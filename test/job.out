@@ -1,0 +1,229 @@
+
+#### Test initialization ####
+
+* distribution ID
+ok  // Debian or derivative
+
+* Charliecloud environment variables used in this script
+ok
+
+* needed binaries
+ip: file
+lsb_release: file
+route: file
+
+* sudo without password
+ok
+
+#### Installation ####
+
+* root filesystem label
+Filesystem volume name:   root
+
+* user charlie is present
+charlie
+
+#### Configuration ####
+
+### Console and friends
+
+* serial console
+console=tty0
+console=ttyS0
+
+* FANCYTTY off
+ok
+
+* framebuffer console disabled
+
+### Filesystem
+
+* Environment variables
+
+* /ch and subdirectories
+data1/
+data2/
+data3/
+data4/
+meta/
+opt/
+tmp/
+
+* /etc/fstab and filesystems mounted under /ch
+LABEL=root    /              ext4         noatime,errors=remount-ro         0 1
+LABEL=tmp     /ch/tmp        ext4         noauto,noatime,errors=remount-ro  0 2
+data1  /ch/data1  9p  nofail,noatime,trans=virtio,version=9p2000.L  0 0
+data2  /ch/data2  9p  nofail,noatime,trans=virtio,version=9p2000.L  0 0
+data3  /ch/data3  9p  nofail,noatime,trans=virtio,version=9p2000.L  0 0
+data4  /ch/data4  9p  nofail,noatime,trans=virtio,version=9p2000.L  0 0
+meta   /ch/meta   9p  nofail,noatime,trans=virtio,version=9p2000.L  0 0
+opt    /ch/opt    9p  nofail,noatime,trans=virtio,version=9p2000.L  0 0
+/dev/vdb2 on /ch/tmp type ext4 (rw,noatime,errors=remount-ro)
+data1 on /ch/data1 type 9p (rw,noatime,sync,dirsync,trans=virtio,version=9p2000.L)
+data2 on /ch/data2 type 9p (rw,noatime,sync,dirsync,trans=virtio,version=9p2000.L)
+data3 on /ch/data3 type 9p (rw,noatime,sync,dirsync,trans=virtio,version=9p2000.L)
+data4 on /ch/data4 type 9p (rw,noatime,sync,dirsync,trans=virtio,version=9p2000.L)
+meta on /ch/meta type 9p (rw,noatime,sync,dirsync,trans=virtio,version=9p2000.L)
+opt on /ch/opt type 9p (rw,noatime,sync,dirsync,trans=virtio,version=9p2000.L)
+
+### Network
+
+* persistent network device names
+/etc/udev/rules.d/75-persistent-net-generator.rules
+
+* interface configuration
+not tested: we test functionality instead
+
+* symlinks to files in /ch/meta
+/ch/meta/hosts
+/ch/meta/resolv.conf
+
+### Users and groups
+
+* umask
+0007
+
+* serial port permissions
+crw--w---Z 1 root tty     4, 64 [timestamp] /dev/ttyS0
+crw-rw---Z 1 root dialout 4, 65 [timestamp] /dev/ttyS1
+crw-rw---Z 1 root dialout 4, 66 [timestamp] /dev/ttyS2
+charlie is in dialout group
+
+## Passwords & authentication
+
+* SSH configuration
+PubkeyAuthentication yes
+PasswordAuthentication no
+PermitRootLogin no
+
+* /etc/sudoers
+
+* charlie empty password
+charlie:
+
+## SSH keys
+
+* ~/.ssh contents
+/home/charlie/.ssh/authorized_keys
+/home/charlie/.ssh/config
+/home/charlie/.ssh/id_rsa
+/home/charlie/.ssh/id_rsa.pub
+
+* authorized_keys
+from="172.22.*" ssh-[xsa] [key] charlie@[host]
+
+* config
+Host 172.22.* chgu*
+    UserKnownHostsFile /dev/null
+    StrictHostKeyChecking no
+    LogLevel error
+
+### Miscellaneous
+
+* MPI hostfile configuration
+orte_default_hostfile = /ch/meta/hostfile
+
+#### Runtime tests ####
+
+### Filesystems
+
+## /ch directories
+
+* /ch/meta
+/ch/meta/guest-macs
+/ch/meta/hostfile
+/ch/meta/hosts
+/ch/meta/resolv.conf
+
+* /ch/opt
+10-hostname.sh
+20-storage.sh
+30-users.py
+80-sync.sh
+90-printvars.sh
+99-runjob.sh
+boot.sh
+charlie.sh
+network.sh
+util.sh
+
+* /ch/tmp is writeable
+lost+found
+test
+
+* /ch/data[1234]
+no additional tests
+
+* swap space present
+Filename				Type		Size	Used	Priority
+/dev/vdb1                               partition	2097148	0	-1
+
+### Networking
+
+* hostname
+
+* MAC and IP space
+0c:00:ac:16:xx:xx
+172.22.xxx.xxx
+/24
+172.22.xxx.xxx
+
+* MAC and IP match
+
+* MAC matches /ch/meta/guest-macs
+
+* routing table
+
+* /etc/hosts link
+/ch/meta/hosts
+
+* /etc/resolv.conf link
+/ch/meta/resolv.conf
+
+* can we reach the internet?
+
+* ssh other nodes
+chgu0
+chgu1
+chgu2
+
+* simple MPI job
+chgu0
+chgu0
+chgu1
+chgu1
+chgu2
+chgu2
+
+* listening ports
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 *:ssh                   *:*                     LISTEN      [pid]/sshd        
+tcp6       0      0 [::]:ssh                [::]:*                  LISTEN      [pid]/sshd        
+
+### Users and groups
+
+* are we charlie?
+charlie
+
+* charlie users and groups
+
+### Miscellaneous
+
+* running virtualized?
+[    0.000000] DMI: QEMU Standard PC (Q35 + ICH9, 2009), BIOS rel-1.8.1-0-g4adadbd-20150316_085822-nilsson.home.kraxel.org 04/01/2014
+
+* job stderr
+
+* virtio drivers in use?
+[pciaddr] Ethernet controller: Red Hat, Inc Virtio network device
+[pciaddr] SCSI storage controller: Red Hat, Inc Virtio block device
+[pciaddr] SCSI storage controller: Red Hat, Inc Virtio block device
+[pciaddr] Unclassified device [0002]: Red Hat, Inc Virtio filesystem
+[pciaddr] Unclassified device [0002]: Red Hat, Inc Virtio filesystem
+[pciaddr] Unclassified device [0002]: Red Hat, Inc Virtio filesystem
+[pciaddr] Unclassified device [0002]: Red Hat, Inc Virtio filesystem
+[pciaddr] Unclassified device [0002]: Red Hat, Inc Virtio filesystem
+[pciaddr] Unclassified device [0002]: Red Hat, Inc Virtio filesystem
+
+* running processes not whitelisted

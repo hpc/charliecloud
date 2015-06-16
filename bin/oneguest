@@ -1,0 +1,191 @@
+#!/usr/bin/env python2.7
+
+"""
+Run the given virtual image. Typically, you should not use this command;
+use "vcluster" instead, even if you just want one guest. A key exception is
+creating new guest images from scratch.
+
+Usage: oneguest [options] [-d DIR ...] IMAGE
+
+Arguments:
+  IMAGE             Virtual machine image file, including extension
+
+Options:
+  --boot ISO        Boot the guest from ISO (e.g., install media image)
+  --commit YNP      Update the image after guest exits [default: prompt]
+  --cores N         Number of virtual cores for guest [default: 2]
+  --cpu C           CPU architecture (try "qemu -cpu help") [default: host]
+  --curses          Emulated display is QEMU curses
+  -d, --dir DIR     Directory to export into guest (can be repeated)
+  -h, --help        Show this help and exit
+  --id ID           Arbitrary int identifier for this guest [default: 0]
+  --keyboard MAP    Use QEMU keyboard map MAP [default: en-us]
+  --output DIR      Directory for console and job output [default: .]
+  --overlay DIR     Directory for runtime overlay image [default: .]
+  --mac M           MAC address for virtual NIC [default: 0C:00:AC:16:01:01]
+  --machine M       QEMU machine (try "qemu -machine help") [default: q35]
+  --metadata DIR    Charliecloud metadata directory (must be populated already)
+  --monitor         Show the monitor interface on stdin/stdout
+  --ram BYTES       Memory per guest [default: 2G]
+  --tap N           Use TAP networking; connect to TAP device N
+  --time-limit T    Shut down image after this many seconds (FIXME, issue #1)
+  --tmp-dir DIR     Directory for temporary image [default: .]
+  --tmp-size BYTES  Size of temporary image [default: 64G]
+  --version         Print version number and exit
+  --vga             Emulated display is VGA shown on host
+  --vgatype TYPE    Type of emulated VGA display [default: cirrus]
+
+Notes:
+
+  * --commit is a tri-state argument. "Yes" (and synonyms) means to commit
+    changes made to the root filesystem to IMAGE when the guest exits without
+    asking; "no" means to discard changes without asking, and "prompt" means
+    ask what to do.
+
+    Warning: Behavior is undefined if you commit changes for more than one
+    guest running from the same image.
+
+  * Directories specified with --dir appear in the guest with mount tag data1,
+    data2, etc., in the order specified. While this script imposes no limit on
+    the number of directories, some images might.
+
+  * The guest always has a VGA display attached. --vga says to show this
+    display on the host using a graphical window, --curses say to display it
+    in the terminal, and omitting both says to discard display output. Note
+    that --curses will assume an 80x25 terminal window regardless of your
+    terminal's actual size.
+"""
+
+from __future__ import print_function
+
+import collections
+import os.path
+from pprint import pprint
+import sys
+
+import charliecloud as cc
+
+COMMIT_PROMPT = 'Save image changes (y/n)?'
+
+# There seems to be essentially no documentation on the differences between
+# the local, handle, and proxy fsdrivers. The best I could come up with is the
+# mailing list submission of the handle driver patch
+# <http://lists.gnu.org/archive/html/qemu-devel/2011-09/msg01193.html>, which
+# suggests that handle may have some minor advantages. However, it didn't work
+# for me -- it gave spurious file not found errors. proxy requires a helper
+# daemon running as root, which we don't want. Therefore, we use local.
+#
+# Security model "none" means that all file operations on the host are done as
+# the user running qemu, and illegal operations (e.g. chown) fail. The docs
+# say failure is silent, but I get errors.
+VIRTFS_OPTIONS = 'local,security_model=none'
+
+# Options for virtual disks. For the temp storage (vdb), we use the "new" high
+# performance virtio-blk data plane driver. This is not very well documented,
+# and while we're on 2.1 now, the documention I found targeted 1.4 [1] or did
+# not specify a version [2]. Configuration is more complex for data plane.
+# Non-data-plane configuration can be placed only in -drive, but we use the
+# same split -drive/-device syntax as data plane for consistency.
+#
+# [1]: http://blog.vmsplice.net/2013/03/new-in-qemu-14-high-performance-virtio.html
+# [2]: http://wiki.mikejung.biz/KVM_/_Xen
+#
+# Note that we do not try to use cache=none for the root filesystem, as it
+# does not work for an overlay across filesystem boundaries.
+VDA_DRIVE_OPTS='id=vd0,if=none,format=qcow2'
+VDA_DEVICE_OPTS='virtio-blk,drive=vd0'
+VDB_DRIVE_OPTS='id=vd1,if=none,aio=threads,format=raw'
+VDB_DEVICE_OPTS='virtio-blk,drive=vd1,scsi=off,x-data-plane=on'
+
+def main():
+   # set up options for qemu
+   overlay_name = '%s/%s.overlay.qcow2' % (cc.cl.overlay, cc.cl.id)
+   temp_name = '%s/%s.tmp' % (cc.cl.tmp_dir, cc.cl.id)
+   console_out = '%s/%s_console.out' % (cc.cl.output, cc.cl.id)
+   job_out = '%s/%s_job.out' % (cc.cl.output, cc.cl.id)
+   job_err = '%s/%s_job.err' % (cc.cl.output, cc.cl.id)
+   qad = collections.OrderedDict((
+            ('-boot',       'order=dc'),     # CD-ROM image, 1st hard disk
+            ('-cpu',        cc.cl.cpu),
+            ('-device',     { 'a': VDA_DEVICE_OPTS,
+                              'b': VDB_DEVICE_OPTS }),
+            ('-drive',      { 'a': ",".join(('file=' + overlay_name,
+                                             VDA_DRIVE_OPTS)),
+                              'b': ",".join(('file=' + temp_name,
+                                             VDB_DRIVE_OPTS,
+                                             cache_opts(cc.cl.tmp_dir))) }),
+            ('-k',          cc.cl.keyboard),
+            ('-m',          cc.cl.ram),
+            ('-machine',    '%s,accel=kvm' % cc.cl.machine),
+            ('-net',        {'nic': 'nic,model=virtio,macaddr=%s' % cc.cl.mac}),
+            ('-nodefaults', None),
+            ('-serial',     {1: 'file:' + console_out,
+                             2: 'file:' + job_out,
+                             3: 'file:' + job_err}),
+            ('-smp',        cc.cl.cores),
+            ('-vga',        cc.cl.vgatype),
+            ('-virtfs',     {}),
+         ))
+   # --boot
+   if (cc.cl.boot):
+      qad['-cdrom'] = cc.cl.boot
+   # --curses, --vga
+   if (cc.cl.curses):
+      qad['-display'] = 'curses'
+   elif (cc.cl.vga):
+      # The documentation implies that "-display sql" is the default, but it
+      # appears to actually be "-display gtk" (QEMU 2.2.0). The latter shows
+      # some QEMU menus above the VGA window, but it also sometimes messes up
+      # the keyboard map (e.g., XQuartz on OS X). The menus aren't
+      # tremendously useful, so we prefer no menus and working keyboard.
+      qad['-display'] = 'sdl'
+   else:
+      qad['-display'] = 'none'
+   # --dir
+   if (cc.cl.dir):
+      for (i, dir_) in enumerate(cc.cl.dir):
+         tag = 'data%d' % (i+1)
+         qad['-virtfs'][tag] = ('%s,path=%s,mount_tag=%s'
+                                % (VIRTFS_OPTIONS, dir_, tag))
+   # --metadata
+   if (cc.cl.metadata):
+      qad['-virtfs']['meta'] = ('%s,path=%s,mount_tag=meta'
+                                % (VIRTFS_OPTIONS, cc.cl.metadata))
+   # --monitor
+   if (cc.cl.monitor):
+      qad['-monitor'] = 'stdio'
+   # Networking
+   if (cc.cl.tap):
+      qad['-net']['net'] = 'tap,ifname=%s,script=no,downscript=no' % (cc.cl.tap)
+   else:
+      qad['-net']['net'] = 'user,net=172.22.1.0/24,host=172.22.1.254,dns=172.22.1.253'
+   # /ch/opt
+   qad['-virtfs']['opt'] = ('%s,path=%s,mount_tag=opt'
+                            % (VIRTFS_OPTIONS, cc.path('opt')))
+   # create an overlay image
+   cc.qemu_img_create(overlay_name, True, base=cc.cl.image)
+   # create the temporary image
+   cc.fallocate(temp_name, cc.cl.tmp_size, clobber=True)
+   # run the guest
+   cc.shell('qemu-system-x86_64', qad)
+   # delete the temporary image
+   cc.unlink(temp_name)
+   # commit image changes, if appropriate
+   if (cc.cl.commit == True
+       or (cc.cl.commit == None
+           and cc.Tristate.from_terminal(COMMIT_PROMPT) == True)):
+      cc.qemu_img_commit(overlay_name)
+   # done
+   print('oneguest done')
+
+def cache_opts(dir_):
+   if (cc.o_direct_p(dir_)):
+      return 'cache=none'
+   else:
+      cc.warning('no O_DIRECT in %s: cannot disable host cache' % dir_)
+      return ''
+
+
+if (__name__ == '__main__'):
+   cc.clargs_parse(__doc__)
+   main()

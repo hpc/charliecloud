@@ -1,0 +1,546 @@
+#!/usr/bin/env python2.7
+
+"""
+Start a virtual cluster of one or more nodes using the given image. The
+guests are distributed across nodes in a SLURM allocation (if one exists) or
+all run on localhost (if not).
+
+Usage: vcluster [options] [-d DIR ...] IMAGE
+
+Arguments:
+  IMAGE              Virtual machine image file, including extension
+  JOBARG             Arguments to job script (FIXME)
+
+Options:
+  --cleanup          Remove job information after job (danger!)
+  --commit ID        Update image with guest ID's changes
+  --cores N          Number of cores per guest [default: 0]
+  --curses           Start 80x25 curses console for guest 0 (implies --nosync)
+  -d, --dir DIR      Directory to export into guest (can be repeated)
+  -h, --help         Show this help and exit
+  -i, --interactive  Interactive mode (don't run job automatically)
+  -j, --job FILE     Job script
+  --jobname NAME     Name for this job (need not be unique) [default: charlie]
+  --jobbase DIR      Directory for Charliecloud jobdirs [default: .]
+  --jobdir NAME      Name for jobdir (default: derived from jobname and time)
+  -n N               Number of guests in the virtual cluster [default: 2]
+  --my-size          Use command line resource spec, not SLURM (FIXME #12)
+  --nobel            Analyze output and file Nobel Prize nominations as needed
+  --nosync           Don't wait for and report guest boot completion
+  --ram BYTES        Memory per guest [default: 2G]
+  --time-limit T     Shut down cluster after this many seconds (FIXME issue #1)
+  --tmp-dir DIR      Directory for temporary image (default: under --jobdir)
+  --tmp-size BYTES   Size of temporary image [default: 4G]
+  --version          Print version number and exit
+  --vga              Start an emulated VGA console for all guests
+  --xterm            Start an xterm with curses console for all guests
+
+If running in a SLURM allocation, the SLURM environment variables and host
+configuration file determine guest resources, and --cores, -n, and --ram are
+all ignored. With --my-size, those switches (including their default values)
+again take precedence; values can be decreased, but not increased, over the
+system settings. (See also issue #13.)
+"""
+
+# Implementation note: This relies on the oneguest script to do most of the
+# work, calling it through the shell. That's not very Pythonic; why not import
+# and call Python functions? The reason is that we need to be able to call
+# oneguest on remote nodes, and Python does not have good support for starting
+# remote processes (or lightweight distributed computing in general, as far as
+# I can tell).
+
+
+from __future__ import division, print_function
+
+import collections
+import distutils.spawn
+import grp
+import io
+import os
+import os.path
+import cPickle as pickle
+from pprint import pprint
+import pwd
+import re
+import shutil
+import signal
+import sys
+import time
+import traceback
+
+import charliecloud as cc
+
+# Make child Python processes use unbuffered output to keep output files in
+# order (see issue #2).
+os.environ['PYTHONUNBUFFERED'] = 'antidisestablishmentarianism'
+
+
+NOWSTR = time.strftime('%Y%m%d_%H%M%S')
+METADATA_UPDATE_TIMEOUT = 60
+SYNC_WAIT = 2       # wait time between tests for jobready files (seconds)
+SYNC_TIMEOUT = 180  # wait time before giving up (seconds)
+
+
+class Guest_Ended_Error(EnvironmentError): pass
+class Guest_Startup_Error(ValueError): pass
+class Guest_Timeout_Error(EnvironmentError): pass
+
+
+class Cluster(object):
+
+   __slots__ = ('host_ct',
+                'jobdir',
+                'meta_dir',
+                'ok_for_guests',
+                'out_dir',
+                'pops',
+                'ports',
+                'run_dir',
+                'slirp',
+                'switch',
+                'temp_dir')
+
+   def __init__(self):
+      self.ok_for_guests = True
+
+   def main(self):
+      self.args_check()
+      print('vcluster starting')
+      self.jobdir_setup()
+      self.metadata_setup()
+      self.testdata_setup()
+      self.hello()
+      if (not self.ok_for_guests):
+         print('running guests was vetoed (see above)')
+      else:
+         try:
+            self.guests_start()
+            self.metadata_update()
+            self.guests_wait()
+         except (Guest_Startup_Error):
+            pass
+         except (KeyboardInterrupt):
+            cc.warning('keyboard interrupt')
+         except (Exception):
+            traceback.print_exc()
+            cc.error('unhandled exception; backtrace above')
+      print('cleaning up')
+      self.jobdir_cleanup()
+      print('vcluster done (%d errors, %d warnings)'
+            % (cc.error_ct, cc.warning_ct))
+
+   def args_check(self):
+      if (cc.cl.curses):
+         cc.cl.nosync = True
+      if (cc.cl.n < 1):
+         cc.fatal('need at least one guest')
+      if (not os.path.exists('/sys/class/net/tap0')):
+         cc.fatal('no TAP devices found')
+
+   def core_ct_get(self, hint_ct):
+      pass
+
+   def guest_net_args(self, id_):
+      return {'--tap': 'tap%d' % self.guest_offset(id_)}
+
+   def guest_offset(self, id_):
+      return (id_ // self.host_ct)
+
+   def guests_start(self):
+      # Note that each guest needs different arguments, so we boot each one
+      # separately with mpirun, rather than all simultaneously with one mpirun
+      # call. This also reduces code path differences with workstation mode.
+      print('starting guests')
+      self.pops = list()
+      # We run guests in reverse order so that guest 0 can have the terminal
+      # for a curses console if needed.
+      for id_ in reversed(xrange(cc.cl.n)):
+         args = collections.OrderedDict((
+                   ('--commit',    'no'),
+                   ('--cores',     cc.cl.cores),
+                   ('-d',          collections.OrderedDict()),
+                   ('--id',        id_),
+                   ('--output',    self.out_dir),
+                   ('--overlay',   self.run_dir),
+                   ('--mac',       self.mac(id_)),
+                   ('--metadata',  self.meta_dir),
+                   ('--ram',       cc.cl.ram),
+                   ('--tmp-dir',   self.temp_dir),
+                   ('--tmp-size',  cc.cl.tmp_size),
+                ))
+         args.update(self.guest_net_args(id_))
+         if (cc.cl.commit is not None and id_ == int(cc.cl.commit)):
+            args['--commit'] = 'yes'
+         if (cc.cl.xterm or cc.cl.curses and id_ == 0):
+            args['--curses'] = None
+         if (cc.cl.dir):
+            for (i, d) in enumerate(cc.cl.dir):
+               if (not os.path.isdir(d)):
+                  cc.error('--dir: %s is not a directory' % d)
+                  raise Guest_Startup_Error()
+               args['-d'][i] = d
+         if (cc.cl.vga):
+            args['--vga'] = None
+         args[cc.cl.image] = None
+         cmd = (self.rsh_prefix(id_)
+                + [os.path.dirname(os.path.realpath(__file__)) + '/oneguest'])
+         if (cc.cl.xterm):
+            cmd = ['xterm', '-hold', '-geometry', '80x25', '-e'] + cmd
+            self.pops.append(cc.shell(cmd, args, async=True))
+         elif (cc.cl.curses and id_ == 0):
+            self.pops.append(cc.shell(cmd, args))
+         else:
+            self.pops.append(cc.shell(cmd, args, async=True,
+                                      outerr=self.outpath('oneguest', id_)))
+      cc.warnings_dump()
+
+   def guests_wait(self):
+      g0_signal = None
+      if (cc.cl.nosync):
+         print('not reporting guest boot completion per --nosync')
+      else:
+         start = time.time()
+         print('waiting for %d jobready files... ' % cc.cl.n, end='')
+         sys.stdout.flush()
+         try:
+            for i in xrange(cc.cl.n):
+               while True:
+                  for (j, pop) in enumerate(reversed(self.pops)):
+                     if (pop.poll() != None):
+                        cc.error('guest %d terminated prematurely' % j)
+                        raise Guest_Ended_Error()
+                  if (os.path.exists('%s/sync/%d.jobready'
+                                     % (self.meta_dir, i))):
+                     print(' %d' % i, end='')
+                     sys.stdout.flush()
+                     break
+                  elif (time.time() - start > SYNC_TIMEOUT):
+                     print()
+                     raise Guest_Timeout_Error()
+                  else:
+                     time.sleep(SYNC_WAIT)
+         except (Guest_Ended_Error):
+            cc.error('stopped waiting because at least 1 guest is gone')
+         except (Guest_Timeout_Error):
+            cc.error('timeout waiting for cluster boot, will kill guest 0')
+            g0_signal = signal.SIGUSR1
+         else:
+            print()
+         print('waited %d seconds for guests to boot' % (time.time() - start))
+         sys.stdout.flush()
+      print('waiting for guest 0 (%s) to finish' % self.ip(0))
+      if (cc.wait(self.pops.pop(), signal=g0_signal, failok=True) != 0):
+         cc.error('guest 0 terminated abnormally')
+      print('killing remaining guests')
+      for (i, pop) in enumerate(self.pops):
+         try:
+            # Send SIGUSR1 instead of SIGTERM because mpirun catches SIGTERM
+            # and turns it into SIGKILL. Setting MCA parameter
+            # odls_base_sigkill_timeout to >> 1 did not seem to affect this
+            # behavior. On the other hand, SIGUSR1 is simply passed through to
+            # the underlying process (oneguest in this case).
+            cc.wait(pop, signal=signal.SIGUSR1)
+         except OSError as x:
+            cc.warning("can't kill guest %d: %s" % (cc.cl.n - i - 1, x))
+
+   def hello(self):
+      print('guest resources --')
+      print('  number of guests: %9d' % cc.cl.n)
+      print('  guest cores:      %9d' % cc.cl.cores)
+      print('  guest RAM:        %9s' % cc.cl.ram)
+      print('directories --')
+      print('  metadata:      %s' % self.meta_dir)
+      print('  output:        %s' % self.out_dir)
+      print('  job run data:  %s' % self.run_dir)
+      print('  temporary:     %s' % self.temp_dir)
+      if (cc.cl.dir):
+         for (i, d) in enumerate(cc.cl.dir):
+            print ('  data %d:        %s' % (i + 1, d))
+      self.hello_more()
+      if (cc.cl.cleanup):
+         print('warning: %s will be deleted per --cleanup' % jobdir)
+
+   def hello_more(self):
+      pass
+
+   def ip(self, id_):
+      return ('172.22.%d.%d' % (self.host_num(id_),
+                                self.guest_offset(id_) + 1))
+
+   def ip_host(self, id_):
+      return ('172.22.%d.254' % self.host_num(id_))
+
+   def ip_net(self, id_):
+      return ('172.22.%d.0' % self.host_num(id_))
+
+   def ip_masklen(self, id_):
+      return 24
+
+   def jobdir_cleanup(self):
+      if (cc.cl.cleanup):
+         print('deleting %s per --cleanup' % self.jobdir)
+         shutil.rmtree(self.jobdir)
+
+   def jobdir_setup(self):
+      if (not os.path.exists(cc.cl.image)):
+         cc.fatal('VM image %s not found' % cc.cl.image)
+      if (not os.path.isdir(cc.cl.jobbase)):
+         cc.fatal('directory %s does not exist' % cc.cl.jobbase)
+      if (cc.cl.jobdir):
+         self.jobdir = cc.mkdir(cc.cl.jobbase, cc.cl.jobdir)
+      else:
+         self.jobdir = cc.mkdir(cc.cl.jobbase,
+                                '%s.%s' % (cc.cl.jobname, NOWSTR))
+      self.meta_dir = cc.mkdir(self.jobdir, 'meta', clobber=True)
+      cc.mkdir(self.meta_dir, 'sync')
+      cc.mkdir(self.meta_dir, 'test')
+      for i in xrange(cc.cl.n):
+         cc.mkdir(os.path.join(self.meta_dir, 'test'), str(i))
+      self.out_dir = cc.mkdir(self.jobdir, 'out', clobber=True)
+      self.run_dir = cc.mkdir(self.jobdir, 'run', clobber=True)
+      if (cc.cl.tmp_dir):
+         self.temp_dir = cc.cl.tmp_dir
+      else:
+         self.temp_dir = self.run_dir
+      for d in (self.run_dir, self.temp_dir):
+         if (not cc.o_direct_p(d)):
+            cc.warning('O_DIRECT unsupported in %s; performance impact?' % d)
+
+   def mac(self, id_):
+      return ('0C:00:AC:16:%02X:%02X' % (self.host_num(id_),
+                                         self.guest_offset(id_) + 1))
+
+
+   def metadata_dump_file(self, filename, text):
+      fp = self.metadata_open_file(filename)
+      fp.write(text)
+      fp.close()
+
+   def metadata_open_file(self, filename):
+      return self.metadata_open_files(filename).itervalues().next()
+
+   def metadata_open_files(self, *args):
+      fps = dict()
+      for filename in args:
+         fps[filename] = open(os.path.join(self.meta_dir, filename), 'w')
+      return fps
+
+   def metadata_setup(self):
+      # Various files with entries per guest
+      fps = self.metadata_open_files('guest-macs', 'guests',
+                                     'hosts', 'hostfile')
+      print('127.0.0.1 localhost', file=fps['hosts'])
+      for id_ in xrange(cc.cl.n):
+         print('%d %s' % (id_, self.mac(id_)), file=fps['guest-macs'])
+         print('chgu%d' % id_, file=fps['guests'])
+         print('%s chgu%d' % (self.ip(id_), id_), file=fps['hosts'])
+         # We should not really be putting the same IP on multiple lines
+         # (e.g., see http://unix.stackexchange.com/questions/102660/), but
+         # this works for now and I'm too lazy to write proper logic. Note
+         # that we can have multiple hosts, each with one or more guests, so
+         # it's not just a matter of one line with many aliases.
+         print('%s chgu%dhost' % (self.ip_host(id_), id_), file=fps['hosts'])
+         print('chgu%d slots=%d' % (id_, cc.cl.cores), file=fps['hostfile'])
+      for fp in fps.itervalues():
+         fp.close()
+      # guest-count
+      self.metadata_dump_file('guest-count', '%d\n' % cc.cl.n)
+      # proxy.sh
+      cc.shell('sh', ['-c', ("set | egrep -i '^[a-z]+_proxy' > %s/proxy.sh"
+                             % self.meta_dir)],
+               failok=True)
+      # resolv.conf
+      self.resolvconf_setup()
+      # interactive file
+      if (cc.cl.interactive):
+         cc.make_empty_file('interactive', self.meta_dir)
+      # commit
+      if (cc.cl.commit is not None):
+         cc.make_empty_file('commit', self.meta_dir)
+      # user/group info
+      uginfo = dict()
+      print('user info --')
+      uid = os.geteuid()
+      user = pwd.getpwuid(uid).pw_name
+      uginfo['user'] = (uid, user)
+      print('  user:           %5d %s' % (uid, user))
+      pgid = pwd.getpwuid(uid).pw_gid
+      pgroup = grp.getgrgid(pgid).gr_name
+      uginfo['group'] = (pgid, pgroup)
+      print('  primary group:  %5d %s' % (pgid, pgroup))
+      uginfo['groups'] = list()
+      for gid in os.getgroups():
+         # Filter out system groups. What exactly is a "system group" is
+         # unclear, and we need to deal with both the host and guest operating
+         # systems, which could be more or less anything. Debian non-system
+         # groups start at 1000, Red Hat at 500. We use 500 as the cutoff.
+         if (gid < 500):
+            continue
+         group = grp.getgrgid(gid).gr_name
+         uginfo['groups'].append((gid, group))
+         print('  group:          %5d %s' % (gid, group))
+      pickle.dump(uginfo, io.open(os.path.join(self.meta_dir, 'host-userdata'),
+                                  'wb'))
+      # job script
+      if (cc.cl.job):
+         # We want to test if the file is executable, not just whether it
+         # exists, to save the user the trouble of booting up a virtual
+         # cluster which then fails. This is oddly difficult in Python,
+         # AFAICT. The below is close, but it uses real UID/GID rather than
+         # effective UID/GID, which are not the same in some corner cases like
+         # sudo. Since that's an unusual situation here, we'll ignore the
+         # problem.
+         if (not os.access(cc.cl.job, os.X_OK)):
+            cc.fatal('%s not found or not executable' % cc.cl.job)
+         job_target = os.path.join(self.meta_dir, 'jobscript')
+         try:
+            os.link(cc.cl.job, job_target)
+         except OSError as x:
+            cc.warning('job script hard link failed, copying instead: %s'
+                       % str(x))
+            shutil.copy2(cc.cl.job, job_target)
+
+   def metadata_update(self):
+      pass
+
+   def outpath(self, what, id_):
+      return os.path.join(self.out_dir, '%d_%s.out' % (id_, what))
+
+   def resolvconf_setup(self):
+      # Use host's DNS settings
+      shutil.copy2('/etc/resolv.conf', self.meta_dir)
+
+   def rsh_prefix(self, id_):
+      return []
+
+   def testdata_setup(self):
+      for id_ in xrange(cc.cl.n):
+         # note trailing spaces
+         self.metadata_dump_file('test/%d/route.expected' % id_, '''\
+default via %s dev eth0 
+%s/%s dev eth0  proto kernel  scope link  src %s 
+''' % (self.ip_host(id_), self.ip_net(id_), self.ip_masklen(id_), self.ip(id_)))
+         self.metadata_dump_file('test/%d/vars-charlie.expected' % id_, '''\
+CH_DATA1=/ch/data1
+CH_DATA2=/ch/data2
+CH_DATA3=/ch/data3
+CH_DATA4=/ch/data4
+CH_GATEWAY_IP=%s
+CH_GUEST_CT=%d
+CH_GUEST_ID=%d
+CH_GUEST_IP=%s
+CH_GUEST_MAC=%s
+CH_META=/ch/meta
+CH_TMP=/ch/tmp
+''' % (self.ip_host(id_), cc.cl.n, id_, self.ip(id_), self.mac(id_)))
+
+
+class Cluster_SLURM(Cluster):
+
+   __slots__ = ('nodes',
+                'slurm_id',
+                'slurm_nodelist',
+                'slurm_core_ct',
+                'slurm_core_ct_used',
+                'slurm_ram',
+                'slurm_ram_used')
+
+   def __init__(self):
+      Cluster.__init__(self)
+      # get SLURM parameters
+      self.slurm_id = int(os.getenv('SLURM_JOB_ID'))
+      self.host_ct = int(os.getenv('SLURM_JOB_NUM_NODES'))
+      self.slurm_nodelist = os.getenv('SLURM_JOB_NODELIST')
+      m = re.search(r'^([0-9]+)', os.environ['SLURM_JOB_CPUS_PER_NODE'])
+      if (m is None):
+         cc.fatal('hopelessly confused by SLURM_JOB_CPUS_PER_NODE=%s'
+                  % os.environ['SLURM_JOB_CPUS_PER_NODE'])
+      self.slurm_core_ct = int(m.group(1))
+      self.slurm_core_ct_used = self.slurm_core_ct - cc.cl.slurm_reserved_cores
+      self.slurm_ram = cc.memtotal_kb()
+      self.slurm_ram_used = '%dK' % (self.slurm_ram
+                                     - cc.cl.slurm_reserved_ram_kb)
+      self.nodes = cc.hostlist_expand(self.slurm_nodelist)
+      # compute virtual cluster size
+      if (cc.cl.my_size):
+         assert False, 'unimplemented'
+      else:
+         cc.cl.cores = self.core_ct_get(cc.cl.cores)
+         cc.cl.ram = self.slurm_ram_used
+         cc.cl.n = self.host_ct
+
+   def core_ct_get(self, hint_ct):
+      if (hint_ct):
+         if (hint_ct > self.slurm_core_ct_used):
+            cc.fatal('--cores=%d exceeds policy limit of %d'
+                     % (hint_ct, self.slurm_core_ct_used))
+         return hint_ct
+      else:
+         return self.slurm_core_ct_used
+
+   def hello_more(self):
+      print('SLURM job parameters --')
+      print('  job id:          %9d' % self.slurm_id)
+      print('  nodes:           %9d  %s'
+            % (self.host_ct, self.slurm_nodelist))
+      print('  cores/node:      %9d  (%d reserved)'
+            % (self.slurm_core_ct, cc.cl.slurm_reserved_cores))
+      print('  cores/node used: %9d' % self.slurm_core_ct_used)
+      print('  RAM/node:        %9dK (%dK reserved)'
+            % (self.slurm_ram, cc.cl.slurm_reserved_ram_kb))
+      print('  RAM/node used:   %10s' % self.slurm_ram_used)
+
+   def host_name(self, id_):
+      return self.nodes[id_ % self.host_ct]
+
+   def host_num(self, id_):
+      return int(re.search(r'(\d+)', self.host_name(id_)).group(1))
+
+   def rsh_prefix(self, id_):
+      # mpirun does something strange to the xterm keyboard (stuff like
+      # control-C kills mpirun, not whatever's in the VM). Therefore, we run
+      # local guests without it so at least one console works properly.
+      if (id_ % self.host_ct == 0):
+         return []
+      else:
+         return ['mpirun', '-n', '1', '-H', self.host_name(id_)]
+
+
+class Cluster_Workstation(Cluster):
+
+   def __init__(self):
+      Cluster.__init__(self)
+      self.host_ct = 1
+      cc.cl.cores = self.core_ct_get(cc.cl.cores)
+
+   def core_ct_get(self, hint_ct):
+      if (hint_ct):
+         return hint_ct
+      else:
+         return 2
+
+   def host_name(self, id_):
+      return 'localhost'
+
+   def host_num(self, id_):
+      return 1
+
+
+def slurm_p():
+   if (os.environ.has_key('SLURM_NODELIST')):
+      print('found SLURM allocation')
+      if (distutils.spawn.find_executable('mpirun')):
+         print('found mpirun')
+      else:
+         cc.fatal('mpirun not in path')
+      return True
+   else:
+      return False
+
+
+if (__name__ == '__main__'):
+   cc.clargs_parse(__doc__, '/etc/charliecloud/config.json')
+   if (slurm_p()):
+      Cluster_SLURM().main()
+   else:
+      Cluster_Workstation().main()

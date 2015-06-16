@@ -1,0 +1,125 @@
+#!/bin/bash
+
+# Set up Charliecloud networking for workstation mode (TAP devices, bridge,
+# and NAT). This script is a SysV init script, so you can install it to run at
+# boot/shutdown time. Arguments: start, stop, restart, status.
+#
+# Requires tunctl, installation of which is distribution-dependent.
+
+# Number of TAP interfaces to create. This is the maximum number of VMs.
+TAP_CT=7
+
+# User who should own the TAP devices.
+TAP_OWNER=reidpr
+
+# Which interface to use for NAT to the outside world?
+FWD_IFACE=em1
+
+# Command output goes here
+LOGFILE=/tmp/network-w.out
+
+# Override above in this file.
+if [ -f /etc/charliecloud/config.sh ]; then
+    . /etc/charliecloud/config.sh
+fi
+
+# iptables rules
+IPT_MASQ="POSTROUTING -t nat -o $FWD_IFACE -j MASQUERADE"
+IPT_IN="FORWARD -i $FWD_IFACE -o br0 -m state --state RELATED,ESTABLISHED -j ACCEPT"
+IPT_OUT="FORWARD -i br0 -o $FWD_IFACE -j ACCEPT"
+
+function start () {
+    echo -n 'Configuring Charliecloud workstation mode networking: '
+    # create bridge
+    x brctl addbr br0
+    x ip addr add 172.22.1.254/24 broadcast 172.22.1.255 dev br0
+    x ip link set up br0
+    # create tap devices
+    for (( i=0; i < $TAP_CT; i++ )); do
+        x tunctl -u $TAP_OWNER -t tap$i
+        x ip link set up tap$i
+        x brctl addif br0 tap$i
+    done
+    # turn on NAT
+    x iptables -A $IPT_MASQ
+    x iptables -A $IPT_IN
+    x iptables -A $IPT_OUT
+    # turn on IP forwarding
+    x sysctl net.ipv4.ip_forward=1
+    # Done
+    ok
+}
+
+function stop () {
+    echo -n 'Deconfiguring Charliecloud workstation mode networking: '
+    # turn off IP forwarding
+    y sysctl net.ipv4.ip_forward=0
+    # turn off NAT
+    y iptables -D $IPT_OUT
+    y iptables -D $IPT_IN
+    y iptables -D $IPT_MASQ
+    # remove tap interfaces
+    for (( i=0; i < $TAP_CT; i++ )); do
+        y brctl delif br0 tap$i
+        y ip link set down tap$i
+        y tunctl -d tap$i
+    done
+    # remove bridge
+    y ip link set down br0
+    y brctl delbr br0
+    # done
+    if [[ $FAILED ]]; then
+        echo 'failed'
+    else
+        ok
+    fi
+}
+
+function abort () {
+    echo 'failed'
+    exit 1
+}
+
+function ok () {
+    echo 'ok'
+}
+
+function x () {
+    echo '$' "$@" >> $LOGFILE
+    if ! "$@" >> $LOGFILE 2>&1; then
+        abort
+    fi
+}
+
+function y () {
+    echo '$' "$@" >> $LOGFILE
+    if ! "$@" >> $LOGFILE 2>&1; then
+        FAILED=true
+    fi
+}
+
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    status)
+        ifconfig
+        brctl show br0 ; echo
+        route -n ; echo
+        sysctl net.ipv4.ip_forward ; echo
+        iptables -v -L FORWARD
+        iptables -v -t nat -L POSTROUTING
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
