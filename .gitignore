@@ -49,6 +49,7 @@ Session.vim
 
 *.py[cod]
 
+doc/
 doc-src/_build
 doc-src/*.help
 

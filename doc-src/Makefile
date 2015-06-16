@@ -61,15 +61,15 @@ html: $(SCRIPTHELPS)
 	@echo "HTML pages copied to doc/."
 
 # see http://stackoverflow.com/a/2659808/396038
-#web: html
-#	@echo
-#	@echo Making sure there are no uncommitted changes
-#	git diff-index --quiet --cached HEAD
-#	git diff-files --quiet
-#	@echo Publishing new docs
-#	cd ../doc && git add --all
-#	cd ../doc && git commit -a -m "docs for commit $$(cd .. && git rev-parse --short HEAD)"
-#	cd ../doc && git push origin gh-pages
+web: html
+	@echo
+	@echo Making sure there are no uncommitted changes
+	git diff-index --quiet --cached HEAD
+	git diff-files --quiet
+	@echo Publishing new docs
+	cd ../doc && git add --all
+	cd ../doc && git commit -a -m "docs for commit $$(cd .. && git rev-parse --short HEAD)"
+	cd ../doc && git push origin gh-pages
 
 dirhtml:
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
