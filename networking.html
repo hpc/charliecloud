@@ -1,0 +1,699 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>3. Networking &mdash; Charliecloud 0.1.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Charliecloud 0.1.5 documentation" href="index.html"/>
+        <link rel="next" title="4. Filesystem passthrough" href="fs-passthrough.html"/>
+        <link rel="prev" title="2. Tutorial" href="tutorial.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> Charliecloud
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing Charliecloud</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#installing-on-linux">1.1. Installing on Linux</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="install.html#miscellaneous-supporting-software">1.1.1. Miscellaneous supporting software</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#charliecloud-itself">1.1.2. Charliecloud itself</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#kvm-hypervisor">1.1.3. KVM hypervisor</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="install.html#cpu-support">1.1.3.1. CPU support</a></li>
+<li class="toctree-l4"><a class="reference internal" href="install.html#bios-support">1.1.3.2. BIOS support</a></li>
+<li class="toctree-l4"><a class="reference internal" href="install.html#dev-kvm-permissions">1.1.3.3. <code class="code docutils literal"><span class="pre">/dev/kvm</span></code> permissions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#qemu">1.1.4. QEMU</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#your-first-virtual-cluster">2.1. Your first virtual cluster</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#getting-help">2.1.1. Getting help</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-the-virtual-network">2.1.2. Starting the virtual network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-a-virtual-cluster">2.1.3. Starting a virtual cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#logging-in">2.1.4. Logging in</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#filesystems">2.1.5. Filesystems</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#root-filesystem">2.1.5.1. Root filesystem</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#ch-tmp">2.1.5.2. <code class="code docutils literal"><span class="pre">/ch/tmp</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#ch-meta">2.1.5.3. <code class="code docutils literal"><span class="pre">/ch/meta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#ch-opt">2.1.5.4. <code class="code docutils literal"><span class="pre">/ch/opt</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#contents-of-the-job-directory">2.1.6. Contents of the job directory</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#meta">2.1.6.1. <code class="code docutils literal"><span class="pre">meta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#run">2.1.6.2. <code class="code docutils literal"><span class="pre">run</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#out">2.1.6.3. <code class="code docutils literal"><span class="pre">out</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#network-topology">2.1.7. Network topology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#ssh">2.1.8. SSH</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#shut-the-cluster-down">2.1.9. Shut the cluster down</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#your-first-virtual-job">2.2. Your first virtual job</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-a-cluster-with-less-clutter">2.2.1. Starting a cluster with less clutter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#users-groups-and-permissions-under-filesystem-passthrough">2.2.2. Users, groups, and permissions under filesystem passthrough</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#running-mpihello-in-interactive-mode">2.2.3. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in interactive mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#running-mpihello-in-batch-mode">2.2.4. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in batch mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#installing-your-own-software">2.3. Installing your own software</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-a-vm-with-persistent-root-filesystem">2.3.1. Starting a VM with persistent root filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#installing-software">2.3.2. Installing software</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">3. Networking</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#network-addresses">3.1. Network addresses</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ip-addresses">3.1.1. IP addresses</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mac-addresses">3.1.2. MAC addresses</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#topology">3.2. Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#workstation-mode">3.3. Workstation mode</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#requirements">3.3.1. Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#topology-implementation">3.3.2. Topology implementation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#security">3.3.3. Security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mac-and-ip-spoofing">3.3.3.1. MAC and IP spoofing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inbound-network-access">3.3.3.2. Inbound network access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#risks">3.3.3.3. Risks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#cluster-mode">3.4. Cluster mode</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">3.4.1. Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">3.4.2. Topology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">3.4.3. Security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id4">3.4.3.1. MAC and IP spoofing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#guest-isolation">3.4.3.2. Guest isolation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id5">3.4.3.3. Risks</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#cluster-mode-faq">3.4.4. Cluster mode FAQ</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#resources">3.5. Resources</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fs-passthrough.html">4. Filesystem passthrough</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#uncoordinated-uids-and-gids">4.1. Uncoordinated UIDs and GIDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#potential-solutions">4.2. Potential solutions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#security-model-mapped">4.2.1. <code class="code docutils literal"><span class="pre">security_model=mapped</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#run-jobs-as-root">4.2.2. Run jobs as root</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#turn-off-guest-permission-checks-on-passthrough-filesystem">4.2.3. Turn off guest permission checks on passthrough filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#mount-with-uid-foo-gid-bar">4.2.4. Mount with <code class="code docutils literal"><span class="pre">uid=foo</span></code>, <code class="code docutils literal"><span class="pre">gid=bar</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#bindfs">4.2.5. bindfs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#fsuid-and-fsgid">4.2.6. <code class="code docutils literal"><span class="pre">fsuid</span></code> and <code class="code docutils literal"><span class="pre">fsgid</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#import-users-and-groups-from-host">4.2.7. Import users and groups from host</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#change-uid-before-running-job">4.2.8. Change UID before running job</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#add-host-groups-before-running-job">4.2.9. Add host groups before running job</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#solution-implemented-in-charliecloud">4.3. Solution implemented in Charliecloud</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image-setup.html">5. Image configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#booting-an-installer-overview">5.1. Booting an installer overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#during-install">5.2. During install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#after-install">5.3. After install</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#console-and-friends">5.3.1. Console and friends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#filesystem">5.3.2. Filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#network">5.3.3. Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#users-and-groups">5.3.4. Users and groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#misc">5.3.5. Misc</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#notes-on-systemd-based-distros">5.4. Notes on <code class="code docutils literal"><span class="pre">systemd</span></code>-based distros</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">6. Testing Charliecloud</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#non-interactive-testing">6.1. Non-interactive testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#interactive-testing">6.2. Interactive testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="script-help.html">7. Script help</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="script-help.html#newimage">7.1. newimage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="script-help.html#oneguest">7.2. oneguest</a></li>
+<li class="toctree-l2"><a class="reference internal" href="script-help.html#vcluster">7.3. vcluster</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">8. Frequently asked questions (FAQ)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#error-and-warning-messages">8.1. Error and warning messages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#p-could-not-find-request-transport-virtio">8.1.1. 9p: Could not find request transport: virtio</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#p-no-channels-available">8.1.2. 9p: no channels available</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#job-script-hard-link-failed-copying-instead">8.1.3. job script hard link failed, copying instead</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#mount-unknown-filesystem-type-9p">8.1.4. mount: unknown filesystem type &#8216;9p&#8217;</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#o-direct-unsupported">8.1.5. O_DIRECT unsupported</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#serial8250-too-much-work-for-irq4">8.1.6. serial8250: too much work for irq4</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#vde-switch-could-not-remove-ctl-dir">8.1.7. vde_switch: Could not remove ctl dir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#vlan-0-is-not-connected-to-host-network">8.1.8. vlan 0 is not connected to host network</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#something-doesn-t-work">8.2. Something doesn&#8217;t work</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#i-can-t-ping-the-outside-world-but-it-s-reachable-by-other-network-stuff">8.2.1. I can&#8217;t ping the outside world, but it&#8217;s reachable by other network stuff</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#intermittent-connectivity-problems-between-guests">8.2.2. Intermittent connectivity problems between guests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#testing-failed-because-orted-is-listening-to-some-port">8.2.3. Testing failed because orted is listening to some port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#vga-console-won-t-relinquish-mouse-grab">8.2.4. VGA console won&#8217;t relinquish mouse grab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#vga-console-does-not-show-the-whole-screen">8.2.5. VGA console does not show the whole screen</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#configuration">8.3. Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-can-i-tell-if-i-m-using-the-faster-virtio-drivers">8.3.1. How can I tell if I&#8217;m using the faster virtio drivers?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-can-i-persist-the-root-filesystem-without-vcluster-commit">8.3.2. How can I persist the root filesystem without <code class="code docutils literal"><span class="pre">vcluster</span> <span class="pre">--commit</span></code>?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">9. API documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#the-job-directory">9.1. The job directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#filesystems-provided-to-the-guest">9.2. Filesystems provided to the guest</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#metadata">9.2.1. Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#charliecloud-resources">9.2.2. Charliecloud resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#persistent-storage">9.2.3. Persistent storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#temporary-storage">9.2.4. Temporary storage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">10. Version history</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-5-2015-jun-16">10.1. v0.1.5, 2015-Jun-16</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-4-2015-jun-04">10.2. v0.1.4, 2015-Jun-04</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-3-2015-apr-30">10.3. v0.1.3, 2015-Apr-30</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-2-2015-feb-09">10.4. v0.1.2, 2015-Feb-09</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-1-2014-dec-01">10.5. v0.1.1, 2014-Dec-01</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-0-2014-sep-30">10.6. v0.1.0, 2014-Sep-30</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Charliecloud</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>3. Networking</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="networking">
+<h1>3. Networking<a class="headerlink" href="#networking" title="Permalink to this headline">¶</a></h1>
+<p>This file documents network addresses, topology, and security in
+Charliecloud virtual clusters. We distinguish between <em>workstation
+mode</em>, where guests can make outgoing connections to the network, and
+<em>cluster mode</em>, where guests have no network access at all beyond the
+SLURM allocation.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#network-addresses" id="id6">Network addresses</a><ul>
+<li><a class="reference internal" href="#ip-addresses" id="id7">IP addresses</a></li>
+<li><a class="reference internal" href="#mac-addresses" id="id8">MAC addresses</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#topology" id="id9">Topology</a></li>
+<li><a class="reference internal" href="#workstation-mode" id="id10">Workstation mode</a><ul>
+<li><a class="reference internal" href="#requirements" id="id11">Requirements</a></li>
+<li><a class="reference internal" href="#topology-implementation" id="id12">Topology implementation</a></li>
+<li><a class="reference internal" href="#security" id="id13">Security</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cluster-mode" id="id14">Cluster mode</a><ul>
+<li><a class="reference internal" href="#id1" id="id15">Requirements</a></li>
+<li><a class="reference internal" href="#id2" id="id16">Topology</a></li>
+<li><a class="reference internal" href="#id3" id="id17">Security</a></li>
+<li><a class="reference internal" href="#cluster-mode-faq" id="id18">Cluster mode FAQ</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#resources" id="id19">Resources</a></li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">InfiniBand within guests is not available at this time, so we do not
+consider it in this document.</p>
+</div>
+<div class="section" id="network-addresses">
+<h2><a class="toc-backref" href="#id6">3.1. Network addresses</a><a class="headerlink" href="#network-addresses" title="Permalink to this headline">¶</a></h2>
+<p>In selecting IP and MAC addresses for guests, there are several
+desirable properties:</p>
+<ol class="arabic simple">
+<li>No collisions with other real or virtual hardware.</li>
+<li>Easy to recognize as Charliecloud addresses.</li>
+<li>Well-defined mappings so that guests can infer useful things.</li>
+</ol>
+<p>This section covers background information on both types of addresses
+and parameter selection to meet these desiderata.</p>
+<div class="section" id="ip-addresses">
+<h3><a class="toc-backref" href="#id7">3.1.1. IP addresses</a><a class="headerlink" href="#ip-addresses" title="Permalink to this headline">¶</a></h3>
+<p>There are three <a class="reference external" href="http://en.wikipedia.org/wiki/Private_network#Private_IPv4_address_spaces">private IP address
+ranges</a>:</p>
+<ul class="simple">
+<li>10.0.0.0/8</li>
+<li>172.16.0.0/12 (i.e., 172.16.0.0 - 172.31.255.255)</li>
+<li>192.168.0.0/16</li>
+</ul>
+<p>Of these, 10/8 and 192.168/16 are very commonly used. Therefore, we use
+172.16/12 to avoid collisions.</p>
+<p>Guests set their IP address to the lower four bytes of the MAC address. It is
+the responsibility of the <code class="code docutils literal"><span class="pre">oneguest</span></code> caller to ensure that the MAC address
+maps to a reasonable IP address. (Guests can do something else if they wish,
+but this will lead to a non-functional network.)</p>
+</div>
+<div class="section" id="mac-addresses">
+<h3><a class="toc-backref" href="#id8">3.1.2. MAC addresses</a><a class="headerlink" href="#mac-addresses" title="Permalink to this headline">¶</a></h3>
+<p>QEMU emulates Ethernet network devices. MAC addresses for Ethernet are 48 bits
+long, typically expressed as 6 hexadecimal octets. The first three octets are
+a vendor code (<em>organizationally unique identifier</em> or OUI). For example, a
+device with MAC address 00:03:93:x:x:x is an Apple product (there are many
+other Apple vendor codes too). These are listed <a class="reference external" href="http://standards.ieee.org/develop/regauth/oui/oui.txt">officially by the IEEE</a> and unofficially by
+<a class="reference external" href="https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=manuf">other sources</a>.</p>
+<p>QEMU has an assigned vendor code, 52:54:00, as do many other virtualization
+technologies. However, if we control 4 bytes rather than just 3, this enables
+a convenient mapping to IP address.</p>
+<p>Private MAC addresses do exist. They are called <em>locally administered
+addresses</em> and there are four ranges: <em>xy</em>:<em>xx</em>:<em>xx</em>, where <em>y</em> is 2, 6, A, or
+E and <em>x</em> is any hex digit.</p>
+<p>My reading of the standards is that we should be using such MAC addresses.
+However, they don&#8217;t work in guests. For example, Debian Wheezy will hang
+during boot, and CentOS 6.4 will finish booting but not bring up the
+interface. I have not investigated this issue.</p>
+<p>We use MAC addresses in the range 0C:00:AC:1B:<em>xx</em>:<em>xx</em>; these produce IP
+addresses in the range 172.22.0.0/16. (This uses a real but apparently unused
+vendor code of 0C:00:AC.)</p>
+<p>QEMU sets the MAC addresses of virtualized hardware. This can be changed later
+by guests, though again to their detriment.</p>
+</div>
+</div>
+<div class="section" id="topology">
+<h2><a class="toc-backref" href="#id9">3.2. Topology</a><a class="headerlink" href="#topology" title="Permalink to this headline">¶</a></h2>
+<p>The following is the topology of each virtual cluster. Implementation varies
+depending on mode (workstation vs. cluster); these details are given below.</p>
+<p>Hosts are numbered consecutively starting with 1, perhaps non-consecutively.
+On each host, guests are numbered consecutively starting with 1. (This
+numbering has no well-defined mapping with guest IDs, which count from 0
+across the whole virtual cluster.) Each guest receives the IP address 172.22.<span class="math">\(i\)</span>.<span class="math">\(j\)</span>, where <span class="math">\(i\)</span> is the host number and <span class="math">\(j\)</span> is the
+guest number. Guests on each host share a gateway router with IP 172.22.<span class="math">\(i\)</span>.254.</p>
+<p>For example, the following are the addresses used in a 4-node virtual
+cluster running on two hosts:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="10%" />
+<col width="12%" />
+<col width="28%" />
+<col width="17%" />
+<col width="20%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">guest ID</th>
+<th class="head">host #</th>
+<th class="head">guest #</th>
+<th class="head">guest MAC</th>
+<th class="head">guest IP</th>
+<th class="head">router IP</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>0</td>
+<td>1</td>
+<td>1</td>
+<td>0C:00:AC:16:01:01</td>
+<td>172.22.1.1</td>
+<td>172.22.1.254</td>
+</tr>
+<tr class="row-odd"><td>1</td>
+<td>1</td>
+<td>2</td>
+<td>0C:00:AC:16:01:02</td>
+<td>172.22.1.2</td>
+<td>172.22.1.254</td>
+</tr>
+<tr class="row-even"><td>2</td>
+<td>2</td>
+<td>1</td>
+<td>0C:00:AC:16:02:01</td>
+<td>172.22.2.1</td>
+<td>172.22.2.254</td>
+</tr>
+<tr class="row-odd"><td>3</td>
+<td>2</td>
+<td>2</td>
+<td>0C:00:AC:16:02:02</td>
+<td>172.22.2.2</td>
+<td>172.22.2.254</td>
+</tr>
+</tbody>
+</table>
+<p>The topology, from the perspective of guest 1:</p>
+<div class="highlight-text"><div class="highlight"><pre>+------------+  +------------+  +------------+  +------------+
+|   guest 0  |  |   guest 1  |  |   guest 2  |  |   guest 3  |
+| 172.22.1.1 |  | 172.22.1.2 |  | 172.22.2.1 |  | 172.22.2.2 |
++------------+  +------------+  +------------+  +------------+
+         |         |                   |               |
+       +--------------+                |               |
+       |    switch    |                |               |
+       +--------------+                |               |
+               |                       |               |
+       +--------------+                |               |
+       |   router 1   |                |               |
+       | 172.22.1.254 |                |               |
+       +--------------+                |               |
+               |                       |               |
+   +------------------------------------------------------+
+   |                  opaque interconnect                 |
+   +------------------------------------------------------+
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>Because the user has root inside the guest, these assignments are merely
+advisory. The guest interface can be set to any IP or MAC address. The
+security implications of this are discussed below.</li>
+<li>This specific numbering scheme does not scale beyond 254 hosts, but the
+principles hold in larger clusters. We defer a more flexible numbering
+scheme to future work.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="workstation-mode">
+<h2><a class="toc-backref" href="#id10">3.3. Workstation mode</a><a class="headerlink" href="#workstation-mode" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="requirements">
+<h3><a class="toc-backref" href="#id11">3.3.1. Requirements</a><a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>Multiple users on the host.</strong> While most workstations have only a single
+user, this isn&#8217;t universal. Guest resources should be only available to the
+user running the guest and to those other local users to whom s/he has
+explicitly granted access.</li>
+<li><strong>Multiple guests running simultaneously.</strong> There might even be multiple
+virtual clusters.</li>
+<li><strong>No inbound networking except from the host and virtual cluster.</strong> Guests
+accept no connections from the outside world. Connections from other guests
+in the same virtual cluster are permitted.</li>
+<li><strong>Outbound network access to network and host.</strong> Guests may initiate
+connections to other guests in the virtual cluster, the network, and the
+host. That is, guests have more or less the same outgoing network access
+that the host does.</li>
+</ul>
+</div>
+<div class="section" id="topology-implementation">
+<h3><a class="toc-backref" href="#id12">3.3.2. Topology implementation</a><a class="headerlink" href="#topology-implementation" title="Permalink to this headline">¶</a></h3>
+<p>Switching is done with a host OS bridge device; outbound networking is
+provided with OS IP forwarding and NAT; inbound networking is prevented by
+NAT.</p>
+</div>
+<div class="section" id="security">
+<h3><a class="toc-backref" href="#id13">3.3.3. Security</a><a class="headerlink" href="#security" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="mac-and-ip-spoofing">
+<h4>3.3.3.1. MAC and IP spoofing<a class="headerlink" href="#mac-and-ip-spoofing" title="Permalink to this headline">¶</a></h4>
+<p>Under the workstation model, no packets with user-defined IP or MAC addresses
+leave the virtual environment. Therefore, spoofing has no benefit.</p>
+</div>
+<div class="section" id="inbound-network-access">
+<h4>3.3.3.2. Inbound network access<a class="headerlink" href="#inbound-network-access" title="Permalink to this headline">¶</a></h4>
+<p>NAT prevents guests from listening to the physical network. Anything on the
+host can connect to the guest IP addresses.</p>
+<p>This raises a potential security issue, as users on the host might not
+necessarily be authorized to log into guests. This is mitigated in the base
+images by SSH key authentication and running minimal network services.</p>
+</div>
+<div class="section" id="risks">
+<h4>3.3.3.3. Risks<a class="headerlink" href="#risks" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>The user might change the Charliecloud scripts, enabling errors such as
+exposing guests directly to the network.</li>
+<li>Data center operators have limited control of what goes on in workstation
+mode, especially if the user has root on their workstation, which is a
+common situation. Ultimately, maintaining security in this mode is up to the
+user and their management.</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="cluster-mode">
+<h2><a class="toc-backref" href="#id14">3.4. Cluster mode</a><a class="headerlink" href="#cluster-mode" title="Permalink to this headline">¶</a></h2>
+<p>In cluster mode, one runs a virtual cluster on physical nodes in a SLURM
+allocation.</p>
+<div class="section" id="id1">
+<h3><a class="toc-backref" href="#id15">3.4.1. Requirements</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>Node-exclusive allocation.</strong> We still have one job per node, consistent
+with existing supercomputing practice.</li>
+<li><strong>Multiple guests per host.</strong> While current plans call for a single guest
+per host node, the cluster mode topology is designed to support several.</li>
+<li><strong>Network traffic limited to job.</strong> No network packets originating from or
+destined to a guest in a SLURM allocation to may go beyond the guests and
+hosts (compute nodes) in that allocation. In particular, the front end, I/O
+nodes, and other cluster support infrastructure, as well as network
+resources such as filesystem servers, are never accessible to guests.</li>
+<li><strong>Resilient security scripts.</strong> The network limitations above are
+implemented using a variety of setup and teardown scripts. Allocation setup
+is designed to fail if network security rules are not configured correctly,
+and rules are designed with some degree of redundancy so that the effect of
+bugs is minimized.</li>
+<li><strong>No user configuration of host networking.</strong> All privileged network
+configuration described below, except within the guest, is performed by
+boot, prologue, and epilogue scripts which the user cannot change. This
+includes setuid tools; for example, we do not use the setuid script
+<code class="code docutils literal"><span class="pre">qemu-bridge-helper</span></code> provided in some installations of QEMU.</li>
+</ul>
+</div>
+<div class="section" id="id2">
+<h3><a class="toc-backref" href="#id16">3.4.2. Topology</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Hosts (compute nodes) use the cluster numbering: e.g., <code class="code docutils literal"><span class="pre">cn001</span></code> is host
+1, <code class="code docutils literal"><span class="pre">cn002</span></code> is host 2, etc.</li>
+<li>Each guest is connected to a host TAP interface: guest 1 to <code class="code docutils literal"><span class="pre">tap0</span></code>,
+guest 2 to <code class="code docutils literal"><span class="pre">tap1</span></code>, etc.</li>
+<li>All of these TAPs are bridged together in <code class="code docutils literal"><span class="pre">br0</span></code>, which is assigned the
+router address. This accomplishes switching.</li>
+<li>Kernel routing tables connect <code class="code docutils literal"><span class="pre">br0</span></code> to the IP-over-InfiniBand
+interface <code class="code docutils literal"><span class="pre">ib0</span></code> at Layer 3. This accomplishes routing.</li>
+</ul>
+</div>
+<div class="section" id="id3">
+<h3><a class="toc-backref" href="#id17">3.4.3. Security</a><a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id4">
+<h4>3.4.3.1. MAC and IP spoofing<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<p>User-selected MAC addresses do not leave the virtual environment (the bridge
+<code class="code docutils literal"><span class="pre">br0</span></code>).</p>
+<p>However, packets with user-selected IP addresses pass to the physical host
+network. This raises the following attack scenario: clone the IP address of a
+compute node and use IP-based authentication (common at many sites) to access
+resources that should be unavailable.</p>
+<p>This is mitigated by adding an iptables rule to each TAP device which drops
+traffic not to/from the assigned IP address. This ensures that packets with
+spoofed addresses don&#8217;t leave (or aren&#8217;t delivered to) the guest.</p>
+</div>
+<div class="section" id="guest-isolation">
+<h4>3.4.3.2. Guest isolation<a class="headerlink" href="#guest-isolation" title="Permalink to this headline">¶</a></h4>
+<p>Guest traffic should only travel between guests in the same job, and in
+particular it should not be allowed to leave the compute nodes. This prevents
+both (a) others accessing perhaps-insecure guest services and (b) guests
+accessing resources that should be unavailable.</p>
+<p>This is mitigated with iptables rules that drop outgoing traffic not destined
+for guests or hosts in the job and incoming traffic not originating from
+guests or hosts in the job.</p>
+</div>
+<div class="section" id="id5">
+<h4>3.4.3.3. Risks<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
+<p>The risks of the above plan include:</p>
+<ul class="simple">
+<li>Problems with the firewall rules can leave openings that were not intended.
+This is mitigated by redundant checks that the rules are set up correctly.</li>
+<li>Guest traffic with other compute nodes (and their guests) is filtered only
+on the host. However, other sandboxing means surround the the compute nodes,
+limiting the scope of any problems.</li>
+</ul>
+<p>While it&#8217;s true that a user who pwns a host can then adjust the firewall rules
+to escalate guest access, this is more work than simply using the pwned host
+directly. Therefore, we don&#8217;t worry too much about maliciously adjusted
+rules.</p>
+</div>
+</div>
+<div class="section" id="cluster-mode-faq">
+<h3><a class="toc-backref" href="#id18">3.4.4. Cluster mode FAQ</a><a class="headerlink" href="#cluster-mode-faq" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>Why not use point-to-point links over TCP sockets?</strong> This would completely
+avoid guest traffic being on the physical network, but we would need a
+complete graph, which doesn&#8217;t scale well.</li>
+<li><strong>How about NAT?</strong> This would make it difficult for guest codes to find one
+another.</li>
+<li><strong>This means guests get no DNS!</strong> That&#8217;s right, but they don&#8217;t need it
+really since they only need to talk to their peers in the job. Charliecloud
+provides an <code class="code docutils literal"><span class="pre">/etc/hosts</span></code> file with symbolic names for the guests in a
+cluster.</li>
+<li><strong>We could build a second physical network.</strong> This network wouldn&#8217;t go
+beyond the compute nodes. Then, even if network traffic escaped the software
+constraints, it couldn&#8217;t go beyond the compute nodes. This approach would be
+pretty reliable but also expensive, and it wouldn&#8217;t serve the Charliecloud
+goal of augmenting existing clusters.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="resources">
+<h2><a class="toc-backref" href="#id19">3.5. Resources</a><a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://people.gnome.org/~markmc/qemu-networking.html">https://people.gnome.org/~markmc/qemu-networking.html</a></li>
+<li><a class="reference external" href="https://wiki.archlinux.org/index.php/QEMU#Networking">https://wiki.archlinux.org/index.php/QEMU#Networking</a></li>
+<li><a class="reference external" href="http://wiki.qemu.org/Features/HelperNetworking">http://wiki.qemu.org/Features/HelperNetworking</a></li>
+<li><a class="reference external" href="http://www.linux-kvm.org/page/Networking">http://www.linux-kvm.org/page/Networking</a></li>
+<li><a class="reference external" href="https://www.kernel.org/doc/Documentation/networking/tuntap.txt">https://www.kernel.org/doc/Documentation/networking/tuntap.txt</a></li>
+<li><a class="reference external" href="https://www.berrange.com/posts/2011/10/03/guest-mac-spoofing-denial-of-service-and-preventing-it-with-libvirt-and-kvm/">https://www.berrange.com/posts/2011/10/03/guest-mac-spoofing-denial-of-service-and-preventing-it-with-libvirt-and-kvm/</a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="fs-passthrough.html" class="btn btn-neutral float-right" title="4. Filesystem passthrough" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tutorial.html" class="btn btn-neutral" title="2. Tutorial" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014–2015, Los Alamos National Security, LLC.
+    </p>
+  </div>
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

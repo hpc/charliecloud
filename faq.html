@@ -1,0 +1,574 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>8. Frequently asked questions (FAQ) &mdash; Charliecloud 0.1.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Charliecloud 0.1.5 documentation" href="index.html"/>
+        <link rel="next" title="9. API documentation" href="api.html"/>
+        <link rel="prev" title="7. Script help" href="script-help.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> Charliecloud
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing Charliecloud</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#installing-on-linux">1.1. Installing on Linux</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="install.html#miscellaneous-supporting-software">1.1.1. Miscellaneous supporting software</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#charliecloud-itself">1.1.2. Charliecloud itself</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#kvm-hypervisor">1.1.3. KVM hypervisor</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="install.html#cpu-support">1.1.3.1. CPU support</a></li>
+<li class="toctree-l4"><a class="reference internal" href="install.html#bios-support">1.1.3.2. BIOS support</a></li>
+<li class="toctree-l4"><a class="reference internal" href="install.html#dev-kvm-permissions">1.1.3.3. <code class="code docutils literal"><span class="pre">/dev/kvm</span></code> permissions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#qemu">1.1.4. QEMU</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#your-first-virtual-cluster">2.1. Your first virtual cluster</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#getting-help">2.1.1. Getting help</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-the-virtual-network">2.1.2. Starting the virtual network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-a-virtual-cluster">2.1.3. Starting a virtual cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#logging-in">2.1.4. Logging in</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#filesystems">2.1.5. Filesystems</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#root-filesystem">2.1.5.1. Root filesystem</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#ch-tmp">2.1.5.2. <code class="code docutils literal"><span class="pre">/ch/tmp</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#ch-meta">2.1.5.3. <code class="code docutils literal"><span class="pre">/ch/meta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#ch-opt">2.1.5.4. <code class="code docutils literal"><span class="pre">/ch/opt</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#contents-of-the-job-directory">2.1.6. Contents of the job directory</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#meta">2.1.6.1. <code class="code docutils literal"><span class="pre">meta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#run">2.1.6.2. <code class="code docutils literal"><span class="pre">run</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tutorial.html#out">2.1.6.3. <code class="code docutils literal"><span class="pre">out</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#network-topology">2.1.7. Network topology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#ssh">2.1.8. SSH</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#shut-the-cluster-down">2.1.9. Shut the cluster down</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#your-first-virtual-job">2.2. Your first virtual job</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-a-cluster-with-less-clutter">2.2.1. Starting a cluster with less clutter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#users-groups-and-permissions-under-filesystem-passthrough">2.2.2. Users, groups, and permissions under filesystem passthrough</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#running-mpihello-in-interactive-mode">2.2.3. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in interactive mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#running-mpihello-in-batch-mode">2.2.4. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in batch mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#installing-your-own-software">2.3. Installing your own software</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-a-vm-with-persistent-root-filesystem">2.3.1. Starting a VM with persistent root filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial.html#installing-software">2.3.2. Installing software</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="networking.html">3. Networking</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#network-addresses">3.1. Network addresses</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#ip-addresses">3.1.1. IP addresses</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#mac-addresses">3.1.2. MAC addresses</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#topology">3.2. Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#workstation-mode">3.3. Workstation mode</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#requirements">3.3.1. Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#topology-implementation">3.3.2. Topology implementation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#security">3.3.3. Security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#mac-and-ip-spoofing">3.3.3.1. MAC and IP spoofing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#inbound-network-access">3.3.3.2. Inbound network access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#risks">3.3.3.3. Risks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#cluster-mode">3.4. Cluster mode</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#id1">3.4.1. Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#id2">3.4.2. Topology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#id3">3.4.3. Security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#id4">3.4.3.1. MAC and IP spoofing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#guest-isolation">3.4.3.2. Guest isolation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#id5">3.4.3.3. Risks</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#cluster-mode-faq">3.4.4. Cluster mode FAQ</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#resources">3.5. Resources</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fs-passthrough.html">4. Filesystem passthrough</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#uncoordinated-uids-and-gids">4.1. Uncoordinated UIDs and GIDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#potential-solutions">4.2. Potential solutions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#security-model-mapped">4.2.1. <code class="code docutils literal"><span class="pre">security_model=mapped</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#run-jobs-as-root">4.2.2. Run jobs as root</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#turn-off-guest-permission-checks-on-passthrough-filesystem">4.2.3. Turn off guest permission checks on passthrough filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#mount-with-uid-foo-gid-bar">4.2.4. Mount with <code class="code docutils literal"><span class="pre">uid=foo</span></code>, <code class="code docutils literal"><span class="pre">gid=bar</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#bindfs">4.2.5. bindfs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#fsuid-and-fsgid">4.2.6. <code class="code docutils literal"><span class="pre">fsuid</span></code> and <code class="code docutils literal"><span class="pre">fsgid</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#import-users-and-groups-from-host">4.2.7. Import users and groups from host</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#change-uid-before-running-job">4.2.8. Change UID before running job</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#add-host-groups-before-running-job">4.2.9. Add host groups before running job</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#solution-implemented-in-charliecloud">4.3. Solution implemented in Charliecloud</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image-setup.html">5. Image configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#booting-an-installer-overview">5.1. Booting an installer overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#during-install">5.2. During install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#after-install">5.3. After install</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#console-and-friends">5.3.1. Console and friends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#filesystem">5.3.2. Filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#network">5.3.3. Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#users-and-groups">5.3.4. Users and groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#misc">5.3.5. Misc</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#notes-on-systemd-based-distros">5.4. Notes on <code class="code docutils literal"><span class="pre">systemd</span></code>-based distros</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">6. Testing Charliecloud</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#non-interactive-testing">6.1. Non-interactive testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#interactive-testing">6.2. Interactive testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="script-help.html">7. Script help</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="script-help.html#newimage">7.1. newimage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="script-help.html#oneguest">7.2. oneguest</a></li>
+<li class="toctree-l2"><a class="reference internal" href="script-help.html#vcluster">7.3. vcluster</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">8. Frequently asked questions (FAQ)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#error-and-warning-messages">8.1. Error and warning messages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#p-could-not-find-request-transport-virtio">8.1.1. 9p: Could not find request transport: virtio</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#p-no-channels-available">8.1.2. 9p: no channels available</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#job-script-hard-link-failed-copying-instead">8.1.3. job script hard link failed, copying instead</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mount-unknown-filesystem-type-9p">8.1.4. mount: unknown filesystem type &#8216;9p&#8217;</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#o-direct-unsupported">8.1.5. O_DIRECT unsupported</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#serial8250-too-much-work-for-irq4">8.1.6. serial8250: too much work for irq4</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vde-switch-could-not-remove-ctl-dir">8.1.7. vde_switch: Could not remove ctl dir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vlan-0-is-not-connected-to-host-network">8.1.8. vlan 0 is not connected to host network</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#something-doesn-t-work">8.2. Something doesn&#8217;t work</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#i-can-t-ping-the-outside-world-but-it-s-reachable-by-other-network-stuff">8.2.1. I can&#8217;t ping the outside world, but it&#8217;s reachable by other network stuff</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#intermittent-connectivity-problems-between-guests">8.2.2. Intermittent connectivity problems between guests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#testing-failed-because-orted-is-listening-to-some-port">8.2.3. Testing failed because orted is listening to some port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vga-console-won-t-relinquish-mouse-grab">8.2.4. VGA console won&#8217;t relinquish mouse grab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vga-console-does-not-show-the-whole-screen">8.2.5. VGA console does not show the whole screen</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration">8.3. Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-can-i-tell-if-i-m-using-the-faster-virtio-drivers">8.3.1. How can I tell if I&#8217;m using the faster virtio drivers?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-can-i-persist-the-root-filesystem-without-vcluster-commit">8.3.2. How can I persist the root filesystem without <code class="code docutils literal"><span class="pre">vcluster</span> <span class="pre">--commit</span></code>?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">9. API documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#the-job-directory">9.1. The job directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#filesystems-provided-to-the-guest">9.2. Filesystems provided to the guest</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#metadata">9.2.1. Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#charliecloud-resources">9.2.2. Charliecloud resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#persistent-storage">9.2.3. Persistent storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#temporary-storage">9.2.4. Temporary storage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">10. Version history</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-5-2015-jun-16">10.1. v0.1.5, 2015-Jun-16</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-4-2015-jun-04">10.2. v0.1.4, 2015-Jun-04</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-3-2015-apr-30">10.3. v0.1.3, 2015-Apr-30</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-2-2015-feb-09">10.4. v0.1.2, 2015-Feb-09</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-1-2014-dec-01">10.5. v0.1.1, 2014-Dec-01</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-0-2014-sep-30">10.6. v0.1.0, 2014-Sep-30</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Charliecloud</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>8. Frequently asked questions (FAQ)</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="frequently-asked-questions-faq">
+<h1>8. Frequently asked questions (FAQ)<a class="headerlink" href="#frequently-asked-questions-faq" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#error-and-warning-messages" id="id1">Error and warning messages</a><ul>
+<li><a class="reference internal" href="#p-could-not-find-request-transport-virtio" id="id2">9p: Could not find request transport: virtio</a></li>
+<li><a class="reference internal" href="#p-no-channels-available" id="id3">9p: no channels available</a></li>
+<li><a class="reference internal" href="#job-script-hard-link-failed-copying-instead" id="id4">job script hard link failed, copying instead</a></li>
+<li><a class="reference internal" href="#mount-unknown-filesystem-type-9p" id="id5">mount: unknown filesystem type &#8216;9p&#8217;</a></li>
+<li><a class="reference internal" href="#o-direct-unsupported" id="id6">O_DIRECT unsupported</a></li>
+<li><a class="reference internal" href="#serial8250-too-much-work-for-irq4" id="id7">serial8250: too much work for irq4</a></li>
+<li><a class="reference internal" href="#vde-switch-could-not-remove-ctl-dir" id="id8">vde_switch: Could not remove ctl dir</a></li>
+<li><a class="reference internal" href="#vlan-0-is-not-connected-to-host-network" id="id9">vlan 0 is not connected to host network</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#something-doesn-t-work" id="id10">Something doesn&#8217;t work</a><ul>
+<li><a class="reference internal" href="#i-can-t-ping-the-outside-world-but-it-s-reachable-by-other-network-stuff" id="id11">I can&#8217;t ping the outside world, but it&#8217;s reachable by other network stuff</a></li>
+<li><a class="reference internal" href="#intermittent-connectivity-problems-between-guests" id="id12">Intermittent connectivity problems between guests</a></li>
+<li><a class="reference internal" href="#testing-failed-because-orted-is-listening-to-some-port" id="id13">Testing failed because orted is listening to some port</a></li>
+<li><a class="reference internal" href="#vga-console-won-t-relinquish-mouse-grab" id="id14">VGA console won&#8217;t relinquish mouse grab</a></li>
+<li><a class="reference internal" href="#vga-console-does-not-show-the-whole-screen" id="id15">VGA console does not show the whole screen</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuration" id="id16">Configuration</a><ul>
+<li><a class="reference internal" href="#how-can-i-tell-if-i-m-using-the-faster-virtio-drivers" id="id17">How can I tell if I&#8217;m using the faster virtio drivers?</a></li>
+<li><a class="reference internal" href="#how-can-i-persist-the-root-filesystem-without-vcluster-commit" id="id18">How can I persist the root filesystem without <code class="code docutils literal"><span class="pre">vcluster</span> <span class="pre">--commit</span></code>?</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="error-and-warning-messages">
+<h2><a class="toc-backref" href="#id1">8.1. Error and warning messages</a><a class="headerlink" href="#error-and-warning-messages" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="p-could-not-find-request-transport-virtio">
+<h3><a class="toc-backref" href="#id2">8.1.1. 9p: Could not find request transport: virtio</a><a class="headerlink" href="#p-could-not-find-request-transport-virtio" title="Permalink to this headline">¶</a></h3>
+<p>This happens when the right 9P modules are not loaded. In theory all the right
+modules should be loaded automatically, but in practice they sometimes aren&#8217;t.
+You can fix this by <a class="reference external" href="http://superuser.com/a/536352/46580">adding some modules to the initramfs</a>.</p>
+</div>
+<div class="section" id="p-no-channels-available">
+<h3><a class="toc-backref" href="#id3">8.1.2. 9p: no channels available</a><a class="headerlink" href="#p-no-channels-available" title="Permalink to this headline">¶</a></h3>
+<p>Among other things, this error can mean that you&#8217;re trying to mount a 9P
+filesystem and there is no filesystem with the given tag. You might also get
+<code class="code docutils literal"><span class="pre">mount:</span> <span class="pre">special</span> <span class="pre">device</span> <span class="pre">&lt;FOO&gt;</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist</span></code> which is vaguely more
+helpful.</p>
+<p><code class="code docutils literal"><span class="pre">mount</span> <span class="pre">-a</span></code> is likely to give this error multiple times, as standard
+images have <code class="code docutils literal"><span class="pre">/etc/fstab</span></code> set up to mount several data directories which
+might not exist. In this case, the error can be ignored.</p>
+</div>
+<div class="section" id="job-script-hard-link-failed-copying-instead">
+<h3><a class="toc-backref" href="#id4">8.1.3. job script hard link failed, copying instead</a><a class="headerlink" href="#job-script-hard-link-failed-copying-instead" title="Permalink to this headline">¶</a></h3>
+<p>Charliecloud tries to use a hard link for the job script, to make it possible
+to edit the job script from the host side. If this fails, Charliecloud will
+proceed with a copy instead. Everything will run fine, but edits on the host
+side will not propagate into the guest, and edits in the guest will affect
+only the copy in the job directory, not the original.</p>
+<p>Symlinks cannot be used because the guest is not able to follow them beyond
+the passed-through metadata directory.</p>
+<p>The typical fix is to move the job script onto the same host filesystem as the
+Charliecloud job directory.</p>
+</div>
+<div class="section" id="mount-unknown-filesystem-type-9p">
+<h3><a class="toc-backref" href="#id5">8.1.4. mount: unknown filesystem type &#8216;9p&#8217;</a><a class="headerlink" href="#mount-unknown-filesystem-type-9p" title="Permalink to this headline">¶</a></h3>
+<p>Fileystem passthrough requires 9P filesystem support in the guest kernel. You
+can check this with something like:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> fgrep CONFIG_9P_FS /boot/config-3.16.0-30-generic
+<span class="go">CONFIG_9P_FS=m</span>
+</pre></div>
+</div>
+<p>You might instead see:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">#</span> CONFIG_9P_FS is not <span class="nb">set</span>
+</pre></div>
+</div>
+<p>In this case, you must find or compile a different kernel with
+<code class="code docutils literal"><span class="pre">CONFIG_9P_FS</span></code> built in or as a module.</p>
+<p>One route is to simply choose a different distribution. RHEL and derivatives
+(e.g., CentOS) are known to have this problem; Debian is known to work. Fedora
+is probably another good choice, though untested.</p>
+</div>
+<div class="section" id="o-direct-unsupported">
+<h3><a class="toc-backref" href="#id6">8.1.5. O_DIRECT unsupported</a><a class="headerlink" href="#o-direct-unsupported" title="Permalink to this headline">¶</a></h3>
+<p>Charliecloud tries to turn off the host file cache for virtual block devices
+(e.g., root filesystem and temporary storage). This is not supported on some
+filesystems. If this fails, Charliecloud will proceed with the host cache
+turned on, which can have performance impact due to poor interaction between
+the host and guest file caches.</p>
+</div>
+<div class="section" id="serial8250-too-much-work-for-irq4">
+<h3><a class="toc-backref" href="#id7">8.1.6. serial8250: too much work for irq4</a><a class="headerlink" href="#serial8250-too-much-work-for-irq4" title="Permalink to this headline">¶</a></h3>
+<p>This error occurs because KVM&#8217;s emulated serial ports can happily digest data
+at very high rates, which <a class="reference external" href="http://linux-kernel.2935.n7.nabble.com/PATCH-serial-remove-quot-too-much-work-for-irq-quot-printk-td229840.html">confuses the kernel</a>
+because it expects serial ports to work at the advertised slower speed. There
+is no real issue, and the error can safely be ignored.</p>
+<p>Turning up the serial console to higher speeds did not make the errors go
+away.</p>
+</div>
+<div class="section" id="vde-switch-could-not-remove-ctl-dir">
+<h3><a class="toc-backref" href="#id8">8.1.7. vde_switch: Could not remove ctl dir</a><a class="headerlink" href="#vde-switch-could-not-remove-ctl-dir" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal"><span class="pre">slirpvde</span></code> puts additional cruft in the VDE control directory and
+doesn&#8217;t remove it on exit. Then <code class="code docutils literal"><span class="pre">vde_switch</span></code> complains. Don&#8217;t worry
+about it.</p>
+</div>
+<div class="section" id="vlan-0-is-not-connected-to-host-network">
+<h3><a class="toc-backref" href="#id9">8.1.8. vlan 0 is not connected to host network</a><a class="headerlink" href="#vlan-0-is-not-connected-to-host-network" title="Permalink to this headline">¶</a></h3>
+<p>This may mean that QEMU wasn&#8217;t compiled with VDE support, which is necessary
+for networking in workstation mode.</p>
+</div>
+</div>
+<div class="section" id="something-doesn-t-work">
+<h2><a class="toc-backref" href="#id10">8.2. Something doesn&#8217;t work</a><a class="headerlink" href="#something-doesn-t-work" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="i-can-t-ping-the-outside-world-but-it-s-reachable-by-other-network-stuff">
+<h3><a class="toc-backref" href="#id11">8.2.1. I can&#8217;t ping the outside world, but it&#8217;s reachable by other network stuff</a><a class="headerlink" href="#i-can-t-ping-the-outside-world-but-it-s-reachable-by-other-network-stuff" title="Permalink to this headline">¶</a></h3>
+<p>User mode and VDE networking does not carry ICMP beyond the virtual cluster.
+Only TCP and UDP work.</p>
+</div>
+<div class="section" id="intermittent-connectivity-problems-between-guests">
+<h3><a class="toc-backref" href="#id12">8.2.2. Intermittent connectivity problems between guests</a><a class="headerlink" href="#intermittent-connectivity-problems-between-guests" title="Permalink to this headline">¶</a></h3>
+<p>This happens sometimes in workstation mode. The problem, I believe, is that
+VDE is simply buggy. Try again (i.e., invoke the problem command again &#8212; no
+need to reboot the cluster) and it will very likely work.</p>
+<p>As SSH is the underlying transport for many things, such as MPI, this can
+manifest in a variety of ways.</p>
+</div>
+<div class="section" id="testing-failed-because-orted-is-listening-to-some-port">
+<h3><a class="toc-backref" href="#id13">8.2.3. Testing failed because orted is listening to some port</a><a class="headerlink" href="#testing-failed-because-orted-is-listening-to-some-port" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal"><span class="pre">orted</span></code> is an OpenMPI daemon. I believe that in Charliecloud
+configurations, it listens only briefly during bootup. That is, the failure is
+a race condition.</p>
+<p>This failure can be ignored.</p>
+</div>
+<div class="section" id="vga-console-won-t-relinquish-mouse-grab">
+<h3><a class="toc-backref" href="#id14">8.2.4. VGA console won&#8217;t relinquish mouse grab</a><a class="headerlink" href="#vga-console-won-t-relinquish-mouse-grab" title="Permalink to this headline">¶</a></h3>
+<p>There are few possibilities:</p>
+<ol class="arabic simple">
+<li>The default grab key chord is <code class="code docutils literal"><span class="pre">Control_L-Alt_L</span></code>; that is, the ones on
+the left side of the keyboard. The ones on the right won&#8217;t work.</li>
+<li>Your keyboard may be sending <code class="code docutils literal"><span class="pre">Meta_L</span></code> instead of <code class="code docutils literal"><span class="pre">Alt_L</span></code>, which
+works in many applications, but not QEMU. Under XQuartz on OS X, you can
+get <code class="code docutils literal"><span class="pre">Alt_L</span></code> from the left Option key if <em>Option keys send Alt_L and
+Alt_R</em> is checked in the preferences.</li>
+<li>You have changed the grab keys from the default with QEMU arguments
+<code class="code docutils literal"><span class="pre">-alt-grab</span></code> or <code class="code docutils literal"><span class="pre">ctrl-grab</span></code>.</li>
+</ol>
+</div>
+<div class="section" id="vga-console-does-not-show-the-whole-screen">
+<h3><a class="toc-backref" href="#id15">8.2.5. VGA console does not show the whole screen</a><a class="headerlink" href="#vga-console-does-not-show-the-whole-screen" title="Permalink to this headline">¶</a></h3>
+<p>Sometimes, the VGA window is smaller than the screen resolution. Try a
+different card type (<code class="code docutils literal"><span class="pre">oneguest</span> <span class="pre">--vgatype</span></code>), or just scroll around using
+the old-school X11 viewport scrolling.</p>
+<p>Resizing the VGA window will not help, as this just scales the window rather
+than changing the underlying emulated resolution. However, if you want an
+amusingly squashed display, this is a good bet.</p>
+</div>
+</div>
+<div class="section" id="configuration">
+<h2><a class="toc-backref" href="#id16">8.3. Configuration</a><a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="how-can-i-tell-if-i-m-using-the-faster-virtio-drivers">
+<h3><a class="toc-backref" href="#id17">8.3.1. How can I tell if I&#8217;m using the faster virtio drivers?</a><a class="headerlink" href="#how-can-i-tell-if-i-m-using-the-faster-virtio-drivers" title="Permalink to this headline">¶</a></h3>
+<p>In your guest, try:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> dmesg <span class="p">|</span> fgrep virtio
+<span class="go">[    0.745660] virtio-pci 0000:00:02.0: irq 41 for MSI/MSI-X</span>
+<span class="go">[    0.745675] virtio-pci 0000:00:02.0: irq 42 for MSI/MSI-X</span>
+<span class="go">[    0.745687] virtio-pci 0000:00:02.0: irq 43 for MSI/MSI-X</span>
+<span class="go">[...]</span>
+<span class="gp">&gt;</span>  fgrep -i virtio /boot/config-<span class="k">$(</span>uname -r<span class="k">)</span>
+<span class="go">CONFIG_VIRTIO_BLK=m</span>
+<span class="go">CONFIG_VIRTIO_NET=m</span>
+<span class="go">CONFIG_VIRTIO=m</span>
+<span class="go">[...]</span>
+</pre></div>
+</div>
+<p>If your output is significantly different, you might not be using
+<code class="code docutils literal"><span class="pre">virtio</span></code>. See <a class="reference external" href="http://wiki.mikejung.biz/KVM_/_Xen#virtio-blk">link 1</a>
+and <a class="reference external" href="http://serverfault.com/questions/478726/">link 2</a>.</p>
+</div>
+<div class="section" id="how-can-i-persist-the-root-filesystem-without-vcluster-commit">
+<h3><a class="toc-backref" href="#id18">8.3.2. How can I persist the root filesystem without <code class="code docutils literal"><span class="pre">vcluster</span> <span class="pre">--commit</span></code>?</a><a class="headerlink" href="#how-can-i-persist-the-root-filesystem-without-vcluster-commit" title="Permalink to this headline">¶</a></h3>
+<p>In some cases, you may not realize you want to persist root filesystem changes
+until the cluster is up (i.e., you did not specify <code class="code docutils literal"><span class="pre">--commit</span></code> but then
+change your mind). This is no problem &#8212; install what you need and then shut
+down the cluster.</p>
+<p>This FAQ entry show how to do manually what <code class="code docutils literal"><span class="pre">vcluster</span></code> does
+automatically. As an example, start up a new headless cluster and wait for it
+to shut down:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>vcluster -n1
+           --job ~/charliecloud/examples/null.sh
+           --jobdir charlie
+           image.qcow2
+</pre></div>
+</div>
+<p>Now, we can examine the images that are left:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ls charlie/run
+<span class="go">0.overlay.qcow2  vde</span>
+<span class="gp">$</span> qemu-img info charlie/run/0.overlay.qcow2
+<span class="go">image: charlie/run/0.overlay.qcow2</span>
+<span class="go">file format: qcow2</span>
+<span class="go">virtual size: 16G (17179869184 bytes)</span>
+<span class="go">disk size: 17M</span>
+<span class="go">cluster_size: 524288</span>
+<span class="go">backing file: /data/vm/image.qcow2</span>
+<span class="go">Format specific information:</span>
+<span class="go">    compat: 1.1</span>
+<span class="go">    lazy refcounts: false</span>
+</pre></div>
+</div>
+<p>The key <code class="code docutils literal"><span class="pre">backing</span> <span class="pre">file</span></code> tells us that this is an overlay image based on
+the noted file. That is, it contains only the blocks which have been changed
+with respect to <code class="code docutils literal"><span class="pre">image.qcow2</span></code>. The commit process simply
+saves these changes into the backing file. For example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> qemu-img commit charlie/run/0.overlay.qcow2
+<span class="go">Image committed.</span>
+</pre></div>
+</div>
+<p>Now root filesystem changes made by guest 0 are saved in the main VM image.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Overlay images are tied to the parent image by absolute path. This path can
+be adjusted; try <code class="code docutils literal"><span class="pre">man</span> <span class="pre">qemu-img</span></code>. Make sure you know what you are
+doing before moving things around.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="api.html" class="btn btn-neutral float-right" title="9. API documentation" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="script-help.html" class="btn btn-neutral" title="7. Script help" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014–2015, Los Alamos National Security, LLC.
+    </p>
+  </div>
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

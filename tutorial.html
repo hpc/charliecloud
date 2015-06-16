@@ -1,0 +1,1202 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>2. Tutorial &mdash; Charliecloud 0.1.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Charliecloud 0.1.5 documentation" href="index.html"/>
+        <link rel="next" title="3. Networking" href="networking.html"/>
+        <link rel="prev" title="1. Installing Charliecloud" href="install.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> Charliecloud
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing Charliecloud</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#installing-on-linux">1.1. Installing on Linux</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="install.html#miscellaneous-supporting-software">1.1.1. Miscellaneous supporting software</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#charliecloud-itself">1.1.2. Charliecloud itself</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#kvm-hypervisor">1.1.3. KVM hypervisor</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="install.html#cpu-support">1.1.3.1. CPU support</a></li>
+<li class="toctree-l4"><a class="reference internal" href="install.html#bios-support">1.1.3.2. BIOS support</a></li>
+<li class="toctree-l4"><a class="reference internal" href="install.html#dev-kvm-permissions">1.1.3.3. <code class="code docutils literal"><span class="pre">/dev/kvm</span></code> permissions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#qemu">1.1.4. QEMU</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">2. Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#your-first-virtual-cluster">2.1. Your first virtual cluster</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#getting-help">2.1.1. Getting help</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starting-the-virtual-network">2.1.2. Starting the virtual network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starting-a-virtual-cluster">2.1.3. Starting a virtual cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging-in">2.1.4. Logging in</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#filesystems">2.1.5. Filesystems</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#root-filesystem">2.1.5.1. Root filesystem</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ch-tmp">2.1.5.2. <code class="code docutils literal"><span class="pre">/ch/tmp</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ch-meta">2.1.5.3. <code class="code docutils literal"><span class="pre">/ch/meta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ch-opt">2.1.5.4. <code class="code docutils literal"><span class="pre">/ch/opt</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#contents-of-the-job-directory">2.1.6. Contents of the job directory</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#meta">2.1.6.1. <code class="code docutils literal"><span class="pre">meta</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run">2.1.6.2. <code class="code docutils literal"><span class="pre">run</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#out">2.1.6.3. <code class="code docutils literal"><span class="pre">out</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#network-topology">2.1.7. Network topology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ssh">2.1.8. SSH</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#shut-the-cluster-down">2.1.9. Shut the cluster down</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#your-first-virtual-job">2.2. Your first virtual job</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starting-a-cluster-with-less-clutter">2.2.1. Starting a cluster with less clutter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#users-groups-and-permissions-under-filesystem-passthrough">2.2.2. Users, groups, and permissions under filesystem passthrough</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-mpihello-in-interactive-mode">2.2.3. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in interactive mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-mpihello-in-batch-mode">2.2.4. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in batch mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-your-own-software">2.3. Installing your own software</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starting-a-vm-with-persistent-root-filesystem">2.3.1. Starting a VM with persistent root filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-software">2.3.2. Installing software</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="networking.html">3. Networking</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#network-addresses">3.1. Network addresses</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#ip-addresses">3.1.1. IP addresses</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#mac-addresses">3.1.2. MAC addresses</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#topology">3.2. Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#workstation-mode">3.3. Workstation mode</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#requirements">3.3.1. Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#topology-implementation">3.3.2. Topology implementation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#security">3.3.3. Security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#mac-and-ip-spoofing">3.3.3.1. MAC and IP spoofing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#inbound-network-access">3.3.3.2. Inbound network access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#risks">3.3.3.3. Risks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#cluster-mode">3.4. Cluster mode</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#id1">3.4.1. Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#id2">3.4.2. Topology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#id3">3.4.3. Security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#id4">3.4.3.1. MAC and IP spoofing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#guest-isolation">3.4.3.2. Guest isolation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="networking.html#id5">3.4.3.3. Risks</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="networking.html#cluster-mode-faq">3.4.4. Cluster mode FAQ</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="networking.html#resources">3.5. Resources</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fs-passthrough.html">4. Filesystem passthrough</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#uncoordinated-uids-and-gids">4.1. Uncoordinated UIDs and GIDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#potential-solutions">4.2. Potential solutions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#security-model-mapped">4.2.1. <code class="code docutils literal"><span class="pre">security_model=mapped</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#run-jobs-as-root">4.2.2. Run jobs as root</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#turn-off-guest-permission-checks-on-passthrough-filesystem">4.2.3. Turn off guest permission checks on passthrough filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#mount-with-uid-foo-gid-bar">4.2.4. Mount with <code class="code docutils literal"><span class="pre">uid=foo</span></code>, <code class="code docutils literal"><span class="pre">gid=bar</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#bindfs">4.2.5. bindfs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#fsuid-and-fsgid">4.2.6. <code class="code docutils literal"><span class="pre">fsuid</span></code> and <code class="code docutils literal"><span class="pre">fsgid</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#import-users-and-groups-from-host">4.2.7. Import users and groups from host</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#change-uid-before-running-job">4.2.8. Change UID before running job</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#add-host-groups-before-running-job">4.2.9. Add host groups before running job</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#solution-implemented-in-charliecloud">4.3. Solution implemented in Charliecloud</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image-setup.html">5. Image configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#booting-an-installer-overview">5.1. Booting an installer overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#during-install">5.2. During install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#after-install">5.3. After install</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#console-and-friends">5.3.1. Console and friends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#filesystem">5.3.2. Filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#network">5.3.3. Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#users-and-groups">5.3.4. Users and groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="image-setup.html#misc">5.3.5. Misc</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="image-setup.html#notes-on-systemd-based-distros">5.4. Notes on <code class="code docutils literal"><span class="pre">systemd</span></code>-based distros</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">6. Testing Charliecloud</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#non-interactive-testing">6.1. Non-interactive testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#interactive-testing">6.2. Interactive testing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="script-help.html">7. Script help</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="script-help.html#newimage">7.1. newimage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="script-help.html#oneguest">7.2. oneguest</a></li>
+<li class="toctree-l2"><a class="reference internal" href="script-help.html#vcluster">7.3. vcluster</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">8. Frequently asked questions (FAQ)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#error-and-warning-messages">8.1. Error and warning messages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#p-could-not-find-request-transport-virtio">8.1.1. 9p: Could not find request transport: virtio</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#p-no-channels-available">8.1.2. 9p: no channels available</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#job-script-hard-link-failed-copying-instead">8.1.3. job script hard link failed, copying instead</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#mount-unknown-filesystem-type-9p">8.1.4. mount: unknown filesystem type &#8216;9p&#8217;</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#o-direct-unsupported">8.1.5. O_DIRECT unsupported</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#serial8250-too-much-work-for-irq4">8.1.6. serial8250: too much work for irq4</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#vde-switch-could-not-remove-ctl-dir">8.1.7. vde_switch: Could not remove ctl dir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#vlan-0-is-not-connected-to-host-network">8.1.8. vlan 0 is not connected to host network</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#something-doesn-t-work">8.2. Something doesn&#8217;t work</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#i-can-t-ping-the-outside-world-but-it-s-reachable-by-other-network-stuff">8.2.1. I can&#8217;t ping the outside world, but it&#8217;s reachable by other network stuff</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#intermittent-connectivity-problems-between-guests">8.2.2. Intermittent connectivity problems between guests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#testing-failed-because-orted-is-listening-to-some-port">8.2.3. Testing failed because orted is listening to some port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#vga-console-won-t-relinquish-mouse-grab">8.2.4. VGA console won&#8217;t relinquish mouse grab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#vga-console-does-not-show-the-whole-screen">8.2.5. VGA console does not show the whole screen</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#configuration">8.3. Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-can-i-tell-if-i-m-using-the-faster-virtio-drivers">8.3.1. How can I tell if I&#8217;m using the faster virtio drivers?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-can-i-persist-the-root-filesystem-without-vcluster-commit">8.3.2. How can I persist the root filesystem without <code class="code docutils literal"><span class="pre">vcluster</span> <span class="pre">--commit</span></code>?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">9. API documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#the-job-directory">9.1. The job directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#filesystems-provided-to-the-guest">9.2. Filesystems provided to the guest</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#metadata">9.2.1. Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#charliecloud-resources">9.2.2. Charliecloud resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#persistent-storage">9.2.3. Persistent storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api.html#temporary-storage">9.2.4. Temporary storage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">10. Version history</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-5-2015-jun-16">10.1. v0.1.5, 2015-Jun-16</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-4-2015-jun-04">10.2. v0.1.4, 2015-Jun-04</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-3-2015-apr-30">10.3. v0.1.3, 2015-Apr-30</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-2-2015-feb-09">10.4. v0.1.2, 2015-Feb-09</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-1-2014-dec-01">10.5. v0.1.1, 2014-Dec-01</a></li>
+<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-0-2014-sep-30">10.6. v0.1.0, 2014-Sep-30</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Charliecloud</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>2. Tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="tutorial">
+<h1>2. Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial will teach you to start a Charliecloud virtual cluster,
+understand how it fits together, run a sample job in interactive and batch
+mode, and install your own software. It will work in both workstation and
+cluster mode as long as the Charliecloud <code class="code docutils literal"><span class="pre">bin</span></code> directory is on your
+<code class="code docutils literal"><span class="pre">$PATH</span></code>.</p>
+<p>You will need a Charliecloud-enabled virtual machine image; obtain one from
+your local operators. This tutorial assumes the image is called
+<code class="code docutils literal"><span class="pre">image.qcow2</span></code> and is running Debian Wheezy. Other distributions will
+have minor differences.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#your-first-virtual-cluster" id="id1">Your first virtual cluster</a><ul>
+<li><a class="reference internal" href="#getting-help" id="id2">Getting help</a></li>
+<li><a class="reference internal" href="#starting-the-virtual-network" id="id3">Starting the virtual network</a></li>
+<li><a class="reference internal" href="#starting-a-virtual-cluster" id="id4">Starting a virtual cluster</a></li>
+<li><a class="reference internal" href="#logging-in" id="id5">Logging in</a></li>
+<li><a class="reference internal" href="#filesystems" id="id6">Filesystems</a></li>
+<li><a class="reference internal" href="#contents-of-the-job-directory" id="id7">Contents of the job directory</a></li>
+<li><a class="reference internal" href="#network-topology" id="id8">Network topology</a></li>
+<li><a class="reference internal" href="#ssh" id="id9">SSH</a></li>
+<li><a class="reference internal" href="#shut-the-cluster-down" id="id10">Shut the cluster down</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#your-first-virtual-job" id="id11">Your first virtual job</a><ul>
+<li><a class="reference internal" href="#starting-a-cluster-with-less-clutter" id="id12">Starting a cluster with less clutter</a></li>
+<li><a class="reference internal" href="#users-groups-and-permissions-under-filesystem-passthrough" id="id13">Users, groups, and permissions under filesystem passthrough</a></li>
+<li><a class="reference internal" href="#running-mpihello-in-interactive-mode" id="id14">Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in interactive mode</a></li>
+<li><a class="reference internal" href="#running-mpihello-in-batch-mode" id="id15">Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in batch mode</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installing-your-own-software" id="id16">Installing your own software</a><ul>
+<li><a class="reference internal" href="#starting-a-vm-with-persistent-root-filesystem" id="id17">Starting a VM with persistent root filesystem</a></li>
+<li><a class="reference internal" href="#installing-software" id="id18">Installing software</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Charliecloud VM images are simply filesystem images; they contain no
+metadata about type of machine, etc. Think of it as a hard disk rather than
+a whole computer. This simple approach contrasts with Amazon EC2 and other
+cloud providers, where the metaphor is a complete machine.</p>
+</div>
+<div class="section" id="your-first-virtual-cluster">
+<h2><a class="toc-backref" href="#id1">2.1. Your first virtual cluster</a><a class="headerlink" href="#your-first-virtual-cluster" title="Permalink to this headline">¶</a></h2>
+<p>In this section, we will run a virtual cluster and poke around a little bit.
+You will want at least three terminals open.</p>
+<div class="section" id="getting-help">
+<h3><a class="toc-backref" href="#id2">2.1.1. Getting help</a><a class="headerlink" href="#getting-help" title="Permalink to this headline">¶</a></h3>
+<p>The Charliecloud script you&#8217;ll use the most (if you use the others at all) is
+called <code class="code docutils literal"><span class="pre">vcluster</span></code>. All the Charliecloud scripts have decent help, so
+let&#8217;s see what <code class="code docutils literal"><span class="pre">vcluster</span></code> has to say about itself:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> vcluster --help
+</pre></div>
+</div>
+</div>
+<div class="section" id="starting-the-virtual-network">
+<h3><a class="toc-backref" href="#id3">2.1.2. Starting the virtual network</a><a class="headerlink" href="#starting-the-virtual-network" title="Permalink to this headline">¶</a></h3>
+<p>A Charliecloud cluster depends on the kernel bridge and TAP devices to talk to
+itself, and kernel NAT to talk to the outside world. A script is included to
+set this up; configuration is required, e.g.:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> sudo mkdir -p /etc/charliecloud
+<span class="gp">$</span> sudo sh -c <span class="s1">&#39;cat &gt; /etc/charliecloud/config.sh&#39;</span>
+<span class="go">TAP_OWNER=reidpr   # you</span>
+<span class="go">FWD_IFACE=em1      # network interface to be used for NAT</span>
+<span class="go">^D</span>
+<span class="gp">$</span> sudo ~/charliecloud/misc/network-w-linux start
+<span class="gp">$</span> sudo ~/charliecloud/misc/network-w-linux status
+<span class="go">[...]</span>
+</pre></div>
+</div>
+<p>The script is a standard SysV init script and so can be configured to start at
+boot time. Root access is required. If you don&#8217;t have this, talk to your
+system administrator.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Any program on the host can connect to the Charliecloud guests; also, any
+program running as you can connect to the TAP devices and use the
+Charliecloud NAT to connect to the outside world. Be sure you understand
+the implications of this before starting the virtual network or a virtual
+cluster.</p>
+</div>
+</div>
+<div class="section" id="starting-a-virtual-cluster">
+<h3><a class="toc-backref" href="#id4">2.1.3. Starting a virtual cluster</a><a class="headerlink" href="#starting-a-virtual-cluster" title="Permalink to this headline">¶</a></h3>
+<p>Now, we&#8217;ll start up a smallish virtual cluster. If you are in workstation
+mode, you will need to explicitly say what resource levels you want; if you
+are in cluster mode, Charliecloud will figure out reasonable defaults
+automatically (one VM per physical compute node).</p>
+<p>For the purposes of this tutorial, we will assume that you&#8217;ve stored the VM
+image in <code class="code docutils literal"><span class="pre">/data/vm</span></code>:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> <span class="nb">cd</span> /data/vm
+<span class="gp">$</span> vcluster -n4 --xterm image.qcow2
+</pre></div>
+</div>
+<p>Let&#8217;s review that command line briefly. We are asking for:</p>
+<ul class="simple">
+<li>A virtual cluster of 4 nodes.</li>
+<li>Each VM console in a separate xterm.</li>
+<li>Boot the root filesystem in <code class="code docutils literal"><span class="pre">image.cow2</span></code>.</li>
+</ul>
+<p>Run the command and wait until the cluster boots. <code class="code docutils literal"><span class="pre">vcluster</span></code> will print
+information about its environment and progress of component launch. Four
+<code class="code docutils literal"><span class="pre">xterm</span></code> will appear, and you can watch boot progress of the VMs
+themselves there. Eventually, you will see a console login prompt in each
+<code class="code docutils literal"><span class="pre">xterm</span></code>.</p>
+</div>
+<div class="section" id="logging-in">
+<h3><a class="toc-backref" href="#id5">2.1.4. Logging in</a><a class="headerlink" href="#logging-in" title="Permalink to this headline">¶</a></h3>
+<p>Log into <code class="code docutils literal"><span class="pre">chgu0</span></code> (guest 0) as <code class="code docutils literal"><span class="pre">charlie</span></code>; there is no password.
+Once you&#8217;re in, try:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> whoami
+<span class="go">charlie</span>
+<span class="gp">&gt;</span> sudo whoami
+<span class="go">root</span>
+</pre></div>
+</div>
+<p>This reflects the basic access philosophy of Charliecloud images:</p>
+<ol class="arabic simple">
+<li>Getting in is controlled.</li>
+<li>Once you&#8217;re in, you&#8217;re in.</li>
+</ol>
+<p>In this case, we assume that being able to make the console available is
+sufficient authentication (because one must have read access to the root
+filesystem image), and so we do not require additional authentication to log
+in.</p>
+<p>In the case of SSH, we set up keys, which is covered below.</p>
+<p>Similarly, by default, no password is required for <code class="code docutils literal"><span class="pre">charlie</span></code> to
+<code class="code docutils literal"><span class="pre">sudo</span></code>.</p>
+</div>
+<div class="section" id="filesystems">
+<h3><a class="toc-backref" href="#id6">2.1.5. Filesystems</a><a class="headerlink" href="#filesystems" title="Permalink to this headline">¶</a></h3>
+<p>Let us examine the filesystems mounted by a Charliecloud guest:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> df -Th
+<span class="go">Filesystem     Type      Size  Used Avail Use% Mounted on</span>
+<span class="go">/dev/vda1      ext4       16G  2.3G   13G  15% /</span>
+<span class="go">udev           devtmpfs   10M     0   10M   0% /dev</span>
+<span class="go">tmpfs          tmpfs     403M  352K  402M   1% /run</span>
+<span class="go">tmpfs          tmpfs    1006M     0 1006M   0% /dev/shm</span>
+<span class="go">tmpfs          tmpfs     5.0M     0  5.0M   0% /run/lock</span>
+<span class="go">tmpfs          tmpfs    1006M     0 1006M   0% /sys/fs/cgroup</span>
+<span class="go">meta           9p        911G  189G  676G  22% /ch/meta</span>
+<span class="go">opt            9p        911G  189G  676G  22% /ch/opt</span>
+<span class="go">/dev/vdb2      ext4      2.0G  3.0M  2.0G   1% /ch/tmp</span>
+<span class="go">tmpfs          tmpfs     202M     0  202M   0% /run/user/1001</span>
+</pre></div>
+</div>
+<p>In addition to standard temporary filesystems found on modern Linux (the six
+<code class="code docutils literal"><span class="pre">tmpfs</span></code> and <code class="code docutils literal"><span class="pre">devtmpfs</span></code> filesystems), there are four mounted
+filesystems. Let us discuss them in turn.</p>
+<div class="section" id="root-filesystem">
+<h4>2.1.5.1. Root filesystem<a class="headerlink" href="#root-filesystem" title="Permalink to this headline">¶</a></h4>
+<p>Device <code class="code docutils literal"><span class="pre">/dev/vda1</span></code> is an ext4 filesystem mounted at the root. This
+corresponds to two files in the host filesystem: a read-only virtual disk
+<em>base image</em> — the <code class="code docutils literal"><span class="pre">image.qcow2</span></code> that you specified to <code class="code docutils literal"><span class="pre">vcluster</span></code>
+— and an <em>overlay</em> which contains all the changes made to the disk. (We will
+see this overlay file in the next section.) This gives two desirable
+properties:</p>
+<ul class="simple">
+<li>Each virtual machine has an independent, read-write view of the root
+filesystem, which starts identically for each VM.</li>
+<li>These changes can be either discarded or committed after the VM exists.
+Charliecloud provides direct support for committing guest 0, but you can use
+<code class="code docutils literal"><span class="pre">qemu-img</span></code> directly to commit any one of the guests. We will use this
+facility later in the tutorial for installing software.</li>
+</ul>
+</div>
+<div class="section" id="ch-tmp">
+<h4>2.1.5.2. <code class="code docutils literal"><span class="pre">/ch/tmp</span></code><a class="headerlink" href="#ch-tmp" title="Permalink to this headline">¶</a></h4>
+<p><code class="code docutils literal"><span class="pre">/dev/vdb2</span></code> is another virtual disk image used for temporary data not
+needed after the VM exits. Each VM has an independent <code class="code docutils literal"><span class="pre">/ch/tmp</span></code>.
+<code class="code docutils literal"><span class="pre">vcluster</span></code> creates a new image for each VM during startup, and the
+Charliecloud boot scripts create a filesystem on it.</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ls /ch/tmp
+<span class="go">lost+found</span>
+</pre></div>
+</div>
+<p>The size and location on the host of the disk image can be adjusted with
+<code class="code docutils literal"><span class="pre">vcluster</span></code> switches.</p>
+<p>(<code class="code docutils literal"><span class="pre">/dev/vdb1</span></code> is used for swap.)</p>
+</div>
+<div class="section" id="ch-meta">
+<h4>2.1.5.3. <code class="code docutils literal"><span class="pre">/ch/meta</span></code><a class="headerlink" href="#ch-meta" title="Permalink to this headline">¶</a></h4>
+<p>Here we encounter our first instance of <em>filesystem passthrough</em>. This is a
+directory on the host which is passed through to all VMs. It contains
+information about the virtual cluster itself:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ls /ch/meta
+<span class="go">guest-count  guests    hosts          proxy.sh     sync  using-vde</span>
+<span class="go">guest-macs   hostfile  host-userdata  resolv.conf  test</span>
+</pre></div>
+</div>
+<p>We will not explore its contents in detail in this tutorial (see the <a class="reference internal" href="api.html"><em>API
+documentation</em></a>). However, one example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ls -l /etc/hosts
+<span class="go">lrwxrwxrwx 1 root root 14 Aug 19 12:28 /etc/hosts -&gt; /ch/meta/hosts</span>
+</pre></div>
+</div>
+<p>That is, <code class="code docutils literal"><span class="pre">/etc/hosts</span></code> in Charliecloud guests is constructed on-demand by
+<code class="code docutils literal"><span class="pre">vcluster</span></code> each time a new cluster is booted.</p>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p>The filesystem type <code class="code docutils literal"><span class="pre">9p</span></code> may be one that you have not seen before.
+Filesystem passthrough is accomplished by a user-space agent in QEMU which
+carries out file operations on behalf of the guest. Communication with this
+agent is over the <a class="reference external" href="http://en.wikipedia.org/wiki/9P">Plan 9 network filesystem protocol</a>.</p>
+<p class="last">If you try <code class="code docutils literal"><span class="pre">ls</span> <span class="pre">-l</span></code>, you may notice some quirks about this mount.
+These will be explained later in this tutorial.</p>
+</div>
+</div>
+<div class="section" id="ch-opt">
+<h4>2.1.5.4. <code class="code docutils literal"><span class="pre">/ch/opt</span></code><a class="headerlink" href="#ch-opt" title="Permalink to this headline">¶</a></h4>
+<p>This passthrough directory contains scripts and other information used by
+Charliecloud guests. Recall that we are running Debian 8.0, &#8220;Jessie&#8221;:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ls /ch/opt
+<span class="go">jessie linux  wheezy</span>
+<span class="gp">&gt;</span> ls /ch/opt/jessie
+<span class="go">10-storage.sh  30-hostname.sh  99-runjob.sh  charlie.sh  util.sh</span>
+<span class="go">20-users.py    80-sync.sh      boot.sh       network.sh</span>
+</pre></div>
+</div>
+<p>For example, the script <code class="code docutils literal"><span class="pre">boot.sh</span></code> coordinates various tasks for booting
+a Charliecloud guest; it is invoked by <code class="code docutils literal"><span class="pre">rc.local</span></code> or a <code class="code docutils literal"><span class="pre">systemd</span></code>
+service. This lets us improve booting without needing to update each
+individual VM image.</p>
+</div>
+</div>
+<div class="section" id="contents-of-the-job-directory">
+<h3><a class="toc-backref" href="#id7">2.1.6. Contents of the job directory</a><a class="headerlink" href="#contents-of-the-job-directory" title="Permalink to this headline">¶</a></h3>
+<p>We now return to the host to explore the host&#8217;s view of a running Charliecloud
+virtual cluster.</p>
+<p><code class="code docutils literal"><span class="pre">vcluster</span></code> creates a <em>job directory</em> to support the cluster. By default,
+this is named <code class="code docutils literal"><span class="pre">charlie</span></code> with a timestamp suffix, but you can change this
+if you prefer. Open a second terminal and <code class="code docutils literal"><span class="pre">cd</span></code> into the job directory
+for the currently-running cluster:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> <span class="nb">cd</span> /data/vm/charlie.19690720_141804
+<span class="gp">$</span> ls
+<span class="go">meta  out  run</span>
+</pre></div>
+</div>
+<p>We see that there are three directories here.</p>
+<div class="section" id="meta">
+<h4>2.1.6.1. <code class="code docutils literal"><span class="pre">meta</span></code><a class="headerlink" href="#meta" title="Permalink to this headline">¶</a></h4>
+<p><code class="code docutils literal"><span class="pre">meta</span></code> is the same directory as <code class="code docutils literal"><span class="pre">/ch/meta</span></code> on all the guests:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ls meta
+<span class="go">guest-count  guests    hosts          proxy.sh     sync  using-vde</span>
+<span class="go">guest-macs   hostfile  host-userdata  resolv.conf  test</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="run">
+<h4>2.1.6.2. <code class="code docutils literal"><span class="pre">run</span></code><a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h4>
+<p>This directory contains runtime data for the cluster:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ls run
+<span class="go">0.overlay.qcow2  1.overlay.qcow2  2.overlay.qcow2  3.overlay.qcow2  vde</span>
+<span class="go">0.tmp.qcow2      1.tmp.qcow2      2.tmp.qcow2      3.tmp.qcow2</span>
+</pre></div>
+</div>
+<p>Here we find:</p>
+<ol class="arabic simple">
+<li>An overlay root disk image for each VM.</li>
+<li>The temporary disk image for each VM.</li>
+<li>A directory for the VDE2 virtual network to coordinate.</li>
+</ol>
+</div>
+<div class="section" id="out">
+<h4>2.1.6.3. <code class="code docutils literal"><span class="pre">out</span></code><a class="headerlink" href="#out" title="Permalink to this headline">¶</a></h4>
+<p>Finally, this contains output from each of the guests:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ls out
+<span class="go">0_console.out  1_console.out  2_console.out  3_console.out  slirpvde.out</span>
+<span class="go">0_job.err      1_job.err      2_job.err      3_job.err      vde_switch.out</span>
+<span class="go">0_job.out      1_job.out      2_job.out      3_job.out</span>
+</pre></div>
+</div>
+<p>Here we find:</p>
+<ol class="arabic simple">
+<li>Console output from each guest. Note that this is somewhat more
+comprehensive than what you see in the <code class="code docutils literal"><span class="pre">xterm</span></code> boot console, and it
+includes output from the Charliecloud boot scripts.</li>
+<li>Standard output and error for the job script on each guest. These are only
+populated in batch (non-interactive) mode; empty files appear otherwise.</li>
+<li>Output from the VDE virtual network programs.</li>
+</ol>
+<p>These are implemented by redirecting virtual serial ports to files.</p>
+<p>Guest console output is exceedingly useful in diagnosing problems. For
+example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> tail -F out/*_console.out out/slirpvde.out out/vde_switch.out
+</pre></div>
+</div>
+<p>We use <code class="code docutils literal"><span class="pre">-F</span></code> as opposed to <code class="code docutils literal"><span class="pre">-f</span></code>, because it will follow the same
+filename if the file is re-created, which happens when you boot a cluster
+multiple times over the same job directory. This is a handy technique to avoid
+a proliferation of soon-to-be-discarded job directories.</p>
+<p>In this case, we are following the entire cluster, but often following just
+guest 0 will be sufficient. Leave this running as we continue to explore our
+cluster.</p>
+<div class="admonition-hey-what-about-code-opt admonition">
+<p class="first admonition-title">Hey! What about <code class="code docutils literal"><span class="pre">opt</span></code>!?</p>
+<p class="last">Indeed, we haven&#8217;t yet explained where <code class="code docutils literal"><span class="pre">opt</span></code> is passed through from.
+It is the <code class="code docutils literal"><span class="pre">opt</span></code> directory in the Charliecloud source code.</p>
+</div>
+</div>
+</div>
+<div class="section" id="network-topology">
+<h3><a class="toc-backref" href="#id8">2.1.7. Network topology</a><a class="headerlink" href="#network-topology" title="Permalink to this headline">¶</a></h3>
+<p>A virtual cluster is not much good if the nodes can&#8217;t communicate. Therefore,
+return to guest 0, and we will explore the cluster&#8217;s network topology.</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> cat /etc/hosts
+<span class="go">127.0.0.1 localhost</span>
+<span class="go">172.22.1.1 chgu0</span>
+<span class="go">172.22.1.254 chgu0host</span>
+<span class="go">172.22.1.2 chgu1</span>
+<span class="go">172.22.1.254 chgu1host</span>
+<span class="go">172.22.1.3 chgu2</span>
+<span class="go">172.22.1.254 chgu2host</span>
+<span class="go">172.22.1.4 chgu3</span>
+<span class="go">172.22.1.254 chgu3host</span>
+</pre></div>
+</div>
+<p>Recall that <code class="code docutils literal"><span class="pre">/etc/hosts</span></code> is dynamically generated for each virtual
+cluster. In this case, we have symbolic names and IP addresses for each of the
+four nodes in our virtual cluster, as well as their hosts. Charliecloud uses
+IP addresses in the private space 172.16.0.0/12; details can be found in the
+<a class="reference internal" href="networking.html"><em>network topology section</em></a>.</p>
+<p>Full TCP/IP service to other guests in the virtual cluster is provided. In
+workstation mode, TCP/IP to the outside world is also provided via NAT.</p>
+<p>Let&#8217;s try some pinging. First, another guest in the cluster:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ping -c3 chgu1
+<span class="go">PING chgu1 (172.22.1.2) 56(84) bytes of data.</span>
+<span class="go">64 bytes from chgu1 (172.22.1.2): icmp_req=1 ttl=64 time=20.0 ms</span>
+<span class="go">64 bytes from chgu1 (172.22.1.2): icmp_req=2 ttl=64 time=0.545 ms</span>
+<span class="go">64 bytes from chgu1 (172.22.1.2): icmp_req=3 ttl=64 time=0.550 ms</span>
+
+<span class="go">--- chgu1 ping statistics ---</span>
+<span class="go">3 packets transmitted, 3 received, 0% packet loss, time 2003ms</span>
+<span class="go">rtt min/avg/max/mdev = 0.545/7.039/20.023/9.181 ms</span>
+</pre></div>
+</div>
+<p>Next, our host:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ping -c3 chgu0host
+<span class="go">PING chgu0host (172.22.1.254) 56(84) bytes of data.</span>
+<span class="go">64 bytes from 172.22.1.254: icmp_req=1 ttl=255 time=0.808 ms</span>
+<span class="go">64 bytes from 172.22.1.254: icmp_req=2 ttl=255 time=0.348 ms</span>
+<span class="go">64 bytes from 172.22.1.254: icmp_req=3 ttl=255 time=0.349 ms</span>
+
+<span class="go">--- 172.22.1.254 ping statistics ---</span>
+<span class="go">3 packets transmitted, 3 received, 0% packet loss, time 2003ms</span>
+<span class="go">rtt min/avg/max/mdev = 0.348/0.501/0.808/0.218 ms</span>
+</pre></div>
+</div>
+<p>Finally, the outside world (specifically, one of Google&#8217;s public DNS
+servers):</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ping -c3 -w5 8.8.8.8
+<span class="go">PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.</span>
+<span class="go">64 bytes from 8.8.8.8: icmp_seq=1 ttl=54 time=31.5 ms</span>
+<span class="go">64 bytes from 8.8.8.8: icmp_seq=2 ttl=54 time=31.5 ms</span>
+<span class="go">64 bytes from 8.8.8.8: icmp_seq=3 ttl=54 time=31.5 ms</span>
+
+<span class="go">--- 8.8.8.8 ping statistics ---</span>
+<span class="go">3 packets transmitted, 3 received, 0% packet loss, time 2003ms</span>
+<span class="go">rtt min/avg/max/mdev = 31.555/31.571/31.584/0.205 ms</span>
+</pre></div>
+</div>
+<p>This works in workstation mode. In cluster mode, most configurations provide
+no networking outside the virtual cluster, so this times out.</p>
+</div>
+<div class="section" id="ssh">
+<h3><a class="toc-backref" href="#id9">2.1.8. SSH</a><a class="headerlink" href="#ssh" title="Permalink to this headline">¶</a></h3>
+<p>We can SSH from one guest into another without a password, because the
+Charliecloud images have keys set up for this:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ssh chgu1 <span class="nb">echo </span>hello
+<span class="go">hello</span>
+</pre></div>
+</div>
+<p>We can also SSH into hosts, but this requires authentication:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ssh reidpr@chgu0host <span class="nb">echo </span>hello
+<span class="go">reidpr@chgu0host&#39;s password:</span>
+<span class="go">hello</span>
+</pre></div>
+</div>
+<p>SSH access from the host to guests is also available. To authenticate, you
+must add your SSH public key to <code class="code docutils literal"><span class="pre">~charlie/.ssh/authorized_keys</span></code>. One
+method is as follows. First, copy your key to the clipboard:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> pbcopy &lt; ~/.ssh/id_rsa.pub
+</pre></div>
+</div>
+<p>Then, on the guest:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> cat &gt;&gt; ~/.ssh/authorized_keys
+<span class="go">[paste the key]</span>
+<span class="go">^D</span>
+<span class="gp">&gt;</span> cat ~/.ssh/authorized_keys
+<span class="go">[...]</span>
+<span class="go">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC4ZfQ0yZgyIaQZLl1FA8nPD+1eZCzDsEf+vVqreqad</span>
+<span class="go">9f+5LP5J/QOU8ZB9F0jqRAod7Y5zspUNFwP7/4n/59ny37bdxpBd0p+0qGUX4UmkCWlD900EfLw5gyJU</span>
+<span class="go">icwI/O/TWFV70HiQX9Tol7Z+WD5k9JR42MjHcQP+hf6Jsk1th8KjqZg+NGcmAiC84pXmFYOnFE38L/nd</span>
+<span class="go">66iTLVhSEYLvXnU5DIx4ZZvRXbDN65C1Gq7unMebjJD7XtuV07znjUpq4ZMtuhAT7mcSdDB9zdg4HO2g</span>
+<span class="go">XE0lCR92uv15h4f3KMygEj4ehFKI9Ii/N6vMyyEsUSpTZ6rz9Z7TuetsQJcf reidpr@example.com</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p>Make sure that the whole key went in, as certain configurations (e.g., OS
+X) have a low limit on the number of bytes that can be copied and pasted
+into an <code class="code docutils literal"><span class="pre">xterm</span></code> at once. You can also use the <code class="code docutils literal"><span class="pre">--curses</span></code>
+console instead, which we will encounter below.</p>
+<p class="last">If you manually copy and paste the key, watch out for line breaks sneaking
+in.</p>
+</div>
+<p>You should now be able to log into the guests from the host. <code class="code docutils literal"><span class="pre">vcluster</span></code>
+prints the IP address of guest 0 during startup, and other guests&#8217; IPs are
+available in <code class="code docutils literal"><span class="pre">meta/hosts</span></code>. Log in as <code class="code docutils literal"><span class="pre">charlie</span></code>, not yourself. For
+example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ssh charlie@172.22.1.1 hostname
+<span class="go">chgu0</span>
+<span class="gp">$</span> ssh charlie@172.22.1.3 hostname
+<span class="go">chgu2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="shut-the-cluster-down">
+<h3><a class="toc-backref" href="#id10">2.1.9. Shut the cluster down</a><a class="headerlink" href="#shut-the-cluster-down" title="Permalink to this headline">¶</a></h3>
+<p>When you are done with the cluster, shut down guest 0:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> sudo shutdown -h now
+<span class="go">Broadcast message from root@chgu0 (tty1) (Mon Jul 21 11:54:30 1969):</span>
+
+<span class="go">The system is going down for system halt NOW!</span>
+<span class="go">[...]</span>
+<span class="go">deleted ./charlie.19690720_141804/run/0.tmp.qcow2</span>
+<span class="go">oneguest done</span>
+</pre></div>
+</div>
+<p>After shutdown is complete , close the <code class="code docutils literal"><span class="pre">xterm</span></code>. <code class="code docutils literal"><span class="pre">vcluster</span></code> will
+clean up the other guests and then exit.</p>
+</div>
+</div>
+<div class="section" id="your-first-virtual-job">
+<h2><a class="toc-backref" href="#id11">2.2. Your first virtual job</a><a class="headerlink" href="#your-first-virtual-job" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="starting-a-cluster-with-less-clutter">
+<h3><a class="toc-backref" href="#id12">2.2.1. Starting a cluster with less clutter</a><a class="headerlink" href="#starting-a-cluster-with-less-clutter" title="Permalink to this headline">¶</a></h3>
+<p>Start a new virtual cluster as follows (all one line):</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>vcluster -n3
+           --curses
+           --jobdir charlie
+           --job ~/charliecloud/examples/mpihello/mpihello.sh
+           --interactive
+           --dir ~/charliecloud/examples/mpihello/data
+           image.qcow2
+</pre></div>
+</div>
+<p>This involves five new common options:</p>
+<ul class="simple">
+<li><code class="code docutils literal"><span class="pre">--curses</span></code> shows the console for guest 0 in the current terminal,
+while remaining guests are headless. This reduces window clutter, and the
+console for guest 0 is must more commonly used than the others.</li>
+<li><code class="code docutils literal"><span class="pre">--jobdir</span></code> gives the job directory a specific name (in this case,
+<code class="code docutils literal"><span class="pre">./charlie</span></code>), overwriting any existing job directory at that location.
+This is useful when iterating a cluster, as it places files at known paths
+and avoids dropping multiple job directories that will never be referred to
+again.</li>
+<li><code class="code docutils literal"><span class="pre">--job</span></code> gives a script defining the computation you wish to
+accomplish.</li>
+<li><code class="code docutils literal"><span class="pre">--interactive</span></code> says not to run that script on boot, but simply make
+it available inside the guests.</li>
+<li><code class="code docutils literal"><span class="pre">--dir</span></code> explicitly invokes filesystem passthrough, making the given
+directory available inside guests. This option can be repeated up to four
+times.</li>
+</ul>
+<p>Once the cluster comes up, log in to guest 0.</p>
+</div>
+<div class="section" id="users-groups-and-permissions-under-filesystem-passthrough">
+<h3><a class="toc-backref" href="#id13">2.2.2. Users, groups, and permissions under filesystem passthrough</a><a class="headerlink" href="#users-groups-and-permissions-under-filesystem-passthrough" title="Permalink to this headline">¶</a></h3>
+<p>In this cluster, we map a specific directory on the host,
+<code class="code docutils literal"><span class="pre">~/charliecloud/examples/mpihello/data</span></code>, to <code class="code docutils literal"><span class="pre">/ch/data1</span></code> inside the
+guest. This is a shared directory appearing in the same place on all guests.
+Additional <code class="code docutils literal"><span class="pre">--dir</span></code> options would map <code class="code docutils literal"><span class="pre">/ch/data2</span></code>, <code class="code docutils literal"><span class="pre">3</span></code>, and
+<code class="code docutils literal"><span class="pre">4</span></code>.</p>
+<p>One of the tricky aspects of filesystem passthrough is mapping users and
+groups from host to guest, because the host and guest can have completely
+different users and groups. Charliecloud hides much of this complexity, but
+there are a few subtleties that remain. This section explains the pitfalls and
+best practices to avoid them.</p>
+<p>Start by examining the passed-through directory and our user account on the
+host:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ls -l ~/charliecloud/examples/mpihello/data
+<span class="go">-rw-rw---- 1 reidpr reidpr 1606 Apr 27 16:18 hello.c</span>
+<span class="go">-rwxrwxr-x 1 reidpr reidpr  784 Aug 19  2014 hello.py</span>
+<span class="gp">$</span> id
+<span class="go">uid=1001(reidpr) gid=1001(reidpr) groups=1001(reidpr),132(kvm),1000(twitter)</span>
+</pre></div>
+</div>
+<p>Things to notice here:</p>
+<ul class="simple">
+<li>The two files are owned by user <code class="code docutils literal"><span class="pre">reidpr</span></code>, group <code class="code docutils literal"><span class="pre">reidpr</span></code>.</li>
+<li>The files are readable by the <em>group</em> <code class="code docutils literal"><span class="pre">reidpr</span></code>.</li>
+<li><code class="code docutils literal"><span class="pre">reidpr</span></code> (UID 1001) is in three groups: <code class="code docutils literal"><span class="pre">reidpr</span></code> (GID 1001),
+<code class="code docutils literal"><span class="pre">kvm</span></code> (GID 132), and <code class="code docutils literal"><span class="pre">twitter</span></code> (GID 1000).</li>
+</ul>
+<p>Now, examine the same directory in the guest:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> ls -l /ch/data1
+<span class="go">-rw-rw---- 1 charlie reidpr 1606 Apr 27 16:18 hello.c</span>
+<span class="go">-rwxrwxr-x 1 charlie reidpr  784 Aug 19  2014 hello.py</span>
+<span class="gp">&gt;</span> id charlie
+<span class="go">uid=1001(charlie) gid=65530(charlie) groups=65530(charlie),1000(twitter),1001(reidpr)</span>
+</pre></div>
+</div>
+<p>Things to notice:</p>
+<ul class="simple">
+<li>The two files still owned by group <code class="code docutils literal"><span class="pre">reidpr</span></code>, but now their user is
+<code class="code docutils literal"><span class="pre">charlie</span></code>.</li>
+<li>Permission bits and other metadata are the same as on the host.</li>
+<li><code class="code docutils literal"><span class="pre">charlie</span></code> (UID 1001) is in groups <code class="code docutils literal"><span class="pre">charlie</span></code> (GID 65530),
+<code class="code docutils literal"><span class="pre">reidpr</span></code> (GID 1001), and <code class="code docutils literal"><span class="pre">twitter</span></code> (GID 1000).</li>
+</ul>
+<p>The Charliecloud magic is that guest users and groups are synchronized with
+the host on boot. <code class="code docutils literal"><span class="pre">charlie</span></code> is adjusted to match the user running
+Charliecloud, with two exceptions: its username, so it can be predictably
+referred to, and system groups. The consequence is that <code class="code docutils literal"><span class="pre">charlie</span></code> — the
+login user and job user with the guest — can read, write, and execute what
+everything that <code class="code docutils literal"><span class="pre">reidpr</span></code> can, because the guest and host agree.</p>
+<p>Permissions on passed-through directories are enforced by both the host and
+guest. For example, let&#8217;s try something that we should not be able to do:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> <span class="nb">cd</span> /ch/data1
+<span class="gp">&gt;</span> touch a
+<span class="gp">&gt;</span> ls -l a
+<span class="go">-rw-rw---- 1 charlie reidpr 0 Apr 29 11:28 a</span>
+<span class="gp">&gt;</span> chown root:root a
+<span class="go">chown: changing ownership of &#39;a&#39;: Operation not permitted</span>
+<span class="gp">&gt;</span> sudo chown root:root a
+<span class="go">chown: changing ownership of &#39;a&#39;: Operation not permitted</span>
+</pre></div>
+</div>
+<p>Here, the first <code class="code docutils literal"><span class="pre">chown</span></code> was rejected by the guest, and the second was
+approved by the guest (because of <code class="code docutils literal"><span class="pre">sudo</span></code>) but rejected by the host.
+However, it works on a within-guest filesystem, because in this case the
+host&#8217;s access control does not get involved:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> <span class="nb">cd</span> /ch/tmp
+<span class="gp">&gt;</span> touch a
+<span class="gp">&gt;</span> ls -l a
+<span class="go">-rw-rw---- 1 charlie charlie 0 Apr 29 11:34 a</span>
+<span class="gp">&gt;</span> chown root:root a
+<span class="gp">&gt;</span> chown: changing ownership of <span class="s1">&#39;a&#39;</span>: Operation not permitted
+<span class="gp">&gt;</span> sudo chown root:root a
+<span class="gp">&gt;</span> ls -l a
+<span class="go">-rw-rw---- 1 root root 0 Apr 29 11:34 a</span>
+</pre></div>
+</div>
+<p>That is, passthrough file actions are carried out by QEMU (and proxied into
+the VM as a 9P network filesystem), which is running unprivileged as us.
+Therefore, we are unable to do anything in the virtual machine that we could
+not do by running a normal program on the host, regardless of how we alter the
+guest or unprivileged QEMU.</p>
+<p>For the gory detail on filesystem passthrough, including possible paths not
+taken (pun intended), see the <a class="reference internal" href="fs-passthrough.html"><em>full passthrough documentation</em></a>.</p>
+<div class="admonition caution">
+<p class="first admonition-title">Caution</p>
+<p>Above, we mentioned there are some gotchas with this arrangement. They
+include:</p>
+<ul class="last simple">
+<li>The guest <code class="code docutils literal"><span class="pre">umask</span></code> governs files created within the guest, even on
+passthrough filesystems, because the relevant system calls are passed
+through unchanged, so make sure it is a value appropriate for you.
+<code class="code docutils literal"><span class="pre">0007</span></code> is common if you want to share work with your groups,
+<code class="code docutils literal"><span class="pre">0077</span></code> for private work.</li>
+<li><code class="code docutils literal"><span class="pre">charlie</span></code>&#8216;s UID will change when the guest is booted by a host user
+with a different UID, which can happen when images are used by different
+people or the image is transferred between different hosts.
+<code class="code docutils literal"><span class="pre">charlie</span></code>&#8216;s home directory will be fixed, which can take some time
+if it contains many files, and files elsewhere in the guest will not be
+fixed.</li>
+<li>System groups from the host are not imported into the guest, so some
+types of group-granted access will be erroneously rejected by the guest.
+Typically this is sysadmin-type stuff and unlikely to be encountered in
+practice, but you can work around it with <code class="code docutils literal"><span class="pre">sudo</span></code> inside the guest.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="running-mpihello-in-interactive-mode">
+<h3><a class="toc-backref" href="#id14">2.2.3. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in interactive mode</a><a class="headerlink" href="#running-mpihello-in-interactive-mode" title="Permalink to this headline">¶</a></h3>
+<p>Notice that in the last section, we slipped in a parallel computation.
+Charliecloud images come with MPI installed by default, since it is a common
+parallel framework familiar to the Charliecloud audience, and this tutorial
+uses it for that reason. However, you can install whatever you wish.</p>
+<p>Recall the argument <code class="code docutils literal"><span class="pre">--job</span> <span class="pre">mpihello.sh</span></code> specified above when we started
+the cluster. This makes the given file appear as <code class="code docutils literal"><span class="pre">/ch/meta/jobscript</span></code>
+within the VMs:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> head ~/charliecloud/examples/mpihello/mpihello.sh
+<span class="go">​#!/bin/bash</span>
+
+<span class="go">​# Demonstrate that MPI works in C and Python.</span>
+<span class="go">​#</span>
+<span class="go">​# Requires ./data as first --dir.</span>
+
+<span class="go">if [ &quot;$CH_GUEST_ID&quot; != 0 ]; then</span>
+<span class="go">    echo &#39;not guest 0; waiting for work&#39;</span>
+<span class="go">    exit 0</span>
+<span class="go">fi</span>
+</pre></div>
+</div>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> head /ch/meta/jobscript
+<span class="go">​#!/bin/bash</span>
+
+<span class="go">​# Demonstrate that MPI works in C and Python.</span>
+<span class="go">​#</span>
+<span class="go">​# Requires ./data as first --dir.</span>
+
+<span class="go">​if [ &quot;$CH_GUEST_ID&quot; != 0 ]; then</span>
+<span class="go">​    echo &#39;not guest 0; waiting for work&#39;</span>
+<span class="go">​    exit 0</span>
+<span class="go">​fi</span>
+</pre></div>
+</div>
+<p>Take a few minutes to examine this script.</p>
+<p>In non-interactive mode (covered in the next section), all guests run the job
+script on boot. In this case, guest 0 initiates everything, so the script
+opens with a test for guest ID and exits if it is not 0.</p>
+<p>Let&#8217;s try running it:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> /ch/meta/jobscript
+<span class="go">Are we running on all nodes?</span>
+<span class="go">chgu0</span>
+<span class="go">chgu0</span>
+<span class="go">chgu1</span>
+<span class="go">chgu2</span>
+<span class="go">chgu1</span>
+<span class="go">chgu2</span>
+
+<span class="go">Can we do MPI in C?</span>
+<span class="go">0: We have 6 processors</span>
+<span class="go">0: Hello 1! Processor 1 reporting for duty</span>
+<span class="go">0: Hello 2! Processor 2 reporting for duty</span>
+<span class="go">0: Hello 3! Processor 3 reporting for duty</span>
+<span class="go">0: Hello 4! Processor 4 reporting for duty</span>
+<span class="go">0: Hello 5! Processor 5 reporting for duty</span>
+
+<span class="go">Can we do MPI in Python?</span>
+<span class="go">5 workers finished, result on rank 0 is:</span>
+<span class="go">{1: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 1 on chgu0&#39;]),</span>
+<span class="go"> 2: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 2 on chgu1&#39;]),</span>
+<span class="go"> 3: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 3 on chgu1&#39;]),</span>
+<span class="go"> 4: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 4 on chgu2&#39;]),</span>
+<span class="go"> 5: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 5 on chgu2&#39;])}</span>
+</pre></div>
+</div>
+<p>It worked! Congratulations on running your first Charliecloud virtual job!</p>
+<p>The job script is implemented as a hard link (when possible) on the host side,
+so you can edit it on the host and immediately re-run in the guest. This is a
+quick way to iterate your computation.</p>
+<p>Let&#8217;s try it. Suppose that you are very old school and lower-case letters make
+you uncomfortable. Edit (on the host)
+<code class="code docutils literal"><span class="pre">~/charliecloud/examples/mpihello/data/hello.c</span></code> and change the string
+literals to upper-case. Then, on the guest:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> /ch/meta/jobscript
+<span class="go">[...]</span>
+<span class="go">Can we do MPI in C?</span>
+<span class="go">0: WE HAVE 6 PROCESSORS</span>
+<span class="go">0: HELLO 1! PROCESSOR 1 REPORTING FOR DUTY</span>
+<span class="go">0: HELLO 2! PROCESSOR 2 REPORTING FOR DUTY</span>
+<span class="go">0: HELLO 3! PROCESSOR 3 REPORTING FOR DUTY</span>
+<span class="go">0: HELLO 4! PROCESSOR 4 REPORTING FOR DUTY</span>
+<span class="go">0: HELLO 5! PROCESSOR 5 REPORTING FOR DUTY</span>
+<span class="go">[...]</span>
+</pre></div>
+</div>
+<p>Much better! If you like, you can also change the Python implementation and
+the job script itself.</p>
+<p>We are done with this cluster, so shut it down.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This workflow reflects the basic philosophy of Charliecloud work: <strong>install
+dependencies within the virtual machine, but define jobs outside it.</strong>
+Among other benefits, this lets you take advantage of package management
+facilities provided by the OS (e.g., <code class="code docutils literal"><span class="pre">apt-get</span></code>) and programming
+languages (e.g., <code class="code docutils literal"><span class="pre">pip</span></code>) while retaining flexibility and convenience
+for your own computations. For example, you need not install editors and a
+carefully tailored interactive environment inside the VM, and changes to
+your computation do not require distributing new virtual machine images.</p>
+</div>
+</div>
+<div class="section" id="running-mpihello-in-batch-mode">
+<h3><a class="toc-backref" href="#id15">2.2.4. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in batch mode</a><a class="headerlink" href="#running-mpihello-in-batch-mode" title="Permalink to this headline">¶</a></h3>
+<p>While interactive mode is great for iterating your computation, production
+jobs are typically run in non-interactive mode. This section will walk you
+through doing do.</p>
+<p>First, start a <code class="code docutils literal"><span class="pre">tail</span> <span class="pre">-F</span></code> on the console output, so we can watch the
+computation happen:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> <span class="nb">cd</span> /data/vm
+<span class="gp">$</span> tail -F charlie/out/0_console.out
+</pre></div>
+</div>
+<p>Then, in another terminal, run <code class="code docutils literal"><span class="pre">vcluster</span></code> as follows:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>vcluster -n3
+           --jobdir charlie
+           --job ~/charliecloud/examples/mpihello/mpihello.sh
+           --dir ~/charliecloud/examples/mpihello/data
+           image.qcow2
+</pre></div>
+</div>
+<p>Notice the two differences from the previous invocation:</p>
+<ul class="simple">
+<li><code class="code docutils literal"><span class="pre">--curses</span></code> (as well as <code class="code docutils literal"><span class="pre">--xterm</span></code>) are missing. Thus, the cluster
+will run entirely headless.</li>
+<li><code class="code docutils literal"><span class="pre">--interactive</span></code> is missing. This instructs the cluster to boot up, run
+the job, and then shut down. You can still log into the cluster while it&#8217;s
+running the job, but being logged in will not prevent shutdown when the job
+completes.</li>
+</ul>
+<p>This is the type of command you would include in a SLURM job script.</p>
+<p>Returning to your <code class="code docutils literal"><span class="pre">tail</span></code> output of the guest 0 console, some key lines
+are:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="go">2014-12-02T13:47:39: running 99-runjob.sh</span>
+<span class="go">2014-12-02T13:47:39: will shut down after job</span>
+<span class="go">2014-12-02T13:47:39: forking to run user job</span>
+<span class="go">2014-12-02T13:47:39: 99-runjob.sh done in 0 seconds</span>
+<span class="go">2014-12-02T13:47:39: boot.sh done in 8 seconds</span>
+<span class="go">2014-12-02T13:47:43: user job complete; writing 0.jobdone</span>
+<span class="go">2014-12-02T13:47:43: shutting down</span>
+</pre></div>
+</div>
+<p>Here you can see the <code class="code docutils literal"><span class="pre">99-runjob.sh</span></code> boot script starting (but not
+waiting for) your job, the completion notice for your job, and a notice that
+the cluster is shutting down.</p>
+<p>Now, examine your job output:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> cat charlie/out/0_job.err
+<span class="gp">$</span> cat charlie/out/0_job.out
+
+<span class="go">Are we running on all nodes?</span>
+<span class="go">chgu0</span>
+<span class="go">chgu0</span>
+<span class="go">chgu1</span>
+<span class="go">chgu2</span>
+<span class="go">chgu2</span>
+<span class="go">chgu1</span>
+
+<span class="go">Can we do MPI in C?</span>
+<span class="go">0: WE HAVE 6 PROCESSORS</span>
+<span class="go">0: HELLO 1! PROCESSOR 1 REPORTING FOR DUTY</span>
+<span class="go">0: HELLO 2! PROCESSOR 2 REPORTING FOR DUTY</span>
+<span class="go">0: HELLO 3! PROCESSOR 3 REPORTING FOR DUTY</span>
+<span class="go">0: HELLO 4! PROCESSOR 4 REPORTING FOR DUTY</span>
+<span class="go">0: HELLO 5! PROCESSOR 5 REPORTING FOR DUTY</span>
+
+<span class="go">Can we do MPI in Python?</span>
+<span class="go">5 workers finished, result on rank 0 is:</span>
+<span class="go">{1: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 1 on chgu0&#39;]),</span>
+<span class="go"> 2: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 2 on chgu1&#39;]),</span>
+<span class="go"> 3: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 3 on chgu1&#39;]),</span>
+<span class="go"> 4: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 4 on chgu2&#39;]),</span>
+<span class="go"> 5: set([0, 3, 5, 6, 7, 8, 9, &#39;rank 5 on chgu2&#39;])}</span>
+</pre></div>
+</div>
+<p>In this case, there were no errors, which is good, and the job output is the
+same as we saw earlier in interactive mode.</p>
+<p>Of course, this is simply the standard output and standard error of your job.
+Real jobs will typically create output files of some kind; these should be
+saved into the user passthrough directories (<code class="code docutils literal"><span class="pre">/ch/data[1234]</span></code>).</p>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p class="last">The environment variables <code class="code docutils literal"><span class="pre">$CH_DATA[1234]</span></code> are set when the
+corresponding passthrough directories are mounted.</p>
+</div>
+</div>
+</div>
+<div class="section" id="installing-your-own-software">
+<h2><a class="toc-backref" href="#id16">2.3. Installing your own software</a><a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="starting-a-vm-with-persistent-root-filesystem">
+<h3><a class="toc-backref" href="#id17">2.3.1. Starting a VM with persistent root filesystem</a><a class="headerlink" href="#starting-a-vm-with-persistent-root-filesystem" title="Permalink to this headline">¶</a></h3>
+<p>Recall that each guest in a Charliecloud virtual cluster gets an independent
+read-write copy of the root filesystem, starting from an identical state. That
+is, while you can muck with the filesystem to your heart&#8217;s content, your
+changes will not persist to the next cluster unless you take special measures.
+This section describes those measures.</p>
+<p>Boot a new virtual cluster:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nv">$ </span>vcluster -n1
+           --commit 0
+           --curses
+           --jobdir charlie
+           image.qcow2
+</pre></div>
+</div>
+<p>New in this invocation:</p>
+<ul class="simple">
+<li>We&#8217;ve asked for a single-node cluster.</li>
+<li><code class="code docutils literal"><span class="pre">--commit</span> <span class="pre">0</span></code> says to save the changes to the root filesystem of guest
+0 to the image (<code class="code docutils literal"><span class="pre">image.qcow2</span></code>).</li>
+<li>The absence of <code class="code docutils literal"><span class="pre">--job</span></code> implies <code class="code docutils literal"><span class="pre">--interactive</span></code>.</li>
+</ul>
+<p>Recall that <code class="code docutils literal"><span class="pre">vcluster</span></code> abruptly kills the remaining guests when guest 0
+exits, potentially leaving their root filesystems in an inconsistent state.
+Usually this is not a problem even when persisting changes, as it&#8217;s typically
+guest 0 whose changes are saved. However, if you do want to save changes on a
+non-0 node, shut it down manually to get a consistent filesystem.</p>
+<div class="admonition tip">
+<p class="first admonition-title">Tip</p>
+<p>If you use <code class="code docutils literal"><span class="pre">--commit</span></code> and later change your mind:</p>
+<ul class="last simple">
+<li>If the virtual cluster is still running, kill the to-be-commited
+<code class="code docutils literal"><span class="pre">qemu</span></code> process. <code class="code docutils literal"><span class="pre">vcluster</span></code> will see this as an error and not
+commit the root filesystem image.</li>
+<li>If the virtual cluster is already shut down, you are out of luck. Hope
+you kept a backup...</li>
+</ul>
+</div>
+</div>
+<div class="section" id="installing-software">
+<h3><a class="toc-backref" href="#id18">2.3.2. Installing software</a><a class="headerlink" href="#installing-software" title="Permalink to this headline">¶</a></h3>
+<p>A key goal of Charliecloud is to make installing software to support your
+application easy. Thus, we take advantage of operating system and
+language-specific package managers.</p>
+<p>For example, let&#8217;s install the package <code class="code docutils literal"><span class="pre">sl</span></code>:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> sudo apt-get install sl
+<span class="go">Reading package lists... Done</span>
+<span class="go">Building dependency tree</span>
+<span class="go">Reading state information... Done</span>
+<span class="go">The following NEW packages will be installed:</span>
+<span class="go">  sl</span>
+<span class="go">[...]</span>
+<span class="go">Setting up sl (3.03-17) ...</span>
+<span class="gp">&gt;</span> man sl <span class="p">|</span> fgrep -A2 DESCRIPTION
+<span class="go">DESCRIPTION</span>
+<span class="go">       sl Displays animations aimed to correct users who accidentally enter sl</span>
+<span class="go">       instead of ls.  SL stands for Steam Locomotive.</span>
+<span class="gp">&gt;</span> sl
+<span class="go">[...]</span>
+</pre></div>
+</div>
+<p><code class="code docutils literal"><span class="pre">sl</span></code> has several pleasant options, so experiment.</p>
+<p>While we didn&#8217;t in this case, you can also pass in a job script, etc., and try
+your application&#8217;s tests to interactively ensure you get all its dependencies.</p>
+<p>Shut down the cluster. Note the following lines in the <code class="code docutils literal"><span class="pre">vcluster</span></code> output:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="go">​$ qemu-img commit ./charlie/run/0.overlay.qcow2</span>
+<span class="go">Image committed.</span>
+<span class="go">deleted ./charlie/run/0.overlay.qcow2</span>
+</pre></div>
+</div>
+<p>This is <code class="code docutils literal"><span class="pre">vcluster</span></code> saving your changes into
+<code class="code docutils literal"><span class="pre">image.qcow2</span></code>. The overlay image is then deleted, as it is
+now invalid.</p>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p class="last">Be sure you charge the time you spend playing with <code class="code docutils literal"><span class="pre">sl</span></code> to the
+correct account.</p>
+</div>
+<p><strong>This concludes the tutorial.</strong> You are now qualified to run Charliecloud
+virtual clusters in interactive and non-interactive mode, run jobs, and
+install software within your virtual cluster. The remainder of this
+documentation covers more advanced topics. Have fun!</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="networking.html" class="btn btn-neutral float-right" title="3. Networking" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="install.html" class="btn btn-neutral" title="1. Installing Charliecloud" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014–2015, Los Alamos National Security, LLC.
+    </p>
+  </div>
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

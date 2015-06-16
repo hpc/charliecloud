@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Charliecloud Documentation &mdash; Charliecloud 0.1.5 documentation</title>
+  <title>9. API documentation &mdash; Charliecloud 0.1.5 documentation</title>
   
 
   
@@ -30,8 +30,9 @@
   
 
   
-    <link rel="top" title="Charliecloud 0.1.5 documentation" href="#"/>
-        <link rel="next" title="1. Installing Charliecloud" href="install.html"/> 
+    <link rel="top" title="Charliecloud 0.1.5 documentation" href="index.html"/>
+        <link rel="next" title="10. Version history" href="history.html"/>
+        <link rel="prev" title="8. Frequently asked questions (FAQ)" href="faq.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -48,7 +49,7 @@
         
 
         
-          <a href="#" class="icon icon-home"> Charliecloud
+          <a href="index.html" class="icon icon-home"> Charliecloud
         
 
         
@@ -70,7 +71,7 @@
         
           
           
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing Charliecloud</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="install.html#installing-on-linux">1.1. Installing on Linux</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="install.html#miscellaneous-supporting-software">1.1.1. Miscellaneous supporting software</a></li>
@@ -226,13 +227,13 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">9. API documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#the-job-directory">9.1. The job directory</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#filesystems-provided-to-the-guest">9.2. Filesystems provided to the guest</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api.html#metadata">9.2.1. Metadata</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api.html#charliecloud-resources">9.2.2. Charliecloud resources</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api.html#persistent-storage">9.2.3. Persistent storage</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api.html#temporary-storage">9.2.4. Temporary storage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">9. API documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-job-directory">9.1. The job directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#filesystems-provided-to-the-guest">9.2. Filesystems provided to the guest</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#metadata">9.2.1. Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#charliecloud-resources">9.2.2. Charliecloud resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#persistent-storage">9.2.3. Persistent storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#temporary-storage">9.2.4. Temporary storage</a></li>
 </ul>
 </li>
 </ul>
@@ -259,7 +260,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="#">Charliecloud</a>
+        <a href="index.html">Charliecloud</a>
       </nav>
 
 
@@ -268,9 +269,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="#">Docs</a> &raquo;</li>
+    <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Charliecloud Documentation</li>
+    <li>9. API documentation</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -281,49 +282,100 @@
 </div>
           <div role="main" class="document">
             
-  <div class="section" id="charliecloud-documentation">
-<h1>Charliecloud Documentation<a class="headerlink" href="#charliecloud-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Charliecloud is a lightweight virtual machine clustering technology based on
-QEMU and KVM. Charliecloud provides:</p>
+  <div class="section" id="api-documentation">
+<h1>9. API documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
 <ul class="simple">
-<li>Virtual clusters on top of existing HPC-style compute clusters, with minimal
-reconfiguration effort.</li>
-<li>Small-scale virtual clusters of equivalent configuration atop workstations,
-with easy transfer between workstation and cluster mode, to speed
-development and configuration of application code.</li>
-<li>Easy-to-use job-oriented virtual computing, where cluster lifetime follows a
-single bounded computation (rather than offering a persistent service).</li>
+<li><a class="reference internal" href="#the-job-directory" id="id1">The job directory</a></li>
+<li><a class="reference internal" href="#filesystems-provided-to-the-guest" id="id2">Filesystems provided to the guest</a><ul>
+<li><a class="reference internal" href="#metadata" id="id3">Metadata</a></li>
+<li><a class="reference internal" href="#charliecloud-resources" id="id4">Charliecloud resources</a></li>
+<li><a class="reference internal" href="#persistent-storage" id="id5">Persistent storage</a></li>
+<li><a class="reference internal" href="#temporary-storage" id="id6">Temporary storage</a></li>
 </ul>
-<p>Patches are welcome on the software itself as well as documentation.</p>
-<p>Charliecloud is copyright © 2015 Los Alamos National Security, LLC. This
-software has been approved for open source release, LA-CC 14-096.</p>
-<p>This material was produced under U.S. Government contract DE-AC52-06NA25396
-for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
-National Security, LLC for the U.S. Department of Energy. The U.S. Government
-has rights to use, reproduce, and distribute this software. NEITHER THE
-GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
-OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
-is modified to produce derivative works, such modified software should be
-clearly marked, so as not to confuse it with the version available from LANL.</p>
-<p>Licensed under the Apache License, Version 2.0 (the &#8220;License&#8221;); you may not
-use this file except in compliance with the License. You may obtain a copy of
-the License at <a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></p>
-<p>Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an &#8220;AS IS&#8221; BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.</p>
-<p>This documentation is for Charliecloud version 0.1.5 (Git commit
-2f6d665) and was built 2015-06-16 15:08 MDT.</p>
-<p>Select your topic of interest at left. If you want to start at the beginning,
-try the <a class="reference internal" href="install.html"><em>installation instructions</em></a>.</p>
+</li>
+</ul>
+</div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Shell sessions throughout this documentation will use the prompt <code class="code docutils literal"><span class="pre">$</span></code>
-to indicate commands executed on the host and <code class="code docutils literal"><span class="pre">&gt;</span></code> for commands
-executed in a guest.</p>
+<p class="last">The Charliecloud API is currently in flux; therefore, this documentation is
+an incomplete work in progress. Honestly, it is best ignored at this point.</p>
 </div>
-<div class="toctree-wrapper compound">
+<div class="section" id="the-job-directory">
+<h2><a class="toc-backref" href="#id1">9.1. The job directory</a><a class="headerlink" href="#the-job-directory" title="Permalink to this headline">¶</a></h2>
+<p>FIXME</p>
+<ul class="simple">
+<li><code class="code docutils literal"><span class="pre">metadata</span></code>: metadata files provided to guests (see below)</li>
+<li><code class="code docutils literal"><span class="pre">console</span></code>: serial console output from each guest (named by guest ID)</li>
+<li><code class="code docutils literal"><span class="pre">images</span></code>: guest root filesystem overlays (named by guest ID)</li>
+</ul>
+<p>Job script arguments: (FIXME: environment variables?)</p>
+<ol class="arabic simple">
+<li>guest ID (integer starting with 0)</li>
+<li>metadata directory</li>
+<li>temporary directory</li>
+<li>data1, if present else empty string</li>
+<li>data2</li>
+<li>data3</li>
+<li>data4</li>
+</ol>
+</div>
+<div class="section" id="filesystems-provided-to-the-guest">
+<h2><a class="toc-backref" href="#id2">9.2. Filesystems provided to the guest</a><a class="headerlink" href="#filesystems-provided-to-the-guest" title="Permalink to this headline">¶</a></h2>
+<p>Charliecloud guests receive both metadata about the job and data of the user&#8217;s
+choice using 9p virtio filesystem passthrough. In standard images, these are
+mounted automatically under <code class="code docutils literal"><span class="pre">/ch</span></code>. The mount tag for each is the same as
+the final directory given below, which can be used to identify the filesystem
+in other guests (e.g.: <code class="code docutils literal"><span class="pre">/ch/meta</span></code> gets mount tag <code class="code docutils literal"><span class="pre">meta</span></code>).</p>
+<div class="section" id="metadata">
+<h3><a class="toc-backref" href="#id3">9.2.1. Metadata</a><a class="headerlink" href="#metadata" title="Permalink to this headline">¶</a></h3>
+<p>Metadata is available under <code class="code docutils literal"><span class="pre">/ch/meta</span></code>. The following files are
+provided. All guests in the job get the same files.</p>
+<p>Files containing records have one record per line; fields are separated by
+whitespace. Record order is arbitrary.</p>
+<ul class="simple">
+<li><code class="code docutils literal"><span class="pre">commit</span></code>: If present, the root filesystem of least one virtual machine
+in the cluster will be committed. If absent, all changes will be discarded.
+The point is to let jobs know if they can safely mess with the root
+filesystem.</li>
+<li><code class="code docutils literal"><span class="pre">guest-macs</span></code>: Two fields: integer guest ID followed by MAC address.</li>
+<li><code class="code docutils literal"><span class="pre">guest-ips</span></code>: Three fields: integer guest ID, IP address of guest, IP
+address of corresponding host. Note that this file may be incomplete and may
+list guests that are unreachable.</li>
+<li><code class="code docutils literal"><span class="pre">host-userdata</span></code>: Python pickle file describing the user and groups of
+the invoking host user.</li>
+<li><code class="code docutils literal"><span class="pre">interactive</span></code>: Indicates that the boot scripts have requested an
+interactive job despite providing a job script. If present, the standard
+images do not shut down after <code class="code docutils literal"><span class="pre">job.sh</span></code> finishes.</li>
+<li><code class="code docutils literal"><span class="pre">job.sh</span></code>: Job shell script provided to guest boot script. If present,
+the standard images run this script after boot. (Note: If <code class="code docutils literal"><span class="pre">job.sh</span></code> is
+not present, standard images will stay up after boot regardless of
+<code class="code docutils literal"><span class="pre">interactive</span></code>.) (FIXME: Document that <code class="code docutils literal"><span class="pre">sudo</span> <span class="pre">/etc/rc.local</span></code> will
+re-run the job as if after boot, and document that doing so won&#8217;t shut down
+regardless of above.)</li>
+</ul>
+</div>
+<div class="section" id="charliecloud-resources">
+<h3><a class="toc-backref" href="#id4">9.2.2. Charliecloud resources</a><a class="headerlink" href="#charliecloud-resources" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal"><span class="pre">/ch/opt</span></code> contains guest resources that come with Charliecloud, such as
+scripts to run the job. Standard images require these resources in order to do
+boot as documented here, but they will come up in a minimal configuration if
+they are absent.</p>
+</div>
+<div class="section" id="persistent-storage">
+<h3><a class="toc-backref" href="#id5">9.2.3. Persistent storage</a><a class="headerlink" href="#persistent-storage" title="Permalink to this headline">¶</a></h3>
+<p>Directories selected by the user (using the <code class="code docutils literal"><span class="pre">-d</span></code> switch of
+<code class="code docutils literal"><span class="pre">runguest</span></code> or <cite>runguests</cite>) are offered to the guests under
+<code class="code docutils literal"><span class="pre">/ch/data[1-4]</span></code>. (There&#8217;s no inherent limit, but 4 is what we
+implemented in the standard images.)</p>
+</div>
+<div class="section" id="temporary-storage">
+<h3><a class="toc-backref" href="#id6">9.2.4. Temporary storage</a><a class="headerlink" href="#temporary-storage" title="Permalink to this headline">¶</a></h3>
+<p>A block storage device is offered to each guest for temporary file storage; it
+is wiped after the guest shuts down.</p>
+<p>Standard guests create an ext4 filesystem with no journal and mount it under
+<code class="code docutils literal"><span class="pre">/ch/tmp</span></code>, option noatime.</p>
+</div>
 </div>
 </div>
 
@@ -333,8 +385,10 @@ executed in a guest.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="install.html" class="btn btn-neutral float-right" title="1. Installing Charliecloud" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="history.html" class="btn btn-neutral float-right" title="10. Version history" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
+      
+        <a href="faq.html" class="btn btn-neutral" title="8. Frequently asked questions (FAQ)" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

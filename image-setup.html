@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Charliecloud Documentation &mdash; Charliecloud 0.1.5 documentation</title>
+  <title>5. Image configuration &mdash; Charliecloud 0.1.5 documentation</title>
   
 
   
@@ -30,8 +30,9 @@
   
 
   
-    <link rel="top" title="Charliecloud 0.1.5 documentation" href="#"/>
-        <link rel="next" title="1. Installing Charliecloud" href="install.html"/> 
+    <link rel="top" title="Charliecloud 0.1.5 documentation" href="index.html"/>
+        <link rel="next" title="6. Testing Charliecloud" href="testing.html"/>
+        <link rel="prev" title="4. Filesystem passthrough" href="fs-passthrough.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -48,7 +49,7 @@
         
 
         
-          <a href="#" class="icon icon-home"> Charliecloud
+          <a href="index.html" class="icon icon-home"> Charliecloud
         
 
         
@@ -70,7 +71,7 @@
         
           
           
-              <ul>
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing Charliecloud</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="install.html#installing-on-linux">1.1. Installing on Linux</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="install.html#miscellaneous-supporting-software">1.1.1. Miscellaneous supporting software</a></li>
@@ -174,18 +175,18 @@
 <li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#solution-implemented-in-charliecloud">4.3. Solution implemented in Charliecloud</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="image-setup.html">5. Image configuration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="image-setup.html#booting-an-installer-overview">5.1. Booting an installer overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="image-setup.html#during-install">5.2. During install</a></li>
-<li class="toctree-l2"><a class="reference internal" href="image-setup.html#after-install">5.3. After install</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#console-and-friends">5.3.1. Console and friends</a></li>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#filesystem">5.3.2. Filesystem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#network">5.3.3. Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#users-and-groups">5.3.4. Users and groups</a></li>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#misc">5.3.5. Misc</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">5. Image configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#booting-an-installer-overview">5.1. Booting an installer overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#during-install">5.2. During install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#after-install">5.3. After install</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#console-and-friends">5.3.1. Console and friends</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#filesystem">5.3.2. Filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#network">5.3.3. Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#users-and-groups">5.3.4. Users and groups</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#misc">5.3.5. Misc</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="image-setup.html#notes-on-systemd-based-distros">5.4. Notes on <code class="code docutils literal"><span class="pre">systemd</span></code>-based distros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#notes-on-systemd-based-distros">5.4. Notes on <code class="code docutils literal"><span class="pre">systemd</span></code>-based distros</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="testing.html">6. Testing Charliecloud</a><ul>
@@ -259,7 +260,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="#">Charliecloud</a>
+        <a href="index.html">Charliecloud</a>
       </nav>
 
 
@@ -268,9 +269,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="#">Docs</a> &raquo;</li>
+    <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Charliecloud Documentation</li>
+    <li>5. Image configuration</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -281,49 +282,188 @@
 </div>
           <div role="main" class="document">
             
-  <div class="section" id="charliecloud-documentation">
-<h1>Charliecloud Documentation<a class="headerlink" href="#charliecloud-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Charliecloud is a lightweight virtual machine clustering technology based on
-QEMU and KVM. Charliecloud provides:</p>
+  <div class="section" id="image-configuration">
+<h1>5. Image configuration<a class="headerlink" href="#image-configuration" title="Permalink to this headline">¶</a></h1>
+<p>The following checklist is a good starting point for creating a virtual
+machine image. Note that this is not recommended for typical users; almost
+always, modifying a provided base image is less work.</p>
+<p>Detailed instructions are not provided; instead, the list contains pointers to
+the Debian Jessie reference image.</p>
+<div class="contents local topic" id="contents">
 <ul class="simple">
-<li>Virtual clusters on top of existing HPC-style compute clusters, with minimal
-reconfiguration effort.</li>
-<li>Small-scale virtual clusters of equivalent configuration atop workstations,
-with easy transfer between workstation and cluster mode, to speed
-development and configuration of application code.</li>
-<li>Easy-to-use job-oriented virtual computing, where cluster lifetime follows a
-single bounded computation (rather than offering a persistent service).</li>
+<li><a class="reference internal" href="#booting-an-installer-overview" id="id1">Booting an installer overview</a></li>
+<li><a class="reference internal" href="#during-install" id="id2">During install</a></li>
+<li><a class="reference internal" href="#after-install" id="id3">After install</a><ul>
+<li><a class="reference internal" href="#console-and-friends" id="id4">Console and friends</a></li>
+<li><a class="reference internal" href="#filesystem" id="id5">Filesystem</a></li>
+<li><a class="reference internal" href="#network" id="id6">Network</a></li>
+<li><a class="reference internal" href="#users-and-groups" id="id7">Users and groups</a></li>
+<li><a class="reference internal" href="#misc" id="id8">Misc</a></li>
 </ul>
-<p>Patches are welcome on the software itself as well as documentation.</p>
-<p>Charliecloud is copyright © 2015 Los Alamos National Security, LLC. This
-software has been approved for open source release, LA-CC 14-096.</p>
-<p>This material was produced under U.S. Government contract DE-AC52-06NA25396
-for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
-National Security, LLC for the U.S. Department of Energy. The U.S. Government
-has rights to use, reproduce, and distribute this software. NEITHER THE
-GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
-OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
-is modified to produce derivative works, such modified software should be
-clearly marked, so as not to confuse it with the version available from LANL.</p>
-<p>Licensed under the Apache License, Version 2.0 (the &#8220;License&#8221;); you may not
-use this file except in compliance with the License. You may obtain a copy of
-the License at <a class="reference external" href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a></p>
-<p>Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an &#8220;AS IS&#8221; BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.</p>
-<p>This documentation is for Charliecloud version 0.1.5 (Git commit
-2f6d665) and was built 2015-06-16 15:08 MDT.</p>
-<p>Select your topic of interest at left. If you want to start at the beginning,
-try the <a class="reference internal" href="install.html"><em>installation instructions</em></a>.</p>
+</li>
+<li><a class="reference internal" href="#notes-on-systemd-based-distros" id="id9">Notes on <code class="code docutils literal"><span class="pre">systemd</span></code>-based distros</a></li>
+</ul>
+</div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Shell sessions throughout this documentation will use the prompt <code class="code docutils literal"><span class="pre">$</span></code>
-to indicate commands executed on the host and <code class="code docutils literal"><span class="pre">&gt;</span></code> for commands
-executed in a guest.</p>
+<p class="last">Unfortunately, the reference image is not provided with Charliecloud itself
+at this time. We are working to rectify this deficiency.</p>
 </div>
-<div class="toctree-wrapper compound">
+<div class="section" id="booting-an-installer-overview">
+<h2><a class="toc-backref" href="#id1">5.1. Booting an installer overview</a><a class="headerlink" href="#booting-an-installer-overview" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> newimage centos-6.5_base.qcow2
+<span class="gp">$</span> oneguest --monitor --vga --boot centos-6.5-x86_64-DVD1.iso centos-6.5_base.qcow2
+<span class="gp">$</span> oneguest --monitor --vga -d /tmp centos-6.5_base.qcow2
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><a class="reference external" href="http://www.linux-kvm.org/page/Change_cdrom">Monitor voodoo</a> is required
+to insert or change CD/DVD media. If you don&#8217;t need to do this, you can
+omit <code class="code docutils literal"><span class="pre">--monitor</span></code>.</p>
+</div>
+</div>
+<div class="section" id="during-install">
+<h2><a class="toc-backref" href="#id2">5.2. During install</a><a class="headerlink" href="#during-install" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Set the label <code class="code docutils literal"><span class="pre">root</span></code> on the root filesystem, if you can.</li>
+<li>Name the initial user, which will be the primary job user, <code class="code docutils literal"><span class="pre">charlie</span></code>.</li>
+<li>No swap space (our scripts deal with this later).</li>
+</ul>
+</div>
+<div class="section" id="after-install">
+<h2><a class="toc-backref" href="#id3">5.3. After install</a><a class="headerlink" href="#after-install" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="console-and-friends">
+<h3><a class="toc-backref" href="#id4">5.3.1. Console and friends</a><a class="headerlink" href="#console-and-friends" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">Attach the console to both the display and the first serial port. See the
+<a class="reference external" href="https://www.kernel.org/doc/Documentation/serial-console.txt">kernel documentation</a> and edit
+<code class="code docutils literal"><span class="pre">/etc/default/grub</span></code> appropriately, then run <code class="code docutils literal"><span class="pre">update-grub</span></code>.</p>
+<p>You may also wish to turn off <code class="code docutils literal"><span class="pre">FANCYTTY</span></code>, which can clutter the
+console log with ANSI escape sequences. Do so in
+<code class="code docutils literal"><span class="pre">/etc/lsb-base-logging.sh</span></code>, though there seem to be still a few overly
+enthusiastic ANSI escapers.</p>
+</li>
+<li><p class="first">Set up the console to stay on the ROM font (the traditional DOS look).
+Optional, but I prefer the aesthetics. Edit
+<code class="code docutils literal"><span class="pre">/etc/default/console-setup</span></code> and <code class="code docutils literal"><span class="pre">/etc/default/grub</span></code>.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="filesystem">
+<h3><a class="toc-backref" href="#id5">5.3.2. Filesystem</a><a class="headerlink" href="#filesystem" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Set up environment variables for interactive shells (e.g.
+<code class="code docutils literal"><span class="pre">/etc/profile.d/charlie_proxy.sh</span></code>). Note that this only sets advisory
+environment variables in certain contexts, so it doesn&#8217;t work for all apps.
+This includes:<ul>
+<li>HTTP/HTTPS proxy. (Not needed for <code class="code docutils literal"><span class="pre">apt</span></code> to work.)</li>
+<li>Charliecloud environment variables. (See issue #35.)</li>
+</ul>
+</li>
+<li>Make <code class="code docutils literal"><span class="pre">/ch</span></code> and subdirectories.</li>
+<li>Install the init script <code class="code docutils literal"><span class="pre">/etc/rc.local</span></code>.</li>
+<li>Set up <code class="code docutils literal"><span class="pre">/etc/fstab</span></code> to mount the filesystems. Don&#8217;t forget
+<code class="code docutils literal"><span class="pre">nofail</span></code> on things that might not be present at boot time.</li>
+</ul>
+</div>
+<div class="section" id="network">
+<h3><a class="toc-backref" href="#id6">5.3.3. Network</a><a class="headerlink" href="#network" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Disable persistent network device naming. This causes trouble because MAC
+addresses change between boots. If the network does not work, this is a
+likely culprit, especially if it does work on guest 0 but not other guests.<ul>
+<li>Debian Wheezy: Create an empty
+<code class="code docutils literal"><span class="pre">/etc/udev/rules.d/75-persistent-net-generator.rules</span></code> and delete
+<code class="code docutils literal"><span class="pre">/etc/udev/rules.d/70-persistent-net.rules</span></code> (see
+<code class="code docutils literal"><span class="pre">/usr/share/doc/udev/README.Debian.gz</span></code>).</li>
+<li>Linux distributions with the new <a class="reference external" href="http://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/">&#8220;Predictable Network Interface Names&#8221;</a>:
+<strong>FIXME</strong></li>
+</ul>
+</li>
+<li>Configure networking:<ul>
+<li><code class="code docutils literal"><span class="pre">/etc/network/interfaces</span></code></li>
+<li><code class="code docutils literal"><span class="pre">/etc/hosts</span></code> symlinked to <code class="code docutils literal"><span class="pre">/ch/meta/hosts</span></code></li>
+<li><code class="code docutils literal"><span class="pre">/etc/resolv.conf</span></code> symlinked to <code class="code docutils literal"><span class="pre">/ch/meta/resolv.conf</span></code></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="users-and-groups">
+<h3><a class="toc-backref" href="#id7">5.3.4. Users and groups</a><a class="headerlink" href="#users-and-groups" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">Change default umask to 002 in <code class="code docutils literal"><span class="pre">/etc/login.defs</span></code>. Also update
+<code class="code docutils literal"><span class="pre">/etc/pam.d/common-session</span></code> because of a <a class="reference external" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=646692">Debian bug</a>. (See
+<a class="reference internal" href="fs-passthrough.html"><em>Filesystem passthrough</em></a> for why.)</p>
+</li>
+<li><p class="first">Change the primary job user <code class="code docutils literal"><span class="pre">charlie</span></code>&#8216;s UID to 65530 and
+user-private group <code class="code docutils literal"><span class="pre">charlie</span></code>&#8216;s GID to 65530. Update all files owned
+by him in the virtual system:</p>
+<div class="highlight-console"><div class="highlight"><pre><span class="gp">&gt;</span> usermod -u <span class="m">65530</span> charlie
+<span class="gp">&gt;</span> groupmod -g <span class="m">65530</span> charlie
+<span class="gp">&gt;</span> usermod -g <span class="m">65530</span> charlie    <span class="c"># maybe?</span>
+<span class="gp">&gt;</span> find / -xdev -group <span class="m">1000</span> -exec chgrp -vh <span class="m">65530</span> <span class="o">{}</span> <span class="se">\;</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Make serial ports R/W for job user. On Debian-derived systems, simply add
+the user to the <code class="code docutils literal"><span class="pre">dialout</span></code> group.</p>
+</li>
+<li><p class="first">Set up passwords &amp; authentication:</p>
+<ul class="simple">
+<li>Configure SSH:<ul>
+<li>allow keys (<code class="code docutils literal"><span class="pre">PubkeyAuthentication</span> <span class="pre">yes</span></code>); this is the default</li>
+<li>forbid passwords (<code class="code docutils literal"><span class="pre">PasswordAuthentication</span> <span class="pre">no</span></code>)</li>
+<li>forbid root login (<code class="code docutils literal"><span class="pre">PermitRootLogin</span> <span class="pre">no</span></code>)</li>
+</ul>
+</li>
+<li>Set root&#8217;s password to something strong.</li>
+<li>Edit <code class="code docutils literal"><span class="pre">/etc/sudoers</span></code>:<ul>
+<li>Add <code class="code docutils literal"><span class="pre">charlie</span></code> (e.g., by adding him to group <code class="code docutils literal"><span class="pre">sudo</span></code>)</li>
+<li>Set <code class="code docutils literal"><span class="pre">NOPASSWD</span></code> on the relevant line(s)</li>
+<li>Pass through the HTTP proxy variables</li>
+</ul>
+</li>
+<li>Set <code class="code docutils literal"><span class="pre">charlie</span></code> to have no password (<code class="code docutils literal"><span class="pre">passwd</span> <span class="pre">-d</span></code>).</li>
+</ul>
+<p>The basic philosophy is: once inside, access control is minimal; access
+controls via the console are minimal; SSH is reasonably locked down.</p>
+</li>
+<li><p class="first">Set up SSH keys for <code class="code docutils literal"><span class="pre">charlie</span></code>. The pair is passwordless, to permit
+unattended login from other members of the virtual cluster, so use with
+care.</p>
+<ul class="simple">
+<li><code class="code docutils literal"><span class="pre">ssh-keygen</span></code>; enter an empty password.</li>
+<li>Copy <code class="code docutils literal"><span class="pre">id_rsa.pub</span></code> to <code class="code docutils literal"><span class="pre">authorized_keys</span></code>.</li>
+<li>Edit <code class="code docutils literal"><span class="pre">authorized_keys</span></code> to restrict the key to virtual cluster IPs.</li>
+<li>Edit <code class="code docutils literal"><span class="pre">config</span></code> to not check host keys within the virtual cluster.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="misc">
+<h3><a class="toc-backref" href="#id8">5.3.5. Misc</a><a class="headerlink" href="#misc" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Remove unnecessary servers, for example mail (<code class="code docutils literal"><span class="pre">exim4</span></code> on Debian), NTP,
+NFS, RPC, etc.</li>
+<li>Configure MPI (e.g., files in <code class="code docutils literal"><span class="pre">/etc/openmpi</span></code>).</li>
+</ul>
+</div>
+</div>
+<div class="section" id="notes-on-systemd-based-distros">
+<h2><a class="toc-backref" href="#id9">5.4. Notes on <code class="code docutils literal"><span class="pre">systemd</span></code>-based distros</a><a class="headerlink" href="#notes-on-systemd-based-distros" title="Permalink to this headline">¶</a></h2>
+<p>Here are some quick, unhelpful notes on setup for <code class="code docutils literal"><span class="pre">systemd</span></code>-based
+distributions (e.g., Debian Jessie).</p>
+<ul class="simple">
+<li><code class="code docutils literal"><span class="pre">/ch/tmp</span></code> needs <code class="code docutils literal"><span class="pre">noauto</span></code>, not <code class="code docutils literal"><span class="pre">nofail</span></code>, in <code class="code docutils literal"><span class="pre">fstab</span></code>.</li>
+<li><code class="code docutils literal"><span class="pre">journald.conf</span></code> to send output to console only (<code class="code docutils literal"><span class="pre">Storage=none</span></code>
+and <code class="code docutils literal"><span class="pre">ForwardToSyslog=yes</span></code>?)</li>
+<li><code class="code docutils literal"><span class="pre">systemd.conf</span></code> <code class="code docutils literal"><span class="pre">ShowStatus=no</span></code> to remove fancy boot messages and
+their ANSI codes from the serial console.</li>
+<li><code class="code docutils literal"><span class="pre">/etc/systemd/system/charliecloud.service</span></code></li>
+<li>Set <code class="code docutils literal"><span class="pre">umask</span> <span class="pre">0007</span></code> in <code class="code docutils literal"><span class="pre">.bashrc</span></code>. <code class="code docutils literal"><span class="pre">login.defs</span></code> setting is not
+applied consistently (only interactive logins?).</li>
+</ul>
 </div>
 </div>
 
@@ -333,8 +473,10 @@ executed in a guest.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="install.html" class="btn btn-neutral float-right" title="1. Installing Charliecloud" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="testing.html" class="btn btn-neutral float-right" title="6. Testing Charliecloud" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
+      
+        <a href="fs-passthrough.html" class="btn btn-neutral" title="4. Filesystem passthrough" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
