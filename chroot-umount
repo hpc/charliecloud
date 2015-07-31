@@ -1,0 +1,17 @@
+#!/bin/bash
+
+MOUNTDIR=$1
+
+set -e
+
+if ( umount --help | fgrep -q -- --recursive ); then
+    # umount has --recursive; use that
+    echo "unmounting $MOUNTDIR with umount --recursive"
+    umount --recursive $MOUNTDIR
+else
+    # emulate umount --recursive
+    echo "unmounting $MOUNTDIR with manual recursion (your umount is old)"
+    for d in $(findmnt -o target --list -Rn $MOUNTDIR | tac); do
+        umount $d
+    done
+fi
