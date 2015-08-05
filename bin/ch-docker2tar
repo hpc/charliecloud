@@ -1,0 +1,35 @@
+#!/bin/sh
+
+. $(dirname "$0")/base.sh
+
+usage () {
+    cat 1>&2 <<EOF
+
+Flattens a Docker image into a tarball in $PWD suitable for further processing
+into a Charliecloud chroot image.
+
+Usage:
+
+  $ $(basename $0) IMAGE
+
+You must have sufficient privilege to run the docker commands.
+
+EOF
+    exit 1
+}
+
+if [ "$#" -ne 1 -o "$1" = "--help" ]; then
+    usage
+fi
+IMAGE=$1
+TAR=$(echo $IMAGE | sed 's/\//./').tar.gz
+
+set -e
+set -x
+
+cid=$($DOCKER create --read-only $IMAGE)
+$DOCKER ps -af "id=$cid"
+$DOCKER export $cid | gzip -9 > $TAR
+$DOCKER rm $cid > /dev/null
+ls -lh $TAR
+
