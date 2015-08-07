@@ -54,3 +54,4 @@ doc-src/_build
 doc-src/*.help
 
 a.out
+bin/ch-activate
