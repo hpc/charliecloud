@@ -1,0 +1,92 @@
+#!/bin/sh
+
+. $(dirname "$0")/base.sh
+
+usage () {
+    cat 1>&2 <<EOF
+
+Mount a Charliecloud filesystem image at the given mount point, and bind mount
+the specified host directories at the locations inside the image.
+
+Usage:
+
+  $ $(basename $0) IMAGE MOUNTPOINT [[HOSTDIR MOUNTPOINT] ...]
+
+Various host directories such as /dev and /proc and files such as /etc/passwd
+are bind-mounted into the image. This is so that the image is functional and
+has the same user/group mapping as the host after chroot(2).
+
+Any number of host directories can be mounted inside the image. Mount points
+within the image are relative to the image root, regardless of whether they
+are relative or absolute, and they must already exist.
+
+This script is intended for use by system administrators, not end users.
+Arguments are not sanitized.
+
+Example:
+
+  $ ls /foo
+  bar baz
+  $ ls /udroot
+  $ $(basename $0) foo.img /udroot /foo /zzz
+  $ ls -R /udroot
+  bin dev etc home lib lib64 ... zzz
+  [...]
+  zzz:
+  bar baz
+  [...]
+
+EOF
+    exit 1
+}
+
+if [ "$#" -lt 2 -o "$1" = '--help' ]; then
+    usage
+fi
+
+IMAGE="$1"
+MOUNTPOINT="$2"
+shift 2
+
+set -e
+
+bindmount () {
+    hostdir="$1"
+    if [ -z "$2" ]; then
+        guestdir="$MOUNTPOINT$hostdir"
+    else
+        guestdir="$MOUNTPOINT$2"
+    fi
+    if [ -e "$hostdir" -a -e "$guestdir" ]; then
+        # Recursively bind-mount $hostdir into the chroot
+        mount --rbind "$hostdir" "$guestdir"
+        # Mark chroot mount as slave, i.e., (un)mounts in the guest don't
+        # propagate to the main mount in the host, but (un)mounts in the host
+        # propagate to the guest.
+        mount --make-rslave "$guestdir"
+    fi
+}
+
+# The image
+mount -o ro,loop,nodev,nosuid "$IMAGE" "$MOUNTPOINT"
+
+# Standard directories needed to make a Linux distribution work.
+bindmount /dev
+bindmount /proc
+bindmount /run
+bindmount /sys
+bindmount /tmp
+
+# Minimal configuration
+bindmount /etc/passwd
+bindmount /etc/group
+bindmount /etc/hosts
+
+# Extra user-specified directories
+while [ "$#" -ge 2 ]; do
+    bindmount "$1" "$2"
+    shift 2
+done
+
+#
+findmnt -R -o target,fstype,propagation "$MOUNTPOINT"
