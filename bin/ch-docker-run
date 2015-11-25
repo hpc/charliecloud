@@ -1,0 +1,66 @@
+#!/bin/bash
+
+. $(dirname "$0")/base.sh
+
+usage () {
+    cat 1>&2 <<EOF
+
+Run CMD in a Docker container TAG.
+
+Usage:
+
+  $ $(basename $0) [-i] [-b HOSTDIR:GUESTDIR ...] TAG CMD [ARGS ...]
+
+The special sauce is:
+
+  1. CMD runs as you, not root or whatever is specified in the Dockerfile.
+  2. Users and groups inside the container match the host.
+  3. /etc/hosts is patched up to use the network effectively.
+
+Options:
+
+  -i  Run interactively with a pseudo-TTY
+  -b  Bind-mount HOSTDIR at GUESTDIR inside the container (can be repeated)
+
+You must have sufficient privilege to run the docker commands.
+
+EOF
+    exit 1
+}
+
+set -e
+
+MOUNTS=( /etc/passwd:/etc/passwd \
+         /etc/group:/etc/group )
+
+while getopts 'ib:' opt; do
+    case $opt in
+        i) INTERACTIVE=-it ;;
+        b) MOUNTS+=( $OPTARG ) ;;
+        \?)
+            usage
+            ;;
+    esac
+done
+shift $(($OPTIND-1))
+
+if [[ $# -lt 2 ]]; then
+    usage
+fi
+
+TAG="$1"
+shift
+
+if [[ $INTERACTIVE ]]; then
+    echo 'interactive mode'
+fi
+
+echo 'bind mounts:'
+MOUNTARGS=''
+for (( i = 0; i < ${#MOUNTS[@]}; i++ )); do
+    echo ' ' ${MOUNTS[$i]}
+    MOUNTARGS+=" -v ${MOUNTS[$i]}"
+done
+
+set -x
+$DOCKER run --read-only -u $USER $INTERACTIVE $MOUNTARGS $TAG "$@"
