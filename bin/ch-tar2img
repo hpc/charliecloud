@@ -72,6 +72,9 @@ trap cleanup_mount EXIT
 # Populate
 sudo tar xf $TAR_ABS
 
+# Create mount points expected by Charliecloud
+sudo mkdir -p mnt run host/project host/1 host/2 host/3 host/4
+
 # Remove files that seem risky due to any of the following:
 #
 #   1. type not in the whitelist:
@@ -103,7 +106,12 @@ cleanup_mount
 trap - EXIT
 
 # Compact
-fsck.ext4 -nf $IMG > /dev/null
+#
+# Note that resize2fs recently became quite a bit more conservative in
+# computing the minimum size, so this may not do anything. Ted Ts'o's rather
+# obnoxious comments on the matter:
+# https://bugs.launchpad.net/ubuntu/+source/e2fsprogs/+bug/1415077
+fsck.ext4 -pf $IMG > /dev/null
 resize2fs -M $IMG > /dev/null
 MIN_BLOCK_CT=$(dumpe2fs $IMG | egrep '^Block count' | awk '{print $3}')
 truncate -s $(($MIN_BLOCK_CT*$BLOCKSIZE)) $IMG

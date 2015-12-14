@@ -71,16 +71,17 @@ bindmount () {
 mount -o ro,loop,nodev,nosuid "$IMAGE" "$MOUNTPOINT"
 
 # Standard directories needed to make a Linux distribution work.
-bindmount /dev
-bindmount /proc
-bindmount /run
-bindmount /sys
-bindmount /tmp
+# FIXME: should mount /proc and /sys after container created
+#bindmount /dev
+#bindmount /proc
+#bindmount /run
+#bindmount /sys
+#bindmount /tmp
 
 # Minimal configuration
-bindmount /etc/passwd
-bindmount /etc/group
-bindmount /etc/hosts
+#bindmount /etc/passwd
+#bindmount /etc/group
+#bindmount /etc/hosts
 
 # Extra user-specified directories
 while [ "$#" -ge 2 ]; do
@@ -88,5 +89,4 @@ while [ "$#" -ge 2 ]; do
     shift 2
 done
 
-#
-findmnt -R -o target,fstype,propagation "$MOUNTPOINT"
+# findmnt -R -o target,fstype,propagation "$MOUNTPOINT"
