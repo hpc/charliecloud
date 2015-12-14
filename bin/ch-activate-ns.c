@@ -107,24 +107,6 @@ void verify_no_privs();
   #warning "SECURITY: PWN_ME_NOW defined: Will run user programs as root"
 #endif
 
-/* Paths to keep inside the container; order host path, guest mount point,
-   append username (if non-NULL). FIXME: This should be moved to a
-   configuration file or something. */
-const char * const HOST_PATHS [] = {
-   // directories
-   "/data",  "/host/1", NULL,
-   "/data2", "/host/2", NULL,
-   "/dev",   "/dev",    NULL,
-   "/home/", "/home/",  "",
-   "/tmp",   "/tmp",    NULL,
-   // files
-   "/etc/passwd", "/etc/passwd", NULL,
-   "/etc/group",  "/etc/group",  NULL,
-   "/etc/hosts",  "/etc/hosts",  NULL,
-   NULL
-};
-
-
 /** Main **/
 
 int main(int argc, char * argv[])
@@ -175,12 +157,7 @@ void enter_udss(const char * image_path)
    if (syscall(SYS_pivot_root, CHROOT_TARGET, CHROOT_PUT_OLD))
       efatal("pivot_root");
    if (chdir("/")) efatal("chdir(\"/\")");
-
-   // Move the host filesystems and files that we want to keep to their normal
-   // places.
-   while (1) {
-      src = 
-   }
+   if (umount2("/mnt", MNT_DETACH)) efatal("umount2(\"/mnt\")");
 
    // Mount the ancillary filesystems. We want these to be the guest versions,
    // not host ones.
@@ -192,9 +169,7 @@ void enter_udss(const char * image_path)
       efatal("mount(\"/run\")");
    if (mount(NULL, "/sys", "sysfs", MS_NOSUID | MS_NODEV | MS_NOEXEC, NULL))
       efatal("mount(\"/sys\")");
-
-   // Unmount the rest of the host
-   if (umount2("/mnt", MNT_DETACH)) efatal("umount2(\"/mnt\")");
+   // FIXME: /dev/pts devpts, /dev/hugpages hugetblfs, /dev/mqueue mqueue
 }
 
 /* filesystems on stderr and exit unsuccessfully. */

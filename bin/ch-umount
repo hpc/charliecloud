@@ -40,4 +40,4 @@ else
 fi
 
 # This should have no output
-findmnt -R -o target,fstype,propagation "$MOUNTPOINT"
+findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"

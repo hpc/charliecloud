@@ -52,36 +52,38 @@ set -e
 
 bindmount () {
     hostdir="$1"
-    if [ -z "$2" ]; then
+    options="${3-nodev,nosuid}"
+    if [ "$2" = '-' ]; then
         guestdir="$MOUNTPOINT$hostdir"
     else
         guestdir="$MOUNTPOINT$2"
     fi
     if [ -e "$hostdir" -a -e "$guestdir" ]; then
-        # Recursively bind-mount $hostdir into the chroot
-        mount --rbind "$hostdir" "$guestdir"
-        # Mark chroot mount as slave, i.e., (un)mounts in the guest don't
-        # propagate to the main mount in the host, but (un)mounts in the host
-        # propagate to the guest.
-        mount --make-rslave "$guestdir"
+        mount --make-slave --bind "$hostdir" "$guestdir"
+        mount -o remount,bind,"$options" "$guestdir"
     fi
 }
+
+# If there's some error during setup, we need to leave things in a safe state
+# rather than an unknown one. The easiest safe state is unmounted. Note that
+# this is quite aggressive and might crash your system for some errors, e.g.
+# if $MOUNTPOINT is /dev.
+#umount_all () {
+#    umount --recursive --force "$MOUNTPOINT"
+#}
+#trap umount_all EXIT
 
 # The image
 mount -o ro,loop,nodev,nosuid "$IMAGE" "$MOUNTPOINT"
 
-# Standard directories needed to make a Linux distribution work.
-# FIXME: should mount /proc and /sys after container created
-#bindmount /dev
-#bindmount /proc
-#bindmount /run
-#bindmount /sys
-#bindmount /tmp
+# Standard host directories we want to keep
+bindmount /dev - ro,nosuid
+bindmount /tmp - nodev,nosuid
 
-# Minimal configuration
-#bindmount /etc/passwd
-#bindmount /etc/group
-#bindmount /etc/hosts
+# Minimal configuration files
+bindmount /etc/passwd - ro,nodev,nosuid
+bindmount /etc/group - ro,nodev,nosuid
+bindmount /etc/hosts - ro,nodev,nosuid
 
 # Extra user-specified directories
 while [ "$#" -ge 2 ]; do
@@ -89,4 +91,15 @@ while [ "$#" -ge 2 ]; do
     shift 2
 done
 
-# findmnt -R -o target,fstype,propagation "$MOUNTPOINT"
+findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"
+
+# Make sure that everything is mounted nosuid.
+suidmounts=$(findmnt -Rln -o target,options "$MOUNTPOINT" | fgrep -v nosuid)
+if [ -n "$suidmounts" ]; then
+    echo 'found non-nosuid filesystem' 1>&2
+    exit 1
+fi
+
+# We are safe now; no longer need to unmount on exit.
+#trap - EXIT
+
