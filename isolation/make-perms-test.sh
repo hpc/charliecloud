@@ -7,45 +7,50 @@ ROOTDIR=$1
 ME=$2
 YOU=$3
 
-cd $ROOTDIR
-if [ -e test ]; then
-    echo "error: $ROOTDIR/test already exists"
+if [[ $# -ne 3 ]]; then
+    echo "usage error; enjoy this useless message"
     exit 1
 fi
-mkdir test
-cd test
+
+#set -x
+set -e
+
+echo "ROOTDIR=$ROOTDIR"
+echo "ME=$ME"
+echo "YOU=$YOU"
+
+cd $ROOTDIR
+mkdir perms_test
+cd perms_test
 
 function dir_ () {
     mkdir $1
-    chown $ME:$ME $1  # no-op if not root
     file_ $1/file
     chmod 660 $1/file
 }
 
 function file_ () {
     echo 'antidisestablishmentarianism' > $1
-    chown $ME:$ME $1  # no-op if not root
 }
 
 function ln_ () {
     ln "$@"
-    chown -h $ME:$ME $3  # no-op if not root
 }
 
 function x () {
     cmd=$1; shift
     user=$1; shift
     name=$1; shift
-    perms=$1; shift
-    expect=$1; shift
-    if [ -n "$expect" ]; then
+    perms=$1; shift || true
+    expect=$1; shift || true
+    if [[ -n $expect ]]; then
         name="$name.$perms~$expect"
     fi
     $cmd $@ $name
-    if [ -n "$perms" ]; then
+    if [[ -n $perms ]]; then
         chmod $perms $name
-        if [ $user != $ME ]; then
-            sudo chown $user $name
+        if [[ $user != $ME ]]; then
+            sudo chown -h $user $name
         fi
     fi
 }
@@ -55,7 +60,7 @@ cd nopass
 x dir_  $ME    dir    770
 cd ..
 
-x dir_  $ME  pass     770
+x dir_  $ME   pass    770
 
 cd pass
 x dir_  $ME    me-d   000 ---

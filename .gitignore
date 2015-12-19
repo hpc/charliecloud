@@ -53,5 +53,8 @@ doc/
 doc-src/_build
 doc-src/*.help
 
-a.out
+bin/a.out
 bin/ch-activate
+bin/ch-activate-PWN_ME_NOW
+bin/ch-activate-ns
+bin/ch-activate-ns-PWN_ME_NOW
