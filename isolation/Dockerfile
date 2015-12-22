@@ -3,15 +3,15 @@
 FROM debian:jessie
 MAINTAINER Reid Priedhorsky <reidpr@lanl.gov>
 
-# add python 3
+# Install needed packages.
 RUN apt-get update \
-    && apt-get install -y python3 gcc
+    && apt-get install -y gcc make python3
 
-# security testing stuff
+# Security testing stuff.
 COPY . test
 WORKDIR /test
-RUN gcc -std=gnu99 -o chroot-escape chroot-escape.c
+RUN make clean && make
 
-# cd command is just a shell
+# Default command is just a shell.
 WORKDIR /
 CMD ["/bin/bash"]

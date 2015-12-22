@@ -6,7 +6,7 @@
 #   1. Privileged tests. These are run only if the script starts as root, to
 #      simulate a successful privilege escalation.
 #
-#   2. Privilege escalation tests. These try to
+#   2. Privilege escalation tests.
 #
 #   3. Unprivileged tests. These test what can be done without an escalation.
 #
@@ -41,8 +41,10 @@ main () {
 }
 
 find_setuid () {
-    find -P / -xdev -type f -perm /u=s > $TMPDIR/setuid_files
-    find -P / -xdev -type f -perm /g=s > $TMPDIR/setgid_files
+    find -P / -xdev ! -readable -prune -o -type f -perm /u=s -print \
+         > $TMPDIR/setuid_files
+    find -P / -xdev ! -readable -prune -o -type f -perm /g=s -print \
+         > $TMPDIR/setgid_files
     # Only search /usr because getcap cannot stop at filesystem boundaries,
     # and we don't know what big host filesystems are mounted.
     getcap -r /usr > $TMPDIR/setcap_files 2> $TMPDIR/setcap_err
