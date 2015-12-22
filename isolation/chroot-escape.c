@@ -3,23 +3,29 @@
    behavior. We use device and inode numbers to test whether the root
    directory is the same before and after the escape.
 
-   If escape succeeded or there was an unexpected error, print "FAIL" and exit
-   with EXIT_FAILURE; if not (re-chroot(2) returned with EPERM or had no
-   effect), print "OK" and exit with EXIT_SUCCESS.
+   Output:
 
-   For example, using the chroot(1) utility and compiling statically so the
-   binary can be used a la carte:
+     - If escape succeeded, print "NOT-ISOLATED" on stdout and exit
+       successfully.
 
+     - If escape failed with EPERM or had no effect, print "ISOLATED" on
+       stdout and exit successfully.
+
+     - Otherwise, print "ERROR" on stdout and exit unsuccessfully.
+
+   For example, using the chroot(1) utility:
+
+     $ mkdir tmp  # writeable /tmp expected
      $ gcc -static chroot-escape.c
      $ ./a.out
-     OK chroot(2) failed with EPERM
+     ISOLATED chroot(2) failed with EPERM
      $ sudo ./a.out
-     OK dev/inode before 2304/2, after 2304/2
+     ISOLATED dev/inode before 2304/2, after 2304/2
      $ sudo chroot . ./a.out
-     FAIL dev/inode before 2304/59645296, after 2304/2
-     $ sudo chroot --userspec $(id -u):$(id -g) /tmp ./chroot-escape
-     OK chroot(2) failed with EPERM
-     $ rmdir chroot-escape-tmp*
+     NOT-ISOLATED dev/inode before 2304/272901, after 2304/2
+     $ sudo chroot --userspec $(id -u):$(id -g) . ./a.out
+     ISOLATED chroot(2) failed with EPERM
+     $ rm -Rf tmp
 
    Reference:
      https://filippo.io/escaping-a-chroot-jail-slash-1/
@@ -39,7 +45,7 @@
 
 void fatal(char * msg)
 {
-   perror(msg);
+   printf("ERROR\t%s: %s\n", msg, strerror(errno));
    exit(EXIT_FAILURE);
 }
 
@@ -47,7 +53,7 @@ int main()
 {
    struct stat before, after;
    int fd, status;
-   char tmpdir_template[] = "./chroot-escape-tmp-XXXXXX"; // not cleaned up
+   char tmpdir_template[] = "/tmp/chroot-escape-XXXXXX";  // not cleaned up
    char * tmpdir_name;
 
    if (stat("/", &before)) fatal("stat before");
@@ -60,12 +66,10 @@ int main()
 
    if (chroot(tmpdir_name)) {
       if (errno == EPERM) {
-         printf("OK chroot(2) failed with EPERM\n");
+         printf("SAFE\tchroot(2) failed with EPERM\n");
          return EXIT_SUCCESS;
       } else {
-         printf("FAIL chroot(2) failed with errno %d: %s\n",
-                errno, strerror(errno));
-         return EXIT_FAILURE;
+         fatal("chroot");
       }
    }
 
@@ -83,10 +87,10 @@ int main()
       then the escape failed, and we should be happy. */
    if (stat("/", &after)) fatal("stat after");
    if (before.st_dev == after.st_dev && before.st_ino == after.st_ino) {
-      printf("OK ");
+      printf("SAFE\t");
       status = EXIT_SUCCESS;
    } else {
-      printf("FAIL ");
+      printf("RISK\t");
       status = EXIT_FAILURE;
    }
    printf("dev/inode before %lu/%lu, after %lu/%lu\n",

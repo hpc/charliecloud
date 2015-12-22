@@ -10,7 +10,7 @@ RUN apt-get update \
 # Security testing stuff.
 COPY . test
 WORKDIR /test
-RUN make clean && make
+RUN make -j4
 
 # Default command is just a shell.
 WORKDIR /

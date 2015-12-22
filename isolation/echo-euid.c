@@ -5,7 +5,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-void main(void)
+int main(void)
 {
    printf("%u\n", geteuid());
+   return 0;
 }

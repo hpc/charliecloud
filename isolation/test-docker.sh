@@ -15,4 +15,7 @@ for i in $(seq $#); do
     pt[$i]="-v ${!i}/perms_test/pass:/$i"
 done
 
-sudo docker run $CUSER -v $(./setup.sh):/0 ${pt[@]} $USER/chtest /test/test.sh
+DATADIR=$(./setup.sh)
+echo "# standard error in $DATADIR/err"
+
+sudo docker run $CUSER -v /etc/passwd:/etc/passwd -v $DATADIR:/0 ${pt[@]} $USER/chtest /test/test.sh

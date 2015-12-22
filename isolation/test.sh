@@ -12,19 +12,19 @@
 #
 # Each test prints a single line on stdout. This line contains:
 #
-#   1. Test name
-#   2. Colon
-#   3. "priv" (privileged) or "unpr" (unprivileged)
-#   4. Colon
-#   5. Result (see below)
-#   6. Additional details beginning with a space (optional)
+#   1. test name
+#   2. tab
+#   3. "p" (privileged) or "u" (unprivileged)
+#   4. tab
+#   5. result (see below)
+#   6. additional details beginning with a tab (optional)
 #
 # Result is one of:
 #
 #   ISOLATED      Host resource could not be accessed
 #   NOT-ISOLATED  Host resource could be accessed
 #   ERROR         Test could not be performed (this should not happen)
-#   INVALID       Test is inappropriate for some reason (may or may not be OK)
+#   UNTESTED      Test not performed for some reason (may or may not be OK)
 #
 # We deliberately do not use "ok/fail" or similar because NOT-ISOLATED is not
 # necessarily a failure.
@@ -33,60 +33,34 @@
 #
 # Additional chatter goes to stderr.
 
-TMPDIR=/tmp
+cd $(dirname $0)
+. tests.sh
 
-main () {
-    print_info
-    echo '# done'
-}
+echo '### Starting'
 
-find_setuid () {
-    find -P / -xdev ! -readable -prune -o -type f -perm /u=s -print \
-         > $TMPDIR/setuid_files
-    find -P / -xdev ! -readable -prune -o -type f -perm /g=s -print \
-         > $TMPDIR/setgid_files
-    # Only search /usr because getcap cannot stop at filesystem boundaries,
-    # and we don't know what big host filesystems are mounted.
-    getcap -r /usr > $TMPDIR/setcap_files 2> $TMPDIR/setcap_err
-    setuid_ct=$(cat $TMPDIR/setuid_files | wc -l)
-    setgid_ct=$(cat $TMPDIR/setgid_files | wc -l)
-    setcap_ct=$(cat $TMPDIR/setcap_files | wc -l)
-    if [[ $setuid_ct -gt 0 || $setgid_ct -gt 0 ]]; then
-        echo "unsafe: $setuid_ct setuid, $setgid_ct setgid, $setcap_ct setcap"
-    else
-        echo "safe"
-    fi
-}
+printf '# running privileged:  '
+[[ $EUID == 0 ]] && echo "unsafe: euid=$EUID" || echo "safe: euid=$EUID"
+printf '# setuid binaries:     '
+find_setuid /
+printf '# suid filesystems:    '
+find_suidmounts
+printf '# user namespace:      '
+find_user_ns
 
-find_suidmounts () {
-    findmnt -ln -o target,options | fgrep -v nosuid > $TMPDIR/suidmounts
-    suidmount_ct=$(cat $TMPDIR/suidmounts | wc -l)
-    if [[ $suidmount_ct -gt 0 ]]; then
-        echo "unsafe: $suidmount_ct filesystems mounted suid"
-    else
-        echo "safe"
-    fi
-}
+if [[ $EUID -eq 0 ]]; then
+    # Bash does not know how to drop privileges. So, we run three sub-scripts
+    # with different privilege levels. Note that su complains about
+    # "Authentication failure" but ignores the problem; we don't want this in
+    # the output, but we also don't want to suppress other errors.
+    TEST_USER=$(cat /0/user)
+    ./test-operations.sh
+    su -m -c './test-escalation.sh' $TEST_USER 2>> $LOGDIR/su.err
+    su -m -c './test-operations.sh' $TEST_USER 2>> $LOGDIR/su.err
+else
+    echo '# skipping privileged tests'
+    ./test-escalation.sh
+    ./test-operations.sh
+fi
 
-find_user_ns () {
-    uid_map=$(sed -E 's/\s+/ /g' /proc/self/uid_map)
-    if [[ $uid_map = ' 0 0 4294967295' ]]; then
-        echo "unsafe: uid_map is default"
-    else
-        echo "safe: uid_map is not default"
-    fi
-}
-
-print_info () {
-    echo -n '# running privileged:  '
-    [[ $EUID == 0 ]] && echo "unsafe: euid=$EUID" || echo "safe: euid=$EUID"
-    echo -n '# setuid binaries:     '
-    find_setuid /
-    echo -n '# suid filesystems:    '
-    find_suidmounts
-    echo -n '# user namespace:      '
-    find_user_ns
-}
-
-
-main
+echo
+echo '### Done'

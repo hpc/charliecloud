@@ -3,6 +3,11 @@
 DATADIR=$(mktemp -d)
 
 cd $DATADIR
+mkdir -p err
+
+# Who is running the test?
+echo $UID > uid
+echo $USER > user
 
 # Find root device major and minor numbers.
 # FIXME: what about lustre, NFS mounts?
