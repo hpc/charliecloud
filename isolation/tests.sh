@@ -67,9 +67,13 @@ test_etc_passwd () {
     false
 }
 
-test_my_shadow () {
-    # Use my /etc/shadow for privilege escalation.
-    false
+test_etc_shadow () {
+    # Use passwordless root account /etc/shadow for privilege escalation.
+    # (Previously set up in Dockerfile.)
+    #
+    # WARNING: Do not use this test. It will report false negatives
+    # (escalation failed when it succeeds). See comments in su_wrap.py.
+    ./su_wrap.py
 }
 
 test_remount_root () {

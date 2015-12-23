@@ -12,6 +12,9 @@ COPY . test
 WORKDIR /test
 RUN make -j4
 
+# Leave a gaping back door in /etc/shadow (no password for root).
+#RUN sed -iE 's/root:\*:/root::/' /etc/shadow
+
 # Default command is just a shell.
 WORKDIR /
 CMD ["/bin/bash"]
