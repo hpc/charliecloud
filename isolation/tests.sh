@@ -89,22 +89,22 @@ test_serial () {
 test_setuid () {
     # Escalate privilege with a setuid binary.
     ESC_ME=./echo-euid.setuid
-    if [[ -e $ESC_ME ]]; then
-        esc_euid=$($ESC_ME)
-        status=$?
-        if [[ $status -ne 0 ]]; then
-            printf 'ERROR\t%s exited with status %d\n' $ESC_ME $status
-        else
-            if [[ $esc_euid -eq 0 ]]; then
-                printf 'RISK\t'
-            else
-                printf 'SAFE\t'
-            fi
-            printf 'euid=%s\n' $esc_euid
-        fi
-    else
+    if [[ ! -e $ESC_ME ]]; then
         printf 'NOTEST\t%s not found\n' $ESC_ME
+        return
     fi
+    esc_euid=$($ESC_ME)
+    status=$?
+    if [[ $status -ne 0 ]]; then
+        printf 'ERROR\t%s exited with status %d\n' $ESC_ME $status
+        return
+    fi
+    if [[ $esc_euid -eq 0 ]]; then
+        printf 'RISK\t'
+    else
+        printf 'SAFE\t'
+    fi
+    printf 'euid=%s\n' $esc_euid
 }
 
 test_signal_udevd () {
