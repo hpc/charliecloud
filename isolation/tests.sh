@@ -1,4 +1,5 @@
 TMPDIR=/tmp
+DATADIR=/0
 LOGDIR=/0/err
 
 find_setuid () {
@@ -43,7 +44,7 @@ find_user_ns () {
 
 test_bind_priv () {
     # Bind to privileged ports on host IP addresses.
-    false
+    ./bind_priv.py $(ls $DATADIR/ip)
 }
 
 test_chroot_escape () {
