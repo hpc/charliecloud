@@ -72,7 +72,7 @@ test_dev_proc_sys () {
 
 test_fs_perms () {
     # Verify filesystem permission enforcement.
-    false
+    ./fs_perms.py $(ls -d /[1-9])
 }
 
 test_etc_passwd () {
