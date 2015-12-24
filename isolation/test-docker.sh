@@ -18,4 +18,4 @@ done
 DATADIR=$(./setup.sh)
 echo "# standard error in $DATADIR/err"
 
-sudo docker run $CUSER -v /etc/passwd:/etc/passwd -v $DATADIR:/0 ${pt[@]} $USER/chtest /test/test.sh
+sudo docker run $CUSER -v /dev:/dev -v /etc/passwd:/etc/passwd -v $DATADIR:/0 ${pt[@]} $USER/chtest /test/test.sh

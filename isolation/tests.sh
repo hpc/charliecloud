@@ -54,8 +54,20 @@ test_chroot_escape () {
 
 test_dev_proc_sys () {
     # Read some files in /dev, /proc, /sys that I shouldn't have access to.
-    #read /dev/mem, /proc/kcore, /sys/devices/cpu/rdpmc
-    false
+    for f in /dev/mem /proc/kcore /sys/devices/cpu/rdpmc; do
+        if [[ ! -e $f ]]; then
+            printf 'ERROR\t%s does not exist\n' $f
+            return
+        fi
+        out=$(dd if=$f of=/dev/null bs=1 count=1 2>&1)
+        echo "$out" 1>&2
+        ok_errs='Permission denied|Operation not permitted'  # Chet FAQ #E14
+        if [[ ! $out =~ $ok_errs ]]; then
+            printf 'RISK\t%s read allowed\n' $f
+            return
+        fi
+    done
+    printf 'SAFE\tread not allowed\n'
 }
 
 test_fs_perms () {
@@ -122,5 +134,5 @@ try () {
         priv=u
     fi
     printf "%-15s\t%s\t" $test $priv
-    test_$test "$@" 2>> $LOGDIR/test_$test.$priv.err
+    test_$test "$@" 2>> $LOGDIR/test_$test.$priv
 }
