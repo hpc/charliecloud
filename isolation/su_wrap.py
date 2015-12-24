@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # This script tries to use su to gain root privileges, assuming that
 # /etc/shadow has been changed such that no password is required. It uses

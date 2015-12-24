@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # This script tries to bind to a privileged port on each of the IP addresses
 # specified on the command line.
