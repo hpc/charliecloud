@@ -75,11 +75,6 @@ test_fs_perms () {
     ./fs_perms.py $(ls -d /[1-9])
 }
 
-test_etc_passwd () {
-    # Change /etc/passwd.
-    false
-}
-
 test_etc_shadow () {
     # Use passwordless root account /etc/shadow for privilege escalation.
     # (Previously set up in Dockerfile.)
