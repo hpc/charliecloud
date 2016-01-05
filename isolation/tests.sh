@@ -85,8 +85,35 @@ test_etc_shadow () {
 }
 
 test_remount_root () {
-    # Re-mount the root filesystem via a new device node.
-    false
+    # Re-mount the root filesystem. Notes:
+    #
+    #   - Because we have /dev from the host, we don't need to create a new
+    #     device node. This makes the test simpler. In particular, we can
+    #     treat network and local root the same.
+    #
+    #   - We leave the filesystem mounted even if successful, again to make
+    #     the test simpler. The rest of the tests will ignore it or maybe
+    #     over-mount something else.
+    mount -n \
+          -o $(cat $DATADIR/rootopts) \
+          -t $(cat $DATADIR/roottype) \
+          $(cat $DATADIR/rootdev) \
+          /mnt
+    mountret=$?
+    # return codes from http://man7.org/linux/man-pages/man8/mount.8.html
+    case $mountret in
+        0)      # success
+            printf 'RISK'
+            ;;
+        1)  ;&  # incorrect invocation or permissions
+        32)     # mount failed
+            printf 'SAFE'
+            ;;
+        *)
+            printf 'ERROR'
+            ;;
+    esac
+    printf '\tmount(8) exited with code %d\n' $mountret
 }
 
 test_serial () {
