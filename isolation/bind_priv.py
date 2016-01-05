@@ -36,6 +36,6 @@ else:
          print('SAFE\t%s ' % errno.errorcode[result], end='')
       else:
          print('RISK\tsuccessful bind ', end='')
-   explanation = '; '.join('%s,%d' % (ip, e)
-                           for (ip, e) in sorted(results.items()))
+   explanation = ' '.join('%s,%d' % (ip, e)
+                          for (ip, e) in sorted(results.items()))
    print(explanation)
