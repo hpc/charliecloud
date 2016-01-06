@@ -10,3 +10,4 @@ try chroot_escape
 try dev_proc_sys
 try fs_perms
 try remount_root
+try signal

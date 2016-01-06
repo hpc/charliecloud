@@ -39,9 +39,6 @@ find_user_ns () {
     fi
 }
 
-# NOTE: Test functions should be named with a maximum of FIXME characters for
-# proper alignment in output.
-
 test_bind_priv () {
     # Bind to privileged ports on host IP addresses.
     ./bind_priv.py $(ls $DATADIR/ip)
@@ -116,11 +113,6 @@ test_remount_root () {
     printf '\tmount(8) exited with code %d\n' $mountret
 }
 
-test_serial () {
-    # Read from a hardware device (serial port) I shouldn't have access to.
-    false
-}
-
 test_setuid () {
     # Escalate privilege with a setuid binary.
     ESC_ME=./echo-euid.setuid
@@ -142,9 +134,46 @@ test_setuid () {
     printf 'euid=%s\n' $esc_euid
 }
 
-test_signal_udevd () {
-    # Send a signal to a process I don't own (SIGCONT to udevd).
-    false
+test_signal () {
+    # Send a signal to a process outside the container.
+    #
+    # This is a little tricky. We want a process that:
+    #
+    #   1. is certain to exist, to avoid false negatives
+    #   2. we shouldn't be able to signal (specifically, we can't create a
+    #      process to serve as the target)
+    #   3. is outside the container
+    #   4. won't crash the host too badly if killed by the signal
+    #
+    # We want a signal that:
+    #
+    #   5. will be harmless if received
+    #   6. is not blocked
+    #
+    # Accordingly, this test sends SIGCONT to the youngest getty process. The
+    # thinking is that the virtual terminals are unlikely to be in use, so
+    # losing one will be straightforward to clean up.
+    pdata=$(pgrep -nl getty)
+    if [[ -z $pdata ]]; then
+        printf 'SAFE\tno non-container processes, max pid=%d\n' $(pgrep -n '')
+        return
+    fi
+    pid=$(echo "$pdata" | cut -d' ' -f1)
+    killmsg=$(kill -SIGCONT $pid 2>&1)
+    killret=$?
+    killmsg=$(echo "$killmsg" | sed -r 's/^.+kill: \([0-9]+\) - //')
+    case $killret in
+        0)
+            printf 'RISK\t%s: success' "$pdata"
+            ;;
+        1)
+            printf 'SAFE\t%s: failed: ' "$pdata"
+            ;;
+        *)
+            printf 'ERROR\t%s: unknown: ' "$pdata"
+            ;;
+    esac
+    printf '%s\n' "$killmsg"
 }
 
 try () {

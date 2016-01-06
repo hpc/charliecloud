@@ -3,12 +3,12 @@
 cd $(dirname $0)
 
 ARGS=''
-while getopts 'pu:' opt; do
+while getopts 'iu:' opt; do
     case $opt in
-        p)
-            ARGS+=' --privileged --cap-add=ALL'
+        i)  # less isolation
+            ARGS+=' --cap-add=ALL --ipc=host --net=host --pid=host --privileged --uts=host'
             ;;
-        u)
+        u)  # non-root user
             ARGS+=" -u $OPTARG"
             ;;
     esac
