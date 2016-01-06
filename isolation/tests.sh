@@ -155,7 +155,7 @@ test_signal () {
     # losing one will be straightforward to clean up.
     pdata=$(pgrep -nl getty)
     if [[ -z $pdata ]]; then
-        printf 'SAFE\tno non-container processes, max pid=%d\n' $(pgrep -n '')
+        printf 'NODEP\tno non-container processes, max pid=%d\n' $(pgrep -n '')
         return
     fi
     pid=$(echo "$pdata" | cut -d' ' -f1)

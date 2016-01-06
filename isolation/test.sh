@@ -21,10 +21,10 @@
 #
 # Result is one of:
 #
-#   ISOLATED      Host resource could not be accessed
-#   NOT-ISOLATED  Host resource could be accessed
-#   ERROR         Test could not be performed (this should not happen)
-#   UNTESTED      Test not performed for some reason (may or may not be OK)
+#   SAFE   Host resource could not be accessed
+#   RISK   Host resource could be accessed or other risky condition
+#   ERROR  Unexpected condition while testing (this should not happen)
+#   NODEP  Test not performed due to missing dependency (may or may not be OK)
 #
 # We deliberately do not use "ok/fail" or similar because NOT-ISOLATED is not
 # necessarily a failure.
@@ -36,6 +36,7 @@
 cd $(dirname $0)
 . tests.sh
 
+echo
 echo '### Starting'
 
 printf '# running privileged:  '
