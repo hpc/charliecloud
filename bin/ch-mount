@@ -122,10 +122,8 @@ findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"
 if [ -n "$UNSAFE" ]; then
     echo 'WARNING: Mounting in unsafe mode; not checking for suid filesystems.'
 else
-    suidmounts=$(findmnt -Rln -o target,options "$MOUNTPOINT" \
-                 | fgrep -v nosuid) || true
-    if [ -n "$suidmounts" ]; then
-        echo 'found suid filesystem' 1>&2
+    if (findmnt -Rln -o target,options "$MOUNTPOINT" | fgrep -v nosuid); then
+        echo 'found suid filesystem(s), aborting' 1>&2
         exit 1
     fi
 fi
