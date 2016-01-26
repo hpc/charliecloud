@@ -54,7 +54,5 @@ doc-src/_build
 doc-src/*.help
 
 a.out
-bin/ch-activate
-bin/ch-activate-PWN_ME_NOW
-bin/ch-activate-ns
-bin/ch-activate-ns-PWN_ME_NOW
+bin/ch-run.chroot*
+bin/ch-run.ns*

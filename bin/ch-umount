@@ -18,13 +18,14 @@ EOF
     exit 1
 }
 
-if [ "$#" -ne 1 -o "$1" = '--help' ]; then
+if [ "$1" = --help ]; then
     usage
 fi
 
-MOUNTPOINT="$1"
+MOUNTPOINT="${1-/chmnt}"
 
 set -e
+#set -x
 
 if ( umount --help | fgrep -q -- --recursive ); then
     # umount has --recursive; use that
@@ -40,4 +41,4 @@ else
 fi
 
 # This should have no output
-findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"
+findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT" || true

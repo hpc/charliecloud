@@ -2,6 +2,9 @@
 
 . $(dirname "$0")/base.sh
 
+set -e
+#set -x
+
 usage () {
     cat 1>&2 <<EOF
 
@@ -9,15 +12,15 @@ Convert a tarball into a mountable filesystem image suitable for chroot'ing.
 
 Usage:
 
-  $ $(basename $0) TARBALL
+  $ $(basename $0) [--no-scan] TARBALL
 
-The image is saved in $PWD. We assume that the image will be mounted
-read-only, so minimal extra space beyond the content of the tarball is
-provided. As a result, special handling to maintain the sparse property is not
-required.
+The image is saved in the same directory as the tarball. We assume that the
+image will be mounted read-only, so minimal extra space beyond the content of
+the tarball is provided. As a result, special handling to maintain the sparse
+property is not required.
 
 A basic security scan, e.g. removal of setuid binaries and device files, is
-performed.
+performed, unless --no-scan is specified.
 
 This script is intended for use by system administrators, not end users. It
 runs on Linux only and requires bash.
@@ -26,7 +29,22 @@ EOF
     exit 1
 }
 
-if [[ $# -ne 1 || $1 = '--help' ]]; then
+while true; do
+    case $1 in
+        -h|--help)
+            usage
+            ;;
+        --no-scan)
+            NOSCAN='.NOSCAN'
+            ;;
+        *)
+            break
+            ;;
+    esac
+    shift
+done
+
+if [[ $# -ne 1 ]]; then
     usage
 fi
 
@@ -36,7 +54,7 @@ if [[ ! -f $TAR ]]; then
     exit 1
 fi
 
-IMG=$(echo $TAR | sed 's/\.tar\.gz/.img/')
+IMG=$(echo $TAR | sed "s/\.tar\.gz/${NOSCAN}.img/")
 TAR_ABS=$(readlink -f $TAR)
 MOUNTPOINT=mnt
 BLOCKSIZE=4096
@@ -46,14 +64,13 @@ GETCAP_OUTFILE=/tmp/getcap.$$
 # the tarball due to various types of overhead. This overhead is hard to
 # estimate precisely, so our approach is to be generous and then shrink the
 # filesystem to its minimum size and truncate the image.
-SIZE=$(gzip -l $TAR | tail -1 | awk '{printf "%d", $2*1.30}')
-
-set -e
-set -x
+TARSIZE=$(gzip -l $TAR | tail -1 | awk '{print $2}')
+SLUSH_CONST=$((1 * 2**30))
+IMGSIZE=$((TARSIZE + SLUSH_CONST))
 
 # Create image.
 rm -f $IMG
-truncate -s $SIZE $IMG
+truncate -s $IMGSIZE $IMG
 mkfs.ext4 -q -b$BLOCKSIZE -m0 -O ^has_journal $IMG
 
 # Mount
@@ -92,14 +109,18 @@ sudo mkdir -p mnt run project 0 1 2 3 4
 # containing a newline). It seems that while GNU tar does store the setcap
 # attributes, it does not currently extract them by default, so we should not
 # see any output at all from getcap -r, which is what we test for.
-sudo find -P -not \( -type d -o -type f -o -type l -o -type p \) -delete
-sudo find -P -type f -perm /6000 -delete
-sudo getcap -r . | head -1000 > $GETCAP_OUTFILE
-if [[ -s $GETCAP_OUTFILE ]]; then
-    echo "setcap files found; see $GETCAP_OUTFILE for details" 1>&2
-    exit 1
+if [[ $NOSCAN ]]; then
+    echo "WARNING: not scanning for risky files"
+else
+    sudo find -P -not \( -type d -o -type f -o -type l -o -type p \) -delete
+    sudo find -P -type f -perm /6000 -delete
+    sudo getcap -r . | head -1000 > $GETCAP_OUTFILE
+    if [[ -s $GETCAP_OUTFILE ]]; then
+        echo "setcap files found; see $GETCAP_OUTFILE for details" 1>&2
+        exit 1
+    fi
+    rm $GETCAP_OUTFILE
 fi
-rm $GETCAP_OUTFILE
 
 # Unmount
 cleanup_mount

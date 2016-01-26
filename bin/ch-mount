@@ -5,12 +5,12 @@
 usage () {
     cat 1>&2 <<EOF
 
-Mount a Charliecloud filesystem image at the given mount point, and bind mount
-the specified host directories at the locations inside the image.
+Mount a Charliecloud filesystem image and bind mount the specified host
+directories at the locations inside the image.
 
 Usage:
 
-  $ $(basename $0) IMAGE MOUNTPOINT [[HOSTDIR MOUNTPOINT] ...]
+  $ $(basename $0) [-t TARGET] [--unsafe] IMAGE [[HOSTDIR TARGET] ...]
 
 Various host directories such as /dev and /proc and files such as /etc/passwd
 are bind-mounted into the image. This is so that the image is functional and
@@ -40,19 +40,9 @@ EOF
     exit 1
 }
 
-if [ "$#" -lt 2 -o "$1" = '--help' ]; then
-    usage
-fi
-
-IMAGE="$1"
-MOUNTPOINT="$2"
-shift 2
-
-set -e
-
 bindmount () {
     hostdir="$1"
-    options="${3-nodev,nosuid}"
+    options="${3-$MOUNTOPTS}"
     if [ "$2" = '-' ]; then
         guestdir="$MOUNTPOINT$hostdir"
     else
@@ -63,6 +53,41 @@ bindmount () {
         mount -o remount,bind,"$options" "$guestdir"
     fi
 }
+
+MOUNTPOINT=/chmnt
+MOUNTOPTS='nodev,nosuid'
+
+while true; do
+    case $1 in
+        -h|--help)
+            usage
+            ;;
+        -t|--target)
+            if [ -n "$2" ]; then
+                MOUNTPOINT="$2"
+                shift
+            else
+                usage
+            fi
+            ;;
+        --unsafe)
+            UNSAFE=yes
+            MOUNTOPTS=''
+            ;;
+        *)
+            break
+    esac
+    shift
+done
+
+if [ "$#" -lt 1 ]; then
+    usage
+fi
+
+IMAGE="$1"
+shift
+
+set -e
 
 # If there's some error during setup, we need to leave things in a safe state
 # rather than an unknown one. The easiest safe state is unmounted. Note that
@@ -78,7 +103,7 @@ mount -o ro,loop,nodev,nosuid "$IMAGE" "$MOUNTPOINT"
 
 # Standard host directories we want to keep
 bindmount /dev - ro,nosuid
-bindmount /tmp - nodev,nosuid
+bindmount /tmp -
 
 # Minimal configuration files
 bindmount /etc/passwd - ro,nodev,nosuid
@@ -94,12 +119,16 @@ done
 findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"
 
 # Make sure that everything is mounted nosuid.
-suidmounts=$(findmnt -Rln -o target,options "$MOUNTPOINT" | fgrep -v nosuid)
-if [ -n "$suidmounts" ]; then
-    echo 'found non-nosuid filesystem' 1>&2
-    exit 1
+if [ -n "$UNSAFE" ]; then
+    echo 'WARNING: Mounting in unsafe mode; not checking for suid filesystems.'
+else
+    suidmounts=$(findmnt -Rln -o target,options "$MOUNTPOINT" \
+                 | fgrep -v nosuid) || true
+    if [ -n "$suidmounts" ]; then
+        echo 'found suid filesystem' 1>&2
+        exit 1
+    fi
 fi
 
 # We are safe now; no longer need to unmount on exit.
 #trap - EXIT
-
