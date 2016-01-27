@@ -257,7 +257,8 @@ id charlie \
 sec '### Miscellaneous'
 
 sec '* running virtualized?'
-dmesg | fgrep 'QEMU Standard PC'
+# http://stackoverflow.com/a/1665574/396038
+dmesg | sed -rn 's/^(.+QEMU Standard PC).*$/\1/p'
 
 sec '* job stderr'
 echo 'hello stderr' > /dev/ttyS2

@@ -211,7 +211,7 @@ charlie
 ### Miscellaneous
 
 * running virtualized?
-[    0.000000] DMI: QEMU Standard PC (Q35 + ICH9, 2009), BIOS rel-1.8.1-0-g4adadbd-20150316_085822-nilsson.home.kraxel.org 04/01/2014
+[    0.000000] DMI: QEMU Standard PC
 
 * job stderr
 

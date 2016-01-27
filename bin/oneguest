@@ -83,19 +83,20 @@ VIRTFS_OPTIONS = 'local,security_model=none'
 # Options for virtual disks. For the temp storage (vdb), we use the "new" high
 # performance virtio-blk data plane driver. This is not very well documented,
 # and while we're on 2.1 now, the documention I found targeted 1.4 [1] or did
-# not specify a version [2]. Configuration is more complex for data plane.
+# not specify a version [2]. Configuration is more complex for data plane [3].
 # Non-data-plane configuration can be placed only in -drive, but we use the
 # same split -drive/-device syntax as data plane for consistency.
 #
 # [1]: http://blog.vmsplice.net/2013/03/new-in-qemu-14-high-performance-virtio.html
 # [2]: http://wiki.mikejung.biz/KVM_/_Xen
+# [3]: http://wiki.qemu.org/ChangeLog/2.5#Block_devices_and_tools
 #
 # Note that we do not try to use cache=none for the root filesystem, as it
 # does not work for an overlay across filesystem boundaries.
 VDA_DRIVE_OPTS='id=vd0,if=none,format=qcow2'
 VDA_DEVICE_OPTS='virtio-blk,drive=vd0'
 VDB_DRIVE_OPTS='id=vd1,if=none,aio=threads,format=raw'
-VDB_DEVICE_OPTS='virtio-blk,drive=vd1,scsi=off,x-data-plane=on'
+VDB_DEVICE_OPTS='virtio-blk,drive=vd1,scsi=off,iothread=iot1'
 
 def main():
    # set up options for qemu
@@ -119,6 +120,7 @@ def main():
             ('-machine',    '%s,accel=kvm' % cc.cl.machine),
             ('-net',        {'nic': 'nic,model=virtio,macaddr=%s' % cc.cl.mac}),
             ('-nodefaults', None),
+            ('-object',     'iothread,id=iot1'),
             ('-serial',     {1: 'file:' + console_out,
                              2: 'file:' + job_out,
                              3: 'file:' + job_err}),
