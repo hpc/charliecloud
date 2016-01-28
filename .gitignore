@@ -54,5 +54,7 @@ doc-src/_build
 doc-src/*.help
 
 a.out
-bin/ch-run.chroot*
-bin/ch-run.ns*
+bin/ch-run.chroot
+bin/ch-run.chroot.unsafe
+bin/ch-run.ns
+bin/ch-run.ns.unsafe
