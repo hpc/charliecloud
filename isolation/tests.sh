@@ -91,11 +91,16 @@ test_remount_root () {
     #   - We leave the filesystem mounted even if successful, again to make
     #     the test simpler. The rest of the tests will ignore it or maybe
     #     over-mount something else.
-    mount -n \
-          -o $(cat $DATADIR/rootopts) \
-          -t $(cat $DATADIR/roottype) \
-          $(cat $DATADIR/rootdev) \
-          /mnt/host
+    MOUNT=/bin/mount
+    if [[ ! -e $MOUNT ]]; then
+        printf 'NOTEST\t%s not found\n' $MOUNT
+        return
+    fi
+    $MOUNT -n \
+           -o $(cat $DATADIR/rootopts) \
+           -t $(cat $DATADIR/roottype) \
+           $(cat $DATADIR/rootdev) \
+           /mnt/host
     mountret=$?
     # return codes from http://man7.org/linux/man-pages/man8/mount.8.html
     case $mountret in
@@ -110,7 +115,7 @@ test_remount_root () {
             printf 'ERROR'
             ;;
     esac
-    printf '\tmount(8) exited with code %d\n' $mountret
+    printf '\t%s exited with code %d\n' $MOUNT $mountret
 }
 
 test_setuid () {
