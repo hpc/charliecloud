@@ -34,6 +34,11 @@ while getopts 'i:uv' opt; do
                     I_MOUNT=
                     I_USER=yes
                     ;;
+                X)
+                    I_FILESCAN=
+                    I_MOUNT=
+                    I_USER=
+                    ;;
                 *)
                     echo "Unknown isolation layer '$OPTARG'" 1>&2
                     exit 1
