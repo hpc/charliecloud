@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 . $(dirname "$0")/base.sh
 
 usage () {
@@ -87,8 +89,6 @@ fi
 IMAGE="$1"
 shift
 
-set -e
-
 # If there's some error during setup, we need to leave things in a safe state
 # rather than an unknown one. The easiest safe state is unmounted. Note that
 # this is quite aggressive and might crash your system for some errors, e.g.
@@ -110,10 +110,18 @@ bindmount /etc/passwd - ro,nodev,nosuid
 bindmount /etc/group - ro,nodev,nosuid
 bindmount /etc/hosts - ro,nodev,nosuid
 
+# tmpfs for /mnt
+mount -t tmpfs -o size=4m,$MOUNTOPTS none "$MOUNTPOINT/mnt"
+mkdir "$MOUNTPOINT/mnt/host"
+
 # Extra user-specified directories
-while [ "$#" -ge 2 ]; do
-    bindmount "$1" "$2"
-    shift 2
+i=0
+while [ "$#" -ge 1 ]; do
+    target=/mnt/$i
+    mkdir "$MOUNTPOINT/$target"
+    bindmount "$1" "$target"
+    i=$((i+1))
+    shift
 done
 
 findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"

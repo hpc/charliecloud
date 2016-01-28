@@ -22,15 +22,18 @@ EXPECTED_RE = re.compile(r'~(...)$')
 class Makes_No_Sense(TypeError): pass
 
 def main():
+   dirs = sys.argv[1:]
+   if (len(dirs) < 1):
+       error('nothing to test')
    mismatch_ct = 0
-   for d in sys.argv[1:]:
+   for d in dirs:
       for path in sorted(os.listdir(d)):
          mismatch_ct += not test('%s/%s' % (d, path))
    if (mismatch_ct == 0):
       print('SAFE\t', end='')
    else:
       print('RISK\t', end='')
-   print('%d mismatches' % mismatch_ct)
+   print('%d mismatches in %d directories' % (mismatch_ct, len(dirs)))
 
 # Table of test function name fragments.
 testvec = { (False, False, False): ('X', 'bad'),

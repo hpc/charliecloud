@@ -90,7 +90,7 @@ trap cleanup_mount EXIT
 sudo tar xf $TAR_ABS
 
 # Create mount points expected by Charliecloud
-sudo mkdir -p mnt run project 0 1 2 3 4
+sudo mkdir -p mnt run
 
 # Remove files that seem risky due to any of the following:
 #

@@ -1,6 +1,6 @@
 TMPDIR=/tmp
-DATADIR=/0
-LOGDIR=/0/err
+DATADIR=/mnt/0
+LOGDIR=/mnt/0/err
 
 find_setuid () {
     find -P / -xdev ! -readable -prune -o -type f -perm /u=s -print \
@@ -69,7 +69,7 @@ test_dev_proc_sys () {
 
 test_fs_perms () {
     # Verify filesystem permission enforcement.
-    ./fs_perms.py $(ls -d /[1-9])
+    ./fs_perms.py $(ls -d /mnt/[1-9])
 }
 
 test_etc_shadow () {
@@ -95,7 +95,7 @@ test_remount_root () {
           -o $(cat $DATADIR/rootopts) \
           -t $(cat $DATADIR/roottype) \
           $(cat $DATADIR/rootdev) \
-          /mnt
+          /mnt/host
     mountret=$?
     # return codes from http://man7.org/linux/man-pages/man8/mount.8.html
     case $mountret in

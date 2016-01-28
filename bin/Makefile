@@ -14,9 +14,9 @@ clean:
 	rm -Rf $(bins_all)
 
 %: %.c
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) -std=c11 $(CFLAGS) -o $@ $<
 	sudo chown root $@
 	sudo chmod u+s $@
 
 %.unsafe: %.c
-	$(CC) $(CFLAGS) -D NO_DROP_PRIVS -o $@ $<
+	$(CC) -std=c11 $(CFLAGS) -D NO_DROP_PRIVS -o $@ $<

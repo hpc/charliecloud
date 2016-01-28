@@ -50,7 +50,7 @@ while getopts 'i:uv' opt; do
 done
 shift $((OPTIND-1))
 
-if [[ $# -ne 1 ]]; then
+if [[ $# -lt 1 ]]; then
     echo 'no image specified' 1>&2
     exit 1
 fi
@@ -58,7 +58,7 @@ IMG="$1"
 shift
 
 for i in $(seq $#); do
-    pt[$i]="${!i}/perms_test/pass /$i"
+    pt[$i]="${!i}/perms_test/pass"
 done
 
 DATADIR=$(./preamble.sh)
@@ -80,7 +80,7 @@ if [[ ! $I_MOUNT ]]; then
     MOUNTARG=--unsafe
 fi
 echo "$IMG $UNSAFE_ARG"
-sudo $CHBIN/ch-mount $MOUNTARG "$IMG" $DATADIR /0 ${pt[@]} >> $OUT 2>&1
+sudo $CHBIN/ch-mount $MOUNTARG "$IMG" $DATADIR ${pt[@]} >> $OUT 2>&1
 
 printf '# running test: '
 if [[ ! $I_USER ]]; then
@@ -92,9 +92,10 @@ CHRUN=$CHBIN/ch-run.ns
 if [[ ! $DROP_PRIVS ]]; then
     CHRUN="sudo ${CHRUN}.unsafe"
 fi
+echo "$CHRUN"
 $CHRUN /test/test.sh
 
 echo "# unmounting image"
 sudo $CHBIN/ch-umount >> $OUT 2>&1
 
-echo '# test completed'
+echo "# test completed; stderr in $DATADIR/err"
