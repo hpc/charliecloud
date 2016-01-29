@@ -104,7 +104,7 @@ fi
 #trap umount_all EXIT
 
 # The image
-mount -o ro,loop,nodev,nosuid "$IMAGE" "$MOUNTPOINT"
+mount -o ro,loop,$MOUNTOPTS "$IMAGE" "$MOUNTPOINT"
 
 # Standard host directories we want to keep
 bindmount /dev - ro,nosuid
