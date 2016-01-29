@@ -2,7 +2,7 @@
 
 set -e
 
-PATH=$(dirname $0)/../bin:$PATH
+CHROOT=$(dirname $0)/../bin
 WORKDIR=$1
 if [ -z "$USER" -o "$USER" = root ]; then
     echo 'Who are you?' 1>&2
@@ -16,6 +16,6 @@ fi
 echo "Docker repository: $USER"
 echo "Image directory:   $WORKDIR"
 
-ch-docker2tar $USER/chtest $WORKDIR
-ch-tar2img $WORKDIR/$USER.chtest.tar.gz
-ch-tar2img --no-scan $WORKDIR/$USER.chtest.tar.gz
+$CHROOT/ch-docker2tar $USER/chtest $WORKDIR
+sudo $CHROOT/ch-tar2img $WORKDIR/$USER.chtest.tar.gz $WORKDIR
+sudo $CHROOT/ch-tar2img --no-scan $WORKDIR/$USER.chtest.tar.gz $WORKDIR

@@ -33,6 +33,8 @@
 #
 # Additional chatter goes to stderr.
 
+set -e
+
 cd $(dirname $0)
 . tests.sh
 

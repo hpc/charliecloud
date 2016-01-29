@@ -12,18 +12,15 @@ Convert a tarball into a mountable filesystem image suitable for chroot'ing.
 
 Usage:
 
-  $ $(basename $0) [--no-scan] TARBALL
+  $ $(basename $0) [--no-scan] TARBALL BUILDROOT
 
-The image is saved in the same directory as the tarball. We assume that the
-image will be mounted read-only, so minimal extra space beyond the content of
-the tarball is provided. As a result, special handling to maintain the sparse
-property is not required.
+A squashfs image is saved in the same directory as the tarball. This image is
+not mounted during the construction process.
 
 A basic security scan, e.g. removal of setuid binaries and device files, is
 performed, unless --no-scan is specified.
 
-This script is intended for use by system administrators, not end users. It
-runs on Linux only and requires bash.
+This script must be run as root.
 
 EOF
     exit 1
@@ -44,13 +41,18 @@ while true; do
     shift
 done
 
-if [[ $# -ne 1 ]]; then
+if [[ $# -ne 2 ]]; then
     usage
 fi
 
 TAR=$1
+BUILDROOT=$2
 if [[ ! -f $TAR ]]; then
     echo "not a regular file: $TAR" 1>&2
+    exit 1
+fi
+if [[ ! -d $BUILDROOT ]]; then
+    echo "not a directory: $TMPDIR" 1>&2
     exit 1
 fi
 
@@ -59,38 +61,16 @@ TAR_ABS=$(readlink -f $TAR)
 MOUNTPOINT=mnt
 BLOCKSIZE=4096
 GETCAP_OUTFILE=/tmp/getcap.$$
-
-# The filesystem image needs to be larger than the sum of the file sizes in
-# the tarball due to various types of overhead. This overhead is hard to
-# estimate precisely, so our approach is to be generous and then shrink the
-# filesystem to its minimum size and truncate the image.
-TARSIZE=$(gzip -l $TAR | tail -1 | awk '{print $2}')
-SLUSH_CONST=$((1 * 2**30))
-IMGSIZE=$((TARSIZE + SLUSH_CONST))
-
-# Create image.
-rm -f $IMG
-truncate -s $IMGSIZE $IMG
-mkfs.ext4 -q -b$BLOCKSIZE -m0 -O ^has_journal $IMG
-
-# Mount
-mkdir $MOUNTPOINT
-sudo mount $IMG $MOUNTPOINT
-pushd $MOUNTPOINT > /dev/null
-
-# While the image is mounted, need cleanup no matter how we exit.
-cleanup_mount () {
-    popd > /dev/null
-    sudo umount $MOUNTPOINT || true
-    rmdir $MOUNTPOINT || true
-}
-trap cleanup_mount EXIT
+unset TMPDIR  # interferes with mktemp
 
 # Populate
-sudo tar xf $TAR_ABS
+BUILDDIR=$(mktemp -d -p $BUILDROOT)
+chmod 755 $BUILDDIR
+cd $BUILDDIR
+tar xf $TAR_ABS
 
 # Create mount points expected by Charliecloud
-sudo mkdir -p mnt run
+mkdir -p mnt run
 
 # Remove files that seem risky due to any of the following:
 #
@@ -110,11 +90,11 @@ sudo mkdir -p mnt run
 # attributes, it does not currently extract them by default, so we should not
 # see any output at all from getcap -r, which is what we test for.
 if [[ $NOSCAN ]]; then
-    echo "WARNING: not scanning for risky files"
+    echo "WARNING: not removing risky files"
 else
-    sudo find -P -not \( -type d -o -type f -o -type l -o -type p \) -delete
-    sudo find -P -type f -perm /6000 -delete
-    sudo getcap -r . | head -1000 > $GETCAP_OUTFILE
+    find -P -not \( -type d -o -type f -o -type l -o -type p \) -delete
+    find -P -type f -perm /6000 -delete
+    getcap -r . | head -1000 > $GETCAP_OUTFILE
     if [[ -s $GETCAP_OUTFILE ]]; then
         echo "setcap files found; see $GETCAP_OUTFILE for details" 1>&2
         exit 1
@@ -122,22 +102,21 @@ else
     rm $GETCAP_OUTFILE
 fi
 
-# Unmount
-cleanup_mount
-trap - EXIT
+# Create squashfs
+cd - > /dev/null
+rm -f $IMG
+mksquashfs $BUILDDIR $IMG -no-progress
 
-# Compact
-#
-# Note that resize2fs recently became quite a bit more conservative in
-# computing the minimum size, so this may not do anything. Ted Ts'o's rather
-# obnoxious comments on the matter:
-# https://bugs.launchpad.net/ubuntu/+source/e2fsprogs/+bug/1415077
-fsck.ext4 -pf $IMG > /dev/null
-resize2fs -M $IMG > /dev/null
-MIN_BLOCK_CT=$(dumpe2fs $IMG | egrep '^Block count' | awk '{print $3}')
-truncate -s $(($MIN_BLOCK_CT*$BLOCKSIZE)) $IMG
-fsck.ext4 -nf $IMG > /dev/null
+# Make sure no setuid/gid files remain
+# FIXME: does not find setcap files
+if [[ ! $NOSCAN ]]; then
+    if ( unsquashfs -ll $IMG | egrep -qi '^-..(s|...s)' ); then
+        echo "setuid and/or setgid files found, aborting" 2>&1
+        exit 1
+    fi
+fi
 
-# clean up
+# Clean up
+rm -Rf $BUILDDIR
 chmod 440 $IMG
 ls -lh $IMG
