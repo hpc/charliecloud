@@ -89,6 +89,11 @@ fi
 IMAGE="$1"
 shift
 
+if ( fgrep -q "$MOUNTPOINT" /proc/mounts ); then
+    echo "something already mounted on $MOUNTPOINT" 1>&2
+    exit 1
+fi
+
 # If there's some error during setup, we need to leave things in a safe state
 # rather than an unknown one. The easiest safe state is unmounted. Note that
 # this is quite aggressive and might crash your system for some errors, e.g.
