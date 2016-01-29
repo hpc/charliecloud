@@ -53,10 +53,15 @@ if [[ $EUID -eq 0 ]]; then
     # with different privilege levels. Note that su complains about
     # "Authentication failure" but ignores the problem; we don't want this in
     # the output, but we also don't want to suppress other errors.
-    TEST_USER=$(cat /0/user)
+    TEST_USER=$(cat /mnt/0/user)
+    SU=/bin/su
+    if [[ ! -e $SU ]]; then
+        echo "$SU missing, aborting"
+        exit 1
+    fi
     ./test-operations.sh
-    su -m -c './test-escalation.sh' $TEST_USER 2>> $LOGDIR/su.err
-    su -m -c './test-operations.sh' $TEST_USER 2>> $LOGDIR/su.err
+    $SU -m -c './test-escalation.sh' $TEST_USER 2>> $LOGDIR/su.err
+    $SU -m -c './test-operations.sh' $TEST_USER 2>> $LOGDIR/su.err
 else
     echo '# skipping privileged tests'
     ./test-escalation.sh
