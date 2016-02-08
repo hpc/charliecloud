@@ -117,7 +117,7 @@ bindmount /etc/hosts - ro,nodev,nosuid
 
 # tmpfs for /mnt
 mount -t tmpfs -o size=4m,$MOUNTOPTS none "$MOUNTPOINT/mnt"
-mkdir "$MOUNTPOINT/mnt/host"
+mkdir "$MOUNTPOINT/mnt/.oldroot"
 
 # Extra user-specified directories
 i=0

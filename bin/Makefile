@@ -4,7 +4,7 @@ default: ch-run.ns
 
 # All binaries. This is everything, including testing stuff that you don't
 # want users to have.
-bins_all=ch-run.chroot ch-run.ns ch-run.ns.unsafe
+bins_all=ch-run.ns ch-run.ns.no_user_ns ch-run.ns.run_as_root
 
 .PHONY: all
 all: $(bins_all)
@@ -15,8 +15,9 @@ clean:
 
 %: %.c
 	$(CC) -std=c11 $(CFLAGS) -o $@ $<
-	sudo chown root $@
-	sudo chmod u+s $@
 
-%.unsafe: %.c
-	$(CC) -std=c11 $(CFLAGS) -D NO_DROP_PRIVS -o $@ $<
+%.no_user_ns: %.c
+	$(CC) -std=c11 $(CFLAGS) -D NO_USER_NS -o $@ $<
+
+%.run_as_root: %.c
+	$(CC) -std=c11 $(CFLAGS) -D RUN_AS_ROOT -o $@ $<
