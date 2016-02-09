@@ -4,6 +4,9 @@ set -e
 
 . $(dirname "$0")/base.sh
 
+MOUNTPOINT=/chmnt
+MOUNTOPTS='nodev,nosuid'
+
 usage () {
     cat 1>&2 <<EOF
 
@@ -12,15 +15,21 @@ directories at the locations inside the image.
 
 Usage:
 
-  $ $(basename $0) [-t TARGET] [--unsafe] IMAGE [[HOSTDIR TARGET] ...]
+  $ $(basename $0) [-t MOUNTPOINT] [--unsafe] IMAGE [HOSTDIR ...]
 
-Various host directories such as /dev and /proc and files such as /etc/passwd
-are bind-mounted into the image. This is so that the image is functional and
-has the same user/group mapping as the host after chroot(2).
+The image is mounted at MOUNTPOINT (default $MOUNTPOINT).
 
-Any number of host directories can be mounted inside the image. Mount points
-within the image are relative to the image root, regardless of whether they
-are relative or absolute, and they must already exist.
+HOSTDIRs are recursively bind-mounted to /mnt/0, /mnt/1, etc. within the image.
+
+Various additional host directories such as /dev and /proc and files such as
+/etc/passwd are similarly bind-mounted to the expected locations. This is so
+that the image is functional and has the same mapping from UID/GID to
+user/group as the host.
+
+Most filesystems are mounted $MOUNTOPTS, unless --unsafe is specified, in
+which case no mount flags are added.
+
+The resulting mount tree is printed on stdout upon successful completion.
 
 This script is intended for use by system administrators, not end users.
 Arguments are not sanitized.
@@ -42,6 +51,32 @@ EOF
     exit 1
 }
 
+# Implementation notes: One would prefer to have all the UDSS mounting happen
+# in one place, rather than split between here and ch-run. However, this isn't
+# possible without making ch-run setuid-root, which seems worse. The reason is
+# that even though ch-run has all capabilities after unshare(CLONE_NEWUSER),
+# its access to privileged system calls is still limited, as in fact one would
+# hope. For example, in a user namespace, one cannot mount a fresh
+#
+#   * sysfs without a new network namespace as well, because /sys/class/net
+#     would allow control of network stuff. [1]
+#
+#   * proc without a new PID namespace as well, because this would allow
+#     inappropriate access to other processes via /proc/[pid]. [2]
+#
+# In both cases, one can bind-mount the host's version instead. Because they
+# are owned by a different user namespace (the parent), the parent's access
+# checks are used, and no inappropriate access is possible.
+#
+# Our general approach is to mount filesystems in this script, unless it must
+# be done in ch-run, e.g. /dev/shm, which needs to be mounted after
+# unshare(CLONE_NEWIPC). We chose this balance instead of the opposite one
+# (mount there unless it has to be done here) because it's easier to program
+# and debug sh than C.
+#
+# [1]: http://lxr.free-electrons.com/source/fs/proc/root.c#L112
+# [2]: http://stackoverflow.com/questions/23417521
+
 bindmount () {
     hostdir="$1"
     options="${3-$MOUNTOPTS}"
@@ -51,13 +86,10 @@ bindmount () {
         guestdir="$MOUNTPOINT$2"
     fi
     if [ -e "$hostdir" -a -e "$guestdir" ]; then
-        mount --make-slave --bind "$hostdir" "$guestdir"
+        mount --rbind "$hostdir" "$guestdir"
         mount -o remount,bind,"$options" "$guestdir"
     fi
 }
-
-MOUNTPOINT=/chmnt
-MOUNTOPTS='nodev,nosuid'
 
 while true; do
     case $1 in
@@ -110,14 +142,18 @@ mount -o ro,loop,$MOUNTOPTS "$IMAGE" "$MOUNTPOINT"
 bindmount /dev - ro,nosuid
 bindmount /tmp -
 
+# Need to use host's /proc and /sys (see detailed note above)
+bindmount /proc -
+bindmount /sys -
+
 # Minimal configuration files
 bindmount /etc/passwd - ro,nodev,nosuid
 bindmount /etc/group - ro,nodev,nosuid
 bindmount /etc/hosts - ro,nodev,nosuid
 
-# tmpfs for /mnt
-mount -t tmpfs -o size=4m,$MOUNTOPTS none "$MOUNTPOINT/mnt"
-mkdir "$MOUNTPOINT/mnt/.oldroot"
+# A few tmpfs
+mount -t tmpfs -o size=4m,mode=1777,$MOUNTOPTS x "$MOUNTPOINT/mnt"
+mount -t tmpfs -o size=10%,mode=755,$MOUNTOPTS x "$MOUNTPOINT/run"
 
 # Extra user-specified directories
 i=0
@@ -129,13 +165,20 @@ while [ "$#" -ge 1 ]; do
     shift
 done
 
+# Everything needs to be a slave (or private) mount so that someone inside the
+# container that has host root can't unmount things and cause issues.
+#mount --make-rslave "$MOUNTPOINT"
+
 findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"
 
 # Make sure that everything is mounted nosuid.
 if [ -n "$UNSAFE" ]; then
     echo 'WARNING: Mounting in unsafe mode; not checking for suid filesystems.'
 else
-    if (findmnt -Rln -o target,options "$MOUNTPOINT" | fgrep -v nosuid); then
+    if (  findmnt -Rln -o target,options "$MOUNTPOINT" \
+        | egrep -v '^/chmnt/(dev|proc|sys)' \
+        | fgrep -v nosuid);
+    then
         echo 'found suid filesystem(s), aborting' 1>&2
         exit 1
     fi

@@ -46,7 +46,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
+#include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 void enter_udss();
@@ -61,28 +63,11 @@ void usage();
 
 /** Constants **/
 
-/* There are three mount points in play for a successful pivot_root(2) into a
-   UDSS and unmount of the host filesystem.
-
-     1. newroot  This is the already-mounted UDSS filesystem we want to use.
-     2. target   Place to bind-mount newroot after CLONE_NEWUSER.
-     3. oldroot  Where the old root filesystem is mounted after pivot_root.
-
-   target would seem to be unnecessary. However, CLONE_NEWUSER|CLONE_NEWNS
-   introduces some restrictions. In particular, pivot_root into a filesystem
-   that was mounted before CLONE_NEWUSER fails with EINVAL. One can work
-   around this by bind-mounting newroot to target before pivot_root.
-
-   Another way to work around this would be to do all UDSS mounting after
-   CLONE_NEWUSER. This requires setting up the loop device manually
-   (mount(8)'s -o loop option is implemented by the mount program, not libc or
-   the system call). This is not yet explored. In particular, teardown of the
-   loop device might be an issue, since by the time that's needed, we've
-   replaced ourselves with the user program. However, in theory, the loop
-   device ought to be local to the filesystem namespace. */
+/* The image root has been set up by ch-mount here. */
 #define NEWROOT "/chmnt"
-#define TARGET "/mnt"
-#define OLDROOT "/mnt"  // rooted at TARGET
+
+/* The old root is put here, rooted at TARGET. */
+#define OLDROOT "/mnt/oldroot"
 
 /* If set, do not set up the user namespace. This is for testing of other
    security layers and should not be offered to normal users. It will make the
@@ -139,18 +124,20 @@ void enter_udss(const char * image_path)
 
    LOG_UIDS;
 
-   TRY (mount(NEWROOT, TARGET, NULL, MS_BIND, NULL));
-   TRY (syscall(SYS_pivot_root, TARGET, TARGET OLDROOT));
+   /* pivot_root(2) fails with EINVAL in a couple of undocumented conditions:
+      into shared mounts, and into any filesystem that was mounted before
+      CLONE_NEWUSER. The standard trick is to recursively bind-mount NEWROOT
+      over itself. */
+   TRY (mount(NEWROOT, NEWROOT, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
+
+   TRY (mkdir(NEWROOT OLDROOT, 0755));
+   TRY (syscall(SYS_pivot_root, NEWROOT, NEWROOT OLDROOT));
    TRY (chdir("/"));
    TRY (umount2(OLDROOT, MNT_DETACH));
+   TRY (rmdir(OLDROOT));
 
-   // Mount the ancillary filesystems. We want these to be the guest versions,
-   // not host ones.
+   // We need our own /dev/shm because of CLONE_NEWIPC.
    TRY (mount(NULL, "/dev/shm", "tmpfs", MS_NOSUID | MS_NODEV, NULL));
-   TRY (mount(NULL, "/proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, NULL));
-   TRY (mount(NULL, "/run", "tmpfs", MS_NOSUID | MS_NODEV, NULL));
-   TRY (mount(NULL, "/sys", "sysfs", MS_NOSUID | MS_NODEV | MS_NOEXEC, NULL));
-   // FIXME: /dev/pts devpts, /dev/hugpages hugetblfs, /dev/mqueue mqueue
 }
 
 /* Escalate to root. This requires CAP_SETUID, which we have if either (a) we
@@ -206,20 +193,25 @@ void setup_namespaces()
    TRY (unshare(CLONE_NEWUSER | CLONE_NEWIPC | CLONE_NEWNS));
    LOG_UIDS;
 
-#ifdef NO_USER_NS
-   // Set all mounts to be slave mounts. The default on systemd systems is for
-   // everything to be a shared mount. This has two effects. First, mounts and
-   // unmounts inside the container propagate to the host. Second,
-   // pivot_root(2) will fail later with EINVAL (this is not documented). By
-   // changing to slave mode, mounts and unmounts on the host will propagate
-   // into the container, but not vice versa.
-   //
-   // unshare(CLONE_NEWUSER) does this for us.
-   //
-   // See e.g.:
-   //   https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=739593
-   //   https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt
-   TRY (mount(NULL, "/", NULL, MS_REC|MS_SLAVE, NULL));
+#ifndef NO_USER_NS
+   /* UID/GID maps. This is a 1-to-1 mapping. Three main principles:
+
+      1. UID/GID = 0 mapped to invoking user. That is, root in container acts
+         as the invoking user.
+
+      2. 1 <= UID/GID <= 999 are unmapped. These are the system users and
+         groups. This makes them essentially unusable, but users shouldn't use
+         them anyway.
+
+      3. UID/GID >= 1000 are mapped through unchanged. That is, normal users
+         appear the same inside the container as outside.
+
+      A possible additional step is to write "deny" to /proc/self/setgroups.
+      This prevents use of setgroups(2) within the container. The uses case is
+      files with permissions like "rwx---rwx", where group permissions are
+      less than other. Because users essentially run as themselves within a
+      user namespace -- and could simply use a different wrapper that does not
+      disable setgroups(2) -- this extra step has limited value. */
 #endif
 }
 
