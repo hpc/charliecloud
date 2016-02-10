@@ -87,7 +87,12 @@ int main(int argc, char * argv[])
       args.newroot = NEWROOT_DEFAULT;
    args.userns = true;
    args.verbose = false;
-   argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args);
+   TRY (argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args));
+   if (args.user_cmd_start >= argc) {
+      fprintf(stderr, "%s: no command specified\n",
+              program_invocation_short_name);
+      exit(EXIT_FAILURE);
+   }
 
    if (args.verbose) {
       fprintf(stderr, "newroot: %s\n", args.newroot);
@@ -197,7 +202,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
    }
 
    execvp(argv[0], argv);  // only returns if error
-   fprintf(stderr, "%s: can't execute: %s", program_invocation_short_name,
+   fprintf(stderr, "%s: can't execute: %s\n", program_invocation_short_name,
            strerror(errno));
 }
 
