@@ -1,47 +1,10 @@
 /* Copyright © Los Alamos National Security, LLC, and others. */
 
-/* This program enters a UDSS and sets up partial isolation using namespaces.
-   By default, the basic steps are:
-
-     1. Set up 3 of the 6 namespaces:
-        * mount - filesystem isolation
-        * IPC - SysV and POSIX shared memory, etc.
-        * user - so root within the container is unprivileged
-     2. Call pivot_root(2) to enter the UDSS (similar to chroot).
-     3. Unmount the old root filesystem.
-     4. exec(2) the user program.
-
-   There are preprocessor constants to alter this behavior, documented below.
-
-   Due to the user namespace, this program is not setuid root despite use of
-   privileged system calls. This eliminates the need to safely drop privileges
-   before invoking user code.
-
-   The following container isolation mechanisms are available, but we do not
-   use them:
-
-     * UTS and network namespaces are omitted so the guest can use host
-       network resources directly, without bridges and whatnot.
-
-     * The PID namespace has a subtle quirk: the first process created become
-       the namespace's init, and if it exits, the kernel sends all the other
-       processes in the container SIGKILL and no more can be created -- fork()
-       fails with ENOMEM. As a result, a wrapper like this one cannot use a
-       plain exec() pattern but must use the more complicated fork() + exec(),
-       or perhaps something based on clone(CLONE_PARENT). See e.g.:
-
-         http://man7.org/linux/man-pages/man7/pid_namespaces.7.html
-         https://bugzilla.redhat.com/show_bug.cgi?id=894623
-
-       This introduces the need for a supervisor process to pass through
-       signals and perhaps other things. We want to avoid that.
-
-     * cgroups are not needed because we assume single-tenancy, so there
-       aren't other jobs to mess up. */
-
 #define _GNU_SOURCE
+#include <argp.h>
 #include <errno.h>
 #include <sched.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,66 +14,91 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-void enter_udss();
-void escalate();
+void enter_udss(const char * newroot, const char * oldroot);
 void fatal(const char * file, int line);
 void log_uids(const char * func, int line);
-void run_user_command(int argc, char * argv[]);
-void setup_namespaces();
-void try(int result);
-void usage();
+void run_user_command(int argc, char * argv[], int user_cmd_start);
+static error_t parse_opt(int key, char * arg, struct argp_state * state);
+void setup_namespaces(const bool userns_p);
 
 
-/** Constants **/
+/** Constants and macros **/
 
-/* The image root has been set up by ch-mount here. */
-#define NEWROOT "/chmnt"
+/* The image root has been set up by ch-mount here. This is the default and
+   can be changed by environment variable or command line option. */
+#define NEWROOT_DEFAULT "/chmnt"
 
 /* The old root is put here, rooted at TARGET. */
 #define OLDROOT "/mnt/oldroot"
 
-/* If set, do not set up the user namespace. This is for testing of other
-   security layers and should not be offered to normal users. It will make the
-   binary unusable except for root. */
-#ifdef NO_USER_NS
-  #warning "SECURITY: NO_USER_NS defined: Will not set up user namespace"
-#endif
-
-/* If set, run user program as root. In principle, this is safe, because
-   either (a) user namespace will protect the host or (b) escalation will fail
-   unless already privileged. However, some versions of Linux are buggy in
-   this regard, so this test setting should not be offered to normal users. */
-#ifdef RUN_AS_ROOT
-  #warning "SECURITY: RUN_AS_ROOT defined: Will run user programs as root"
-#endif
-
-/* If set, log current UIDs and capabilities at various points. */
-#define DEBUG_UIDS 1
-
-
-/** Macros **/
-
-/* Test the result of a system call: if not zero, exit with an error. This is
-   a macro so we have access to the file and line number. */
+/* Test some result: if not zero, exit with an error. This is a macro so we
+   have access to the file and line number. */
 #define TRY(x) if (x) fatal(__FILE__, __LINE__)
 
 /* Log the current UIDs. */
 #define LOG_UIDS log_uids(__func__, __LINE__)
 
 
+/** Command line options **/
+
+const char usage[] = "\
+\n\
+Run a command with new root directory and partial isolation using namespaces.\n\
+\v\
+Example:\n\
+\n\
+  $ ch-run echo hello world\n\
+  hello world\n\
+\n\
+Normal users will rarely need any of the options. In particular, the new root\n\
+directory is managed by system administrators.\n\
+\n\
+You cannot use this program to actually change your UID.";
+
+static char args_doc[] = "CMD [ARGS ...]";
+
+static struct argp_option options[] = {
+   { "no-userns", 'n', 0,     0, "don't use user namespace" },
+   { "newroot",   'r', "DIR", 0, "container root directory" },
+   { "uid",       'u', "UID", 0, "run as UID within container" },
+   { "verbose",   'v', 0,     0, "be more verbose" },
+   { 0 }
+};
+
+struct args {
+   uid_t container_uid;
+   char * newroot;
+   int user_cmd_start;  // index into argv where user command and args start
+   bool userns;         // true if using CLONE_NEWUSER
+   bool verbose;
+};
+
+struct args args;
+static struct argp argp = { options, parse_opt, args_doc, usage };
+
+
 /** Main **/
 
 int main(int argc, char * argv[])
 {
-   LOG_UIDS;
-   if (argc < 2)
-      usage();
-   setup_namespaces();
-   enter_udss();
-#ifdef RUN_AS_ROOT
-   escalate();
-#endif
-   run_user_command(argc, argv);
+   args.container_uid = geteuid();
+   args.newroot = getenv("CH_NEWROOT");
+   if (args.newroot == NULL)
+      args.newroot = NEWROOT_DEFAULT;
+   args.userns = true;
+   args.verbose = false;
+   argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args);
+
+   if (args.verbose) {
+      fprintf(stderr, "newroot: %s\n", args.newroot);
+      fprintf(stderr, "container uid: %u\n", args.container_uid);
+      fprintf(stderr, "user namespace: %d\n", args.userns);
+   }
+
+   setup_namespaces(args.userns);
+   //TRY (setresuid(args.container_uid, args.container_uid, args.container_uid));
+   enter_udss(args.newroot, OLDROOT);
+   run_user_command(argc, argv, args.user_cmd_start);
 }
 
 
@@ -118,9 +106,10 @@ int main(int argc, char * argv[])
 
 /* Enter the UDSS. After this, we are inside the UDSS and no longer have
    access to host resources except as provided. */
-void enter_udss(const char * image_path)
+void enter_udss(const char * newroot, const char * oldroot)
 {
-   char * src, dst;
+   char * host_oldroot;
+   const char * guest_oldroot = oldroot;
 
    LOG_UIDS;
 
@@ -128,26 +117,18 @@ void enter_udss(const char * image_path)
       into shared mounts, and into any filesystem that was mounted before
       CLONE_NEWUSER. The standard trick is to recursively bind-mount NEWROOT
       over itself. */
-   TRY (mount(NEWROOT, NEWROOT, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
+   TRY (mount(args.newroot, args.newroot, NULL,
+              MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
-   TRY (mkdir(NEWROOT OLDROOT, 0755));
-   TRY (syscall(SYS_pivot_root, NEWROOT, NEWROOT OLDROOT));
+   TRY (asprintf(&host_oldroot, "%s/%s", newroot, oldroot) < 0);
+   TRY (mkdir(host_oldroot, 0755));
+   TRY (syscall(SYS_pivot_root, newroot, host_oldroot));
    TRY (chdir("/"));
-   TRY (umount2(OLDROOT, MNT_DETACH));
-   TRY (rmdir(OLDROOT));
+   TRY (umount2(guest_oldroot, MNT_DETACH));
+   TRY (rmdir(guest_oldroot));
 
    // We need our own /dev/shm because of CLONE_NEWIPC.
    TRY (mount(NULL, "/dev/shm", "tmpfs", MS_NOSUID | MS_NODEV, NULL));
-}
-
-/* Escalate to root. This requires CAP_SETUID, which we have if either (a) we
-   entered a user namespace or (b) the program was invoked by root, in which
-   case it's a no-op. That is, normal users can't use this to get root. */
-void escalate()
-{
-   LOG_UIDS;
-   TRY (setresuid(0, 0, 0));
-   LOG_UIDS;
 }
 
 /* Report the string expansion of errno on stderr, then exit unsuccessfully. */
@@ -160,40 +141,78 @@ void fatal(const char * file, int line)
 /* If DEBUG_UIDS, print uids on stderr prefixed with where. Otherwise, no-op. */
 void log_uids(const char * func, int line)
 {
-#ifdef DEBUG_UIDS
    uid_t ruid, euid, suid;
 
-   TRY (getresuid(&ruid, &euid, &suid));
-   fprintf(stderr, "%s %d: uids=%d,%d,%d\n", func, line, ruid, euid, suid);
-#endif
+   if (args.verbose) {
+      TRY (getresuid(&ruid, &euid, &suid));
+      fprintf(stderr, "%s %d: uids=%d,%d,%d\n", func, line, ruid, euid, suid);
+   }
 }
 
-/* Replace the current process with command and arguments starting at argv[1]
-   (i.e., argv[1] is the command to exectue, argv[2] the first argument, etc.
-   argv will be overwritten in order to avoid the need for copying it, because
-   execvp() requires null-termination instead of an argument count. */
-void run_user_command(int argc, char * argv[])
+/* Parse one command line option. Called by argp_parse(). */
+static error_t parse_opt(int key, char * arg, struct argp_state * state)
+{
+   struct args * as = state->input;
+   long l;
+
+   switch (key) {
+   case 'n':
+      as->userns = false;
+      break;
+   case 'r':
+      as->newroot = arg;
+      break;
+   case 'u':
+      errno = 0;
+      l = strtol(arg, NULL, 0);
+      TRY (errno || l < 0);
+      as->container_uid = (uid_t)l;
+      break;
+   case 'v':
+      as->verbose = true;
+      break;
+   default:
+      return ARGP_ERR_UNKNOWN;
+   };
+
+   return 0;
+}
+
+/* Replace the current process with user command and arguments. argv will be
+   overwritten in order to avoid the need for copying it, because execvp()
+   requires null-termination instead of an argument count. */
+void run_user_command(int argc, char * argv[], int user_cmd_start)
 {
    LOG_UIDS;
-   for (int i = 0; i < argc - 1; i++)
-      argv[i] = argv[i + 1];
-   argv[argc - 1] = NULL;
+
+   for (int i = user_cmd_start; i < argc; i++)
+      argv[i - user_cmd_start] = argv[i];
+   argv[argc - user_cmd_start] = NULL;
+
+   if (args.verbose) {
+      fprintf(stderr, "cmd at %d/%d:", user_cmd_start, argc);
+      for (int i = 0; argv[i] != NULL; i++)
+         fprintf(stderr, " %s", argv[i]);
+      fprintf(stderr, "\n");
+   }
+
    execvp(argv[0], argv);  // only returns if error
    fprintf(stderr, "%s: can't execute: %s", program_invocation_short_name,
            strerror(errno));
 }
 
 /* Activate the desired isolation namespaces. */
-void setup_namespaces()
+void setup_namespaces(const bool userns_p)
 {
+   int flags = CLONE_NEWIPC | CLONE_NEWNS;
+
+   if (userns_p)
+      flags |= CLONE_NEWUSER;
+
+   LOG_UIDS;
+   TRY (unshare(flags));
    LOG_UIDS;
 
-   // http://man7.org/linux/man-pages/man7/namespaces.7.html
-   // http://man7.org/linux/man-pages/man7/user_namespaces.7.html
-   TRY (unshare(CLONE_NEWUSER | CLONE_NEWIPC | CLONE_NEWNS));
-   LOG_UIDS;
-
-#ifndef NO_USER_NS
    /* UID/GID maps. This is a 1-to-1 mapping. Three main principles:
 
       1. UID/GID = 0 mapped to invoking user. That is, root in container acts
@@ -212,12 +231,4 @@ void setup_namespaces()
       less than other. Because users essentially run as themselves within a
       user namespace -- and could simply use a different wrapper that does not
       disable setgroups(2) -- this extra step has limited value. */
-#endif
-}
-
-/* Print a usage message and abort. */
-void usage()
-{
-   fprintf(stderr, "%s: usage: FIXME\n", program_invocation_short_name);
-   exit(EXIT_FAILURE);
 }

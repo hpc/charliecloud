@@ -14,7 +14,7 @@ clean:
 	rm -Rf $(bins_all)
 
 %: %.c
-	$(CC) -std=c11 $(CFLAGS) -o $@ $<
+	$(CC) -std=c11 -Wall -Werror -Wfatal-errors $(CFLAGS) -o $@ $<
 
 %.no_user_ns: %.c
 	$(CC) -std=c11 $(CFLAGS) -D NO_USER_NS -o $@ $<
