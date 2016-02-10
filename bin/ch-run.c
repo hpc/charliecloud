@@ -32,6 +32,9 @@ void setup_namespaces(const bool userns_p, const int cuid);
 /* The old root is put here, rooted at TARGET. */
 #define OLDROOT "/mnt/oldroot"
 
+/* Number of supplemental GIDs we can deal with. */
+#define SUPP_GIDS_MAX 32
+
 /* Test some result: if not zero, exit with an error. This is a macro so we
    have access to the file and line number. */
 #define TRY(x) if (x) fatal(__FILE__, __LINE__)
@@ -148,12 +151,21 @@ void log_ids(const char * func, int line)
 {
    uid_t ruid, euid, suid;
    gid_t rgid, egid, sgid;
+   gid_t supp_gids[SUPP_GIDS_MAX];
+   int supp_gid_ct;
 
    if (args.verbose) {
       TRY (getresuid(&ruid, &euid, &suid));
       TRY (getresgid(&rgid, &egid, &sgid));
-      fprintf(stderr, "%s %d: uids=%d,%d,%d, gids=%d,%d,%d\n", func, line,
+      fprintf(stderr, "%s %d: uids=%d,%d,%d, gids=%d,%d,%d + ", func, line,
               ruid, euid, suid, rgid, egid, sgid);
+      TRY ((supp_gid_ct = getgroups(SUPP_GIDS_MAX, supp_gids)) == -1);
+      for (int i = 0; i < supp_gid_ct; i++) {
+         if (i > 0)
+            fprintf(stderr, ",");
+         fprintf(stderr, "%d", supp_gids[i]);
+      }
+      fprintf(stderr, "\n");
    }
 }
 
