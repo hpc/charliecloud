@@ -3,6 +3,7 @@
 #define _GNU_SOURCE
 #include <argp.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sched.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -16,10 +17,10 @@
 
 void enter_udss(const char * newroot, const char * oldroot);
 void fatal(const char * file, int line);
-void log_uids(const char * func, int line);
+void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
-void setup_namespaces(const bool userns_p);
+void setup_namespaces(const bool userns_p, const int cuid);
 
 
 /** Constants and macros **/
@@ -36,7 +37,7 @@ void setup_namespaces(const bool userns_p);
 #define TRY(x) if (x) fatal(__FILE__, __LINE__)
 
 /* Log the current UIDs. */
-#define LOG_UIDS log_uids(__func__, __LINE__)
+#define LOG_IDS log_ids(__func__, __LINE__)
 
 
 /** Command line options **/
@@ -100,8 +101,7 @@ int main(int argc, char * argv[])
       fprintf(stderr, "user namespace: %d\n", args.userns);
    }
 
-   setup_namespaces(args.userns);
-   //TRY (setresuid(args.container_uid, args.container_uid, args.container_uid));
+   setup_namespaces(args.userns, args.container_uid);
    enter_udss(args.newroot, OLDROOT);
    run_user_command(argc, argv, args.user_cmd_start);
 }
@@ -116,7 +116,7 @@ void enter_udss(const char * newroot, const char * oldroot)
    char * host_oldroot;
    const char * guest_oldroot = oldroot;
 
-   LOG_UIDS;
+   LOG_IDS;
 
    /* pivot_root(2) fails with EINVAL in a couple of undocumented conditions:
       into shared mounts, and into any filesystem that was mounted before
@@ -143,14 +143,17 @@ void fatal(const char * file, int line)
    exit(EXIT_FAILURE);
 }
 
-/* If DEBUG_UIDS, print uids on stderr prefixed with where. Otherwise, no-op. */
-void log_uids(const char * func, int line)
+/* If verbose, print uids and gids on stderr prefixed with where. */
+void log_ids(const char * func, int line)
 {
    uid_t ruid, euid, suid;
+   gid_t rgid, egid, sgid;
 
    if (args.verbose) {
       TRY (getresuid(&ruid, &euid, &suid));
-      fprintf(stderr, "%s %d: uids=%d,%d,%d\n", func, line, ruid, euid, suid);
+      TRY (getresgid(&rgid, &egid, &sgid));
+      fprintf(stderr, "%s %d: uids=%d,%d,%d, gids=%d,%d,%d\n", func, line,
+              ruid, euid, suid, rgid, egid, sgid);
    }
 }
 
@@ -188,7 +191,7 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
    requires null-termination instead of an argument count. */
 void run_user_command(int argc, char * argv[], int user_cmd_start)
 {
-   LOG_UIDS;
+   LOG_IDS;
 
    for (int i = user_cmd_start; i < argc; i++)
       argv[i - user_cmd_start] = argv[i];
@@ -207,33 +210,36 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
 }
 
 /* Activate the desired isolation namespaces. */
-void setup_namespaces(const bool userns_p)
+void setup_namespaces(const bool userns_p, const int cuid)
 {
    int flags = CLONE_NEWIPC | CLONE_NEWNS;
+   int fd;
+   uid_t euid = 0;
 
-   if (userns_p)
+   if (userns_p) {
       flags |= CLONE_NEWUSER;
+      euid = geteuid();
+   }
 
-   LOG_UIDS;
+   LOG_IDS;
    TRY (unshare(flags));
-   LOG_UIDS;
+   LOG_IDS;
 
-   /* UID/GID maps. This is a 1-to-1 mapping. Three main principles:
+   if (userns_p) {
+      /* Write UID map. What we are allowed to put here is quite limited.
+         Because we do not have CAP_SETUID in the *parent* user namespace, we
+         can map exactly one UID: an arbitrary container UID to our EUID in
+         the parent namespace.
 
-      1. UID/GID = 0 mapped to invoking user. That is, root in container acts
-         as the invoking user.
+         This is sufficient to change our UID within the container; no
+         setuid(2) or similar required. This is because the EUID of the
+         process in the parent namespace is unchanged, so the kernel uses our
+         new 1-to-1 map to convert that EUID into the container UID for most
+         (maybe all) purposes. */
+      TRY ((fd = open("/proc/self/uid_map", O_WRONLY)) == -1);
+      TRY (dprintf(fd, "%d %d 1\n", cuid, euid) < 0);
+      TRY (close(fd));
+   }
 
-      2. 1 <= UID/GID <= 999 are unmapped. These are the system users and
-         groups. This makes them essentially unusable, but users shouldn't use
-         them anyway.
-
-      3. UID/GID >= 1000 are mapped through unchanged. That is, normal users
-         appear the same inside the container as outside.
-
-      A possible additional step is to write "deny" to /proc/self/setgroups.
-      This prevents use of setgroups(2) within the container. The uses case is
-      files with permissions like "rwx---rwx", where group permissions are
-      less than other. Because users essentially run as themselves within a
-      user namespace -- and could simply use a different wrapper that does not
-      disable setgroups(2) -- this extra step has limited value. */
+   LOG_IDS;
 }
