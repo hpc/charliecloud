@@ -11,6 +11,7 @@ $(ALL): Makefile
 
 %: %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $< -o $@
+	chmod 755 $@
 
 %.setuid: %
 	cp $< $@
