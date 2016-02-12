@@ -20,7 +20,7 @@ void fatal(const char * file, int line);
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
-void setup_namespaces(const bool userns_p, const int cuid);
+void setup_namespaces(const bool userns_p, const uid_t cuid, const gid_t cgid);
 
 
 /** Constants and macros **/
@@ -62,6 +62,7 @@ You cannot use this program to actually change your UID.";
 static char args_doc[] = "CMD [ARGS ...]";
 
 static struct argp_option options[] = {
+   { "gid",       'g', "GID", 0, "run as GID within container" },
    { "no-userns", 'n', 0,     0, "don't use user namespace" },
    { "newroot",   'r', "DIR", 0, "container root directory" },
    { "uid",       'u', "UID", 0, "run as UID within container" },
@@ -70,6 +71,7 @@ static struct argp_option options[] = {
 };
 
 struct args {
+   gid_t container_gid;
    uid_t container_uid;
    char * newroot;
    int user_cmd_start;  // index into argv where user command and args start
@@ -85,6 +87,7 @@ static struct argp argp = { options, parse_opt, args_doc, usage };
 
 int main(int argc, char * argv[])
 {
+   args.container_gid = getegid();
    args.container_uid = geteuid();
    args.newroot = getenv("CH_NEWROOT");
    if (args.newroot == NULL)
@@ -101,10 +104,11 @@ int main(int argc, char * argv[])
    if (args.verbose) {
       fprintf(stderr, "newroot: %s\n", args.newroot);
       fprintf(stderr, "container uid: %u\n", args.container_uid);
+      fprintf(stderr, "container gid: %u\n", args.container_gid);
       fprintf(stderr, "user namespace: %d\n", args.userns);
    }
 
-   setup_namespaces(args.userns, args.container_uid);
+   setup_namespaces(args.userns, args.container_uid, args.container_gid);
    enter_udss(args.newroot, OLDROOT);
    run_user_command(argc, argv, args.user_cmd_start);
 }
@@ -176,6 +180,12 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
    long l;
 
    switch (key) {
+   case 'g':
+      errno = 0;
+      l = strtol(arg, NULL, 0);
+      TRY (errno || l < 0);
+      as->container_gid = (gid_t)l;
+      break;
    case 'n':
       as->userns = false;
       break;
@@ -222,7 +232,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
 }
 
 /* Activate the desired isolation namespaces. */
-void setup_namespaces(const bool userns_p, const int cuid)
+void setup_namespaces(const bool userns_p, const uid_t cuid, const gid_t cgid)
 {
    int flags = CLONE_NEWIPC | CLONE_NEWNS;
    int fd;
@@ -259,7 +269,7 @@ void setup_namespaces(const bool userns_p, const int cuid)
       TRY (dprintf(fd, "deny\n") < 0);
       TRY (close(fd));
       TRY ((fd = open("/proc/self/gid_map", O_WRONLY)) == -1);
-      TRY (dprintf(fd, "%d %d 1\n", egid, egid) < 0);
+      TRY (dprintf(fd, "%d %d 1\n", cgid, egid) < 0);
       TRY (close(fd));
       LOG_IDS;
    }
