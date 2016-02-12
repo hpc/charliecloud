@@ -165,9 +165,10 @@ while [ "$#" -ge 1 ]; do
     shift
 done
 
-# Everything needs to be a slave (or private) mount so that someone inside the
-# container that has host root can't unmount things and cause issues.
-#mount --make-rslave "$MOUNTPOINT"
+# Make the UDSS a slave mount so that it can be unmounted later without
+# issues. On some systems the default is shared, so e.g. unmounting
+# $MOUNTPOINT/proc tries to unmount the host's /proc too.
+mount --make-rslave "$MOUNTPOINT"
 
 findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"
 
