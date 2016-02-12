@@ -1,16 +1,7 @@
 #!/bin/bash
 
-# Run this test script inside a container to evaluate its isolation. There are
-# three basic groups of tests:
-#
-#   1. Privileged tests. These are run only if the script starts as root, to
-#      simulate a successful privilege escalation.
-#
-#   2. Privilege escalation tests.
-#
-#   3. Unprivileged tests. These test what can be done without an escalation.
-#
-# Each test prints a single line on stdout. This line contains:
+# Run this test script inside a container to evaluate its isolation. Each test
+# prints a single line on stdout. This line contains:
 #
 #   1. test name
 #   2. tab
@@ -29,9 +20,14 @@
 # We deliberately do not use "ok/fail" or similar because NOT-ISOLATED is not
 # necessarily a failure.
 #
-# Lines beginning with "#" are informational.
+# Lines beginning with "#" are informational. Additional chatter goes to
+# stderr.
 #
-# Additional chatter goes to stderr.
+# Originally, when invoked as root, this script ran the tests, dropped
+# privileges using su, and ran the tests again. However, setgroups(2) is
+# completely unavailable in some containers, and so su doesn't work.
+# Therefore, the caller must run two test suites to evaluate privileged and
+# unprivileged mode operations.
 
 set -e
 
@@ -51,21 +47,8 @@ printf '# user namespace:      '
 find_user_ns
 
 if [[ $EUID -eq 0 ]]; then
-    # Bash does not know how to drop privileges. So, we run three sub-scripts
-    # with different privilege levels. Note that su complains about
-    # "Authentication failure" but ignores the problem; we don't want this in
-    # the output, but we also don't want to suppress other errors.
-    TEST_USER=$(cat /mnt/0/user)
-    SU=/bin/su
-    if [[ ! -e $SU ]]; then
-        echo "$SU missing, aborting"
-        exit 1
-    fi
     ./test-operations.sh
-    $SU -m -c './test-escalation.sh' $TEST_USER 2>> $LOGDIR/su.err
-    $SU -m -c './test-operations.sh' $TEST_USER 2>> $LOGDIR/su.err
 else
-    echo '# skipping privileged tests'
     ./test-escalation.sh
     ./test-operations.sh
 fi
