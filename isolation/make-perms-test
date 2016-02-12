@@ -192,14 +192,18 @@ os.chdir('pass')
 ct = 0
 for uid in (my_uid, yr_uid):
    for gid in (my_gid, my_gid2, yr_gid):
+      if (uid == my_uid and gid == my_gid):
+         # Files owned by my_uid:my_gid are not a meaningful access control
+         # test; check the documentation for why.
+         continue
       for up in ALL_PERMS:
          for gp in ALL_PERMS:
             for op in ALL_PERMS:
                ct += Test_File(uid, gid, up, gp, op).write()
                ct += Test_Directory(uid, gid, up, gp, op).write()
 
-symlink('f.%s-%s.600~rw-' % (my_user, my_group), 'lf.in~rw-')
-symlink('d.%s-%s.700~rwt' % (my_user, my_group), 'ld.in~rwt')
+symlink('f.%s-%s.600~rw-' % (my_user, yr_group), 'lf.in~rw-')
+symlink('d.%s-%s.700~rwt' % (my_user, yr_group), 'ld.in~rwt')
 symlink('%s/nopass/file' % testdir, 'lf.out-a~---')
 symlink('%s/nopass/dir' % testdir, 'ld.out-a~---')
 symlink('../nopass/file', 'lf.out-r~---')

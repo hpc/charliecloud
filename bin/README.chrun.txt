@@ -56,5 +56,56 @@ There are other container isolation mechanisms, but we do not use them:
 
 Further reading:
 
-   http://man7.org/linux/man-pages/man7/namespaces.7.html
-   http://man7.org/linux/man-pages/man7/user_namespaces.7.html
+  http://man7.org/linux/man-pages/man7/namespaces.7.html
+  http://man7.org/linux/man-pages/man7/user_namespaces.7.html
+
+Some filesystem permission tests can give a surprising result with a container
+UID of 0. For example:
+
+  $ whoami
+  reidpr
+  $ mkdir /tmp/foo
+  $ echo surprise > /tmp/foo/cantreadme
+  $ chmod 000 /tmp/foo/cantreadme
+  $ ls -l /tmp/foo/cantreadme
+  ---------- 1 reidpr reidpr 9 Feb 12 13:53 /tmp/foo/cantreadme
+  $ cat /tmp/foo/cantreadme
+  cat: /tmp/foo/cantreadme: Permission denied
+  $ sudo ch-mount /data/reidpr.chtest.img /tmp/foo
+  $ ch-run cat /mnt/0/cantreadme
+  cat: /mnt/0/cantreadme: Permission denied
+  $ ch-run -u0 cat /mnt/0/cantreadme
+  surprise
+
+At first glance, this seems rather scary -- we got access to a file inside the
+container that we didn't have outside! However, what is actually going on is
+rather more prosaic:
+
+  1. After unshare(CLONE_NEWUSER), ch-run gains all capabilities inside the
+     namespace. (Outside, capabilities are unchanged.)
+
+  2. This includes CAP_DAC_OVERRIDE, which enables a process to
+     read/write/execute a file or directory roughly regardless of its
+     permission bits. (This is why root isn't limited by permissions.)
+
+  3. Within the container, execve(2) capability rules are followed. Normally,
+     this means roughly that all capabilities are dropped. However, if EUID is
+     0, then the subprocess keeps all its capabilities. (This makes sense --
+     if root creates a new process, it stays root.)
+
+  4. CAP_DAC_OVERRIDE within a user namespace is honored for a file or
+     directory only if its UID and GID are both mapped. In the above case,
+     ch-run maps user reidpr to root (because -u0) and group reidpr to reidpr.
+
+  5. Thus, files and directories owned by reidpr:reidpr are available for all
+     access with chrun -u0.
+
+This is OK, though. Because the invoking user (reidpr in this case) owns the
+file, s/he should simply chown it. That is, access inside and outside the
+container remains equivalent, but with fewer steps inside.
+
+References:
+
+  http://man7.org/linux/man-pages/man7/capabilities.7.html
+  http://lxr.free-electrons.com/source/kernel/capability.c?v=4.2#L442
+  http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328
