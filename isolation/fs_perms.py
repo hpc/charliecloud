@@ -71,7 +71,7 @@ def test(path):
          error('exception on %s: %s' % (path, x))
       else:
          result += op
-   print(' %s %s' % (expect, result), file=sys.stderr, end='')
+   print(' %s' % result, file=sys.stderr, end='')
    if (expect != '*' and result != expect):
       print(' mismatch', file=sys.stderr)
       return False
@@ -110,7 +110,7 @@ def try_w_file(path):
    # check for that error condition because we *only* want to touch the OS for
    # open(2) and write(2).
    with open(path, 'wb', buffering=0) as fp:
-      fp.write(b'*')
+      fp.write(b'written by fs_test.py\n')
 
 if (__name__ == '__main__'):
    main()
