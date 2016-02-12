@@ -108,6 +108,9 @@ while true; do
             UNSAFE=yes
             MOUNTOPTS=''
             ;;
+        -v|--verbose)
+            VERBOSE=yes
+            ;;
         *)
             break
     esac
@@ -170,7 +173,9 @@ done
 # $MOUNTPOINT/proc tries to unmount the host's /proc too.
 mount --make-rslave "$MOUNTPOINT"
 
-findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"
+if [ -n "$VERBOSE" ]; then
+    findmnt -R -o target,fstype,propagation,options "$MOUNTPOINT"
+fi
 
 # Make sure that everything is mounted nosuid.
 if [ -n "$UNSAFE" ]; then
