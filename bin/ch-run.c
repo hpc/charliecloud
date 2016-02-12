@@ -226,11 +226,13 @@ void setup_namespaces(const bool userns_p, const int cuid)
 {
    int flags = CLONE_NEWIPC | CLONE_NEWNS;
    int fd;
-   uid_t euid = 0;
+   uid_t euid = -1;
+   gid_t egid = -1;
 
    if (userns_p) {
       flags |= CLONE_NEWUSER;
       euid = geteuid();
+      egid = getegid();
    }
 
    LOG_IDS;
@@ -251,7 +253,14 @@ void setup_namespaces(const bool userns_p, const int cuid)
       TRY ((fd = open("/proc/self/uid_map", O_WRONLY)) == -1);
       TRY (dprintf(fd, "%d %d 1\n", cuid, euid) < 0);
       TRY (close(fd));
-   }
+      LOG_IDS;
 
-   LOG_IDS;
+      TRY ((fd = open("/proc/self/setgroups", O_WRONLY)) == -1);
+      TRY (dprintf(fd, "deny\n") < 0);
+      TRY (close(fd));
+      TRY ((fd = open("/proc/self/gid_map", O_WRONLY)) == -1);
+      TRY (dprintf(fd, "%d %d 1\n", egid, egid) < 0);
+      TRY (close(fd));
+      LOG_IDS;
+   }
 }
