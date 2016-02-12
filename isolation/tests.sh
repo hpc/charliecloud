@@ -16,7 +16,7 @@ find_setuid () {
     if [[ $setuid_ct -gt 0 || $setgid_ct -gt 0 ]]; then
         echo "unsafe: $setuid_ct setuid, $setgid_ct setgid, $setcap_ct setcap"
     else
-        echo "safe"
+        echo "safe: no setuid/setgid/setcap binaries found"
     fi
 }
 
@@ -26,7 +26,7 @@ find_suidmounts () {
     if [[ $suidmount_ct -gt 0 ]]; then
         echo "unsafe: $suidmount_ct filesystems mounted suid"
     else
-        echo "safe"
+        echo "safe: no suid filesystems"
     fi
 }
 

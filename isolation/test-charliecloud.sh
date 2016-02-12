@@ -6,8 +6,8 @@ I_FILESCAN=yes
 I_MOUNT=yes
 I_USER=yes
 
-# Do we drop privileges?
-DROP_PRIVS=yes
+# UID to use inside container
+CUID=$UID
 
 set -e
 #set -x
@@ -15,7 +15,7 @@ set -e
 cd $(dirname $0)
 CHBIN=$(dirname $0)/../bin
 
-while getopts 'i:uv' opt; do
+while getopts 'i:u:v' opt; do
     case $opt in
         i)  # less isolation
             case $OPTARG in
@@ -46,7 +46,7 @@ while getopts 'i:uv' opt; do
             esac
             ;;
         u)
-            DROP_PRIVS=
+            CUID=$OPTARG
             ;;
         v)  # setup/teardown output to terminal, not files
             OUT=/dev/fd/2
@@ -89,16 +89,12 @@ sudo $CHBIN/ch-mount $MOUNTARG "$IMG" $DATADIR ${pt[@]} >> $OUT 2>&1
 
 printf '# running test: '
 if [[ ! $I_USER ]]; then
-    # FIXME
-    #RUNARG=--no-user-ns
+    RUNARG=--no-userns
     true
 fi
-CHRUN=$CHBIN/ch-run.ns
-if [[ ! $DROP_PRIVS ]]; then
-    CHRUN="sudo ${CHRUN}.unsafe"
-fi
+CHRUN="$CHBIN/ch-run -u $CUID $RUNARG /test/test.sh"
 echo "$CHRUN"
-$CHRUN /test/test.sh
+$CHRUN
 
 echo "# unmounting image"
 sudo $CHBIN/ch-umount >> $OUT 2>&1
