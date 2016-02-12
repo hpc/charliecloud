@@ -2,7 +2,8 @@
 
 set -e
 
-DATADIR=$(mktemp -d)
+DATADIR=test
+mkdir $DATADIR
 
 cd $DATADIR
 mkdir -p err
