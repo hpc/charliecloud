@@ -6,17 +6,20 @@ I_FILESCAN=yes
 I_MOUNT=yes
 I_USER=yes
 
-# UID to use inside container
+# IDs to use inside container
 CUID=$UID
+CGID=$(id -g $UID)
 
 set -e
 #set -x
 
-cd $(dirname $0)
 CHBIN=$(dirname $0)/../bin
 
-while getopts 'i:u:v' opt; do
+while getopts 'g:i:u:v' opt; do
     case $opt in
+        g)
+            CGID=$OPTARG
+            ;;
         i)  # less isolation
             case $OPTARG in
                 F)
@@ -62,18 +65,27 @@ fi
 IMG="$1"
 shift
 
+echo
+echo '### test-ch-run.sh starting'
+
 for i in $(seq $#); do
-    pt[$i]="${!i}/perms_test/pass"
+    dir="${!i}/perms_test/pass"
+    if [[ ! -d $dir ]]; then
+        echo "$dir: not a directory" 1>&2
+        exit 1
+    fi
+    pt[$i]="$dir"
 done
 
-DATADIR=$(./preamble.sh)
+DATADIR=$($(dirname $0)/preamble.sh)
 echo "# standard error in $DATADIR/err"
 
 echo "# isolation:"
+echo "#   container UID:    $CUID"
+echo "#   container GID:    $CGID"
 echo "#   file scan:        ${I_FILESCAN:-no}"
 echo "#   safe mount:       ${I_MOUNT:-no}"
 echo "#   user namespace:   ${I_USER:-no}"
-echo "#   drop privileges:  ${DROP_PRIVS:-no}"
 
 OUT=${OUT:-$DATADIR/err/setup-teardown.err}
 
@@ -85,14 +97,14 @@ if [[ ! $I_MOUNT ]]; then
     MOUNTARG=--unsafe
 fi
 echo "$IMG $UNSAFE_ARG"
-sudo $CHBIN/ch-mount $MOUNTARG "$IMG" $DATADIR ${pt[@]} >> $OUT 2>&1
+sudo $CHBIN/ch-mount $MOUNTARG "$IMG" $DATADIR ${pt[@]} >> "$OUT" 2>&1
 
 printf '# running test: '
 if [[ ! $I_USER ]]; then
     RUNARG=--no-userns
     true
 fi
-CHRUN="$CHBIN/ch-run -u $CUID $RUNARG /test/test.sh"
+CHRUN="$CHBIN/ch-run -u $CUID -g $CGID $RUNARG /test/test.sh"
 echo "$CHRUN"
 $CHRUN
 

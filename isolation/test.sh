@@ -35,7 +35,7 @@ cd $(dirname $0)
 . tests.sh
 
 echo
-echo '### Starting'
+echo '# test.sh starting'
 
 printf '# running privileged:  '
 [[ $EUID == 0 ]] && echo "unsafe: euid=$EUID" || echo "safe: euid=$EUID"
@@ -54,4 +54,4 @@ else
 fi
 
 echo
-echo '### Done'
+echo '# test.sh done'
