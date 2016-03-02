@@ -1,7 +1,11 @@
 /* Copyright © Los Alamos National Security, LLC, and others. */
 
+/* Note: This program does not bother to free memory allocations, since they
+   are modest and the program is short-lived. */
+
 #define _GNU_SOURCE
 #include <argp.h>
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sched.h>
@@ -15,22 +19,29 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-void enter_udss(const char * newroot, const char * oldroot);
-void fatal(const char * file, int line);
+void enter_udss(char * newroot, char * oldroot, char ** binds);
+void fatal(char * file, int line);
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
-void setup_namespaces(const bool userns_p, const uid_t cuid, const gid_t cgid);
+void setup_namespaces(bool userns_p, uid_t cuid, gid_t cgid);
 
 
 /** Constants and macros **/
 
-/* The image root has been set up by ch-mount here. This is the default and
-   can be changed by environment variable or command line option. */
-#define NEWROOT_DEFAULT "/chmnt"
-
 /* The old root is put here, rooted at TARGET. */
 #define OLDROOT "/mnt/oldroot"
+
+/* Host filesystems to bind. */
+#define USER_BINDS_MAX 10
+const char * DEFAULT_BINDS[] = { "/proc",
+                                 "/etc/passwd",
+                                 "/etc/group",
+                                 "/etc/hosts",
+                                 "/proc",
+                                 "/sys",
+                                 "/tmp",
+                                 NULL };
 
 /* Number of supplemental GIDs we can deal with. */
 #define SUPP_GIDS_MAX 32
@@ -51,55 +62,55 @@ Run a command with new root directory and partial isolation using namespaces.\n\
 \v\
 Example:\n\
 \n\
-  $ ch-run echo hello world\n\
+  $ ch-run /tmp/foo echo hello world\n\
   hello world\n\
-\n\
-Normal users will rarely need any of the options. In particular, the new root\n\
-directory is managed by system administrators.\n\
 \n\
 You cannot use this program to actually change your UID.";
 
-static char args_doc[] = "CMD [ARGS ...]";
+const char args_doc[] = "NEWROOT CMD [ARGS ...]";
 
-static struct argp_option options[] = {
+const struct argp_option options[] = {
+   { "dir",       'd', "DIR", 0,
+     "mount host DIR at container /mnt/i (i starts at 0)" },
    { "gid",       'g', "GID", 0, "run as GID within container" },
    { "no-userns", 'n', 0,     0, "don't use user namespace" },
-   { "newroot",   'r', "DIR", 0, "container root directory" },
    { "uid",       'u', "UID", 0, "run as UID within container" },
-   { "verbose",   'v', 0,     0, "be more verbose" },
+   { "verbose",   'v', 0,     0, "be more verbose (debug if repeated)" },
    { 0 }
 };
 
 struct args {
+   char * binds[USER_BINDS_MAX+1];
    gid_t container_gid;
    uid_t container_uid;
    char * newroot;
-   int user_cmd_start;  // index into argv where user command and args start
+   int user_cmd_start;  // index into argv where NEWROOT is
    bool userns;         // true if using CLONE_NEWUSER
-   bool verbose;
+   int verbose;
 };
 
 struct args args;
-static struct argp argp = { options, parse_opt, args_doc, usage };
+const struct argp argp = { options, parse_opt, args_doc, usage };
 
 
 /** Main **/
 
 int main(int argc, char * argv[])
 {
+   memset(args.binds, 0, sizeof(args.binds));
    args.container_gid = getegid();
    args.container_uid = geteuid();
-   args.newroot = getenv("CH_NEWROOT");
-   if (args.newroot == NULL)
-      args.newroot = NEWROOT_DEFAULT;
    args.userns = true;
-   args.verbose = false;
+   args.verbose = 0;
+   TRY (setenv("ARGP_HELP_FMT", "opt-doc-col=20,no-dup-args-note", 0));
    TRY (argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args));
-   if (args.user_cmd_start >= argc) {
-      fprintf(stderr, "%s: no command specified\n",
+   if (args.user_cmd_start >= argc - 1) {
+      fprintf(stderr, "%s: NEWROOT and/or CMD not specified\n",
               program_invocation_short_name);
       exit(EXIT_FAILURE);
    }
+   assert(args.binds[USER_BINDS_MAX] == NULL);  // array overrun in argp_parse?
+   args.newroot = argv[args.user_cmd_start++];
 
    if (args.verbose) {
       fprintf(stderr, "newroot: %s\n", args.newroot);
@@ -109,8 +120,9 @@ int main(int argc, char * argv[])
    }
 
    setup_namespaces(args.userns, args.container_uid, args.container_gid);
-   enter_udss(args.newroot, OLDROOT);
-   run_user_command(argc, argv, args.user_cmd_start);
+   enter_udss(args.newroot, OLDROOT, args.binds);
+   run_user_command(argc, argv, args.user_cmd_start); // should never return
+   exit(EXIT_FAILURE);
 }
 
 
@@ -118,10 +130,10 @@ int main(int argc, char * argv[])
 
 /* Enter the UDSS. After this, we are inside the UDSS and no longer have
    access to host resources except as provided. */
-void enter_udss(const char * newroot, const char * oldroot)
+void enter_udss(char * newroot, char * oldroot, char ** binds)
 {
+   char * guestpath;
    char * host_oldroot;
-   const char * guest_oldroot = oldroot;
 
    LOG_IDS;
 
@@ -129,22 +141,38 @@ void enter_udss(const char * newroot, const char * oldroot)
       into shared mounts, and into any filesystem that was mounted before
       CLONE_NEWUSER. The standard trick is to recursively bind-mount NEWROOT
       over itself. */
-   TRY (mount(args.newroot, args.newroot, NULL,
-              MS_REC | MS_BIND | MS_PRIVATE, NULL));
+   TRY (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
-   TRY (asprintf(&host_oldroot, "%s/%s", newroot, oldroot) < 0);
+   // Bind-mount default stuff at same guest path
+   for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
+      TRY (0 > asprintf(&guestpath, "%s%s", newroot, DEFAULT_BINDS[i]));
+      TRY (mount(DEFAULT_BINDS[i], guestpath, NULL, MS_REC | MS_BIND, NULL));
+   }
+   // Mount tmpfs on guest /mnt because guest root is read-only
+   TRY (0 > asprintf(&guestpath, "%s/mnt", newroot));
+   TRY (mount(NULL, guestpath, "tmpfs", 0, "size=4m"));
+   // Bind-mount user-specified directories at guest /mnt/i
+   for (int i = 0; binds[i] != NULL; i++) {
+      TRY (0 > asprintf(&guestpath, "%s/mnt/%d", newroot, i));
+      TRY (mkdir(guestpath, 0755));
+      TRY (mount(binds[i], guestpath, NULL, MS_BIND, NULL));
+   }
+
+   // Pivot into the new root
+   TRY (0 > asprintf(&host_oldroot, "%s%s", newroot, oldroot));
    TRY (mkdir(host_oldroot, 0755));
    TRY (syscall(SYS_pivot_root, newroot, host_oldroot));
    TRY (chdir("/"));
-   TRY (umount2(guest_oldroot, MNT_DETACH));
-   TRY (rmdir(guest_oldroot));
+   TRY (umount2(oldroot, MNT_DETACH));
+   TRY (rmdir(oldroot));
 
-   // We need our own /dev/shm because of CLONE_NEWIPC.
-   TRY (mount(NULL, "/dev/shm", "tmpfs", MS_NOSUID | MS_NODEV, NULL));
+   // Post pivot_root() tmpfs
+   TRY (mount(NULL, "/dev/shm", "tmpfs", 0, "size=4m"));  // for CLONE_NEWIPC
+   TRY (mount(NULL, "/run", "tmpfs", 0, "size=10%"));
 }
 
 /* Report the string expansion of errno on stderr, then exit unsuccessfully. */
-void fatal(const char * file, int line)
+void fatal(char * file, int line)
 {
    fprintf(stderr, "%s:%d: %d: %s\n", file, line, errno, strerror(errno));
    exit(EXIT_FAILURE);
@@ -158,7 +186,7 @@ void log_ids(const char * func, int line)
    gid_t supp_gids[SUPP_GIDS_MAX];
    int supp_gid_ct;
 
-   if (args.verbose) {
+   if (args.verbose >= 2) {
       TRY (getresuid(&ruid, &euid, &suid));
       TRY (getresgid(&rgid, &egid, &sgid));
       fprintf(stderr, "%s %d: uids=%d,%d,%d, gids=%d,%d,%d + ", func, line,
@@ -177,9 +205,21 @@ void log_ids(const char * func, int line)
 static error_t parse_opt(int key, char * arg, struct argp_state * state)
 {
    struct args * as = state->input;
+   int i;
    long l;
 
    switch (key) {
+   case 'd':
+      for (i = 0; as->binds[i] != NULL; i++)
+         ;
+      if (i < USER_BINDS_MAX) {
+         as->binds[i] = arg;
+      } else {
+         fprintf(stderr, "%s: --dir can be used at most %d times\n",
+                 program_invocation_short_name, USER_BINDS_MAX);
+         exit(EXIT_FAILURE);
+      }
+      break;
    case 'g':
       errno = 0;
       l = strtol(arg, NULL, 0);
@@ -199,7 +239,7 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       as->container_uid = (uid_t)l;
       break;
    case 'v':
-      as->verbose = true;
+      as->verbose++;
       break;
    default:
       return ARGP_ERR_UNKNOWN;
@@ -232,7 +272,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
 }
 
 /* Activate the desired isolation namespaces. */
-void setup_namespaces(const bool userns_p, const uid_t cuid, const gid_t cgid)
+void setup_namespaces(bool userns_p, uid_t cuid, gid_t cgid)
 {
    int flags = CLONE_NEWIPC | CLONE_NEWNS;
    int fd;
