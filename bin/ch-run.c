@@ -34,7 +34,7 @@ void setup_namespaces(bool userns_p, uid_t cuid, gid_t cgid);
 
 /* Host filesystems to bind. */
 #define USER_BINDS_MAX 10
-const char * DEFAULT_BINDS[] = { "/proc",
+const char * DEFAULT_BINDS[] = { "/dev",
                                  "/etc/passwd",
                                  "/etc/group",
                                  "/etc/hosts",
