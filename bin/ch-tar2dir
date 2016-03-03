@@ -1,0 +1,53 @@
+#!/bin/bash
+
+. $(dirname "$0")/base.sh
+
+usage () {
+    cat 1>&2 <<EOF
+Unpack a Docker export tarball into a directory.
+
+Usage:
+
+  $ $(basename $0) TARBALL DIR
+
+If DIR doesn't exist, it is created and filled with the contents of TARBALL,
+which must be a Linux filesystem image, e.g. from ch-docker2tar. If it does
+exist, and appears to be a Charliecloud container image, it is removed and
+replaced per above. Otherwise, the script aborts with an error.
+
+Warning:
+
+  Do not place DIR on a shared filesystem (e.g., your home directory, project
+  space, scratch) unless specifically instructed by your site admins. Doing so
+  will cause excess metadata load on the filesystem, resulting in poor
+  performance for you and everyone else trying to do work at the same time.
+
+EOF
+    exit 1
+}
+
+set -e
+
+if [[ $# -lt 2 ]]; then
+    usage
+fi
+TARBALL="$1"
+NEWROOT="$2"
+
+SENTINEL=WEIRD_AL_YANKOVIC
+
+if [[ -d $NEWROOT ]]; then
+    if [[    -f $NEWROOT/$SENTINEL
+          && -d $NEWROOT/bin && -d $NEWROOT/lib && -d $NEWROOT/usr ]]; then
+        echo "replacing existing image $NEWROOT" 1>&2
+        rm -Rf $NEWROOT
+    else
+        echo "$NEWROOT exists but does not appear to be an image" 1>&2
+        exit 1
+    fi
+fi
+
+mkdir "$NEWROOT"
+echo 'This directory is a Charliecloud container image.' > "$NEWROOT/$SENTINEL"
+tar x -C "$NEWROOT" -f "$TARBALL"
+
