@@ -73,9 +73,9 @@ const struct argp_option options[] = {
    { "dir",       'd', "DIR", 0,
      "mount host DIR at container /mnt/i (i starts at 0)" },
    { "gid",       'g', "GID", 0, "run as GID within container" },
-   { "no-userns", 'n', 0,     0, "don't use user namespace" },
    { "uid",       'u', "UID", 0, "run as UID within container" },
    { "verbose",   'v', 0,     0, "be more verbose (debug if repeated)" },
+   { "no-userns", 'z', 0,     0, "don't use user namespace" },
    { 0 }
 };
 
