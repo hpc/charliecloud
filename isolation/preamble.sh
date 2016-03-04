@@ -2,10 +2,10 @@
 
 set -e
 
-DATADIR=test
-mkdir $DATADIR
+TESTDIR="$1"
+mkdir $TESTDIR
 
-cd $DATADIR
+cd $TESTDIR
 mkdir -p err
 
 # Who is running the test?
@@ -23,5 +23,3 @@ mkdir ip
 for addr in $(hostname --all-ip-addresses); do
     touch ip/$addr
 done
-
-echo $DATADIR

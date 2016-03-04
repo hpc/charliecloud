@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Run this test script inside a container to evaluate its isolation. Each test
-# prints a single line on stdout. This line contains:
+# prints a single line on stdout. This line contains, separated by a tab
+# followed by optional whitespace:
 #
 #   1. test name
-#   2. tab
-#   3. "p" (privileged) or "u" (unprivileged)
-#   4. tab
-#   5. result (see below)
-#   6. additional details beginning with a tab (optional)
+#   2. effective UID
+#   3. effective GID
+#   4. result (see below)
+#   5. additional details beginning with a tab (optional)
 #
 # Result is one of:
 #

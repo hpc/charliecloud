@@ -1,5 +1,27 @@
 #!/bin/bash
 
+function usage () {
+    cat 1>&2 <<EOF
+Run container isolation tests with ch-run.
+
+Usage:
+
+  $ $(basename $0) [-g GID] [-h] [-u UID] [-z] NEWROOT OUTDIR [PDIR1 [PDIR2] ...]
+
+Options:
+
+  -g GID  Use group GID inside the container
+  -u UID  Use user UID inside the container
+  -z      Don't isolate with user namespace
+
+TESTDIR is used for test scratch space and output.
+
+PDIRn are perms_test directories created with make-perms-test.
+
+EOF
+    exit 1
+}
+
 # If true, turn on the user namespace
 I_USERNS=yes
 
@@ -12,10 +34,13 @@ set -e
 
 CHBIN=$(dirname $0)/../bin
 
-while getopts 'g:u:z' opt; do
+while getopts 'g:hu:z' opt; do
     case $opt in
         g)
             CGID=$OPTARG
+            ;;
+        h)
+            usage
             ;;
         u)
             CUID=$OPTARG
@@ -27,18 +52,18 @@ while getopts 'g:u:z' opt; do
 done
 shift $((OPTIND-1))
 
-if [[ $# -lt 1 ]]; then
-    echo 'no image specified' 1>&2
-    exit 1
+if [[ $# -lt 2 ]]; then
+    usage
 fi
 IMG="$1"
-shift
+TESTDIR="$2"
+shift 2
 
 echo
 echo '### test-ch-run.sh starting'
 
 for i in $(seq $#); do
-    dir="${!i}/perms_test/pass"
+    dir="${!i}/pass"
     if [[ ! -d $dir ]]; then
         echo "$dir: not a directory" 1>&2
         exit 1
@@ -46,14 +71,12 @@ for i in $(seq $#); do
     BINDS[$i]="-d $dir"
 done
 
-DATADIR=$($(dirname $0)/preamble.sh)
-echo "# standard error in $DATADIR/err"
+$(dirname $0)/preamble.sh "$TESTDIR"
+echo "# standard error in $TESTDIR/err"
 
 echo "# isolation:"
 echo "#   container UID:    $CUID"
 echo "#   container GID:    $CGID"
-echo "#   file scan:        ${I_FILESCAN:-no}"
-echo "#   safe mount:       ${I_MOUNT:-no}"
 echo "#   user namespace:   ${I_USER:-no}"
 
 printf '# running test: '
@@ -61,8 +84,8 @@ if [[ ! $I_USERNS ]]; then
     RUNARG=--no-userns
     true
 fi
-CHRUN="$CHBIN/ch-run -u $CUID -g $CGID -d $DATADIR ${BINDS[@]} $RUNARG $IMG /test/test.sh"
+CHRUN="$CHBIN/ch-run -u $CUID -g $CGID -d $TESTDIR ${BINDS[@]} $RUNARG $IMG /test/test.sh"
 echo "$CHRUN"
 $CHRUN
 
-echo "# test completed; stderr in $DATADIR/err"
+echo "# test completed; stderr in $TESTDIR/err"

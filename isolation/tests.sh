@@ -185,12 +185,8 @@ test_signal () {
 
 try () {
     test=$1
+    egid=$(id -g)
     shift
-    if [[ $EUID -eq 0 ]]; then
-        priv=p
-    else
-        priv=u
-    fi
-    printf "%-15s\t%s\t" $test $priv
+    printf "%-15s\t%5d\t%5d\t" $test $EUID $egid
     test_$test "$@" 2>> $LOGDIR/test_$test.$priv
 }
