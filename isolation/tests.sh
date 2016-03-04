@@ -83,6 +83,12 @@ test_etc_shadow () {
     ./su_wrap.py
 }
 
+test_mknod () {
+    # Try to make some device files. If this works, we might be able to later
+    # read or write them to do things we shouldn't. Try on all mount points.
+    ./mknods $(cat /proc/mounts | cut -d' ' -f2)
+}
+
 test_remount_root () {
     # Re-mount the root filesystem. Notes:
     #
@@ -193,5 +199,5 @@ try () {
     egid=$(id -g)
     shift
     printf "%-15s\t%5d\t%5d\t" $test $EUID $egid
-    test_$test "$@" 2>> $LOGDIR/test_$test.$priv
+    test_$test "$@" 2>> $LOGDIR/test_$test.$EUID,$egid
 }

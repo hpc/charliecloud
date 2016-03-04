@@ -1,7 +1,7 @@
-PROGS := chroot-escape echo-euid setgroups
+PROGS := chroot-escape echo-euid mknods setgroups
 SETUIDS := echo-euid.setuid
 ALL := $(PROGS) $(SETUIDS)
-CFLAGS := -std=gnu11
+CFLAGS := -std=gnu11 -Wall
 
 .PHONY: all clean
 all: $(ALL)
