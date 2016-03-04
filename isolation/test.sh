@@ -37,21 +37,18 @@ cd $(dirname $0)
 echo
 echo '# test.sh starting'
 
-printf '# running privileged:  '
-[[ $EUID == 0 ]] && echo "unsafe: euid=$EUID" || echo "safe: euid=$EUID"
-printf '# setuid binaries:     '
+printf "# running as:        euid=$EUID\n"
+printf '# setuid binaries:   '
 find_setuid /
-printf '# suid filesystems:    '
+printf '# suid filesystems:  '
 find_suidmounts
-printf '# user namespace:      '
+printf '# user namespace:    '
 find_user_ns
 
-if [[ $EUID -eq 0 ]]; then
-    ./test-operations.sh
-else
+if [[ $EUID -eq 0 && ! IN_USERNS ]]; then
     ./test-escalation.sh
-    ./test-operations.sh
 fi
+./test-operations.sh
 
 echo
 echo '# test.sh done'

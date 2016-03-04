@@ -14,9 +14,9 @@ find_setuid () {
     setgid_ct=$(cat $TMPDIR/setgid_files | wc -l)
     setcap_ct=$(cat $TMPDIR/setcap_files | wc -l)
     if [[ $setuid_ct -gt 0 || $setgid_ct -gt 0 ]]; then
-        echo "unsafe: $setuid_ct setuid, $setgid_ct setgid, $setcap_ct setcap"
+        echo "$setuid_ct setuid, $setgid_ct setgid, $setcap_ct setcap"
     else
-        echo "safe: no setuid/setgid/setcap binaries found"
+        echo "no setuid/setgid/setcap binaries found"
     fi
 }
 
@@ -24,18 +24,20 @@ find_suidmounts () {
     findmnt -ln -o target,options | fgrep -v nosuid > $TMPDIR/suidmounts
     suidmount_ct=$(cat $TMPDIR/suidmounts | wc -l)
     if [[ $suidmount_ct -gt 0 ]]; then
-        echo "unsafe: $suidmount_ct filesystems mounted suid"
+        echo "$suidmount_ct filesystems mounted suid"
     else
-        echo "safe: no suid filesystems"
+        echo "no suid filesystems"
     fi
 }
 
 find_user_ns () {
     uid_map=$(sed -E 's/\s+/ /g' /proc/self/uid_map)
     if [[ $uid_map = ' 0 0 4294967295' ]]; then
-        echo "unsafe: uid_map is default"
+        echo "uid_map is default"
+        IN_USERNS=
     else
-        echo "safe: uid_map is not default"
+        echo "in userns (uid_map is not default)"
+        IN_USERNS=yes
     fi
 }
 

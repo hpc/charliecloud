@@ -30,7 +30,7 @@ TAR=$OUTDIR/$(echo $IMAGE | sed 's/\//./').tar.gz
 
 cid=$($DOCKER create --read-only $IMAGE)
 $DOCKER ps -af "id=$cid"
-$DOCKER export $cid | gzip -9 > $TAR
+$DOCKER export $cid | gzip -6 > $TAR
 $DOCKER rm $cid > /dev/null
 ls -lh $TAR
 
