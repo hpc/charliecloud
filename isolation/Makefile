@@ -1,4 +1,4 @@
-PROGS := chroot-escape echo-euid
+PROGS := chroot-escape echo-euid setgroups
 SETUIDS := echo-euid.setuid
 ALL := $(PROGS) $(SETUIDS)
 CFLAGS := -std=gnu11
@@ -15,5 +15,5 @@ $(ALL): Makefile
 
 %.setuid: %
 	cp $< $@
-	chown root:root $@
-	chmod 4755 $@
+	sudo chown root:root $@
+	sudo chmod 4755 $@

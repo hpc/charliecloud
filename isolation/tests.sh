@@ -120,6 +120,11 @@ test_remount_root () {
     printf '\t%s exited with code %d\n' $MOUNT $mountret
 }
 
+test_setgroups () {
+    # Can we change our supplemental groups with setgroups(2)?
+    ./setgroups
+}
+
 test_setuid () {
     # Escalate privilege with a setuid binary.
     ESC_ME=./echo-euid.setuid
