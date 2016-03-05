@@ -13,6 +13,9 @@ TESTDIR is used for test scratch space and output.
 PERMDIRn are perms_test directories created with make-perms-test. These must
 be crated with "you" being "nobody".
 
+Summary of all tests with no chatter appears in TESTDIR/summary.
+Standard output from this script appears in TESTDIR/stdout.
+
 EOF
     exit 1
 }
@@ -32,6 +35,10 @@ IHOME=$(readlink -f $(dirname $0))
 
 mkdir $TESTDIR
 
+# Redirect stdout through tee (http://stackoverflow.com/a/3403786/396038)
+exec > >(tee -i $TESTDIR/stdout)
+
+
 GID=$(id -g)
 
 for cuid in $UID 0 65534; do
@@ -45,7 +52,7 @@ for cuid in $UID 0 65534; do
     done
 done
 
-summary=$TESTDIR/all.out
+summary=$TESTDIR/summary
 cat $TESTDIR/*.out | egrep -v '^(#|$)' | sort > $summary
 
 echo
