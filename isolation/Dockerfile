@@ -10,7 +10,7 @@ RUN apt-get update \
 # Testing support software.
 COPY . test
 WORKDIR /test
-RUN make -j4
+RUN make -j$(getconf _NPROCESSORS_ONLN)
 
 # Leave a gaping back door in /etc/shadow (no password for root).
 #RUN sed -iE 's/root:\*:/root::/' /etc/shadow

@@ -1,19 +1,10 @@
-PROGS := chroot-escape echo-euid mknods setgroups
-SETUIDS := echo-euid.setuid
-ALL := $(PROGS) $(SETUIDS)
+BINS := chroot-escape echo-euid mknods setgroups
+ALL := $(BINS)
 CFLAGS := -std=gnu11 -Wall
 
-.PHONY: all clean
+.PHONY: all
 all: $(ALL)
+
+.PHONY: clean
 clean:
 	rm -f $(ALL)
-$(ALL): Makefile
-
-%: %.c
-	$(CC) $(CFLAGS) $< -o $@
-	chmod 755 $@
-
-%.setuid: %
-	cp $< $@
-	sudo chown root:root $@
-	sudo chmod 4755 $@
