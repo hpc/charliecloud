@@ -167,7 +167,7 @@ void enter_udss(char * newroot, char * oldroot, char ** binds)
    TRY (rmdir(oldroot));
 
    // Post pivot_root() tmpfs
-   TRY (mount(NULL, "/dev/shm", "tmpfs", 0, "size=4m"));  // for CLONE_NEWIPC
+   //TRY (mount(NULL, "/dev/shm", "tmpfs", 0, "size=4m"));  // for CLONE_NEWIPC
    TRY (mount(NULL, "/run", "tmpfs", 0, "size=10%"));
 }
 
@@ -274,7 +274,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
 /* Activate the desired isolation namespaces. */
 void setup_namespaces(bool userns_p, uid_t cuid, gid_t cgid)
 {
-   int flags = CLONE_NEWIPC | CLONE_NEWNS;
+   int flags = CLONE_NEWNS;
    int fd;
    uid_t euid = -1;
    gid_t egid = -1;

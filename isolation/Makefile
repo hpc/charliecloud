@@ -10,7 +10,7 @@ clean:
 $(ALL): Makefile
 
 %: %.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 	chmod 755 $@
 
 %.setuid: %
