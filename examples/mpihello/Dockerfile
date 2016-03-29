@@ -2,7 +2,7 @@ FROM debian:jessie
 
 # Install needed OS packages.
 RUN    apt-get update \
-    && apt-get install -y less g++ gcc make openssh-client wget
+    && apt-get install -y less g++ gcc make wget
 
 # Compile OpenMPI. We can't use the Debian package because
 # --disable-pty-support is needed to avoid "pipe function call failed when
@@ -18,15 +18,6 @@ RUN    cd openmpi-${MPI_VERSION} \
                    --disable-mpi-cxx \
                    --disable-mpi-fortran \
     && make -j$(getconf _NPROCESSORS_ONLN) install
-
-# Configure OpenMPI. We force TCP/IP communication to simulate a cluster.
-RUN    echo localhost >> /etc/openmpi-default-hostfile \
-    && echo 'plm_rsh_agent = ch-ssh' >> /etc/openmpi-mca-params.conf \
-    && echo 'orte_fork_agent = ch-ssh' >> /etc/openmpi-mca-params.conf \
-    && echo 'btl = tcp,self' >> /etc/openmpi-mca-params.conf
-
-# ch-ssh is needed for MPI to communicate
-COPY bin/ch-ssh /usr/bin
 
 # This example.
 COPY examples/mpihello /hello

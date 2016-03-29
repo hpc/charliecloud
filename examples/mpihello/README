@@ -3,8 +3,8 @@ OpenMPI application. It uses the host's mpirun command to run MPI ranks inside
 separate containers.
 
 In addition to the OpenMPI inside the container, you need OpenMPI installed on
-the host. This is very sensitive to versions; for example, even though Ubuntu
-Wily also has OpenMPI 1.6.5, the distribution package would not work for me
+the host. This is very sensitive to versions; for example, even with 1.6.5
+inside the container, the distribution 1.6.5 on the host did not work for me
 ("orte_util_nidmap_init failed"). A stock OpenMPI compiled from source, with
 the same configure arguments as in the Dockerfile, worked.
 

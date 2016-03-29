@@ -16,5 +16,5 @@ fi
 if [[ -n $1 ]]; then
     printf 'parent userns '
     stat -L --format='%i' /proc/self/ns/user
-    $CHBIN/ch-run /tmp/mpihello -- mpirun --nolocal -d -n $1 /hello/hello
+    mpirun -n $1 $CHBIN/ch-run /tmp/mpihello -- /hello/hello
 fi
