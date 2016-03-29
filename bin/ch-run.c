@@ -133,7 +133,7 @@ int main(int argc, char * argv[])
 void enter_udss(char * newroot, char * oldroot, char ** binds)
 {
    char * guestpath;
-   char * host_oldroot;
+   char * hostpath;
 
    LOG_IDS;
 
@@ -143,14 +143,21 @@ void enter_udss(char * newroot, char * oldroot, char ** binds)
       over itself. */
    TRY (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
+   // Mount tmpfses on guest /home and /mnt because guest root is read-only
+   TRY (0 > asprintf(&guestpath, "%s/mnt", newroot));
+   TRY (mount(NULL, guestpath, "tmpfs", 0, "size=4m"));
+   TRY (0 > asprintf(&guestpath, "%s/home", newroot));
+   TRY (mount(NULL, guestpath, "tmpfs", 0, "size=4m"));
    // Bind-mount default stuff at same guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
       TRY (0 > asprintf(&guestpath, "%s%s", newroot, DEFAULT_BINDS[i]));
       TRY (mount(DEFAULT_BINDS[i], guestpath, NULL, MS_REC | MS_BIND, NULL));
    }
-   // Mount tmpfs on guest /mnt because guest root is read-only
-   TRY (0 > asprintf(&guestpath, "%s/mnt", newroot));
-   TRY (mount(NULL, guestpath, "tmpfs", 0, "size=4m"));
+   // Bind-mount user's home directory at /home/$USER. The main use case is
+   // dotfiles.
+   TRY (0 > asprintf(&guestpath, "%s/home/%s", newroot, getenv("USER")));
+   TRY (mkdir(guestpath, 0755));
+   TRY (mount(getenv("HOME"), guestpath, NULL, MS_REC | MS_BIND, NULL));
    // Bind-mount user-specified directories at guest /mnt/i
    for (int i = 0; binds[i] != NULL; i++) {
       TRY (0 > asprintf(&guestpath, "%s/mnt/%d", newroot, i));
@@ -159,9 +166,9 @@ void enter_udss(char * newroot, char * oldroot, char ** binds)
    }
 
    // Pivot into the new root
-   TRY (0 > asprintf(&host_oldroot, "%s%s", newroot, oldroot));
-   TRY (mkdir(host_oldroot, 0755));
-   TRY (syscall(SYS_pivot_root, newroot, host_oldroot));
+   TRY (0 > asprintf(&hostpath, "%s%s", newroot, oldroot));
+   TRY (mkdir(hostpath, 0755));
+   TRY (syscall(SYS_pivot_root, newroot, hostpath));
    TRY (chdir("/"));
    TRY (umount2(oldroot, MNT_DETACH));
    TRY (rmdir(oldroot));
