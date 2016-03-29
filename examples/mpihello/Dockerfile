@@ -23,7 +23,3 @@ RUN    cd openmpi-${MPI_VERSION} \
 COPY examples/mpihello /hello
 WORKDIR /hello
 RUN make clean && make
-
-# Default command is just a shell.
-WORKDIR /
-CMD ["/bin/bash"]

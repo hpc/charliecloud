@@ -51,3 +51,4 @@ mkdir "$NEWROOT"
 echo 'This directory is a Charliecloud container image.' > "$NEWROOT/$SENTINEL"
 tar x -C "$NEWROOT" -f "$TARBALL" --exclude='dev/*'
 
+echo "$NEWROOT unpacked ok"
