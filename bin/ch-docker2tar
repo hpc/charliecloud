@@ -34,7 +34,6 @@ if ( command -v pigz >/dev/null 2>&1 ); then
 else
     GZIP=gzip
 fi
-echo $GZIP
 
 cid=$($DOCKER create --read-only $IMAGE)
 $DOCKER ps -af "id=$cid"
