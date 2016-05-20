@@ -132,6 +132,11 @@ test_setgroups () {
 }
 
 test_setuid () {
+    # Try to seteuid(2) inappropriately.
+    ./setuid
+}
+
+test_setuid_bin () {
     # Escalate privilege with a setuid binary.
     ESC_ME=./echo-euid.setuid
     if [[ ! -e $ESC_ME ]]; then

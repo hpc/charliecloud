@@ -1,4 +1,4 @@
-BINS := chroot-escape echo-euid mknods setgroups
+BINS := chroot-escape echo-euid mknods setgroups setuid
 ALL := $(BINS)
 CFLAGS := -std=gnu11 -Wall
 

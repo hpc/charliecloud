@@ -13,3 +13,4 @@ try mknod
 try remount_root
 try setgroups
 try signal
+try setuid
