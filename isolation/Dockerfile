@@ -12,14 +12,6 @@ COPY . test
 WORKDIR /test
 RUN make -j$(getconf _NPROCESSORS_ONLN)
 
-# Leave a gaping back door in /etc/shadow (no password for root).
-#RUN sed -iE 's/root:\*:/root::/' /etc/shadow
-
-# We need access to some typically setuid binaries. Thus, remove their setuid
-# and setgid bits so they don't get deleted during the Charliecloud image
-# build process.
-RUN chmod -v ug-s /bin/mount
-
 # Default command is just a shell.
 WORKDIR /
 CMD ["/bin/bash"]
