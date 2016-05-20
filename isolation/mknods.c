@@ -28,7 +28,7 @@ int main(int argc, char ** argv)
          min = char_devs[j + 1];
          if (0 > asprintf(&path, "%s/c%d.%d", dir, maj, min)) {
             printf("ERROR\tasprintf() failed with errno=%d\n", errno);
-            goto fail;
+            return 1;
          }
          fprintf(stderr, "trying to mknod %s\n", path);
          dev = makedev(maj, min);
@@ -45,24 +45,22 @@ int main(int argc, char ** argv)
             default:
                printf("ERROR\tmknod(2) failed on %s with errno=%d\n",
                       path, errno);
-               goto fail;
+               return 1;
             }
          } else {
             // created device OK, now try to remove it
             if (unlink(path)) {
                printf("ERROR\tmknod(2) succeeded on %s and then unlink(2) "
                       "failed with errno=%d", path, errno);
-               goto fail;
+               return 1;
             }
             printf("RISK\tmknod(2) succeeded on %s (now removed)\n", path);
-            goto fail;
+            return 1;
          }
       }
    }
 
    printf("SAFE\t%d devices in %d dirs failed\n",
           (i - 1) * (j / 2), i - 1);
-
-   fail:
-      ;
+   return 0;
 }
