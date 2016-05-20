@@ -36,7 +36,7 @@ else
 fi
 
 cid=$($DOCKER create --read-only $IMAGE)
-$DOCKER ps -af "id=$cid"
+#$DOCKER ps -af "id=$cid"
 $DOCKER export $cid | $GZIP -6 > $TAR
 $DOCKER rm $cid > /dev/null
 # FIXME: This is brittle. We want the filename and size, but not the rest, so
