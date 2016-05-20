@@ -77,7 +77,7 @@ echo "# standard error in $TESTDIR/err"
 echo "# isolation:"
 echo "#   container UID:    $CUID"
 echo "#   container GID:    $CGID"
-echo "#   user namespace:   ${I_USER:-no}"
+echo "#   user namespace:   ${I_USERNS:-no}"
 
 printf '# running test: '
 if [[ ! $I_USERNS ]]; then
