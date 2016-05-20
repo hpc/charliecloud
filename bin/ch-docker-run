@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# bash is needed for arrays.
+
 . $(dirname "$0")/base.sh
 
 usage () {
@@ -33,7 +35,7 @@ set -e
 MOUNTS=( /etc/passwd:/etc/passwd \
          /etc/group:/etc/group )
 
-while getopts 'ib:' opt; do
+while getopts 'b:ih' opt; do
     case $opt in
         i) INTERACTIVE=-it ;;
         b) MOUNTS+=( $OPTARG ) ;;

@@ -21,14 +21,14 @@ EOF
     exit 1
 }
 
-if [ "$#" -ne 2 -o "$1" = "--help" ]; then
+if [ "$#" -ne 2 ] || [ "$1" = "--help" ]; then
     usage
 fi
 IMAGE=$1
 OUTDIR=$2
 TAR=$OUTDIR/$(echo $IMAGE | sed 's/\//./g').tar.gz
 
-# Use parallel gzip if it's available.
+# Use parallel gzip if it's available. ("command -v" is POSIX.1-2008.)
 if ( command -v pigz >/dev/null 2>&1 ); then
     GZIP=pigz
 else

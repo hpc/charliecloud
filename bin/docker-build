@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Wrapper for docker build that works around some of the more user-hostile
 # behavior. Specifically:
@@ -9,7 +9,7 @@
 #     exists. This works around Docker's hostility to symlinks (e.g., see
 #     https://github.com/docker/docker/issues/1676).
 
-if [[ -f Dockerfile ]]; then
+if [ -f Dockerfile ]; then
     dockerfile="--file=$PWD/Dockerfile"
 else
     dockerfile=

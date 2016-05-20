@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 . $(dirname "$0")/base.sh
 
@@ -28,7 +28,7 @@ EOF
 
 set -e
 
-if [[ $# -lt 2 ]]; then
+if [ $# -lt 2 ]; then
     usage
 fi
 TARBALL="$1"
@@ -36,9 +36,11 @@ NEWROOT="$2"
 
 SENTINEL=WEIRD_AL_YANKOVIC
 
-if [[ -d $NEWROOT ]]; then
-    if [[    -f $NEWROOT/$SENTINEL
-          && -d $NEWROOT/bin && -d $NEWROOT/lib && -d $NEWROOT/usr ]]; then
+if [ -d "$NEWROOT" ]; then
+    if    [ -f "$NEWROOT/$SENTINEL" ] \
+       && [ -d "$NEWROOT/bin" ] \
+       && [ -d "$NEWROOT/lib" ] \
+       && [ -d "$NEWROOT/usr" ]; then
         echo "replacing existing image $NEWROOT" 1>&2
         rm -Rf $NEWROOT
     else
