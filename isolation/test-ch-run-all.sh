@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function usage () {
+usage () {
     cat 1>&2 <<EOF
 Isolation test driver for multiple variations of test-ch-run.sh
 
