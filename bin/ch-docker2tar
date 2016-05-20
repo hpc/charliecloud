@@ -26,7 +26,7 @@ if [ "$#" -ne 2 -o "$1" = "--help" ]; then
 fi
 IMAGE=$1
 OUTDIR=$2
-TAR=$OUTDIR/$(echo $IMAGE | sed 's/\//./').tar.gz
+TAR=$OUTDIR/$(echo $IMAGE | sed 's/\//./g').tar.gz
 
 # Use parallel gzip if it's available.
 if ( command -v pigz >/dev/null 2>&1 ); then
