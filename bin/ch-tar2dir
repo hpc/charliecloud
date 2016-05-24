@@ -28,6 +28,10 @@ EOF
 
 set -e
 
+if [ "$1" = --verbose ]; then
+    VERBOSE=v
+    shift
+fi
 if [ $# -lt 2 ]; then
     usage
 fi
@@ -36,7 +40,9 @@ NEWROOT="$2"
 
 SENTINEL=WEIRD_AL_YANKOVIC
 
-if [ -d "$NEWROOT" ]; then
+if [ ! -d "$NEWROOT" ]; then
+    echo "creating new image $NEWROOT"
+else
     if    [ -f "$NEWROOT/$SENTINEL" ] \
        && [ -d "$NEWROOT/bin" ] \
        && [ -d "$NEWROOT/lib" ] \
@@ -51,6 +57,6 @@ fi
 
 mkdir "$NEWROOT"
 echo 'This directory is a Charliecloud container image.' > "$NEWROOT/$SENTINEL"
-tar x -C "$NEWROOT" -f "$TARBALL" --exclude='dev/*'
+tar x$VERBOSE -C "$NEWROOT" -f "$TARBALL" --exclude='dev/*'
 
 echo "$NEWROOT unpacked ok"
