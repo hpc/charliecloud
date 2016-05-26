@@ -21,7 +21,10 @@ int main(void)
    TRY(mount("/tmp/newroot", "/tmp/newroot", NULL,
              MS_REC|MS_BIND|MS_PRIVATE, NULL));
    TRY(mkdir("/tmp/newroot/oldroot", 0755));
-   TRY(syscall(SYS_pivot_root, "/tmp/newroot", "/tmp/newroot/oldroot"));
+   TRY(chdir("/tmp"));
+   TRY(mount("/tmp", "/", NULL, MS_MOVE, NULL));
+   TRY(chroot("."));
+   TRY(syscall(SYS_pivot_root, "/newroot", "/newroot/oldroot"));
 
    printf("ok\n");
 }
