@@ -58,3 +58,5 @@ bin/ch-run
 
 isolation/test
 examples/mpihello/hello
+examples/syscalls/pivot_root
+examples/syscalls/userns

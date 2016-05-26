@@ -15,14 +15,13 @@
 int main(void)
 {
    TRY(unshare(CLONE_NEWNS|CLONE_NEWUSER));
-   TRY(mount("/tmp", "/", NULL, MS_MOVE, NULL));
-   if (mkdir("/newroot", 0755))
-      if (errno != EEXIST)
-         TRY(errno);
-   TRY(mount(NULL, "/newroot", "tmpfs", 0, NULL));
-   TRY(mount("/newroot", "/newroot", NULL, MS_REC|MS_BIND|MS_PRIVATE, NULL));
-   TRY(mkdir("/newroot/oldroot", 0755));
-   TRY(syscall(SYS_pivot_root, "/newroot", "/newroot/oldroot"));
+   TRY(mount(NULL, "/tmp", "tmpfs", 0, NULL));
+   TRY(mkdir("/tmp/newroot", 0755));
+   TRY(mount(NULL, "/tmp/newroot", "tmpfs", 0, NULL));
+   TRY(mount("/tmp/newroot", "/tmp/newroot", NULL,
+             MS_REC|MS_BIND|MS_PRIVATE, NULL));
+   TRY(mkdir("/tmp/newroot/oldroot", 0755));
+   TRY(syscall(SYS_pivot_root, "/tmp/newroot", "/tmp/newroot/oldroot"));
 
    printf("ok\n");
 }
