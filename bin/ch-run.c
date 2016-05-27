@@ -8,19 +8,24 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <libgen.h>
+#include <linux/magic.h>
 #include <sched.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <sys/statfs.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 void enter_udss(char * newroot, char * oldroot, char ** binds);
-void fatal(char * file, int line);
+void fatal(char * fmt, ...);
+void fatal_errno(char * file, int line);
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
@@ -48,7 +53,7 @@ const char * DEFAULT_BINDS[] = { "/dev",
 
 /* Test some result: if not zero, exit with an error. This is a macro so we
    have access to the file and line number. */
-#define TRY(x) if (x) fatal(__FILE__, __LINE__)
+#define TRY(x) if (x) fatal_errno(__FILE__, __LINE__)
 
 /* Log the current UIDs. */
 #define LOG_IDS log_ids(__func__, __LINE__)
@@ -129,18 +134,20 @@ int main(int argc, char * argv[])
 /** Supporting functions **/
 
 /* Enter the UDSS. After this, we are inside the UDSS and no longer have
-   access to host resources except as provided. */
+   access to host resources except as provided.
+
+   Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
+   multiple undocumented error conditions. This dance is explained in detail
+   in examples/syscalls/pivot_root.c. */
 void enter_udss(char * newroot, char * oldroot, char ** binds)
 {
    char * guestpath;
    char * hostpath;
+   struct statfs st;
 
    LOG_IDS;
 
-   /* pivot_root(2) fails with EINVAL in a couple of undocumented conditions:
-      into shared mounts, and into any filesystem that was mounted before
-      CLONE_NEWUSER. The standard trick is to recursively bind-mount NEWROOT
-      over itself. */
+   // Claim newroot for this namespace
    TRY (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
    // Mount tmpfses on guest /home and /mnt because guest root is read-only
@@ -165,6 +172,26 @@ void enter_udss(char * newroot, char * oldroot, char ** binds)
       TRY (mount(binds[i], guestpath, NULL, MS_BIND, NULL));
    }
 
+   // Create an intermediate root filesystem if the one we have is the rootfs.
+   TRY (statfs("/", &st));
+   if (st.f_type == RAMFS_MAGIC || st.f_type == TMPFS_MAGIC) {
+      char * nr_base;
+      char * nr_copy;
+      char * nr_dir;
+
+      TRY (NULL == (nr_copy = strdup(newroot)));
+      nr_dir = dirname(nr_copy);
+      TRY (NULL == (nr_copy = strdup(newroot)));
+      nr_base = basename(nr_copy);
+
+      TRY (mount(nr_dir, nr_dir, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
+      TRY (chdir(nr_dir));
+      TRY (mount(nr_dir, "/", NULL, MS_MOVE, NULL));
+      TRY (chroot("."));
+
+      TRY (0 > asprintf(&newroot, "/%s", nr_base));
+   }
+
    // Pivot into the new root
    TRY (0 > asprintf(&hostpath, "%s%s", newroot, oldroot));
    TRY (mkdir(hostpath, 0755));
@@ -178,11 +205,21 @@ void enter_udss(char * newroot, char * oldroot, char ** binds)
    TRY (mount(NULL, "/run", "tmpfs", 0, "size=10%"));
 }
 
-/* Report the string expansion of errno on stderr, then exit unsuccessfully. */
-void fatal(char * file, int line)
+/* Print a formatted error message on stderr, then exit unsuccessfully. */
+void fatal(char * fmt, ...)
 {
-   fprintf(stderr, "%s:%d: %d: %s\n", file, line, errno, strerror(errno));
+   va_list ap;
+
+   va_start(ap, fmt);
+   vfprintf(stderr, fmt, ap);
+   va_end(ap);
    exit(EXIT_FAILURE);
+}
+
+/* Report the string expansion of errno on stderr, then exit unsuccessfully. */
+void fatal_errno(char * file, int line)
+{
+   fatal("%s:%d: %d: %s\n", file, line, errno, strerror(errno));
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
