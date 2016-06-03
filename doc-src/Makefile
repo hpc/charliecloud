@@ -16,14 +16,21 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 # Help dumps from scripts
 SCRIPTHELPS := $(addsuffix .help, \
-	          $(notdir $(shell find ../bin -executable -type f)))
+	          $(subst ../bin/,,$(shell find ../bin -executable -type f)))
 
 .PHONY: help clean html web dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
 all: html
 
-%.help: ../bin/%
-	$< --help > $@
+# All programs and scripts need to accept "--help", even if they normally use
+# single-character flags only.
+#
+# Adding in $(SCRIPTHELPS) is voodoo to make the pattern work. Otherwise, it
+# tries to build e.g. vm/vcluster.help from vm/../bin/vcluster. This is
+# documented, but I didn't really understand. See
+# http://stackoverflow.com/a/13552576/396038
+$(SCRIPTHELPS): %.help: ../bin/%
+	$< --help > $@ 2>&1
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -48,7 +55,9 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf $(BUILDDIR)/*
+	rm -rf $(BUILDDIR)/*
+	find . -name '*.help' -delete
+	rm -rf ../doc/* ../doc/.buildinfo ../doc/.nojekyll
 
 html: $(SCRIPTHELPS)
 	$(SPHINXBUILD) -b html -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/html
