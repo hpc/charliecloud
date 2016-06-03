@@ -6,7 +6,6 @@
 
 usage () {
     cat 1>&2 <<EOF
-
 Run CMD in a Docker container TAG.
 
 Usage:
@@ -25,9 +24,8 @@ Options:
   -b  Bind-mount HOSTDIR at GUESTDIR inside the container (can be repeated)
 
 You must have sufficient privilege to run the docker commands.
-
 EOF
-    exit 1
+    exit ${1:-1}
 }
 
 set -e
@@ -35,10 +33,17 @@ set -e
 MOUNTS=( /etc/passwd:/etc/passwd \
          /etc/group:/etc/group )
 
+if [[ $1 = --help ]]; then
+    usage 0
+fi
+
 while getopts 'b:ih' opt; do
     case $opt in
         i) INTERACTIVE=-it ;;
         b) MOUNTS+=( $OPTARG ) ;;
+        h)
+            usage 0
+            ;;
         \?)
             usage
             ;;

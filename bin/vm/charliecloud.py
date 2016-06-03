@@ -227,7 +227,7 @@ def o_direct_p(dir_):
 
 def path(dir_=None):
    bin_dir = os.path.dirname(__file__)
-   result = os.path.realpath(os.path.join(bin_dir, '..'))
+   result = os.path.realpath(os.path.join(bin_dir, '../..'))
    if (dir_ is not None):
       result = os.path.join(result, dir_)
    return result

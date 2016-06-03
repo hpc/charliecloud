@@ -1,0 +1,43 @@
+This documentation is built using Sphinx with the sphinx-rtd-theme.
+
+Currently, we use Python 2.7 for building the docs. Python 3.x is untested.
+
+
+To build the HTML
+-----------------
+
+Make sure you have a current version of sphinx-rtd-theme installed:
+
+  $ pip install sphinx-rtd-theme
+
+Then:
+
+  $ make
+
+The HTML files are copied to ../doc with rsync. Anything that should not be
+copied should be listed in RSYNC_EXCLUDE.
+
+There is also a "clean" target that removes all the derived files as well as
+everything in ../doc.
+
+
+Publishing to the web
+---------------------
+
+If you have write access to the repository, you can update the web
+documentation (i.e., http://hpc.github.io/charliecloud).
+
+Normally, ../doc is normal directory that is ignored by Git. To publish to the
+web, that diretory needs to contain a Git checkout of the gh-pages branch (not
+a submodule). To set that up:
+
+  $ rm -Rf doc
+  $ git clone git@github.com:hpc/charliecloud.git doc
+  $ cd doc
+  $ git checkout gh-pages
+
+To publish:
+
+  $ make doc-web
+
+It sometimes takes a few minutes for the web pages to update.

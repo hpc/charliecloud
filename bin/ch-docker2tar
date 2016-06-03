@@ -18,10 +18,13 @@ Usage:
 You must have sufficient privilege to run the docker commands.
 
 EOF
-    exit 1
+    exit ${1:-1}
 }
 
-if [ "$#" -ne 2 ] || [ "$1" = "--help" ]; then
+if [ "$1" = "--help" ]; then
+    usage 0
+fi
+if [ "$#" -ne 2 ]; then
     usage
 fi
 IMAGE=$1

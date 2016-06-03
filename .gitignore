@@ -48,10 +48,10 @@ Session.vim
 ### Custom ###
 
 *.py[cod]
+*.help
 
 doc/
 doc-src/_build
-doc-src/*.help
 
 a.out
 bin/ch-run
