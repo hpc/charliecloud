@@ -1,36 +1,34 @@
-Charliecloud is a lightweight virtual machine clustering technology based on
-QEMU and KVM. Charliecloud provides:
+Charliecloud provides user-defined software stacks (UDSS) for high-performance
+computing (HPC) centers. This "bring your own software stack" functionality
+addresses needs such as:
 
-* Virtual clusters on top of existing HPC-style compute clusters, with minimal
-  reconfiguration effort.
+  * software dependencies that are numerous, complex, unusual, diferently
+    configured, or simply newer/older than what the center provides;
 
-* Small-scale virtual clusters of equivalent configuration atop workstations,
-  with easy transfer between workstation and cluster mode, to speed
-  development and configuration of application code.
+  * build-time requirements unavailable within the center, such as relatively
+    unfettered internet access;
 
-* Easy-to-use job-oriented virtual computing, where cluster lifetime follows a
-  single bounded computation (rather than offering a persistent service).
+  * validated software stacks and configuration to meet the standards of a
+    particular field of inquiry;
 
-Patches are welcome on the software itself as well as documentation.
+  * portability of environments between resources, including workstations and
+    other test and development system not managed by the center;
 
-Charliecloud is copyright © 2015 Los Alamos National Security, LLC. This
-software has been approved for open source release, LA-CC 14-096.
+  * consistent environments, even archivally so, that can be easily,
+    reliabily, and verifiably reproduced in the future; and/or
 
-This material was produced under U.S. Government contract DE-AC52-06NA25396
-for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
-National Security, LLC for the U.S. Department of Energy. The U.S. Government
-has rights to use, reproduce, and distribute this software. NEITHER THE
-GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
-OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
-is modified to produce derivative works, such modified software should be
-clearly marked, so as not to confuse it with the version available from LANL.
+  * usability and comprehensibility.
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not
-use this file except in compliance with the License. You may obtain a copy of
-the License at http://www.apache.org/licenses/LICENSE-2.0
+This is done using Linux user namespaces to run industry-standard Docker
+containers with no privileged operations or daemons and minimal configuration
+changes on center resources. This simple approach avoids most security risks
+while maintaining access to the performance and functionality already on
+offer.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
+Patches are much appreciated on the software itself as well as documentation.
+We are friendly and welcoming of diversity on all dimensions.
+
+Charliecloud's original path was to use virtual machines (QEMU and KVM). This
+code and documentation has been removed from the master branch but is still
+available in the virtual-machines branch. We are open to re-including it in
+master, given a volunteer to maintain it.
