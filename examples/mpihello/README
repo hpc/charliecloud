@@ -1,0 +1,29 @@
+This example demonstrates use of Charliecloud containers to run a simple
+OpenMPI application. It uses the host's mpirun command to run MPI ranks inside
+separate containers.
+
+In addition to the OpenMPI inside the container, you need OpenMPI installed on
+the host. This is very sensitive to versions; for example, even with 1.6.5
+inside the container, the distribution 1.6.5 on the host did not work for me
+("orte_util_nidmap_init failed"). A stock OpenMPI compiled from source, with
+the same configure arguments as in the Dockerfile, worked.
+
+A script test.sh is provided to demonstrate the build and test procedure. It
+is designed to run on a single node where you have sudo.
+
+With the argument "build", test.sh builds a Docker container and unpacks it in
+/tmp. With an different argument, it runs the hello app with the specified
+number of ranks. You can do both as well. For example:
+
+  $ ./test.sh build 2
+
+Example output:
+
+  $ ./test.sh 4
+  parent userns 4026531837
+  0: init ok, 4 ranks, userns 4026532257
+  1: init ok, 4 ranks, userns 4026532259
+  2: init ok, 4 ranks, userns 4026532261
+  3: init ok, 4 ranks, userns 4026532263
+  0: send/receive ok
+  0: finalize ok

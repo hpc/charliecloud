@@ -1,0 +1,29 @@
+#!/bin/sh
+
+if [ "$1" = --help ]; then
+    cat <<EOF
+Wrapper for docker build that works around some of the more user-hostile
+behavior. Specifically:
+
+  * Add the HTTP proxy environment variables.
+
+  * Use the Dockerfile in CWD regardless of the build context, if one exists.
+    This works around Docker's hostility to symlinks (e.g., see
+    https://github.com/docker/docker/issues/1676).
+EOF
+    exit 0
+fi
+
+if [ -f Dockerfile ]; then
+    dockerfile="--file=$PWD/Dockerfile"
+else
+    dockerfile=
+fi
+
+sudo docker build --build-arg HTTP_PROXY=$HTTP_PROXY \
+                  --build-arg HTTPS_PROXY=$HTTPS_PROXY \
+                  --build-arg http_proxy=$http_proxy \
+                  --build-arg https_proxy=$https_proxy \
+                  --build-arg no_proxy=$no_proxy \
+                  $dockerfile \
+                  "$@"

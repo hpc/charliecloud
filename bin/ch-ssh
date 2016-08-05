@@ -1,0 +1,23 @@
+#!/bin/sh
+
+echo "$@" 1>&2
+
+. $(dirname $0)/base.sh
+
+set -e
+
+usage () {
+    cat 1>&2 <<EOF
+
+foo bar
+
+Usage:
+
+  $ $(basename $0) HOST IMAGE
+
+image refers to path on destination host
+
+
+EOF
+    exit 1
+}

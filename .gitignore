@@ -54,3 +54,9 @@ doc/
 doc-src/_build
 
 a.out
+bin/ch-run
+
+isolation/test
+examples/mpihello/hello
+examples/syscalls/pivot_root
+examples/syscalls/userns

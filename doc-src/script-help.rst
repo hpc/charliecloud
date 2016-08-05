@@ -12,19 +12,19 @@ scripts.
 newimage
 ========
 
-.. literalinclude:: newimage.help
+.. literalinclude:: vm/newimage.help
    :language: text
 
 
 oneguest
 ========
 
-.. literalinclude:: oneguest.help
+.. literalinclude:: vm/oneguest.help
    :language: text
 
 
 vcluster
 ========
 
-.. literalinclude:: vcluster.help
+.. literalinclude:: vm/vcluster.help
    :language: text
