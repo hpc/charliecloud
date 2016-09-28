@@ -59,5 +59,6 @@ if [ $RUN ]; then
     print_info
     echo
     echo 'running container'
+    echo
     ch-run -d . $IMAGE /mnt/0/hello.sh
 fi
