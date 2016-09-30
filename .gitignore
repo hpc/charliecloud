@@ -47,14 +47,16 @@ Session.vim
 
 ### Custom ###
 
-*.py[cod]
 *.help
+*.o
+*.py[cod]
 
 doc/
 doc-src/_build
 
 a.out
 bin/ch-run
+bin/ch-ssh
 
 isolation/test
 examples/mpihello/hello

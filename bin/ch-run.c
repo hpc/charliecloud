@@ -13,7 +13,6 @@
 #include <sched.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
@@ -23,9 +22,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "charliecloud.h"
+
 void enter_udss(char * newroot, char * oldroot, char ** binds);
-void fatal(char * fmt, ...);
-void fatal_errno(char * file, int line);
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
@@ -51,10 +50,6 @@ const char * DEFAULT_BINDS[] = { "/dev",
 /* Number of supplemental GIDs we can deal with. */
 #define SUPP_GIDS_MAX 32
 
-/* Test some result: if not zero, exit with an error. This is a macro so we
-   have access to the file and line number. */
-#define TRY(x) if (x) fatal_errno(__FILE__, __LINE__)
-
 /* Log the current UIDs. */
 #define LOG_IDS log_ids(__func__, __LINE__)
 
@@ -63,16 +58,16 @@ const char * DEFAULT_BINDS[] = { "/dev",
 
 const char usage[] = "\
 \n\
-Run a command with new root directory and partial isolation using namespaces.\n\
+Run a command in a Charliecloud container.\n\
 \v\
 Example:\n\
 \n\
-  $ ch-run /tmp/foo echo hello world\n\
-  hello world\n\
+  $ ch-run /data/foo echo hello\n\
+  hello\n\
 \n\
 You cannot use this program to actually change your UID.";
 
-const char args_doc[] = "NEWROOT CMD [ARGS ...]";
+const char args_doc[] = "NEWROOT CMD [ARG...]";
 
 const struct argp_option options[] = {
    { "dir",       'd', "DIR", 0,
@@ -109,11 +104,8 @@ int main(int argc, char * argv[])
    args.verbose = 0;
    TRY (setenv("ARGP_HELP_FMT", "opt-doc-col=20,no-dup-args-note", 0));
    TRY (argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args));
-   if (args.user_cmd_start >= argc - 1) {
-      fprintf(stderr, "%s: NEWROOT and/or CMD not specified\n",
-              program_invocation_short_name);
-      exit(EXIT_FAILURE);
-   }
+   if (args.user_cmd_start >= argc - 1)
+      fatal("NEWROOT and/or CMD not specified\n");
    assert(args.binds[USER_BINDS_MAX] == NULL);  // array overrun in argp_parse?
    args.newroot = argv[args.user_cmd_start++];
 
@@ -205,23 +197,6 @@ void enter_udss(char * newroot, char * oldroot, char ** binds)
    TRY (mount(NULL, "/run", "tmpfs", 0, "size=10%"));
 }
 
-/* Print a formatted error message on stderr, then exit unsuccessfully. */
-void fatal(char * fmt, ...)
-{
-   va_list ap;
-
-   va_start(ap, fmt);
-   vfprintf(stderr, fmt, ap);
-   va_end(ap);
-   exit(EXIT_FAILURE);
-}
-
-/* Report the string expansion of errno on stderr, then exit unsuccessfully. */
-void fatal_errno(char * file, int line)
-{
-   fatal("%s:%d: %d: %s\n", file, line, errno, strerror(errno));
-}
-
 /* If verbose, print uids and gids on stderr prefixed with where. */
 void log_ids(const char * func, int line)
 {
@@ -256,13 +231,10 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
    case 'd':
       for (i = 0; as->binds[i] != NULL; i++)
          ;
-      if (i < USER_BINDS_MAX) {
+      if (i < USER_BINDS_MAX)
          as->binds[i] = arg;
-      } else {
-         fprintf(stderr, "%s: --dir can be used at most %d times\n",
-                 program_invocation_short_name, USER_BINDS_MAX);
-         exit(EXIT_FAILURE);
-      }
+      else
+         fatal("--dir can be used at most %d times\n", USER_BINDS_MAX);
       break;
    case 'g':
       errno = 0;
@@ -314,8 +286,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
    }
 
    execvp(argv[0], argv);  // only returns if error
-   fprintf(stderr, "%s: can't execute: %s\n", program_invocation_short_name,
-           strerror(errno));
+   fatal("can't execute: %s\n", strerror(errno));
 }
 
 /* Activate the desired isolation namespaces. */
