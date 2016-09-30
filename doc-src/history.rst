@@ -7,6 +7,12 @@ A detailed version history is available in the Git commit log.
    :depth: 2
    :local:
 
+v0.2.0, FIXME
+=============
+
+* Switch to containers rather than virtual machines. (VM code remains
+  available under the :code:`virtual-machines` branch.)
+
 v0.1.5, 2015-Jun-16
 ===================
 

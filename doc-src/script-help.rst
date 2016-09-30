@@ -1,30 +1,46 @@
-Script help
-***********
+Help text for executables
+*************************
 
 This section contains the :code:`--help` output for each of the Charliecloud
-scripts.
+exectuables.
 
 .. contents::
    :depth: 2
    :local:
 
 
-newimage
-========
+ch-docker2tar
+=============
 
-.. literalinclude:: vm/newimage.help
+.. literalinclude:: ch-docker2tar.help
    :language: text
 
+ch-docker-run
+=============
 
-oneguest
-========
-
-.. literalinclude:: vm/oneguest.help
+.. literalinclude:: ch-docker-run.help
    :language: text
 
+ch-run
+======
 
-vcluster
-========
+.. literalinclude:: ch-run.help
+   :language: text
 
-.. literalinclude:: vm/vcluster.help
+ch-ssh
+======
+
+.. literalinclude:: ch-ssh.help
+   :language: text
+
+ch-tar2dir
+==========
+
+.. literalinclude:: ch-tar2dir.help
+   :language: text
+
+docker-build
+============
+
+.. literalinclude:: docker-build.help
    :language: text

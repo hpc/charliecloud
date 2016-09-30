@@ -1,13 +1,7 @@
-Charliecloud Documentation
-**************************
+Overview
+********
 
 .. include:: ../README
-
-This documentation is for Charliecloud version |release| (Git commit
-|version|) and was built |today|.
-
-Select your topic of interest at left. If you want to start at the beginning,
-try the :doc:`installation instructions <install>`.
 
 .. note::
 
@@ -15,6 +9,8 @@ try the :doc:`installation instructions <install>`.
    to indicate commands executed on the host and :code:`>` for commands
    executed in a guest.
 
+This documentation is for Charliecloud version |release| (Git commit
+|version|) and was built |today|.
 
 .. toctree::
    :numbered:
@@ -22,11 +18,7 @@ try the :doc:`installation instructions <install>`.
 
    install
    tutorial
-   networking
-   fs-passthrough
-   image-setup
    testing
    script-help
    faq
-   api
    history

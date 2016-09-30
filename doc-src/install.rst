@@ -1,221 +1,166 @@
-Installing Charliecloud
-***********************
+Installation
+************
 
 .. contents::
    :depth: 2
    :local:
 
-.. note::
+Prequisites
+===========
 
-  Charliecloud supports Linux hosts. OS X and Windows hosts are not currently
-  supported because filesystem passthrough support is missing. For the same
-  reason, OS X and Windows guests are unsupported. We hope to fix this
-  deficiency in the future (patches are welcome!).
+Charliecloud is a simple system with limited prerequisites. If your system
+meets these prerequisites but Charliecloud doesn't work, please report that as
+a bug.
 
-Installing on Linux
-===================
+Run time
+--------
 
-This file explains how to install Charliecloud and run a small virtual cluster
-on your x86-64 Linux machine. You can run Charliecloud over X11, so this
-machine need not be your desktop or laptop.
+Systems used for running images need:
 
-Charliecloud is designed to have a fairly small number of dependencies, but
-unfortunately, the major ones (QEMU itself and VDE networking) require
-building from source.
+* Recent Linux kernel with :code:`CONFIG_USER_NS=y`
+* C compiler and standard library
+* POSIX shell and utilities
 
-The below assumes you put tarballs in :code:`/usr/local/src` and wish to install
-into :code:`/usr/local`.
+The kernel version is vague because it's not a simple number. The upstream
+kernel documentation says 3.10+ is sufficient. However, RHEL7 derivatives have
+a patch to disable user namespaces in concert with mount namespaces. Tested by
+us and working are 4.2 (Ubuntu) and 4.4 (Ubuntu as well as upstream
+:code:`kernel.org`).
 
-These instructions use Bash syntax.
+Build time
+----------
 
+Systems used for building images need the run-time prerequisites, plus:
 
-Miscellaneous supporting software
----------------------------------
-
-You need:
-
-* A reasonably recent version of Git.
-
-* GNU Stow (optional but highly recommended, as QEMU wants to mess with
-  permissions of shared directories).
-
-* Python 2.7.
-
-* Python packages :code:`Sphinx` and :code:`sphinx-rtd-theme` (only if you
-  wish to build the documentation).
-
-You also need the build dependencies of QEMU and VDE. At a high level, these
-can be obtained by repeatedly attempting to build and installing what's
-missing.
-
-For Ubuntu Vivid::
-
-  $ sudo apt-get build-dep qemu
+* `Docker <https://www.docker.com/>`_, recent version. We do not make compatibility guarantees with any specific version, but let us know if you run into issues.
+* bash
+* root access using :code:`sudo`
 
 
-Charliecloud itself
--------------------
+Verifying the system calls
+==========================
 
-We install Charliecloud early, even though it cannot run until the
-prerequisites are met, in order to access included files needed for installing
-those prerequisites.
+The :code:`examples` directory includes a C program that exercises the key
+system calls Charliecloud depends on. If this works, then Charliecloud
+probably will too::
 
-This assumes you are putting Charliecloud in :code:`~/charliecloud`. You may
-want to put :code:`~/charliecloud/bin` on your :code:`$PATH`.
+  $ cd examples/syscalls
+  $ make
+  $ ./pivot_root
+  ok
 
-Install as follows::
-
-  $ cd ~
-  $ git clone git@git.lanl.gov:reidpr/charliecloud.git
-  $ cd charliecloud
-  $ make doc                # optional
-  $ bin/vcluster --version
-  0.1.4
+If :code:`pivot_root` instead reports an error, check the reported line number
+in :code:`pivot_root.c` to see what failed.
 
 
-KVM hypervisor
---------------
+Installing Docker
+=================
 
-Virtual machine performance is much better with the KVM hypervisor (as opposed
-to software emulation), which is built into the stock Linux kernel. All
-kernels and x86 CPUs which are even vaguely modern support KVM, so it is
-simply a matter of enabling KVM if it isn't already.
+While installing Docker is beyond the scope of this documentation, here are a
+few tips.
 
-.. note::
+Understand the security implications of Docker
+----------------------------------------------
 
-   While Charliecloud currently requires KVM, it would be a very small patch
-   to make the KVM command line switches passed to QEMU optional (hint, hint).
+Because Docker (a) makes installing random crap from the internet really easy
+and (b) has an "interesting" security culture, you should take care. Some of
+the implications are below. This list should not be considered comprehensive
+nor a substitute for appropriate expertise; adhere to your moral and
+institutional responsibilities.
 
-CPU support
-~~~~~~~~~~~
+(All this stuff is a key motivation for Charliecloud.)
 
-To test if your CPU supports hardware virtualization (and thus KVM)::
+Don't pipe web pages to your shell
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  $ egrep -c '(vmx|svm)' /proc/cpuinfo
+This is how Docker recommends you install the software. Don't do this::
 
-:code:`0` means no, a positive integer means yes.
+  $ curl -fsSL https://get.docker.com/ | sh
 
-BIOS support
-~~~~~~~~~~~~
+This approach --- piping a web page directly into a shell --- is easy and
+fashionable but stupid.
 
-Hardware virtualization may also need to be enabled in the BIOS. Detecting
-this setting and changing is dependent on your OS and hardware; you are best
-off consulting Google for details.
+The problem is that you've invited the web page to execute arbitrary code as
+you (or worse, root). Auditing the page in a browser only helps somewhat, as
+the server could use your :code:`User-Agent` header to decide whether to show
+you safe or malicious code.
 
-Modern Debian-derived distributions include a command :code:`kvm-ok` in the
-package :code:`cpu-checker` which makes this easy. If you get something like
-this, you're golden::
+Download the script to a file and audit it carefully before running.
 
-  $ kvm-ok
-  INFO: /dev/kvm exists
-  KVM acceleration can be used
+:code:`docker` equals root
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If something like this, you need to tweak your BIOS::
+Anyone who can run the :code:`docker` command or interact with the Docker
+daemon can `trivially escalate to root
+<http://reventlov.com/advisories/using-the-docker-command-to-root-the-host>`_.
+This is considered a feature.
 
-  $ kvm-ok
-  INFO: /dev/kvm does not exist
-  HINT:   sudo modprobe kvm_intel
-  INFO: Your CPU supports KVM extensions
-  INFO: KVM (vmx) is disabled by your BIOS
-  HINT: Enter your BIOS setup and enable Virtualization Technology (VT),
-        and then hard poweroff/poweron your system
-  KVM acceleration can NOT be used
+For this reason, don't create the :code:`docker` group when the installer
+offers it, as this will allow passwordless, unlogged escalation for anyone in
+the group.
 
-
-:code:`/dev/kvm` permissions
+Images can contain bad stuff
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You need read/write access to :code:`/dev/kvm`. There are at least two ways
-this is accomplished. Which you get depends on your distribution.
+Standard hygiene for "installing stuff from the internet" applies. Only work
+with images you trust. The official DockerHub repositories can help.
 
-The traditional way is to put all KVM users in group :code:`kvm` and make the
-device group R/W for that user::
+Containers run as root
+~~~~~~~~~~~~~~~~~~~~~~
 
-  $ ls -l /dev/kvm
-  crw-rw---- 1 root kvm 10, 232 Nov  7 10:36 /dev/kvm
+By default, Docker runs container processes as root. In addition to being poor
+hygiene, this can be an escalation path, e.g. if you bind-mount host
+directories.
 
-The newfangled :code:`systemd` way is to make the device owned
-:code:`root:root` and dynamically add users to the file's ACL when they log in
-to the console (that is, anyone sitting at the computer can use KVM). Note the
-trailing plus on the permissions, which implies the presence of an ACL:
+Docker alters your network configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. Note: The following example contains zero-width space characters (Unicode
-   code point U+200B) at the beginning of the leading-hash output lines, to
-   prevent the "console" lexer from inappropriately highlighting them as a
-   prompt and commands.
+To see what it did::
 
-::
+  $ ifconfig    # note docker0 interface
+  $ brctl show  # note docker0 bridge
+  $ route -n
 
-  $ ls -l /dev/kvm
-  crw-rw----+ 1 root root 10, 232 Nov  7 10:36 /dev/kvm
-  $ getfacl /dev/kvm
-  getfacl: Removing leading '/' from absolute path names
-  ​# file: dev/kvm
-  ​# owner: root
-  ​# group: root
-  user::rw-
-  user:lightdm:rw-
-  group::---
-  mask::rw-
-  other::---
+Docker installs services
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the above, users :code:`root` and :code:`lightdm` can use KVM.
+If you don't want the service starting automatically at boot, e.g.::
 
-This causes problems if you want to run Charliecloud over the network, since
-you are not sitting at the console.
+  $ systemctl is-enabled docker
+  enabled
+  $ systemctl disable docker
+  $ systemctl is-enabled docker
+  disabled
 
-You can fix the ACL manually after every boot with :code:`setfacl`, or you can
-add a :code:`udev` rule to also grant access to users in group :code:`kvm`.
-This can be accomplished as follows (note that you must paste the file
-content)::
+Configuring Docker for a proxy
+------------------------------
 
-  $ sudo sh -c 'cat > /etc/udev/rules.d/99-fix-kvm.rules'
-  SUBSYSTEM=="misc", KERNEL=="kvm", GROUP="kvm"
-  ^D
-  $ sudo udevadm trigger --action=add --sysname-match=kvm
-  $ ls -l /dev/kvm
-  crw-rw----+ 1 root kvm 10, 232 Nov 24 13:57 /dev/kvm
+By default, Docker does not work if you have a proxy. The symptom is this::
 
-.. warning::
+  $ sudo docker run hello-world
+  Unable to find image 'hello-world:latest' locally
+  Pulling repository hello-world
+  Get https://index.docker.io/v1/repositories/library/hello-world/images: dial tcp 54.152.161.54:443: connection refused
 
-   This leaves the ACLs in place, so you can use KVM *either* if you are in
-   the :code:`kvm` group or sitting at the console.
+The solution is to configure an override file :code:`http-proxy.conf` as
+`documented <https://docs.docker.com/articles/systemd/>`_. If you don't have a
+systemd system, then :code:`/etc/default/docker` might be the place to go.
 
 
-QEMU
-----
+Installing Charliecloud
+=======================
 
-We build QEMU from source for two reasons. First, distribution versions tend
-to be stale. Second, VDE networking support is often not compiled in (e.g.,
-`in Ubuntu
-<https://bugs.launchpad.net/ubuntu/+source/qemu-kvm/+bug/776650>`_).
+All you need in order to use Charliecloud is the contents of :code:`bin`::
 
-Download QEMU from the `official site <http://wiki.qemu.org/Download>`_. You
-probably want to choose the most recent stable version, which is 2.1.2 as of
-this writing (November 1914).
-
-Build and install as follows::
-
-  $ tar xjf qemu-2.1.2.tar.bz2
-  $ cd qemu-2.1.2
-  $ ./configure --prefix=/usr/local/stow/qemu-2.1.2 \
-                --target-list=i386-softmmu,x86_64-softmmu \
-                --enable-kvm \
-                --enable-uuid \
-                --enable-virtfs
+  $ cd bin
   $ make
-  $ make install
-  $ stow -d /usr/local/stow -S qemu-2.1.2
-  $ qemu-system-x86_64 --version
-  QEMU emulator version 2.1.2, Copyright (c) 2003-2008 Fabrice Bellard
+  cc -std=c11 -Wall -Werror -Wfatal-errors -o ch-run ch-run.c
 
-Note that :code:`configure` will pick up available libraries automatically, so
-some of the above is redundant. However, we list it to document what
-Charliecloud needs. :code:`--target-list` is short simply to improve compile
-speed; you can add more/all targets if you want to other guest architectures
-(note that KVM is not available for most targets).
+You could put this directory in your :code:`$PATH` or link/copy the contents
+to somewhere else.
 
+That said, in order to understand Charliecloud, including completing the
+tutorial in the next section, you will want access to the rest of the source
+code as well.
 
-*Now, move on to the next section to learn how to run your first virtual
-cluster.*
-
+If you wish to build the documentation, see :code:`doc-src/README`.
