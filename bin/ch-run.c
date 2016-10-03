@@ -9,17 +9,13 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
-#include <linux/magic.h>
 #include <sched.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
-#include <sys/statfs.h>
 #include <sys/syscall.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "charliecloud.h"
@@ -49,6 +45,10 @@ const char * DEFAULT_BINDS[] = { "/dev",
 
 /* Number of supplemental GIDs we can deal with. */
 #define SUPP_GIDS_MAX 32
+
+/* Maximum length of paths we're willing to deal with. (Note that
+   system-defined PATH_MAX isn't reliable.) */
+#define PATH_CHARS 4096
 
 /* Log the current UIDs. */
 #define LOG_IDS log_ids(__func__, __LINE__)
@@ -132,7 +132,10 @@ int main(int argc, char * argv[])
    in examples/syscalls/pivot_root.c. */
 void enter_udss(char * newroot, char ** binds)
 {
-   char * guestpath;
+   int fd;
+   char * bindir;
+   char * path;
+   char bin[PATH_CHARS];
 
    LOG_IDS;
 
@@ -153,19 +156,28 @@ void enter_udss(char * newroot, char ** binds)
 
    // Bind-mount default stuff at same guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
-      TRY (0 > asprintf(&guestpath, "/mnt/merged%s", DEFAULT_BINDS[i]));
-      TRY (mount(DEFAULT_BINDS[i], guestpath, NULL, MS_REC | MS_BIND, NULL));
+      TRY (0 > asprintf(&path, "/mnt/merged%s", DEFAULT_BINDS[i]));
+      TRY (mount(DEFAULT_BINDS[i], path, NULL, MS_REC | MS_BIND, NULL));
    }
    // Bind-mount user's home directory at /home/$USER. The main use case is
    // dotfiles.
-   TRY (0 > asprintf(&guestpath, "/mnt/merged/home/%s", getenv("USER")));
-   TRY (mkdir(guestpath, 0755));
-   TRY (mount(getenv("HOME"), guestpath, NULL, MS_REC | MS_BIND, NULL));
+   TRY (0 > asprintf(&path, "/mnt/merged/home/%s", getenv("USER")));
+   TRY (mkdir(path, 0755));
+   TRY (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL));
+   // Bind-mount ch-ssh into /usr/bin. Create mount point if it doesn't exist.
+   fd = open("/mnt/merged/usr/bin/ch-ssh", O_WRONLY | O_CREAT, 0);
+   TRY (fd == -1);
+   TRY (close(fd));
+   TRY (-1 == readlink("/proc/self/exe", bin, PATH_CHARS));
+   bin[PATH_CHARS-1] = 0;  // guarantee string termination
+   bindir = dirname(bin);
+   TRY (0 > asprintf(&path, "%s/ch-ssh", bindir));
+   TRY (mount(path, "/mnt/merged/usr/bin/ch-ssh", NULL, MS_BIND, NULL));
    // Bind-mount user-specified directories at guest /mnt/i
    for (int i = 0; binds[i] != NULL; i++) {
-      TRY (0 > asprintf(&guestpath, "/mnt/merged/mnt/%d", i));
-      TRY (mkdir(guestpath, 0755));
-      TRY (mount(binds[i], guestpath, NULL, MS_BIND, NULL));
+      TRY (0 > asprintf(&path, "/mnt/merged/mnt/%d", i));
+      TRY (mkdir(path, 0755));
+      TRY (mount(binds[i], path, NULL, MS_BIND, NULL));
    }
 
    // Overmount / with /mnt to avoid EINVAL if / is a rootfs

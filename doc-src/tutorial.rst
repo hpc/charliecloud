@@ -266,10 +266,8 @@ property of the running kernel rather than the filesystem.
 
 Several host directories are always bind-mounted into the container. These
 include system directories such as :code:`/dev`, :code:`/proc`, and
-:code:`/sys`; :code:`/tmp`; and the invoking user's home directory (for
-dotfiles).
-
-.. and the Charliecloud source at :code:`/mnt/ch`.
+:code:`/sys`; :code:`/tmp`; Charliecloud's :code:`ch-ssh` command in
+:code:`/usr/bin`; and the invoking user's home directory (for dotfiles).
 
 Charliecloud uses recursive bind mounts, so for example if the host has a
 variety of sub-filesystems under :code:`/sys`, as Ubuntu does, these will be
@@ -336,6 +334,19 @@ making it mostly a drop-in replacement for :code:`ssh`. For example::
   $ ch-ssh -t localhost /bin/bash
   > stat -L --format='%i' /proc/self/ns/user
   4026532256
+
+:code:`ch-ssh` is available inside containers as well (in :code:`/usr/bin` via
+bind-mount)::
+
+  $ export CH_RUN_ARGS="/data/$USER.hello --"
+  $ ch-run /data/$USER.hello /bin/bash
+  > stat -L --format='%i' /proc/self/ns/user
+  4026532256
+  > ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
+  4026532258
+
+This also demonstrates that :code:`ch-run` does not alter your environment
+variables.
 
 .. warning::
 
