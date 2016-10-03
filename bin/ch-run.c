@@ -24,7 +24,7 @@
 
 #include "charliecloud.h"
 
-void enter_udss(char * newroot, char * oldroot, char ** binds);
+void enter_udss(char * newroot, char ** binds);
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
@@ -33,8 +33,8 @@ void setup_namespaces(bool userns_p, uid_t cuid, gid_t cgid);
 
 /** Constants and macros **/
 
-/* The old root is put here, rooted at TARGET. */
-#define OLDROOT "/mnt/oldroot"
+/* Arguments for the tmpfs that holds image changes. */
+#define TMPFS_DATA "size=16m"
 
 /* Host filesystems to bind. */
 #define USER_BINDS_MAX 10
@@ -117,7 +117,7 @@ int main(int argc, char * argv[])
    }
 
    setup_namespaces(args.userns, args.container_uid, args.container_gid);
-   enter_udss(args.newroot, OLDROOT, args.binds);
+   enter_udss(args.newroot, args.binds);
    run_user_command(argc, argv, args.user_cmd_start); // should never return
    exit(EXIT_FAILURE);
 }
@@ -125,76 +125,61 @@ int main(int argc, char * argv[])
 
 /** Supporting functions **/
 
-/* Enter the UDSS. After this, we are inside the UDSS and no longer have
-   access to host resources except as provided.
+/* Enter the UDSS. After this, we are inside the UDSS.
 
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
    in examples/syscalls/pivot_root.c. */
-void enter_udss(char * newroot, char * oldroot, char ** binds)
+void enter_udss(char * newroot, char ** binds)
 {
    char * guestpath;
-   char * hostpath;
-   struct statfs st;
 
    LOG_IDS;
 
-   // Claim newroot for this namespace
-   TRY (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
+   // Create a tmpfs for image changes and set up the overlay
+   TRY (mount(NULL, "/mnt", "tmpfs", 0, TMPFS_DATA));
+   TRY (mkdir("/mnt/upper", 0755));
+   TRY (mkdir("/mnt/lower", 0755));
+   TRY (mkdir("/mnt/work", 0755));
+   TRY (mkdir("/mnt/merged", 0755));
 
-   // Mount tmpfses on guest /home and /mnt because guest root is read-only
-   TRY (0 > asprintf(&guestpath, "%s/mnt", newroot));
-   TRY (mount(NULL, guestpath, "tmpfs", 0, "size=4m"));
-   TRY (0 > asprintf(&guestpath, "%s/home", newroot));
-   TRY (mount(NULL, guestpath, "tmpfs", 0, "size=4m"));
+   // Claim newroot for this namespace and prepare it for overlay
+   TRY (mount(newroot, "/mnt/lower", NULL,
+              MS_REC | MS_BIND | MS_PRIVATE, NULL));
+
+   // Activate the overlay
+   TRY (mount(NULL, "/mnt/merged", "overlay", 0,
+              "lowerdir=/mnt/lower,upperdir=/mnt/upper,workdir=/mnt/work"));
+
    // Bind-mount default stuff at same guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
-      TRY (0 > asprintf(&guestpath, "%s%s", newroot, DEFAULT_BINDS[i]));
+      TRY (0 > asprintf(&guestpath, "/mnt/merged%s", DEFAULT_BINDS[i]));
       TRY (mount(DEFAULT_BINDS[i], guestpath, NULL, MS_REC | MS_BIND, NULL));
    }
    // Bind-mount user's home directory at /home/$USER. The main use case is
    // dotfiles.
-   TRY (0 > asprintf(&guestpath, "%s/home/%s", newroot, getenv("USER")));
+   TRY (0 > asprintf(&guestpath, "/mnt/merged/home/%s", getenv("USER")));
    TRY (mkdir(guestpath, 0755));
    TRY (mount(getenv("HOME"), guestpath, NULL, MS_REC | MS_BIND, NULL));
    // Bind-mount user-specified directories at guest /mnt/i
    for (int i = 0; binds[i] != NULL; i++) {
-      TRY (0 > asprintf(&guestpath, "%s/mnt/%d", newroot, i));
+      TRY (0 > asprintf(&guestpath, "/mnt/merged/mnt/%d", i));
       TRY (mkdir(guestpath, 0755));
       TRY (mount(binds[i], guestpath, NULL, MS_BIND, NULL));
    }
 
-   // Create an intermediate root filesystem if the one we have is the rootfs.
-   TRY (statfs("/", &st));
-   if (st.f_type == RAMFS_MAGIC || st.f_type == TMPFS_MAGIC) {
-      char * nr_base;
-      char * nr_copy;
-      char * nr_dir;
-
-      TRY (NULL == (nr_copy = strdup(newroot)));
-      nr_dir = dirname(nr_copy);
-      TRY (NULL == (nr_copy = strdup(newroot)));
-      nr_base = basename(nr_copy);
-
-      TRY (mount(nr_dir, nr_dir, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
-      TRY (chdir(nr_dir));
-      TRY (mount(nr_dir, "/", NULL, MS_MOVE, NULL));
-      TRY (chroot("."));
-
-      TRY (0 > asprintf(&newroot, "/%s", nr_base));
-   }
+   // Overmount / with /mnt to avoid EINVAL if / is a rootfs
+   TRY(chdir("/mnt"));
+   TRY(mount("/mnt", "/", NULL, MS_MOVE, NULL));
+   TRY(chroot("."));
 
    // Pivot into the new root
-   TRY (0 > asprintf(&hostpath, "%s%s", newroot, oldroot));
-   TRY (mkdir(hostpath, 0755));
-   TRY (syscall(SYS_pivot_root, newroot, hostpath));
-   TRY (chdir("/"));
-   TRY (umount2(oldroot, MNT_DETACH));
-   TRY (rmdir(oldroot));
-
-   // Post pivot_root() tmpfs
-   //TRY (mount(NULL, "/dev/shm", "tmpfs", 0, "size=4m"));  // for CLONE_NEWIPC
-   TRY (mount(NULL, "/run", "tmpfs", 0, "size=10%"));
+   TRY (mkdir("/merged/oldroot", 0755));
+   TRY (chdir("/merged"));
+   TRY (syscall(SYS_pivot_root, "/merged", "/merged/oldroot"));
+   TRY (chroot("."));
+   TRY (umount2("/oldroot", MNT_DETACH));
+   TRY (rmdir("/oldroot"));
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
