@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installing Charliecloud &mdash; Charliecloud 0.1.5 documentation</title>
+  <title>1. Installation &mdash; Charliecloud 0.2.0 documentation</title>
   
 
   
@@ -30,9 +30,10 @@
   
 
   
-    <link rel="top" title="Charliecloud 0.1.5 documentation" href="index.html"/>
+        <link rel="copyright" title="Copyright" href="copyright.html"/>
+    <link rel="top" title="Charliecloud 0.2.0 documentation" href="index.html"/>
         <link rel="next" title="2. Tutorial" href="tutorial.html"/>
-        <link rel="prev" title="Charliecloud Documentation" href="index.html"/> 
+        <link rel="prev" title="Overview" href="index.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -45,17 +46,27 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
 
-        
-          <a href="index.html" class="icon icon-home"> Charliecloud
-        
+          
+            <a href="index.html" class="icon icon-home"> Charliecloud
+          
 
-        
-        </a>
+          
+          </a>
 
-        
+          
+            
+            
+              <div class="version">
+                a670e71
+              </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -64,195 +75,50 @@
   </form>
 </div>
 
-        
-      </div>
+          
+        </div>
 
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-          
-              <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="">1. Installing Charliecloud</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installing-on-linux">1.1. Installing on Linux</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#miscellaneous-supporting-software">1.1.1. Miscellaneous supporting software</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#charliecloud-itself">1.1.2. Charliecloud itself</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kvm-hypervisor">1.1.3. KVM hypervisor</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#cpu-support">1.1.3.1. CPU support</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bios-support">1.1.3.2. BIOS support</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#dev-kvm-permissions">1.1.3.3. <code class="code docutils literal"><span class="pre">/dev/kvm</span></code> permissions</a></li>
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prequisites">1.1. Prequisites</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#run-time">1.1.1. Run time</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-time">1.1.2. Build time</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#qemu">1.1.4. QEMU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#download-charliecloud">1.2. Download Charliecloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#verifying-the-system-calls">1.3. Verifying the system calls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-docker">1.4. Installing Docker</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#understand-the-security-implications-of-docker">1.4.1. Understand the security implications of Docker</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#don-t-pipe-web-pages-to-your-shell">1.4.1.1. Don&#8217;t pipe web pages to your shell</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#docker-equals-root">1.4.1.2. <code class="code docutils literal"><span class="pre">docker</span></code> equals root</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#images-can-contain-bad-stuff">1.4.1.3. Images can contain bad stuff</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#containers-run-as-root">1.4.1.4. Containers run as root</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#docker-alters-your-network-configuration">1.4.1.5. Docker alters your network configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#docker-installs-services">1.4.1.6. Docker installs services</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#configuring-docker-for-a-proxy">1.4.2. Configuring Docker for a proxy</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#your-first-virtual-cluster">2.1. Your first virtual cluster</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#getting-help">2.1.1. Getting help</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-the-virtual-network">2.1.2. Starting the virtual network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-a-virtual-cluster">2.1.3. Starting a virtual cluster</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#logging-in">2.1.4. Logging in</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#filesystems">2.1.5. Filesystems</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="tutorial.html#root-filesystem">2.1.5.1. Root filesystem</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tutorial.html#ch-tmp">2.1.5.2. <code class="code docutils literal"><span class="pre">/ch/tmp</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tutorial.html#ch-meta">2.1.5.3. <code class="code docutils literal"><span class="pre">/ch/meta</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tutorial.html#ch-opt">2.1.5.4. <code class="code docutils literal"><span class="pre">/ch/opt</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-charliecloud">1.5. Installing Charliecloud</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#contents-of-the-job-directory">2.1.6. Contents of the job directory</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="tutorial.html#meta">2.1.6.1. <code class="code docutils literal"><span class="pre">meta</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tutorial.html#run">2.1.6.2. <code class="code docutils literal"><span class="pre">run</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tutorial.html#out">2.1.6.3. <code class="code docutils literal"><span class="pre">out</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#network-topology">2.1.7. Network topology</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#ssh">2.1.8. SSH</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#shut-the-cluster-down">2.1.9. Shut the cluster down</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#your-first-virtual-job">2.2. Your first virtual job</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-a-cluster-with-less-clutter">2.2.1. Starting a cluster with less clutter</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#users-groups-and-permissions-under-filesystem-passthrough">2.2.2. Users, groups, and permissions under filesystem passthrough</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#running-mpihello-in-interactive-mode">2.2.3. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in interactive mode</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#running-mpihello-in-batch-mode">2.2.4. Running <code class="code docutils literal"><span class="pre">mpihello</span></code> in batch mode</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#installing-your-own-software">2.3. Installing your own software</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#starting-a-vm-with-persistent-root-filesystem">2.3.1. Starting a VM with persistent root filesystem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tutorial.html#installing-software">2.3.2. Installing software</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="networking.html">3. Networking</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="networking.html#network-addresses">3.1. Network addresses</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="networking.html#ip-addresses">3.1.1. IP addresses</a></li>
-<li class="toctree-l3"><a class="reference internal" href="networking.html#mac-addresses">3.1.2. MAC addresses</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="networking.html#topology">3.2. Topology</a></li>
-<li class="toctree-l2"><a class="reference internal" href="networking.html#workstation-mode">3.3. Workstation mode</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="networking.html#requirements">3.3.1. Requirements</a></li>
-<li class="toctree-l3"><a class="reference internal" href="networking.html#topology-implementation">3.3.2. Topology implementation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="networking.html#security">3.3.3. Security</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="networking.html#mac-and-ip-spoofing">3.3.3.1. MAC and IP spoofing</a></li>
-<li class="toctree-l4"><a class="reference internal" href="networking.html#inbound-network-access">3.3.3.2. Inbound network access</a></li>
-<li class="toctree-l4"><a class="reference internal" href="networking.html#risks">3.3.3.3. Risks</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="networking.html#cluster-mode">3.4. Cluster mode</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="networking.html#id1">3.4.1. Requirements</a></li>
-<li class="toctree-l3"><a class="reference internal" href="networking.html#id2">3.4.2. Topology</a></li>
-<li class="toctree-l3"><a class="reference internal" href="networking.html#id3">3.4.3. Security</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="networking.html#id4">3.4.3.1. MAC and IP spoofing</a></li>
-<li class="toctree-l4"><a class="reference internal" href="networking.html#guest-isolation">3.4.3.2. Guest isolation</a></li>
-<li class="toctree-l4"><a class="reference internal" href="networking.html#id5">3.4.3.3. Risks</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="networking.html#cluster-mode-faq">3.4.4. Cluster mode FAQ</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="networking.html#resources">3.5. Resources</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="fs-passthrough.html">4. Filesystem passthrough</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#uncoordinated-uids-and-gids">4.1. Uncoordinated UIDs and GIDs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#potential-solutions">4.2. Potential solutions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#security-model-mapped">4.2.1. <code class="code docutils literal"><span class="pre">security_model=mapped</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#run-jobs-as-root">4.2.2. Run jobs as root</a></li>
-<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#turn-off-guest-permission-checks-on-passthrough-filesystem">4.2.3. Turn off guest permission checks on passthrough filesystem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#mount-with-uid-foo-gid-bar">4.2.4. Mount with <code class="code docutils literal"><span class="pre">uid=foo</span></code>, <code class="code docutils literal"><span class="pre">gid=bar</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#bindfs">4.2.5. bindfs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#fsuid-and-fsgid">4.2.6. <code class="code docutils literal"><span class="pre">fsuid</span></code> and <code class="code docutils literal"><span class="pre">fsgid</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#import-users-and-groups-from-host">4.2.7. Import users and groups from host</a></li>
-<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#change-uid-before-running-job">4.2.8. Change UID before running job</a></li>
-<li class="toctree-l3"><a class="reference internal" href="fs-passthrough.html#add-host-groups-before-running-job">4.2.9. Add host groups before running job</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="fs-passthrough.html#solution-implemented-in-charliecloud">4.3. Solution implemented in Charliecloud</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="image-setup.html">5. Image configuration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="image-setup.html#booting-an-installer-overview">5.1. Booting an installer overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="image-setup.html#during-install">5.2. During install</a></li>
-<li class="toctree-l2"><a class="reference internal" href="image-setup.html#after-install">5.3. After install</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#console-and-friends">5.3.1. Console and friends</a></li>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#filesystem">5.3.2. Filesystem</a></li>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#network">5.3.3. Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#users-and-groups">5.3.4. Users and groups</a></li>
-<li class="toctree-l3"><a class="reference internal" href="image-setup.html#misc">5.3.5. Misc</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="image-setup.html#notes-on-systemd-based-distros">5.4. Notes on <code class="code docutils literal"><span class="pre">systemd</span></code>-based distros</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="testing.html">6. Testing Charliecloud</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="testing.html#non-interactive-testing">6.1. Non-interactive testing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="testing.html#interactive-testing">6.2. Interactive testing</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="script-help.html">7. Script help</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="script-help.html#newimage">7.1. newimage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="script-help.html#oneguest">7.2. oneguest</a></li>
-<li class="toctree-l2"><a class="reference internal" href="script-help.html#vcluster">7.3. vcluster</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">8. Frequently asked questions (FAQ)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#error-and-warning-messages">8.1. Error and warning messages</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#p-could-not-find-request-transport-virtio">8.1.1. 9p: Could not find request transport: virtio</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#p-no-channels-available">8.1.2. 9p: no channels available</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#job-script-hard-link-failed-copying-instead">8.1.3. job script hard link failed, copying instead</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#mount-unknown-filesystem-type-9p">8.1.4. mount: unknown filesystem type &#8216;9p&#8217;</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#o-direct-unsupported">8.1.5. O_DIRECT unsupported</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#serial8250-too-much-work-for-irq4">8.1.6. serial8250: too much work for irq4</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#vde-switch-could-not-remove-ctl-dir">8.1.7. vde_switch: Could not remove ctl dir</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#vlan-0-is-not-connected-to-host-network">8.1.8. vlan 0 is not connected to host network</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#something-doesn-t-work">8.2. Something doesn&#8217;t work</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#i-can-t-ping-the-outside-world-but-it-s-reachable-by-other-network-stuff">8.2.1. I can&#8217;t ping the outside world, but it&#8217;s reachable by other network stuff</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#intermittent-connectivity-problems-between-guests">8.2.2. Intermittent connectivity problems between guests</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#testing-failed-because-orted-is-listening-to-some-port">8.2.3. Testing failed because orted is listening to some port</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#vga-console-won-t-relinquish-mouse-grab">8.2.4. VGA console won&#8217;t relinquish mouse grab</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#vga-console-does-not-show-the-whole-screen">8.2.5. VGA console does not show the whole screen</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#configuration">8.3. Configuration</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#how-can-i-tell-if-i-m-using-the-faster-virtio-drivers">8.3.1. How can I tell if I&#8217;m using the faster virtio drivers?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="faq.html#how-can-i-persist-the-root-filesystem-without-vcluster-commit">8.3.2. How can I persist the root filesystem without <code class="code docutils literal"><span class="pre">vcluster</span> <span class="pre">--commit</span></code>?</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">9. API documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#the-job-directory">9.1. The job directory</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#filesystems-provided-to-the-guest">9.2. Filesystems provided to the guest</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api.html#metadata">9.2.1. Metadata</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api.html#charliecloud-resources">9.2.2. Charliecloud resources</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api.html#persistent-storage">9.2.3. Persistent storage</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api.html#temporary-storage">9.2.4. Temporary storage</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="history.html">10. Version history</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-5-2015-jun-16">10.1. v0.1.5, 2015-Jun-16</a></li>
-<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-4-2015-jun-04">10.2. v0.1.4, 2015-Jun-04</a></li>
-<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-3-2015-apr-30">10.3. v0.1.3, 2015-Apr-30</a></li>
-<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-2-2015-feb-09">10.4. v0.1.2, 2015-Feb-09</a></li>
-<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-1-2014-dec-01">10.5. v0.1.1, 2014-Dec-01</a></li>
-<li class="toctree-l2"><a class="reference internal" href="history.html#v0-1-0-2014-sep-30">10.6. v0.1.0, 2014-Sep-30</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">3. Testing Charliecloud</a></li>
+<li class="toctree-l1"><a class="reference internal" href="script-help.html">4. Help text for executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">5. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="copyright.html">6. Copyright and license</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">7. Version history</a></li>
 </ul>
 
+            
           
-        
+        </div>
       </div>
-      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -267,11 +133,17 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>1. Installing Charliecloud</li>
+    <li>1. Installation</li>
       <li class="wy-breadcrumbs-aside">
         
           
@@ -280,204 +152,180 @@
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document">
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
-  <div class="section" id="installing-charliecloud">
-<h1>1. Installing Charliecloud<a class="headerlink" href="#installing-charliecloud" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="installation">
+<h1>1. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#installing-on-linux" id="id1">Installing on Linux</a><ul>
-<li><a class="reference internal" href="#miscellaneous-supporting-software" id="id2">Miscellaneous supporting software</a></li>
-<li><a class="reference internal" href="#charliecloud-itself" id="id3">Charliecloud itself</a></li>
-<li><a class="reference internal" href="#kvm-hypervisor" id="id4">KVM hypervisor</a></li>
-<li><a class="reference internal" href="#qemu" id="id5">QEMU</a></li>
+<li><a class="reference internal" href="#prequisites" id="id1">Prequisites</a><ul>
+<li><a class="reference internal" href="#run-time" id="id2">Run time</a></li>
+<li><a class="reference internal" href="#build-time" id="id3">Build time</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#download-charliecloud" id="id4">Download Charliecloud</a></li>
+<li><a class="reference internal" href="#verifying-the-system-calls" id="id5">Verifying the system calls</a></li>
+<li><a class="reference internal" href="#installing-docker" id="id6">Installing Docker</a><ul>
+<li><a class="reference internal" href="#understand-the-security-implications-of-docker" id="id7">Understand the security implications of Docker</a></li>
+<li><a class="reference internal" href="#configuring-docker-for-a-proxy" id="id8">Configuring Docker for a proxy</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installing-charliecloud" id="id9">Installing Charliecloud</a></li>
 </ul>
 </div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Charliecloud supports Linux hosts. OS X and Windows hosts are not currently
-supported because filesystem passthrough support is missing. For the same
-reason, OS X and Windows guests are unsupported. We hope to fix this
-deficiency in the future (patches are welcome!).</p>
-</div>
-<div class="section" id="installing-on-linux">
-<h2><a class="toc-backref" href="#id1">1.1. Installing on Linux</a><a class="headerlink" href="#installing-on-linux" title="Permalink to this headline">¶</a></h2>
-<p>This file explains how to install Charliecloud and run a small virtual cluster
-on your x86-64 Linux machine. You can run Charliecloud over X11, so this
-machine need not be your desktop or laptop.</p>
-<p>Charliecloud is designed to have a fairly small number of dependencies, but
-unfortunately, the major ones (QEMU itself and VDE networking) require
-building from source.</p>
-<p>The below assumes you put tarballs in <code class="code docutils literal"><span class="pre">/usr/local/src</span></code> and wish to install
-into <code class="code docutils literal"><span class="pre">/usr/local</span></code>.</p>
-<p>These instructions use Bash syntax.</p>
-<div class="section" id="miscellaneous-supporting-software">
-<h3><a class="toc-backref" href="#id2">1.1.1. Miscellaneous supporting software</a><a class="headerlink" href="#miscellaneous-supporting-software" title="Permalink to this headline">¶</a></h3>
-<p>You need:</p>
+<div class="section" id="prequisites">
+<h2><a class="toc-backref" href="#id1">1.1. Prequisites</a><a class="headerlink" href="#prequisites" title="Permalink to this headline">¶</a></h2>
+<p>Charliecloud is a simple system with limited prerequisites. If your system
+meets these prerequisites but Charliecloud doesn&#8217;t work, please report that as
+a bug.</p>
+<div class="section" id="run-time">
+<h3><a class="toc-backref" href="#id2">1.1.1. Run time</a><a class="headerlink" href="#run-time" title="Permalink to this headline">¶</a></h3>
+<p>Systems used for running images need:</p>
 <ul class="simple">
-<li>A reasonably recent version of Git.</li>
-<li>GNU Stow (optional but highly recommended, as QEMU wants to mess with
-permissions of shared directories).</li>
-<li>Python 2.7.</li>
-<li>Python packages <code class="code docutils literal"><span class="pre">Sphinx</span></code> and <code class="code docutils literal"><span class="pre">sphinx-rtd-theme</span></code> (only if you
-wish to build the documentation).</li>
+<li>Recent Linux kernel with <code class="code docutils literal"><span class="pre">CONFIG_USER_NS=y</span></code> and <code class="code docutils literal"><span class="pre">CONFIG_OVERLAY_FS=y</span></code></li>
+<li>C compiler and standard library</li>
+<li>POSIX shell and utilities</li>
 </ul>
-<p>You also need the build dependencies of QEMU and VDE. At a high level, these
-can be obtained by repeatedly attempting to build and installing what&#8217;s
-missing.</p>
-<p>For Ubuntu Vivid:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> sudo apt-get build-dep qemu
-</pre></div>
-</div>
-</div>
-<div class="section" id="charliecloud-itself">
-<h3><a class="toc-backref" href="#id3">1.1.2. Charliecloud itself</a><a class="headerlink" href="#charliecloud-itself" title="Permalink to this headline">¶</a></h3>
-<p>We install Charliecloud early, even though it cannot run until the
-prerequisites are met, in order to access included files needed for installing
-those prerequisites.</p>
-<p>This assumes you are putting Charliecloud in <code class="code docutils literal"><span class="pre">~/charliecloud</span></code>. You may
-want to put <code class="code docutils literal"><span class="pre">~/charliecloud/bin</span></code> on your <code class="code docutils literal"><span class="pre">$PATH</span></code>.</p>
-<p>Install as follows:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> <span class="nb">cd</span> ~
-<span class="gp">$</span> git clone git@git.lanl.gov:reidpr/charliecloud.git
-<span class="gp">$</span> <span class="nb">cd </span>charliecloud
-<span class="gp">$</span> make doc                <span class="c"># optional</span>
-<span class="gp">$</span> bin/vcluster --version
-<span class="go">0.1.4</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="kvm-hypervisor">
-<h3><a class="toc-backref" href="#id4">1.1.3. KVM hypervisor</a><a class="headerlink" href="#kvm-hypervisor" title="Permalink to this headline">¶</a></h3>
-<p>Virtual machine performance is much better with the KVM hypervisor (as opposed
-to software emulation), which is built into the stock Linux kernel. All
-kernels and x86 CPUs which are even vaguely modern support KVM, so it is
-simply a matter of enabling KVM if it isn&#8217;t already.</p>
+<p>If you are using the upstream kernel, you will need 3.18+.</p>
+<p>Distribution kernels vary. For example, RHEL7 and derivatives have a patch to
+disable user namespaces in concert with mount namespaces, and overlayfs is
+available as a &#8220;technology preview&#8221;.</p>
+<p>Tested and working by us include the Ubuntu and upstream versions of 4.4.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">While Charliecloud currently requires KVM, it would be a very small patch
-to make the KVM command line switches passed to QEMU optional (hint, hint).</p>
+<p class="last">We are open to patches to make Charliecloud available on older kernels. The
+key parts are likely a setuid binary to avoid the user namespace and some
+workaround for missing overlayfs. Please contact us if you are interested.</p>
 </div>
-<div class="section" id="cpu-support">
-<h4>1.1.3.1. CPU support<a class="headerlink" href="#cpu-support" title="Permalink to this headline">¶</a></h4>
-<p>To test if your CPU supports hardware virtualization (and thus KVM):</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> egrep -c <span class="s1">&#39;(vmx|svm)&#39;</span> /proc/cpuinfo
+</div>
+<div class="section" id="build-time">
+<h3><a class="toc-backref" href="#id3">1.1.2. Build time</a><a class="headerlink" href="#build-time" title="Permalink to this headline">¶</a></h3>
+<p>Systems used for building images need the run-time prerequisites, plus:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://www.docker.com/">Docker</a>, recent version. We do not make compatibility guarantees with any specific version, but let us know if you run into issues.</li>
+<li>Bash</li>
+<li>root access using <code class="code docutils literal"><span class="pre">sudo</span></code></li>
+</ul>
+</div>
+</div>
+<div class="section" id="download-charliecloud">
+<h2><a class="toc-backref" href="#id4">1.2. Download Charliecloud</a><a class="headerlink" href="#download-charliecloud" title="Permalink to this headline">¶</a></h2>
+<p>See our GitHub project: <a class="reference external" href="https://github.com/hpc/charliecloud">https://github.com/hpc/charliecloud</a></p>
+</div>
+<div class="section" id="verifying-the-system-calls">
+<h2><a class="toc-backref" href="#id5">1.3. Verifying the system calls</a><a class="headerlink" href="#verifying-the-system-calls" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="code docutils literal"><span class="pre">examples</span></code> directory includes a C program that exercises the key
+system calls Charliecloud depends on. If this works, then Charliecloud
+probably will too:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/syscalls
+<span class="gp">$</span> make <span class="o">&amp;&amp;</span> ./pivot_root
+<span class="go">ok</span>
 </pre></div>
 </div>
-<p><code class="code docutils literal"><span class="pre">0</span></code> means no, a positive integer means yes.</p>
+<p>If <code class="code docutils literal"><span class="pre">pivot_root</span></code> instead reports an error, check the reported line number
+in <code class="code docutils literal"><span class="pre">pivot_root.c</span></code> to see what failed.</p>
 </div>
-<div class="section" id="bios-support">
-<h4>1.1.3.2. BIOS support<a class="headerlink" href="#bios-support" title="Permalink to this headline">¶</a></h4>
-<p>Hardware virtualization may also need to be enabled in the BIOS. Detecting
-this setting and changing is dependent on your OS and hardware; you are best
-off consulting Google for details.</p>
-<p>Modern Debian-derived distributions include a command <code class="code docutils literal"><span class="pre">kvm-ok</span></code> in the
-package <code class="code docutils literal"><span class="pre">cpu-checker</span></code> which makes this easy. If you get something like
-this, you&#8217;re golden:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> kvm-ok
-<span class="go">INFO: /dev/kvm exists</span>
-<span class="go">KVM acceleration can be used</span>
+<div class="section" id="installing-docker">
+<h2><a class="toc-backref" href="#id6">1.4. Installing Docker</a><a class="headerlink" href="#installing-docker" title="Permalink to this headline">¶</a></h2>
+<p>While installing Docker is beyond the scope of this documentation, here are a
+few tips.</p>
+<div class="section" id="understand-the-security-implications-of-docker">
+<h3><a class="toc-backref" href="#id7">1.4.1. Understand the security implications of Docker</a><a class="headerlink" href="#understand-the-security-implications-of-docker" title="Permalink to this headline">¶</a></h3>
+<p>Because Docker (a) makes installing random crap from the internet really easy
+and (b) has an &#8220;interesting&#8221; security culture, you should take care. Some of
+the implications are below. This list should not be considered comprehensive
+nor a substitute for appropriate expertise; adhere to your moral and
+institutional responsibilities.</p>
+<p>(All this stuff is a key motivation for Charliecloud.)</p>
+<div class="section" id="don-t-pipe-web-pages-to-your-shell">
+<h4>1.4.1.1. Don&#8217;t pipe web pages to your shell<a class="headerlink" href="#don-t-pipe-web-pages-to-your-shell" title="Permalink to this headline">¶</a></h4>
+<p>This is how Docker recommends you install the software. Don&#8217;t do this:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -fsSL https://get.docker.com/ <span class="p">|</span> sh
 </pre></div>
 </div>
-<p>If something like this, you need to tweak your BIOS:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> kvm-ok
-<span class="go">INFO: /dev/kvm does not exist</span>
-<span class="go">HINT:   sudo modprobe kvm_intel</span>
-<span class="go">INFO: Your CPU supports KVM extensions</span>
-<span class="go">INFO: KVM (vmx) is disabled by your BIOS</span>
-<span class="go">HINT: Enter your BIOS setup and enable Virtualization Technology (VT),</span>
-<span class="go">      and then hard poweroff/poweron your system</span>
-<span class="go">KVM acceleration can NOT be used</span>
+<p>This approach &#8212; piping a web page directly into a shell &#8212; is easy and
+fashionable but stupid.</p>
+<p>The problem is that you&#8217;ve invited the web page to execute arbitrary code as
+you (or worse, root). Auditing the page in a browser only helps somewhat, as
+the server could use your <code class="code docutils literal"><span class="pre">User-Agent</span></code> header to decide whether to show
+you safe or malicious code.</p>
+<p>Download the script to a file and audit it carefully before running.</p>
+</div>
+<div class="section" id="docker-equals-root">
+<h4>1.4.1.2. <code class="code docutils literal"><span class="pre">docker</span></code> equals root<a class="headerlink" href="#docker-equals-root" title="Permalink to this headline">¶</a></h4>
+<p>Anyone who can run the <code class="code docutils literal"><span class="pre">docker</span></code> command or interact with the Docker
+daemon can <a class="reference external" href="http://reventlov.com/advisories/using-the-docker-command-to-root-the-host">trivially escalate to root</a>.
+This is considered a feature.</p>
+<p>For this reason, don&#8217;t create the <code class="code docutils literal"><span class="pre">docker</span></code> group when the installer
+offers it, as this will allow passwordless, unlogged escalation for anyone in
+the group.</p>
+</div>
+<div class="section" id="images-can-contain-bad-stuff">
+<h4>1.4.1.3. Images can contain bad stuff<a class="headerlink" href="#images-can-contain-bad-stuff" title="Permalink to this headline">¶</a></h4>
+<p>Standard hygiene for &#8220;installing stuff from the internet&#8221; applies. Only work
+with images you trust. The official DockerHub repositories can help.</p>
+</div>
+<div class="section" id="containers-run-as-root">
+<h4>1.4.1.4. Containers run as root<a class="headerlink" href="#containers-run-as-root" title="Permalink to this headline">¶</a></h4>
+<p>By default, Docker runs container processes as root. In addition to being poor
+hygiene, this can be an escalation path, e.g. if you bind-mount host
+directories.</p>
+</div>
+<div class="section" id="docker-alters-your-network-configuration">
+<h4>1.4.1.5. Docker alters your network configuration<a class="headerlink" href="#docker-alters-your-network-configuration" title="Permalink to this headline">¶</a></h4>
+<p>To see what it did:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ifconfig    <span class="c1"># note docker0 interface</span>
+<span class="gp">$</span> brctl show  <span class="c1"># note docker0 bridge</span>
+<span class="gp">$</span> route -n
 </pre></div>
 </div>
 </div>
-<div class="section" id="dev-kvm-permissions">
-<h4>1.1.3.3. <code class="code docutils literal"><span class="pre">/dev/kvm</span></code> permissions<a class="headerlink" href="#dev-kvm-permissions" title="Permalink to this headline">¶</a></h4>
-<p>You need read/write access to <code class="code docutils literal"><span class="pre">/dev/kvm</span></code>. There are at least two ways
-this is accomplished. Which you get depends on your distribution.</p>
-<p>The traditional way is to put all KVM users in group <code class="code docutils literal"><span class="pre">kvm</span></code> and make the
-device group R/W for that user:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ls -l /dev/kvm
-<span class="go">crw-rw---- 1 root kvm 10, 232 Nov  7 10:36 /dev/kvm</span>
+<div class="section" id="docker-installs-services">
+<h4>1.4.1.6. Docker installs services<a class="headerlink" href="#docker-installs-services" title="Permalink to this headline">¶</a></h4>
+<p>If you don&#8217;t want the service starting automatically at boot, e.g.:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> systemctl is-enabled docker
+<span class="go">enabled</span>
+<span class="gp">$</span> systemctl disable docker
+<span class="gp">$</span> systemctl is-enabled docker
+<span class="go">disabled</span>
 </pre></div>
 </div>
-<p>The newfangled <code class="code docutils literal"><span class="pre">systemd</span></code> way is to make the device owned
-<code class="code docutils literal"><span class="pre">root:root</span></code> and dynamically add users to the file&#8217;s ACL when they log in
-to the console (that is, anyone sitting at the computer can use KVM). Note the
-trailing plus on the permissions, which implies the presence of an ACL:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> ls -l /dev/kvm
-<span class="go">crw-rw----+ 1 root root 10, 232 Nov  7 10:36 /dev/kvm</span>
-<span class="gp">$</span> getfacl /dev/kvm
-<span class="go">getfacl: Removing leading &#39;/&#39; from absolute path names</span>
-<span class="go">​# file: dev/kvm</span>
-<span class="go">​# owner: root</span>
-<span class="go">​# group: root</span>
-<span class="go">user::rw-</span>
-<span class="go">user:lightdm:rw-</span>
-<span class="go">group::---</span>
-<span class="go">mask::rw-</span>
-<span class="go">other::---</span>
+</div>
+</div>
+<div class="section" id="configuring-docker-for-a-proxy">
+<h3><a class="toc-backref" href="#id8">1.4.2. Configuring Docker for a proxy</a><a class="headerlink" href="#configuring-docker-for-a-proxy" title="Permalink to this headline">¶</a></h3>
+<p>By default, Docker does not work if you have a proxy. The symptom is this:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker run hello-world
+<span class="go">Unable to find image &#39;hello-world:latest&#39; locally</span>
+<span class="go">Pulling repository hello-world</span>
+<span class="go">Get https://index.docker.io/v1/repositories/library/hello-world/images: dial tcp 54.152.161.54:443: connection refused</span>
 </pre></div>
 </div>
-<p>In the above, users <code class="code docutils literal"><span class="pre">root</span></code> and <code class="code docutils literal"><span class="pre">lightdm</span></code> can use KVM.</p>
-<p>This causes problems if you want to run Charliecloud over the network, since
-you are not sitting at the console.</p>
-<p>You can fix the ACL manually after every boot with <code class="code docutils literal"><span class="pre">setfacl</span></code>, or you can
-add a <code class="code docutils literal"><span class="pre">udev</span></code> rule to also grant access to users in group <code class="code docutils literal"><span class="pre">kvm</span></code>.
-This can be accomplished as follows (note that you must paste the file
-content):</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> sudo sh -c <span class="s1">&#39;cat &gt; /etc/udev/rules.d/99-fix-kvm.rules&#39;</span>
-<span class="go">SUBSYSTEM==&quot;misc&quot;, KERNEL==&quot;kvm&quot;, GROUP=&quot;kvm&quot;</span>
-<span class="go">^D</span>
-<span class="gp">$</span> sudo udevadm trigger --action<span class="o">=</span>add --sysname-match<span class="o">=</span>kvm
-<span class="gp">$</span> ls -l /dev/kvm
-<span class="go">crw-rw----+ 1 root kvm 10, 232 Nov 24 13:57 /dev/kvm</span>
-</pre></div>
-</div>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This leaves the ACLs in place, so you can use KVM <em>either</em> if you are in
-the <code class="code docutils literal"><span class="pre">kvm</span></code> group or sitting at the console.</p>
+<p>The solution is to configure an override file <code class="code docutils literal"><span class="pre">http-proxy.conf</span></code> as
+<a class="reference external" href="https://docs.docker.com/articles/systemd/">documented</a>. If you don&#8217;t have a
+systemd system, then <code class="code docutils literal"><span class="pre">/etc/default/docker</span></code> might be the place to go.</p>
 </div>
 </div>
-</div>
-<div class="section" id="qemu">
-<h3><a class="toc-backref" href="#id5">1.1.4. QEMU</a><a class="headerlink" href="#qemu" title="Permalink to this headline">¶</a></h3>
-<p>We build QEMU from source for two reasons. First, distribution versions tend
-to be stale. Second, VDE networking support is often not compiled in (e.g.,
-<a class="reference external" href="https://bugs.launchpad.net/ubuntu/+source/qemu-kvm/+bug/776650">in Ubuntu</a>).</p>
-<p>Download QEMU from the <a class="reference external" href="http://wiki.qemu.org/Download">official site</a>. You
-probably want to choose the most recent stable version, which is 2.1.2 as of
-this writing (November 1914).</p>
-<p>Build and install as follows:</p>
-<div class="highlight-console"><div class="highlight"><pre><span class="gp">$</span> tar xjf qemu-2.1.2.tar.bz2
-<span class="gp">$</span> <span class="nb">cd </span>qemu-2.1.2
-<span class="gp">$</span> ./configure --prefix<span class="o">=</span>/usr/local/stow/qemu-2.1.2 <span class="se">\</span>
-<span class="go">              --target-list=i386-softmmu,x86_64-softmmu \</span>
-<span class="go">              --enable-kvm \</span>
-<span class="go">              --enable-uuid \</span>
-<span class="go">              --enable-virtfs</span>
+<div class="section" id="installing-charliecloud">
+<h2><a class="toc-backref" href="#id9">1.5. Installing Charliecloud</a><a class="headerlink" href="#installing-charliecloud" title="Permalink to this headline">¶</a></h2>
+<p>All you need in order to use Charliecloud is the executables and <code class="code docutils literal"><span class="pre">.sh</span></code>
+files in <code class="code docutils literal"><span class="pre">bin</span></code>:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> bin
 <span class="gp">$</span> make
-<span class="gp">$</span> make install
-<span class="gp">$</span> stow -d /usr/local/stow -S qemu-2.1.2
-<span class="gp">$</span> qemu-system-x86_64 --version
-<span class="go">QEMU emulator version 2.1.2, Copyright (c) 2003-2008 Fabrice Bellard</span>
 </pre></div>
 </div>
-<p>Note that <code class="code docutils literal"><span class="pre">configure</span></code> will pick up available libraries automatically, so
-some of the above is redundant. However, we list it to document what
-Charliecloud needs. <code class="code docutils literal"><span class="pre">--target-list</span></code> is short simply to improve compile
-speed; you can add more/all targets if you want to other guest architectures
-(note that KVM is not available for most targets).</p>
-<p><em>Now, move on to the next section to learn how to run your first virtual
-cluster.</em></p>
-</div>
+<p>You could put this directory in your <code class="code docutils literal"><span class="pre">$PATH</span></code> or link/copy the contents
+to somewhere else.</p>
+<p>That said, in order to understand Charliecloud, including completing the
+tutorial in the next section, you will want access to the rest of the source
+code as well.</p>
+<p>If you wish to build the documentation, see <code class="code docutils literal"><span class="pre">doc-src/README</span></code>.</p>
 </div>
 </div>
 
 
+           </div>
           </div>
           <footer>
   
@@ -486,7 +334,7 @@ cluster.</em></p>
         <a href="tutorial.html" class="btn btn-neutral float-right" title="2. Tutorial" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="Charliecloud Documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral" title="Overview" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -495,9 +343,10 @@ cluster.</em></p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014–2015, Los Alamos National Security, LLC.
+        &copy; <a href="copyright.html">Copyright</a> 2014–2016, Los Alamos National Security, LLC.
+
     </p>
-  </div>
+  </div> 
 
 </footer>
 
@@ -515,7 +364,7 @@ cluster.</em></p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.5',
+            VERSION:'0.2.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
