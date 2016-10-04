@@ -38,6 +38,6 @@ a submodule). To set that up:
 
 To publish:
 
-  $ make doc-web
+  $ make web
 
 It sometimes takes a few minutes for the web pages to update.
