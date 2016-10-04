@@ -75,6 +75,8 @@ web: html
 	@echo Making sure there are no uncommitted changes
 	git diff-index --quiet --cached HEAD
 	git diff-files --quiet
+	@echo Can we talk to GitHub?
+	cd ../doc && git ls-remote > /dev/null
 	@echo Publishing new docs
 	cd ../doc && git add --all
 	cd ../doc && git commit -a -m "docs for commit $$(cd .. && git rev-parse --short HEAD)"
