@@ -32,3 +32,5 @@ Charliecloud's original path was to use virtual machines (QEMU and KVM). This
 code and documentation has been removed from the master branch but is still
 available in the virtual-machines branch. We are open to re-including it in
 master, given a volunteer to maintain it.
+
+Please contact reidpr@lanl.gov with any comments or questions.

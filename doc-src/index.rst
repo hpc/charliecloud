@@ -21,4 +21,5 @@ This documentation is for Charliecloud version |release| (Git commit
    testing
    script-help
    faq
+   copyright
    history

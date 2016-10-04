@@ -47,6 +47,7 @@ Session.vim
 
 ### Custom ###
 
+.fuse_hidden*
 *.help
 *.o
 *.py[cod]

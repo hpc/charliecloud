@@ -43,13 +43,10 @@ consult the `Dockerfile documentation
 this. Note that run-time functionality such as :code:`ENTRYPOINT` is not
 supported.
 
-We will use the following very simple Dockerfile::
+We will use the following very simple Dockerfile:
 
-  $ cat Dockerfile
-  FROM debian:jessie
-  RUN    apt-get update \
-      && apt-get install -y openssh-client \
-      && rm -rf /var/lib/apt/lists/*
+.. literalinclude:: ../examples/hello/Dockerfile
+   :language: docker
 
 This creates a minimal Debian Jessie image with :code:`ssh` installed. We will
 encounter more complex Dockerfiles later in this tutorial.
@@ -90,8 +87,8 @@ directory, which in this case is the Charliecloud source code.
   Successfully built 526e2ca75656
 
 :code:`docker-build` and many other Charliecloud commands wrap various
-privileged `docker` commands. Thus, you will be prompted for a password to
-escalate as needed. Note however that most configurations of :code:`sudo`
+privileged :code:`docker` commands. Thus, you will be prompted for a password
+to escalate as needed. Note however that most configurations of :code:`sudo`
 don't require a password on every invocation, so just because you aren't
 prompted doesn't mean privileged commands aren't running.
 
@@ -117,10 +114,10 @@ can have value when debugging Charliecloud.
 ::
 
   $ sudo docker run -it $USER/hello /bin/bash
-  root@6e5c514e0296:/# ls /
-  bin   dev  home  lib64	mnt  proc  run	 srv  tmp  var
-  boot  etc  lib	 media	opt  root  sbin  sys  usr
-  root@6e5c514e0296:/# exit
+  # ls /
+  bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
+  boot  etc  lib   media  opt  root  sbin  sys  usr
+  # exit
   exit
 
 Flatten image
@@ -159,7 +156,7 @@ the image directory if it already exists.
    /data/reidpr.hello unpacked ok
 
 One potential gotcha is the tarball including special files such as devices.
-Because :code:`tar` is running unprivileged, these will not be unpacked, but
+Because :code:`tar` is running unprivileged, these will not be unpacked, and
 they can cause the extraction to fail. The fix is to delete them in the
 Dockerfile.
 
@@ -357,7 +354,7 @@ variables.
    2. Argument :code:`-t` is required for SSH to allocate a pseudo-TTY and
       thus convince your shell to be interactive. In the case of Bash,
       otherwise you'll get a shell that accepts commands but doesn't print
-      prompts, amother other issues. (`Issue #2
+      prompts, among other other issues. (`Issue #2
       <https://github.com/hpc/charliecloud/issues/2>`_.)
 
 A third may be to edit one's shell initialization scripts to check the command
@@ -368,17 +365,17 @@ User and group IDs
 ------------------
 
 Unlike Docker and some other container systems, Charliecloud tries to make the
-container's users and groups look the same as the hosts. (This is accomplished
-by bind-mounting :code:`/etc/passwd` and :code:`/etc/group` into the
-container.) For example::
+container's users and groups look the same as the host's. (This is
+accomplished by bind-mounting :code:`/etc/passwd` and :code:`/etc/group` into
+the container.) For example::
 
   $ id -u
-  1001
+  901
   $ whoami
   reidpr
   $ ch-run /data/$USER.hello bash
   > id -u
-  1001
+  901
   > whoami
   reidpr
 
@@ -407,12 +404,12 @@ typical usage without :code:`--uid`, this mapping is a no-op, so everything
 looks normal::
 
   $ ls -nd ~
-  drwxr-xr-x 87 1001 1001 4096 Sep 28 12:12 /home/reidpr
+  drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/reidpr
   $ ls -ld ~
   drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 12:12 /home/reidpr
   $ ch-run /data/$USER.hello bash
   > ls -nd ~
-  drwxr-xr-x 87 1001 1001 4096 Sep 28 18:12 /home/reidpr
+  drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld ~
   drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 18:12 /home/reidpr
 
@@ -420,7 +417,7 @@ But if :code:`--uid` is provided, things can seem odd. For example::
 
   $ ch-run --uid 0 /data/$USER.hello bash
   > ls -nd /home/reidpr
-  drwxr-xr-x 87 0 1001 4096 Sep 28 18:12 /home/reidpr
+  drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld /home/reidpr
   drwxr-xr-x 87 root reidpr 4096 Sep 28 18:12 /home/reidpr
 
@@ -429,7 +426,7 @@ effective UID on the host. Thus, all other users are unmapped, and they show
 up as :code:`nobody`::
 
   $ ls -n /tmp/foo
-  -rw-rw---- 1 1002 1002 0 Sep 28 15:40 /tmp/foo
+  -rw-rw---- 1 902 902 0 Sep 28 15:40 /tmp/foo
   $ ls -l /tmp/foo
   -rw-rw---- 1 sig sig 0 Sep 28 15:40 /tmp/foo
   $ ch-run /data/$USER.hello bash
@@ -444,11 +441,11 @@ can lead to some strange-looking results, because only one of your GIDs can be
 mapped in any given container. All the rest become :code:`nogroup`::
 
   $ id
-  uid=1001(reidpr) gid=1001(reidpr) groups=1001(reidpr),1003(nerds),1004(losers)
+  uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),903(nerds),904(losers)
   $ ch-run /data/$USER.hello -- id
-  uid=1001(reidpr) gid=1001(reidpr) groups=1001(reidpr),65534(nogroup)
-  $ ch-run --gid 1003 /data/$USER.hello -- id
-  uid=1001(reidpr) gid=1003(nerds) groups=1003(nerds),65534(nogroup)
+  uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),65534(nogroup)
+  $ ch-run --gid 903 /data/$USER.hello -- id
+  uid=901(reidpr) gid=903(nerds) groups=903(nerds),65534(nogroup)
 
 However, this doesn't affect access. The container process retains the same
 GIDs from the host perspective, and as always, the host IDs are what control
@@ -471,7 +468,7 @@ group is a no-op because it's mapped back to the host GID::
   chgrp: changing group of '/tmp/bar': Invalid argument
   $ ch-run /data/$USER.hello -- chgrp nogroup /tmp/bar
   chgrp: changing group of '/tmp/bar': Invalid argument
-  $ ch-run --gid 1003 /data/$USER.hello -- chgrp nerds /tmp/bar
+  $ ch-run --gid 903 /data/$USER.hello -- chgrp nerds /tmp/bar
   $ ls -l /tmp/bar
   -rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar
 
@@ -495,38 +492,267 @@ software.
 Installing your own software
 ============================
 
-There are
+This section covers four situations for making software available inside a
+Charliecloud container:
 
-Most of Docker's `Best practices for writing Dockerfiles
+  1. Third-party software installed into the image using a package manager.
+  2. Third-party software compiled from source into the image.
+  3. Your software installed into the image.
+  4. Your software stored on the host but compiled in the container.
+
+Many of Docker's `Best practices for writing Dockerfiles
 <https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices>`_
-apply to Charliecloud images as well.
+apply to Charliecloud images as well, so you should be familiar with that
+document.
 
-only install software if you have to ... maybe there's already a trustable Docker image you can use as a base
+.. note::
 
-installing with OS package managers -- sl
-compiling third-party software -- download and install sl from source
-installing your code into the image -- download on host, COPY to image
-running code on the host -- download on host
+   Maybe you don't have to install the software at all. Is there already a
+   trustable image on Docker Hub you can use as a base?
 
-This script is available at :code:`/mnt/ch/bin/ch-ssh` inside containers. It
-requires :code:`ssh` to be on :code:`$PATH` inside the container::
+Third-party software via package manager
+----------------------------------------
 
-  $ ch-run /data/$USER.hello /bin/bash
-  > export CH_RUN_ARGS="/data/$USER.hello --"
-  > /mnt/ch/bin/ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
-  4026532256
+This approach is the simplest and fastest way to install stuff in your image.
+The :code:`examples/hello` Dockerfile also seen above does this to install the
+package :code:`openssh-client`:
 
-Install into image or not?
---------------------------
+.. literalinclude:: ../examples/hello/Dockerfile
+   :language: docker
+
+You can use distribution package managers such as :code:`apt-get`, as
+demonstrated above, or others, such as :code:`pip` for Python modules.
+
+Be aware that the software will be downloaded anew each time you build the
+image, unless you add an HTTP cache, which is out of scope of this tutorial.
+
+Third-party software compiled from source
+-----------------------------------------
+
+Under this method, one uses :code:`RUN` commands to fetch the desired software
+using :code:`curl` or :code:`wget`, compile it, and install. An example we'll
+revisit later, :code:`examples/mpihello`, uses this approach:
+
+.. literalinclude:: ../examples/mpihello/Dockerfile
+   :language: docker
+   :lines: 1-22
+
+So what is going on here?
+
+1. Use the latest Debian, Jessie, as the base image.
+
+2. Install a basic build system using the OS package manager.
+
+3. Download and untar OpenMPI. Note the use of variables to make adjusting the
+   URL and MPI version easier, as well as the explanation of why we're not
+   using :code:`apt-get`, given that OpenMPI 1.10 is included in Debian.
+
+4. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
+   appropriate parallel build.
+
+5. Clean up, in order to reduce the size of layers (:code:`make clean`) as
+   well as the resulting Charliecloud tarball (:code:`rm -Rf`).
+
+Finally, because it's a container image, you can be less tidy than you might
+be on a normal system. For example, the above downloads and builds in
+:code:`/` rather than :code:`/usr/local/src`, and it installs MPI into
+:code:`/usr` rather than :code:`/usr/local`.
+
+Your software stored in the image
+---------------------------------
+
+This method covers software provided by you that is included in the image.
+This is recommended when your software is relatively stable or is not easily
+available to users of your image, for example a library rather than simulation
+code under active development.
+
+The general approach is the same as installing third-party software from
+source, but you use the :code:`COPY` instruction to transfer files from the
+host filesystem (rather than the network via HTTP) to the image. For example,
+the :code:`mpihello` Dockerfile continues beyond what is shown in the previous
+section:
+
+.. literalinclude:: ../examples/mpihello/Dockerfile
+   :language: docker
+   :lines: 25-
+
+These Dockerfile instructions:
+
+1. Copy the host directory :code:`examples/mpihello` to the image at path
+   :code:`/hello`. The host path is *relative to the context directory*;
+   Docker builds have no access to the host filesystem outside the context
+   directory. (This is so the Docker daemon can run on a different machine ---
+   the context directory is tarred up and sent to the daemon, even if it's on
+   the same machine.)
+
+   The convention for the Charliecloud examples is that the build directory is
+   always rooted at the top of the Charliecloud source code, but we could just
+   as easily have provided the :code:`mpihello` directory. In that case, the
+   source in :code:`COPY` would have been :code:`.`.
+
+2. :code:`cd` to :code:`/hello`.
+
+3. Compile our example. We include :code:`make clean` to remove any leftover
+   build files, since they would be inappropriate inside the container.
+
+Once the image is built, we can see the results. (Install the image into
+:code:`/data` as outlined above, if you haven't already.)
+
+::
+
+  $ ch-run /data/$USER.mpihello -- ls -lh /hello
+  total 32K
+  -rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile
+  -rw-rw---- 1 reidpr reidpr  157 Aug  5 22:37 Makefile
+  -rw-rw---- 1 reidpr reidpr 1.2K Aug  5 22:37 README
+  -rwxr-x--- 1 reidpr reidpr 9.5K Oct  4 15:58 hello
+  -rw-rw---- 1 reidpr reidpr 1.4K Aug  5 22:37 hello.c
+  -rwxrwx--- 1 reidpr reidpr  441 Aug  5 22:37 test.sh
+
+We will revisit this image later.
+
+Your software stored on the host
+--------------------------------
+
+This method leaves your software on the host but compiles it in the image.
+This is recommended when your software is volatile or each image user needs a
+different version, for example a simulation code under active development.
+
+The general approach is to bind-mount the appropriate directory and then run
+the build inside the container. We can re-use the :code:`mpihello` image to
+demonstrate this.
+
+::
+
+  $ cd examples/mpihello
+  $ ls -l
+  total 20
+  -rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile
+  -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
+  -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
+  -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
+  -rwxrwx--- 1 reidpr reidpr  441 Aug  5 16:37 test.sh
+  $ ch-run -d . /data/$USER.mpihello -- sh -c 'cd /mnt/0 && make'
+  mpicc -std=gnu11 -Wall hello.c -o hello
+  $ ls -l
+  total 32
+  -rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile
+  -rwxrwx--- 1 reidpr reidpr 9632 Oct  4 10:43 hello
+  -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
+  -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
+  -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
+  -rwxrwx--- 1 reidpr reidpr  441 Aug  5 16:37 test.sh
+
+A common use case is to leave a container shell open in one terminal for
+building, and then run using a separate container invoked from a different
+terminal.
+
 
 Your first single-node, multi-process job
 ===========================================
 
-a little artificial as there's no real point in multiple identical containers
-on a single node
+This is an important use case even for large-scale codes, when testing and
+development happens at small scale but need to use an environment comparable
+to large-scale runs.
+
+This tutorial covers three approaches:
+
+1. Processes are coordinated by the host, i.e., one process per container.
+
+2. Processes are coordinated by the container, i.e., one container with
+   multiple processes, using configuration files from the container.
+
+3. Processes are coordinated by the container using configuration files from
+   the host.
+
+In order to test approach 1, you must install OpenMPI 1.10.\ *x* on the host. In
+our experience, we have had success compiling from source with the same
+options as in the Dockerfile, but there is probably more nuance to the match
+than we've discovered.
+
+Processes coordinated by host
+-----------------------------
+
+This approach does the forking and process coordination on the host. Each
+process is spawned in its own container, and because Charliecloud introduces
+minimal isolation, they can communicate almost as if they were running
+directly on the host.
+
+For example, using :code:`mpirun` and the :code:`mpihello` example above::
+
+  $ mpirun --version
+  mpirun (Open MPI) 1.10.2
+  $ stat -L --format='%i' /proc/self/ns/user
+  4026531837
+  $ ch-run /data/$USER.mpihello -- mpirun --version
+  mpirun (Open MPI) 1.10.4
+  $ mpirun -np 4 ch-run /data/$USER.mpihello /hello/hello
+  0: init ok, 4 ranks, userns 4026532256
+  1: init ok, 4 ranks, userns 4026532267
+  2: init ok, 4 ranks, userns 4026532269
+  3: init ok, 4 ranks, userns 4026532271
+  0: send/receive ok
+  0: finalize ok
+
+The advantage is that we can easily take advantage of host-specific things
+such as configurations; the disadvantage is that it introduces a close
+coupling between the host and container that can manifest in complex ways. For
+example, while OpenMPI 1.10.2 worked with 1.10.4 above, both had to be
+compiled with the same options. The OpenMPI 1.10.2 packages that come with
+Ubuntu fail with "orte_util_nidmap_init failed" if run with the container
+1.10.4.
+
+Processes coordinated by container
+----------------------------------
+
+This approach starts a single container process, which then forks and
+coordinates the parallel work. The advantage is that this approach is
+completely independent of the host for dependency configuration and
+installation; the disadvantage is that it cannot take advantage of any
+host-specific things that might e.g. improve performance.
+
+For example::
+
+  $ ch-run /data/$USER.mpihello -- mpirun -np 4 /hello/hello
+  0: init ok, 4 ranks, userns 4026532256
+  1: init ok, 4 ranks, userns 4026532256
+  2: init ok, 4 ranks, userns 4026532256
+  3: init ok, 4 ranks, userns 4026532256
+  0: send/receive ok
+  0: finalize ok
+
+
+Processes coordinated by container using host configuration
+-----------------------------------------------------------
+
+This approach is a middle ground. The use case is when there is some
+host-specific configuration we want to use, but we don't want to install the
+entire configured dependency on the host. It would be undesirable to copy this
+configuration into the image, because that would reduce its portability.
+
+For example::
+
+  $ ch-run -d /usr/local/etc /data/$USER.mpihello -- \
+    mpirun -np 4 -mca mca_base_param_files /mnt/0/openmpi-mca-params.conf \
+    /hello/hello
+  0: init ok, 4 ranks, userns 4026532256
+  1: init ok, 4 ranks, userns 4026532256
+  2: init ok, 4 ranks, userns 4026532256
+  3: init ok, 4 ranks, userns 4026532256
+  0: send/receive ok
+  0: finalize ok
+
+There are a variety of ways to communicate the configuration location to the
+application. One is via command-line parameters, as above. Another is to use a
+symlink to point to the configuration. This can be set up with :code:`RUN` in
+the Dockerfile to create a dangling symlink that is resolved when the
+appropriate host directory is bind-mounted into :code:`/mnt`.
+
 
 Your first multi-node job
 =========================
+
+FIXME --- in progress
 
 two models
   host coordinates, each task in own container - mpirun on host

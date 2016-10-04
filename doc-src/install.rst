@@ -17,15 +17,23 @@ Run time
 
 Systems used for running images need:
 
-* Recent Linux kernel with :code:`CONFIG_USER_NS=y`
+* Recent Linux kernel with :code:`CONFIG_USER_NS=y` and :code:`CONFIG_OVERLAY_FS=y`
 * C compiler and standard library
 * POSIX shell and utilities
 
-The kernel version is vague because it's not a simple number. The upstream
-kernel documentation says 3.10+ is sufficient. However, RHEL7 derivatives have
-a patch to disable user namespaces in concert with mount namespaces. Tested by
-us and working are 4.2 (Ubuntu) and 4.4 (Ubuntu as well as upstream
-:code:`kernel.org`).
+If you are using the upstream kernel, you will need 3.18+.
+
+Distribution kernels vary. For example, RHEL7 and derivatives have a patch to
+disable user namespaces in concert with mount namespaces, and overlayfs is
+available as a "technology preview".
+
+Tested and working by us include the Ubuntu and upstream versions of 4.4.
+
+.. note::
+
+   We are open to patches to make Charliecloud available on older kernels. The
+   key parts are likely a setuid binary to avoid the user namespace and some
+   workaround for missing overlayfs. Please contact us if you are interested.
 
 Build time
 ----------
@@ -33,8 +41,14 @@ Build time
 Systems used for building images need the run-time prerequisites, plus:
 
 * `Docker <https://www.docker.com/>`_, recent version. We do not make compatibility guarantees with any specific version, but let us know if you run into issues.
-* bash
+* Bash
 * root access using :code:`sudo`
+
+
+Download Charliecloud
+=====================
+
+See our GitHub project: https://github.com/hpc/charliecloud
 
 
 Verifying the system calls
@@ -45,8 +59,7 @@ system calls Charliecloud depends on. If this works, then Charliecloud
 probably will too::
 
   $ cd examples/syscalls
-  $ make
-  $ ./pivot_root
+  $ make && ./pivot_root
   ok
 
 If :code:`pivot_root` instead reports an error, check the reported line number
@@ -150,11 +163,11 @@ systemd system, then :code:`/etc/default/docker` might be the place to go.
 Installing Charliecloud
 =======================
 
-All you need in order to use Charliecloud is the contents of :code:`bin`::
+All you need in order to use Charliecloud is the executables and :code:`.sh`
+files in :code:`bin`::
 
   $ cd bin
   $ make
-  cc -std=c11 -Wall -Werror -Wfatal-errors -o ch-run ch-run.c
 
 You could put this directory in your :code:`$PATH` or link/copy the contents
 to somewhere else.
