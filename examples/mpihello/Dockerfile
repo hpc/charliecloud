@@ -2,7 +2,8 @@ FROM debian:jessie
 
 # Install needed OS packages.
 RUN    apt-get update \
-    && apt-get install -y less g++ gcc make wget
+    && apt-get install -y less g++ gcc make openssh-client wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Compile OpenMPI. We can't use the Debian package because
 # --disable-pty-support is needed to avoid "pipe function call failed when
@@ -25,3 +26,6 @@ RUN rm -Rf openmpi-${MPI_VERSION}*
 COPY examples/mpihello /hello
 WORKDIR /hello
 RUN make clean && make
+
+# We want ch-ssh
+RUN touch /usr/bin/ch-ssh

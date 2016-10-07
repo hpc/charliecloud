@@ -26,14 +26,11 @@
         overmounted during boot. However, some cluster provisioning systems,
         e.g. Perceus, use the original rootfs directly.
 
-   Notes on overlayfs:
-
-     1. Ideally, we would re-mount the lower directory read-only, to protect
-        it against changes resulting from bugs. However, this raises a corner
-        case: if the lower directory crosses filesystems, then only the top
-        filesystem will become read-only, because MS_REMOUNT cannot be applied
-        recursively. Thus, in order to avoid rare bugs, we don't re-mount
-        read-only. This simplifies the code as well.
+   Regarding overlayfs: It's very attractive to union-mount a tmpfs over the
+   read-only image; then all programs can write to their hearts' desire, and
+   the image does not change. This also simplifies the code. Unfortunately,
+   overlayfs + userns is not allowed as of 4.4.23. See:
+   https://lwn.net/Articles/671774/
 
    [1]: http://man7.org/linux/man-pages/man2/pivot_root.2.html
    [2]: https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt
@@ -70,60 +67,47 @@ int main(void)
       case, the following mount(2) will fail with EPERM. */
    TRY (unshare(CLONE_NEWNS|CLONE_NEWUSER));
 
-   /* Create a tmpfs to hold any image changes the container wants to make
-      (these will be discarded), and place it on top of the image using
-      overlayfs. This also helps us be tidier about all these root directories
-      flying around. (Note that it doesn't really matter where we mount it,
-      since only our namespace can see it.) */
-   TRY (mount(NULL, "/mnt", "tmpfs", 0, "size=16m"));
-   TRY (mkdir("/mnt/upper", 0755));
-   TRY (mkdir("/mnt/lower", 0755));
-   TRY (mkdir("/mnt/work", 0755));
-   TRY (mkdir("/mnt/merged", 0755));
-
-   /* Claim the image for our namespace by recursively bind-mounting it. This
-      avoids conditions 1 and 2. (While we put it on /mnt/lower, the standard
-      trick is to bind-mount it over itself.) */
-   TRY (mount("/tmp/newroot", "/mnt/lower", NULL,
-              MS_REC | MS_BIND | MS_PRIVATE, NULL));
-
-   /* Activate the overlay. */
-   TRY (mount(NULL, "/mnt/merged", "overlay", 0,
-              "lowerdir=/mnt/lower,upperdir=/mnt/upper,workdir=/mnt/work"));
+   /* Claim the image for our namespace by recursively bind-mounting it over
+      itself. This standard trick avoids conditions 1 and 2. */
+   TRY (mount("/tmp/newroot", "/tmp/newroot", NULL,
+              MS_REC | MS_BIND | MS_PRIVATE | MS_RDONLY, NULL));
 
    /* The next few calls deal with condition 3. The solution is to overmount
-      the root filesystem with literally anything else. We use /mnt. This
-      doesn't hurt if / is not a rootfs, so we always do it for simplicity. */
+      the root filesystem with literally anything else. We use the parent of
+      the image, /tmp. This doesn't hurt if / is not a rootfs, so we always do
+      it for simplicity. */
 
-   /* chdir to /mnt. This moves the process' special "." pointer to
+   /* Claim /tmp for our namespace. You would think that because /tmp contains
+      /tmp/newroot and it's a recursive bind mount, we could claim both in the
+      same call. But, this causes pivot_root(2) to fail later with EBUSY. */
+   TRY (mount("/tmp", "/tmp", NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
+
+   /* chdir to /tmp. This moves the process' special "." pointer to
       the soon-to-be root filesystem. Otherwise, it will keep pointing to the
       overmounted root. See the e-mail at the end of:
       https://git.busybox.net/busybox/tree/util-linux/switch_root.c?h=1_24_2 */
-   TRY (chdir("/mnt"));
+   TRY (chdir("/tmp"));
 
-   /* Move /mnt to /. (One could use this to directly enter the image,
+   /* Move /tmp to /. (One could use this to directly enter the image,
       avoiding pivot_root(2) altogether. However, there are ways to remove all
       active references to the root filesystem. Then, the image could be
       unmounted, exposing the old root filesystem underneath. While
       Charliecloud does not claim a strong isolation boundary, we do want to
       make activating the UDSS irreversible.) */
-   TRY (mount("/mnt", "/", NULL, MS_MOVE, NULL));
+   TRY (mount("/tmp", "/", NULL, MS_MOVE, NULL));
 
-   /* Move the "/" special pointer to the new root filesystem, similar to
+   /* Move the "/" special pointer to the new root filesystem, for the reasons
       above. (Similar reasoning applies for why we don't use chroot(2) to
       directly activate the UDSS.) */
    TRY (chroot("."));
 
-   /* Make a place for the old (intermediate) root filesystem to land.
-
-      Note also that you can use this to prove that we did not write to the
-      image -- this new directory will not exist after the program exits. */
-   if (mkdir("/merged/oldroot", 0755) && errno != EEXIST)
+   /* Make a place for the old (intermediate) root filesystem to land. */
+   if (mkdir("/newroot/oldroot", 0755) && errno != EEXIST)
       TRY (errno);
 
    /* Finally, make our "real" newroot into the root filesystem. */
-   TRY (chdir("/merged"));
-   TRY (syscall(SYS_pivot_root, "/merged", "/merged/oldroot"));
+   TRY (chdir("/newroot"));
+   TRY (syscall(SYS_pivot_root, "/newroot", "/newroot/oldroot"));
    TRY (chroot("."));
 
    /* Unmount the old filesystem and it's gone for good. */

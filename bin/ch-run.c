@@ -29,9 +29,6 @@ void setup_namespaces(bool userns_p, uid_t cuid, gid_t cgid);
 
 /** Constants and macros **/
 
-/* Arguments for the tmpfs that holds image changes. */
-#define TMPFS_DATA "size=16m"
-
 /* Host filesystems to bind. */
 #define USER_BINDS_MAX 10
 const char * DEFAULT_BINDS[] = { "/dev",
@@ -132,51 +129,47 @@ int main(int argc, char * argv[])
    in examples/syscalls/pivot_root.c. */
 void enter_udss(char * newroot, char ** binds)
 {
-   int fd;
-   char * bindir;
+   char * base;
+   char * dir;
+   char * oldpath;
    char * path;
    char bin[PATH_CHARS];
    struct stat st;
 
    LOG_IDS;
 
-   // Create a tmpfs for image changes and set up the overlay
-   TRY (mount(NULL, "/mnt", "tmpfs", 0, TMPFS_DATA));
-   TRY (mkdir("/mnt/upper", 0755));
-   TRY (mkdir("/mnt/lower", 0755));
-   TRY (mkdir("/mnt/work", 0755));
-   TRY (mkdir("/mnt/merged", 0755));
+   // Claim newroot for this namespace
+   TRY (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
-   // Claim newroot for this namespace and prepare it for overlay
-   TRY (mount(newroot, "/mnt/lower", NULL,
-              MS_REC | MS_BIND | MS_PRIVATE, NULL));
-
-   // Activate the overlay
-   TRY (mount(NULL, "/mnt/merged", "overlay", 0,
-              "lowerdir=/mnt/lower,upperdir=/mnt/upper,workdir=/mnt/work"));
-
+   // Mount tmpfses on guest /home and /mnt because guest root is read-only
+   TRY (0 > asprintf(&path, "%s/home", newroot));
+   TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
+   TRY (0 > asprintf(&path, "%s/mnt", newroot));
+   TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
    // Bind-mount default stuff at same guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
-      TRY (0 > asprintf(&path, "/mnt/merged%s", DEFAULT_BINDS[i]));
+      TRY (0 > asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
       TRY (mount(DEFAULT_BINDS[i], path, NULL, MS_REC | MS_BIND, NULL));
    }
    // Bind-mount user's home directory at /home/$USER. The main use case is
    // dotfiles.
-   TRY (0 > asprintf(&path, "/mnt/merged/home/%s", getenv("USER")));
+   TRY (0 > asprintf(&path, "%s/home/%s", newroot, getenv("USER")));
    TRY (mkdir(path, 0755));
    TRY (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL));
-   // Bind-mount ch-ssh into /usr/bin. Create mount point if it doesn't exist.
-   fd = open("/mnt/merged/usr/bin/ch-ssh", O_WRONLY | O_CREAT, 0);
-   TRY (fd == -1);
-   TRY (close(fd));
-   TRY (-1 == readlink("/proc/self/exe", bin, PATH_CHARS));
-   bin[PATH_CHARS-1] = 0;  // guarantee string termination
-   bindir = dirname(bin);
-   TRY (0 > asprintf(&path, "%s/ch-ssh", bindir));
-   TRY (mount(path, "/mnt/merged/usr/bin/ch-ssh", NULL, MS_BIND, NULL));
+   // Bind-mount /usr/bin/ch-ssh if it exists.
+   TRY (0 > asprintf(&path, "%s/usr/bin/ch-ssh", newroot));
+   if (stat(path, &st)) {
+      TRY (errno != EEXIST);
+   } else {
+      TRY (-1 == readlink("/proc/self/exe", bin, PATH_CHARS));
+      bin[PATH_CHARS-1] = 0;  // guarantee string termination
+      dir = dirname(bin);
+      TRY (0 > asprintf(&oldpath, "%s/ch-ssh", dir));
+      TRY (mount(path, oldpath, NULL, MS_BIND, NULL));
+   }
    // Bind-mount user-specified directories at guest /mnt/i
    for (int i = 0; binds[i] != NULL; i++) {
-      TRY (0 > asprintf(&path, "/mnt/merged/mnt/%d", i));
+      TRY (0 > asprintf(&path, "%s/mnt/%d", newroot, i));
       if (lstat(path, &st)) {
          if (errno == ENOENT) {
             TRY (mkdir(path, 0755));  // doesn't exist, create it
@@ -189,18 +182,28 @@ void enter_udss(char * newroot, char ** binds)
       TRY (mount(binds[i], path, NULL, MS_BIND, NULL));
    }
 
-   // Overmount / with /mnt to avoid EINVAL if / is a rootfs
-   TRY(chdir("/mnt"));
-   TRY(mount("/mnt", "/", NULL, MS_MOVE, NULL));
-   TRY(chroot("."));
+   // Overmount / with itself to avoid EINVAL if it's a rootfs
+   TRY (NULL == (path = strdup(newroot)));
+   dir = dirname(path);
+   TRY (NULL == (path = strdup(newroot)));
+   base = basename(path);
+   TRY (mount(dir, dir, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
+   TRY (chdir(dir));
+   TRY (mount(dir, "/", NULL, MS_MOVE, NULL));
+   TRY (chroot("."));
+   TRY (0 > asprintf(&newroot, "/%s", base));
 
    // Pivot into the new root
-   TRY (mkdir("/merged/oldroot", 0755));
-   TRY (chdir("/merged"));
-   TRY (syscall(SYS_pivot_root, "/merged", "/merged/oldroot"));
+   TRY (0 > asprintf(&path, "%s/oldroot", newroot));
+   TRY (mkdir(path, 0755));
+   TRY (chdir(newroot));
+   TRY (syscall(SYS_pivot_root, newroot, path));
    TRY (chroot("."));
    TRY (umount2("/oldroot", MNT_DETACH));
    TRY (rmdir("/oldroot"));
+
+   // Post-pivot_root() tmpfs
+   TRY (mount(NULL, "/run", "tmpfs", 0, "size=16m"));
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
