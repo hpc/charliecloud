@@ -687,10 +687,10 @@ For example, using :code:`mpirun` and the :code:`mpihello` example above::
   $ ch-run /data/$USER.mpihello -- mpirun --version
   mpirun (Open MPI) 1.10.4
   $ mpirun -np 4 ch-run /data/$USER.mpihello /hello/hello
-  0: init ok, 4 ranks, userns 4026532256
-  1: init ok, 4 ranks, userns 4026532267
-  2: init ok, 4 ranks, userns 4026532269
-  3: init ok, 4 ranks, userns 4026532271
+  0: init ok cn001, 4 ranks, userns 4026532256
+  1: init ok cn001, 4 ranks, userns 4026532267
+  2: init ok cn001, 4 ranks, userns 4026532269
+  3: init ok cn001, 4 ranks, userns 4026532271
   0: send/receive ok
   0: finalize ok
 
@@ -714,10 +714,10 @@ host-specific things that might e.g. improve performance.
 For example::
 
   $ ch-run /data/$USER.mpihello -- mpirun -np 4 /hello/hello
-  0: init ok, 4 ranks, userns 4026532256
-  1: init ok, 4 ranks, userns 4026532256
-  2: init ok, 4 ranks, userns 4026532256
-  3: init ok, 4 ranks, userns 4026532256
+  0: init ok cn001, 4 ranks, userns 4026532256
+  1: init ok cn001, 4 ranks, userns 4026532256
+  2: init ok cn001, 4 ranks, userns 4026532256
+  3: init ok cn001, 4 ranks, userns 4026532256
   0: send/receive ok
   0: finalize ok
 
@@ -730,23 +730,33 @@ host-specific configuration we want to use, but we don't want to install the
 entire configured dependency on the host. It would be undesirable to copy this
 configuration into the image, because that would reduce its portability.
 
-For example::
+The host configuration is communicated to the container by bind-mounting the
+relevant directory and then pointing the application to it. There are a
+variety of approaches. Some application or frameworks take command-line
+parameters specifying the configuration path.
 
-  $ ch-run -d /usr/local/etc /data/$USER.mpihello -- \
-    mpirun -np 4 -mca mca_base_param_files /mnt/0/openmpi-mca-params.conf \
-    /hello/hello
-  0: init ok, 4 ranks, userns 4026532256
-  1: init ok, 4 ranks, userns 4026532256
-  2: init ok, 4 ranks, userns 4026532256
-  3: init ok, 4 ranks, userns 4026532256
+The approach used in the :code:`mpihello` example is to set the configuration
+directory to :code:`/mnt/0`. From the Dockerfile:
+
+.. literalinclude:: ../examples/mpihello/Dockerfile
+   :language: docker
+   :lines: 15-19
+
+The effect is that the image contains a default MPI configuration, but if you
+specify a different configuration directory with :code:`-d`, that is used
+instead. For example::
+
+  $ ch-run -d /usr/local/etc /data/$USER.mpihello -- mpirun -np 4 /hello/hello
+  0: init ok cn001, 4 ranks, userns 4026532256
+  1: init ok cn001, 4 ranks, userns 4026532256
+  2: init ok cn001, 4 ranks, userns 4026532256
+  3: init ok cn001, 4 ranks, userns 4026532256
   0: send/receive ok
   0: finalize ok
 
-There are a variety of ways to communicate the configuration location to the
-application. One is via command-line parameters, as above. Another is to use a
-symlink to point to the configuration. This can be set up with :code:`RUN` in
-the Dockerfile to create a dangling symlink that is resolved when the
-appropriate host directory is bind-mounted into :code:`/mnt`.
+A similar approach creates a dangling symlink with :code:`RUN` that is
+resolved when the appropriate host directory is bind-mounted into
+:code:`/mnt`.
 
 
 Your first multi-node job

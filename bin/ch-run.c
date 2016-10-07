@@ -136,6 +136,7 @@ void enter_udss(char * newroot, char ** binds)
    char * bindir;
    char * path;
    char bin[PATH_CHARS];
+   struct stat st;
 
    LOG_IDS;
 
@@ -176,7 +177,15 @@ void enter_udss(char * newroot, char ** binds)
    // Bind-mount user-specified directories at guest /mnt/i
    for (int i = 0; binds[i] != NULL; i++) {
       TRY (0 > asprintf(&path, "/mnt/merged/mnt/%d", i));
-      TRY (mkdir(path, 0755));
+      if (lstat(path, &st)) {
+         if (errno == ENOENT) {
+            TRY (mkdir(path, 0755));  // doesn't exist, create it
+         } else {
+            TRY (-1);                 // some other problem, fail
+         }
+      } else if (!S_ISDIR(st.st_mode)) {
+         fatal("%s exists but is not a directory\n", path);
+      }
       TRY (mount(binds[i], path, NULL, MS_BIND, NULL));
    }
 

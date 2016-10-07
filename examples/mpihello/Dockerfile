@@ -13,7 +13,7 @@ RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
 RUN tar xf openmpi-${MPI_VERSION}.tar.gz
 RUN    cd openmpi-${MPI_VERSION} \
     && ./configure --prefix=/usr \
-                   --sysconfdir=/etc \
+                   --sysconfdir=/mnt/0 \
                    --disable-pty-support \
                    --disable-mpi-cxx \
                    --disable-mpi-fortran \

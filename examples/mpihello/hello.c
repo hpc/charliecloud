@@ -5,6 +5,7 @@
    http://en.wikipedia.org/wiki/Message_Passing_Interface#Example_program */
 
 #define _GNU_SOURCE
+#include <limits.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -19,6 +20,7 @@ int main(int argc, char ** argv)
    int msg, rank, rank_ct;
    struct stat st;
    MPI_Status mstat;
+   char hostname[HOST_NAME_MAX+1];
 
    stat("/proc/self/ns/user", &st);
 
@@ -26,7 +28,9 @@ int main(int argc, char ** argv)
    MPI_Comm_size(MPI_COMM_WORLD, &rank_ct);
    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-   printf("%d: init ok, %d ranks, userns %lu\n", rank, rank_ct, st.st_ino);
+   gethostname(hostname, HOST_NAME_MAX+1);
+   printf("%d: init ok %s, %d ranks, userns %lu\n",
+          rank, hostname, rank_ct, st.st_ino);
    fflush(stdout);
 
    if (rank == 0) {
