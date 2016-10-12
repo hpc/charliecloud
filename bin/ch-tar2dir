@@ -62,4 +62,7 @@ mkdir "$NEWROOT"
 echo 'This directory is a Charliecloud container image.' > "$NEWROOT/$SENTINEL"
 tar x$VERBOSE -C "$NEWROOT" -f "$TARBALL" --exclude='dev/*'
 
+# make old root mount point
+mkdir -p "$NEWROOT/oldroot"
+
 echo "$NEWROOT unpacked ok"

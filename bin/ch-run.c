@@ -195,12 +195,10 @@ void enter_udss(char * newroot, char ** binds)
 
    // Pivot into the new root
    TRY (0 > asprintf(&path, "%s/oldroot", newroot));
-   TRY (mkdir(path, 0755));
    TRY (chdir(newroot));
    TRY (syscall(SYS_pivot_root, newroot, path));
    TRY (chroot("."));
    TRY (umount2("/oldroot", MNT_DETACH));
-   TRY (rmdir("/oldroot"));
 
    // Post-pivot_root() tmpfs
    TRY (mount(NULL, "/run", "tmpfs", 0, "size=16m"));
