@@ -3,7 +3,7 @@ src := $(wildcard *.c)
 obj := $(src:.c=.o)
 
 # Add some good stuff to CFLAGS.
-CFLAGS += -std=c11 -Wall -Werror -Wfatal-errors
+CFLAGS += -std=c11 -Wall
 
 .PHONY: all
 all: $(bin)
