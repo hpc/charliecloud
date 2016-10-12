@@ -192,6 +192,9 @@ void enter_udss(char * newroot, char ** binds)
    TRY (chroot("."));
    TRY (0 > asprintf(&newroot, "/%s", base));
 
+   // Re-mount image read-only
+   TRY (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL));
+
    // Pivot into the new root
    TRY (0 > asprintf(&path, "%s/oldroot", newroot));
    TRY (chdir(newroot));

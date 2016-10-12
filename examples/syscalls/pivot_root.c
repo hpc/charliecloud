@@ -70,7 +70,7 @@ int main(void)
    /* Claim the image for our namespace by recursively bind-mounting it over
       itself. This standard trick avoids conditions 1 and 2. */
    TRY (mount("/tmp/newroot", "/tmp/newroot", NULL,
-              MS_REC | MS_BIND | MS_PRIVATE | MS_RDONLY, NULL));
+              MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
    /* The next few calls deal with condition 3. The solution is to overmount
       the root filesystem with literally anything else. We use the parent of
@@ -104,6 +104,9 @@ int main(void)
    /* Make a place for the old (intermediate) root filesystem to land. */
    if (mkdir("/newroot/oldroot", 0755) && errno != EEXIST)
       TRY (errno);
+
+   /* Re-mount the image read-only. */
+   TRY (mount(NULL, "/newroot", NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL));
 
    /* Finally, make our "real" newroot into the root filesystem. */
    TRY (chdir("/newroot"));
