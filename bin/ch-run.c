@@ -181,7 +181,7 @@ void enter_udss(char * newroot, char ** binds)
       TRY (mount(binds[i], path, NULL, MS_BIND, NULL));
    }
 
-   // Overmount / with itself to avoid EINVAL if it's a rootfs
+   // Overmount / to avoid EINVAL if it's a rootfs
    TRY (NULL == (path = strdup(newroot)));
    dir = dirname(path);
    TRY (NULL == (path = strdup(newroot)));
