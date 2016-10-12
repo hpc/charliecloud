@@ -37,7 +37,6 @@ const char * DEFAULT_BINDS[] = { "/dev",
                                  "/etc/hosts",
                                  "/proc",
                                  "/sys",
-                                 "/tmp",
                                  NULL };
 
 /* Number of supplemental GIDs we can deal with. */
@@ -202,6 +201,7 @@ void enter_udss(char * newroot, char ** binds)
 
    // Post-pivot_root() tmpfs
    TRY (mount(NULL, "/run", "tmpfs", 0, "size=16m"));
+   TRY (mount(NULL, "/tmp", "tmpfs", 0, "mode=1777"));
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
