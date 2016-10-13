@@ -30,9 +30,10 @@
   
 
   
+        <link rel="search" title="Search" href="search.html"/>
         <link rel="copyright" title="Copyright" href="copyright.html"/>
     <link rel="top" title="Charliecloud 0.2.0 documentation" href="index.html"/>
-        <link rel="next" title="3. Testing Charliecloud" href="testing.html"/>
+        <link rel="next" title="3. Help text for executables" href="script-help.html"/>
         <link rel="prev" title="1. Installation" href="install.html"/> 
 
   
@@ -61,7 +62,7 @@
             
             
               <div class="version">
-                a670e71
+                036b5c5
               </div>
             
           
@@ -109,20 +110,24 @@
 <li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">2.4.4. Your software stored on the host</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#your-first-single-node-multi-process-job">2.5. Your first single-node, multi-process job</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#your-first-single-node-multi-process-jobs">2.5. Your first single-node, multi-process jobs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-host">2.5.1. Processes coordinated by host</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container">2.5.2. Processes coordinated by container</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration">2.5.3. Processes coordinated by container using host configuration</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#your-first-multi-node-job">2.6. Your first multi-node job</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#your-first-multi-node-job">2.6. Your first multi-node job</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#interactive-mpi-hello-world">2.6.1. Interactive MPI hello world</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#non-interactive-mpi-hello-world">2.6.2. Non-interactive MPI hello world</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#non-interactive-apache-spark">2.6.3. Non-interactive Apache Spark</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="testing.html">3. Testing Charliecloud</a></li>
-<li class="toctree-l1"><a class="reference internal" href="script-help.html">4. Help text for executables</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">5. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="copyright.html">6. Copyright and license</a></li>
-<li class="toctree-l1"><a class="reference internal" href="history.html">7. Version history</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="script-help.html">3. Help text for executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">4. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="copyright.html">5. Copyright and license</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">6. Version history</a></li>
 </ul>
 
             
@@ -199,13 +204,18 @@ the previous section, that the <code class="code docutils literal"><span class="
 <li><a class="reference internal" href="#your-software-stored-on-the-host" id="id18">Your software stored on the host</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#your-first-single-node-multi-process-job" id="id19">Your first single-node, multi-process job</a><ul>
+<li><a class="reference internal" href="#your-first-single-node-multi-process-jobs" id="id19">Your first single-node, multi-process jobs</a><ul>
 <li><a class="reference internal" href="#processes-coordinated-by-host" id="id20">Processes coordinated by host</a></li>
 <li><a class="reference internal" href="#processes-coordinated-by-container" id="id21">Processes coordinated by container</a></li>
 <li><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration" id="id22">Processes coordinated by container using host configuration</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#your-first-multi-node-job" id="id23">Your first multi-node job</a></li>
+<li><a class="reference internal" href="#your-first-multi-node-job" id="id23">Your first multi-node job</a><ul>
+<li><a class="reference internal" href="#interactive-mpi-hello-world" id="id24">Interactive MPI hello world</a></li>
+<li><a class="reference internal" href="#non-interactive-mpi-hello-world" id="id25">Non-interactive MPI hello world</a></li>
+<li><a class="reference internal" href="#non-interactive-apache-spark" id="id26">Non-interactive Apache Spark</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="section" id="getting-help">
@@ -236,6 +246,7 @@ supported.</p>
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
     <span class="o">&amp;&amp;</span> apt-get install -y openssh-client <span class="se">\</span>
     <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
+<span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
 </div>
 <p>This creates a minimal Debian Jessie image with <code class="code docutils literal"><span class="pre">ssh</span></code> installed. We will
@@ -681,6 +692,7 @@ package <code class="code docutils literal"><span class="pre">openssh-client</sp
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
     <span class="o">&amp;&amp;</span> apt-get install -y openssh-client <span class="se">\</span>
     <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
+<span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
 </div>
 <p>You can use distribution package managers such as <code class="code docutils literal"><span class="pre">apt-get</span></code>, as
@@ -697,7 +709,8 @@ revisit later, <code class="code docutils literal"><span class="pre">examples/mp
 
 <span class="c"># Install needed OS packages.</span>
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> apt-get install -y less g++ gcc make wget
+    <span class="o">&amp;&amp;</span> apt-get install -y less g++ gcc make openssh-client wget <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
 
 <span class="c"># Compile OpenMPI. We can&#39;t use the Debian package because</span>
 <span class="c"># --disable-pty-support is needed to avoid &quot;pipe function call failed when</span>
@@ -708,13 +721,12 @@ revisit later, <code class="code docutils literal"><span class="pre">examples/mp
 <span class="k">RUN</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
     <span class="o">&amp;&amp;</span> ./configure --prefix<span class="o">=</span>/usr <span class="se">\</span>
-                   --sysconfdir<span class="o">=</span>/etc <span class="se">\</span>
+                   --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
                    --disable-pty-support <span class="se">\</span>
                    --disable-mpi-cxx <span class="se">\</span>
                    --disable-mpi-fortran <span class="se">\</span>
     <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
     <span class="o">&amp;&amp;</span> make clean
-<span class="k">RUN</span> rm -Rf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
 </pre></div>
 </div>
 <p>So what is going on here?</p>
@@ -745,9 +757,13 @@ source, but you use the <code class="code docutils literal"><span class="pre">CO
 host filesystem (rather than the network via HTTP) to the image. For example,
 the <code class="code docutils literal"><span class="pre">mpihello</span></code> Dockerfile continues beyond what is shown in the previous
 section:</p>
-<div class="highlight-docker"><div class="highlight"><pre><span></span>COPY examples/mpihello /hello
+<div class="highlight-docker"><div class="highlight"><pre><span></span><span class="c"># This example.</span>
+COPY examples/mpihello /hello
 <span class="k">WORKDIR</span><span class="s"> /hello</span>
 <span class="k">RUN</span> make clean <span class="o">&amp;&amp;</span> make
+
+<span class="c"># We want ch-ssh</span>
+<span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
 </div>
 <p>These Dockerfile instructions:</p>
@@ -816,8 +832,8 @@ building, and then run using a separate container invoked from a different
 terminal.</p>
 </div>
 </div>
-<div class="section" id="your-first-single-node-multi-process-job">
-<h2><a class="toc-backref" href="#id19">2.5. Your first single-node, multi-process job</a><a class="headerlink" href="#your-first-single-node-multi-process-job" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="your-first-single-node-multi-process-jobs">
+<h2><a class="toc-backref" href="#id19">2.5. Your first single-node, multi-process jobs</a><a class="headerlink" href="#your-first-single-node-multi-process-jobs" title="Permalink to this headline">¶</a></h2>
 <p>This is an important use case even for large-scale codes, when testing and
 development happens at small scale but need to use an environment comparable
 to large-scale runs.</p>
@@ -847,10 +863,10 @@ directly on the host.</p>
 <span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.mpihello -- mpirun --version
 <span class="go">mpirun (Open MPI) 1.10.4</span>
 <span class="gp">$</span> mpirun -np <span class="m">4</span> ch-run /data/<span class="nv">$USER</span>.mpihello /hello/hello
-<span class="go">0: init ok, 4 ranks, userns 4026532256</span>
-<span class="go">1: init ok, 4 ranks, userns 4026532267</span>
-<span class="go">2: init ok, 4 ranks, userns 4026532269</span>
-<span class="go">3: init ok, 4 ranks, userns 4026532271</span>
+<span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
+<span class="go">1: init ok cn001, 4 ranks, userns 4026532267</span>
+<span class="go">2: init ok cn001, 4 ranks, userns 4026532269</span>
+<span class="go">3: init ok cn001, 4 ranks, userns 4026532271</span>
 <span class="go">0: send/receive ok</span>
 <span class="go">0: finalize ok</span>
 </pre></div>
@@ -872,10 +888,10 @@ installation; the disadvantage is that it cannot take advantage of any
 host-specific things that might e.g. improve performance.</p>
 <p>For example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.mpihello -- mpirun -np <span class="m">4</span> /hello/hello
-<span class="go">0: init ok, 4 ranks, userns 4026532256</span>
-<span class="go">1: init ok, 4 ranks, userns 4026532256</span>
-<span class="go">2: init ok, 4 ranks, userns 4026532256</span>
-<span class="go">3: init ok, 4 ranks, userns 4026532256</span>
+<span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
+<span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
+<span class="go">2: init ok cn001, 4 ranks, userns 4026532256</span>
+<span class="go">3: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">0: send/receive ok</span>
 <span class="go">0: finalize ok</span>
 </pre></div>
@@ -887,42 +903,167 @@ host-specific things that might e.g. improve performance.</p>
 host-specific configuration we want to use, but we don&#8217;t want to install the
 entire configured dependency on the host. It would be undesirable to copy this
 configuration into the image, because that would reduce its portability.</p>
-<p>For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d /usr/local/etc /data/<span class="nv">$USER</span>.mpihello -- <span class="se">\</span>
-<span class="go">  mpirun -np 4 -mca mca_base_param_files /mnt/0/openmpi-mca-params.conf \</span>
-<span class="go">  /hello/hello</span>
-<span class="go">0: init ok, 4 ranks, userns 4026532256</span>
-<span class="go">1: init ok, 4 ranks, userns 4026532256</span>
-<span class="go">2: init ok, 4 ranks, userns 4026532256</span>
-<span class="go">3: init ok, 4 ranks, userns 4026532256</span>
+<p>The host configuration is communicated to the container by bind-mounting the
+relevant directory and then pointing the application to it. There are a
+variety of approaches. Some application or frameworks take command-line
+parameters specifying the configuration path.</p>
+<p>The approach used in the <code class="code docutils literal"><span class="pre">mpihello</span></code> example is to set the configuration
+directory to <code class="code docutils literal"><span class="pre">/mnt/0</span></code>. From the Dockerfile:</p>
+<div class="highlight-docker"><div class="highlight"><pre><span></span>RUN    cd openmpi-${MPI_VERSION} \
+    &amp;&amp; ./configure --prefix=/usr \
+                   --sysconfdir=/mnt/0 \
+                   --disable-pty-support \
+                   --disable-mpi-cxx \
+</pre></div>
+</div>
+<p>The effect is that the image contains a default MPI configuration, but if you
+specify a different configuration directory with <code class="code docutils literal"><span class="pre">-d</span></code>, that is used
+instead. For example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d /usr/local/etc /data/<span class="nv">$USER</span>.mpihello -- mpirun -np <span class="m">4</span> /hello/hello
+<span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
+<span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
+<span class="go">2: init ok cn001, 4 ranks, userns 4026532256</span>
+<span class="go">3: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">0: send/receive ok</span>
 <span class="go">0: finalize ok</span>
 </pre></div>
 </div>
-<p>There are a variety of ways to communicate the configuration location to the
-application. One is via command-line parameters, as above. Another is to use a
-symlink to point to the configuration. This can be set up with <code class="code docutils literal"><span class="pre">RUN</span></code> in
-the Dockerfile to create a dangling symlink that is resolved when the
-appropriate host directory is bind-mounted into <code class="code docutils literal"><span class="pre">/mnt</span></code>.</p>
+<p>A similar approach creates a dangling symlink with <code class="code docutils literal"><span class="pre">RUN</span></code> that is
+resolved when the appropriate host directory is bind-mounted into
+<code class="code docutils literal"><span class="pre">/mnt</span></code>.</p>
 </div>
 </div>
 <div class="section" id="your-first-multi-node-job">
 <h2><a class="toc-backref" href="#id23">2.6. Your first multi-node job</a><a class="headerlink" href="#your-first-multi-node-job" title="Permalink to this headline">¶</a></h2>
-<p>FIXME &#8212; in progress</p>
-<dl class="docutils">
-<dt>two models</dt>
-<dd><dl class="first last docutils">
-<dt>host coordinates, each task in own container - mpirun on host</dt>
-<dd>needs close version matching with host, e.g. OpenMPI needs to be compiled the same</dd>
-<dt>container coordinates - mpirun in container</dt>
-<dd>ch-ssh to arrive at other host inside container</dd>
-</dl>
-</dd>
-</dl>
-<p>The image directory will be mounted read-only, so it can be shared by multiple
-Charliecloud instances in the same or different jobs.</p>
-<p>Any filesystem can be used, but be aware of the metadata impact &#8212; a large
-Charliecloud job may overwhelm a network filesystem.</p>
+<p>This section assumes that you are using a MOAB/SLURM cluster with a working
+OpenMPI 1.10.<em>x</em> installation and some type of node-local storage. A
+<code class="code docutils literal"><span class="pre">tmpfs</span></code> will suffice, and we use <code class="code docutils literal"><span class="pre">/tmp</span></code> for this tutorial, but
+it&#8217;s best to use something else to avoid confusion with circular mounts
+(recall that <code class="code docutils literal"><span class="pre">/tmp</span></code> is shared by the container and host).</p>
+<p>We cover three cases:</p>
+<ol class="arabic simple">
+<li>The MPI hello world example above, run interactively, with the host
+coordinating.</li>
+<li>Same, run non-interactively.</li>
+<li>An Apache Spark example run non-interactively, with in-container
+coordination.</li>
+</ol>
+<p>We think that container-coordinated MPI jobs will also work, but we haven&#8217;t
+worked out how to do this yet. (See issue #5.)</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The image directory is mounted read-only, so it can be shared by multiple
+Charliecloud containers in the same or different jobs.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">The image can reside on any filesystem, but be aware of metadata impact. A
+non-trivial Charliecloud job may overwhelm a network filesystem, earning
+you the ire of your sysadmins and colleagues.</p>
+</div>
+<div class="section" id="interactive-mpi-hello-world">
+<h3><a class="toc-backref" href="#id24">2.6.1. Interactive MPI hello world</a><a class="headerlink" href="#interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
+<p>First, obtain an interactive allocation of nodes. This tutorial assumes an
+allocation of 4 nodes (but any number should work) and an interactive shell on
+one of those nodes. For example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> msub -I -l <span class="nv">nodes</span><span class="o">=</span>4
+</pre></div>
+</div>
+<p>We also need OpenMPI 1.10.<em>x</em> available:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun --version
+<span class="go">mpirun (Open MPI) 1.10.3</span>
+</pre></div>
+</div>
+<p>The next step is to distribute the image to the compute nodes, which we assume
+is in the home directory. To do so, we run one instance of <code class="code docutils literal"><span class="pre">ch-tar2dir</span></code>
+on each node:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span>
+<span class="gp">$</span> mpirun -pernode ch-tar2dir ./<span class="nv">$USER</span>.mpihello.tar.gz /tmp/mpihello
+<span class="go">App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs</span>
+<span class="go">creating new image /tmp/mpihello</span>
+<span class="go">creating new image /tmp/mpihello</span>
+<span class="go">creating new image /tmp/mpihello</span>
+<span class="go">creating new image /tmp/mpihello</span>
+<span class="go">/tmp/mpihello unpacked ok</span>
+<span class="go">/tmp/mpihello unpacked ok</span>
+<span class="go">/tmp/mpihello unpacked ok</span>
+<span class="go">/tmp/mpihello unpacked ok</span>
+</pre></div>
+</div>
+<p>We can now activate the image and run our program:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun ch-run /tmp/mpihello -- /hello/hello
+<span class="go">App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs</span>
+<span class="go">2: init ok cn001.localdomain, 64 ranks, userns 4026532567</span>
+<span class="go">4: init ok cn001.localdomain, 64 ranks, userns 4026532571</span>
+<span class="go">8: init ok cn001.localdomain, 64 ranks, userns 4026532579</span>
+<span class="go">[...]</span>
+<span class="go">45: init ok cn003.localdomain, 64 ranks, userns 4026532589</span>
+<span class="go">17: init ok cn002.localdomain, 64 ranks, userns 4026532565</span>
+<span class="go">55: init ok cn004.localdomain, 64 ranks, userns 4026532577</span>
+<span class="go">0: send/receive ok</span>
+<span class="go">0: finalize ok</span>
+</pre></div>
+</div>
+<p>Success!</p>
+</div>
+<div class="section" id="non-interactive-mpi-hello-world">
+<h3><a class="toc-backref" href="#id25">2.6.2. Non-interactive MPI hello world</a><a class="headerlink" href="#non-interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
+<p>Production jobs are normally run non-interactively, via submission of a job
+script that runs when resources are available, placing output into a file.</p>
+<p>The MPI hello world example includes such a script:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">#</span>!/bin/bash
+
+<span class="gp">#</span> Run in directory where the tarball is.
+<span class="gp">#</span> Output will go to same place.
+
+<span class="gp">#</span> MSUB -l <span class="nv">walltime</span><span class="o">=</span>0:10:00
+
+<span class="go">set -e</span>
+
+<span class="go">TAG=mpihello</span>
+<span class="go">IMAGE=/tmp/$TAG</span>
+
+<span class="go">printf &#39;host:      &#39;</span>
+<span class="go">mpirun --version | egrep &#39;^mpirun&#39;</span>
+
+<span class="go">if [[ ! -e $IMAGE ]]; then</span>
+<span class="go">    mpirun -pernode ch-tar2dir ./$USER.$TAG.tar.gz $IMAGE &gt; /dev/null</span>
+<span class="go">fi</span>
+
+<span class="go">printf &#39;container: &#39;</span>
+<span class="go">ch-run $IMAGE -- mpirun --version | egrep &#39;^mpirun&#39;</span>
+
+<span class="go">mpirun ch-run $IMAGE -- /hello/hello</span>
+</pre></div>
+</div>
+<p>Note that this script both unpacks the image and runs it.</p>
+<p>Submit it with something like:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> msub -l <span class="nv">nodes</span><span class="o">=</span><span class="m">4</span> -q tossdev ~/charliecloud/examples/mpihello/moab.sh
+<span class="go">86753</span>
+</pre></div>
+</div>
+<p>When the job is complete, look at the output:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> cat slurm-86753.out
+<span class="go">host:      mpirun (Open MPI) 1.10.3</span>
+<span class="go">container: mpirun (Open MPI) 1.10.4</span>
+<span class="go">App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs</span>
+<span class="go">8: init ok cn001.localdomain, 64 ranks, userns 4026532579</span>
+<span class="go">0: init ok cn001.localdomain, 64 ranks, userns 4026532564</span>
+<span class="go">2: init ok cn001.localdomain, 64 ranks, userns 4026532568</span>
+<span class="go">[...]</span>
+<span class="go">61: init ok cn004.localdomain, 64 ranks, userns 4026532589</span>
+<span class="go">63: init ok cn004.localdomain, 64 ranks, userns 4026532593</span>
+<span class="go">54: init ok cn004.localdomain, 64 ranks, userns 4026532575</span>
+<span class="go">0: send/receive ok</span>
+<span class="go">0: finalize ok</span>
+</pre></div>
+</div>
+<p>Success!</p>
+</div>
+<div class="section" id="non-interactive-apache-spark">
+<h3><a class="toc-backref" href="#id26">2.6.3. Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<p>TBD.</p>
+</div>
 </div>
 </div>
 
@@ -933,7 +1074,7 @@ Charliecloud job may overwhelm a network filesystem.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="testing.html" class="btn btn-neutral float-right" title="3. Testing Charliecloud" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="script-help.html" class="btn btn-neutral float-right" title="3. Help text for executables" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="install.html" class="btn btn-neutral" title="1. Installation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
