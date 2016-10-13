@@ -18,7 +18,6 @@ This documentation is for Charliecloud version |release| (Git commit
 
    install
    tutorial
-   testing
    script-help
    faq
    copyright
