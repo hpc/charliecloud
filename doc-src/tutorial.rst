@@ -648,8 +648,8 @@ building, and then run using a separate container invoked from a different
 terminal.
 
 
-Your first single-node, multi-process job
-===========================================
+Your first single-node, multi-process jobs
+==========================================
 
 This is an important use case even for large-scale codes, when testing and
 development happens at small scale but need to use an environment comparable
@@ -762,17 +762,118 @@ resolved when the appropriate host directory is bind-mounted into
 Your first multi-node job
 =========================
 
-FIXME --- in progress
+This section assumes that you are using a MOAB/SLURM cluster with a working
+OpenMPI 1.10.\ *x* installation and some type of node-local storage. A
+:code:`tmpfs` will suffice, and we use :code:`/tmp` for this tutorial, but
+it's best to use something else to avoid confusion with circular mounts
+(recall that :code:`/tmp` is shared by the container and host).
 
-two models
-  host coordinates, each task in own container - mpirun on host
-    needs close version matching with host, e.g. OpenMPI needs to be compiled the same
-  container coordinates - mpirun in container
-    ch-ssh to arrive at other host inside container
+We cover three cases:
 
-The image directory will be mounted read-only, so it can be shared by multiple
-Charliecloud instances in the same or different jobs.
+1. The MPI hello world example above, run interactively, with the host
+   coordinating.
 
-Any filesystem can be used, but be aware of the metadata impact --- a large
-Charliecloud job may overwhelm a network filesystem.
+2. Same, run non-interactively.
 
+3. An Apache Spark example run non-interactively, with in-container
+   coordination.
+
+We think that container-coordinated MPI jobs will also work, but we haven't
+worked out how to do this yet. (See issue #5.)
+
+.. note::
+
+   The image directory is mounted read-only, so it can be shared by multiple
+   Charliecloud containers in the same or different jobs.
+
+.. warning::
+
+   The image can reside on any filesystem, but be aware of metadata impact. A
+   non-trivial Charliecloud job may overwhelm a network filesystem, earning
+   you the ire of your sysadmins and colleagues.
+
+Interactive MPI hello world
+---------------------------
+
+First, obtain an interactive allocation of nodes. This tutorial assumes an
+allocation of 4 nodes (but any number should work) and an interactive shell on
+one of those nodes. For example::
+
+  $ msub -I -l nodes=4
+
+We also need OpenMPI 1.10.\ *x* available::
+
+  $ mpirun --version
+  mpirun (Open MPI) 1.10.3
+
+The next step is to distribute the image to the compute nodes, which we assume
+is in the home directory. To do so, we run one instance of :code:`ch-tar2dir`
+on each node::
+
+  $ cd
+  $ mpirun -pernode ch-tar2dir ./$USER.mpihello.tar.gz /tmp/mpihello
+  App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs
+  creating new image /tmp/mpihello
+  creating new image /tmp/mpihello
+  creating new image /tmp/mpihello
+  creating new image /tmp/mpihello
+  /tmp/mpihello unpacked ok
+  /tmp/mpihello unpacked ok
+  /tmp/mpihello unpacked ok
+  /tmp/mpihello unpacked ok
+
+We can now activate the image and run our program::
+
+  $ mpirun ch-run /tmp/mpihello -- /hello/hello
+  App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs
+  2: init ok cn001.localdomain, 64 ranks, userns 4026532567
+  4: init ok cn001.localdomain, 64 ranks, userns 4026532571
+  8: init ok cn001.localdomain, 64 ranks, userns 4026532579
+  [...]
+  45: init ok cn003.localdomain, 64 ranks, userns 4026532589
+  17: init ok cn002.localdomain, 64 ranks, userns 4026532565
+  55: init ok cn004.localdomain, 64 ranks, userns 4026532577
+  0: send/receive ok
+  0: finalize ok
+
+Success!
+
+Non-interactive MPI hello world
+-------------------------------
+
+Production jobs are normally run non-interactively, via submission of a job
+script that runs when resources are available, placing output into a file.
+
+The MPI hello world example includes such a script:
+
+.. literalinclude:: ../examples/mpihello/moab.sh
+
+Note that this script both unpacks the image and runs it.
+
+Submit it with something like::
+
+  $ msub -l nodes=4 -q tossdev ~/charliecloud/examples/mpihello/moab.sh
+  86753
+
+When the job is complete, look at the output::
+
+  $ cat slurm-86753.out
+  host:      mpirun (Open MPI) 1.10.3
+  container: mpirun (Open MPI) 1.10.4
+  App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs
+  8: init ok cn001.localdomain, 64 ranks, userns 4026532579
+  0: init ok cn001.localdomain, 64 ranks, userns 4026532564
+  2: init ok cn001.localdomain, 64 ranks, userns 4026532568
+  [...]
+  61: init ok cn004.localdomain, 64 ranks, userns 4026532589
+  63: init ok cn004.localdomain, 64 ranks, userns 4026532593
+  54: init ok cn004.localdomain, 64 ranks, userns 4026532575
+  0: send/receive ok
+  0: finalize ok
+
+Success!
+
+Non-interactive Apache Spark
+----------------------------
+
+TBD.
