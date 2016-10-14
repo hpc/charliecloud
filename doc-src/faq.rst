@@ -6,6 +6,19 @@ Frequently asked questions (FAQ)
    :local:
 
 
+My app needs to write to :code:`/var/log`, :code:`/run`, etc.
+=============================================================
+
+Because the image is mounted read-only, log files, caches, and other stuff
+needs to go somewhere else. :code:`/tmp` is often a good choice. You have two
+options:
+
+1. Use :code:`RUN` commands in your Dockerfile to create symlinks that point
+   somewhere writeable.
+
+2. Configure the application to use a different directory.
+
+
 :code:`--uid 0` lets me read files I can't otherwise!
 =====================================================
 

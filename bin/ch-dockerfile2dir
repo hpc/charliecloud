@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e
+
+if [[ $# -ne 2 || $1 = --help ]]; then
+    cat <<EOF
+FIXME
+EOF
+    exit 0
+fi
+
+CONTEXT="$1"
+DEST="$2"
+shift 2
+
+BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PATH=$BASE:$PATH
+
+TAG=$(basename $PWD)
+
+set -x
+
+docker-build -t $USER/$TAG "$CONTEXT"
+ch-docker2tar $USER/$TAG "$DEST"
+ch-tar2dir "$DEST/$USER.$TAG.tar.gz" "$DEST/$USER.$TAG"

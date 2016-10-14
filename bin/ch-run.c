@@ -141,10 +141,8 @@ void enter_udss(char * newroot, char ** binds)
    // Claim newroot for this namespace
    TRY (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
-   // Mount tmpfses on guest /home and /mnt because guest root is read-only
+   // Mount tmpfs on guest /home because guest root is read-only
    TRY (0 > asprintf(&path, "%s/home", newroot));
-   TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
-   TRY (0 > asprintf(&path, "%s/mnt", newroot));
    TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
    // Bind-mount default stuff at same guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
@@ -167,18 +165,9 @@ void enter_udss(char * newroot, char ** binds)
       TRY (0 > asprintf(&oldpath, "%s/ch-ssh", dir));
       TRY (mount(path, oldpath, NULL, MS_BIND, NULL));
    }
-   // Bind-mount user-specified directories at guest /mnt/i
+   // Bind-mount user-specified directories at guest /mnt/i, which must exist
    for (int i = 0; binds[i] != NULL; i++) {
       TRY (0 > asprintf(&path, "%s/mnt/%d", newroot, i));
-      if (lstat(path, &st)) {
-         if (errno == ENOENT) {
-            TRY (mkdir(path, 0755));  // doesn't exist, create it
-         } else {
-            TRY (-1);                 // some other problem, fail
-         }
-      } else if (!S_ISDIR(st.st_mode)) {
-         fatal("%s exists but is not a directory\n", path);
-      }
       TRY (mount(binds[i], path, NULL, MS_BIND, NULL));
    }
 
@@ -202,9 +191,6 @@ void enter_udss(char * newroot, char ** binds)
    TRY (syscall(SYS_pivot_root, newroot, path));
    TRY (chroot("."));
    TRY (umount2("/oldroot", MNT_DETACH));
-
-   // Post-pivot_root() tmpfs
-   TRY (mount(NULL, "/run", "tmpfs", 0, "size=16m"));
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
