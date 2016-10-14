@@ -759,8 +759,8 @@ resolved when the appropriate host directory is bind-mounted into
 :code:`/mnt`.
 
 
-Your first multi-node job
-=========================
+Your first multi-node jobs
+==========================
 
 This section assumes that you are using a MOAB/SLURM cluster with a working
 OpenMPI 1.10.\ *x* installation and some type of node-local storage. A
@@ -773,10 +773,11 @@ We cover three cases:
 1. The MPI hello world example above, run interactively, with the host
    coordinating.
 
-2. Same, run non-interactively.
+2. Same, non-interactive.
 
-3. An Apache Spark example run non-interactively, with in-container
-   coordination.
+3. An Apache Spark example, run interactively.
+
+4. Same, non-interactive.
 
 We think that container-coordinated MPI jobs will also work, but we haven't
 worked out how to do this yet. (See issue #5.)
@@ -852,7 +853,7 @@ Note that this script both unpacks the image and runs it.
 
 Submit it with something like::
 
-  $ msub -l nodes=4 -q tossdev ~/charliecloud/examples/mpihello/moab.sh
+  $ msub -l nodes=4 ~/charliecloud/examples/mpihello/moab.sh
   86753
 
 When the job is complete, look at the output::
@@ -873,7 +874,142 @@ When the job is complete, look at the output::
 
 Success!
 
+Interactive Apache Spark
+------------------------
+
+This example is in :code:`examples/spark`. Build a tarball and upload it to
+your cluster.
+
+Once you have an interactive job, unpack the tarball.
+
+::
+
+  $ mpirun -pernode ch-tar2dir ./$USER.spark.tar.gz /tmp/spark
+
+We need to first create a basic configuration directory for Spark, as the
+defaults in the Dockerfile are insufficient. (For real jobs, you'll want to
+also configure performance parameters such as memory use; see `the
+documentation <http://spark.apache.org/docs/latest/configuration.html>`_.)
+First::
+
+  $ mkdir ~/sparkconf
+
+Next, we set some environment variables. In the directory above, create a file
+containing something like the following. Edit to match your configuration; in
+particular, use local disks instead of :code:`/tmp` if you have them.
+:code:`spark-env.sh`::
+
+  SPARK_LOCAL_DIRS=/tmp
+  SPARK_LOG_DIR=/home/$USER/sparklog
+  SPARK_WORKER_DIR=/tmp
+  SPARK_LOCAL_IP=$(  ip -o -f inet addr show dev eth0 \
+                   | sed -r 's/^.+inet ([0-9.]+).+/\1/')
+  SPARK_MASTER_HOST=$SPARK_LOCAL_IP
+
+This is a shell script, so you can include code to set variables, as we do to
+select the IP address of the right interface.
+
+Other configuration variables are called "Spark properties" and go in a
+different file. Change the secret to something known only to you.
+:code:`spark-defaults.conf`::
+
+  spark.authenticate true
+  spark.authenticate.secret CHANGEME
+
+We can now start the Spark master::
+
+  $ ch-run -d ~/sparkconf /tmp/spark -- /spark/sbin/start-master.sh
+
+If you can see the node with a web browser, browse to
+:code:`http://$SPARK_LOCAL_IP:8080` for the Spark master web interface.
+Because this capability varies, the tutorial does not depend on it, but it can
+be informative. Refresh after each key step below.
+
+The Spark workers need to know how to reach the master. This is via a URL; you
+can construct it from your knowledge of :code:`$SPARK_LOCAL_IP`, or consult
+the web interface. For example::
+
+  $ MASTER_URL=spark://10.8.8.1:7077
+
+Next, start one worker on each compute node. This is a little ugly;
+:code:`mpirun` will wait until everything is finished before returning, but we
+want to start the workers in the background, so we add :code:`&` and introduce
+a race condition. (:code:`srun` has different, even less helpful behavior: it
+kills the worker as soon as it goes into the background.)
+
+::
+
+  $ mpirun -pernode ch-run -d ~/sparkconf /tmp/spark -- \
+    /spark/sbin/start-slave.sh $MASTER_URL &
+
+We can now start an interactive shell to do some Spark computing::
+
+  $ ch-run -d ~/sparkconf /tmp/spark -- /spark/bin/pyspark --master $MASTER_URL
+
+Let's use this shell to estimate 𝜋 (this is adapted from one of the Spark
+`examples <http://spark.apache.org/examples.html>`_):
+
+.. code-block:: pycon
+
+  >>> import operator
+  >>> import random
+  >>>
+  >>> def sample(p):
+  ...    (x, y) = (random.random(), random.random())
+  ...    return 1 if x*x + y*y < 1 else 0
+  ...
+  >>> SAMPLE_CT = int(2e8)
+  >>> ct = sc.parallelize(xrange(0, SAMPLE_CT)) \
+  ...        .map(sample) \
+  ...        .reduce(operator.add)
+  >>> 4.0*ct/SAMPLE_CT
+  3.14109824
+
+(Type Control-D to exit.)
+
+We can also submit jobs to the Spark cluster. This one runs the same example
+as included with the Spark source code. (The voluminous logging output is
+omitted.)
+
+::
+
+  $ ch-run -d ~/sparkconf /tmp/spark -- \
+    /spark/bin/spark-submit --master $MASTER_URL \
+    /spark/examples/src/main/python/pi.py 1024
+  [...]
+  Pi is roughly 3.141211
+  [...]
+
+Finally, we shut down the Spark cluster. This isn't strictly necessary, as
+SLURM will kill everything when exit the allocation, but it's good hygiene::
+
+  $ mpirun -pernode ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-slave.sh
+  $ ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-master.sh
+
+Success! Next, we'll run a similar job non-interactively.
+
 Non-interactive Apache Spark
 ----------------------------
 
-TBD.
+We'll re-use much of the above, including the configuration we created, to run
+the same computation non-interactively. Here is the Moab script:
+
+.. literalinclude:: ../examples/spark/moab.sh
+
+There are four basic steps:
+
+1. Unpack the image.
+2. Start a Spark cluster.
+3. Run our computation.
+4. Stop the Spark cluster.
+
+Submit like so::
+
+  $ msub -l nodes=4 ~/charliecloud/examples/spark/moab.sh
+
+Output::
+
+  $ fgrep 'Pi is' slurm-86754.out
+  Pi is roughly 3.141393
+
+Success! (to four significant digits)
