@@ -157,7 +157,7 @@ void enter_udss(char * newroot, char ** binds)
    // Bind-mount /usr/bin/ch-ssh if it exists.
    TRY (0 > asprintf(&path, "%s/usr/bin/ch-ssh", newroot));
    if (stat(path, &st)) {
-      TRY (errno != EEXIST);
+      TRY (errno != ENOENT);
    } else {
       TRY (-1 == readlink("/proc/self/exe", bin, PATH_CHARS));
       bin[PATH_CHARS-1] = 0;  // guarantee string termination
