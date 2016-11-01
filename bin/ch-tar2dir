@@ -62,6 +62,9 @@ mkdir "$NEWROOT"
 echo 'This directory is a Charliecloud container image.' > "$NEWROOT/$SENTINEL"
 tar x$VERBOSE -C "$NEWROOT" -f "$TARBALL" --exclude='dev/*'
 
+# make all directories writeable so we can delete image later (hello, Red Hat)
+find "$NEWROOT" -type d -a ! -perm /200 -exec chmod u+w {} +
+
 # make directories that ch-run will need
 mkdir -p "$NEWROOT/oldroot"
 for i in $(seq 0 9); do mkdir -p "$NEWROOT/mnt/$i"; done
