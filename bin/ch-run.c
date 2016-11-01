@@ -20,7 +20,7 @@
 
 #include "charliecloud.h"
 
-void enter_udss(char * newroot, char ** binds);
+void enter_udss(char * newroot, char ** binds, bool private_tmp);
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
@@ -38,7 +38,6 @@ const char * DEFAULT_BINDS[] = { "/dev",
                                  "/etc/resolv.conf",
                                  "/proc",
                                  "/sys",
-                                 "/tmp",
                                  NULL };
 
 /* Number of supplemental GIDs we can deal with. */
@@ -68,12 +67,13 @@ You cannot use this program to actually change your UID.";
 const char args_doc[] = "NEWROOT CMD [ARG...]";
 
 const struct argp_option options[] = {
-   { "dir",       'd', "DIR", 0,
+   { "dir",         'd', "DIR", 0,
      "mount host DIR at container /mnt/i (i starts at 0)" },
-   { "gid",       'g', "GID", 0, "run as GID within container" },
-   { "uid",       'u', "UID", 0, "run as UID within container" },
-   { "verbose",   'v', 0,     0, "be more verbose (debug if repeated)" },
-   { "no-userns", 'z', 0,     0, "don't use user namespace" },
+   { "gid",         'g', "GID", 0, "run as GID within container" },
+   { "private-tmp", 't', 0,     0, "mount container-private tmpfs on /tmp" },
+   { "uid",         'u', "UID", 0, "run as UID within container" },
+   { "verbose",     'v', 0,     0, "be more verbose (debug if repeated)" },
+   { "no-userns",   'z', 0,     0, "don't use user namespace" },
    { 0 }
 };
 
@@ -82,6 +82,7 @@ struct args {
    gid_t container_gid;
    uid_t container_uid;
    char * newroot;
+   bool private_tmp;
    int user_cmd_start;  // index into argv where NEWROOT is
    bool userns;         // true if using CLONE_NEWUSER
    int verbose;
@@ -98,9 +99,10 @@ int main(int argc, char * argv[])
    memset(args.binds, 0, sizeof(args.binds));
    args.container_gid = getegid();
    args.container_uid = geteuid();
+   args.private_tmp = false;
    args.userns = true;
    args.verbose = 0;
-   TRY (setenv("ARGP_HELP_FMT", "opt-doc-col=20,no-dup-args-note", 0));
+   TRY (setenv("ARGP_HELP_FMT", "opt-doc-col=21,no-dup-args-note", 0));
    TRY (argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args));
    if (args.user_cmd_start >= argc - 1)
       fatal("NEWROOT and/or CMD not specified\n");
@@ -111,11 +113,12 @@ int main(int argc, char * argv[])
       fprintf(stderr, "newroot: %s\n", args.newroot);
       fprintf(stderr, "container uid: %u\n", args.container_uid);
       fprintf(stderr, "container gid: %u\n", args.container_gid);
+      fprintf(stderr, "private /tmp: %d\n", args.private_tmp);
       fprintf(stderr, "user namespace: %d\n", args.userns);
    }
 
    setup_namespaces(args.userns, args.container_uid, args.container_gid);
-   enter_udss(args.newroot, args.binds);
+   enter_udss(args.newroot, args.binds, args.private_tmp);
    run_user_command(argc, argv, args.user_cmd_start); // should never return
    exit(EXIT_FAILURE);
 }
@@ -128,7 +131,7 @@ int main(int argc, char * argv[])
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
    in examples/syscalls/pivot_root.c. */
-void enter_udss(char * newroot, char ** binds)
+void enter_udss(char * newroot, char ** binds, bool private_tmp)
 {
    char * base;
    char * dir;
@@ -149,6 +152,13 @@ void enter_udss(char * newroot, char ** binds)
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
       TRY (0 > asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
       TRY (mount(DEFAULT_BINDS[i], path, NULL, MS_REC | MS_BIND, NULL));
+   }
+   // Container /tmp
+   TRY (0 > asprintf(&path, "%s%s", newroot, "/tmp"));
+   if (private_tmp) {
+      TRY (mount(NULL, path, "tmpfs", 0, 0));
+   } else {
+      TRY (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL));
    }
    // Bind-mount user's home directory at /home/$USER. The main use case is
    // dotfiles.
@@ -244,6 +254,9 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       break;
    case 'r':
       as->newroot = arg;
+      break;
+   case 't':
+      as->private_tmp = true;
       break;
    case 'u':
       errno = 0;

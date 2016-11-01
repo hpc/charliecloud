@@ -4,7 +4,7 @@
 # enforcement in UDSS such as virtual machines and containers. It must be run
 # as root. For example:
 #
-#   $ ./make-perms-test /data $USER nobody
+#   $ sudo ./make-perms-test /data $USER nobody
 #   $ ./fs_perms.py /data/perms_test/pass 2>&1 | egrep -v 'ok$'
 #   d /data/perms_test/pass/ld.out-a~--- --- rwt mismatch
 #   d /data/perms_test/pass/ld.out-r~--- --- rwt mismatch

@@ -21,19 +21,28 @@ import sys
 EXPECTED_RE = re.compile(r'~(...)$')
 class Makes_No_Sense(TypeError): pass
 
+VERBOSE = False
+
+
 def main():
-   dirs = sys.argv[1:]
-   if (len(dirs) < 1):
-       error('nothing to test')
+   if (sys.argv[1] == '--verbose'):
+      global VERBOSE
+      VERBOSE = True
+      sys.argv.pop(1)
+   d = sys.argv[1]
    mismatch_ct = 0
-   for d in dirs:
-      for path in sorted(os.listdir(d)):
-         mismatch_ct += not test('%s/%s' % (d, path))
+   test_ct = 0
+   for path in sorted(os.listdir(d)):
+      test_ct += 1
+      mismatch_ct += not test('%s/%s' % (d, path))
+   if (test_ct <= 0 or test_ct % 2887 != 0):
+      error("unexpected number of tests: %d" % test_ct)
    if (mismatch_ct == 0):
       print('SAFE\t', end='')
    else:
       print('RISK\t', end='')
-   print('%d mismatches in %d directories' % (mismatch_ct, len(dirs)))
+   print('%d mismatches in %d tests' % (mismatch_ct, test_ct))
+   sys.exit(mismatch_ct != 0)
 
 # Table of test function name fragments.
 testvec = { (False, False, False): ('X', 'bad'),
@@ -58,7 +67,7 @@ def test(path):
    filetype = (os.path.isdir(path),
                os.path.isfile(path),
                os.path.islink(path))
-   print('%s %-24s' % (testvec[filetype][0], path), file=sys.stderr, end='')
+   report = '%s %-24s ' % (testvec[filetype][0], path)
    expect = expected(path)
    result = ''
    for op in 'r', 'w', 't':  # read, write, traverse
@@ -71,12 +80,13 @@ def test(path):
          error('exception on %s: %s' % (path, x))
       else:
          result += op
-   print(' %s' % result, file=sys.stderr, end='')
+   report += result
    if (expect != '*' and result != expect):
-      print(' mismatch', file=sys.stderr)
+      print('%s mismatch' % report)
       return False
    else:
-      print(' ok', file=sys.stderr)
+      if (VERBOSE):
+         print('%s ok' % report)
       return True
 
 def try_r_bad(path):
@@ -96,7 +106,9 @@ def try_t_dir(path):
    try_r_file(path + '/file')
 
 def try_w_dir(path):
-   try_w_file('%s/a%d' % (path, random.getrandbits(64)))
+   fpath = '%s/a%d' % (path, random.getrandbits(64))
+   try_w_file(fpath)
+   os.unlink(fpath)
 
 def try_r_file(path):
    with open(path, 'rb', buffering=0) as fp:

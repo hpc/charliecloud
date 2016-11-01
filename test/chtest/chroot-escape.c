@@ -3,31 +3,7 @@
    behavior. We use device and inode numbers to test whether the root
    directory is the same before and after the escape.
 
-   Output:
-
-     - If escape succeeded, print "NOT-ISOLATED" on stdout and exit
-       successfully.
-
-     - If escape failed with EPERM or had no effect, print "ISOLATED" on
-       stdout and exit successfully.
-
-     - Otherwise, print "ERROR" on stdout and exit unsuccessfully.
-
-   For example, using the chroot(1) utility:
-
-     $ mkdir tmp  # writeable /tmp expected
-     $ gcc -static chroot-escape.c
-     $ ./a.out
-     ISOLATED chroot(2) failed with EPERM
-     $ sudo ./a.out
-     ISOLATED dev/inode before 2304/2, after 2304/2
-     $ sudo chroot . ./a.out
-     NOT-ISOLATED dev/inode before 2304/272901, after 2304/2
-     $ sudo chroot --userspec $(id -u):$(id -g) . ./a.out
-     ISOLATED chroot(2) failed with EPERM
-     $ rm -Rf tmp
-
-   Reference:
+   References:
      https://filippo.io/escaping-a-chroot-jail-slash-1/
      http://www.bpfh.net/simes/computing/chroot-break.html
 

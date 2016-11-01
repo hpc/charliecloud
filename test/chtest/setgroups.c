@@ -15,18 +15,24 @@ int main()
    gid_t groups[NGROUPS_MAX];
 
    group_ct = getgroups(NGROUPS_MAX, groups);
-   if (group_ct == -1)
+   if (group_ct == -1) {
       printf("ERROR\tgetgroups(2) failed with errno=%d\n", errno);
+      return 1;
+   }
 
    fprintf(stderr, "found %d groups; trying to drop last group %d\n",
            group_ct, groups[group_ct - 1]);
 
    if (setgroups(group_ct - 1, groups)) {
-      if (errno == EPERM)
+      if (errno == EPERM) {
          printf("SAFE\tsetgroups(2) failed with EPERM\n");
-      else
+         return 0;
+      } else {
          printf("ERROR\tsetgroups(2) failed with errno=%d\n", errno);
+         return 1;
+      }
    } else {
       printf("RISK\tsetgroups(2) succeeded\n");
+      return 1;
    }
 }

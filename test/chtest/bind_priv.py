@@ -25,17 +25,24 @@ try:
          results[ip] = 0
 except Exception as x:
    print('ERROR\texception: %s' % x)
+   rc = 1
 else:
    if (len(results) < 1):
       print('ERROR\tnothing to test', end='')
+      rc = 1
    elif (len(set(results.values())) != 1):
       print('ERROR\tmixed results: ', end='')
+      rc = 1
    else:
       result = next(iter(results.values()))
       if (result != 0):
-         print('SAFE\t%s ' % errno.errorcode[result], end='')
+         print('SAFE\t%d (%s) ' % (result, errno.errorcode[result]), end='')
+         rc = 0
       else:
          print('RISK\tsuccessful bind ', end='')
-   explanation = ' '.join('%s,%d' % (ip, e)
+         rc = 1
+   explanation = ' '.join('%s=%d' % (ip, e)
                           for (ip, e) in sorted(results.items()))
    print(explanation)
+
+sys.exit(rc)

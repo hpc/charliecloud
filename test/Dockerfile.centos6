@@ -1,0 +1,4 @@
+FROM centos:6
+
+RUN yum -y install bc
+RUN yum clean all

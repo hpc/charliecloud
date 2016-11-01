@@ -19,6 +19,24 @@ options:
 2. Configure the application to use a different directory.
 
 
+Tarball build fails with "No command specified"
+===============================================
+
+The full error from :code:`ch-docker2tar` or :code:`ch-dockerfile2dir` is::
+
+  docker: Error response from daemon: No command specified.
+
+You will also see it with various plain Docker commands.
+
+This happens when there is no default command specified. Some base images
+specify one (e.g., Debian) and others don't (e.g., Alpine). Docker requires
+this even for commands that don't seem like they should need it, such as
+:code:`docker create` (which is what trips up Charliecloud).
+
+The solution is to add a default command to your Dockerfile, such as
+:code:`CMD ["true"]`.
+
+
 :code:`--uid 0` lets me read files I can't otherwise!
 =====================================================
 

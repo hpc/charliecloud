@@ -17,7 +17,8 @@ Run time
 
 Systems used for running images need:
 
-* Recent Linux kernel with :code:`CONFIG_USER_NS=y` and :code:`CONFIG_OVERLAY_FS=y`
+* Recent Linux kernel with :code:`CONFIG_USER_NS=y` and
+  :code:`CONFIG_OVERLAY_FS=y`
 * C compiler and standard library
 * POSIX shell and utilities
 
@@ -43,6 +44,16 @@ Systems used for building images need the run-time prerequisites, plus:
 * `Docker <https://www.docker.com/>`_, recent version. We do not make compatibility guarantees with any specific version, but let us know if you run into issues.
 * Bash
 * root access using :code:`sudo`
+* Internet access or a Docker configured for a local Docker hub
+
+Test suite
+----------
+
+In order to run the test suite on a run or build system (you can test each
+mode independently), you also need:
+
+* Bash
+* Python 2.6+
 
 
 Download Charliecloud
@@ -50,13 +61,19 @@ Download Charliecloud
 
 See our GitHub project: https://github.com/hpc/charliecloud
 
+The recommended way to download is with :code:`git clone --recursive`; the
+switch gets the submodule needed for testing as well.
 
-Verifying the system calls
-==========================
+
+Make sure you have the required kernel features
+===============================================
 
 The :code:`examples` directory includes a C program that exercises the key
 system calls Charliecloud depends on. If this works, then Charliecloud
-probably will too::
+probably will too. If it doesn't, you'll want to understand why before
+bothering with the remaining install steps.
+
+::
 
   $ cd examples/syscalls
   $ make && ./pivot_root
@@ -66,11 +83,16 @@ If :code:`pivot_root` instead reports an error, check the reported line number
 in :code:`pivot_root.c` to see what failed.
 
 
-Installing Docker
-=================
+Install Docker
+==============
 
 While installing Docker is beyond the scope of this documentation, here are a
 few tips.
+
+.. note::
+
+   Docker need be installed only on build systems. It is not needed at
+   runtime.
 
 Understand the security implications of Docker
 ----------------------------------------------
@@ -160,8 +182,8 @@ The solution is to configure an override file :code:`http-proxy.conf` as
 systemd system, then :code:`/etc/default/docker` might be the place to go.
 
 
-Installing Charliecloud
-=======================
+Install Charliecloud
+====================
 
 All you need in order to use Charliecloud is the executables and :code:`.sh`
 files in :code:`bin`::
@@ -177,3 +199,110 @@ tutorial in the next section, you will want access to the rest of the source
 code as well.
 
 If you wish to build the documentation, see :code:`doc-src/README`.
+
+
+Test Charliecloud
+=================
+
+Charliecloud comes with a fairly comprehensive `Bats
+<https://github.com/sstephenson/bats>`_ test suite, in :code:`test`. Go there::
+
+  $ cd test
+
+Bats must be installed in the :code:`test/bats.src`. In the Git repository,
+this is arranged with a Git submodule, so if you downloaded Charliecloud with
+Git command above, it should already be there. Otherwise, you must download
+and unpack Bats manually.
+
+:code:`test/bats` is a symlink to the main Bats script, for convenience.
+
+Verify the Bats install with::
+
+  $ ./bats --version
+  Bats 0.4.0
+
+Just like for normal use, the Charliecloud test suite is split into build and
+run phases. These can be tested independently on different systems.
+
+Testing is coordinated by :code:`make`. The test targets run one or more test
+suites. If any test suite has a failure, testing stops with an error message.
+
+Both the build and run phases require a work directory with several gigabytes
+of free space. This is configured with an environment variable::
+
+  $ export CH_TEST_WORKDIR=/data
+
+Build time
+----------
+
+In this phase, image building and associated functionality is tested::
+
+  $ make test-build
+  ./bats build.bats
+   ✓ executables --help
+   ✓ docker-build
+   ✓ docker-build --pull
+   ✓ ch-dockerfile2dir
+
+  4 tests, 0 failures
+  ./bats build_auto.bats
+   ✓ docker-build debian8
+   ✓ ch-docker2tar debian8
+   ✓ docker-build python3
+   ✓ ch-docker2tar python3
+  [...]
+   ✓ docker-build mpibench
+   ✓ ch-docker2tar mpibench
+
+  22 tests, 0 failures
+
+Note that with an empty Docker cache, this test can be quite lengthy, on the
+order of 20--30 minutes for me, because it builds all the examples as well as
+several basic Dockerfiles for common Linux distributions and tools (in
+:code:`test`). With a full cache, it takes about 1 minute for me.
+
+A faster test that does not include these is available as well::
+
+  $ make test-build-quick
+
+The easiest way to update the base Docker images used in this test is to simply
+delete all Docker images and let them be rebuilt on the next test.
+
+::
+
+  $ sudo docker rm $(sudo docker ps -aq)
+  $ sudo docker rmi -f $(sudo docker images -q)
+
+Run time
+--------
+
+The run tests require the contents of :code:`$CH_TEST_WORKDIR/tarballs`
+produced by a successful build test. Copy this directory to the run system.
+
+Run-time testing requires an additional environment variable specifing the
+location(s) of specially constructed filesystem permissions test directories.
+These should include every meaningful mounted filesystem, and they cannot be
+shared between different users. For example::
+
+  $ export CH_TEST_PERMDIRS='/data /tmp /var/tmp'
+
+These directories must be created as root. For example::
+
+  $ for d in $CH_TEST_PERMDIRS; do sudo ./make-perms-test $d $USER nobody; done
+
+These tests also have full and quick variants::
+
+  $ make test-run
+  $ make test-run-quick
+
+Both
+----
+
+Charliecloud also provides :code:`test-all` and :code:`test-all-quick` targets
+that combine both phases. We recommend that a build box pass these tests as
+well so that it can be used to run containers for testing and development.
+
+::
+
+   $ make test-all
+   $ make test-all-quick
