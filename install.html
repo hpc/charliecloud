@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                b9d774d
+                1e7ae91
               </div>
             
           
@@ -88,11 +88,12 @@
 <li class="toctree-l2"><a class="reference internal" href="#prequisites">1.1. Prequisites</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#run-time">1.1.1. Run time</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#build-time">1.1.2. Build time</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-suite">1.1.3. Test suite</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#download-charliecloud">1.2. Download Charliecloud</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#verifying-the-system-calls">1.3. Verifying the system calls</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-docker">1.4. Installing Docker</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#make-sure-you-have-the-required-kernel-features">1.3. Make sure you have the required kernel features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-docker">1.4. Install Docker</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#understand-the-security-implications-of-docker">1.4.1. Understand the security implications of Docker</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#don-t-pipe-web-pages-to-your-shell">1.4.1.1. Don&#8217;t pipe web pages to your shell</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#docker-equals-root">1.4.1.2. <code class="code docutils literal"><span class="pre">docker</span></code> equals root</a></li>
@@ -105,7 +106,13 @@
 <li class="toctree-l3"><a class="reference internal" href="#configuring-docker-for-a-proxy">1.4.2. Configuring Docker for a proxy</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-charliecloud">1.5. Installing Charliecloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-charliecloud">1.5. Install Charliecloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-charliecloud">1.6. Test Charliecloud</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">1.6.1. Build time</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">1.6.2. Run time</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#both">1.6.3. Both</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
@@ -159,31 +166,39 @@
 <h1>1. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#prequisites" id="id1">Prequisites</a><ul>
-<li><a class="reference internal" href="#run-time" id="id2">Run time</a></li>
-<li><a class="reference internal" href="#build-time" id="id3">Build time</a></li>
+<li><a class="reference internal" href="#prequisites" id="id3">Prequisites</a><ul>
+<li><a class="reference internal" href="#run-time" id="id4">Run time</a></li>
+<li><a class="reference internal" href="#build-time" id="id5">Build time</a></li>
+<li><a class="reference internal" href="#test-suite" id="id6">Test suite</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#download-charliecloud" id="id4">Download Charliecloud</a></li>
-<li><a class="reference internal" href="#verifying-the-system-calls" id="id5">Verifying the system calls</a></li>
-<li><a class="reference internal" href="#installing-docker" id="id6">Installing Docker</a><ul>
-<li><a class="reference internal" href="#understand-the-security-implications-of-docker" id="id7">Understand the security implications of Docker</a></li>
-<li><a class="reference internal" href="#configuring-docker-for-a-proxy" id="id8">Configuring Docker for a proxy</a></li>
+<li><a class="reference internal" href="#download-charliecloud" id="id7">Download Charliecloud</a></li>
+<li><a class="reference internal" href="#make-sure-you-have-the-required-kernel-features" id="id8">Make sure you have the required kernel features</a></li>
+<li><a class="reference internal" href="#install-docker" id="id9">Install Docker</a><ul>
+<li><a class="reference internal" href="#understand-the-security-implications-of-docker" id="id10">Understand the security implications of Docker</a></li>
+<li><a class="reference internal" href="#configuring-docker-for-a-proxy" id="id11">Configuring Docker for a proxy</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#installing-charliecloud" id="id9">Installing Charliecloud</a></li>
+<li><a class="reference internal" href="#install-charliecloud" id="id12">Install Charliecloud</a></li>
+<li><a class="reference internal" href="#test-charliecloud" id="id13">Test Charliecloud</a><ul>
+<li><a class="reference internal" href="#id1" id="id14">Build time</a></li>
+<li><a class="reference internal" href="#id2" id="id15">Run time</a></li>
+<li><a class="reference internal" href="#both" id="id16">Both</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="section" id="prequisites">
-<h2><a class="toc-backref" href="#id1">1.1. Prequisites</a><a class="headerlink" href="#prequisites" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id3">1.1. Prequisites</a><a class="headerlink" href="#prequisites" title="Permalink to this headline">¶</a></h2>
 <p>Charliecloud is a simple system with limited prerequisites. If your system
 meets these prerequisites but Charliecloud doesn&#8217;t work, please report that as
 a bug.</p>
 <div class="section" id="run-time">
-<h3><a class="toc-backref" href="#id2">1.1.1. Run time</a><a class="headerlink" href="#run-time" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id4">1.1.1. Run time</a><a class="headerlink" href="#run-time" title="Permalink to this headline">¶</a></h3>
 <p>Systems used for running images need:</p>
 <ul class="simple">
-<li>Recent Linux kernel with <code class="code docutils literal"><span class="pre">CONFIG_USER_NS=y</span></code> and <code class="code docutils literal"><span class="pre">CONFIG_OVERLAY_FS=y</span></code></li>
+<li>Recent Linux kernel with <code class="code docutils literal"><span class="pre">CONFIG_USER_NS=y</span></code> and
+<code class="code docutils literal"><span class="pre">CONFIG_OVERLAY_FS=y</span></code></li>
 <li>C compiler and standard library</li>
 <li>POSIX shell and utilities</li>
 </ul>
@@ -200,24 +215,37 @@ workaround for missing overlayfs. Please contact us if you are interested.</p>
 </div>
 </div>
 <div class="section" id="build-time">
-<h3><a class="toc-backref" href="#id3">1.1.2. Build time</a><a class="headerlink" href="#build-time" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5">1.1.2. Build time</a><a class="headerlink" href="#build-time" title="Permalink to this headline">¶</a></h3>
 <p>Systems used for building images need the run-time prerequisites, plus:</p>
 <ul class="simple">
 <li><a class="reference external" href="https://www.docker.com/">Docker</a>, recent version. We do not make compatibility guarantees with any specific version, but let us know if you run into issues.</li>
 <li>Bash</li>
 <li>root access using <code class="code docutils literal"><span class="pre">sudo</span></code></li>
+<li>Internet access or a Docker configured for a local Docker hub</li>
+</ul>
+</div>
+<div class="section" id="test-suite">
+<h3><a class="toc-backref" href="#id6">1.1.3. Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h3>
+<p>In order to run the test suite on a run or build system (you can test each
+mode independently), you also need:</p>
+<ul class="simple">
+<li>Bash</li>
+<li>Python 2.6+</li>
 </ul>
 </div>
 </div>
 <div class="section" id="download-charliecloud">
-<h2><a class="toc-backref" href="#id4">1.2. Download Charliecloud</a><a class="headerlink" href="#download-charliecloud" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">1.2. Download Charliecloud</a><a class="headerlink" href="#download-charliecloud" title="Permalink to this headline">¶</a></h2>
 <p>See our GitHub project: <a class="reference external" href="https://github.com/hpc/charliecloud">https://github.com/hpc/charliecloud</a></p>
+<p>The recommended way to download is with <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>; the
+switch gets the submodule needed for testing as well.</p>
 </div>
-<div class="section" id="verifying-the-system-calls">
-<h2><a class="toc-backref" href="#id5">1.3. Verifying the system calls</a><a class="headerlink" href="#verifying-the-system-calls" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="make-sure-you-have-the-required-kernel-features">
+<h2><a class="toc-backref" href="#id8">1.3. Make sure you have the required kernel features</a><a class="headerlink" href="#make-sure-you-have-the-required-kernel-features" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="code docutils literal"><span class="pre">examples</span></code> directory includes a C program that exercises the key
 system calls Charliecloud depends on. If this works, then Charliecloud
-probably will too:</p>
+probably will too. If it doesn&#8217;t, you&#8217;ll want to understand why before
+bothering with the remaining install steps.</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/syscalls
 <span class="gp">$</span> make <span class="o">&amp;&amp;</span> ./pivot_root
 <span class="go">ok</span>
@@ -226,12 +254,17 @@ probably will too:</p>
 <p>If <code class="code docutils literal"><span class="pre">pivot_root</span></code> instead reports an error, check the reported line number
 in <code class="code docutils literal"><span class="pre">pivot_root.c</span></code> to see what failed.</p>
 </div>
-<div class="section" id="installing-docker">
-<h2><a class="toc-backref" href="#id6">1.4. Installing Docker</a><a class="headerlink" href="#installing-docker" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="install-docker">
+<h2><a class="toc-backref" href="#id9">1.4. Install Docker</a><a class="headerlink" href="#install-docker" title="Permalink to this headline">¶</a></h2>
 <p>While installing Docker is beyond the scope of this documentation, here are a
 few tips.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Docker need be installed only on build systems. It is not needed at
+runtime.</p>
+</div>
 <div class="section" id="understand-the-security-implications-of-docker">
-<h3><a class="toc-backref" href="#id7">1.4.1. Understand the security implications of Docker</a><a class="headerlink" href="#understand-the-security-implications-of-docker" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10">1.4.1. Understand the security implications of Docker</a><a class="headerlink" href="#understand-the-security-implications-of-docker" title="Permalink to this headline">¶</a></h3>
 <p>Because Docker (a) makes installing random crap from the internet really easy
 and (b) has an &#8220;interesting&#8221; security culture, you should take care. Some of
 the implications are below. This list should not be considered comprehensive
@@ -294,7 +327,7 @@ directories.</p>
 </div>
 </div>
 <div class="section" id="configuring-docker-for-a-proxy">
-<h3><a class="toc-backref" href="#id8">1.4.2. Configuring Docker for a proxy</a><a class="headerlink" href="#configuring-docker-for-a-proxy" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id11">1.4.2. Configuring Docker for a proxy</a><a class="headerlink" href="#configuring-docker-for-a-proxy" title="Permalink to this headline">¶</a></h3>
 <p>By default, Docker does not work if you have a proxy. The symptom is this:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker run hello-world
 <span class="go">Unable to find image &#39;hello-world:latest&#39; locally</span>
@@ -307,8 +340,8 @@ directories.</p>
 systemd system, then <code class="code docutils literal"><span class="pre">/etc/default/docker</span></code> might be the place to go.</p>
 </div>
 </div>
-<div class="section" id="installing-charliecloud">
-<h2><a class="toc-backref" href="#id9">1.5. Installing Charliecloud</a><a class="headerlink" href="#installing-charliecloud" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="install-charliecloud">
+<h2><a class="toc-backref" href="#id12">1.5. Install Charliecloud</a><a class="headerlink" href="#install-charliecloud" title="Permalink to this headline">¶</a></h2>
 <p>All you need in order to use Charliecloud is the executables and <code class="code docutils literal"><span class="pre">.sh</span></code>
 files in <code class="code docutils literal"><span class="pre">bin</span></code>:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> bin
@@ -321,6 +354,101 @@ to somewhere else.</p>
 tutorial in the next section, you will want access to the rest of the source
 code as well.</p>
 <p>If you wish to build the documentation, see <code class="code docutils literal"><span class="pre">doc-src/README</span></code>.</p>
+</div>
+<div class="section" id="test-charliecloud">
+<h2><a class="toc-backref" href="#id13">1.6. Test Charliecloud</a><a class="headerlink" href="#test-charliecloud" title="Permalink to this headline">¶</a></h2>
+<p>Charliecloud comes with a fairly comprehensive <a class="reference external" href="https://github.com/sstephenson/bats">Bats</a> test suite, in <code class="code docutils literal"><span class="pre">test</span></code>. Go there:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> <span class="nb">test</span>
+</pre></div>
+</div>
+<p>Bats must be installed in the <code class="code docutils literal"><span class="pre">test/bats.src</span></code>. In the Git repository,
+this is arranged with a Git submodule, so if you downloaded Charliecloud with
+Git command above, it should already be there. Otherwise, you must download
+and unpack Bats manually.</p>
+<p><code class="code docutils literal"><span class="pre">test/bats</span></code> is a symlink to the main Bats script, for convenience.</p>
+<p>Verify the Bats install with:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ./bats --version
+<span class="go">Bats 0.4.0</span>
+</pre></div>
+</div>
+<p>Just like for normal use, the Charliecloud test suite is split into build and
+run phases. These can be tested independently on different systems.</p>
+<p>Testing is coordinated by <code class="code docutils literal"><span class="pre">make</span></code>. The test targets run one or more test
+suites. If any test suite has a failure, testing stops with an error message.</p>
+<p>Both the build and run phases require a work directory with several gigabytes
+of free space. This is configured with an environment variable:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_WORKDIR</span><span class="o">=</span>/data
+</pre></div>
+</div>
+<div class="section" id="id1">
+<h3><a class="toc-backref" href="#id14">1.6.1. Build time</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>In this phase, image building and associated functionality is tested:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-build
+<span class="go">./bats build.bats</span>
+<span class="go"> ✓ executables --help</span>
+<span class="go"> ✓ docker-build</span>
+<span class="go"> ✓ docker-build --pull</span>
+<span class="go"> ✓ ch-dockerfile2dir</span>
+
+<span class="go">4 tests, 0 failures</span>
+<span class="go">./bats build_auto.bats</span>
+<span class="go"> ✓ docker-build debian8</span>
+<span class="go"> ✓ ch-docker2tar debian8</span>
+<span class="go"> ✓ docker-build python3</span>
+<span class="go"> ✓ ch-docker2tar python3</span>
+<span class="go">[...]</span>
+<span class="go"> ✓ docker-build mpibench</span>
+<span class="go"> ✓ ch-docker2tar mpibench</span>
+
+<span class="go">22 tests, 0 failures</span>
+</pre></div>
+</div>
+<p>Note that with an empty Docker cache, this test can be quite lengthy, on the
+order of 20&#8211;30 minutes for me, because it builds all the examples as well as
+several basic Dockerfiles for common Linux distributions and tools (in
+<code class="code docutils literal"><span class="pre">test</span></code>). With a full cache, it takes about 1 minute for me.</p>
+<p>A faster test that does not include these is available as well:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-build-quick
+</pre></div>
+</div>
+<p>The easiest way to update the base Docker images used in this test is to simply
+delete all Docker images and let them be rebuilt on the next test.</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker rm <span class="k">$(</span>sudo docker ps -aq<span class="k">)</span>
+<span class="gp">$</span> sudo docker rmi -f <span class="k">$(</span>sudo docker images -q<span class="k">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h3><a class="toc-backref" href="#id15">1.6.2. Run time</a><a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>The run tests require the contents of <code class="code docutils literal"><span class="pre">$CH_TEST_WORKDIR/tarballs</span></code>
+produced by a successful build test. Copy this directory to the run system.</p>
+<p>Run-time testing requires an additional environment variable specifing the
+location(s) of specially constructed filesystem permissions test directories.
+These should include every meaningful mounted filesystem, and they cannot be
+shared between different users. For example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s1">&#39;/data /tmp /var/tmp&#39;</span>
+</pre></div>
+</div>
+<p>These directories must be created as root. For example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="k">for</span> d in <span class="nv">$CH_TEST_PERMDIRS</span><span class="p">;</span> <span class="k">do</span> sudo ./make-perms-test <span class="nv">$d</span> <span class="nv">$USER</span> nobody<span class="p">;</span> <span class="k">done</span>
+</pre></div>
+</div>
+<p>These tests also have full and quick variants:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-run
+<span class="gp">$</span> make test-run-quick
+</pre></div>
+</div>
+</div>
+<div class="section" id="both">
+<h3><a class="toc-backref" href="#id16">1.6.3. Both</a><a class="headerlink" href="#both" title="Permalink to this headline">¶</a></h3>
+<p>Charliecloud also provides <code class="code docutils literal"><span class="pre">test-all</span></code> and <code class="code docutils literal"><span class="pre">test-all-quick</span></code> targets
+that combine both phases. We recommend that a build box pass these tests as
+well so that it can be used to run containers for testing and development.</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-all
+<span class="gp">$</span> make test-all-quick
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 

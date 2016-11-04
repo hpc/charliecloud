@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                b9d774d
+                1e7ae91
               </div>
             
           
@@ -196,13 +196,14 @@ You must have sufficient privilege to run the docker commands.
 
 Run a command in a Charliecloud container.
 
-  -d, --dir=DIR     mount host DIR at container /mnt/i (i starts at 0)
-  -g, --gid=GID     run as GID within container
-  -u, --uid=UID     run as UID within container
-  -v, --verbose     be more verbose (debug if repeated)
-  -z, --no-userns   don&#39;t use user namespace
-  -?, --help        Give this help list
-      --usage       Give a short usage message
+  -d, --dir=DIR      mount host DIR at container /mnt/i (i starts at 0)
+  -g, --gid=GID      run as GID within container
+  -t, --private-tmp  mount container-private tmpfs on /tmp
+  -u, --uid=UID      run as UID within container
+  -v, --verbose      be more verbose (debug if repeated)
+  -z, --no-userns    don&#39;t use user namespace
+  -?, --help         Give this help list
+      --usage        Give a short usage message
 
 Example:
 
