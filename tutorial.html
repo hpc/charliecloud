@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                012e75f
+                0d7cdaa
               </div>
             
           
@@ -271,7 +271,7 @@ the Dockerfile in the current directory, rather than at the root of the Docker
 context directory. (We will address the context directory later.)</p>
 <p>The two arguments here are a tag for the Docker image and the context
 directory, which in this case is the Charliecloud source code.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> docker-build -t <span class="nv">$USER</span>/hello ../..
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> docker-build -t hello ../..
 <span class="go">Sending build context to Docker daemon 8.105 MB</span>
 <span class="go">Step 1 : FROM debian:jessie</span>
 <span class="go"> ---&gt; ddf73f48a05d</span>
@@ -295,16 +295,16 @@ prompted doesn&#8217;t mean privileged commands aren&#8217;t running.</p>
 In particular, image sharing using a public or private Docker Hub repository
 can be very useful.</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker images
-<span class="go">REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE</span>
-<span class="go">debian              jessie              1742affe03b5        10 days ago         125.1 MB</span>
-<span class="go">reidpr/hello        latest              1742affe03b5        10 days ago         139.7 MB</span>
+<span class="go">REPOSITORY  TAG     IMAGE ID      CREATED      SIZE</span>
+<span class="go">debian      jessie  1742affe03b5  10 days ago  125.1 MB</span>
+<span class="go">hello       latest  1742affe03b5  10 days ago  139.7 MB</span>
 <span class="gp">$</span> sudo docker push  <span class="c1"># FIXME</span>
 </pre></div>
 </div>
 <p>Running the image with Docker is not generally useful, because Docker&#8217;s
 run-time environment is significantly different than Charliecloud&#8217;s, but it
 can have value when debugging Charliecloud.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker run -it <span class="nv">$USER</span>/hello /bin/bash
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker run -it hello /bin/bash
 <span class="gp">#</span> ls /
 <span class="go">bin   dev  home  lib64  mnt  proc  run   srv  tmp  var</span>
 <span class="go">boot  etc  lib   media  opt  root  sbin  sys  usr</span>
@@ -318,8 +318,8 @@ can have value when debugging Charliecloud.</p>
 <p>Next, we flatten the Docker image into a tarball, which is then a plain file
 amenable to standard file manipulation commands. This tarball is placed in an
 arbitrary directory, here <code class="code docutils literal"><span class="pre">/data</span></code>.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-docker2tar <span class="nv">$USER</span>/hello /data
-<span class="go">57M /data/reidpr.hello.tar.gz</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-docker2tar hello /data
+<span class="go">57M /data/hello.tar.gz</span>
 </pre></div>
 </div>
 </div>
@@ -337,8 +337,8 @@ typical use case for the testing phase.</p>
 <p>Charliecloud runs out of a normal directory rather than a filesystem image. In
 order to create this directory, we unpack the image tarball. This will replace
 the image directory if it already exists.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tar2dir /data/<span class="nv">$USER</span>.hello.tar.gz /data/<span class="nv">$USER</span>.hello
-<span class="go">/data/reidpr.hello unpacked ok</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tar2dir /data/hello.tar.gz /data/hello
+<span class="go">/data/hello unpacked ok</span>
 </pre></div>
 </div>
 <p>One potential gotcha is the tarball including special files such as devices.
@@ -357,7 +357,7 @@ both users and programs.</p>
 <h3><a class="toc-backref" href="#id9">2.2.7. Activate image</a><a class="headerlink" href="#activate-image" title="Permalink to this headline">¶</a></h3>
 <p>We are now ready to run programs inside a Charliecloud container. This is done
 with the <code class="code docutils literal"><span class="pre">ch-run</span></code> command:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- <span class="nb">echo</span> hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/hello -- <span class="nb">echo</span> hello
 <span class="go">hello</span>
 </pre></div>
 </div>
@@ -371,7 +371,7 @@ identified by long ID numbers:</p>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 pid -&gt; pid:[4026531836]</span>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 user -&gt; user:[4026531837]</span>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 uts -&gt; uts:[4026531838]</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- ls -l /proc/self/ns
+<span class="gp">$</span> ch-run /data/hello -- ls -l /proc/self/ns
 <span class="go">total 0</span>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 ipc -&gt; ipc:[4026531839]</span>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 mnt -&gt; mnt:[4026532257]</span>
@@ -400,12 +400,12 @@ argument.</p>
 number:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026531837</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
+<span class="gp">$</span> ch-run /data/hello -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 </pre></div>
 </div>
 <p>You can also run interactive commands, such as a shell:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- /bin/bash
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/hello -- /bin/bash
 <span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 <span class="gp">$</span> <span class="nb">exit</span>
@@ -416,13 +416,13 @@ host, not the container, unless protected. One workaround is to use a
 sub-shell. For example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls /usr/bin/oldfind
 <span class="go">ls: cannot access &#39;/usr/bin/oldfind&#39;: No such file or directory</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- ls /usr/bin/oldfind
+<span class="gp">$</span> ch-run /data/hello -- ls /usr/bin/oldfind
 <span class="go">/usr/bin/oldfind</span>
 <span class="gp">$</span> ls /usr/bin/oldf*
 <span class="go">ls: cannot access &#39;/usr/bin/oldf*&#39;: No such file or directory</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- ls /usr/bin/oldf*
+<span class="gp">$</span> ch-run /data/hello -- ls /usr/bin/oldf*
 <span class="go">ls: cannot access /usr/bin/oldf*: No such file or directory</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- sh -c <span class="s1">&#39;ls /usr/bin/oldf*&#39;</span>
+<span class="gp">$</span> ch-run /data/hello -- sh -c <span class="s1">&#39;ls /usr/bin/oldf*&#39;</span>
 <span class="go">/usr/bin/oldfind</span>
 </pre></div>
 </div>
@@ -454,7 +454,7 @@ can be added using the <code class="code docutils literal"><span class="pre">-d<
 <span class="gp">$</span> <span class="nb">echo</span> hello &gt; /data/foo0/bar
 <span class="gp">$</span> mkdir /data/foo1
 <span class="gp">$</span> <span class="nb">echo</span> world &gt; /data/foo1/bar
-<span class="gp">$</span> ch-run -d /data/foo0 -d /data/foo1 /data/<span class="nv">$USER</span>.hello bash
+<span class="gp">$</span> ch-run -d /data/foo0 -d /data/foo1 /data/hello bash
 <span class="gp">&gt;</span> ls /mnt
 <span class="go">0  1</span>
 <span class="gp">&gt;</span> cat /mnt/0/bar
@@ -475,7 +475,7 @@ container, even if <code class="code docutils literal"><span class="pre">ssh</sp
 <span class="go">4026531837</span>
 <span class="gp">$</span> ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026531837</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- /bin/bash
+<span class="gp">$</span> ch-run /data/hello -- /bin/bash
 <span class="gp">&gt;</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 <span class="gp">&gt;</span> ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
@@ -485,7 +485,7 @@ container, even if <code class="code docutils literal"><span class="pre">ssh</sp
 <p>There are several ways to SSH to a remote note and run commands inside a
 container. The simplest is to manually invoke <code class="code docutils literal"><span class="pre">ch-run</span></code> in the
 <code class="code docutils literal"><span class="pre">ssh</span></code> command:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh localhost ch-run /data/<span class="nv">$USER</span>.hello -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh localhost ch-run /data/hello -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 </pre></div>
 </div>
@@ -500,7 +500,7 @@ namespace <code class="code docutils literal"><span class="pre">’2256</span></
 <code class="code docutils literal"><span class="pre">ch-run</span></code> to the <code class="code docutils literal"><span class="pre">ssh</span></code> command implicitly. It takes the
 <code class="code docutils literal"><span class="pre">ch-run</span></code> arguments from the environment variable <code class="code docutils literal"><span class="pre">CH_RUN_ARGS</span></code>,
 making it mostly a drop-in replacement for <code class="code docutils literal"><span class="pre">ssh</span></code>. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/data/</span><span class="nv">$USER</span><span class="s2">.hello --&quot;</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/data/hello --&quot;</span>
 <span class="gp">$</span> ch-ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 <span class="gp">$</span> ch-ssh -t localhost /bin/bash
@@ -510,8 +510,8 @@ making it mostly a drop-in replacement for <code class="code docutils literal"><
 </div>
 <p><code class="code docutils literal"><span class="pre">ch-ssh</span></code> is available inside containers as well (in <code class="code docutils literal"><span class="pre">/usr/bin</span></code> via
 bind-mount):</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/data/</span><span class="nv">$USER</span><span class="s2">.hello --&quot;</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello /bin/bash
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/data/hello --&quot;</span>
+<span class="gp">$</span> ch-run /data/hello /bin/bash
 <span class="gp">&gt;</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 <span class="gp">&gt;</span> ch-ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
@@ -546,7 +546,7 @@ the container.) For example:</p>
 <span class="go">901</span>
 <span class="gp">$</span> whoami
 <span class="go">reidpr</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello bash
+<span class="gp">$</span> ch-run /data/hello bash
 <span class="gp">&gt;</span> id -u
 <span class="go">901</span>
 <span class="gp">&gt;</span> whoami
@@ -558,7 +558,7 @@ Charliecloud does, lets you map any container UID to your host UID.
 <code class="code docutils literal"><span class="pre">ch-run</span></code> implements this with the <code class="code docutils literal"><span class="pre">--uid</span></code> switch. So, for example,
 you can tell Charliecloud you want to be root, and it will tell you that
 you&#8217;re root:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /data/<span class="nv">$USER</span>.hello bash
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /data/hello bash
 <span class="gp">&gt;</span> id -u
 <span class="go">0</span>
 <span class="gp">&gt;</span> whoami
@@ -580,7 +580,7 @@ looks normal:</p>
 <span class="go">drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/reidpr</span>
 <span class="gp">$</span> ls -ld ~
 <span class="go">drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 12:12 /home/reidpr</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello bash
+<span class="gp">$</span> ch-run /data/hello bash
 <span class="gp">&gt;</span> ls -nd ~
 <span class="go">drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/reidpr</span>
 <span class="gp">&gt;</span> ls -ld ~
@@ -588,7 +588,7 @@ looks normal:</p>
 </pre></div>
 </div>
 <p>But if <code class="code docutils literal"><span class="pre">--uid</span></code> is provided, things can seem odd. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /data/<span class="nv">$USER</span>.hello bash
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /data/hello bash
 <span class="gp">&gt;</span> ls -nd /home/reidpr
 <span class="go">drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/reidpr</span>
 <span class="gp">&gt;</span> ls -ld /home/reidpr
@@ -602,7 +602,7 @@ up as <code class="code docutils literal"><span class="pre">nobody</span></code>
 <span class="go">-rw-rw---- 1 902 902 0 Sep 28 15:40 /tmp/foo</span>
 <span class="gp">$</span> ls -l /tmp/foo
 <span class="go">-rw-rw---- 1 sig sig 0 Sep 28 15:40 /tmp/foo</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello bash
+<span class="gp">$</span> ch-run /data/hello bash
 <span class="gp">&gt;</span> ls -n /tmp/foo
 <span class="go">-rw-rw---- 1 65534 65534 843 Sep 28 21:40 /tmp/foo</span>
 <span class="gp">&gt;</span> ls -l /tmp/foo
@@ -615,9 +615,9 @@ can lead to some strange-looking results, because only one of your GIDs can be
 mapped in any given container. All the rest become <code class="code docutils literal"><span class="pre">nogroup</span></code>:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> id
 <span class="go">uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),903(nerds),904(losers)</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- id
+<span class="gp">$</span> ch-run /data/hello -- id
 <span class="go">uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),65534(nogroup)</span>
-<span class="gp">$</span> ch-run --gid <span class="m">903</span> /data/<span class="nv">$USER</span>.hello -- id
+<span class="gp">$</span> ch-run --gid <span class="m">903</span> /data/hello -- id
 <span class="go">uid=901(reidpr) gid=903(nerds) groups=903(nerds),65534(nogroup)</span>
 </pre></div>
 </div>
@@ -627,7 +627,7 @@ access:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /tmp/primary /tmp/supplemental
 <span class="go">-rw-rw---- 1 sig reidpr 0 Sep 28 15:47 /tmp/primary</span>
 <span class="go">-rw-rw---- 1 sig nerds  0 Sep 28 15:48 /tmp/supplemental</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello bash
+<span class="gp">$</span> ch-run /data/hello bash
 <span class="gp">&gt;</span> cat /tmp/primary &gt; /dev/null
 <span class="gp">&gt;</span> cat /tmp/supplemental &gt; /dev/null
 </pre></div>
@@ -637,11 +637,11 @@ useless. Using an unmapped group or <code class="code docutils literal"><span cl
 group is a no-op because it&#8217;s mapped back to the host GID:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /tmp/bar
 <span class="go">rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- chgrp nerds /tmp/bar
+<span class="gp">$</span> ch-run /data/hello -- chgrp nerds /tmp/bar
 <span class="go">chgrp: changing group of &#39;/tmp/bar&#39;: Invalid argument</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- chgrp nogroup /tmp/bar
+<span class="gp">$</span> ch-run /data/hello -- chgrp nogroup /tmp/bar
 <span class="go">chgrp: changing group of &#39;/tmp/bar&#39;: Invalid argument</span>
-<span class="gp">$</span> ch-run --gid <span class="m">903</span> /data/<span class="nv">$USER</span>.hello -- chgrp nerds /tmp/bar
+<span class="gp">$</span> ch-run --gid <span class="m">903</span> /data/hello -- chgrp nerds /tmp/bar
 <span class="gp">$</span> ls -l /tmp/bar
 <span class="go">-rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar</span>
 </pre></div>
@@ -653,7 +653,7 @@ directories:</p>
 <span class="gp">$</span> chmod <span class="m">2770</span> /tmp/baz
 <span class="gp">$</span> ls -ld /tmp/baz
 <span class="go">drwxrws--- 2 reidpr nerds 40 Sep 28 16:19 /tmp/baz</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello -- touch /tmp/baz/foo
+<span class="gp">$</span> ch-run /data/hello -- touch /tmp/baz/foo
 <span class="gp">$</span> ls -l /tmp/baz/foo
 <span class="go">-rw-rw---- 1 reidpr nerds 0 Sep 28 16:21 /tmp/baz/foo</span>
 </pre></div>
@@ -787,7 +787,7 @@ build files, since they would be inappropriate inside the container.</p>
 </ol>
 <p>Once the image is built, we can see the results. (Install the image into
 <code class="code docutils literal"><span class="pre">/data</span></code> as outlined above, if you haven&#8217;t already.)</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.mpihello -- ls -lh /hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/mpihello -- ls -lh /hello
 <span class="go">total 32K</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr  157 Aug  5 22:37 Makefile</span>
@@ -815,7 +815,7 @@ demonstrate this.</p>
 <span class="go">-rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README</span>
 <span class="go">-rwxrwx--- 1 reidpr reidpr  441 Aug  5 16:37 test.sh</span>
-<span class="gp">$</span> ch-run -d . /data/<span class="nv">$USER</span>.mpihello -- sh -c <span class="s1">&#39;cd /mnt/0 &amp;&amp; make&#39;</span>
+<span class="gp">$</span> ch-run -d . /data/mpihello -- sh -c <span class="s1">&#39;cd /mnt/0 &amp;&amp; make&#39;</span>
 <span class="go">mpicc -std=gnu11 -Wall hello.c -o hello</span>
 <span class="gp">$</span> ls -l
 <span class="go">total 32</span>
@@ -860,9 +860,9 @@ directly on the host.</p>
 <span class="go">mpirun (Open MPI) 1.10.2</span>
 <span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026531837</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.mpihello -- mpirun --version
+<span class="gp">$</span> ch-run /data/mpihello -- mpirun --version
 <span class="go">mpirun (Open MPI) 1.10.4</span>
-<span class="gp">$</span> mpirun -np <span class="m">4</span> ch-run /data/<span class="nv">$USER</span>.mpihello /hello/hello
+<span class="gp">$</span> mpirun -np <span class="m">4</span> ch-run /data/mpihello /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026532267</span>
 <span class="go">2: init ok cn001, 4 ranks, userns 4026532269</span>
@@ -887,7 +887,7 @@ completely independent of the host for dependency configuration and
 installation; the disadvantage is that it cannot take advantage of any
 host-specific things that might e.g. improve performance.</p>
 <p>For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.mpihello -- mpirun -np <span class="m">4</span> /hello/hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">2: init ok cn001, 4 ranks, userns 4026532256</span>
@@ -919,7 +919,7 @@ directory to <code class="code docutils literal"><span class="pre">/mnt/0</span>
 <p>The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with <code class="code docutils literal"><span class="pre">-d</span></code>, that is used
 instead. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d /usr/local/etc /data/<span class="nv">$USER</span>.mpihello -- mpirun -np <span class="m">4</span> /hello/hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d /usr/local/etc /data/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">2: init ok cn001, 4 ranks, userns 4026532256</span>
@@ -978,7 +978,7 @@ one of those nodes. For example:</p>
 is in the home directory. To do so, we run one instance of <code class="code docutils literal"><span class="pre">ch-tar2dir</span></code>
 on each node:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span>
-<span class="gp">$</span> mpirun -pernode ch-tar2dir ./<span class="nv">$USER</span>.mpihello.tar.gz /tmp/mpihello
+<span class="gp">$</span> mpirun -pernode ch-tar2dir ./mpihello.tar.gz /tmp/mpihello
 <span class="go">App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs</span>
 <span class="go">creating new image /tmp/mpihello</span>
 <span class="go">creating new image /tmp/mpihello</span>
@@ -1027,7 +1027,7 @@ script that runs when resources are available, placing output into a file.</p>
 <span class="go">mpirun --version | egrep &#39;^mpirun&#39;</span>
 
 <span class="go">if [[ ! -e $IMAGE ]]; then</span>
-<span class="go">    mpirun -pernode ch-tar2dir ./$USER.$TAG.tar.gz $IMAGE &gt; /dev/null</span>
+<span class="go">    mpirun -pernode ch-tar2dir ./$TAG.tar.gz $IMAGE &gt; /dev/null</span>
 <span class="go">fi</span>
 
 <span class="go">printf &#39;container: &#39;</span>
