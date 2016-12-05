@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                1e7ae91
+                012e75f
               </div>
             
           
@@ -433,6 +433,8 @@ shared between different users. For example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="k">for</span> d in <span class="nv">$CH_TEST_PERMDIRS</span><span class="p">;</span> <span class="k">do</span> sudo ./make-perms-test <span class="nv">$d</span> <span class="nv">$USER</span> nobody<span class="p">;</span> <span class="k">done</span>
 </pre></div>
 </div>
+<p>To skip this test (e.g., if you don&#8217;t have root), set
+<code class="code docutils literal"><span class="pre">$CH_TEST_PERMDIRS</span></code> to <code class="code docutils literal"><span class="pre">skip</span></code>.</p>
 <p>These tests also have full and quick variants:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-run
 <span class="gp">$</span> make test-run-quick
