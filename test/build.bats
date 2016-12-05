@@ -9,27 +9,27 @@ load common
 
 @test 'docker-build' {
     cd chtest
-    docker-build -t $USER/chtest ../..
-    docker_ok $USER/chtest
+    docker-build -t chtest ../..
+    docker_ok chtest
 }
 
 @test 'docker-build --pull' {
     # this may get a new image, if edge has been updated
-    docker-build --pull -t $USER/alpineedge --file=./Dockerfile.alpineedge ..
+    docker-build --pull -t alpineedge --file=./Dockerfile.alpineedge ..
     # this very probably will not
-    docker-build --pull -t $USER/alpineedge --file=./Dockerfile.alpineedge ..
+    docker-build --pull -t alpineedge --file=./Dockerfile.alpineedge ..
 }
 
 @test 'ch-dockerfile2dir' {
     cd chtest
     # Dockerfile expected in $CWD
     ch-dockerfile2dir ../.. $IMGDIR
-    docker_ok $USER/chtest
+    docker_ok chtest
     tarball_ok $CHTEST_TARBALL
     image_ok $CHTEST_IMG
     # Same, overwrite
     ch-dockerfile2dir ../.. $IMGDIR
-    docker_ok $USER/chtest
+    docker_ok chtest
     tarball_ok $CHTEST_TARBALL
     image_ok $CHTEST_IMG
 }

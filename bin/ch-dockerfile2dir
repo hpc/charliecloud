@@ -20,6 +20,6 @@ TAG=$(basename $PWD)
 
 set -x
 
-docker-build -t $USER/$TAG "$CONTEXT"
-ch-docker2tar $USER/$TAG "$DEST"
-ch-tar2dir "$DEST/$USER.$TAG.tar.gz" "$DEST/$USER.$TAG"
+docker-build -t $TAG "$CONTEXT"
+ch-docker2tar $TAG "$DEST"
+ch-tar2dir "$DEST/$TAG.tar.gz" "$DEST/$TAG"

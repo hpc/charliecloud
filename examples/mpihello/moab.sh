@@ -14,7 +14,7 @@ printf 'host:      '
 mpirun --version | egrep '^mpirun'
 
 if [[ ! -e $IMAGE ]]; then
-    mpirun -pernode ch-tar2dir ./$USER.$TAG.tar.gz $IMAGE > /dev/null
+    mpirun -pernode ch-tar2dir ./$TAG.tar.gz $IMAGE > /dev/null
 fi
 
 printf 'container: '

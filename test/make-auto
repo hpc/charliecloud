@@ -24,13 +24,13 @@ for path in sys.argv[2:]:
       print("""\
 
 @test 'docker-build %(tag)s' {
-    docker-build -t $USER/%(tag)s --file=%(path)s ..
-    docker_ok $USER/%(tag)s
+    docker-build -t %(tag)s --file=%(path)s ..
+    docker_ok %(tag)s
 }
 
 @test 'ch-docker2tar %(tag)s' {
-    TARBALL=$TARDIR/$USER.%(tag)s.tar.gz
-    ch-docker2tar $USER/%(tag)s $TARDIR
+    TARBALL=$TARDIR/%(tag)s.tar.gz
+    ch-docker2tar %(tag)s $TARDIR
     tarball_ok $TARBALL
 }
 """ % locals())
@@ -39,8 +39,8 @@ for path in sys.argv[2:]:
       print("""\
 
 @test 'ch-tar2dir %(tag)s' {
-    TARBALL=$TARDIR/$USER.%(tag)s.tar.gz
-    IMG=$IMGDIR/$USER.%(tag)s
+    TARBALL=$TARDIR/%(tag)s.tar.gz
+    IMG=$IMGDIR/%(tag)s
     if [[ -d $IMG && -f $IMG/WEIRD_AL_YANKOVIC ]]; then
         # image exists, remove so we can test new unpack
         rm -Rf $IMG
@@ -52,7 +52,7 @@ for path in sys.argv[2:]:
 }
 
 @test 'ch-run %(tag)s /bin/true' {
-    IMG=$IMGDIR/$USER.%(tag)s
+    IMG=$IMGDIR/%(tag)s
     ch-run $IMG /bin/true
 }
 

@@ -75,7 +75,7 @@ directory, which in this case is the Charliecloud source code.
 
 ::
 
-  $ docker-build -t $USER/hello ../..
+  $ docker-build -t hello ../..
   Sending build context to Docker daemon 8.105 MB
   Step 1 : FROM debian:jessie
    ---> ddf73f48a05d
@@ -102,9 +102,9 @@ can be very useful.
 ::
 
   $ sudo docker images
-  REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
-  debian              jessie              1742affe03b5        10 days ago         125.1 MB
-  reidpr/hello        latest              1742affe03b5        10 days ago         139.7 MB
+  REPOSITORY  TAG     IMAGE ID      CREATED      SIZE
+  debian      jessie  1742affe03b5  10 days ago  125.1 MB
+  hello       latest  1742affe03b5  10 days ago  139.7 MB
   $ sudo docker push  # FIXME
 
 Running the image with Docker is not generally useful, because Docker's
@@ -113,7 +113,7 @@ can have value when debugging Charliecloud.
 
 ::
 
-  $ sudo docker run -it $USER/hello /bin/bash
+  $ sudo docker run -it hello /bin/bash
   # ls /
   bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
   boot  etc  lib   media  opt  root  sbin  sys  usr
@@ -129,8 +129,8 @@ arbitrary directory, here :code:`/data`.
 
 ::
 
-   $ ch-docker2tar $USER/hello /data
-   57M /data/reidpr.hello.tar.gz
+   $ ch-docker2tar hello /data
+   57M /data/hello.tar.gz
 
 Distribute tarball
 ------------------
@@ -152,8 +152,8 @@ the image directory if it already exists.
 
 ::
 
-   $ ch-tar2dir /data/$USER.hello.tar.gz /data/$USER.hello
-   /data/reidpr.hello unpacked ok
+   $ ch-tar2dir /data/hello.tar.gz /data/hello
+   /data/hello unpacked ok
 
 One potential gotcha is the tarball including special files such as devices.
 Because :code:`tar` is running unprivileged, these will not be unpacked, and
@@ -173,7 +173,7 @@ Activate image
 We are now ready to run programs inside a Charliecloud container. This is done
 with the :code:`ch-run` command::
 
-  $ ch-run /data/$USER.hello -- echo hello
+  $ ch-run /data/hello -- echo hello
   hello
 
 Symbolic links in :code:`/proc` tell us the current namespaces, which are
@@ -187,7 +187,7 @@ identified by long ID numbers::
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 pid -> pid:[4026531836]
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 user -> user:[4026531837]
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 uts -> uts:[4026531838]
-  $ ch-run /data/$USER.hello -- ls -l /proc/self/ns
+  $ ch-run /data/hello -- ls -l /proc/self/ns
   total 0
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 ipc -> ipc:[4026531839]
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 mnt -> mnt:[4026532257]
@@ -218,12 +218,12 @@ number::
 
   $ stat -L --format='%i' /proc/self/ns/user
   4026531837
-  $ ch-run /data/$USER.hello -- stat -L --format='%i' /proc/self/ns/user
+  $ ch-run /data/hello -- stat -L --format='%i' /proc/self/ns/user
   4026532256
 
 You can also run interactive commands, such as a shell::
 
-  $ ch-run /data/$USER.hello -- /bin/bash
+  $ ch-run /data/hello -- /bin/bash
   $ stat -L --format='%i' /proc/self/ns/user
   4026532256
   $ exit
@@ -234,13 +234,13 @@ sub-shell. For example::
 
   $ ls /usr/bin/oldfind
   ls: cannot access '/usr/bin/oldfind': No such file or directory
-  $ ch-run /data/$USER.hello -- ls /usr/bin/oldfind
+  $ ch-run /data/hello -- ls /usr/bin/oldfind
   /usr/bin/oldfind
   $ ls /usr/bin/oldf*
   ls: cannot access '/usr/bin/oldf*': No such file or directory
-  $ ch-run /data/$USER.hello -- ls /usr/bin/oldf*
+  $ ch-run /data/hello -- ls /usr/bin/oldf*
   ls: cannot access /usr/bin/oldf*: No such file or directory
-  $ ch-run /data/$USER.hello -- sh -c 'ls /usr/bin/oldf*'
+  $ ch-run /data/hello -- sh -c 'ls /usr/bin/oldf*'
   /usr/bin/oldfind
 
 You have now successfully run commands within a single-node Charliecloud
@@ -278,7 +278,7 @@ can be added using the :code:`-d` switch. These appear at :code:`/mnt/0`,
   $ echo hello > /data/foo0/bar
   $ mkdir /data/foo1
   $ echo world > /data/foo1/bar
-  $ ch-run -d /data/foo0 -d /data/foo1 /data/$USER.hello bash
+  $ ch-run -d /data/foo0 -d /data/foo1 /data/hello bash
   > ls /mnt
   0  1
   > cat /mnt/0/bar
@@ -300,7 +300,7 @@ container, even if :code:`ssh` was initiated from a container::
   4026531837
   $ ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026531837
-  $ ch-run /data/$USER.hello -- /bin/bash
+  $ ch-run /data/hello -- /bin/bash
   > stat -L --format='%i' /proc/self/ns/user
   4026532256
   > ssh localhost stat -L --format='%i' /proc/self/ns/user
@@ -310,7 +310,7 @@ There are several ways to SSH to a remote note and run commands inside a
 container. The simplest is to manually invoke :code:`ch-run` in the
 :code:`ssh` command::
 
-  $ ssh localhost ch-run /data/$USER.hello -- stat -L --format='%i' /proc/self/ns/user
+  $ ssh localhost ch-run /data/hello -- stat -L --format='%i' /proc/self/ns/user
   4026532256
 
 .. note::
@@ -325,7 +325,7 @@ Another is to use the :code:`ch-ssh` wrapper program, which adds
 :code:`ch-run` arguments from the environment variable :code:`CH_RUN_ARGS`,
 making it mostly a drop-in replacement for :code:`ssh`. For example::
 
-  $ export CH_RUN_ARGS="/data/$USER.hello --"
+  $ export CH_RUN_ARGS="/data/hello --"
   $ ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026532256
   $ ch-ssh -t localhost /bin/bash
@@ -335,8 +335,8 @@ making it mostly a drop-in replacement for :code:`ssh`. For example::
 :code:`ch-ssh` is available inside containers as well (in :code:`/usr/bin` via
 bind-mount)::
 
-  $ export CH_RUN_ARGS="/data/$USER.hello --"
-  $ ch-run /data/$USER.hello /bin/bash
+  $ export CH_RUN_ARGS="/data/hello --"
+  $ ch-run /data/hello /bin/bash
   > stat -L --format='%i' /proc/self/ns/user
   4026532256
   > ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
@@ -373,7 +373,7 @@ the container.) For example::
   901
   $ whoami
   reidpr
-  $ ch-run /data/$USER.hello bash
+  $ ch-run /data/hello bash
   > id -u
   901
   > whoami
@@ -385,7 +385,7 @@ Charliecloud does, lets you map any container UID to your host UID.
 you can tell Charliecloud you want to be root, and it will tell you that
 you're root::
 
-  $ ch-run --uid 0 /data/$USER.hello bash
+  $ ch-run --uid 0 /data/hello bash
   > id -u
   0
   > whoami
@@ -407,7 +407,7 @@ looks normal::
   drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/reidpr
   $ ls -ld ~
   drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 12:12 /home/reidpr
-  $ ch-run /data/$USER.hello bash
+  $ ch-run /data/hello bash
   > ls -nd ~
   drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld ~
@@ -415,7 +415,7 @@ looks normal::
 
 But if :code:`--uid` is provided, things can seem odd. For example::
 
-  $ ch-run --uid 0 /data/$USER.hello bash
+  $ ch-run --uid 0 /data/hello bash
   > ls -nd /home/reidpr
   drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld /home/reidpr
@@ -429,7 +429,7 @@ up as :code:`nobody`::
   -rw-rw---- 1 902 902 0 Sep 28 15:40 /tmp/foo
   $ ls -l /tmp/foo
   -rw-rw---- 1 sig sig 0 Sep 28 15:40 /tmp/foo
-  $ ch-run /data/$USER.hello bash
+  $ ch-run /data/hello bash
   > ls -n /tmp/foo
   -rw-rw---- 1 65534 65534 843 Sep 28 21:40 /tmp/foo
   > ls -l /tmp/foo
@@ -442,9 +442,9 @@ mapped in any given container. All the rest become :code:`nogroup`::
 
   $ id
   uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),903(nerds),904(losers)
-  $ ch-run /data/$USER.hello -- id
+  $ ch-run /data/hello -- id
   uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),65534(nogroup)
-  $ ch-run --gid 903 /data/$USER.hello -- id
+  $ ch-run --gid 903 /data/hello -- id
   uid=901(reidpr) gid=903(nerds) groups=903(nerds),65534(nogroup)
 
 However, this doesn't affect access. The container process retains the same
@@ -454,7 +454,7 @@ access::
   $ ls -l /tmp/primary /tmp/supplemental
   -rw-rw---- 1 sig reidpr 0 Sep 28 15:47 /tmp/primary
   -rw-rw---- 1 sig nerds  0 Sep 28 15:48 /tmp/supplemental
-  $ ch-run /data/$USER.hello bash
+  $ ch-run /data/hello bash
   > cat /tmp/primary > /dev/null
   > cat /tmp/supplemental > /dev/null
 
@@ -464,11 +464,11 @@ group is a no-op because it's mapped back to the host GID::
 
   $ ls -l /tmp/bar
   rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar
-  $ ch-run /data/$USER.hello -- chgrp nerds /tmp/bar
+  $ ch-run /data/hello -- chgrp nerds /tmp/bar
   chgrp: changing group of '/tmp/bar': Invalid argument
-  $ ch-run /data/$USER.hello -- chgrp nogroup /tmp/bar
+  $ ch-run /data/hello -- chgrp nogroup /tmp/bar
   chgrp: changing group of '/tmp/bar': Invalid argument
-  $ ch-run --gid 903 /data/$USER.hello -- chgrp nerds /tmp/bar
+  $ ch-run --gid 903 /data/hello -- chgrp nerds /tmp/bar
   $ ls -l /tmp/bar
   -rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar
 
@@ -480,7 +480,7 @@ directories::
   $ chmod 2770 /tmp/baz
   $ ls -ld /tmp/baz
   drwxrws--- 2 reidpr nerds 40 Sep 28 16:19 /tmp/baz
-  $ ch-run /data/$USER.hello -- touch /tmp/baz/foo
+  $ ch-run /data/hello -- touch /tmp/baz/foo
   $ ls -l /tmp/baz/foo
   -rw-rw---- 1 reidpr nerds 0 Sep 28 16:21 /tmp/baz/foo
 
@@ -600,7 +600,7 @@ Once the image is built, we can see the results. (Install the image into
 
 ::
 
-  $ ch-run /data/$USER.mpihello -- ls -lh /hello
+  $ ch-run /data/mpihello -- ls -lh /hello
   total 32K
   -rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 22:37 Makefile
@@ -632,7 +632,7 @@ demonstrate this.
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
   -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
   -rwxrwx--- 1 reidpr reidpr  441 Aug  5 16:37 test.sh
-  $ ch-run -d . /data/$USER.mpihello -- sh -c 'cd /mnt/0 && make'
+  $ ch-run -d . /data/mpihello -- sh -c 'cd /mnt/0 && make'
   mpicc -std=gnu11 -Wall hello.c -o hello
   $ ls -l
   total 32
@@ -684,9 +684,9 @@ For example, using :code:`mpirun` and the :code:`mpihello` example above::
   mpirun (Open MPI) 1.10.2
   $ stat -L --format='%i' /proc/self/ns/user
   4026531837
-  $ ch-run /data/$USER.mpihello -- mpirun --version
+  $ ch-run /data/mpihello -- mpirun --version
   mpirun (Open MPI) 1.10.4
-  $ mpirun -np 4 ch-run /data/$USER.mpihello /hello/hello
+  $ mpirun -np 4 ch-run /data/mpihello /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532267
   2: init ok cn001, 4 ranks, userns 4026532269
@@ -713,7 +713,7 @@ host-specific things that might e.g. improve performance.
 
 For example::
 
-  $ ch-run /data/$USER.mpihello -- mpirun -np 4 /hello/hello
+  $ ch-run /data/mpihello -- mpirun -np 4 /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532256
   2: init ok cn001, 4 ranks, userns 4026532256
@@ -746,7 +746,7 @@ The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with :code:`-d`, that is used
 instead. For example::
 
-  $ ch-run -d /usr/local/etc /data/$USER.mpihello -- mpirun -np 4 /hello/hello
+  $ ch-run -d /usr/local/etc /data/mpihello -- mpirun -np 4 /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532256
   2: init ok cn001, 4 ranks, userns 4026532256
@@ -811,7 +811,7 @@ is in the home directory. To do so, we run one instance of :code:`ch-tar2dir`
 on each node::
 
   $ cd
-  $ mpirun -pernode ch-tar2dir ./$USER.mpihello.tar.gz /tmp/mpihello
+  $ mpirun -pernode ch-tar2dir ./mpihello.tar.gz /tmp/mpihello
   App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs
   creating new image /tmp/mpihello
   creating new image /tmp/mpihello

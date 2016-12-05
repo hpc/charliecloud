@@ -56,8 +56,8 @@ mkdir -p $IMGDIR/bind2
 touch $IMGDIR/bind2/file2
 
 # Some test variables
-CHTEST_TARBALL=$IMGDIR/$USER.chtest.tar.gz
-CHTEST_IMG=$IMGDIR/$USER.chtest
+CHTEST_TARBALL=$IMGDIR/chtest.tar.gz
+CHTEST_IMG=$IMGDIR/chtest
 if [[ -n $GUEST_USER && -z $BATS_TEST_NAME ]]; then
     GUEST_UID=$(id -u $GUEST_USER)
     GUEST_GID=$(getent group $GUEST_GROUP | cut -d: -f3)
