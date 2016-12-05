@@ -44,6 +44,9 @@ EOF
 }
 
 @test 'permissions test directories exist' {
+    if [[ $CH_TEST_PERMDIRS = skip ]]; then
+        skip
+    fi
     for d in $CH_TEST_PERMDIRS; do
         d=$d/perms_test
         echo $d

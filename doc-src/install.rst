@@ -290,6 +290,9 @@ These directories must be created as root. For example::
 
   $ for d in $CH_TEST_PERMDIRS; do sudo ./make-perms-test $d $USER nobody; done
 
+To skip this test (e.g., if you don't have root), set
+:code:`$CH_TEST_PERMDIRS` to :code:`skip`.
+
 These tests also have full and quick variants::
 
   $ make test-run

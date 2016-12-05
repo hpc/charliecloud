@@ -8,13 +8,13 @@ setup () {
 
 @test 'user and group as specified' {
     g=$(ch-run -u $GUEST_UID -g $GUEST_GID $CHTEST_IMG -- id -un)
-    [[ $GUEST_USER == $g ]]
+    [[ $GUEST_USER = $g ]]
     g=$(ch-run -u $GUEST_UID -g $GUEST_GID $CHTEST_IMG -- id -u)
-    [[ $GUEST_UID == $g ]]
+    [[ $GUEST_UID = $g ]]
     g=$(ch-run -u $GUEST_UID -g $GUEST_GID $CHTEST_IMG -- id -gn)
-    [[ $GUEST_GROUP == $g ]]
+    [[ $GUEST_GROUP = $g ]]
     g=$(ch-run -u $GUEST_UID -g $GUEST_GID $CHTEST_IMG -- id -g)
-    [[ $GUEST_GID == $g ]]
+    [[ $GUEST_GID = $g ]]
 }
 
 @test 'chroot escape' {
@@ -28,6 +28,9 @@ setup () {
 }
 
 @test 'filesystem permission enforcement' {
+    if [[ $CH_TEST_PERMDIRS = skip ]]; then
+        skip
+    fi
     for d in $CH_TEST_PERMDIRS; do
         d="$d/perms_test/pass"
         echo "verifying: $d"
