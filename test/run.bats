@@ -13,19 +13,48 @@ sanity_permdirs
     ./pivot_root
 }
 
+@test 'userns id differs' {
+    host_userns=$(stat -Lc '%i' /proc/self/ns/user)
+    echo "host:  $host_userns"
+    echo "guest: $guest_userns"
+    [[ $host_userns -ne $guest_userns ]]
+}
+
+@test 'distro differs' {
+    # This is a catch-all and a bit of a guess. Even if it fails, however, we
+    # get an empty string, which is fine for the purposes of the test.
+    echo hello world
+    host_distro=$(  cat /etc/os-release /etc/*-release /etc/*_version \
+                  | egrep -m1 '[A-Za-z] [0-9]' \
+                  | sed -r 's/^(.*")?(.+)(")$/\2/')
+    echo "host: $host_distro"
+    guest_expected='Alpine Linux v3.4'
+    echo "guest expected: $guest_expected"
+    if [[ $host_distro = $guest_expected ]]; then
+        skip 'host matches expected guest distro'
+    fi
+    guest_distro=$(ch-run $CHTEST_IMG -- \
+                          cat /etc/os-release \
+                   | fgrep PRETTY_NAME \
+                   | sed -r 's/^(.*")?(.+)(")$/\2/')
+    echo "guest: $guest_distro"
+    [[ $guest_distro = $guest_expected ]]
+    [[ $guest_distro != $host_distro ]]
+}
+
 @test 'user and group match host' {
     host_uid=$(id -u)
     guest_uid=$(ch-run $CHTEST_IMG -- id -u)
-    [[ $host_uid == $guest_uid ]]
+    [[ $host_uid = $guest_uid ]]
     host_pgid=$(id -g)
     guest_pgid=$(ch-run $CHTEST_IMG -- id -g)
-    [[ $host_pgid == $guest_pgid ]]
+    [[ $host_pgid = $guest_pgid ]]
     host_username=$(id -un)
     guest_username=$(ch-run $CHTEST_IMG -- id -un)
-    [[ $host_username == $guest_username ]]
+    [[ $host_username = $guest_username ]]
     host_pgroup=$(id -gn)
     guest_pgroup=$(ch-run $CHTEST_IMG -- id -gn)
-    [[ $host_pgroup == $guest_pgroup ]]
+    [[ $host_pgroup = $guest_pgroup ]]
 }
 
 @test 'image mounted read-only' {
