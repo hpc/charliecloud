@@ -1,4 +1,6 @@
-DOCKERFILES := $(wildcard ./Dockerfile.*) $(wildcard ../examples/*/Dockerfile)
+export LC_ALL := C
+DOCKERFILES := $(sort $(wildcard ./Dockerfile.*)) \
+               $(sort $(wildcard ../examples/*/Dockerfile))
 
 .PHONY: test-all test-all-quick test-build permdirs test-run-quick clean
 

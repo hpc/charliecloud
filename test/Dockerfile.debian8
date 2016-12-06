@@ -1,5 +1,6 @@
 FROM debian:jessie
 
+ENV DEBIAN_FRONTEND noninteractive
+
 RUN    apt-get update \
-    && apt-get install -y bc \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y apt-utils
