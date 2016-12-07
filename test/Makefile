@@ -1,12 +1,15 @@
 export LC_ALL := C
 DOCKERFILES := $(sort $(wildcard ./Dockerfile.*)) \
                $(sort $(wildcard ../examples/*/Dockerfile))
+EXAMPLETESTS := $(sort $(wildcard ../examples/*/test.bats))
 
 .PHONY: test-all test-all-quick test-build permdirs test-run-quick clean
 
-test-all: test-build test-run
+test: test-build test-run
 
-test-all-quick: test-build-quick test-run-quick
+test-all: test test-test
+
+test-quick: test-build-quick test-run-quick
 
 test-build-quick: build.bats
 	./bats build.bats
@@ -28,6 +31,9 @@ test-run-quick: run.bats run_uidgid.bats
 
 test-run: test-run-quick run_auto.bats
 	./bats run_auto.bats
+
+test-test:
+	./bats $(EXAMPLETESTS)
 
 clean:
 	rm -f *_auto.bats
