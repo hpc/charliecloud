@@ -66,7 +66,7 @@ clean:
 	rm -rf ../doc/* ../doc/.buildinfo ../doc/.nojekyll
 
 html: $(SCRIPTHELPS)
-	$(SPHINXBUILD) -b html -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	$(SPHINXBUILD) -W -b html -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 	@echo
