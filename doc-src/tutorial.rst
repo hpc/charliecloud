@@ -519,6 +519,7 @@ package :code:`openssh-client`:
 
 .. literalinclude:: ../examples/hello/Dockerfile
    :language: docker
+   :lines: 1-5
 
 You can use distribution package managers such as :code:`apt-get`, as
 demonstrated above, or others, such as :code:`pip` for Python modules.
@@ -530,12 +531,17 @@ Third-party software compiled from source
 -----------------------------------------
 
 Under this method, one uses :code:`RUN` commands to fetch the desired software
-using :code:`curl` or :code:`wget`, compile it, and install. An example we'll
-revisit later, :code:`examples/mpihello`, uses this approach:
+using :code:`curl` or :code:`wget`, compile it, and install. Our example does
+this with two chained Dockerfiles. First, we build a basic Debian image
+(:code:`test/Dockerfile.debian8`):
 
-.. literalinclude:: ../examples/mpihello/Dockerfile
+.. literalinclude:: ../test/Dockerfile.debian8
    :language: docker
-   :lines: 1-22
+
+Then, we add OpenMPI with :code:`test/Dockerfile.debian8openmpi`:
+
+.. literalinclude:: ../test/Dockerfile.debian8openmpi
+   :language: docker
 
 So what is going on here?
 
@@ -550,8 +556,8 @@ So what is going on here?
 4. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
    appropriate parallel build.
 
-5. Clean up, in order to reduce the size of layers (:code:`make clean`) as
-   well as the resulting Charliecloud tarball (:code:`rm -Rf`).
+5. Clean up, in order to reduce the size of layers as well as the resulting
+   Charliecloud tarball (:code:`rm -Rf`).
 
 Finally, because it's a container image, you can be less tidy than you might
 be on a normal system. For example, the above downloads and builds in
@@ -569,12 +575,12 @@ code under active development.
 The general approach is the same as installing third-party software from
 source, but you use the :code:`COPY` instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
-the :code:`mpihello` Dockerfile continues beyond what is shown in the previous
-section:
+the :code:`mpihello` Dockerfile extends :code:`debian8openmpi` with this
+approach.
 
 .. literalinclude:: ../examples/mpihello/Dockerfile
    :language: docker
-   :lines: 25-
+   :lines: 1-6
 
 These Dockerfile instructions:
 
@@ -735,16 +741,17 @@ relevant directory and then pointing the application to it. There are a
 variety of approaches. Some application or frameworks take command-line
 parameters specifying the configuration path.
 
-The approach used in the :code:`mpihello` example is to set the configuration
-directory to :code:`/mnt/0`. From the Dockerfile:
+The approach used in our example is to set the configuration directory to
+:code:`/mnt/0`. This is done in :code:`test/Dockerfile.debian8openmpi` with
+the :code:`--sysconfdir` argument:
 
-.. literalinclude:: ../examples/mpihello/Dockerfile
+.. literalinclude:: ../test/Dockerfile.debian8openmpi
    :language: docker
-   :lines: 15-19
+   :lines: 23-29
 
 The effect is that the image contains a default MPI configuration, but if you
-specify a different configuration directory with :code:`-d`, that is used
-instead. For example::
+specify a different configuration directory with :code:`-d`, that is
+overmounted and used instead. For example::
 
   $ ch-run -d /usr/local/etc /data/mpihello -- mpirun -np 4 /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256

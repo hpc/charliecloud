@@ -222,7 +222,8 @@ Verify the Bats install with::
   Bats 0.4.0
 
 Just like for normal use, the Charliecloud test suite is split into build and
-run phases. These can be tested independently on different systems.
+run phases, and there is an additional phase that runs the examples' test
+suites. These phase can be tested independently on different systems.
 
 Testing is coordinated by :code:`make`. The test targets run one or more test
 suites. If any test suite has a failure, testing stops with an error message.
@@ -232,52 +233,49 @@ of free space. This is configured with an environment variable::
 
   $ export CH_TEST_WORKDIR=/data
 
-Build time
-----------
+Build
+-----
 
-In this phase, image building and associated functionality is tested::
+In this phase, image building and associated functionality is tested.
+
+::
 
   $ make test-build
-  ./bats build.bats
+  ./bats build.bats build_auto.bats
    ✓ executables --help
    ✓ docker-build
    ✓ docker-build --pull
    ✓ ch-dockerfile2dir
-
-  4 tests, 0 failures
-  ./bats build_auto.bats
-   ✓ docker-build debian8
-   ✓ ch-docker2tar debian8
-   ✓ docker-build python3
-   ✓ ch-docker2tar python3
+   ✓ docker-build alpine34
+   ✓ ch-docker2tar alpine34
   [...]
-   ✓ docker-build mpibench
-   ✓ ch-docker2tar mpibench
+   ✓ docker-build spark
+   ✓ ch-docker2tar spark
 
-  22 tests, 0 failures
+  28 tests, 0 failures
 
-Note that with an empty Docker cache, this test can be quite lengthy, on the
-order of 20--30 minutes for me, because it builds all the examples as well as
-several basic Dockerfiles for common Linux distributions and tools (in
-:code:`test`). With a full cache, it takes about 1 minute for me.
+Note that with an empty Docker cache, this test can be quite lengthy, half an
+hour or more, because it builds all the examples as well as several basic
+Dockerfiles for common Linux distributions and tools (in :code:`test`). With a
+full cache, expect more like 1--2 minutes.
 
-A faster test that does not include these is available as well::
+To iterate faster, you can cancel the test with Control-C once it gets into
+repetitive testing of different Dockerfiles.
 
-  $ make test-build-quick
-
-The easiest way to update the base Docker images used in this test is to simply
-delete all Docker images and let them be rebuilt on the next test.
+The easiest way to update the Docker images used in this test is to simply
+delete all Docker images and let them be rebuilt.
 
 ::
 
   $ sudo docker rm $(sudo docker ps -aq)
   $ sudo docker rmi -f $(sudo docker images -q)
 
-Run time
---------
+Run
+---
 
 The run tests require the contents of :code:`$CH_TEST_WORKDIR/tarballs`
-produced by a successful build test. Copy this directory to the run system.
+produced by a successful, complete build test. Copy this directory to the run
+system.
 
 Run-time testing requires an additional environment variable specifing the
 location(s) of specially constructed filesystem permissions test directories.
@@ -293,19 +291,34 @@ These directories must be created as root. For example::
 To skip this test (e.g., if you don't have root), set
 :code:`$CH_TEST_PERMDIRS` to :code:`skip`.
 
-These tests also have full and quick variants::
+To run the tests::
 
   $ make test-run
-  $ make test-run-quick
 
-Both
-----
+Test suites of examples
+-----------------------
 
-Charliecloud also provides :code:`test-all` and :code:`test-all-quick` targets
-that combine both phases. We recommend that a build box pass these tests as
-well so that it can be used to run containers for testing and development.
+Some of the examples include test suites of their own. This Charliecloud runs
+those test suites, using a SLURM allocation if one is available or a single
+node (localhost) if not.
 
-::
+These require that the run tests have been completed successfully.
 
-   $ make test-all
-   $ make test-all-quick
+Note that this test can take quite a while, and that single tests from
+the Charliecloud perspective include entire test suites from the example's
+perspective, so be patient.
+
+To run the tests::
+
+  $ make test-test
+
+Multiple phases
+---------------
+
+We also provide multiple-phase targets:
+
+ * :code:`test`: build and run phases
+ * :code:`test-all`: all three phases
+
+We recommend that a build box pass all phases so it can be used to run
+containers for testing and development.
