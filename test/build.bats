@@ -21,6 +21,7 @@ load common
 }
 
 @test 'ch-dockerfile2dir' {
+    CHTEST_TARBALL=$IMGDIR/chtest.tar.gz
     cd chtest
     # Dockerfile expected in $CWD
     ch-dockerfile2dir ../.. $IMGDIR

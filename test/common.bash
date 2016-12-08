@@ -59,7 +59,7 @@ touch $IMGDIR/bind2/file2
 # Some test variables
 EXAMPLE_TAG=$(basename $BATS_TEST_DIRNAME)
 EXAMPLE_IMG=$IMGDIR/$EXAMPLE_TAG
-CHTEST_TARBALL=$IMGDIR/chtest.tar.gz
+CHTEST_TARBALL=$TARDIR/chtest.tar.gz
 CHTEST_IMG=$IMGDIR/chtest
 if [[ -n $GUEST_USER && -z $BATS_TEST_NAME ]]; then
     GUEST_UID=$(id -u $GUEST_USER)
