@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0d7cdaa
+                f0b5bef
               </div>
             
           
@@ -116,10 +116,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration">2.5.3. Processes coordinated by container using host configuration</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#your-first-multi-node-job">2.6. Your first multi-node job</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#your-first-multi-node-jobs">2.6. Your first multi-node jobs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#interactive-mpi-hello-world">2.6.1. Interactive MPI hello world</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#non-interactive-mpi-hello-world">2.6.2. Non-interactive MPI hello world</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#non-interactive-apache-spark">2.6.3. Non-interactive Apache Spark</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interactive-apache-spark">2.6.3. Interactive Apache Spark</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#non-interactive-apache-spark">2.6.4. Non-interactive Apache Spark</a></li>
 </ul>
 </li>
 </ul>
@@ -210,10 +211,11 @@ the previous section, that the <code class="code docutils literal"><span class="
 <li><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration" id="id22">Processes coordinated by container using host configuration</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#your-first-multi-node-job" id="id23">Your first multi-node job</a><ul>
+<li><a class="reference internal" href="#your-first-multi-node-jobs" id="id23">Your first multi-node jobs</a><ul>
 <li><a class="reference internal" href="#interactive-mpi-hello-world" id="id24">Interactive MPI hello world</a></li>
 <li><a class="reference internal" href="#non-interactive-mpi-hello-world" id="id25">Non-interactive MPI hello world</a></li>
-<li><a class="reference internal" href="#non-interactive-apache-spark" id="id26">Non-interactive Apache Spark</a></li>
+<li><a class="reference internal" href="#interactive-apache-spark" id="id26">Interactive Apache Spark</a></li>
+<li><a class="reference internal" href="#non-interactive-apache-spark" id="id27">Non-interactive Apache Spark</a></li>
 </ul>
 </li>
 </ul>
@@ -243,9 +245,13 @@ this. Note that run-time functionality such as <code class="code docutils litera
 supported.</p>
 <p>We will use the following very simple Dockerfile:</p>
 <div class="highlight-docker"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:jessie</span>
+
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
     <span class="o">&amp;&amp;</span> apt-get install -y openssh-client <span class="se">\</span>
     <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
+
+COPY examples/hello hello
+
 <span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
 </div>
@@ -689,10 +695,10 @@ trustable image on Docker Hub you can use as a base?</p>
 The <code class="code docutils literal"><span class="pre">examples/hello</span></code> Dockerfile also seen above does this to install the
 package <code class="code docutils literal"><span class="pre">openssh-client</span></code>:</p>
 <div class="highlight-docker"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:jessie</span>
+
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
     <span class="o">&amp;&amp;</span> apt-get install -y openssh-client <span class="se">\</span>
     <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
-<span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
 </div>
 <p>You can use distribution package managers such as <code class="code docutils literal"><span class="pre">apt-get</span></code>, as
@@ -703,30 +709,48 @@ image, unless you add an HTTP cache, which is out of scope of this tutorial.</p>
 <div class="section" id="third-party-software-compiled-from-source">
 <h3><a class="toc-backref" href="#id16">2.4.2. Third-party software compiled from source</a><a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
 <p>Under this method, one uses <code class="code docutils literal"><span class="pre">RUN</span></code> commands to fetch the desired software
-using <code class="code docutils literal"><span class="pre">curl</span></code> or <code class="code docutils literal"><span class="pre">wget</span></code>, compile it, and install. An example we&#8217;ll
-revisit later, <code class="code docutils literal"><span class="pre">examples/mpihello</span></code>, uses this approach:</p>
+using <code class="code docutils literal"><span class="pre">curl</span></code> or <code class="code docutils literal"><span class="pre">wget</span></code>, compile it, and install. Our example does
+this with two chained Dockerfiles. First, we build a basic Debian image
+(<code class="code docutils literal"><span class="pre">test/Dockerfile.debian8</span></code>):</p>
 <div class="highlight-docker"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:jessie</span>
 
-<span class="c"># Install needed OS packages.</span>
+<span class="k">ENV</span><span class="s"> DEBIAN_FRONTEND noninteractive</span>
+
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> apt-get install -y less g++ gcc make openssh-client wget <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
+    <span class="o">&amp;&amp;</span> apt-get install -y apt-utils
+</pre></div>
+</div>
+<p>Then, we add OpenMPI with <code class="code docutils literal"><span class="pre">test/Dockerfile.debian8openmpi</span></code>:</p>
+<div class="highlight-docker"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian8</span>
+
+<span class="c"># OS packages needed to build OpenMPI.</span>
+<span class="k">RUN</span> apt-get install -y <span class="se">\</span>
+    file <span class="se">\</span>
+    flex <span class="se">\</span>
+    g++ <span class="se">\</span>
+    gcc <span class="se">\</span>
+    gfortran <span class="se">\</span>
+    less <span class="se">\</span>
+    libdb5.3-dev <span class="se">\</span>
+    make <span class="se">\</span>
+    wget
 
 <span class="c"># Compile OpenMPI. We can&#39;t use the Debian package because</span>
 <span class="c"># --disable-pty-support is needed to avoid &quot;pipe function call failed when</span>
 <span class="c"># setting up I/O forwarding subsystem&quot;.</span>
 <span class="k">ENV</span><span class="s"> MPI_URL https://www.open-mpi.org/software/ompi/v1.10/downloads</span>
 <span class="k">ENV</span><span class="s"> MPI_VERSION 1.10.4</span>
+<span class="k">WORKDIR</span><span class="s"> /usr/src</span>
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> ./configure --prefix<span class="o">=</span>/usr <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+       <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+       ./configure --prefix<span class="o">=</span>/usr <span class="se">\</span>
                    --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
                    --disable-pty-support <span class="se">\</span>
-                   --disable-mpi-cxx <span class="se">\</span>
-                   --disable-mpi-fortran <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> make clean
+    <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
+<span class="k">RUN</span> rm -Rf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
 </pre></div>
 </div>
 <p>So what is going on here?</p>
@@ -738,8 +762,8 @@ URL and MPI version easier, as well as the explanation of why we&#8217;re not
 using <code class="code docutils literal"><span class="pre">apt-get</span></code>, given that OpenMPI 1.10 is included in Debian.</li>
 <li>Build and install OpenMPI. Note the <code class="code docutils literal"><span class="pre">getconf</span></code> trick to guess at an
 appropriate parallel build.</li>
-<li>Clean up, in order to reduce the size of layers (<code class="code docutils literal"><span class="pre">make</span> <span class="pre">clean</span></code>) as
-well as the resulting Charliecloud tarball (<code class="code docutils literal"><span class="pre">rm</span> <span class="pre">-Rf</span></code>).</li>
+<li>Clean up, in order to reduce the size of layers as well as the resulting
+Charliecloud tarball (<code class="code docutils literal"><span class="pre">rm</span> <span class="pre">-Rf</span></code>).</li>
 </ol>
 <p>Finally, because it&#8217;s a container image, you can be less tidy than you might
 be on a normal system. For example, the above downloads and builds in
@@ -755,15 +779,14 @@ code under active development.</p>
 <p>The general approach is the same as installing third-party software from
 source, but you use the <code class="code docutils literal"><span class="pre">COPY</span></code> instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
-the <code class="code docutils literal"><span class="pre">mpihello</span></code> Dockerfile continues beyond what is shown in the previous
-section:</p>
-<div class="highlight-docker"><div class="highlight"><pre><span></span><span class="c"># This example.</span>
+the <code class="code docutils literal"><span class="pre">mpihello</span></code> Dockerfile extends <code class="code docutils literal"><span class="pre">debian8openmpi</span></code> with this
+approach.</p>
+<div class="highlight-docker"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian8openmpi</span>
+
+<span class="c"># This example</span>
 COPY examples/mpihello /hello
 <span class="k">WORKDIR</span><span class="s"> /hello</span>
 <span class="k">RUN</span> make clean <span class="o">&amp;&amp;</span> make
-
-<span class="c"># We want ch-ssh</span>
-<span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
 </div>
 <p>These Dockerfile instructions:</p>
@@ -907,18 +930,21 @@ configuration into the image, because that would reduce its portability.</p>
 relevant directory and then pointing the application to it. There are a
 variety of approaches. Some application or frameworks take command-line
 parameters specifying the configuration path.</p>
-<p>The approach used in the <code class="code docutils literal"><span class="pre">mpihello</span></code> example is to set the configuration
-directory to <code class="code docutils literal"><span class="pre">/mnt/0</span></code>. From the Dockerfile:</p>
-<div class="highlight-docker"><div class="highlight"><pre><span></span>RUN    cd openmpi-${MPI_VERSION} \
-    &amp;&amp; ./configure --prefix=/usr \
-                   --sysconfdir=/mnt/0 \
-                   --disable-pty-support \
-                   --disable-mpi-cxx \
+<p>The approach used in our example is to set the configuration directory to
+<code class="code docutils literal"><span class="pre">/mnt/0</span></code>. This is done in <code class="code docutils literal"><span class="pre">test/Dockerfile.debian8openmpi</span></code> with
+the <code class="code docutils literal"><span class="pre">--sysconfdir</span></code> argument:</p>
+<div class="highlight-docker"><div class="highlight"><pre><span></span><span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+       <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+       ./configure --prefix<span class="o">=</span>/usr <span class="se">\</span>
+                   --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
+                   --disable-pty-support <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
 </pre></div>
 </div>
 <p>The effect is that the image contains a default MPI configuration, but if you
-specify a different configuration directory with <code class="code docutils literal"><span class="pre">-d</span></code>, that is used
-instead. For example:</p>
+specify a different configuration directory with <code class="code docutils literal"><span class="pre">-d</span></code>, that is
+overmounted and used instead. For example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d /usr/local/etc /data/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
@@ -933,8 +959,8 @@ resolved when the appropriate host directory is bind-mounted into
 <code class="code docutils literal"><span class="pre">/mnt</span></code>.</p>
 </div>
 </div>
-<div class="section" id="your-first-multi-node-job">
-<h2><a class="toc-backref" href="#id23">2.6. Your first multi-node job</a><a class="headerlink" href="#your-first-multi-node-job" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="your-first-multi-node-jobs">
+<h2><a class="toc-backref" href="#id23">2.6. Your first multi-node jobs</a><a class="headerlink" href="#your-first-multi-node-jobs" title="Permalink to this headline">¶</a></h2>
 <p>This section assumes that you are using a MOAB/SLURM cluster with a working
 OpenMPI 1.10.<em>x</em> installation and some type of node-local storage. A
 <code class="code docutils literal"><span class="pre">tmpfs</span></code> will suffice, and we use <code class="code docutils literal"><span class="pre">/tmp</span></code> for this tutorial, but
@@ -944,9 +970,9 @@ it&#8217;s best to use something else to avoid confusion with circular mounts
 <ol class="arabic simple">
 <li>The MPI hello world example above, run interactively, with the host
 coordinating.</li>
-<li>Same, run non-interactively.</li>
-<li>An Apache Spark example run non-interactively, with in-container
-coordination.</li>
+<li>Same, non-interactive.</li>
+<li>An Apache Spark example, run interactively.</li>
+<li>Same, non-interactive.</li>
 </ol>
 <p>We think that container-coordinated MPI jobs will also work, but we haven&#8217;t
 worked out how to do this yet. (See issue #5.)</p>
@@ -1038,7 +1064,7 @@ script that runs when resources are available, placing output into a file.</p>
 </div>
 <p>Note that this script both unpacks the image and runs it.</p>
 <p>Submit it with something like:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> msub -l <span class="nv">nodes</span><span class="o">=</span><span class="m">4</span> -q tossdev ~/charliecloud/examples/mpihello/moab.sh
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> msub -l <span class="nv">nodes</span><span class="o">=</span><span class="m">4</span> ~/charliecloud/examples/mpihello/moab.sh
 <span class="go">86753</span>
 </pre></div>
 </div>
@@ -1060,9 +1086,161 @@ script that runs when resources are available, placing output into a file.</p>
 </div>
 <p>Success!</p>
 </div>
+<div class="section" id="interactive-apache-spark">
+<h3><a class="toc-backref" href="#id26">2.6.3. Interactive Apache Spark</a><a class="headerlink" href="#interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<p>This example is in <code class="code docutils literal"><span class="pre">examples/spark</span></code>. Build a tarball and upload it to
+your cluster.</p>
+<p>Once you have an interactive job, unpack the tarball.</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -pernode ch-tar2dir ./<span class="nv">$USER</span>.spark.tar.gz /tmp/spark
+</pre></div>
+</div>
+<p>We need to first create a basic configuration directory for Spark, as the
+defaults in the Dockerfile are insufficient. (For real jobs, you&#8217;ll want to
+also configure performance parameters such as memory use; see <a class="reference external" href="http://spark.apache.org/docs/latest/configuration.html">the
+documentation</a>.)
+First:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir ~/sparkconf
+</pre></div>
+</div>
+<p>Next, we set some environment variables. In the directory above, create a file
+containing something like the following. Edit to match your configuration; in
+particular, use local disks instead of <code class="code docutils literal"><span class="pre">/tmp</span></code> if you have them.
+<code class="code docutils literal"><span class="pre">spark-env.sh</span></code>:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">SPARK_LOCAL_DIRS=/tmp</span>
+<span class="go">SPARK_LOG_DIR=/home/$USER/sparklog</span>
+<span class="go">SPARK_WORKER_DIR=/tmp</span>
+<span class="go">SPARK_LOCAL_IP=$(  ip -o -f inet addr show dev eth0 \</span>
+<span class="go">                 | sed -r &#39;s/^.+inet ([0-9.]+).+/\1/&#39;)</span>
+<span class="go">SPARK_MASTER_HOST=$SPARK_LOCAL_IP</span>
+</pre></div>
+</div>
+<p>This is a shell script, so you can include code to set variables, as we do to
+select the IP address of the right interface.</p>
+<p>Other configuration variables are called &#8220;Spark properties&#8221; and go in a
+different file. Change the secret to something known only to you.
+<code class="code docutils literal"><span class="pre">spark-defaults.conf</span></code>:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">spark.authenticate true</span>
+<span class="go">spark.authenticate.secret CHANGEME</span>
+</pre></div>
+</div>
+<p>We can now start the Spark master:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /tmp/spark -- /spark/sbin/start-master.sh
+</pre></div>
+</div>
+<p>If you can see the node with a web browser, browse to
+<code class="code docutils literal"><span class="pre">http://$SPARK_LOCAL_IP:8080</span></code> for the Spark master web interface.
+Because this capability varies, the tutorial does not depend on it, but it can
+be informative. Refresh after each key step below.</p>
+<p>The Spark workers need to know how to reach the master. This is via a URL; you
+can construct it from your knowledge of <code class="code docutils literal"><span class="pre">$SPARK_LOCAL_IP</span></code>, or consult
+the web interface. For example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nv">MASTER_URL</span><span class="o">=</span>spark://10.8.8.1:7077
+</pre></div>
+</div>
+<p>Next, start one worker on each compute node. This is a little ugly;
+<code class="code docutils literal"><span class="pre">mpirun</span></code> will wait until everything is finished before returning, but we
+want to start the workers in the background, so we add <code class="code docutils literal"><span class="pre">&amp;</span></code> and introduce
+a race condition. (<code class="code docutils literal"><span class="pre">srun</span></code> has different, even less helpful behavior: it
+kills the worker as soon as it goes into the background.)</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -pernode ch-run -d ~/sparkconf /tmp/spark -- <span class="se">\</span>
+<span class="go">  /spark/sbin/start-slave.sh $MASTER_URL &amp;</span>
+</pre></div>
+</div>
+<p>We can now start an interactive shell to do some Spark computing:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /tmp/spark -- /spark/bin/pyspark --master <span class="nv">$MASTER_URL</span>
+</pre></div>
+</div>
+<p>Let&#8217;s use this shell to estimate 𝜋 (this is adapted from one of the Spark
+<a class="reference external" href="http://spark.apache.org/examples.html">examples</a>):</p>
+<div class="highlight-pycon"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">operator</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">random</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+<span class="gp">... </span>   <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+<span class="gp">... </span>   <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">x</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">SAMPLE_CT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">2e8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ct</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SAMPLE_CT</span><span class="p">))</span> \
+<span class="gp">... </span>       <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> \
+<span class="gp">... </span>       <span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mf">4.0</span><span class="o">*</span><span class="n">ct</span><span class="o">/</span><span class="n">SAMPLE_CT</span>
+<span class="go">3.14109824</span>
+</pre></div>
+</div>
+<p>(Type Control-D to exit.)</p>
+<p>We can also submit jobs to the Spark cluster. This one runs the same example
+as included with the Spark source code. (The voluminous logging output is
+omitted.)</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /tmp/spark -- <span class="se">\</span>
+<span class="go">  /spark/bin/spark-submit --master $MASTER_URL \</span>
+<span class="go">  /spark/examples/src/main/python/pi.py 1024</span>
+<span class="go">[...]</span>
+<span class="go">Pi is roughly 3.141211</span>
+<span class="go">[...]</span>
+</pre></div>
+</div>
+<p>Finally, we shut down the Spark cluster. This isn&#8217;t strictly necessary, as
+SLURM will kill everything when exit the allocation, but it&#8217;s good hygiene:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -pernode ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-slave.sh
+<span class="gp">$</span> ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-master.sh
+</pre></div>
+</div>
+<p>Success! Next, we&#8217;ll run a similar job non-interactively.</p>
+</div>
 <div class="section" id="non-interactive-apache-spark">
-<h3><a class="toc-backref" href="#id26">2.6.3. Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
-<p>TBD.</p>
+<h3><a class="toc-backref" href="#id27">2.6.4. Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<p>We&#8217;ll re-use much of the above, including the configuration we created, to run
+the same computation non-interactively. Here is the Moab script:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">#</span>!/bin/bash
+<span class="gp">#</span> MSUB -l <span class="nv">walltime</span><span class="o">=</span>0:10:00
+
+<span class="gp">#</span> Run in directory where the tarball is. Output will go to same place.
+<span class="gp">#</span> Needs Spark configuration in ~/sparkconf.
+
+<span class="go">set -e</span>
+
+<span class="go">TAG=spark</span>
+<span class="go">IMAGE=/tmp/$TAG</span>
+
+<span class="go">mpirun -pernode ch-tar2dir ./$USER.$TAG.tar.gz $IMAGE &gt; /dev/null</span>
+
+<span class="gp">#</span> start Spark cluster
+<span class="go">MASTER_IP=$(sh -c &#39;source ~/sparkconf/spark-env.sh &amp;&amp; echo $SPARK_LOCAL_IP&#39;)</span>
+<span class="gp">MASTER_URL=&quot;spark://$</span>MASTER_IP:7077<span class="s2">&quot;</span>
+<span class="go">echo &quot;master: $MASTER_URL&quot;</span>
+<span class="go">ch-run -d ~/sparkconf /tmp/spark -- /spark/sbin/start-master.sh</span>
+<span class="go">mpirun -pernode ch-run -d ~/sparkconf /tmp/spark -- \</span>
+<span class="go">  /spark/sbin/start-slave.sh $MASTER_URL &amp;</span>
+<span class="go">sleep 10  # wait for workers to boot</span>
+
+<span class="gp">#</span> run our job
+<span class="go">ch-run -d ~/sparkconf /tmp/spark -- \</span>
+<span class="go">  /spark/bin/spark-submit --master $MASTER_URL \</span>
+<span class="go">  /spark/examples/src/main/python/pi.py 1024</span>
+
+<span class="gp">#</span> shut down Spark cluster
+<span class="go">mpirun -pernode ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-slave.sh</span>
+<span class="go">ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-master.sh</span>
+<span class="go">sleep 2   # wait for things to finish exiting</span>
+</pre></div>
+</div>
+<p>There are four basic steps:</p>
+<ol class="arabic simple">
+<li>Unpack the image.</li>
+<li>Start a Spark cluster.</li>
+<li>Run our computation.</li>
+<li>Stop the Spark cluster.</li>
+</ol>
+<p>Submit like so:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> msub -l <span class="nv">nodes</span><span class="o">=</span><span class="m">4</span> ~/charliecloud/examples/spark/moab.sh
+</pre></div>
+</div>
+<p>Output:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> fgrep <span class="s1">&#39;Pi is&#39;</span> slurm-86754.out
+<span class="go">Pi is roughly 3.141393</span>
+</pre></div>
+</div>
+<p>Success! (to four significant digits)</p>
 </div>
 </div>
 </div>
