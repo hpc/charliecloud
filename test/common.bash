@@ -44,17 +44,9 @@ sanity
 CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/../bin" && pwd)"
 PATH=$CH_BIN:$PATH
 
-# Make separate directories for tarballs and images
+# Separate directories for tarballs and images
 TARDIR=$CH_TEST_WORKDIR/tarballs
-IMGDIR=$CH_TEST_WORKDIR/images
-mkdir -p $TARDIR
-mkdir -p $IMGDIR
-
-# Test directories to bind-mount
-mkdir -p $IMGDIR/bind1
-touch $IMGDIR/bind1/file1
-mkdir -p $IMGDIR/bind2
-touch $IMGDIR/bind2/file2
+IMGDIR=$CH_TEST_WORKDIR/images.tmp
 
 # Some test variables
 EXAMPLE_TAG=$(basename $BATS_TEST_DIRNAME)

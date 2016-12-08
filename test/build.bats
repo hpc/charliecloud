@@ -1,5 +1,9 @@
 load common
 
+@test 'create tarball directory if needed' {
+    mkdir -p $TARDIR
+}
+
 @test 'executables --help' {
     docker-build --help
     ch-docker2tar --help
@@ -21,7 +25,9 @@ load common
 }
 
 @test 'ch-dockerfile2dir' {
-    CHTEST_TARBALL=$IMGDIR/chtest.tar.gz
+    IMGDIR=$TARDIR
+    CHTEST_IMG=$IMGDIR/chtest
+    [[ ! -e $CHTEST_IMG ]]
     cd chtest
     # Dockerfile expected in $CWD
     ch-dockerfile2dir ../.. $IMGDIR
@@ -33,4 +39,6 @@ load common
     docker_ok chtest
     tarball_ok $CHTEST_TARBALL
     image_ok $CHTEST_IMG
+    # Remove since we don't want it hanging around later
+    rm -Rf $CHTEST_TARBALL $CHTEST_IMG
 }

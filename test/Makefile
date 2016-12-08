@@ -12,7 +12,7 @@ test-all: test test-test
 
 .PHONY: test-build
 test-build: build_auto.bats
-	./bats build.bats build_auto.bats
+	./bats build.bats build_auto.bats build_post.bats
 
 .PHONY: test-run
 test-run: run_auto.bats
