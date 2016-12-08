@@ -41,7 +41,8 @@ tarball_ok () {
 sanity
 
 # Set path to the right Charliecloud.
-PATH="$BATS_TEST_DIRNAME/../bin":$PATH
+CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/../bin" && pwd)"
+PATH=$CH_BIN:$PATH
 
 # Make separate directories for tarballs and images
 TARDIR=$CH_TEST_WORKDIR/tarballs

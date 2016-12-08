@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
+# If environment variable CH_TEST_ABBREV is set, then avoid Dockerfiles that
+# seem lengthy. This supports job time limits in Travis CI. See source code
+# below for the heuristic.
+
 from __future__ import print_function
 
+import os
 import os.path
 import sys
 
@@ -19,6 +24,11 @@ for path in sys.argv[2:]:
       tag = os.path.basename(d)         # enclosing directory
    else:
       tag = os.path.splitext(f)[1][1:]  # extension
+
+   if ("CH_TEST_ABBREV" in os.environ
+       and "mpi" in tag):
+      # test seems lengthy, skip it
+      continue
 
    if (mode == "build"):
       print("""\

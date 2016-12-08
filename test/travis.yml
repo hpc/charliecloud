@@ -1,0 +1,26 @@
+dist: trusty
+sudo: required
+language: c
+compiler: gcc
+
+install:
+  - pip -q install sphinx-rtd-theme
+
+before_script:
+  - export CH_TEST_WORKDIR=/var/tmp
+  - export CH_TEST_PERMDIRS='/var/tmp /run'
+  - export CH_TEST_ABBREV=yes
+  - df -h
+  - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
+
+script:
+  - (cd bin && make)
+  - (cd doc-src && make)
+  - (cd examples/syscalls && make && ./pivot_root)
+  - cd test
+  - make test-build
+  - make test-run
+  - make test-test
+
+after_script:
+  - df -h

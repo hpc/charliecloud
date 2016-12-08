@@ -2,8 +2,12 @@
 
 import sys
 
+# other candidates:
+#   /sys/devices/cpu/rdpmc (not in Travis)
+#   /sys/kernel/slab/*/cpu_partial (how to make sure * is stable?)
+
 problem_ct = 0
-for f in ("/dev/mem", "/proc/kcore", "/sys/devices/cpu/rdpmc"):
+for f in ("/dev/mem", "/proc/kcore", "/sys/kernel/mm/page_idle/bitmap"):
    try:
       open(f, "rb").read(1)
       print("RISK\t%s: read allowed" % f)

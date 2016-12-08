@@ -64,7 +64,7 @@ yr_group = grp.getgrgid(yr_gid).gr_name
 my_group2 = None
 my_gid2 = None
 for g in grp.getgrall():
-   if (my_user in g.gr_mem):
+   if (my_user in g.gr_mem and g.gr_name != my_group):
       my_group2 = g.gr_name
       my_gid2 = g.gr_gid
       break
