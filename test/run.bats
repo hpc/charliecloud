@@ -9,6 +9,7 @@ load common
         for i in $IMGDIR/*; do
             if [[ -d $i && -f $i/WEIRD_AL_YANKOVIC ]]; then
                 echo "found image $i; removing"
+                rm -Rf $i
             else
                 echo "found non-image $i; aborting"
                 false
@@ -36,11 +37,18 @@ load common
     ./pivot_root
 }
 
+@test 'unpack chtest image' {
+    ch-tar2dir $CHTEST_TARBALL $CHTEST_IMG
+}
+
 @test 'userns id differs' {
     host_userns=$(stat -Lc '%i' /proc/self/ns/user)
     echo "host:  $host_userns"
+    guest_userns=$(ch-run $CHTEST_IMG -- stat -Lc '%i' /proc/self/ns/user)
     echo "guest: $guest_userns"
-    [[ $host_userns -ne $guest_userns ]]
+    [[    -n $host_userns
+       && -n $guest_userns
+       && $host_userns -ne $guest_userns ]]
 }
 
 @test 'distro differs' {

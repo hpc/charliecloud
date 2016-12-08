@@ -21,6 +21,3 @@ script:
   - make test-build
   - make test-run
   - make test-test
-
-after_script:
-  - df -h
