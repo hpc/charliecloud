@@ -10,6 +10,7 @@ before_script:
   - export CH_TEST_WORKDIR=/var/tmp
   - export CH_TEST_PERMDIRS='/var/tmp /run'
   - export CH_TEST_ABBREV=yes
+  - unset JAVA_HOME  # otherwise Spark tries to use host's Java
   - df -h
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
 

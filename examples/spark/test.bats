@@ -42,6 +42,8 @@ EOF
     rm -Rf $SPARK_DIR/log
     # start the master
     ch-run -d $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/start-master.sh
+    sleep 2  # race condition here somehow?
+    cat $SPARK_DIR/log/*master.Master*.out
     fgrep -q 'New state: ALIVE' $SPARK_DIR/log/*master.Master*.out
     # start the workers
     $MPIRUN ch-run -d $SPARK_CONFIG $SPARK_IMG -- \
@@ -52,7 +54,7 @@ EOF
 @test "$EXAMPLE_TAG/pi" {
     run ch-run -d $SPARK_CONFIG $SPARK_IMG -- \
                /spark/bin/spark-submit --master $MASTER_URL \
-               /spark/examples/src/main/python/pi.py 64
+               /spark/examples/src/main/python/pi.py 128
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output =~ 'Pi is roughly 3.14' ]]
