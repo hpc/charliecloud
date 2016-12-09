@@ -46,7 +46,7 @@ PATH=$CH_BIN:$PATH
 
 # Separate directories for tarballs and images
 TARDIR=$CH_TEST_WORKDIR/tarballs
-IMGDIR=$CH_TEST_WORKDIR/images.tmp
+IMGDIR=$CH_TEST_WORKDIR/images
 
 # Some test variables
 EXAMPLE_TAG=$(basename $BATS_TEST_DIRNAME)
