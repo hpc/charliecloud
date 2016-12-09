@@ -94,7 +94,8 @@ set -e
 test -w /WEIRD_AL_YANKOVIC
 dd if=/dev/zero bs=1 count=1 of=/WEIRD_AL_YANKOVIC
 EOF
-    [[ $status > 0 ]]
+    echo "$output"
+    [[ $status -ne 0 ]]
     [[ $output =~ 'Read-only file system' ]]
 }
 
