@@ -233,6 +233,12 @@ of free space. This is configured with an environment variable::
 
   $ export CH_TEST_WORKDIR=/data
 
+.. note::
+
+   Bats will wait until all descendant processes finish before exiting, so if
+   you get into a failure mode where a test suite doesn't clean up all its
+   processes, it will hang.
+
 Build
 -----
 
