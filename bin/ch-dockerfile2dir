@@ -23,3 +23,4 @@ set -x
 docker-build -t $TAG "$CONTEXT"
 ch-docker2tar $TAG "$DEST"
 ch-tar2dir "$DEST/$TAG.tar.gz" "$DEST/$TAG"
+rm "$DEST/$TAG.tar.gz"
