@@ -25,20 +25,20 @@ load common
 }
 
 @test 'ch-dockerfile2dir' {
-    IMGDIR=$TARDIR
-    CHTEST_IMG=$IMGDIR/chtest
-    [[ ! -e $CHTEST_IMG ]]
+    # This test unpacks into $TARDIR so we don't put anything in $IMGDIR at
+    # build time. It removes the image on completion.
+    TAR=$CHTEST_TARBALL
+    IMG=$TARDIR/chtest
+    [[ ! -e $IMG ]]
     cd chtest
     # Dockerfile expected in $CWD
-    ch-dockerfile2dir ../.. $IMGDIR
+    ch-dockerfile2dir ../.. $TARDIR
     docker_ok chtest
-    tarball_ok $CHTEST_TARBALL
-    image_ok $CHTEST_IMG
+    image_ok $IMG
     # Same, overwrite
-    ch-dockerfile2dir ../.. $IMGDIR
+    ch-dockerfile2dir ../.. $TARDIR
     docker_ok chtest
-    tarball_ok $CHTEST_TARBALL
-    image_ok $CHTEST_IMG
+    image_ok $IMG
     # Remove since we don't want it hanging around later
-    rm -Rf $CHTEST_TARBALL $CHTEST_IMG
+    rm -Rf $TAR $IMG
 }

@@ -27,12 +27,16 @@ docker_ok () {
 }
 
 image_ok () {
+    ls -ld $1 $1/WEIRD_AL_YANKOVIC || true
     test -d $1
-    test -f $1/WEIRD_AL_YANKOVIC
-    [[ -n $(du -s -t 4M $1) ]]  # image is non-trivial size?
+    ls -ld $1 || true
+    byte_ct=$(du -s -B1 $1 | cut -f1)
+    echo "$byte_ct"
+    [[ $byte_ct -ge 4194304 ]]  # image is at least 4MB
 }
 
 tarball_ok () {
+    ls -ld $1 || true
     test -f $1
     test -s $1
 }
