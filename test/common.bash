@@ -41,6 +41,9 @@ tarball_ok () {
     test -s $1
 }
 
+# Predictable sorting and collation
+export LC_ALL=C
+
 # Do we have what we need?
 sanity
 
