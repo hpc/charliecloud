@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# If environment variable CH_TEST_ABBREV is set, then avoid Dockerfiles that
+# If environment variable CH_TEST_OMIT is set, then avoid Dockerfiles that
 # seem lengthy. This supports job time limits in Travis CI. See source code
 # below for the heuristic.
 
@@ -25,10 +25,11 @@ for path in sys.argv[2:]:
    else:
       tag = os.path.splitext(f)[1][1:]  # extension
 
-   if ("CH_TEST_ABBREV" in os.environ
-       and "mpi" in tag):
-      # test seems lengthy, skip it
-      continue
+   try:
+      if (os.environ["CH_TEST_OMIT"] in tag):
+         continue
+   except KeyError:
+      pass
 
    if (mode == "build"):
       print("""\
