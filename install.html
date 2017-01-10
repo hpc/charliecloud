@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                f0b5bef
+                b3d1e95
               </div>
             
           
@@ -330,16 +330,38 @@ directories.</p>
 </div>
 <div class="section" id="configuring-docker-for-a-proxy">
 <h3><a class="toc-backref" href="#id9">1.4.2. Configuring Docker for a proxy</a><a class="headerlink" href="#configuring-docker-for-a-proxy" title="Permalink to this headline">¶</a></h3>
-<p>By default, Docker does not work if you have a proxy. The symptom is this:</p>
+<p>By default, Docker does not work if you have a proxy, and it fails in two
+different ways.</p>
+<p>The first problem is that Docker itself must be told to use a proxy. This
+manifests as:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker run hello-world
 <span class="go">Unable to find image &#39;hello-world:latest&#39; locally</span>
 <span class="go">Pulling repository hello-world</span>
 <span class="go">Get https://index.docker.io/v1/repositories/library/hello-world/images: dial tcp 54.152.161.54:443: connection refused</span>
 </pre></div>
 </div>
-<p>The solution is to configure an override file <code class="code docutils literal"><span class="pre">http-proxy.conf</span></code> as
-<a class="reference external" href="https://docs.docker.com/articles/systemd/">documented</a>. If you don&#8217;t have a
-systemd system, then <code class="code docutils literal"><span class="pre">/etc/default/docker</span></code> might be the place to go.</p>
+<p>If you have a systemd system, the <a class="reference external" href="https://docs.docker.com/engine/admin/systemd/#http-proxy">Docker documentation</a> explains how to
+configure this. (If you don&#8217;t have a systemd system, then
+<code class="code docutils literal"><span class="pre">/etc/default/docker</span></code> might be the place to go?)</p>
+<p>The second problem is that Docker containers need to know about the proxy as
+well. This manifests as images failing to build because they can&#8217;t download
+stuff from the internet.</p>
+<p>The fix is to set the proxy variables in your environment, e.g.:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">export HTTP_PROXY=http://example.com:8088</span>
+<span class="go">export http_proxy=$HTTP_PROXY</span>
+<span class="go">export HTTPS_PROXY=$HTTP_PROXY</span>
+<span class="go">export https_proxy=$HTTP_PROXY</span>
+<span class="go">export ALL_PROXY=$HTTP_PROXY</span>
+<span class="go">export all_proxy=$HTTP_PROXY</span>
+<span class="go">export NO_PROXY=&#39;localhost,127.0.0.1,.example.com&#39;</span>
+<span class="go">export no_proxy=$NO_PROXY</span>
+</pre></div>
+</div>
+<p><code class="code docutils literal"><span class="pre">docker-build</span></code> will then pass these through to your image builds.</p>
+<p>Because different programs use different subsets of these variables, and to
+avoid a situation where some things work and others don&#8217;t, the Charliecloud
+test suite (see below) includes a test that fails if some but not all of the
+above variables are set.</p>
 </div>
 </div>
 <div class="section" id="install-charliecloud">
@@ -382,6 +404,12 @@ suites. If any test suite has a failure, testing stops with an error message.</p
 of free space. This is configured with an environment variable:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_WORKDIR</span><span class="o">=</span>/data
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Bats will wait until all descendant processes finish before exiting, so if
+you get into a failure mode where a test suite doesn&#8217;t clean up all its
+processes, it will hang.</p>
 </div>
 <div class="section" id="build">
 <h3><a class="toc-backref" href="#id12">1.6.1. Build</a><a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h3>
