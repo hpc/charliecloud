@@ -27,8 +27,10 @@ if [ -f Dockerfile ]; then
     done
 fi
 
+# Coordinate this list with test "build.bats/proxy variables".
 sudo docker build --build-arg HTTP_PROXY=$HTTP_PROXY \
                   --build-arg HTTPS_PROXY=$HTTPS_PROXY \
+                  --build-arg NO_PROXY=$NO_PROXY \
                   --build-arg http_proxy=$http_proxy \
                   --build-arg https_proxy=$https_proxy \
                   --build-arg no_proxy=$no_proxy \

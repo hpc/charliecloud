@@ -170,16 +170,43 @@ If you don't want the service starting automatically at boot, e.g.::
 Configuring Docker for a proxy
 ------------------------------
 
-By default, Docker does not work if you have a proxy. The symptom is this::
+By default, Docker does not work if you have a proxy, and it fails in two
+different ways.
+
+The first problem is that Docker itself must be told to use a proxy. This
+manifests as::
 
   $ sudo docker run hello-world
   Unable to find image 'hello-world:latest' locally
   Pulling repository hello-world
   Get https://index.docker.io/v1/repositories/library/hello-world/images: dial tcp 54.152.161.54:443: connection refused
 
-The solution is to configure an override file :code:`http-proxy.conf` as
-`documented <https://docs.docker.com/articles/systemd/>`_. If you don't have a
-systemd system, then :code:`/etc/default/docker` might be the place to go.
+If you have a systemd system, the `Docker documentation
+<https://docs.docker.com/engine/admin/systemd/#http-proxy>`_ explains how to
+configure this. (If you don't have a systemd system, then
+:code:`/etc/default/docker` might be the place to go?)
+
+The second problem is that Docker containers need to know about the proxy as
+well. This manifests as images failing to build because they can't download
+stuff from the internet.
+
+The fix is to set the proxy variables in your environment, e.g.::
+
+  export HTTP_PROXY=http://example.com:8088
+  export http_proxy=$HTTP_PROXY
+  export HTTPS_PROXY=$HTTP_PROXY
+  export https_proxy=$HTTP_PROXY
+  export ALL_PROXY=$HTTP_PROXY
+  export all_proxy=$HTTP_PROXY
+  export NO_PROXY='localhost,127.0.0.1,.example.com'
+  export no_proxy=$NO_PROXY
+
+:code:`docker-build` will then pass these through to your image builds.
+
+Because different programs use different subsets of these variables, and to
+avoid a situation where some things work and others don't, the Charliecloud
+test suite (see below) includes a test that fails if some but not all of the
+above variables are set.
 
 
 Install Charliecloud
