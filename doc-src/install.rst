@@ -17,24 +17,17 @@ Run time
 
 Systems used for running images need:
 
-* Recent Linux kernel with :code:`CONFIG_USER_NS=y` and
-  :code:`CONFIG_OVERLAY_FS=y`
+* Recent Linux kernel with :code:`CONFIG_USER_NS=y`.
 * C compiler and standard library
 * POSIX shell and utilities
-
-If you are using the upstream kernel, you will need 3.18+.
-
-Distribution kernels vary. For example, RHEL7 and derivatives have a patch to
-disable user namespaces in concert with mount namespaces, and overlayfs is
-available as a "technology preview".
 
 Tested and working by us include the Ubuntu and upstream versions of 4.4.
 
 .. note::
 
    We are open to patches to make Charliecloud available on older kernels. The
-   key parts are likely a setuid binary to avoid the user namespace and some
-   workaround for missing overlayfs. Please contact us if you are interested.
+   key is likely a setuid binary to avoid the user namespace. Please contact
+   us if you are interested.
 
 Build time
 ----------
