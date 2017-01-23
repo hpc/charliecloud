@@ -5,10 +5,16 @@ load common
 }
 
 @test 'executables --help' {
-    docker-build --help
-    ch-docker2tar --help
-    ch-tar2dir --help
-    ch-dockerfile2dir --help
+    # Assume that everything in $CH_BIN is ours if it starts with "ch-" and
+    # either (1) is executable or (2) ends in ".c". Demand satisfaction from
+    # each. The latter is to catch cases when we haven't compiled everything;
+    # if we have, the test makes duplicate demands, but that's low cost.
+    for i in $(find $CH_BIN -name 'ch-*' -a \( -executable -o -name '*.c' \));
+    do
+        i=$(echo $i | sed s/.c$//)
+        echo $i
+        $i --help
+    done
 }
 
 @test 'proxy variables' {

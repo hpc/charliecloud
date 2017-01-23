@@ -15,10 +15,20 @@ before_script:
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
 
 script:
-  - (cd bin && make)
+  - set -e
+  - make
   - (cd doc-src && make)
-  - (cd examples/syscalls && make && ./pivot_root)
   - cd test
+  - make test-build
+  - make test-run
+  - make test-test
+  - cd -
+  - make export
+  - tar xf charliecloud-*.tar.gz
+  - cd charliecloud-*
+  - make
+  - sudo make install PREFIX=/usr/local
+  - cd /usr/local/share/doc/charliecloud/test
   - make test-build
   - make test-run
   - make test-test

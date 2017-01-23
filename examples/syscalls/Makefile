@@ -1,5 +1,4 @@
 BINS := $(patsubst %.c,%,$(wildcard *.c))
-CFLAGS := -std=gnu11 -Wall
 
 .PHONY: all
 all: $(BINS)

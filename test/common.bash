@@ -2,12 +2,16 @@ sanity () {
     if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
         # Bash bug: [[ ... ]] expression doesn't exit with set -e
         # https://github.com/sstephenson/bats/issues/49
-        echo "Need at least Bash 4.1 for these tests." >&2
+        printf "Need at least Bash 4.1 for these tests.\n\n" >&2
+        exit 1
+    fi
+    if [[ ! -x $CH_BIN/ch-run ]]; then
+        printf 'Must build with "make" before running tests.\n\n' >&2
         exit 1
     fi
     for var in CH_TEST_WORKDIR; do
         if [[ -z ${!var} ]]; then
-            echo "\$$var is empty or not set" >&2
+            printf "\$$var is empty or not set\n\n" >&2
             exit 1
         fi
     done
@@ -16,8 +20,8 @@ sanity () {
 sanity_permdirs () {
     for var in CH_TEST_PERMDIRS; do
         if [[ -z ${!var} ]]; then
-            echo "\$$var is empty or not set" >&2
-           exit 1
+            printf "\$$var is empty or not set\n\n" >&2
+            exit 1
         fi
     done
 }
@@ -44,11 +48,9 @@ tarball_ok () {
 # Predictable sorting and collation
 export LC_ALL=C
 
-# Do we have what we need?
-sanity
-
 # Set path to the right Charliecloud.
-CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/../bin" && pwd)"
+CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/bin" && pwd)"
+CH_BIN="$(readlink -f "$CH_BIN")"
 PATH=$CH_BIN:$PATH
 
 # Separate directories for tarballs and images
@@ -64,3 +66,6 @@ if [[ -n $GUEST_USER && -z $BATS_TEST_NAME ]]; then
     GUEST_UID=$(id -u $GUEST_USER)
     GUEST_GID=$(getent group $GUEST_GROUP | cut -d: -f3)
 fi
+
+# Do we have what we need?
+sanity

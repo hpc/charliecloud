@@ -45,47 +45,15 @@ Test suite
 In order to run the test suite on a run or build system (you can test each
 mode independently), you also need:
 
-* Bash
+* Bash 4.1+
 * Python 2.6+
 
 
-Download Charliecloud
-=====================
+Install Docker (build systems only)
+===================================
 
-See our GitHub project: https://github.com/hpc/charliecloud
-
-The recommended way to download is with :code:`git clone --recursive`; the
-switch gets the submodule needed for testing as well.
-
-
-Make sure you have the required kernel features
-===============================================
-
-The :code:`examples` directory includes a C program that exercises the key
-system calls Charliecloud depends on. If this works, then Charliecloud
-probably will too. If it doesn't, you'll want to understand why before
-bothering with the remaining install steps.
-
-::
-
-  $ cd examples/syscalls
-  $ make && ./pivot_root
-  ok
-
-If :code:`pivot_root` instead reports an error, check the reported line number
-in :code:`pivot_root.c` to see what failed.
-
-
-Install Docker
-==============
-
-While installing Docker is beyond the scope of this documentation, here are a
+Tnstalling Docker is beyond the scope of this documentation, but here are a
 few tips.
-
-.. note::
-
-   Docker need be installed only on build systems. It is not needed at
-   runtime.
 
 Understand the security implications of Docker
 ----------------------------------------------
@@ -205,20 +173,41 @@ above variables are set.
 Install Charliecloud
 ====================
 
-All you need in order to use Charliecloud is the executables and :code:`.sh`
-files in :code:`bin`::
+Download
+--------
 
-  $ cd bin
+See our GitHub project: https://github.com/hpc/charliecloud
+
+The recommended way to download is with :code:`git clone --recursive`; the
+switch gets the submodule needed for testing as well.
+
+The remaining install steps can be run from the Git working directory or an
+unpacked export tarball created with :code:`make export`.
+
+Build
+-----
+
+Just say::
+
   $ make
 
-You could put this directory in your :code:`$PATH` or link/copy the contents
-to somewhere else.
+.. note::
 
-That said, in order to understand Charliecloud, including completing the
-tutorial in the next section, you will want access to the rest of the source
-code as well.
+   If you wish to build the documentation, see :code:`doc-src/README`.
 
-If you wish to build the documentation, see :code:`doc-src/README`.
+Install (optional)
+------------------
+
+You can run Charliecloud from the source directory, and it's recommended you
+at least run the test suite before installation to establish that your system
+will work.
+
+To install (FHS-compliant)::
+
+  $ make install PREFIX=/foo/bar
+
+Note that :code:`PREFIX` is required; it does not default to
+:code:`/usr/local` like many packages.
 
 
 Test Charliecloud

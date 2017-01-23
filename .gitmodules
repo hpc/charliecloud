@@ -1,3 +1,4 @@
 [submodule "test/bats"]
 	path = test/bats.src
 	url = https://github.com/sstephenson/bats.git
+	ignore = untracked

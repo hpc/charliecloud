@@ -47,21 +47,21 @@ Session.vim
 
 ### Custom ###
 
-.fuse_hidden*
 *.help
 *.o
 *.py[cod]
+.fuse_hidden*
+charliecloud-*
 
-doc/
-doc-src/_build
-
+VERSION.full
 a.out
+
 bin/ch-run
 bin/ch-ssh
-
+doc/
+doc-src/_build
 examples/mpihello/hello
 examples/syscalls/pivot_root
 examples/syscalls/userns
-
 test/build_auto.bats
 test/run_auto.bats
