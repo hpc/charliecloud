@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                4836ac1
+                cb981d4
               </div>
             
           
@@ -87,12 +87,13 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">3. Help text for executables</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#ch-docker2tar">3.1. ch-docker2tar</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-docker-run">3.2. ch-docker-run</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-run">3.3. ch-run</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-ssh">3.4. ch-ssh</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-tar2dir">3.5. ch-tar2dir</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#docker-build">3.6. docker-build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-build">3.1. ch-build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-build2dir">3.2. ch-build2dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-docker2tar">3.3. ch-docker2tar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-docker-run">3.4. ch-docker-run</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-run">3.5. ch-run</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-ssh">3.6. ch-ssh</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-tar2dir">3.7. ch-tar2dir</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">4. Frequently asked questions (FAQ)</a></li>
@@ -146,29 +147,70 @@
 exectuables.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#ch-docker2tar" id="id1">ch-docker2tar</a></li>
-<li><a class="reference internal" href="#ch-docker-run" id="id2">ch-docker-run</a></li>
-<li><a class="reference internal" href="#ch-run" id="id3">ch-run</a></li>
-<li><a class="reference internal" href="#ch-ssh" id="id4">ch-ssh</a></li>
-<li><a class="reference internal" href="#ch-tar2dir" id="id5">ch-tar2dir</a></li>
-<li><a class="reference internal" href="#docker-build" id="id6">docker-build</a></li>
+<li><a class="reference internal" href="#ch-build" id="id1">ch-build</a></li>
+<li><a class="reference internal" href="#ch-build2dir" id="id2">ch-build2dir</a></li>
+<li><a class="reference internal" href="#ch-docker2tar" id="id3">ch-docker2tar</a></li>
+<li><a class="reference internal" href="#ch-docker-run" id="id4">ch-docker-run</a></li>
+<li><a class="reference internal" href="#ch-run" id="id5">ch-run</a></li>
+<li><a class="reference internal" href="#ch-ssh" id="id6">ch-ssh</a></li>
+<li><a class="reference internal" href="#ch-tar2dir" id="id7">ch-tar2dir</a></li>
 </ul>
 </div>
+<div class="section" id="ch-build">
+<h2><a class="toc-backref" href="#id1">3.1. ch-build</a><a class="headerlink" href="#ch-build" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-text"><div class="highlight"><pre><span></span>Wrapper for &quot;docker build&quot; that works around some of its annoying behaviors.
+
+Usage:
+
+  $ ch-build [ARGS ...]
+
+ARGS are passed unchanged to &quot;docker build&quot; after the workaround arguments.
+
+Workarounds:
+
+  * Add the HTTP proxy environment variables with &quot;--build-arg&quot;.
+
+  * Default to the Dockerfile in CWD with &quot;--file&quot;, if one exists and --file
+    wasn&#39;t already specified, rather than the one at the root of the build
+    context. This works around Docker&#39;s hostility to symlinks (e.g., see
+    https://github.com/docker/docker/issues/1676).
+</pre></div>
+</div>
+</div>
+<div class="section" id="ch-build2dir">
+<h2><a class="toc-backref" href="#id2">3.2. ch-build2dir</a><a class="headerlink" href="#ch-build2dir" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-text"><div class="highlight"><pre><span></span>Build a Charliecloud image specified by $PWD/Dockerfile and unpack it.
+Equivalent to ch-build, ch-docker2tar, ch-tar2dir sequence but somewhat less
+flexible.
+
+Usage:
+
+  $ ch-build2dir CONTEXT DEST [ARGS ...]
+
+Arguments:
+
+  CONTEXT  Docker context directory
+  DEST     Directory in which to place image tarball and directory
+  ARGS     Additional arguments passed to ch-build
+
+You must have sufficient privilege (via sudo) to run the Docker commands.
+</pre></div>
+</div>
+</div>
 <div class="section" id="ch-docker2tar">
-<h2><a class="toc-backref" href="#id1">3.1. ch-docker2tar</a><a class="headerlink" href="#ch-docker2tar" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-text"><div class="highlight"><pre><span></span>Flattens a Docker image into a tarball suitable for further processing
-into a Charliecloud chroot image.
+<h2><a class="toc-backref" href="#id3">3.3. ch-docker2tar</a><a class="headerlink" href="#ch-docker2tar" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-text"><div class="highlight"><pre><span></span>Flatten a Docker image into a Charliecloud image tarball.
 
 Usage:
 
   $ ch-docker2tar IMAGE OUTDIR
 
-You must have sufficient privilege to run the docker commands.
+You must have sufficient privilege (via sudo) to run the Docker commands.
 </pre></div>
 </div>
 </div>
 <div class="section" id="ch-docker-run">
-<h2><a class="toc-backref" href="#id2">3.2. ch-docker-run</a><a class="headerlink" href="#ch-docker-run" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4">3.4. ch-docker-run</a><a class="headerlink" href="#ch-docker-run" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-text"><div class="highlight"><pre><span></span>Run CMD in a Docker container TAG.
 
 Usage:
@@ -186,12 +228,12 @@ Options:
   -i  Run interactively with a pseudo-TTY
   -b  Bind-mount HOSTDIR at GUESTDIR inside the container (can be repeated)
 
-You must have sufficient privilege to run the docker commands.
+You must have sufficient privilege (via sudo) to run the Docker commands.
 </pre></div>
 </div>
 </div>
 <div class="section" id="ch-run">
-<h2><a class="toc-backref" href="#id3">3.3. ch-run</a><a class="headerlink" href="#ch-run" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">3.5. ch-run</a><a class="headerlink" href="#ch-run" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-text"><div class="highlight"><pre><span></span>Usage: ch-run [OPTION...] NEWROOT CMD [ARG...]
 
 Run a command in a Charliecloud container.
@@ -204,6 +246,7 @@ Run a command in a Charliecloud container.
   -z, --no-userns    don&#39;t use user namespace
   -?, --help         Give this help list
       --usage        Give a short usage message
+  -V, --version      print version and exit
 
 Example:
 
@@ -215,7 +258,7 @@ You cannot use this program to actually change your UID.
 </div>
 </div>
 <div class="section" id="ch-ssh">
-<h2><a class="toc-backref" href="#id4">3.4. ch-ssh</a><a class="headerlink" href="#ch-ssh" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id6">3.6. ch-ssh</a><a class="headerlink" href="#ch-ssh" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-text"><div class="highlight"><pre><span></span>Usage: CH_RUN_ARGS=&quot;NEWROOT [ARG...]&quot; ch-ssh [OPTION...] HOST CMD [ARG...]
 
 Run a remote command in a Charliecloud container.
@@ -234,7 +277,7 @@ and backslashes are not interpreted.
 </div>
 </div>
 <div class="section" id="ch-tar2dir">
-<h2><a class="toc-backref" href="#id5">3.5. ch-tar2dir</a><a class="headerlink" href="#ch-tar2dir" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">3.7. ch-tar2dir</a><a class="headerlink" href="#ch-tar2dir" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-text"><div class="highlight"><pre><span></span>Unpack a Docker export tarball into a directory.
 
 Usage:
@@ -250,22 +293,8 @@ Warning:
 
   Do not place DIR on a shared filesystem (e.g., your home directory, project
   space, scratch) unless specifically instructed by your site admins. Doing so
-  will cause excess metadata load on the filesystem, resulting in poor
+  may cause excess metadata load on the filesystem, resulting in poor
   performance for you and everyone else trying to do work at the same time.
-</pre></div>
-</div>
-</div>
-<div class="section" id="docker-build">
-<h2><a class="toc-backref" href="#id6">3.6. docker-build</a><a class="headerlink" href="#docker-build" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-text"><div class="highlight"><pre><span></span>Wrapper for docker build that works around some of the more user-hostile
-behavior. Specifically:
-
-  * Add the HTTP proxy environment variables.
-
-  * Default to the Dockerfile in CWD, if one exists and --file wasn&#39;t
-    specified, rather than the one at the root of the build context. This
-    works around Docker&#39;s hostility to symlinks (e.g., see
-    https://github.com/docker/docker/issues/1676).
 </pre></div>
 </div>
 </div>

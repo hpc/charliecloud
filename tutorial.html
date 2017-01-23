@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                4836ac1
+                cb981d4
               </div>
             
           
@@ -222,12 +222,18 @@ the previous section, that the <code class="code docutils literal"><span class="
 </div>
 <div class="section" id="getting-help">
 <h2><a class="toc-backref" href="#id1">2.1. Getting help</a><a class="headerlink" href="#getting-help" title="Permalink to this headline">¶</a></h2>
-<p>All the Charliecloud executables have decent help (if not, please report a
-bug). For example:</p>
+<p>All the executables have decent help and can tell you what version of
+Charliecloud you have (if not, please report a bug). For example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --help
+<span class="go">Usage: ch-run [OPTION...] NEWROOT CMD [ARG...]</span>
+
+<span class="go">Run a command in a Charliecloud container.</span>
+<span class="go">[...]</span>
+<span class="gp">$</span> ch-run --version
+<span class="go">0.2.0.4836ac1</span>
 </pre></div>
 </div>
-<p>This help text is also collected later in this documentation; see
+<p>The help text is also collected later in this documentation; see
 <a class="reference internal" href="script-help.html"><span class="doc">Help text for executables</span></a>.</p>
 </div>
 <div class="section" id="your-first-user-defined-software-stack">
@@ -270,14 +276,14 @@ process.</p>
 </div>
 <div class="section" id="build-docker-image">
 <h3><a class="toc-backref" href="#id4">2.2.2. Build Docker image</a><a class="headerlink" href="#build-docker-image" title="Permalink to this headline">¶</a></h3>
-<p>Charliecloud provides an optional convenience wrapper around <code class="code docutils literal"><span class="pre">docker</span>
-<span class="pre">build</span></code> that works around some of its more irritating characteristics. In
-particular, it passes through any HTTP proxy variables, and by default it uses
-the Dockerfile in the current directory, rather than at the root of the Docker
-context directory. (We will address the context directory later.)</p>
+<p>Charliecloud provides a convenience wrapper around <code class="code docutils literal"><span class="pre">docker</span> <span class="pre">build</span></code> that
+works around some of its more irritating characteristics. In particular, it
+passes through any HTTP proxy variables, and by default it uses the Dockerfile
+in the current directory, rather than at the root of the Docker context
+directory. (We will address the context directory later.)</p>
 <p>The two arguments here are a tag for the Docker image and the context
 directory, which in this case is the Charliecloud source code.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> docker-build -t hello ../..
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello ../..
 <span class="go">Sending build context to Docker daemon 8.105 MB</span>
 <span class="go">Step 1 : FROM debian:jessie</span>
 <span class="go"> ---&gt; ddf73f48a05d</span>
@@ -289,7 +295,7 @@ directory, which in this case is the Charliecloud source code.</p>
 <span class="go">Successfully built 526e2ca75656</span>
 </pre></div>
 </div>
-<p><code class="code docutils literal"><span class="pre">docker-build</span></code> and many other Charliecloud commands wrap various
+<p><code class="code docutils literal"><span class="pre">ch-build</span></code> and many other Charliecloud commands wrap various
 privileged <code class="code docutils literal"><span class="pre">docker</span></code> commands. Thus, you will be prompted for a password
 to escalate as needed. Note however that most configurations of <code class="code docutils literal"><span class="pre">sudo</span></code>
 don&#8217;t require a password on every invocation, so just because you aren&#8217;t

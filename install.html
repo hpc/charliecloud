@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                4836ac1
+                cb981d4
               </div>
             
           
@@ -333,7 +333,7 @@ stuff from the internet.</p>
 <span class="go">export no_proxy=$NO_PROXY</span>
 </pre></div>
 </div>
-<p><code class="code docutils literal"><span class="pre">docker-build</span></code> will then pass these through to your image builds.</p>
+<p><code class="code docutils literal"><span class="pre">ch-build</span></code> will then pass these through to your image builds.</p>
 <p>Because different programs use different subsets of these variables, and to
 avoid a situation where some things work and others don&#8217;t, the Charliecloud
 test suite (see below) includes a test that fails if some but not all of the
@@ -412,13 +412,13 @@ processes, it will hang.</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-build
 <span class="go">./bats build.bats build_auto.bats</span>
 <span class="go"> ✓ executables --help</span>
-<span class="go"> ✓ docker-build</span>
-<span class="go"> ✓ docker-build --pull</span>
-<span class="go"> ✓ ch-dockerfile2dir</span>
-<span class="go"> ✓ docker-build alpine34</span>
+<span class="go"> ✓ ch-build</span>
+<span class="go"> ✓ ch-build --pull</span>
+<span class="go"> ✓ ch-build2dir</span>
+<span class="go"> ✓ ch-build alpine34</span>
 <span class="go"> ✓ ch-docker2tar alpine34</span>
 <span class="go">[...]</span>
-<span class="go"> ✓ docker-build spark</span>
+<span class="go"> ✓ ch-build spark</span>
 <span class="go"> ✓ ch-docker2tar spark</span>
 
 <span class="go">28 tests, 0 failures</span>
