@@ -98,8 +98,8 @@ load common
     ch-build2dir ../.. $TARDIR
     docker_ok chtest
     image_ok $IMG
-    # Same, overwrite
-    ch-build2dir ../.. $TARDIR
+    # Same, overwrite, also --file argument
+    ch-build2dir ../.. $TARDIR --file="$PWD/Dockerfile"
     docker_ok chtest
     image_ok $IMG
     # Remove since we don't want it hanging around later

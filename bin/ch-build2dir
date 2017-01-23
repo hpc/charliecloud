@@ -32,7 +32,7 @@ if [ "$1" = "--version" ]; then
     version
     exit 0
 fi
-if [ "$#" -ne 2 ]; then
+if [ "$#" -lt 2 ]; then
     usage
 fi
 CONTEXT="$1"
