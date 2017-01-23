@@ -17,12 +17,18 @@ the previous section, that the :code:`bin` directory is on your
 Getting help
 ============
 
-All the Charliecloud executables have decent help (if not, please report a
-bug). For example::
+All the executables have decent help and can tell you what version of
+Charliecloud you have (if not, please report a bug). For example::
 
   $ ch-run --help
+  Usage: ch-run [OPTION...] NEWROOT CMD [ARG...]
 
-This help text is also collected later in this documentation; see
+  Run a command in a Charliecloud container.
+  [...]
+  $ ch-run --version
+  0.2.0.4836ac1
+
+The help text is also collected later in this documentation; see
 :doc:`script-help`.
 
 

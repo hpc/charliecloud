@@ -7,6 +7,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "version.h"
+
 /* Print a formatted error message on stderr, then exit unsuccessfully. */
 void fatal(char * fmt, ...)
 {
@@ -23,4 +25,10 @@ void fatal(char * fmt, ...)
 void fatal_errno(char * file, int line)
 {
    fatal("%s:%d: %d: %s\n", file, line, errno, strerror(errno));
+}
+
+/* Report the version number. */
+void version(void)
+{
+   fprintf(stderr, "%s\n", VERSION);
 }

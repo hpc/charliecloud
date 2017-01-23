@@ -6,4 +6,4 @@
 
 void fatal(char * fmt, ...);
 void fatal_errno(char * file, int line);
-
+void version(void);

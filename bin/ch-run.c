@@ -73,6 +73,7 @@ const struct argp_option options[] = {
    { "private-tmp", 't', 0,     0, "mount container-private tmpfs on /tmp" },
    { "uid",         'u', "UID", 0, "run as UID within container" },
    { "verbose",     'v', 0,     0, "be more verbose (debug if repeated)" },
+   { "version",     'V', 0,     0, "print version and exit" },
    { "no-userns",   'z', 0,     0, "don't use user namespace" },
    { 0 }
 };
@@ -263,6 +264,10 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       l = strtol(arg, NULL, 0);
       TRY (errno || l < 0);
       as->container_uid = (uid_t)l;
+      break;
+   case 'V':
+      version();
+      exit(EXIT_SUCCESS);
       break;
    case 'v':
       as->verbose++;

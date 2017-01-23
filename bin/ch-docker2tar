@@ -7,15 +7,13 @@ set -e
 
 usage () {
     cat 1>&2 <<EOF
-
-Flattens a Docker image into a tarball suitable for further processing
-into a Charliecloud chroot image.
+Flatten a Docker image into a Charliecloud image tarball.
 
 Usage:
 
   $ $(basename $0) IMAGE OUTDIR
 
-You must have sufficient privilege to run the docker commands.
+You must have sufficient privilege (via sudo) to run the Docker commands.
 
 EOF
     exit ${1:-1}
@@ -23,6 +21,10 @@ EOF
 
 if [ "$1" = "--help" ]; then
     usage 0
+fi
+if [ "$1" = "--version" ]; then
+    version
+    exit 0
 fi
 if [ "$#" -ne 2 ]; then
     usage

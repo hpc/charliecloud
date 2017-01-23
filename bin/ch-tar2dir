@@ -19,7 +19,7 @@ Warning:
 
   Do not place DIR on a shared filesystem (e.g., your home directory, project
   space, scratch) unless specifically instructed by your site admins. Doing so
-  will cause excess metadata load on the filesystem, resulting in poor
+  may cause excess metadata load on the filesystem, resulting in poor
   performance for you and everyone else trying to do work at the same time.
 
 EOF
@@ -30,6 +30,10 @@ set -e
 
 if [ "$1" = --help ]; then
     usage 0
+fi
+if [ "$1" = --version ]; then
+    version
+    exit 0
 fi
 if [ "$1" = --verbose ]; then
     VERBOSE=v

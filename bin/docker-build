@@ -1,17 +1,35 @@
 #!/bin/sh
 
-if [ "$1" = --help ]; then
-    cat <<EOF
-Wrapper for docker build that works around some of the more user-hostile
-behavior. Specifically:
+. $(dirname "$0")/base.sh
 
-  * Add the HTTP proxy environment variables.
+usage () {
+    cat 1>&2 <<EOF
+Wrapper for "docker build" that works around some of its annoying behaviors.
 
-  * Default to the Dockerfile in CWD, if one exists and --file wasn't
-    specified, rather than the one at the root of the build context. This
-    works around Docker's hostility to symlinks (e.g., see
+Usage:
+
+  $ $(basename $0) [ARGS ...]
+
+ARGS are passed unchanged to "docker build" after the workaround arguments.
+
+Workarounds:
+
+  * Add the HTTP proxy environment variables with "--build-arg".
+
+  * Default to the Dockerfile in CWD with "--file", if one exists and --file
+    wasn't already specified, rather than the one at the root of the build
+    context. This works around Docker's hostility to symlinks (e.g., see
     https://github.com/docker/docker/issues/1676).
+
 EOF
+    exit ${1:-1}
+}
+
+if [ "$1" = "--help" ]; then
+    usage 0
+fi
+if [ "$1" = "--version" ]; then
+    version
     exit 0
 fi
 

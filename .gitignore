@@ -58,6 +58,8 @@ a.out
 
 bin/ch-run
 bin/ch-ssh
+bin/version.sh
+bin/version.h
 doc/
 doc-src/_build
 examples/mpihello/hello

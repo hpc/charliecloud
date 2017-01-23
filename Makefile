@@ -2,7 +2,7 @@
 export CFLAGS += -std=c11 -Wall
 
 .PHONY: all
-all: VERSION.full
+all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
 	cd test && $(MAKE) all
 	cd examples/syscalls && $(MAKE) all
@@ -25,6 +25,10 @@ VERSION.full:
 	       $$(git diff-index --quiet HEAD || echo '.dirty') \
 	       > VERSION.full
 endif
+bin/version.h: VERSION.full
+	echo "#define VERSION \"$$(cat $<)\"" > $@
+bin/version.sh: VERSION.full
+	echo "version () { echo 1>&2 '$$(cat $<)'; }" > $@
 
 # Yes, this is bonkers.
 .PHONY: export
@@ -56,7 +60,7 @@ install: all
 #       binaries
 	install -d $(BIN)
 	install -pm 755 -t $(BIN) $$(find bin -type f -executable)
-	install -pm 644 -t $(BIN) bin/base.sh
+	install -pm 644 -t $(BIN) bin/base.sh bin/version.h bin/version.sh
 #       misc "documentation"
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) COPYRIGHT LICENSE README

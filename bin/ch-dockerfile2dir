@@ -1,26 +1,49 @@
-#!/bin/bash
+#!/bin/sh
+
+. $(dirname "$0")/base.sh
 
 set -e
 
-if [[ $# -ne 2 || $1 = --help ]]; then
-    cat <<EOF
-FIXME
+usage () {
+    cat 1>&2 <<EOF
+Build a Charliecloud image specified by \$PWD/Dockerfile and unpack it.
+Equivalent to ch-build, ch-docker2tar, ch-tar2dir sequence but somewhat less
+flexible.
+
+Usage:
+
+  $ $(basename $0) CONTEXT DEST [ARGS ...]
+
+Arguments:
+
+  CONTEXT  Docker context directory
+  DEST     Directory in which to place image tarball and directory
+  ARGS     Additional arguments passed to ch-build
+
+You must have sufficient privilege (via sudo) to run the Docker commands.
 EOF
+    exit ${1:-1}
+}
+
+if [ "$1" = "--help" ]; then
+    usage 0
+fi
+if [ "$1" = "--version" ]; then
+    version
     exit 0
 fi
-
+if [ "$#" -ne 2 ]; then
+    usage
+fi
 CONTEXT="$1"
 DEST="$2"
 shift 2
-
-BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PATH=$BASE:$PATH
 
 TAG=$(basename $PWD)
 
 set -x
 
-docker-build -t $TAG "$CONTEXT"
-ch-docker2tar $TAG "$DEST"
-ch-tar2dir "$DEST/$TAG.tar.gz" "$DEST/$TAG"
+$CH_BIN/docker-build -t $TAG "$CONTEXT" "$@"
+$CH_BIN/ch-docker2tar $TAG "$DEST"
+$CH_BIN/ch-tar2dir "$DEST/$TAG.tar.gz" "$DEST/$TAG"
 rm "$DEST/$TAG.tar.gz"

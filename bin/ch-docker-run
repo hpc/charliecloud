@@ -23,7 +23,7 @@ Options:
   -i  Run interactively with a pseudo-TTY
   -b  Bind-mount HOSTDIR at GUESTDIR inside the container (can be repeated)
 
-You must have sufficient privilege to run the docker commands.
+You must have sufficient privilege (via sudo) to run the Docker commands.
 EOF
     exit ${1:-1}
 }
@@ -35,6 +35,10 @@ MOUNTS=( /etc/passwd:/etc/passwd \
 
 if [[ $1 = --help ]]; then
     usage 0
+fi
+if [[ $1 = --version ]]; then
+    version
+    exit 0
 fi
 
 while getopts 'b:ih' opt; do

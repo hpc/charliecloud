@@ -4,7 +4,7 @@ load common
     mkdir -p $TARDIR
 }
 
-@test 'executables --help' {
+@test 'executables --help and --version' {
     # Assume that everything in $CH_BIN is ours if it starts with "ch-" and
     # either (1) is executable or (2) ends in ".c". Demand satisfaction from
     # each. The latter is to catch cases when we haven't compiled everything;
@@ -12,8 +12,19 @@ load common
     for i in $(find $CH_BIN -name 'ch-*' -a \( -executable -o -name '*.c' \));
     do
         i=$(echo $i | sed s/.c$//)
+        echo
         echo $i
-        $i --help
+        # One line, starts with "0.", looks like a version number.
+        run $i --version
+        echo "$output"
+        [[ $status -eq 0 ]]
+        [[ ${#lines[@]} -eq 1 ]]
+        [[ ${lines[0]} =~ 0\.[0-9]+\.[0-9]+ ]]
+        # Returns 0, says "Usage:" somewhere.
+        run $i --help
+        echo "$output"
+        [[ $status -eq 0 ]]
+        [[ $output =~ Usage: ]]
     done
 }
 
