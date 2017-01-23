@@ -9,6 +9,18 @@ exectuables.
    :local:
 
 
+ch-build
+========
+
+.. literalinclude:: ch-build.help
+   :language: text
+
+ch-build2dir
+============
+
+.. literalinclude:: ch-build2dir.help
+   :language: text
+
 ch-docker2tar
 =============
 
@@ -39,8 +51,3 @@ ch-tar2dir
 .. literalinclude:: ch-tar2dir.help
    :language: text
 
-docker-build
-============
-
-.. literalinclude:: docker-build.help
-   :language: text

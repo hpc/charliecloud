@@ -34,7 +34,7 @@ load common
     # that if one of the proxy variables are set, then they all should be, in
     # order to prepare for diverse internet access at build time.
     #
-    # Coordinate this test with bin/docker-build.
+    # Coordinate this test with bin/ch-build.
     #
     # Note: ALL_PROXY and all_proxy aren't currently included, because they
     # cause image builds to fail until Docker 1.13
@@ -74,32 +74,32 @@ load common
     sudo docker run hello-world
 }
 
-@test 'docker-build' {
+@test 'ch-build' {
     cd chtest
-    docker-build -t chtest ../..
+    ch-build -t chtest ../..
     docker_ok chtest
 }
 
-@test 'docker-build --pull' {
+@test 'ch-build --pull' {
     # this may get a new image, if edge has been updated
-    docker-build --pull -t alpineedge --file=./Dockerfile.alpineedge ..
+    ch-build --pull -t alpineedge --file=./Dockerfile.alpineedge ..
     # this very probably will not
-    docker-build --pull -t alpineedge --file=./Dockerfile.alpineedge ..
+    ch-build --pull -t alpineedge --file=./Dockerfile.alpineedge ..
 }
 
-@test 'ch-dockerfile2dir' {
+@test 'ch-build2dir' {
     # This test unpacks into $TARDIR so we don't put anything in $IMGDIR at
     # build time. It removes the image on completion.
     TAR=$CHTEST_TARBALL
     IMG=$TARDIR/chtest
     [[ ! -e $IMG ]]
     cd chtest
-    # Dockerfile expected in $CWD
-    ch-dockerfile2dir ../.. $TARDIR
+    # Dockerfile expected in $PWD
+    ch-build2dir ../.. $TARDIR
     docker_ok chtest
     image_ok $IMG
     # Same, overwrite
-    ch-dockerfile2dir ../.. $TARDIR
+    ch-build2dir ../.. $TARDIR
     docker_ok chtest
     image_ok $IMG
     # Remove since we don't want it hanging around later

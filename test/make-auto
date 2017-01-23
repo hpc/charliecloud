@@ -34,8 +34,8 @@ for path in sys.argv[2:]:
    if (mode == "build"):
       print("""\
 
-@test 'docker-build %(tag)s' {
-    docker-build -t %(tag)s --file=%(path)s ..
+@test 'ch-build %(tag)s' {
+    ch-build -t %(tag)s --file=%(path)s ..
     docker_ok %(tag)s
 }
 

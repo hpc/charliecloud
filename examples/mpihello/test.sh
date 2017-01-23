@@ -8,7 +8,7 @@ CHBIN=$CHBASE/bin
 
 if [[ $1 == build ]]; then
     shift
-    $CHBIN/docker-build -t $USER/mpihello $CHBASE
+    $CHBIN/ch-build -t $USER/mpihello $CHBASE
     $CHBIN/ch-docker2tar $USER/mpihello /tmp
     $CHBIN/ch-tar2dir /tmp/$USER.mpihello.tar.gz /tmp/mpihello
 fi

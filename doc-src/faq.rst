@@ -22,7 +22,7 @@ options:
 Tarball build fails with "No command specified"
 ===============================================
 
-The full error from :code:`ch-docker2tar` or :code:`ch-dockerfile2dir` is::
+The full error from :code:`ch-docker2tar` or :code:`ch-build2dir` is::
 
   docker: Error response from daemon: No command specified.
 

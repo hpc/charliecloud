@@ -162,7 +162,7 @@ The fix is to set the proxy variables in your environment, e.g.::
   export NO_PROXY='localhost,127.0.0.1,.example.com'
   export no_proxy=$NO_PROXY
 
-:code:`docker-build` will then pass these through to your image builds.
+:code:`ch-build` will then pass these through to your image builds.
 
 Because different programs use different subsets of these variables, and to
 avoid a situation where some things work and others don't, the Charliecloud
@@ -258,13 +258,13 @@ In this phase, image building and associated functionality is tested.
   $ make test-build
   ./bats build.bats build_auto.bats
    ✓ executables --help
-   ✓ docker-build
-   ✓ docker-build --pull
-   ✓ ch-dockerfile2dir
-   ✓ docker-build alpine34
+   ✓ ch-build
+   ✓ ch-build --pull
+   ✓ ch-build2dir
+   ✓ ch-build alpine34
    ✓ ch-docker2tar alpine34
   [...]
-   ✓ docker-build spark
+   ✓ ch-build spark
    ✓ ch-docker2tar spark
 
   28 tests, 0 failures

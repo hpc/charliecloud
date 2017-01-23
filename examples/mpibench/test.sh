@@ -11,7 +11,7 @@ IMB=/usr/local/src/imb/src/IMB-MPI1
 
 if [[ $1 == build ]]; then
     shift
-    $CHBIN/docker-build -t $USER/mpibench $CHBASE
+    $CHBIN/ch-build -t $USER/mpibench $CHBASE
     $CHBIN/ch-docker2tar $USER/mpibench /tmp
     $CHBIN/ch-tar2dir /tmp/$USER.mpibench.tar.gz /tmp/mpibench
 fi

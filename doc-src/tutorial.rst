@@ -70,18 +70,18 @@ encounter more complex Dockerfiles later in this tutorial.
 Build Docker image
 ------------------
 
-Charliecloud provides an optional convenience wrapper around :code:`docker
-build` that works around some of its more irritating characteristics. In
-particular, it passes through any HTTP proxy variables, and by default it uses
-the Dockerfile in the current directory, rather than at the root of the Docker
-context directory. (We will address the context directory later.)
+Charliecloud provides a convenience wrapper around :code:`docker build` that
+works around some of its more irritating characteristics. In particular, it
+passes through any HTTP proxy variables, and by default it uses the Dockerfile
+in the current directory, rather than at the root of the Docker context
+directory. (We will address the context directory later.)
 
 The two arguments here are a tag for the Docker image and the context
 directory, which in this case is the Charliecloud source code.
 
 ::
 
-  $ docker-build -t hello ../..
+  $ ch-build -t hello ../..
   Sending build context to Docker daemon 8.105 MB
   Step 1 : FROM debian:jessie
    ---> ddf73f48a05d
@@ -92,7 +92,7 @@ directory, which in this case is the Charliecloud source code.
   Removing intermediate container beadfda45e4c
   Successfully built 526e2ca75656
 
-:code:`docker-build` and many other Charliecloud commands wrap various
+:code:`ch-build` and many other Charliecloud commands wrap various
 privileged :code:`docker` commands. Thus, you will be prompted for a password
 to escalate as needed. Note however that most configurations of :code:`sudo`
 don't require a password on every invocation, so just because you aren't
