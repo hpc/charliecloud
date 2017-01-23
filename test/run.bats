@@ -33,7 +33,6 @@ load common
 
 @test 'sycalls/pivot_root' {
     cd ../examples/syscalls
-    make
     ./pivot_root
 }
 
