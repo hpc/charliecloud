@@ -54,10 +54,12 @@ EOF
 @test "$EXAMPLE_TAG/pi" {
     run ch-run -d $SPARK_CONFIG $SPARK_IMG -- \
                /spark/bin/spark-submit --master $MASTER_URL \
-               /spark/examples/src/main/python/pi.py 128
+               /spark/examples/src/main/python/pi.py 64
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output =~ 'Pi is roughly 3.14' ]]
+    # This computation converges quite slowly, so we only ask for two correct
+    # digits of pi.
+    [[ $output =~ 'Pi is roughly 3.1' ]]
 }
 
 @test "$EXAMPLE_TAG/stop" {
