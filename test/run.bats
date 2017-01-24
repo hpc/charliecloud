@@ -58,7 +58,7 @@ load common
                   | egrep -m1 '[A-Za-z] [0-9]' \
                   | sed -r 's/^(.*")?(.+)(")$/\2/')
     echo "host: $host_distro"
-    guest_expected='Alpine Linux v3.4'
+    guest_expected='Alpine Linux v3.5'
     echo "guest expected: $guest_expected"
     if [[ $host_distro = $guest_expected ]]; then
         skip 'host matches expected guest distro'

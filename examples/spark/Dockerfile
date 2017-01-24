@@ -10,7 +10,7 @@ RUN touch /usr/bin/ch-ssh
 
 # Download and install Spark
 ENV URLPATH http://d3kbcqa49mib13.cloudfront.net
-ENV DIR spark-2.0.2-bin-hadoop2.7
+ENV DIR spark-2.1.0-bin-hadoop2.7
 ENV TAR $DIR.tgz
 RUN wget -nv $URLPATH/$TAR
 RUN tar xf $TAR && mv $DIR spark && rm $TAR
