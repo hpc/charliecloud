@@ -144,7 +144,8 @@ void enter_udss(char * newroot, char ** binds, bool private_tmp)
    LOG_IDS;
 
    // Claim newroot for this namespace
-   TRY (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
+   TRX (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL),
+        newroot);
 
    // Mount tmpfs on guest /home because guest root is read-only
    TRY (0 > asprintf(&path, "%s/home", newroot));

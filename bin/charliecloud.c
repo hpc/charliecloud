@@ -22,9 +22,11 @@ void fatal(char * fmt, ...)
 }
 
 /* Report the string expansion of errno on stderr, then exit unsuccessfully. */
-void fatal_errno(char * file, int line)
+void fatal_errno(char * msg, char * file, int line)
 {
-   fatal("%s:%d: %d: %s\n", file, line, errno, strerror(errno));
+   if (msg == NULL)
+      msg = "error";
+   fatal("%s: %s (%s:%d:%d)\n", msg, strerror(errno), file, line, errno);
 }
 
 /* Report the version number. */
