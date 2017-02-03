@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                cb981d4
+                8077f09
               </div>
             
           
@@ -392,19 +392,27 @@ and unpack Bats manually.</p>
 </div>
 <p>Just like for normal use, the Charliecloud test suite is split into build and
 run phases, and there is an additional phase that runs the examples&#8217; test
-suites. These phase can be tested independently on different systems.</p>
+suites. These phases can be tested independently on different systems.</p>
 <p>Testing is coordinated by <code class="code docutils literal"><span class="pre">make</span></code>. The test targets run one or more test
 suites. If any test suite has a failure, testing stops with an error message.</p>
-<p>Both the build and run phases require a work directory with several gigabytes
-of free space. This is configured with an environment variable:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_WORKDIR</span><span class="o">=</span>/data
+<p>The tests need three work directories with several gigabytes of free space, in
+order to store image tarballs, unpacked image directories, and file permission
+test fixtures. These are configured with environment variables:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_TARDIR</span><span class="o">=</span>/data/tarballs
+<span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_IMGDIR</span><span class="o">=</span>/data/images
+<span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s1">&#39;/data /tmp /var/tmp&#39;</span>
 </pre></div>
 </div>
+<p><code class="code docutils literal"><span class="pre">CH_TEST_PERMDIRS</span></code> can be set to <cite>skip</cite> in order to skip the file
+permissions tests.</p>
+<p>(Strictly speaking, the build phase needs only the first, and the example test
+phase does not need the last one. However, for simplicity, the tests will
+demand all three for all phases.)</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Bats will wait until all descendant processes finish before exiting, so if
 you get into a failure mode where a test suite doesn&#8217;t clean up all its
-processes, it will hang.</p>
+processes, Bats will hang.</p>
 </div>
 <div class="section" id="id1">
 <h3><a class="toc-backref" href="#id14">1.4.1. Build</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
@@ -439,17 +447,11 @@ delete all Docker images and let them be rebuilt.</p>
 </div>
 <div class="section" id="run">
 <h3><a class="toc-backref" href="#id15">1.4.2. Run</a><a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h3>
-<p>The run tests require the contents of <code class="code docutils literal"><span class="pre">$CH_TEST_WORKDIR/tarballs</span></code>
-produced by a successful, complete build test. Copy this directory to the run
-system.</p>
-<p>Run-time testing requires an additional environment variable specifing the
-location(s) of specially constructed filesystem permissions test directories.
-These should include every meaningful mounted filesystem, and they cannot be
-shared between different users. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s1">&#39;/data /tmp /var/tmp&#39;</span>
-</pre></div>
-</div>
-<p>These directories must be created as root. For example:</p>
+<p>The run tests require the contents of <code class="code docutils literal"><span class="pre">$CH_TEST_TARDIR</span></code> produced by a
+successful, complete build test. Copy this directory to the run system.</p>
+<p>File permission enforcement is tested against specially constructed fixture
+directories. These should include every meaningful mounted filesystem, and
+they cannot be shared between different users. To create them:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="k">for</span> d in <span class="nv">$CH_TEST_PERMDIRS</span><span class="p">;</span> <span class="k">do</span> sudo ./make-perms-test <span class="nv">$d</span> <span class="nv">$USER</span> nobody<span class="p">;</span> <span class="k">done</span>
 </pre></div>
 </div>

@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                cb981d4
+                8077f09
               </div>
             
           
@@ -745,7 +745,7 @@ this with two chained Dockerfiles. First, we build a basic Debian image
 <span class="c"># --disable-pty-support is needed to avoid &quot;pipe function call failed when</span>
 <span class="c"># setting up I/O forwarding subsystem&quot;.</span>
 <span class="k">ENV</span><span class="s"> MPI_URL https://www.open-mpi.org/software/ompi/v1.10/downloads</span>
-<span class="k">ENV</span><span class="s"> MPI_VERSION 1.10.4</span>
+<span class="k">ENV</span><span class="s"> MPI_VERSION 1.10.5</span>
 <span class="k">WORKDIR</span><span class="s"> /usr/src</span>
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
