@@ -1,5 +1,4 @@
 load common
-sanity_permdirs
 
 setup () {
     echo "testing as: $GUEST_USER $GUEST_UID $GUEST_GROUP $GUEST_GID"

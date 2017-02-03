@@ -232,21 +232,31 @@ Verify the Bats install with::
 
 Just like for normal use, the Charliecloud test suite is split into build and
 run phases, and there is an additional phase that runs the examples' test
-suites. These phase can be tested independently on different systems.
+suites. These phases can be tested independently on different systems.
 
 Testing is coordinated by :code:`make`. The test targets run one or more test
 suites. If any test suite has a failure, testing stops with an error message.
 
-Both the build and run phases require a work directory with several gigabytes
-of free space. This is configured with an environment variable::
+The tests need three work directories with several gigabytes of free space, in
+order to store image tarballs, unpacked image directories, and file permission
+test fixtures. These are configured with environment variables::
 
-  $ export CH_TEST_WORKDIR=/data
+  $ export CH_TEST_TARDIR=/data/tarballs
+  $ export CH_TEST_IMGDIR=/data/images
+  $ export CH_TEST_PERMDIRS='/data /tmp /var/tmp'
+
+:code:`CH_TEST_PERMDIRS` can be set to `skip` in order to skip the file
+permissions tests.
+
+(Strictly speaking, the build phase needs only the first, and the example test
+phase does not need the last one. However, for simplicity, the tests will
+demand all three for all phases.)
 
 .. note::
 
    Bats will wait until all descendant processes finish before exiting, so if
    you get into a failure mode where a test suite doesn't clean up all its
-   processes, it will hang.
+   processes, Bats will hang.
 
 Build
 -----
@@ -288,18 +298,12 @@ delete all Docker images and let them be rebuilt.
 Run
 ---
 
-The run tests require the contents of :code:`$CH_TEST_WORKDIR/tarballs`
-produced by a successful, complete build test. Copy this directory to the run
-system.
+The run tests require the contents of :code:`$CH_TEST_TARDIR` produced by a
+successful, complete build test. Copy this directory to the run system.
 
-Run-time testing requires an additional environment variable specifing the
-location(s) of specially constructed filesystem permissions test directories.
-These should include every meaningful mounted filesystem, and they cannot be
-shared between different users. For example::
-
-  $ export CH_TEST_PERMDIRS='/data /tmp /var/tmp'
-
-These directories must be created as root. For example::
+File permission enforcement is tested against specially constructed fixture
+directories. These should include every meaningful mounted filesystem, and
+they cannot be shared between different users. To create them::
 
   $ for d in $CH_TEST_PERMDIRS; do sudo ./make-perms-test $d $USER nobody; done
 

@@ -3,7 +3,7 @@ load ../../test/common
 setup () {
     umask 0077
     SPARK_IMG=$IMGDIR/spark
-    SPARK_DIR=$CH_TEST_WORKDIR/spark.tmp
+    SPARK_DIR=$BATS_TMPDIR/spark.tmp
     SPARK_CONFIG=$SPARK_DIR
     if [[ -n $SLURM_JOB_ID ]]; then
         false  # unimplemented

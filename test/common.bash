@@ -1,33 +1,12 @@
-sanity () {
-    if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
-        # Bash bug: [[ ... ]] expression doesn't exit with set -e
-        # https://github.com/sstephenson/bats/issues/49
-        printf "Need at least Bash 4.1 for these tests.\n\n" >&2
-        exit 1
-    fi
-    if [[ ! -x $CH_BIN/ch-run ]]; then
-        printf 'Must build with "make" before running tests.\n\n' >&2
-        exit 1
-    fi
-    for var in CH_TEST_WORKDIR; do
-        if [[ -z ${!var} ]]; then
-            printf "\$$var is empty or not set\n\n" >&2
-            exit 1
-        fi
-    done
-}
-
-sanity_permdirs () {
-    for var in CH_TEST_PERMDIRS; do
-        if [[ -z ${!var} ]]; then
-            printf "\$$var is empty or not set\n\n" >&2
-            exit 1
-        fi
-    done
-}
-
 docker_ok () {
     sudo docker images | fgrep -q $1
+}
+
+env_require () {
+    if [[ -z ${!1} ]]; then
+        printf "\$$1 is empty or not set\n\n" >&2
+        exit 1
+    fi
 }
 
 image_ok () {
@@ -54,8 +33,8 @@ CH_BIN="$(readlink -f "$CH_BIN")"
 PATH=$CH_BIN:$PATH
 
 # Separate directories for tarballs and images
-TARDIR=$CH_TEST_WORKDIR/tarballs
-IMGDIR=$CH_TEST_WORKDIR/images
+TARDIR=$CH_TEST_TARDIR
+IMGDIR=$CH_TEST_IMGDIR
 
 # Some test variables
 EXAMPLE_TAG=$(basename $BATS_TEST_DIRNAME)
@@ -68,4 +47,16 @@ if [[ -n $GUEST_USER && -z $BATS_TEST_NAME ]]; then
 fi
 
 # Do we have what we need?
-sanity
+if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
+    # Bash bug: [[ ... ]] expression doesn't exit with set -e
+    # https://github.com/sstephenson/bats/issues/49
+    printf "Need at least Bash 4.1 for these tests.\n\n" >&2
+    exit 1
+fi
+if [[ ! -x $CH_BIN/ch-run ]]; then
+    printf 'Must build with "make" before running tests.\n\n' >&2
+    exit 1
+fi
+env_require CH_TEST_TARDIR
+env_require CH_TEST_IMGDIR
+env_require CH_TEST_PERMDIRS
