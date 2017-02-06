@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                8077f09
+                cf2aca2
               </div>
             
           
@@ -91,6 +91,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc">4.1. My app needs to write to <code class="code docutils literal"><span class="pre">/var/log</span></code>, <code class="code docutils literal"><span class="pre">/run</span></code>, etc.</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#tarball-build-fails-with-no-command-specified">4.2. Tarball build fails with &#8220;No command specified&#8221;</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#uid-0-lets-me-read-files-i-can-t-otherwise">4.3. <code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can&#8217;t otherwise!</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-is-bin-being-added-to-my-path">4.4. Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="copyright.html">5. Copyright and license</a></li>
@@ -144,6 +145,7 @@
 <li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id1">My app needs to write to <code class="code docutils literal"><span class="pre">/var/log</span></code>, <code class="code docutils literal"><span class="pre">/run</span></code>, etc.</a></li>
 <li><a class="reference internal" href="#tarball-build-fails-with-no-command-specified" id="id2">Tarball build fails with &#8220;No command specified&#8221;</a></li>
 <li><a class="reference internal" href="#uid-0-lets-me-read-files-i-can-t-otherwise" id="id3"><code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can&#8217;t otherwise!</a></li>
+<li><a class="reference internal" href="#why-is-bin-being-added-to-my-path" id="id4">Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a></li>
 </ul>
 </div>
 <div class="section" id="my-app-needs-to-write-to-var-log-run-etc">
@@ -223,6 +225,29 @@ inside and outside the container remains equivalent.</p>
 <li><a class="reference external" href="http://lxr.free-electrons.com/source/kernel/capability.c?v=4.2#L442">http://lxr.free-electrons.com/source/kernel/capability.c?v=4.2#L442</a></li>
 <li><a class="reference external" href="http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328">http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328</a></li>
 </ul>
+</div>
+<div class="section" id="why-is-bin-being-added-to-my-path">
+<h2><a class="toc-backref" href="#id4">4.4. Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a><a class="headerlink" href="#why-is-bin-being-added-to-my-path" title="Permalink to this headline">¶</a></h2>
+<p>Newer Linux distributions replace some root-level directories, such as
+<code class="code docutils literal"><span class="pre">/bin</span></code>, with symlinks to their counterparts in <code class="code docutils literal"><span class="pre">/usr</span></code>, e.g.:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /bin
+<span class="go">lrwxrwxrwx 1 root root 7 Jan 13 15:46 /bin -&gt; usr/bin</span>
+</pre></div>
+</div>
+<p>Some of these (e.g., Fedora 24) have also dropped <code class="code docutils literal"><span class="pre">/bin</span></code> from the
+default <code class="code docutils literal"><span class="pre">$PATH</span></code>. This is a problem when the guest OS does <em>not</em> have a
+merged <code class="code docutils literal"><span class="pre">/usr</span></code> (e.g., Debian 8 &#8220;Jessie&#8221;).</p>
+<p>While Charliecloud&#8217;s general philosophy is not to manipulate environment
+variables, in this case, guests can be severely broken if <code class="code docutils literal"><span class="pre">/bin</span></code> is not
+in <code class="code docutils literal"><span class="pre">$PATH</span></code>. Thus, we add it if it&#8217;s not there.</p>
+<p>Further reading:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="https://www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge/">The case for the /usr Merge</a></li>
+<li><a class="reference external" href="https://fedoraproject.org/wiki/Features/UsrMove">Fedora</a></li>
+<li><a class="reference external" href="https://wiki.debian.org/UsrMerge">Debian</a></li>
+</ul>
+</div></blockquote>
 </div>
 </div>
 
