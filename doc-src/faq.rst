@@ -95,3 +95,27 @@ References:
 * http://man7.org/linux/man-pages/man7/capabilities.7.html
 * http://lxr.free-electrons.com/source/kernel/capability.c?v=4.2#L442
 * http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328
+
+
+Why is :code:`/bin` being added to my :code:`$PATH`?
+====================================================
+
+Newer Linux distributions replace some root-level directories, such as
+:code:`/bin`, with symlinks to their counterparts in :code:`/usr`, e.g.::
+
+  $ ls -l /bin
+  lrwxrwxrwx 1 root root 7 Jan 13 15:46 /bin -> usr/bin
+
+Some of these (e.g., Fedora 24) have also dropped :code:`/bin` from the
+default :code:`$PATH`. This is a problem when the guest OS does *not* have a
+merged :code:`/usr` (e.g., Debian 8 "Jessie").
+
+While Charliecloud's general philosophy is not to manipulate environment
+variables, in this case, guests can be severely broken if :code:`/bin` is not
+in :code:`$PATH`. Thus, we add it if it's not there.
+
+Further reading:
+
+  * `The case for the /usr Merge <https://www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge/>`_
+  * `Fedora <https://fedoraproject.org/wiki/Features/UsrMove>`_
+  * `Debian <https://wiki.debian.org/UsrMerge>`_

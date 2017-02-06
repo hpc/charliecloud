@@ -288,11 +288,22 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
    requires null-termination instead of an argument count. */
 void run_user_command(int argc, char * argv[], int user_cmd_start)
 {
+   char * old_path, * new_path;
+
    LOG_IDS;
 
    for (int i = user_cmd_start; i < argc; i++)
       argv[i - user_cmd_start] = argv[i];
    argv[argc - user_cmd_start] = NULL;
+
+   // Append /bin to $PATH if not already present. See FAQ.
+   TRY (NULL == (old_path = getenv("PATH")));
+   if (strstr(old_path, "/bin") != old_path && !strstr(old_path, ":/bin")) {
+      TRY (0 > asprintf(&new_path, "%s:/bin", old_path));
+      TRY (setenv("PATH", new_path, 1));
+      if (args.verbose)
+         fprintf(stderr, "new $PATH: %s\n", new_path);
+   }
 
    if (args.verbose) {
       fprintf(stderr, "cmd at %d/%d:", user_cmd_start, argc);
@@ -302,7 +313,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
    }
 
    execvp(argv[0], argv);  // only returns if error
-   fatal("can't execute: %s\n", strerror(errno));
+   fatal("can't execve(2) user command: %s\n", strerror(errno));
 }
 
 /* Activate the desired isolation namespaces. */

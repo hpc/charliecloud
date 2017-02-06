@@ -40,6 +40,30 @@ load common
     ch-tar2dir $CHTEST_TARBALL $CHTEST_IMG
 }
 
+@test 'workaround for /bin not in $PATH' {
+    echo "$PATH"
+    # if /bin is in $PATH, latter passes through unchanged
+    PATH2="$CH_BIN:/bin:/usr/bin"
+    echo $PATH2
+    PATH=$PATH2 run ch-run $CHTEST_IMG -- /bin/sh -c 'echo $PATH'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = $PATH2 ]]
+    PATH2="/bin:$CH_BIN:/usr/bin"
+    echo $PATH2
+    PATH=$PATH2 run ch-run $CHTEST_IMG -- /bin/sh -c 'echo $PATH'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = $PATH2 ]]
+    # if /bin isn't in $PATH, former is added to end
+    PATH2="$CH_BIN:/usr/bin"
+    echo $PATH2
+    PATH=$PATH2 run ch-run $CHTEST_IMG -- /bin/sh -c 'echo $PATH'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = $PATH2:/bin ]]
+}
+
 @test 'userns id differs' {
     host_userns=$(stat -Lc '%i' /proc/self/ns/user)
     echo "host:  $host_userns"
