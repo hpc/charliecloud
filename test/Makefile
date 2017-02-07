@@ -26,7 +26,7 @@ test-run: run_auto.bats
 	./bats run.bats run_auto.bats
 	set -e; \
 	for GUEST_USER in $$(id -un) root nobody; do \
-	    for GUEST_GROUP in $$(id -gn) root nogroup; do \
+	    for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
 	        export GUEST_USER; \
 	        export GUEST_GROUP; \
 	        echo testing as: $$GUEST_USER $$GUEST_GROUP; \

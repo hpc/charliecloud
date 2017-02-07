@@ -1,8 +1,12 @@
 load common
 
 setup () {
-    echo "testing as: $GUEST_USER $GUEST_UID $GUEST_GROUP $GUEST_GID"
+    echo "testing as: $GUEST_USER/$GUEST_UID $GUEST_GROUP/$GUEST_GID"
     echo
+    [[ -n $GUEST_USER ]]
+    [[ -n $GUEST_UID ]]
+    [[ -n $GUEST_GROUP ]]
+    [[ -n $GUEST_GID ]]
 }
 
 @test 'user and group as specified' {
