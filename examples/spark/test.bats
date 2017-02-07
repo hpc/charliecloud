@@ -5,7 +5,7 @@ setup () {
     SPARK_IMG=$IMGDIR/spark
     SPARK_DIR=$BATS_TMPDIR/spark.tmp
     SPARK_CONFIG=$SPARK_DIR
-    if [[ -n $SLURM_JOB_ID ]]; then
+    if [[ -n $CHTEST_MULTINODE ]]; then
         false  # unimplemented
         MPIRUN='mpirun -pernode'
     else

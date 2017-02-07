@@ -45,7 +45,9 @@ lammps_try () {
         # serial (but still uses MPI somehow)
         ch-run $IMG -- sh -c "cd /lammps/examples/$1 && lmp_mpi -log none -in $i"
         # parallel
-        mpirun ch-run $IMG -- sh -c "cd /lammps/examples/$1 && lmp_mpi -log none -in $i"
+        if [[ $CHTEST_MULTINODE ]]; then
+            mpirun ch-run $IMG -- sh -c "cd /lammps/examples/$1 && lmp_mpi -log none -in $i"
+        fi
     done
 
 }
