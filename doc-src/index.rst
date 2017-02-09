@@ -21,4 +21,3 @@ This documentation is for Charliecloud version |release| (Git commit
    script-help
    faq
    copyright
-   history
