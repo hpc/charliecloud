@@ -39,6 +39,8 @@ setup () {
 }
 
 lammps_try () {
+    # These examples cd because some (not all) of the LAMMPS tests expect to
+    # find things based on $CWD.
     infiles=$(ch-run $IMG -- bash -c "cd /lammps/examples/$1 && ls in.*")
     for i in $infiles; do
         printf '\n\n%s\n' $i
@@ -50,6 +52,18 @@ lammps_try () {
         fi
     done
 
+}
+
+@test "$EXAMPLE_TAG/using all cores" {
+    [[ -z $CHTEST_MULTINODE ]] && skip
+    run mpirun ch-run $IMG -- lmp_mpi -log none -in /lammps/examples/melt/in.melt
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ranks_found=$(  echo "$output" \
+                  | fgrep 'MPI tasks' \
+                  | sed -r 's/^.+with ([0-9]+) MPI tasks.+$/\1/')
+    echo "ranks found: $ranks_found"
+    [[ $ranks_found -eq $SLURM_NTASKS ]]
 }
 
 @test "$EXAMPLE_TAG/crack"    { lammps_try crack; }
