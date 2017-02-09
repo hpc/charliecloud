@@ -19,7 +19,7 @@ clean:
 ifeq ($(wildcard .git),.git)
 .PHONY: VERSION.full
 VERSION.full:
-	printf '%s.%s%s\n' \
+	printf '%s+%s%s\n' \
 	       $$(cat VERSION) \
                $$(git rev-parse --short HEAD) \
 	       $$(git diff-index --quiet HEAD || echo '.dirty') \
