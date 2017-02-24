@@ -14,6 +14,28 @@ the previous section, that the :code:`bin` directory is on your
    :local:
 
 
+90 seconds to Charliecloud
+==========================
+
+This section is for the impatient. It shows you how to quickly build and run a
+"hello world" Charliecloud container. If you like what you see, then proceed
+with the rest of the tutorial to understand what is happening and how to use
+Charliecloud for your own applications.
+
+::
+
+   $ cd charliecloud/examples/hello
+   $ ch-build -t hello ../..
+   Sending build context to Docker daemon 12.24 MB
+   [...]
+   Successfully built 2972e7281f75
+   $ ch-docker2tar hello /data
+   57M /data/hello.tar.gz
+   $ ch-tar2dir /data/hello.tar.gz /data/hello
+   /data/hello unpacked ok
+   $ ch-run /data/hello -- echo "I'm in a container"
+   I'm in a container
+
 Getting help
 ============
 
