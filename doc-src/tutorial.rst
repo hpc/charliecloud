@@ -29,11 +29,11 @@ Charliecloud for your own applications.
    Sending build context to Docker daemon 12.24 MB
    [...]
    Successfully built 2972e7281f75
-   $ ch-docker2tar hello /data
-   57M /data/hello.tar.gz
-   $ ch-tar2dir /data/hello.tar.gz /data/hello
-   /data/hello unpacked ok
-   $ ch-run /data/hello -- echo "I'm in a container"
+   $ ch-docker2tar hello /var/tmp
+   57M /var/tmp/hello.tar.gz
+   $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
+   /var/tmp/hello unpacked ok
+   $ ch-run /var/tmp/hello -- echo "I'm in a container"
    I'm in a container
 
 Getting help
@@ -153,12 +153,12 @@ Flatten image
 
 Next, we flatten the Docker image into a tarball, which is then a plain file
 amenable to standard file manipulation commands. This tarball is placed in an
-arbitrary directory, here :code:`/data`.
+arbitrary directory, here :code:`/var/tmp`.
 
 ::
 
-   $ ch-docker2tar hello /data
-   57M /data/hello.tar.gz
+   $ ch-docker2tar hello /var/tmp
+   57M /var/tmp/hello.tar.gz
 
 Distribute tarball
 ------------------
@@ -180,8 +180,8 @@ the image directory if it already exists.
 
 ::
 
-   $ ch-tar2dir /data/hello.tar.gz /data/hello
-   /data/hello unpacked ok
+   $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
+   /var/tmp/hello unpacked ok
 
 One potential gotcha is the tarball including special files such as devices.
 Because :code:`tar` is running unprivileged, these will not be unpacked, and
@@ -201,7 +201,7 @@ Activate image
 We are now ready to run programs inside a Charliecloud container. This is done
 with the :code:`ch-run` command::
 
-  $ ch-run /data/hello -- echo hello
+  $ ch-run /var/tmp/hello -- echo hello
   hello
 
 Symbolic links in :code:`/proc` tell us the current namespaces, which are
@@ -215,7 +215,7 @@ identified by long ID numbers::
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 pid -> pid:[4026531836]
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 user -> user:[4026531837]
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 uts -> uts:[4026531838]
-  $ ch-run /data/hello -- ls -l /proc/self/ns
+  $ ch-run /var/tmp/hello -- ls -l /proc/self/ns
   total 0
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 ipc -> ipc:[4026531839]
   lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 mnt -> mnt:[4026532257]
@@ -246,12 +246,12 @@ number::
 
   $ stat -L --format='%i' /proc/self/ns/user
   4026531837
-  $ ch-run /data/hello -- stat -L --format='%i' /proc/self/ns/user
+  $ ch-run /var/tmp/hello -- stat -L --format='%i' /proc/self/ns/user
   4026532256
 
 You can also run interactive commands, such as a shell::
 
-  $ ch-run /data/hello -- /bin/bash
+  $ ch-run /var/tmp/hello -- /bin/bash
   $ stat -L --format='%i' /proc/self/ns/user
   4026532256
   $ exit
@@ -262,13 +262,13 @@ sub-shell. For example::
 
   $ ls /usr/bin/oldfind
   ls: cannot access '/usr/bin/oldfind': No such file or directory
-  $ ch-run /data/hello -- ls /usr/bin/oldfind
+  $ ch-run /var/tmp/hello -- ls /usr/bin/oldfind
   /usr/bin/oldfind
   $ ls /usr/bin/oldf*
   ls: cannot access '/usr/bin/oldf*': No such file or directory
-  $ ch-run /data/hello -- ls /usr/bin/oldf*
+  $ ch-run /var/tmp/hello -- ls /usr/bin/oldf*
   ls: cannot access /usr/bin/oldf*: No such file or directory
-  $ ch-run /data/hello -- sh -c 'ls /usr/bin/oldf*'
+  $ ch-run /var/tmp/hello -- sh -c 'ls /usr/bin/oldf*'
   /usr/bin/oldfind
 
 You have now successfully run commands within a single-node Charliecloud
@@ -302,11 +302,11 @@ In addition to the default bind mounts, arbitrary user-specified directories
 can be added using the :code:`-d` switch. These appear at :code:`/mnt/0`,
 :code:`/mnt/0`, etc. For example::
 
-  $ mkdir /data/foo0
-  $ echo hello > /data/foo0/bar
-  $ mkdir /data/foo1
-  $ echo world > /data/foo1/bar
-  $ ch-run -d /data/foo0 -d /data/foo1 /data/hello bash
+  $ mkdir /var/tmp/foo0
+  $ echo hello > /var/tmp/foo0/bar
+  $ mkdir /var/tmp/foo1
+  $ echo world > /var/tmp/foo1/bar
+  $ ch-run -d /var/tmp/foo0 -d /var/tmp/foo1 /var/tmp/hello bash
   > ls /mnt
   0  1
   > cat /mnt/0/bar
@@ -328,7 +328,7 @@ container, even if :code:`ssh` was initiated from a container::
   4026531837
   $ ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026531837
-  $ ch-run /data/hello -- /bin/bash
+  $ ch-run /var/tmp/hello -- /bin/bash
   > stat -L --format='%i' /proc/self/ns/user
   4026532256
   > ssh localhost stat -L --format='%i' /proc/self/ns/user
@@ -338,7 +338,7 @@ There are several ways to SSH to a remote note and run commands inside a
 container. The simplest is to manually invoke :code:`ch-run` in the
 :code:`ssh` command::
 
-  $ ssh localhost ch-run /data/hello -- stat -L --format='%i' /proc/self/ns/user
+  $ ssh localhost ch-run /var/tmp/hello -- stat -L --format='%i' /proc/self/ns/user
   4026532256
 
 .. note::
@@ -353,7 +353,7 @@ Another is to use the :code:`ch-ssh` wrapper program, which adds
 :code:`ch-run` arguments from the environment variable :code:`CH_RUN_ARGS`,
 making it mostly a drop-in replacement for :code:`ssh`. For example::
 
-  $ export CH_RUN_ARGS="/data/hello --"
+  $ export CH_RUN_ARGS="/var/tmp/hello --"
   $ ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026532256
   $ ch-ssh -t localhost /bin/bash
@@ -363,8 +363,8 @@ making it mostly a drop-in replacement for :code:`ssh`. For example::
 :code:`ch-ssh` is available inside containers as well (in :code:`/usr/bin` via
 bind-mount)::
 
-  $ export CH_RUN_ARGS="/data/hello --"
-  $ ch-run /data/hello /bin/bash
+  $ export CH_RUN_ARGS="/var/tmp/hello --"
+  $ ch-run /var/tmp/hello /bin/bash
   > stat -L --format='%i' /proc/self/ns/user
   4026532256
   > ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
@@ -401,7 +401,7 @@ the container.) For example::
   901
   $ whoami
   reidpr
-  $ ch-run /data/hello bash
+  $ ch-run /var/tmp/hello bash
   > id -u
   901
   > whoami
@@ -413,7 +413,7 @@ Charliecloud does, lets you map any container UID to your host UID.
 you can tell Charliecloud you want to be root, and it will tell you that
 you're root::
 
-  $ ch-run --uid 0 /data/hello bash
+  $ ch-run --uid 0 /var/tmp/hello bash
   > id -u
   0
   > whoami
@@ -435,7 +435,7 @@ looks normal::
   drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/reidpr
   $ ls -ld ~
   drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 12:12 /home/reidpr
-  $ ch-run /data/hello bash
+  $ ch-run /var/tmp/hello bash
   > ls -nd ~
   drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld ~
@@ -443,7 +443,7 @@ looks normal::
 
 But if :code:`--uid` is provided, things can seem odd. For example::
 
-  $ ch-run --uid 0 /data/hello bash
+  $ ch-run --uid 0 /var/tmp/hello bash
   > ls -nd /home/reidpr
   drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld /home/reidpr
@@ -457,7 +457,7 @@ up as :code:`nobody`::
   -rw-rw---- 1 902 902 0 Sep 28 15:40 /tmp/foo
   $ ls -l /tmp/foo
   -rw-rw---- 1 sig sig 0 Sep 28 15:40 /tmp/foo
-  $ ch-run /data/hello bash
+  $ ch-run /var/tmp/hello bash
   > ls -n /tmp/foo
   -rw-rw---- 1 65534 65534 843 Sep 28 21:40 /tmp/foo
   > ls -l /tmp/foo
@@ -470,9 +470,9 @@ mapped in any given container. All the rest become :code:`nogroup`::
 
   $ id
   uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),903(nerds),904(losers)
-  $ ch-run /data/hello -- id
+  $ ch-run /var/tmp/hello -- id
   uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),65534(nogroup)
-  $ ch-run --gid 903 /data/hello -- id
+  $ ch-run --gid 903 /var/tmp/hello -- id
   uid=901(reidpr) gid=903(nerds) groups=903(nerds),65534(nogroup)
 
 However, this doesn't affect access. The container process retains the same
@@ -482,7 +482,7 @@ access::
   $ ls -l /tmp/primary /tmp/supplemental
   -rw-rw---- 1 sig reidpr 0 Sep 28 15:47 /tmp/primary
   -rw-rw---- 1 sig nerds  0 Sep 28 15:48 /tmp/supplemental
-  $ ch-run /data/hello bash
+  $ ch-run /var/tmp/hello bash
   > cat /tmp/primary > /dev/null
   > cat /tmp/supplemental > /dev/null
 
@@ -492,11 +492,11 @@ group is a no-op because it's mapped back to the host GID::
 
   $ ls -l /tmp/bar
   rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar
-  $ ch-run /data/hello -- chgrp nerds /tmp/bar
+  $ ch-run /var/tmp/hello -- chgrp nerds /tmp/bar
   chgrp: changing group of '/tmp/bar': Invalid argument
-  $ ch-run /data/hello -- chgrp nogroup /tmp/bar
+  $ ch-run /var/tmp/hello -- chgrp nogroup /tmp/bar
   chgrp: changing group of '/tmp/bar': Invalid argument
-  $ ch-run --gid 903 /data/hello -- chgrp nerds /tmp/bar
+  $ ch-run --gid 903 /var/tmp/hello -- chgrp nerds /tmp/bar
   $ ls -l /tmp/bar
   -rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar
 
@@ -508,7 +508,7 @@ directories::
   $ chmod 2770 /tmp/baz
   $ ls -ld /tmp/baz
   drwxrws--- 2 reidpr nerds 40 Sep 28 16:19 /tmp/baz
-  $ ch-run /data/hello -- touch /tmp/baz/foo
+  $ ch-run /var/tmp/hello -- touch /tmp/baz/foo
   $ ls -l /tmp/baz/foo
   -rw-rw---- 1 reidpr nerds 0 Sep 28 16:21 /tmp/baz/foo
 
@@ -630,11 +630,11 @@ These Dockerfile instructions:
    build files, since they would be inappropriate inside the container.
 
 Once the image is built, we can see the results. (Install the image into
-:code:`/data` as outlined above, if you haven't already.)
+:code:`/var/tmp` as outlined above, if you haven't already.)
 
 ::
 
-  $ ch-run /data/mpihello -- ls -lh /hello
+  $ ch-run /var/tmp/mpihello -- ls -lh /hello
   total 32K
   -rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 22:37 Makefile
@@ -666,7 +666,7 @@ demonstrate this.
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
   -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
   -rwxrwx--- 1 reidpr reidpr  441 Aug  5 16:37 test.sh
-  $ ch-run -d . /data/mpihello -- sh -c 'cd /mnt/0 && make'
+  $ ch-run -d . /var/tmp/mpihello -- sh -c 'cd /mnt/0 && make'
   mpicc -std=gnu11 -Wall hello.c -o hello
   $ ls -l
   total 32
@@ -718,9 +718,9 @@ For example, using :code:`mpirun` and the :code:`mpihello` example above::
   mpirun (Open MPI) 1.10.2
   $ stat -L --format='%i' /proc/self/ns/user
   4026531837
-  $ ch-run /data/mpihello -- mpirun --version
+  $ ch-run /var/tmp/mpihello -- mpirun --version
   mpirun (Open MPI) 1.10.4
-  $ mpirun -np 4 ch-run /data/mpihello /hello/hello
+  $ mpirun -np 4 ch-run /var/tmp/mpihello /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532267
   2: init ok cn001, 4 ranks, userns 4026532269
@@ -747,7 +747,7 @@ host-specific things that might e.g. improve performance.
 
 For example::
 
-  $ ch-run /data/mpihello -- mpirun -np 4 /hello/hello
+  $ ch-run /var/tmp/mpihello -- mpirun -np 4 /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532256
   2: init ok cn001, 4 ranks, userns 4026532256
@@ -781,7 +781,7 @@ The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with :code:`-d`, that is
 overmounted and used instead. For example::
 
-  $ ch-run -d /usr/local/etc /data/mpihello -- mpirun -np 4 /hello/hello
+  $ ch-run -d /usr/local/etc /var/tmp/mpihello -- mpirun -np 4 /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532256
   2: init ok cn001, 4 ranks, userns 4026532256
@@ -799,9 +799,9 @@ Your first multi-node jobs
 
 This section assumes that you are using a MOAB/SLURM cluster with a working
 OpenMPI 1.10.\ *x* installation and some type of node-local storage. A
-:code:`tmpfs` will suffice, and we use :code:`/tmp` for this tutorial, but
-it's best to use something else to avoid confusion with circular mounts
-(recall that :code:`/tmp` is shared by the container and host).
+:code:`tmpfs` will suffice, and we use :code:`/var/tmp` for this tutorial.
+(Using :code:`/tmp` often works but can cause confusion because it's share by
+the container and host, yielding a circular directory tree.)
 
 We cover three cases:
 
@@ -919,30 +919,35 @@ Once you have an interactive job, unpack the tarball.
 
 ::
 
-  $ mpirun -pernode ch-tar2dir ./$USER.spark.tar.gz /tmp/spark
+  $ mpirun -pernode ch-tar2dir spark.tar.gz /var/tmp/spark
 
-We need to first create a basic configuration directory for Spark, as the
-defaults in the Dockerfile are insufficient. (For real jobs, you'll want to
-also configure performance parameters such as memory use; see `the
-documentation <http://spark.apache.org/docs/latest/configuration.html>`_.)
-First::
+We need to first create a basic configuration for Spark, as the defaults in
+the Dockerfile are insufficient. (For real jobs, you'll want to also configure
+performance parameters such as memory use; see `the documentation
+<http://spark.apache.org/docs/latest/configuration.html>`_.) First::
 
   $ mkdir ~/sparkconf
 
+We'll want to use the cluster's high-speed network. For this example, we'll
+find the Spark master's IP manually::
+
+  $ ip -o -f inet addr show | cut -d'/' -f1
+  1: lo    inet 127.0.0.1
+  2: eth0  inet 192.168.8.3
+  8: eth1  inet 10.8.8.3
+
+Your site support can tell you which to use. In this case, we'll use 10.8.8.3.
+
 Next, we set some environment variables. In the directory above, create a file
-containing something like the following. Edit to match your configuration; in
+containing roughly the following. Edit to match your configuration; in
 particular, use local disks instead of :code:`/tmp` if you have them.
 :code:`spark-env.sh`::
 
-  SPARK_LOCAL_DIRS=/tmp
-  SPARK_LOG_DIR=/home/$USER/sparklog
-  SPARK_WORKER_DIR=/tmp
-  SPARK_LOCAL_IP=$(  ip -o -f inet addr show dev eth0 \
-                   | sed -r 's/^.+inet ([0-9.]+).+/\1/')
-  SPARK_MASTER_HOST=$SPARK_LOCAL_IP
-
-This is a shell script, so you can include code to set variables, as we do to
-select the IP address of the right interface.
+  SPARK_LOCAL_DIRS=/tmp/spark
+  SPARK_LOG_DIR=/tmp/spark/log
+  SPARK_WORKER_DIR=/tmp/spark
+  SPARK_LOCAL_IP=127.0.0.1
+  SPARK_MASTER_HOST=10.8.8.3
 
 Other configuration variables are called "Spark properties" and go in a
 different file. Change the secret to something known only to you.
@@ -953,18 +958,29 @@ different file. Change the secret to something known only to you.
 
 We can now start the Spark master::
 
-  $ ch-run -d ~/sparkconf /tmp/spark -- /spark/sbin/start-master.sh
+  $ ch-run -d ~/sparkconf /var/tmp/spark -- /spark/sbin/start-master.sh
 
-If you can see the node with a web browser, browse to
-:code:`http://$SPARK_LOCAL_IP:8080` for the Spark master web interface.
-Because this capability varies, the tutorial does not depend on it, but it can
-be informative. Refresh after each key step below.
+Look at the log in :code:`/tmp/spark/log` to see that the master started
+correctly::
+
+  $ tail -7 /tmp/spark/log/*master*.localdomain.out
+  17/02/24 22:37:21 INFO Master: Starting Spark master at spark://10.8.8.3:7077
+  17/02/24 22:37:21 INFO Master: Running Spark version 2.0.2
+  17/02/24 22:37:22 INFO Utils: Successfully started service 'MasterUI' on port 8080.
+  17/02/24 22:37:22 INFO MasterWebUI: Bound MasterWebUI to 127.0.0.1, and started at http://127.0.0.1:8080
+  17/02/24 22:37:22 INFO Utils: Successfully started service on port 6066.
+  17/02/24 22:37:22 INFO StandaloneRestServer: Started REST server for submitting applications on port 6066
+  17/02/24 22:37:22 INFO Master: I have been elected leader! New state: ALIVE
+
+If you can run a web browser on the node, browse to
+:code:`http://localhost:8080` for the Spark master web interface. Because this
+capability varies, the tutorial does not depend on it, but it can be
+informative. Refresh after each key step below.
 
 The Spark workers need to know how to reach the master. This is via a URL; you
-can construct it from your knowledge of :code:`$SPARK_LOCAL_IP`, or consult
-the web interface. For example::
+can derive it from the above, or consult the web interface. For example::
 
-  $ MASTER_URL=spark://10.8.8.1:7077
+  $ MASTER_URL=spark://10.8.8.3:7077
 
 Next, start one worker on each compute node. This is a little ugly;
 :code:`mpirun` will wait until everything is finished before returning, but we
@@ -974,12 +990,41 @@ kills the worker as soon as it goes into the background.)
 
 ::
 
-  $ mpirun -pernode ch-run -d ~/sparkconf /tmp/spark -- \
+  $ mpirun -pernode ch-run -d ~/sparkconf /var/tmp/spark -- \
     /spark/sbin/start-slave.sh $MASTER_URL &
+
+One of the advantages of Spark is that it's resilient: if a worker becomes
+available, the computation simply proceeds without it. However, this can mask
+issues as well. For example, this example will run perfectly fine with just
+one worker on the same node as the master, which isn't what we want.
+
+Check the master log to see that the right number of workers registered::
+
+  $  fgrep worker /tmp/spark/log/*master*.out
+  17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:39890 with 16 cores, 187.8 GB RAM
+  17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:44735 with 16 cores, 187.8 GB RAM
+  17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:22445 with 16 cores, 187.8 GB RAM
+  17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:29473 with 16 cores, 187.8 GB RAM
+
+Despite the workers calling themselves 127.0.0.1, they really are running
+across the allocation. (The confusion happens because of our
+:code:`$SPARK_LOCAL_IP` setting above.) This can be verified by examining logs
+on each compute node. For example::
+
+  $ ssh 10.8.8.4
+  $ tail -7 /tmp/spark/log/*worker*.out
+  17/02/24 22:52:23 INFO Worker: Running Spark version 2.0.2
+  17/02/24 22:52:23 INFO Worker: Spark home: /spark
+  17/02/24 22:52:24 INFO Utils: Successfully started service 'WorkerUI' on port 8081.
+  17/02/24 22:52:24 INFO WorkerWebUI: Bound WorkerWebUI to 127.0.0.1, and started at http://127.0.0.1:8081
+  17/02/24 22:52:24 INFO Worker: Connecting to master 10.8.8.3:7077...
+  17/02/24 22:52:24 INFO TransportClientFactory: Successfully created connection to /10.8.8.3:7077 after 263 ms (216 ms spent in bootstraps)
+  17/02/24 22:52:24 INFO Worker: Successfully registered with master spark://10.8.8.3:7077
+  $ exit
 
 We can now start an interactive shell to do some Spark computing::
 
-  $ ch-run -d ~/sparkconf /tmp/spark -- /spark/bin/pyspark --master $MASTER_URL
+  $ ch-run -d ~/sparkconf /var/tmp/spark -- /spark/bin/pyspark --master $MASTER_URL
 
 Let's use this shell to estimate 𝜋 (this is adapted from one of the Spark
 `examples <http://spark.apache.org/examples.html>`_):
@@ -1008,7 +1053,7 @@ omitted.)
 
 ::
 
-  $ ch-run -d ~/sparkconf /tmp/spark -- \
+  $ ch-run -d ~/sparkconf /var/tmp/spark -- \
     /spark/bin/spark-submit --master $MASTER_URL \
     /spark/examples/src/main/python/pi.py 1024
   [...]
@@ -1018,8 +1063,8 @@ omitted.)
 Finally, we shut down the Spark cluster. This isn't strictly necessary, as
 SLURM will kill everything when exit the allocation, but it's good hygiene::
 
-  $ mpirun -pernode ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-slave.sh
-  $ ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-master.sh
+  $ mpirun -pernode ch-run -d ~/sparkconf /var/tmp/spark -- /spark/sbin/stop-slave.sh
+  $ ch-run -d ~/sparkconf /var/tmp/spark -- /spark/sbin/stop-master.sh
 
 Success! Next, we'll run a similar job non-interactively.
 
