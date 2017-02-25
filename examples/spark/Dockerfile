@@ -8,9 +8,19 @@ RUN    apt-get update \
 # We want ch-ssh
 RUN touch /usr/bin/ch-ssh
 
-# Download and install Spark
+# Download and install Spark.
+#
+# We're staying on Spark 2.0 because 2.1.0 introduces Hive for metadata
+# handling somehow [1]. Data for this goes in $CWD by default, which is / and
+# not writeable in Charliecloud containers. So you get thousands of lines of
+# stack trace from pyspark. Workarounds exist, including cd to /tmp first or
+# configure hive-site.xml [2], but I'm not willing to put up with that crap
+# for demo purposes. Maybe it will be fixed in a 2.1 point release.
+#
+# [1]: http://spark.apache.org/docs/latest/sql-programming-guide.html#upgrading-from-spark-sql-20-to-21
+# [2]: https://community.cloudera.com/t5/Advanced-Analytics-Apache-Spark/Spark-displays-SQLException-when-Hive-not-installed/td-p/37954
 ENV URLPATH http://d3kbcqa49mib13.cloudfront.net
-ENV DIR spark-2.1.0-bin-hadoop2.7
+ENV DIR spark-2.0.2-bin-hadoop2.7
 ENV TAR $DIR.tgz
 RUN wget -nv $URLPATH/$TAR
 RUN tar xf $TAR && mv $DIR spark && rm $TAR
