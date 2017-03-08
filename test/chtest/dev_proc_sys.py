@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 
+import os.path
 import sys
 
-# other candidates:
-#   /sys/devices/cpu/rdpmc (not in Travis)
-#   /sys/kernel/slab/*/cpu_partial (how to make sure * is stable?)
+# File in /sys seem to vary between Linux systems. Thus, try a few candidates
+# and use the first one that exists.
+sys_file = None
+for f in ("/sys/devices/cpu/rdpmc", "/sys/kernel/mm/page_idle/bitmap"):
+   if (os.path.exists(f)):
+      sys_file = f
+      break
 
 problem_ct = 0
-for f in ("/dev/mem", "/proc/kcore", "/sys/kernel/mm/page_idle/bitmap"):
+for f in ("/dev/mem", "/proc/kcore", sys_file):
    try:
       open(f, "rb").read(1)
       print("RISK\t%s: read allowed" % f)
