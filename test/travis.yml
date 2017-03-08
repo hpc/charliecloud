@@ -4,7 +4,7 @@ language: c
 compiler: gcc
 
 install:
-  - pip -q install sphinx-rtd-theme
+  - pip install sphinx sphinx-rtd-theme
 
 before_script:
   - export CH_TEST_TARDIR=/var/tmp/tarballs
