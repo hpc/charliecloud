@@ -65,7 +65,7 @@ EOF
     rm -Rf $SPARKLOG
     # start the master
     ch-run -d $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/start-master.sh
-    sleep 2  # race condition here somehow?
+    sleep 5
     cat $MASTER_LOG
     fgrep -q 'New state: ALIVE' $MASTER_LOG
     # start the workers
