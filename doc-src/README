@@ -1,6 +1,6 @@
 This documentation is built using Sphinx with the sphinx-rtd-theme.
 
-Currently, we use Python 2.7 for building the docs. Python 3.x is untested.
+Both Python 2.7 and 3.5+ should work; 3.5+ is preferred.
 
 
 To build the HTML
@@ -8,7 +8,15 @@ To build the HTML
 
 Make sure you have a current version of sphinx-rtd-theme installed:
 
-  $ pip install sphinx-rtd-theme
+  $ pip3 install sphinx sphinx-rtd-theme
+
+  Note: If you're on Debian Stretch or some version of Ubuntu, this will
+  silently install into ~/.local, leaving the sphinx-build binary in
+  ~/.local/bin, which is not on your path. One workaround (untested) is to run
+  pip3 as root, which violates principle of least-privilege. A better
+  workaround, assuming you can write to /usr/local, is to add the undocumented
+  and non-standard --system argument to install in /usr/local instead. (This
+  matches previous pip behavior.) See: https://bugs.debian.org/725848
 
 Then:
 
