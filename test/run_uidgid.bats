@@ -83,10 +83,13 @@ setup () {
         1)  ;&  # "incorrect invocation of permissions" (we care which)
         255)    # undocumented
             if [[ $output =~ 'ermission denied' ]]; then
-                printf 'SAFE\tmount exit code %d and permission denied\n' $status
+                printf 'SAFE\tmount exit %d, permission denied\n' $status
+                return 0
+            elif [[ $dev = 'rootfs' && $output =~ 'No such device' ]]; then
+                printf 'SAFE\tmount exit %d, no such device for rootfs' $status
                 return 0
             else
-                printf 'RISK\tmount exit code %d w/o permission denied\n' $status
+                printf 'RISK\tmount exit %d w/o known explanation\n' $status
                 return 1
             fi
             ;;

@@ -46,6 +46,10 @@ if [[ -n $GUEST_USER && -z $BATS_TEST_NAME ]]; then
     GUEST_GID=$(getent group $GUEST_GROUP | cut -d: -f3)
 fi
 CHTEST_MULTINODE=$SLURM_JOB_ID
+if [[ $CHTEST_MULTINODE ]]; then
+    # $SLURM_NTASKS isn't always set
+    CHTEST_CORES=$(($SLURM_CPUS_ON_NODE * $SLURM_JOB_NUM_NODES))
+fi
 
 # Do we have what we need?
 if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then

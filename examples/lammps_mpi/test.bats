@@ -63,7 +63,7 @@ lammps_try () {
                   | fgrep 'MPI tasks' \
                   | sed -r 's/^.+with ([0-9]+) MPI tasks.+$/\1/')
     echo "ranks found: $ranks_found"
-    [[ $ranks_found -eq $SLURM_NTASKS ]]
+    [[ $ranks_found -eq $CHTEST_CORES ]]
 }
 
 @test "$EXAMPLE_TAG/crack"    { lammps_try crack; }

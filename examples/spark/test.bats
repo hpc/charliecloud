@@ -1,7 +1,7 @@
 load ../../test/common
 
-# FIXME: This test works as part of "make test" but not when run directly with
-# BATS. For example (piping through cat turns of BATS terminal magic):
+# Note: If you get output like the following (piping through cat turns of BATS
+# terminal magic):
 #
 #  $ ./bats ../examples/spark/test.bats | cat
 #  1..5
@@ -11,9 +11,9 @@ load ../../test/common
 #  [...]/test/bats.src/libexec/bats-exec-test: line 329: /tmp/bats.92406.src: No such file or directory
 #  [...]/test/bats.src/libexec/bats-exec-test: line 329: /tmp/bats.92406.src: No such file or directory
 #
-# "spark/worker count" then hangs. Something in "spark/start" is deleting
-# /tmp/bats.92406.src. To recover, one must control-C and kill the Spark
-# master manually.
+# that means that mpirun is starting too many processes per node (you want 1).
+# One solution is to export OMPI_MCA_rmaps_base_mapping_policy= (i.e., set but
+# empty).
 
 setup () {
     umask 0077
@@ -29,10 +29,12 @@ setup () {
                     | fgrep 'scope global' \
                     | tail -1 \
                     | sed -r 's/^.+inet ([0-9.]+).+/\1/')
-        MPIRUN='mpirun -pernode'
+        PERNODE='mpirun -pernode'
+        PERNODE_PIDFILE=/tmp/spark-pernode.pid
     else
         MASTER_IP=127.0.0.1
-        MPIRUN=
+        PERNODE=
+        PERNODE_PIDFILE=
     fi
     MASTER_URL="spark://$MASTER_IP:7077"
     MASTER_LOG=$SPARK_LOG/*master.Master*.out
@@ -69,8 +71,11 @@ EOF
     cat $MASTER_LOG
     fgrep -q 'New state: ALIVE' $MASTER_LOG
     # start the workers
-    $MPIRUN ch-run -d $SPARK_CONFIG $SPARK_IMG -- \
+    $PERNODE ch-run -d $SPARK_CONFIG $SPARK_IMG -- \
                    /spark/sbin/start-slave.sh $MASTER_URL &
+    if [[ -n $PERNODE ]]; then
+        echo $! > $PERNODE_PIDFILE
+    fi
     sleep 7
 }
 
@@ -82,13 +87,13 @@ EOF
     # tells the workers to put their web interfaces on localhost. They still
     # connect to the master and get work OK.
     [[ -z $CHTEST_MULTINODE ]] && SLURM_NNODES=1
-    worker_ct=$(fgrep -c 'Registering worker' $MASTER_LOG)
+    worker_ct=$(fgrep -c 'Registering worker' $MASTER_LOG || true)
     echo "node count: $SLURM_NNODES; worker count: $worker_ct"
     [[ $worker_ct -eq $SLURM_NNODES ]]
 }
 
 @test "$EXAMPLE_TAG/pi" {
-    run ch-run -d $SPARK_CONFIG $SPARK_IMG -- \
+   run ch-run -d $SPARK_CONFIG $SPARK_IMG -- \
                /spark/bin/spark-submit --master $MASTER_URL \
                /spark/examples/src/main/python/pi.py 64
     echo "$output"
@@ -99,7 +104,24 @@ EOF
 }
 
 @test "$EXAMPLE_TAG/stop" {
-    $MPIRUN ch-run -d $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-slave.sh
+    # If the workers were started with mpirun, we have to kill that prior
+    # mpirun before the next one will do anything. Further, we have to abuse
+    # it with SIGKILL because it doesn't quit on SIGTERM. Even further, this
+    # kills all the processes started by mpirun too -- except on the node
+    # where we ran mpirun.
+    if [[ -n $CHTEST_MULTINODE ]]; then
+        kill -9 $(cat $PERNODE_PIDFILE)
+    fi
+    ch-run -d $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-slave.sh
     ch-run -d $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-master.sh
     sleep 2
+    # Any Spark processes left?
+    run $PERNODE ps aux
+    echo "$output"
+    [[ ! $output =~ 'org\.apache\.spark\.deploy' ]]
+}
+
+@test "$EXAMPLE_TAG/hang" {
+    # If there are any test processes remaining, this test will hang.
+    true
 }
