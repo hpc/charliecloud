@@ -882,7 +882,7 @@ script that runs when resources are available, placing output into a file.
 
 The MPI hello world example includes such a script:
 
-.. literalinclude:: ../examples/mpihello/moab.sh
+.. literalinclude:: ../examples/mpihello/slurm.sh
 
 Note that this script both unpacks the image and runs it.
 
