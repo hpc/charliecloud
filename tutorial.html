@@ -8,9 +8,11 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.2.1~pre documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.2.2~pre documentation</title>
   
 
+  
+  
   
   
 
@@ -32,7 +34,7 @@
   
         <link rel="search" title="Search" href="search.html"/>
         <link rel="copyright" title="Copyright" href="copyright.html"/>
-    <link rel="top" title="Charliecloud 0.2.1~pre documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.2.2~pre documentation" href="index.html"/>
         <link rel="next" title="3. Help text for executables" href="script-help.html"/>
         <link rel="prev" title="1. Installation" href="install.html"/> 
 
@@ -43,6 +45,7 @@
 
 <body class="wy-body-for-nav" role="document">
 
+   
   <div class="wy-grid-for-nav">
 
     
@@ -62,7 +65,7 @@
             
             
               <div class="version">
-                96d80b1
+                9f56aa1
               </div>
             
           
@@ -83,44 +86,48 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">2. Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#getting-help">2.1. Getting help</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#your-first-user-defined-software-stack">2.2. Your first user-defined software stack</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#defining-your-udss">2.2.1. Defining your UDSS</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#build-docker-image">2.2.2. Build Docker image</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#share-image-and-other-standard-docker-stuff">2.2.3. Share image and other standard Docker stuff</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flatten-image">2.2.4. Flatten image</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#distribute-tarball">2.2.5. Distribute tarball</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#unpack-tarball">2.2.6. Unpack tarball</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#activate-image">2.2.7. Activate image</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seconds-to-charliecloud">2.1. 90 seconds to Charliecloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-help">2.2. Getting help</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#your-first-user-defined-software-stack">2.3. Your first user-defined software stack</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#defining-your-udss">2.3.1. Defining your UDSS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-docker-image">2.3.2. Build Docker image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#share-image-and-other-standard-docker-stuff">2.3.3. Share image and other standard Docker stuff</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flatten-image">2.3.4. Flatten image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#distribute-tarball">2.3.5. Distribute tarball</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unpack-tarball">2.3.6. Unpack tarball</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#activate-image">2.3.7. Activate image</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#interacting-with-the-host">2.3. Interacting with the host</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#filesystems">2.3.1. Filesystems</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#network">2.3.2. Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#user-and-group-ids">2.3.3. User and group IDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#interacting-with-the-host">2.4. Interacting with the host</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#filesystems">2.4.1. Filesystems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#network">2.4.2. Network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#user-and-group-ids">2.4.3. User and group IDs</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-your-own-software">2.4. Installing your own software</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#third-party-software-via-package-manager">2.4.1. Third-party software via package manager</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#third-party-software-compiled-from-source">2.4.2. Third-party software compiled from source</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-in-the-image">2.4.3. Your software stored in the image</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">2.4.4. Your software stored on the host</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-your-own-software">2.5. Installing your own software</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#third-party-software-via-package-manager">2.5.1. Third-party software via package manager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#third-party-software-compiled-from-source">2.5.2. Third-party software compiled from source</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-in-the-image">2.5.3. Your software stored in the image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">2.5.4. Your software stored on the host</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#your-first-single-node-multi-process-jobs">2.5. Your first single-node, multi-process jobs</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-host">2.5.1. Processes coordinated by host</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container">2.5.2. Processes coordinated by container</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration">2.5.3. Processes coordinated by container using host configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#your-first-single-node-multi-process-jobs">2.6. Your first single-node, multi-process jobs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-host">2.6.1. Processes coordinated by host</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container">2.6.2. Processes coordinated by container</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration">2.6.3. Processes coordinated by container using host configuration</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#your-first-multi-node-jobs">2.6. Your first multi-node jobs</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#interactive-mpi-hello-world">2.6.1. Interactive MPI hello world</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#non-interactive-mpi-hello-world">2.6.2. Non-interactive MPI hello world</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#interactive-apache-spark">2.6.3. Interactive Apache Spark</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#non-interactive-apache-spark">2.6.4. Non-interactive Apache Spark</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#your-first-multi-node-jobs">2.7. Your first multi-node jobs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#interactive-mpi-hello-world">2.7.1. Interactive MPI hello world</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#non-interactive-mpi-hello-world">2.7.2. Non-interactive MPI hello world</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interactive-apache-spark">2.7.3. Interactive Apache Spark</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#non-interactive-apache-spark">2.7.4. Non-interactive Apache Spark</a></li>
 </ul>
 </li>
 </ul>
@@ -140,8 +147,10 @@
 
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Charliecloud</a>
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Charliecloud</a>
+        
       </nav>
 
 
@@ -150,21 +159,38 @@
         <div class="rst-content">
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>2. Tutorial</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>2. Tutorial</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
+            
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -180,47 +206,68 @@ the previous section, that the <code class="code docutils literal"><span class="
 <code class="code docutils literal"><span class="pre">$PATH</span></code>, and that you have access to the examples in the source code.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#getting-help" id="id1">Getting help</a></li>
-<li><a class="reference internal" href="#your-first-user-defined-software-stack" id="id2">Your first user-defined software stack</a><ul>
-<li><a class="reference internal" href="#defining-your-udss" id="id3">Defining your UDSS</a></li>
-<li><a class="reference internal" href="#build-docker-image" id="id4">Build Docker image</a></li>
-<li><a class="reference internal" href="#share-image-and-other-standard-docker-stuff" id="id5">Share image and other standard Docker stuff</a></li>
-<li><a class="reference internal" href="#flatten-image" id="id6">Flatten image</a></li>
-<li><a class="reference internal" href="#distribute-tarball" id="id7">Distribute tarball</a></li>
-<li><a class="reference internal" href="#unpack-tarball" id="id8">Unpack tarball</a></li>
-<li><a class="reference internal" href="#activate-image" id="id9">Activate image</a></li>
+<li><a class="reference internal" href="#seconds-to-charliecloud" id="id1">90 seconds to Charliecloud</a></li>
+<li><a class="reference internal" href="#getting-help" id="id2">Getting help</a></li>
+<li><a class="reference internal" href="#your-first-user-defined-software-stack" id="id3">Your first user-defined software stack</a><ul>
+<li><a class="reference internal" href="#defining-your-udss" id="id4">Defining your UDSS</a></li>
+<li><a class="reference internal" href="#build-docker-image" id="id5">Build Docker image</a></li>
+<li><a class="reference internal" href="#share-image-and-other-standard-docker-stuff" id="id6">Share image and other standard Docker stuff</a></li>
+<li><a class="reference internal" href="#flatten-image" id="id7">Flatten image</a></li>
+<li><a class="reference internal" href="#distribute-tarball" id="id8">Distribute tarball</a></li>
+<li><a class="reference internal" href="#unpack-tarball" id="id9">Unpack tarball</a></li>
+<li><a class="reference internal" href="#activate-image" id="id10">Activate image</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#interacting-with-the-host" id="id10">Interacting with the host</a><ul>
-<li><a class="reference internal" href="#filesystems" id="id11">Filesystems</a></li>
-<li><a class="reference internal" href="#network" id="id12">Network</a></li>
-<li><a class="reference internal" href="#user-and-group-ids" id="id13">User and group IDs</a></li>
+<li><a class="reference internal" href="#interacting-with-the-host" id="id11">Interacting with the host</a><ul>
+<li><a class="reference internal" href="#filesystems" id="id12">Filesystems</a></li>
+<li><a class="reference internal" href="#network" id="id13">Network</a></li>
+<li><a class="reference internal" href="#user-and-group-ids" id="id14">User and group IDs</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#installing-your-own-software" id="id14">Installing your own software</a><ul>
-<li><a class="reference internal" href="#third-party-software-via-package-manager" id="id15">Third-party software via package manager</a></li>
-<li><a class="reference internal" href="#third-party-software-compiled-from-source" id="id16">Third-party software compiled from source</a></li>
-<li><a class="reference internal" href="#your-software-stored-in-the-image" id="id17">Your software stored in the image</a></li>
-<li><a class="reference internal" href="#your-software-stored-on-the-host" id="id18">Your software stored on the host</a></li>
+<li><a class="reference internal" href="#installing-your-own-software" id="id15">Installing your own software</a><ul>
+<li><a class="reference internal" href="#third-party-software-via-package-manager" id="id16">Third-party software via package manager</a></li>
+<li><a class="reference internal" href="#third-party-software-compiled-from-source" id="id17">Third-party software compiled from source</a></li>
+<li><a class="reference internal" href="#your-software-stored-in-the-image" id="id18">Your software stored in the image</a></li>
+<li><a class="reference internal" href="#your-software-stored-on-the-host" id="id19">Your software stored on the host</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#your-first-single-node-multi-process-jobs" id="id19">Your first single-node, multi-process jobs</a><ul>
-<li><a class="reference internal" href="#processes-coordinated-by-host" id="id20">Processes coordinated by host</a></li>
-<li><a class="reference internal" href="#processes-coordinated-by-container" id="id21">Processes coordinated by container</a></li>
-<li><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration" id="id22">Processes coordinated by container using host configuration</a></li>
+<li><a class="reference internal" href="#your-first-single-node-multi-process-jobs" id="id20">Your first single-node, multi-process jobs</a><ul>
+<li><a class="reference internal" href="#processes-coordinated-by-host" id="id21">Processes coordinated by host</a></li>
+<li><a class="reference internal" href="#processes-coordinated-by-container" id="id22">Processes coordinated by container</a></li>
+<li><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration" id="id23">Processes coordinated by container using host configuration</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#your-first-multi-node-jobs" id="id23">Your first multi-node jobs</a><ul>
-<li><a class="reference internal" href="#interactive-mpi-hello-world" id="id24">Interactive MPI hello world</a></li>
-<li><a class="reference internal" href="#non-interactive-mpi-hello-world" id="id25">Non-interactive MPI hello world</a></li>
-<li><a class="reference internal" href="#interactive-apache-spark" id="id26">Interactive Apache Spark</a></li>
-<li><a class="reference internal" href="#non-interactive-apache-spark" id="id27">Non-interactive Apache Spark</a></li>
+<li><a class="reference internal" href="#your-first-multi-node-jobs" id="id24">Your first multi-node jobs</a><ul>
+<li><a class="reference internal" href="#interactive-mpi-hello-world" id="id25">Interactive MPI hello world</a></li>
+<li><a class="reference internal" href="#non-interactive-mpi-hello-world" id="id26">Non-interactive MPI hello world</a></li>
+<li><a class="reference internal" href="#interactive-apache-spark" id="id27">Interactive Apache Spark</a></li>
+<li><a class="reference internal" href="#non-interactive-apache-spark" id="id28">Non-interactive Apache Spark</a></li>
 </ul>
 </li>
 </ul>
 </div>
+<div class="section" id="seconds-to-charliecloud">
+<h2><a class="toc-backref" href="#id1">2.1. 90 seconds to Charliecloud</a><a class="headerlink" href="#seconds-to-charliecloud" title="Permalink to this headline">¶</a></h2>
+<p>This section is for the impatient. It shows you how to quickly build and run a
+&#8220;hello world&#8221; Charliecloud container. If you like what you see, then proceed
+with the rest of the tutorial to understand what is happening and how to use
+Charliecloud for your own applications.</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> charliecloud/examples/hello
+<span class="gp">$</span> ch-build -t hello ../..
+<span class="go">Sending build context to Docker daemon 12.24 MB</span>
+<span class="go">[...]</span>
+<span class="go">Successfully built 2972e7281f75</span>
+<span class="gp">$</span> ch-docker2tar hello /var/tmp
+<span class="go">57M /var/tmp/hello.tar.gz</span>
+<span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
+<span class="go">/var/tmp/hello unpacked ok</span>
+<span class="gp">$</span> ch-run /var/tmp/hello -- <span class="nb">echo</span> <span class="s2">&quot;I&#39;m in a container&quot;</span>
+<span class="go">I&#39;m in a container</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="getting-help">
-<h2><a class="toc-backref" href="#id1">2.1. Getting help</a><a class="headerlink" href="#getting-help" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2">2.2. Getting help</a><a class="headerlink" href="#getting-help" title="Permalink to this headline">¶</a></h2>
 <p>All the executables have decent help and can tell you what version of
 Charliecloud you have (if not, please report a bug). For example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --help
@@ -229,21 +276,21 @@ Charliecloud you have (if not, please report a bug). For example:</p>
 <span class="go">Run a command in a Charliecloud container.</span>
 <span class="go">[...]</span>
 <span class="gp">$</span> ch-run --version
-<span class="go">0.2.0.4836ac1</span>
+<span class="go">0.2.0+4836ac1</span>
 </pre></div>
 </div>
 <p>The help text is also collected later in this documentation; see
 <a class="reference internal" href="script-help.html"><span class="doc">Help text for executables</span></a>.</p>
 </div>
 <div class="section" id="your-first-user-defined-software-stack">
-<h2><a class="toc-backref" href="#id2">2.2. Your first user-defined software stack</a><a class="headerlink" href="#your-first-user-defined-software-stack" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id3">2.3. Your first user-defined software stack</a><a class="headerlink" href="#your-first-user-defined-software-stack" title="Permalink to this headline">¶</a></h2>
 <p>In this section, we will create and run a simple &#8220;hello, world&#8221; image. This
 uses the <code class="code docutils literal"><span class="pre">hello</span></code> example in the Charliecloud source code. Start with:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/hello
 </pre></div>
 </div>
 <div class="section" id="defining-your-udss">
-<h3><a class="toc-backref" href="#id3">2.2.1. Defining your UDSS</a><a class="headerlink" href="#defining-your-udss" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id4">2.3.1. Defining your UDSS</a><a class="headerlink" href="#defining-your-udss" title="Permalink to this headline">¶</a></h3>
 <p>You must first write a Dockerfile that describes the image you would like;
 consult the <a class="reference external" href="https://docs.docker.com/engine/reference/builder/">Dockerfile documentation</a> for details on how to do
 this. Note that run-time functionality such as <code class="code docutils literal"><span class="pre">ENTRYPOINT</span></code> is not
@@ -274,7 +321,7 @@ process.</p>
 </div>
 </div>
 <div class="section" id="build-docker-image">
-<h3><a class="toc-backref" href="#id4">2.2.2. Build Docker image</a><a class="headerlink" href="#build-docker-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5">2.3.2. Build Docker image</a><a class="headerlink" href="#build-docker-image" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud provides a convenience wrapper around <code class="code docutils literal"><span class="pre">docker</span> <span class="pre">build</span></code> that
 works around some of its more irritating characteristics. In particular, it
 passes through any HTTP proxy variables, and by default it uses the Dockerfile
@@ -301,7 +348,7 @@ don&#8217;t require a password on every invocation, so just because you aren&#82
 prompted doesn&#8217;t mean privileged commands aren&#8217;t running.</p>
 </div>
 <div class="section" id="share-image-and-other-standard-docker-stuff">
-<h3><a class="toc-backref" href="#id5">2.2.3. Share image and other standard Docker stuff</a><a class="headerlink" href="#share-image-and-other-standard-docker-stuff" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6">2.3.3. Share image and other standard Docker stuff</a><a class="headerlink" href="#share-image-and-other-standard-docker-stuff" title="Permalink to this headline">¶</a></h3>
 <p>If needed, the Docker image can be manipulated with standard Docker commands.
 In particular, image sharing using a public or private Docker Hub repository
 can be very useful.</p>
@@ -325,17 +372,17 @@ can have value when debugging Charliecloud.</p>
 </div>
 </div>
 <div class="section" id="flatten-image">
-<h3><a class="toc-backref" href="#id6">2.2.4. Flatten image</a><a class="headerlink" href="#flatten-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id7">2.3.4. Flatten image</a><a class="headerlink" href="#flatten-image" title="Permalink to this headline">¶</a></h3>
 <p>Next, we flatten the Docker image into a tarball, which is then a plain file
 amenable to standard file manipulation commands. This tarball is placed in an
-arbitrary directory, here <code class="code docutils literal"><span class="pre">/data</span></code>.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-docker2tar hello /data
-<span class="go">57M /data/hello.tar.gz</span>
+arbitrary directory, here <code class="code docutils literal"><span class="pre">/var/tmp</span></code>.</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-docker2tar hello /var/tmp
+<span class="go">57M /var/tmp/hello.tar.gz</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="distribute-tarball">
-<h3><a class="toc-backref" href="#id7">2.2.5. Distribute tarball</a><a class="headerlink" href="#distribute-tarball" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8">2.3.5. Distribute tarball</a><a class="headerlink" href="#distribute-tarball" title="Permalink to this headline">¶</a></h3>
 <p>Thus far, the workflow has taken place on the build system. The next step is
 to move the tarball to the run system. This can use any appropriate method for
 moving files: <code class="code docutils literal"><span class="pre">scp</span></code>, <code class="code docutils literal"><span class="pre">rsync</span></code>, something integrated with the
@@ -344,12 +391,12 @@ scheduler, etc.</p>
 typical use case for the testing phase.</p>
 </div>
 <div class="section" id="unpack-tarball">
-<h3><a class="toc-backref" href="#id8">2.2.6. Unpack tarball</a><a class="headerlink" href="#unpack-tarball" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9">2.3.6. Unpack tarball</a><a class="headerlink" href="#unpack-tarball" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud runs out of a normal directory rather than a filesystem image. In
 order to create this directory, we unpack the image tarball. This will replace
 the image directory if it already exists.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tar2dir /data/hello.tar.gz /data/hello
-<span class="go">/data/hello unpacked ok</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
+<span class="go">/var/tmp/hello unpacked ok</span>
 </pre></div>
 </div>
 <p>One potential gotcha is the tarball including special files such as devices.
@@ -365,10 +412,10 @@ both users and programs.</p>
 </div>
 </div>
 <div class="section" id="activate-image">
-<h3><a class="toc-backref" href="#id9">2.2.7. Activate image</a><a class="headerlink" href="#activate-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10">2.3.7. Activate image</a><a class="headerlink" href="#activate-image" title="Permalink to this headline">¶</a></h3>
 <p>We are now ready to run programs inside a Charliecloud container. This is done
 with the <code class="code docutils literal"><span class="pre">ch-run</span></code> command:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/hello -- <span class="nb">echo</span> hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/hello -- <span class="nb">echo</span> hello
 <span class="go">hello</span>
 </pre></div>
 </div>
@@ -382,7 +429,7 @@ identified by long ID numbers:</p>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 pid -&gt; pid:[4026531836]</span>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 user -&gt; user:[4026531837]</span>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 uts -&gt; uts:[4026531838]</span>
-<span class="gp">$</span> ch-run /data/hello -- ls -l /proc/self/ns
+<span class="gp">$</span> ch-run /var/tmp/hello -- ls -l /proc/self/ns
 <span class="go">total 0</span>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 ipc -&gt; ipc:[4026531839]</span>
 <span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 mnt -&gt; mnt:[4026532257]</span>
@@ -411,15 +458,15 @@ argument.</p>
 number:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026531837</span>
-<span class="gp">$</span> ch-run /data/hello -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
+<span class="gp">$</span> ch-run /var/tmp/hello -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 </pre></div>
 </div>
 <p>You can also run interactive commands, such as a shell:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/hello -- /bin/bash
-<span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/hello -- /bin/bash
+<span class="gp">&gt;</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
-<span class="gp">$</span> <span class="nb">exit</span>
+<span class="gp">&gt;</span> <span class="nb">exit</span>
 </pre></div>
 </div>
 <p>Be aware that wildcards in the <code class="code docutils literal"><span class="pre">ch-run</span></code> command are interpreted by the
@@ -427,13 +474,13 @@ host, not the container, unless protected. One workaround is to use a
 sub-shell. For example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls /usr/bin/oldfind
 <span class="go">ls: cannot access &#39;/usr/bin/oldfind&#39;: No such file or directory</span>
-<span class="gp">$</span> ch-run /data/hello -- ls /usr/bin/oldfind
+<span class="gp">$</span> ch-run /var/tmp/hello -- ls /usr/bin/oldfind
 <span class="go">/usr/bin/oldfind</span>
 <span class="gp">$</span> ls /usr/bin/oldf*
 <span class="go">ls: cannot access &#39;/usr/bin/oldf*&#39;: No such file or directory</span>
-<span class="gp">$</span> ch-run /data/hello -- ls /usr/bin/oldf*
+<span class="gp">$</span> ch-run /var/tmp/hello -- ls /usr/bin/oldf*
 <span class="go">ls: cannot access /usr/bin/oldf*: No such file or directory</span>
-<span class="gp">$</span> ch-run /data/hello -- sh -c <span class="s1">&#39;ls /usr/bin/oldf*&#39;</span>
+<span class="gp">$</span> ch-run /var/tmp/hello -- sh -c <span class="s1">&#39;ls /usr/bin/oldf*&#39;</span>
 <span class="go">/usr/bin/oldfind</span>
 </pre></div>
 </div>
@@ -442,11 +489,11 @@ container. Next, we explore how Charliecloud accesses host resources.</p>
 </div>
 </div>
 <div class="section" id="interacting-with-the-host">
-<h2><a class="toc-backref" href="#id10">2.3. Interacting with the host</a><a class="headerlink" href="#interacting-with-the-host" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id11">2.4. Interacting with the host</a><a class="headerlink" href="#interacting-with-the-host" title="Permalink to this headline">¶</a></h2>
 <p>Charliecloud is not an isolation layer, so containers have full access to host
 resources, with a few quirks. This section demonstrates how this works.</p>
 <div class="section" id="filesystems">
-<h3><a class="toc-backref" href="#id11">2.3.1. Filesystems</a><a class="headerlink" href="#filesystems" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12">2.4.1. Filesystems</a><a class="headerlink" href="#filesystems" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud makes host directories available inside the container using bind
 mounts, which is somewhat like a hard link in that it causes a file or
 directory to appear in multiple places in the filesystem tree, but it is a
@@ -461,13 +508,13 @@ available in the container as well.</p>
 <p>In addition to the default bind mounts, arbitrary user-specified directories
 can be added using the <code class="code docutils literal"><span class="pre">-d</span></code> switch. These appear at <code class="code docutils literal"><span class="pre">/mnt/0</span></code>,
 <code class="code docutils literal"><span class="pre">/mnt/0</span></code>, etc. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir /data/foo0
-<span class="gp">$</span> <span class="nb">echo</span> hello &gt; /data/foo0/bar
-<span class="gp">$</span> mkdir /data/foo1
-<span class="gp">$</span> <span class="nb">echo</span> world &gt; /data/foo1/bar
-<span class="gp">$</span> ch-run -d /data/foo0 -d /data/foo1 /data/hello bash
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir /var/tmp/foo0
+<span class="gp">$</span> <span class="nb">echo</span> hello &gt; /var/tmp/foo0/bar
+<span class="gp">$</span> mkdir /var/tmp/foo1
+<span class="gp">$</span> <span class="nb">echo</span> world &gt; /var/tmp/foo1/bar
+<span class="gp">$</span> ch-run -d /var/tmp/foo0 -d /var/tmp/foo1 /var/tmp/hello -- bash
 <span class="gp">&gt;</span> ls /mnt
-<span class="go">0  1</span>
+<span class="go">0  1  2  3  4  5  6  7  8  9</span>
 <span class="gp">&gt;</span> cat /mnt/0/bar
 <span class="go">hello</span>
 <span class="gp">&gt;</span> cat /mnt/1/bar
@@ -476,7 +523,7 @@ can be added using the <code class="code docutils literal"><span class="pre">-d<
 </div>
 </div>
 <div class="section" id="network">
-<h3><a class="toc-backref" href="#id12">2.3.2. Network</a><a class="headerlink" href="#network" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13">2.4.2. Network</a><a class="headerlink" href="#network" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud containers share the host&#8217;s network namespace, so most network
 things should be the same.</p>
 <p>However, SSH is not aware of Charliecloud containers. If you SSH to a node
@@ -486,7 +533,7 @@ container, even if <code class="code docutils literal"><span class="pre">ssh</sp
 <span class="go">4026531837</span>
 <span class="gp">$</span> ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026531837</span>
-<span class="gp">$</span> ch-run /data/hello -- /bin/bash
+<span class="gp">$</span> ch-run /var/tmp/hello -- /bin/bash
 <span class="gp">&gt;</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 <span class="gp">&gt;</span> ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
@@ -496,7 +543,7 @@ container, even if <code class="code docutils literal"><span class="pre">ssh</sp
 <p>There are several ways to SSH to a remote note and run commands inside a
 container. The simplest is to manually invoke <code class="code docutils literal"><span class="pre">ch-run</span></code> in the
 <code class="code docutils literal"><span class="pre">ssh</span></code> command:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh localhost ch-run /data/hello -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh localhost ch-run /var/tmp/hello -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 </pre></div>
 </div>
@@ -511,7 +558,7 @@ namespace <code class="code docutils literal"><span class="pre">’2256</span></
 <code class="code docutils literal"><span class="pre">ch-run</span></code> to the <code class="code docutils literal"><span class="pre">ssh</span></code> command implicitly. It takes the
 <code class="code docutils literal"><span class="pre">ch-run</span></code> arguments from the environment variable <code class="code docutils literal"><span class="pre">CH_RUN_ARGS</span></code>,
 making it mostly a drop-in replacement for <code class="code docutils literal"><span class="pre">ssh</span></code>. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/data/hello --&quot;</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/var/tmp/hello --&quot;</span>
 <span class="gp">$</span> ch-ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 <span class="gp">$</span> ch-ssh -t localhost /bin/bash
@@ -521,8 +568,8 @@ making it mostly a drop-in replacement for <code class="code docutils literal"><
 </div>
 <p><code class="code docutils literal"><span class="pre">ch-ssh</span></code> is available inside containers as well (in <code class="code docutils literal"><span class="pre">/usr/bin</span></code> via
 bind-mount):</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/data/hello --&quot;</span>
-<span class="gp">$</span> ch-run /data/hello /bin/bash
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/var/tmp/hello --&quot;</span>
+<span class="gp">$</span> ch-run /var/tmp/hello -- /bin/bash
 <span class="gp">&gt;</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026532256</span>
 <span class="gp">&gt;</span> ch-ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
@@ -548,7 +595,7 @@ line and <code class="code docutils literal"><span class="pre">exec(1)</span></c
 avoids wrapping <code class="code docutils literal"><span class="pre">ssh</span></code> or altering its command line.</p>
 </div>
 <div class="section" id="user-and-group-ids">
-<h3><a class="toc-backref" href="#id13">2.3.3. User and group IDs</a><a class="headerlink" href="#user-and-group-ids" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14">2.4.3. User and group IDs</a><a class="headerlink" href="#user-and-group-ids" title="Permalink to this headline">¶</a></h3>
 <p>Unlike Docker and some other container systems, Charliecloud tries to make the
 container&#8217;s users and groups look the same as the host&#8217;s. (This is
 accomplished by bind-mounting <code class="code docutils literal"><span class="pre">/etc/passwd</span></code> and <code class="code docutils literal"><span class="pre">/etc/group</span></code> into
@@ -557,7 +604,7 @@ the container.) For example:</p>
 <span class="go">901</span>
 <span class="gp">$</span> whoami
 <span class="go">reidpr</span>
-<span class="gp">$</span> ch-run /data/hello bash
+<span class="gp">$</span> ch-run /var/tmp/hello -- bash
 <span class="gp">&gt;</span> id -u
 <span class="go">901</span>
 <span class="gp">&gt;</span> whoami
@@ -569,7 +616,7 @@ Charliecloud does, lets you map any container UID to your host UID.
 <code class="code docutils literal"><span class="pre">ch-run</span></code> implements this with the <code class="code docutils literal"><span class="pre">--uid</span></code> switch. So, for example,
 you can tell Charliecloud you want to be root, and it will tell you that
 you&#8217;re root:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /data/hello bash
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /var/tmp/hello -- bash
 <span class="gp">&gt;</span> id -u
 <span class="go">0</span>
 <span class="gp">&gt;</span> whoami
@@ -591,7 +638,7 @@ looks normal:</p>
 <span class="go">drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/reidpr</span>
 <span class="gp">$</span> ls -ld ~
 <span class="go">drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 12:12 /home/reidpr</span>
-<span class="gp">$</span> ch-run /data/hello bash
+<span class="gp">$</span> ch-run /var/tmp/hello -- bash
 <span class="gp">&gt;</span> ls -nd ~
 <span class="go">drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/reidpr</span>
 <span class="gp">&gt;</span> ls -ld ~
@@ -599,7 +646,7 @@ looks normal:</p>
 </pre></div>
 </div>
 <p>But if <code class="code docutils literal"><span class="pre">--uid</span></code> is provided, things can seem odd. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /data/hello bash
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /var/tmp/hello -- bash
 <span class="gp">&gt;</span> ls -nd /home/reidpr
 <span class="go">drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/reidpr</span>
 <span class="gp">&gt;</span> ls -ld /home/reidpr
@@ -613,7 +660,7 @@ up as <code class="code docutils literal"><span class="pre">nobody</span></code>
 <span class="go">-rw-rw---- 1 902 902 0 Sep 28 15:40 /tmp/foo</span>
 <span class="gp">$</span> ls -l /tmp/foo
 <span class="go">-rw-rw---- 1 sig sig 0 Sep 28 15:40 /tmp/foo</span>
-<span class="gp">$</span> ch-run /data/hello bash
+<span class="gp">$</span> ch-run /var/tmp/hello -- bash
 <span class="gp">&gt;</span> ls -n /tmp/foo
 <span class="go">-rw-rw---- 1 65534 65534 843 Sep 28 21:40 /tmp/foo</span>
 <span class="gp">&gt;</span> ls -l /tmp/foo
@@ -626,9 +673,9 @@ can lead to some strange-looking results, because only one of your GIDs can be
 mapped in any given container. All the rest become <code class="code docutils literal"><span class="pre">nogroup</span></code>:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> id
 <span class="go">uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),903(nerds),904(losers)</span>
-<span class="gp">$</span> ch-run /data/hello -- id
+<span class="gp">$</span> ch-run /var/tmp/hello -- id
 <span class="go">uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),65534(nogroup)</span>
-<span class="gp">$</span> ch-run --gid <span class="m">903</span> /data/hello -- id
+<span class="gp">$</span> ch-run --gid <span class="m">903</span> /var/tmp/hello -- id
 <span class="go">uid=901(reidpr) gid=903(nerds) groups=903(nerds),65534(nogroup)</span>
 </pre></div>
 </div>
@@ -638,7 +685,7 @@ access:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /tmp/primary /tmp/supplemental
 <span class="go">-rw-rw---- 1 sig reidpr 0 Sep 28 15:47 /tmp/primary</span>
 <span class="go">-rw-rw---- 1 sig nerds  0 Sep 28 15:48 /tmp/supplemental</span>
-<span class="gp">$</span> ch-run /data/hello bash
+<span class="gp">$</span> ch-run /var/tmp/hello -- bash
 <span class="gp">&gt;</span> cat /tmp/primary &gt; /dev/null
 <span class="gp">&gt;</span> cat /tmp/supplemental &gt; /dev/null
 </pre></div>
@@ -648,11 +695,11 @@ useless. Using an unmapped group or <code class="code docutils literal"><span cl
 group is a no-op because it&#8217;s mapped back to the host GID:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /tmp/bar
 <span class="go">rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar</span>
-<span class="gp">$</span> ch-run /data/hello -- chgrp nerds /tmp/bar
+<span class="gp">$</span> ch-run /var/tmp/hello -- chgrp nerds /tmp/bar
 <span class="go">chgrp: changing group of &#39;/tmp/bar&#39;: Invalid argument</span>
-<span class="gp">$</span> ch-run /data/hello -- chgrp nogroup /tmp/bar
+<span class="gp">$</span> ch-run /var/tmp/hello -- chgrp nogroup /tmp/bar
 <span class="go">chgrp: changing group of &#39;/tmp/bar&#39;: Invalid argument</span>
-<span class="gp">$</span> ch-run --gid <span class="m">903</span> /data/hello -- chgrp nerds /tmp/bar
+<span class="gp">$</span> ch-run --gid <span class="m">903</span> /var/tmp/hello -- chgrp nerds /tmp/bar
 <span class="gp">$</span> ls -l /tmp/bar
 <span class="go">-rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar</span>
 </pre></div>
@@ -664,7 +711,7 @@ directories:</p>
 <span class="gp">$</span> chmod <span class="m">2770</span> /tmp/baz
 <span class="gp">$</span> ls -ld /tmp/baz
 <span class="go">drwxrws--- 2 reidpr nerds 40 Sep 28 16:19 /tmp/baz</span>
-<span class="gp">$</span> ch-run /data/hello -- touch /tmp/baz/foo
+<span class="gp">$</span> ch-run /var/tmp/hello -- touch /tmp/baz/foo
 <span class="gp">$</span> ls -l /tmp/baz/foo
 <span class="go">-rw-rw---- 1 reidpr nerds 0 Sep 28 16:21 /tmp/baz/foo</span>
 </pre></div>
@@ -675,7 +722,7 @@ software.</p>
 </div>
 </div>
 <div class="section" id="installing-your-own-software">
-<h2><a class="toc-backref" href="#id14">2.4. Installing your own software</a><a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id15">2.5. Installing your own software</a><a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
 <p>This section covers four situations for making software available inside a
 Charliecloud container:</p>
 <blockquote>
@@ -695,7 +742,7 @@ document.</p>
 trustable image on Docker Hub you can use as a base?</p>
 </div>
 <div class="section" id="third-party-software-via-package-manager">
-<h3><a class="toc-backref" href="#id15">2.4.1. Third-party software via package manager</a><a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16">2.5.1. Third-party software via package manager</a><a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
 <p>This approach is the simplest and fastest way to install stuff in your image.
 The <code class="code docutils literal"><span class="pre">examples/hello</span></code> Dockerfile also seen above does this to install the
 package <code class="code docutils literal"><span class="pre">openssh-client</span></code>:</p>
@@ -712,7 +759,7 @@ demonstrated above, or others, such as <code class="code docutils literal"><span
 image, unless you add an HTTP cache, which is out of scope of this tutorial.</p>
 </div>
 <div class="section" id="third-party-software-compiled-from-source">
-<h3><a class="toc-backref" href="#id16">2.4.2. Third-party software compiled from source</a><a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17">2.5.2. Third-party software compiled from source</a><a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
 <p>Under this method, one uses <code class="code docutils literal"><span class="pre">RUN</span></code> commands to fetch the desired software
 using <code class="code docutils literal"><span class="pre">curl</span></code> or <code class="code docutils literal"><span class="pre">wget</span></code>, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic Debian image
@@ -776,7 +823,7 @@ be on a normal system. For example, the above downloads and builds in
 <code class="code docutils literal"><span class="pre">/usr</span></code> rather than <code class="code docutils literal"><span class="pre">/usr/local</span></code>.</p>
 </div>
 <div class="section" id="your-software-stored-in-the-image">
-<h3><a class="toc-backref" href="#id17">2.4.3. Your software stored in the image</a><a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">2.5.3. Your software stored in the image</a><a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
 <p>This method covers software provided by you that is included in the image.
 This is recommended when your software is relatively stable or is not easily
 available to users of your image, for example a library rather than simulation
@@ -784,12 +831,8 @@ code under active development.</p>
 <p>The general approach is the same as installing third-party software from
 source, but you use the <code class="code docutils literal"><span class="pre">COPY</span></code> instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
-the <code class="code docutils literal"><span class="pre">mpihello</span></code> Dockerfile extends <code class="code docutils literal"><span class="pre">debian8openmpi</span></code> with this
-approach.</p>
-<div class="highlight-docker"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian8openmpi</span>
-
-<span class="c"># This example</span>
-COPY examples/mpihello /hello
+the <code class="code docutils literal"><span class="pre">mpihello</span></code> Dockerfile uses this approach:</p>
+<div class="highlight-docker"><div class="highlight"><pre><span></span>COPY examples/mpihello /hello
 <span class="k">WORKDIR</span><span class="s"> /hello</span>
 <span class="k">RUN</span> make clean <span class="o">&amp;&amp;</span> make
 </pre></div>
@@ -814,8 +857,8 @@ build files, since they would be inappropriate inside the container.</p>
 </li>
 </ol>
 <p>Once the image is built, we can see the results. (Install the image into
-<code class="code docutils literal"><span class="pre">/data</span></code> as outlined above, if you haven&#8217;t already.)</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/mpihello -- ls -lh /hello
+<code class="code docutils literal"><span class="pre">/var/tmp</span></code> as outlined above, if you haven&#8217;t already.)</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/mpihello -- ls -lh /hello
 <span class="go">total 32K</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr  157 Aug  5 22:37 Makefile</span>
@@ -828,7 +871,7 @@ build files, since they would be inappropriate inside the container.</p>
 <p>We will revisit this image later.</p>
 </div>
 <div class="section" id="your-software-stored-on-the-host">
-<h3><a class="toc-backref" href="#id18">2.4.4. Your software stored on the host</a><a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">2.5.4. Your software stored on the host</a><a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
 <p>This method leaves your software on the host but compiles it in the image.
 This is recommended when your software is volatile or each image user needs a
 different version, for example a simulation code under active development.</p>
@@ -842,8 +885,7 @@ demonstrate this.</p>
 <span class="go">-rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README</span>
-<span class="go">-rwxrwx--- 1 reidpr reidpr  441 Aug  5 16:37 test.sh</span>
-<span class="gp">$</span> ch-run -d . /data/mpihello -- sh -c <span class="s1">&#39;cd /mnt/0 &amp;&amp; make&#39;</span>
+<span class="gp">$</span> ch-run -d . /var/tmp/mpihello -- sh -c <span class="s1">&#39;cd /mnt/0 &amp;&amp; make&#39;</span>
 <span class="go">mpicc -std=gnu11 -Wall hello.c -o hello</span>
 <span class="gp">$</span> ls -l
 <span class="go">total 32</span>
@@ -852,7 +894,6 @@ demonstrate this.</p>
 <span class="go">-rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README</span>
-<span class="go">-rwxrwx--- 1 reidpr reidpr  441 Aug  5 16:37 test.sh</span>
 </pre></div>
 </div>
 <p>A common use case is to leave a container shell open in one terminal for
@@ -861,7 +902,7 @@ terminal.</p>
 </div>
 </div>
 <div class="section" id="your-first-single-node-multi-process-jobs">
-<h2><a class="toc-backref" href="#id19">2.5. Your first single-node, multi-process jobs</a><a class="headerlink" href="#your-first-single-node-multi-process-jobs" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id20">2.6. Your first single-node, multi-process jobs</a><a class="headerlink" href="#your-first-single-node-multi-process-jobs" title="Permalink to this headline">¶</a></h2>
 <p>This is an important use case even for large-scale codes, when testing and
 development happens at small scale but need to use an environment comparable
 to large-scale runs.</p>
@@ -878,7 +919,7 @@ our experience, we have had success compiling from source with the same
 options as in the Dockerfile, but there is probably more nuance to the match
 than we&#8217;ve discovered.</p>
 <div class="section" id="processes-coordinated-by-host">
-<h3><a class="toc-backref" href="#id20">2.5.1. Processes coordinated by host</a><a class="headerlink" href="#processes-coordinated-by-host" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id21">2.6.1. Processes coordinated by host</a><a class="headerlink" href="#processes-coordinated-by-host" title="Permalink to this headline">¶</a></h3>
 <p>This approach does the forking and process coordination on the host. Each
 process is spawned in its own container, and because Charliecloud introduces
 minimal isolation, they can communicate almost as if they were running
@@ -888,9 +929,9 @@ directly on the host.</p>
 <span class="go">mpirun (Open MPI) 1.10.2</span>
 <span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026531837</span>
-<span class="gp">$</span> ch-run /data/mpihello -- mpirun --version
+<span class="gp">$</span> ch-run /var/tmp/mpihello -- mpirun --version
 <span class="go">mpirun (Open MPI) 1.10.4</span>
-<span class="gp">$</span> mpirun -np <span class="m">4</span> ch-run /data/mpihello /hello/hello
+<span class="gp">$</span> mpirun -np <span class="m">4</span> ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026532267</span>
 <span class="go">2: init ok cn001, 4 ranks, userns 4026532269</span>
@@ -908,14 +949,14 @@ Ubuntu fail with &#8220;orte_util_nidmap_init failed&#8221; if run with the cont
 1.10.4.</p>
 </div>
 <div class="section" id="processes-coordinated-by-container">
-<h3><a class="toc-backref" href="#id21">2.5.2. Processes coordinated by container</a><a class="headerlink" href="#processes-coordinated-by-container" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22">2.6.2. Processes coordinated by container</a><a class="headerlink" href="#processes-coordinated-by-container" title="Permalink to this headline">¶</a></h3>
 <p>This approach starts a single container process, which then forks and
 coordinates the parallel work. The advantage is that this approach is
 completely independent of the host for dependency configuration and
 installation; the disadvantage is that it cannot take advantage of any
 host-specific things that might e.g. improve performance.</p>
 <p>For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">2: init ok cn001, 4 ranks, userns 4026532256</span>
@@ -926,7 +967,7 @@ host-specific things that might e.g. improve performance.</p>
 </div>
 </div>
 <div class="section" id="processes-coordinated-by-container-using-host-configuration">
-<h3><a class="toc-backref" href="#id22">2.5.3. Processes coordinated by container using host configuration</a><a class="headerlink" href="#processes-coordinated-by-container-using-host-configuration" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id23">2.6.3. Processes coordinated by container using host configuration</a><a class="headerlink" href="#processes-coordinated-by-container-using-host-configuration" title="Permalink to this headline">¶</a></h3>
 <p>This approach is a middle ground. The use case is when there is some
 host-specific configuration we want to use, but we don&#8217;t want to install the
 entire configured dependency on the host. It would be undesirable to copy this
@@ -936,21 +977,19 @@ relevant directory and then pointing the application to it. There are a
 variety of approaches. Some application or frameworks take command-line
 parameters specifying the configuration path.</p>
 <p>The approach used in our example is to set the configuration directory to
-<code class="code docutils literal"><span class="pre">/mnt/0</span></code>. This is done in <code class="code docutils literal"><span class="pre">test/Dockerfile.debian8openmpi</span></code> with
-the <code class="code docutils literal"><span class="pre">--sysconfdir</span></code> argument:</p>
-<div class="highlight-docker"><div class="highlight"><pre><span></span><span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-       <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-       ./configure --prefix<span class="o">=</span>/usr <span class="se">\</span>
-                   --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
-                   --disable-pty-support <span class="se">\</span>
+<code class="code docutils literal"><span class="pre">/mnt/0</span></code>. This is done in <code class="code docutils literal"><span class="pre">mpihello</span></code> with the <code class="code docutils literal"><span class="pre">--sysconfdir</span></code>
+argument:</p>
+<div class="highlight-docker"><div class="highlight"><pre><span></span><span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span> <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+       ./configure --prefix<span class="o">=</span>/usr --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
+                   --disable-pty-support --disable-mpi-cxx --disable-mpi-fortran <span class="se">\</span>
     <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
 </pre></div>
 </div>
 <p>The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with <code class="code docutils literal"><span class="pre">-d</span></code>, that is
 overmounted and used instead. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d /usr/local/etc /data/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d /usr/local/etc /var/tmp/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">2: init ok cn001, 4 ranks, userns 4026532256</span>
@@ -965,12 +1004,12 @@ resolved when the appropriate host directory is bind-mounted into
 </div>
 </div>
 <div class="section" id="your-first-multi-node-jobs">
-<h2><a class="toc-backref" href="#id23">2.6. Your first multi-node jobs</a><a class="headerlink" href="#your-first-multi-node-jobs" title="Permalink to this headline">¶</a></h2>
-<p>This section assumes that you are using a MOAB/SLURM cluster with a working
-OpenMPI 1.10.<em>x</em> installation and some type of node-local storage. A
-<code class="code docutils literal"><span class="pre">tmpfs</span></code> will suffice, and we use <code class="code docutils literal"><span class="pre">/tmp</span></code> for this tutorial, but
-it&#8217;s best to use something else to avoid confusion with circular mounts
-(recall that <code class="code docutils literal"><span class="pre">/tmp</span></code> is shared by the container and host).</p>
+<h2><a class="toc-backref" href="#id24">2.7. Your first multi-node jobs</a><a class="headerlink" href="#your-first-multi-node-jobs" title="Permalink to this headline">¶</a></h2>
+<p>This section assumes that you are using a Slurm cluster with a working OpenMPI
+1.10.<em>x</em> installation and some type of node-local storage. A <code class="code docutils literal"><span class="pre">tmpfs</span></code>
+will suffice, and we use <code class="code docutils literal"><span class="pre">/var/tmp</span></code> for this tutorial. (Using
+<code class="code docutils literal"><span class="pre">/tmp</span></code> often works but can cause confusion because it&#8217;s shared by the
+container and host, yielding a circular directory tree.)</p>
 <p>We cover three cases:</p>
 <ol class="arabic simple">
 <li>The MPI hello world example above, run interactively, with the host
@@ -993,23 +1032,24 @@ non-trivial Charliecloud job may overwhelm a network filesystem, earning
 you the ire of your sysadmins and colleagues.</p>
 </div>
 <div class="section" id="interactive-mpi-hello-world">
-<h3><a class="toc-backref" href="#id24">2.6.1. Interactive MPI hello world</a><a class="headerlink" href="#interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25">2.7.1. Interactive MPI hello world</a><a class="headerlink" href="#interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
 <p>First, obtain an interactive allocation of nodes. This tutorial assumes an
 allocation of 4 nodes (but any number should work) and an interactive shell on
 one of those nodes. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> msub -I -l <span class="nv">nodes</span><span class="o">=</span>4
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> salloc -N4
 </pre></div>
 </div>
-<p>We also need OpenMPI 1.10.<em>x</em> available:</p>
+<p>We also need OpenMPI 1.10.<em>x</em> available and with the correct mapping
+policy:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun --version
-<span class="go">mpirun (Open MPI) 1.10.3</span>
+<span class="go">mpirun (Open MPI) 1.10.5</span>
+<span class="gp">$</span> <span class="nb">export</span> <span class="nv">OMPI_MCA_rmaps_base_mapping_policy</span><span class="o">=</span>
 </pre></div>
 </div>
 <p>The next step is to distribute the image to the compute nodes, which we assume
 is in the home directory. To do so, we run one instance of <code class="code docutils literal"><span class="pre">ch-tar2dir</span></code>
 on each node:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span>
-<span class="gp">$</span> mpirun -pernode ch-tar2dir ./mpihello.tar.gz /tmp/mpihello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -pernode ch-tar2dir ./mpihello.tar.gz /var/tmp/mpihello
 <span class="go">App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs</span>
 <span class="go">creating new image /tmp/mpihello</span>
 <span class="go">creating new image /tmp/mpihello</span>
@@ -1022,7 +1062,7 @@ on each node:</p>
 </pre></div>
 </div>
 <p>We can now activate the image and run our program:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun ch-run /tmp/mpihello -- /hello/hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs</span>
 <span class="go">2: init ok cn001.localdomain, 64 ranks, userns 4026532567</span>
 <span class="go">4: init ok cn001.localdomain, 64 ranks, userns 4026532571</span>
@@ -1038,53 +1078,77 @@ on each node:</p>
 <p>Success!</p>
 </div>
 <div class="section" id="non-interactive-mpi-hello-world">
-<h3><a class="toc-backref" href="#id25">2.6.2. Non-interactive MPI hello world</a><a class="headerlink" href="#non-interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id26">2.7.2. Non-interactive MPI hello world</a><a class="headerlink" href="#non-interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
 <p>Production jobs are normally run non-interactively, via submission of a job
 script that runs when resources are available, placing output into a file.</p>
 <p>The MPI hello world example includes such a script:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">#</span>!/bin/bash
+<div class="highlight-sh"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH --time=0:10:00</span>
 
-<span class="gp">#</span> Run in directory where the tarball is.
-<span class="gp">#</span> Output will go to same place.
+<span class="c1"># Arguments: Path to tarball, path to image.</span>
 
-<span class="gp">#</span> MSUB -l <span class="nv">walltime</span><span class="o">=</span>0:10:00
+<span class="nb">set</span> -e
 
-<span class="go">set -e</span>
+<span class="nv">TAR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span>
+<span class="nv">IMG</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">&quot;</span>
 
-<span class="go">TAG=mpihello</span>
-<span class="go">IMAGE=/tmp/$TAG</span>
+<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$TAR</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="nb">echo</span> <span class="s1">&#39;no tarball specified&#39;</span> <span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span>
+    <span class="nb">exit</span> <span class="m">1</span>
+<span class="k">fi</span>
+<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$IMG</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="nb">echo</span> <span class="s1">&#39;no image directory specified&#39;</span> <span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span>
+    <span class="nb">exit</span> <span class="m">1</span>
+<span class="k">fi</span>
 
-<span class="go">printf &#39;host:      &#39;</span>
-<span class="go">mpirun --version | egrep &#39;^mpirun&#39;</span>
+<span class="c1"># Make Charliecloud available (varies by site).</span>
+module purge
+module load openmpi
+module load sandbox
+module load charliecloud
 
-<span class="go">if [[ ! -e $IMAGE ]]; then</span>
-<span class="go">    mpirun -pernode ch-tar2dir ./$TAG.tar.gz $IMAGE &gt; /dev/null</span>
-<span class="go">fi</span>
+<span class="c1"># Makes &quot;mpirun -pernode&quot; work.</span>
+<span class="nb">export</span> <span class="nv">OMPI_MCA_rmaps_base_mapping_policy</span><span class="o">=</span>
 
-<span class="go">printf &#39;container: &#39;</span>
-<span class="go">ch-run $IMAGE -- mpirun --version | egrep &#39;^mpirun&#39;</span>
+<span class="c1"># MPI version on host.</span>
+<span class="nb">printf</span> <span class="s1">&#39;host:      &#39;</span>
+mpirun --version <span class="p">|</span> egrep <span class="s1">&#39;^mpirun&#39;</span>
 
-<span class="go">mpirun ch-run $IMAGE -- /hello/hello</span>
+<span class="c1"># Unpack image.</span>
+mpirun -pernode ch-tar2dir <span class="nv">$TAR</span> <span class="nv">$IMG</span>
+
+<span class="c1"># MPI version in container.</span>
+<span class="nb">printf</span> <span class="s1">&#39;container: &#39;</span>
+ch-run <span class="nv">$IMG</span> -- mpirun --version <span class="p">|</span> egrep <span class="s1">&#39;^mpirun&#39;</span>
+
+<span class="c1"># Run the app.</span>
+mpirun ch-run <span class="nv">$IMG</span> -- /hello/hello
 </pre></div>
 </div>
 <p>Note that this script both unpacks the image and runs it.</p>
 <p>Submit it with something like:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> msub -l <span class="nv">nodes</span><span class="o">=</span><span class="m">4</span> ~/charliecloud/examples/mpihello/moab.sh
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch -N4 slurm.sh ~/mpihello.tar.gz /var/tmp/mpihello
 <span class="go">86753</span>
 </pre></div>
 </div>
 <p>When the job is complete, look at the output:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> cat slurm-86753.out
-<span class="go">host:      mpirun (Open MPI) 1.10.3</span>
-<span class="go">container: mpirun (Open MPI) 1.10.4</span>
-<span class="go">App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs</span>
-<span class="go">8: init ok cn001.localdomain, 64 ranks, userns 4026532579</span>
-<span class="go">0: init ok cn001.localdomain, 64 ranks, userns 4026532564</span>
-<span class="go">2: init ok cn001.localdomain, 64 ranks, userns 4026532568</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> cat slurm-207745.out
+<span class="go">host:      mpirun (Open MPI) 1.10.5</span>
+<span class="go">App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs</span>
+<span class="go">creating new image /var/tmp/mpihello</span>
+<span class="go">creating new image /var/tmp/mpihello</span>
 <span class="go">[...]</span>
-<span class="go">61: init ok cn004.localdomain, 64 ranks, userns 4026532589</span>
-<span class="go">63: init ok cn004.localdomain, 64 ranks, userns 4026532593</span>
-<span class="go">54: init ok cn004.localdomain, 64 ranks, userns 4026532575</span>
+<span class="go">/var/tmp/mpihello unpacked ok</span>
+<span class="go">/var/tmp/mpihello unpacked ok</span>
+<span class="go">container: mpirun (Open MPI) 1.10.5</span>
+<span class="go">App launch reported: 4 (out of 4) daemons - 32 (out of 64) procs</span>
+<span class="go">2: init ok cn004.localdomain, 64 ranks, userns 4026532604</span>
+<span class="go">3: init ok cn004.localdomain, 64 ranks, userns 4026532606</span>
+<span class="go">4: init ok cn004.localdomain, 64 ranks, userns 4026532608</span>
+<span class="go">[...]</span>
+<span class="go">63: init ok cn007.localdomain, 64 ranks, userns 4026532630</span>
+<span class="go">30: init ok cn005.localdomain, 64 ranks, userns 4026532628</span>
+<span class="go">27: init ok cn005.localdomain, 64 ranks, userns 4026532622</span>
 <span class="go">0: send/receive ok</span>
 <span class="go">0: finalize ok</span>
 </pre></div>
@@ -1092,54 +1156,71 @@ script that runs when resources are available, placing output into a file.</p>
 <p>Success!</p>
 </div>
 <div class="section" id="interactive-apache-spark">
-<h3><a class="toc-backref" href="#id26">2.6.3. Interactive Apache Spark</a><a class="headerlink" href="#interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27">2.7.3. Interactive Apache Spark</a><a class="headerlink" href="#interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
 <p>This example is in <code class="code docutils literal"><span class="pre">examples/spark</span></code>. Build a tarball and upload it to
 your cluster.</p>
 <p>Once you have an interactive job, unpack the tarball.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -pernode ch-tar2dir ./<span class="nv">$USER</span>.spark.tar.gz /tmp/spark
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-tar2dir spark.tar.gz /var/tmp/spark
+<span class="go">creating new image /var/tmp/spark</span>
+<span class="go">creating new image /var/tmp/spark</span>
+<span class="go">[...]</span>
+<span class="go">/var/tmp/spark unpacked ok</span>
+<span class="go">/var/tmp/spark unpacked ok</span>
 </pre></div>
 </div>
-<p>We need to first create a basic configuration directory for Spark, as the
-defaults in the Dockerfile are insufficient. (For real jobs, you&#8217;ll want to
-also configure performance parameters such as memory use; see <a class="reference external" href="http://spark.apache.org/docs/latest/configuration.html">the
-documentation</a>.)
-First:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir ~/sparkconf
+<p>We need to first create a basic configuration for Spark, as the defaults in
+the Dockerfile are insufficient. (For real jobs, you&#8217;ll want to also configure
+performance parameters such as memory use; see <a class="reference external" href="http://spark.apache.org/docs/latest/configuration.html">the documentation</a>.) First:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir -p ~/sparkconf
+<span class="gp">$</span> chmod <span class="m">700</span> ~/sparkconf
 </pre></div>
 </div>
-<p>Next, we set some environment variables. In the directory above, create a file
-containing something like the following. Edit to match your configuration; in
-particular, use local disks instead of <code class="code docutils literal"><span class="pre">/tmp</span></code> if you have them.
-<code class="code docutils literal"><span class="pre">spark-env.sh</span></code>:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">SPARK_LOCAL_DIRS=/tmp</span>
-<span class="go">SPARK_LOG_DIR=/home/$USER/sparklog</span>
-<span class="go">SPARK_WORKER_DIR=/tmp</span>
-<span class="go">SPARK_LOCAL_IP=$(  ip -o -f inet addr show dev eth0 \</span>
-<span class="go">                 | sed -r &#39;s/^.+inet ([0-9.]+).+/\1/&#39;)</span>
-<span class="go">SPARK_MASTER_HOST=$SPARK_LOCAL_IP</span>
+<p>We&#8217;ll want to use the cluster&#8217;s high-speed network. For this example, we&#8217;ll
+find the Spark master&#8217;s IP manually:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ip -o -f inet addr show <span class="p">|</span> cut -d<span class="s1">&#39;/&#39;</span> -f1
+<span class="go">1: lo    inet 127.0.0.1</span>
+<span class="go">2: eth0  inet 192.168.8.3</span>
+<span class="go">8: eth1  inet 10.8.8.3</span>
 </pre></div>
 </div>
-<p>This is a shell script, so you can include code to set variables, as we do to
-select the IP address of the right interface.</p>
-<p>Other configuration variables are called &#8220;Spark properties&#8221; and go in a
-different file. Change the secret to something known only to you.
-<code class="code docutils literal"><span class="pre">spark-defaults.conf</span></code>:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">spark.authenticate true</span>
-<span class="go">spark.authenticate.secret CHANGEME</span>
+<p>Your site support can tell you which to use. In this case, we&#8217;ll use 10.8.8.3.</p>
+<p>Create some configuration files. Replace <code class="code docutils literal"><span class="pre">[MYSECRET]</span></code> with a string only
+you know. Edit to match your system; in particular, use local disks instead of
+<code class="code docutils literal"><span class="pre">/tmp</span></code> if you have them:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> cat &gt; ~/sparkconf/spark-env.sh
+<span class="go">SPARK_LOCAL_DIRS=/tmp/spark</span>
+<span class="go">SPARK_LOG_DIR=/tmp/spark/log</span>
+<span class="go">SPARK_WORKER_DIR=/tmp/spark</span>
+<span class="go">SPARK_LOCAL_IP=127.0.0.1</span>
+<span class="go">SPARK_MASTER_HOST=10.8.8.3</span>
+<span class="gp">$</span> cat &gt; ~/sparkconf/spark-defaults.conf
+<span class="go">spark.authenticate true</span>
+<span class="go">spark.authenticate.secret [MYSECRET]</span>
 </pre></div>
 </div>
 <p>We can now start the Spark master:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /tmp/spark -- /spark/sbin/start-master.sh
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /var/tmp/spark -- /spark/sbin/start-master.sh
 </pre></div>
 </div>
-<p>If you can see the node with a web browser, browse to
-<code class="code docutils literal"><span class="pre">http://$SPARK_LOCAL_IP:8080</span></code> for the Spark master web interface.
-Because this capability varies, the tutorial does not depend on it, but it can
-be informative. Refresh after each key step below.</p>
+<p>Look at the log in <code class="code docutils literal"><span class="pre">/tmp/spark/log</span></code> to see that the master started
+correctly:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> tail -7 /tmp/spark/log/*master*.out
+<span class="go">17/02/24 22:37:21 INFO Master: Starting Spark master at spark://10.8.8.3:7077</span>
+<span class="go">17/02/24 22:37:21 INFO Master: Running Spark version 2.0.2</span>
+<span class="go">17/02/24 22:37:22 INFO Utils: Successfully started service &#39;MasterUI&#39; on port 8080.</span>
+<span class="go">17/02/24 22:37:22 INFO MasterWebUI: Bound MasterWebUI to 127.0.0.1, and started at http://127.0.0.1:8080</span>
+<span class="go">17/02/24 22:37:22 INFO Utils: Successfully started service on port 6066.</span>
+<span class="go">17/02/24 22:37:22 INFO StandaloneRestServer: Started REST server for submitting applications on port 6066</span>
+<span class="go">17/02/24 22:37:22 INFO Master: I have been elected leader! New state: ALIVE</span>
+</pre></div>
+</div>
+<p>If you can run a web browser on the node, browse to
+<code class="code docutils literal"><span class="pre">http://localhost:8080</span></code> for the Spark master web interface. Because this
+capability varies, the tutorial does not depend on it, but it can be
+informative. Refresh after each key step below.</p>
 <p>The Spark workers need to know how to reach the master. This is via a URL; you
-can construct it from your knowledge of <code class="code docutils literal"><span class="pre">$SPARK_LOCAL_IP</span></code>, or consult
-the web interface. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nv">MASTER_URL</span><span class="o">=</span>spark://10.8.8.1:7077
+can derive it from the above, or consult the web interface. For example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nv">MASTER_URL</span><span class="o">=</span>spark://10.8.8.3:7077
 </pre></div>
 </div>
 <p>Next, start one worker on each compute node. This is a little ugly;
@@ -1147,12 +1228,36 @@ the web interface. For example:</p>
 want to start the workers in the background, so we add <code class="code docutils literal"><span class="pre">&amp;</span></code> and introduce
 a race condition. (<code class="code docutils literal"><span class="pre">srun</span></code> has different, even less helpful behavior: it
 kills the worker as soon as it goes into the background.)</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -pernode ch-run -d ~/sparkconf /tmp/spark -- <span class="se">\</span>
-<span class="go">  /spark/sbin/start-slave.sh $MASTER_URL &amp;</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -map-by <span class="s1">&#39;&#39;</span> -pernode ch-run -d ~/sparkconf /var/tmp/spark -- <span class="se">\</span>
+  /spark/sbin/start-slave.sh <span class="nv">$MASTER_URL</span> <span class="p">&amp;</span>
+</pre></div>
+</div>
+<p>One of the advantages of Spark is that it&#8217;s resilient: if a worker becomes
+available, the computation simply proceeds without it. However, this can mask
+issues as well. For example, this example will run perfectly fine with just
+one worker on the same node as the master, which isn&#8217;t what we want.</p>
+<p>Check the master log to see that the right number of workers registered:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span>  fgrep worker /tmp/spark/log/*master*.out
+<span class="go">17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:39890 with 16 cores, 187.8 GB RAM</span>
+<span class="go">17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:44735 with 16 cores, 187.8 GB RAM</span>
+<span class="go">17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:22445 with 16 cores, 187.8 GB RAM</span>
+<span class="go">17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:29473 with 16 cores, 187.8 GB RAM</span>
+</pre></div>
+</div>
+<p>Despite the workers calling themselves 127.0.0.1, they really are running
+across the allocation. (The confusion happens because of our
+<code class="code docutils literal"><span class="pre">$SPARK_LOCAL_IP</span></code> setting above.) This can be verified by examining logs
+on each compute node. For example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh <span class="m">10</span>.8.8.4
+<span class="gp">$</span> tail -3 /tmp/spark/log/*worker*.out
+<span class="go">17/02/24 22:52:24 INFO Worker: Connecting to master 10.8.8.3:7077...</span>
+<span class="go">17/02/24 22:52:24 INFO TransportClientFactory: Successfully created connection to /10.8.8.3:7077 after 263 ms (216 ms spent in bootstraps)</span>
+<span class="go">17/02/24 22:52:24 INFO Worker: Successfully registered with master spark://10.8.8.3:7077</span>
+<span class="gp">$</span> <span class="nb">exit</span>
 </pre></div>
 </div>
 <p>We can now start an interactive shell to do some Spark computing:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /tmp/spark -- /spark/bin/pyspark --master <span class="nv">$MASTER_URL</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /var/tmp/spark -- /spark/bin/pyspark --master <span class="nv">$MASTER_URL</span>
 </pre></div>
 </div>
 <p>Let&#8217;s use this shell to estimate 𝜋 (this is adapted from one of the Spark
@@ -1176,68 +1281,27 @@ kills the worker as soon as it goes into the background.)</p>
 <p>We can also submit jobs to the Spark cluster. This one runs the same example
 as included with the Spark source code. (The voluminous logging output is
 omitted.)</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /tmp/spark -- <span class="se">\</span>
-<span class="go">  /spark/bin/spark-submit --master $MASTER_URL \</span>
-<span class="go">  /spark/examples/src/main/python/pi.py 1024</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /var/tmp/spark -- <span class="se">\</span>
+  /spark/bin/spark-submit --master <span class="nv">$MASTER_URL</span> <span class="se">\</span>
+  /spark/examples/src/main/python/pi.py <span class="m">1024</span>
 <span class="go">[...]</span>
 <span class="go">Pi is roughly 3.141211</span>
 <span class="go">[...]</span>
 </pre></div>
 </div>
-<p>Finally, we shut down the Spark cluster. This isn&#8217;t strictly necessary, as
-SLURM will kill everything when exit the allocation, but it&#8217;s good hygiene:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -pernode ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-slave.sh
-<span class="gp">$</span> ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-master.sh
-</pre></div>
-</div>
+<p>Exit your allocation. Slurm will clean up the Spark daemons.</p>
 <p>Success! Next, we&#8217;ll run a similar job non-interactively.</p>
 </div>
 <div class="section" id="non-interactive-apache-spark">
-<h3><a class="toc-backref" href="#id27">2.6.4. Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
-<p>We&#8217;ll re-use much of the above, including the configuration we created, to run
-the same computation non-interactively. Here is the Moab script:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">#</span>!/bin/bash
-<span class="gp">#</span> MSUB -l <span class="nv">walltime</span><span class="o">=</span>0:10:00
-
-<span class="gp">#</span> Run in directory where the tarball is. Output will go to same place.
-<span class="gp">#</span> Needs Spark configuration in ~/sparkconf.
-
-<span class="go">set -e</span>
-
-<span class="go">TAG=spark</span>
-<span class="go">IMAGE=/tmp/$TAG</span>
-
-<span class="go">mpirun -pernode ch-tar2dir ./$USER.$TAG.tar.gz $IMAGE &gt; /dev/null</span>
-
-<span class="gp">#</span> start Spark cluster
-<span class="go">MASTER_IP=$(sh -c &#39;source ~/sparkconf/spark-env.sh &amp;&amp; echo $SPARK_LOCAL_IP&#39;)</span>
-<span class="gp">MASTER_URL=&quot;spark://$</span>MASTER_IP:7077<span class="s2">&quot;</span>
-<span class="go">echo &quot;master: $MASTER_URL&quot;</span>
-<span class="go">ch-run -d ~/sparkconf /tmp/spark -- /spark/sbin/start-master.sh</span>
-<span class="go">mpirun -pernode ch-run -d ~/sparkconf /tmp/spark -- \</span>
-<span class="go">  /spark/sbin/start-slave.sh $MASTER_URL &amp;</span>
-<span class="go">sleep 10  # wait for workers to boot</span>
-
-<span class="gp">#</span> run our job
-<span class="go">ch-run -d ~/sparkconf /tmp/spark -- \</span>
-<span class="go">  /spark/bin/spark-submit --master $MASTER_URL \</span>
-<span class="go">  /spark/examples/src/main/python/pi.py 1024</span>
-
-<span class="gp">#</span> shut down Spark cluster
-<span class="go">mpirun -pernode ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-slave.sh</span>
-<span class="go">ch-run -d ~/sparkconf /tmp/spark /spark/sbin/stop-master.sh</span>
-<span class="go">sleep 2   # wait for things to finish exiting</span>
-</pre></div>
-</div>
-<p>There are four basic steps:</p>
-<ol class="arabic simple">
-<li>Unpack the image.</li>
-<li>Start a Spark cluster.</li>
-<li>Run our computation.</li>
-<li>Stop the Spark cluster.</li>
-</ol>
-<p>Submit like so:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> msub -l <span class="nv">nodes</span><span class="o">=</span><span class="m">4</span> ~/charliecloud/examples/spark/moab.sh
+<h3><a class="toc-backref" href="#id28">2.7.4. Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<p>We&#8217;ll re-use much of the above to run the same computation non-interactively.
+For brevity, the Slurm script at <code class="code docutils literal"><span class="pre">examples/spark/slurm.h</span></code> is not
+reproduced here.</p>
+<p>Submit it as follows. It requires three arguments: the tarball, the image
+directory to unpack into, and the high-speed network interface. Again, consult
+your site administrators for the latter.</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch -N4 slurm.sh spark.tar.gz /var/tmp eth1
+<span class="go">Submitted batch job 86754</span>
 </pre></div>
 </div>
 <p>Output:</p>
@@ -1252,15 +1316,18 @@ the same computation non-interactively. Here is the Moab script:</p>
 
 
            </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="script-help.html" class="btn btn-neutral float-right" title="3. Help text for executables" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="script-help.html" class="btn btn-neutral float-right" title="3. Help text for executables" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="install.html" class="btn btn-neutral" title="1. Installation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="install.html" class="btn btn-neutral" title="1. Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -1290,10 +1357,11 @@ the same computation non-interactively. Here is the Moab script:</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.1~pre',
+            VERSION:'0.2.2~pre',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
         };
     </script>
       <script type="text/javascript" src="_static/jquery.js"></script>
