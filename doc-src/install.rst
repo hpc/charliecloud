@@ -15,7 +15,7 @@ a bug.
 Run time
 --------
 
-Systems used for running images need:
+Systems used for running images in the standard unprivileged mode need:
 
 * Recent Linux kernel with :code:`CONFIG_USER_NS=y`.
 * C compiler and standard library
@@ -25,9 +25,9 @@ Tested and working by us include the Ubuntu and upstream versions of 4.4.
 
 .. note::
 
-   We are open to patches to make Charliecloud available on older kernels. The
-   key is likely a setuid binary to avoid the user namespace. Please contact
-   us if you are interested.
+   An experimental setuid mode is also provided that does not need user
+   namespaces. This should run on most currently supported Linux
+   distributions.
 
 Build time
 ----------
@@ -178,8 +178,9 @@ Download
 
 See our GitHub project: https://github.com/hpc/charliecloud
 
-The recommended way to download is with :code:`git clone --recursive`; the
-switch gets the submodule needed for testing as well.
+Download with :code:`git clone --recursive`; the switch gets the submodule
+needed for testing as well. Other methods of downloading (e.g. the tarball,
+plain :code:`git clone`) are known not to work.
 
 The remaining install steps can be run from the Git working directory or an
 unpacked export tarball created with :code:`make export`.
@@ -187,13 +188,22 @@ unpacked export tarball created with :code:`make export`.
 Build
 -----
 
-Just say::
+To build in the standard, unprivileged mode (recommended)::
 
   $ make
 
-.. note::
+To build in setuid mode (experimental)::
 
-   If you wish to build the documentation, see :code:`doc-src/README`.
+  $ make SETUID=yes
+
+This mode escalates with :code:`sudo` when needed.
+
+To build the documentation, see :code:`doc-src/README`.
+
+.. warning::
+
+   Do not build as root. This is unsupported and may introduce security
+   problems.
 
 Install (optional)
 ------------------

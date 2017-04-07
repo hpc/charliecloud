@@ -25,10 +25,12 @@ load common
         echo "$output"
         [[ $status -eq 0 ]]
         [[ $output =~ Usage: ]]
-        # not setuid or setgid
-        ls -l $i
-        [[ ! -u $i ]]
-        [[ ! -g $i ]]
+        # not setuid or setgid (ch-run tested elsewhere)
+        if [[ ! $i =~ .*/ch-run ]]; then
+            ls -l $i
+            [[ ! -u $i ]]
+            [[ ! -g $i ]]
+        fi
     done
 }
 
@@ -107,5 +109,5 @@ load common
     docker_ok chtest
     image_ok $IMG
     # Remove since we don't want it hanging around later
-    rm -Rf $TAR $IMG
+    rm -Rf --one-file-system $TAR $IMG
 }

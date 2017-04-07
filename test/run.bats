@@ -9,7 +9,7 @@ load common
         for i in $IMGDIR/*; do
             if [[ -d $i && -f $i/WEIRD_AL_YANKOVIC ]]; then
                 echo "found image $i; removing"
-                rm -Rf $i
+                rm -Rf --one-file-system $i
             else
                 echo "found non-image $i; aborting"
                 false
@@ -31,7 +31,76 @@ load common
     ch-ssh --help
 }
 
-@test 'sycalls/pivot_root' {
+@test 'setuid bit matches --is-setuid' {
+    test $CH_RUN_FILE -ef $(which ch-run)
+    [[ -e $CH_RUN_FILE ]]
+    ls -l $CH_RUN_FILE
+    if ( ch-run --is-setuid ); then
+        [[ -n $CH_RUN_SETUID ]]
+        [[ -u $CH_RUN_FILE ]]
+        [[ $(stat -c %U $CH_RUN_FILE) = root ]]
+    else
+        [[ -z $CH_RUN_SETUID ]]
+        [[ ! -u $CH_RUN_FILE ]]
+        #[[ $(stat -c %U $CH_RUN_FILE) != root ]]
+    fi
+}
+
+@test 'setgid bit is off' {
+    [[ -e $CH_RUN_FILE ]]
+    [[ ! -g $CH_RUN_FILE ]]
+    #[[ $(stat -c %G $CH_RUN_FILE) != root ]]
+}
+
+@test 'ch-run refuses to run if setgid' {
+    CH_RUN_TMP=$BATS_TMPDIR_PRIVATE/ch-run.setgid
+    GID=$(id -g)
+    GID2=$(id -G | cut -d' ' -f2)
+    echo "GIDs: $GID $GID2"
+    [[ $GID != $GID2 ]]
+    cp -a $CH_RUN_FILE $CH_RUN_TMP
+    ls -l $CH_RUN_TMP
+    chgrp $GID2 $CH_RUN_TMP
+    chmod g+s $CH_RUN_TMP
+    ls -l $CH_RUN_TMP
+    [[ -g $CH_RUN_TMP ]]
+    run $CH_RUN_TMP --version
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ 'ch-run.setgid: error: Success' ]]
+    rm $CH_RUN_TMP
+}
+
+@test 'ch-run refuses to run if setuid' {
+    [[ -n $CH_RUN_SETUID ]] && skip
+    CH_RUN_TMP=$BATS_TMPDIR_PRIVATE/ch-run.setuid
+    cp -a $CH_RUN_FILE $CH_RUN_TMP
+    ls -l $CH_RUN_TMP
+    sudo chown root $CH_RUN_TMP
+    sudo chmod u+s $CH_RUN_TMP
+    ls -l $CH_RUN_TMP
+    [[ -u $CH_RUN_TMP ]]
+    run $CH_RUN_TMP --version
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ 'ch-run.setuid: error: Success' ]]
+    sudo rm $CH_RUN_TMP
+}
+
+@test 'ch-run -u and -g refused in setuid mode' {
+    [[ -z $CH_RUN_SETUID ]] && skip
+    run ch-run -u 65534
+    echo "$output"
+    [[ $status -eq 64 ]]
+    [[ $output =~ "ch-run: invalid option -- 'u'" ]]
+    run ch-run -g 65534
+    echo "$output"
+    [[ $status -eq 64 ]]
+    [[ $output =~ "ch-run: invalid option -- 'g'" ]]
+}
+
+@test 'syscalls/pivot_root' {
+    [[ -n $CH_RUN_SETUID ]] && skip
     cd ../examples/syscalls
     ./pivot_root
 }
@@ -64,14 +133,21 @@ load common
     [[ $output = $PATH2:/bin ]]
 }
 
+@test 'mountns id differs' {
+    host_ns=$(stat -Lc '%i' /proc/self/ns/mnt)
+    echo "host:  $host_ns"
+    guest_ns=$(ch-run $CHTEST_IMG -- stat -Lc '%i' /proc/self/ns/mnt)
+    echo "guest: $guest_ns"
+    [[ -n $host_ns && -n $guest_ns && $host_ns -ne $guest_ns ]]
+}
+
 @test 'userns id differs' {
-    host_userns=$(stat -Lc '%i' /proc/self/ns/user)
+    [[ -n $CH_RUN_SETUID ]] && skip
+    host_ns=$(stat -Lc '%i' /proc/self/ns/user)
     echo "host:  $host_userns"
-    guest_userns=$(ch-run $CHTEST_IMG -- stat -Lc '%i' /proc/self/ns/user)
-    echo "guest: $guest_userns"
-    [[    -n $host_userns
-       && -n $guest_userns
-       && $host_userns -ne $guest_userns ]]
+    guest_ns=$(ch-run $CHTEST_IMG -- stat -Lc '%i' /proc/self/ns/user)
+    echo "guest: $guest_ns"
+    [[ -n $host_ns && -n $guest_ns && $host_ns -ne $guest_ns ]]
 }
 
 @test 'distro differs' {

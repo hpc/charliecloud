@@ -4,7 +4,7 @@ language: c
 compiler: gcc
 
 install:
-  - apt-get install pigz
+  - sudo apt-get install pigz
   - pip install sphinx sphinx-rtd-theme
 
 before_script:
@@ -25,6 +25,13 @@ script:
   - make test-run
   - make test-test
   - cd -
+  - make clean && make SETUID=yes
+  - cd test
+  - make test-build
+  - make test-run
+  - make test-test
+  - cd -
+  - make clean && make
   - make export
   - tar xf charliecloud-*.tar.gz
   - cd charliecloud-*

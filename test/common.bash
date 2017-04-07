@@ -31,6 +31,10 @@ export LC_ALL=C
 CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/bin" && pwd)"
 CH_BIN="$(readlink -f "$CH_BIN")"
 PATH=$CH_BIN:$PATH
+CH_RUN_FILE="$(which ch-run)"
+if [[ -u $CH_RUN_FILE ]]; then
+    CH_RUN_SETUID=yes
+fi
 
 # Separate directories for tarballs and images
 TARDIR=$CH_TEST_TARDIR
@@ -41,27 +45,36 @@ EXAMPLE_TAG=$(basename $BATS_TEST_DIRNAME)
 EXAMPLE_IMG=$IMGDIR/$EXAMPLE_TAG
 CHTEST_TARBALL=$TARDIR/chtest.tar.gz
 CHTEST_IMG=$IMGDIR/chtest
-if [[ -n $GUEST_USER && -z $BATS_TEST_NAME ]]; then
-    GUEST_UID=$(id -u $GUEST_USER)
-    GUEST_GID=$(getent group $GUEST_GROUP | cut -d: -f3)
-fi
 CHTEST_MULTINODE=$SLURM_JOB_ID
 if [[ $CHTEST_MULTINODE ]]; then
     # $SLURM_NTASKS isn't always set
     CHTEST_CORES=$(($SLURM_CPUS_ON_NODE * $SLURM_JOB_NUM_NODES))
 fi
 
+# Stuff for a few more sensitive tests
+BATS_TMPDIR_PRIVATE=$(mktemp -d --tmpdir=$BATS_TMPDIR)
+[[ $(stat -c '%a' $BATS_TMPDIR_PRIVATE) = '700' ]]
+if (sudo -v); then
+    # This isn't super reliable; it returns true if we have *any* sudo
+    # privileges, not specifically to run the commands we want to run.
+    CHTEST_HAVE_SUDO=yes
+fi
+
 # Do we have what we need?
+env_require CH_TEST_TARDIR
+env_require CH_TEST_IMGDIR
+env_require CH_TEST_PERMDIRS
 if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
     # https://github.com/sstephenson/bats/issues/49
-    printf "Need at least Bash 4.1 for these tests.\n\n" >&2
+    printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
     exit 1
 fi
 if [[ ! -x $CH_BIN/ch-run ]]; then
     printf 'Must build with "make" before running tests.\n\n' >&2
     exit 1
 fi
-env_require CH_TEST_TARDIR
-env_require CH_TEST_IMGDIR
-env_require CH_TEST_PERMDIRS
+if ( mount | fgrep -q $IMGDIR ); then
+    printf 'Something is mounted under %s.\n\n' $IMGDIR >&2
+    exit 1
+fi

@@ -3,7 +3,7 @@ export CFLAGS += -std=c11 -Wall
 
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
-	cd bin && $(MAKE) all
+	cd bin && $(MAKE) SETUID=$(SETUID) all
 	cd test && $(MAKE) all
 	cd examples/syscalls && $(MAKE) all
 

@@ -54,7 +54,7 @@ for path in sys.argv[2:]:
     IMG=$IMGDIR/%(tag)s
     if [[ -d $IMG && -f $IMG/WEIRD_AL_YANKOVIC ]]; then
         # image exists, remove so we can test new unpack
-        rm -Rf $IMG
+        rm -Rf --one-file-system $IMG
     fi
     ch-tar2dir $TARBALL $IMG  # new unpack
     image_ok $IMG

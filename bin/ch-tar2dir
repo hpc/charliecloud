@@ -55,7 +55,7 @@ else
        && [ -d "$NEWROOT/lib" ] \
        && [ -d "$NEWROOT/usr" ]; then
         echo "replacing existing image $NEWROOT" 1>&2
-        rm -Rf $NEWROOT
+        rm -Rf --one-file-system $NEWROOT
     else
         echo "$NEWROOT exists but does not appear to be an image" 1>&2
         exit 1

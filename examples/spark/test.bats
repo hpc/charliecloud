@@ -64,7 +64,7 @@ EOF
 
 @test "$EXAMPLE_TAG/start" {
     # remove old master logs so new one has predictable name
-    rm -Rf $SPARKLOG
+    rm -Rf --one-file-system $SPARKLOG
     # start the master
     ch-run -d $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/start-master.sh
     sleep 5
