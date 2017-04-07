@@ -24,7 +24,7 @@ void enter_udss(char * newroot, char ** binds, bool private_tmp);
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
-void setup_namespaces(bool userns_p, uid_t cuid, gid_t cgid);
+void setup_namespaces(uid_t cuid, gid_t cgid);
 
 
 /** Constants and macros **/
@@ -74,7 +74,6 @@ const struct argp_option options[] = {
    { "uid",         'u', "UID", 0, "run as UID within container" },
    { "verbose",     'v', 0,     0, "be more verbose (debug if repeated)" },
    { "version",     'V', 0,     0, "print version and exit" },
-   { "no-userns",   'z', 0,     0, "don't use user namespace" },
    { 0 }
 };
 
@@ -85,7 +84,6 @@ struct args {
    char * newroot;
    bool private_tmp;
    int user_cmd_start;  // index into argv where NEWROOT is
-   bool userns;         // true if using CLONE_NEWUSER
    int verbose;
 };
 
@@ -101,7 +99,6 @@ int main(int argc, char * argv[])
    args.container_gid = getegid();
    args.container_uid = geteuid();
    args.private_tmp = false;
-   args.userns = true;
    args.verbose = 0;
    TRY (setenv("ARGP_HELP_FMT", "opt-doc-col=21,no-dup-args-note", 0));
    TRY (argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args));
@@ -115,10 +112,9 @@ int main(int argc, char * argv[])
       fprintf(stderr, "container uid: %u\n", args.container_uid);
       fprintf(stderr, "container gid: %u\n", args.container_gid);
       fprintf(stderr, "private /tmp: %d\n", args.private_tmp);
-      fprintf(stderr, "user namespace: %d\n", args.userns);
    }
 
-   setup_namespaces(args.userns, args.container_uid, args.container_gid);
+   setup_namespaces(args.container_uid, args.container_gid);
    enter_udss(args.newroot, args.binds, args.private_tmp);
    run_user_command(argc, argv, args.user_cmd_start); // should never return
    exit(EXIT_FAILURE);
@@ -251,12 +247,6 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       TRY (errno || l < 0);
       as->container_gid = (gid_t)l;
       break;
-   case 'n':
-      as->userns = false;
-      break;
-   case 'r':
-      as->newroot = arg;
-      break;
    case 't':
       as->private_tmp = true;
       break;
@@ -272,9 +262,6 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       break;
    case 'v':
       as->verbose++;
-      break;
-   case 'z':
-      as->userns = false;
       break;
    default:
       return ARGP_ERR_UNKNOWN;
@@ -317,45 +304,40 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
 }
 
 /* Activate the desired isolation namespaces. */
-void setup_namespaces(bool userns_p, uid_t cuid, gid_t cgid)
+void setup_namespaces(uid_t cuid, gid_t cgid)
 {
-   int flags = CLONE_NEWNS;
+   int flags = CLONE_NEWNS|CLONE_NEWUSER;
    int fd;
    uid_t euid = -1;
    gid_t egid = -1;
 
-   if (userns_p) {
-      flags |= CLONE_NEWUSER;
-      euid = geteuid();
-      egid = getegid();
-   }
+   euid = geteuid();
+   egid = getegid();
 
    LOG_IDS;
    TRY (unshare(flags));
    LOG_IDS;
 
-   if (userns_p) {
-      /* Write UID map. What we are allowed to put here is quite limited.
-         Because we do not have CAP_SETUID in the *parent* user namespace, we
-         can map exactly one UID: an arbitrary container UID to our EUID in
-         the parent namespace.
+   /* Write UID map. What we are allowed to put here is quite limited. Because
+      we do not have CAP_SETUID in the *parent* user namespace, we can map
+      exactly one UID: an arbitrary container UID to our EUID in the parent
+      namespace.
 
-         This is sufficient to change our UID within the container; no
-         setuid(2) or similar required. This is because the EUID of the
-         process in the parent namespace is unchanged, so the kernel uses our
-         new 1-to-1 map to convert that EUID into the container UID for most
-         (maybe all) purposes. */
-      TRY ((fd = open("/proc/self/uid_map", O_WRONLY)) == -1);
-      TRY (dprintf(fd, "%d %d 1\n", cuid, euid) < 0);
-      TRY (close(fd));
-      LOG_IDS;
+      This is sufficient to change our UID within the container; no setuid(2)
+      or similar required. This is because the EUID of the process in the
+      parent namespace is unchanged, so the kernel uses our new 1-to-1 map to
+      convert that EUID into the container UID for most (maybe all)
+      purposes. */
+   TRY ((fd = open("/proc/self/uid_map", O_WRONLY)) == -1);
+   TRY (dprintf(fd, "%d %d 1\n", cuid, euid) < 0);
+   TRY (close(fd));
+   LOG_IDS;
 
-      TRY ((fd = open("/proc/self/setgroups", O_WRONLY)) == -1);
-      TRY (dprintf(fd, "deny\n") < 0);
-      TRY (close(fd));
-      TRY ((fd = open("/proc/self/gid_map", O_WRONLY)) == -1);
-      TRY (dprintf(fd, "%d %d 1\n", cgid, egid) < 0);
-      TRY (close(fd));
-      LOG_IDS;
-   }
+   TRY ((fd = open("/proc/self/setgroups", O_WRONLY)) == -1);
+   TRY (dprintf(fd, "deny\n") < 0);
+   TRY (close(fd));
+   TRY ((fd = open("/proc/self/gid_map", O_WRONLY)) == -1);
+   TRY (dprintf(fd, "%d %d 1\n", cgid, egid) < 0);
+   TRY (close(fd));
+   LOG_IDS;
 }
