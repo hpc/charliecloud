@@ -48,7 +48,7 @@ Charliecloud you have (if not, please report a bug). For example::
   Run a command in a Charliecloud container.
   [...]
   $ ch-run --version
-  0.2.0.4836ac1
+  0.2.0+4836ac1
 
 The help text is also collected later in this documentation; see
 :doc:`script-help`.
@@ -252,9 +252,9 @@ number::
 You can also run interactive commands, such as a shell::
 
   $ ch-run /var/tmp/hello -- /bin/bash
-  $ stat -L --format='%i' /proc/self/ns/user
+  > stat -L --format='%i' /proc/self/ns/user
   4026532256
-  $ exit
+  > exit
 
 Be aware that wildcards in the :code:`ch-run` command are interpreted by the
 host, not the container, unless protected. One workaround is to use a
@@ -306,9 +306,9 @@ can be added using the :code:`-d` switch. These appear at :code:`/mnt/0`,
   $ echo hello > /var/tmp/foo0/bar
   $ mkdir /var/tmp/foo1
   $ echo world > /var/tmp/foo1/bar
-  $ ch-run -d /var/tmp/foo0 -d /var/tmp/foo1 /var/tmp/hello bash
+  $ ch-run -d /var/tmp/foo0 -d /var/tmp/foo1 /var/tmp/hello -- bash
   > ls /mnt
-  0  1
+  0  1  2  3  4  5  6  7  8  9
   > cat /mnt/0/bar
   hello
   > cat /mnt/1/bar
@@ -364,7 +364,7 @@ making it mostly a drop-in replacement for :code:`ssh`. For example::
 bind-mount)::
 
   $ export CH_RUN_ARGS="/var/tmp/hello --"
-  $ ch-run /var/tmp/hello /bin/bash
+  $ ch-run /var/tmp/hello -- /bin/bash
   > stat -L --format='%i' /proc/self/ns/user
   4026532256
   > ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
@@ -401,7 +401,7 @@ the container.) For example::
   901
   $ whoami
   reidpr
-  $ ch-run /var/tmp/hello bash
+  $ ch-run /var/tmp/hello -- bash
   > id -u
   901
   > whoami
@@ -413,7 +413,7 @@ Charliecloud does, lets you map any container UID to your host UID.
 you can tell Charliecloud you want to be root, and it will tell you that
 you're root::
 
-  $ ch-run --uid 0 /var/tmp/hello bash
+  $ ch-run --uid 0 /var/tmp/hello -- bash
   > id -u
   0
   > whoami
@@ -435,7 +435,7 @@ looks normal::
   drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/reidpr
   $ ls -ld ~
   drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 12:12 /home/reidpr
-  $ ch-run /var/tmp/hello bash
+  $ ch-run /var/tmp/hello -- bash
   > ls -nd ~
   drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld ~
@@ -443,7 +443,7 @@ looks normal::
 
 But if :code:`--uid` is provided, things can seem odd. For example::
 
-  $ ch-run --uid 0 /var/tmp/hello bash
+  $ ch-run --uid 0 /var/tmp/hello -- bash
   > ls -nd /home/reidpr
   drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld /home/reidpr
@@ -457,7 +457,7 @@ up as :code:`nobody`::
   -rw-rw---- 1 902 902 0 Sep 28 15:40 /tmp/foo
   $ ls -l /tmp/foo
   -rw-rw---- 1 sig sig 0 Sep 28 15:40 /tmp/foo
-  $ ch-run /var/tmp/hello bash
+  $ ch-run /var/tmp/hello -- bash
   > ls -n /tmp/foo
   -rw-rw---- 1 65534 65534 843 Sep 28 21:40 /tmp/foo
   > ls -l /tmp/foo
@@ -482,7 +482,7 @@ access::
   $ ls -l /tmp/primary /tmp/supplemental
   -rw-rw---- 1 sig reidpr 0 Sep 28 15:47 /tmp/primary
   -rw-rw---- 1 sig nerds  0 Sep 28 15:48 /tmp/supplemental
-  $ ch-run /var/tmp/hello bash
+  $ ch-run /var/tmp/hello -- bash
   > cat /tmp/primary > /dev/null
   > cat /tmp/supplemental > /dev/null
 
@@ -603,12 +603,11 @@ code under active development.
 The general approach is the same as installing third-party software from
 source, but you use the :code:`COPY` instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
-the :code:`mpihello` Dockerfile extends :code:`debian8openmpi` with this
-approach.
+the :code:`mpihello` Dockerfile uses this approach:
 
 .. literalinclude:: ../examples/mpihello/Dockerfile
    :language: docker
-   :lines: 1-6
+   :lines: 19-
 
 These Dockerfile instructions:
 
@@ -665,7 +664,6 @@ demonstrate this.
   -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
   -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
-  -rwxrwx--- 1 reidpr reidpr  441 Aug  5 16:37 test.sh
   $ ch-run -d . /var/tmp/mpihello -- sh -c 'cd /mnt/0 && make'
   mpicc -std=gnu11 -Wall hello.c -o hello
   $ ls -l
@@ -675,7 +673,6 @@ demonstrate this.
   -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
   -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
-  -rwxrwx--- 1 reidpr reidpr  441 Aug  5 16:37 test.sh
 
 A common use case is to leave a container shell open in one terminal for
 building, and then run using a separate container invoked from a different
@@ -720,7 +717,7 @@ For example, using :code:`mpirun` and the :code:`mpihello` example above::
   4026531837
   $ ch-run /var/tmp/mpihello -- mpirun --version
   mpirun (Open MPI) 1.10.4
-  $ mpirun -np 4 ch-run /var/tmp/mpihello /hello/hello
+  $ mpirun -np 4 ch-run /var/tmp/mpihello -- /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532267
   2: init ok cn001, 4 ranks, userns 4026532269
@@ -770,12 +767,12 @@ variety of approaches. Some application or frameworks take command-line
 parameters specifying the configuration path.
 
 The approach used in our example is to set the configuration directory to
-:code:`/mnt/0`. This is done in :code:`test/Dockerfile.debian8openmpi` with
-the :code:`--sysconfdir` argument:
+:code:`/mnt/0`. This is done in :code:`mpihello` with the :code:`--sysconfdir`
+argument:
 
-.. literalinclude:: ../test/Dockerfile.debian8openmpi
+.. literalinclude:: ../examples/mpihello/Dockerfile
    :language: docker
-   :lines: 23-29
+   :lines: 11-15
 
 The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with :code:`-d`, that is
@@ -797,11 +794,11 @@ resolved when the appropriate host directory is bind-mounted into
 Your first multi-node jobs
 ==========================
 
-This section assumes that you are using a MOAB/SLURM cluster with a working
-OpenMPI 1.10.\ *x* installation and some type of node-local storage. A
-:code:`tmpfs` will suffice, and we use :code:`/var/tmp` for this tutorial.
-(Using :code:`/tmp` often works but can cause confusion because it's share by
-the container and host, yielding a circular directory tree.)
+This section assumes that you are using a Slurm cluster with a working OpenMPI
+1.10.\ *x* installation and some type of node-local storage. A :code:`tmpfs`
+will suffice, and we use :code:`/var/tmp` for this tutorial. (Using
+:code:`/tmp` often works but can cause confusion because it's shared by the
+container and host, yielding a circular directory tree.)
 
 We cover three cases:
 
@@ -835,19 +832,20 @@ First, obtain an interactive allocation of nodes. This tutorial assumes an
 allocation of 4 nodes (but any number should work) and an interactive shell on
 one of those nodes. For example::
 
-  $ msub -I -l nodes=4
+  $ salloc -N4
 
-We also need OpenMPI 1.10.\ *x* available::
+We also need OpenMPI 1.10.\ *x* available and with the correct mapping
+policy::
 
   $ mpirun --version
-  mpirun (Open MPI) 1.10.3
+  mpirun (Open MPI) 1.10.5
+  $ export OMPI_MCA_rmaps_base_mapping_policy=
 
 The next step is to distribute the image to the compute nodes, which we assume
 is in the home directory. To do so, we run one instance of :code:`ch-tar2dir`
 on each node::
 
-  $ cd
-  $ mpirun -pernode ch-tar2dir ./mpihello.tar.gz /tmp/mpihello
+  $ mpirun -pernode ch-tar2dir ./mpihello.tar.gz /var/tmp/mpihello
   App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs
   creating new image /tmp/mpihello
   creating new image /tmp/mpihello
@@ -860,7 +858,7 @@ on each node::
 
 We can now activate the image and run our program::
 
-  $ mpirun ch-run /tmp/mpihello -- /hello/hello
+  $ mpirun ch-run /var/tmp/mpihello -- /hello/hello
   App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs
   2: init ok cn001.localdomain, 64 ranks, userns 4026532567
   4: init ok cn001.localdomain, 64 ranks, userns 4026532571
@@ -883,27 +881,34 @@ script that runs when resources are available, placing output into a file.
 The MPI hello world example includes such a script:
 
 .. literalinclude:: ../examples/mpihello/slurm.sh
+         :language: sh
 
 Note that this script both unpacks the image and runs it.
 
 Submit it with something like::
 
-  $ msub -l nodes=4 ~/charliecloud/examples/mpihello/moab.sh
+  $ sbatch -N4 slurm.sh ~/mpihello.tar.gz /var/tmp/mpihello
   86753
 
 When the job is complete, look at the output::
 
-  $ cat slurm-86753.out
-  host:      mpirun (Open MPI) 1.10.3
-  container: mpirun (Open MPI) 1.10.4
-  App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs
-  8: init ok cn001.localdomain, 64 ranks, userns 4026532579
-  0: init ok cn001.localdomain, 64 ranks, userns 4026532564
-  2: init ok cn001.localdomain, 64 ranks, userns 4026532568
+  $ cat slurm-207745.out
+  host:      mpirun (Open MPI) 1.10.5
+  App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs
+  creating new image /var/tmp/mpihello
+  creating new image /var/tmp/mpihello
   [...]
-  61: init ok cn004.localdomain, 64 ranks, userns 4026532589
-  63: init ok cn004.localdomain, 64 ranks, userns 4026532593
-  54: init ok cn004.localdomain, 64 ranks, userns 4026532575
+  /var/tmp/mpihello unpacked ok
+  /var/tmp/mpihello unpacked ok
+  container: mpirun (Open MPI) 1.10.5
+  App launch reported: 4 (out of 4) daemons - 32 (out of 64) procs
+  2: init ok cn004.localdomain, 64 ranks, userns 4026532604
+  3: init ok cn004.localdomain, 64 ranks, userns 4026532606
+  4: init ok cn004.localdomain, 64 ranks, userns 4026532608
+  [...]
+  63: init ok cn007.localdomain, 64 ranks, userns 4026532630
+  30: init ok cn005.localdomain, 64 ranks, userns 4026532628
+  27: init ok cn005.localdomain, 64 ranks, userns 4026532622
   0: send/receive ok
   0: finalize ok
 
@@ -919,14 +924,20 @@ Once you have an interactive job, unpack the tarball.
 
 ::
 
-  $ mpirun -pernode ch-tar2dir spark.tar.gz /var/tmp/spark
+  $ srun ch-tar2dir spark.tar.gz /var/tmp/spark
+  creating new image /var/tmp/spark
+  creating new image /var/tmp/spark
+  [...]
+  /var/tmp/spark unpacked ok
+  /var/tmp/spark unpacked ok
 
 We need to first create a basic configuration for Spark, as the defaults in
 the Dockerfile are insufficient. (For real jobs, you'll want to also configure
 performance parameters such as memory use; see `the documentation
 <http://spark.apache.org/docs/latest/configuration.html>`_.) First::
 
-  $ mkdir ~/sparkconf
+  $ mkdir -p ~/sparkconf
+  $ chmod 700 ~/sparkconf
 
 We'll want to use the cluster's high-speed network. For this example, we'll
 find the Spark master's IP manually::
@@ -938,23 +949,19 @@ find the Spark master's IP manually::
 
 Your site support can tell you which to use. In this case, we'll use 10.8.8.3.
 
-Next, we set some environment variables. In the directory above, create a file
-containing roughly the following. Edit to match your configuration; in
-particular, use local disks instead of :code:`/tmp` if you have them.
-:code:`spark-env.sh`::
+Create some configuration files. Replace :code:`[MYSECRET]` with a string only
+you know. Edit to match your system; in particular, use local disks instead of
+:code:`/tmp` if you have them::
 
+  $ cat > ~/sparkconf/spark-env.sh
   SPARK_LOCAL_DIRS=/tmp/spark
   SPARK_LOG_DIR=/tmp/spark/log
   SPARK_WORKER_DIR=/tmp/spark
   SPARK_LOCAL_IP=127.0.0.1
   SPARK_MASTER_HOST=10.8.8.3
-
-Other configuration variables are called "Spark properties" and go in a
-different file. Change the secret to something known only to you.
-:code:`spark-defaults.conf`::
-
+  $ cat > ~/sparkconf/spark-defaults.conf
   spark.authenticate true
-  spark.authenticate.secret CHANGEME
+  spark.authenticate.secret [MYSECRET]
 
 We can now start the Spark master::
 
@@ -963,7 +970,7 @@ We can now start the Spark master::
 Look at the log in :code:`/tmp/spark/log` to see that the master started
 correctly::
 
-  $ tail -7 /tmp/spark/log/*master*.localdomain.out
+  $ tail -7 /tmp/spark/log/*master*.out
   17/02/24 22:37:21 INFO Master: Starting Spark master at spark://10.8.8.3:7077
   17/02/24 22:37:21 INFO Master: Running Spark version 2.0.2
   17/02/24 22:37:22 INFO Utils: Successfully started service 'MasterUI' on port 8080.
@@ -990,7 +997,7 @@ kills the worker as soon as it goes into the background.)
 
 ::
 
-  $ mpirun -pernode ch-run -d ~/sparkconf /var/tmp/spark -- \
+  $ mpirun -map-by '' -pernode ch-run -d ~/sparkconf /var/tmp/spark -- \
     /spark/sbin/start-slave.sh $MASTER_URL &
 
 One of the advantages of Spark is that it's resilient: if a worker becomes
@@ -1012,11 +1019,7 @@ across the allocation. (The confusion happens because of our
 on each compute node. For example::
 
   $ ssh 10.8.8.4
-  $ tail -7 /tmp/spark/log/*worker*.out
-  17/02/24 22:52:23 INFO Worker: Running Spark version 2.0.2
-  17/02/24 22:52:23 INFO Worker: Spark home: /spark
-  17/02/24 22:52:24 INFO Utils: Successfully started service 'WorkerUI' on port 8081.
-  17/02/24 22:52:24 INFO WorkerWebUI: Bound WorkerWebUI to 127.0.0.1, and started at http://127.0.0.1:8081
+  $ tail -3 /tmp/spark/log/*worker*.out
   17/02/24 22:52:24 INFO Worker: Connecting to master 10.8.8.3:7077...
   17/02/24 22:52:24 INFO TransportClientFactory: Successfully created connection to /10.8.8.3:7077 after 263 ms (216 ms spent in bootstraps)
   17/02/24 22:52:24 INFO Worker: Successfully registered with master spark://10.8.8.3:7077
@@ -1060,32 +1063,25 @@ omitted.)
   Pi is roughly 3.141211
   [...]
 
-Finally, we shut down the Spark cluster. This isn't strictly necessary, as
-SLURM will kill everything when exit the allocation, but it's good hygiene::
-
-  $ mpirun -pernode ch-run -d ~/sparkconf /var/tmp/spark -- /spark/sbin/stop-slave.sh
-  $ ch-run -d ~/sparkconf /var/tmp/spark -- /spark/sbin/stop-master.sh
+Exit your allocation. Slurm will clean up the Spark daemons.
 
 Success! Next, we'll run a similar job non-interactively.
 
 Non-interactive Apache Spark
 ----------------------------
 
-We'll re-use much of the above, including the configuration we created, to run
-the same computation non-interactively. Here is the Moab script:
+We'll re-use much of the above to run the same computation non-interactively.
+For brevity, the Slurm script at :code:`examples/spark/slurm.h` is not
+reproduced here.
 
-.. literalinclude:: ../examples/spark/moab.sh
+Submit it as follows. It requires three arguments: the tarball, the image
+directory to unpack into, and the high-speed network interface. Again, consult
+your site administrators for the latter.
 
-There are four basic steps:
+::
 
-1. Unpack the image.
-2. Start a Spark cluster.
-3. Run our computation.
-4. Stop the Spark cluster.
-
-Submit like so::
-
-  $ msub -l nodes=4 ~/charliecloud/examples/spark/moab.sh
+  $ sbatch -N4 slurm.sh spark.tar.gz /var/tmp eth1
+  Submitted batch job 86754
 
 Output::
 
