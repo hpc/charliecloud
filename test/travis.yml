@@ -4,6 +4,7 @@ language: c
 compiler: gcc
 
 install:
+  - apt-get install pigz
   - pip install sphinx sphinx-rtd-theme
 
 before_script:

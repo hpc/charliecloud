@@ -33,16 +33,9 @@ IMAGE=$1
 OUTDIR=$2
 TAR=$OUTDIR/$(echo $IMAGE | sed 's/\//./g').tar.gz
 
-# Use parallel gzip if it's available. ("command -v" is POSIX.1-2008.)
-if ( command -v pigz >/dev/null 2>&1 ); then
-    GZIP=pigz
-else
-    GZIP=gzip
-fi
-
 cid=$($DOCKER create --read-only $IMAGE)
 #$DOCKER ps -af "id=$cid"
-$DOCKER export $cid | $GZIP -6 > $TAR
+$DOCKER export $cid | $GZIP_CMD -6 > $TAR
 $DOCKER rm $cid > /dev/null
 # FIXME: This is brittle. We want the filename and size, but not the rest, so
 # we can't just ask ls. Another option is stat and numfmt, but the latter may

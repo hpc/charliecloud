@@ -8,3 +8,10 @@ if ( docker info > /dev/null 2>&1 ); then
 else
     export DOCKER="sudo docker"
 fi
+
+# Use parallel gzip if it's available. ("command -v" is POSIX.1-2008.)
+if ( command -v pigz >/dev/null 2>&1 ); then
+    export GZIP_CMD=pigz
+else
+    export GZIP_CMD=gzip
+fi
