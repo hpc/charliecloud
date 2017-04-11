@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                9f56aa1
+                8b340cf
               </div>
             
           
@@ -227,7 +227,7 @@ meets these prerequisites but Charliecloud doesn&#8217;t work, please report tha
 a bug.</p>
 <div class="section" id="run-time">
 <h3><a class="toc-backref" href="#id3">1.1.1. Run time</a><a class="headerlink" href="#run-time" title="Permalink to this headline">¶</a></h3>
-<p>Systems used for running images need:</p>
+<p>Systems used for running images in the standard unprivileged mode need:</p>
 <ul class="simple">
 <li>Recent Linux kernel with <code class="code docutils literal"><span class="pre">CONFIG_USER_NS=y</span></code>.</li>
 <li>C compiler and standard library</li>
@@ -236,9 +236,9 @@ a bug.</p>
 <p>Tested and working by us include the Ubuntu and upstream versions of 4.4.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">We are open to patches to make Charliecloud available on older kernels. The
-key is likely a setuid binary to avoid the user namespace. Please contact
-us if you are interested.</p>
+<p class="last">An experimental setuid mode is also provided that does not need user
+namespaces. This should run on most currently supported Linux
+distributions.</p>
 </div>
 </div>
 <div class="section" id="build-time">
@@ -369,20 +369,28 @@ above variables are set.</p>
 <div class="section" id="download">
 <h3><a class="toc-backref" href="#id10">1.3.1. Download</a><a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h3>
 <p>See our GitHub project: <a class="reference external" href="https://github.com/hpc/charliecloud">https://github.com/hpc/charliecloud</a></p>
-<p>The recommended way to download is with <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>; the
-switch gets the submodule needed for testing as well.</p>
+<p>Download with <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>; the switch gets the submodule
+needed for testing as well. Other methods of downloading (e.g. the tarball,
+plain <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span></code>) are known not to work.</p>
 <p>The remaining install steps can be run from the Git working directory or an
 unpacked export tarball created with <code class="code docutils literal"><span class="pre">make</span> <span class="pre">export</span></code>.</p>
 </div>
 <div class="section" id="build">
 <h3><a class="toc-backref" href="#id11">1.3.2. Build</a><a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h3>
-<p>Just say:</p>
+<p>To build in the standard, unprivileged mode (recommended):</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make
 </pre></div>
 </div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">If you wish to build the documentation, see <code class="code docutils literal"><span class="pre">doc-src/README</span></code>.</p>
+<p>To build in setuid mode (experimental):</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make <span class="nv">SETUID</span><span class="o">=</span>yes
+</pre></div>
+</div>
+<p>This mode escalates with <code class="code docutils literal"><span class="pre">sudo</span></code> when needed.</p>
+<p>To build the documentation, see <code class="code docutils literal"><span class="pre">doc-src/README</span></code>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Do not build as root. This is unsupported and may introduce security
+problems.</p>
 </div>
 </div>
 <div class="section" id="install-optional">
