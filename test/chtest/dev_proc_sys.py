@@ -4,9 +4,12 @@ import os.path
 import sys
 
 # File in /sys seem to vary between Linux systems. Thus, try a few candidates
-# and use the first one that exists.
+# and use the first one that exists. What we want is any file under /sys with
+# permissions root:root -rw-------.
 sys_file = None
-for f in ("/sys/devices/cpu/rdpmc", "/sys/kernel/mm/page_idle/bitmap"):
+for f in ("/sys/devices/cpu/rdpmc",
+          "/sys/kernel/mm/page_idle/bitmap",
+          "/sys/kernel/slab/request_sock_TCP/red_zone"):
    if (os.path.exists(f)):
       sys_file = f
       break
