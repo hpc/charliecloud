@@ -199,8 +199,13 @@ for uid in (my_uid, yr_uid):
       for up in ALL_PERMS:
          for gp in ALL_PERMS:
             for op in ALL_PERMS:
-               ct += Test_File(uid, gid, up, gp, op).write()
-               ct += Test_Directory(uid, gid, up, gp, op).write()
+               f = Test_File(uid, gid, up, gp, op)
+               #print(f.name)
+               ct += f.write()
+               d = Test_Directory(uid, gid, up, gp, op)
+               #print(d.name)
+               ct += d.write()
+               #print(ct)
 
 symlink('f.%s-%s.600~rw-' % (my_user, yr_group), 'lf.in~rw-')
 symlink('d.%s-%s.700~rwt' % (my_user, yr_group), 'ld.in~rwt')
