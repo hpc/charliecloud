@@ -1,4 +1,4 @@
-load ../../test/common
+load ../../../test/common
 
 # Note: If you get output like the following (piping through cat turns of BATS
 # terminal magic):

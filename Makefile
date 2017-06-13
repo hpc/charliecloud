@@ -5,13 +5,13 @@ export CFLAGS += -std=c11 -Wall
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) SETUID=$(SETUID) all
 	cd test && $(MAKE) all
-	cd examples/syscalls && $(MAKE) all
+	cd examples/original/syscalls && $(MAKE) all
 
 .PHONY: clean
 clean:
 	cd bin && $(MAKE) clean
 	cd test && $(MAKE) clean
-	cd examples/syscalls && $(MAKE) clean
+	cd examples/original/syscalls && $(MAKE) clean
 
 # If we're in a Git checkout, rebuild VERSION.full every time (since it's hard
 # to tell if it needs to be rebuilt). If not, it had better be there since we
