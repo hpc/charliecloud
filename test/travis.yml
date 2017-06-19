@@ -19,7 +19,6 @@ before_script:
 script:
   - set -e
   - make
-  - (cd doc-src && make)
   - cd test
   - make test-build
   - make test-run

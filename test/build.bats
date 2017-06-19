@@ -4,6 +4,14 @@ load common
     mkdir -p $TARDIR
 }
 
+@test 'building doc-src' {
+    run doc_src_ok
+    if [ "$status" -ne 0 ]; then
+        skip "doc-src pre-requisites are not installed"
+    fi
+    [ "$status" -eq 0 ]   
+}
+
 @test 'executables seem sane' {
     # Assume that everything in $CH_BIN is ours if it starts with "ch-" and
     # either (1) is executable or (2) ends in ".c". Demand satisfaction from

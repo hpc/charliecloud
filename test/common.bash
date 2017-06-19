@@ -1,3 +1,7 @@
+doc_src_ok() {
+    cd ../doc-src && make
+}
+
 docker_ok () {
     sudo docker images | fgrep -q $1
 }
