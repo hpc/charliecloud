@@ -4,12 +4,10 @@ load common
     mkdir -p $TARDIR
 }
 
-@test 'building doc-src' {
-    run doc_src_ok
-    if [ "$status" -ne 0 ]; then
-        skip "doc-src pre-requisites are not installed"
-    fi
-    [ "$status" -eq 0 ]   
+@test 'checking doc-src' {
+    sphinx-build --help || skip "sphinx is not installed"
+    cd ../doc-src && make
+    [[ $status -eq 0 ]]
 }
 
 @test 'executables seem sane' {
