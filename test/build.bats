@@ -7,7 +7,6 @@ load common
 @test 'checking doc-src' {
     sphinx-build --help || skip "sphinx is not installed"
     cd ../doc-src && make
-    [[ $status -eq 0 ]]
 }
 
 @test 'executables seem sane' {
