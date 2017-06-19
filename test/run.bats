@@ -101,7 +101,7 @@ load common
 
 @test 'syscalls/pivot_root' {
     [[ -n $CH_RUN_SETUID ]] && skip
-    cd ../examples/syscalls
+    cd ../examples/original/syscalls
     ./pivot_root
 }
 

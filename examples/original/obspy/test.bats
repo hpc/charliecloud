@@ -1,4 +1,4 @@
-load ../../test/common
+load ../../../test/common
 
 setup () {
     IMG=$IMGDIR/obspy

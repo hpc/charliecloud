@@ -1,4 +1,4 @@
-load ../../test/common
+load ../../../test/common
 
 @test "$EXAMPLE_TAG/hello" {
     run ch-run $EXAMPLE_IMG -- /hello/hello.sh

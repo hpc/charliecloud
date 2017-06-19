@@ -1,8 +1,8 @@
 export LC_ALL := C
 DOCKERFILES := chtest/Dockerfile \
                $(sort $(wildcard ./Dockerfile.*)) \
-               $(sort $(wildcard ../examples/*/Dockerfile))
-EXAMPLETESTS := $(sort $(wildcard ../examples/*/test.bats))
+               $(sort $(wildcard ../examples/*/*/Dockerfile))
+EXAMPLETESTS := $(sort $(wildcard ../examples/*/*/test.bats))
 ifdef CH_TEST_OMIT
   EXAMPLETESTS := $(foreach i,$(EXAMPLETESTS),$(if $(findstring $(CH_TEST_OMIT),$(i)),,$(i)))
 endif
