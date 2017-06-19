@@ -4,6 +4,11 @@ load common
     mkdir -p $TARDIR
 }
 
+@test 'documentations build' {
+    command -v sphinx-build > /dev/null 2>&1 || skip "sphinx is not installed"
+    cd ../doc-src && make
+}
+
 @test 'executables seem sane' {
     # Assume that everything in $CH_BIN is ours if it starts with "ch-" and
     # either (1) is executable or (2) ends in ".c". Demand satisfaction from
