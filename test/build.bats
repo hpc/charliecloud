@@ -5,7 +5,7 @@ load common
 }
 
 @test 'checking doc-src' {
-    sphinx-build --help || skip "sphinx is not installed"
+    command -v sphinx-build > /dev/null 2>&1 || skip "sphinx is not installed"
     cd ../doc-src && make
 }
 
