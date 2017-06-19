@@ -4,7 +4,7 @@ load common
     mkdir -p $TARDIR
 }
 
-@test 'checking doc-src' {
+@test 'documentations build' {
     command -v sphinx-build > /dev/null 2>&1 || skip "sphinx is not installed"
     cd ../doc-src && make
 }
