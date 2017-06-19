@@ -6,6 +6,7 @@ load common
 
 @test 'documentations build' {
     command -v sphinx-build > /dev/null 2>&1 || skip "sphinx is not installed"
+    test -d ../doc-src || skip "documentation source code absent"
     cd ../doc-src && make
 }
 

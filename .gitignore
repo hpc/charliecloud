@@ -62,9 +62,9 @@ bin/version.sh
 bin/version.h
 doc/
 doc-src/_build
-examples/original/mpihello/hello
-examples/original/syscalls/pivot_root
-examples/original/syscalls/userns
+examples/mpi/mpihello/hello
+examples/syscalls/pivot_root
+examples/syscalls/userns
 test/build_auto.bats
 test/run_auto.bats
 examples/proto

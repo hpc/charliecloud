@@ -1,3 +1,5 @@
+SHELL=/bin/bash
+
 # Add some good stuff to CFLAGS.
 export CFLAGS += -std=c11 -Wall
 
@@ -5,13 +7,13 @@ export CFLAGS += -std=c11 -Wall
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) SETUID=$(SETUID) all
 	cd test && $(MAKE) all
-	cd examples/original/syscalls && $(MAKE) all
+	cd examples/syscalls && $(MAKE) all
 
 .PHONY: clean
 clean:
 	cd bin && $(MAKE) clean
 	cd test && $(MAKE) clean
-	cd examples/original/syscalls && $(MAKE) clean
+	cd examples/syscalls && $(MAKE) clean
 
 # If we're in a Git checkout, rebuild VERSION.full every time (since it's hard
 # to tell if it needs to be rebuilt). If not, it had better be there since we
@@ -65,11 +67,11 @@ install: all
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) COPYRIGHT LICENSE README
 #       examples
-	for i in examples/*; do \
+	for i in examples/syscalls examples/{serial,mpi,other}/*; do \
 	    install -d $(DOC)/$$i; \
 	    install -pm 644 -t $(DOC)/$$i $$i/*; \
 	done
-	chmod 755 $(DOC)/examples/hello/hello.sh \
+	chmod 755 $(DOC)/examples/serial/hello/hello.sh \
 	          $(DOC)/examples/syscalls/pivot_root \
 	          $(DOC)/examples/syscalls/userns
 #       tests

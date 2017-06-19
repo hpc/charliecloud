@@ -24,7 +24,7 @@ Charliecloud for your own applications.
 
 ::
 
-   $ cd charliecloud/examples/hello
+   $ cd charliecloud/examples/serial/hello
    $ ch-build -t hello ../..
    Sending build context to Docker daemon 12.24 MB
    [...]
@@ -60,7 +60,7 @@ Your first user-defined software stack
 In this section, we will create and run a simple "hello, world" image. This
 uses the :code:`hello` example in the Charliecloud source code. Start with::
 
-  $ cd examples/hello
+  $ cd examples/serial/hello
 
 Defining your UDSS
 ------------------
@@ -73,7 +73,7 @@ supported.
 
 We will use the following very simple Dockerfile:
 
-.. literalinclude:: ../examples/hello/Dockerfile
+.. literalinclude:: ../examples/serial/hello/Dockerfile
    :language: docker
 
 This creates a minimal Debian Jessie image with :code:`ssh` installed. We will
@@ -545,7 +545,7 @@ This approach is the simplest and fastest way to install stuff in your image.
 The :code:`examples/hello` Dockerfile also seen above does this to install the
 package :code:`openssh-client`:
 
-.. literalinclude:: ../examples/hello/Dockerfile
+.. literalinclude:: ../examples/serial/hello/Dockerfile
    :language: docker
    :lines: 1-5
 
@@ -605,13 +605,13 @@ source, but you use the :code:`COPY` instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
 the :code:`mpihello` Dockerfile uses this approach:
 
-.. literalinclude:: ../examples/mpihello/Dockerfile
+.. literalinclude:: ../examples/mpi/mpihello/Dockerfile
    :language: docker
    :lines: 19-
 
 These Dockerfile instructions:
 
-1. Copy the host directory :code:`examples/mpihello` to the image at path
+1. Copy the host directory :code:`examples/mpi/mpihello` to the image at path
    :code:`/hello`. The host path is *relative to the context directory*;
    Docker builds have no access to the host filesystem outside the context
    directory. (This is so the Docker daemon can run on a different machine ---
@@ -770,7 +770,7 @@ The approach used in our example is to set the configuration directory to
 :code:`/mnt/0`. This is done in :code:`mpihello` with the :code:`--sysconfdir`
 argument:
 
-.. literalinclude:: ../examples/mpihello/Dockerfile
+.. literalinclude:: ../examples/mpi/mpihello/Dockerfile
    :language: docker
    :lines: 11-15
 
@@ -880,7 +880,7 @@ script that runs when resources are available, placing output into a file.
 
 The MPI hello world example includes such a script:
 
-.. literalinclude:: ../examples/mpihello/slurm.sh
+.. literalinclude:: ../examples/mpi/mpihello/slurm.sh
          :language: sh
 
 Note that this script both unpacks the image and runs it.
