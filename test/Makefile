@@ -23,7 +23,7 @@ test-build: build_auto.bats
 
 .PHONY: test-run
 test-run: run_auto.bats
-	./bats run.bats run_uidgid.bats run_auto.bats rpull_auto.bats
+	./bats run.bats run_uidgid.bats run_auto.bats
 	set -e; \
 	if ( ! ../bin/ch-run --is-setuid ); then \
 	for GUEST_USER in $$(id -un) root nobody; do \
