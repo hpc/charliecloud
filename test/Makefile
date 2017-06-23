@@ -1,8 +1,8 @@
 export LC_ALL := C
-DOCKERFILES := chtest/Dockerfile \
+DOCKERS:= chtest/Dockerfile \
                $(sort $(wildcard ./Dockerfile.*)) \
                $(sort $(wildcard ../examples/*/*/Dockerfile)) \
-               $(sort $(wildcard ../examples/*/*/Dockerhub))
+               $(sort $(wildcard ../examples/*/*/dockerpull))
 EXAMPLETESTS := $(sort $(wildcard ../examples/*/*/test.bats))
 ifdef CH_TEST_OMIT
   EXAMPLETESTS := $(foreach i,$(EXAMPLETESTS),$(if $(findstring $(CH_TEST_OMIT),$(i)),,$(i)))
@@ -44,8 +44,8 @@ test-test: $(EXAMPLETESTS)
 clean:
 	rm -f *_auto.bats
 
-build_auto.bats: $(DOCKERFILES)
+build_auto.bats: $(DOCKERS)
 	./make-auto build $^ > $@
 
-run_auto.bats: $(DOCKERFILES)
+run_auto.bats: $(DOCKERS)
 	./make-auto run $^ > $@

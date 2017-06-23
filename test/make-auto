@@ -19,16 +19,16 @@ load common
 """)
 
 for path in sys.argv[2:]:
+   #NOTE: The following 2x2 matrix has an empty cell 
    (d, f) = os.path.split(path)
-   if (f == 'Dockerfile'):
-      tag = os.path.basename(d)         # enclosing directory
-   elif (f == 'Dockerhub'):
-      with open(path, 'r') as i:
-         addr = i.readline().rstrip()	# dockerhub address
-         i.close()   
-         tag = os.path.basename(d)
+   if (f =='Dockerfile' or f == 'dockerpull'):
+      tag = os.path.basename(d)
    else:
-      tag = os.path.splitext(f)[1][1:]  # extension
+      tag = os.path.splitext(f)[1][1:] # extension
+   assert (tag != "")
+   if (f == 'dockerpull'):
+      with open(path) as fp: 
+         addr = fp.readline().rstrip()
    try:
       if (os.environ["CH_TEST_OMIT"] in tag):
          continue
@@ -36,13 +36,12 @@ for path in sys.argv[2:]:
       pass
 
    if (mode == "build"):
-      if (f == "Dockerhub"):
+      if (f == "dockerpull"):
          print("""\
 
 @test 'docker pull %(tag)s' {
     sudo docker pull %(addr)s
     sudo docker tag %(addr)s %(tag)s
-    sudo docker rmi %(addr)s
 }
 
 """ % locals())
