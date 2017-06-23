@@ -20,14 +20,15 @@ load common
 
 for path in sys.argv[2:]:
    (d, f) = os.path.split(path)
-   if (f == 'Dockerfile' || 'Dockerhub'):
+   if (f == 'Dockerfile'):
       tag = os.path.basename(d)         # enclosing directory
+   elif (f == 'Dockerhub'):
+      with open(path, 'r') as i:
+         addr = i.readline().rstrip()	# dockerhub address
+         i.close()   
+         tag = os.path.basename(d)
    else:
       tag = os.path.splitext(f)[1][1:]  # extension
-   if (f == 'Dockerhub'):
-      with open(path, 'r') as hub;	# dockerhub address
-         addr = hub.readline().rstrip()
-         hub.close()
    try:
       if (os.environ["CH_TEST_OMIT"] in tag):
          continue
@@ -35,8 +36,8 @@ for path in sys.argv[2:]:
       pass
 
    if (mode == "build"):
-      if(f == "Dockerhub"):
-      print("""\
+      if (f == "Dockerhub"):
+         print("""\
 
 @test 'docker pull %(tag)s' {
     sudo docker pull %(addr)s
@@ -46,7 +47,7 @@ for path in sys.argv[2:]:
 
 """ % locals())
 
-      else:
+      else:		# is Dockerfile
          print("""\
 
 @test 'ch-build %(tag)s' {
@@ -56,8 +57,7 @@ for path in sys.argv[2:]:
 
 """ % locals())
 
-   print("""\
-
+      print("""\
 @test 'ch-docker2tar %(tag)s' {
     TARBALL=$TARDIR/%(tag)s.tar.gz
     ch-docker2tar %(tag)s $TARDIR

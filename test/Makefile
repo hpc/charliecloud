@@ -1,7 +1,7 @@
 export LC_ALL := C
 DOCKERFILES := chtest/Dockerfile \
                $(sort $(wildcard ./Dockerfile.*)) \
-               $(sort $(wildcard ../examples/*/*/Dockerfile))
+               $(sort $(wildcard ../examples/*/*/Dockerfile)) \
                $(sort $(wildcard ../examples/*/*/Dockerhub))
 EXAMPLETESTS := $(sort $(wildcard ../examples/*/*/test.bats))
 ifdef CH_TEST_OMIT
