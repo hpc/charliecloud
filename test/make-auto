@@ -19,15 +19,16 @@ load common
 """)
 
 for path in sys.argv[2:]:
+   #NOTE: The following 2x2 matrix has an empty cell 
    (d, f) = os.path.split(path)
-   if (f == 'Dockerfile' || 'Dockerhub'):
-      tag = os.path.basename(d)         # enclosing directory
+   if (f =='Dockerfile' or f == 'dockerpull'):
+      tag = os.path.basename(d)
    else:
-      tag = os.path.splitext(f)[1][1:]  # extension
-   if (f == 'Dockerhub'):
-      with open(path, 'r') as hub;	# dockerhub address
-         addr = hub.readline().rstrip()
-         hub.close()
+      tag = os.path.splitext(f)[1][1:] # extension
+   assert (tag != "")
+   if (f == 'dockerpull'):
+      with open(path) as fp: 
+         addr = fp.readline().rstrip()
    try:
       if (os.environ["CH_TEST_OMIT"] in tag):
          continue
@@ -35,18 +36,17 @@ for path in sys.argv[2:]:
       pass
 
    if (mode == "build"):
-      if(f == "Dockerhub"):
-      print("""\
+      if (f == "dockerpull"):
+         print("""\
 
 @test 'docker pull %(tag)s' {
     sudo docker pull %(addr)s
     sudo docker tag %(addr)s %(tag)s
-    sudo docker rmi %(addr)s
 }
 
 """ % locals())
 
-      else:
+      else:		# is Dockerfile
          print("""\
 
 @test 'ch-build %(tag)s' {
@@ -56,8 +56,7 @@ for path in sys.argv[2:]:
 
 """ % locals())
 
-   print("""\
-
+      print("""\
 @test 'ch-docker2tar %(tag)s' {
     TARBALL=$TARDIR/%(tag)s.tar.gz
     ch-docker2tar %(tag)s $TARDIR

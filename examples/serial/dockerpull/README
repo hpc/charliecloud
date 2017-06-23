@@ -1,0 +1,4 @@
+This dir contains a "dockerpull" file which contains an address used to pull
+an image or a repository from a registry.
+
+For more information visit: https://docs.docker.com/engine/reference/commandline/pull/
