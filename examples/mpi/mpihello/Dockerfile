@@ -16,6 +16,6 @@ RUN    cd openmpi-${VERSION} \
 RUN rm -Rf openmpi-${VERSION}*
 
 # This example
-COPY /examples/original/mpihello /hello
+COPY /examples/mpi/mpihello /hello
 WORKDIR /hello
 RUN make clean && make
