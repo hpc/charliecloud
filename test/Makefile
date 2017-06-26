@@ -36,6 +36,10 @@ test-run: run_auto.bats
 	    done; \
 	done; fi
 
+.PHONY: test-quick
+test-quick: test-build
+	./bats build.bats build_post.bats run.bats
+
 .PHONY: test-test
 test-test: $(EXAMPLETESTS)
 	./bats $(EXAMPLETESTS)
