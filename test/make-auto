@@ -19,7 +19,7 @@ load common
 """)
 
 for path in sys.argv[2:]:
-   #NOTE: The following 2x2 matrix has an empty cell 
+   # NOTE: The following 2x2 matrix has an empty cell 
    (d, f) = os.path.split(path)
    if (f =='Dockerfile' or f == 'dockerpull'):
       tag = os.path.basename(d)
