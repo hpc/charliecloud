@@ -67,4 +67,3 @@ examples/syscalls/pivot_root
 examples/syscalls/userns
 test/build_auto.bats
 test/run_auto.bats
-examples/other/dockerpull
