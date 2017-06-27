@@ -38,7 +38,7 @@ test-run: run_auto.bats
 
 .PHONY: test-quick
 test-quick: test-build
-	./bats build.bats build_post.bats run.bats
+	./bats build.bats run.bats
 
 .PHONY: test-test
 test-test: $(EXAMPLETESTS)
