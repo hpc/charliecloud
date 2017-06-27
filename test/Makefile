@@ -1,5 +1,5 @@
 export LC_ALL := C
-DOCKERS:= chtest/Dockerfile \
+DOCKERS := chtest/Dockerfile \
                $(sort $(wildcard ./Dockerfile.*)) \
                $(sort $(wildcard ../examples/*/*/Dockerfile)) \
                $(sort $(wildcard ../examples/*/*/dockerpull))
