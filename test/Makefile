@@ -40,6 +40,10 @@ test-run: run_auto.bats
 test-test: $(EXAMPLETESTS)
 	./bats $(EXAMPLETESTS)
 
+.PHONY: test-quick
+test-quick: test-build
+	./bats build.bats run.bats
+
 .PHONY: clean
 clean:
 	rm -f *_auto.bats
