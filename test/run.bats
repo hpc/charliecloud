@@ -31,6 +31,13 @@ load common
     ch-ssh --help
 }
 
+@test 'docker pull runs' {
+    IMG=alpine:3.5
+    TAR=$IMG.tar.gz
+    ch-tar2dir $TARDIR/$TAR $IMGDIR/$IMG
+    ch-run $IMGDIR/$IMG /bin/true
+}
+
 @test 'setuid bit matches --is-setuid' {
     test $CH_RUN_FILE -ef $(which ch-run)
     [[ -e $CH_RUN_FILE ]]
