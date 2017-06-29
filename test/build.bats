@@ -75,7 +75,6 @@ load common
     # This test pulls an image from the Dockerhub repository, ensures it 
     # exists, and builds it to a tar. 
     IMG=alpine:3.5
-    TAR=$IMG.tar.gz
     sudo docker pull $IMG
     docker_ok alpine
     ch-docker2tar $IMG $TARDIR
