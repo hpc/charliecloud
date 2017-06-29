@@ -31,7 +31,7 @@ load common
     ch-ssh --help
 }
 
-@test 'docker pull builds' {
+@test 'docker pull runs' {
     IMG=alpine:3.5
     TAR=$IMG.tar.gz
     ch-tar2dir $TARDIR/$TAR $IMGDIR/$IMG
