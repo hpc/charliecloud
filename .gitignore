@@ -66,4 +66,5 @@ examples/mpi/mpihello/hello
 examples/syscalls/pivot_root
 examples/syscalls/userns
 test/build_auto.bats
+test/build_auto-quick.bats
 test/run_auto.bats
