@@ -3,6 +3,7 @@ DOCKERS := chtest/Dockerfile \
                $(sort $(wildcard ./Dockerfile.*)) \
                $(sort $(wildcard ../examples/*/*/Dockerfile)) \
                $(sort $(wildcard ../examples/*/*/dockerpull))
+DOCKERSQUICK := chtest/Dockerfile
 EXAMPLETESTS := $(sort $(wildcard ../examples/*/*/test.bats))
 ifdef CH_TEST_OMIT
   EXAMPLETESTS := $(foreach i,$(EXAMPLETESTS),$(if $(findstring $(CH_TEST_OMIT),$(i)),,$(i)))
@@ -41,14 +42,17 @@ test-test: $(EXAMPLETESTS)
 	./bats $(EXAMPLETESTS)
 
 .PHONY: test-quick
-test-quick: test-build
-	./bats build.bats run.bats
+test-quick: build_auto-quick.bats
+	./bats build.bats build_auto-quick.bats run.bats
 
 .PHONY: clean
 clean:
-	rm -f *_auto.bats
+	rm -f *_auto*.bats
 
 build_auto.bats: $(DOCKERS)
+	./make-auto build $^ > $@
+
+build_auto-quick.bats: $(DOCKERSQUICK)
 	./make-auto build $^ > $@
 
 run_auto.bats: $(DOCKERS)
