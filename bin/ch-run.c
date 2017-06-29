@@ -24,7 +24,7 @@
 
 #include "charliecloud.h"
 
-void enter_udss(char * newroot, char ** binds, bool private_tmp);
+void enter_udss(char * newroot, char ** binds, bool private_tmp, bool write);
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
@@ -78,6 +78,8 @@ const char args_doc[] = "NEWROOT CMD [ARG...]";
 const struct argp_option options[] = {
    { "dir",         'd', "DIR", 0,
      "mount host DIR at container /mnt/i (i starts at 0)" },
+   { "write",       'w', 0,     0, "allow image to be writable"},
+   { "write",       'W', 0,     0, "allow image to be writable"},
 #ifndef SETUID
    { "gid",         'g', "GID", 0, "run as GID within container" },
 #endif
@@ -98,6 +100,7 @@ struct args {
    uid_t container_uid;
    char * newroot;
    bool private_tmp;
+   bool write;
    int user_cmd_start;  // index into argv where NEWROOT is
    int verbose;
 };
@@ -134,7 +137,7 @@ int main(int argc, char * argv[])
    }
 
    setup_namespaces(args.container_uid, args.container_gid);
-   enter_udss(args.newroot, args.binds, args.private_tmp);
+   enter_udss(args.newroot, args.binds, args.private_tmp, args.write);
 #ifdef SETUID
    privs_drop_permanently();
 #endif
@@ -150,7 +153,7 @@ int main(int argc, char * argv[])
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
    in examples/syscalls/pivot_root.c. */
-void enter_udss(char * newroot, char ** binds, bool private_tmp)
+void enter_udss(char * newroot, char ** binds, bool private_tmp, bool write)
 {
    char * base;
    char * dir;
@@ -227,9 +230,9 @@ void enter_udss(char * newroot, char ** binds, bool private_tmp)
    TRY (chroot("."));
    TRY (0 > asprintf(&newroot, "/%s", base));
 
-   // Re-mount image read-only
-   TRY (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL));
-
+   if (!write) { // Re-mount image read-only
+      TRY (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL));
+   }
    // Pivot into the new root
    TRY (0 > asprintf(&path, "%s/oldroot", newroot));
    TRY (chdir(newroot));
@@ -309,6 +312,10 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       break;
    case 'v':
       as->verbose++;
+      break;
+   case 'W':
+   case 'w':
+      as->write = true;
       break;
    default:
       return ARGP_ERR_UNKNOWN;
