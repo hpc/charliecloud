@@ -69,33 +69,15 @@ load common
     [[ $empty_ct -eq 0 ]]
 }
 
-@test 'docker pulls image' {
+@test 'docker pull' {
     # Do we have all the Docker functionality required to run charliecloud?
-    # This test pulls an image from the Dockerhub repository and ensures it 
-    # exists. First, clear the cache so we pull from the
-    # specified repository.
-    containers=$(sudo docker ps -qaf ancestor=alpine3.5)
-    if [[ -n $containers ]]; then
-        sudo docker rm $containers
-    fi
-    images=$(sudo docker images -qa alpine:3.5)
-    if [[ -n $images ]]; then
-        sudo docker rmi -f $images
-    fi
-    sudo docker pull alpine:3.5
-    docker_ok alpine
-}
-
-@test 'docker pull builds' {
-    # This ensures the image obtained from docker pull builds.
+    # This test pulls an image from the Dockerhub repository, ensures it 
+    # exists, and builds it to a tar. 
     IMG=alpine:3.5
     TAR=$IMG.tar.gz
+    sudo docker pull $IMG
+    docker_ok alpine
     ch-docker2tar $IMG $TARDIR
-    ch-tar2dir $TARDIR/$TAR $IMGDIR/$IMG
-}
-
-@test 'docker runs alpine:3.5' {
-    sudo docker run alpine:3.5
 }
 
 @test 'ch-build' {
