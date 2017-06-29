@@ -218,4 +218,3 @@ EOF
         test -f $d/nopass/file
     done
 }
-
