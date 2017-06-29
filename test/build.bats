@@ -69,27 +69,16 @@ load common
     [[ $empty_ct -eq 0 ]]
 }
 
-@test 'docker run hello-world' {
-    # Does Docker basically work before we start in on the Charliecloud stuff?
-    # First, clear the cache so we pull from the internet and start from a
-    # known (empty) state.
-    containers=$(sudo docker ps -qaf ancestor=hello-world)
-    if [[ -n $containers ]]; then
-        sudo docker rm $containers
-    fi
-    images=$(sudo docker images -qa hello-world)
-    if [[ -n $images ]]; then
-        sudo docker rmi $images
-    fi
-    sudo docker run hello-world
-    # This one should use the cache (though we don't verify that).
-    sudo docker run hello-world
-}
 
-@test 'ch-build' {
-    cd chtest
-    ch-build -t chtest ../..
-    docker_ok chtest
+@test 'docker pull' {
+    # Do we have all the Docker functionality required to run charliecloud?
+    # This test pulls an image from the Dockerhub repository, ensures it 
+    # exists, and builds it to a tar. 
+    IMG=alpine:3.5
+    TAR=$IMG.tar.gz
+    sudo docker pull $IMG
+    docker_ok alpine
+    ch-docker2tar $IMG $TARDIR
 }
 
 @test 'ch-build --pull' {
