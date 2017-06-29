@@ -69,7 +69,6 @@ load common
     [[ $empty_ct -eq 0 ]]
 }
 
-
 @test 'docker pull' {
     # Do we have all the Docker functionality required to run charliecloud?
     # This test pulls an image from the Dockerhub repository, ensures it 
@@ -78,6 +77,12 @@ load common
     sudo docker pull $IMG
     docker_ok alpine
     ch-docker2tar $IMG $TARDIR
+}
+
+@test 'ch-build' {
+    cd chtest
+    ch-build -t chtest ../..
+    docker_ok chtest
 }
 
 @test 'ch-build --pull' {
