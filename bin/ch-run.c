@@ -106,8 +106,8 @@ struct args {
 struct args args;
 const struct argp argp = { options, parse_opt, args_doc, usage };
 
-/* I had to moved this function prototype here so the compiler knew
-   that args was declared. */
+/* This function prototype was moved here to avoid declaration
+   conflicts. */
 void enter_udss(struct args args);
 
 /** Main **/
