@@ -71,8 +71,8 @@ load common
 
 @test 'docker pull' {
     # Do we have all the Docker functionality required to run charliecloud?
-    # This test pulls an image from the Dockerhub repository, ensures it 
-    # exists, and builds it to a tar. 
+    # This test pulls an image from the Dockerhub repository, ensures it
+    # exists, and builds it to a tar.
     IMG=alpine:3.5
     sudo docker pull $IMG
     docker_ok alpine
