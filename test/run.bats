@@ -207,7 +207,7 @@ EOF
 
 @test 'mount image read-write' {
    ch-run -w $CHTEST_IMG -- sh -c 'echo writable > write'
-   ch-run -w $CHTEST_IMG -- sh -c 'rm write'
+   ch-run -w $CHTEST_IMG rm write
 }
 
 @test '--dir' {

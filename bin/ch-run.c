@@ -78,7 +78,7 @@ const char args_doc[] = "NEWROOT CMD [ARG...]";
 const struct argp_option options[] = {
    { "dir",         'd', "DIR", 0,
      "mount host DIR at container /mnt/i (i starts at 0)" },
-   { "write",       'w', 0,     0, "allow image to be read-write"},
+   { "write",       'w', 0,     0, "mount image read-write"},
 #ifndef SETUID
    { "gid",         'g', "GID", 0, "run as GID within container" },
 #endif
