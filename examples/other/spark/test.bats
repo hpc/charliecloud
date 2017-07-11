@@ -66,12 +66,12 @@ EOF
     # remove old master logs so new one has predictable name
     rm -Rf --one-file-system $SPARKLOG
     # start the master
-    ch-run -d $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/start-master.sh
+    ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/start-master.sh
     sleep 5
     cat $MASTER_LOG
     fgrep -q 'New state: ALIVE' $MASTER_LOG
     # start the workers
-    $PERNODE ch-run -d $SPARK_CONFIG $SPARK_IMG -- \
+    $PERNODE ch-run -b $SPARK_CONFIG $SPARK_IMG -- \
                    /spark/sbin/start-slave.sh $MASTER_URL &
     if [[ -n $PERNODE ]]; then
         echo $! > $PERNODE_PIDFILE
@@ -93,7 +93,7 @@ EOF
 }
 
 @test "$EXAMPLE_TAG/pi" {
-   run ch-run -d $SPARK_CONFIG $SPARK_IMG -- \
+   run ch-run -b $SPARK_CONFIG $SPARK_IMG -- \
                /spark/bin/spark-submit --master $MASTER_URL \
                /spark/examples/src/main/python/pi.py 64
     echo "$output"
@@ -112,8 +112,8 @@ EOF
     if [[ -n $CHTEST_MULTINODE ]]; then
         kill -9 $(cat $PERNODE_PIDFILE)
     fi
-    ch-run -d $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-slave.sh
-    ch-run -d $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-master.sh
+    ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-slave.sh
+    ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-master.sh
     sleep 2
     # Any Spark processes left?
     run $PERNODE ps aux

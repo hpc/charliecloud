@@ -210,9 +210,74 @@ EOF
    ch-run -w $CHTEST_IMG rm write
 }
 
-@test '--dir' {
-    ch-run -d $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
-    ch-run -d $IMGDIR/bind1 -d $IMGDIR/bind2 $CHTEST_IMG -- cat /mnt/1/file2
+@test '--bind' {
+   # Bind at /mnt/0
+   ch-run -b $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
+
+   # Bind SRC at DST
+   ch-run -b $IMGDIR/bind1:/usr $CHTEST_IMG -- cat /usr/file1
+
+   # Bind home directory manually
+   ch-run --no-home -b $IMGDIR/bind1:/home $CHTEST_IMG -- cat /home/file1
+
+   # Bypass default home directory bind. Bind SRC at DST.
+   ch-run --no-home -b $IMGDIR/bind1:/usr $CHTEST_IMG -- cat /usr/file1
+
+   # Bind SRC at home without --no-home
+   # NOTE: users dotfiles won't exist in this case
+   ch-run -b $IMGDIR/bind1:/home -- $CHTEST_IMG cat /home/file1
+
+   # Bind SRC at DST1 and DST2
+   ch-run -b $IMGDIR/bind1:/usr -b $IMGDIR/bind1:/var $CHTEST_IMG -- cat /usr/file1
+   ch-run -b $IMGDIR/bind1:/usr -b $IMGDIR/bind1:/var $CHTEST_IMG -- cat /var/file1
+
+}
+
+@test '--bind errors' {
+   # SRC is not provided
+   run ch-run -b :/home $CHTEST_IMG -- cat /home
+   echo "$output"
+   [[ status -ne 0 ]]
+   [[ $output != "--bind error: an argument in ':/home' does not exist" ]]
+
+   # DST is not provided
+   run ch-run -b /home: $CHTEST_IMG -- cat /home
+   echo "$output"
+   [[ status -ne 0 ]]
+   [[ $output != "---bind error: an argument in '/home:' does not exist" ]]
+
+   # SRC does not exist
+   run ch-run -b /whoops:/mnt $CHTEST_IMG -- cat /home
+   [[ status -ne 0 ]]
+   [[ $output != "--bind SRC argument '/whoops' does not exist" ]]
+
+   # DST is does not exist
+   run ch-run -b /mnt:/whoops $CHTEST_IMG -- cat /home
+   [[ status -ne 0 ]]
+   [[ $output != "--bind DST argument 'whoops' is not a valid path" ]]
+
+   # SRC and DST do not exist
+   run ch-run -b abra:kadabra $CHTEST_IMG -- cat /home
+   [[ status -ne 0 ]]
+   [[ $output != "" ]]
+
+   # Bind SRC1 at DST1 and SRC2 at DST2, where DST2 is not
+   # provided
+   run ch-run -b $IMGDIR/bind1:/usr -b /home: $CHTEST_IMG -- cat /home
+   [[ status -ne 0 ]]
+   [[ $output != "--bind error: an argument in '/home:' does not exist\n" ]]
+
+   # Bind tmp at DST
+   run ch-run -b /tmp:/usr $CHTEST_IMG -- cat /usr
+   [[ status -ne 0 ]]
+   [[ $output != "--bind error: binding '/tmp' is not supported" ]]
+
+   # Bind SRC at /mnt
+   # This causes problems when a combination of SRC and SRC:DST arguments
+   # are used
+   run ch-run -b $IMGDIR/bind1 -b $IMGDIR/bind2:/mnt $CHTEST_IMG -- cat /mnt/0/file1
+   [[ status -ne 0 ]]
+   [[ $output != "--bind error: DST '/mnt' is not supported. use '/mnt/{dir}'\n" ]]
 }
 
 @test 'permissions test directories exist' {
