@@ -24,6 +24,7 @@
 
 #include "charliecloud.h"
 
+void enter_udss(char * newroot, char ** binds, bool private_tmp, bool writable);
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
@@ -106,10 +107,6 @@ struct args {
 struct args args;
 const struct argp argp = { options, parse_opt, args_doc, usage };
 
-/* This function prototype was moved here to avoid declaration
-   conflicts. */
-void enter_udss(struct args args);
-
 /** Main **/
 
 int main(int argc, char * argv[])
@@ -138,7 +135,7 @@ int main(int argc, char * argv[])
    }
 
    setup_namespaces(args.container_uid, args.container_gid);
-   enter_udss(args);
+   enter_udss(args.newroot, args.binds, args.private_tmp, args.writable);
 
 #ifdef SETUID
    privs_drop_permanently();
@@ -155,7 +152,7 @@ int main(int argc, char * argv[])
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
    in examples/syscalls/pivot_root.c. */
-void enter_udss(struct args args)
+void enter_udss(char * newroot, char ** binds, bool private_tmp, bool writable)
 {
    char * base;
    char * dir;
@@ -181,31 +178,31 @@ void enter_udss(struct args args)
 #endif
 
    // Claim newroot for this namespace
-   TRX (mount(args.newroot, args.newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL),
-        args.newroot);
+   TRX (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL),
+        newroot);
 
    // Mount tmpfs on guest /home because guest root is read-only
-   TRY (0 > asprintf(&path, "%s/home", args.newroot));
+   TRY (0 > asprintf(&path, "%s/home", newroot));
    TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
    // Bind-mount default stuff at same guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
-      TRY (0 > asprintf(&path, "%s%s", args.newroot, DEFAULT_BINDS[i]));
+      TRY (0 > asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
       TRY (mount(DEFAULT_BINDS[i], path, NULL, MS_REC | MS_BIND, NULL));
    }
    // Container /tmp
-   TRY (0 > asprintf(&path, "%s%s", args.newroot, "/tmp"));
-   if (args.private_tmp) {
+   TRY (0 > asprintf(&path, "%s%s", newroot, "/tmp"));
+   if (private_tmp) {
       TRY (mount(NULL, path, "tmpfs", 0, 0));
    } else {
       TRY (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL));
    }
    // Bind-mount user's home directory at /home/$USER. The main use case is
    // dotfiles.
-   TRY (0 > asprintf(&path, "%s/home/%s", args.newroot, getenv("USER")));
+   TRY (0 > asprintf(&path, "%s/home/%s", newroot, getenv("USER")));
    TRY (mkdir(path, 0755));
    TRY (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL));
    // Bind-mount /usr/bin/ch-ssh if it exists.
-   TRY (0 > asprintf(&path, "%s/usr/bin/ch-ssh", args.newroot));
+   TRY (0 > asprintf(&path, "%s/usr/bin/ch-ssh", newroot));
    if (stat(path, &st)) {
       TRY (errno != ENOENT);
    } else {
@@ -216,30 +213,30 @@ void enter_udss(struct args args)
       TRY (mount(path, oldpath, NULL, MS_BIND, NULL));
    }
    // Bind-mount user-specified directories at guest /mnt/i, which must exist
-   for (int i = 0; args.binds[i] != NULL; i++) {
-      TRY (0 > asprintf(&path, "%s/mnt/%d", args.newroot, i));
-      TRY (mount(args.binds[i], path, NULL, MS_BIND, NULL));
+   for (int i = 0; binds[i] != NULL; i++) {
+      TRY (0 > asprintf(&path, "%s/mnt/%d", newroot, i));
+      TRY (mount(binds[i], path, NULL, MS_BIND, NULL));
    }
 
    // Overmount / to avoid EINVAL if it's a rootfs
-   TRY (NULL == (path = strdup(args.newroot)));
+   TRY (NULL == (path = strdup(newroot)));
    dir = dirname(path);
-   TRY (NULL == (path = strdup(args.newroot)));
+   TRY (NULL == (path = strdup(newroot)));
    base = basename(path);
    TRY (mount(dir, dir, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
    TRY (chdir(dir));
    TRY (mount(dir, "/", NULL, MS_MOVE, NULL));
    TRY (chroot("."));
-   TRY (0 > asprintf(&args.newroot, "/%s", base));
+   TRY (0 > asprintf(&newroot, "/%s", base));
 
-   if (!args.writable) {
+   if (!writable) {
       // Re-mount image read-only
-      TRY (mount(NULL, args.newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL));
+      TRY (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL));
    }
    // Pivot into the new root
-   TRY (0 > asprintf(&path, "%s/oldroot", args.newroot));
-   TRY (chdir(args.newroot));
-   TRY (syscall(SYS_pivot_root, args.newroot, path));
+   TRY (0 > asprintf(&path, "%s/oldroot", newroot));
+   TRY (chdir(newroot));
+   TRY (syscall(SYS_pivot_root, newroot, path));
    TRY (chroot("."));
    TRY (umount2("/oldroot", MNT_DETACH));
 

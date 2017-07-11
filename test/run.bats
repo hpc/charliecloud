@@ -194,7 +194,7 @@ load common
     [[ $host_pgroup = $guest_pgroup ]]
 }
 
-@test 'image mounted read-only option' {
+@test 'mount image read-only' {
     run ch-run $CHTEST_IMG sh <<EOF
 set -e
 test -w /WEIRD_AL_YANKOVIC
@@ -205,14 +205,9 @@ EOF
     [[ $output =~ 'Read-only file system' ]]
 }
 
-@test 'image mounted read-write option' {
-   run ch-run -w $CHTEST_IMG sh <<EOF
-set -e
-echo "writable" > write.test
-rm write.test
-EOF
-   echo "$output"
-   [[ $status -eq 0 ]]
+@test 'mount image read-write' {
+   ch-run -w $CHTEST_IMG -- sh -c 'echo writable > write'
+   ch-run -w $CHTEST_IMG -- sh -c 'rm write'
 }
 
 @test '--dir' {
