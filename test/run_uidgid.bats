@@ -55,7 +55,7 @@ setup () {
     for d in $CH_TEST_PERMDIRS; do
         d="$d/perms_test/pass"
         echo "verifying: $d"
-          ch-run -t $UID_ARGS $GID_ARGS -d $d $CHTEST_IMG -- \
+          ch-run -t $UID_ARGS $GID_ARGS -b $d $CHTEST_IMG -- \
                  /test/fs_perms.py /mnt/0
     done
 }

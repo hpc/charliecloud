@@ -24,18 +24,6 @@
 
 #include "charliecloud.h"
 
-void enter_udss(char * newroot, char ** binds, bool private_tmp, bool writable);
-void log_ids(const char * func, int line);
-void run_user_command(int argc, char * argv[], int user_cmd_start);
-static error_t parse_opt(int key, char * arg, struct argp_state * state);
-void privs_verify_invoking();
-void setup_namespaces(uid_t cuid, gid_t cgid);
-#ifdef SETUID
-void privs_drop_permanently();
-void privs_drop_temporarily();
-void privs_restore();
-#endif
-
 /** Constants and macros **/
 
 /* Host filesystems to bind. */
@@ -76,14 +64,15 @@ You cannot use this program to actually change your UID.";
 const char args_doc[] = "NEWROOT CMD [ARG...]";
 
 const struct argp_option options[] = {
-   { "dir",         'd', "DIR", 0,
-     "mount host DIR at container /mnt/i (i starts at 0)" },
+   { "bind",        'b', "SRC[:DST]", 0,
+     "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
    { "write",       'w', 0,     0, "mount image read-write"},
+   { "no-home",      -2, 0,     0, "bypass automatic home bind"},
 #ifndef SETUID
    { "gid",         'g', "GID", 0, "run as GID within container" },
 #endif
    { "is-setuid",    -1, 0,     0,
-     "exit successfully if compiled for setuid, fail otherwise" },
+     "exit successfully if compiled for setuid, else fail" },
    { "private-tmp", 't', 0,     0, "mount container-private tmpfs on /tmp" },
 #ifndef SETUID
    { "uid",         'u', "UID", 0, "run as UID within container" },
@@ -93,19 +82,39 @@ const struct argp_option options[] = {
    { 0 }
 };
 
+struct bind {
+   char * src;
+   char * dst;
+};
+
 struct args {
-   char * binds[USER_BINDS_MAX+1];
+   struct bind binds[USER_BINDS_MAX+1];
    gid_t container_gid;
    uid_t container_uid;
    char * newroot;
+   bool private_home;
    bool private_tmp;
    bool writable;
    int user_cmd_start;  // index into argv where NEWROOT is
    int verbose;
 };
 
+void enter_udss(char * newroot, bool writeable, struct bind * binds,
+                bool private_tmp, bool private_home);
+void log_ids(const char * func, int line);
+void run_user_command(int argc, char * argv[], int user_cmd_start);
+static error_t parse_opt(int key, char * arg, struct argp_state * state);
+void privs_verify_invoking();
+void setup_namespaces(uid_t cuid, gid_t cgid);
+#ifdef SETUID
+void privs_drop_permanently();
+void privs_drop_temporarily();
+void privs_restore();
+#endif
+
 struct args args;
 const struct argp argp = { options, parse_opt, args_doc, usage };
+
 
 /** Main **/
 
@@ -118,13 +127,14 @@ int main(int argc, char * argv[])
    memset(args.binds, 0, sizeof(args.binds));
    args.container_gid = getgid();
    args.container_uid = getuid();
+   args.private_home = false;
    args.private_tmp = false;
    args.verbose = 0;
-   TRY (setenv("ARGP_HELP_FMT", "opt-doc-col=21,no-dup-args-note", 0));
+   TRY (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
    TRY (argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args));
    if (args.user_cmd_start >= argc - 1)
       fatal("NEWROOT and/or CMD not specified\n");
-   assert(args.binds[USER_BINDS_MAX] == NULL);  // array overrun in argp_parse?
+   assert(args.binds[USER_BINDS_MAX].src == NULL);  // overrun in argp_parse?
    args.newroot = argv[args.user_cmd_start++];
 
    if (args.verbose) {
@@ -135,7 +145,8 @@ int main(int argc, char * argv[])
    }
 
    setup_namespaces(args.container_uid, args.container_gid);
-   enter_udss(args.newroot, args.binds, args.private_tmp, args.writable);
+   enter_udss(args.newroot, args.writable, args.binds,
+              args.private_tmp, args.private_home);
 
 #ifdef SETUID
    privs_drop_permanently();
@@ -152,7 +163,8 @@ int main(int argc, char * argv[])
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
    in examples/syscalls/pivot_root.c. */
-void enter_udss(char * newroot, char ** binds, bool private_tmp, bool writable)
+void enter_udss(char * newroot, bool writable, struct bind * binds,
+                bool private_tmp, bool private_home)
 {
    char * base;
    char * dir;
@@ -180,7 +192,6 @@ void enter_udss(char * newroot, char ** binds, bool private_tmp, bool writable)
    // Claim newroot for this namespace
    TRX (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL),
         newroot);
-
    // Mount tmpfs on guest /home because guest root is read-only
    TRY (0 > asprintf(&path, "%s/home", newroot));
    TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
@@ -196,11 +207,13 @@ void enter_udss(char * newroot, char ** binds, bool private_tmp, bool writable)
    } else {
       TRY (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL));
    }
-   // Bind-mount user's home directory at /home/$USER. The main use case is
-   // dotfiles.
-   TRY (0 > asprintf(&path, "%s/home/%s", newroot, getenv("USER")));
-   TRY (mkdir(path, 0755));
-   TRY (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL));
+   if (!private_home) {
+      // Bind-mount user's home directory at /home/$USER. The main use case is
+      // dotfiles.
+      TRY (0 > asprintf(&path, "%s/home/%s", newroot, getenv("USER")));
+      TRY (mkdir(path, 0755));
+      TRY (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL));
+   }
    // Bind-mount /usr/bin/ch-ssh if it exists.
    TRY (0 > asprintf(&path, "%s/usr/bin/ch-ssh", newroot));
    if (stat(path, &st)) {
@@ -212,10 +225,13 @@ void enter_udss(char * newroot, char ** binds, bool private_tmp, bool writable)
       TRY (0 > asprintf(&oldpath, "%s/ch-ssh", dir));
       TRY (mount(path, oldpath, NULL, MS_BIND, NULL));
    }
-   // Bind-mount user-specified directories at guest /mnt/i, which must exist
-   for (int i = 0; binds[i] != NULL; i++) {
-      TRY (0 > asprintf(&path, "%s/mnt/%d", newroot, i));
-      TRY (mount(binds[i], path, NULL, MS_BIND, NULL));
+   // Bind-mount user-specified directories at guest DST and|or /mnt/i,
+   // which must exist
+   for (int i = 0; binds[i].src != NULL; i++) {
+      TRY (0 > asprintf(&path, "%s%s", newroot, binds[i].dst));
+      if (mount(binds[i].src, path, NULL, MS_REC | MS_BIND, NULL))
+         fatal("could not bind %s to %s: %s\n",
+               binds[i].src, binds[i].dst, strerror(errno));
    }
 
    // Overmount / to avoid EINVAL if it's a rootfs
@@ -283,13 +299,25 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       exit(EXIT_FAILURE);
 #endif
       break;
-   case 'd':
-      for (i = 0; as->binds[i] != NULL; i++)
+   case -2:
+      as->private_home = true;
+   break;
+   case 'b':
+      for (i = 0; as->binds[i].src != NULL; i++)
          ;
-      if (i < USER_BINDS_MAX)
-         as->binds[i] = arg;
-      else
-         fatal("--dir can be used at most %d times\n", USER_BINDS_MAX);
+      if (i < USER_BINDS_MAX) {
+         as->binds[i].src = strsep(&arg, ":");
+         assert(as->binds[i].src != NULL);
+         if (arg)
+            as->binds[i].dst = arg;
+         else // arg is NULL => no destination specified
+            TRY (0 > asprintf(&(as->binds[i].dst), "/mnt/%d", i));
+         if (as->binds[i].src[0] == 0)
+            fatal("--bind: no source provided\n");
+         if (as->binds[i].dst[0] == 0)
+            fatal("--bind: no destination provided\n");
+      } else
+         fatal("--bind can be used at most %d times\n", USER_BINDS_MAX);
       break;
    case 'g':
       errno = 0;

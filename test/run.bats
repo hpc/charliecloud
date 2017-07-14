@@ -210,9 +210,111 @@ EOF
    ch-run -w $CHTEST_IMG rm write
 }
 
-@test '--dir' {
-    ch-run -d $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
-    ch-run -d $IMGDIR/bind1 -d $IMGDIR/bind2 $CHTEST_IMG -- cat /mnt/1/file2
+@test '--bind' {
+    # one bind, default destination (/mnt/0)
+    ch-run -b $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
+    # one bind, explicit destination
+    ch-run -b $IMGDIR/bind1:/mnt/9 $CHTEST_IMG -- cat /mnt/9/file1
+
+    # two binds, default destination
+    ch-run -b $IMGDIR/bind1 -b $IMGDIR/bind2 $CHTEST_IMG \
+           -- cat /mnt/0/file1 /mnt/1/file2
+    # two binds, explicit destinations
+    ch-run -b $IMGDIR/bind1:/mnt/8 -b $IMGDIR/bind2:/mnt/9 $CHTEST_IMG \
+           -- cat /mnt/8/file1 /mnt/9/file2
+    # two binds, default/explicit
+    ch-run -b $IMGDIR/bind1 -b $IMGDIR/bind2:/mnt/9 $CHTEST_IMG \
+           -- cat /mnt/0/file1 /mnt/9/file2
+    # two binds, explicit/default
+    ch-run -b $IMGDIR/bind1:/mnt/8 -b $IMGDIR/bind2 $CHTEST_IMG \
+           -- cat /mnt/8/file1 /mnt/1/file2
+
+    # bind one source at two destinations
+    ch-run -b $IMGDIR/bind1:/mnt/8 -b $IMGDIR/bind1:/mnt/9 $CHTEST_IMG \
+           -- diff -u /mnt/8/file1 /mnt/9/file1
+    # bind two sources at one destination
+    ch-run -b $IMGDIR/bind1:/mnt/9 -b $IMGDIR/bind2:/mnt/9 $CHTEST_IMG \
+           -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
+
+    # omit tmpfs at /home, which should be empty
+    run ch-run --no-home $CHTEST_IMG -- ls /home
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ -z $output ]]
+    # overmount tmpfs at /home
+    ch-run -b $IMGDIR/bind1:/home $CHTEST_IMG -- cat /home/file1
+    # bind to /home without overmount
+    ch-run --no-home -b $IMGDIR/bind1:/home $CHTEST_IMG -- cat /home/file1
+    # omit default /home, with unrelated --bind
+    ch-run --no-home -b $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
+}
+
+@test '--bind errors' {
+
+    # too many binds (11)
+    run ch-run -b0 -b1 -b2 -b3 -b4 -b5 -b6 -b7 -b8 -b9 -b10 $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = 'ch-run: --bind can be used at most 10 times' ]]
+
+    # no argument to --bind
+    run ch-run $CHTEST_IMG -b
+    echo "$output"
+    [[ $status -eq 64 ]]
+    [[ $output =~ 'ch-run: option requires an argument' ]]
+
+    # empty argument to --bind
+    run ch-run -b '' $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = 'ch-run: --bind: no source provided' ]]
+
+    # source not provided
+    run ch-run -b :/mnt/9 $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = 'ch-run: --bind: no source provided' ]]
+
+    # destination not provided
+    run ch-run -b $IMGDIR/bind1: $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = 'ch-run: --bind: no destination provided' ]]
+
+    # source does not exist
+    run ch-run -b $IMGDIR/hoops $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    r='^ch-run: could not bind .+/hoops to /mnt/0: No such file or directory$'
+    [[ $output =~ $r ]]
+
+    # destination does not exist
+    run ch-run -b $IMGDIR/bind1:/goops $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    r='^ch-run: could not bind .+/bind1 to /goops: No such file or directory$'
+    [[ $output =~ $r ]]
+
+    # neither source nor destination exist
+    run ch-run -b $IMGDIR/hoops:/goops $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    r='^ch-run: could not bind .+/hoops to /goops: No such file or directory$'
+    [[ $output =~ $r ]]
+
+    # correct bind followed by source does not exist
+    run ch-run -b $IMGDIR/bind1:/mnt/9 -b $IMGDIR/hoops $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    r='^ch-run: could not bind .+/hoops to /mnt/1: No such file or directory$'
+    [[ $output =~ $r ]]
+
+    # correct bind followed by destination does not exist
+    run ch-run -b $IMGDIR/bind1 -b $IMGDIR/bind2:/goops $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    r='^ch-run: could not bind .+/bind2 to /goops: No such file or directory$'
+    [[ $output =~ $r ]]
 }
 
 @test 'permissions test directories exist' {

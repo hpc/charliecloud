@@ -292,27 +292,36 @@ property of the running kernel rather than the filesystem.
 Several host directories are always bind-mounted into the container. These
 include system directories such as :code:`/dev`, :code:`/proc`, and
 :code:`/sys`; :code:`/tmp`; Charliecloud's :code:`ch-ssh` command in
-:code:`/usr/bin`; and the invoking user's home directory (for dotfiles).
+:code:`/usr/bin`; and the invoking user's home directory (for dotfiles),
+unless :code:`--no-home` is specified.
 
 Charliecloud uses recursive bind mounts, so for example if the host has a
 variety of sub-filesystems under :code:`/sys`, as Ubuntu does, these will be
 available in the container as well.
 
 In addition to the default bind mounts, arbitrary user-specified directories
-can be added using the :code:`-d` switch. These appear at :code:`/mnt/0`,
-:code:`/mnt/0`, etc. For example::
+can be added using the :code:`--bind` or :code:`-b` switch. By default,
+:code:`/mnt/0`, :code:`/mnt/1`, etc., are used for the destination in the guest::
 
   $ mkdir /var/tmp/foo0
   $ echo hello > /var/tmp/foo0/bar
   $ mkdir /var/tmp/foo1
   $ echo world > /var/tmp/foo1/bar
-  $ ch-run -d /var/tmp/foo0 -d /var/tmp/foo1 /var/tmp/hello -- bash
+  $ ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
   > ls /mnt
   0  1  2  3  4  5  6  7  8  9
   > cat /mnt/0/bar
   hello
   > cat /mnt/1/bar
   world
+
+Explicit destinations are also possible::
+
+  $ ch-run -b /var/tmp/foo0:/mnt /var/tmp/hello -- bash
+  > ls /mnt
+  bar
+  > cat /mnt/bar
+  hello
 
 Network
 -------
@@ -816,8 +825,10 @@ worked out how to do this yet. (See issue #5.)
 
 .. note::
 
-   The image directory is mounted read-only, so it can be shared by multiple
+   The image directory is mounted read-only by default, so it can be shared by multiple
    Charliecloud containers in the same or different jobs.
+
+   The image directory can be mounted read-write with :code:`ch-run -w`.
 
 .. warning::
 
