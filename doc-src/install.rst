@@ -251,9 +251,9 @@ The tests need three work directories with several gigabytes of free space, in
 order to store image tarballs, unpacked image directories, and file permission
 test fixtures. These are configured with environment variables::
 
-  $ export CH_TEST_TARDIR=/data/tarballs
-  $ export CH_TEST_IMGDIR=/data/images
-  $ export CH_TEST_PERMDIRS='/data /tmp /var/tmp'
+  $ export CH_TEST_TARDIR=/var/tmp/tarballs
+  $ export CH_TEST_IMGDIR=/var/tmp/images
+  $ export CH_TEST_PERMDIRS='/var/tmp /tmp'
 
 :code:`CH_TEST_PERMDIRS` can be set to `skip` in order to skip the file
 permissions tests.
