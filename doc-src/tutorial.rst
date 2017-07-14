@@ -291,42 +291,37 @@ property of the running kernel rather than the filesystem.
 
 Several host directories are always bind-mounted into the container. These
 include system directories such as :code:`/dev`, :code:`/proc`, and
-:code:`/sys`; :code:`/tmp`; and Charliecloud's :code:`ch-ssh` command in
-:code:`/usr/bin`. The user's home directory is bind-mounted (for dotfiles)
-unless the :code:`--no-home` flag is invoked.
+:code:`/sys`; :code:`/tmp`; Charliecloud's :code:`ch-ssh` command in
+:code:`/usr/bin`; and the invoking user's home directory (for dotfiles),
+unless :code:`--no-home` is specified.
 
 Charliecloud uses recursive bind mounts, so for example if the host has a
 variety of sub-filesystems under :code:`/sys`, as Ubuntu does, these will be
 available in the container as well.
 
 In addition to the default bind mounts, arbitrary user-specified directories
-can be added using the :code:`-b SRC[:DST]` switch. Unless a specfic :code:`DST`
-is provided, the :code:`SRC` directory will appear at :code:`/mnt/0`,
-:code:`/mnt/1`, etc. For example::
-
-  $ export SRC=/tmp/src
-  $ export DST=/tmp/dst
-  $ mkdir $SRC && mkdir $DST
-  $ echo world > $SRC/hello
-  $ ch-run -b $SRC:$DST /var/tmp/hello -- bash
-  > ls /tmp/dst
-  hello
-  > cat hello
-  world
-
-Alternatively::
+can be added using the :code:`--bind` or :code:`-b` switch. By default,
+:code:`/mnt/0`, :code:`/mnt/1`, etc., are used for the destination in the guest::
 
   $ mkdir /var/tmp/foo0
   $ echo hello > /var/tmp/foo0/bar
   $ mkdir /var/tmp/foo1
   $ echo world > /var/tmp/foo1/bar
-  $ ch-run -b /var/tmp/foo0 -d /var/tmp/foo1 /var/tmp/hello -- bash
+  $ ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
   > ls /mnt
   0  1  2  3  4  5  6  7  8  9
   > cat /mnt/0/bar
   hello
   > cat /mnt/1/bar
   world
+
+Explicit destinations are also possible::
+
+  $ ch-run -b /var/tmp/foo0:/mnt /var/tmp/hello -- bash
+  > ls /mnt
+  bar
+  > cat /mnt/bar
+  hello
 
 Network
 -------
