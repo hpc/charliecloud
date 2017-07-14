@@ -228,7 +228,8 @@ void enter_udss(char * newroot, struct binds ** binds, bool private_tmp, bool wr
    // which must exist
    for (int i = 0; binds[i] != NULL; i++) {
       TRY (0 > asprintf(&path, "%s%s", newroot, binds[i]->dst));
-      TRY (mount(binds[i]->src, path, NULL, MS_BIND, NULL));
+      TRX (mount(binds[i]->src, path, NULL, MS_BIND, NULL), \
+         "--bind could not bind SRC to DST");
    }
 
    // Overmount / to avoid EINVAL if it's a rootfs
@@ -285,12 +286,9 @@ void log_ids(const char * func, int line)
 static error_t parse_opt(int key, char * arg, struct argp_state * state)
 {
    struct args * as = state->input;
-   char * dst;
+   char * dst, * src;
    int i;
    long l;
-   char * src;
-   struct stat src_stat;
-   struct stat dst_stat;
 
    switch (key) {
    case -1:
@@ -309,24 +307,11 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       if (i < USER_BINDS_MAX) {
          dst = arg;
          src = strsep(&dst, ":");
-         stat(src, &src_stat);
-         stat(dst, &dst_stat);
          as->binds[i] = malloc(sizeof(struct binds *));
          assert(as->binds[i]);
          if (dst) {
-            if (dst[0] != '/')
-               fatal("--bind error: DST argument '%s' is not a valid path\n", dst);
-            if (strncmp(src, "/tmp", strlen("/tmp\0")) == 0)
-               fatal("--bind error: binding '/tmp' is not supported\n");
-            if (strncmp("/mnt", dst, strlen("/mnt\0")) == 0)
-               fatal("--bind error: DST '/mnt' is not supported. use '/mnt/{dir}'\n");
-            if (!S_ISDIR(dst_stat.st_mode))
-               fatal("--bind error: DST '%s' does not exist\n", dst);
-            if (S_ISREG(src_stat.st_mode) || S_ISDIR(src_stat.st_mode)) {
-               TRY(0 > asprintf(&as->binds[i]->src, "%s", src));
-               TRY(0 > asprintf(&as->binds[i]->dst, "%s", dst));
-            } else
-               fatal("--bind error: an argument in '%s:%s' does not exist\n", src, dst);
+            TRY(0 > asprintf(&as->binds[i]->src, "%s", src));
+            TRY(0 > asprintf(&as->binds[i]->dst, "%s", dst));
          } else {
             TRY(0 > asprintf(&as->binds[i]->src, "%s", arg));
             TRY(0 > asprintf(&as->binds[i]->dst, "/mnt/%d", i));

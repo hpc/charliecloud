@@ -238,46 +238,48 @@ EOF
    run ch-run -b :/home $CHTEST_IMG -- cat /home
    echo "$output"
    [[ status -ne 0 ]]
-   [[ $output != "--bind error: an argument in ':/home' does not exist" ]]
+   [[ $output =~ "ch-run: --bind could not bind SRC to DST: Invalid argument" ]]
 
    # DST is not provided
    run ch-run -b /home: $CHTEST_IMG -- cat /home
    echo "$output"
    [[ status -ne 0 ]]
-   [[ $output != "---bind error: an argument in '/home:' does not exist" ]]
+   [[ $output =~ "ch-run: --bind could not bind SRC to DST: Invalid argument" ]]
 
    # SRC does not exist
    run ch-run -b /whoops:/mnt $CHTEST_IMG -- cat /home
    [[ status -ne 0 ]]
-   [[ $output != "--bind SRC argument '/whoops' does not exist" ]]
+   [[ $output =~ "ch-run: --bind could not bind SRC to DST: Invalid argument" ]]
 
    # DST is does not exist
    run ch-run -b /mnt:/whoops $CHTEST_IMG -- cat /home
    [[ status -ne 0 ]]
-   [[ $output != "--bind DST argument 'whoops' is not a valid path" ]]
+   [[ $output =~ "ch-run: --bind could not bind SRC to DST: Invalid argument" ]]
 
    # SRC and DST do not exist
    run ch-run -b abra:kadabra $CHTEST_IMG -- cat /home
    [[ status -ne 0 ]]
-   [[ $output != "" ]]
+   [[ $output =~ "ch-run: --bind could not bind SRC to DST: Invalid argument" ]]
 
    # Bind SRC1 at DST1 and SRC2 at DST2, where DST2 is not
    # provided
    run ch-run -b $IMGDIR/bind1:/usr -b /home: $CHTEST_IMG -- cat /home
    [[ status -ne 0 ]]
-   [[ $output != "--bind error: an argument in '/home:' does not exist\n" ]]
+   [[ $output =~ "ch-run: --bind could not bind SRC to DST: Invalid argument" ]]
 
    # Bind tmp at DST
-   run ch-run -b /tmp:/usr $CHTEST_IMG -- cat /usr
-   [[ status -ne 0 ]]
-   [[ $output != "--bind error: binding '/tmp' is not supported" ]]
+   # error checking removed
+   # run ch-run -b /tmp:/usr $CHTEST_IMG -- cat /usr
+   # [[ status -ne 0 ]]
+   # [[ $output =~ "--bind error: binding '/tmp' is not supported" ]]
 
    # Bind SRC at /mnt
+   # error checking removed
    # This causes problems when a combination of SRC and SRC:DST arguments
    # are used
-   run ch-run -b $IMGDIR/bind1 -b $IMGDIR/bind2:/mnt $CHTEST_IMG -- cat /mnt/0/file1
-   [[ status -ne 0 ]]
-   [[ $output != "--bind error: DST '/mnt' is not supported. use '/mnt/{dir}'\n" ]]
+   # run ch-run -b $IMGDIR/bind1 -b $IMGDIR/bind2:/mnt $CHTEST_IMG -- cat /mnt/0/file1
+   # [[ status -ne 0 ]]
+   # [[ $output =~ "--bind error: DST '/mnt' is not supported. use '/mnt/{dir}'\n" ]]
 }
 
 @test 'permissions test directories exist' {
