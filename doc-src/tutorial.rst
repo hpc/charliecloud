@@ -816,8 +816,11 @@ worked out how to do this yet. (See issue #5.)
 
 .. note::
 
-   The image directory is mounted read-only, so it can be shared by multiple
+   The image directory is mounted read-only by default, so it can be shared by multiple
    Charliecloud containers in the same or different jobs.
+
+   The image directory can be mounted read-write with :code: `ch-run -w`; see :code:`ch-run --help`
+   for details.
 
 .. warning::
 
