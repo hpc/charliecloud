@@ -238,11 +238,10 @@ EOF
 
     # omit tmpfs at /home, which shouldn't be empty
     if [[ ! -f $CHTEST_IMG/home/foo ]]; then
-       touch $CHTEST_IMG/home/foo
+        # insert sentinel file
+        touch $CHTEST_IMG/home/foo
     fi
-    run ch-run --no-home $CHTEST_IMG -- ls /home/foo
-    echo "$output"
-    [[ $status -eq 0 ]]
+    ch-run --no-home $CHTEST_IMG -- ls /home/foo
     rm $CHTEST_IMG/home/foo
     # overmount tmpfs at /home
     ch-run -b $IMGDIR/bind1:/home $CHTEST_IMG -- cat /home/file1
