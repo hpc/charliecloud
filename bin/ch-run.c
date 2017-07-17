@@ -192,10 +192,7 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    // Claim newroot for this namespace
    TRX (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL),
         newroot);
-   // Mount tmpfs on guest /home because guest root is read-only
-   TRY (0 > asprintf(&path, "%s/home", newroot));
-   TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
-   // Bind-mount default stuff at same guest path
+   // Bind-mount default stuff at newroot path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
       TRY (0 > asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
       TRY (mount(DEFAULT_BINDS[i], path, NULL, MS_REC | MS_BIND, NULL));
@@ -208,6 +205,9 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
       TRY (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL));
    }
    if (!private_home) {
+      // Mount tmpfs on guest /home because guest root is read-only
+      TRY (0 > asprintf(&path, "%s/home", newroot));
+      TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
       TRY (0 > asprintf(&path, "%s/home/%s", newroot, getenv("USER")));

@@ -236,11 +236,15 @@ EOF
     ch-run -b $IMGDIR/bind1:/mnt/9 -b $IMGDIR/bind2:/mnt/9 $CHTEST_IMG \
            -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
 
-    # omit tmpfs at /home, which should be empty
-    run ch-run --no-home $CHTEST_IMG -- ls /home
+    # omit tmpfs at /home, which shouldn't be empty
+    if [[ ! -f $CHTEST_IMG/home/foo ]]; then
+       touch $CHTEST_IMG/home/foo
+    fi
+    run ch-run --no-home $CHTEST_IMG -- ls /home/foo
     echo "$output"
     [[ $status -eq 0 ]]
     [[ -z $output ]]
+    rm $CHTEST_IMG/home/foo
     # overmount tmpfs at /home
     ch-run -b $IMGDIR/bind1:/home $CHTEST_IMG -- cat /home/file1
     # bind to /home without overmount
