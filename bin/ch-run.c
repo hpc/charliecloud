@@ -192,7 +192,7 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    // Claim newroot for this namespace
    TRX (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL),
         newroot);
-   // Bind-mount default stuff at newroot path
+   // Bind-mount default directories at the same host and guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
       TRY (0 > asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
       TRY (mount(DEFAULT_BINDS[i], path, NULL, MS_REC | MS_BIND, NULL));
