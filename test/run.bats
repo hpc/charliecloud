@@ -237,12 +237,7 @@ EOF
            -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
 
     # omit tmpfs at /home, which shouldn't be empty
-    if [[ ! -f $CHTEST_IMG/home/foo ]]; then
-        # insert sentinel file
-        touch $CHTEST_IMG/home/foo
-    fi
-    ch-run --no-home $CHTEST_IMG -- ls /home/foo
-    rm $CHTEST_IMG/home/foo
+    ch-run --no-home $CHTEST_IMG -- cat /home/foo
     # overmount tmpfs at /home
     ch-run -b $IMGDIR/bind1:/home $CHTEST_IMG -- cat /home/file1
     # bind to /home without overmount
