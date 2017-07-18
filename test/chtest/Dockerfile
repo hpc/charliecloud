@@ -7,7 +7,8 @@ COPY test/chtest test
 WORKDIR /test
 RUN make -j$(getconf _NPROCESSORS_ONLN)
 
-# Create sentinel file for --no-home --bind tests
-RUN echo > /home/foo
+# Create sentinel file for --no-home --bind test
+RUN echo "tmpfs and host home are not overmounted" \
+   > /home/overmount-me
 
 CMD ["true"]
