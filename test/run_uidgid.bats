@@ -67,10 +67,13 @@ setup () {
            sh -c '/test/mknods $(cat /proc/mounts | cut -d" " -f2)'
 }
 
-@test 'privileged bind(2)' {
-    # Bind to privileged ports on host IP addresses.
-    ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- \
-           /test/bind_priv.py $(hostname --all-ip-addresses)
+@test 'privileged IPv4 bind(2)' {
+    # Bind to privileged ports on all host IPv4 addresses.
+    #
+    # Some supported distributions don't have "hostname --all-ip-addresses".
+    # Hence the awk voodoo.
+    ADDRS=$(ip -o addr | awk '/inet / {gsub(/\/.*/, " ",$4); print $4}')
+    ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- /test/bind_priv.py $ADDRS
 }
 
 @test 'remount host root' {

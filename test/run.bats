@@ -79,7 +79,8 @@ load common
 }
 
 @test 'ch-run refuses to run if setuid' {
-    [[ -n $CH_RUN_SETUID ]] && skip
+    [[ -z $CH_RUN_SETUID ]] || skip 'compiled in setuid mode'
+    [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
     CH_RUN_TMP=$BATS_TMPDIR_PRIVATE/ch-run.setuid
     cp -a $CH_RUN_FILE $CH_RUN_TMP
     ls -l $CH_RUN_TMP
@@ -95,7 +96,7 @@ load common
 }
 
 @test 'ch-run -u and -g refused in setuid mode' {
-    [[ -z $CH_RUN_SETUID ]] && skip
+    [[ -n $CH_RUN_SETUID ]] || skip 'not compiled for setuid'
     run ch-run -u 65534
     echo "$output"
     [[ $status -eq 64 ]]
