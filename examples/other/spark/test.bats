@@ -68,7 +68,7 @@ EOF
     rm -Rf --one-file-system $SPARKLOG
     # start the master
     ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/start-master.sh
-    sleep 5
+    sleep 7
     cat $MASTER_LOG
     fgrep -q 'New state: ALIVE' $MASTER_LOG
     # start the workers
