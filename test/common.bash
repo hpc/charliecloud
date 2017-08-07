@@ -87,6 +87,8 @@ if [[ $CHTEST_MULTINODE ]]; then
         SLURM_CPUS_ON_NODE=$(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f1)
     fi
     CHTEST_CORES=$(($SLURM_CPUS_ON_NODE * $SLURM_JOB_NUM_NODES))
+else
+    CHTEST_CORES=$(getconf _NPROCESSORS_ONLN)
 fi
 
 # If the variable CH_TEST_SKIP_DOCKER is true, we skip all the tests that
