@@ -27,7 +27,9 @@ tarball_ok () {
 # Predictable sorting and collation
 export LC_ALL=C
 
-# Set path to the right Charliecloud.
+# Set path to the right Charliecloud. This uses a symlink in this directory
+# called "bin" which points to the corresponding bin directory, either simply
+# up and over (source code) or set during "make install".
 CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/bin" && pwd)"
 CH_BIN="$(readlink -f "$CH_BIN")"
 PATH=$CH_BIN:$PATH

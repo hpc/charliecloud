@@ -23,11 +23,13 @@ test-all: test test-test
 test-build: build_auto.bats
 	./bats build.bats build_auto.bats build_post.bats
 
+# Note: This will will not find ch-run correctly if $CWD is not the test
+# directory, which I believe is assumed elsewhere in the test suite as well.
 .PHONY: test-run
 test-run: run_auto.bats
 	./bats run.bats run_uidgid.bats run_auto.bats
 	set -e; \
-	if ( ! ../bin/ch-run --is-setuid ); then \
+	if ( ! bin/ch-run --is-setuid ); then \
 	for GUEST_USER in $$(id -un) root nobody; do \
 	    for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
 	        export GUEST_USER; \
