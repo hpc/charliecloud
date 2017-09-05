@@ -1,11 +1,12 @@
 load common
 
 @test 'prepare images directory' {
+    shopt -s nullglob  # globs that match nothing yield empty string
     if [[ -e $IMGDIR ]]; then
         # Images directory exists. If all it contains is Charliecloud images
-        # or supporting directories, then we're ok; remove the images (this
-        # makes test-build and test-run follow the same path when run on the
-        # same or different machines). Otherwise, error.
+        # or supporting directories, or nothing, then we're ok. Remove any
+        # images (this makes test-build and test-run follow the same path when
+        # run on the same or different machines). Otherwise, error.
         for i in $IMGDIR/*; do
             if [[ -d $i && -f $i/WEIRD_AL_YANKOVIC ]]; then
                 echo "found image $i; removing"
