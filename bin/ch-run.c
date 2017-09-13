@@ -73,7 +73,7 @@ const struct argp_option options[] = {
 #endif
    { "is-setuid",    -1, 0,     0,
      "exit successfully if compiled for setuid, else fail" },
-   { "private-tmp", 't', 0,     0, "mount container-private tmpfs on /tmp" },
+   { "private-tmp", 't', 0,     0, "mount container-private ramfs on /tmp" }, // See Cray CASE #188073
 #ifndef SETUID
    { "uid",         'u', "UID", 0, "run as UID within container" },
 #endif
@@ -200,14 +200,14 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    // Container /tmp
    TRY (0 > asprintf(&path, "%s%s", newroot, "/tmp"));
    if (private_tmp) {
-      TRY (mount(NULL, path, "tmpfs", 0, 0));
+      TRY (mount(NULL, path, "ramfs", 0, 0)); // See Cray CASE #188073
    } else {
       TRY (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL));
    }
    if (!private_home) {
-      // Mount tmpfs on guest /home because guest root is read-only
+      // Mount ramfs on guest /home because guest root is read-only
       TRY (0 > asprintf(&path, "%s/home", newroot));
-      TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
+      TRY (mount(NULL, path, "ramfs", 0, 0)); // See Cray CASE #188073
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
       TRY (0 > asprintf(&path, "%s/home/%s", newroot, getenv("USER")));
