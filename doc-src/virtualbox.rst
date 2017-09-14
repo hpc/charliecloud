@@ -10,8 +10,8 @@ Docker pre-installed. This lets you:
 
 The virtual machine uses CentOS 7 with an ElRepo LTS kernel. We use the
 :code:`kernel.org` mirror for CentOS, but any should work. Various settings
-are specified, but in most cases we have not done an particular tuning, so use
-your judgement, and feedback is welcome. We assume Bash shell.
+are specified, but in most cases we have not done any particular tuning, so
+use your judgement, and feedback is welcome. We assume Bash shell.
 
 This procedure assumes you already have VirtualBox installed and working.
 
@@ -35,18 +35,23 @@ Initialize VM
 
 Configure *Preferences* -> *Proxy* if needed.
 
-Create a new VM in VirtualBox:
+Create a new VM in VirtualBox. We used the following specifications:
 
-* Memory: 4 GiB
-* Disk: 48 GiB, VDI dynamically allocated
+* *Processors(s):* However many you have in the box you are using to build the
+  appliance. This value will be adjusted at export time and by users when they
+  install the appliance.
+
+* *Memory:* 4 GiB. Less might work too. This can be adjusted as needed.
+
+* *Disk:* 24 GiB, VDI dynamically allocated. We've run demos with 8 GiB, but
+  that's not enough to run the Charliecloud test suite. The downside of being
+  generous is more use of the host disk. The image file starts small and grows
+  as needed, so unused space doesn't consume real resources. Note however that
+  the image file does not shrink if you delete files in the guest (modulo
+  heroics — image files can be compacted to remove zero pages, so you need to
+  zero out the free space in the guest filesystem for this to work).
 
 Additional non-default settings:
-
-* *System*
-
-  * *Processor*
-
-    * *Processor(s)*: 4
 
 * *Network*
 
@@ -54,16 +59,16 @@ Additional non-default settings:
 
     * *Advanced*
 
-      * *Attached to*: NAT
-      * *Adapter Type*: Paravirtualized Network
-      * *Port Forwarding*: add the following rule (but see caveat above):
+      * *Attached to:* NAT
+      * *Adapter Type:* Paravirtualized Network
+      * *Port Forwarding:* add the following rule (but see caveat above):
 
-        * *Name*: ssh from localhost
-        * *Protocol*: TCP
-        * *Host IP*: 127.0.0.1
-        * *Host Port*: 2022
-        * *Guest IP*: 10.0.2.15
-        * *Guest Port*: 22
+        * *Name:* ssh from localhost
+        * *Protocol:* TCP
+        * *Host IP:* 127.0.0.1
+        * *Host Port:* 2022
+        * *Guest IP:* 10.0.2.15
+        * *Guest Port:* 22
 
 
 Install CentOS
@@ -79,30 +84,39 @@ Start the VM. Choose *Install CentOS Linux 7*.
 Under *Installation summary*, configure (in this order):
 
 * *Network & host name*
-  * Enable *eth0*; verify it gets an IP and correct DNS.
+
+  * Enable *eth0*; verify it gets 10.0.2.15 and correct DNS.
+
 * *Date & time*
+
   * Enable *Network Time*
   * Select your time zone
+
 * *Installation source*
+
   * *On the network*: :code:`https://mirrors.kernel.org/centos/7/os/x86_64/`
   * *Proxy setup*: as appropriate for your network
+
 * *Software selection*
+
   * *Base environment:* Minimal Install
   * *Add-Ons*: Development Tools
+
 * *Installation destination*
+
   * No changes needed but the installer wants you to click in and look.
 
 Click *Begin installation*. Configure:
 
-* *Root password*: Set to something random (e.g. :code:`pwgen -cny 12`), which
+* *Root password:* Set to something random (e.g. :code:`pwgen -cny 12`), which
   you can then forget because it will never be needed again.
-* *User creation*:
+* *User creation:*
 
-  * *User name*: charlie
-  * *Make this user administrator*: yes
-  * *Password*: If the appliance will be used on single-user desktops, or
+  * *User name:* charlie
+  * *Make this user administrator:* yes
+  * *Password:* If the appliance will be used on single-user desktops, or
     other appropriate situations, and it does not conflict with your
-    organization's policies, a null password such as "foobar" can be used.
+    organization's policies, a dummy password such as "foo" can be used.
     Otherwise, choose a good password.
 
 Click *Finish configuration*, then *Reboot* and wait for the login prompt to
@@ -126,7 +140,7 @@ with copy and paste, your preferred configuration, etc.)
 Update sudoers
 ~~~~~~~~~~~~~~
 
-We want :code:`sudo` to (1) accept :code:`charlie` without a password, (2)
+We want :code:`sudo` to (1) accept :code:`charlie` without a password and (2)
 have access to the proxy environment variables.
 
 ::
@@ -196,7 +210,7 @@ Test::
   # set | fgrep -i proxy
   ALL_PROXY=http://proxy.example.com:8080
   [...]
-  $ exit
+  # exit
 
 Install a decent user environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -262,8 +276,8 @@ Reboot.
 Install OpenMPI
 ~~~~~~~~~~~~~~~
 
-This is not strictly necessary, but it will enable you to run MPI-based images
-using the host MPI, as you would on a cluster. Match the MPI version in
+This will enable you to run MPI-based images using the host MPI, as you would
+on a cluster. Match the MPI version in
 :code:`examples/mpi/mpihello/Dockerfile`.
 
 (CentOS has an OpenMPI RPM, but it's the wrong version and lacks an
@@ -272,6 +286,10 @@ using the host MPI, as you would on a cluster. Match the MPI version in
 ::
 
   $ cd /usr/local/src
+  $ sudo chgrp wheel .
+  $ sudo chmod 2775 .
+  $ ls -ld .
+  drwxrwsr-x. 2 root wheel 6 Nov  5  2016 .
   $ wget https://www.open-mpi.org/software/ompi/v1.10/downloads/openmpi-1.10.5.tar.gz
   $ tar xf openmpi-1.10.5.tar.gz
   $ rm openmpi-1.10.5.tar.gz
@@ -394,10 +412,6 @@ you want a different version, use Git commands to check it out.
 ::
 
   $ cd /usr/local/src
-  $ sudo chgrp wheel .
-  $ sudo chmod 2775 .
-  $ ls -ld .
-  drwxrwsr-x. 2 root wheel 6 Nov  5  2016 .
   $ git clone --recursive https://www.github.com/hpc/charliecloud.git
   $ cd charliecloud
   $ make
@@ -479,4 +493,7 @@ Export appliance
 Upgrading the appliance
 =======================
 
-FIXME (coming soon)
+* FIXME (coming soon)
+* yum stuff
+* charliecloud
+* docker images
