@@ -247,7 +247,10 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
 
    if (!writable) {
       // Re-mount image read-only
-      TRY (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL));
+      if (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL)) {
+         fatal("can't re-mount image read-only (is it on NFS?): %s\n",
+               strerror(errno));
+      }
    }
    // Pivot into the new root
    TRY (0 > asprintf(&path, "%s/oldroot", newroot));
