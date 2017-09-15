@@ -35,7 +35,7 @@ load common
 @test 'docker pull runs' {
     IMG=alpine:3.5
     TAR=$IMG.tar.gz
-    ch-tar2dir $TARDIR/$TAR $IMGDIR/$IMG
+    ch-tar2dir $TARDIR/$TAR $IMGDIR
     ch-run $IMGDIR/$IMG /bin/true
 }
 
@@ -115,7 +115,7 @@ load common
 }
 
 @test 'unpack chtest image' {
-    ch-tar2dir $CHTEST_TARBALL $CHTEST_IMG
+    ch-tar2dir $CHTEST_TARBALL $IMGDIR
 }
 
 @test 'workaround for /bin not in $PATH' {

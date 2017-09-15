@@ -75,9 +75,9 @@ for path in sys.argv[2:]:
         # image exists, remove so we can test new unpack
         rm -Rf --one-file-system $IMG
     fi
-    ch-tar2dir $TARBALL $IMG  # new unpack
+    ch-tar2dir $TARBALL $IMGDIR  # new unpack
     image_ok $IMG
-    ch-tar2dir $TARBALL $IMG  # overwrite
+    ch-tar2dir $TARBALL $IMGDIR  # overwrite
     image_ok $IMG
 }
 

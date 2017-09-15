@@ -10,10 +10,13 @@ Usage:
 
   $ $(basename $0) TARBALL DIR
 
-If DIR doesn't exist, it is created and filled with the contents of TARBALL,
-which must be a Linux filesystem image, e.g. from ch-docker2tar. If it does
-exist, and appears to be a Charliecloud container image, it is removed and
-replaced per above. Otherwise, the script aborts with an error.
+Extract the tarball, which must be a Linux filesystem image e.g. from
+ch-docker2tar, into a subdirectory of DIR named as the tarball with .tar.gz
+removed. For example, if the tarball is foo.tar.gz, unpack into DIR/foo.
+
+If the subdirectory doesn't exist, it is created. If it does exist and appears
+to be a Charliecloud container image, it is removed and replaced. Otherwise,
+the script aborts with an error.
 
 Warning:
 
@@ -43,7 +46,7 @@ if [ $# -lt 2 ]; then
     usage
 fi
 TARBALL="$1"
-NEWROOT="$2"
+NEWROOT="$2/$(basename "${TARBALL%.tar.gz}")"
 
 SENTINEL=WEIRD_AL_YANKOVIC
 
