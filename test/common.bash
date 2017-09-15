@@ -56,7 +56,7 @@ fi
 # Stuff for a few more sensitive tests
 BATS_TMPDIR_PRIVATE=$(mktemp -d --tmpdir=$BATS_TMPDIR)
 [[ $(stat -c '%a' $BATS_TMPDIR_PRIVATE) = '700' ]]
-if (command -v sudo >/dev/null 2>&1 && sudo -v); then
+if (command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     CHTEST_HAVE_SUDO=yes
