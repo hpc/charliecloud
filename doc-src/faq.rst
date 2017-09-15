@@ -154,3 +154,21 @@ We do not worry about the Linux-specific :code:`fsuid` and :code:`fsgid`,
 which track :code:`euid`/:code:`egid` unless specifically changed, which we
 don't do. Kernel bugs have existed that violate this invariant, but none are
 recent.
+
+
+:code:`ch-run` fails with "can't re-mount image read-only"
+==========================================================
+
+Normally, :code:`ch-run` re-mounts the image directory read-only within the
+container. This fails if the image resides on certain filesystems, such as NFS
+(see `issue #9 <https://github.com/hpc/charliecloud/issues/9>`_). There are
+two solutions:
+
+1. Unpack the image into a different filesystem, such as :code:`tmpfs` or
+   local disk. Consult your local admins for a recommendation.
+
+2. Use the :code:`-w` switch to leave the image mounted read-write. Note that
+   this has may have an impact on reproducibility (because the application can
+   change the image between runs) and/or stability (if there are multiple
+   application processes and one writes a file in the image that another is
+   reading or writing).
