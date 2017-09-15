@@ -219,6 +219,7 @@ To install (FHS-compliant)::
 Note that :code:`PREFIX` is required; it does not default to
 :code:`/usr/local` like many packages.
 
+.. _install_test-charliecloud:
 
 Test Charliecloud
 =================

@@ -20,14 +20,94 @@ This procedure assumes you already have VirtualBox installed and working.
    :local:
 
 
-Installing and using the appliance
-==================================
+Install and use the appliance
+=============================
 
-FIXME (coming soon)
+This procedure imports a provided :code:`.ova` file into VirtualBox and walks
+you through logging in and running a brief Hello World in Charliecloud. You
+will act as user :code:`charlie`, who has passwordless :code:`sudo`.
+
+.. warning::
+
+   These instructions provide for an SSH server in the guest that is
+   accessible to anyone logged into the host. It is your responsibility to
+   ensure this is safe and compliant with your organization's policies, or
+   modify the procedure accordingly.
+
+Configure VirtualBox
+--------------------
+
+1. Set *Preferences* -> *Proxy* if needed at your site.
+
+Install the appliance
+---------------------
+
+1. Download the :code:`charliecloud_centos7.ova` file (or whatever your site
+   has called it).
+2. *File* -> *Import appliance*. Choose :code:`charliecloud_centos7.ova` and click *Continue*.
+3. Review the settings.
+
+   * CPU should match the number of cores in your system.
+   * RAM should be reasonable. Anywhere from 2GiB to half your system RAM will
+     probably work.
+   * Check *Reinitialize the MAC address of all network cards*.
+
+4. Click *Import*.
+5. Verify that the appliance's port forwarding is acceptable to you and your
+   site: *Details* -> *Network* -> *Adapter 1* -> *Advanced* -> *Port
+   Forwarding*.
+
+Log in and try Charliecloud
+---------------------------
+
+1. Start the VM by clicking the green arrow.
+2. Wait for it to boot.
+3. Click on the console window, where user :code:`charlie` is logged in.
+4. Change your password:
+
+::
+
+   $ sudo passwd charlie
+
+5. SSH into the VM using the password you just set. (Accessing the VM using
+   SSH rather than the console is generally more pleasant, because you have a
+   nice terminal with native copy-and-paste, etc.)
+
+::
+
+  $ ssh -p 2022 charlie@localhost
+
+6. Run a container:
+
+::
+
+  $ ch-docker2tar hello /var/tmp
+  57M /var/tmp/hello.tar.gz
+  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
+  creating new image /var/tmp/hello
+  /var/tmp/hello unpacked ok
+  $ cat /etc/redhat-release
+  CentOS Linux release 7.3.1611 (Core)
+  $ ch-run /var/tmp/hello -- /bin/bash
+  > cat /etc/debian_version
+  8.9
+  > exit
+
+Congratulations! You've successfully used Charliecloud. Now all of your
+wildest dreams will come true.
+
+Shut down the VM at your leisure.
+
+Possible next steps:
+
+  * Follow the :doc:`tutorial <tutorial>`.
+  * Run the :ref:`test suite <install_test-charliecloud>` in
+    :code:`/usr/share/doc/charliecloud/test`. (Note that the environment
+    variables are already configured for you.)
 
 
-Building the appliance
-======================
+Build the appliance
+===================
 
 
 Initialize VM
@@ -35,11 +115,12 @@ Initialize VM
 
 Configure *Preferences* -> *Proxy* if needed.
 
-Create a new VM in VirtualBox. We used the following specifications:
+Create a new VM called *Charliecloud (CentOS 7)* in VirtualBox. We used the
+following specifications:
 
 * *Processors(s):* However many you have in the box you are using to build the
-  appliance. This value will be adjusted at export time and by users when they
-  install the appliance.
+  appliance. This value will be adjusted by users when they install the
+  appliance.
 
 * *Memory:* 4 GiB. Less might work too. This can be adjusted as needed.
 
@@ -108,16 +189,15 @@ Under *Installation summary*, configure (in this order):
 
 Click *Begin installation*. Configure:
 
-* *Root password:* Set to something random (e.g. :code:`pwgen -cny 12`), which
-  you can then forget because it will never be needed again.
+* *Root password:* Something random (e.g. :code:`pwgen -cny 12`), which you
+  can then forget because it will never be needed again.
 * *User creation:*
 
   * *User name:* charlie
   * *Make this user administrator:* yes
-  * *Password:* If the appliance will be used on single-user desktops, or
-    other appropriate situations, and it does not conflict with your
-    organization's policies, a dummy password such as "foo" can be used.
-    Otherwise, choose a good password.
+  * *Password:* Decent password that meets your organization's requirements.
+    Users of the appliance will not have access to this password itself but
+    will have its hash in :code:`/etc/shadow`.
 
 Click *Finish configuration*, then *Reboot* and wait for the login prompt to
 come up in the console. Note that the install ISO will be automatically
@@ -227,6 +307,40 @@ example::
    installing Charliecloud, but if you expect users to do any real development
    with Git, you probably want to install a newer version, perhaps from
    source.
+
+Configure auto-login on console
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This sets the first virtual console to log in :code:`charlie` automatically
+(i.e., without password). This increases user convenience and, combined with
+passwordless :code:`sudo` above, it lets users set their own password for
+:code:`charlie` without you needing to distribute the password set above. Even
+on multi-user systems, this is secure because the VM console window is
+displayed only in the invoking user's windowing environment.
+
+Adapted from this `forum post
+<https://www.centos.org/forums/viewtopic.php?t=48288>`_.
+
+::
+
+  $ cd /etc/systemd/system/getty.target.wants
+  $ sudo cp /lib/systemd/system/getty\@.service getty\@tty1.service
+
+Edit :code:`getty@tty1.service` to modify the :code:`ExecStart` line and add a
+new line at the end, as follows:
+
+.. code-block:: ini
+
+  [Service]
+  ...
+  ExecStart=-/sbin/agetty --autologin charlie --noclear %I
+  ...
+  [Install]
+  ...
+  ;Alias=getty@tty1.service
+
+Reboot. The VM text console should be logged into :code:`charlie` with no user
+interaction.
 
 Upgrade kernel
 ~~~~~~~~~~~~~~
@@ -424,6 +538,8 @@ Basic sanity::
   $ ch-run --version
   0.2.2~pre+00ffb9b
 
+.. _virtualbox_prime-docker-cache:
+
 Prime Docker cache
 ~~~~~~~~~~~~~~~~~~
 
@@ -478,22 +594,88 @@ you created in the previous step is good to go.
 
 ::
 
-   $ cd /usr/share/doc/charliecloud/test
-   $ make test-all
+  $ cd /usr/share/doc/charliecloud/test
+  $ make test-all
 
 Export appliance
 ----------------
 
-* FIXME (coming soon)
-* Shut down.
-* Revert to :code:`exportme`.
-* Export :code:`.ova` should be about 4GB.
+This creates a :code:`.ova` file, which is a standard way to package a virtual
+machine image with metadata. Someone else can then import it into their own
+VirtualBox, as described above. In principle other virtual machine emulators
+should work as well, though we haven't tried.
+
+1. Shut down the VM.
+2. Revert to snapshot *exportme*.
+3. *File* -> *Export appliance*
+4. Select your VM. Click *Continue*.
+5. Configure the export:
+
+   * *File:* Directory and filename you want. (The install procedure above
+     uses :code:`charliecloud_centos7.ova`.)
+   * *Format:* OVF 2.0
+   * *Write Manifest file:* unchecked
+
+6. Click *Continue*.
+7. Check the decriptive information and click *Export*.
+8. Distribute the resulting file (which should be about 4GiB).
 
 
-Upgrading the appliance
-=======================
+Upgrade the appliance
+=====================
 
-* FIXME (coming soon)
-* yum stuff
-* charliecloud
-* docker images
+Shut down the VM and roll back to *exportme*.
+
+OS packages via :code:`yum`
+---------------------------
+
+::
+
+  $ sudo yum upgrade
+  $ sudo yum --enablerepo=elrepo-kernel install kernel-lt kernel-lt-headers kernel-lt-devel
+
+You may also want to remove old, unneeded kernel packages::
+
+  $ rpm -qa 'kernel*' | sort
+  kernel-3.10.0-514.26.2.el7.x86_64
+  kernel-3.10.0-514.el7.x86_64
+  kernel-3.10.0-693.2.2.el7.x86_64
+  kernel-devel-3.10.0-514.26.2.el7.x86_64
+  kernel-devel-3.10.0-514.el7.x86_64
+  kernel-devel-3.10.0-693.2.2.el7.x86_64
+  kernel-lt-4.4.85-1.el7.elrepo.x86_64
+  kernel-lt-devel-4.4.85-1.el7.elrepo.x86_64
+  kernel-lt-headers-4.4.85-1.el7.elrepo.x86_64
+  kernel-tools-3.10.0-693.2.2.el7.x86_64
+  kernel-tools-libs-3.10.0-693.2.2.el7.x86_64
+  $ sudo rpm --erase kernel-3.10.0-514.26.2.el7 [... etc ...]
+
+Charliecloud
+------------
+
+::
+
+  $ cd /usr/local/src/charliecloud
+  $ git pull
+  $ make clean
+  $ make
+  $ sudo make install PREFIX=/usr
+  $ git log -n1
+  commit 4ebff0a0d7352b69e4cf8b9f529b6247c17dbe86
+  [...]
+  $ which ch-run
+  /usr/bin/ch-run
+  $ ch-run --version
+  0.2.2~pre+4ebff0a
+
+Make sure the Git hashes match.
+
+Docker images
+-------------
+
+Delete existing containers and images::
+
+  $ sudo docker rm $(sudo docker ps -aq)
+  $ sudo docker rmi -f $(sudo docker images -q)
+
+Now, go to :ref:`virtualbox_prime-docker-cache` above and proceed.
