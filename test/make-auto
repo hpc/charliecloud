@@ -19,7 +19,7 @@ load common
 """)
 
 for path in sys.argv[2:]:
-   # NOTE: The following 2x2 matrix has an empty cell 
+   # NOTE: The following 2x2 matrix has an empty cell
    (d, f) = os.path.split(path)
    if (f =='Dockerfile' or f == 'dockerpull'):
       tag = os.path.basename(d)
@@ -27,7 +27,7 @@ for path in sys.argv[2:]:
       tag = os.path.splitext(f)[1][1:] # extension
    assert (tag != "")
    if (f == 'dockerpull'):
-      with open(path) as fp: 
+      with open(path) as fp:
          addr = fp.readline().rstrip()
    try:
       if (os.environ["CH_TEST_OMIT"] in tag):
