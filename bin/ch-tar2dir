@@ -50,6 +50,12 @@ NEWROOT="$2/$(basename "${TARBALL%.tar.gz}")"
 
 SENTINEL=WEIRD_AL_YANKOVIC
 
+# Is the tarball a regular file (or symlink) and readable?
+if [ ! -f "$TARBALL" -o ! -r "$TARBALL" ]; then
+    echo "can't read $TARBALL" 1>&2
+    exit 1
+fi
+
 if [ ! -d "$NEWROOT" ]; then
     echo "creating new image $NEWROOT"
 else

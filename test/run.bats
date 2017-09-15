@@ -118,6 +118,22 @@ load common
     ch-tar2dir $CHTEST_TARBALL $IMGDIR
 }
 
+@test 'ch-tar2dir errors' {
+    # tarball doesn't exist
+    run ch-tar2dir does_not_exist.tar.gz $IMGDIR
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = "can't read does_not_exist.tar.gz" ]]
+
+    # tarball exists but isn't readable
+    touch $BATS_TMPDIR/unreadable.tar.gz
+    chmod 000 $BATS_TMPDIR/unreadable.tar.gz
+    run ch-tar2dir $BATS_TMPDIR/unreadable.tar.gz $IMGDIR
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = "can't read $BATS_TMPDIR/unreadable.tar.gz" ]]
+}
+
 @test 'workaround for /bin not in $PATH' {
     echo "$PATH"
     # if /bin is in $PATH, latter passes through unchanged
