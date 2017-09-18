@@ -336,8 +336,8 @@ EOF
     ls -l $CH_BIN/ch-ssh
     ch-run $CHTEST_IMG -- ls -l /usr/bin/ch-ssh
     ch-run $CHTEST_IMG -- test -x /usr/bin/ch-ssh
-    host_size=$(stat --format=%s ../bin/ch-ssh)
-    guest_size=$(ch-run /var/tmp/hello -- stat --format=%s /usr/bin/ch-ssh)
+    host_size=$(stat -c %s ../bin/ch-ssh)
+    guest_size=$(ch-run $CHTEST_IMG -- stat -c %s /usr/bin/ch-ssh)
     echo "host: $host_size, guest: $guest_size"
     [[ $host_size -eq $guest_size ]]
 }
