@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installation &mdash; Charliecloud 0.2.2~pre documentation</title>
+  <title>1. Installation &mdash; Charliecloud 0.2.2 documentation</title>
   
 
   
@@ -34,7 +34,7 @@
   
         <link rel="search" title="Search" href="search.html"/>
         <link rel="copyright" title="Copyright" href="copyright.html"/>
-    <link rel="top" title="Charliecloud 0.2.2~pre documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.2.2 documentation" href="index.html"/>
         <link rel="next" title="2. Tutorial" href="tutorial.html"/>
         <link rel="prev" title="Overview" href="index.html"/> 
 
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                8b340cf
+                34f7e35
               </div>
             
           
@@ -99,15 +99,14 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#install-docker-build-systems-only">1.2. Install Docker (build systems only)</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#understand-the-security-implications-of-docker">1.2.1. Understand the security implications of Docker</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#don-t-pipe-web-pages-to-your-shell">1.2.1.1. Don&#8217;t pipe web pages to your shell</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#docker-equals-root">1.2.1.2. <code class="code docutils literal"><span class="pre">docker</span></code> equals root</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#images-can-contain-bad-stuff">1.2.1.3. Images can contain bad stuff</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#containers-run-as-root">1.2.1.4. Containers run as root</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#docker-alters-your-network-configuration">1.2.1.5. Docker alters your network configuration</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#docker-installs-services">1.2.1.6. Docker installs services</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#docker-equals-root">1.2.1.1. <code class="code docutils literal"><span class="pre">docker</span></code> equals root</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#images-can-contain-bad-stuff">1.2.1.2. Images can contain bad stuff</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#containers-run-as-root">1.2.1.3. Containers run as root</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#docker-alters-your-network-configuration">1.2.1.4. Docker alters your network configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#docker-installs-services">1.2.1.5. Docker installs services</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#configuring-docker-for-a-proxy">1.2.2. Configuring Docker for a proxy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuring-for-a-proxy">1.2.2. Configuring for a proxy</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#install-charliecloud">1.3. Install Charliecloud</a><ul>
@@ -119,16 +118,17 @@
 <li class="toctree-l2"><a class="reference internal" href="#test-charliecloud">1.4. Test Charliecloud</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id1">1.4.1. Build</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#run">1.4.2. Run</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#test-suites-of-examples">1.4.3. Test suites of examples</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#multiple-phases">1.4.4. Multiple phases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">1.4.3. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quick-and-multiple-phase-tests">1.4.4. Quick and multiple-phase tests</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="script-help.html">3. Help text for executables</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">4. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="copyright.html">5. Copyright and license</a></li>
+<li class="toctree-l1"><a class="reference internal" href="virtualbox.html">4. VirtualBox appliance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">5. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="copyright.html">6. Copyright and license</a></li>
 </ul>
 
             
@@ -202,7 +202,7 @@
 </li>
 <li><a class="reference internal" href="#install-docker-build-systems-only" id="id6">Install Docker (build systems only)</a><ul>
 <li><a class="reference internal" href="#understand-the-security-implications-of-docker" id="id7">Understand the security implications of Docker</a></li>
-<li><a class="reference internal" href="#configuring-docker-for-a-proxy" id="id8">Configuring Docker for a proxy</a></li>
+<li><a class="reference internal" href="#configuring-for-a-proxy" id="id8">Configuring for a proxy</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#install-charliecloud" id="id9">Install Charliecloud</a><ul>
@@ -214,22 +214,29 @@
 <li><a class="reference internal" href="#test-charliecloud" id="id13">Test Charliecloud</a><ul>
 <li><a class="reference internal" href="#id1" id="id14">Build</a></li>
 <li><a class="reference internal" href="#run" id="id15">Run</a></li>
-<li><a class="reference internal" href="#test-suites-of-examples" id="id16">Test suites of examples</a></li>
-<li><a class="reference internal" href="#multiple-phases" id="id17">Multiple phases</a></li>
+<li><a class="reference internal" href="#examples" id="id16">Examples</a></li>
+<li><a class="reference internal" href="#quick-and-multiple-phase-tests" id="id17">Quick and multiple-phase tests</a></li>
 </ul>
 </li>
 </ul>
 </div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">These are general installation instructions. If you’d like specific,
+step-by-step directions for CentOS 7, section <a class="reference internal" href="virtualbox.html"><span class="doc">VirtualBox appliance</span></a> has these
+for a VirtualBox virtual machine.</p>
+</div>
 <div class="section" id="prequisites">
 <h2><a class="toc-backref" href="#id2">1.1. Prequisites</a><a class="headerlink" href="#prequisites" title="Permalink to this headline">¶</a></h2>
 <p>Charliecloud is a simple system with limited prerequisites. If your system
-meets these prerequisites but Charliecloud doesn&#8217;t work, please report that as
+meets these prerequisites but Charliecloud doesn’t work, please report that as
 a bug.</p>
 <div class="section" id="run-time">
 <h3><a class="toc-backref" href="#id3">1.1.1. Run time</a><a class="headerlink" href="#run-time" title="Permalink to this headline">¶</a></h3>
 <p>Systems used for running images in the standard unprivileged mode need:</p>
 <ul class="simple">
-<li>Recent Linux kernel with <code class="code docutils literal"><span class="pre">CONFIG_USER_NS=y</span></code>.</li>
+<li>Recent Linux kernel with <code class="code docutils literal"><span class="pre">CONFIG_USER_NS=y</span></code>. (We’ve had good luck with
+various distribution upstream versions of 4.4 and higher.)</li>
 <li>C compiler and standard library</li>
 <li>POSIX shell and utilities</li>
 </ul>
@@ -268,47 +275,32 @@ few tips.</p>
 <div class="section" id="understand-the-security-implications-of-docker">
 <h3><a class="toc-backref" href="#id7">1.2.1. Understand the security implications of Docker</a><a class="headerlink" href="#understand-the-security-implications-of-docker" title="Permalink to this headline">¶</a></h3>
 <p>Because Docker (a) makes installing random crap from the internet really easy
-and (b) has an &#8220;interesting&#8221; security culture, you should take care. Some of
+and (b) has an “interesting” security culture, you should take care. Some of
 the implications are below. This list should not be considered comprehensive
 nor a substitute for appropriate expertise; adhere to your moral and
 institutional responsibilities.</p>
 <p>(All this stuff is a key motivation for Charliecloud.)</p>
-<div class="section" id="don-t-pipe-web-pages-to-your-shell">
-<h4>1.2.1.1. Don&#8217;t pipe web pages to your shell<a class="headerlink" href="#don-t-pipe-web-pages-to-your-shell" title="Permalink to this headline">¶</a></h4>
-<p>This is how Docker recommends you install the software. Don&#8217;t do this:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -fsSL https://get.docker.com/ <span class="p">|</span> sh
-</pre></div>
-</div>
-<p>This approach &#8212; piping a web page directly into a shell &#8212; is easy and
-fashionable but stupid.</p>
-<p>The problem is that you&#8217;ve invited the web page to execute arbitrary code as
-you (or worse, root). Auditing the page in a browser only helps somewhat, as
-the server could use your <code class="code docutils literal"><span class="pre">User-Agent</span></code> header to decide whether to show
-you safe or malicious code.</p>
-<p>Download the script to a file and audit it carefully before running.</p>
-</div>
 <div class="section" id="docker-equals-root">
-<h4>1.2.1.2. <code class="code docutils literal"><span class="pre">docker</span></code> equals root<a class="headerlink" href="#docker-equals-root" title="Permalink to this headline">¶</a></h4>
+<h4>1.2.1.1. <code class="code docutils literal"><span class="pre">docker</span></code> equals root<a class="headerlink" href="#docker-equals-root" title="Permalink to this headline">¶</a></h4>
 <p>Anyone who can run the <code class="code docutils literal"><span class="pre">docker</span></code> command or interact with the Docker
 daemon can <a class="reference external" href="http://reventlov.com/advisories/using-the-docker-command-to-root-the-host">trivially escalate to root</a>.
 This is considered a feature.</p>
-<p>For this reason, don&#8217;t create the <code class="code docutils literal"><span class="pre">docker</span></code> group when the installer
-offers it, as this will allow passwordless, unlogged escalation for anyone in
-the group.</p>
+<p>For this reason, don’t create the <code class="code docutils literal"><span class="pre">docker</span></code> group, as this will allow
+passwordless, unlogged escalation for anyone in the group.</p>
 </div>
 <div class="section" id="images-can-contain-bad-stuff">
-<h4>1.2.1.3. Images can contain bad stuff<a class="headerlink" href="#images-can-contain-bad-stuff" title="Permalink to this headline">¶</a></h4>
-<p>Standard hygiene for &#8220;installing stuff from the internet&#8221; applies. Only work
+<h4>1.2.1.2. Images can contain bad stuff<a class="headerlink" href="#images-can-contain-bad-stuff" title="Permalink to this headline">¶</a></h4>
+<p>Standard hygiene for “installing stuff from the internet” applies. Only work
 with images you trust. The official DockerHub repositories can help.</p>
 </div>
 <div class="section" id="containers-run-as-root">
-<h4>1.2.1.4. Containers run as root<a class="headerlink" href="#containers-run-as-root" title="Permalink to this headline">¶</a></h4>
+<h4>1.2.1.3. Containers run as root<a class="headerlink" href="#containers-run-as-root" title="Permalink to this headline">¶</a></h4>
 <p>By default, Docker runs container processes as root. In addition to being poor
 hygiene, this can be an escalation path, e.g. if you bind-mount host
 directories.</p>
 </div>
 <div class="section" id="docker-alters-your-network-configuration">
-<h4>1.2.1.5. Docker alters your network configuration<a class="headerlink" href="#docker-alters-your-network-configuration" title="Permalink to this headline">¶</a></h4>
+<h4>1.2.1.4. Docker alters your network configuration<a class="headerlink" href="#docker-alters-your-network-configuration" title="Permalink to this headline">¶</a></h4>
 <p>To see what it did:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ifconfig    <span class="c1"># note docker0 interface</span>
 <span class="gp">$</span> brctl show  <span class="c1"># note docker0 bridge</span>
@@ -317,8 +309,8 @@ directories.</p>
 </div>
 </div>
 <div class="section" id="docker-installs-services">
-<h4>1.2.1.6. Docker installs services<a class="headerlink" href="#docker-installs-services" title="Permalink to this headline">¶</a></h4>
-<p>If you don&#8217;t want the service starting automatically at boot, e.g.:</p>
+<h4>1.2.1.5. Docker installs services<a class="headerlink" href="#docker-installs-services" title="Permalink to this headline">¶</a></h4>
+<p>If you don’t want the service starting automatically at boot, e.g.:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> systemctl is-enabled docker
 <span class="go">enabled</span>
 <span class="gp">$</span> systemctl disable docker
@@ -328,8 +320,8 @@ directories.</p>
 </div>
 </div>
 </div>
-<div class="section" id="configuring-docker-for-a-proxy">
-<h3><a class="toc-backref" href="#id8">1.2.2. Configuring Docker for a proxy</a><a class="headerlink" href="#configuring-docker-for-a-proxy" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="configuring-for-a-proxy">
+<h3><a class="toc-backref" href="#id8">1.2.2. Configuring for a proxy</a><a class="headerlink" href="#configuring-for-a-proxy" title="Permalink to this headline">¶</a></h3>
 <p>By default, Docker does not work if you have a proxy, and it fails in two
 different ways.</p>
 <p>The first problem is that Docker itself must be told to use a proxy. This
@@ -341,13 +333,13 @@ manifests as:</p>
 </pre></div>
 </div>
 <p>If you have a systemd system, the <a class="reference external" href="https://docs.docker.com/engine/admin/systemd/#http-proxy">Docker documentation</a> explains how to
-configure this. (If you don&#8217;t have a systemd system, then
-<code class="code docutils literal"><span class="pre">/etc/default/docker</span></code> might be the place to go?)</p>
+configure this. If you don’t have a systemd system, then
+<code class="code docutils literal"><span class="pre">/etc/default/docker</span></code> might be the place to go?</p>
 <p>The second problem is that Docker containers need to know about the proxy as
-well. This manifests as images failing to build because they can&#8217;t download
+well. This manifests as images failing to build because they can’t download
 stuff from the internet.</p>
 <p>The fix is to set the proxy variables in your environment, e.g.:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">export HTTP_PROXY=http://example.com:8088</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">export HTTP_PROXY=http://proxy.example.com:8088</span>
 <span class="go">export http_proxy=$HTTP_PROXY</span>
 <span class="go">export HTTPS_PROXY=$HTTP_PROXY</span>
 <span class="go">export https_proxy=$HTTP_PROXY</span>
@@ -357,9 +349,13 @@ stuff from the internet.</p>
 <span class="go">export no_proxy=$NO_PROXY</span>
 </pre></div>
 </div>
-<p><code class="code docutils literal"><span class="pre">ch-build</span></code> will then pass these through to your image builds.</p>
+<p>You also need to teach <code class="code docutils literal"><span class="pre">sudo</span></code> to retain them. Add the following to
+<code class="code docutils literal"><span class="pre">/etc/sudoers</span></code>:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">Defaults env_keep+=&quot;HTTP_PROXY http_proxy HTTPS_PROXY https_proxy ALL_PROXY all_proxy NO_PROXY no_proxy&quot;</span>
+</pre></div>
+</div>
 <p>Because different programs use different subsets of these variables, and to
-avoid a situation where some things work and others don&#8217;t, the Charliecloud
+avoid a situation where some things work and others don’t, the Charliecloud
 test suite (see below) includes a test that fails if some but not all of the
 above variables are set.</p>
 </div>
@@ -381,11 +377,11 @@ unpacked export tarball created with <code class="code docutils literal"><span c
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make
 </pre></div>
 </div>
-<p>To build in setuid mode (experimental):</p>
+<p>To build in setuid mode (for testing if your kernel doesn’t support the user
+namespace):</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make <span class="nv">SETUID</span><span class="o">=</span>yes
 </pre></div>
 </div>
-<p>This mode escalates with <code class="code docutils literal"><span class="pre">sudo</span></code> when needed.</p>
 <p>To build the documentation, see <code class="code docutils literal"><span class="pre">doc-src/README</span></code>.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -395,7 +391,7 @@ problems.</p>
 </div>
 <div class="section" id="install-optional">
 <h3><a class="toc-backref" href="#id12">1.3.3. Install (optional)</a><a class="headerlink" href="#install-optional" title="Permalink to this headline">¶</a></h3>
-<p>You can run Charliecloud from the source directory, and it&#8217;s recommended you
+<p>You can run Charliecloud from the source directory, and it’s recommended you
 at least run the test suite before installation to establish that your system
 will work.</p>
 <p>To install (FHS-compliant):</p>
@@ -407,7 +403,7 @@ will work.</p>
 </div>
 </div>
 <div class="section" id="test-charliecloud">
-<h2><a class="toc-backref" href="#id13">1.4. Test Charliecloud</a><a class="headerlink" href="#test-charliecloud" title="Permalink to this headline">¶</a></h2>
+<span id="install-test-charliecloud"></span><h2><a class="toc-backref" href="#id13">1.4. Test Charliecloud</a><a class="headerlink" href="#test-charliecloud" title="Permalink to this headline">¶</a></h2>
 <p>Charliecloud comes with a fairly comprehensive <a class="reference external" href="https://github.com/sstephenson/bats">Bats</a> test suite, in <code class="code docutils literal"><span class="pre">test</span></code>. Go there:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> <span class="nb">test</span>
 </pre></div>
@@ -423,16 +419,16 @@ and unpack Bats manually.</p>
 </pre></div>
 </div>
 <p>Just like for normal use, the Charliecloud test suite is split into build and
-run phases, and there is an additional phase that runs the examples&#8217; test
+run phases, and there is an additional phase that runs the examples’ test
 suites. These phases can be tested independently on different systems.</p>
 <p>Testing is coordinated by <code class="code docutils literal"><span class="pre">make</span></code>. The test targets run one or more test
 suites. If any test suite has a failure, testing stops with an error message.</p>
 <p>The tests need three work directories with several gigabytes of free space, in
-order to store image tarballs, unpacked image directories, and file permission
-test fixtures. These are configured with environment variables:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_TARDIR</span><span class="o">=</span>/data/tarballs
-<span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_IMGDIR</span><span class="o">=</span>/data/images
-<span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s1">&#39;/data /tmp /var/tmp&#39;</span>
+order to store image tarballs, unpacked image directories, and permission test
+fixtures. These are configured with environment variables:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_TARDIR</span><span class="o">=</span>/var/tmp/tarballs
+<span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_IMGDIR</span><span class="o">=</span>/var/tmp/images
+<span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s1">&#39;/var/tmp /tmp&#39;</span>
 </pre></div>
 </div>
 <p><code class="code docutils literal"><span class="pre">CH_TEST_PERMDIRS</span></code> can be set to <cite>skip</cite> in order to skip the file
@@ -443,38 +439,38 @@ demand all three for all phases.)</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Bats will wait until all descendant processes finish before exiting, so if
-you get into a failure mode where a test suite doesn&#8217;t clean up all its
+you get into a failure mode where a test suite doesn’t clean up all its
 processes, Bats will hang.</p>
 </div>
 <div class="section" id="id1">
 <h3><a class="toc-backref" href="#id14">1.4.1. Build</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>In this phase, image building and associated functionality is tested.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-build
-<span class="go">./bats build.bats build_auto.bats</span>
-<span class="go"> ✓ executables --help</span>
-<span class="go"> ✓ ch-build</span>
-<span class="go"> ✓ ch-build --pull</span>
-<span class="go"> ✓ ch-build2dir</span>
-<span class="go"> ✓ ch-build alpine34</span>
-<span class="go"> ✓ ch-docker2tar alpine34</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">./bats build.bats build_auto.bats build_post.bats</span>
+<span class="go"> ✓ create tarball directory if needed</span>
+<span class="go"> ✓ documentations build</span>
+<span class="go"> ✓ executables seem sane</span>
 <span class="go">[...]</span>
-<span class="go"> ✓ ch-build spark</span>
-<span class="go"> ✓ ch-docker2tar spark</span>
+<span class="go"> ✓ ch-build obspy</span>
+<span class="go"> ✓ ch-docker2tar obspy</span>
+<span class="go"> ✓ docker pull dockerpull</span>
+<span class="go"> ✓ ch-docker2tar dockerpull</span>
+<span class="go"> ✓ nothing unexpected in tarball directory</span>
 
-<span class="go">28 tests, 0 failures</span>
+<span class="go">41 tests, 0 failures</span>
 </pre></div>
 </div>
 <p>Note that with an empty Docker cache, this test can be quite lengthy, half an
 hour or more, because it builds all the examples as well as several basic
 Dockerfiles for common Linux distributions and tools (in <code class="code docutils literal"><span class="pre">test</span></code>). With a
-full cache, expect more like 1&#8211;2 minutes.</p>
-<p>To iterate faster, you can cancel the test with Control-C once it gets into
-repetitive testing of different Dockerfiles.</p>
+full cache, expect more like 1–2 minutes.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
 <p>The easiest way to update the Docker images used in this test is to simply
-delete all Docker images and let them be rebuilt.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker rm <span class="k">$(</span>sudo docker ps -aq<span class="k">)</span>
+delete all Docker containers and images, and let them be rebuilt:</p>
+<div class="last highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker rm <span class="k">$(</span>sudo docker ps -aq<span class="k">)</span>
 <span class="gp">$</span> sudo docker rmi -f <span class="k">$(</span>sudo docker images -q<span class="k">)</span>
 </pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="run">
@@ -487,32 +483,33 @@ they cannot be shared between different users. To create them:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="k">for</span> d in <span class="nv">$CH_TEST_PERMDIRS</span><span class="p">;</span> <span class="k">do</span> sudo ./make-perms-test <span class="nv">$d</span> <span class="nv">$USER</span> nobody<span class="p">;</span> <span class="k">done</span>
 </pre></div>
 </div>
-<p>To skip this test (e.g., if you don&#8217;t have root), set
+<p>To skip this test (e.g., if you don’t have root), set
 <code class="code docutils literal"><span class="pre">$CH_TEST_PERMDIRS</span></code> to <code class="code docutils literal"><span class="pre">skip</span></code>.</p>
 <p>To run the tests:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-run
 </pre></div>
 </div>
 </div>
-<div class="section" id="test-suites-of-examples">
-<h3><a class="toc-backref" href="#id16">1.4.3. Test suites of examples</a><a class="headerlink" href="#test-suites-of-examples" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="examples">
+<h3><a class="toc-backref" href="#id16">1.4.3. Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <p>Some of the examples include test suites of their own. This Charliecloud runs
-those test suites, using a SLURM allocation if one is available or a single
+those test suites, using a Slurm allocation if one is available or a single
 node (localhost) if not.</p>
 <p>These require that the run tests have been completed successfully.</p>
 <p>Note that this test can take quite a while, and that single tests from
-the Charliecloud perspective include entire test suites from the example&#8217;s
+the Charliecloud perspective include entire test suites from the example’s
 perspective, so be patient.</p>
 <p>To run the tests:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-test
 </pre></div>
 </div>
 </div>
-<div class="section" id="multiple-phases">
-<h3><a class="toc-backref" href="#id17">1.4.4. Multiple phases</a><a class="headerlink" href="#multiple-phases" title="Permalink to this headline">¶</a></h3>
-<p>We also provide multiple-phase targets:</p>
+<div class="section" id="quick-and-multiple-phase-tests">
+<h3><a class="toc-backref" href="#id17">1.4.4. Quick and multiple-phase tests</a><a class="headerlink" href="#quick-and-multiple-phase-tests" title="Permalink to this headline">¶</a></h3>
+<p>We also provide the following additional test targets:</p>
 <blockquote>
 <div><ul class="simple">
+<li><code class="code docutils literal"><span class="pre">test-quick</span></code>: key subset of build and run phases (nice for development)</li>
 <li><code class="code docutils literal"><span class="pre">test</span></code>: build and run phases</li>
 <li><code class="code docutils literal"><span class="pre">test-all</span></code>: all three phases</li>
 </ul>
@@ -545,7 +542,7 @@ containers for testing and development.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; <a href="copyright.html">Copyright</a> 2014–2016, Los Alamos National Security, LLC.
+        &copy; <a href="copyright.html">Copyright</a> 2014–2017, Los Alamos National Security, LLC.
 
     </p>
   </div> 
@@ -566,7 +563,7 @@ containers for testing and development.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.2~pre',
+            VERSION:'0.2.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -576,7 +573,7 @@ containers for testing and development.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

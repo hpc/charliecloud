@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.2.2~pre documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.2.2 documentation</title>
   
 
   
@@ -34,7 +34,7 @@
   
         <link rel="search" title="Search" href="search.html"/>
         <link rel="copyright" title="Copyright" href="copyright.html"/>
-    <link rel="top" title="Charliecloud 0.2.2~pre documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.2.2 documentation" href="index.html"/>
         <link rel="next" title="3. Help text for executables" href="script-help.html"/>
         <link rel="prev" title="1. Installation" href="install.html"/> 
 
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                8b340cf
+                34f7e35
               </div>
             
           
@@ -133,8 +133,9 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="script-help.html">3. Help text for executables</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">4. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="copyright.html">5. Copyright and license</a></li>
+<li class="toctree-l1"><a class="reference internal" href="virtualbox.html">4. VirtualBox appliance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">5. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="copyright.html">6. Copyright and license</a></li>
 </ul>
 
             
@@ -202,8 +203,8 @@
 both examples included with the source code as well as new ones you create
 from scratch.</p>
 <p>This tutorial assumes that Charliecloud is correctly installed as described in
-the previous section, that the <code class="code docutils literal"><span class="pre">bin</span></code> directory is on your
-<code class="code docutils literal"><span class="pre">$PATH</span></code>, and that you have access to the examples in the source code.</p>
+the previous section, that the executables are on your <code class="code docutils literal"><span class="pre">$PATH</span></code>, and that
+you have access to the examples in the source code.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#seconds-to-charliecloud" id="id1">90 seconds to Charliecloud</a></li>
@@ -249,17 +250,17 @@ the previous section, that the <code class="code docutils literal"><span class="
 <div class="section" id="seconds-to-charliecloud">
 <h2><a class="toc-backref" href="#id1">2.1. 90 seconds to Charliecloud</a><a class="headerlink" href="#seconds-to-charliecloud" title="Permalink to this headline">¶</a></h2>
 <p>This section is for the impatient. It shows you how to quickly build and run a
-&#8220;hello world&#8221; Charliecloud container. If you like what you see, then proceed
+“hello world” Charliecloud container. If you like what you see, then proceed
 with the rest of the tutorial to understand what is happening and how to use
 Charliecloud for your own applications.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> charliecloud/examples/hello
-<span class="gp">$</span> ch-build -t hello ../..
-<span class="go">Sending build context to Docker daemon 12.24 MB</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello ~/charliecloud
+<span class="go">Sending build context to Docker daemon 15.67 MB</span>
 <span class="go">[...]</span>
-<span class="go">Successfully built 2972e7281f75</span>
+<span class="go">Successfully built 1136de7d4c0a</span>
 <span class="gp">$</span> ch-docker2tar hello /var/tmp
 <span class="go">57M /var/tmp/hello.tar.gz</span>
-<span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
+<span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
+<span class="go">creating new image /var/tmp/hello</span>
 <span class="go">/var/tmp/hello unpacked ok</span>
 <span class="gp">$</span> ch-run /var/tmp/hello -- <span class="nb">echo</span> <span class="s2">&quot;I&#39;m in a container&quot;</span>
 <span class="go">I&#39;m in a container</span>
@@ -284,9 +285,9 @@ Charliecloud you have (if not, please report a bug). For example:</p>
 </div>
 <div class="section" id="your-first-user-defined-software-stack">
 <h2><a class="toc-backref" href="#id3">2.3. Your first user-defined software stack</a><a class="headerlink" href="#your-first-user-defined-software-stack" title="Permalink to this headline">¶</a></h2>
-<p>In this section, we will create and run a simple &#8220;hello, world&#8221; image. This
+<p>In this section, we will create and run a simple “hello, world” image. This
 uses the <code class="code docutils literal"><span class="pre">hello</span></code> example in the Charliecloud source code. Start with:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/serial/hello
 </pre></div>
 </div>
 <div class="section" id="defining-your-udss">
@@ -302,7 +303,7 @@ supported.</p>
     <span class="o">&amp;&amp;</span> apt-get install -y openssh-client <span class="se">\</span>
     <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
 
-COPY examples/hello hello
+COPY examples/serial/hello hello
 
 <span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
@@ -329,23 +330,22 @@ in the current directory, rather than at the root of the Docker context
 directory. (We will address the context directory later.)</p>
 <p>The two arguments here are a tag for the Docker image and the context
 directory, which in this case is the Charliecloud source code.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello ../..
-<span class="go">Sending build context to Docker daemon 8.105 MB</span>
-<span class="go">Step 1 : FROM debian:jessie</span>
-<span class="go"> ---&gt; ddf73f48a05d</span>
-<span class="go">Step 2 : RUN apt-get update &amp;&amp; apt-get install -y openssh-client</span>
-<span class="go"> ---&gt; Running in beadfda45e4c</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello ~/charliecloud
+<span class="go">Sending build context to Docker daemon 15.67 MB</span>
+<span class="go">Step 1/4 : FROM debian:jessie</span>
+<span class="go">---&gt; 86baf4e8cde9</span>
 <span class="go">[...]</span>
-<span class="go"> ---&gt; 526e2ca75656</span>
-<span class="go">Removing intermediate container beadfda45e4c</span>
-<span class="go">Successfully built 526e2ca75656</span>
+<span class="go">Step 4/4 : RUN touch /usr/bin/ch-ssh</span>
+<span class="go">---&gt; 1136de7d4c0a</span>
+<span class="go">Successfully built 1136de7d4c0a</span>
 </pre></div>
 </div>
+<p>Note that Docker prints each step of the Dockerfile as it’s executed.</p>
 <p><code class="code docutils literal"><span class="pre">ch-build</span></code> and many other Charliecloud commands wrap various
 privileged <code class="code docutils literal"><span class="pre">docker</span></code> commands. Thus, you will be prompted for a password
 to escalate as needed. Note however that most configurations of <code class="code docutils literal"><span class="pre">sudo</span></code>
-don&#8217;t require a password on every invocation, so just because you aren&#8217;t
-prompted doesn&#8217;t mean privileged commands aren&#8217;t running.</p>
+don’t require a password on every invocation, so just because you aren’t
+prompted doesn’t mean privileged commands aren’t running.</p>
 </div>
 <div class="section" id="share-image-and-other-standard-docker-stuff">
 <h3><a class="toc-backref" href="#id6">2.3.3. Share image and other standard Docker stuff</a><a class="headerlink" href="#share-image-and-other-standard-docker-stuff" title="Permalink to this headline">¶</a></h3>
@@ -359,8 +359,8 @@ can be very useful.</p>
 <span class="gp">$</span> sudo docker push  <span class="c1"># FIXME</span>
 </pre></div>
 </div>
-<p>Running the image with Docker is not generally useful, because Docker&#8217;s
-run-time environment is significantly different than Charliecloud&#8217;s, but it
+<p>Running the image with Docker is not generally useful, because Docker’s
+run-time environment is significantly different than Charliecloud’s, but it
 can have value when debugging Charliecloud.</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker run -it hello /bin/bash
 <span class="gp">#</span> ls /
@@ -384,30 +384,31 @@ arbitrary directory, here <code class="code docutils literal"><span class="pre">
 <div class="section" id="distribute-tarball">
 <h3><a class="toc-backref" href="#id8">2.3.5. Distribute tarball</a><a class="headerlink" href="#distribute-tarball" title="Permalink to this headline">¶</a></h3>
 <p>Thus far, the workflow has taken place on the build system. The next step is
-to move the tarball to the run system. This can use any appropriate method for
+to copy the tarball to the run system. This can use any appropriate method for
 moving files: <code class="code docutils literal"><span class="pre">scp</span></code>, <code class="code docutils literal"><span class="pre">rsync</span></code>, something integrated with the
 scheduler, etc.</p>
-<p>If the build and run systems are the same, then no move is needed. This is a
-typical use case for the testing phase.</p>
+<p>If the build and run systems are the same, then no copy is needed. This is a
+typical use case for development and testing.</p>
 </div>
 <div class="section" id="unpack-tarball">
 <h3><a class="toc-backref" href="#id9">2.3.6. Unpack tarball</a><a class="headerlink" href="#unpack-tarball" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud runs out of a normal directory rather than a filesystem image. In
 order to create this directory, we unpack the image tarball. This will replace
 the image directory if it already exists.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
+<span class="go">creating new image /var/tmp/hello</span>
 <span class="go">/var/tmp/hello unpacked ok</span>
 </pre></div>
 </div>
-<p>One potential gotcha is the tarball including special files such as devices.
-Because <code class="code docutils literal"><span class="pre">tar</span></code> is running unprivileged, these will not be unpacked, and
-they can cause the extraction to fail. The fix is to delete them in the
-Dockerfile.</p>
+<p>Generally, you should avoid unpacking into shared filesystems such as NFS and
+Lustre, in favor of local storage such as <code class="code docutils literal"><span class="pre">tmpfs</span></code> and local hard disks.
+This will yield better performance for you and anyone else on the shared
+filesystem.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">You can run perfectly well out of <code class="code docutils literal"><span class="pre">/tmp</span></code>, but because it is
 bind-mounted automatically, the image root will then appear in multiple
-locations in the container&#8217;s filesystem tree. This can cause confusion for
+locations in the container’s filesystem tree. This can cause confusion for
 both users and programs.</p>
 </div>
 </div>
@@ -441,7 +442,7 @@ identified by long ID numbers:</p>
 </div>
 <p>Notice that the container has different mount (<code class="code docutils literal"><span class="pre">mnt</span></code>) and user
 (<code class="code docutils literal"><span class="pre">user</span></code>) namespaces, but the rest of the namespaces are shared with the
-host. This highlights Charliecloud&#8217;s focus on functionality (make your UDSS
+host. This highlights Charliecloud’s focus on functionality (make your UDSS
 run), rather than isolation (protect the host from your UDSS).</p>
 <p>Each invocation of <code class="code docutils literal"><span class="pre">ch-run</span></code> creates a new container, so if you have
 multiple simultaneous invocations, they will not share containers. However,
@@ -500,19 +501,20 @@ directory to appear in multiple places in the filesystem tree, but it is a
 property of the running kernel rather than the filesystem.</p>
 <p>Several host directories are always bind-mounted into the container. These
 include system directories such as <code class="code docutils literal"><span class="pre">/dev</span></code>, <code class="code docutils literal"><span class="pre">/proc</span></code>, and
-<code class="code docutils literal"><span class="pre">/sys</span></code>; <code class="code docutils literal"><span class="pre">/tmp</span></code>; Charliecloud&#8217;s <code class="code docutils literal"><span class="pre">ch-ssh</span></code> command in
-<code class="code docutils literal"><span class="pre">/usr/bin</span></code>; and the invoking user&#8217;s home directory (for dotfiles).</p>
+<code class="code docutils literal"><span class="pre">/sys</span></code>; <code class="code docutils literal"><span class="pre">/tmp</span></code>; Charliecloud’s <code class="code docutils literal"><span class="pre">ch-ssh</span></code> command in
+<code class="code docutils literal"><span class="pre">/usr/bin</span></code>; and the invoking user’s home directory (for dotfiles),
+unless <code class="code docutils literal"><span class="pre">--no-home</span></code> is specified.</p>
 <p>Charliecloud uses recursive bind mounts, so for example if the host has a
 variety of sub-filesystems under <code class="code docutils literal"><span class="pre">/sys</span></code>, as Ubuntu does, these will be
 available in the container as well.</p>
 <p>In addition to the default bind mounts, arbitrary user-specified directories
-can be added using the <code class="code docutils literal"><span class="pre">-d</span></code> switch. These appear at <code class="code docutils literal"><span class="pre">/mnt/0</span></code>,
-<code class="code docutils literal"><span class="pre">/mnt/0</span></code>, etc. For example:</p>
+can be added using the <code class="code docutils literal"><span class="pre">--bind</span></code> or <code class="code docutils literal"><span class="pre">-b</span></code> switch. By default,
+<code class="code docutils literal"><span class="pre">/mnt/0</span></code>, <code class="code docutils literal"><span class="pre">/mnt/1</span></code>, etc., are used for the destination in the guest:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir /var/tmp/foo0
 <span class="gp">$</span> <span class="nb">echo</span> hello &gt; /var/tmp/foo0/bar
 <span class="gp">$</span> mkdir /var/tmp/foo1
 <span class="gp">$</span> <span class="nb">echo</span> world &gt; /var/tmp/foo1/bar
-<span class="gp">$</span> ch-run -d /var/tmp/foo0 -d /var/tmp/foo1 /var/tmp/hello -- bash
+<span class="gp">$</span> ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
 <span class="gp">&gt;</span> ls /mnt
 <span class="go">0  1  2  3  4  5  6  7  8  9</span>
 <span class="gp">&gt;</span> cat /mnt/0/bar
@@ -521,10 +523,18 @@ can be added using the <code class="code docutils literal"><span class="pre">-d<
 <span class="go">world</span>
 </pre></div>
 </div>
+<p>Explicit destinations are also possible:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -b /var/tmp/foo0:/mnt /var/tmp/hello -- bash
+<span class="gp">&gt;</span> ls /mnt
+<span class="go">bar</span>
+<span class="gp">&gt;</span> cat /mnt/bar
+<span class="go">hello</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="network">
 <h3><a class="toc-backref" href="#id13">2.4.2. Network</a><a class="headerlink" href="#network" title="Permalink to this headline">¶</a></h3>
-<p>Charliecloud containers share the host&#8217;s network namespace, so most network
+<p>Charliecloud containers share the host’s network namespace, so most network
 things should be the same.</p>
 <p>However, SSH is not aware of Charliecloud containers. If you SSH to a node
 where Charliecloud is installed, you will get a shell on the host, not in a
@@ -586,18 +596,18 @@ spaces. It is not shell syntax. In particular, quotes and backslashes
 are not interpreted.</li>
 <li>Argument <code class="code docutils literal"><span class="pre">-t</span></code> is required for SSH to allocate a pseudo-TTY and
 thus convince your shell to be interactive. In the case of Bash,
-otherwise you&#8217;ll get a shell that accepts commands but doesn&#8217;t print
+otherwise you’ll get a shell that accepts commands but doesn’t print
 prompts, among other other issues. (<a class="reference external" href="https://github.com/hpc/charliecloud/issues/2">Issue #2</a>.)</li>
 </ol>
 </div>
-<p>A third may be to edit one&#8217;s shell initialization scripts to check the command
+<p>A third may be to edit one’s shell initialization scripts to check the command
 line and <code class="code docutils literal"><span class="pre">exec(1)</span></code> <code class="code docutils literal"><span class="pre">ch-run</span></code> if appropriate. This is brittle but
 avoids wrapping <code class="code docutils literal"><span class="pre">ssh</span></code> or altering its command line.</p>
 </div>
 <div class="section" id="user-and-group-ids">
 <h3><a class="toc-backref" href="#id14">2.4.3. User and group IDs</a><a class="headerlink" href="#user-and-group-ids" title="Permalink to this headline">¶</a></h3>
 <p>Unlike Docker and some other container systems, Charliecloud tries to make the
-container&#8217;s users and groups look the same as the host&#8217;s. (This is
+container’s users and groups look the same as the host’s. (This is
 accomplished by bind-mounting <code class="code docutils literal"><span class="pre">/etc/passwd</span></code> and <code class="code docutils literal"><span class="pre">/etc/group</span></code> into
 the container.) For example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> id -u
@@ -615,7 +625,7 @@ the container.) For example:</p>
 Charliecloud does, lets you map any container UID to your host UID.
 <code class="code docutils literal"><span class="pre">ch-run</span></code> implements this with the <code class="code docutils literal"><span class="pre">--uid</span></code> switch. So, for example,
 you can tell Charliecloud you want to be root, and it will tell you that
-you&#8217;re root:</p>
+you’re root:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /var/tmp/hello -- bash
 <span class="gp">&gt;</span> id -u
 <span class="go">0</span>
@@ -623,7 +633,7 @@ you&#8217;re root:</p>
 <span class="go">root</span>
 </pre></div>
 </div>
-<p>But, this doesn&#8217;t get you anything useful, because the container UID is mapped
+<p>But, this doesn’t get you anything useful, because the container UID is mapped
 back to your UID on the host before permission checks are applied:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> dd <span class="k">if</span><span class="o">=</span>/dev/mem <span class="nv">of</span><span class="o">=</span>/tmp/pwned
 <span class="go">dd: failed to open &#39;/dev/mem&#39;: Permission denied</span>
@@ -667,7 +677,7 @@ up as <code class="code docutils literal"><span class="pre">nobody</span></code>
 <span class="go">-rw-rw---- 1 nobody nogroup 843 Sep 28 21:40 /tmp/foo</span>
 </pre></div>
 </div>
-<p>User namespaces have a similar mapping for GIDs, with the same limitation &#8212;
+<p>User namespaces have a similar mapping for GIDs, with the same limitation —
 exactly one arbitrary container GID maps to your effective <em>primary</em> GID. This
 can lead to some strange-looking results, because only one of your GIDs can be
 mapped in any given container. All the rest become <code class="code docutils literal"><span class="pre">nogroup</span></code>:</p>
@@ -679,7 +689,7 @@ mapped in any given container. All the rest become <code class="code docutils li
 <span class="go">uid=901(reidpr) gid=903(nerds) groups=903(nerds),65534(nogroup)</span>
 </pre></div>
 </div>
-<p>However, this doesn&#8217;t affect access. The container process retains the same
+<p>However, this doesn’t affect access. The container process retains the same
 GIDs from the host perspective, and as always, the host IDs are what control
 access:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /tmp/primary /tmp/supplemental
@@ -692,7 +702,7 @@ access:</p>
 </div>
 <p>One area where functionality <em>is</em> reduced is that <code class="code docutils literal"><span class="pre">chgrp(1)</span></code> becomes
 useless. Using an unmapped group or <code class="code docutils literal"><span class="pre">nogroup</span></code> fails, and using a mapped
-group is a no-op because it&#8217;s mapped back to the host GID:</p>
+group is a no-op because it’s mapped back to the host GID:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /tmp/bar
 <span class="go">rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar</span>
 <span class="gp">$</span> ch-run /var/tmp/hello -- chgrp nerds /tmp/bar
@@ -717,7 +727,7 @@ directories:</p>
 </pre></div>
 </div>
 <p>This concludes our discussion of how a Charliecloud container interacts with
-its host. principal Charliecloud quirks. We next move on to installing
+its host and principal Charliecloud quirks. We next move on to installing
 software.</p>
 </div>
 </div>
@@ -733,13 +743,13 @@ Charliecloud container:</p>
 <li>Your software stored on the host but compiled in the container.</li>
 </ol>
 </div></blockquote>
-<p>Many of Docker&#8217;s <a class="reference external" href="https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices">Best practices for writing Dockerfiles</a>
+<p>Many of Docker’s <a class="reference external" href="https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices">Best practices for writing Dockerfiles</a>
 apply to Charliecloud images as well, so you should be familiar with that
 document.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Maybe you don&#8217;t have to install the software at all. Is there already a
-trustable image on Docker Hub you can use as a base?</p>
+<p class="last">Maybe you don’t have to install the software at all. Is there already a
+trustworthy image on Docker Hub you can use as a base?</p>
 </div>
 <div class="section" id="third-party-software-via-package-manager">
 <h3><a class="toc-backref" href="#id16">2.5.1. Third-party software via package manager</a><a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
@@ -754,7 +764,7 @@ package <code class="code docutils literal"><span class="pre">openssh-client</sp
 </pre></div>
 </div>
 <p>You can use distribution package managers such as <code class="code docutils literal"><span class="pre">apt-get</span></code>, as
-demonstrated above, or others, such as <code class="code docutils literal"><span class="pre">pip</span></code> for Python modules.</p>
+demonstrated above, or others, such as <code class="code docutils literal"><span class="pre">pip</span></code> for Python packages.</p>
 <p>Be aware that the software will be downloaded anew each time you build the
 image, unless you add an HTTP cache, which is out of scope of this tutorial.</p>
 </div>
@@ -810,17 +820,13 @@ this with two chained Dockerfiles. First, we build a basic Debian image
 <li>Use the latest Debian, Jessie, as the base image.</li>
 <li>Install a basic build system using the OS package manager.</li>
 <li>Download and untar OpenMPI. Note the use of variables to make adjusting the
-URL and MPI version easier, as well as the explanation of why we&#8217;re not
+URL and MPI version easier, as well as the explanation of why we’re not
 using <code class="code docutils literal"><span class="pre">apt-get</span></code>, given that OpenMPI 1.10 is included in Debian.</li>
 <li>Build and install OpenMPI. Note the <code class="code docutils literal"><span class="pre">getconf</span></code> trick to guess at an
 appropriate parallel build.</li>
 <li>Clean up, in order to reduce the size of layers as well as the resulting
 Charliecloud tarball (<code class="code docutils literal"><span class="pre">rm</span> <span class="pre">-Rf</span></code>).</li>
 </ol>
-<p>Finally, because it&#8217;s a container image, you can be less tidy than you might
-be on a normal system. For example, the above downloads and builds in
-<code class="code docutils literal"><span class="pre">/</span></code> rather than <code class="code docutils literal"><span class="pre">/usr/local/src</span></code>, and it installs MPI into
-<code class="code docutils literal"><span class="pre">/usr</span></code> rather than <code class="code docutils literal"><span class="pre">/usr/local</span></code>.</p>
 </div>
 <div class="section" id="your-software-stored-in-the-image">
 <h3><a class="toc-backref" href="#id18">2.5.3. Your software stored in the image</a><a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
@@ -832,18 +838,18 @@ code under active development.</p>
 source, but you use the <code class="code docutils literal"><span class="pre">COPY</span></code> instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
 the <code class="code docutils literal"><span class="pre">mpihello</span></code> Dockerfile uses this approach:</p>
-<div class="highlight-docker"><div class="highlight"><pre><span></span>COPY examples/mpihello /hello
+<div class="highlight-docker"><div class="highlight"><pre><span></span>COPY /examples/mpi/mpihello /hello
 <span class="k">WORKDIR</span><span class="s"> /hello</span>
 <span class="k">RUN</span> make clean <span class="o">&amp;&amp;</span> make
 </pre></div>
 </div>
 <p>These Dockerfile instructions:</p>
 <ol class="arabic">
-<li><p class="first">Copy the host directory <code class="code docutils literal"><span class="pre">examples/mpihello</span></code> to the image at path
+<li><p class="first">Copy the host directory <code class="code docutils literal"><span class="pre">examples/mpi/mpihello</span></code> to the image at path
 <code class="code docutils literal"><span class="pre">/hello</span></code>. The host path is <em>relative to the context directory</em>;
 Docker builds have no access to the host filesystem outside the context
-directory. (This is so the Docker daemon can run on a different machine &#8212;
-the context directory is tarred up and sent to the daemon, even if it&#8217;s on
+directory. (This is so the Docker daemon can run on a different machine —
+the context directory is tarred up and sent to the daemon, even if it’s on
 the same machine.)</p>
 <p>The convention for the Charliecloud examples is that the build directory is
 always rooted at the top of the Charliecloud source code, but we could just
@@ -857,7 +863,7 @@ build files, since they would be inappropriate inside the container.</p>
 </li>
 </ol>
 <p>Once the image is built, we can see the results. (Install the image into
-<code class="code docutils literal"><span class="pre">/var/tmp</span></code> as outlined above, if you haven&#8217;t already.)</p>
+<code class="code docutils literal"><span class="pre">/var/tmp</span></code> as outlined above, if you haven’t already.)</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/mpihello -- ls -lh /hello
 <span class="go">total 32K</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile</span>
@@ -878,14 +884,14 @@ different version, for example a simulation code under active development.</p>
 <p>The general approach is to bind-mount the appropriate directory and then run
 the build inside the container. We can re-use the <code class="code docutils literal"><span class="pre">mpihello</span></code> image to
 demonstrate this.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/mpihello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/mpi/mpihello
 <span class="gp">$</span> ls -l
 <span class="go">total 20</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile</span>
 <span class="go">-rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README</span>
-<span class="gp">$</span> ch-run -d . /var/tmp/mpihello -- sh -c <span class="s1">&#39;cd /mnt/0 &amp;&amp; make&#39;</span>
+<span class="gp">$</span> ch-run -b . /var/tmp/mpihello -- sh -c <span class="s1">&#39;cd /mnt/0 &amp;&amp; make&#39;</span>
 <span class="go">mpicc -std=gnu11 -Wall hello.c -o hello</span>
 <span class="gp">$</span> ls -l
 <span class="go">total 32</span>
@@ -917,13 +923,13 @@ the host.</li>
 <p>In order to test approach 1, you must install OpenMPI 1.10.<em>x</em> on the host. In
 our experience, we have had success compiling from source with the same
 options as in the Dockerfile, but there is probably more nuance to the match
-than we&#8217;ve discovered.</p>
+than we’ve discovered.</p>
 <div class="section" id="processes-coordinated-by-host">
 <h3><a class="toc-backref" href="#id21">2.6.1. Processes coordinated by host</a><a class="headerlink" href="#processes-coordinated-by-host" title="Permalink to this headline">¶</a></h3>
 <p>This approach does the forking and process coordination on the host. Each
 process is spawned in its own container, and because Charliecloud introduces
-minimal isolation, they can communicate almost as if they were running
-directly on the host.</p>
+minimal isolation, they can communicate as if they were running directly on
+the host.</p>
 <p>For example, using <code class="code docutils literal"><span class="pre">mpirun</span></code> and the <code class="code docutils literal"><span class="pre">mpihello</span></code> example above:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun --version
 <span class="go">mpirun (Open MPI) 1.10.2</span>
@@ -945,7 +951,7 @@ such as configurations; the disadvantage is that it introduces a close
 coupling between the host and container that can manifest in complex ways. For
 example, while OpenMPI 1.10.2 worked with 1.10.4 above, both had to be
 compiled with the same options. The OpenMPI 1.10.2 packages that come with
-Ubuntu fail with &#8220;orte_util_nidmap_init failed&#8221; if run with the container
+Ubuntu fail with “orte_util_nidmap_init failed” if run with the container
 1.10.4.</p>
 </div>
 <div class="section" id="processes-coordinated-by-container">
@@ -969,7 +975,7 @@ host-specific things that might e.g. improve performance.</p>
 <div class="section" id="processes-coordinated-by-container-using-host-configuration">
 <h3><a class="toc-backref" href="#id23">2.6.3. Processes coordinated by container using host configuration</a><a class="headerlink" href="#processes-coordinated-by-container-using-host-configuration" title="Permalink to this headline">¶</a></h3>
 <p>This approach is a middle ground. The use case is when there is some
-host-specific configuration we want to use, but we don&#8217;t want to install the
+host-specific configuration we want to use, but we don’t want to install the
 entire configured dependency on the host. It would be undesirable to copy this
 configuration into the image, because that would reduce its portability.</p>
 <p>The host configuration is communicated to the container by bind-mounting the
@@ -987,9 +993,9 @@ argument:</p>
 </pre></div>
 </div>
 <p>The effect is that the image contains a default MPI configuration, but if you
-specify a different configuration directory with <code class="code docutils literal"><span class="pre">-d</span></code>, that is
+specify a different configuration directory with <code class="code docutils literal"><span class="pre">--bind</span></code>, that is
 overmounted and used instead. For example:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d /usr/local/etc /var/tmp/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -b /usr/local/etc /var/tmp/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
 <span class="go">2: init ok cn001, 4 ranks, userns 4026532256</span>
@@ -1007,9 +1013,9 @@ resolved when the appropriate host directory is bind-mounted into
 <h2><a class="toc-backref" href="#id24">2.7. Your first multi-node jobs</a><a class="headerlink" href="#your-first-multi-node-jobs" title="Permalink to this headline">¶</a></h2>
 <p>This section assumes that you are using a Slurm cluster with a working OpenMPI
 1.10.<em>x</em> installation and some type of node-local storage. A <code class="code docutils literal"><span class="pre">tmpfs</span></code>
-will suffice, and we use <code class="code docutils literal"><span class="pre">/var/tmp</span></code> for this tutorial. (Using
-<code class="code docutils literal"><span class="pre">/tmp</span></code> often works but can cause confusion because it&#8217;s shared by the
-container and host, yielding a circular directory tree.)</p>
+is recommended, and we use <code class="code docutils literal"><span class="pre">/var/tmp</span></code> for this tutorial. (Using
+<code class="code docutils literal"><span class="pre">/tmp</span></code> often works but can cause confusion because it’s shared by the
+container and host, yielding cycles in the directory tree.)</p>
 <p>We cover three cases:</p>
 <ol class="arabic simple">
 <li>The MPI hello world example above, run interactively, with the host
@@ -1018,18 +1024,20 @@ coordinating.</li>
 <li>An Apache Spark example, run interactively.</li>
 <li>Same, non-interactive.</li>
 </ol>
-<p>We think that container-coordinated MPI jobs will also work, but we haven&#8217;t
-worked out how to do this yet. (See issue #5.)</p>
+<p>We think that container-coordinated MPI jobs will also work, but we haven’t
+worked out how to do this yet. (See <a class="reference external" href="https://github.com/hpc/charliecloud/issues/5">issue #5</a>.)</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">The image directory is mounted read-only, so it can be shared by multiple
-Charliecloud containers in the same or different jobs.</p>
+<p class="last">The image directory is mounted read-only by default so it can be shared by
+multiple Charliecloud containers in the same or different jobs. It can be
+mounted read-write with <code class="code docutils literal"><span class="pre">ch-run</span> <span class="pre">-w</span></code>.</p>
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">The image can reside on any filesystem, but be aware of metadata impact. A
-non-trivial Charliecloud job may overwhelm a network filesystem, earning
-you the ire of your sysadmins and colleagues.</p>
+<p class="last">The image can reside on most filesystems, but be aware of metadata impact.
+A non-trivial Charliecloud job may overwhelm a network filesystem, earning
+you the ire of your sysadmins and colleagues. (NFS sometimes does not work
+for read-only images; see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/9">issue #9</a>.)</p>
 </div>
 <div class="section" id="interactive-mpi-hello-world">
 <h3><a class="toc-backref" href="#id25">2.7.1. Interactive MPI hello world</a><a class="headerlink" href="#interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
@@ -1046,10 +1054,9 @@ policy:</p>
 <span class="gp">$</span> <span class="nb">export</span> <span class="nv">OMPI_MCA_rmaps_base_mapping_policy</span><span class="o">=</span>
 </pre></div>
 </div>
-<p>The next step is to distribute the image to the compute nodes, which we assume
-is in the home directory. To do so, we run one instance of <code class="code docutils literal"><span class="pre">ch-tar2dir</span></code>
-on each node:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -pernode ch-tar2dir ./mpihello.tar.gz /var/tmp/mpihello
+<p>The next step is to distribute the image tarball to the compute nodes. To do
+so, we run one instance of <code class="code docutils literal"><span class="pre">ch-tar2dir</span></code> on each node:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -pernode ch-tar2dir mpihello.tar.gz /var/tmp
 <span class="go">App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs</span>
 <span class="go">creating new image /tmp/mpihello</span>
 <span class="go">creating new image /tmp/mpihello</span>
@@ -1064,13 +1071,13 @@ on each node:</p>
 <p>We can now activate the image and run our program:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs</span>
-<span class="go">2: init ok cn001.localdomain, 64 ranks, userns 4026532567</span>
-<span class="go">4: init ok cn001.localdomain, 64 ranks, userns 4026532571</span>
-<span class="go">8: init ok cn001.localdomain, 64 ranks, userns 4026532579</span>
+<span class="go">2: init ok cn001, 64 ranks, userns 4026532567</span>
+<span class="go">4: init ok cn001, 64 ranks, userns 4026532571</span>
+<span class="go">8: init ok cn001, 64 ranks, userns 4026532579</span>
 <span class="go">[...]</span>
-<span class="go">45: init ok cn003.localdomain, 64 ranks, userns 4026532589</span>
-<span class="go">17: init ok cn002.localdomain, 64 ranks, userns 4026532565</span>
-<span class="go">55: init ok cn004.localdomain, 64 ranks, userns 4026532577</span>
+<span class="go">45: init ok cn003, 64 ranks, userns 4026532589</span>
+<span class="go">17: init ok cn002, 64 ranks, userns 4026532565</span>
+<span class="go">55: init ok cn004, 64 ranks, userns 4026532577</span>
 <span class="go">0: send/receive ok</span>
 <span class="go">0: finalize ok</span>
 </pre></div>
@@ -1081,25 +1088,29 @@ on each node:</p>
 <h3><a class="toc-backref" href="#id26">2.7.2. Non-interactive MPI hello world</a><a class="headerlink" href="#non-interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
 <p>Production jobs are normally run non-interactively, via submission of a job
 script that runs when resources are available, placing output into a file.</p>
-<p>The MPI hello world example includes such a script:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<p>The MPI hello world example includes such a script, <code class="code docutils literal"><span class="pre">slurm.sh</span></code>:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
 <span class="c1">#SBATCH --time=0:10:00</span>
 
-<span class="c1"># Arguments: Path to tarball, path to image.</span>
+<span class="c1"># Arguments: Path to tarball, path to image parent directory.</span>
 
 <span class="nb">set</span> -e
 
 <span class="nv">TAR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span>
-<span class="nv">IMG</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">&quot;</span>
+<span class="nv">IMGDIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">&quot;</span>
+<span class="nv">IMG</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">/</span><span class="k">$(</span>basename <span class="s2">&quot;</span><span class="si">${</span><span class="nv">TAR</span><span class="p">%.tar.gz</span><span class="si">}</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">&quot;</span>
 
 <span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$TAR</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
     <span class="nb">echo</span> <span class="s1">&#39;no tarball specified&#39;</span> <span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span>
     <span class="nb">exit</span> <span class="m">1</span>
 <span class="k">fi</span>
-<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$IMG</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+<span class="nb">printf</span> <span class="s1">&#39;tarball:   %s\n&#39;</span> <span class="s2">&quot;</span><span class="nv">$TAR</span><span class="s2">&quot;</span>
+
+<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$IMGDIR</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
     <span class="nb">echo</span> <span class="s1">&#39;no image directory specified&#39;</span> <span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span>
     <span class="nb">exit</span> <span class="m">1</span>
 <span class="k">fi</span>
+<span class="nb">printf</span> <span class="s1">&#39;image:     %s\n&#39;</span> <span class="s2">&quot;</span><span class="nv">$IMG</span><span class="s2">&quot;</span>
 
 <span class="c1"># Make Charliecloud available (varies by site).</span>
 module purge
@@ -1115,7 +1126,7 @@ module load charliecloud
 mpirun --version <span class="p">|</span> egrep <span class="s1">&#39;^mpirun&#39;</span>
 
 <span class="c1"># Unpack image.</span>
-mpirun -pernode ch-tar2dir <span class="nv">$TAR</span> <span class="nv">$IMG</span>
+mpirun -pernode ch-tar2dir <span class="nv">$TAR</span> <span class="nv">$IMGDIR</span>
 
 <span class="c1"># MPI version in container.</span>
 <span class="nb">printf</span> <span class="s1">&#39;container: &#39;</span>
@@ -1127,12 +1138,14 @@ mpirun ch-run <span class="nv">$IMG</span> -- /hello/hello
 </div>
 <p>Note that this script both unpacks the image and runs it.</p>
 <p>Submit it with something like:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch -N4 slurm.sh ~/mpihello.tar.gz /var/tmp/mpihello
-<span class="go">86753</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch -N4 slurm.sh ~/mpihello.tar.gz /var/tmp
+<span class="go">207745</span>
 </pre></div>
 </div>
 <p>When the job is complete, look at the output:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> cat slurm-207745.out
+<span class="go">tarball:   /home/reidpr/mpihello.tar.gz</span>
+<span class="go">image:     /var/tmp/mpihello</span>
 <span class="go">host:      mpirun (Open MPI) 1.10.5</span>
 <span class="go">App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs</span>
 <span class="go">creating new image /var/tmp/mpihello</span>
@@ -1142,13 +1155,13 @@ mpirun ch-run <span class="nv">$IMG</span> -- /hello/hello
 <span class="go">/var/tmp/mpihello unpacked ok</span>
 <span class="go">container: mpirun (Open MPI) 1.10.5</span>
 <span class="go">App launch reported: 4 (out of 4) daemons - 32 (out of 64) procs</span>
-<span class="go">2: init ok cn004.localdomain, 64 ranks, userns 4026532604</span>
-<span class="go">3: init ok cn004.localdomain, 64 ranks, userns 4026532606</span>
-<span class="go">4: init ok cn004.localdomain, 64 ranks, userns 4026532608</span>
+<span class="go">2: init ok cn004, 64 ranks, userns 4026532604</span>
+<span class="go">3: init ok cn004, 64 ranks, userns 4026532606</span>
+<span class="go">4: init ok cn004, 64 ranks, userns 4026532608</span>
 <span class="go">[...]</span>
-<span class="go">63: init ok cn007.localdomain, 64 ranks, userns 4026532630</span>
-<span class="go">30: init ok cn005.localdomain, 64 ranks, userns 4026532628</span>
-<span class="go">27: init ok cn005.localdomain, 64 ranks, userns 4026532622</span>
+<span class="go">63: init ok cn007, 64 ranks, userns 4026532630</span>
+<span class="go">30: init ok cn005, 64 ranks, userns 4026532628</span>
+<span class="go">27: init ok cn005, 64 ranks, userns 4026532622</span>
 <span class="go">0: send/receive ok</span>
 <span class="go">0: finalize ok</span>
 </pre></div>
@@ -1160,7 +1173,7 @@ mpirun ch-run <span class="nv">$IMG</span> -- /hello/hello
 <p>This example is in <code class="code docutils literal"><span class="pre">examples/spark</span></code>. Build a tarball and upload it to
 your cluster.</p>
 <p>Once you have an interactive job, unpack the tarball.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-tar2dir spark.tar.gz /var/tmp/spark
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-tar2dir spark.tar.gz /var/tmp
 <span class="go">creating new image /var/tmp/spark</span>
 <span class="go">creating new image /var/tmp/spark</span>
 <span class="go">[...]</span>
@@ -1169,21 +1182,21 @@ your cluster.</p>
 </pre></div>
 </div>
 <p>We need to first create a basic configuration for Spark, as the defaults in
-the Dockerfile are insufficient. (For real jobs, you&#8217;ll want to also configure
+the Dockerfile are insufficient. (For real jobs, you’ll want to also configure
 performance parameters such as memory use; see <a class="reference external" href="http://spark.apache.org/docs/latest/configuration.html">the documentation</a>.) First:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir -p ~/sparkconf
 <span class="gp">$</span> chmod <span class="m">700</span> ~/sparkconf
 </pre></div>
 </div>
-<p>We&#8217;ll want to use the cluster&#8217;s high-speed network. For this example, we&#8217;ll
-find the Spark master&#8217;s IP manually:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ip -o -f inet addr show <span class="p">|</span> cut -d<span class="s1">&#39;/&#39;</span> -f1
+<p>We’ll want to use the cluster’s high-speed network. For this example, we’ll
+find the Spark master’s IP manually:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ip -o -f inet addr show <span class="p">|</span> cut -d/ -f1
 <span class="go">1: lo    inet 127.0.0.1</span>
 <span class="go">2: eth0  inet 192.168.8.3</span>
 <span class="go">8: eth1  inet 10.8.8.3</span>
 </pre></div>
 </div>
-<p>Your site support can tell you which to use. In this case, we&#8217;ll use 10.8.8.3.</p>
+<p>Your site support can tell you which to use. In this case, we’ll use 10.8.8.3.</p>
 <p>Create some configuration files. Replace <code class="code docutils literal"><span class="pre">[MYSECRET]</span></code> with a string only
 you know. Edit to match your system; in particular, use local disks instead of
 <code class="code docutils literal"><span class="pre">/tmp</span></code> if you have them:</p>
@@ -1199,7 +1212,7 @@ you know. Edit to match your system; in particular, use local disks instead of
 </pre></div>
 </div>
 <p>We can now start the Spark master:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /var/tmp/spark -- /spark/sbin/start-master.sh
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -b ~/sparkconf /var/tmp/spark -- /spark/sbin/start-master.sh
 </pre></div>
 </div>
 <p>Look at the log in <code class="code docutils literal"><span class="pre">/tmp/spark/log</span></code> to see that the master started
@@ -1228,14 +1241,14 @@ can derive it from the above, or consult the web interface. For example:</p>
 want to start the workers in the background, so we add <code class="code docutils literal"><span class="pre">&amp;</span></code> and introduce
 a race condition. (<code class="code docutils literal"><span class="pre">srun</span></code> has different, even less helpful behavior: it
 kills the worker as soon as it goes into the background.)</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -map-by <span class="s1">&#39;&#39;</span> -pernode ch-run -d ~/sparkconf /var/tmp/spark -- <span class="se">\</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -map-by <span class="s1">&#39;&#39;</span> -pernode ch-run -b ~/sparkconf /var/tmp/spark -- <span class="se">\</span>
   /spark/sbin/start-slave.sh <span class="nv">$MASTER_URL</span> <span class="p">&amp;</span>
 </pre></div>
 </div>
-<p>One of the advantages of Spark is that it&#8217;s resilient: if a worker becomes
+<p>One of the advantages of Spark is that it’s resilient: if a worker becomes
 available, the computation simply proceeds without it. However, this can mask
 issues as well. For example, this example will run perfectly fine with just
-one worker on the same node as the master, which isn&#8217;t what we want.</p>
+one worker on the same node as the master, which isn’t what we want.</p>
 <p>Check the master log to see that the right number of workers registered:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span>  fgrep worker /tmp/spark/log/*master*.out
 <span class="go">17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:39890 with 16 cores, 187.8 GB RAM</span>
@@ -1257,10 +1270,10 @@ on each compute node. For example:</p>
 </pre></div>
 </div>
 <p>We can now start an interactive shell to do some Spark computing:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /var/tmp/spark -- /spark/bin/pyspark --master <span class="nv">$MASTER_URL</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -b ~/sparkconf /var/tmp/spark -- /spark/bin/pyspark --master <span class="nv">$MASTER_URL</span>
 </pre></div>
 </div>
-<p>Let&#8217;s use this shell to estimate 𝜋 (this is adapted from one of the Spark
+<p>Let’s use this shell to estimate 𝜋 (this is adapted from one of the Spark
 <a class="reference external" href="http://spark.apache.org/examples.html">examples</a>):</p>
 <div class="highlight-pycon"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">operator</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">random</span>
@@ -1281,7 +1294,7 @@ on each compute node. For example:</p>
 <p>We can also submit jobs to the Spark cluster. This one runs the same example
 as included with the Spark source code. (The voluminous logging output is
 omitted.)</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -d ~/sparkconf /var/tmp/spark -- <span class="se">\</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -b ~/sparkconf /var/tmp/spark -- <span class="se">\</span>
   /spark/bin/spark-submit --master <span class="nv">$MASTER_URL</span> <span class="se">\</span>
   /spark/examples/src/main/python/pi.py <span class="m">1024</span>
 <span class="go">[...]</span>
@@ -1290,12 +1303,12 @@ omitted.)</p>
 </pre></div>
 </div>
 <p>Exit your allocation. Slurm will clean up the Spark daemons.</p>
-<p>Success! Next, we&#8217;ll run a similar job non-interactively.</p>
+<p>Success! Next, we’ll run a similar job non-interactively.</p>
 </div>
 <div class="section" id="non-interactive-apache-spark">
 <h3><a class="toc-backref" href="#id28">2.7.4. Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
-<p>We&#8217;ll re-use much of the above to run the same computation non-interactively.
-For brevity, the Slurm script at <code class="code docutils literal"><span class="pre">examples/spark/slurm.h</span></code> is not
+<p>We’ll re-use much of the above to run the same computation non-interactively.
+For brevity, the Slurm script at <code class="code docutils literal"><span class="pre">examples/other/spark/slurm.h</span></code> is not
 reproduced here.</p>
 <p>Submit it as follows. It requires three arguments: the tarball, the image
 directory to unpack into, and the high-speed network interface. Again, consult
@@ -1336,7 +1349,7 @@ your site administrators for the latter.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; <a href="copyright.html">Copyright</a> 2014–2016, Los Alamos National Security, LLC.
+        &copy; <a href="copyright.html">Copyright</a> 2014–2017, Los Alamos National Security, LLC.
 
     </p>
   </div> 
@@ -1357,7 +1370,7 @@ your site administrators for the latter.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.2~pre',
+            VERSION:'0.2.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -1367,7 +1380,7 @@ your site administrators for the latter.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

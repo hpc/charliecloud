@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Help text for executables &mdash; Charliecloud 0.2.2~pre documentation</title>
+  <title>3. Help text for executables &mdash; Charliecloud 0.2.2 documentation</title>
   
 
   
@@ -34,8 +34,8 @@
   
         <link rel="search" title="Search" href="search.html"/>
         <link rel="copyright" title="Copyright" href="copyright.html"/>
-    <link rel="top" title="Charliecloud 0.2.2~pre documentation" href="index.html"/>
-        <link rel="next" title="4. Frequently asked questions (FAQ)" href="faq.html"/>
+    <link rel="top" title="Charliecloud 0.2.2 documentation" href="index.html"/>
+        <link rel="next" title="4. VirtualBox appliance" href="virtualbox.html"/>
         <link rel="prev" title="2. Tutorial" href="tutorial.html"/> 
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                8b340cf
+                34f7e35
               </div>
             
           
@@ -102,8 +102,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#ch-tar2dir">3.7. ch-tar2dir</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">4. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="copyright.html">5. Copyright and license</a></li>
+<li class="toctree-l1"><a class="reference internal" href="virtualbox.html">4. VirtualBox appliance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">5. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="copyright.html">6. Copyright and license</a></li>
 </ul>
 
             
@@ -262,19 +263,21 @@ You must have sufficient privilege (via sudo) to run the Docker commands.
 
 Run a command in a Charliecloud container.
 
-  -d, --dir=DIR      mount host DIR at container /mnt/i (i starts at 0)
-  -g, --gid=GID      run as GID within container
-      --is-setuid    exit successfully if compiled for setuid, fail otherwise
-  -t, --private-tmp  mount container-private tmpfs on /tmp
-  -u, --uid=UID      run as UID within container
-  -v, --verbose      be more verbose (debug if repeated)
-  -?, --help         Give this help list
-      --usage        Give a short usage message
-  -V, --version      print version and exit
+  -b, --bind=SRC[:DST]   mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)
+  -g, --gid=GID          run as GID within container
+      --is-setuid        exit successfully if compiled for setuid, else fail
+      --no-home          do not bind-mount your home directory
+  -t, --private-tmp      use container-private /tmp
+  -u, --uid=UID          run as UID within container
+  -v, --verbose          be more verbose (debug if repeated)
+  -w, --write            mount image read-write
+  -?, --help             Give this help list
+      --usage            Give a short usage message
+  -V, --version          print version and exit
 
 Example:
 
-  $ ch-run /data/foo echo hello
+  $ ch-run /data/foo -- echo hello
   hello
 
 You cannot use this program to actually change your UID.
@@ -290,7 +293,7 @@ Run a remote command in a Charliecloud container.
 Example:
 
   $ export CH_RUN_ARGS=/data/foo
-  $ ch-ssh example.com echo hello
+  $ ch-ssh example.com -- echo hello
   hello
 
 Arguments to ch-run, including the image to activate, are specified in the
@@ -308,10 +311,13 @@ Usage:
 
   $ ch-tar2dir TARBALL DIR
 
-If DIR doesn&#39;t exist, it is created and filled with the contents of TARBALL,
-which must be a Linux filesystem image, e.g. from ch-docker2tar. If it does
-exist, and appears to be a Charliecloud container image, it is removed and
-replaced per above. Otherwise, the script aborts with an error.
+Extract the tarball, which must be a Linux filesystem image e.g. from
+ch-docker2tar, into a subdirectory of DIR named as the tarball with .tar.gz
+removed. For example, if the tarball is foo.tar.gz, unpack into DIR/foo.
+
+If the subdirectory doesn&#39;t exist, it is created. If it does exist and appears
+to be a Charliecloud container image, it is removed and replaced. Otherwise,
+the script aborts with an error.
 
 Warning:
 
@@ -334,7 +340,7 @@ Warning:
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="faq.html" class="btn btn-neutral float-right" title="4. Frequently asked questions (FAQ)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="virtualbox.html" class="btn btn-neutral float-right" title="4. VirtualBox appliance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="tutorial.html" class="btn btn-neutral" title="2. Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -346,7 +352,7 @@ Warning:
 
   <div role="contentinfo">
     <p>
-        &copy; <a href="copyright.html">Copyright</a> 2014–2016, Los Alamos National Security, LLC.
+        &copy; <a href="copyright.html">Copyright</a> 2014–2017, Los Alamos National Security, LLC.
 
     </p>
   </div> 
@@ -367,7 +373,7 @@ Warning:
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.2~pre',
+            VERSION:'0.2.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -377,7 +383,7 @@ Warning:
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

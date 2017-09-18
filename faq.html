@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Frequently asked questions (FAQ) &mdash; Charliecloud 0.2.2~pre documentation</title>
+  <title>5. Frequently asked questions (FAQ) &mdash; Charliecloud 0.2.2 documentation</title>
   
 
   
@@ -34,9 +34,9 @@
   
         <link rel="search" title="Search" href="search.html"/>
         <link rel="copyright" title="Copyright" href="copyright.html"/>
-    <link rel="top" title="Charliecloud 0.2.2~pre documentation" href="index.html"/>
-        <link rel="next" title="5. Copyright and license" href="copyright.html"/>
-        <link rel="prev" title="3. Help text for executables" href="script-help.html"/> 
+    <link rel="top" title="Charliecloud 0.2.2 documentation" href="index.html"/>
+        <link rel="next" title="6. Copyright and license" href="copyright.html"/>
+        <link rel="prev" title="4. VirtualBox appliance" href="virtualbox.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                8b340cf
+                34f7e35
               </div>
             
           
@@ -93,15 +93,17 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="script-help.html">3. Help text for executables</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Frequently asked questions (FAQ)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc">4.1. My app needs to write to <code class="code docutils literal"><span class="pre">/var/log</span></code>, <code class="code docutils literal"><span class="pre">/run</span></code>, etc.</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#tarball-build-fails-with-no-command-specified">4.2. Tarball build fails with &#8220;No command specified&#8221;</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#uid-0-lets-me-read-files-i-can-t-otherwise">4.3. <code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can&#8217;t otherwise!</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#why-is-bin-being-added-to-my-path">4.4. Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#how-does-setuid-mode-work">4.5. How does setuid mode work?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="virtualbox.html">4. VirtualBox appliance</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Frequently asked questions (FAQ)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc">5.1. My app needs to write to <code class="code docutils literal"><span class="pre">/var/log</span></code>, <code class="code docutils literal"><span class="pre">/run</span></code>, etc.</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tarball-build-fails-with-no-command-specified">5.2. Tarball build fails with “No command specified”</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#uid-0-lets-me-read-files-i-can-t-otherwise">5.3. <code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-is-bin-being-added-to-my-path">5.4. Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-does-setuid-mode-work">5.5. How does setuid mode work?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-run-fails-with-can-t-re-mount-image-read-only">5.6. <code class="code docutils literal"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="copyright.html">5. Copyright and license</a></li>
+<li class="toctree-l1"><a class="reference internal" href="copyright.html">6. Copyright and license</a></li>
 </ul>
 
             
@@ -146,7 +148,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>4. Frequently asked questions (FAQ)</li>
+      <li>5. Frequently asked questions (FAQ)</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -164,43 +166,48 @@
            <div itemprop="articleBody">
             
   <div class="section" id="frequently-asked-questions-faq">
-<h1>4. Frequently asked questions (FAQ)<a class="headerlink" href="#frequently-asked-questions-faq" title="Permalink to this headline">¶</a></h1>
+<h1>5. Frequently asked questions (FAQ)<a class="headerlink" href="#frequently-asked-questions-faq" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id1">My app needs to write to <code class="code docutils literal"><span class="pre">/var/log</span></code>, <code class="code docutils literal"><span class="pre">/run</span></code>, etc.</a></li>
-<li><a class="reference internal" href="#tarball-build-fails-with-no-command-specified" id="id2">Tarball build fails with &#8220;No command specified&#8221;</a></li>
-<li><a class="reference internal" href="#uid-0-lets-me-read-files-i-can-t-otherwise" id="id3"><code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can&#8217;t otherwise!</a></li>
+<li><a class="reference internal" href="#tarball-build-fails-with-no-command-specified" id="id2">Tarball build fails with “No command specified”</a></li>
+<li><a class="reference internal" href="#uid-0-lets-me-read-files-i-can-t-otherwise" id="id3"><code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></li>
 <li><a class="reference internal" href="#why-is-bin-being-added-to-my-path" id="id4">Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a></li>
 <li><a class="reference internal" href="#how-does-setuid-mode-work" id="id5">How does setuid mode work?</a></li>
+<li><a class="reference internal" href="#ch-run-fails-with-can-t-re-mount-image-read-only" id="id6"><code class="code docutils literal"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></li>
 </ul>
 </div>
 <div class="section" id="my-app-needs-to-write-to-var-log-run-etc">
-<h2><a class="toc-backref" href="#id1">4.1. My app needs to write to <code class="code docutils literal"><span class="pre">/var/log</span></code>, <code class="code docutils literal"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h2>
-<p>Because the image is mounted read-only, log files, caches, and other stuff
-needs to go somewhere else. <code class="code docutils literal"><span class="pre">/tmp</span></code> is often a good choice. You have two
-options:</p>
+<h2><a class="toc-backref" href="#id1">5.1. My app needs to write to <code class="code docutils literal"><span class="pre">/var/log</span></code>, <code class="code docutils literal"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h2>
+<p>Because the image is mounted read-only by default, log files, caches, and
+other stuff cannot be written anywhere in the image. You have three options:</p>
 <ol class="arabic simple">
+<li>Configure the application to use a different directory. <code class="code docutils literal"><span class="pre">/tmp</span></code> is
+often a good choice, because it’s shared with the host and fast.</li>
 <li>Use <code class="code docutils literal"><span class="pre">RUN</span></code> commands in your Dockerfile to create symlinks that point
-somewhere writeable.</li>
-<li>Configure the application to use a different directory.</li>
+somewhere writeable, e.g. <code class="code docutils literal"><span class="pre">/tmp</span></code>, or <code class="code docutils literal"><span class="pre">/mnt/0</span></code> with
+<code class="code docutils literal"><span class="pre">ch-run</span> <span class="pre">--bind</span></code>.</li>
+<li>Run the image read-write with <code class="code docutils literal"><span class="pre">ch-run</span> <span class="pre">-w</span></code>. Be careful that multiple
+containers do not try to write to the same image files.</li>
 </ol>
 </div>
 <div class="section" id="tarball-build-fails-with-no-command-specified">
-<h2><a class="toc-backref" href="#id2">4.2. Tarball build fails with &#8220;No command specified&#8221;</a><a class="headerlink" href="#tarball-build-fails-with-no-command-specified" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2">5.2. Tarball build fails with “No command specified”</a><a class="headerlink" href="#tarball-build-fails-with-no-command-specified" title="Permalink to this headline">¶</a></h2>
 <p>The full error from <code class="code docutils literal"><span class="pre">ch-docker2tar</span></code> or <code class="code docutils literal"><span class="pre">ch-build2dir</span></code> is:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">docker: Error response from daemon: No command specified.</span>
 </pre></div>
 </div>
 <p>You will also see it with various plain Docker commands.</p>
-<p>This happens when there is no default command specified. Some base images
-specify one (e.g., Debian) and others don&#8217;t (e.g., Alpine). Docker requires
-this even for commands that don&#8217;t seem like they should need it, such as
-<code class="code docutils literal"><span class="pre">docker</span> <span class="pre">create</span></code> (which is what trips up Charliecloud).</p>
+<p>This happens when there is no default command specified in the Dockerfile or
+any of its ancestors. Some base images specify one (e.g., Debian) and others
+don’t (e.g., Alpine). Docker requires this even for commands that don’t seem
+like they should need it, such as <code class="code docutils literal"><span class="pre">docker</span> <span class="pre">create</span></code> (which is what trips
+up Charliecloud).</p>
 <p>The solution is to add a default command to your Dockerfile, such as
 <code class="code docutils literal"><span class="pre">CMD</span> <span class="pre">[&quot;true&quot;]</span></code>.</p>
 </div>
 <div class="section" id="uid-0-lets-me-read-files-i-can-t-otherwise">
-<h2><a class="toc-backref" href="#id3">4.3. <code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can&#8217;t otherwise!</a><a class="headerlink" href="#uid-0-lets-me-read-files-i-can-t-otherwise" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id3">5.3. <code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a><a class="headerlink" href="#uid-0-lets-me-read-files-i-can-t-otherwise" title="Permalink to this headline">¶</a></h2>
 <p>Some permission bits can give a surprising result with a container UID of 0.
 For example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> whoami
@@ -211,13 +218,13 @@ For example:</p>
 <span class="go">---------- 1 reidpr reidpr 9 Oct  3 15:03 /home/reidpr/cantreadme</span>
 <span class="gp">$</span> cat ~/cantreadme
 <span class="go">cat: /home/reidpr/cantreadme: Permission denied</span>
-<span class="gp">$</span> ch-run /data/<span class="nv">$USER</span>.hello cat ~/cantreadme
+<span class="gp">$</span> ch-run /var/tmp/hello cat ~/cantreadme
 <span class="go">cat: /home/reidpr/cantreadme: Permission denied</span>
-<span class="gp">$</span> ch-run --uid <span class="m">0</span> /data/<span class="nv">$USER</span>.hello cat ~/cantreadme
+<span class="gp">$</span> ch-run --uid <span class="m">0</span> /var/tmp/hello cat ~/cantreadme
 <span class="go">surprise</span>
 </pre></div>
 </div>
-<p>At first glance, it seems that we&#8217;ve found an escalation &#8211; we were able to
+<p>At first glance, it seems that we’ve found an escalation – we were able to
 read a file inside a container that we could not read on the host! That seems
 bad.</p>
 <p>However, what is really going on here is more prosaic but complicated:</p>
@@ -226,11 +233,11 @@ bad.</p>
 inside the namespace. (Outside, capabilities are unchanged.)</li>
 <li>This include <code class="code docutils literal"><span class="pre">CAP_DAC_OVERRIDE</span></code>, which enables a process to
 read/write/execute a file or directory mostly regardless of its permission
-bits. (This is why root isn&#8217;t limited by permissions.)</li>
+bits. (This is why root isn’t limited by permissions.)</li>
 <li>Within the container, <code class="code docutils literal"><span class="pre">exec(2)</span></code> capability rules are followed.
-Normally, this essentially means that all capabilities are dropped when
-<code class="code docutils literal"><span class="pre">ch-run</span></code> replaces itself with the user command. However, if EUID is 0
-&#8212; which it is inside the namespace given <code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code> &#8212; then the
+Normally, this basically means that all capabilities are dropped when
+<code class="code docutils literal"><span class="pre">ch-run</span></code> replaces itself with the user command. However, if EUID is
+0, which it is inside the namespace given <code class="code docutils literal"><span class="pre">--uid</span> <span class="pre">0</span></code>, then the
 subprocess keeps all its capabilities. (This makes sense: if root creates a
 new process, it stays root.)</li>
 <li><code class="code docutils literal"><span class="pre">CAP_DAC_OVERRIDE</span></code> within a user namespace is honored for a file or
@@ -241,10 +248,10 @@ directory only if its UID and GID are both mapped. In this case,
 <code class="code docutils literal"><span class="pre">reidpr:reidpr</span></code>) are available for all access with <code class="code docutils literal"><span class="pre">ch-run</span>
 <span class="pre">--uid</span> <span class="pre">0</span></code>.</li>
 </ol>
-<p>This isn&#8217;t a problem. The quirk applies only to files owned by the invoking
+<p>This isn’t a problem. The quirk applies only to files owned by the invoking
 user, because <code class="code docutils literal"><span class="pre">ch-run</span></code> is unprivileged outside the namespace, and thus
-he or she could simply <code class="code docutils literal"><span class="pre">chmod</span></code> the file to read it. That is, access
-inside and outside the container remains equivalent.</p>
+he or she could simply <code class="code docutils literal"><span class="pre">chmod</span></code> the file to read it. Access inside and
+outside the container remains equivalent.</p>
 <p>References:</p>
 <ul class="simple">
 <li><a class="reference external" href="http://man7.org/linux/man-pages/man7/capabilities.7.html">http://man7.org/linux/man-pages/man7/capabilities.7.html</a></li>
@@ -253,19 +260,15 @@ inside and outside the container remains equivalent.</p>
 </ul>
 </div>
 <div class="section" id="why-is-bin-being-added-to-my-path">
-<h2><a class="toc-backref" href="#id4">4.4. Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a><a class="headerlink" href="#why-is-bin-being-added-to-my-path" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4">5.4. Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a><a class="headerlink" href="#why-is-bin-being-added-to-my-path" title="Permalink to this headline">¶</a></h2>
 <p>Newer Linux distributions replace some root-level directories, such as
-<code class="code docutils literal"><span class="pre">/bin</span></code>, with symlinks to their counterparts in <code class="code docutils literal"><span class="pre">/usr</span></code>, e.g.:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /bin
-<span class="go">lrwxrwxrwx 1 root root 7 Jan 13 15:46 /bin -&gt; usr/bin</span>
-</pre></div>
-</div>
-<p>Some of these (e.g., Fedora 24) have also dropped <code class="code docutils literal"><span class="pre">/bin</span></code> from the
-default <code class="code docutils literal"><span class="pre">$PATH</span></code>. This is a problem when the guest OS does <em>not</em> have a
-merged <code class="code docutils literal"><span class="pre">/usr</span></code> (e.g., Debian 8 &#8220;Jessie&#8221;).</p>
-<p>While Charliecloud&#8217;s general philosophy is not to manipulate environment
+<code class="code docutils literal"><span class="pre">/bin</span></code>, with symlinks to their counterparts in <code class="code docutils literal"><span class="pre">/usr</span></code>.</p>
+<p>Some of these distributions (e.g., Fedora 24) have also dropped <code class="code docutils literal"><span class="pre">/bin</span></code>
+from the default <code class="code docutils literal"><span class="pre">$PATH</span></code>. This is a problem when the guest OS does <em>not</em>
+have a merged <code class="code docutils literal"><span class="pre">/usr</span></code> (e.g., Debian 8 “Jessie”).</p>
+<p>While Charliecloud’s general philosophy is not to manipulate environment
 variables, in this case, guests can be severely broken if <code class="code docutils literal"><span class="pre">/bin</span></code> is not
-in <code class="code docutils literal"><span class="pre">$PATH</span></code>. Thus, we add it if it&#8217;s not there.</p>
+in <code class="code docutils literal"><span class="pre">$PATH</span></code>. Thus, we add it if it’s not there.</p>
 <p>Further reading:</p>
 <blockquote>
 <div><ul class="simple">
@@ -276,12 +279,12 @@ in <code class="code docutils literal"><span class="pre">$PATH</span></code>. Th
 </div></blockquote>
 </div>
 <div class="section" id="how-does-setuid-mode-work">
-<h2><a class="toc-backref" href="#id5">4.5. How does setuid mode work?</a><a class="headerlink" href="#how-does-setuid-mode-work" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">5.5. How does setuid mode work?</a><a class="headerlink" href="#how-does-setuid-mode-work" title="Permalink to this headline">¶</a></h2>
 <p>As noted above, <code class="code docutils literal"><span class="pre">ch-run</span></code> has a transition mode that uses setuid-root
 privileges instead of user namespaces. The goal of this mode is to let sites
-evaluate Charliecloud even if they do not have Linux kernels that support user
-namespaces readily available. We plan to remove this code once user namespaces
-are more widely available, and we encourage sites to use the unprivileged,
+evaluate Charliecloud even on systems that do not have a Linux kernel that
+supports user namespaces. We plan to remove this code once user namespaces are
+more widely available, and we encourage sites to use the unprivileged,
 non-setuid mode in production.</p>
 <p>We haven taken care to (1) drop privileges temporarily upon program start and
 only re-acquire them when needed and (2) drop privileges permanently before
@@ -292,14 +295,31 @@ this also relies on newer features, which would hamper the goal of broadly
 available testing. For example, NFSv3 does not support extended attributes,
 which are required for setcap files.</p>
 <p>Dropping privileges safely requires care. We follow the recommendations in
-&#8220;<a class="reference external" href="https://www.usenix.org/legacy/events/sec02/full_papers/chen/chen.pdf">Setuid demystified</a>&#8221; as
+“<a class="reference external" href="https://www.usenix.org/legacy/events/sec02/full_papers/chen/chen.pdf">Setuid demystified</a>” as
 well as the <a class="reference external" href="https://www.securecoding.cert.org/confluence/display/c/POS36-C.+Observe+correct+revocation+order+while+relinquishing+privileges">system call ordering</a>
 and <a class="reference external" href="https://www.securecoding.cert.org/confluence/display/c/POS37-C.+Ensure+that+privilege+relinquishment+is+successful">privilege drop verification</a>
 recommendations of the SEI CERT C Coding Standard.</p>
 <p>We do not worry about the Linux-specific <code class="code docutils literal"><span class="pre">fsuid</span></code> and <code class="code docutils literal"><span class="pre">fsgid</span></code>,
 which track <code class="code docutils literal"><span class="pre">euid</span></code>/<code class="code docutils literal"><span class="pre">egid</span></code> unless specifically changed, which we
-don&#8217;t do. Kernel bugs have existed that violate this invariant, but none are
+don’t do. Kernel bugs have existed that violate this invariant, but none are
 recent.</p>
+</div>
+<div class="section" id="ch-run-fails-with-can-t-re-mount-image-read-only">
+<h2><a class="toc-backref" href="#id6">5.6. <code class="code docutils literal"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a><a class="headerlink" href="#ch-run-fails-with-can-t-re-mount-image-read-only" title="Permalink to this headline">¶</a></h2>
+<p>Normally, <code class="code docutils literal"><span class="pre">ch-run</span></code> re-mounts the image directory read-only within the
+container. This fails if the image resides on certain filesystems, such as NFS
+(see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/9">issue #9</a>). There are
+two solutions:</p>
+<ol class="arabic simple">
+<li>Unpack the image into a different filesystem, such as <code class="code docutils literal"><span class="pre">tmpfs</span></code> or
+local disk. Consult your local admins for a recommendation. Note that
+<code class="code docutils literal"><span class="pre">tmpfs</span></code> is a lot faster than Lustre.</li>
+<li>Use the <code class="code docutils literal"><span class="pre">-w</span></code> switch to leave the image mounted read-write. Note that
+this has may have an impact on reproducibility (because the application can
+change the image between runs) and/or stability (if there are multiple
+application processes and one writes a file in the image that another is
+reading or writing).</li>
+</ol>
 </div>
 </div>
 
@@ -313,10 +333,10 @@ recent.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="copyright.html" class="btn btn-neutral float-right" title="5. Copyright and license" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="copyright.html" class="btn btn-neutral float-right" title="6. Copyright and license" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="script-help.html" class="btn btn-neutral" title="3. Help text for executables" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="virtualbox.html" class="btn btn-neutral" title="4. VirtualBox appliance" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -325,7 +345,7 @@ recent.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; <a href="copyright.html">Copyright</a> 2014–2016, Los Alamos National Security, LLC.
+        &copy; <a href="copyright.html">Copyright</a> 2014–2017, Los Alamos National Security, LLC.
 
     </p>
   </div> 
@@ -346,7 +366,7 @@ recent.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.2~pre',
+            VERSION:'0.2.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -356,7 +376,7 @@ recent.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

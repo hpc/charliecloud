@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Overview &mdash; Charliecloud 0.2.2~pre documentation</title>
+  <title>Overview &mdash; Charliecloud 0.2.2 documentation</title>
   
 
   
@@ -34,7 +34,7 @@
   
         <link rel="search" title="Search" href="search.html"/>
         <link rel="copyright" title="Copyright" href="copyright.html"/>
-    <link rel="top" title="Charliecloud 0.2.2~pre documentation" href="#"/>
+    <link rel="top" title="Charliecloud 0.2.2 documentation" href="#"/>
         <link rel="next" title="1. Installation" href="install.html"/> 
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                8b340cf
+                34f7e35
               </div>
             
           
@@ -92,8 +92,9 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="script-help.html">3. Help text for executables</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">4. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="copyright.html">5. Copyright and license</a></li>
+<li class="toctree-l1"><a class="reference internal" href="virtualbox.html">4. VirtualBox appliance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">5. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="copyright.html">6. Copyright and license</a></li>
 </ul>
 
             
@@ -158,7 +159,7 @@
   <div class="section" id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
 <p>Charliecloud provides user-defined software stacks (UDSS) for high-performance
-computing (HPC) centers. This &#8220;bring your own software stack&#8221; functionality
+computing (HPC) centers. This “bring your own software stack” functionality
 addresses needs such as:</p>
 <blockquote>
 <div><ul class="simple">
@@ -185,19 +186,21 @@ experimental setuid mode is also provided to let sites evaluate Charliecloud
 even if they do not have user namespace-capable kernels readily available.</p>
 <p>Patches are much appreciated on the software itself as well as documentation.
 We are friendly and welcoming of diversity on all dimensions.</p>
-<p>Charliecloud&#8217;s original path was to use virtual machines (QEMU and KVM). This
+<p>Charliecloud’s original path was to use virtual machines (QEMU and KVM). This
 code and documentation has been removed from the master branch but is still
 available in the virtual-machines branch. We are open to re-including it in
 master, given a volunteer to maintain it.</p>
+<p>To learn more, see our article in USENIX’s ;login: magazine:
+<a class="reference external" href="https://www.usenix.org/publications/login/fall2017/priedhorsky">https://www.usenix.org/publications/login/fall2017/priedhorsky</a></p>
 <p>Please contact <a class="reference external" href="mailto:reidpr&#37;&#52;&#48;lanl&#46;gov">reidpr<span>&#64;</span>lanl<span>&#46;</span>gov</a> with any comments or questions.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Shell sessions throughout this documentation will use the prompt <code class="code docutils literal"><span class="pre">$</span></code>
-to indicate commands executed on the host and <code class="code docutils literal"><span class="pre">&gt;</span></code> for commands
-executed in a guest.</p>
+to indicate commands executed natively on the host and <code class="code docutils literal"><span class="pre">&gt;</span></code> for
+commands executed in a container.</p>
 </div>
-<p>This documentation is for Charliecloud version 0.2.2~pre (Git commit
-8b340cf) and was built 2017-04-11 15:58 GMT+00:00.</p>
+<p>This documentation is for Charliecloud version 0.2.2 (Git commit
+34f7e35) and was built 2017-09-18 16:38 GMT+00:00.</p>
 <div class="toctree-wrapper compound">
 </div>
 </div>
@@ -222,7 +225,7 @@ executed in a guest.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; <a href="copyright.html">Copyright</a> 2014–2016, Los Alamos National Security, LLC.
+        &copy; <a href="copyright.html">Copyright</a> 2014–2017, Los Alamos National Security, LLC.
 
     </p>
   </div> 
@@ -243,7 +246,7 @@ executed in a guest.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.2~pre',
+            VERSION:'0.2.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -253,7 +256,7 @@ executed in a guest.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
