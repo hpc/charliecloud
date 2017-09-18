@@ -22,15 +22,16 @@ if [[ -z $SLURM_JOB_ID ]]; then
 fi
 
 TAR="$1"
-IMG="$2"
+IMGDIR="$2"
+IMG="$IMGDIR/spark"
 DEV="$3"
 CONF="$HOME/slurm-$SLURM_JOB_ID.spark"
 
 # Make Charliecloud available (varies by site)
 module purge
+module load openmpi
 module load sandbox
 module load charliecloud
-module load openmpi
 
 # What IP address to use for master?
 if [[ -z $DEV ]]; then
@@ -48,12 +49,7 @@ else
 fi
 
 # Unpack image
-if [[ ! -d $IMG ]]; then
-    echo "unpack directory not found: $IMG"
-    exit 1
-fi
-IMG=$IMG/spark
-srun ch-tar2dir $TAR $IMG
+srun ch-tar2dir $TAR $IMGDIR
 
 # Make Spark configuration
 mkdir $CONF
@@ -73,20 +69,20 @@ EOF
 chmod 600 $CONF/spark-defaults.sh
 
 # Start the Spark master
-ch-run -d $CONF $IMG -- /spark/sbin/start-master.sh
+ch-run -b $CONF $IMG -- /spark/sbin/start-master.sh
 sleep 10
 tail -7 /tmp/spark/log/*master*.out
 fgrep -q 'New state: ALIVE' /tmp/spark/log/*master*.out
 
 # Start the Spark workers
-mpirun -map-by '' -pernode ch-run -d $CONF $IMG -- \
+mpirun -map-by '' -pernode ch-run -b $CONF $IMG -- \
   /spark/sbin/start-slave.sh $MASTER_URL &
 sleep 10
 fgrep worker /tmp/spark/log/*master*.out
 tail -3 /tmp/spark/log/*worker*.out
 
 # Compute pi
-ch-run -d $CONF $IMG -- \
+ch-run -b $CONF $IMG -- \
   /spark/bin/spark-submit --master $MASTER_URL \
   /spark/examples/src/main/python/pi.py 1024
 

@@ -1,21 +1,25 @@
 #!/bin/bash
 #SBATCH --time=0:10:00
 
-# Arguments: Path to tarball, path to image.
+# Arguments: Path to tarball, path to image parent directory.
 
 set -e
 
 TAR="$1"
-IMG="$2"
+IMGDIR="$2"
+IMG="$2/$(basename "${TAR%.tar.gz}")"
 
 if [[ -z $TAR ]]; then
     echo 'no tarball specified' 1>&2
     exit 1
 fi
-if [[ -z $IMG ]]; then
+printf 'tarball:   %s\n' "$TAR"
+
+if [[ -z $IMGDIR ]]; then
     echo 'no image directory specified' 1>&2
     exit 1
 fi
+printf 'image:     %s\n' "$IMG"
 
 # Make Charliecloud available (varies by site).
 module purge
@@ -31,7 +35,7 @@ printf 'host:      '
 mpirun --version | egrep '^mpirun'
 
 # Unpack image.
-mpirun -pernode ch-tar2dir $TAR $IMG
+mpirun -pernode ch-tar2dir $TAR $IMGDIR
 
 # MPI version in container.
 printf 'container: '

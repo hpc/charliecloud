@@ -56,7 +56,7 @@ Run a command in a Charliecloud container.\n\
 \v\
 Example:\n\
 \n\
-  $ ch-run /data/foo echo hello\n\
+  $ ch-run /data/foo -- echo hello\n\
   hello\n\
 \n\
 You cannot use this program to actually change your UID.";
@@ -67,13 +67,13 @@ const struct argp_option options[] = {
    { "bind",        'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
    { "write",       'w', 0,     0, "mount image read-write"},
-   { "no-home",      -2, 0,     0, "bypass automatic home bind"},
+   { "no-home",      -2, 0,     0, "do not bind-mount your home directory"},
 #ifndef SETUID
    { "gid",         'g', "GID", 0, "run as GID within container" },
 #endif
    { "is-setuid",    -1, 0,     0,
      "exit successfully if compiled for setuid, else fail" },
-   { "private-tmp", 't', 0,     0, "mount container-private tmpfs on /tmp" },
+   { "private-tmp", 't', 0,     0, "use container-private /tmp" },
 #ifndef SETUID
    { "uid",         'u', "UID", 0, "run as UID within container" },
 #endif

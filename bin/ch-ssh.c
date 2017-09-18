@@ -18,7 +18,7 @@ Run a remote command in a Charliecloud container.\n\
 Example:\n\
 \n\
   $ export CH_RUN_ARGS=/data/foo\n\
-  $ ch-ssh example.com echo hello\n\
+  $ ch-ssh example.com -- echo hello\n\
   hello\n\
 \n\
 Arguments to ch-run, including the image to activate, are specified in the\n\

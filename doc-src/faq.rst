@@ -9,14 +9,18 @@ Frequently asked questions (FAQ)
 My app needs to write to :code:`/var/log`, :code:`/run`, etc.
 =============================================================
 
-Because the image is mounted read-only, log files, caches, and other stuff
-needs to go somewhere else. :code:`/tmp` is often a good choice. You have two
-options:
+Because the image is mounted read-only by default, log files, caches, and
+other stuff cannot be written anywhere in the image. You have three options:
 
-1. Use :code:`RUN` commands in your Dockerfile to create symlinks that point
-   somewhere writeable.
+1. Configure the application to use a different directory. :code:`/tmp` is
+   often a good choice, because it's shared with the host and fast.
 
-2. Configure the application to use a different directory.
+2. Use :code:`RUN` commands in your Dockerfile to create symlinks that point
+   somewhere writeable, e.g. :code:`/tmp`, or :code:`/mnt/0` with
+   :code:`ch-run --bind`.
+
+3. Run the image read-write with :code:`ch-run -w`. Be careful that multiple
+   containers do not try to write to the same image files.
 
 
 Tarball build fails with "No command specified"
@@ -28,10 +32,11 @@ The full error from :code:`ch-docker2tar` or :code:`ch-build2dir` is::
 
 You will also see it with various plain Docker commands.
 
-This happens when there is no default command specified. Some base images
-specify one (e.g., Debian) and others don't (e.g., Alpine). Docker requires
-this even for commands that don't seem like they should need it, such as
-:code:`docker create` (which is what trips up Charliecloud).
+This happens when there is no default command specified in the Dockerfile or
+any of its ancestors. Some base images specify one (e.g., Debian) and others
+don't (e.g., Alpine). Docker requires this even for commands that don't seem
+like they should need it, such as :code:`docker create` (which is what trips
+up Charliecloud).
 
 The solution is to add a default command to your Dockerfile, such as
 :code:`CMD ["true"]`.
@@ -51,9 +56,9 @@ For example::
   ---------- 1 reidpr reidpr 9 Oct  3 15:03 /home/reidpr/cantreadme
   $ cat ~/cantreadme
   cat: /home/reidpr/cantreadme: Permission denied
-  $ ch-run /data/$USER.hello cat ~/cantreadme
+  $ ch-run /var/tmp/hello cat ~/cantreadme
   cat: /home/reidpr/cantreadme: Permission denied
-  $ ch-run --uid 0 /data/$USER.hello cat ~/cantreadme
+  $ ch-run --uid 0 /var/tmp/hello cat ~/cantreadme
   surprise
 
 At first glance, it seems that we've found an escalation -- we were able to
@@ -70,9 +75,9 @@ However, what is really going on here is more prosaic but complicated:
    bits. (This is why root isn't limited by permissions.)
 
 3. Within the container, :code:`exec(2)` capability rules are followed.
-   Normally, this essentially means that all capabilities are dropped when
-   :code:`ch-run` replaces itself with the user command. However, if EUID is 0
-   --- which it is inside the namespace given :code:`--uid 0` --- then the
+   Normally, this basically means that all capabilities are dropped when
+   :code:`ch-run` replaces itself with the user command. However, if EUID is
+   0, which it is inside the namespace given :code:`--uid 0`, then the
    subprocess keeps all its capabilities. (This makes sense: if root creates a
    new process, it stays root.)
 
@@ -87,8 +92,8 @@ However, what is really going on here is more prosaic but complicated:
 
 This isn't a problem. The quirk applies only to files owned by the invoking
 user, because :code:`ch-run` is unprivileged outside the namespace, and thus
-he or she could simply :code:`chmod` the file to read it. That is, access
-inside and outside the container remains equivalent.
+he or she could simply :code:`chmod` the file to read it. Access inside and
+outside the container remains equivalent.
 
 References:
 
@@ -101,14 +106,11 @@ Why is :code:`/bin` being added to my :code:`$PATH`?
 ====================================================
 
 Newer Linux distributions replace some root-level directories, such as
-:code:`/bin`, with symlinks to their counterparts in :code:`/usr`, e.g.::
+:code:`/bin`, with symlinks to their counterparts in :code:`/usr`.
 
-  $ ls -l /bin
-  lrwxrwxrwx 1 root root 7 Jan 13 15:46 /bin -> usr/bin
-
-Some of these (e.g., Fedora 24) have also dropped :code:`/bin` from the
-default :code:`$PATH`. This is a problem when the guest OS does *not* have a
-merged :code:`/usr` (e.g., Debian 8 "Jessie").
+Some of these distributions (e.g., Fedora 24) have also dropped :code:`/bin`
+from the default :code:`$PATH`. This is a problem when the guest OS does *not*
+have a merged :code:`/usr` (e.g., Debian 8 "Jessie").
 
 While Charliecloud's general philosophy is not to manipulate environment
 variables, in this case, guests can be severely broken if :code:`/bin` is not
@@ -126,9 +128,9 @@ How does setuid mode work?
 
 As noted above, :code:`ch-run` has a transition mode that uses setuid-root
 privileges instead of user namespaces. The goal of this mode is to let sites
-evaluate Charliecloud even if they do not have Linux kernels that support user
-namespaces readily available. We plan to remove this code once user namespaces
-are more widely available, and we encourage sites to use the unprivileged,
+evaluate Charliecloud even on systems that do not have a Linux kernel that
+supports user namespaces. We plan to remove this code once user namespaces are
+more widely available, and we encourage sites to use the unprivileged,
 non-setuid mode in production.
 
 We haven taken care to (1) drop privileges temporarily upon program start and
@@ -165,7 +167,8 @@ container. This fails if the image resides on certain filesystems, such as NFS
 two solutions:
 
 1. Unpack the image into a different filesystem, such as :code:`tmpfs` or
-   local disk. Consult your local admins for a recommendation.
+   local disk. Consult your local admins for a recommendation. Note that
+   :code:`tmpfs` is a lot faster than Lustre.
 
 2. Use the :code:`-w` switch to leave the image mounted read-write. Note that
    this has may have an impact on reproducibility (because the application can

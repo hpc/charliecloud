@@ -5,6 +5,12 @@ Installation
    :depth: 2
    :local:
 
+.. note::
+
+   These are general installation instructions. If you'd like specific,
+   step-by-step directions for CentOS 7, section :doc:`virtualbox` has these
+   for a VirtualBox virtual machine.
+
 Prequisites
 ===========
 
@@ -17,8 +23,11 @@ Run time
 
 Systems used for running images in the standard unprivileged mode need:
 
-* Recent Linux kernel with :code:`CONFIG_USER_NS=y`.
+* Recent Linux kernel with :code:`CONFIG_USER_NS=y`. (We've had good luck with
+  various distribution upstream versions of 4.4 and higher.)
+
 * C compiler and standard library
+
 * POSIX shell and utilities
 
 Tested and working by us include the Ubuntu and upstream versions of 4.4.
@@ -66,23 +75,6 @@ institutional responsibilities.
 
 (All this stuff is a key motivation for Charliecloud.)
 
-Don't pipe web pages to your shell
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This is how Docker recommends you install the software. Don't do this::
-
-  $ curl -fsSL https://get.docker.com/ | sh
-
-This approach --- piping a web page directly into a shell --- is easy and
-fashionable but stupid.
-
-The problem is that you've invited the web page to execute arbitrary code as
-you (or worse, root). Auditing the page in a browser only helps somewhat, as
-the server could use your :code:`User-Agent` header to decide whether to show
-you safe or malicious code.
-
-Download the script to a file and audit it carefully before running.
-
 :code:`docker` equals root
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -91,9 +83,8 @@ daemon can `trivially escalate to root
 <http://reventlov.com/advisories/using-the-docker-command-to-root-the-host>`_.
 This is considered a feature.
 
-For this reason, don't create the :code:`docker` group when the installer
-offers it, as this will allow passwordless, unlogged escalation for anyone in
-the group.
+For this reason, don't create the :code:`docker` group, as this will allow
+passwordless, unlogged escalation for anyone in the group.
 
 Images can contain bad stuff
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -128,8 +119,8 @@ If you don't want the service starting automatically at boot, e.g.::
   $ systemctl is-enabled docker
   disabled
 
-Configuring Docker for a proxy
-------------------------------
+Configuring for a proxy
+-----------------------
 
 By default, Docker does not work if you have a proxy, and it fails in two
 different ways.
@@ -144,8 +135,8 @@ manifests as::
 
 If you have a systemd system, the `Docker documentation
 <https://docs.docker.com/engine/admin/systemd/#http-proxy>`_ explains how to
-configure this. (If you don't have a systemd system, then
-:code:`/etc/default/docker` might be the place to go?)
+configure this. If you don't have a systemd system, then
+:code:`/etc/default/docker` might be the place to go?
 
 The second problem is that Docker containers need to know about the proxy as
 well. This manifests as images failing to build because they can't download
@@ -153,7 +144,7 @@ stuff from the internet.
 
 The fix is to set the proxy variables in your environment, e.g.::
 
-  export HTTP_PROXY=http://example.com:8088
+  export HTTP_PROXY=http://proxy.example.com:8088
   export http_proxy=$HTTP_PROXY
   export HTTPS_PROXY=$HTTP_PROXY
   export https_proxy=$HTTP_PROXY
@@ -162,7 +153,10 @@ The fix is to set the proxy variables in your environment, e.g.::
   export NO_PROXY='localhost,127.0.0.1,.example.com'
   export no_proxy=$NO_PROXY
 
-:code:`ch-build` will then pass these through to your image builds.
+You also need to teach :code:`sudo` to retain them. Add the following to
+:code:`/etc/sudoers`::
+
+  Defaults env_keep+="HTTP_PROXY http_proxy HTTPS_PROXY https_proxy ALL_PROXY all_proxy NO_PROXY no_proxy"
 
 Because different programs use different subsets of these variables, and to
 avoid a situation where some things work and others don't, the Charliecloud
@@ -192,11 +186,10 @@ To build in the standard, unprivileged mode (recommended)::
 
   $ make
 
-To build in setuid mode (experimental)::
+To build in setuid mode (for testing if your kernel doesn't support the user
+namespace)::
 
   $ make SETUID=yes
-
-This mode escalates with :code:`sudo` when needed.
 
 To build the documentation, see :code:`doc-src/README`.
 
@@ -249,8 +242,8 @@ Testing is coordinated by :code:`make`. The test targets run one or more test
 suites. If any test suite has a failure, testing stops with an error message.
 
 The tests need three work directories with several gigabytes of free space, in
-order to store image tarballs, unpacked image directories, and file permission
-test fixtures. These are configured with environment variables::
+order to store image tarballs, unpacked image directories, and permission test
+fixtures. These are configured with environment variables::
 
   $ export CH_TEST_TARDIR=/var/tmp/tarballs
   $ export CH_TEST_IMGDIR=/var/tmp/images
@@ -276,35 +269,31 @@ In this phase, image building and associated functionality is tested.
 
 ::
 
-  $ make test-build
-  ./bats build.bats build_auto.bats
-   ✓ executables --help
-   ✓ ch-build
-   ✓ ch-build --pull
-   ✓ ch-build2dir
-   ✓ ch-build alpine34
-   ✓ ch-docker2tar alpine34
+  ./bats build.bats build_auto.bats build_post.bats
+   ✓ create tarball directory if needed
+   ✓ documentations build
+   ✓ executables seem sane
   [...]
-   ✓ ch-build spark
-   ✓ ch-docker2tar spark
+   ✓ ch-build obspy
+   ✓ ch-docker2tar obspy
+   ✓ docker pull dockerpull
+   ✓ ch-docker2tar dockerpull
+   ✓ nothing unexpected in tarball directory
 
-  28 tests, 0 failures
+  41 tests, 0 failures
 
 Note that with an empty Docker cache, this test can be quite lengthy, half an
 hour or more, because it builds all the examples as well as several basic
 Dockerfiles for common Linux distributions and tools (in :code:`test`). With a
-full cache, expect more like 1--2 minutes.
+full cache, expect more like 1–2 minutes.
 
-To iterate faster, you can cancel the test with Control-C once it gets into
-repetitive testing of different Dockerfiles.
+.. note::
 
-The easiest way to update the Docker images used in this test is to simply
-delete all Docker images and let them be rebuilt.
+   The easiest way to update the Docker images used in this test is to simply
+   delete all Docker containers and images, and let them be rebuilt::
 
-::
-
-  $ sudo docker rm $(sudo docker ps -aq)
-  $ sudo docker rmi -f $(sudo docker images -q)
+     $ sudo docker rm $(sudo docker ps -aq)
+     $ sudo docker rmi -f $(sudo docker images -q)
 
 Run
 ---
@@ -325,11 +314,11 @@ To run the tests::
 
   $ make test-run
 
-Test suites of examples
------------------------
+Examples
+--------
 
 Some of the examples include test suites of their own. This Charliecloud runs
-those test suites, using a SLURM allocation if one is available or a single
+those test suites, using a Slurm allocation if one is available or a single
 node (localhost) if not.
 
 These require that the run tests have been completed successfully.
@@ -342,11 +331,12 @@ To run the tests::
 
   $ make test-test
 
-Multiple phases
----------------
+Quick and multiple-phase tests
+------------------------------
 
-We also provide multiple-phase targets:
+We also provide the following additional test targets:
 
+ * :code:`test-quick`: key subset of build and run phases (nice for development)
  * :code:`test`: build and run phases
  * :code:`test-all`: all three phases
 

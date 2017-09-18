@@ -61,8 +61,13 @@ Log in and try Charliecloud
 ---------------------------
 
 1. Start the VM by clicking the green arrow.
+
 2. Wait for it to boot.
-3. Click on the console window, where user :code:`charlie` is logged in.
+
+3. Click on the console window, where user :code:`charlie` is logged in. (If
+   the VM "captures" your mouse pointer, type the key combination listed in
+   the lower-right corner of the window to release it.)
+
 4. Change your password:
 
 ::
@@ -83,7 +88,7 @@ Log in and try Charliecloud
 
   $ ch-docker2tar hello /var/tmp
   57M /var/tmp/hello.tar.gz
-  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
+  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
   creating new image /var/tmp/hello
   /var/tmp/hello unpacked ok
   $ cat /etc/redhat-release
@@ -103,7 +108,7 @@ Possible next steps:
   * Follow the :doc:`tutorial <tutorial>`.
   * Run the :ref:`test suite <install_test-charliecloud>` in
     :code:`/usr/share/doc/charliecloud/test`. (Note that the environment
-    variables are already configured for you.)
+    variables are already configured for you in this appliance.)
 
 
 Build the appliance
@@ -189,15 +194,17 @@ Under *Installation summary*, configure (in this order):
 
 Click *Begin installation*. Configure:
 
-* *Root password:* Something random (e.g. :code:`pwgen -cny 12`), which you
-  can then forget because it will never be needed again.
+* *Root password:* Something random (e.g. :code:`pwgen -cny 24`), which you
+  can then forget because it will never be needed again. Users of the
+  appliance will not have access to this password but will to its hash in
+  :code:`/etc/shadow`.
+
 * *User creation:*
 
   * *User name:* charlie
   * *Make this user administrator:* yes
   * *Password:* Decent password that meets your organization's requirements.
-    Users of the appliance will not have access to this password itself but
-    will have its hash in :code:`/etc/shadow`.
+    Appliance user access is same as the root password.
 
 Click *Finish configuration*, then *Reboot* and wait for the login prompt to
 come up in the console. Note that the install ISO will be automatically
@@ -618,7 +625,7 @@ should work as well, though we haven't tried.
 
 6. Click *Continue*.
 7. Check the decriptive information and click *Export*.
-8. Distribute the resulting file (which should be about 4GiB).
+8. Distribute the resulting file (which should be about 5GiB).
 
 
 Upgrade the appliance

@@ -6,8 +6,8 @@ both examples included with the source code as well as new ones you create
 from scratch.
 
 This tutorial assumes that Charliecloud is correctly installed as described in
-the previous section, that the :code:`bin` directory is on your
-:code:`$PATH`, and that you have access to the examples in the source code.
+the previous section, that the executables are on your :code:`$PATH`, and that
+you have access to the examples in the source code.
 
 .. contents::
    :depth: 2
@@ -24,17 +24,17 @@ Charliecloud for your own applications.
 
 ::
 
-   $ cd charliecloud/examples/serial/hello
-   $ ch-build -t hello ../..
-   Sending build context to Docker daemon 12.24 MB
-   [...]
-   Successfully built 2972e7281f75
-   $ ch-docker2tar hello /var/tmp
-   57M /var/tmp/hello.tar.gz
-   $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
-   /var/tmp/hello unpacked ok
-   $ ch-run /var/tmp/hello -- echo "I'm in a container"
-   I'm in a container
+  $ ch-build -t hello ~/charliecloud
+  Sending build context to Docker daemon 15.67 MB
+  [...]
+  Successfully built 1136de7d4c0a
+  $ ch-docker2tar hello /var/tmp
+  57M /var/tmp/hello.tar.gz
+  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
+  creating new image /var/tmp/hello
+  /var/tmp/hello unpacked ok
+  $ ch-run /var/tmp/hello -- echo "I'm in a container"
+  I'm in a container
 
 Getting help
 ============
@@ -103,16 +103,16 @@ directory, which in this case is the Charliecloud source code.
 
 ::
 
-  $ ch-build -t hello ../..
-  Sending build context to Docker daemon 8.105 MB
-  Step 1 : FROM debian:jessie
-   ---> ddf73f48a05d
-  Step 2 : RUN apt-get update && apt-get install -y openssh-client
-   ---> Running in beadfda45e4c
-  [...]
-   ---> 526e2ca75656
-  Removing intermediate container beadfda45e4c
-  Successfully built 526e2ca75656
+   $ ch-build -t hello ~/charliecloud
+   Sending build context to Docker daemon 15.67 MB
+   Step 1/4 : FROM debian:jessie
+   ---> 86baf4e8cde9
+   [...]
+   Step 4/4 : RUN touch /usr/bin/ch-ssh
+   ---> 1136de7d4c0a
+   Successfully built 1136de7d4c0a
+
+Note that Docker prints each step of the Dockerfile as it's executed.
 
 :code:`ch-build` and many other Charliecloud commands wrap various
 privileged :code:`docker` commands. Thus, you will be prompted for a password
@@ -157,19 +157,19 @@ arbitrary directory, here :code:`/var/tmp`.
 
 ::
 
-   $ ch-docker2tar hello /var/tmp
-   57M /var/tmp/hello.tar.gz
+  $ ch-docker2tar hello /var/tmp
+  57M /var/tmp/hello.tar.gz
 
 Distribute tarball
 ------------------
 
 Thus far, the workflow has taken place on the build system. The next step is
-to move the tarball to the run system. This can use any appropriate method for
+to copy the tarball to the run system. This can use any appropriate method for
 moving files: :code:`scp`, :code:`rsync`, something integrated with the
 scheduler, etc.
 
-If the build and run systems are the same, then no move is needed. This is a
-typical use case for the testing phase.
+If the build and run systems are the same, then no copy is needed. This is a
+typical use case for development and testing.
 
 Unpack tarball
 --------------
@@ -180,13 +180,19 @@ the image directory if it already exists.
 
 ::
 
-   $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp/hello
-   /var/tmp/hello unpacked ok
+  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
+  creating new image /var/tmp/hello
+  /var/tmp/hello unpacked ok
 
-One potential gotcha is the tarball including special files such as devices.
-Because :code:`tar` is running unprivileged, these will not be unpacked, and
-they can cause the extraction to fail. The fix is to delete them in the
-Dockerfile.
+Generally, you should avoid unpacking into shared filesystems such as NFS and
+Lustre, in favor of local storage such as :code:`tmpfs` and local hard disks.
+This will yield better performance for you and anyone else on the shared
+filesystem.
+
+.. One potential gotcha is the tarball including special files such as
+   devices. Because :code:`tar` is running unprivileged, these will not be
+   unpacked, and they can cause the extraction to fail. The fix is to delete
+   them in the Dockerfile.
 
 .. note::
 
@@ -522,7 +528,7 @@ directories::
   -rw-rw---- 1 reidpr nerds 0 Sep 28 16:21 /tmp/baz/foo
 
 This concludes our discussion of how a Charliecloud container interacts with
-its host. principal Charliecloud quirks. We next move on to installing
+its host and principal Charliecloud quirks. We next move on to installing
 software.
 
 
@@ -545,7 +551,7 @@ document.
 .. note::
 
    Maybe you don't have to install the software at all. Is there already a
-   trustable image on Docker Hub you can use as a base?
+   trustworthy image on Docker Hub you can use as a base?
 
 Third-party software via package manager
 ----------------------------------------
@@ -559,7 +565,7 @@ package :code:`openssh-client`:
    :lines: 1-5
 
 You can use distribution package managers such as :code:`apt-get`, as
-demonstrated above, or others, such as :code:`pip` for Python modules.
+demonstrated above, or others, such as :code:`pip` for Python packages.
 
 Be aware that the software will be downloaded anew each time you build the
 image, unless you add an HTTP cache, which is out of scope of this tutorial.
@@ -596,10 +602,10 @@ So what is going on here?
 5. Clean up, in order to reduce the size of layers as well as the resulting
    Charliecloud tarball (:code:`rm -Rf`).
 
-Finally, because it's a container image, you can be less tidy than you might
-be on a normal system. For example, the above downloads and builds in
-:code:`/` rather than :code:`/usr/local/src`, and it installs MPI into
-:code:`/usr` rather than :code:`/usr/local`.
+.. Finally, because it's a container image, you can be less tidy than you
+   might be on a normal system. For example, the above downloads and builds in
+   :code:`/` rather than :code:`/usr/local/src`, and it installs MPI into
+   :code:`/usr` rather than :code:`/usr/local`.
 
 Your software stored in the image
 ---------------------------------
@@ -666,14 +672,14 @@ demonstrate this.
 
 ::
 
-  $ cd examples/mpihello
+  $ cd examples/mpi/mpihello
   $ ls -l
   total 20
   -rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile
   -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
   -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
-  $ ch-run -d . /var/tmp/mpihello -- sh -c 'cd /mnt/0 && make'
+  $ ch-run -b . /var/tmp/mpihello -- sh -c 'cd /mnt/0 && make'
   mpicc -std=gnu11 -Wall hello.c -o hello
   $ ls -l
   total 32
@@ -715,8 +721,8 @@ Processes coordinated by host
 
 This approach does the forking and process coordination on the host. Each
 process is spawned in its own container, and because Charliecloud introduces
-minimal isolation, they can communicate almost as if they were running
-directly on the host.
+minimal isolation, they can communicate as if they were running directly on
+the host.
 
 For example, using :code:`mpirun` and the :code:`mpihello` example above::
 
@@ -784,10 +790,10 @@ argument:
    :lines: 11-15
 
 The effect is that the image contains a default MPI configuration, but if you
-specify a different configuration directory with :code:`-d`, that is
+specify a different configuration directory with :code:`--bind`, that is
 overmounted and used instead. For example::
 
-  $ ch-run -d /usr/local/etc /var/tmp/mpihello -- mpirun -np 4 /hello/hello
+  $ ch-run -b /usr/local/etc /var/tmp/mpihello -- mpirun -np 4 /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532256
   2: init ok cn001, 4 ranks, userns 4026532256
@@ -805,9 +811,9 @@ Your first multi-node jobs
 
 This section assumes that you are using a Slurm cluster with a working OpenMPI
 1.10.\ *x* installation and some type of node-local storage. A :code:`tmpfs`
-will suffice, and we use :code:`/var/tmp` for this tutorial. (Using
+is recommended, and we use :code:`/var/tmp` for this tutorial. (Using
 :code:`/tmp` often works but can cause confusion because it's shared by the
-container and host, yielding a circular directory tree.)
+container and host, yielding cycles in the directory tree.)
 
 We cover three cases:
 
@@ -821,20 +827,22 @@ We cover three cases:
 4. Same, non-interactive.
 
 We think that container-coordinated MPI jobs will also work, but we haven't
-worked out how to do this yet. (See issue #5.)
+worked out how to do this yet. (See `issue #5
+<https://github.com/hpc/charliecloud/issues/5>`_.)
 
 .. note::
 
-   The image directory is mounted read-only by default, so it can be shared by multiple
-   Charliecloud containers in the same or different jobs.
-
-   The image directory can be mounted read-write with :code:`ch-run -w`.
+   The image directory is mounted read-only by default so it can be shared by
+   multiple Charliecloud containers in the same or different jobs. It can be
+   mounted read-write with :code:`ch-run -w`.
 
 .. warning::
 
-   The image can reside on any filesystem, but be aware of metadata impact. A
-   non-trivial Charliecloud job may overwhelm a network filesystem, earning
-   you the ire of your sysadmins and colleagues.
+   The image can reside on most filesystems, but be aware of metadata impact.
+   A non-trivial Charliecloud job may overwhelm a network filesystem, earning
+   you the ire of your sysadmins and colleagues. (NFS sometimes does not work
+   for read-only images; see `issue #9
+   <https://github.com/hpc/charliecloud/issues/9>`_.)
 
 Interactive MPI hello world
 ---------------------------
@@ -852,11 +860,10 @@ policy::
   mpirun (Open MPI) 1.10.5
   $ export OMPI_MCA_rmaps_base_mapping_policy=
 
-The next step is to distribute the image to the compute nodes, which we assume
-is in the home directory. To do so, we run one instance of :code:`ch-tar2dir`
-on each node::
+The next step is to distribute the image tarball to the compute nodes. To do
+so, we run one instance of :code:`ch-tar2dir` on each node::
 
-  $ mpirun -pernode ch-tar2dir ./mpihello.tar.gz /var/tmp/mpihello
+  $ mpirun -pernode ch-tar2dir mpihello.tar.gz /var/tmp
   App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs
   creating new image /tmp/mpihello
   creating new image /tmp/mpihello
@@ -871,13 +878,13 @@ We can now activate the image and run our program::
 
   $ mpirun ch-run /var/tmp/mpihello -- /hello/hello
   App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs
-  2: init ok cn001.localdomain, 64 ranks, userns 4026532567
-  4: init ok cn001.localdomain, 64 ranks, userns 4026532571
-  8: init ok cn001.localdomain, 64 ranks, userns 4026532579
+  2: init ok cn001, 64 ranks, userns 4026532567
+  4: init ok cn001, 64 ranks, userns 4026532571
+  8: init ok cn001, 64 ranks, userns 4026532579
   [...]
-  45: init ok cn003.localdomain, 64 ranks, userns 4026532589
-  17: init ok cn002.localdomain, 64 ranks, userns 4026532565
-  55: init ok cn004.localdomain, 64 ranks, userns 4026532577
+  45: init ok cn003, 64 ranks, userns 4026532589
+  17: init ok cn002, 64 ranks, userns 4026532565
+  55: init ok cn004, 64 ranks, userns 4026532577
   0: send/receive ok
   0: finalize ok
 
@@ -889,21 +896,23 @@ Non-interactive MPI hello world
 Production jobs are normally run non-interactively, via submission of a job
 script that runs when resources are available, placing output into a file.
 
-The MPI hello world example includes such a script:
+The MPI hello world example includes such a script, :code:`slurm.sh`:
 
 .. literalinclude:: ../examples/mpi/mpihello/slurm.sh
-         :language: sh
+         :language: bash
 
 Note that this script both unpacks the image and runs it.
 
 Submit it with something like::
 
-  $ sbatch -N4 slurm.sh ~/mpihello.tar.gz /var/tmp/mpihello
-  86753
+  $ sbatch -N4 slurm.sh ~/mpihello.tar.gz /var/tmp
+  207745
 
 When the job is complete, look at the output::
 
   $ cat slurm-207745.out
+  tarball:   /home/reidpr/mpihello.tar.gz
+  image:     /var/tmp/mpihello
   host:      mpirun (Open MPI) 1.10.5
   App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs
   creating new image /var/tmp/mpihello
@@ -913,13 +922,13 @@ When the job is complete, look at the output::
   /var/tmp/mpihello unpacked ok
   container: mpirun (Open MPI) 1.10.5
   App launch reported: 4 (out of 4) daemons - 32 (out of 64) procs
-  2: init ok cn004.localdomain, 64 ranks, userns 4026532604
-  3: init ok cn004.localdomain, 64 ranks, userns 4026532606
-  4: init ok cn004.localdomain, 64 ranks, userns 4026532608
+  2: init ok cn004, 64 ranks, userns 4026532604
+  3: init ok cn004, 64 ranks, userns 4026532606
+  4: init ok cn004, 64 ranks, userns 4026532608
   [...]
-  63: init ok cn007.localdomain, 64 ranks, userns 4026532630
-  30: init ok cn005.localdomain, 64 ranks, userns 4026532628
-  27: init ok cn005.localdomain, 64 ranks, userns 4026532622
+  63: init ok cn007, 64 ranks, userns 4026532630
+  30: init ok cn005, 64 ranks, userns 4026532628
+  27: init ok cn005, 64 ranks, userns 4026532622
   0: send/receive ok
   0: finalize ok
 
@@ -935,7 +944,7 @@ Once you have an interactive job, unpack the tarball.
 
 ::
 
-  $ srun ch-tar2dir spark.tar.gz /var/tmp/spark
+  $ srun ch-tar2dir spark.tar.gz /var/tmp
   creating new image /var/tmp/spark
   creating new image /var/tmp/spark
   [...]
@@ -953,7 +962,7 @@ performance parameters such as memory use; see `the documentation
 We'll want to use the cluster's high-speed network. For this example, we'll
 find the Spark master's IP manually::
 
-  $ ip -o -f inet addr show | cut -d'/' -f1
+  $ ip -o -f inet addr show | cut -d/ -f1
   1: lo    inet 127.0.0.1
   2: eth0  inet 192.168.8.3
   8: eth1  inet 10.8.8.3
@@ -976,7 +985,7 @@ you know. Edit to match your system; in particular, use local disks instead of
 
 We can now start the Spark master::
 
-  $ ch-run -d ~/sparkconf /var/tmp/spark -- /spark/sbin/start-master.sh
+  $ ch-run -b ~/sparkconf /var/tmp/spark -- /spark/sbin/start-master.sh
 
 Look at the log in :code:`/tmp/spark/log` to see that the master started
 correctly::
@@ -1008,7 +1017,7 @@ kills the worker as soon as it goes into the background.)
 
 ::
 
-  $ mpirun -map-by '' -pernode ch-run -d ~/sparkconf /var/tmp/spark -- \
+  $ mpirun -map-by '' -pernode ch-run -b ~/sparkconf /var/tmp/spark -- \
     /spark/sbin/start-slave.sh $MASTER_URL &
 
 One of the advantages of Spark is that it's resilient: if a worker becomes
@@ -1038,7 +1047,7 @@ on each compute node. For example::
 
 We can now start an interactive shell to do some Spark computing::
 
-  $ ch-run -d ~/sparkconf /var/tmp/spark -- /spark/bin/pyspark --master $MASTER_URL
+  $ ch-run -b ~/sparkconf /var/tmp/spark -- /spark/bin/pyspark --master $MASTER_URL
 
 Let's use this shell to estimate 𝜋 (this is adapted from one of the Spark
 `examples <http://spark.apache.org/examples.html>`_):
@@ -1067,7 +1076,7 @@ omitted.)
 
 ::
 
-  $ ch-run -d ~/sparkconf /var/tmp/spark -- \
+  $ ch-run -b ~/sparkconf /var/tmp/spark -- \
     /spark/bin/spark-submit --master $MASTER_URL \
     /spark/examples/src/main/python/pi.py 1024
   [...]
@@ -1082,7 +1091,7 @@ Non-interactive Apache Spark
 ----------------------------
 
 We'll re-use much of the above to run the same computation non-interactively.
-For brevity, the Slurm script at :code:`examples/spark/slurm.h` is not
+For brevity, the Slurm script at :code:`examples/other/spark/slurm.h` is not
 reproduced here.
 
 Submit it as follows. It requires three arguments: the tarball, the image
