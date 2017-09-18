@@ -11,4 +11,7 @@ RUN make -j$(getconf _NPROCESSORS_ONLN)
 RUN echo "tmpfs and host home are not overmounted" \
    > /home/overmount-me
 
+# We want ch-ssh
+RUN touch /usr/bin/ch-ssh
+
 CMD ["true"]

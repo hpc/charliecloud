@@ -223,7 +223,7 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
       bin[PATH_CHARS-1] = 0;  // guarantee string termination
       dir = dirname(bin);
       TRY (0 > asprintf(&oldpath, "%s/ch-ssh", dir));
-      TRY (mount(path, oldpath, NULL, MS_BIND, NULL));
+      TRY (mount(oldpath, path, NULL, MS_BIND, NULL));
    }
    // Bind-mount user-specified directories at guest DST and|or /mnt/i,
    // which must exist
