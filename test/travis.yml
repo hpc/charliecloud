@@ -3,6 +3,30 @@ sudo: required
 language: c
 compiler: gcc
 
+# This defines a "matrix" of jobs. Each combination of environment variables
+# defines a different job. All of them run in parallel.
+#
+# FIXME: Each job starts with a cold Docker cache, which wastes work heating
+# it up in parallel. It would be nice if "make test-build" could be done
+# serially before splitting into parallel jobs.
+#
+#   EXPORT=         # build in Git checkout
+#   EXPORT=yes      # build from "make export" tarball
+#   INSTALL=        # run from build directory
+#   INSTALL=yes     # make install to /usr/local, run that one
+#   SETUID=         # standard build (user + mount namespaces)
+#   SETUID=yes      # setuid build (mount namespace, setuid binary)
+#
+env:
+  - EXPORT=    INSTALL=    SETUID=
+  - EXPORT=    INSTALL=    SETUID=yes
+  - EXPORT=    INSTALL=yes SETUID=
+  - EXPORT=    INSTALL=yes SETUID=yes
+  - EXPORT=yes INSTALL=    SETUID=
+  - EXPORT=yes INSTALL=    SETUID=yes
+  - EXPORT=yes INSTALL=yes SETUID=
+  - EXPORT=yes INSTALL=yes SETUID=yes
+
 install:
   - sudo apt-get install pigz
   - sudo pip install sphinx sphinx-rtd-theme
@@ -17,26 +41,4 @@ before_script:
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
 
 script:
-  - set -e
-  - make
-  - cd test
-  - make test-build
-  - make test-run
-  - make test-test
-  - cd -
-  - make clean && make SETUID=yes
-  - cd test
-  - make test-build
-  - make test-run
-  - make test-test
-  - cd -
-  - make clean && make
-  - make export
-  - tar xf charliecloud-*.tar.gz
-  - cd charliecloud-*
-  - make
-  - sudo make install PREFIX=/usr/local
-  - cd /usr/local/share/doc/charliecloud/test
-  - make test-build
-  - make test-run
-  - make test-test
+  - test/travis.sh
