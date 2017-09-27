@@ -62,6 +62,7 @@ install: all
 #       binaries
 	install -d $(BIN)
 	install -pm 755 -t $(BIN) $$(find bin -type f -executable)
+	if [ -u bin/ch-run ]; then sudo chmod u+s $(BIN)/ch-run; fi
 	install -pm 644 -t $(BIN) bin/base.sh bin/version.h bin/version.sh
 #       misc "documentation"
 	install -d $(DOC)
