@@ -11,7 +11,7 @@ endif
 
 # Used by "make all" at top level to build these files for "make install".
 .PHONY: all
-all: build_auto.bats run_auto.bats
+all: build_auto.bats build_auto-quick.bats run_auto.bats
 
 .PHONY: test
 test: test-build test-run
