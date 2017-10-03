@@ -195,7 +195,8 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    // Bind-mount default directories at the same host and guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
       TRY (0 > asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
-      TRY (mount(DEFAULT_BINDS[i], path, NULL, MS_REC | MS_BIND, NULL));
+      TRY (mount(DEFAULT_BINDS[i], path, NULL,
+                 MS_REC | MS_BIND | MS_RDONLY, NULL));
    }
    // Container /tmp
    TRY (0 > asprintf(&path, "%s%s", newroot, "/tmp"));
