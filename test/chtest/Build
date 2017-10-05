@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# Build an Alpine Linux image roughly following the chroot(2) instructions:
+# https://wiki.alpinelinux.org/wiki/Installing_Alpine_Linux_in_a_chroot
+#
+# We deliberately do not sudo. It's a little rough around the edges, because
+# apk expects root, but it better follows the principle of least principle. We
+# could tidy by using the fakeroot utility, but AFAICT that's not particularly
+# common and we'd prefer not to introduce another dependency. For example,
+# it's a standard tool on Debian but only in EPEL for CentOS.
+
+set -ex
+
+SRCDIR=$1
+TARBALL=$2
+WORKDIR=$3
+MIRROR=http://dl-cdn.alpinelinux.org/alpine/v3.6
+APK_TOOLS=apk-tools-static-2.7.2-r0.apk
+IMG="$WORKDIR/img"
+CH_RUN="ch-run -u0 -g0 -w --no-home $IMG"
+
+cd $WORKDIR
+
+# FIXME: skip if compiled setuid
+
+
+## Bootstrap base Alpine Linux.
+
+# Download statically linked apk.
+wget $MIRROR/main/x86_64/$APK_TOOLS
+
+# Bootstrap directories.
+mkdir img
+mkdir img/{dev,etc,oldroot,proc,sys,tmp}
+touch img/etc/{group,hosts,passwd,resolv.conf}
+
+# Bootstrap static apk.
+(cd img && tar xf ../$APK_TOOLS)
+mkdir img/etc/apk
+echo $MIRROR/main > img/etc/apk/repositories
+
+# Install the base system and a dynamically linked apk.
+#
+# This will give a few errors about chown failures. However, the install does
+# seem to work, so we ignore the failed exit code.
+$CH_RUN -- /sbin/apk.static \
+           --allow-untrusted --initdb --update-cache \
+           add alpine-base apk-tools \
+  1>&2 || true
+
+# Now that we've bootstrapped, we don't need apk.static any more. It wasn't
+# installed using apk, so it's not in the database and can just be rm'ed.
+rm img/sbin/apk.static.*
+
+# Install packages we need for our tests.
+$CH_RUN -- apk add gcc make musl-dev python3 || true
+
+# Validate the install.
+$CH_RUN -- apk audit --system
+$CH_RUN -- apk stats
+
+# Fix permissions.
+#
+# Note that this removes setuid/setgid bits from a few files (and
+# directories). There is not a race condition, i.e., a window where setuid
+# executables could become the invoking users, which would be a security hole,
+# because the setuid/setgid binaries are not group- or world-readable until
+# after this chmod.
+chmod -R u+rw,ug-s img
+
+
+## Install our test stuff.
+
+# Sentinel file for --no-home --bind test
+echo "tmpfs and host home are not overmounted" \
+  > img/home/overmount-me
+
+# We want ch-ssh
+touch img/usr/bin/ch-ssh
+
+# Install test programs.
+cp -r $SRCDIR img/test
+$CH_RUN -- sh -c 'cd /test && make'
+
+
+## Tar it up.
+
+# Using pigz saves about 8 seconds. Normally we wouldn't care about that, but
+# this script is park of "make test-quick", which we'd like developers to use
+# frequently, so every second matters.
+if ( command -v pigz >/dev/null 2>&1 ); then
+    GZIP_CMD=pigz
+else
+    GZIP_CMD=gzip
+fi
+
+cd img
+tar c . | $GZIP_CMD > $TARBALL

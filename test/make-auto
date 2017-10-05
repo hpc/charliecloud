@@ -19,55 +19,65 @@ load common
 """)
 
 for path in sys.argv[2:]:
-   # NOTE: The following 2x2 matrix has an empty cell
+
    (d, f) = os.path.split(path)
-   if (f =='Dockerfile' or f == 'dockerpull'):
-      tag = os.path.basename(d)
+
+   # Find image tag.
+   if (f in ("Build", "Dockerfile", "dockerpull")):
+      tag = os.path.basename(d)         # no extension; use parent directory
    else:
-      tag = os.path.splitext(f)[1][1:] # extension
+      tag = os.path.splitext(f)[1][1:]  # use extension
    assert (tag != "")
-   if (f == 'dockerpull'):
-      with open(path) as fp:
-         addr = fp.readline().rstrip()
+
+   # Should we omit the test?
    try:
       if (os.environ["CH_TEST_OMIT"] in tag):
          continue
    except KeyError:
       pass
 
+   # Build a tarball: different test for each type.
    if (mode == "build"):
-      if (f == "dockerpull"):
-         print("""\
-
-@test 'docker pull %(tag)s' {
-    sudo docker pull %(addr)s
-    sudo docker tag %(addr)s %(tag)s
-}
-
-""" % locals())
-
-      else:		# is Dockerfile
-         print("""\
-
+      if ("Build" in f):
+         template = """\
+@test 'custom build %(tag)s' {
+    TARBALL=$TARDIR/%(tag)s.tar.gz
+    WORKDIR=$TARDIR/%(tag)s.tmp
+    mkdir $WORKDIR
+    cd %(d)s
+    ./Build $PWD $TARBALL $WORKDIR
+    rm -Rf $WORKDIR
+}"""
+      elif ("Dockerfile" in f or "dockerpull" in f):
+         if ("Dockerfile" in f):
+            template = """\
 @test 'ch-build %(tag)s' {
     ch-build -t %(tag)s --file=%(path)s ..
     docker_ok %(tag)s
-}
-
-""" % locals())
-
-      print("""\
+}"""
+         else:
+            assert ("dockerpull" in f)
+            with open(path) as fp:
+               addr = fp.readline().rstrip()
+            template = """\
+@test 'docker pull %(tag)s' {
+    sudo docker pull %(addr)s
+    sudo docker tag %(addr)s %(tag)s
+}"""
+         template += """
 @test 'ch-docker2tar %(tag)s' {
     TARBALL=$TARDIR/%(tag)s.tar.gz
     ch-docker2tar %(tag)s $TARDIR
     tarball_ok $TARBALL
-}
+}"""
+      else:
+         assert False, "unknown build type"
+      print("\n" + template % locals())
 
-""" % locals())
-
+   # Unpack tarball and run: same for all types.
    if (mode == "run"):
+      print()
       print("""\
-
 @test 'ch-tar2dir %(tag)s' {
     TARBALL=$TARDIR/%(tag)s.tar.gz
     IMG=$IMGDIR/%(tag)s
@@ -80,10 +90,7 @@ for path in sys.argv[2:]:
     ch-tar2dir $TARBALL $IMGDIR  # overwrite
     image_ok $IMG
 }
-
 @test 'ch-run %(tag)s /bin/true' {
     IMG=$IMGDIR/%(tag)s
     ch-run $IMG /bin/true
-}
-
-""" % locals())
+}""" % locals())

@@ -32,13 +32,6 @@ load common
     ch-ssh --help
 }
 
-@test 'docker pull runs' {
-    IMG=alpine:3.5
-    TAR=$IMG.tar.gz
-    ch-tar2dir $TARDIR/$TAR $IMGDIR
-    ch-run $IMGDIR/$IMG /bin/true
-}
-
 @test 'setuid bit matches --is-setuid' {
     test $CH_RUN_FILE -ef $(which ch-run)
     [[ -e $CH_RUN_FILE ]]
@@ -183,7 +176,7 @@ load common
                   | egrep -m1 '[A-Za-z] [0-9]' \
                   | sed -r 's/^(.*")?(.+)(")$/\2/')
     echo "host: $host_distro"
-    guest_expected='Alpine Linux v3.5'
+    guest_expected='Alpine Linux v3.6'
     echo "guest expected: $guest_expected"
     if [[ $host_distro = $guest_expected ]]; then
         skip 'host matches expected guest distro'
