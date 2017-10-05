@@ -76,7 +76,7 @@ load common
     IMG=$TARDIR/test
     [[ ! -e $IMG ]]
     ch-build2dir .. $TARDIR --file=Dockerfile.alpine35
-    docker_ok alpine35
+    docker_ok test
     image_ok $IMG
     # Remove since we don't want it hanging around later.
     rm -Rf --one-file-system $TAR $IMG
