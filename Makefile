@@ -75,14 +75,16 @@ install: all
 	chmod 755 $(DOC)/examples/serial/hello/hello.sh \
 	          $(DOC)/examples/syscalls/pivot_root \
 	          $(DOC)/examples/syscalls/userns
+	find $(DOC)/examples -name Build -exec chmod 755 {} \;
 #       tests
 	install -d $(TEST)
-	install -pm 644 -t $(TEST) \
-	        test/*.bats test/common.bash test/Dockerfile.* test/Makefile
+	install -pm 644 -t $(TEST) test/*.bats test/common.bash test/Makefile
+#       install -pm 755 -t $(TEST) test/Build.*
+	install -pm 644 -t $(TEST) test/Dockerfile.* #test/dockerpull.*
 	install -pm 755 -t $(TEST) test/make-perms-test
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
-	chmod 755 $(TEST)/chtest/*.py
+	chmod 755 $(TEST)/chtest/Build $(TEST)/chtest/*.py
 	install -d $(TEST)/bats.src
 	install -pm 644 -t $(TEST)/bats.src \
 	        test/bats.src/CONDUCT.md test/bats.src/LICENSE \
