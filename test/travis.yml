@@ -19,12 +19,12 @@ compiler: gcc
 #
 env:
   - EXPORT=    INSTALL=    SETUID=
-  - EXPORT=    INSTALL=    SETUID=yes
   - EXPORT=    INSTALL=yes SETUID=
-  - EXPORT=    INSTALL=yes SETUID=yes
   - EXPORT=yes INSTALL=    SETUID=
-  - EXPORT=yes INSTALL=    SETUID=yes
   - EXPORT=yes INSTALL=yes SETUID=
+  - EXPORT=    INSTALL=    SETUID=yes
+  - EXPORT=    INSTALL=yes SETUID=yes
+  - EXPORT=yes INSTALL=    SETUID=yes
   - EXPORT=yes INSTALL=yes SETUID=yes
 
 install:
