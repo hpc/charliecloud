@@ -1,9 +1,12 @@
 export LC_ALL := C
-DOCKERS := chtest/Dockerfile \
+IMAGES :=      chtest/Build \
+               $(sort $(wildcard ./Build.*)) \
                $(sort $(wildcard ./Dockerfile.*)) \
+               $(sort $(wildcard ./dockerpull.*)) \
+               $(sort $(wildcard ../examples/*/*/Build)) \
                $(sort $(wildcard ../examples/*/*/Dockerfile)) \
                $(sort $(wildcard ../examples/*/*/dockerpull))
-DOCKERSQUICK := chtest/Dockerfile
+IMAGESQUICK := chtest/Build Dockerfile.alpine35 ../examples/serial/dockerpull/dockerpull
 EXAMPLETESTS := $(sort $(wildcard ../examples/*/*/test.bats))
 ifdef CH_TEST_OMIT
   EXAMPLETESTS := $(foreach i,$(EXAMPLETESTS),$(if $(findstring $(CH_TEST_OMIT),$(i)),,$(i)))
@@ -51,11 +54,11 @@ test-quick: build_auto-quick.bats
 clean:
 	rm -f *_auto*.bats
 
-build_auto.bats: $(DOCKERS)
+build_auto.bats: $(IMAGES)
 	./make-auto build $^ > $@
 
-build_auto-quick.bats: $(DOCKERSQUICK)
+build_auto-quick.bats: $(IMAGESQUICK)
 	./make-auto build $^ > $@
 
-run_auto.bats: $(DOCKERS)
+run_auto.bats: $(IMAGES)
 	./make-auto run $^ > $@

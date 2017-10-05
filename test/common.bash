@@ -32,7 +32,7 @@ export LC_ALL=C
 # up and over (source code) or set during "make install".
 CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/bin" && pwd)"
 CH_BIN="$(readlink -f "$CH_BIN")"
-PATH=$CH_BIN:$PATH
+export PATH=$CH_BIN:$PATH
 CH_RUN_FILE="$(which ch-run)"
 if [[ -u $CH_RUN_FILE ]]; then
     CH_RUN_SETUID=yes

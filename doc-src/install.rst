@@ -56,6 +56,13 @@ mode independently), you also need:
 
 * Bash 4.1+
 * Python 2.6+
+* wget
+
+.. With respect to curl vs. wget, both will work fine for our purposes
+   (download a URL). According to Debian's popularity contest, 99.88% of
+   reporting systems have wget installed, vs. about 44% for curl. On the other
+   hand, curl is in the minimal install of CentOS 7 while wget is not. For now
+   I just picked wget because I liked it better.
 
 
 Install Docker (build systems only)
