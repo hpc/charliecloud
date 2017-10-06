@@ -55,7 +55,7 @@ echo $MIRROR/main > img/etc/apk/repositories
 $CH_RUN -- /sbin/apk.static \
            --allow-untrusted --initdb --update-cache \
            add alpine-base apk-tools \
-  1>&2 || true
+  || true
 
 # apk doesn't install the busybox symlinks in setuid mode.
 if ( ch-run --is-setuid ); then

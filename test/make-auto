@@ -21,6 +21,7 @@ load common
 for path in sys.argv[2:]:
 
    (d, f) = os.path.split(path)
+   if (d == ""): d = "."
 
    # Find image tag.
    if (f in ("Build", "Dockerfile", "Docker_Pull")):
@@ -42,11 +43,19 @@ for path in sys.argv[2:]:
          template = """\
 @test 'custom build %(tag)s' {
     TARBALL=$TARDIR/%(tag)s.tar.gz
+    PQ=$TARDIR/%(tag)s.pq_missing
     WORKDIR=$TARDIR/%(tag)s.tmp
+    rm -f $PQ
     mkdir $WORKDIR
     cd %(d)s
-    ./Build $PWD $TARBALL $WORKDIR
+    run ./%(f)s $PWD $TARBALL $WORKDIR
+    echo "$output"
     rm -Rf $WORKDIR
+    if [[ $status -eq 65 ]]; then
+         touch $PQ
+         skip 'prerequisites not met'
+    fi
+    [[ $status -eq 0 ]]
 }"""
       elif ("Dockerfile" in f or "Docker_Pull" in f):
          if ("Dockerfile" in f):
@@ -79,9 +88,11 @@ for path in sys.argv[2:]:
       print()
       print("""\
 @test 'ch-tar2dir %(tag)s' {
+    prerequisites_ok %(tag)s
     ch-tar2dir $TARDIR/%(tag)s.tar.gz $IMGDIR
 }
 @test 'ch-run %(tag)s /bin/true' {
+    prerequisites_ok %(tag)s
     IMG=$IMGDIR/%(tag)s
     ch-run $IMG /bin/true
 }""" % locals())

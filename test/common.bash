@@ -18,6 +18,12 @@ image_ok () {
     [[ $byte_ct -ge 3145728 ]]  # image is at least 3MiB
 }
 
+prerequisites_ok () {
+    if [[ -f $TARDIR/$1.pq_missing ]]; then
+        skip 'build prerequisites not met'
+    fi
+}
+
 tarball_ok () {
     ls -ld $1 || true
     test -f $1
