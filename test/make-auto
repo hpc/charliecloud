@@ -23,7 +23,7 @@ for path in sys.argv[2:]:
    (d, f) = os.path.split(path)
 
    # Find image tag.
-   if (f in ("Build", "Dockerfile", "dockerpull")):
+   if (f in ("Build", "Dockerfile", "Docker_Pull")):
       tag = os.path.basename(d)         # no extension; use parent directory
    else:
       tag = os.path.splitext(f)[1][1:]  # use extension
@@ -48,7 +48,7 @@ for path in sys.argv[2:]:
     ./Build $PWD $TARBALL $WORKDIR
     rm -Rf $WORKDIR
 }"""
-      elif ("Dockerfile" in f or "dockerpull" in f):
+      elif ("Dockerfile" in f or "Docker_Pull" in f):
          if ("Dockerfile" in f):
             template = """\
 @test 'ch-build %(tag)s' {
@@ -56,7 +56,7 @@ for path in sys.argv[2:]:
     docker_ok %(tag)s
 }"""
          else:
-            assert ("dockerpull" in f)
+            assert ("Docker_Pull" in f)
             with open(path) as fp:
                addr = fp.readline().rstrip()
             template = """\

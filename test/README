@@ -8,11 +8,11 @@ The Charliecloud test suite can build images by three methods:
 3. By running a custom script.
 
 To create an image that will be built, unpacked, and basic tests run within,
-create a file in test/ called {Dockerfile,Dockerpull,Build}.foo. This will
+create a file in test/ called {Dockerfile,Docker_Pull,Build}.foo. This will
 create an image tagged "foo".
 
 To create an image with its own tests, documentation, etc., create a directory
-in examples/* containing a file called {Dockerfile,Dockerpull,Build}.
+in examples/* containing a file called {Dockerfile,Docker_Pull,Build}.
 Optionally, include a file test.bats containing Bats tests for the image.
 
 Additional subdirectories can be symlinked into examples and will be
@@ -25,7 +25,7 @@ Dockerfile:
 
   * It's a Dockerfile.
 
-dockerpull:
+Docker_Pull:
 
   * One line stating the address to pull from Docker Hub.
 

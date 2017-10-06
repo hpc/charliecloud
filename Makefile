@@ -80,7 +80,7 @@ install: all
 	install -d $(TEST)
 	install -pm 644 -t $(TEST) test/*.bats test/common.bash test/Makefile
 #       install -pm 755 -t $(TEST) test/Build.*
-	install -pm 644 -t $(TEST) test/Dockerfile.* #test/dockerpull.*
+	install -pm 644 -t $(TEST) test/Dockerfile.* test/Docker_Pull.*
 	install -pm 755 -t $(TEST) test/make-perms-test
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
