@@ -2,11 +2,11 @@ export LC_ALL := C
 IMAGES :=      chtest/Build \
                $(sort $(wildcard ./Build.*)) \
                $(sort $(wildcard ./Dockerfile.*)) \
-               $(sort $(wildcard ./dockerpull.*)) \
+               $(sort $(wildcard ./Docker_Pull.*)) \
                $(sort $(wildcard ../examples/*/*/Build)) \
                $(sort $(wildcard ../examples/*/*/Dockerfile)) \
-               $(sort $(wildcard ../examples/*/*/dockerpull))
-IMAGESQUICK := chtest/Build Dockerfile.alpine35 ../examples/serial/dockerpull/dockerpull
+               $(sort $(wildcard ../examples/*/*/Docker_Pull))
+IMAGESQUICK := chtest/Build Dockerfile.alpine36 Docker_Pull.alpine36_dp
 EXAMPLETESTS := $(sort $(wildcard ../examples/*/*/test.bats))
 ifdef CH_TEST_OMIT
   EXAMPLETESTS := $(foreach i,$(EXAMPLETESTS),$(if $(findstring $(CH_TEST_OMIT),$(i)),,$(i)))
