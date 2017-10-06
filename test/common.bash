@@ -38,6 +38,14 @@ if [[ -u $CH_RUN_FILE ]]; then
     CH_RUN_SETUID=yes
 fi
 
+# User-private temporary directory in case multiple users are running the
+# tests simultaenously.
+btnew=$BATS_TMPDIR/bats.tmp.$USER
+mkdir -p $btnew
+chmod 700 $btnew
+export BATS_TMPDIR=$btnew
+[[ $(stat -c '%a' $BATS_TMPDIR) = '700' ]]
+
 # Separate directories for tarballs and images
 TARDIR=$CH_TEST_TARDIR
 IMGDIR=$CH_TEST_IMGDIR
@@ -53,9 +61,7 @@ if [[ $CHTEST_MULTINODE ]]; then
     CHTEST_CORES=$(($SLURM_CPUS_ON_NODE * $SLURM_JOB_NUM_NODES))
 fi
 
-# Stuff for a few more sensitive tests
-BATS_TMPDIR_PRIVATE=$(mktemp -d --tmpdir=$BATS_TMPDIR)
-[[ $(stat -c '%a' $BATS_TMPDIR_PRIVATE) = '700' ]]
+# Do we have sudo?
 if (command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.

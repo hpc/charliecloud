@@ -29,7 +29,7 @@ int main()
 {
    struct stat before, after;
    int fd, status;
-   char tmpdir_template[] = "/tmp/chroot-escape-XXXXXX";  // not cleaned up
+   char tmpdir_template[] = "/tmp/chtest.tmp.chroot.XXXXXX";
    char * tmpdir_name;
 
    if (stat("/", &before)) fatal("stat before");
@@ -71,6 +71,8 @@ int main()
    }
    printf("dev/inode before %lu/%lu, after %lu/%lu\n",
           before.st_dev, before.st_ino, after.st_dev, after.st_ino);
+
+   if (rmdir(tmpdir_name)) fatal("rmdir");
 
    return status;
 }
