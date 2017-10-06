@@ -54,7 +54,7 @@ load common
 }
 
 @test 'ch-run refuses to run if setgid' {
-    CH_RUN_TMP=$BATS_TMPDIR_PRIVATE/ch-run.setgid
+    CH_RUN_TMP=$BATS_TMPDIR/ch-run.setgid
     GID=$(id -g)
     GID2=$(id -G | cut -d' ' -f2)
     echo "GIDs: $GID $GID2"
@@ -75,7 +75,7 @@ load common
 @test 'ch-run refuses to run if setuid' {
     [[ -z $CH_RUN_SETUID ]] || skip 'compiled in setuid mode'
     [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
-    CH_RUN_TMP=$BATS_TMPDIR_PRIVATE/ch-run.setuid
+    CH_RUN_TMP=$BATS_TMPDIR/ch-run.setuid
     cp -a $CH_RUN_FILE $CH_RUN_TMP
     ls -l $CH_RUN_TMP
     sudo chown root $CH_RUN_TMP
