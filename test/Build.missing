@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# This image's prerequisites can never be satisfied.
+exit 65

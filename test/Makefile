@@ -6,7 +6,10 @@ IMAGES :=      chtest/Build \
                $(sort $(wildcard ../examples/*/*/Build)) \
                $(sort $(wildcard ../examples/*/*/Dockerfile)) \
                $(sort $(wildcard ../examples/*/*/Docker_Pull))
-IMAGESQUICK := chtest/Build Dockerfile.alpine36 Docker_Pull.alpine36_dp
+IMAGESQUICK := chtest/Build \
+               Build.missing \
+               Dockerfile.alpine36 \
+               Docker_Pull.alpine36_dp
 EXAMPLETESTS := $(sort $(wildcard ../examples/*/*/test.bats))
 ifdef CH_TEST_OMIT
   EXAMPLETESTS := $(foreach i,$(EXAMPLETESTS),$(if $(findstring $(CH_TEST_OMIT),$(i)),,$(i)))
@@ -14,7 +17,7 @@ endif
 
 # Used by "make all" at top level to build these files for "make install".
 .PHONY: all
-all: build_auto.bats build_auto-quick.bats run_auto.bats
+all: build_auto.bats build_auto-quick.bats run_auto.bats run_auto-quick.bats
 
 .PHONY: test
 test: test-build test-run
@@ -47,8 +50,8 @@ test-test: $(EXAMPLETESTS)
 	./bats $(EXAMPLETESTS)
 
 .PHONY: test-quick
-test-quick: build_auto-quick.bats
-	./bats build.bats build_auto-quick.bats run.bats
+test-quick: build_auto-quick.bats run_auto-quick.bats
+	./bats build.bats build_auto-quick.bats run.bats run_auto-quick.bats
 
 .PHONY: clean
 clean:
@@ -61,4 +64,7 @@ build_auto-quick.bats: $(IMAGESQUICK)
 	./make-auto build $^ > $@
 
 run_auto.bats: $(IMAGES)
+	./make-auto run $^ > $@
+
+run_auto-quick.bats: $(IMAGESQUICK)
 	./make-auto run $^ > $@

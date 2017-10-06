@@ -47,8 +47,7 @@ Build:
     tarball with no leading path ("./" is acceptable).
   * Any scripting language is permitted. To be included in the Charliecloud
     source code, a language already within the prerequisites is required.
-  * Exit codes (in all cases, logging chatter may be printed on stderr):
-    *    0: Image tarball successfully created. No output on stdout.
-    *   65: One or more prerequisites were not met. Description of the missing
-            prerequisite(s) of 50 characters or less is printed on stdout.
-    * else: An error occurred. No output on stdout. Error message on stderr.
+  * Exit codes:
+    *    0: Image tarball successfully created.
+    *   65: One or more prerequisites were not met.
+    * else: An error occurred.
