@@ -79,16 +79,7 @@ for path in sys.argv[2:]:
       print()
       print("""\
 @test 'ch-tar2dir %(tag)s' {
-    TARBALL=$TARDIR/%(tag)s.tar.gz
-    IMG=$IMGDIR/%(tag)s
-    if [[ -d $IMG && -f $IMG/WEIRD_AL_YANKOVIC ]]; then
-        # image exists, remove so we can test new unpack
-        rm -Rf --one-file-system $IMG
-    fi
-    ch-tar2dir $TARBALL $IMGDIR  # new unpack
-    image_ok $IMG
-    ch-tar2dir $TARBALL $IMGDIR  # overwrite
-    image_ok $IMG
+    ch-tar2dir $TARDIR/%(tag)s.tar.gz $IMGDIR
 }
 @test 'ch-run %(tag)s /bin/true' {
     IMG=$IMGDIR/%(tag)s

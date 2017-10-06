@@ -108,7 +108,14 @@ load common
 }
 
 @test 'unpack chtest image' {
-    ch-tar2dir $CHTEST_TARBALL $IMGDIR
+    if ( image_ok $CHTEST_IMG ); then
+        # image exists, remove so we can test new unpack
+        rm -Rf --one-file-system $CHTEST_IMG
+    fi
+    ch-tar2dir $CHTEST_TARBALL $IMGDIR  # new unpack
+    image_ok $CHTEST_IMG
+    ch-tar2dir $CHTEST_TARBALL $IMGDIR  # overwrite
+    image_ok $CHTEST_IMG
 }
 
 @test 'ch-tar2dir errors' {
