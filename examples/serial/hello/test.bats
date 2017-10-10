@@ -1,5 +1,9 @@
 load ../../../test/common
 
+setup () {
+    prerequisites_ok hello
+}
+
 @test "$EXAMPLE_TAG/hello" {
     run ch-run $EXAMPLE_IMG -- /hello/hello.sh
     echo "$output"

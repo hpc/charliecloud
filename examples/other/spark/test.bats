@@ -16,6 +16,7 @@ load ../../../test/common
 # empty).
 
 setup () {
+    prerequisites_ok spark
     umask 0077
     SPARK_IMG=$IMGDIR/spark
     SPARK_DIR=~/ch-spark-test.tmp  # runs before each test, so no mktemp

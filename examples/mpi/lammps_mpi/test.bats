@@ -35,6 +35,7 @@ load ../../../test/common
 # [2]: https://ci.lammps.org/job/lammps/job/master/job/testing/lastSuccessfulBuild/console
 
 setup () {
+    prerequisites_ok lammps_mpi
     IMG=$IMGDIR/lammps_mpi
 }
 
