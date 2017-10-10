@@ -18,6 +18,21 @@ image_ok () {
     [[ $byte_ct -ge 3145728 ]]  # image is at least 3MiB
 }
 
+need_docker () {
+    # Skip test if $CH_TEST_SKIP_DOCKER is true. If argument provided, use
+    # that tag as missing prerequisite sentinel file.
+    PQ=$TARDIR/$1.pq_missing
+    if [[ $PQ ]]; then
+        rm -f $PQ
+    fi
+    if [[ $CH_TEST_SKIP_DOCKER ]]; then
+        if [[ $PQ ]]; then
+            touch $PQ
+        fi
+        skip 'Docker not found or user-skipped'
+    fi
+}
+
 prerequisites_ok () {
     if [[ -f $TARDIR/$1.pq_missing ]]; then
         skip 'build prerequisites not met'
@@ -67,8 +82,14 @@ if [[ $CHTEST_MULTINODE ]]; then
     CHTEST_CORES=$(($SLURM_CPUS_ON_NODE * $SLURM_JOB_NUM_NODES))
 fi
 
+# If the variable CH_TEST_SKIP_DOCKER is true, we skip all the tests that
+# depend on Docker. It's true if user-set or command "docker" is not in $PATH.
+if ( ! command -v docker >/dev/null 2>&1 ); then
+    CH_TEST_SKIP_DOCKER=yes
+fi
+
 # Do we have sudo?
-if (command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1); then
+if ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     CHTEST_HAVE_SUDO=yes

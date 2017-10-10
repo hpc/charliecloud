@@ -1,6 +1,7 @@
 load ../../../test/common
 
 setup () {
+    prerequisites_ok obspy
     IMG=$IMGDIR/obspy
 }
 

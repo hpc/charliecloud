@@ -72,6 +72,7 @@ load common
 @test 'ch-build2dir' {
     # This test unpacks into $TARDIR so we don't put anything in $IMGDIR at
     # build time. It removes the image on completion.
+    need_docker
     TAR=$TARDIR/alpine36.tar.gz
     IMG=$TARDIR/test
     [[ ! -e $IMG ]]
