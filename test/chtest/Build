@@ -4,7 +4,7 @@
 # https://wiki.alpinelinux.org/wiki/Installing_Alpine_Linux_in_a_chroot
 #
 # We deliberately do not sudo. It's a little rough around the edges, because
-# apk expects root, but it better follows the principle of least principle. We
+# apk expects root, but it better follows the principle of least privilege. We
 # could tidy by using the fakeroot utility, but AFAICT that's not particularly
 # common and we'd prefer not to introduce another dependency. For example,
 # it's a standard tool on Debian but only in EPEL for CentOS.
