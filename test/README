@@ -28,6 +28,9 @@ Dockerfile:
 Docker_Pull:
 
   * One line stating the address to pull from Docker Hub.
+  * Examples (these refer to the same image as of this writing):
+      alpine:3.6
+      alpine@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d
 
 Build:
 
@@ -36,7 +39,6 @@ Build:
     * $1: Absolute path to directory containing Build.
     * $2: Absolute path and name of gzipped tarball output.
     * $3: Absolute path to appropriate temporary directory.
-  * $PWD is the directory containing Build.
   * The script must not write anything in $PWD.
   * Temporary directory can be used for whatever and need not be cleaned up.
     (It will be deleted by the test harness.)
