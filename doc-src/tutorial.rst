@@ -13,6 +13,12 @@ you have access to the examples in the source code.
    :depth: 2
    :local:
 
+.. note::
+
+   Shell sessions throughout this documentation will use the prompt :code:`$`
+   to indicate commands executed natively on the host and :code:`>` for
+   commands executed in a container.
+
 
 90 seconds to Charliecloud
 ==========================

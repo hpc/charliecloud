@@ -66,7 +66,7 @@ install: all
 	install -pm 644 -t $(BIN) bin/base.sh bin/version.h bin/version.sh
 #       misc "documentation"
 	install -d $(DOC)
-	install -pm 644 -t $(DOC) COPYRIGHT LICENSE README
+	install -pm 644 -t $(DOC) COPYRIGHT LICENSE README.rst
 #       examples
 	for i in examples/syscalls examples/{serial,mpi,other}/*; do \
 	    install -d $(DOC)/$$i; \
