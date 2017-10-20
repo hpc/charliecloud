@@ -175,3 +175,25 @@ two solutions:
    change the image between runs) and/or stability (if there are multiple
    application processes and one writes a file in the image that another is
    reading or writing).
+
+
+Which specific :code:`sudo` commands are needed?
+================================================
+
+For running images, :code:`sudo` is not needed at all.
+
+For building images, it depends on what you would like to support. For
+example, do you want to let users build images with Docker? Do you want to let
+them run the build tests?
+
+We do not maintain specific lists, but you can search the source code and
+documentation for uses of :code:`sudo` and :code:`$DOCKER` and evaluate them
+on a case-by-case basis. (The latter includes :code:`sudo` if needed to invoke
+:code:`docker` in your environment.) For example::
+
+  $ find . \(   -type f -executable \
+             -o -name Makefile \
+             -o -name '*.bats' \
+             -o -name '*.rst' \
+             -o -name '*.sh' \) \
+           -exec egrep -H '(sudo|\$DOCKER)' {} \;
