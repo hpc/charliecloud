@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5. Frequently asked questions (FAQ) &mdash; Charliecloud 0.2.2 documentation</title>
+  <title>5. Frequently asked questions (FAQ) &mdash; Charliecloud 0.2.3~pre documentation</title>
   
 
   
@@ -34,7 +34,7 @@
   
         <link rel="search" title="Search" href="search.html"/>
         <link rel="copyright" title="Copyright" href="copyright.html"/>
-    <link rel="top" title="Charliecloud 0.2.2 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.2.3~pre documentation" href="index.html"/>
         <link rel="next" title="6. Copyright and license" href="copyright.html"/>
         <link rel="prev" title="4. VirtualBox appliance" href="virtualbox.html"/> 
 
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                34f7e35
+                62d9bbc
               </div>
             
           
@@ -101,6 +101,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#why-is-bin-being-added-to-my-path">5.4. Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#how-does-setuid-mode-work">5.5. How does setuid mode work?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ch-run-fails-with-can-t-re-mount-image-read-only">5.6. <code class="code docutils literal"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#which-specific-sudo-commands-are-needed">5.7. Which specific <code class="code docutils literal"><span class="pre">sudo</span></code> commands are needed?</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="copyright.html">6. Copyright and license</a></li>
@@ -175,6 +176,7 @@
 <li><a class="reference internal" href="#why-is-bin-being-added-to-my-path" id="id4">Why is <code class="code docutils literal"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal"><span class="pre">$PATH</span></code>?</a></li>
 <li><a class="reference internal" href="#how-does-setuid-mode-work" id="id5">How does setuid mode work?</a></li>
 <li><a class="reference internal" href="#ch-run-fails-with-can-t-re-mount-image-read-only" id="id6"><code class="code docutils literal"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></li>
+<li><a class="reference internal" href="#which-specific-sudo-commands-are-needed" id="id7">Which specific <code class="code docutils literal"><span class="pre">sudo</span></code> commands are needed?</a></li>
 </ul>
 </div>
 <div class="section" id="my-app-needs-to-write-to-var-log-run-etc">
@@ -321,6 +323,25 @@ application processes and one writes a file in the image that another is
 reading or writing).</li>
 </ol>
 </div>
+<div class="section" id="which-specific-sudo-commands-are-needed">
+<h2><a class="toc-backref" href="#id7">5.7. Which specific <code class="code docutils literal"><span class="pre">sudo</span></code> commands are needed?</a><a class="headerlink" href="#which-specific-sudo-commands-are-needed" title="Permalink to this headline">¶</a></h2>
+<p>For running images, <code class="code docutils literal"><span class="pre">sudo</span></code> is not needed at all.</p>
+<p>For building images, it depends on what you would like to support. For
+example, do you want to let users build images with Docker? Do you want to let
+them run the build tests?</p>
+<p>We do not maintain specific lists, but you can search the source code and
+documentation for uses of <code class="code docutils literal"><span class="pre">sudo</span></code> and <code class="code docutils literal"><span class="pre">$DOCKER</span></code> and evaluate them
+on a case-by-case basis. (The latter includes <code class="code docutils literal"><span class="pre">sudo</span></code> if needed to invoke
+<code class="code docutils literal"><span class="pre">docker</span></code> in your environment.) For example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> find . <span class="se">\(</span>   -type f -executable <span class="se">\</span>
+           -o -name Makefile <span class="se">\</span>
+           -o -name <span class="s1">&#39;*.bats&#39;</span> <span class="se">\</span>
+           -o -name <span class="s1">&#39;*.rst&#39;</span> <span class="se">\</span>
+           -o -name <span class="s1">&#39;*.sh&#39;</span> <span class="se">\)</span> <span class="se">\</span>
+         -exec egrep -H <span class="s1">&#39;(sudo|\$DOCKER)&#39;</span> <span class="o">{}</span> <span class="se">\;</span>
+</pre></div>
+</div>
+</div>
 </div>
 
 
@@ -366,7 +387,7 @@ reading or writing).</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.2',
+            VERSION:'0.2.3~pre',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Overview &mdash; Charliecloud 0.2.2 documentation</title>
+  <title>Overview &mdash; Charliecloud 0.2.3~pre documentation</title>
   
 
   
@@ -34,7 +34,7 @@
   
         <link rel="search" title="Search" href="search.html"/>
         <link rel="copyright" title="Copyright" href="copyright.html"/>
-    <link rel="top" title="Charliecloud 0.2.2 documentation" href="#"/>
+    <link rel="top" title="Charliecloud 0.2.3~pre documentation" href="#"/>
         <link rel="next" title="1. Installation" href="install.html"/> 
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                34f7e35
+                62d9bbc
               </div>
             
           
@@ -158,11 +158,12 @@
             
   <div class="section" id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="what-is-charliecloud">
+<h2>What is Charliecloud?<a class="headerlink" href="#what-is-charliecloud" title="Permalink to this headline">¶</a></h2>
 <p>Charliecloud provides user-defined software stacks (UDSS) for high-performance
 computing (HPC) centers. This “bring your own software stack” functionality
 addresses needs such as:</p>
-<blockquote>
-<div><ul class="simple">
+<ul class="simple">
 <li>software dependencies that are numerous, complex, unusual, diferently
 configured, or simply newer/older than what the center provides;</li>
 <li>build-time requirements unavailable within the center, such as relatively
@@ -171,11 +172,13 @@ unfettered internet access;</li>
 particular field of inquiry;</li>
 <li>portability of environments between resources, including workstations and
 other test and development system not managed by the center;</li>
-<li>consistent environments, even archivally so, that can be easily,
-reliabily, and verifiably reproduced in the future; and/or</li>
+<li>consistent environments, even archivally so, that can be easily, reliabily,
+and verifiably reproduced in the future; and/or</li>
 <li>usability and comprehensibility.</li>
 </ul>
-</div></blockquote>
+</div>
+<div class="section" id="how-does-it-work">
+<h2>How does it work?<a class="headerlink" href="#how-does-it-work" title="Permalink to this headline">¶</a></h2>
 <p>This is done using Linux user namespaces to run industry-standard Docker
 containers with no privileged operations or daemons and minimal configuration
 changes on center resources. This simple approach avoids most security risks
@@ -184,24 +187,35 @@ offer.</p>
 <p>Because user namespaces are available only in newer kernel versions, an
 experimental setuid mode is also provided to let sites evaluate Charliecloud
 even if they do not have user namespace-capable kernels readily available.</p>
-<p>Patches are much appreciated on the software itself as well as documentation.
-We are friendly and welcoming of diversity on all dimensions.</p>
-<p>Charliecloud’s original path was to use virtual machines (QEMU and KVM). This
-code and documentation has been removed from the master branch but is still
-available in the virtual-machines branch. We are open to re-including it in
-master, given a volunteer to maintain it.</p>
-<p>To learn more, see our article in USENIX’s ;login: magazine:
-<a class="reference external" href="https://www.usenix.org/publications/login/fall2017/priedhorsky">https://www.usenix.org/publications/login/fall2017/priedhorsky</a></p>
-<p>Please contact <a class="reference external" href="mailto:reidpr&#37;&#52;&#48;lanl&#46;gov">reidpr<span>&#64;</span>lanl<span>&#46;</span>gov</a> with any comments or questions.</p>
+</div>
+<div class="section" id="how-do-i-learn-more">
+<h2>How do I learn more?<a class="headerlink" href="#how-do-i-learn-more" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Documentation: <a class="reference external" href="https://hpc.github.io/charliecloud">https://hpc.github.io/charliecloud</a></li>
+<li>GitHub repository: <a class="reference external" href="https://github.com/hpc/charliecloud">https://github.com/hpc/charliecloud</a></li>
+<li>We wrote an article for USENIX’s magazine <em>;login:</em> that explains in more
+detail the motivation for Charliecloud and the technology upon which it is
+based: <a class="reference external" href="https://www.usenix.org/publications/login/fall2017/priedhorsky">https://www.usenix.org/publications/login/fall2017/priedhorsky</a></li>
+<li>A more technical resource is our Supercomputing 2017 paper:
+<a class="reference external" href="http://permalink.lanl.gov/object/tr?what=info:lanl-repo/lareport/LA-UR-16-22370">http://permalink.lanl.gov/object/tr?what=info:lanl-repo/lareport/LA-UR-16-22370</a></li>
+</ul>
+</div>
+<div class="section" id="how-can-i-participate">
+<h2>How can I participate?<a class="headerlink" href="#how-can-i-participate" title="Permalink to this headline">¶</a></h2>
+<p>Questions, comments, feature requests, bug reports, etc. can be directed to:</p>
+<ul class="simple">
+<li>our mailing list: <em>charliecloud&#64;groups.io</em> or <a class="reference external" href="https://groups.io/g/charliecloud">https://groups.io/g/charliecloud</a></li>
+<li>issues on GitHub</li>
+</ul>
+<p>Patches are much appreciated on the software itself as well as documentation.</p>
+<p>We are friendly and welcoming of diversity on all dimensions.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Shell sessions throughout this documentation will use the prompt <code class="code docutils literal"><span class="pre">$</span></code>
-to indicate commands executed natively on the host and <code class="code docutils literal"><span class="pre">&gt;</span></code> for
-commands executed in a container.</p>
+<p class="last">This documentation is for Charliecloud version 0.2.3~pre (Git commit
+62d9bbc) and was built 2017-10-24 10:29 GMT+00:00.</p>
 </div>
-<p>This documentation is for Charliecloud version 0.2.2 (Git commit
-34f7e35) and was built 2017-09-18 16:38 GMT+00:00.</p>
 <div class="toctree-wrapper compound">
+</div>
 </div>
 </div>
 
@@ -246,7 +260,7 @@ commands executed in a container.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.2',
+            VERSION:'0.2.3~pre',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
