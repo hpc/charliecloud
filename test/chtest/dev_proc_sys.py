@@ -9,7 +9,8 @@ import sys
 sys_file = None
 for f in ("/sys/devices/cpu/rdpmc",
           "/sys/kernel/mm/page_idle/bitmap",
-          "/sys/kernel/slab/request_sock_TCP/red_zone"):
+          "/sys/kernel/slab/request_sock_TCP/red_zone",
+	  "sys/kernel/debug/kprobes/enabled"):
    if (os.path.exists(f)):
       sys_file = f
       break
