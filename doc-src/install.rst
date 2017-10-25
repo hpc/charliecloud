@@ -26,6 +26,10 @@ Systems used for running images in the standard unprivileged mode need:
 * Recent Linux kernel with :code:`CONFIG_USER_NS=y`. (We've had good luck with
   various distribution upstream versions of 4.4 and higher.)
 
+  * Some distributions (e.g. debian stretch) disable user namespaces
+    via the :code:`kernel.unprivileged_userns_clone` sysctl. Set this
+    to :code:`1` to enable them.
+
 * C compiler and standard library
 
 * POSIX shell and utilities
