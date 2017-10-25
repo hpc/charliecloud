@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                62d9bbc
+                e1c3087
               </div>
             
           
@@ -240,6 +240,11 @@ various distribution upstream versions of 4.4 and higher.)</li>
 <li>C compiler and standard library</li>
 <li>POSIX shell and utilities</li>
 </ul>
+<p>Some distributions need configuration changes to enable user namespaces. For
+example, Debian Stretch needs sysctl
+<code class="code docutils literal"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>, and RHEL and CentOS 7.4 need both
+a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>
+(that put you into “technology preview”).</p>
 <p>Tested and working by us include the Ubuntu and upstream versions of 4.4.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
