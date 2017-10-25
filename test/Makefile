@@ -51,7 +51,7 @@ test-test: $(EXAMPLETESTS)
 
 .PHONY: test-quick
 test-quick: build_auto-quick.bats run_auto-quick.bats
-	./bats build.bats build_auto-quick.bats run.bats run_auto-quick.bats
+	./bats build.bats build_auto-quick.bats run.bats run_uidgid.bats run_auto-quick.bats
 
 .PHONY: clean
 clean:
