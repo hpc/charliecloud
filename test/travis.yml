@@ -32,6 +32,10 @@ install:
   - sudo pip install sphinx sphinx-rtd-theme
 
 before_script:
+  - getconf _NPROCESSORS_ONLN
+  - free -m
+  - df -h
+  - df -h /var/tmp
   - export CH_TEST_TARDIR=/var/tmp/tarballs
   - export CH_TEST_IMGDIR=/var/tmp/images
   - export CH_TEST_PERMDIRS='/var/tmp /run'
@@ -42,3 +46,7 @@ before_script:
 
 script:
   - test/travis.sh
+
+after_script:
+  - free -m
+  - df -h
