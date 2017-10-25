@@ -26,13 +26,16 @@ Systems used for running images in the standard unprivileged mode need:
 * Recent Linux kernel with :code:`CONFIG_USER_NS=y`. (We've had good luck with
   various distribution upstream versions of 4.4 and higher.)
 
-  * Some distributions (e.g. debian stretch) disable user namespaces
-    via the :code:`kernel.unprivileged_userns_clone` sysctl. Set this
-    to :code:`1` to enable them.
-
 * C compiler and standard library
 
 * POSIX shell and utilities
+
+Some distributions need configuration changes to enable user namespaces. For
+example, Debian Stretch needs sysctl
+:code:`kernel.unprivileged_userns_clone=1`, and RHEL and CentOS 7.4 need both
+a `kernel command line option and a sysctl
+<https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_
+(that put you into "technology preview").
 
 Tested and working by us include the Ubuntu and upstream versions of 4.4.
 
