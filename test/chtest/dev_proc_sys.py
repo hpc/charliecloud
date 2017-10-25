@@ -14,16 +14,20 @@ for f in ("/sys/devices/cpu/rdpmc",
       sys_file = f
       break
 
+if sys_file is None:
+   print("WARNING\t No sys_file found to test")
+
 problem_ct = 0
 for f in ("/dev/mem", "/proc/kcore", sys_file):
-   try:
-      open(f, "rb").read(1)
-      print("RISK\t%s: read allowed" % f)
-      problem_ct += 1
-   except PermissionError:
-      print("SAFE\t%s: read not allowed" % f)
-   except OSError as x:
-      print("ERROR\t%s: exception: %s" % (f, x))
-      problem_ct += 1
+   if f is not None:
+      try:
+         open(f, "rb").read(1)
+         print("RISK\t%s: read allowed" % f)
+         problem_ct += 1
+      except PermissionError:
+         print("SAFE\t%s: read not allowed" % f)
+      except OSError as x:
+         print("ERROR\t%s: exception: %s" % (f, x))
+         problem_ct += 1
 
 sys.exit(problem_ct != 0)
