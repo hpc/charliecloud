@@ -73,11 +73,11 @@ fi
 rm img/sbin/apk.static.*
 
 # Install packages we need for our tests.
-$CH_RUN -- apk add gcc make musl-dev python3 || true
+$CH_RUN -- sbin/apk add gcc make musl-dev python3 || true
 
 # Validate the install.
-$CH_RUN -- apk audit --system
-$CH_RUN -- apk stats
+$CH_RUN -- sbin/apk audit --system
+$CH_RUN -- sbin/apk stats
 
 # Fix permissions.
 #
