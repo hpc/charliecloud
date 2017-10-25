@@ -14,6 +14,10 @@ for f in ("/sys/devices/cpu/rdpmc",
       sys_file = f
       break
 
+if (sys_file is None):
+   print("ERROR\tno test candidates in /sys exist")
+   sys.exit(1)
+
 problem_ct = 0
 for f in ("/dev/mem", "/proc/kcore", sys_file):
    try:
