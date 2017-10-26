@@ -69,6 +69,11 @@ for g in grp.getgrall():
       my_gid2 = g.gr_gid
       break
 
+if my_group2 is None or my_gid2 is None:
+   print("Couldn't find a second group %s is a member of!" % my_user,
+         file=sys.stderr)
+   sys.exit(1)
+
 print('''\
 test directory:     %(testdir)s
 me:                 %(my_user)s %(my_uid)d
