@@ -546,3 +546,14 @@ EOF
    ln -s $CHTEST_IMG $BATS_TMPDIR/symlink-test
    ch-run $BATS_TMPDIR/symlink-test -- true
 }
+
+@test 'ch-validate succeeds on valid image' {
+   ch-validate $CHTEST_IMG
+}
+
+@test 'ch-validate fails on invalid image' {
+   cp -r $CHTEST_IMG $BATS_TMPDIR/badimage
+   rmdir $BATS_TMPDIR/badimage/tmp
+   run ch-validate $BATS_TMPDIR/badimage
+   [ "$status" -eq 1 ]
+}
