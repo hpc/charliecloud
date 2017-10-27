@@ -1,0 +1,98 @@
+#!/bin/bash
+
+. $(dirname "$0")/base.sh
+
+usage () {
+   cat 1>&2 <<EOF
+Verify that a specified Charliecloud image has the basic required structure to run.
+
+Usage:
+
+   $ $(basename $0) IMAGE_DIR
+
+Arguments:
+   
+   IMAGE_DIR   Directory containing the Charliecloud image
+
+EOF
+   exit ${1:-1}
+}
+
+need_files=( 
+   "/etc/passwd"
+   "/etc/group"
+   "/etc/hosts"
+   "/etc/resolv.conf"
+)
+
+need_dirs=(
+   "/etc"
+   "/dev"
+   "/proc"
+   "/sys"
+   "/tmp"
+   "/oldroot"
+)
+
+
+if [ "$1" = "--help" ]; then
+    usage 0
+fi
+if [ "$1" = "--version" ]; then
+    version
+    exit 0
+fi
+
+if [ $# -ne 1 ]; then
+   usage -1
+fi
+
+image_dir=$1
+
+if [ ! -d $image_dir ]; then
+   echo "Image Directory does not exist: $image_dir is not a directory."
+   usage -1
+fi
+
+echo
+echo "Validating image at: $image_dir"
+echo
+
+errors=0
+
+echo "Testing for required directories..."
+echo
+
+for d in ${need_dirs[@]}; do 
+   printf "%-32s" $d
+   if [ -d $image_dir/$d ]; then
+      printf "Found.\n"
+   else
+      printf "Missing.\n"
+      errors=$((errors+1))
+   fi
+done
+
+echo
+echo "Testing for required files..."
+echo
+
+for f in ${need_files[@]}; do 
+   printf "%-32s" $f
+   if [ -f $image_dir/$f ]; then
+      printf "Found.\n"
+   else
+      printf "Missing.\n"
+      errors=$((errors+1))
+   fi
+done
+
+echo 
+if [ $errors -eq 0 ]; then
+   echo "Image is valid."
+else
+   echo "$errors errors found, image is not valid."
+fi
+echo
+
+exit $errors
