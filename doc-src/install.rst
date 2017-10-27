@@ -314,8 +314,10 @@ Run
 
 The run tests require the contents of :code:`$CH_TEST_TARDIR` produced by a
 successful, complete build test. Copy this directory to the run
-system. Additionally, the user running the tests needs to be a member
-of at least 2 groups.
+system.
+
+Additionally, the user running the tests needs to be a member of at least 2
+groups.
 
 File permission enforcement is tested against specially constructed fixture
 directories. These should include every meaningful mounted filesystem, and
