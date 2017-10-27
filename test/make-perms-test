@@ -68,6 +68,13 @@ for g in grp.getgrall():
       my_group2 = g.gr_name
       my_gid2 = g.gr_gid
       break
+if (my_group2 is None):
+   print("couldn't find supplementary group for %s" % my_user, file=sys.stderr)
+   sys.exit(1)
+if (my_gid == yr_gid or my_gid == my_gid2):
+   print('%s and %s share a group' % (my_user, yr_user), file=sys.stderr)
+   sys.exit(1)
+
 
 print('''\
 test directory:     %(testdir)s
@@ -77,12 +84,6 @@ my primary group:   %(my_group)s %(my_gid)d
 my supp. group:     %(my_group2)s %(my_gid2)d
 your primary group: %(yr_group)s %(yr_gid)d
 ''' % locals())
-
-if (   my_group2 is None
-    or my_gid == yr_gid
-    or my_gid == my_gid2):
-   print('problem with groups', file=sys.stderr)
-   sys.exit(1)
 
 
 def set_perms(name, uid, gid, mode):
