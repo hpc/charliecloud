@@ -38,7 +38,7 @@ const char * DEFAULT_BINDS[] = { "/dev",
                                  NULL };
 
 /* Number of supplemental GIDs we can deal with. */
-#define SUPP_GIDS_MAX 32
+#define SUPP_GIDS_MAX 128
 
 /* Maximum length of paths we're willing to deal with. (Note that
    system-defined PATH_MAX isn't reliable.) */
