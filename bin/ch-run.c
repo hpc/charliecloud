@@ -195,25 +195,25 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    // Bind-mount default directories at the same host and guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
       TRY (0 > asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
-      TRY (mount(DEFAULT_BINDS[i], path, NULL,
-                 MS_REC | MS_BIND | MS_RDONLY, NULL));
+      TRX (mount(DEFAULT_BINDS[i], path, NULL,
+                 MS_REC | MS_BIND | MS_RDONLY, NULL), (char *) DEFAULT_BINDS[i]);
    }
    // Container /tmp
    TRY (0 > asprintf(&path, "%s%s", newroot, "/tmp"));
    if (private_tmp) {
-      TRY (mount(NULL, path, "tmpfs", 0, 0));
+      TRX (mount(NULL, path, "tmpfs", 0, 0), path);
    } else {
-      TRY (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL));
+      TRX (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL), path);
    }
    if (!private_home) {
       // Mount tmpfs on guest /home because guest root is read-only
       TRY (0 > asprintf(&path, "%s/home", newroot));
-      TRY (mount(NULL, path, "tmpfs", 0, "size=4m"));
+      TRX (mount(NULL, path, "tmpfs", 0, "size=4m"), path);
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
       TRY (0 > asprintf(&path, "%s/home/%s", newroot, getenv("USER")));
       TRY (mkdir(path, 0755));
-      TRY (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL));
+      TRX (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL), path);
    }
    // Bind-mount /usr/bin/ch-ssh if it exists.
    TRY (0 > asprintf(&path, "%s/usr/bin/ch-ssh", newroot));
@@ -224,7 +224,7 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
       bin[PATH_CHARS-1] = 0;  // guarantee string termination
       dir = dirname(bin);
       TRY (0 > asprintf(&oldpath, "%s/ch-ssh", dir));
-      TRY (mount(oldpath, path, NULL, MS_BIND, NULL));
+      TRX (mount(oldpath, path, NULL, MS_BIND, NULL), path);
    }
    // Bind-mount user-specified directories at guest DST and|or /mnt/i,
    // which must exist
@@ -256,7 +256,9 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    // Pivot into the new root
    TRY (0 > asprintf(&path, "%s/oldroot", newroot));
    TRY (chdir(newroot));
-   TRY (syscall(SYS_pivot_root, newroot, path));
+   // This is not the best way to handle the error, but prevents adding dir checking code -JLW
+   TRX (syscall(SYS_pivot_root, newroot, path),
+         "Maybe /oldroot doesn't exist?");
    TRY (chroot("."));
    TRY (umount2("/oldroot", MNT_DETACH));
 
