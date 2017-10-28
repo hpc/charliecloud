@@ -254,11 +254,13 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
       }
    }
    // Pivot into the new root
-   TRY (0 > asprintf(&path, "%s/oldroot", newroot));
+   // Directory /dev is used since it is readily available even
+   // in extremely minimal environments.
+   TRY (0 > asprintf(&path, "%s/dev", newroot));
    TRY (chdir(newroot));
    TRY (syscall(SYS_pivot_root, newroot, path));
    TRY (chroot("."));
-   TRY (umount2("/oldroot", MNT_DETACH));
+   TRY (umount2("/dev", MNT_DETACH));
 
 #ifdef SETUID
    privs_drop_temporarily();
