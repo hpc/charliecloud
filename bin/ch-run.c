@@ -247,7 +247,7 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    TRY (chroot("."));
    TRY (0 > asprintf(&newroot, "/%s", base));
 
-   if (!writable) {
+   if (!writable && !(access(newroot, W_OK) == -1 && errno == EROFS)) {
       // Re-mount image read-only
       if (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL)) {
          fatal("can't re-mount image read-only (is it on NFS?): %s\n",
