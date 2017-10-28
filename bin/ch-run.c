@@ -278,7 +278,12 @@ void log_ids(const char * func, int line)
       TRY (getresgid(&rgid, &egid, &sgid));
       fprintf(stderr, "%s %d: uids=%d,%d,%d, gids=%d,%d,%d + ", func, line,
               ruid, euid, suid, rgid, egid, sgid);
-      TRY ((supp_gid_ct = getgroups(SUPP_GIDS_MAX, supp_gids)) == -1);
+      supp_gid_ct = getgroups(SUPP_GIDS_MAX, supp_gids);
+      if (supp_gid_ct == -1 && errno == EINVAL)
+      {
+         fatal("too many groups (> %d), raise an issue if more are required\n", SUPP_GIDS_MAX);
+      }
+      TRY (supp_gid_ct == -1);
       for (int i = 0; i < supp_gid_ct; i++) {
          if (i > 0)
             fprintf(stderr, ",");
