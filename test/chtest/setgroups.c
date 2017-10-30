@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define NGROUPS_MAX 32
+#define NGROUPS_MAX 128
 
 int main()
 {

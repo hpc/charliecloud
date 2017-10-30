@@ -40,7 +40,7 @@ wget $MIRROR/main/x86_64/$APK_TOOLS
 
 # Bootstrap directories.
 mkdir img
-mkdir img/{dev,etc,oldroot,proc,sys,tmp}
+mkdir img/{dev,etc,proc,sys,tmp}
 touch img/etc/{group,hosts,passwd,resolv.conf}
 
 # Bootstrap static apk.
