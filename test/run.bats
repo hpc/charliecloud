@@ -366,7 +366,7 @@ EOF
 }
 
 @test 'symlink to image' {
-   # bug number 80
+   # bug number 50
    ln -s $CHTEST_IMG $BATS_TMPDIR/symlink-test
    ch-run $BATS_TMPDIR/symlink-test -- true
 }
