@@ -78,8 +78,8 @@ tar x$VERBOSE -I $GZIP_CMD -C "$NEWROOT" -f "$TARBALL" --exclude='dev/*'
 # Make all directories writeable so we can delete image later (hello, Red Hat).
 find "$NEWROOT" -type d -a ! -perm /200 -exec chmod u+w {} +
 
-# Make directories that ch-run will need.
-mkdir -p "$NEWROOT/oldroot"
+# Ensure directories that ch-run needs exist.
+mkdir -p "$NEWROOT/dev"
 for i in $(seq 0 9); do mkdir -p "$NEWROOT/mnt/$i"; done
 
 echo "$NEWROOT unpacked ok"
