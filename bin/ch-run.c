@@ -260,8 +260,7 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    TRY (0 > asprintf(&path, "%s/dev", newroot));
    TRY (chdir(newroot));
    // This is not the best way to handle the error, but prevents adding dir checking code -JLW
-   TRX (syscall(SYS_pivot_root, newroot, path),
-         "Maybe /oldroot doesn't exist?");
+   TRY (syscall(SYS_pivot_root, newroot, path));
    TRY (chroot("."));
    TRY (umount2("/dev", MNT_DETACH));
 
