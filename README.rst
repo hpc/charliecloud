@@ -49,6 +49,22 @@ How do I learn more?
 * A more technical resource is our Supercomputing 2017 paper:
   http://permalink.lanl.gov/object/tr?what=info:lanl-repo/lareport/LA-UR-16-22370
 
+Who is responsible?
+-------------------
+
+The core Charliecloud team at Los Alamos is:
+
+* Reid Priedhorsky <reidpr@lanl.gov>, co-founder and BDFL
+* Tim Randles <trandles@lanl.gov>, co-founder
+* Michael Jennings <mej@lanl.gov>
+
+Patches (code, documentation, etc.) contributed by:
+
+* Reid Priedhorsky <reidpr@lanl.gov>
+* Oliver Freyermuth <o.freyermuth@googlemail.com>
+* Matthew Vernon <mv3@sanger.ac.uk>
+* Lowell Wofford <lowell@lanl.gov>
+
 How can I participate?
 ----------------------
 
@@ -59,5 +75,7 @@ Questions, comments, feature requests, bug reports, etc. can be directed to:
 * issues on GitHub
 
 Patches are much appreciated on the software itself as well as documentation.
+Optionally, please include in your first patch a credit for yourself in the
+list above.
 
 We are friendly and welcoming of diversity on all dimensions.
