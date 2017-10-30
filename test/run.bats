@@ -368,3 +368,16 @@ EOF
    run ch-validate $BATS_TMPDIR/badimage
    [ "$status" -eq 1 ]
 }
+
+@test 'relative path to image' {
+   # bug number 6
+   DIRNAME=$(dirname $CHTEST_IMG)
+   BASEDIR=$(basename $CHTEST_IMG)
+   cd $DIRNAME && ch-run $BASEDIR -- true
+}
+
+@test 'symlink to image' {
+   # bug number 50
+   ln -s $CHTEST_IMG $BATS_TMPDIR/symlink-test
+   ch-run $BATS_TMPDIR/symlink-test -- true
+}

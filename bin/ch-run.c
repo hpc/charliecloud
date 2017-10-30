@@ -38,7 +38,7 @@ const char * DEFAULT_BINDS[] = { "/dev",
                                  NULL };
 
 /* Number of supplemental GIDs we can deal with. */
-#define SUPP_GIDS_MAX 32
+#define SUPP_GIDS_MAX 128
 
 /* Maximum length of paths we're willing to deal with. (Note that
    system-defined PATH_MAX isn't reliable.) */
@@ -135,7 +135,8 @@ int main(int argc, char * argv[])
    if (args.user_cmd_start >= argc - 1)
       fatal("NEWROOT and/or CMD not specified\n");
    assert(args.binds[USER_BINDS_MAX].src == NULL);  // overrun in argp_parse?
-   args.newroot = argv[args.user_cmd_start++];
+   args.newroot = realpath(argv[args.user_cmd_start++], NULL);
+   TRX ((args.newroot == NULL), "couldn't resolve image path");
 
    if (args.verbose) {
       fprintf(stderr, "newroot: %s\n", args.newroot);
@@ -246,7 +247,7 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    TRY (chroot("."));
    TRY (0 > asprintf(&newroot, "/%s", base));
 
-   if (!writable) {
+   if (!writable && !(access(newroot, W_OK) == -1 && errno == EROFS)) {
       // Re-mount image read-only
       if (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL)) {
          fatal("can't re-mount image read-only (is it on NFS?): %s\n",
@@ -254,11 +255,13 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
       }
    }
    // Pivot into the new root
-   TRY (0 > asprintf(&path, "%s/oldroot", newroot));
+   // Directory /dev is used since it is readily available even
+   // in extremely minimal environments.
+   TRY (0 > asprintf(&path, "%s/dev", newroot));
    TRY (chdir(newroot));
    TRY (syscall(SYS_pivot_root, newroot, path));
    TRY (chroot("."));
-   TRY (umount2("/oldroot", MNT_DETACH));
+   TRY (umount2("/dev", MNT_DETACH));
 
 #ifdef SETUID
    privs_drop_temporarily();
@@ -278,7 +281,12 @@ void log_ids(const char * func, int line)
       TRY (getresgid(&rgid, &egid, &sgid));
       fprintf(stderr, "%s %d: uids=%d,%d,%d, gids=%d,%d,%d + ", func, line,
               ruid, euid, suid, rgid, egid, sgid);
-      TRY ((supp_gid_ct = getgroups(SUPP_GIDS_MAX, supp_gids)) == -1);
+      supp_gid_ct = getgroups(SUPP_GIDS_MAX, supp_gids);
+      if (supp_gid_ct == -1) {
+         if (errno == EINVAL)
+            fatal("too many groups (> %d)\n");
+         TRY (0); // error was something else
+      }
       for (int i = 0; i < supp_gid_ct; i++) {
          if (i > 0)
             fprintf(stderr, ",");
