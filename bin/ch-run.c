@@ -135,7 +135,8 @@ int main(int argc, char * argv[])
    if (args.user_cmd_start >= argc - 1)
       fatal("NEWROOT and/or CMD not specified\n");
    assert(args.binds[USER_BINDS_MAX].src == NULL);  // overrun in argp_parse?
-   args.newroot = argv[args.user_cmd_start++];
+   args.newroot = realpath(argv[args.user_cmd_start++], NULL);
+   TRX ((args.newroot == NULL), "couldn't resolve image path");
 
    if (args.verbose) {
       fprintf(stderr, "newroot: %s\n", args.newroot);
