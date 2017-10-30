@@ -93,7 +93,7 @@ setup () {
     type=$(fgrep ' / ' /proc/mounts | cut -d' ' -f3)
     opts=$(fgrep ' / ' /proc/mounts | cut -d' ' -f4)
     run ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- \
-               /bin/mount -n -o $opts -t $type $dev /dev
+               /bin/mount -n -o $opts -t $type $dev /mnt/0
     echo "$output"
     # return codes from http://man7.org/linux/man-pages/man8/mount.8.html
     # busybox seems to use the same list
