@@ -31,7 +31,6 @@ need_dirs=(
    "/proc"
    "/sys"
    "/tmp"
-   "/oldroot"
 )
 
 
