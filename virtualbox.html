@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                e1c3087
+                c6b3a5d
               </div>
             
           
@@ -533,11 +533,11 @@ displayed only in the invoking user’s windowing environment.</p>
 <p>Edit <code class="code docutils literal"><span class="pre">getty&#64;tty1.service</span></code> to modify the <code class="code docutils literal"><span class="pre">ExecStart</span></code> line and add a
 new line at the end, as follows:</p>
 <div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[Service]</span>
-<span class="na">...</span>
+<span class="c1">;...</span>
 <span class="na">ExecStart</span><span class="o">=</span><span class="s">-/sbin/agetty --autologin charlie --noclear %I</span>
-<span class="na">...</span>
+<span class="c1">;...</span>
 <span class="k">[Install]</span>
-<span class="na">...</span>
+<span class="c1">;...</span>
 <span class="c1">;Alias=getty@tty1.service</span>
 </pre></div>
 </div>

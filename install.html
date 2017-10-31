@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                e1c3087
+                c6b3a5d
               </div>
             
           
@@ -482,7 +482,10 @@ delete all Docker containers and images, and let them be rebuilt:</p>
 <div class="section" id="run">
 <h3><a class="toc-backref" href="#id15">1.4.2. Run</a><a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h3>
 <p>The run tests require the contents of <code class="code docutils literal"><span class="pre">$CH_TEST_TARDIR</span></code> produced by a
-successful, complete build test. Copy this directory to the run system.</p>
+successful, complete build test. Copy this directory to the run
+system.</p>
+<p>Additionally, the user running the tests needs to be a member of at least 2
+groups.</p>
 <p>File permission enforcement is tested against specially constructed fixture
 directories. These should include every meaningful mounted filesystem, and
 they cannot be shared between different users. To create them:</p>
