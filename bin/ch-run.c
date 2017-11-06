@@ -377,8 +377,9 @@ void privs_verify_invoking()
    TRY (getresuid(&ruid, &euid, &suid));
    TRY (getresgid(&rgid, &egid, &sgid));
 
-   // GIDs should be unprivileged and non-setgid regardless of mode.
-   TRY (egid == 0);
+   // GIDs should be unprivileged unless called by root,
+   // and non-setgid regardless of mode.
+   TRY (!(ruid == 0 && rgid == 0) && egid == 0);
    TRY (egid != rgid || egid != sgid);
 
 #ifdef SETUID
