@@ -89,6 +89,17 @@ load common
     sudo rm $CH_RUN_TMP
 }
 
+@test 'ch-run (--help|--version) works as privileged user unless setuid mode' {
+    [[ -z $CH_RUN_SETUID ]] || skip 'compiled in setuid mode'
+    [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
+    run sudo $CH_RUN_FILE --version
+    echo "$output"
+    [[ $status -eq 0 ]]
+    run sudo $CH_RUN_FILE --help
+    echo "$output"
+    [[ $status -eq 0 ]]
+}
+
 @test 'ch-run -u and -g refused in setuid mode' {
     [[ -n $CH_RUN_SETUID ]] || skip 'not compiled for setuid'
     run ch-run -u 65534
