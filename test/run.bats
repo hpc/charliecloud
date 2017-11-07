@@ -89,6 +89,35 @@ load common
     sudo rm $CH_RUN_TMP
 }
 
+@test 'ch-run as root: --version and --test' {
+    [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
+    sudo $CH_RUN_FILE --version
+    sudo $CH_RUN_FILE --help
+}
+
+@test 'ch-run as root: run image' {
+    # Running an image should work as root, but it doesn't, and I'm not sure
+    # why, so skip this test. This fails in the test suite with:
+    #
+    #   ch-run: couldn't resolve image path: No such file or directory (ch-run.c:139:2)
+    #
+    # but when run manually (with same arguments?) it fails differently with:
+    #
+    #   $ sudo bin/ch-run $CH_TEST_IMGDIR/chtest -- true
+    #   ch-run: [...]/chtest: Permission denied (ch-run.c:195:13)
+    #
+    skip 'issue #76'
+    sudo $CH_RUN_FILE $CHTEST_IMG -- true
+}
+
+@test 'ch-run as root: root with non-zero GID refused' {
+    [[ -z $TRAVIS ]] || skip 'not permitted on Travis'
+    run sudo -u root -g $(id -gn) $CH_RUN_FILE -v --version
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ 'error: Success' ]]
+}
+
 @test 'ch-run -u and -g refused in setuid mode' {
     [[ -n $CH_RUN_SETUID ]] || skip 'not compiled for setuid'
     run ch-run -u 65534
