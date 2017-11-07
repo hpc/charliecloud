@@ -366,9 +366,9 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
 /* Validate that the UIDs and GIDs are appropriate for program start, and
    abort if not.
 
-   If the binary is setuid, then the real UID will be the invoking user and
-   the effective and saved UIDs will be the owner of the binary. Otherwise,
-   all three IDs are that of the invoking user. */
+   Note: If the binary is setuid, then the real UID will be the invoking user
+   and the effective and saved UIDs will be the owner of the binary.
+   Otherwise, all three IDs are that of the invoking user. */
 void privs_verify_invoking()
 {
    uid_t ruid, euid, suid;
@@ -377,18 +377,22 @@ void privs_verify_invoking()
    TRY (getresuid(&ruid, &euid, &suid));
    TRY (getresgid(&rgid, &egid, &sgid));
 
-   // GIDs should be unprivileged unless called by root,
-   // and non-setgid regardless of mode.
-   TRY (!(ruid == 0 && rgid == 0) && egid == 0);
-   TRY (egid != rgid || egid != sgid);
+   // Calling the program if user is really root is OK.
+   if (   ruid == 0 && euid == 0 && suid == 0
+       && rgid == 0 && egid == 0 && sgid == 0)
+      return;
 
+   // Now that we know user isn't root, no GID privilege is allowed.
+   TRY (!(egid != 0));                           // no privilege
+   TRY (!(egid == rgid && egid == sgid));        // no setuid or funny business
+
+   // Setuid must match the compiled mode.
 #ifdef SETUID
-   TRY (ruid == 0);                     // invoking as root is not OK
-   TRY (euid != 0 || suid != 0);        // must be setuid to root
-#else // not SETUID
-   //TRY (ruid == 0);                   // invoking as root is OK
-   TRY (euid != ruid || euid != suid);  // must not be setuid
-#endif // not SETUID
+   TRY (!(ruid != 0 && euid == 0 && suid == 0)); // must be setuid root
+#else
+   TRY (!(euid != 0));                           // no privilege
+   TRY (!(euid == ruid && euid == suid));        // no setuid or funny business
+#endif
 }
 
 /* Drop UID privileges permanently. */

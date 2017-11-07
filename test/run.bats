@@ -89,15 +89,30 @@ load common
     sudo rm $CH_RUN_TMP
 }
 
-@test 'ch-run (--help|--version) works as privileged user unless setuid mode' {
-    [[ -z $CH_RUN_SETUID ]] || skip 'compiled in setuid mode'
+@test 'ch-run as privileged user' {
     [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
-    run sudo $CH_RUN_FILE --version
+
+    # ch-run informational arguments work when invoked as root.
+    sudo $CH_RUN_FILE --version
+    sudo $CH_RUN_FILE --help
+
+    # Root with GID other than zero doesn't work.
+    run sudo -u root -g $(id -gn) $CH_RUN_FILE -v --version
     echo "$output"
-    [[ $status -eq 0 ]]
-    run sudo $CH_RUN_FILE --help
-    echo "$output"
-    [[ $status -eq 0 ]]
+    [[ $status -eq 1 ]]
+    [[ $output =~ 'error: Success' ]]
+
+    # Running an image should work as root, but it doesn't, and I'm not sure
+    # why, so don't test it. This fails in the test suite with:
+    #
+    #   ch-run: couldn't resolve image path: No such file or directory (ch-run.c:139:2)
+    #
+    # but when run manually (with same arguments?) it fails differently with:
+    #
+    #   $ sudo bin/ch-run $CH_TEST_IMGDIR/chtest -- true
+    #   ch-run: [...]/chtest: Permission denied (ch-run.c:195:13)
+    #
+    #sudo $CH_RUN_FILE $CHTEST_IMG -- true
 }
 
 @test 'ch-run -u and -g refused in setuid mode' {
