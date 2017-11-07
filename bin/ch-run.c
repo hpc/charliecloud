@@ -285,7 +285,7 @@ void log_ids(const char * func, int line)
       if (supp_gid_ct == -1) {
          if (errno == EINVAL)
             fatal("too many groups (> %d)\n");
-         TRY (0); // error was something else
+         TRY (-1); // error was something else
       }
       for (int i = 0; i < supp_gid_ct; i++) {
          if (i > 0)
