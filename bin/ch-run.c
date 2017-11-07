@@ -429,7 +429,11 @@ void privs_drop_temporarily()
 {
    uid_t unpriv_uid = getuid();
 
-   TRY (unpriv_uid == 0);
+   if (unpriv_uid == 0) {
+      // Invoked as root, so descend to nobody.
+      unpriv_uid = 65534;
+   }
+
    TRY (setresuid(-1, unpriv_uid, -1));
    TRY (unpriv_uid != geteuid());
 }
@@ -443,8 +447,6 @@ void privs_restore()
 
    TRY (setresuid(-1, 0, -1));
    TRY (getresuid(&ruid, &euid, &suid));
-   TRY (ruid == 0);               // invoking as root is not OK
-   TRY (euid != 0 || suid != 0);  // must be setuid to root
 }
 #endif // SETUID
 
