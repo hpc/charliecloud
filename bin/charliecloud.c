@@ -9,24 +9,31 @@
 
 #include "version.h"
 
-/* Print a formatted error message on stderr, then exit unsuccessfully. */
-void fatal(char * fmt, ...)
+
+/* Print a formatted error message on stderr, followed by the string expansion
+   of errno, source file, line number, errno, and newline; then exit
+   unsuccessfully. If errno is zero, then don't include it, because then it
+   says "success", which is super confusing in an error message. */
+void fatal(char * file, int line, int errno_, char * fmt, ...)
 {
    va_list ap;
 
-   fprintf(stderr, "%s: ", program_invocation_short_name);
-   va_start(ap, fmt);
-   vfprintf(stderr, fmt, ap);
-   va_end(ap);
-   exit(EXIT_FAILURE);
-}
+   fputs(program_invocation_short_name, stderr);
+   fputs(": ", stderr);
 
-/* Report the string expansion of errno on stderr, then exit unsuccessfully. */
-void fatal_errno(char * msg, char * file, int line)
-{
-   if (msg == NULL)
-      msg = "error";
-   fatal("%s: %s (%s:%d:%d)\n", msg, strerror(errno), file, line, errno);
+   if (fmt == NULL)
+      fputs("error", stderr);
+   else {
+      va_start(ap, fmt);
+      vfprintf(stderr, fmt, ap);
+      va_end(ap);
+   }
+
+   if (errno)
+      fprintf(stderr, ": %s (%s:%d %d)\n", strerror(errno), file, line, errno);
+   else
+      fprintf(stderr, " (%s:%d)\n", file, line);
+   exit(EXIT_FAILURE);
 }
 
 /* Report the version number. */

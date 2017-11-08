@@ -68,7 +68,7 @@ load common
     run $CH_RUN_TMP --version
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ 'ch-run.setgid: error: Success' ]]
+    [[ $output =~ 'ch-run.setgid: error (' ]]
     rm $CH_RUN_TMP
 }
 
@@ -85,7 +85,7 @@ load common
     run $CH_RUN_TMP --version
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ 'ch-run.setuid: error: Success' ]]
+    [[ $output =~ 'ch-run.setuid: error (' ]]
     sudo rm $CH_RUN_TMP
 }
 
@@ -115,7 +115,7 @@ load common
     run sudo -u root -g $(id -gn) $CH_RUN_FILE -v --version
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ 'error: Success' ]]
+    [[ $output =~ 'error (' ]]
 }
 
 @test 'ch-run -u and -g refused in setuid mode' {
@@ -299,7 +299,7 @@ EOF
     run ch-run -b0 -b1 -b2 -b3 -b4 -b5 -b6 -b7 -b8 -b9 -b10 $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = 'ch-run: --bind can be used at most 10 times' ]]
+    [[ $output =~ 'ch-run: --bind can be used at most 10 times' ]]
 
     # no argument to --bind
     run ch-run $CHTEST_IMG -b
@@ -311,53 +311,53 @@ EOF
     run ch-run -b '' $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = 'ch-run: --bind: no source provided' ]]
+    [[ $output =~ 'ch-run: --bind: no source provided' ]]
 
     # source not provided
     run ch-run -b :/mnt/9 $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = 'ch-run: --bind: no source provided' ]]
+    [[ $output =~ 'ch-run: --bind: no source provided' ]]
 
     # destination not provided
     run ch-run -b $IMGDIR/bind1: $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = 'ch-run: --bind: no destination provided' ]]
+    [[ $output =~ 'ch-run: --bind: no destination provided' ]]
 
     # source does not exist
     run ch-run -b $IMGDIR/hoops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/hoops to /mnt/0: No such file or directory$'
+    r='^ch-run: could not bind .+/hoops to /mnt/0: No such file or directory'
     [[ $output =~ $r ]]
 
     # destination does not exist
     run ch-run -b $IMGDIR/bind1:/goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/bind1 to /goops: No such file or directory$'
+    r='^ch-run: could not bind .+/bind1 to /goops: No such file or directory'
     [[ $output =~ $r ]]
 
     # neither source nor destination exist
     run ch-run -b $IMGDIR/hoops:/goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/hoops to /goops: No such file or directory$'
+    r='^ch-run: could not bind .+/hoops to /goops: No such file or directory'
     [[ $output =~ $r ]]
 
     # correct bind followed by source does not exist
     run ch-run -b $IMGDIR/bind1:/mnt/9 -b $IMGDIR/hoops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/hoops to /mnt/1: No such file or directory$'
+    r='^ch-run: could not bind .+/hoops to /mnt/1: No such file or directory'
     [[ $output =~ $r ]]
 
     # correct bind followed by destination does not exist
     run ch-run -b $IMGDIR/bind1 -b $IMGDIR/bind2:/goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/bind2 to /goops: No such file or directory$'
+    r='^ch-run: could not bind .+/bind2 to /goops: No such file or directory'
     [[ $output =~ $r ]]
 }
 
