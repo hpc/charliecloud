@@ -51,14 +51,26 @@ export: VERSION.full
 	rm bats.tar
 	ls -lh charliecloud-$$(cat VERSION.full).tar.gz
 
-BIN=$(PREFIX)/bin
-DOC=$(PREFIX)/share/doc/charliecloud
+# PREFIX is the prefix expected at runtime (usually /usr or /usr/local
+#  for system-wide installations).
+#  More at https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
+# DESTDIR is the installation directory using during make install,
+#  which usually coincides for manual installation,
+#  but is chosen to be a temporary directory in packaging
+#  environments. PREFIX needs to be appended.
+#  More at https://www.gnu.org/prep/standards/html_node/DESTDIR.html
+# Reasoning here: Users performing manual install *have* to specify PREFIX,
+# default is to use that also for DESTDIR.
+# If DESTDIR is provided in addition, we use that for installation.
+INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
+BIN=$(INSTALL_PREFIX)/bin
+DOC=$(INSTALL_PREFIX)/share/doc/charliecloud
 TEST=$(DOC)/test
 .PHONY: install
 install: all
 	@test -n "$(PREFIX)" || \
           (echo "No PREFIX specified. Lasciando ogni speranza." && false)
-	@echo Installing in $(PREFIX)
+	@echo Installing in $(INSTALL_PREFIX)
 #       binaries
 	install -d $(BIN)
 	install -pm 755 -t $(BIN) $$(find bin -type f -executable)
