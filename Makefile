@@ -62,7 +62,19 @@ install: all
 #       binaries
 	install -d $(BIN)
 	install -pm 755 -t $(BIN) $$(find bin -type f -executable)
-	if [ -u bin/ch-run ]; then sudo chmod u+s $(BIN)/ch-run; fi
+	# Install ch-run setuid if either SETUID=yes is specified
+	# or the binary in the build directory is setuid.
+	if [ -n "$(SETUID)" ]; then \
+            if [ $$(id -u) -eq 0 ]; then \
+	        chown root $(BIN)/ch-run; \
+	        chmod u+s $(BIN)/ch-run; \
+	    else \
+	        sudo chown root $(BIN)/ch-run; \
+	        sudo chmod u+s $(BIN)/ch-run; \
+	    fi \
+	elif [ -u bin/ch-run ]; then \
+	    sudo chmod u+s $(BIN)/ch-run; \
+	fi
 	install -pm 644 -t $(BIN) bin/base.sh bin/version.h bin/version.sh
 #       misc "documentation"
 	install -d $(DOC)
