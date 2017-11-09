@@ -51,29 +51,30 @@ export: VERSION.full
 	rm bats.tar
 	ls -lh charliecloud-$$(cat VERSION.full).tar.gz
 
-# PREFIX is the prefix expected at runtime (usually /usr or /usr/local
-#  for system-wide installations).
-#  More at https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
-# DESTDIR is the installation directory using during make install,
-#  which usually coincides for manual installation,
-#  but is chosen to be a temporary directory in packaging
-#  environments. PREFIX needs to be appended.
-#  More at https://www.gnu.org/prep/standards/html_node/DESTDIR.html
-# Reasoning here: Users performing manual install *have* to specify PREFIX,
-# default is to use that also for DESTDIR.
-# If DESTDIR is provided in addition, we use that for installation.
+# PREFIX is the prefix expected at runtime (usually /usr or /usr/local for
+#  system-wide installations).
+#  More: https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
+#
+# DESTDIR is the installation directory using during make install, which
+#  usually coincides for manual installation, but is chosen to be a temporary
+#  directory in packaging environments. PREFIX needs to be appended.
+#  More: https://www.gnu.org/prep/standards/html_node/DESTDIR.html
+#
+# Reasoning here: Users performing manual install *have* to specify PREFIX;
+# default is to use that also for DESTDIR. If DESTDIR is provided in addition,
+# we use that for installation.
+#
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
-BIN=$(INSTALL_PREFIX)/bin
-DOC=$(INSTALL_PREFIX)/share/doc/charliecloud
-TEST=$(DOC)/test
+BIN := $(INSTALL_PREFIX)/bin
+DOC := $(INSTALL_PREFIX)/share/doc/charliecloud
+TEST := $(DOC)/test
 # LIBEXEC_DIR is modeled after FHS 3.0 and
-# https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
-# It contains any executable helpers that are not needed in PATH.
-# Default is libexec/charliecloud which will be preprended with
-# the PREFIX.
+# https://www.gnu.org/prep/standards/html_node/Directory-Variables.html. It
+# contains any executable helpers that are not needed in PATH. Default is
+# libexec/charliecloud which will be preprended with the PREFIX.
 LIBEXEC_DIR ?= libexec/charliecloud
-LIBEXEC_INST=$(INSTALL_PREFIX)/$(LIBEXEC_DIR)
-LIBEXEC_RUN=$(PREFIX)/$(LIBEXEC_DIR)
+LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
+LIBEXEC_RUN := $(PREFIX)/$(LIBEXEC_DIR)
 .PHONY: install
 install: all
 	@test -n "$(PREFIX)" || \
@@ -82,12 +83,12 @@ install: all
 #       binaries
 	install -d $(BIN)
 	install -pm 755 -t $(BIN) $$(find bin -type f -executable)
-	# Modify scripts to relate to new libexec location
+#       Modify scripts to relate to new libexec location.
 	for scriptfile in $$(find bin -type f -executable -printf "%f\n"); do \
 	    sed -i "s#^LIBEXEC=.*#LIBEXEC=$(LIBEXEC_RUN)#" $(BIN)/$${scriptfile}; \
 	done
-	# Install ch-run setuid if either SETUID=yes is specified
-	# or the binary in the build directory is setuid.
+#       Install ch-run setuid if either SETUID=yes is specified or the binary
+#       in the build directory is setuid.
 	if [ -n "$(SETUID)" ]; then \
             if [ $$(id -u) -eq 0 ]; then \
 	        chown root $(BIN)/ch-run; \
