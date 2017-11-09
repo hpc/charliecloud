@@ -66,6 +66,14 @@ INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 BIN=$(INSTALL_PREFIX)/bin
 DOC=$(INSTALL_PREFIX)/share/doc/charliecloud
 TEST=$(DOC)/test
+# LIBEXEC_DIR is modeled after FHS 3.0 and
+# https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
+# It contains any executable helpers that are not needed in PATH.
+# Default is libexec/charliecloud which will be preprended with
+# the PREFIX.
+LIBEXEC_DIR ?= libexec/charliecloud
+LIBEXEC_INST=$(INSTALL_PREFIX)/$(LIBEXEC_DIR)
+LIBEXEC_RUN=$(PREFIX)/$(LIBEXEC_DIR)
 .PHONY: install
 install: all
 	@test -n "$(PREFIX)" || \
@@ -74,6 +82,10 @@ install: all
 #       binaries
 	install -d $(BIN)
 	install -pm 755 -t $(BIN) $$(find bin -type f -executable)
+	# Modify scripts to relate to new libexec location
+	for scriptfile in $$(find bin -type f -executable -printf "%f\n"); do \
+	    sed -i "s#^LIBEXEC=.*#LIBEXEC=$(LIBEXEC_RUN)#" $(BIN)/$${scriptfile}; \
+	done
 	# Install ch-run setuid if either SETUID=yes is specified
 	# or the binary in the build directory is setuid.
 	if [ -n "$(SETUID)" ]; then \
@@ -87,7 +99,10 @@ install: all
 	elif [ -u bin/ch-run ]; then \
 	    sudo chmod u+s $(BIN)/ch-run; \
 	fi
-	install -pm 644 -t $(BIN) bin/base.sh bin/version.h bin/version.sh
+#       executable helpers
+	install -d $(LIBEXEC_INST)
+	install -pm 644 -t $(LIBEXEC_INST) bin/base.sh bin/version.sh
+	sed -i "s#^LIBEXEC=.*#LIBEXEC=$(LIBEXEC_RUN)#" $(LIBEXEC_INST)/base.sh
 #       misc "documentation"
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) COPYRIGHT LICENSE README.rst
