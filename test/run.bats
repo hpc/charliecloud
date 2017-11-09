@@ -361,6 +361,24 @@ EOF
     [[ $output =~ $r ]]
 }
 
+@test '--cd' {
+    # Default initial working directory is /.
+    initial_wd=$(ch-run $CHTEST_IMG -- pwd)
+    [[ $status -eq 0 ]]
+    [[ $initial_wd = '/' ]]
+
+    # Specify initial working directory.
+    initial_wd=$(ch-run --cd /dev $CHTEST_IMG -- pwd)
+    [[ $status -eq 0 ]]
+    [[ $initial_wd = '/dev' ]]
+
+    # Error if directory does not exist.
+    run ch-run --cd /notexisting $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ 'ch-run: error: No such file or directory' ]]
+}
+
 @test '/usr/bin/ch-ssh' {
     ls -l $CH_BIN/ch-ssh
     ch-run $CHTEST_IMG -- ls -l /usr/bin/ch-ssh
