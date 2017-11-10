@@ -68,6 +68,7 @@ const struct argp_option options[] = {
      "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
    { "write",       'w', 0,     0, "mount image read-write"},
    { "no-home",      -2, 0,     0, "do not bind-mount your home directory"},
+   { "cd",          'c', "DIR", 0, "initial working directory in container"},
 #ifndef SETUID
    { "gid",         'g', "GID", 0, "run as GID within container" },
 #endif
@@ -92,6 +93,7 @@ struct args {
    gid_t container_gid;
    uid_t container_uid;
    char * newroot;
+   char * initial_working_dir;
    bool private_home;
    bool private_tmp;
    bool writable;
@@ -127,6 +129,7 @@ int main(int argc, char * argv[])
    memset(args.binds, 0, sizeof(args.binds));
    args.container_gid = getgid();
    args.container_uid = getuid();
+   args.initial_working_dir = NULL;
    args.private_home = false;
    args.private_tmp = false;
    args.verbose = 0;
@@ -266,6 +269,11 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
 #ifdef SETUID
    privs_drop_temporarily();
 #endif
+
+   if (args.initial_working_dir != NULL)
+      if (chdir(args.initial_working_dir))
+         fatal("can't cd to %s: %s\n", args.initial_working_dir,
+               strerror(errno));
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
@@ -313,7 +321,10 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       break;
    case -2:
       as->private_home = true;
-   break;
+      break;
+   case 'c':
+      as->initial_working_dir = arg;
+      break;
    case 'b':
       for (i = 0; as->binds[i].src != NULL; i++)
          ;
