@@ -271,7 +271,9 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
 #endif
 
    if (args.initial_working_dir != NULL)
-      TRY (chdir(args.initial_working_dir));
+      if (chdir(args.initial_working_dir))
+         fatal("can't cd to %s: %s\n", args.initial_working_dir,
+               strerror(errno));
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
