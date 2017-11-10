@@ -257,7 +257,7 @@ EOF
    ch-run -w $CHTEST_IMG rm write
 }
 
-@test '--bind' {
+@test 'ch-run --bind' {
     # one bind, default destination (/mnt/0)
     ch-run -b $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
     # one bind, explicit destination
@@ -293,7 +293,7 @@ EOF
     ch-run --no-home -b $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
 }
 
-@test '--bind errors' {
+@test 'ch-run --bind errors' {
 
     # too many binds (11)
     run ch-run -b0 -b1 -b2 -b3 -b4 -b5 -b6 -b7 -b8 -b9 -b10 $CHTEST_IMG -- true
@@ -361,22 +361,24 @@ EOF
     [[ $output =~ $r ]]
 }
 
-@test '--cd' {
+@test 'ch-run --cd' {
     # Default initial working directory is /.
-    initial_wd=$(ch-run $CHTEST_IMG -- pwd)
+    run ch-run $CHTEST_IMG -- pwd
+    echo "$output"
     [[ $status -eq 0 ]]
-    [[ $initial_wd = '/' ]]
+    [[ $output = '/' ]]
 
     # Specify initial working directory.
-    initial_wd=$(ch-run --cd /dev $CHTEST_IMG -- pwd)
+    run ch-run --cd /dev $CHTEST_IMG -- pwd
+    echo "$output"
     [[ $status -eq 0 ]]
-    [[ $initial_wd = '/dev' ]]
+    [[ $output = '/dev' ]]
 
     # Error if directory does not exist.
-    run ch-run --cd /notexisting $CHTEST_IMG -- true
+    run ch-run --cd /goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ 'ch-run: error: No such file or directory' ]]
+    [[ $output =~ "ch-run: can't cd to /goops: No such file or directory" ]]
 }
 
 @test '/usr/bin/ch-ssh' {
