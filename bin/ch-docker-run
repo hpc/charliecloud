@@ -2,7 +2,8 @@
 
 # bash is needed for arrays.
 
-. $(dirname "$0")/base.sh
+LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
+. ${LIBEXEC}/base.sh
 
 usage () {
     cat 1>&2 <<EOF

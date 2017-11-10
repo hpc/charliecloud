@@ -1,6 +1,7 @@
 #!/bin/sh
 
-. $(dirname "$0")/base.sh
+LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
+. ${LIBEXEC}/base.sh
 
 set -e
 
