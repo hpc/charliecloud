@@ -89,9 +89,9 @@ setup () {
     #     over-mount something else.
     ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- \
            sh -c '[ -f /bin/mount -a -x /bin/mount ]'
-    dev=$(fgrep ' / ' /proc/mounts | cut -d' ' -f1)
-    type=$(fgrep ' / ' /proc/mounts | cut -d' ' -f3)
-    opts=$(fgrep ' / ' /proc/mounts | cut -d' ' -f4)
+    dev=$(findmnt -n -o SOURCE -T /)
+    type=$(findmnt -n -o FSTYPE -T /)
+    opts=$(findmnt -n -o OPTIONS -T /)
     run ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- \
                /bin/mount -n -o $opts -t $type $dev /mnt/0
     echo "$output"
