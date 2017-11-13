@@ -478,8 +478,9 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
    old_path = getenv("PATH");
    if (old_path == NULL) {
       if (args.verbose)
-         fprintf(stderr, "$PATH is not set, leaving it unset\n");
-   } else if (strstr(old_path, "/bin") != old_path && !strstr(old_path, ":/bin")) {
+         fprintf(stderr, "warning: $PATH not set\n");
+   } else if (   strstr(old_path, "/bin") != old_path
+              && !strstr(old_path, ":/bin")) {
       TRY (0 > asprintf(&new_path, "%s:/bin", old_path));
       TRY (setenv("PATH", new_path, 1));
       if (args.verbose)

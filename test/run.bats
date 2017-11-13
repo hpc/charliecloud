@@ -187,14 +187,15 @@ load common
     [[ $output = $PATH2:/bin ]]
 }
 
-@test 'ch-run works if $PATH not set, leaves it unset' {
+@test '$PATH unset' {
     BACKUP_PATH=$PATH
     unset PATH
-    run $CH_RUN_FILE $CHTEST_IMG -- /usr/bin/python3 -c 'import os; print(os.getenv("PATH") is None)'
+    run $CH_RUN_FILE $CHTEST_IMG -- \
+        /usr/bin/python3 -c 'import os; print(os.getenv("PATH") is None)'
+    PATH=$BACKUP_PATH
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "True" ]]
-    PATH=$BACKUP_PATH
 }
 
 @test 'mountns id differs' {
