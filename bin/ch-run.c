@@ -465,8 +465,12 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
    argv[argc - user_cmd_start] = NULL;
 
    // Append /bin to $PATH if not already present. See FAQ.
-   T_ (old_path = getenv("PATH"));
-   if (strstr(old_path, "/bin") != old_path && !strstr(old_path, ":/bin")) {
+   old_path = getenv("PATH");
+   if (old_path == NULL) {
+      if (args.verbose)
+         fprintf(stderr, "warning: $PATH not set\n");
+   } else if (   strstr(old_path, "/bin") != old_path
+              && !strstr(old_path, ":/bin")) {
       T_ (1 <= asprintf(&new_path, "%s:/bin", old_path));
       Z_ (setenv("PATH", new_path, 1));
       if (args.verbose)

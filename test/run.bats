@@ -187,6 +187,17 @@ load common
     [[ $output = $PATH2:/bin ]]
 }
 
+@test '$PATH unset' {
+    BACKUP_PATH=$PATH
+    unset PATH
+    run $CH_RUN_FILE $CHTEST_IMG -- \
+        /usr/bin/python3 -c 'import os; print(os.getenv("PATH") is None)'
+    PATH=$BACKUP_PATH
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = "True" ]]
+}
+
 @test 'mountns id differs' {
     host_ns=$(stat -Lc '%i' /proc/self/ns/mnt)
     echo "host:  $host_ns"
