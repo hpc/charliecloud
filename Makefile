@@ -15,32 +15,43 @@ clean:
 	cd test && $(MAKE) clean
 	cd examples/syscalls && $(MAKE) clean
 
-# If we're in a Git checkout, rebuild VERSION.full every time (since it's hard
-# to tell if it needs to be rebuilt). If not, it had better be there since we
-# can't build it.
-ifeq ($(wildcard .git),.git)
-.PHONY: VERSION.full
+# VERSION.full contains the version string reported by the executables.
+#
+# * If VERSION is an unadorned release (e.g. 0.2.3 not 0.2.3~pre), or there's
+#   no Git information available, VERSION.full is simply a copy of VERSION.
+#
+# * Otherwise, we add the Git commit and a note if the working directory
+#   contains uncommitted changes, e.g. "0.2.3~pre+ae24a4e.dirty".
+#
+ifeq ($(shell test -d .git && fgrep -q \~ VERSION && echo true),true)
+.PHONY: VERSION.full  # depends on git metadata, not a simple file
 VERSION.full:
 	printf '%s+%s%s\n' \
 	       $$(cat VERSION) \
-               $$(git rev-parse --short HEAD) \
+	       $$(git rev-parse --short HEAD) \
 	       $$(git diff-index --quiet HEAD || echo '.dirty') \
 	       > VERSION.full
+else
+VERSION.full: VERSION
+	cp VERSION VERSION.full
 endif
 bin/version.h: VERSION.full
 	echo "#define VERSION \"$$(cat $<)\"" > $@
 bin/version.sh: VERSION.full
 	echo "version () { echo 1>&2 '$$(cat $<)'; }" > $@
 
-# Yes, this is bonkers.
+# Yes, this is bonkers. We keep it around even though normal "git archive" or
+# the zip files on Github work, because it provides an easy way to create a
+# self-contained tarball with embedded Bats.
 .PHONY: export
 export: VERSION.full
-	git diff-index --quiet HEAD  # only export if WD is clean
+	test -d .git -a -f test/bats/.git  # need recursive Git checkout
+	git diff-index --quiet HEAD        # need clean working directory
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
-	cd test/bats.src && \
+	cd test/bats && \
           git archive HEAD \
-            --prefix=charliecloud-$$(cat ../../VERSION.full)/test/bats.src/ \
+            --prefix=charliecloud-$$(cat ../../VERSION.full)/test/bats/ \
             -o ../../bats.tar
 	tar Af main.tar bats.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
@@ -125,14 +136,16 @@ install: all
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
 	chmod 755 $(TEST)/chtest/Build $(TEST)/chtest/*.py
-	install -d $(TEST)/bats.src
-	install -pm 644 -t $(TEST)/bats.src \
-	        test/bats.src/CONDUCT.md test/bats.src/LICENSE \
-                test/bats.src/README.md
-	install -d $(TEST)/bats.src/libexec
-	install -pm 755 -t $(TEST)/bats.src/libexec \
-	        test/bats.src/libexec/*
-	install -d $(TEST)/bats.src/bin
-	ln -sf ../libexec/bats $(TEST)/bats.src/bin/bats
-	ln -sf bats.src/bin/bats $(TEST)/bats
 	ln -sf ../../../../bin $(TEST)/bin
+#       Bats (if embedded)
+	if [ -d test/bats/bin ]; then \
+	    install -d $(TEST)/bats && \
+	    install -pm 644 -t $(TEST)/bats test/bats/CONDUCT.md \
+	                                    test/bats/LICENSE \
+	                                    test/bats/README.md && \
+	    install -d $(TEST)/bats/libexec && \
+	    install -pm 755 -t $(TEST)/bats/libexec test/bats/libexec/* && \
+	    install -d $(TEST)/bats/bin && \
+	    ln -sf ../libexec/bats $(TEST)/bats/bin/bats && \
+	    ln -sf bats/bin/bats $(TEST)/bats; \
+	fi

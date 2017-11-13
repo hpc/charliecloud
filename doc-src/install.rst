@@ -63,6 +63,7 @@ mode independently), you also need:
 
 * Bash 4.1+
 * Python 2.6+
+* `Bats <https://github.com/sstephenson/bats>`_ 0.4.0
 * wget
 
 .. With respect to curl vs. wget, both will work fine for our purposes
@@ -70,6 +71,21 @@ mode independently), you also need:
    reporting systems have wget installed, vs. about 44% for curl. On the other
    hand, curl is in the minimal install of CentOS 7 while wget is not. For now
    I just picked wget because I liked it better.
+
+Bats can be installed at the system level or embedded in the Charliecloud
+source code. If it's in both places, the latter is used.
+
+To embed Bats, either:
+
+* Download Charliecloud using :code:`git clone --recursive`, which will check
+  out Bats as a submodule in :code:`test/bats`.
+
+* Unpack the Bats zip file or tarball in :code:`test/bats`.
+
+To check an embedded Bats::
+
+  $ test/bats/bin/bats --version
+  Bats 0.4.0
 
 
 Install Docker (build systems only)
@@ -186,13 +202,6 @@ Download
 
 See our GitHub project: https://github.com/hpc/charliecloud
 
-Download with :code:`git clone --recursive`; the switch gets the submodule
-needed for testing as well. Other methods of downloading (e.g. the tarball,
-plain :code:`git clone`) are known not to work.
-
-The remaining install steps can be run from the Git working directory or an
-unpacked export tarball created with :code:`make export`.
-
 Build
 -----
 
@@ -231,21 +240,17 @@ Note that :code:`PREFIX` is required; it does not default to
 Test Charliecloud
 =================
 
-Charliecloud comes with a fairly comprehensive `Bats
-<https://github.com/sstephenson/bats>`_ test suite, in :code:`test`. Go there::
+Charliecloud comes with a fairly comprehensive Bats test suite, in
+:code:`test`. Go there::
 
   $ cd test
 
-Bats must be installed in the :code:`test/bats.src`. In the Git repository,
-this is arranged with a Git submodule, so if you downloaded Charliecloud with
-Git command above, it should already be there. Otherwise, you must download
-and unpack Bats manually.
+To check location and version of Bats used by the tests::
 
-:code:`test/bats` is a symlink to the main Bats script, for convenience.
-
-Verify the Bats install with::
-
-  $ ./bats --version
+  $ make where-bats
+  which bats
+  /usr/bin/bats
+  bats --version
   Bats 0.4.0
 
 Just like for normal use, the Charliecloud test suite is split into build and
@@ -263,7 +268,7 @@ fixtures. These are configured with environment variables::
   $ export CH_TEST_IMGDIR=/var/tmp/images
   $ export CH_TEST_PERMDIRS='/var/tmp /tmp'
 
-:code:`CH_TEST_PERMDIRS` can be set to `skip` in order to skip the file
+:code:`CH_TEST_PERMDIRS` can be set to :code:`skip` in order to skip the file
 permissions tests.
 
 (Strictly speaking, the build phase needs only the first, and the example test
@@ -283,7 +288,8 @@ In this phase, image building and associated functionality is tested.
 
 ::
 
-  ./bats build.bats build_auto.bats build_post.bats
+  $ make test-build
+  bats build.bats build_auto.bats build_post.bats
    ✓ create tarball directory if needed
    ✓ documentations build
    ✓ executables seem sane

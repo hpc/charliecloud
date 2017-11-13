@@ -1,22 +1,31 @@
 #!/bin/bash
 
-# Warning: This script messes with your "docker" binary. Don't run it unless
-# you know what you are doing.
+# Warning: This script installs software and messes with your "docker" binary.
+# Don't run it unless you know what you are doing.
+
+# We start in the Charliecloud Git working directory.
 
 set -e
 set -x
 
-echo "INSTALL=$INSTALL EXPORT=$EXPORT SETUID=$SETUID"
+echo "SETUID=$SETUID TARBALL=$TARBALL INSTALL=$INSTALL"
 
-if [[ $EXPORT ]]; then
-    make export
-    tar xf charliecloud-*.tar.gz
-    rm charliecloud-*.tar.gz
-    cd charliecloud-*
-fi
+case $TARBALL in
+    export)
+        make export
+        tar xf charliecloud-*.tar.gz
+        cd charliecloud-*
+        ;;
+    archive)
+        # The Travis image already has Bats installed.
+        git archive HEAD --prefix=charliecloud/ -o charliecloud.tar
+        tar xf charliecloud.tar
+        cd charliecloud
+        ;;
+esac
 
-# We start in the Charliecloud Git working directory, so no cd needed.
 make SETUID=$SETUID
+bin/ch-run --version
 
 if [[ $INSTALL ]]; then
     sudo make install PREFIX=/usr/local
@@ -25,6 +34,7 @@ fi
 
 cd test
 
+make where-bats
 make test-quick
 make test-all
 
