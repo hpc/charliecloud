@@ -3,6 +3,14 @@ SHELL=/bin/bash
 # Add some good stuff to CFLAGS.
 export CFLAGS += -std=c11 -Wall
 
+# Only target "install" is allowed as root.
+ifeq ($(shell id -u),0)
+ifneq ($(MAKECMDGOALS),install)
+  $(error Building as root is not supported)
+endif
+endif
+
+
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) SETUID=$(SETUID) all
@@ -87,9 +95,14 @@ LIBEXEC_DIR ?= libexec/charliecloud
 LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
 LIBEXEC_RUN := $(PREFIX)/$(LIBEXEC_DIR)
 .PHONY: install
-install: all
+ifneq ($(shell id -u),0)
+  install: all
+endif
+install:
 	@test -n "$(PREFIX)" || \
           (echo "No PREFIX specified. Lasciando ogni speranza." && false)
+	@test -x bin/ch-run || \
+	  (echo "No bin/ch-run found. Build as non-root first." && false)
 	@echo Installing in $(INSTALL_PREFIX)
 #       binaries
 	install -d $(BIN)
