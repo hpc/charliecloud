@@ -6,9 +6,17 @@
 # We start in the Charliecloud Git working directory.
 
 set -e
-set -x
 
 echo "SETUID=$SETUID TARBALL=$TARBALL INSTALL=$INSTALL"
+
+# Remove sbin directories from $PATH (see issue #43). Assume none are first.
+echo $PATH
+for i in /sbin /usr/sbin /usr/local/sbin; do
+    export PATH=${PATH/:$i/}
+done
+echo $PATH
+
+set -x
 
 case $TARBALL in
     export)
