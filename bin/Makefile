@@ -16,7 +16,7 @@ ifdef SETUID
 export CFLAGS += -DSETUID
 all: setuid
 setuid: ch-run
-	# Use sudo only if not already root.
+#	Use sudo only if not already root.
 	if [ $$(id -u) -eq 0 ]; then \
 	    chown root $<; \
 	    chmod u+s $<; \
