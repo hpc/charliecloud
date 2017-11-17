@@ -69,44 +69,16 @@ load common
     [[ $empty_ct -eq 0 ]]
 }
 
-@test 'docker pull' {
-    # Do we have all the Docker functionality required to run charliecloud?
-    # This test pulls an image from the Dockerhub repository, ensures it
-    # exists, and builds it to a tar.
-    IMG=alpine:3.5
-    sudo docker pull $IMG
-    docker_ok alpine
-    ch-docker2tar $IMG $TARDIR
-}
-
-@test 'ch-build' {
-    cd chtest
-    ch-build -t chtest ../..
-    docker_ok chtest
-}
-
-@test 'ch-build --pull' {
-    # this may get a new image, if edge has been updated
-    ch-build --pull -t alpineedge --file=./Dockerfile.alpineedge ..
-    # this very probably will not
-    ch-build --pull -t alpineedge --file=./Dockerfile.alpineedge ..
-}
-
 @test 'ch-build2dir' {
     # This test unpacks into $TARDIR so we don't put anything in $IMGDIR at
     # build time. It removes the image on completion.
-    TAR=$CHTEST_TARBALL
-    IMG=$TARDIR/chtest
+    need_docker
+    TAR=$TARDIR/alpine36.tar.gz
+    IMG=$TARDIR/test
     [[ ! -e $IMG ]]
-    cd chtest
-    # Dockerfile expected in $PWD
-    ch-build2dir ../.. $TARDIR
-    docker_ok chtest
+    ch-build2dir .. $TARDIR --file=Dockerfile.alpine36
+    docker_ok test
     image_ok $IMG
-    # Same, overwrite, also --file argument
-    ch-build2dir ../.. $TARDIR --file="$PWD/Dockerfile"
-    docker_ok chtest
-    image_ok $IMG
-    # Remove since we don't want it hanging around later
+    # Remove since we don't want it hanging around later.
     rm -Rf --one-file-system $TAR $IMG
 }

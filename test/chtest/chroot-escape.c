@@ -28,8 +28,9 @@ void fatal(char * msg)
 int main()
 {
    struct stat before, after;
-   int fd, status;
-   char tmpdir_template[] = "/tmp/chroot-escape-XXXXXX";  // not cleaned up
+   int fd;
+   int status = EXIT_FAILURE;
+   char tmpdir_template[] = "/tmp/chtest.tmp.chroot.XXXXXX";
    char * tmpdir_name;
 
    if (stat("/", &before)) fatal("stat before");
@@ -43,34 +44,35 @@ int main()
    if (chroot(tmpdir_name)) {
       if (errno == EPERM) {
          printf("SAFE\tchroot(2) failed with EPERM\n");
-         return EXIT_SUCCESS;
+         status = EXIT_SUCCESS;
       } else {
          fatal("chroot");
       }
-   }
-
-   if (fchdir(fd)) fatal("fchdir");
-   if (close(fd)) fatal("close");
-
-   for (int i = 0; i < 1024; i++)
-      if (chdir("..")) fatal("chdir");
-
-   /* If we got this far, we should be able to call chroot(2), so any error is
-      a FAIL. */
-   if (chroot(".")) fatal("chroot");
-
-   /* If root directory is the same before and after the attempted escape,
-      then the escape failed, and we should be happy. */
-   if (stat("/", &after)) fatal("stat after");
-   if (before.st_dev == after.st_dev && before.st_ino == after.st_ino) {
-      printf("SAFE\t");
-      status = EXIT_SUCCESS;
    } else {
-      printf("RISK\t");
-      status = EXIT_FAILURE;
-   }
-   printf("dev/inode before %lu/%lu, after %lu/%lu\n",
-          before.st_dev, before.st_ino, after.st_dev, after.st_ino);
+      if (fchdir(fd)) fatal("fchdir");
+      if (close(fd)) fatal("close");
 
+      for (int i = 0; i < 1024; i++)
+         if (chdir("..")) fatal("chdir");
+
+      /* If we got this far, we should be able to call chroot(2), so failure
+         is an error. */
+      if (chroot(".")) fatal("chroot");
+
+      /* If root directory is the same before and after the attempted escape,
+         then the escape failed, and we should be happy. */
+      if (stat("/", &after)) fatal("stat after");
+      if (before.st_dev == after.st_dev && before.st_ino == after.st_ino) {
+         printf("SAFE\t");
+         status = EXIT_SUCCESS;
+      } else {
+         printf("RISK\t");
+         status = EXIT_FAILURE;
+      }
+      printf("dev/inode before %lu/%lu, after %lu/%lu\n",
+             before.st_dev, before.st_ino, after.st_dev, after.st_ino);
+   }
+
+   if (rmdir(tmpdir_name)) fatal("rmdir");
    return status;
 }

@@ -1,6 +1,7 @@
 CH_BIN="$(cd "$(dirname "$0")" && pwd)"
 
-. "$CH_BIN/version.sh"
+LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
+. ${LIBEXEC}/version.sh
 
 # Do we need sudo to run docker?
 if ( docker info > /dev/null 2>&1 ); then

@@ -1,6 +1,7 @@
 #!/bin/sh
 
-. $(dirname "$0")/base.sh
+LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
+. ${LIBEXEC}/base.sh
 
 usage () {
     cat 1>&2 <<EOF
@@ -10,10 +11,13 @@ Usage:
 
   $ $(basename $0) TARBALL DIR
 
-If DIR doesn't exist, it is created and filled with the contents of TARBALL,
-which must be a Linux filesystem image, e.g. from ch-docker2tar. If it does
-exist, and appears to be a Charliecloud container image, it is removed and
-replaced per above. Otherwise, the script aborts with an error.
+Extract the tarball, which must be a Linux filesystem image e.g. from
+ch-docker2tar, into a subdirectory of DIR named as the tarball with .tar.gz
+removed. For example, if the tarball is foo.tar.gz, unpack into DIR/foo.
+
+If the subdirectory doesn't exist, it is created. If it does exist and appears
+to be a Charliecloud container image, it is removed and replaced. Otherwise,
+the script aborts with an error.
 
 Warning:
 
@@ -43,9 +47,15 @@ if [ $# -lt 2 ]; then
     usage
 fi
 TARBALL="$1"
-NEWROOT="$2"
+NEWROOT="$2/$(basename "${TARBALL%.tar.gz}")"
 
 SENTINEL=WEIRD_AL_YANKOVIC
+
+# Is the tarball a regular file (or symlink) and readable?
+if [ ! -f "$TARBALL" -o ! -r "$TARBALL" ]; then
+    echo "can't read $TARBALL" 1>&2
+    exit 1
+fi
 
 if [ ! -d "$NEWROOT" ]; then
     echo "creating new image $NEWROOT"
@@ -66,11 +76,11 @@ mkdir "$NEWROOT"
 echo 'This directory is a Charliecloud container image.' > "$NEWROOT/$SENTINEL"
 tar x$VERBOSE -I $GZIP_CMD -C "$NEWROOT" -f "$TARBALL" --exclude='dev/*'
 
-# make all directories writeable so we can delete image later (hello, Red Hat)
+# Make all directories writeable so we can delete image later (hello, Red Hat).
 find "$NEWROOT" -type d -a ! -perm /200 -exec chmod u+w {} +
 
-# make directories that ch-run will need
-mkdir -p "$NEWROOT/oldroot"
+# Ensure directories that ch-run needs exist.
+mkdir -p "$NEWROOT/dev"
 for i in $(seq 0 9); do mkdir -p "$NEWROOT/mnt/$i"; done
 
 echo "$NEWROOT unpacked ok"

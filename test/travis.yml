@@ -3,40 +3,55 @@ sudo: required
 language: c
 compiler: gcc
 
+# This defines a "matrix" of jobs. Each combination of environment variables
+# defines a different job. They run in parallel, five at a time.
+#
+# FIXME: Each job starts with a cold Docker cache, which wastes work heating
+# it up in parallel. It would be nice if "make test-build" could be done
+# serially before splitting into parallel jobs.
+#
+#   TARBALL=         # build in Git checkout & use embedded Bats
+#   TARBALL=archive  # build from "git archive" tarball & use system Bats
+#   TARBALL=export   # build from "make export" tarball & use embedded Bats
+#   INSTALL=         # run from build directory
+#   INSTALL=yes      # make install to /usr/local, run that one
+#   SETUID=          # standard build (user + mount namespaces)
+#   SETUID=yes       # setuid build (mount namespace, setuid binary)
+#
+env:
+  - SETUID=    TARBALL=        INSTALL=
+  - SETUID=    TARBALL=        INSTALL=yes
+  - SETUID=    TARBALL=archive INSTALL=
+  - SETUID=    TARBALL=archive INSTALL=yes
+  - SETUID=    TARBALL=export  INSTALL=
+  - SETUID=    TARBALL=export  INSTALL=yes
+# Setuid mode is only sort of supported, so don't test it as carefully.
+  - SETUID=yes TARBALL=        INSTALL=
+  - SETUID=yes TARBALL=        INSTALL=yes
+# - SETUID=yes TARBALL=archive INSTALL=
+# - SETUID=yes TARBALL=archive INSTALL=yes
+# - SETUID=yes TARBALL=export  INSTALL=
+# - SETUID=yes TARBALL=export  INSTALL=yes
+
 install:
   - sudo apt-get install pigz
-  - pip install sphinx sphinx-rtd-theme
+  - sudo pip install sphinx sphinx-rtd-theme
 
 before_script:
+  - getconf _NPROCESSORS_ONLN
+  - free -m
+  - df -h
+  - df -h /var/tmp
   - export CH_TEST_TARDIR=/var/tmp/tarballs
   - export CH_TEST_IMGDIR=/var/tmp/images
   - export CH_TEST_PERMDIRS='/var/tmp /run'
   - export CH_TEST_OMIT=mpi
   - unset JAVA_HOME  # otherwise Spark tries to use host's Java
-  - df -h
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
 
 script:
-  - set -e
-  - make
-  - cd test
-  - make test-build
-  - make test-run
-  - make test-test
-  - cd -
-  - make clean && make SETUID=yes
-  - cd test
-  - make test-build
-  - make test-run
-  - make test-test
-  - cd -
-  - make clean && make
-  - make export
-  - tar xf charliecloud-*.tar.gz
-  - cd charliecloud-*
-  - make
-  - sudo make install PREFIX=/usr/local
-  - cd /usr/local/share/doc/charliecloud/test
-  - make test-build
-  - make test-run
-  - make test-test
+  - test/travis.sh
+
+after_script:
+  - free -m
+  - df -h

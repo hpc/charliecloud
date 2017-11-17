@@ -1,6 +1,7 @@
 #!/bin/sh
 
-. $(dirname "$0")/base.sh
+LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
+. ${LIBEXEC}/base.sh
 
 set -e
 
@@ -45,5 +46,5 @@ set -x
 
 $CH_BIN/ch-build -t $TAG "$CONTEXT" "$@"
 $CH_BIN/ch-docker2tar $TAG "$DEST"
-$CH_BIN/ch-tar2dir "$DEST/$TAG.tar.gz" "$DEST/$TAG"
+$CH_BIN/ch-tar2dir "$DEST/$TAG.tar.gz" "$DEST"
 rm "$DEST/$TAG.tar.gz"

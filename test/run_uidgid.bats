@@ -55,7 +55,8 @@ setup () {
     for d in $CH_TEST_PERMDIRS; do
         d="$d/perms_test/pass"
         echo "verifying: $d"
-          ch-run -t $UID_ARGS $GID_ARGS -b $d $CHTEST_IMG -- \
+          ch-run --no-home --private-tmp \
+                 $UID_ARGS $GID_ARGS -b $d $CHTEST_IMG -- \
                  /test/fs_perms.py /mnt/0
     done
 }
@@ -88,11 +89,11 @@ setup () {
     #     over-mount something else.
     ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- \
            sh -c '[ -f /bin/mount -a -x /bin/mount ]'
-    dev=$(fgrep ' / ' /proc/mounts | cut -d' ' -f1)
-    type=$(fgrep ' / ' /proc/mounts | cut -d' ' -f3)
-    opts=$(fgrep ' / ' /proc/mounts | cut -d' ' -f4)
+    dev=$(findmnt -n -o SOURCE -T /)
+    type=$(findmnt -n -o FSTYPE -T /)
+    opts=$(findmnt -n -o OPTIONS -T /)
     run ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- \
-               /bin/mount -n -o $opts -t $type $dev /oldroot
+               /bin/mount -n -o $opts -t $type $dev /mnt/0
     echo "$output"
     # return codes from http://man7.org/linux/man-pages/man8/mount.8.html
     # busybox seems to use the same list

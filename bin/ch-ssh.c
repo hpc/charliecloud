@@ -18,7 +18,7 @@ Run a remote command in a Charliecloud container.\n\
 Example:\n\
 \n\
   $ export CH_RUN_ARGS=/data/foo\n\
-  $ ch-ssh example.com echo hello\n\
+  $ ch-ssh example.com -- echo hello\n\
   hello\n\
 \n\
 Arguments to ch-run, including the image to activate, are specified in the\n\
@@ -59,8 +59,8 @@ int main(int argc, char * argv[])
 
    // insert ch-run command
    ch_run_args = getenv("CH_RUN_ARGS");
-   if (ch_run_args == NULL)
-      fatal("CH_RUN_ARGS not set\n");
+   Te (ch_run_args != NULL, "CH_RUN_ARGS not set");
+
    args[i] = "ch-run";
    for (j = 1; i + j < ARGS_MAX; j++, ch_run_args = NULL) {
       args[i+j] = strtok(ch_run_args, " ");
@@ -76,5 +76,5 @@ int main(int argc, char * argv[])
    //   printf("%d: %s\n", i, args[i]);
 
    execvp("ssh", args);
-   fatal("can't execute ssh: %s\n", strerror(errno));
+   Tf (0, "can't execute ssh");
 }

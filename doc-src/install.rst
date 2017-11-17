@@ -5,6 +5,12 @@ Installation
    :depth: 2
    :local:
 
+.. note::
+
+   These are general installation instructions. If you'd like specific,
+   step-by-step directions for CentOS 7, section :doc:`virtualbox` has these
+   for a VirtualBox virtual machine.
+
 Prequisites
 ===========
 
@@ -17,11 +23,19 @@ Run time
 
 Systems used for running images in the standard unprivileged mode need:
 
-* Recent Linux kernel with :code:`CONFIG_USER_NS=y`.
+* Recent Linux kernel with :code:`CONFIG_USER_NS=y`. We recommend version 4.4
+  or higher.
+
 * C compiler and standard library
+
 * POSIX shell and utilities
 
-Tested and working by us include the Ubuntu and upstream versions of 4.4.
+Some distributions need configuration changes to enable user namespaces. For
+example, Debian Stretch needs sysctl
+:code:`kernel.unprivileged_userns_clone=1`, and RHEL and CentOS 7.4 need both
+a `kernel command line option and a sysctl
+<https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_
+(that put you into "technology preview").
 
 .. note::
 
@@ -34,10 +48,16 @@ Build time
 
 Systems used for building images need the run-time prerequisites, plus:
 
-* `Docker <https://www.docker.com/>`_, recent version. We do not make compatibility guarantees with any specific version, but let us know if you run into issues.
-* Bash
+* Bash 4.1+
+
+and optionally:
+
+* `Docker <https://www.docker.com/>`_ 17.03+
+* internet access or Docker configured for a local Docker hub
 * root access using :code:`sudo`
-* Internet access or a Docker configured for a local Docker hub
+
+Older versions of Docker may work but are untested. We know that 1.7.1 does
+not work.
 
 Test suite
 ----------
@@ -47,10 +67,36 @@ mode independently), you also need:
 
 * Bash 4.1+
 * Python 2.6+
+* `Bats <https://github.com/sstephenson/bats>`_ 0.4.0
+* wget
+
+.. With respect to curl vs. wget, both will work fine for our purposes
+   (download a URL). According to Debian's popularity contest, 99.88% of
+   reporting systems have wget installed, vs. about 44% for curl. On the other
+   hand, curl is in the minimal install of CentOS 7 while wget is not. For now
+   I just picked wget because I liked it better.
+
+Note that without Docker on the build system, some of the test suite will be
+skipped.
+
+Bats can be installed at the system level or embedded in the Charliecloud
+source code. If it's in both places, the latter is used.
+
+To embed Bats, either:
+
+* Download Charliecloud using :code:`git clone --recursive`, which will check
+  out Bats as a submodule in :code:`test/bats`.
+
+* Unpack the Bats zip file or tarball in :code:`test/bats`.
+
+To check an embedded Bats::
+
+  $ test/bats/bin/bats --version
+  Bats 0.4.0
 
 
-Install Docker (build systems only)
-===================================
+Docker install tips
+===================
 
 Tnstalling Docker is beyond the scope of this documentation, but here are a
 few tips.
@@ -59,29 +105,10 @@ Understand the security implications of Docker
 ----------------------------------------------
 
 Because Docker (a) makes installing random crap from the internet really easy
-and (b) has an "interesting" security culture, you should take care. Some of
-the implications are below. This list should not be considered comprehensive
-nor a substitute for appropriate expertise; adhere to your moral and
-institutional responsibilities.
-
-(All this stuff is a key motivation for Charliecloud.)
-
-Don't pipe web pages to your shell
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This is how Docker recommends you install the software. Don't do this::
-
-  $ curl -fsSL https://get.docker.com/ | sh
-
-This approach --- piping a web page directly into a shell --- is easy and
-fashionable but stupid.
-
-The problem is that you've invited the web page to execute arbitrary code as
-you (or worse, root). Auditing the page in a browser only helps somewhat, as
-the server could use your :code:`User-Agent` header to decide whether to show
-you safe or malicious code.
-
-Download the script to a file and audit it carefully before running.
+and (b) is easy to deploy insecurely, you should take care. Some of the
+implications are below. This list should not be considered comprehensive nor a
+substitute for appropriate expertise; adhere to your moral and institutional
+responsibilities.
 
 :code:`docker` equals root
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,15 +118,14 @@ daemon can `trivially escalate to root
 <http://reventlov.com/advisories/using-the-docker-command-to-root-the-host>`_.
 This is considered a feature.
 
-For this reason, don't create the :code:`docker` group when the installer
-offers it, as this will allow passwordless, unlogged escalation for anyone in
-the group.
+For this reason, don't create the :code:`docker` group, as this will allow
+passwordless, unlogged escalation for anyone in the group.
 
 Images can contain bad stuff
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Standard hygiene for "installing stuff from the internet" applies. Only work
-with images you trust. The official DockerHub repositories can help.
+with images you trust. The official Docker Hub repositories can help.
 
 Containers run as root
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -128,8 +154,8 @@ If you don't want the service starting automatically at boot, e.g.::
   $ systemctl is-enabled docker
   disabled
 
-Configuring Docker for a proxy
-------------------------------
+Configuring for a proxy
+-----------------------
 
 By default, Docker does not work if you have a proxy, and it fails in two
 different ways.
@@ -144,8 +170,8 @@ manifests as::
 
 If you have a systemd system, the `Docker documentation
 <https://docs.docker.com/engine/admin/systemd/#http-proxy>`_ explains how to
-configure this. (If you don't have a systemd system, then
-:code:`/etc/default/docker` might be the place to go?)
+configure this. If you don't have a systemd system, then
+:code:`/etc/default/docker` might be the place to go?
 
 The second problem is that Docker containers need to know about the proxy as
 well. This manifests as images failing to build because they can't download
@@ -153,7 +179,7 @@ stuff from the internet.
 
 The fix is to set the proxy variables in your environment, e.g.::
 
-  export HTTP_PROXY=http://example.com:8088
+  export HTTP_PROXY=http://proxy.example.com:8088
   export http_proxy=$HTTP_PROXY
   export HTTPS_PROXY=$HTTP_PROXY
   export https_proxy=$HTTP_PROXY
@@ -162,7 +188,10 @@ The fix is to set the proxy variables in your environment, e.g.::
   export NO_PROXY='localhost,127.0.0.1,.example.com'
   export no_proxy=$NO_PROXY
 
-:code:`ch-build` will then pass these through to your image builds.
+You also need to teach :code:`sudo` to retain them. Add the following to
+:code:`/etc/sudoers`::
+
+  Defaults env_keep+="HTTP_PROXY http_proxy HTTPS_PROXY https_proxy ALL_PROXY all_proxy NO_PROXY no_proxy"
 
 Because different programs use different subsets of these variables, and to
 avoid a situation where some things work and others don't, the Charliecloud
@@ -178,12 +207,7 @@ Download
 
 See our GitHub project: https://github.com/hpc/charliecloud
 
-Download with :code:`git clone --recursive`; the switch gets the submodule
-needed for testing as well. Other methods of downloading (e.g. the tarball,
-plain :code:`git clone`) are known not to work.
-
-The remaining install steps can be run from the Git working directory or an
-unpacked export tarball created with :code:`make export`.
+The recommended download method is :code:`git clone --recursive`.
 
 Build
 -----
@@ -192,11 +216,10 @@ To build in the standard, unprivileged mode (recommended)::
 
   $ make
 
-To build in setuid mode (experimental)::
+To build in setuid mode (for testing if your kernel doesn't support the user
+namespace)::
 
   $ make SETUID=yes
-
-This mode escalates with :code:`sudo` when needed.
 
 To build the documentation, see :code:`doc-src/README`.
 
@@ -219,25 +242,22 @@ To install (FHS-compliant)::
 Note that :code:`PREFIX` is required; it does not default to
 :code:`/usr/local` like many packages.
 
+.. _install_test-charliecloud:
 
 Test Charliecloud
 =================
 
-Charliecloud comes with a fairly comprehensive `Bats
-<https://github.com/sstephenson/bats>`_ test suite, in :code:`test`. Go there::
+Charliecloud comes with a fairly comprehensive Bats test suite, in
+:code:`test`. Go there::
 
   $ cd test
 
-Bats must be installed in the :code:`test/bats.src`. In the Git repository,
-this is arranged with a Git submodule, so if you downloaded Charliecloud with
-Git command above, it should already be there. Otherwise, you must download
-and unpack Bats manually.
+To check location and version of Bats used by the tests::
 
-:code:`test/bats` is a symlink to the main Bats script, for convenience.
-
-Verify the Bats install with::
-
-  $ ./bats --version
+  $ make where-bats
+  which bats
+  /usr/bin/bats
+  bats --version
   Bats 0.4.0
 
 Just like for normal use, the Charliecloud test suite is split into build and
@@ -248,14 +268,14 @@ Testing is coordinated by :code:`make`. The test targets run one or more test
 suites. If any test suite has a failure, testing stops with an error message.
 
 The tests need three work directories with several gigabytes of free space, in
-order to store image tarballs, unpacked image directories, and file permission
-test fixtures. These are configured with environment variables::
+order to store image tarballs, unpacked image directories, and permission test
+fixtures. These are configured with environment variables::
 
   $ export CH_TEST_TARDIR=/var/tmp/tarballs
   $ export CH_TEST_IMGDIR=/var/tmp/images
   $ export CH_TEST_PERMDIRS='/var/tmp /tmp'
 
-:code:`CH_TEST_PERMDIRS` can be set to `skip` in order to skip the file
+:code:`CH_TEST_PERMDIRS` can be set to :code:`skip` in order to skip the file
 permissions tests.
 
 (Strictly speaking, the build phase needs only the first, and the example test
@@ -276,40 +296,41 @@ In this phase, image building and associated functionality is tested.
 ::
 
   $ make test-build
-  ./bats build.bats build_auto.bats
-   ✓ executables --help
-   ✓ ch-build
-   ✓ ch-build --pull
-   ✓ ch-build2dir
-   ✓ ch-build alpine34
-   ✓ ch-docker2tar alpine34
+  bats build.bats build_auto.bats build_post.bats
+   ✓ create tarball directory if needed
+   ✓ documentations build
+   ✓ executables seem sane
   [...]
-   ✓ ch-build spark
-   ✓ ch-docker2tar spark
+   ✓ ch-build obspy
+   ✓ ch-docker2tar obspy
+   ✓ docker pull dockerpull
+   ✓ ch-docker2tar dockerpull
+   ✓ nothing unexpected in tarball directory
 
-  28 tests, 0 failures
+  41 tests, 0 failures
 
 Note that with an empty Docker cache, this test can be quite lengthy, half an
 hour or more, because it builds all the examples as well as several basic
 Dockerfiles for common Linux distributions and tools (in :code:`test`). With a
-full cache, expect more like 1--2 minutes.
+full cache, expect more like 1–2 minutes.
 
-To iterate faster, you can cancel the test with Control-C once it gets into
-repetitive testing of different Dockerfiles.
+.. note::
 
-The easiest way to update the Docker images used in this test is to simply
-delete all Docker images and let them be rebuilt.
+   The easiest way to update the Docker images used in this test is to simply
+   delete all Docker containers and images, and let them be rebuilt::
 
-::
-
-  $ sudo docker rm $(sudo docker ps -aq)
-  $ sudo docker rmi -f $(sudo docker images -q)
+     $ sudo docker rm $(sudo docker ps -aq)
+     $ sudo docker rmi -f $(sudo docker images -q)
 
 Run
 ---
 
 The run tests require the contents of :code:`$CH_TEST_TARDIR` produced by a
-successful, complete build test. Copy this directory to the run system.
+successful, complete build test. Copy this directory to the run
+system.
+
+Additionally, the user running the tests needs to be a member of at least 2
+groups.
 
 File permission enforcement is tested against specially constructed fixture
 directories. These should include every meaningful mounted filesystem, and
@@ -324,11 +345,11 @@ To run the tests::
 
   $ make test-run
 
-Test suites of examples
------------------------
+Examples
+--------
 
 Some of the examples include test suites of their own. This Charliecloud runs
-those test suites, using a SLURM allocation if one is available or a single
+those test suites, using a Slurm allocation if one is available or a single
 node (localhost) if not.
 
 These require that the run tests have been completed successfully.
@@ -341,11 +362,12 @@ To run the tests::
 
   $ make test-test
 
-Multiple phases
----------------
+Quick and multiple-phase tests
+------------------------------
 
-We also provide multiple-phase targets:
+We also provide the following additional test targets:
 
+ * :code:`test-quick`: key subset of build and run phases (nice for development)
  * :code:`test`: build and run phases
  * :code:`test-all`: all three phases
 

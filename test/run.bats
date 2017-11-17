@@ -32,13 +32,6 @@ load common
     ch-ssh --help
 }
 
-@test 'docker pull runs' {
-    IMG=alpine:3.5
-    TAR=$IMG.tar.gz
-    ch-tar2dir $TARDIR/$TAR $IMGDIR/$IMG
-    ch-run $IMGDIR/$IMG /bin/true
-}
-
 @test 'setuid bit matches --is-setuid' {
     test $CH_RUN_FILE -ef $(which ch-run)
     [[ -e $CH_RUN_FILE ]]
@@ -61,7 +54,7 @@ load common
 }
 
 @test 'ch-run refuses to run if setgid' {
-    CH_RUN_TMP=$BATS_TMPDIR_PRIVATE/ch-run.setgid
+    CH_RUN_TMP=$BATS_TMPDIR/ch-run.setgid
     GID=$(id -g)
     GID2=$(id -G | cut -d' ' -f2)
     echo "GIDs: $GID $GID2"
@@ -75,14 +68,14 @@ load common
     run $CH_RUN_TMP --version
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ 'ch-run.setgid: error: Success' ]]
+    [[ $output =~ 'ch-run.setgid: error (' ]]
     rm $CH_RUN_TMP
 }
 
 @test 'ch-run refuses to run if setuid' {
     [[ -z $CH_RUN_SETUID ]] || skip 'compiled in setuid mode'
     [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
-    CH_RUN_TMP=$BATS_TMPDIR_PRIVATE/ch-run.setuid
+    CH_RUN_TMP=$BATS_TMPDIR/ch-run.setuid
     cp -a $CH_RUN_FILE $CH_RUN_TMP
     ls -l $CH_RUN_TMP
     sudo chown root $CH_RUN_TMP
@@ -92,8 +85,37 @@ load common
     run $CH_RUN_TMP --version
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ 'ch-run.setuid: error: Success' ]]
+    [[ $output =~ 'ch-run.setuid: error (' ]]
     sudo rm $CH_RUN_TMP
+}
+
+@test 'ch-run as root: --version and --test' {
+    [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
+    sudo $CH_RUN_FILE --version
+    sudo $CH_RUN_FILE --help
+}
+
+@test 'ch-run as root: run image' {
+    # Running an image should work as root, but it doesn't, and I'm not sure
+    # why, so skip this test. This fails in the test suite with:
+    #
+    #   ch-run: couldn't resolve image path: No such file or directory (ch-run.c:139:2)
+    #
+    # but when run manually (with same arguments?) it fails differently with:
+    #
+    #   $ sudo bin/ch-run $CH_TEST_IMGDIR/chtest -- true
+    #   ch-run: [...]/chtest: Permission denied (ch-run.c:195:13)
+    #
+    skip 'issue #76'
+    sudo $CH_RUN_FILE $CHTEST_IMG -- true
+}
+
+@test 'ch-run as root: root with non-zero GID refused' {
+    [[ -z $TRAVIS ]] || skip 'not permitted on Travis'
+    run sudo -u root -g $(id -gn) $CH_RUN_FILE -v --version
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ 'error (' ]]
 }
 
 @test 'ch-run -u and -g refused in setuid mode' {
@@ -115,7 +137,30 @@ load common
 }
 
 @test 'unpack chtest image' {
-    ch-tar2dir $CHTEST_TARBALL $CHTEST_IMG
+    if ( image_ok $CHTEST_IMG ); then
+        # image exists, remove so we can test new unpack
+        rm -Rf --one-file-system $CHTEST_IMG
+    fi
+    ch-tar2dir $CHTEST_TARBALL $IMGDIR  # new unpack
+    image_ok $CHTEST_IMG
+    ch-tar2dir $CHTEST_TARBALL $IMGDIR  # overwrite
+    image_ok $CHTEST_IMG
+}
+
+@test 'ch-tar2dir errors' {
+    # tarball doesn't exist
+    run ch-tar2dir does_not_exist.tar.gz $IMGDIR
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = "can't read does_not_exist.tar.gz" ]]
+
+    # tarball exists but isn't readable
+    touch $BATS_TMPDIR/unreadable.tar.gz
+    chmod 000 $BATS_TMPDIR/unreadable.tar.gz
+    run ch-tar2dir $BATS_TMPDIR/unreadable.tar.gz $IMGDIR
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = "can't read $BATS_TMPDIR/unreadable.tar.gz" ]]
 }
 
 @test 'workaround for /bin not in $PATH' {
@@ -140,6 +185,17 @@ load common
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = $PATH2:/bin ]]
+}
+
+@test '$PATH unset' {
+    BACKUP_PATH=$PATH
+    unset PATH
+    run $CH_RUN_FILE $CHTEST_IMG -- \
+        /usr/bin/python3 -c 'import os; print(os.getenv("PATH") is None)'
+    PATH=$BACKUP_PATH
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = "True" ]]
 }
 
 @test 'mountns id differs' {
@@ -167,7 +223,7 @@ load common
                   | egrep -m1 '[A-Za-z] [0-9]' \
                   | sed -r 's/^(.*")?(.+)(")$/\2/')
     echo "host: $host_distro"
-    guest_expected='Alpine Linux v3.5'
+    guest_expected='Alpine Linux v3.6'
     echo "guest expected: $guest_expected"
     if [[ $host_distro = $guest_expected ]]; then
         skip 'host matches expected guest distro'
@@ -212,7 +268,7 @@ EOF
    ch-run -w $CHTEST_IMG rm write
 }
 
-@test '--bind' {
+@test 'ch-run --bind' {
     # one bind, default destination (/mnt/0)
     ch-run -b $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
     # one bind, explicit destination
@@ -248,13 +304,13 @@ EOF
     ch-run --no-home -b $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
 }
 
-@test '--bind errors' {
+@test 'ch-run --bind errors' {
 
     # too many binds (11)
     run ch-run -b0 -b1 -b2 -b3 -b4 -b5 -b6 -b7 -b8 -b9 -b10 $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = 'ch-run: --bind can be used at most 10 times' ]]
+    [[ $output =~ 'ch-run: --bind can be used at most 10 times' ]]
 
     # no argument to --bind
     run ch-run $CHTEST_IMG -b
@@ -266,54 +322,84 @@ EOF
     run ch-run -b '' $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = 'ch-run: --bind: no source provided' ]]
+    [[ $output =~ 'ch-run: --bind: no source provided' ]]
 
     # source not provided
     run ch-run -b :/mnt/9 $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = 'ch-run: --bind: no source provided' ]]
+    [[ $output =~ 'ch-run: --bind: no source provided' ]]
 
     # destination not provided
     run ch-run -b $IMGDIR/bind1: $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = 'ch-run: --bind: no destination provided' ]]
+    [[ $output =~ 'ch-run: --bind: no destination provided' ]]
 
     # source does not exist
     run ch-run -b $IMGDIR/hoops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/hoops to /mnt/0: No such file or directory$'
+    r='^ch-run: could not bind .+/hoops to /mnt/0: No such file or directory'
     [[ $output =~ $r ]]
 
     # destination does not exist
     run ch-run -b $IMGDIR/bind1:/goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/bind1 to /goops: No such file or directory$'
+    r='^ch-run: could not bind .+/bind1 to /goops: No such file or directory'
     [[ $output =~ $r ]]
 
     # neither source nor destination exist
     run ch-run -b $IMGDIR/hoops:/goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/hoops to /goops: No such file or directory$'
+    r='^ch-run: could not bind .+/hoops to /goops: No such file or directory'
     [[ $output =~ $r ]]
 
     # correct bind followed by source does not exist
     run ch-run -b $IMGDIR/bind1:/mnt/9 -b $IMGDIR/hoops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/hoops to /mnt/1: No such file or directory$'
+    r='^ch-run: could not bind .+/hoops to /mnt/1: No such file or directory'
     [[ $output =~ $r ]]
 
     # correct bind followed by destination does not exist
     run ch-run -b $IMGDIR/bind1 -b $IMGDIR/bind2:/goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/bind2 to /goops: No such file or directory$'
+    r='^ch-run: could not bind .+/bind2 to /goops: No such file or directory'
     [[ $output =~ $r ]]
+}
+
+@test 'ch-run --cd' {
+    # Default initial working directory is /.
+    run ch-run $CHTEST_IMG -- pwd
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = '/' ]]
+
+    # Specify initial working directory.
+    run ch-run --cd /dev $CHTEST_IMG -- pwd
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = '/dev' ]]
+
+    # Error if directory does not exist.
+    run ch-run --cd /goops $CHTEST_IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ "ch-run: can't cd to /goops: No such file or directory" ]]
+}
+
+@test '/usr/bin/ch-ssh' {
+    ls -l $CH_BIN/ch-ssh
+    ch-run $CHTEST_IMG -- ls -l /usr/bin/ch-ssh
+    ch-run $CHTEST_IMG -- test -x /usr/bin/ch-ssh
+    host_size=$(stat -c %s $CH_BIN/ch-ssh)
+    guest_size=$(ch-run $CHTEST_IMG -- stat -c %s /usr/bin/ch-ssh)
+    echo "host: $host_size, guest: $guest_size"
+    [[ $host_size -eq $guest_size ]]
 }
 
 @test 'permissions test directories exist' {
@@ -332,3 +418,15 @@ EOF
     done
 }
 
+@test 'relative path to image' {
+   # bug number 6
+   DIRNAME=$(dirname $CHTEST_IMG)
+   BASEDIR=$(basename $CHTEST_IMG)
+   cd $DIRNAME && ch-run $BASEDIR -- true
+}
+
+@test 'symlink to image' {
+   # bug number 50
+   ln -s $CHTEST_IMG $BATS_TMPDIR/symlink-test
+   ch-run $BATS_TMPDIR/symlink-test -- true
+}

@@ -38,7 +38,7 @@ const char * DEFAULT_BINDS[] = { "/dev",
                                  NULL };
 
 /* Number of supplemental GIDs we can deal with. */
-#define SUPP_GIDS_MAX 32
+#define SUPP_GIDS_MAX 128
 
 /* Maximum length of paths we're willing to deal with. (Note that
    system-defined PATH_MAX isn't reliable.) */
@@ -56,7 +56,7 @@ Run a command in a Charliecloud container.\n\
 \v\
 Example:\n\
 \n\
-  $ ch-run /data/foo echo hello\n\
+  $ ch-run /data/foo -- echo hello\n\
   hello\n\
 \n\
 You cannot use this program to actually change your UID.";
@@ -67,13 +67,14 @@ const struct argp_option options[] = {
    { "bind",        'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
    { "write",       'w', 0,     0, "mount image read-write"},
-   { "no-home",      -2, 0,     0, "bypass automatic home bind"},
+   { "no-home",      -2, 0,     0, "do not bind-mount your home directory"},
+   { "cd",          'c', "DIR", 0, "initial working directory in container"},
 #ifndef SETUID
    { "gid",         'g', "GID", 0, "run as GID within container" },
 #endif
    { "is-setuid",    -1, 0,     0,
      "exit successfully if compiled for setuid, else fail" },
-   { "private-tmp", 't', 0,     0, "mount container-private ramfs on /tmp" }, // See Cray CASE #188073
+   { "private-tmp", 't', 0,     0, "use container-private /tmp" },
 #ifndef SETUID
    { "uid",         'u', "UID", 0, "run as UID within container" },
 #endif
@@ -92,6 +93,7 @@ struct args {
    gid_t container_gid;
    uid_t container_uid;
    char * newroot;
+   char * initial_working_dir;
    bool private_home;
    bool private_tmp;
    bool writable;
@@ -127,15 +129,16 @@ int main(int argc, char * argv[])
    memset(args.binds, 0, sizeof(args.binds));
    args.container_gid = getgid();
    args.container_uid = getuid();
+   args.initial_working_dir = NULL;
    args.private_home = false;
    args.private_tmp = false;
    args.verbose = 0;
-   TRY (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
-   TRY (argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args));
-   if (args.user_cmd_start >= argc - 1)
-      fatal("NEWROOT and/or CMD not specified\n");
+   Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
+   Z_ (argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args));
+   Te (args.user_cmd_start < argc - 1, "NEWROOT and/or CMD not specified");
    assert(args.binds[USER_BINDS_MAX].src == NULL);  // overrun in argp_parse?
-   args.newroot = argv[args.user_cmd_start++];
+   args.newroot = realpath(argv[args.user_cmd_start++], NULL);
+   Tf (args.newroot != NULL, "couldn't resolve image path");
 
    if (args.verbose) {
       fprintf(stderr, "newroot: %s\n", args.newroot);
@@ -185,80 +188,86 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    // nothing is cleaned up so the mounts are a big tangle and ch-tar2dir will
    // delete your home directory. I think this is redundant with some of the
    // below, but it doesn't seem to hurt.
-   TRY (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL));
+   Z_ (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL));
 
 #endif
 
    // Claim newroot for this namespace
-   TRX (mount(newroot, newroot, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL),
-        newroot);
+   Zf (mount(newroot, newroot, NULL,
+             MS_REC | MS_BIND | MS_PRIVATE, NULL), newroot);
    // Bind-mount default directories at the same host and guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
-      TRY (0 > asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
-      TRY (mount(DEFAULT_BINDS[i], path, NULL, MS_REC | MS_BIND, NULL));
+      T_ (1 <= asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
+      Z_ (mount(DEFAULT_BINDS[i], path, NULL,
+                MS_REC | MS_BIND | MS_RDONLY, NULL));
    }
    // Container /tmp
-   TRY (0 > asprintf(&path, "%s%s", newroot, "/tmp"));
+   T_ (1 <= asprintf(&path, "%s%s", newroot, "/tmp"));
    if (private_tmp) {
-      TRY (mount(NULL, path, "ramfs", 0, 0)); // See Cray CASE #188073
+      Z_ (mount(NULL, path, "ramfs", 0, 0)); // See Cray CASE #188073
    } else {
-      TRY (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL));
+      Z_ (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL));
    }
    if (!private_home) {
       // Mount ramfs on guest /home because guest root is read-only
-      TRY (0 > asprintf(&path, "%s/home", newroot));
-      TRY (mount(NULL, path, "ramfs", 0, 0)); // See Cray CASE #188073
+      T_ (1 <= asprintf(&path, "%s/home", newroot));
+      Z_ (mount(NULL, path, "ramfs", 0, 0)); // See Cray CASE #188073
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
-      TRY (0 > asprintf(&path, "%s/home/%s", newroot, getenv("USER")));
-      TRY (mkdir(path, 0755));
-      TRY (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL));
+      T_ (1 <= asprintf(&path, "%s/home/%s", newroot, getenv("USER")));
+      Z_ (mkdir(path, 0755));
+      Z_ (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL));
    }
    // Bind-mount /usr/bin/ch-ssh if it exists.
-   TRY (0 > asprintf(&path, "%s/usr/bin/ch-ssh", newroot));
+   T_ (1 <= asprintf(&path, "%s/usr/bin/ch-ssh", newroot));
    if (stat(path, &st)) {
-      TRY (errno != ENOENT);
+      T_ (errno == ENOENT);
    } else {
-      TRY (-1 == readlink("/proc/self/exe", bin, PATH_CHARS));
+      T_ (-1 != readlink("/proc/self/exe", bin, PATH_CHARS));
       bin[PATH_CHARS-1] = 0;  // guarantee string termination
       dir = dirname(bin);
-      TRY (0 > asprintf(&oldpath, "%s/ch-ssh", dir));
-      TRY (mount(path, oldpath, NULL, MS_BIND, NULL));
+      T_ (1 <= asprintf(&oldpath, "%s/ch-ssh", dir));
+      Z_ (mount(oldpath, path, NULL, MS_BIND, NULL));
    }
    // Bind-mount user-specified directories at guest DST and|or /mnt/i,
    // which must exist
    for (int i = 0; binds[i].src != NULL; i++) {
-      TRY (0 > asprintf(&path, "%s%s", newroot, binds[i].dst));
-      if (mount(binds[i].src, path, NULL, MS_REC | MS_BIND, NULL))
-         fatal("could not bind %s to %s: %s\n",
-               binds[i].src, binds[i].dst, strerror(errno));
+      T_ (1 <= asprintf(&path, "%s%s", newroot, binds[i].dst));
+      Zf (mount(binds[i].src, path, NULL, MS_REC | MS_BIND, NULL),
+          "could not bind %s to %s", binds[i].src, binds[i].dst);
    }
 
    // Overmount / to avoid EINVAL if it's a rootfs
-   TRY (NULL == (path = strdup(newroot)));
+   T_ (path = strdup(newroot));
    dir = dirname(path);
-   TRY (NULL == (path = strdup(newroot)));
+   T_ (path = strdup(newroot));
    base = basename(path);
-   TRY (mount(dir, dir, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
-   TRY (chdir(dir));
-   TRY (mount(dir, "/", NULL, MS_MOVE, NULL));
-   TRY (chroot("."));
-   TRY (0 > asprintf(&newroot, "/%s", base));
+   Z_ (mount(dir, dir, NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
+   Z_ (chdir(dir));
+   Z_ (mount(dir, "/", NULL, MS_MOVE, NULL));
+   Z_ (chroot("."));
+   T_ (1 <= asprintf(&newroot, "/%s", base));
 
-   if (!writable) {
+   if (!writable && !(access(newroot, W_OK) == -1 && errno == EROFS)) {
       // Re-mount image read-only
-      TRY (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL));
+      Zf (mount(NULL, newroot, NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL),
+          "can't re-mount image read-only (is it on NFS?)");
    }
-   // Pivot into the new root
-   TRY (0 > asprintf(&path, "%s/oldroot", newroot));
-   TRY (chdir(newroot));
-   TRY (syscall(SYS_pivot_root, newroot, path));
-   TRY (chroot("."));
-   TRY (umount2("/oldroot", MNT_DETACH));
+   // Pivot into the new root. Use /dev because it's available even in
+   // extremely minimal images.
+   T_ (1 <= asprintf(&path, "%s/dev", newroot));
+   Z_ (chdir(newroot));
+   Z_ (syscall(SYS_pivot_root, newroot, path));
+   Z_ (chroot("."));
+   Z_ (umount2("/dev", MNT_DETACH));
 
 #ifdef SETUID
    privs_drop_temporarily();
 #endif
+
+   if (args.initial_working_dir != NULL)
+      Zf (chdir(args.initial_working_dir),
+          "can't cd to %s", args.initial_working_dir);
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
@@ -270,11 +279,15 @@ void log_ids(const char * func, int line)
    int supp_gid_ct;
 
    if (args.verbose >= 2) {
-      TRY (getresuid(&ruid, &euid, &suid));
-      TRY (getresgid(&rgid, &egid, &sgid));
+      Z_ (getresuid(&ruid, &euid, &suid));
+      Z_ (getresgid(&rgid, &egid, &sgid));
       fprintf(stderr, "%s %d: uids=%d,%d,%d, gids=%d,%d,%d + ", func, line,
               ruid, euid, suid, rgid, egid, sgid);
-      TRY ((supp_gid_ct = getgroups(SUPP_GIDS_MAX, supp_gids)) == -1);
+      supp_gid_ct = getgroups(SUPP_GIDS_MAX, supp_gids);
+      if (supp_gid_ct == -1) {
+         T_ (errno == EINVAL);
+         Te (0, "more than %d groups", SUPP_GIDS_MAX);
+      }
       for (int i = 0; i < supp_gid_ct; i++) {
          if (i > 0)
             fprintf(stderr, ",");
@@ -301,28 +314,28 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       break;
    case -2:
       as->private_home = true;
-   break;
+      break;
+   case 'c':
+      as->initial_working_dir = arg;
+      break;
    case 'b':
       for (i = 0; as->binds[i].src != NULL; i++)
          ;
-      if (i < USER_BINDS_MAX) {
-         as->binds[i].src = strsep(&arg, ":");
-         assert(as->binds[i].src != NULL);
-         if (arg)
-            as->binds[i].dst = arg;
-         else // arg is NULL => no destination specified
-            TRY (0 > asprintf(&(as->binds[i].dst), "/mnt/%d", i));
-         if (as->binds[i].src[0] == 0)
-            fatal("--bind: no source provided\n");
-         if (as->binds[i].dst[0] == 0)
-            fatal("--bind: no destination provided\n");
-      } else
-         fatal("--bind can be used at most %d times\n", USER_BINDS_MAX);
+      Te (i < USER_BINDS_MAX,
+          "--bind can be used at most %d times", USER_BINDS_MAX);
+      as->binds[i].src = strsep(&arg, ":");
+      assert(as->binds[i].src != NULL);
+      if (arg)
+         as->binds[i].dst = arg;
+      else // arg is NULL => no destination specified
+         T_ (1 <= asprintf(&(as->binds[i].dst), "/mnt/%d", i));
+      Te (as->binds[i].src[0] != 0, "--bind: no source provided");
+      Te (as->binds[i].dst[0] != 0, "--bind: no destination provided");
       break;
    case 'g':
       errno = 0;
       l = strtol(arg, NULL, 0);
-      TRY (errno || l < 0);
+      Te (errno == 0 && l >= 0, "GID must be a non-negative integer");
       as->container_gid = (gid_t)l;
       break;
    case 't':
@@ -331,7 +344,7 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
    case 'u':
       errno = 0;
       l = strtol(arg, NULL, 0);
-      TRY (errno || l < 0);
+      Te (errno == 0 && l >= 0, "UID must be a non-negative integer");
       as->container_uid = (uid_t)l;
       break;
    case 'V':
@@ -354,28 +367,33 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
 /* Validate that the UIDs and GIDs are appropriate for program start, and
    abort if not.
 
-   If the binary is setuid, then the real UID will be the invoking user and
-   the effective and saved UIDs will be the owner of the binary. Otherwise,
-   all three IDs are that of the invoking user. */
+   Note: If the binary is setuid, then the real UID will be the invoking user
+   and the effective and saved UIDs will be the owner of the binary.
+   Otherwise, all three IDs are that of the invoking user. */
 void privs_verify_invoking()
 {
    uid_t ruid, euid, suid;
    gid_t rgid, egid, sgid;
 
-   TRY (getresuid(&ruid, &euid, &suid));
-   TRY (getresgid(&rgid, &egid, &sgid));
+   Z_ (getresuid(&ruid, &euid, &suid));
+   Z_ (getresgid(&rgid, &egid, &sgid));
 
-   // GIDs should be unprivileged and non-setgid regardless of mode.
-   TRY (egid == 0);
-   TRY (egid != rgid || egid != sgid);
+   // Calling the program if user is really root is OK.
+   if (   ruid == 0 && euid == 0 && suid == 0
+       && rgid == 0 && egid == 0 && sgid == 0)
+      return;
 
+   // Now that we know user isn't root, no GID privilege is allowed.
+   T_ (egid != 0);                           // no privilege
+   T_ (egid == rgid && egid == sgid);        // no setuid or funny business
+
+   // Setuid must match the compiled mode.
 #ifdef SETUID
-   TRY (ruid == 0);                     // invoking as root is not OK
-   TRY (euid != 0 || suid != 0);        // must be setuid to root
-#else // not SETUID
-   //TRY (ruid == 0);                   // invoking as root is OK
-   TRY (euid != ruid || euid != suid);  // must not be setuid
-#endif // not SETUID
+   T_ (ruid != 0 && euid == 0 && suid == 0); // must be setuid root
+#else
+   T_ (euid != 0);                           // no privilege
+   T_ (euid == ruid && euid == suid);        // no setuid or funny business
+#endif
 }
 
 /* Drop UID privileges permanently. */
@@ -387,22 +405,22 @@ void privs_drop_permanently()
 
    // Drop privileges.
    uid_wanted = getuid();
-   TRY (uid_wanted == 0);  // abort if real UID is root
-   TRY (setresuid(uid_wanted, uid_wanted, uid_wanted));
+   T_ (uid_wanted != 0);  // abort if real UID is root
+   Z_ (setresuid(uid_wanted, uid_wanted, uid_wanted));
 
    // Try to regain privileges; it should fail.
-   TRY (-1 != setuid(0));
-   TRY (-1 != setresuid(-1, 0, -1));
+   T_ (-1 == setuid(0));
+   T_ (-1 == setresuid(-1, 0, -1));
 
    // UIDs should be unprivileged and the same.
-   TRY (getresuid(&ruid, &euid, &suid));
-   TRY (ruid != uid_wanted);
-   TRY (uid_wanted != ruid || uid_wanted != euid || uid_wanted != suid);
+   Z_ (getresuid(&ruid, &euid, &suid));
+   T_ (ruid == uid_wanted);
+   T_ (uid_wanted == ruid && uid_wanted == euid && uid_wanted == suid);
 
    // GIDs should be unprivileged and the same.
-   TRY (getresgid(&rgid, &egid, &sgid));
-   TRY (rgid == 0);
-   TRY (rgid != egid || rgid != sgid);
+   Z_ (getresgid(&rgid, &egid, &sgid));
+   T_ (rgid != 0);
+   T_ (rgid == egid && rgid == sgid);
 }
 #endif // SETUID
 
@@ -412,9 +430,13 @@ void privs_drop_temporarily()
 {
    uid_t unpriv_uid = getuid();
 
-   TRY (unpriv_uid == 0);
-   TRY (setresuid(-1, unpriv_uid, -1));
-   TRY (unpriv_uid != geteuid());
+   if (unpriv_uid == 0) {
+      // Invoked as root, so descend to nobody.
+      unpriv_uid = 65534;
+   }
+
+   Z_ (setresuid(-1, unpriv_uid, -1));
+   T_ (unpriv_uid == geteuid());
 }
 #endif // SETUID
 
@@ -424,10 +446,8 @@ void privs_restore()
 {
    uid_t ruid, euid, suid;
 
-   TRY (setresuid(-1, 0, -1));
-   TRY (getresuid(&ruid, &euid, &suid));
-   TRY (ruid == 0);               // invoking as root is not OK
-   TRY (euid != 0 || suid != 0);  // must be setuid to root
+   Z_ (setresuid(-1, 0, -1));
+   Z_ (getresuid(&ruid, &euid, &suid));
 }
 #endif // SETUID
 
@@ -445,10 +465,14 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
    argv[argc - user_cmd_start] = NULL;
 
    // Append /bin to $PATH if not already present. See FAQ.
-   TRY (NULL == (old_path = getenv("PATH")));
-   if (strstr(old_path, "/bin") != old_path && !strstr(old_path, ":/bin")) {
-      TRY (0 > asprintf(&new_path, "%s:/bin", old_path));
-      TRY (setenv("PATH", new_path, 1));
+   old_path = getenv("PATH");
+   if (old_path == NULL) {
+      if (args.verbose)
+         fprintf(stderr, "warning: $PATH not set\n");
+   } else if (   strstr(old_path, "/bin") != old_path
+              && !strstr(old_path, ":/bin")) {
+      T_ (1 <= asprintf(&new_path, "%s:/bin", old_path));
+      Z_ (setenv("PATH", new_path, 1));
       if (args.verbose)
          fprintf(stderr, "new $PATH: %s\n", new_path);
    }
@@ -461,7 +485,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
    }
 
    execvp(argv[0], argv);  // only returns if error
-   fatal("can't execve(2) user command: %s\n", strerror(errno));
+   Tf (0, "can't execve(2) user command");
 }
 
 /* Activate the desired isolation namespaces. */
@@ -470,11 +494,11 @@ void setup_namespaces(uid_t cuid, gid_t cgid)
 #ifdef SETUID
 
    // can't change IDs from invoking
-   TRY (cuid != getuid());
-   TRY (cgid != getgid());
+   T_ (cuid == getuid());
+   T_ (cgid == getgid());
 
    privs_restore();
-   TRY (unshare(CLONE_NEWNS));
+   Z_ (unshare(CLONE_NEWNS));
    privs_drop_temporarily();
 
 #else // not SETUID
@@ -487,7 +511,7 @@ void setup_namespaces(uid_t cuid, gid_t cgid)
    egid = getegid();
 
    LOG_IDS;
-   TRY (unshare(CLONE_NEWNS|CLONE_NEWUSER));
+   Z_ (unshare(CLONE_NEWNS|CLONE_NEWUSER));
    LOG_IDS;
 
    /* Write UID map. What we are allowed to put here is quite limited. Because
@@ -500,17 +524,17 @@ void setup_namespaces(uid_t cuid, gid_t cgid)
       parent namespace is unchanged, so the kernel uses our new 1-to-1 map to
       convert that EUID into the container UID for most (maybe all)
       purposes. */
-   TRY ((fd = open("/proc/self/uid_map", O_WRONLY)) == -1);
-   TRY (dprintf(fd, "%d %d 1\n", cuid, euid) < 0);
-   TRY (close(fd));
+   T_ (-1 != (fd = open("/proc/self/uid_map", O_WRONLY)));
+   T_ (1 <= dprintf(fd, "%d %d 1\n", cuid, euid));
+   Z_ (close(fd));
    LOG_IDS;
 
-   TRY ((fd = open("/proc/self/setgroups", O_WRONLY)) == -1);
-   TRY (dprintf(fd, "deny\n") < 0);
-   TRY (close(fd));
-   TRY ((fd = open("/proc/self/gid_map", O_WRONLY)) == -1);
-   TRY (dprintf(fd, "%d %d 1\n", cgid, egid) < 0);
-   TRY (close(fd));
+   T_ (-1 != (fd = open("/proc/self/setgroups", O_WRONLY)));
+   T_ (1 <= dprintf(fd, "deny\n"));
+   Z_ (close(fd));
+   T_ (-1 != (fd = open("/proc/self/gid_map", O_WRONLY)));
+   T_ (1 <= dprintf(fd, "%d %d 1\n", cgid, egid));
+   Z_ (close(fd));
    LOG_IDS;
 
 #endif // not SETUID
