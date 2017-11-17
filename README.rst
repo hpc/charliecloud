@@ -25,11 +25,13 @@ addresses needs such as:
 How does it work?
 -----------------
 
-This is done using Linux user namespaces to run industry-standard Docker
-containers with no privileged operations or daemons and minimal configuration
-changes on center resources. This simple approach avoids most security risks
-while maintaining access to the performance and functionality already on
-offer.
+Charliecloud uses Linux user namespaces to run containers with no privileged
+operations or daemons and minimal configuration changes on center resources.
+This simple approach avoids most security risks while maintaining access to
+the performance and functionality already on offer.
+
+Container images can be built using Docker or anything else that can generate
+a standard Linux filesystem tree.
 
 Because user namespaces are available only in newer kernel versions, an
 experimental setuid mode is also provided to let sites evaluate Charliecloud

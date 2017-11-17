@@ -23,8 +23,8 @@ Run time
 
 Systems used for running images in the standard unprivileged mode need:
 
-* Recent Linux kernel with :code:`CONFIG_USER_NS=y`. (We've had good luck with
-  various distribution upstream versions of 4.4 and higher.)
+* Recent Linux kernel with :code:`CONFIG_USER_NS=y`. We recommend version 4.4
+  or higher.
 
 * C compiler and standard library
 
@@ -37,8 +37,6 @@ a `kernel command line option and a sysctl
 <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_
 (that put you into "technology preview").
 
-Tested and working by us include the Ubuntu and upstream versions of 4.4.
-
 .. note::
 
    An experimental setuid mode is also provided that does not need user
@@ -50,10 +48,16 @@ Build time
 
 Systems used for building images need the run-time prerequisites, plus:
 
-* `Docker <https://www.docker.com/>`_, recent version. We do not make compatibility guarantees with any specific version, but let us know if you run into issues.
-* Bash
+* Bash 4.1+
+
+and optionally:
+
+* `Docker <https://www.docker.com/>`_ 17.03+
+* internet access or Docker configured for a local Docker hub
 * root access using :code:`sudo`
-* Internet access or a Docker configured for a local Docker hub
+
+Older versions of Docker may work but are untested. We know that 1.7.1 does
+not work.
 
 Test suite
 ----------
@@ -72,6 +76,9 @@ mode independently), you also need:
    hand, curl is in the minimal install of CentOS 7 while wget is not. For now
    I just picked wget because I liked it better.
 
+Note that without Docker on the build system, some of the test suite will be
+skipped.
+
 Bats can be installed at the system level or embedded in the Charliecloud
 source code. If it's in both places, the latter is used.
 
@@ -88,8 +95,8 @@ To check an embedded Bats::
   Bats 0.4.0
 
 
-Install Docker (build systems only)
-===================================
+Docker install tips
+===================
 
 Tnstalling Docker is beyond the scope of this documentation, but here are a
 few tips.
@@ -98,12 +105,10 @@ Understand the security implications of Docker
 ----------------------------------------------
 
 Because Docker (a) makes installing random crap from the internet really easy
-and (b) has an "interesting" security culture, you should take care. Some of
-the implications are below. This list should not be considered comprehensive
-nor a substitute for appropriate expertise; adhere to your moral and
-institutional responsibilities.
-
-(All this stuff is a key motivation for Charliecloud.)
+and (b) is easy to deploy insecurely, you should take care. Some of the
+implications are below. This list should not be considered comprehensive nor a
+substitute for appropriate expertise; adhere to your moral and institutional
+responsibilities.
 
 :code:`docker` equals root
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -120,7 +125,7 @@ Images can contain bad stuff
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Standard hygiene for "installing stuff from the internet" applies. Only work
-with images you trust. The official DockerHub repositories can help.
+with images you trust. The official Docker Hub repositories can help.
 
 Containers run as root
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -201,6 +206,8 @@ Download
 --------
 
 See our GitHub project: https://github.com/hpc/charliecloud
+
+The recommended download method is :code:`git clone --recursive`.
 
 Build
 -----
