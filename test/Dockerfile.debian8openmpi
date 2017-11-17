@@ -16,7 +16,7 @@ RUN apt-get install -y \
 # --disable-pty-support is needed to avoid "pipe function call failed when
 # setting up I/O forwarding subsystem".
 ENV MPI_URL https://www.open-mpi.org/software/ompi/v2.1/downloads
-ENV MPI_VERSION 2.1.1
+ENV MPI_VERSION 2.1.2
 WORKDIR /usr/src
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
 RUN tar xf openmpi-${MPI_VERSION}.tar.gz
