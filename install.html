@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                c6b3a5d
+                1a5609e
               </div>
             
           
@@ -97,7 +97,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#test-suite">1.1.3. Test suite</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#install-docker-build-systems-only">1.2. Install Docker (build systems only)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#docker-install-tips">1.2. Docker install tips</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#understand-the-security-implications-of-docker">1.2.1. Understand the security implications of Docker</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#docker-equals-root">1.2.1.1. <code class="code docutils literal"><span class="pre">docker</span></code> equals root</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#images-can-contain-bad-stuff">1.2.1.2. Images can contain bad stuff</a></li>
@@ -192,6 +192,14 @@
             
   <div class="section" id="installation">
 <h1>1. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><strong>If you are installing on a Cray</strong> and have not applied the patch for Cray
+case #188073, you must use the <a class="reference external" href="https://github.com/hpc/charliecloud/compare/cray">cray branch</a> to avoid crashing
+nodes during job completion. This is a Cray bug that Charliecloud happens
+to tickle. Non-Cray build boxes and others at the same site can still use
+the master branch.</p>
+</div>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#prequisites" id="id2">Prequisites</a><ul>
@@ -200,7 +208,7 @@
 <li><a class="reference internal" href="#test-suite" id="id5">Test suite</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#install-docker-build-systems-only" id="id6">Install Docker (build systems only)</a><ul>
+<li><a class="reference internal" href="#docker-install-tips" id="id6">Docker install tips</a><ul>
 <li><a class="reference internal" href="#understand-the-security-implications-of-docker" id="id7">Understand the security implications of Docker</a></li>
 <li><a class="reference internal" href="#configuring-for-a-proxy" id="id8">Configuring for a proxy</a></li>
 </ul>
@@ -235,8 +243,8 @@ a bug.</p>
 <h3><a class="toc-backref" href="#id3">1.1.1. Run time</a><a class="headerlink" href="#run-time" title="Permalink to this headline">¶</a></h3>
 <p>Systems used for running images in the standard unprivileged mode need:</p>
 <ul class="simple">
-<li>Recent Linux kernel with <code class="code docutils literal"><span class="pre">CONFIG_USER_NS=y</span></code>. (We’ve had good luck with
-various distribution upstream versions of 4.4 and higher.)</li>
+<li>Recent Linux kernel with <code class="code docutils literal"><span class="pre">CONFIG_USER_NS=y</span></code>. We recommend version 4.4
+or higher.</li>
 <li>C compiler and standard library</li>
 <li>POSIX shell and utilities</li>
 </ul>
@@ -245,7 +253,6 @@ example, Debian Stretch needs sysctl
 <code class="code docutils literal"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>, and RHEL and CentOS 7.4 need both
 a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>
 (that put you into “technology preview”).</p>
-<p>Tested and working by us include the Ubuntu and upstream versions of 4.4.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">An experimental setuid mode is also provided that does not need user
@@ -257,11 +264,16 @@ distributions.</p>
 <h3><a class="toc-backref" href="#id4">1.1.2. Build time</a><a class="headerlink" href="#build-time" title="Permalink to this headline">¶</a></h3>
 <p>Systems used for building images need the run-time prerequisites, plus:</p>
 <ul class="simple">
-<li><a class="reference external" href="https://www.docker.com/">Docker</a>, recent version. We do not make compatibility guarantees with any specific version, but let us know if you run into issues.</li>
-<li>Bash</li>
-<li>root access using <code class="code docutils literal"><span class="pre">sudo</span></code></li>
-<li>Internet access or a Docker configured for a local Docker hub</li>
+<li>Bash 4.1+</li>
 </ul>
+<p>and optionally:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://www.docker.com/">Docker</a> 17.03+</li>
+<li>internet access or Docker configured for a local Docker hub</li>
+<li>root access using <code class="code docutils literal"><span class="pre">sudo</span></code></li>
+</ul>
+<p>Older versions of Docker may work but are untested. We know that 1.7.1 does
+not work.</p>
 </div>
 <div class="section" id="test-suite">
 <h3><a class="toc-backref" href="#id5">1.1.3. Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h3>
@@ -270,22 +282,37 @@ mode independently), you also need:</p>
 <ul class="simple">
 <li>Bash 4.1+</li>
 <li>Python 2.6+</li>
+<li><a class="reference external" href="https://github.com/sstephenson/bats">Bats</a> 0.4.0</li>
 <li>wget</li>
 </ul>
+<p>Note that without Docker on the build system, some of the test suite will be
+skipped.</p>
+<p>Bats can be installed at the system level or embedded in the Charliecloud
+source code. If it’s in both places, the latter is used.</p>
+<p>To embed Bats, either:</p>
+<ul class="simple">
+<li>Download Charliecloud using <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>, which will check
+out Bats as a submodule in <code class="code docutils literal"><span class="pre">test/bats</span></code>.</li>
+<li>Unpack the Bats zip file or tarball in <code class="code docutils literal"><span class="pre">test/bats</span></code>.</li>
+</ul>
+<p>To check an embedded Bats:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> test/bats/bin/bats --version
+<span class="go">Bats 0.4.0</span>
+</pre></div>
 </div>
 </div>
-<div class="section" id="install-docker-build-systems-only">
-<h2><a class="toc-backref" href="#id6">1.2. Install Docker (build systems only)</a><a class="headerlink" href="#install-docker-build-systems-only" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="docker-install-tips">
+<h2><a class="toc-backref" href="#id6">1.2. Docker install tips</a><a class="headerlink" href="#docker-install-tips" title="Permalink to this headline">¶</a></h2>
 <p>Tnstalling Docker is beyond the scope of this documentation, but here are a
 few tips.</p>
 <div class="section" id="understand-the-security-implications-of-docker">
 <h3><a class="toc-backref" href="#id7">1.2.1. Understand the security implications of Docker</a><a class="headerlink" href="#understand-the-security-implications-of-docker" title="Permalink to this headline">¶</a></h3>
 <p>Because Docker (a) makes installing random crap from the internet really easy
-and (b) has an “interesting” security culture, you should take care. Some of
-the implications are below. This list should not be considered comprehensive
-nor a substitute for appropriate expertise; adhere to your moral and
-institutional responsibilities.</p>
-<p>(All this stuff is a key motivation for Charliecloud.)</p>
+and (b) is easy to deploy insecurely, you should take care. Some of the
+implications are below. This list should not be considered comprehensive nor a
+substitute for appropriate expertise; adhere to your moral and institutional
+responsibilities.</p>
 <div class="section" id="docker-equals-root">
 <h4>1.2.1.1. <code class="code docutils literal"><span class="pre">docker</span></code> equals root<a class="headerlink" href="#docker-equals-root" title="Permalink to this headline">¶</a></h4>
 <p>Anyone who can run the <code class="code docutils literal"><span class="pre">docker</span></code> command or interact with the Docker
@@ -297,7 +324,7 @@ passwordless, unlogged escalation for anyone in the group.</p>
 <div class="section" id="images-can-contain-bad-stuff">
 <h4>1.2.1.2. Images can contain bad stuff<a class="headerlink" href="#images-can-contain-bad-stuff" title="Permalink to this headline">¶</a></h4>
 <p>Standard hygiene for “installing stuff from the internet” applies. Only work
-with images you trust. The official DockerHub repositories can help.</p>
+with images you trust. The official Docker Hub repositories can help.</p>
 </div>
 <div class="section" id="containers-run-as-root">
 <h4>1.2.1.3. Containers run as root<a class="headerlink" href="#containers-run-as-root" title="Permalink to this headline">¶</a></h4>
@@ -371,11 +398,7 @@ above variables are set.</p>
 <div class="section" id="download">
 <h3><a class="toc-backref" href="#id10">1.3.1. Download</a><a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h3>
 <p>See our GitHub project: <a class="reference external" href="https://github.com/hpc/charliecloud">https://github.com/hpc/charliecloud</a></p>
-<p>Download with <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>; the switch gets the submodule
-needed for testing as well. Other methods of downloading (e.g. the tarball,
-plain <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span></code>) are known not to work.</p>
-<p>The remaining install steps can be run from the Git working directory or an
-unpacked export tarball created with <code class="code docutils literal"><span class="pre">make</span> <span class="pre">export</span></code>.</p>
+<p>The recommended download method is <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>.</p>
 </div>
 <div class="section" id="build">
 <h3><a class="toc-backref" href="#id11">1.3.2. Build</a><a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h3>
@@ -410,17 +433,16 @@ will work.</p>
 </div>
 <div class="section" id="test-charliecloud">
 <span id="install-test-charliecloud"></span><h2><a class="toc-backref" href="#id13">1.4. Test Charliecloud</a><a class="headerlink" href="#test-charliecloud" title="Permalink to this headline">¶</a></h2>
-<p>Charliecloud comes with a fairly comprehensive <a class="reference external" href="https://github.com/sstephenson/bats">Bats</a> test suite, in <code class="code docutils literal"><span class="pre">test</span></code>. Go there:</p>
+<p>Charliecloud comes with a fairly comprehensive Bats test suite, in
+<code class="code docutils literal"><span class="pre">test</span></code>. Go there:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> <span class="nb">test</span>
 </pre></div>
 </div>
-<p>Bats must be installed in the <code class="code docutils literal"><span class="pre">test/bats.src</span></code>. In the Git repository,
-this is arranged with a Git submodule, so if you downloaded Charliecloud with
-Git command above, it should already be there. Otherwise, you must download
-and unpack Bats manually.</p>
-<p><code class="code docutils literal"><span class="pre">test/bats</span></code> is a symlink to the main Bats script, for convenience.</p>
-<p>Verify the Bats install with:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ./bats --version
+<p>To check location and version of Bats used by the tests:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make where-bats
+<span class="go">which bats</span>
+<span class="go">/usr/bin/bats</span>
+<span class="go">bats --version</span>
 <span class="go">Bats 0.4.0</span>
 </pre></div>
 </div>
@@ -437,7 +459,7 @@ fixtures. These are configured with environment variables:</p>
 <span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s1">&#39;/var/tmp /tmp&#39;</span>
 </pre></div>
 </div>
-<p><code class="code docutils literal"><span class="pre">CH_TEST_PERMDIRS</span></code> can be set to <cite>skip</cite> in order to skip the file
+<p><code class="code docutils literal"><span class="pre">CH_TEST_PERMDIRS</span></code> can be set to <code class="code docutils literal"><span class="pre">skip</span></code> in order to skip the file
 permissions tests.</p>
 <p>(Strictly speaking, the build phase needs only the first, and the example test
 phase does not need the last one. However, for simplicity, the tests will
@@ -451,7 +473,8 @@ processes, Bats will hang.</p>
 <div class="section" id="id1">
 <h3><a class="toc-backref" href="#id14">1.4.1. Build</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>In this phase, image building and associated functionality is tested.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">./bats build.bats build_auto.bats build_post.bats</span>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-build
+<span class="go">bats build.bats build_auto.bats build_post.bats</span>
 <span class="go"> ✓ create tarball directory if needed</span>
 <span class="go"> ✓ documentations build</span>
 <span class="go"> ✓ executables seem sane</span>

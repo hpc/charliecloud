@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                c6b3a5d
+                1a5609e
               </div>
             
           
@@ -176,14 +176,18 @@ other test and development system not managed by the center;</li>
 and verifiably reproduced in the future; and/or</li>
 <li>usability and comprehensibility.</li>
 </ul>
+<p><strong>WARNING: Cray CLE in recent versions</strong> has a bug that crashes nodes when
+cleaning up after some jobs, including if Charliecloud has been used. See the
+installation instructions for a workaround.</p>
 </div>
 <div class="section" id="how-does-it-work">
 <h2>How does it work?<a class="headerlink" href="#how-does-it-work" title="Permalink to this headline">¶</a></h2>
-<p>This is done using Linux user namespaces to run industry-standard Docker
-containers with no privileged operations or daemons and minimal configuration
-changes on center resources. This simple approach avoids most security risks
-while maintaining access to the performance and functionality already on
-offer.</p>
+<p>Charliecloud uses Linux user namespaces to run containers with no privileged
+operations or daemons and minimal configuration changes on center resources.
+This simple approach avoids most security risks while maintaining access to
+the performance and functionality already on offer.</p>
+<p>Container images can be built using Docker or anything else that can generate
+a standard Linux filesystem tree.</p>
 <p>Because user namespaces are available only in newer kernel versions, an
 experimental setuid mode is also provided to let sites evaluate Charliecloud
 even if they do not have user namespace-capable kernels readily available.</p>
@@ -230,7 +234,7 @@ list above.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">This documentation is for Charliecloud version 0.2.3~pre (Git commit
-c6b3a5d) and was built 2017-10-31 15:13 GMT+00:00.</p>
+1a5609e) and was built 2017-11-17 17:29 GMT+00:00.</p>
 </div>
 <div class="toctree-wrapper compound">
 </div>
