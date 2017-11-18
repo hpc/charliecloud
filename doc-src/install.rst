@@ -1,6 +1,15 @@
 Installation
 ************
 
+.. warning::
+
+   **If you are installing on a Cray** and have not applied the patch for Cray
+   case #188073, you must use the `cray branch
+   <https://github.com/hpc/charliecloud/compare/cray>`_ to avoid crashing
+   nodes during job completion. This is a Cray bug that Charliecloud happens
+   to tickle. Non-Cray build boxes and others at the same site can still use
+   the master branch.
+
 .. contents::
    :depth: 2
    :local:
