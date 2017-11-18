@@ -32,6 +32,8 @@ env:
 # - SETUID=yes TARBALL=archive INSTALL=yes
 # - SETUID=yes TARBALL=export  INSTALL=
 # - SETUID=yes TARBALL=export  INSTALL=yes
+  - PACKAGING=yes DEBUILD=yes
+  - PACKAGING=yes RPMBUILD=yes
 
 install:
   - sudo apt-get install pigz
@@ -50,7 +52,10 @@ before_script:
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
 
 script:
-  - test/travis.sh
+  - if [[ $PACKAGING ]]; 
+    then packaging/travis.sh;
+    else test/travis.sh;
+    fi
 
 after_script:
   - free -m
