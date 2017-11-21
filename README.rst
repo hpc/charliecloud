@@ -5,7 +5,7 @@ Charliecloud provides user-defined software stacks (UDSS) for high-performance
 computing (HPC) centers. This "bring your own software stack" functionality
 addresses needs such as:
 
-* software dependencies that are numerous, complex, unusual, diferently
+* software dependencies that are numerous, complex, unusual, differently
   configured, or simply newer/older than what the center provides;
 
 * build-time requirements unavailable within the center, such as relatively
