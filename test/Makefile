@@ -15,6 +15,10 @@ ifdef CH_TEST_OMIT
   EXAMPLETESTS := $(foreach i,$(EXAMPLETESTS),$(if $(findstring $(CH_TEST_OMIT),$(i)),,$(i)))
 endif
 
+ifeq ($(shell id -u),0)
+  $(error Testing as root is not supported)
+endif
+
 # Favor embedded Bats, if installed, over system Bats.
 export PATH := $(CURDIR)/bats/bin:$(PATH)
 
