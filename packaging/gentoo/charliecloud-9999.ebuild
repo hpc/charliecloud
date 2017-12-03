@@ -12,22 +12,22 @@ if [[ ${PV} == "9999" ]] ; then
 	S="${WORKDIR}/${P}"
 else
 	SRC_URI="https://github.com/hpc/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="amd64 x86 ~amd64-linux ~x86-linux"
+	KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 	S="${WORKDIR}/${P}"
 fi
 
-DESCRIPTION="Lightweight user-defined software stacks for high-performance computing."
+DESCRIPTION="Lightweight user-defined software stacks for high-performance computing"
 HOMEPAGE="https://hpc.github.io/charliecloud/"
 
 SLOT="0"
 LICENSE="Apache-2.0"
-KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 IUSE="doc examples suid test"
 
 RDEPEND=""
 DEPEND="${RDEPEND}
 	doc? ( dev-python/sphinx
-	       dev-python/sphinx_rtd_theme )
+	       dev-python/sphinx_rtd_theme
+	       net-misc/rsync )
 	test? ( app-arch/pigz )"
 
 src_compile() {
@@ -51,7 +51,7 @@ src_install() {
 			mv doc html || die
 			dodoc -r html
 		else
-			elog "Building documentation with SUID not supported yet."
+			ewarn "Building documentation with SUID not supported yet!"
 		fi
 	fi
 	if use examples; then
