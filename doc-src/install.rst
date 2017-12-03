@@ -20,6 +20,53 @@ Installation
    step-by-step directions for CentOS 7, section :doc:`virtualbox` has these
    for a VirtualBox virtual machine.
 
+
+Installation via Package Manager
+================================
+
+For some distributions, either native packages exist or packaging code is provided.
+These should be preferred if a system-wide installation is planned.
+Details on this are provided in the following subsections for each distribution.
+
+However, a key point of the design of Charliecloud is that it can be compiled and used
+without installation by any user. The general compilation and installation guide
+is provided in the remaining part of this document.
+
+Gentoo
+------
+
+Native packages already exist for `Gentoo <https://packages.gentoo.org/packages/sys-cluster/charliecloud>`_.
+The package can be installed with:
+
+  $ emerge sys-cluster/charliecloud
+
+If may necessary to accept keywords first, e.g.
+
+  $ echo "=sys-cluster/charliecloud-0.2.3_pre20171121 ~amd64" >> /etc/portage/package.accept_keywords
+
+A live ebuild is also available and can be keyworded via:
+
+  $ echo "~sys-cluster/charliecloud-9999 \*\*" >> /etc/portage/package.accept_keywords
+
+Debian
+------
+
+Packaging code for Debian is provided in repository in the directory
+:code:`packaging/debian`. It can be used to build a package with :code:`debuild`
+after adapting the version string :code:`@VERSION@` in :code:`packaging/debian/changelog`.
+
+An official Debian package is underway, c.f. `Issue 95 <https://github.com/hpc/charliecloud/issues/95>`_.
+
+RedHat-based Distributions
+--------------------------
+
+For RedHat-based distributions, a :code:`.spec`-file is provided in
+:code:`packaging/redhat`. It can be used to build a package with :code:`rpmbuild`
+after adapting the version string :code:`@VERSION@` inside the :code:`.spec`-file.
+
+RedHat packagers are welcome to take this existing code and create an official package!
+
+
 Prequisites
 ===========
 
