@@ -1,6 +1,10 @@
 Installation
 ************
 
+This section describes how to build and install Charliecloud. For some
+distributions, this can be done using your package manager; otherwise, both
+normal users and admins can build and install it manually.
+
 .. warning::
 
    **If you are installing on a Cray** and have not applied the patch for Cray
@@ -19,52 +23,6 @@ Installation
    These are general installation instructions. If you'd like specific,
    step-by-step directions for CentOS 7, section :doc:`virtualbox` has these
    for a VirtualBox virtual machine.
-
-
-Installation via Package Manager
-================================
-
-For some distributions, either native packages exist or packaging code is provided.
-These should be preferred if a system-wide installation is planned.
-Details on this are provided in the following subsections for each distribution.
-
-However, a key point of the design of Charliecloud is that it can be compiled and used
-without installation by any user. The general compilation and installation guide
-is provided in the remaining part of this document.
-
-Gentoo
-------
-
-Native packages already exist for `Gentoo <https://packages.gentoo.org/packages/sys-cluster/charliecloud>`_.
-The package can be installed with:
-
-  $ emerge sys-cluster/charliecloud
-
-If may necessary to accept keywords first, e.g.
-
-  $ echo "=sys-cluster/charliecloud-0.2.3_pre20171121 ~amd64" >> /etc/portage/package.accept_keywords
-
-A live ebuild is also available and can be keyworded via:
-
-  $ echo "~sys-cluster/charliecloud-9999 \*\*" >> /etc/portage/package.accept_keywords
-
-Debian
-------
-
-Packaging code for Debian is provided in repository in the directory
-:code:`packaging/debian`. It can be used to build a package with :code:`debuild`
-after adapting the version string :code:`@VERSION@` in :code:`packaging/debian/changelog`.
-
-An official Debian package is underway, c.f. `Issue 95 <https://github.com/hpc/charliecloud/issues/95>`_.
-
-RedHat-based Distributions
---------------------------
-
-For RedHat-based distributions, a :code:`.spec`-file is provided in
-:code:`packaging/redhat`. It can be used to build a package with :code:`rpmbuild`
-after adapting the version string :code:`@VERSION@` inside the :code:`.spec`-file.
-
-RedHat packagers are welcome to take this existing code and create an official package!
 
 
 Prequisites
@@ -151,11 +109,140 @@ To check an embedded Bats::
   Bats 0.4.0
 
 
-Docker install tips
-===================
+Package manager install
+=======================
 
-Tnstalling Docker is beyond the scope of this documentation, but here are a
-few tips.
+Charliecloud is available in some distribution package repositories, and
+packages can be built for additional distributions. (Note, however, that
+system-wide installation is not required — Charliecloud works fine when built
+by any user and run from one's home directory or similar.)
+
+This section describes how to obtain packages for the distributions we know
+about, and where to go for support on them.
+
+If you'd like to build one of the packages, or if you're a package maintainer,
+see :code:`packaging/README` and :code:`packaging/*/README` for additional
+documentation.
+
+Pull requests and other collaboration to improve the packaging situation are
+particularly welcome!
+
+Debian
+------
+
+Charliecloud has been proposed for inclusion in Debian; see `issue 95
+<https://github.com/hpc/charliecloud/issues/95>`_.
+
+.. list-table::
+   :widths: auto
+
+   * - Distribution versions
+     - proposed for *Buster* and *Stretch backports*
+   * - Maintainers
+     - Lucas Nussbaum (:code:`lucas@debian.org`)
+       and Peter Wienemann (:code:`wienemann@physik.uni-bonn.de`)
+   * - Bug reports to
+     - Charliecloud's GitHub issue tracker
+   * - Packaging source code
+     - in Charliecloud: :code:`packaging/debian`
+
+Gentoo
+------
+
+A native package for Gentoo is available.
+
+.. list-table::
+   :widths: auto
+
+   * - Package name
+     - `sys-cluster/charliecloud <https://packages.gentoo.org/packages/sys-cluster/charliecloud>`_
+   * - Maintainer
+     - Oliver Freyermuth (:code:`o.freyermuth@googlemail.com`)
+   * - Bug reports to
+     - `Gentoo Bugzilla <https://bugs.gentoo.org/buglist.cgi?quicksearch=sys-cluster%2Fcharliecloud>`_
+   * - Packaging source code
+     - `Gentoo ebuild repository <https://gitweb.gentoo.org/repo/gentoo.git/tree/sys-cluster/charliecloud>`_
+
+To install::
+
+  $ emerge sys-cluster/charliecloud
+
+If may necessary to accept keywords first, e.g.::
+
+  $ echo "=sys-cluster/charliecloud-0.2.3_pre20171121 ~amd64" >> /etc/portage/package.accept_keywords
+
+A live ebuild is also available and can be keyworded via::
+
+  $ echo "~sys-cluster/charliecloud-9999 \*\*" >> /etc/portage/package.accept_keywords
+
+RPM-based distributions
+-----------------------
+
+An RPM :code:`.spec` file is provided in the Charliecloud source code. We are
+actively seeking distribution packagers to adapt this into official packages!
+
+.. list-table::
+   :widths: auto
+
+   * - Repositories
+     - none yet
+   * - Maintainer
+     - Oliver Freyermuth (:code:`o.freyermuth@googlemail.com`)
+   * - Bug reports to
+     - Charliecloud's GitHub issue tracker
+   * - Packaging source code
+     - in Charliecloud: :code:`packaging/redhat`
+
+
+Manual build and install
+========================
+
+Download
+--------
+
+See our GitHub project: https://github.com/hpc/charliecloud
+
+The recommended download method is :code:`git clone --recursive`.
+
+Build
+-----
+
+To build in the standard, unprivileged mode (recommended)::
+
+  $ make
+
+To build in setuid mode (for testing if your kernel doesn't support the user
+namespace)::
+
+  $ make SETUID=yes
+
+To build the documentation, see :code:`doc-src/README`.
+
+.. warning::
+
+   Do not build as root. This is unsupported and may introduce security
+   problems.
+
+Install (optional)
+------------------
+
+You can run Charliecloud from the source directory, and it's recommended you
+at least run the test suite before installation to establish that your system
+will work.
+
+To install (FHS-compliant)::
+
+  $ make install PREFIX=/foo/bar
+
+Note that :code:`PREFIX` is required. It does not default to
+:code:`/usr/local` like many packages.
+
+
+Docker tips
+===========
+
+Docker is a convenient way to build Charliecloud images. While installing
+Docker is beyond the scope of this documentation, here are a few tips.
 
 Understand the security implications of Docker
 ----------------------------------------------
@@ -255,52 +342,9 @@ test suite (see below) includes a test that fails if some but not all of the
 above variables are set.
 
 
-Install Charliecloud
-====================
-
-Download
---------
-
-See our GitHub project: https://github.com/hpc/charliecloud
-
-The recommended download method is :code:`git clone --recursive`.
-
-Build
------
-
-To build in the standard, unprivileged mode (recommended)::
-
-  $ make
-
-To build in setuid mode (for testing if your kernel doesn't support the user
-namespace)::
-
-  $ make SETUID=yes
-
-To build the documentation, see :code:`doc-src/README`.
-
-.. warning::
-
-   Do not build as root. This is unsupported and may introduce security
-   problems.
-
-Install (optional)
-------------------
-
-You can run Charliecloud from the source directory, and it's recommended you
-at least run the test suite before installation to establish that your system
-will work.
-
-To install (FHS-compliant)::
-
-  $ make install PREFIX=/foo/bar
-
-Note that :code:`PREFIX` is required; it does not default to
-:code:`/usr/local` like many packages.
-
 .. _install_test-charliecloud:
 
-Test Charliecloud
+Running the tests
 =================
 
 Charliecloud comes with a fairly comprehensive Bats test suite, in

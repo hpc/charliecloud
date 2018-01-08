@@ -51,7 +51,10 @@ Session.vim
 *.o
 *.py[cod]
 .fuse_hidden*
-charliecloud-*
+
+# ignore (unpacked) tarballs in working directory
+charliecloud-*.tar*
+charliecloud-*/
 
 VERSION.full
 a.out
@@ -69,3 +72,12 @@ test/build_auto.bats
 test/build_auto-quick.bats
 test/run_auto.bats
 test/run_auto-quick.bats
+
+# for Debian package
+*.debhelper.log
+*.substvars
+packaging/debian/.debhelper/
+packaging/debian/debhelper-build-stamp
+packaging/debian/charliecloud/
+packaging/debian/files
+packaging/debian/tmp
