@@ -7,8 +7,6 @@
 
 set -e
 
-echo "SETUID=$SETUID TARBALL=$TARBALL INSTALL=$INSTALL"
-
 # Remove sbin directories from $PATH (see issue #43). Assume none are first.
 echo $PATH
 for i in /sbin /usr/sbin /usr/local/sbin; do
@@ -44,6 +42,14 @@ cd test
 
 make where-bats
 make test-quick
+
+# Package builds are here because they're moot if the basic test-quick fails.
+if [[ $PKG_BUILD ]]; then
+    cd ..
+    for i in packaging/*/travis.sh; do $i; done
+    cd -
+fi
+
 make test-all
 
 # To test without Docker, move the binary out of the way.

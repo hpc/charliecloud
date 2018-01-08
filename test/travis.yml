@@ -17,11 +17,13 @@ compiler: gcc
 #   INSTALL=yes      # make install to /usr/local, run that one
 #   SETUID=          # standard build (user + mount namespaces)
 #   SETUID=yes       # setuid build (mount namespace, setuid binary)
+#   PKG_BUILD=       # ignore distribution package build code
+#   PKG_BUILD=yes    # build (but don't test) distribution packages
 #
 env:
-  - SETUID=    TARBALL=        INSTALL=
+  - SETUID=    TARBALL=        INSTALL=     PKG_BUILD=yes
   - SETUID=    TARBALL=        INSTALL=yes
-  - SETUID=    TARBALL=archive INSTALL=
+  - SETUID=    TARBALL=archive INSTALL=     PKG_BUILD=yes
   - SETUID=    TARBALL=archive INSTALL=yes
   - SETUID=    TARBALL=export  INSTALL=
   - SETUID=    TARBALL=export  INSTALL=yes
@@ -32,8 +34,6 @@ env:
 # - SETUID=yes TARBALL=archive INSTALL=yes
 # - SETUID=yes TARBALL=export  INSTALL=
 # - SETUID=yes TARBALL=export  INSTALL=yes
-  - PACKAGING=yes DEBUILD=yes
-  - PACKAGING=yes RPMBUILD=yes
 
 install:
   - sudo apt-get install pigz
@@ -52,10 +52,7 @@ before_script:
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
 
 script:
-  - if [[ $PACKAGING ]]; 
-    then packaging/travis.sh;
-    else test/travis.sh;
-    fi
+  - test/travis.sh
 
 after_script:
   - free -m
