@@ -51,6 +51,9 @@ export LC_ALL=C
 # Set path to the right Charliecloud. This uses a symlink in this directory
 # called "bin" which points to the corresponding bin directory, either simply
 # up and over (source code) or set during "make install".
+#
+# Note that sudo resets $PATH, so if you want to run any Charliecloud stuff
+# under sudo, you must use an absolute path.
 CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/bin" && pwd)"
 CH_BIN="$(readlink -f "$CH_BIN")"
 export PATH=$CH_BIN:$PATH

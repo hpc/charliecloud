@@ -1,0 +1,5 @@
+This started failing Travis on roughly 10/31/2017 with:
+
+  pkg_resources.DistributionNotFound: The 'pytz' distribution was not found and is required by matplotlib
+
+I'm not sure how to fix it, so disabling for now. See issue #64.

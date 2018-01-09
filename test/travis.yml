@@ -4,28 +4,34 @@ language: c
 compiler: gcc
 
 # This defines a "matrix" of jobs. Each combination of environment variables
-# defines a different job. All of them run in parallel.
+# defines a different job. They run in parallel, five at a time.
 #
 # FIXME: Each job starts with a cold Docker cache, which wastes work heating
 # it up in parallel. It would be nice if "make test-build" could be done
 # serially before splitting into parallel jobs.
 #
-#   EXPORT=         # build in Git checkout
-#   EXPORT=yes      # build from "make export" tarball
-#   INSTALL=        # run from build directory
-#   INSTALL=yes     # make install to /usr/local, run that one
-#   SETUID=         # standard build (user + mount namespaces)
-#   SETUID=yes      # setuid build (mount namespace, setuid binary)
+#   TARBALL=         # build in Git checkout & use embedded Bats
+#   TARBALL=archive  # build from "git archive" tarball & use system Bats
+#   TARBALL=export   # build from "make export" tarball & use embedded Bats
+#   INSTALL=         # run from build directory
+#   INSTALL=yes      # make install to /usr/local, run that one
+#   SETUID=          # standard build (user + mount namespaces)
+#   SETUID=yes       # setuid build (mount namespace, setuid binary)
 #
 env:
-  - EXPORT=    INSTALL=    SETUID=
-  - EXPORT=    INSTALL=yes SETUID=
-  - EXPORT=yes INSTALL=    SETUID=
-  - EXPORT=yes INSTALL=yes SETUID=
-  - EXPORT=    INSTALL=    SETUID=yes
-  - EXPORT=    INSTALL=yes SETUID=yes
-  - EXPORT=yes INSTALL=    SETUID=yes
-  - EXPORT=yes INSTALL=yes SETUID=yes
+  - SETUID=    TARBALL=        INSTALL=
+  - SETUID=    TARBALL=        INSTALL=yes
+  - SETUID=    TARBALL=archive INSTALL=
+  - SETUID=    TARBALL=archive INSTALL=yes
+  - SETUID=    TARBALL=export  INSTALL=
+  - SETUID=    TARBALL=export  INSTALL=yes
+# Setuid mode is only sort of supported, so don't test it as carefully.
+  - SETUID=yes TARBALL=        INSTALL=
+  - SETUID=yes TARBALL=        INSTALL=yes
+# - SETUID=yes TARBALL=archive INSTALL=
+# - SETUID=yes TARBALL=archive INSTALL=yes
+# - SETUID=yes TARBALL=export  INSTALL=
+# - SETUID=yes TARBALL=export  INSTALL=yes
 
 install:
   - sudo apt-get install pigz

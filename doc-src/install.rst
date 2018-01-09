@@ -1,6 +1,15 @@
 Installation
 ************
 
+.. warning::
+
+   **If you are installing on a Cray** and have not applied the patch for Cray
+   case #188073, you must use the `cray branch
+   <https://github.com/hpc/charliecloud/compare/cray>`_ to avoid crashing
+   nodes during job completion. This is a Cray bug that Charliecloud happens
+   to tickle. Non-Cray build boxes and others at the same site can still use
+   the master branch.
+
 .. contents::
    :depth: 2
    :local:
@@ -23,8 +32,8 @@ Run time
 
 Systems used for running images in the standard unprivileged mode need:
 
-* Recent Linux kernel with :code:`CONFIG_USER_NS=y`. (We've had good luck with
-  various distribution upstream versions of 4.4 and higher.)
+* Recent Linux kernel with :code:`CONFIG_USER_NS=y`. We recommend version 4.4
+  or higher.
 
 * C compiler and standard library
 
@@ -37,8 +46,6 @@ a `kernel command line option and a sysctl
 <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_
 (that put you into "technology preview").
 
-Tested and working by us include the Ubuntu and upstream versions of 4.4.
-
 .. note::
 
    An experimental setuid mode is also provided that does not need user
@@ -50,10 +57,16 @@ Build time
 
 Systems used for building images need the run-time prerequisites, plus:
 
-* `Docker <https://www.docker.com/>`_, recent version. We do not make compatibility guarantees with any specific version, but let us know if you run into issues.
-* Bash
+* Bash 4.1+
+
+and optionally:
+
+* `Docker <https://www.docker.com/>`_ 17.03+
+* internet access or Docker configured for a local Docker hub
 * root access using :code:`sudo`
-* Internet access or a Docker configured for a local Docker hub
+
+Older versions of Docker may work but are untested. We know that 1.7.1 does
+not work.
 
 Test suite
 ----------
@@ -63,6 +76,7 @@ mode independently), you also need:
 
 * Bash 4.1+
 * Python 2.6+
+* `Bats <https://github.com/sstephenson/bats>`_ 0.4.0
 * wget
 
 .. With respect to curl vs. wget, both will work fine for our purposes
@@ -71,9 +85,27 @@ mode independently), you also need:
    hand, curl is in the minimal install of CentOS 7 while wget is not. For now
    I just picked wget because I liked it better.
 
+Note that without Docker on the build system, some of the test suite will be
+skipped.
 
-Install Docker (build systems only)
-===================================
+Bats can be installed at the system level or embedded in the Charliecloud
+source code. If it's in both places, the latter is used.
+
+To embed Bats, either:
+
+* Download Charliecloud using :code:`git clone --recursive`, which will check
+  out Bats as a submodule in :code:`test/bats`.
+
+* Unpack the Bats zip file or tarball in :code:`test/bats`.
+
+To check an embedded Bats::
+
+  $ test/bats/bin/bats --version
+  Bats 0.4.0
+
+
+Docker install tips
+===================
 
 Tnstalling Docker is beyond the scope of this documentation, but here are a
 few tips.
@@ -82,12 +114,10 @@ Understand the security implications of Docker
 ----------------------------------------------
 
 Because Docker (a) makes installing random crap from the internet really easy
-and (b) has an "interesting" security culture, you should take care. Some of
-the implications are below. This list should not be considered comprehensive
-nor a substitute for appropriate expertise; adhere to your moral and
-institutional responsibilities.
-
-(All this stuff is a key motivation for Charliecloud.)
+and (b) is easy to deploy insecurely, you should take care. Some of the
+implications are below. This list should not be considered comprehensive nor a
+substitute for appropriate expertise; adhere to your moral and institutional
+responsibilities.
 
 :code:`docker` equals root
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,7 +134,7 @@ Images can contain bad stuff
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Standard hygiene for "installing stuff from the internet" applies. Only work
-with images you trust. The official DockerHub repositories can help.
+with images you trust. The official Docker Hub repositories can help.
 
 Containers run as root
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -186,12 +216,7 @@ Download
 
 See our GitHub project: https://github.com/hpc/charliecloud
 
-Download with :code:`git clone --recursive`; the switch gets the submodule
-needed for testing as well. Other methods of downloading (e.g. the tarball,
-plain :code:`git clone`) are known not to work.
-
-The remaining install steps can be run from the Git working directory or an
-unpacked export tarball created with :code:`make export`.
+The recommended download method is :code:`git clone --recursive`.
 
 Build
 -----
@@ -231,21 +256,17 @@ Note that :code:`PREFIX` is required; it does not default to
 Test Charliecloud
 =================
 
-Charliecloud comes with a fairly comprehensive `Bats
-<https://github.com/sstephenson/bats>`_ test suite, in :code:`test`. Go there::
+Charliecloud comes with a fairly comprehensive Bats test suite, in
+:code:`test`. Go there::
 
   $ cd test
 
-Bats must be installed in the :code:`test/bats.src`. In the Git repository,
-this is arranged with a Git submodule, so if you downloaded Charliecloud with
-Git command above, it should already be there. Otherwise, you must download
-and unpack Bats manually.
+To check location and version of Bats used by the tests::
 
-:code:`test/bats` is a symlink to the main Bats script, for convenience.
-
-Verify the Bats install with::
-
-  $ ./bats --version
+  $ make where-bats
+  which bats
+  /usr/bin/bats
+  bats --version
   Bats 0.4.0
 
 Just like for normal use, the Charliecloud test suite is split into build and
@@ -263,7 +284,7 @@ fixtures. These are configured with environment variables::
   $ export CH_TEST_IMGDIR=/var/tmp/images
   $ export CH_TEST_PERMDIRS='/var/tmp /tmp'
 
-:code:`CH_TEST_PERMDIRS` can be set to `skip` in order to skip the file
+:code:`CH_TEST_PERMDIRS` can be set to :code:`skip` in order to skip the file
 permissions tests.
 
 (Strictly speaking, the build phase needs only the first, and the example test
@@ -283,7 +304,8 @@ In this phase, image building and associated functionality is tested.
 
 ::
 
-  ./bats build.bats build_auto.bats build_post.bats
+  $ make test-build
+  bats build.bats build_auto.bats build_post.bats
    ✓ create tarball directory if needed
    ✓ documentations build
    ✓ executables seem sane

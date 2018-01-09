@@ -5,9 +5,10 @@ This tutorial will teach you how to create and run Charliecloud images, using
 both examples included with the source code as well as new ones you create
 from scratch.
 
-This tutorial assumes that Charliecloud is correctly installed as described in
-the previous section, that the executables are on your :code:`$PATH`, and that
-you have access to the examples in the source code.
+This tutorial assumes that: (a) Charliecloud is correctly installed as
+described in the previous section, (b) Docker is installed on the build
+system, (c) the executables are in your :code:`$PATH`, and (d) you have access
+to the examples in the source code.
 
 .. contents::
    :depth: 2

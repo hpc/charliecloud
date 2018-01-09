@@ -15,6 +15,9 @@ ifdef CH_TEST_OMIT
   EXAMPLETESTS := $(foreach i,$(EXAMPLETESTS),$(if $(findstring $(CH_TEST_OMIT),$(i)),,$(i)))
 endif
 
+# Favor embedded Bats, if installed, over system Bats.
+export PATH := $(CURDIR)/bats/bin:$(PATH)
+
 # Used by "make all" at top level to build these files for "make install".
 .PHONY: all
 all: build_auto.bats build_auto-quick.bats run_auto.bats run_auto-quick.bats
@@ -27,13 +30,13 @@ test-all: test test-test
 
 .PHONY: test-build
 test-build: build_auto.bats
-	./bats build.bats build_auto.bats build_post.bats
+	bats build.bats build_auto.bats build_post.bats
 
 # Note: This will will not find ch-run correctly if $CWD is not the test
 # directory, which I believe is assumed elsewhere in the test suite as well.
 .PHONY: test-run
 test-run: run_auto.bats
-	./bats run.bats run_uidgid.bats run_auto.bats
+	bats run.bats run_uidgid.bats run_auto.bats
 	set -e; \
 	if ( ! bin/ch-run --is-setuid ); then \
 	for GUEST_USER in $$(id -un) root nobody; do \
@@ -41,21 +44,26 @@ test-run: run_auto.bats
 	        export GUEST_USER; \
 	        export GUEST_GROUP; \
 	        echo testing as: $$GUEST_USER $$GUEST_GROUP; \
-	        ./bats run_uidgid.bats; \
+	        bats run_uidgid.bats; \
 	    done; \
 	done; fi
 
 .PHONY: test-test
 test-test: $(EXAMPLETESTS)
-	./bats $(EXAMPLETESTS)
+	bats $(EXAMPLETESTS)
 
 .PHONY: test-quick
 test-quick: build_auto-quick.bats run_auto-quick.bats
-	./bats build.bats build_auto-quick.bats run.bats run_uidgid.bats run_auto-quick.bats
+	bats build.bats build_auto-quick.bats run.bats run_uidgid.bats run_auto-quick.bats
 
 .PHONY: clean
 clean:
 	rm -f *_auto*.bats
+
+.PHONY: where-bats
+where-bats:
+	which bats
+	bats --version
 
 build_auto.bats: $(IMAGES)
 	./make-auto build $^ > $@

@@ -6,6 +6,21 @@ Frequently asked questions (FAQ)
    :local:
 
 
+Where did the name Charliecloud come from?
+==========================================
+
+*Charlie* — Charles F. McMillan was director of Los Alamos National Laboratory
+from June 2011 until December 2017, i.e., at the time Charliecloud was started
+in early 2014. He is universally referred to as "Charlie" here.
+
+*cloud* — Charliecloud provides cloud-like flexibility for HPC systems.
+
+How do you spell Charliecloud?
+==============================
+
+We try to be consistent with *Charliecloud* — one word, no camel case. That
+is, *Charlie Cloud* and *CharlieCloud* are both incorrect.
+
 My app needs to write to :code:`/var/log`, :code:`/run`, etc.
 =============================================================
 
