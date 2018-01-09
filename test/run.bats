@@ -340,36 +340,152 @@ EOF
     run ch-run -b $IMGDIR/hoops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/hoops to /mnt/0: No such file or directory'
+    r="^ch-run: can't bind .+/hoops to $CHTEST_IMG/mnt/0: No such file or directory"
     [[ $output =~ $r ]]
 
     # destination does not exist
     run ch-run -b $IMGDIR/bind1:/goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/bind1 to /goops: No such file or directory'
+    r="^ch-run: can't bind .+/bind1 to $CHTEST_IMG/goops: No such file or directory"
     [[ $output =~ $r ]]
 
     # neither source nor destination exist
     run ch-run -b $IMGDIR/hoops:/goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/hoops to /goops: No such file or directory'
+    r="^ch-run: can't bind .+/hoops to $CHTEST_IMG/goops: No such file or directory"
     [[ $output =~ $r ]]
 
     # correct bind followed by source does not exist
     run ch-run -b $IMGDIR/bind1:/mnt/9 -b $IMGDIR/hoops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/hoops to /mnt/1: No such file or directory'
+    r="^ch-run: can't bind .+/hoops to $CHTEST_IMG/mnt/1: No such file or directory"
     [[ $output =~ $r ]]
 
     # correct bind followed by destination does not exist
     run ch-run -b $IMGDIR/bind1 -b $IMGDIR/bind2:/goops $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r='^ch-run: could not bind .+/bind2 to /goops: No such file or directory'
+    r="^ch-run: can't bind .+/bind2 to $CHTEST_IMG/goops: No such file or directory"
     [[ $output =~ $r ]]
+}
+
+@test 'broken image errors' {
+    IMG=$BATS_TMPDIR/broken-image
+
+    # Create an image skeleton.
+    DIRS=$(echo {dev,proc,sys})
+    FILES=$(echo etc/{group,hosts,passwd,resolv.conf})
+    FILES_OPTIONAL=$(echo usr/bin/ch-ssh)
+    mkdir -p $IMG
+    for d in $DIRS; do mkdir -p $IMG/$d; done
+    mkdir -p $IMG/etc $IMG/home $IMG/usr/bin $IMG/tmp
+    for f in $FILES $FILES_OPTIONAL; do touch $IMG/$f; done
+
+    # This should start up the container OK but fail to find the user command.
+    run ch-run $IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ "can't execve(2) user command: No such file or directory" ]]
+
+    # For each required file, we want a correct error if it's missing.
+    for f in $FILES; do
+        rm $IMG/$f
+        run ch-run $IMG -- true
+        touch $IMG/$f  # restore before test fails for idempotency
+        echo "$output"
+        [[ $status -eq 1 ]]
+        r="ch-run: can't bind .+ to /.+/$f: No such file or directory"
+        echo "expected: $r"
+        [[ $output =~ $r ]]
+    done
+
+    # For each optional file, we want no error if it's missing.
+    for f in $FILES_OPTIONAL; do
+        rm $IMG/$f
+        run ch-run $IMG -- true
+        touch $IMG/$f  # restore before test fails for idempotency
+        echo "$output"
+        [[ $status -eq 1 ]]
+        [[ $output =~ "can't execve(2) user command: No such file or directory" ]]
+    done
+
+    # For all files, we want a correct error if it's not a regular file.
+    for f in $FILES $FILES_OPTIONAL; do
+        rm $IMG/$f
+        mkdir $IMG/$f
+        run ch-run $IMG -- true
+        rmdir $IMG/$f  # restore before test fails for idempotency
+        touch $IMG/$f
+        echo "$output"
+        [[ $status -eq 1 ]]
+        r="ch-run: can't bind .+ to /.+/$f: Not a directory"
+        echo "expected: $r"
+        [[ $output =~ $r ]]
+    done
+
+    # For each directory, we want a correct error if it's missing.
+    for d in $DIRS tmp; do
+        rmdir $IMG/$d
+        run ch-run $IMG -- true
+        mkdir $IMG/$d  # restore before test fails for idempotency
+        echo "$output"
+        [[ $status -eq 1 ]]
+        r="ch-run: can't bind .+ to /.+/$d: No such file or directory"
+        echo "expected: $r"
+        [[ $output =~ $r ]]
+    done
+
+    # For each directory, we want a correct error if it's not a directory.
+    for d in $DIRS tmp; do
+        rmdir $IMG/$d
+        touch $IMG/$d
+        run ch-run $IMG -- true
+        rm $IMG/$d  # restore before test fails for idempotency
+        mkdir $IMG/$d
+        echo "$output"
+        [[ $status -eq 1 ]]
+        r="ch-run: can't bind .+ to /.+/$d: Not a directory"
+        echo "expected: $r"
+        [[ $output =~ $r ]]
+    done
+
+    # --private-tmp
+    rmdir $IMG/tmp
+    run ch-run --private-tmp $IMG -- true
+    mkdir $IMG/tmp  # restore before test fails for idempotency
+    echo "$output"
+    [[ $status -eq 1 ]]
+    r="ch-run: can't mount tmpfs at /.+/tmp: No such file or directory"
+    echo "expected: $r"
+    [[ $output =~ $r ]]
+
+    # /home without --private-home
+    # FIXME: Not sure how to make the second mount(2) fail.
+    rmdir $IMG/home
+    run ch-run $IMG -- true
+    mkdir $IMG/home  # restore before test fails for idempotency
+    echo "$output"
+    [[ $status -eq 1 ]]
+    r="ch-run: can't mount tmpfs at /.+/home: No such file or directory"
+    echo "expected: $r"
+    [[ $output =~ $r ]]
+
+    # --no-home shouldn't care if /home is missing
+    rmdir $IMG/home
+    run ch-run --no-home $IMG -- true
+    mkdir $IMG/home  # restore before test fails for idempotency
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ "can't execve(2) user command: No such file or directory" ]]
+
+    # Everything should be restored and back to the original error.
+    run ch-run $IMG -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ "can't execve(2) user command: No such file or directory" ]]
 }
 
 @test 'ch-run --cd' {

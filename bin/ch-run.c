@@ -195,28 +195,32 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    // Claim newroot for this namespace
    Zf (mount(newroot, newroot, NULL,
              MS_REC | MS_BIND | MS_PRIVATE, NULL), newroot);
-   // Bind-mount default directories at the same host and guest path
+   // Bind-mount default files and directories at the same host and guest path
    for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
       T_ (1 <= asprintf(&path, "%s%s", newroot, DEFAULT_BINDS[i]));
-      Z_ (mount(DEFAULT_BINDS[i], path, NULL,
-                MS_REC | MS_BIND | MS_RDONLY, NULL));
+      Zf (mount(DEFAULT_BINDS[i], path, NULL,
+                MS_REC | MS_BIND | MS_RDONLY, NULL),
+          "can't bind %s to %s", (char *) DEFAULT_BINDS[i], path);
    }
    // Container /tmp
    T_ (1 <= asprintf(&path, "%s%s", newroot, "/tmp"));
    if (private_tmp) {
-      Z_ (mount(NULL, path, "tmpfs", 0, 0));
+      Zf (mount(NULL, path, "tmpfs", 0, 0), "can't mount tmpfs at %s", path);
    } else {
-      Z_ (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL));
+      Zf (mount("/tmp", path, NULL, MS_REC | MS_BIND, NULL),
+          "can't bind /tmp to %s", path);
    }
    if (!private_home) {
       // Mount tmpfs on guest /home because guest root is read-only
       T_ (1 <= asprintf(&path, "%s/home", newroot));
-      Z_ (mount(NULL, path, "tmpfs", 0, "size=4m"));
+      Zf (mount(NULL, path, "tmpfs", 0, "size=4m"),
+          "can't mount tmpfs at %s", path);
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
       T_ (1 <= asprintf(&path, "%s/home/%s", newroot, getenv("USER")));
       Z_ (mkdir(path, 0755));
-      Z_ (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL));
+      Zf (mount(getenv("HOME"), path, NULL, MS_REC | MS_BIND, NULL),
+          "can't bind %s to %s", getenv("HOME"), path);
    }
    // Bind-mount /usr/bin/ch-ssh if it exists.
    T_ (1 <= asprintf(&path, "%s/usr/bin/ch-ssh", newroot));
@@ -227,14 +231,15 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
       bin[PATH_CHARS-1] = 0;  // guarantee string termination
       dir = dirname(bin);
       T_ (1 <= asprintf(&oldpath, "%s/ch-ssh", dir));
-      Z_ (mount(oldpath, path, NULL, MS_BIND, NULL));
+      Zf (mount(oldpath, path, NULL, MS_BIND, NULL),
+          "can't bind %s to %s", oldpath, path);
    }
    // Bind-mount user-specified directories at guest DST and|or /mnt/i,
    // which must exist
    for (int i = 0; binds[i].src != NULL; i++) {
       T_ (1 <= asprintf(&path, "%s%s", newroot, binds[i].dst));
       Zf (mount(binds[i].src, path, NULL, MS_REC | MS_BIND, NULL),
-          "could not bind %s to %s", binds[i].src, binds[i].dst);
+          "can't bind %s to %s", binds[i].src, path);
    }
 
    // Overmount / to avoid EINVAL if it's a rootfs
@@ -256,10 +261,10 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    // Pivot into the new root. Use /dev because it's available even in
    // extremely minimal images.
    T_ (1 <= asprintf(&path, "%s/dev", newroot));
-   Z_ (chdir(newroot));
-   Z_ (syscall(SYS_pivot_root, newroot, path));
-   Z_ (chroot("."));
-   Z_ (umount2("/dev", MNT_DETACH));
+   Zf (chdir(newroot), "can't chdir into new root");
+   Zf (syscall(SYS_pivot_root, newroot, path), "can't pivot_root(2)");
+   Zf (chroot("."), "can't chroot(2) into new root");
+   Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
 
 #ifdef SETUID
    privs_drop_temporarily();
