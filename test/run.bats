@@ -534,6 +534,17 @@ EOF
     done
 }
 
+@test 'ch-validate succeeds on valid image' {
+   ch-validate $CHTEST_IMG
+}
+
+@test 'ch-validate fails on invalid image' {
+   cp -r $CHTEST_IMG $BATS_TMPDIR/badimage
+   rmdir $BATS_TMPDIR/badimage/tmp
+   run ch-validate $BATS_TMPDIR/badimage
+   [ "$status" -eq 1 ]
+}
+
 @test 'relative path to image' {
    # bug number 6
    DIRNAME=$(dirname $CHTEST_IMG)
