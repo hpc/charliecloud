@@ -7,8 +7,6 @@
 
 set -e
 
-echo "SETUID=$SETUID TARBALL=$TARBALL INSTALL=$INSTALL"
-
 # Remove sbin directories from $PATH (see issue #43). Assume none are first.
 echo $PATH
 for i in /sbin /usr/sbin /usr/local/sbin; do
@@ -31,6 +29,14 @@ case $TARBALL in
         cd charliecloud
         ;;
 esac
+
+if [[ $PKG_BUILD ]]; then
+    for i in packaging/*/travis.sh; do $i; done
+    # FIXME: If we continue with the rest of the tests after building the
+    # packages, they hang in "make test-all", I believe in test "ch-build
+    # python3" but I have not been able to verify this.
+    exit
+fi
 
 make SETUID=$SETUID
 bin/ch-run --version

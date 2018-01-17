@@ -1,0 +1,5 @@
+Use debuild at the root of the Charliecloud source code, e.g.:
+
+  $ debuild FIXME
+
+See travis.sh for an example of a build under Travis' Ubuntu image.

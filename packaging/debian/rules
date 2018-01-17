@@ -1,0 +1,43 @@
+#!/usr/bin/make -f
+
+srcpkg = $(shell LC_ALL=C dpkg-parsechangelog | grep '^Source:' | cut -d ' ' -f 2,2)
+debver = $(shell LC_ALL=C dpkg-parsechangelog | grep '^Version:' | cut -d ' ' -f 2,2 )
+uver = $(shell echo $(debver) | cut -d '-' -f 1,1 )
+
+#DH_VERBOSE=1
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+BUILDDIR := debian/tmp
+DESTDIR := ${CURDIR}/${BUILDDIR}
+
+PKGDIR=debian/charliecloud
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure
+	#echo ${debver} > VERSION.full
+
+override_dh_auto_build:
+	dh_auto_build
+	cd doc-src && $(MAKE)
+	mv doc html
+
+override_dh_auto_install:
+	# PREFIX needed for installation (there's no configure).
+	dh_auto_install -- PREFIX=/usr LIBEXEC_DIR=lib/charliecloud
+	rm -rf ${DESTDIR}/usr/share/doc/charliecloud/test
+
+	# Patch out bundled jquery.js
+	rm html/_static/jquery.js
+	ln -s /usr/share/javascript/jquery/jquery.js html/_static/jquery.js
+
+	# Patch out bundled underscore.js
+	rm html/_static/underscore.js
+	ln -s /usr/share/javascript/underscore/underscore.js html/_static/underscore.js
+
+	# Patch out usage of MathJax CDN
+	find html/*.html -type f -print0 | xargs -0 sed -i 's#https://cdn.mathjax.org/mathjax/latest/#/usr/share/javascript/mathjax/#g'
+
+override_dh_auto_test:
