@@ -356,7 +356,7 @@ container, even if :code:`ssh` was initiated from a container::
   > ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026531837
 
-There are several ways to SSH to a remote note and run commands inside a
+There are several ways to SSH to a remote node and run commands inside a
 container. The simplest is to manually invoke :code:`ch-run` in the
 :code:`ssh` command::
 
