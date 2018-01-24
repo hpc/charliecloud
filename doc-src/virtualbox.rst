@@ -74,9 +74,9 @@ Log in and try Charliecloud
 
    $ sudo passwd charlie
 
-5. SSH into the VM using the password you just set. (Accessing the VM using
-   SSH rather than the console is generally more pleasant, because you have a
-   nice terminal with native copy-and-paste, etc.)
+5. SSH (from terminal on the host) into the VM using the password you just set.
+   (Accessing the VM using SSH rather than the console is generally more
+   pleasant, because you have a nice terminal with native copy-and-paste, etc.)
 
 ::
 
