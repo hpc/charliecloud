@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This script sets up a test directory for testing filesystem permissions
 # enforcement in UDSS such as virtual machines and containers. It must be run
@@ -155,7 +155,7 @@ class Test_Directory(Test):
       file_ = self.name + '/file'
       with open(file_, 'w') as fp:
          fp.write(FILE_CONTENT)
-      set_perms(file_, my_uid, my_uid, 0660)
+      set_perms(file_, my_uid, my_uid, 0o660)
 
 
 class Test_File(Test):
@@ -179,7 +179,7 @@ try:
 except OSError as x:
    print("can't mkdir %s: %s" % (testdir, str(x)))
    sys.exit(1)
-set_perms(testdir, my_uid, my_gid, 0770)
+set_perms(testdir, my_uid, my_gid, 0o770)
 os.chdir(testdir)
 
 Test_Directory(my_uid, my_gid, 7, 7, 0, 'nopass').write()
