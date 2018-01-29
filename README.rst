@@ -53,7 +53,7 @@ How do I learn more?
   based: https://www.usenix.org/publications/login/fall2017/priedhorsky
 
 * A more technical resource is our Supercomputing 2017 paper:
-  http://permalink.lanl.gov/object/tr?what=info:lanl-repo/lareport/LA-UR-16-22370
+  https://dl.acm.org/citation.cfm?id=3126925
 
 Who is responsible?
 -------------------
