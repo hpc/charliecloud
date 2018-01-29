@@ -15,7 +15,7 @@ SRCDIR=$1
 TARBALL=$2
 WORKDIR=$3
 MIRROR=http://dl-cdn.alpinelinux.org/alpine/v3.6
-APK_TOOLS=apk-tools-static-2.7.4-r0.apk
+APK_TOOLS=apk-tools-static-2.7.5-r0.apk
 IMG="$WORKDIR/img"
 
 cd $WORKDIR
