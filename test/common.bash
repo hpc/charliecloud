@@ -81,7 +81,11 @@ CHTEST_TARBALL=$TARDIR/chtest.tar.gz
 CHTEST_IMG=$IMGDIR/chtest
 CHTEST_MULTINODE=$SLURM_JOB_ID
 if [[ $CHTEST_MULTINODE ]]; then
-    # $SLURM_NTASKS isn't always set
+    # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
+    # documentation.
+    if [[ -z $SLURM_CPUS_ON_NODE ]]; then
+        SLURM_CPUS_ON_NODE=$(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f1)
+    fi
     CHTEST_CORES=$(($SLURM_CPUS_ON_NODE * $SLURM_JOB_NUM_NODES))
 fi
 

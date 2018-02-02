@@ -49,9 +49,7 @@ setup () {
 }
 
 @test 'filesystem permission enforcement' {
-    if [[ $CH_TEST_PERMDIRS = skip ]]; then
-        skip
-    fi
+    [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
     for d in $CH_TEST_PERMDIRS; do
         d="$d/perms_test/pass"
         echo "verifying: $d"

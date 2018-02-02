@@ -72,8 +72,8 @@ load common
     rm $CH_RUN_TMP
 }
 
-@test 'ch-run refuses to run if setuid' {
-    [[ -z $CH_RUN_SETUID ]] || skip 'compiled in setuid mode'
+@test 'ch-run refuses to run if setuid but not compiled setuid' {
+    [[ -z $CH_RUN_SETUID ]] || skip 'compiled setuid'
     [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
     CH_RUN_TMP=$BATS_TMPDIR/ch-run.setuid
     cp -a $CH_RUN_FILE $CH_RUN_TMP
@@ -131,7 +131,7 @@ load common
 }
 
 @test 'syscalls/pivot_root' {
-    [[ -n $CH_RUN_SETUID ]] && skip
+    [[ -n $CH_RUN_SETUID ]] && skip 'pivot_root has no setuid mode'
     cd ../examples/syscalls
     ./pivot_root
 }
@@ -207,7 +207,7 @@ load common
 }
 
 @test 'userns id differs' {
-    [[ -n $CH_RUN_SETUID ]] && skip
+    [[ -n $CH_RUN_SETUID ]] && skip 'setuid mode'
     host_ns=$(stat -Lc '%i' /proc/self/ns/user)
     echo "host:  $host_userns"
     guest_ns=$(ch-run $CHTEST_IMG -- stat -Lc '%i' /proc/self/ns/user)
@@ -519,9 +519,7 @@ EOF
 }
 
 @test 'permissions test directories exist' {
-    if [[ $CH_TEST_PERMDIRS = skip ]]; then
-        skip
-    fi
+    [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
     for d in $CH_TEST_PERMDIRS; do
         d=$d/perms_test
         echo $d
