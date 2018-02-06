@@ -111,6 +111,7 @@ load common
 }
 
 @test 'ch-run as root: root with non-zero GID refused' {
+    [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
     [[ -z $TRAVIS ]] || skip 'not permitted on Travis'
     run sudo -u root -g $(id -gn) $CH_RUN_FILE -v --version
     echo "$output"
