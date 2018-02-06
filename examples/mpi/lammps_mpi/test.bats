@@ -63,6 +63,7 @@ lammps_try () {
     ranks_found=$(  echo "$output" \
                   | fgrep 'MPI tasks' \
                   | sed -r 's/^.+with ([0-9]+) MPI tasks.+$/\1/')
+    echo "ranks expected: $CHTEST_CORES"
     echo "ranks found: $ranks_found"
     [[ $ranks_found -eq $CHTEST_CORES ]]
 }
