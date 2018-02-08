@@ -42,14 +42,14 @@ setup () {
 lammps_try () {
     # These examples cd because some (not all) of the LAMMPS tests expect to
     # find things based on $CWD.
-    infiles=$(ch-run $IMG -- bash -c "cd /lammps/examples/$1 && ls in.*")
+    infiles=$(ch-run --cd /lammps/examples/$1 $IMG -- bash -c "ls in.*")
     for i in $infiles; do
         printf '\n\n%s\n' $i
         # serial (but still uses MPI somehow)
-        ch-run $IMG -- sh -c "cd /lammps/examples/$1 && lmp_mpi -log none -in $i"
+        ch-run --cd /lammps/examples/$1 $IMG -- sh -c "lmp_mpi -log none -in $i"
         # parallel
         if [[ $CHTEST_MULTINODE ]]; then
-            mpirun ch-run $IMG -- sh -c "cd /lammps/examples/$1 && lmp_mpi -log none -in $i"
+            mpirun ch-run --cd /lammps/examples/$1 $IMG -- sh -c "lmp_mpi -log none -in $i"
         fi
     done
 
