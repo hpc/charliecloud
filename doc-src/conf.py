@@ -221,7 +221,21 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'Charliecloud', u'Charliecloud Documentation',
+    ('index', 'charliecloud', u'Charliecloud Documentation',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-build', 'ch-build', u'Wrapper for "docker build" that works around some of its annoying behaviors',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-build2dir', 'ch-build2dir', u'Build a Charliecloud image from Dockerfile and unpack it',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-docker2tar', 'ch-docker2tar', u'Flatten a Docker image into a Charliecloud image tarball',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-docker-run', 'ch-docker-run', u'Run a command in a Docker container',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-run', 'ch-run', u'Run a command in a Charliecloud container',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-ssh', 'ch-ssh', u'Run a remote command in a Charliecloud container',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-tar2dir', 'ch-tar2dir', u'Unpack a Docker export tarball into a directory',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1)
 ]
 

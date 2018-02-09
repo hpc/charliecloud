@@ -1,0 +1,25 @@
+Synopsis
+========
+
+``ch-docker-run`` [-i] [-b HOSTDIR:GUESTDIR ...] TAG CMD [ARGS ...]
+
+Description
+===========
+
+Runs the command CMD in a docker container as specified by TAG. This requires sudo privileges.
+The command CMD is run under your user ID. The users and groups inside the container match those on the host.
+
+
+    ``--help``
+        Give this help list
+
+    ``--version``
+        print version and exit
+
+    ``-i``
+        Run interactively with a pseudo-TTY
+
+    ``-b``
+        Bind-mount HOSTDIR at GUESTDIR inside the container (can be repeated)
+
+.. include:: ./docker_tips.rst

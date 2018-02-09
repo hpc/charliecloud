@@ -20,7 +20,7 @@ SCRIPTHELPS := $(addsuffix .help, \
 
 .PHONY: help clean html web dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
-all: html
+all: html man
 
 # All programs and scripts need to accept "--help", even if they normally use
 # single-character flags only.
