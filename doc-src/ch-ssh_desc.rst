@@ -1,7 +1,7 @@
 Synopsis
 ========
 
-CH_RUN_ARGS="NEWROOT [ARG...]" ``ch-ssh`` [OPTION...] HOST CMD [ARG...]
+CH_RUN_ARGS="NEWROOT [ARG...]" :code:`ch-ssh` [OPTION...] HOST CMD [ARG...]
 
 Description
 ===========
@@ -14,7 +14,7 @@ variable on remote host HOST.
 Example
 =======
 
-Run the command ``echo hello`` inside a Charliecloud container using the extracted image in ``/data/foo``
+Run the command :code:`echo hello` inside a Charliecloud container using the extracted image in :code:`/data/foo`
 on host example.com::
 
     $ export CH_RUN_ARGS=/data/foo

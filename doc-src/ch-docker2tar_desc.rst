@@ -1,7 +1,7 @@
 Synopsis
 ========
 
-``ch-docker2tar`` IMAGE OUTDIR
+:code:`ch-docker2tar` IMAGE OUTDIR
 
 Description
 ===========
@@ -9,10 +9,10 @@ Description
 Flattens the image IMAGE into a Charliecloud tarball in directory OUTDIR.
 This requires sudo privileges.
 
-    ``--help``
+    :code:`--help`
         Give this help list
 
-    ``--version``
+    :code:`--version`
         print version and exit
 
 .. include:: ./docker_tips.rst
