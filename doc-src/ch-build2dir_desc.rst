@@ -26,5 +26,3 @@ The meaning of provided arguments is as follows:
 
     :code:`--version`
         print version and exit
-
-.. include:: ./docker_tips.rst

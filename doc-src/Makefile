@@ -14,23 +14,9 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-# Help dumps from scripts
-SCRIPTHELPS := $(addsuffix .help, \
-	          $(subst ../bin/,,$(shell find ../bin -executable -type f)))
-
 .PHONY: help clean html web dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
 all: html man
-
-# All programs and scripts need to accept "--help", even if they normally use
-# single-character flags only.
-#
-# Adding in $(SCRIPTHELPS) is voodoo to make the pattern work. Otherwise, it
-# tries to build e.g. vm/vcluster.help from vm/../bin/vcluster. This is
-# documented, but I didn't really understand. See
-# http://stackoverflow.com/a/13552576/396038
-$(SCRIPTHELPS): %.help: ../bin/%
-	$< --help > $@ 2>&1
 
 # Re-building programs in ch-run from here fails, so don't do it.
 # FIXME: Rather than stopping the build, it continues with warnings. 
@@ -65,7 +51,7 @@ clean:
 	find . -name '*.help' -delete
 	rm -rf ../doc/* ../doc/.buildinfo ../doc/.nojekyll
 
-html: $(SCRIPTHELPS)
+html:
 	$(SPHINXBUILD) -W -b html -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."

@@ -20,5 +20,3 @@ The command CMD is run under your user ID. The users and groups inside the conta
 
     :code:`-b`
         Bind-mount HOSTDIR at GUESTDIR inside the container (can be repeated)
-
-.. include:: ./docker_tips.rst

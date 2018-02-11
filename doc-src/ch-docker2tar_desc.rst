@@ -14,5 +14,3 @@ This requires sudo privileges.
 
     :code:`--version`
         print version and exit
-
-.. include:: ./docker_tips.rst

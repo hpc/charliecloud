@@ -57,9 +57,8 @@ Charliecloud you have (if not, please report a bug). For example::
   $ ch-run --version
   0.2.0+4836ac1
 
-The help text is also collected later in this documentation; see
-:doc:`script-help`.
-
+A description of all commands is also collected later in this documentation; see
+:doc:`command-usage`. In addition each executable has a man page.
 
 Your first user-defined software stack
 ======================================

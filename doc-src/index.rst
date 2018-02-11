@@ -14,7 +14,7 @@ Overview
 
    install
    tutorial
-   script-help
+   command-usage
    virtualbox
    faq
    copyright

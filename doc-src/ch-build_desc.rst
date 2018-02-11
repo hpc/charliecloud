@@ -25,5 +25,3 @@ Create a Docker image according to the specifications in the file :code:`Dockerf
 the directory :code:`/foo`::
 
     $ ch-build --file=/foo/Dockerfile
-
-.. include:: ./docker_tips.rst
