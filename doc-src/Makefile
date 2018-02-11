@@ -48,7 +48,6 @@ help:
 
 clean:
 	rm -rf $(BUILDDIR)/*
-	find . -name '*.help' -delete
 	rm -rf ../doc/* ../doc/.buildinfo ../doc/.nojekyll
 
 html:
@@ -61,7 +60,6 @@ html:
 	@echo
 	@echo "HTML pages copied to doc/."
 
-# see http://stackoverflow.com/a/2659808/396038
 web: html
 	@echo
 	@echo Making sure there are no uncommitted changes
