@@ -70,6 +70,7 @@ Patches (code, documentation, etc.) contributed by:
 * Oliver Freyermuth <o.freyermuth@googlemail.com>
 * Matthew Vernon <mv3@sanger.ac.uk>
 * Lowell Wofford <lowell@lanl.gov>
+* Peter Wienemann <wienemann@physik.uni-bonn.de>
 
 How can I participate?
 ----------------------
