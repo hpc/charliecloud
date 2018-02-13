@@ -3,29 +3,50 @@ Synopsis
 
 ::
 
-   $ ch-build [ARGS ...]
+  $ ch-build -t TAG [ARGS ...] CONTEXT
 
 Description
 ===========
 
-Build a Docker image as specified by file :code:`Dockerfile` using
-:code:`docker build`. It requires sudo privileges to run the docker command.
-If no location is provided for the :code:`Dockerfile` (using the
-:code:`--file` argument of :code:`docker build`), the current working
-directory is assumed. :code:`ch-build` respects your HTTP proxy settings
-(details are explained below). ARGS different from those listed below are
-passed unchanged to :code:`docker build`.
+Build a Docker image named :code:`TAG` described by Dockerfile
+:code:`./Dockerfile` or as specified. Pass the HTTP proxy environment
+variables through with :code:`--build-arg`.
 
-    :code:`--help`
-        Give this help list
+Sudo privileges are required to run the :code:`docker` command.
 
-    :code:`--version`
-        print version and exit
+Arguments:
 
-Example
-=======
+  :code:`--file`
+    Dockerfile to use (default: :code:`./Dockerfile`)
 
-Create a Docker image according to the specifications in the file
-:code:`Dockerfile` located in the directory :code:`/foo`::
+  :code:`-t`
+    name (tag) of Docker image to build
 
-    $ ch-build --file=/foo/Dockerfile
+  :code:`--help`
+    print help and exit
+
+  :code:`--version`
+    print version and exit
+
+Additional arguments are accepted and passed unchanged to :code:`docker
+build`.
+
+Examples
+========
+
+Create a Docker image tagged :code:`foo` and specified by the file
+:code:`Dockerfile` located in the current working directory. Use :code:`/bar`
+as the Docker context directory::
+
+  $ ch-build -t foo /bar
+
+Equivalent to above::
+
+  $ ch-build -t foo --file=./Dockerfile /bar
+
+Instead, use the Dockerfile :code:`/baz/qux.docker`::
+
+  $ ch-build -t foo --file=/baz/qux.docker /bar
+
+Note that calling your Dockerfile anything other than :code:`Dockerfile` will
+confuse people.

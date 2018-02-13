@@ -3,15 +3,18 @@ Synopsis
 
 ::
 
-   $ ch-docker-run [-i] [-b HOSTDIR:GUESTDIR ...] TAG CMD [ARGS ...]
+  $ ch-docker-run [-i] [-b HOSTDIR:GUESTDIR ...] TAG CMD [ARGS ...]
 
 Description
 ===========
 
-Runs the command :code:`CMD` in a docker container as specified by
-:code:`TAG`. This requires sudo privileges. The command :code:`CMD` is run
-under your user ID. The users and groups inside the container match those on
-the host.
+Runs the command :code:`CMD` in a Docker container using the image named
+:code:`TAG`.
+
+Sudo privileges are required for :code:`docker run`.
+
+:code:`CMD` is run under your user ID. The users and groups inside the
+container match those on the host.
 
 .. note::
 
@@ -19,17 +22,18 @@ the host.
    Charliecloud. Routine use for running applications is not recommended.
    Instead, use :code:`ch-run`.
 
-..
+Arguments:
 
-    :code:`--help`
-        Give this help list
+  :code:`-i`
+    run interactively with a pseudo-TTY
 
-    :code:`--version`
-        print version and exit
+  :code:`-b`
+    bind-mount :code:`HOSTDIR` at :code:`GUESTDIR` inside the container (can
+    be repeated)
 
-    :code:`-i`
-        Run interactively with a pseudo-TTY
+  :code:`--help`
+    print help and exit
 
-    :code:`-b`
-        Bind-mount :code:`HOSTDIR` at :code:`GUESTDIR` inside the container
-        (can be repeated)
+  :code:`--version`
+    print version and exit
+

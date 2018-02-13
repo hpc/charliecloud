@@ -1,7 +1,8 @@
-Usage of Charliecloud commands
+Charliecloud command reference
 ******************************
 
-This sections describes how to use the Charliecloud commands.
+This section is a comprehensive description of the usage and arguments of the
+Charliecloud commands. Its content is identical to the commands' man pages.
 
 .. WARNING: The one-line summaries below are duplicated in list man_pages in
    conf.py. Any updates need to be made there also.
