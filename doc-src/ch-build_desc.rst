@@ -1,7 +1,9 @@
 Synopsis
 ========
 
-:code:`ch-build` [ARGS ...]
+::
+
+   $ ch-build [ARGS ...]
 
 Description
 ===========

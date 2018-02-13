@@ -1,13 +1,15 @@
 Synopsis
 ========
 
-:code:`ch-docker-run` [-i] [-b HOSTDIR:GUESTDIR ...] TAG CMD [ARGS ...]
+::
+
+   $ ch-docker-run [-i] [-b HOSTDIR:GUESTDIR ...] TAG CMD [ARGS ...]
 
 Description
 ===========
 
-Runs the command CMD in a docker container as specified by TAG. This requires sudo privileges.
-The command CMD is run under your user ID. The users and groups inside the container match those on the host.
+Runs the command :code:`CMD` in a docker container as specified by :code:`TAG`. This requires sudo privileges.
+The command :code:`CMD` is run under your user ID. The users and groups inside the container match those on the host.
 
 .. note::
 
@@ -27,4 +29,4 @@ The command CMD is run under your user ID. The users and groups inside the conta
         Run interactively with a pseudo-TTY
 
     :code:`-b`
-        Bind-mount HOSTDIR at GUESTDIR inside the container (can be repeated)
+        Bind-mount :code:`HOSTDIR` at :code:`GUESTDIR` inside the container (can be repeated)

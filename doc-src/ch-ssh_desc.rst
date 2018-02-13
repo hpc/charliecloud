@@ -1,15 +1,20 @@
 Synopsis
 ========
 
-CH_RUN_ARGS="NEWROOT [ARG...]" :code:`ch-ssh` [OPTION...] HOST CMD [ARG...]
+::
+
+   $ CH_RUN_ARGS="NEWROOT [ARG...]"
+   $ ch-ssh [OPTION...] HOST CMD [ARG...]
 
 Description
 ===========
 
-Runs command CMD in a container as specified in the CH_RUN_ARGS environment
-variable on remote host HOST.
+Runs command :code:`CMD` in a container as specified in the :code:`CH_RUN_ARGS` environment
+variable on remote host :code:`HOST`.
 
-.. WARNING:: Words in CH_RUN_ARGS are delimited by spaces only; it is not shell syntax
+.. note::
+
+   Words in :code:`CH_RUN_ARGS` are delimited by spaces only; it is not shell syntax
 
 Example
 =======

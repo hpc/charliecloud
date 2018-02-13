@@ -1,7 +1,9 @@
 Synopsis
 ========
 
-:code:`ch-build2dir` CONTEXT DEST [ARGS ...]
+::
+
+   $ ch-build2dir CONTEXT DEST [ARGS ...]
 
 Description
 ===========
@@ -12,13 +14,13 @@ directory and unpack it. This runs the following command sequence: :code:`ch-bui
 individual commands. Running this command requires sudo privileges.
 The meaning of provided arguments is as follows:
 
-    CONTEXT
+    :code:`CONTEXT`
         Docker context directory
 
-    DEST
+    :code:`DEST`
         Directory in which to place image tarball and directory
 
-    ARGS
+    :code:`ARGS`
         Additional arguments passed to :code:`ch-build`
 
     :code:`--help`

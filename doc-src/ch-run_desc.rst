@@ -1,21 +1,23 @@
 Synopsis
 ========
 
-:code:`ch-run` [OPTION...] NEWROOT CMD [ARG...]
+::
+
+   $ ch-run [OPTION...] NEWROOT CMD [ARG...]
 
 Description
 ===========
 
-Run command CMD in a Charliecloud container using the flattened and unpacked image located in NEWROOT.
+Run command :code:`CMD` in a Charliecloud container using the flattened and unpacked image located in :code:`NEWROOT`.
 
-    :code:`-b, --bind=`\SRC[:DST]
-        mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)
+    :code:`-b`, :code:`--bind=SRC[:DST]`
+        mount :code:`SRC` at guest :code:`DST` (default :code:`/mnt/0`, :code:`/mnt/1`, etc.)
 
-    :code:`-c, --cd=`\DIR
+    :code:`-c`, :code:`--cd=DIR`
         initial working directory in container
 
-    :code:`-g, --gid=`\GID
-        run as GID within container
+    :code:`-g`, :code:`--gid=GID`
+        run as :code:`GID` within container
 
     :code:`--is-setuid`
         exit successfully if compiled for setuid, else fail
@@ -23,25 +25,25 @@ Run command CMD in a Charliecloud container using the flattened and unpacked ima
     :code:`--no-home`
         do not bind-mount your home directory
 
-    :code:`-t, --private-tmp`
-        use container-private /tmp
+    :code:`-t`, :code:`--private-tmp`
+        use container-private :code:`/tmp`
 
-    :code:`-u, --uid=`\UID
-        run as UID within container
+    :code:`-u`, :code:`--uid=UID`
+        run as :code:`UID` within container
 
-    :code:`-v, --verbose`
+    :code:`-v`, :code:`--verbose`
         be more verbose (debug if repeated)
 
-    :code:`-w, --write`
+    :code:`-w`, :code:`--write`
         mount image read-write
 
-    :code:`-?, --help`
+    :code:`-?`, :code:`--help`
         Give this help list
 
     :code:`--usage`
         Give a short usage message
 
-    :code:`-V, --version`
+    :code:`-V`, :code:`--version`
         print version and exit
 
 Example
