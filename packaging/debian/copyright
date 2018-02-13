@@ -5,11 +5,11 @@ Source: https://github.com/hpc/charliecloud
 Files-Excluded: debian
 
 Files: *
-Copyright: 2014–2017 Los Alamos National Security, LLC
+Copyright: 2014–2018 Los Alamos National Security, LLC
 License: Apache-2.0
 
 Files: debian/*
-Copyright: 2017, Oliver Freyermuth <freyermuth@physik.uni-bonn.de>
+Copyright: 2017–2018, Oliver Freyermuth <freyermuth@physik.uni-bonn.de>
 License: Apache-2.0
 
 License: Apache-2.0
