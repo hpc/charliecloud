@@ -43,6 +43,7 @@ help:
 clean:
 	rm -rf $(BUILDDIR)/*
 	rm -rf ../doc/* ../doc/.buildinfo ../doc/.nojekyll
+	rm -rf ../man/*.1
 
 html:
 	$(SPHINXBUILD) -W -b html -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/html
@@ -143,6 +144,9 @@ man:
 	$(SPHINXBUILD) -b man -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/man
 	@echo
 	@echo "Build finished. The manual pages are in $(BUILDDIR)/man."
+	@echo
+	cp $(BUILDDIR)/man/*.1 ../man
+	@echo "Man pages copied to man/."
 
 texinfo:
 	$(SPHINXBUILD) -b texinfo $(ALLSPHINXOPTS) $(BUILDDIR)/texinfo
