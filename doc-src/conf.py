@@ -220,6 +220,9 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
+#
+# WARNING: Any updates also need to be made in command-usage.rst.
+#
 man_pages = [
     ('index', 'charliecloud', u'Charliecloud Documentation',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
@@ -235,7 +238,7 @@ man_pages = [
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-ssh', 'ch-ssh', u'Run a remote command in a Charliecloud container',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-tar2dir', 'ch-tar2dir', u'Unpack a Docker export tarball into a directory',
+    ('ch-tar2dir', 'ch-tar2dir', u'Unpack an image tarball into a directory',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1)
 ]
 
