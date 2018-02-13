@@ -115,6 +115,9 @@ install: all
 	install -d $(LIBEXEC_INST)
 	install -pm 644 -t $(LIBEXEC_INST) bin/base.sh bin/version.sh
 	sed -i "s#^LIBEXEC=.*#LIBEXEC=$(LIBEXEC_RUN)#" $(LIBEXEC_INST)/base.sh
+#       man pages
+	install -d $(INSTALL_PREFIX)/share/man/man1
+	install -pm 644 -t $(INSTALL_PREFIX)/share/man/man1 man/*.1
 #       misc "documentation"
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) COPYRIGHT LICENSE README.rst
