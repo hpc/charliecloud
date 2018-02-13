@@ -146,7 +146,7 @@ text:
 	@echo "Build finished. The text files are in $(BUILDDIR)/text."
 
 man:
-	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
+	$(SPHINXBUILD) -b man -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/man
 	@echo
 	@echo "Build finished. The manual pages are in $(BUILDDIR)/man."
 
