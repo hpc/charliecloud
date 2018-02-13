@@ -1,7 +1,7 @@
 :orphan:
 
-ch-docker-run manpage
-+++++++++++++++++++++
+ch-docker-run man page
+++++++++++++++++++++++
 
 .. include:: ./ch-docker-run_desc.rst
 

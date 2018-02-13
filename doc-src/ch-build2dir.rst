@@ -1,7 +1,7 @@
 :orphan:
 
-ch-build2dir manpage
-++++++++++++++++++++
+ch-build2dir man page
++++++++++++++++++++++
 
 .. include:: ./ch-build2dir_desc.rst
 

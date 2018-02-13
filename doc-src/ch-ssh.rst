@@ -1,7 +1,7 @@
 :orphan:
 
-ch-ssh manpage
-++++++++++++++
+ch-ssh man page
++++++++++++++++
 
 .. include:: ./ch-ssh_desc.rst
 
