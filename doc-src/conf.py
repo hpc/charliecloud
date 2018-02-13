@@ -224,7 +224,7 @@ latex_documents = [
 # WARNING: Any updates also need to be made in command-usage.rst.
 #
 man_pages = [
-    ('index', 'charliecloud', u'Charliecloud Documentation',
+    ('charliecloud', 'charliecloud', u'Lightweight user-defined software stacks for high-performance computing',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-build', 'ch-build', u'Wrapper for "docker build" that works around some of its annoying behaviors',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
