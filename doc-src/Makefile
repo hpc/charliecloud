@@ -60,6 +60,12 @@ html:
 	@echo
 	@echo "HTML pages copied to doc/."
 
+# Upload HTML documentation to the web via GitHub's Pages service [1]. Prevent
+# uploading if there are any uncommitted changes [2], to avoid placing docs
+# for work-in-progress in public.
+#
+# [1]: https://help.github.com/categories/github-pages-basics
+# [2]: http://stackoverflow.com/a/2659808
 web: html
 	@echo
 	@echo Making sure there are no uncommitted changes
