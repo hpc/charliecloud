@@ -18,12 +18,6 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 all: html man
 
-# Re-building programs in ch-run from here fails, so don't do it.
-# FIXME: Rather than stopping the build, it continues with warnings. 
-%.o : %.c
-% : %.o
-% : %.c
-
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html       to make standalone HTML files"
