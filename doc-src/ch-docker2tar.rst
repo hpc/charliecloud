@@ -1,8 +1,7 @@
 :orphan:
 
-=====================
 ch-docker2tar manpage
-=====================
++++++++++++++++++++++
 
 .. include:: ./ch-docker2tar_desc.rst
 

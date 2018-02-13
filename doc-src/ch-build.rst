@@ -1,8 +1,7 @@
 :orphan:
 
-================
 ch-build manpage
-================
+++++++++++++++++
 
 .. include:: ./ch-build_desc.rst
 

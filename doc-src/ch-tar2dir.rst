@@ -1,8 +1,7 @@
 :orphan:
 
-==================
 ch-tar2dir manpage
-==================
+++++++++++++++++++
 
 .. include:: ./ch-tar2dir_desc.rst
 

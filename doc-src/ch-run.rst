@@ -1,8 +1,7 @@
 :orphan:
 
-==============
 ch-run manpage
-==============
+++++++++++++++
 
 .. include:: ./ch-run_desc.rst
 
