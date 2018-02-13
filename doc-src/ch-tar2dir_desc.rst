@@ -8,13 +8,15 @@ Synopsis
 Description
 ===========
 
-Extract the tarball :code:`TARBALL` into the directory :code:`DIR`. The tarball :code:`TARBALL` must be
-a Linux filesystem image, as e. g. created by :code:`ch-docker2tar`. Inside the directory
-:code:`DIR` a new subdirectory will be created whose name corresponds to the name of the
-tarball with the :code:`.tar.gz` suffix removed, i.e. if the tarball is e.g. called :code:`foo.tar.gz`
-the contents of the tarball will be put into the directory :code:`DIR/foo`. If such a directory
-exists already and appears to be a Charliecloud container image, it is removed and replaced.
-Otherwise, the script aborts with an error.
+Extract the tarball :code:`TARBALL` into the directory :code:`DIR`. The
+tarball :code:`TARBALL` must be a Linux filesystem image, as e. g. created by
+:code:`ch-docker2tar`. Inside the directory :code:`DIR` a new subdirectory
+will be created whose name corresponds to the name of the tarball with the
+:code:`.tar.gz` suffix removed, i.e. if the tarball is e.g. called
+:code:`foo.tar.gz` the contents of the tarball will be put into the directory
+:code:`DIR/foo`. If such a directory exists already and appears to be a
+Charliecloud container image, it is removed and replaced. Otherwise, the
+script aborts with an error.
 
     :code:`--help`
         Give this help list
@@ -27,6 +29,7 @@ Otherwise, the script aborts with an error.
 
 .. warning::
 
-   Placing :code:`DIR` on a shared file system can cause significant meta-data load on the
-   file system servers. This can result in poor performance for you and all your colleagues
-   who use the same file system. Please consult your site admin for a suitable location.
+   Placing :code:`DIR` on a shared file system can cause significant meta-data
+   load on the file system servers. This can result in poor performance for
+   you and all your colleagues who use the same file system. Please consult
+   your site admin for a suitable location.

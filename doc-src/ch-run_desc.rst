@@ -8,10 +8,12 @@ Synopsis
 Description
 ===========
 
-Run command :code:`CMD` in a Charliecloud container using the flattened and unpacked image located in :code:`NEWROOT`.
+Run command :code:`CMD` in a Charliecloud container using the flattened and
+unpacked image located in :code:`NEWROOT`.
 
     :code:`-b`, :code:`--bind=SRC[:DST]`
-        mount :code:`SRC` at guest :code:`DST` (default :code:`/mnt/0`, :code:`/mnt/1`, etc.)
+        mount :code:`SRC` at guest :code:`DST` (default :code:`/mnt/0`,
+        :code:`/mnt/1`, etc.)
 
     :code:`-c`, :code:`--cd=DIR`
         initial working directory in container
@@ -49,7 +51,8 @@ Run command :code:`CMD` in a Charliecloud container using the flattened and unpa
 Example
 =======
 
-Run the command :code:`echo hello` inside a Charliecloud container using the extracted image in :code:`/data/foo`::
+Run the command :code:`echo hello` inside a Charliecloud container using the
+extracted image in :code:`/data/foo`::
 
     $ ch-run /data/foo -- echo hello
     hello

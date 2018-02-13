@@ -8,8 +8,10 @@ Synopsis
 Description
 ===========
 
-Runs the command :code:`CMD` in a docker container as specified by :code:`TAG`. This requires sudo privileges.
-The command :code:`CMD` is run under your user ID. The users and groups inside the container match those on the host.
+Runs the command :code:`CMD` in a docker container as specified by
+:code:`TAG`. This requires sudo privileges. The command :code:`CMD` is run
+under your user ID. The users and groups inside the container match those on
+the host.
 
 .. note::
 
@@ -29,4 +31,5 @@ The command :code:`CMD` is run under your user ID. The users and groups inside t
         Run interactively with a pseudo-TTY
 
     :code:`-b`
-        Bind-mount :code:`HOSTDIR` at :code:`GUESTDIR` inside the container (can be repeated)
+        Bind-mount :code:`HOSTDIR` at :code:`GUESTDIR` inside the container
+        (can be repeated)
