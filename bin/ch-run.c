@@ -503,7 +503,7 @@ void setup_namespaces(uid_t cuid, gid_t cgid)
    T_ (cgid == getgid());
 
    privs_restore();
-   Z_ (unshare(CLONE_NEWNS));
+   Zf (unshare(CLONE_NEWNS), "can't init mount namespace");
    privs_drop_temporarily();
 
 #else // not SETUID
@@ -516,7 +516,7 @@ void setup_namespaces(uid_t cuid, gid_t cgid)
    egid = getegid();
 
    LOG_IDS;
-   Z_ (unshare(CLONE_NEWNS|CLONE_NEWUSER));
+   Zf (unshare(CLONE_NEWNS|CLONE_NEWUSER), "can't init user+mount namespaces");
    LOG_IDS;
 
    /* Write UID map. What we are allowed to put here is quite limited. Because
