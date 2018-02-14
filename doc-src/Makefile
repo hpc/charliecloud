@@ -14,29 +14,9 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-# Help dumps from scripts
-SCRIPTHELPS := $(addsuffix .help, \
-	          $(subst ../bin/,,$(shell find ../bin -executable -type f)))
-
 .PHONY: help clean html web dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
-all: html
-
-# All programs and scripts need to accept "--help", even if they normally use
-# single-character flags only.
-#
-# Adding in $(SCRIPTHELPS) is voodoo to make the pattern work. Otherwise, it
-# tries to build e.g. vm/vcluster.help from vm/../bin/vcluster. This is
-# documented, but I didn't really understand. See
-# http://stackoverflow.com/a/13552576/396038
-$(SCRIPTHELPS): %.help: ../bin/%
-	$< --help > $@ 2>&1
-
-# Re-building programs in ch-run from here fails, so don't do it.
-# FIXME: Rather than stopping the build, it continues with warnings. 
-%.o : %.c
-% : %.o
-% : %.c
+all: html man
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -62,10 +42,10 @@ help:
 
 clean:
 	rm -rf $(BUILDDIR)/*
-	find . -name '*.help' -delete
 	rm -rf ../doc/* ../doc/.buildinfo ../doc/.nojekyll
+	rm -rf ../man/*.1
 
-html: $(SCRIPTHELPS)
+html:
 	$(SPHINXBUILD) -W -b html -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
@@ -75,7 +55,12 @@ html: $(SCRIPTHELPS)
 	@echo
 	@echo "HTML pages copied to doc/."
 
-# see http://stackoverflow.com/a/2659808/396038
+# Upload HTML documentation to the web via GitHub's Pages service [1]. Prevent
+# uploading if there are any uncommitted changes [2], to avoid placing docs
+# for work-in-progress in public.
+#
+# [1]: https://help.github.com/categories/github-pages-basics
+# [2]: http://stackoverflow.com/a/2659808
 web: html
 	@echo
 	@echo Making sure there are no uncommitted changes
@@ -156,9 +141,12 @@ text:
 	@echo "Build finished. The text files are in $(BUILDDIR)/text."
 
 man:
-	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
+	$(SPHINXBUILD) -b man -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/man
 	@echo
 	@echo "Build finished. The manual pages are in $(BUILDDIR)/man."
+	@echo
+	cp $(BUILDDIR)/man/*.1 ../man
+	@echo "Man pages copied to man/."
 
 texinfo:
 	$(SPHINXBUILD) -b texinfo $(ALLSPHINXOPTS) $(BUILDDIR)/texinfo

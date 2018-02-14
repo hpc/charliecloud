@@ -69,6 +69,7 @@ Patches (code, documentation, etc.) contributed by:
 * Reid Priedhorsky <reidpr@lanl.gov>
 * Oliver Freyermuth <o.freyermuth@googlemail.com>
 * Matthew Vernon <mv3@sanger.ac.uk>
+* Peter Wienemann <wienemann@physik.uni-bonn.de>
 * Lowell Wofford <lowell@lanl.gov>
 
 How can I participate?
