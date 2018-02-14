@@ -50,6 +50,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %doc COPYRIGHT LICENSE README.rst examples
+%{_mandir}/man1/*
 
 # Helper scripts
 %{_libexecdir}/%{name}/base.sh
