@@ -45,7 +45,14 @@ clean:
 	rm -rf ../doc/* ../doc/.buildinfo ../doc/.nojekyll
 	rm -rf ../man/*.1
 
-html:
+# This target works around a race condition in Sphinx that's triggered when
+# two instances (e.g., for html and man targets) try to mkdir(2)
+# _build/doctrees simultaneously. It is temporary and can be removed when
+# Sphinx >= 1.6.6 is an appropriate dependency. See issue #115.
+mkdir_issue115:
+	mkdir -p $(BUILDDIR)/doctrees
+
+html: mkdir_issue115
 	$(SPHINXBUILD) -W -b html -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
@@ -140,7 +147,7 @@ text:
 	@echo
 	@echo "Build finished. The text files are in $(BUILDDIR)/text."
 
-man:
+man: mkdir_issue115
 	$(SPHINXBUILD) -b man -D release="$$(cat ../VERSION)" -D version="$$(git rev-parse --short HEAD)" $(ALLSPHINXOPTS) $(BUILDDIR)/man
 	@echo
 	@echo "Build finished. The manual pages are in $(BUILDDIR)/man."
