@@ -49,7 +49,7 @@ rm -rf $RPM_BUILD_ROOT
 #%{__make} -C test test-quick
 
 %files
-%doc COPYRIGHT LICENSE README.rst examples
+%doc LICENSE README.rst examples
 %{_mandir}/man1/*
 
 # Helper scripts

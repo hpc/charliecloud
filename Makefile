@@ -122,7 +122,7 @@ install: all
 	fi
 #       misc "documentation"
 	install -d $(DOC)
-	install -pm 644 -t $(DOC) COPYRIGHT LICENSE README.rst
+	install -pm 644 -t $(DOC) LICENSE README.rst
 #       examples
 	for i in examples/syscalls examples/{serial,mpi,other}/*; do \
 	    install -d $(DOC)/$$i; \
