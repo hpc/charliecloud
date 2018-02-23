@@ -88,3 +88,22 @@ Optionally, please include in your first patch a credit for yourself in the
 list above.
 
 We are friendly and welcoming of diversity on all dimensions.
+
+Copyright and license
+---------------------
+
+Charliecloud is copyright © 2014–2018 Los Alamos National Security, LLC. This
+software has been approved for open source release, LA-CC 14-096.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this software except in compliance with the License. A copy of the license
+is included in file LICENSE.
+
+This material was produced under U.S. Government contract DE-AC52-06NA25396
+for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
+National Security, LLC for the U.S. Department of Energy. The U.S. Government
+has rights to use, reproduce, and distribute this software. NEITHER THE
+GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
+OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
+is modified to produce derivative works, such modified software should be
+clearly marked, so as not to confuse it with the version available from LANL.

@@ -17,4 +17,3 @@ Overview
    command-usage
    virtualbox
    faq
-   copyright
