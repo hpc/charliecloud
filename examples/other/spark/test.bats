@@ -117,9 +117,8 @@ EOF
     ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-master.sh
     sleep 2
     # Any Spark processes left?
-    run $PERNODE ps aux
-    echo "$output"
-    [[ ! $output =~ 'org\.apache\.spark\.deploy' ]]
+    # (Use egrep instead of fgrep so we don't match the grep process.)
+    $PERNODE ps aux | ( ! egrep org\.apache\.spark\.deploy )
 }
 
 @test "$EXAMPLE_TAG/hang" {

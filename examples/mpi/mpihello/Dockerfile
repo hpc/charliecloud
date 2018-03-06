@@ -1,4 +1,4 @@
-FROM debian8openmpi
+FROM openmpi
 
 # This example
 COPY /examples/mpi/mpihello /hello

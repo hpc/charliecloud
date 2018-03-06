@@ -1,4 +1,4 @@
-FROM debian8
+FROM debian9
 
 # OS packages needed to build OpenMPI.
 RUN apt-get install -y \
@@ -9,6 +9,12 @@ RUN apt-get install -y \
     gfortran \
     less \
     libdb5.3-dev \
+    libfabric-dev \
+    libhwloc-dev \
+    libibverbs-dev \
+    libnuma-dev \
+    libpmi2-0-dev \
+    libpsm-infinipath1-dev \
     make \
     wget
 
@@ -26,6 +32,9 @@ RUN    cd openmpi-${MPI_VERSION} \
        ./configure --prefix=/usr \
                    --sysconfdir=/mnt/0 \
                    --disable-pty-support \
+                   --with-pmi \
+                   --with-pmi-libdir=/usr/lib/x86_64-linux-gnu \
+                   --with-pmix \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN rm -Rf openmpi-${MPI_VERSION}*
 

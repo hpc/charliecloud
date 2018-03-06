@@ -1,4 +1,4 @@
-FROM debian8openmpi
+FROM openmpi
 WORKDIR /
 
 # Packages for building.
