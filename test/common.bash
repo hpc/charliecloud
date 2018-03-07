@@ -48,6 +48,11 @@ tarball_ok () {
 # Predictable sorting and collation
 export LC_ALL=C
 
+# Disable OpenMPI's process_vm_readv(2)-based single-copy mechanism because
+# processes in sibling user namespaces don't have permission to use this
+# system call on one another. See issue #126 and the FAQ.
+export OMPI_MCA_btl_vader_single_copy_mechanism=none
+
 # Set path to the right Charliecloud. This uses a symlink in this directory
 # called "bin" which points to the corresponding bin directory, either simply
 # up and over (source code) or set during "make install".
@@ -81,14 +86,20 @@ CHTEST_TARBALL=$TARDIR/chtest.tar.gz
 CHTEST_IMG=$IMGDIR/chtest
 CHTEST_MULTINODE=$SLURM_JOB_ID
 if [[ $CHTEST_MULTINODE ]]; then
+    MPIRUN_NODE='srun --ntasks-per-node 1'
+    MPIRUN_CORE='srun --cpus-per-task 1'
     # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
     # documentation.
     if [[ -z $SLURM_CPUS_ON_NODE ]]; then
         SLURM_CPUS_ON_NODE=$(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f1)
     fi
-    CHTEST_CORES=$(($SLURM_CPUS_ON_NODE * $SLURM_JOB_NUM_NODES))
+    CHTEST_CORES_NODE=$SLURM_CPUS_ON_NODE
+    CHTEST_CORES_TOTAL=$(($CHTEST_CORES_NODE * $SLURM_JOB_NUM_NODES))
 else
-    CHTEST_CORES=$(getconf _NPROCESSORS_ONLN)
+    MPIRUN_NODE='mpirun --map-by ppr:1:node'
+    MPIRUN_CORE='mpirun'
+    CHTEST_CORES_NODE=$(getconf _NPROCESSORS_ONLN)
+    CHTEST_CORES_TOTAL=$CHTEST_CORES_NODE
 fi
 
 # If the variable CH_TEST_SKIP_DOCKER is true, we skip all the tests that
