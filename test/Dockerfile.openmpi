@@ -18,9 +18,17 @@ RUN apt-get install -y \
     make \
     wget
 
-# Compile OpenMPI. We can't use the Debian package because
-# --disable-pty-support is needed to avoid "pipe function call failed when
-# setting up I/O forwarding subsystem".
+# Compile OpenMPI. We can't use the Debian package because we need a specific
+# version and we need to build a little differently:
+#
+#   1. --disable-pty-support to avoid "pipe function call failed when
+#      setting up I/O forwarding subsystem".
+#
+#   2. --with-slurm=no so mpirun in the container doesn't try use Slurm to
+#       launch processes, which will fail in inscrutable ways e.g. if srun is
+#       not found. (If you do want Slurm launching processes, use srun or
+#       mpirun outside the container.)
+#
 ENV MPI_URL https://www.open-mpi.org/software/ompi/v2.1/downloads
 ENV MPI_VERSION 2.1.2
 WORKDIR /usr/src
@@ -35,6 +43,7 @@ RUN    cd openmpi-${MPI_VERSION} \
                    --with-pmi \
                    --with-pmi-libdir=/usr/lib/x86_64-linux-gnu \
                    --with-pmix \
+                   --with-slurm=no \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN rm -Rf openmpi-${MPI_VERSION}*
 
