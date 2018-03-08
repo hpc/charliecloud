@@ -212,3 +212,100 @@ on a case-by-case basis. (The latter includes :code:`sudo` if needed to invoke
              -o -name '*.rst' \
              -o -name '*.sh' \) \
            -exec egrep -H '(sudo|\$DOCKER)' {} \;
+
+
+OpenMPI Charliecloud jobs don't work
+=====================================
+
+MPI can be finicky. This section documents some of the problems we've seen.
+
+:code:`mpirun` can't launch jobs
+--------------------------------
+
+For example, you might see::
+
+  $ mpirun -np 1 ch-run /var/tmp/mpihello -- /hello/hello
+  App launch reported: 2 (out of 2) daemons - 0 (out of 1) procs
+  [cn001:27101] PMIX ERROR: BAD-PARAM in file src/dstore/pmix_esh.c at line 996
+
+We're not yet sure why this happens — it may be a mismatch between the OpenMPI
+builds inside and outside the container — but in our experience launching with
+:code:`srun` often works when :code:`mpirun` doesn't, so try that.
+
+My ranks can't talk to one another and I'm told Darth Vader has something to do with it
+---------------------------------------------------------------------------------------
+
+OpenMPI has the notion of a *byte transport layer* (BTL), which is a module
+that defines how messages are passed from one rank to another. There are many
+different BTLs.
+
+One is called :code:`vader`, and in OpenMPI 2.0 it enabled single-copy data
+transfers between ranks on the same node. Previously by default, and in the
+older :code:`sm` BTL, such messages had to be copied once into shared memory
+and a second time into the destination process. Single-copy enables the
+message to be copied directly from one rank to another. This gives significant
+performance improvements in `benchmarks
+<https://blogs.cisco.com/performance/the-vader-shared-memory-transport-in-open-mpi-now-featuring-3-flavors-of-zero-copy>`_,
+though of course the real-world impact depends on the application.
+
+One manifestation of this is in the LAMMPS molecular dynamics application::
+
+  $ srun --cpus-per-task 1 ch-run /var/tmp/lammps_mpi -- \
+    lmp_mpi -log none -in /lammps/examples/melt/in.melt
+  [cn002:21512] Read -1, expected 6144, errno = 1
+  [cn001:23947] Read -1, expected 6144, errno = 1
+  [cn002:21517] Read -1, expected 9792, errno = 1
+  [... repeat thousands of times ...]
+
+With :code:`strace`, one can isolate the problem to the system call
+:code:`process_vm_readv(2)` (and perhaps also :code:`process_vm_writev(2)`)::
+
+  process_vm_readv(...) = -1 EPERM (Operation not permitted)
+  write(33, "[cn001:27673] Read -1, expected 6"..., 48) = 48
+
+The `man page <http://man7.org/linux/man-pages/man2/process_vm_readv.2.html>`_
+reveals that these system calls require that the process have permission to
+:code:`ptrace(2)` one another, but sibling user namespaces `do not
+<http://man7.org/linux/man-pages/man2/ptrace.2.html>`_. (You *can*
+:code:`ptrace(2)` into a child namespace, which is why :code:`gdb` doesn't
+require anything special in Charliecloud.)
+
+This problem is not specific to containers; for example, many settings of
+kernels with `YAMA
+<https://www.kernel.org/doc/Documentation/security/Yama.txt>`_ enabled will
+similarly disallow this access.
+
+Thus, :code:`vader` CMA does not currently work in Charliecloud by default. So
+what can you do?
+
+* The easiest thing is to simply turn off single-copy. For most applications,
+  we suspect the performance impact will be minimal, but you should of course
+  evaluate that yourself. To do so, either set an environment variable::
+
+    export OMPI_MCA_btl_vader_single_copy_mechanism=none
+
+  or add an argument to :code:`mpirun`::
+
+    $ mpirun --mca btl_vader_single_copy_mechanism none ...
+
+* The kernel module `XPMEM
+  <https://github.com/hjelmn/xpmem/tree/master/kernel>`_ enables a different
+  single-copy approach. We have not yet tried this, and the module needs to be
+  evaluated for user namespace safety, but it's quite a bit faster than CMA on
+  benchmarks.
+
+* Wait. We are in communication with the OpenMPI developers on this, and they
+  may implement a fallback mechanism to keep your application working rather
+  than failing. This would, however, have the same performance impact as the
+  first approach.
+
+* Heroics. With sufficient shell voodoo, one could get all the ranks into the
+  same user namespace, at which point the problem goes away.
+
+We are tracking this problem in `issue #128
+<https://github.com/hpc/charliecloud/issues/128>`_. It is possible that we can
+do something in Charliecloud to make it work, but we don't know yet.
+
+.. image:: https://media.giphy.com/media/1mNBTj3g4jRCg/giphy.gif
+   :alt: Darth Vader bowling a strike with the help of the Force
+   :align: center
