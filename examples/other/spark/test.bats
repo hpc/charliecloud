@@ -118,7 +118,7 @@ EOF
     sleep 2
     # Any Spark processes left?
     # (Use egrep instead of fgrep so we don't match the grep process.)
-    $PERNODE ps aux | ( ! egrep org\.apache\.spark\.deploy )
+    $PERNODE ps aux | ( ! egrep [o]rg\.apache\.spark\.deploy )
 }
 
 @test "$EXAMPLE_TAG/hang" {
