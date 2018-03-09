@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                48aa770
+                8af3206
               </div>
             
           
@@ -139,7 +139,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#upgrade-the-appliance">4.3. Upgrade the appliance</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#os-packages-via-yum">4.3.1. OS packages via <code class="code docutils literal notranslate"><span class="pre">yum</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#charliecloud">4.3.2. Charliecloud</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#docker-images">4.3.3. Docker images</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#other-upgrades">4.3.3. Other upgrades</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#docker-images">4.3.4. Docker images</a></li>
 </ul>
 </li>
 </ul>
@@ -243,7 +244,8 @@ use your judgement, and feedback is welcome. We assume Bash shell.</p>
 <li><a class="reference internal" href="#upgrade-the-appliance" id="id15">Upgrade the appliance</a><ul>
 <li><a class="reference internal" href="#os-packages-via-yum" id="id16">OS packages via <code class="code docutils literal notranslate"><span class="pre">yum</span></code></a></li>
 <li><a class="reference internal" href="#charliecloud" id="id17">Charliecloud</a></li>
-<li><a class="reference internal" href="#docker-images" id="id18">Docker images</a></li>
+<li><a class="reference internal" href="#other-upgrades" id="id18">Other upgrades</a></li>
+<li><a class="reference internal" href="#docker-images" id="id19">Docker images</a></li>
 </ul>
 </li>
 </ul>
@@ -337,7 +339,7 @@ variables are already configured for you in this appliance.)</li>
 </div>
 </div>
 <div class="section" id="build-the-appliance">
-<h2><a class="toc-backref" href="#id6">4.2. Build the appliance</a><a class="headerlink" href="#build-the-appliance" title="Permalink to this headline">¶</a></h2>
+<span id="virtualbox-build"></span><h2><a class="toc-backref" href="#id6">4.2. Build the appliance</a><a class="headerlink" href="#build-the-appliance" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="initialize-vm">
 <h3><a class="toc-backref" href="#id7">4.2.1. Initialize VM</a><a class="headerlink" href="#initialize-vm" title="Permalink to this headline">¶</a></h3>
 <p>Configure <em>Preferences</em> -&gt; <em>Proxy</em> if needed.</p>
@@ -449,12 +451,12 @@ have access to the proxy environment variables.</p>
 </div>
 <p>Comment out:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>## Allows people in group wheel to run all commands
-%wheel  ALL=(ALL)       ALL
+#%wheel  ALL=(ALL)       ALL
 </pre></div>
 </div>
-<p>Uncomment:</p>
+<p>Uncomment and add a fourth <code class="code docutils literal notranslate"><span class="pre">ALL</span></code> to:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>## Same thing without a password
-# %wheel        ALL=(ALL)       NOPASSWD: ALL
+%wheel        ALL=(ALL:ALL)       NOPASSWD: ALL
 </pre></div>
 </div>
 <p>Add:</p>
@@ -598,21 +600,22 @@ on a cluster. Match the MPI version in
 <span class="gp">$</span> sudo chmod <span class="m">2775</span> .
 <span class="gp">$</span> ls -ld .
 <span class="go">drwxrwsr-x. 2 root wheel 6 Nov  5  2016 .</span>
-<span class="gp">$</span> wget https://www.open-mpi.org/software/ompi/v1.10/downloads/openmpi-1.10.5.tar.gz
-<span class="gp">$</span> tar xf openmpi-1.10.5.tar.gz
-<span class="gp">$</span> rm openmpi-1.10.5.tar.gz
-<span class="gp">$</span> <span class="nb">cd</span> openmpi-1.10.5/
+<span class="gp">$</span> wget https://www.open-mpi.org/software/ompi/v2.1/downloads/openmpi-2.1.2.tar.gz
+<span class="gp">$</span> tar xf openmpi-2.1.2.tar.gz
+<span class="gp">$</span> rm openmpi-2.1.2.tar.gz
+<span class="gp">$</span> <span class="nb">cd</span> openmpi-2.1.2/
 <span class="gp">$</span> ./configure --prefix<span class="o">=</span>/usr --disable-mpi-cxx --disable-mpi-fortran
 <span class="gp">$</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span>
 <span class="gp">$</span> sudo make install
 <span class="gp">$</span> make clean
-<span class="gp">$</span> ldconfig
+<span class="gp">$</span> sudo ldconfig
 </pre></div>
 </div>
 <p>Sanity:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> which mpirun
+<span class="go">/usr/bin/mpirun</span>
 <span class="gp">$</span> mpirun --version
-<span class="go">mpirun (Open MPI) 1.10.5</span>
+<span class="go">mpirun (Open MPI) 2.1.2</span>
 </pre></div>
 </div>
 </div>
@@ -837,8 +840,13 @@ uses <code class="code docutils literal notranslate"><span class="pre">charliecl
 </div>
 <p>Make sure the Git hashes match.</p>
 </div>
+<div class="section" id="other-upgrades">
+<h3><a class="toc-backref" href="#id18">4.3.3. Other upgrades</a><a class="headerlink" href="#other-upgrades" title="Permalink to this headline">¶</a></h3>
+<p>Review section <a class="reference internal" href="#virtualbox-build"><span class="std std-ref">Build the appliance</span></a> and see if there is anything else you
+need to upgrade or fix. (The Guest Additions and OpenMPI are common ones.)</p>
+</div>
 <div class="section" id="docker-images">
-<h3><a class="toc-backref" href="#id18">4.3.3. Docker images</a><a class="headerlink" href="#docker-images" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">4.3.4. Docker images</a><a class="headerlink" href="#docker-images" title="Permalink to this headline">¶</a></h3>
 <p>Delete existing containers and images:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker rm <span class="k">$(</span>sudo docker ps -aq<span class="k">)</span>
 <span class="gp">$</span> sudo docker rmi -f <span class="k">$(</span>sudo docker images -q<span class="k">)</span>
