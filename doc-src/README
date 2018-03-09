@@ -1,12 +1,20 @@
 This documentation is built using Sphinx with the sphinx-rtd-theme.
 
-Both Python 2.7 and 3.5+ should work; 3.5+ is preferred.
+Prerequisites
+-------------
+
+  * Python 3.5+ or 2.7; 3.5+ is preferred
+  * Sphinx 1.7.1+
+  * docutils 0.13.1+
+  * sphinx-rtd-theme 0.2.4+
+
+Older versions of Sphinx and sphinx-rtd-theme may work but are untested.
 
 
 To build the HTML
 -----------------
 
-Make sure you have a current version of sphinx-rtd-theme installed:
+Install Sphinx, docutils, and sphinx-rtd-theme:
 
   $ pip3 install sphinx sphinx-rtd-theme
 
