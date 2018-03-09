@@ -12,6 +12,7 @@ all: VERSION.full bin/version.h bin/version.sh
 .PHONY: clean
 clean:
 	cd bin && $(MAKE) clean
+	cd doc-src && $(MAKE) clean
 	cd test && $(MAKE) clean
 	cd examples/syscalls && $(MAKE) clean
 
