@@ -110,6 +110,7 @@ Possible next steps:
     :code:`/usr/share/doc/charliecloud/test`. (Note that the environment
     variables are already configured for you in this appliance.)
 
+.. _virtualbox_build:
 
 Build the appliance
 ===================
@@ -239,14 +240,14 @@ Comment out:
 .. code-block:: none
 
   ## Allows people in group wheel to run all commands
-  %wheel  ALL=(ALL)       ALL
+  #%wheel  ALL=(ALL)       ALL
 
-Uncomment:
+Uncomment and add a fourth :code:`ALL` to:
 
 .. code-block:: none
 
   ## Same thing without a password
-  # %wheel        ALL=(ALL)       NOPASSWD: ALL
+  %wheel        ALL=(ALL:ALL)       NOPASSWD: ALL
 
 Add:
 
@@ -411,21 +412,22 @@ on a cluster. Match the MPI version in
   $ sudo chmod 2775 .
   $ ls -ld .
   drwxrwsr-x. 2 root wheel 6 Nov  5  2016 .
-  $ wget https://www.open-mpi.org/software/ompi/v1.10/downloads/openmpi-1.10.5.tar.gz
-  $ tar xf openmpi-1.10.5.tar.gz
-  $ rm openmpi-1.10.5.tar.gz
-  $ cd openmpi-1.10.5/
+  $ wget https://www.open-mpi.org/software/ompi/v2.1/downloads/openmpi-2.1.2.tar.gz
+  $ tar xf openmpi-2.1.2.tar.gz
+  $ rm openmpi-2.1.2.tar.gz
+  $ cd openmpi-2.1.2/
   $ ./configure --prefix=/usr --disable-mpi-cxx --disable-mpi-fortran
   $ make -j$(getconf _NPROCESSORS_ONLN)
   $ sudo make install
   $ make clean
-  $ ldconfig
+  $ sudo ldconfig
 
 Sanity::
 
   $ which mpirun
+  /usr/bin/mpirun
   $ mpirun --version
-  mpirun (Open MPI) 1.10.5
+  mpirun (Open MPI) 2.1.2
 
 
 Install Docker
@@ -676,6 +678,12 @@ Charliecloud
   0.2.2~pre+4ebff0a
 
 Make sure the Git hashes match.
+
+Other upgrades
+--------------
+
+Review section :ref:`virtualbox_build` and see if there is anything else you
+need to upgrade or fix. (The Guest Additions and OpenMPI are common ones.)
 
 Docker images
 -------------
