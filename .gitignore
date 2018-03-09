@@ -52,9 +52,9 @@ Session.vim
 *.py[cod]
 .fuse_hidden*
 
-# ignore (unpacked) tarballs in working directory
-charliecloud-*.tar*
-charliecloud-*/
+# ignore (unpacked) tarballs at root of working directory
+/charliecloud-*.tar*
+/charliecloud-*/
 
 VERSION.full
 a.out
@@ -80,5 +80,6 @@ test/run_auto-quick.bats
 packaging/debian/.debhelper/
 packaging/debian/debhelper-build-stamp
 packaging/debian/charliecloud/
+packaging/debian/charliecloud-doc/
 packaging/debian/files
 packaging/debian/tmp
