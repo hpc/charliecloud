@@ -8,10 +8,12 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installation &mdash; Charliecloud 0.2.3 documentation</title>
+  <title>1. Installation &mdash; Charliecloud 0.2.4~pre documentation</title>
   
 
   
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
   
   
   
@@ -33,8 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-        <link rel="copyright" title="Copyright" href="copyright.html"/>
-    <link rel="top" title="Charliecloud 0.2.3 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.2.4~pre documentation" href="index.html"/>
         <link rel="next" title="2. Tutorial" href="tutorial.html"/>
         <link rel="prev" title="Overview" href="index.html"/> 
 
@@ -59,13 +60,16 @@
           
 
           
+            
+            <img src="_static/logo-sidebar.png" class="logo" />
+          
           </a>
 
           
             
             
               <div class="version">
-                07fca0b
+                0511845
               </div>
             
           
@@ -111,7 +115,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#docker-tips">1.4. Docker tips</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#understand-the-security-implications-of-docker">1.4.1. Understand the security implications of Docker</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#docker-equals-root">1.4.1.1. <code class="code docutils literal"><span class="pre">docker</span></code> equals root</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#docker-equals-root">1.4.1.1. <code class="code docutils literal notranslate"><span class="pre">docker</span></code> equals root</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#images-can-contain-bad-stuff">1.4.1.2. Images can contain bad stuff</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#containers-run-as-root">1.4.1.3. Containers run as root</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#docker-alters-your-network-configuration">1.4.1.4. Docker alters your network configuration</a></li>
@@ -134,7 +138,6 @@
 <li class="toctree-l1"><a class="reference internal" href="command-usage.html">3. Charliecloud command reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="virtualbox.html">4. VirtualBox appliance</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">5. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="copyright.html">6. Copyright and license</a></li>
 </ul>
 
             
@@ -258,14 +261,14 @@ a bug.</p>
 <h3><a class="toc-backref" href="#id3">1.1.1. Run time</a><a class="headerlink" href="#run-time" title="Permalink to this headline">¶</a></h3>
 <p>Systems used for running images in the standard unprivileged mode need:</p>
 <ul class="simple">
-<li>Recent Linux kernel with <code class="code docutils literal"><span class="pre">CONFIG_USER_NS=y</span></code>. We recommend version 4.4
+<li>Recent Linux kernel with <code class="code docutils literal notranslate"><span class="pre">CONFIG_USER_NS=y</span></code>. We recommend version 4.4
 or higher.</li>
 <li>C compiler and standard library</li>
 <li>POSIX shell and utilities</li>
 </ul>
 <p>Some distributions need configuration changes to enable user namespaces. For
 example, Debian Stretch needs sysctl
-<code class="code docutils literal"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>, and RHEL and CentOS 7.4 need both
+<code class="code docutils literal notranslate"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>, and RHEL and CentOS 7.4 need both
 a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>
 (that put you into “technology preview”).</p>
 <div class="admonition note">
@@ -285,7 +288,7 @@ distributions.</p>
 <ul class="simple">
 <li><a class="reference external" href="https://www.docker.com/">Docker</a> 17.03+</li>
 <li>internet access or Docker configured for a local Docker hub</li>
-<li>root access using <code class="code docutils literal"><span class="pre">sudo</span></code></li>
+<li>root access using <code class="code docutils literal notranslate"><span class="pre">sudo</span></code></li>
 </ul>
 <p>Older versions of Docker may work but are untested. We know that 1.7.1 does
 not work.</p>
@@ -306,12 +309,12 @@ skipped.</p>
 source code. If it’s in both places, the latter is used.</p>
 <p>To embed Bats, either:</p>
 <ul class="simple">
-<li>Download Charliecloud using <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>, which will check
-out Bats as a submodule in <code class="code docutils literal"><span class="pre">test/bats</span></code>.</li>
-<li>Unpack the Bats zip file or tarball in <code class="code docutils literal"><span class="pre">test/bats</span></code>.</li>
+<li>Download Charliecloud using <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>, which will check
+out Bats as a submodule in <code class="code docutils literal notranslate"><span class="pre">test/bats</span></code>.</li>
+<li>Unpack the Bats zip file or tarball in <code class="code docutils literal notranslate"><span class="pre">test/bats</span></code>.</li>
 </ul>
 <p>To check an embedded Bats:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> test/bats/bin/bats --version
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> test/bats/bin/bats --version
 <span class="go">Bats 0.4.0</span>
 </pre></div>
 </div>
@@ -326,7 +329,7 @@ by any user and run from one’s home directory or similar.)</p>
 <p>This section describes how to obtain packages for the distributions we know
 about, and where to go for support on them.</p>
 <p>If you’d like to build one of the packages, or if you’re a package maintainer,
-see <code class="code docutils literal"><span class="pre">packaging/README</span></code> and <code class="code docutils literal"><span class="pre">packaging/*/README</span></code> for additional
+see <code class="code docutils literal notranslate"><span class="pre">packaging/README</span></code> and <code class="code docutils literal notranslate"><span class="pre">packaging/*/README</span></code> for additional
 documentation.</p>
 <p>Pull requests and other collaboration to improve the packaging situation are
 particularly welcome!</p>
@@ -339,14 +342,14 @@ particularly welcome!</p>
 <td>proposed for <em>Buster</em> and <em>Stretch backports</em></td>
 </tr>
 <tr class="row-even"><td>Maintainers</td>
-<td>Lucas Nussbaum (<code class="code docutils literal"><span class="pre">lucas&#64;debian.org</span></code>)
-and Peter Wienemann (<code class="code docutils literal"><span class="pre">wienemann&#64;physik.uni-bonn.de</span></code>)</td>
+<td>Lucas Nussbaum (<code class="code docutils literal notranslate"><span class="pre">lucas&#64;debian.org</span></code>)
+and Peter Wienemann (<code class="code docutils literal notranslate"><span class="pre">wienemann&#64;physik.uni-bonn.de</span></code>)</td>
 </tr>
 <tr class="row-odd"><td>Bug reports to</td>
 <td>Charliecloud’s GitHub issue tracker</td>
 </tr>
 <tr class="row-even"><td>Packaging source code</td>
-<td>in Charliecloud: <code class="code docutils literal"><span class="pre">packaging/debian</span></code></td>
+<td>in Charliecloud: <code class="code docutils literal notranslate"><span class="pre">packaging/debian</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -360,7 +363,7 @@ and Peter Wienemann (<code class="code docutils literal"><span class="pre">wiene
 <td><a class="reference external" href="https://packages.gentoo.org/packages/sys-cluster/charliecloud">sys-cluster/charliecloud</a></td>
 </tr>
 <tr class="row-even"><td>Maintainer</td>
-<td>Oliver Freyermuth (<code class="code docutils literal"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</td>
+<td>Oliver Freyermuth (<code class="code docutils literal notranslate"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</td>
 </tr>
 <tr class="row-odd"><td>Bug reports to</td>
 <td><a class="reference external" href="https://bugs.gentoo.org/buglist.cgi?quicksearch=sys-cluster%2Fcharliecloud">Gentoo Bugzilla</a></td>
@@ -371,21 +374,21 @@ and Peter Wienemann (<code class="code docutils literal"><span class="pre">wiene
 </tbody>
 </table>
 <p>To install:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> emerge sys-cluster/charliecloud
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> emerge sys-cluster/charliecloud
 </pre></div>
 </div>
 <p>If may necessary to accept keywords first, e.g.:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">echo</span> <span class="s2">&quot;=sys-cluster/charliecloud-0.2.3_pre20171121 ~amd64&quot;</span> &gt;&gt; /etc/portage/package.accept_keywords
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">echo</span> <span class="s2">&quot;=sys-cluster/charliecloud-0.2.3_pre20171121 ~amd64&quot;</span> &gt;&gt; /etc/portage/package.accept_keywords
 </pre></div>
 </div>
 <p>A live ebuild is also available and can be keyworded via:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">echo</span> <span class="s2">&quot;~sys-cluster/charliecloud-9999 \*\*&quot;</span> &gt;&gt; /etc/portage/package.accept_keywords
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">echo</span> <span class="s2">&quot;~sys-cluster/charliecloud-9999 \*\*&quot;</span> &gt;&gt; /etc/portage/package.accept_keywords
 </pre></div>
 </div>
 </div>
 <div class="section" id="rpm-based-distributions">
 <h3><a class="toc-backref" href="#id9">1.2.3. RPM-based distributions</a><a class="headerlink" href="#rpm-based-distributions" title="Permalink to this headline">¶</a></h3>
-<p>An RPM <code class="code docutils literal"><span class="pre">.spec</span></code> file is provided in the Charliecloud source code. We are
+<p>An RPM <code class="code docutils literal notranslate"><span class="pre">.spec</span></code> file is provided in the Charliecloud source code. We are
 actively seeking distribution packagers to adapt this into official packages!</p>
 <table border="1" class="colwidths-auto docutils">
 <tbody valign="top">
@@ -393,13 +396,13 @@ actively seeking distribution packagers to adapt this into official packages!</p
 <td>none yet</td>
 </tr>
 <tr class="row-even"><td>Maintainer</td>
-<td>Oliver Freyermuth (<code class="code docutils literal"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</td>
+<td>Oliver Freyermuth (<code class="code docutils literal notranslate"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</td>
 </tr>
 <tr class="row-odd"><td>Bug reports to</td>
 <td>Charliecloud’s GitHub issue tracker</td>
 </tr>
 <tr class="row-even"><td>Packaging source code</td>
-<td>in Charliecloud: <code class="code docutils literal"><span class="pre">packaging/redhat</span></code></td>
+<td>in Charliecloud: <code class="code docutils literal notranslate"><span class="pre">packaging/redhat</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -410,20 +413,20 @@ actively seeking distribution packagers to adapt this into official packages!</p
 <div class="section" id="download">
 <h3><a class="toc-backref" href="#id11">1.3.1. Download</a><a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h3>
 <p>See our GitHub project: <a class="reference external" href="https://github.com/hpc/charliecloud">https://github.com/hpc/charliecloud</a></p>
-<p>The recommended download method is <code class="code docutils literal"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>.</p>
+<p>The recommended download method is <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>.</p>
 </div>
 <div class="section" id="build">
 <h3><a class="toc-backref" href="#id12">1.3.2. Build</a><a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h3>
 <p>To build in the standard, unprivileged mode (recommended):</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make
 </pre></div>
 </div>
 <p>To build in setuid mode (for testing if your kernel doesn’t support the user
 namespace):</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make <span class="nv">SETUID</span><span class="o">=</span>yes
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make <span class="nv">SETUID</span><span class="o">=</span>yes
 </pre></div>
 </div>
-<p>To build the documentation, see <code class="code docutils literal"><span class="pre">doc-src/README</span></code>.</p>
+<p>To build the documentation, see <code class="code docutils literal notranslate"><span class="pre">doc-src/README</span></code>.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">Do not build as root. This is unsupported and may introduce security
@@ -436,11 +439,11 @@ problems.</p>
 at least run the test suite before installation to establish that your system
 will work.</p>
 <p>To install (FHS-compliant):</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make install <span class="nv">PREFIX</span><span class="o">=</span>/foo/bar
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make install <span class="nv">PREFIX</span><span class="o">=</span>/foo/bar
 </pre></div>
 </div>
-<p>Note that <code class="code docutils literal"><span class="pre">PREFIX</span></code> is required. It does not default to
-<code class="code docutils literal"><span class="pre">/usr/local</span></code> like many packages.</p>
+<p>Note that <code class="code docutils literal notranslate"><span class="pre">PREFIX</span></code> is required. It does not default to
+<code class="code docutils literal notranslate"><span class="pre">/usr/local</span></code> like many packages.</p>
 </div>
 </div>
 <div class="section" id="docker-tips">
@@ -455,11 +458,11 @@ implications are below. This list should not be considered comprehensive nor a
 substitute for appropriate expertise; adhere to your moral and institutional
 responsibilities.</p>
 <div class="section" id="docker-equals-root">
-<h4>1.4.1.1. <code class="code docutils literal"><span class="pre">docker</span></code> equals root<a class="headerlink" href="#docker-equals-root" title="Permalink to this headline">¶</a></h4>
-<p>Anyone who can run the <code class="code docutils literal"><span class="pre">docker</span></code> command or interact with the Docker
+<h4>1.4.1.1. <code class="code docutils literal notranslate"><span class="pre">docker</span></code> equals root<a class="headerlink" href="#docker-equals-root" title="Permalink to this headline">¶</a></h4>
+<p>Anyone who can run the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> command or interact with the Docker
 daemon can <a class="reference external" href="http://reventlov.com/advisories/using-the-docker-command-to-root-the-host">trivially escalate to root</a>.
 This is considered a feature.</p>
-<p>For this reason, don’t create the <code class="code docutils literal"><span class="pre">docker</span></code> group, as this will allow
+<p>For this reason, don’t create the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> group, as this will allow
 passwordless, unlogged escalation for anyone in the group.</p>
 </div>
 <div class="section" id="images-can-contain-bad-stuff">
@@ -476,7 +479,7 @@ directories.</p>
 <div class="section" id="docker-alters-your-network-configuration">
 <h4>1.4.1.4. Docker alters your network configuration<a class="headerlink" href="#docker-alters-your-network-configuration" title="Permalink to this headline">¶</a></h4>
 <p>To see what it did:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> ifconfig    <span class="c1"># note docker0 interface</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ifconfig    <span class="c1"># note docker0 interface</span>
 <span class="gp">$</span> brctl show  <span class="c1"># note docker0 bridge</span>
 <span class="gp">$</span> route -n
 </pre></div>
@@ -485,7 +488,7 @@ directories.</p>
 <div class="section" id="docker-installs-services">
 <h4>1.4.1.5. Docker installs services<a class="headerlink" href="#docker-installs-services" title="Permalink to this headline">¶</a></h4>
 <p>If you don’t want the service starting automatically at boot, e.g.:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> systemctl is-enabled docker
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> systemctl is-enabled docker
 <span class="go">enabled</span>
 <span class="gp">$</span> systemctl disable docker
 <span class="gp">$</span> systemctl is-enabled docker
@@ -500,7 +503,7 @@ directories.</p>
 different ways.</p>
 <p>The first problem is that Docker itself must be told to use a proxy. This
 manifests as:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker run hello-world
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker run hello-world
 <span class="go">Unable to find image &#39;hello-world:latest&#39; locally</span>
 <span class="go">Pulling repository hello-world</span>
 <span class="go">Get https://index.docker.io/v1/repositories/library/hello-world/images: dial tcp 54.152.161.54:443: connection refused</span>
@@ -508,12 +511,12 @@ manifests as:</p>
 </div>
 <p>If you have a systemd system, the <a class="reference external" href="https://docs.docker.com/engine/admin/systemd/#http-proxy">Docker documentation</a> explains how to
 configure this. If you don’t have a systemd system, then
-<code class="code docutils literal"><span class="pre">/etc/default/docker</span></code> might be the place to go?</p>
+<code class="code docutils literal notranslate"><span class="pre">/etc/default/docker</span></code> might be the place to go?</p>
 <p>The second problem is that Docker containers need to know about the proxy as
 well. This manifests as images failing to build because they can’t download
 stuff from the internet.</p>
 <p>The fix is to set the proxy variables in your environment, e.g.:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">export HTTP_PROXY=http://proxy.example.com:8088</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export HTTP_PROXY=http://proxy.example.com:8088</span>
 <span class="go">export http_proxy=$HTTP_PROXY</span>
 <span class="go">export HTTPS_PROXY=$HTTP_PROXY</span>
 <span class="go">export https_proxy=$HTTP_PROXY</span>
@@ -523,9 +526,9 @@ stuff from the internet.</p>
 <span class="go">export no_proxy=$NO_PROXY</span>
 </pre></div>
 </div>
-<p>You also need to teach <code class="code docutils literal"><span class="pre">sudo</span></code> to retain them. Add the following to
-<code class="code docutils literal"><span class="pre">/etc/sudoers</span></code>:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">Defaults env_keep+=&quot;HTTP_PROXY http_proxy HTTPS_PROXY https_proxy ALL_PROXY all_proxy NO_PROXY no_proxy&quot;</span>
+<p>You also need to teach <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> to retain them. Add the following to
+<code class="code docutils literal notranslate"><span class="pre">/etc/sudoers</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Defaults env_keep+=&quot;HTTP_PROXY http_proxy HTTPS_PROXY https_proxy ALL_PROXY all_proxy NO_PROXY no_proxy&quot;</span>
 </pre></div>
 </div>
 <p>Because different programs use different subsets of these variables, and to
@@ -537,12 +540,12 @@ above variables are set.</p>
 <div class="section" id="running-the-tests">
 <span id="install-test-charliecloud"></span><h2><a class="toc-backref" href="#id17">1.5. Running the tests</a><a class="headerlink" href="#running-the-tests" title="Permalink to this headline">¶</a></h2>
 <p>Charliecloud comes with a fairly comprehensive Bats test suite, in
-<code class="code docutils literal"><span class="pre">test</span></code>. Go there:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> <span class="nb">test</span>
+<code class="code docutils literal notranslate"><span class="pre">test</span></code>. Go there:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> <span class="nb">test</span>
 </pre></div>
 </div>
 <p>To check location and version of Bats used by the tests:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make where-bats
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make where-bats
 <span class="go">which bats</span>
 <span class="go">/usr/bin/bats</span>
 <span class="go">bats --version</span>
@@ -552,17 +555,17 @@ above variables are set.</p>
 <p>Just like for normal use, the Charliecloud test suite is split into build and
 run phases, and there is an additional phase that runs the examples’ test
 suites. These phases can be tested independently on different systems.</p>
-<p>Testing is coordinated by <code class="code docutils literal"><span class="pre">make</span></code>. The test targets run one or more test
+<p>Testing is coordinated by <code class="code docutils literal notranslate"><span class="pre">make</span></code>. The test targets run one or more test
 suites. If any test suite has a failure, testing stops with an error message.</p>
 <p>The tests need three work directories with several gigabytes of free space, in
 order to store image tarballs, unpacked image directories, and permission test
 fixtures. These are configured with environment variables:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_TARDIR</span><span class="o">=</span>/var/tmp/tarballs
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_TARDIR</span><span class="o">=</span>/var/tmp/tarballs
 <span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_IMGDIR</span><span class="o">=</span>/var/tmp/images
 <span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s1">&#39;/var/tmp /tmp&#39;</span>
 </pre></div>
 </div>
-<p><code class="code docutils literal"><span class="pre">CH_TEST_PERMDIRS</span></code> can be set to <code class="code docutils literal"><span class="pre">skip</span></code> in order to skip the file
+<p><code class="code docutils literal notranslate"><span class="pre">CH_TEST_PERMDIRS</span></code> can be set to <code class="code docutils literal notranslate"><span class="pre">skip</span></code> in order to skip the file
 permissions tests.</p>
 <p>(Strictly speaking, the build phase needs only the first, and the example test
 phase does not need the last one. However, for simplicity, the tests will
@@ -576,7 +579,7 @@ processes, Bats will hang.</p>
 <div class="section" id="id1">
 <h3><a class="toc-backref" href="#id18">1.5.1. Build</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>In this phase, image building and associated functionality is tested.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-build
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-build
 <span class="go">bats build.bats build_auto.bats build_post.bats</span>
 <span class="go"> ✓ create tarball directory if needed</span>
 <span class="go"> ✓ documentations build</span>
@@ -593,13 +596,13 @@ processes, Bats will hang.</p>
 </div>
 <p>Note that with an empty Docker cache, this test can be quite lengthy, half an
 hour or more, because it builds all the examples as well as several basic
-Dockerfiles for common Linux distributions and tools (in <code class="code docutils literal"><span class="pre">test</span></code>). With a
+Dockerfiles for common Linux distributions and tools (in <code class="code docutils literal notranslate"><span class="pre">test</span></code>). With a
 full cache, expect more like 1–2 minutes.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>The easiest way to update the Docker images used in this test is to simply
 delete all Docker containers and images, and let them be rebuilt:</p>
-<div class="last highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker rm <span class="k">$(</span>sudo docker ps -aq<span class="k">)</span>
+<div class="last highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker rm <span class="k">$(</span>sudo docker ps -aq<span class="k">)</span>
 <span class="gp">$</span> sudo docker rmi -f <span class="k">$(</span>sudo docker images -q<span class="k">)</span>
 </pre></div>
 </div>
@@ -607,7 +610,7 @@ delete all Docker containers and images, and let them be rebuilt:</p>
 </div>
 <div class="section" id="run">
 <h3><a class="toc-backref" href="#id19">1.5.2. Run</a><a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h3>
-<p>The run tests require the contents of <code class="code docutils literal"><span class="pre">$CH_TEST_TARDIR</span></code> produced by a
+<p>The run tests require the contents of <code class="code docutils literal notranslate"><span class="pre">$CH_TEST_TARDIR</span></code> produced by a
 successful, complete build test. Copy this directory to the run
 system.</p>
 <p>Additionally, the user running the tests needs to be a member of at least 2
@@ -615,13 +618,13 @@ groups.</p>
 <p>File permission enforcement is tested against specially constructed fixture
 directories. These should include every meaningful mounted filesystem, and
 they cannot be shared between different users. To create them:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="k">for</span> d in <span class="nv">$CH_TEST_PERMDIRS</span><span class="p">;</span> <span class="k">do</span> sudo ./make-perms-test <span class="nv">$d</span> <span class="nv">$USER</span> nobody<span class="p">;</span> <span class="k">done</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="k">for</span> d in <span class="nv">$CH_TEST_PERMDIRS</span><span class="p">;</span> <span class="k">do</span> sudo ./make-perms-test <span class="nv">$d</span> <span class="nv">$USER</span> nobody<span class="p">;</span> <span class="k">done</span>
 </pre></div>
 </div>
 <p>To skip this test (e.g., if you don’t have root), set
-<code class="code docutils literal"><span class="pre">$CH_TEST_PERMDIRS</span></code> to <code class="code docutils literal"><span class="pre">skip</span></code>.</p>
+<code class="code docutils literal notranslate"><span class="pre">$CH_TEST_PERMDIRS</span></code> to <code class="code docutils literal notranslate"><span class="pre">skip</span></code>.</p>
 <p>To run the tests:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-run
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-run
 </pre></div>
 </div>
 </div>
@@ -635,7 +638,7 @@ node (localhost) if not.</p>
 the Charliecloud perspective include entire test suites from the example’s
 perspective, so be patient.</p>
 <p>To run the tests:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-test
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make test-test
 </pre></div>
 </div>
 </div>
@@ -644,9 +647,9 @@ perspective, so be patient.</p>
 <p>We also provide the following additional test targets:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="code docutils literal"><span class="pre">test-quick</span></code>: key subset of build and run phases (nice for development)</li>
-<li><code class="code docutils literal"><span class="pre">test</span></code>: build and run phases</li>
-<li><code class="code docutils literal"><span class="pre">test-all</span></code>: all three phases</li>
+<li><code class="code docutils literal notranslate"><span class="pre">test-quick</span></code>: key subset of build and run phases (nice for development)</li>
+<li><code class="code docutils literal notranslate"><span class="pre">test</span></code>: build and run phases</li>
+<li><code class="code docutils literal notranslate"><span class="pre">test-all</span></code>: all three phases</li>
 </ul>
 </div></blockquote>
 <p>We recommend that a build box pass all phases so it can be used to run
@@ -677,7 +680,7 @@ containers for testing and development.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; <a href="copyright.html">Copyright</a> 2014–2018, Los Alamos National Security, LLC.
+        &copy; Copyright 2014–2018, Los Alamos National Security, LLC.
 
     </p>
   </div> 
@@ -698,7 +701,7 @@ containers for testing and development.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.3',
+            VERSION:'0.2.4~pre',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
