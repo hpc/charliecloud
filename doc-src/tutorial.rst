@@ -82,15 +82,15 @@ We will use the following very simple Dockerfile:
 .. literalinclude:: ../examples/serial/hello/Dockerfile
    :language: docker
 
-This creates a minimal Debian Jessie image with :code:`ssh` installed. We will
-encounter more complex Dockerfiles later in this tutorial.
+This creates a minimal Debian Stretch image with :code:`ssh` installed. We
+will encounter more complex Dockerfiles later in this tutorial.
 
 .. note::
 
    Docker does not update the base image unless asked to. Specific images can
    be updated manually; in this case::
 
-     $ sudo docker pull debian:jessie
+     $ sudo docker pull debian:stretch
 
    There are various resources and scripts online to help automate this
    process.
@@ -111,7 +111,7 @@ directory, which in this case is the Charliecloud source code.
 
    $ ch-build -t hello ~/charliecloud
    Sending build context to Docker daemon 15.67 MB
-   Step 1/4 : FROM debian:jessie
+   Step 1/4 : FROM debian:stretch
    ---> 86baf4e8cde9
    [...]
    Step 4/4 : RUN touch /usr/bin/ch-ssh
@@ -136,9 +136,9 @@ can be very useful.
 ::
 
   $ sudo docker images
-  REPOSITORY  TAG     IMAGE ID      CREATED      SIZE
-  debian      jessie  1742affe03b5  10 days ago  125.1 MB
-  hello       latest  1742affe03b5  10 days ago  139.7 MB
+  REPOSITORY  TAG      IMAGE ID      CREATED      SIZE
+  debian      stretch  1742affe03b5  10 days ago  125.1 MB
+  hello       latest   1742affe03b5  10 days ago  139.7 MB
   $ sudo docker push  # FIXME
 
 Running the image with Docker is not generally useful, because Docker's
@@ -582,25 +582,26 @@ Third-party software compiled from source
 Under this method, one uses :code:`RUN` commands to fetch the desired software
 using :code:`curl` or :code:`wget`, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic Debian image
-(:code:`test/Dockerfile.debian8`):
+(:code:`test/Dockerfile.debian9`):
 
-.. literalinclude:: ../test/Dockerfile.debian8
+.. literalinclude:: ../test/Dockerfile.debian9
    :language: docker
 
-Then, we add OpenMPI with :code:`test/Dockerfile.debian8openmpi`:
+Then, we add OpenMPI with :code:`test/Dockerfile.openmpi`:
 
-.. literalinclude:: ../test/Dockerfile.debian8openmpi
+.. literalinclude:: ../test/Dockerfile.openmpi
    :language: docker
+   :lines: -48
 
 So what is going on here?
 
-1. Use the latest Debian, Jessie, as the base image.
+1. Use the latest Debian, Stretch, as the base image.
 
 2. Install a basic build system using the OS package manager.
 
 3. Download and untar OpenMPI. Note the use of variables to make adjusting the
    URL and MPI version easier, as well as the explanation of why we're not
-   using :code:`apt-get`, given that OpenMPI 1.10 is included in Debian.
+   using :code:`apt-get`, given that OpenMPI is included in Debian.
 
 4. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
    appropriate parallel build.
@@ -628,7 +629,6 @@ the :code:`mpihello` Dockerfile uses this approach:
 
 .. literalinclude:: ../examples/mpi/mpihello/Dockerfile
    :language: docker
-   :lines: 19-
 
 These Dockerfile instructions:
 
@@ -717,8 +717,8 @@ This tutorial covers three approaches:
 3. Processes are coordinated by the container using configuration files from
    the host.
 
-In order to test approach 1, you must install OpenMPI 1.10.\ *x* on the host. In
-our experience, we have had success compiling from source with the same
+In order to test approach 1, you must install OpenMPI 2.1.2 on the host.
+In our experience, we have had success compiling from source with the same
 options as in the Dockerfile, but there is probably more nuance to the match
 than we've discovered.
 
@@ -730,29 +730,33 @@ process is spawned in its own container, and because Charliecloud introduces
 minimal isolation, they can communicate as if they were running directly on
 the host.
 
-For example, using :code:`mpirun` and the :code:`mpihello` example above::
+For example, using :code:`srun` and the :code:`mpihello` example above::
 
   $ mpirun --version
-  mpirun (Open MPI) 1.10.2
+  mpirun (Open MPI) 2.1.2
   $ stat -L --format='%i' /proc/self/ns/user
   4026531837
   $ ch-run /var/tmp/mpihello -- mpirun --version
-  mpirun (Open MPI) 1.10.4
-  $ mpirun -np 4 ch-run /var/tmp/mpihello -- /hello/hello
-  0: init ok cn001, 4 ranks, userns 4026532256
-  1: init ok cn001, 4 ranks, userns 4026532267
-  2: init ok cn001, 4 ranks, userns 4026532269
-  3: init ok cn001, 4 ranks, userns 4026532271
+  mpirun (Open MPI) 2.1.2
+  $ srun -n4 ch-run /var/tmp/images/mpihello -- /hello/hello
+  0: init ok cn001, 4 ranks, userns 4026554650
+  1: init ok cn001, 4 ranks, userns 4026554652
+  3: init ok cn002, 4 ranks, userns 4026554652
+  2: init ok cn002, 4 ranks, userns 4026554650
   0: send/receive ok
   0: finalize ok
 
+(If you don't have Slurm, you can use :code:`mpirun -np 4` instead of
+:code:`srun -n4`.)
+
 The advantage is that we can easily take advantage of host-specific things
 such as configurations; the disadvantage is that it introduces a close
-coupling between the host and container that can manifest in complex ways. For
-example, while OpenMPI 1.10.2 worked with 1.10.4 above, both had to be
-compiled with the same options. The OpenMPI 1.10.2 packages that come with
-Ubuntu fail with "orte_util_nidmap_init failed" if run with the container
-1.10.4.
+coupling between the host and container that can manifest in complex ways.
+
+For example, in our experience, while OpenMPI 1.10.2 on a Ubuntu host worked
+with 1.10.4 in the guest, both had to be compiled with the same options. The
+OpenMPI 1.10.2 packages that came with Ubuntu failed with
+"orte_util_nidmap_init failed" if run with the container 1.10.4.
 
 Processes coordinated by container
 ----------------------------------
@@ -760,8 +764,8 @@ Processes coordinated by container
 This approach starts a single container process, which then forks and
 coordinates the parallel work. The advantage is that this approach is
 completely independent of the host for dependency configuration and
-installation; the disadvantage is that it cannot take advantage of any
-host-specific things that might e.g. improve performance.
+installation; the disadvantage is that it cannot take advantage of
+host-specific things such as configuration.
 
 For example::
 
@@ -772,6 +776,10 @@ For example::
   3: init ok cn001, 4 ranks, userns 4026532256
   0: send/receive ok
   0: finalize ok
+
+Note that in this case, we use :code:`mpirun` rather than :code:`srun` because
+the Slurm client programs are not installed inside the container and we don't
+want the host's Slurm coordinating processes anyway.
 
 
 Processes coordinated by container using host configuration
@@ -788,12 +796,12 @@ variety of approaches. Some application or frameworks take command-line
 parameters specifying the configuration path.
 
 The approach used in our example is to set the configuration directory to
-:code:`/mnt/0`. This is done in :code:`mpihello` with the :code:`--sysconfdir`
-argument:
+:code:`/mnt/0`. This is done in :code:`openmpi` (and hence
+:code:`mpihello`) with the :code:`--sysconfdir` argument:
 
-.. literalinclude:: ../examples/mpi/mpihello/Dockerfile
+.. literalinclude:: ../test/Dockerfile.openmpi
    :language: docker
-   :lines: 11-15
+   :lines:    37-47
 
 The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with :code:`--bind`, that is
@@ -816,10 +824,10 @@ Your first multi-node jobs
 ==========================
 
 This section assumes that you are using a Slurm cluster with a working OpenMPI
-1.10.\ *x* installation and some type of node-local storage. A :code:`tmpfs`
-is recommended, and we use :code:`/var/tmp` for this tutorial. (Using
-:code:`/tmp` often works but can cause confusion because it's shared by the
-container and host, yielding cycles in the directory tree.)
+2.1.2 installation and some type of node-local storage. A :code:`tmpfs` will
+suffice, and we use :code:`/var/tmp` for this tutorial. (Using :code:`/tmp`
+often works but can cause confusion because it's shared by the container and
+host, yielding cycles in the directory tree.)
 
 We cover three cases:
 
@@ -859,18 +867,16 @@ one of those nodes. For example::
 
   $ salloc -N4
 
-We also need OpenMPI 1.10.\ *x* available and with the correct mapping
-policy::
+We also need OpenMPI 2.1.2 available, in order to match the version of the
+libraries in the container::
 
   $ mpirun --version
-  mpirun (Open MPI) 1.10.5
-  $ export OMPI_MCA_rmaps_base_mapping_policy=
+  mpirun (Open MPI) 2.1.2
 
 The next step is to distribute the image tarball to the compute nodes. To do
 so, we run one instance of :code:`ch-tar2dir` on each node::
 
-  $ mpirun -pernode ch-tar2dir mpihello.tar.gz /var/tmp
-  App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs
+  $ srun ch-tar2dir mpihello.tar.gz /var/tmp
   creating new image /tmp/mpihello
   creating new image /tmp/mpihello
   creating new image /tmp/mpihello
@@ -882,8 +888,7 @@ so, we run one instance of :code:`ch-tar2dir` on each node::
 
 We can now activate the image and run our program::
 
-  $ mpirun ch-run /var/tmp/mpihello -- /hello/hello
-  App launch reported: 4 (out of 4) daemons - 48 (out of 64) procs
+  $ srun --cpus-per-task=1 ch-run /var/tmp/mpihello -- /hello/hello
   2: init ok cn001, 64 ranks, userns 4026532567
   4: init ok cn001, 64 ranks, userns 4026532571
   8: init ok cn001, 64 ranks, userns 4026532579
@@ -919,14 +924,14 @@ When the job is complete, look at the output::
   $ cat slurm-207745.out
   tarball:   /home/reidpr/mpihello.tar.gz
   image:     /var/tmp/mpihello
-  host:      mpirun (Open MPI) 1.10.5
+  host:      mpirun (Open MPI) 2.1.2
   App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs
   creating new image /var/tmp/mpihello
   creating new image /var/tmp/mpihello
   [...]
   /var/tmp/mpihello unpacked ok
   /var/tmp/mpihello unpacked ok
-  container: mpirun (Open MPI) 1.10.5
+  container: mpirun (Open MPI) 2.1.2
   App launch reported: 4 (out of 4) daemons - 32 (out of 64) procs
   2: init ok cn004, 64 ranks, userns 4026532604
   3: init ok cn004, 64 ranks, userns 4026532606

@@ -1,4 +1,4 @@
-FROM debian8openmpi
+FROM openmpi
 
 # Compile the Intel MPI benchmark. Note that this URL comes from a button
 # labeled "Accept", so you may want to go click it before building the image.

@@ -27,19 +27,16 @@ module load openmpi
 module load sandbox
 module load charliecloud
 
-# Makes "mpirun -pernode" work.
-export OMPI_MCA_rmaps_base_mapping_policy=
-
 # MPI version on host.
 printf 'host:      '
 mpirun --version | egrep '^mpirun'
 
 # Unpack image.
-mpirun -pernode ch-tar2dir $TAR $IMGDIR
+srun ch-tar2dir $TAR $IMGDIR
 
 # MPI version in container.
 printf 'container: '
 ch-run $IMG -- mpirun --version | egrep '^mpirun'
 
 # Run the app.
-mpirun ch-run $IMG -- /hello/hello
+srun --cpus-per-task=1 ch-run $IMG -- /hello/hello

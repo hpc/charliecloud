@@ -45,27 +45,23 @@ lammps_try () {
     infiles=$(ch-run --cd /lammps/examples/$1 $IMG -- bash -c "ls in.*")
     for i in $infiles; do
         printf '\n\n%s\n' $i
-        # serial (but still uses MPI somehow)
-        ch-run --cd /lammps/examples/$1 $IMG -- sh -c "lmp_mpi -log none -in $i"
-        # parallel
-        if [[ $CHTEST_MULTINODE ]]; then
-            mpirun ch-run --cd /lammps/examples/$1 $IMG -- sh -c "lmp_mpi -log none -in $i"
-        fi
+        $MPIRUN_CORE ch-run --cd /lammps/examples/$1 $IMG -- \
+                            lmp_mpi -log none -in $i
     done
 
 }
 
 @test "$EXAMPLE_TAG/using all cores" {
-    [[ -z $CHTEST_MULTINODE ]] && skip
-    run mpirun ch-run $IMG -- lmp_mpi -log none -in /lammps/examples/melt/in.melt
+    run $MPIRUN_CORE ch-run $IMG -- \
+                            lmp_mpi -log none -in /lammps/examples/melt/in.melt
     echo "$output"
     [[ $status -eq 0 ]]
     ranks_found=$(  echo "$output" \
                   | fgrep 'MPI tasks' \
                   | sed -r 's/^.+with ([0-9]+) MPI tasks.+$/\1/')
-    echo "ranks expected: $CHTEST_CORES"
+    echo "ranks expected: $CHTEST_CORES_TOTAL"
     echo "ranks found: $ranks_found"
-    [[ $ranks_found -eq $CHTEST_CORES ]]
+    [[ $ranks_found -eq $CHTEST_CORES_TOTAL ]]
 }
 
 @test "$EXAMPLE_TAG/crack"    { lammps_try crack; }

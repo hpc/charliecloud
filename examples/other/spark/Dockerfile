@@ -1,8 +1,8 @@
-FROM debian:jessie
+FROM debian:stretch
 
 # Install needed OS packages.
 RUN    apt-get update \
-    && apt-get install -y less openjdk-7-jre-headless python wget \
+    && apt-get install -y less openjdk-8-jre-headless procps python wget \
     && rm -rf /var/lib/apt/lists/*
 
 # We want ch-ssh

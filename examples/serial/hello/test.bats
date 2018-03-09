@@ -17,7 +17,6 @@ setup () {
     ch-run $EXAMPLE_IMG -- /bin/bash -c true
     ch-run $EXAMPLE_IMG -- /bin/true
     ch-run $EXAMPLE_IMG -- find /etc -name 'a*'
-    ch-run $EXAMPLE_IMG -- ps aux
     ch-run $EXAMPLE_IMG -- sh -c 'echo foo | /bin/egrep foo'
     ch-run $EXAMPLE_IMG -- nice true
 }

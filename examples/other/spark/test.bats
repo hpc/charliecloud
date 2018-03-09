@@ -68,7 +68,7 @@ EOF
     rm -Rf --one-file-system $SPARKLOG
     # start the master
     ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/start-master.sh
-    sleep 5
+    sleep 7
     cat $MASTER_LOG
     fgrep -q 'New state: ALIVE' $MASTER_LOG
     # start the workers
@@ -117,9 +117,8 @@ EOF
     ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-master.sh
     sleep 2
     # Any Spark processes left?
-    run $PERNODE ps aux
-    echo "$output"
-    [[ ! $output =~ 'org\.apache\.spark\.deploy' ]]
+    # (Use egrep instead of fgrep so we don't match the grep process.)
+    $PERNODE ps aux | ( ! egrep [o]rg\.apache\.spark\.deploy )
 }
 
 @test "$EXAMPLE_TAG/hang" {
