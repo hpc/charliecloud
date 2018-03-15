@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # If environment variable CH_TEST_OMIT is set, then avoid Dockerfiles that
 # seem lengthy. This supports job time limits in Travis CI. See source code
