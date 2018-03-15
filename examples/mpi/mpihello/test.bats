@@ -1,6 +1,7 @@
 load ../../../test/common
 
 setup () {
+      scope full
       IMG=$IMGDIR/mpihello
 }
 

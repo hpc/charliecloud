@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-# If environment variable CH_TEST_OMIT is set, then avoid Dockerfiles that
-# seem lengthy. This supports job time limits in Travis CI. See source code
-# below for the heuristic.
-
 from __future__ import print_function
 
 import os
 import os.path
+import re
 import sys
 
 mode = sys.argv[1]
@@ -30,18 +27,20 @@ for path in sys.argv[2:]:
       tag = os.path.splitext(f)[1][1:]  # use extension
    assert (tag != "")
 
-   # Should we omit the test?
-   try:
-      if (os.environ["CH_TEST_OMIT"] in tag):
-         continue
-   except KeyError:
-      pass
+   # Find scope
+   with open(path) as fp:
+      m = re.search(r"ch-test-scope: (quick|standard|full)", fp.read())
+      if (m is None):
+         print("%s: no valid scope specified" % path, file=sys.stderr)
+         sys.exit(1)
+      scope = m.group(1)
 
    # Build a tarball: different test for each type.
    if (mode == "build"):
       if ("Build" in f):
          template = """\
 @test 'custom build %(tag)s' {
+    scope %(scope)s
     TARBALL=$TARDIR/%(tag)s.tar.gz
     PQ=$TARDIR/%(tag)s.pq_missing
     WORKDIR=$TARDIR/%(tag)s.tmp
@@ -61,6 +60,7 @@ for path in sys.argv[2:]:
          if ("Dockerfile" in f):
             template = """\
 @test 'ch-build %(tag)s' {
+    scope %(scope)s
     need_docker %(tag)s
     ch-build -t %(tag)s --file=%(path)s ..
     docker_ok %(tag)s
@@ -71,12 +71,14 @@ for path in sys.argv[2:]:
                addr = fp.readline().rstrip()
             template = """\
 @test 'docker pull %(tag)s' {
+    scope %(scope)s
     need_docker %(tag)s
     sudo docker pull %(addr)s
     sudo docker tag %(addr)s %(tag)s
 }"""
          template += """
 @test 'ch-docker2tar %(tag)s' {
+    scope %(scope)s
     need_docker
     TARBALL=$TARDIR/%(tag)s.tar.gz
     ch-docker2tar %(tag)s $TARDIR
@@ -91,10 +93,12 @@ for path in sys.argv[2:]:
       print()
       print("""\
 @test 'ch-tar2dir %(tag)s' {
+    scope %(scope)s
     prerequisites_ok %(tag)s
     ch-tar2dir $TARDIR/%(tag)s.tar.gz $IMGDIR
 }
 @test 'ch-run %(tag)s /bin/true' {
+    scope %(scope)s
     prerequisites_ok %(tag)s
     IMG=$IMGDIR/%(tag)s
     ch-run $IMG /bin/true

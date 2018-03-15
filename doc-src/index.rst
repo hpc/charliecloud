@@ -13,6 +13,7 @@ Overview
    :hidden:
 
    install
+   test
    tutorial
    command-usage
    virtualbox

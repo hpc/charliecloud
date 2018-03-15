@@ -6,27 +6,17 @@ IMAGES :=      chtest/Build \
                $(sort $(wildcard ../examples/*/*/Build)) \
                $(sort $(wildcard ../examples/*/*/Dockerfile)) \
                $(sort $(wildcard ../examples/*/*/Docker_Pull))
-IMAGESQUICK := chtest/Build \
-               Build.missing \
-               Dockerfile.alpine36 \
-               Docker_Pull.alpine36_dp
 EXAMPLETESTS := $(sort $(wildcard ../examples/*/*/test.bats))
-ifdef CH_TEST_OMIT
-  EXAMPLETESTS := $(foreach i,$(EXAMPLETESTS),$(if $(findstring $(CH_TEST_OMIT),$(i)),,$(i)))
-endif
 
 # Favor embedded Bats, if installed, over system Bats.
 export PATH := $(CURDIR)/bats/bin:$(PATH)
 
 # Used by "make all" at top level to build these files for "make install".
 .PHONY: all
-all: build_auto.bats build_auto-quick.bats run_auto.bats run_auto-quick.bats
+all: build_auto.bats run_auto.bats
 
 .PHONY: test
-test: test-build test-run
-
-.PHONY: test-all
-test-all: test test-test
+test: test-build test-run test-test
 
 .PHONY: test-build
 test-build: build_auto.bats
@@ -38,6 +28,7 @@ test-build: build_auto.bats
 test-run: run_auto.bats
 	bats run.bats run_uidgid.bats run_auto.bats
 	set -e; \
+        if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
 	if ( ! bin/ch-run --is-setuid ); then \
 	for GUEST_USER in $$(id -un) root nobody; do \
 	    for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
@@ -46,19 +37,23 @@ test-run: run_auto.bats
 	        echo testing as: $$GUEST_USER $$GUEST_GROUP; \
 	        bats run_uidgid.bats; \
 	    done; \
-	done; fi
+	done; fi; fi
 
 .PHONY: test-test
 test-test: $(EXAMPLETESTS)
 	bats $(EXAMPLETESTS)
 
-.PHONY: test-quick
-test-quick: build_auto-quick.bats run_auto-quick.bats
-	bats build.bats build_auto-quick.bats run.bats run_uidgid.bats run_auto-quick.bats
-
 .PHONY: clean
 clean:
-	rm -f *_auto*.bats
+	rm -f *_auto.bats
+
+.PHONY: clean-docker
+clean-docker:
+	sudo docker rm $$(sudo docker ps -aq) || true
+	sudo docker rmi -f $$(sudo docker images -q) || true
+#	For reasons I don't understand, sometimes you have to "docker rmi" a
+#	second time.
+	sudo docker rmi -f $$(sudo docker images -q) || true
 
 .PHONY: where-bats
 where-bats:
@@ -68,11 +63,5 @@ where-bats:
 build_auto.bats: $(IMAGES)
 	./make-auto build $^ > $@
 
-build_auto-quick.bats: $(IMAGESQUICK)
-	./make-auto build $^ > $@
-
 run_auto.bats: $(IMAGES)
-	./make-auto run $^ > $@
-
-run_auto-quick.bats: $(IMAGESQUICK)
 	./make-auto run $^ > $@

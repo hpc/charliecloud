@@ -1,16 +1,19 @@
 load common
 
 @test 'create tarball directory if needed' {
+    scope quick
     mkdir -p $TARDIR
 }
 
 @test 'documentations build' {
+    scope quick
     command -v sphinx-build > /dev/null 2>&1 || skip "sphinx is not installed"
     test -d ../doc-src || skip "documentation source code absent"
     cd ../doc-src && make
 }
 
 @test 'executables seem sane' {
+    scope quick
     # Assume that everything in $CH_BIN is ours if it starts with "ch-" and
     # either (1) is executable or (2) ends in ".c". Demand satisfaction from
     # each. The latter is to catch cases when we haven't compiled everything;
@@ -41,6 +44,7 @@ load common
 }
 
 @test 'proxy variables' {
+    scope quick
     # Proxy variables are a mess on UNIX. There are a lot them, and different
     # programs use them inconsistently. This test is based on the assumption
     # that if one of the proxy variables are set, then they all should be, in
@@ -70,6 +74,7 @@ load common
 }
 
 @test 'ch-build2dir' {
+    scope standard
     # This test unpacks into $TARDIR so we don't put anything in $IMGDIR at
     # build time. It removes the image on completion.
     need_docker

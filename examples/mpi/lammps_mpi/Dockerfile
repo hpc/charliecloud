@@ -1,3 +1,4 @@
+# ch-test-scope: full
 FROM openmpi
 WORKDIR /
 

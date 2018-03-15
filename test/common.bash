@@ -39,6 +39,25 @@ prerequisites_ok () {
     fi
 }
 
+scope () {
+    case $CH_TEST_SCOPE in
+        quick)
+            if [[ $1 != quick ]]; then
+                skip "$1 scope"
+            fi
+            ;;
+        standard)
+            if [[ $1 != standard && $1 != quick ]]; then
+                skip "$1 scope"
+            fi
+            ;;
+        full)
+            ;;  # always run tests in full scope
+        *)
+            exit 1
+    esac
+}
+
 tarball_ok () {
     ls -ld $1 || true
     test -f $1
@@ -106,6 +125,16 @@ fi
 # depend on Docker. It's true if user-set or command "docker" is not in $PATH.
 if ( ! command -v docker >/dev/null 2>&1 ); then
     CH_TEST_SKIP_DOCKER=yes
+fi
+
+# Validate CH_TEST_SCOPE and set if empty.
+if [[ -z $CH_TEST_SCOPE ]]; then
+    CH_TEST_SCOPE=standard
+elif [[    $CH_TEST_SCOPE != quick \
+        && $CH_TEST_SCOPE != standard \
+        && $CH_TEST_SCOPE != full ]]; then
+    printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' $CH_TEST_SCOPE >&2
+    exit 1
 fi
 
 # Do we have sudo?

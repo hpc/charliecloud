@@ -8,6 +8,8 @@
 # could tidy by using the fakeroot utility, but AFAICT that's not particularly
 # common and we'd prefer not to introduce another dependency. For example,
 # it's a standard tool on Debian but only in EPEL for CentOS.
+#
+# ch-test-scope: quick
 
 set -ex
 
@@ -106,7 +108,7 @@ $CH_RUN -- sh -c 'cd /test && make'
 ## Tar it up.
 
 # Using pigz saves about 8 seconds. Normally we wouldn't care about that, but
-# this script is park of "make test-quick", which we'd like developers to use
+# this script is part of the quick scope, which we'd like developers to use
 # frequently, so every second matters.
 if ( command -v pigz >/dev/null 2>&1 ); then
     GZIP_CMD=pigz
