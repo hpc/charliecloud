@@ -80,7 +80,7 @@ In order to run the test suite on a run or build system (you can test each
 mode independently), you also need:
 
 * Bash 4.1+
-* Python 2.6+
+* Python 3.4+
 * `Bats <https://github.com/sstephenson/bats>`_ 0.4.0
 * wget
 
