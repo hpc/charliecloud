@@ -43,11 +43,13 @@ bin/version.sh: VERSION.full
 
 # Yes, this is bonkers. We keep it around even though normal "git archive" or
 # the zip files on Github work, because it provides an easy way to create a
-# self-contained tarball with embedded Bats.
+# self-contained tarball with embedded Bats and man pages.
+#
+# You must "cd doc-src && make" before this will work.
 .PHONY: export
-export: VERSION.full
+export: VERSION.full man/charliecloud.1
 	test -d .git -a -f test/bats/.git  # need recursive Git checkout
-	git diff-index --quiet HEAD        # need clean working directory
+#	git diff-index --quiet HEAD        # need clean working directory
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
 	cd test/bats && \
@@ -57,7 +59,7 @@ export: VERSION.full
 	tar Af main.tar bats.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
             -rf main.tar \
-            VERSION.full
+            man/*.1 VERSION.full
 	gzip -9 main.tar
 	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
 	rm bats.tar
