@@ -591,7 +591,7 @@ Then, we add OpenMPI with :code:`test/Dockerfile.openmpi`:
 
 .. literalinclude:: ../test/Dockerfile.openmpi
    :language: docker
-   :lines: -48
+   :lines: -49
 
 So what is going on here?
 
@@ -801,7 +801,7 @@ The approach used in our example is to set the configuration directory to
 
 .. literalinclude:: ../test/Dockerfile.openmpi
    :language: docker
-   :lines:    37-47
+   :lines:    38-48
 
 The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with :code:`--bind`, that is
