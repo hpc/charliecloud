@@ -36,8 +36,8 @@ load ../../../test/common
 
 setup () {
     scope full
-    prerequisites_ok lammps_mpi
-    IMG=$IMGDIR/lammps_mpi
+    prerequisites_ok lammps
+    IMG=$IMGDIR/lammps
 }
 
 lammps_try () {
