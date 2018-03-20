@@ -1,0 +1,11 @@
+--- a/lammps/examples/melt/in.melt	2014-01-07 14:43:31.000000000 -0700
++++ b/lammps/examples/melt/in.melt	2018-03-16 14:37:02.000000000 -0600
+@@ -6,3 +6,3 @@
+ lattice		fcc 0.8442
+-region		box block 0 10 0 10 0 10
++region		box block 0 120 0 120 0 120
+ create_box	1 box
+@@ -32,2 +32,2 @@
+ thermo		50
+-run		250
++run		3
