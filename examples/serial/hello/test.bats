@@ -1,6 +1,7 @@
 load ../../../test/common
 
 setup () {
+    scope standard
     prerequisites_ok hello
 }
 

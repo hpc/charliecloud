@@ -15,6 +15,16 @@ To create an image with its own tests, documentation, etc., create a directory
 in examples/* containing a file called {Dockerfile,Docker_Pull,Build}.
 Optionally, include a file test.bats containing Bats tests for the image.
 
+Each of these files must specify its scope for building and running, which
+must be greater than or equal to the scope of custom examples-phase tests in
+test.bats. Exactly one of the following strings must be in each file:
+
+  ch-test-scope: quick
+  ch-test-scope: standard
+  ch-test-scope: full
+
+Other stuff on the line (e.g., comment syntax) is ignored.
+
 Additional subdirectories can be symlinked into examples and will be
 integrated into the test suite. This allows you to create a site-specific test
 suite.
@@ -27,7 +37,8 @@ Dockerfile:
 
 Docker_Pull:
 
-  * One line stating the address to pull from Docker Hub.
+  * First line states the address to pull from Docker Hub.
+  * Second line is a scope expression as described above.
   * Examples (these refer to the same image as of this writing):
       alpine:3.6
       alpine@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d

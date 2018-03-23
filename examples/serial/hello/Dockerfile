@@ -1,3 +1,4 @@
+# ch-test-scope: standard
 FROM debian:stretch
 
 RUN    apt-get update \

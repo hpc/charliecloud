@@ -24,14 +24,21 @@ compiler: gcc
 #   PKG_BUILD=yes    # build (but don't test) distribution packages, then exit
 #
 env:
-  - SETUID=    TARBALL=        INSTALL=
+# Quick test to fail fast in case something is really messed up.
+  - SETUID=    TARBALL=        INSTALL=     CH_TEST_SCOPE=quick
+# Package building (also fast).
   -            TARBALL=                     PKG_BUILD=yes
+  -            TARBALL=archive              PKG_BUILD=yes
+# Complete matrix of TARBALL and INSTALL.
+  - SETUID=    TARBALL=        INSTALL=
   - SETUID=    TARBALL=        INSTALL=yes
   - SETUID=    TARBALL=archive INSTALL=
-  -            TARBALL=archive              PKG_BUILD=yes
   - SETUID=    TARBALL=archive INSTALL=yes
   - SETUID=    TARBALL=export  INSTALL=
   - SETUID=    TARBALL=export  INSTALL=yes
+# One full-scope test. This will finish last by a lot.
+# (Disabled because it gives a >10-minute gap in output, so Travis times out.)
+#  - SETUID=    TARBALL=        INSTALL=     CH_TEST_SCOPE=full
 # Setuid mode is only sort of supported, so don't test it as carefully.
   - SETUID=yes TARBALL=        INSTALL=
   - SETUID=yes TARBALL=        INSTALL=yes

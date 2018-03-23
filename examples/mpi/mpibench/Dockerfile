@@ -1,3 +1,4 @@
+# ch-test-scope: full
 FROM openmpi
 
 # Compile the Intel MPI benchmark. Note that this URL comes from a button

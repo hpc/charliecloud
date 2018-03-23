@@ -1,6 +1,7 @@
 load common
 
 @test 'prepare images directory' {
+    scope quick
     shopt -s nullglob  # globs that match nothing yield empty string
     if [[ -e $IMGDIR ]]; then
         # Images directory exists. If all it contains is Charliecloud images
@@ -27,12 +28,14 @@ load common
 }
 
 @test 'executables --help' {
+    scope standard
     ch-tar2dir --help
     ch-run --help
     ch-ssh --help
 }
 
 @test 'setuid bit matches --is-setuid' {
+    scope quick
     test $CH_RUN_FILE -ef $(which ch-run)
     [[ -e $CH_RUN_FILE ]]
     ls -l $CH_RUN_FILE
@@ -48,12 +51,14 @@ load common
 }
 
 @test 'setgid bit is off' {
+    scope quick
     [[ -e $CH_RUN_FILE ]]
     [[ ! -g $CH_RUN_FILE ]]
     #[[ $(stat -c %G $CH_RUN_FILE) != root ]]
 }
 
 @test 'ch-run refuses to run if setgid' {
+    scope quick
     CH_RUN_TMP=$BATS_TMPDIR/ch-run.setgid
     GID=$(id -g)
     GID2=$(id -G | cut -d' ' -f2)
@@ -73,6 +78,7 @@ load common
 }
 
 @test 'ch-run refuses to run if setuid but not compiled setuid' {
+    scope quick
     [[ -z $CH_RUN_SETUID ]] || skip 'compiled setuid'
     [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
     CH_RUN_TMP=$BATS_TMPDIR/ch-run.setuid
@@ -90,12 +96,14 @@ load common
 }
 
 @test 'ch-run as root: --version and --test' {
+    scope standard
     [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
     sudo $CH_RUN_FILE --version
     sudo $CH_RUN_FILE --help
 }
 
 @test 'ch-run as root: run image' {
+    scope standard
     # Running an image should work as root, but it doesn't, and I'm not sure
     # why, so skip this test. This fails in the test suite with:
     #
@@ -111,6 +119,7 @@ load common
 }
 
 @test 'ch-run as root: root with non-zero GID refused' {
+    scope standard
     [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
     [[ -z $TRAVIS ]] || skip 'not permitted on Travis'
     run sudo -u root -g $(id -gn) $CH_RUN_FILE -v --version
@@ -120,6 +129,7 @@ load common
 }
 
 @test 'ch-run -u and -g refused in setuid mode' {
+    scope quick
     [[ -n $CH_RUN_SETUID ]] || skip 'not compiled for setuid'
     run ch-run -u 65534
     echo "$output"
@@ -132,12 +142,14 @@ load common
 }
 
 @test 'syscalls/pivot_root' {
+    scope quick
     [[ -n $CH_RUN_SETUID ]] && skip 'pivot_root has no setuid mode'
     cd ../examples/syscalls
     ./pivot_root
 }
 
 @test 'unpack chtest image' {
+    scope quick
     if ( image_ok $CHTEST_IMG ); then
         # image exists, remove so we can test new unpack
         rm -Rf --one-file-system $CHTEST_IMG
@@ -149,6 +161,7 @@ load common
 }
 
 @test 'ch-tar2dir errors' {
+    scope quick
     # tarball doesn't exist
     run ch-tar2dir does_not_exist.tar.gz $IMGDIR
     echo "$output"
@@ -165,6 +178,7 @@ load common
 }
 
 @test 'workaround for /bin not in $PATH' {
+    scope quick
     echo "$PATH"
     # if /bin is in $PATH, latter passes through unchanged
     PATH2="$CH_BIN:/bin:/usr/bin"
@@ -189,6 +203,7 @@ load common
 }
 
 @test '$PATH unset' {
+    scope standard
     BACKUP_PATH=$PATH
     unset PATH
     run $CH_RUN_FILE $CHTEST_IMG -- \
@@ -200,6 +215,7 @@ load common
 }
 
 @test 'mountns id differs' {
+    scope quick
     host_ns=$(stat -Lc '%i' /proc/self/ns/mnt)
     echo "host:  $host_ns"
     guest_ns=$(ch-run $CHTEST_IMG -- stat -Lc '%i' /proc/self/ns/mnt)
@@ -208,6 +224,7 @@ load common
 }
 
 @test 'userns id differs' {
+    scope quick
     [[ -n $CH_RUN_SETUID ]] && skip 'setuid mode'
     host_ns=$(stat -Lc '%i' /proc/self/ns/user)
     echo "host:  $host_userns"
@@ -217,9 +234,9 @@ load common
 }
 
 @test 'distro differs' {
+    scope quick
     # This is a catch-all and a bit of a guess. Even if it fails, however, we
     # get an empty string, which is fine for the purposes of the test.
-    echo hello world
     host_distro=$(  cat /etc/os-release /etc/*-release /etc/*_version \
                   | egrep -m1 '[A-Za-z] [0-9]' \
                   | sed -r 's/^(.*")?(.+)(")$/\2/')
@@ -239,6 +256,7 @@ load common
 }
 
 @test 'user and group match host' {
+    scope quick
     host_uid=$(id -u)
     guest_uid=$(ch-run $CHTEST_IMG -- id -u)
     [[ $host_uid = $guest_uid ]]
@@ -254,6 +272,7 @@ load common
 }
 
 @test 'mount image read-only' {
+    scope quick
     run ch-run $CHTEST_IMG sh <<EOF
 set -e
 test -w /WEIRD_AL_YANKOVIC
@@ -265,11 +284,13 @@ EOF
 }
 
 @test 'mount image read-write' {
-   ch-run -w $CHTEST_IMG -- sh -c 'echo writable > write'
-   ch-run -w $CHTEST_IMG rm write
+    scope quick
+    ch-run -w $CHTEST_IMG -- sh -c 'echo writable > write'
+    ch-run -w $CHTEST_IMG rm write
 }
 
 @test 'ch-run --bind' {
+    scope quick
     # one bind, default destination (/mnt/0)
     ch-run -b $IMGDIR/bind1 $CHTEST_IMG -- cat /mnt/0/file1
     # one bind, explicit destination
@@ -306,6 +327,7 @@ EOF
 }
 
 @test 'ch-run --bind errors' {
+    scope quick
 
     # too many binds (11)
     run ch-run -b0 -b1 -b2 -b3 -b4 -b5 -b6 -b7 -b8 -b9 -b10 $CHTEST_IMG -- true
@@ -374,6 +396,7 @@ EOF
 }
 
 @test 'broken image errors' {
+    scope standard
     IMG=$BATS_TMPDIR/broken-image
 
     # Create an image skeleton.
@@ -490,6 +513,7 @@ EOF
 }
 
 @test 'ch-run --cd' {
+    scope quick
     # Default initial working directory is /.
     run ch-run $CHTEST_IMG -- pwd
     echo "$output"
@@ -510,6 +534,7 @@ EOF
 }
 
 @test '/usr/bin/ch-ssh' {
+    scope quick
     ls -l $CH_BIN/ch-ssh
     ch-run $CHTEST_IMG -- ls -l /usr/bin/ch-ssh
     ch-run $CHTEST_IMG -- test -x /usr/bin/ch-ssh
@@ -520,6 +545,7 @@ EOF
 }
 
 @test 'permissions test directories exist' {
+    scope standard
     [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
     for d in $CH_TEST_PERMDIRS; do
         d=$d/perms_test
@@ -534,14 +560,16 @@ EOF
 }
 
 @test 'relative path to image' {
-   # bug number 6
-   DIRNAME=$(dirname $CHTEST_IMG)
-   BASEDIR=$(basename $CHTEST_IMG)
-   cd $DIRNAME && ch-run $BASEDIR -- true
+    # issue #6
+    scope quick
+    DIRNAME=$(dirname $CHTEST_IMG)
+    BASEDIR=$(basename $CHTEST_IMG)
+    cd $DIRNAME && ch-run $BASEDIR -- true
 }
 
 @test 'symlink to image' {
-   # bug number 50
-   ln -s $CHTEST_IMG $BATS_TMPDIR/symlink-test
-   ch-run $BATS_TMPDIR/symlink-test -- true
+    # issue #50
+    scope quick
+    ln -s $CHTEST_IMG $BATS_TMPDIR/symlink-test
+    ch-run $BATS_TMPDIR/symlink-test -- true
 }

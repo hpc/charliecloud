@@ -568,7 +568,7 @@ package :code:`openssh-client`:
 
 .. literalinclude:: ../examples/serial/hello/Dockerfile
    :language: docker
-   :lines: 1-5
+   :lines: 2-6
 
 You can use distribution package managers such as :code:`apt-get`, as
 demonstrated above, or others, such as :code:`pip` for Python packages.
@@ -586,12 +586,13 @@ this with two chained Dockerfiles. First, we build a basic Debian image
 
 .. literalinclude:: ../test/Dockerfile.debian9
    :language: docker
+   :lines: 2-
 
 Then, we add OpenMPI with :code:`test/Dockerfile.openmpi`:
 
 .. literalinclude:: ../test/Dockerfile.openmpi
    :language: docker
-   :lines: -49
+   :lines: 2-50
 
 So what is going on here?
 
@@ -801,7 +802,7 @@ The approach used in our example is to set the configuration directory to
 
 .. literalinclude:: ../test/Dockerfile.openmpi
    :language: docker
-   :lines:    38-48
+   :lines:    39-49
 
 The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with :code:`--bind`, that is

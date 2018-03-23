@@ -1,3 +1,4 @@
+# ch-test-scope: full
 FROM debian9
 
 # OS packages needed to build OpenMPI.

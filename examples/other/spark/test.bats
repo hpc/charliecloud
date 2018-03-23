@@ -16,6 +16,7 @@ load ../../../test/common
 # empty).
 
 setup () {
+    scope standard
     prerequisites_ok spark
     umask 0077
     SPARK_IMG=$IMGDIR/spark

@@ -50,14 +50,13 @@ fi
 cd test
 
 make where-bats
-make test-quick
-make test-all
+make test
 
 # To test without Docker, move the binary out of the way.
 DOCKER=$(which docker)
 sudo mv $DOCKER $DOCKER.tmp
 
-make test-all
+make test
 
 # For Travis, this isn't really necessary, since the VM will go away
 # immediately after this script exits. However, restore the binary to enable
