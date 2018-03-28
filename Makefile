@@ -43,6 +43,14 @@ bin/version.h: VERSION.full
 bin/version.sh: VERSION.full
 	echo "version () { echo 1>&2 '$$(cat $<)'; }" > $@
 
+# Clone BATS if it's not already there
+.PHONY: get-bats
+get-bats: test/bats/
+	cd test/bats/ \
+	  && test -d .git \
+	    && git pull \
+	    || git clone https://github.com/sstephenson/bats.git .
+
 # Yes, this is bonkers. We keep it around even though normal "git archive" or
 # the zip files on Github work, because it provides an easy way to create a
 # self-contained tarball with embedded Bats and man pages.
@@ -50,8 +58,8 @@ bin/version.sh: VERSION.full
 # You must "cd doc-src && make" before this will work.
 .PHONY: export
 export: VERSION.full man/charliecloud.1
-	test -d .git -a -f test/bats/.git  # need recursive Git checkout
-#	git diff-index --quiet HEAD        # need clean working directory
+	test -d .git -a -f test/bats/.git \
+	  || $(MAKE) get-bats
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
 	cd test/bats && \
