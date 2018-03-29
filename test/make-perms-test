@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # This script sets up a test directory for testing filesystem permissions
 # enforcement in UDSS such as virtual machines and containers. It must be run
@@ -22,6 +22,14 @@
 # traverse. Files are not tested for execute because it's a more complicated
 # test (new process needed) and if readable, someone could simply make their
 # own executable copy.
+#
+# Compatibility: As of February 2016, this needs to be compatible with Python
+# 2.6 because that's the highest version that comes with RHEL 6. We're also
+# aiming to be source-compatible with Python 3.4+, but that's untested.
+#
+# Help: http://python-future.org/compatible_idioms.html
+
+from __future__ import division, print_function, unicode_literals
 
 import grp
 import os
@@ -147,7 +155,7 @@ class Test_Directory(Test):
       file_ = self.name + '/file'
       with open(file_, 'w') as fp:
          fp.write(FILE_CONTENT)
-      set_perms(file_, my_uid, my_uid, 0o660)
+      set_perms(file_, my_uid, my_uid, 0660)
 
 
 class Test_File(Test):
@@ -171,7 +179,7 @@ try:
 except OSError as x:
    print("can't mkdir %s: %s" % (testdir, str(x)))
    sys.exit(1)
-set_perms(testdir, my_uid, my_gid, 0o770)
+set_perms(testdir, my_uid, my_gid, 0770)
 os.chdir(testdir)
 
 Test_Directory(my_uid, my_gid, 7, 7, 0, 'nopass').write()
