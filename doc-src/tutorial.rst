@@ -31,6 +31,7 @@ Charliecloud for your own applications.
 
 ::
 
+  $ cd ~/charliecloud/examples/serial/hello
   $ ch-build -t hello ~/charliecloud
   Sending build context to Docker daemon 15.67 MB
   [...]
