@@ -107,6 +107,7 @@ CHTEST_MULTINODE=$SLURM_JOB_ID
 if [[ $CHTEST_MULTINODE ]]; then
     MPIRUN_NODE='srun --ntasks-per-node 1'
     MPIRUN_CORE='srun --cpus-per-task 1'
+    MPIRUN_2='srun -n 2'
     # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
     # documentation.
     if [[ -z $SLURM_CPUS_ON_NODE ]]; then
@@ -117,6 +118,7 @@ if [[ $CHTEST_MULTINODE ]]; then
 else
     MPIRUN_NODE='mpirun --map-by ppr:1:node'
     MPIRUN_CORE='mpirun'
+    MPIRUN_2='mpirun -np 2'
     CHTEST_CORES_NODE=$(getconf _NPROCESSORS_ONLN)
     CHTEST_CORES_TOTAL=$CHTEST_CORES_NODE
 fi
