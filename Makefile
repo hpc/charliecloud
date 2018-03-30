@@ -78,6 +78,15 @@ export: VERSION.full man/charliecloud.1
 # default is to use that also for DESTDIR. If DESTDIR is provided in addition,
 # we use that for installation.
 #
+# PREFIX can be relative unless DESTDIR is set. Absolute paths are not
+# canonicalized.
+ifneq ($(shell echo "$(PREFIX)" | cut -c1),/)
+  ifdef DESTDIR
+    $(error PREFIX must be absolute if DESTDIR is set)
+  endif
+  override PREFIX := $(abspath $(PREFIX))
+  $(warning Relative PREFIX converted to $(PREFIX))
+endif
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 BIN := $(INSTALL_PREFIX)/bin
 DOC := $(INSTALL_PREFIX)/share/doc/charliecloud
