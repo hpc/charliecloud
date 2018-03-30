@@ -1,9 +1,6 @@
 # Draw a cone and write it out to sys.argv[1] in a few different ways. All
 # output files should be bit-for-bit reproducible, i.e., no embedded
 # timestamps, hostnames, floating point error, etc.
-#
-# Note that even if you start multiple pvbatch using MPI, this script is only
-# executed by rank 0.
 
 from __future__ import print_function
 
@@ -21,10 +18,9 @@ print("ParaView %d.%d.%d on Python %s"
          pv.paraview.servermanager.vtkSMProxyManager.GetVersionPatch(),
          platform.python_version()))
 
-# Which rank am I?
-rank = mpi4py.MPI.COMM_WORLD.rank
-def print_wrote(filename):
-   print("rank %d: wrote %s" % (rank, filename))
+# Even if you start multiple pvbatch using MPI, this script is only
+# executed by rank 0. Check this assumption.
+assert mpi4py.MPI.COMM_WORLD.rank == 0
 
 # Output directory provided on command line.
 outdir = sys.argv[1]
@@ -33,25 +29,23 @@ outdir = sys.argv[1]
 pv.Cone()
 pv.Show()
 pv.Render()
-print("rank %d: rendered" % rank)
+print("rendered")
 
 # PNG image (serial).
-if (rank == 0):
-   filename = "%s/cone.png" % outdir
-   pv.SaveScreenshot(filename)
-   print_wrote(filename)
+filename = "%s/cone.png" % outdir
+pv.SaveScreenshot(filename)
+print(filename)
 
 # Legacy VTK file (ASCII, serial).
-if (rank == 0):
-   filename = "%s/cone.vtk" % outdir
-   pv.SaveData(filename, FileType="Ascii")
-   print_wrote(filename)
+filename = "%s/cone.vtk" % outdir
+pv.SaveData(filename, FileType="Ascii")
+print(filename)
 
 # XML VTK files (parallel).
-filename=("%s/cone_%d.pvtp" % (outdir, rank))
+filename=("%s/cone.pvtp" % outdir)
 writer = pv.XMLPPolyDataWriter(FileName=filename)
 writer.UpdatePipeline()
-print_wrote(filename)
+print(filename)
 
 # Done.
-print("rank %d: done" % rank)
+print("done")
