@@ -3,7 +3,7 @@ load ../../../test/common
 setup() {
     prerequisites_ok spack
     SPACK_IMG=$IMGDIR/spack
-    SPACK_ROOT=/spack
+    SPACK_BIN=/spack/bin
 }
 
 clean() {
@@ -13,14 +13,22 @@ clean() {
 
 @test "$EXAMPLE_TAG/basic" {
     # run basic usage from spack documentation
-    ch-run -w --no-home $SPACK_IMG -- bash -c "export PATH=$SPACK_ROOT/bin:$PATH && spack list"
-    ch-run -w --no-home $SPACK_IMG -- bash -c "export PATH=$SPACK_ROOT/bin:$PATH && spack info mpich"
-    ch-run -w --no-home $SPACK_IMG -- bash -c "export PATH=$SPACK_ROOT/bin:$PATH && spack versions libelf"  
+    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c "./spack list"
+    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c "./spack info mpich"
+    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c "./spack versions libelf"  
 }
 
 @test "$EXAMPLE_TAG/install" {
-    # install a package
-    ch-run -w --no-home $SPACK_IMG -- bash -c "export PATH=$SPACK_ROOT/bin:$PATH && spack install mpileaks" 
+    # install test packages
+    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c "./spack install subversion"
+    # install a specific package version
+    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c "./spack install paraview@5.4.0"
+}
+
+@test "$EXAMPLE_TAG/find" {
+    # confirm package install
+    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c "./spack find subversion"
+    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c "./spack find paraview@5.4.0" 
 }
 
 @test "$EXAMPLE_TAG/clean" {
