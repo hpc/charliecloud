@@ -4,7 +4,7 @@ SHELL=/bin/bash
 export CFLAGS += -std=c11 -Wall
 
 .PHONY: all
-all: VERSION.full bin/version.h bin/version.sh
+all: VERSION.full bin/version.h bin/version.sh charliecloud.spec
 	cd bin && $(MAKE) all
 	cd test && $(MAKE) all
 	cd examples/syscalls && $(MAKE) all
@@ -57,7 +57,7 @@ get-bats: test/bats/
 #
 # You must "cd doc-src && make" before this will work.
 .PHONY: export
-export: VERSION.full man/charliecloud.1
+export: VERSION.full man/charliecloud.1 charliecloud.spec
 	test -d .git -a -f test/bats/.git \
 	  || $(MAKE) get-bats
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
@@ -69,7 +69,7 @@ export: VERSION.full man/charliecloud.1
 	tar Af main.tar bats.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
             -rf main.tar \
-            man/*.1 VERSION.full
+            $^
 	gzip -9 main.tar
 	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
 	rm bats.tar
@@ -176,3 +176,9 @@ install: all
 	    ln -sf ../libexec/bats $(TEST)/bats/bin/bats && \
 	    ln -sf bats/bin/bats $(TEST)/bats; \
 	fi
+
+charliecloud.spec: packaging/redhat/charliecloud.spec
+	sed -e 's,@VERSION@,$(shell cat VERSION.full),g' \
+	    -e 's,@PREFIX@,$(if $(PREFIX),$(PREFIX),%{_prefix}),g' \
+	    -e 's,@LIBEXECDIR@,$(if $(INSTALL_PREFIX),$(LIBEXEC_INST),%{_libexecdir}),g' \
+	    $< > $@
