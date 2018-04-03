@@ -177,7 +177,7 @@ install: all
 	    ln -sf bats/bin/bats $(TEST)/bats; \
 	fi
 
-charliecloud.spec: packaging/redhat/charliecloud.spec
+charliecloud.spec: packaging/redhat/charliecloud.spec.in
 	sed -e 's,@VERSION@,$(shell cat VERSION.full),g' \
 	    -e 's,@PREFIX@,$(if $(PREFIX),$(PREFIX),%{_prefix}),g' \
 	    -e 's,@LIBEXECDIR@,$(if $(INSTALL_PREFIX),$(LIBEXEC_INST),%{_libexecdir}),g' \
