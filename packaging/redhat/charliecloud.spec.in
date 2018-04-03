@@ -1,18 +1,39 @@
-Summary: Lightweight user-defined software stacks for high-performance computing
+# These are the Python resource directories we need to look in for modules
+%if %{?python_sitelib:1}0
+%{expand: %%global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; import sys; sys.stdout.write(get_python_lib())")}
+%endif
+%if %{?python_sitearch:1}0
+%{expand: %%global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; import sys; sys.stdout.write(get_python_lib(1))")}
+%endif
+
+# Check for the Python modules we need in the above directories
+%define python_check_buildreq() %{expand:%%(for P in %{python_sitelib}/*-info/top_level.txt %{python_sitearch}/*-info/top_level.txt ; do PKG=$(< $P) ; test "$PKG" = "%{1}" && echo 1 && break ; done)}
+
+# If the modules we need aren't there, list them as missing build requirements.  If not, don't!
+
+Summary: Lightweight Container Runtime for User-Defined Software Stacks in High-Performance Computing
 Name: charliecloud
 Version: @VERSION@
-Release: %{?dist}
+#Release: 1%{?dist}
+Release: 0.%(date +%Y%m%d)%{?dist}
 License: Apache-2.0
 Group: System Environment/Base
 URL: https://hpc.github.io/charliecloud/
 Source: %{name}-%{version}.tar.gz
 ExclusiveOS: linux
+BuildRequires: python
+%if !%{python_check_buildreq sphinx}0
+BuildRequires: python-sphinx
+%endif
+%if !%{python_check_buildreq sphinx_rtd_theme}0
+BuildRequires: python-sphinx_rtd_theme
+%endif
 BuildRoot: %{?_tmppath}%{!?_tmppath:/var/tmp}/%{name}-%{version}-%{release}-root
-BuildRequires: python python-sphinx python-sphinx_rtd_theme rsync
 
 %description
 Charliecloud provides user-defined software stacks (UDSS) for
 high-performance computing (HPC) centers.
+
 
 %package doc
 Summary: Documentation and examples for %{name}
@@ -22,15 +43,18 @@ Group: System Environment/Base
 This package contains documentation and examples
 for the %{name} package.
 
+
 %prep
 %setup -q
 # Required for CentOS 7 and older, which don't know of Docker lexer yet.
 #find doc-src -type f -print0 | xargs -0 sed -i '/.*:language: docker.*/d'
 
+
 %build
 %{__make} %{?mflags}
 %{__make} -C doc-src %{?mflags}
 mv doc html
+
 
 %install
 LIBEXEC_POSTFIX=$(echo %{_libexecdir} | sed 's#^/usr/##')
@@ -42,11 +66,15 @@ rm -rf $RPM_BUILD_ROOT/%{_defaultdocdir}/%{name}/COPYRIGHT
 rm -rf $RPM_BUILD_ROOT/%{_defaultdocdir}/%{name}/LICENSE
 rm -rf $RPM_BUILD_ROOT/%{_defaultdocdir}/%{name}/README.rst
 
+
+%check
+%{__make} -C test test-build || exit 0
+%{__make} -C test test-run test-test
+
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-#%check
-#%{__make} -C test test-quick
 
 %files
 %doc LICENSE README.rst examples
@@ -59,7 +87,9 @@ rm -rf $RPM_BUILD_ROOT
 # Binaries
 %{_bindir}/ch-*
 
+
 %files doc
 %doc html
+
 
 %changelog
