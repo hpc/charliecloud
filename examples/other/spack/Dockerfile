@@ -3,11 +3,19 @@ FROM debian:stretch
 
 RUN apt-get update \
     && apt-get install -y \
+    apt-utils \
     curl \
     g++ \
+    gfortran \
     git \
-    make \ 
-    python
+    make \
+    mercurial \
+    patch \
+    procps \
+    python \
+    python-pkg-resources\
+    tar \
+    unzip
 
 # Install Spack
 WORKDIR /
@@ -16,11 +24,4 @@ ENV SPACK_ROOT /spack
 ENV PATH $SPACK_ROOT/bin:$PATH
 RUN git clone $SPACK_URL
 RUN spack install libelf
-
-# Compiler Verification
-RUN spack install zlib%gcc@6.3.0
-
-# Utilities Configuration
-RUN spack install curl
-RUN spack load curl
 RUN spack bootstrap
