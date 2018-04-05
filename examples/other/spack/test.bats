@@ -25,5 +25,5 @@ setup() {
 
 @test "$EXAMPLE_TAG/clean" {
     # revert image back to orginal
-    ch-tar2dir $TARDIR/spack.tar.gz $SPACK_IMG
+    ch-tar2dir $TARDIR/spack.tar.gz $IMGDIR
 }
