@@ -13,14 +13,9 @@ setup() {
     ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c ". $SPACK_ENV && ./spack test"
 }
 
-@test "$EXAMPLE_TAG/installpackages" {
-    # Note that this command actually installs multiple packages.
-    # Before attempting to install openmpi, Spack will check
-    # dependencies and automatically install any missing packages.
-    # As such, this test installs libsigsegv, m4, libtool, util-macros,
-    # libpciaccess, xz, libxml2, readline, gdbm, perl, autoconf, automake,
-    # numactl, hwloc, and openmpi 3.0.1 
-    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c ". $SPACK_ENV && ./spack install openmpi"
+@test "$EXAMPLE_TAG/installpackage" {
+    # Install a small package 
+    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c ". $SPACK_ENV && ./spack install m4"
 }
 
 @test "$EXAMPLE_TAG/clean" {
