@@ -150,8 +150,8 @@ can have value when debugging Charliecloud.
 
   $ sudo docker run -it hello /bin/bash
   # ls /
-  bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
-  boot  etc  lib   media  opt  root  sbin  sys  usr
+  bin   dev  hello  lib    media  opt   root  sbin  sys  usr
+  boot  etc  home   lib64  mnt    proc  run   srv   tmp  var
   # exit
   exit
 
