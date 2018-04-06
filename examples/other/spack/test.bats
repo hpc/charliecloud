@@ -15,7 +15,7 @@ setup() {
 
 @test "$EXAMPLE_TAG/installpackage" {
     # Install a small package 
-    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c ". $SPACK_ENV && ./spack install m4"
+    ch-run -w --no-home -c $SPACK_BIN $SPACK_IMG -- bash -c ". $SPACK_ENV && ./spack install libsigsegv"
 }
 
 @test "$EXAMPLE_TAG/clean" {
