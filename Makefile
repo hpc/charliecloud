@@ -80,12 +80,14 @@ export: VERSION.full man/charliecloud.1
 #
 # PREFIX can be relative unless DESTDIR is set. Absolute paths are not
 # canonicalized.
+ifneq ($(PREFIX),)
 ifneq ($(shell echo "$(PREFIX)" | cut -c1),/)
   ifdef DESTDIR
     $(error PREFIX must be absolute if DESTDIR is set)
   endif
   override PREFIX := $(abspath $(PREFIX))
   $(warning Relative PREFIX converted to $(PREFIX))
+endif
 endif
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 BIN := $(INSTALL_PREFIX)/bin
