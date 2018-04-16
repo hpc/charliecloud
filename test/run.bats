@@ -27,6 +27,21 @@ load common
     touch $IMGDIR/bind2/file2
 }
 
+@test 'permissions test directories exist' {
+    scope standard
+    [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
+    for d in $CH_TEST_PERMDIRS; do
+        d=$d/perms_test
+        echo $d
+        test -d $d
+        test -d $d/pass
+        test -f $d/pass/file
+        test -d $d/nopass
+        test -d $d/nopass/dir
+        test -f $d/nopass/file
+    done
+}
+
 @test 'executables --help' {
     scope standard
     ch-tar2dir --help
@@ -542,21 +557,6 @@ EOF
     guest_size=$(ch-run $CHTEST_IMG -- stat -c %s /usr/bin/ch-ssh)
     echo "host: $host_size, guest: $guest_size"
     [[ $host_size -eq $guest_size ]]
-}
-
-@test 'permissions test directories exist' {
-    scope standard
-    [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
-    for d in $CH_TEST_PERMDIRS; do
-        d=$d/perms_test
-        echo $d
-        test -d $d
-        test -d $d/pass
-        test -f $d/pass/file
-        test -d $d/nopass
-        test -d $d/nopass/dir
-        test -f $d/nopass/file
-    done
 }
 
 @test 'relative path to image' {
