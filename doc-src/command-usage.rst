@@ -41,6 +41,13 @@ Run a command in a Docker container.
 
 .. include:: ./ch-docker-run_desc.rst
 
+ch-fromhost
++++++++++++
+
+Inject files from the host into an image directory.
+
+.. include:: ./ch-fromhost_desc.rst
+
 ch-run
 ++++++
 
