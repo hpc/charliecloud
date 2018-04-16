@@ -73,6 +73,10 @@ test/build_auto.bats
 test/build_auto-quick.bats
 test/run_auto.bats
 test/run_auto-quick.bats
+test/sotest/*.so*
+test/sotest/sotest
+test/sotest/bin/sotest
+test/sotest/lib/*.so*
 
 # for Debian package
 *.debhelper.log
