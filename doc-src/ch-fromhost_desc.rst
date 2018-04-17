@@ -71,8 +71,11 @@ Additional arguments:
 Notes
 =====
 
-Do not include symlinks to shared libraries. These will be re-created by
-:code:`ldconfig`.
+Symbolic links are dereferenced, i.e., the files pointed to are injected, not
+the links themselves.
+
+As a corollary, do not include symlinks to shared libraries. These will be
+re-created by :code:`ldconfig`.
 
 There are two alternate approaches for nVidia GPU libraries:
 
@@ -91,6 +94,12 @@ There are two alternate approaches for nVidia GPU libraries:
 
 Further, while these alternate approaches would simplify or eliminate this
 script for nVidia GPUs, it would not solve the problem for other situations.
+
+
+Bugs
+====
+
+File paths may not contain newlines.
 
 
 Examples
@@ -121,6 +130,7 @@ within the container::
   /usr/lib64/libfoo.so
   $ ch-fromhost --file corge.txt --dest /etc /var/tmp/baz
 
-Inject the files recommended by nVidia into the image::
+Inject the executables and libraries recommended by nVidia into the image, and
+then run :code:`ldconfig`::
 
   $ ch-fromhost --nvidia /var/tmp/baz

@@ -1,0 +1,2 @@
+sotest/bin/sotest
+sotest/lib/libsotest.so.1.0
