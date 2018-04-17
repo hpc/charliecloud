@@ -89,7 +89,7 @@ load common
 }
 
 @test 'sotest executable works' {
-    scope quick
+    scope standard
     export LD_LIBRARY_PATH=./sotest
     ldd sotest/sotest
     sotest/sotest

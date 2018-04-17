@@ -1,0 +1,2 @@
+# ch-test-scope: standard
+FROM debian:stretch

@@ -1,0 +1,132 @@
+#!/bin/bash
+
+# Note: The ${x:+y} construction yields $y if $x is set and not null, or $x
+# otherwise; here, to append a delimiter on second and subsequent iterations.
+# See: https://chris-lamb.co.uk/posts/joining-strings-in-posix-shell
+
+LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
+. ${LIBEXEC}/base.sh
+
+usage () {
+    cat 1>&2 <<EOF
+Usage: FIXME
+EOF
+    exit ${1:-1}
+}
+
+DEST_DEFAULT=
+IMAGE=
+INFER=yes
+NEWLINE='
+'
+FOUND_FILES=
+FOUND_LIBS_P=
+
+debug () {
+    [[ $VERBOSE ]] && printf "ch-fromhost: %s\n" "$1" 1>&2
+}
+
+ensure_nonempty () {
+    [[ -z $2 ]] && fatal "$1 must not be empty"
+}
+
+fatal () {
+    printf "ch-fromhost: %s\n" "$1" 1>&2
+    exit 1
+}
+
+info () {
+    printf "ch-fromhost: %s\n" "$1" 1>&2
+}
+
+while [ $# -gt 0 ]; do
+    OPT="$1"; shift
+    case $OPT in
+        -c|--cmd)
+            ensure_nonempty --cmd "$1"
+            OUT=$($1)
+            [[ $? -ne 0 ]] && fatal "command failed: $1"
+            FOUND_FILES="${FOUND_FILES:+$FOUND_FILES$NEWLINE}$OUT"
+            shift
+            ;;
+        -d|--dest)
+            ensure_nonempty --dest "$1"
+            DEST_DEFAULT="$1"
+            shift
+            ;;
+        -f|--file)
+            ensure_nonempty --file "$1"
+            OUT=$(cat "$1")
+            [[ $? -ne 0 ]] && fatal "cannot read file: $1"
+            FOUND_FILES="${FOUND_FILES:+$FOUND_FILES$NEWLINE}$OUT"
+            shift
+            ;;
+        -h|--help)
+            usage 0
+            ;;
+        --no-infer)
+            INFER=
+            ;;
+        --nvidia)
+            ;;
+        -v|--verbose)
+            VERBOSE=yes
+            ;;
+        --version)
+            version
+            exit 0
+            ;;
+        -*)
+            info "invalid option: $OPT"
+            usage
+            ;;
+        *)
+            ensure_nonempty "image path" "$OPT"
+            [[ $IMAGE ]] && fatal "duplicate image path: $OPT"
+            [[ -d $OPT ]] || fatal "image not a directory: $OPT"
+            IMAGE="$OPT"
+            ;;
+    esac
+done
+
+debug "injecting into image: $IMAGE"
+
+[[ $VERBOSE ]] && echo "injecting ..." 1>&2
+OLD_IFS="$IFS"
+IFS="$NEWLINE"
+FOUND_FILE_P=
+for FILE in $FOUND_FILES; do
+    FOUND_FILE_P=yes
+    TYPE_=unk
+    DEST="$DEST_DEFAULT"
+    if [ $INFER ]; then
+        case $FILE in
+            */bin*)
+                TYPE_=bin
+                DEST=/usr/bin
+                ;;
+            */lib*)
+                TYPE_=lib
+                DEST=/usr/lib
+                FOUND_LIBS_P=yes
+                ;;
+        esac
+    fi
+    [[ $VERBOSE ]] && echo "  $TYPE_: $FILE -> $DEST" 1>&2
+    [[ -z $DEST ]] && fatal "no destination for: $FILE"
+    [[ ${DEST:0:1} = '/' ]] || fatal "not an absolute path: $DEST"
+    [[ -d $IMAGE$DEST ]] || fatal "not a directory: $IMAGE$DEST"
+    cp --dereference --preserve=all $FILE "$IMAGE/$DEST"
+    [[ $? -ne 0 ]] && fatal "cannot inject: $FILE"
+done
+IFS="$OLD_IFS"
+
+[[ -z $FOUND_FILE_P ]] && fatal "empty file list"
+
+if [[ $FOUND_LIBS_P && $INFER ]]; then
+    debug "found shared library, running ldconfig"
+    $CH_BIN/ch-run -w $IMAGE -- ldconfig
+else
+    debug "no shared libraries found"
+fi
+

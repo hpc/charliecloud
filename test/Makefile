@@ -27,7 +27,7 @@ test-build: build_auto.bats
 # directory, which I believe is assumed elsewhere in the test suite as well.
 .PHONY: test-run
 test-run: run_auto.bats
-	bats run.bats run_uidgid.bats run_auto.bats
+	bats run.bats run_uidgid.bats run_auto.bats run_post.bats
 	set -e; \
         if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
 	if ( ! bin/ch-run --is-setuid ); then \
