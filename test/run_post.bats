@@ -1,6 +1,7 @@
 load common
 
 fromhost_clean () {
+    [[ $1 ]]
     for file in {mnt,usr/bin}/sotest \
                 {mnt,usr/lib}/libsotest.so.1{.0,} \
                 /mnt/sotest.c \
@@ -186,12 +187,49 @@ fromhost_ls () {
     fromhost_clean_p $IMG
 }
 
-@test 'ch-fromhost --nvidia' {
+@test 'ch-fromhost --nvidia with GPU' {
     scope standard
     prerequisites_ok fromhost
-    skip 'not implemented'
+    command -v nvidia-container-cli >/dev/null 2>&1 \
+        || skip 'nvidia-container-cli not in $PATH'
+    IMG=$IMGDIR/fromhost
+
+    # nvidia-container-cli --version (to make sure it's linked correctly)
+    nvidia-container-cli --version
+
     # --nvidia
+    ch-fromhost -v --nvidia $IMG
+
+    # nvidia-smi runs in guest
+    ch-run $IMG -- nvidia-smi -L
+
+    # nvidia-smi -L matches host
+    host=$(nvidia-smi -L)
+    echo "host GPUs:"
+    echo "$host"
+    guest=$(ch-run $IMG -- nvidia-smi -L)
+    echo "guest GPUs:"
+    echo "$guest"
+    cmp <(echo "$host") <(echo "$guest")
+
     # --nvidia and --cmd
+    fromhost_clean $IMG
+    ch-fromhost --nvidia --file sotest/files_inferrable.txt $IMG
+    ch-run $IMG -- nvidia-smi -L
+    ch-run $IMG -- sotest
     # --nvidia and --file
+    fromhost_clean $IMG
+    ch-fromhost --nvidia --cmd 'cat sotest/files_inferrable.txt' $IMG
+    ch-run $IMG -- nvidia-smi -L
+    ch-run $IMG -- sotest
+
+    # CUDA example
+    #FIXME
 }
 
+@test 'ch-fromhost --nvidia without GPU' {
+    skip 'not implemented'
+
+    # --nvidia with no nvidia-container-cli gives proper error
+    #FIXME
+}
