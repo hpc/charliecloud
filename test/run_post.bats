@@ -23,6 +23,7 @@ fromhost_ls () {
 
 @test 'ch-fromhost' {
     scope standard
+    prerequisites_ok fromhost
     IMG=$IMGDIR/fromhost
 
     # --cmd
@@ -187,6 +188,7 @@ fromhost_ls () {
 
 @test 'ch-fromhost --nvidia' {
     scope standard
+    prerequisites_ok fromhost
     skip 'not implemented'
     # --nvidia
     # --nvidia and --cmd
