@@ -27,7 +27,7 @@ debug () {
 }
 
 ensure_nonempty () {
-    [[ -z $2 ]] && fatal "$1 must not be empty"
+    [[ $2 ]] || fatal "$1 must not be empty"
 }
 
 fatal () {
@@ -41,12 +41,12 @@ info () {
 
 while [ $# -gt 0 ]; do
     OPT="$1"; shift
+    OUT=
     case $OPT in
         -c|--cmd)
             ensure_nonempty --cmd "$1"
             OUT=$($1)
-            [[ $? -ne 0 ]] && fatal "command failed: $1"
-            FOUND_FILES="${FOUND_FILES:+$FOUND_FILES$NEWLINE}$OUT"
+            [[ $? -eq 0 ]] || fatal "command failed: $1"
             shift
             ;;
         -d|--dest)
@@ -57,8 +57,7 @@ while [ $# -gt 0 ]; do
         -f|--file)
             ensure_nonempty --file "$1"
             OUT=$(cat "$1")
-            [[ $? -ne 0 ]] && fatal "cannot read file: $1"
-            FOUND_FILES="${FOUND_FILES:+$FOUND_FILES$NEWLINE}$OUT"
+            [[ $? -eq 0 ]] || fatal "cannot read file: $1"
             shift
             ;;
         -h|--help)
@@ -68,6 +67,8 @@ while [ $# -gt 0 ]; do
             INFER=
             ;;
         --nvidia)
+            OUT=$(nvidia-container-cli list --binaries --libraries)
+            [[ $? -eq 0 ]] || fatal "nvidia-container-cli failed"
             ;;
         -v|--verbose)
             VERBOSE=yes
@@ -82,11 +83,12 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             ensure_nonempty "image path" "$OPT"
-            [[ $IMAGE ]] && fatal "duplicate image path: $OPT"
+            [[ -z $IMAGE ]] || fatal "duplicate image path: $OPT"
             [[ -d $OPT ]] || fatal "image not a directory: $OPT"
             IMAGE="$OPT"
             ;;
     esac
+    FOUND_FILES="${FOUND_FILES:+$FOUND_FILES$NEWLINE}$OUT"
 done
 
 debug "injecting into image: $IMAGE"
@@ -113,11 +115,11 @@ for FILE in $FOUND_FILES; do
         esac
     fi
     [[ $VERBOSE ]] && echo "  $TYPE_: $FILE -> $DEST" 1>&2
-    [[ -z $DEST ]] && fatal "no destination for: $FILE"
+    [[ $DEST ]] || fatal "no destination for: $FILE"
     [[ ${DEST:0:1} = '/' ]] || fatal "not an absolute path: $DEST"
     [[ -d $IMAGE$DEST ]] || fatal "not a directory: $IMAGE$DEST"
     cp --dereference --preserve=all $FILE "$IMAGE/$DEST"
-    [[ $? -ne 0 ]] && fatal "cannot inject: $FILE"
+    [[ $? -eq 0 ]] || fatal "cannot inject: $FILE"
 done
 IFS="$OLD_IFS"
 
