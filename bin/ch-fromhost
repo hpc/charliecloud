@@ -125,7 +125,7 @@ IFS="$OLD_IFS"
 
 if [[ $FOUND_LIBS_P && $INFER ]]; then
     debug "found shared library, running ldconfig"
-    $CH_BIN/ch-run -w $IMAGE -- ldconfig
+    $CH_BIN/ch-run -w $IMAGE -- /sbin/ldconfig
 else
     debug "no shared libraries found"
 fi

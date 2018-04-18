@@ -32,7 +32,7 @@ fromhost_ls () {
     test -f $IMG/usr/bin/sotest
     test -f $IMG/usr/lib/libsotest.so.1.0
     test -L $IMG/usr/lib/libsotest.so.1
-    ch-run $IMG -- ldconfig -p | fgrep sotest
+    ch-run $IMG -- /sbin/ldconfig -p | fgrep sotest
     ch-run $IMG -- sotest
     rm $IMG/usr/bin/sotest
     rm $IMG/usr/lib/libsotest.so.1.0
@@ -79,13 +79,13 @@ fromhost_ls () {
     fromhost_clean_p $IMG
 
     # --no-infer
-    ch-run -w $IMG -- ldconfig  # restore default cache
+    ch-run -w $IMG -- /sbin/ldconfig  # restore default cache
     ch-fromhost -v --cmd 'echo sotest/bin/sotest' \
                    --no-infer --dest /usr/bin $IMG
     ch-fromhost -v --cmd 'echo sotest/lib/libsotest.so.1.0' \
                    --no-infer --dest /usr/lib $IMG
     fromhost_ls $IMG
-    ch-run $IMG -- ldconfig -p | fgrep sotest || true
+    ch-run $IMG -- /sbin/ldconfig -p | fgrep sotest || true
     run ch-run $IMG -- sotest
     echo "$output"
     [[ $status -ne 0 ]]
