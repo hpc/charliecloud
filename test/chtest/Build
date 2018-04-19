@@ -102,7 +102,7 @@ touch img/usr/bin/ch-ssh
 
 # Install test programs.
 cp -r $SRCDIR img/test
-$CH_RUN -- sh -c 'cd /test && make'
+$CH_RUN --cd /test -- make
 
 
 ## Tar it up.

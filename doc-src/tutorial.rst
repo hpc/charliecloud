@@ -687,7 +687,7 @@ demonstrate this.
   -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
   -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
-  $ ch-run -b . /var/tmp/mpihello -- sh -c 'cd /mnt/0 && make'
+  $ ch-run -b . --cd /mnt/0 /var/tmp/mpihello -- make
   mpicc -std=gnu11 -Wall hello.c -o hello
   $ ls -l
   total 32
