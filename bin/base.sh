@@ -16,3 +16,15 @@ if ( command -v pigz >/dev/null 2>&1 ); then
 else
     export GZIP_CMD=gzip
 fi
+
+# pipe view is only useful when using an interactive terminal
+if ( [ -t 1 ] && command -v pv >/dev/null 2>&1 ); then
+    PV() {
+        pv "$@"
+    }
+else
+   PV() {
+       # ignore all agruments, so that PV() is just a pass-through and does nothing
+       cat
+   }
+fi
