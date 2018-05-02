@@ -11,7 +11,10 @@ normal users and admins can build and install it manually.
    case #188073, you must use the `cray branch
    <https://github.com/hpc/charliecloud/compare/cray>`_ to avoid crashing
    nodes during job completion. This is a Cray bug that Charliecloud happens
-   to tickle. Non-Cray build boxes and others at the same site can still use
+   to tickle. There is a patch available from Cray for CLE6.0 UP04 and UP05.
+   The fix is mainlined into Cray CLE6.0 UP06, released in March 2018. Versions
+   of Cray CLE6.0 prior to UP04 are unpatched and affected by the bug.
+   Non-Cray build boxes and others at the same site can still use
    the master branch.
 
 .. contents::
