@@ -69,11 +69,11 @@ Patches (code, documentation, etc.) contributed by:
 
 * Reid Priedhorsky <reidpr@lanl.gov>
 * Oliver Freyermuth <o.freyermuth@googlemail.com>
+* Christoph Junghans <junghans@lanl.gov>
 * Jordan Ogas <jogas@lanl.gov>
 * Matthew Vernon <mv3@sanger.ac.uk>
 * Peter Wienemann <wienemann@physik.uni-bonn.de>
 * Lowell Wofford <lowell@lanl.gov>
-* Christoph Junghans <junghans@lanl.gov>
 
 How can I participate?
 ----------------------
