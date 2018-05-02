@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -489,6 +490,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
       fprintf(stderr, "\n");
    }
 
+   Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    execvp(argv[0], argv);  // only returns if error
    Tf (0, "can't execve(2) user command");
 }
