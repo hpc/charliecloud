@@ -22,6 +22,7 @@ compiler: gcc
 # ignored, as is the main test suite. These tests are much faster.
 #
 #   PKG_BUILD=yes    # build (but don't test) distribution packages, then exit
+#   INSTALL_PV=yes   # install pv ("pipe view")
 #
 env:
 # Quick test to fail fast in case something is really messed up.
@@ -36,6 +37,8 @@ env:
   - SETUID=    TARBALL=archive INSTALL=yes
   - SETUID=    TARBALL=export  INSTALL=
   - SETUID=    TARBALL=export  INSTALL=yes
+# Extra conditions
+  - SETUID=    TARBALL=        INSTALL=     INSTALL_PV=yes
 # One full-scope test. This will finish last by a lot.
 # (Disabled because it gives a >10-minute gap in output, so Travis times out.)
 #  - SETUID=    TARBALL=        INSTALL=     CH_TEST_SCOPE=full
@@ -49,6 +52,7 @@ env:
 
 install:
   - sudo apt-get install pigz
+  - if [ -n "$INSTALL_PV" ]; then sudo apt-get install pv; fi
   - sudo pip install sphinx sphinx-rtd-theme
 
 before_script:
