@@ -35,8 +35,9 @@ OUTDIR=$2
 TAR=$OUTDIR/$(echo $IMAGE | sed 's/\//./g').tar.gz
 
 cid=$($DOCKER create --read-only $IMAGE)
+size=$($DOCKER image inspect $IMAGE --format='{{.Size}}')
 #$DOCKER ps -af "id=$cid"
-$DOCKER export $cid | $GZIP_CMD -6 > $TAR
+$DOCKER export $cid | PV -s $size | $GZIP_CMD -6 > $TAR
 $DOCKER rm $cid > /dev/null
 # FIXME: This is brittle. We want the filename and size, but not the rest, so
 # we can't just ask ls. Another option is stat and numfmt, but the latter may

@@ -74,7 +74,8 @@ fi
 
 mkdir "$NEWROOT"
 echo 'This directory is a Charliecloud container image.' > "$NEWROOT/$SENTINEL"
-tar x$VERBOSE -I $GZIP_CMD -C "$NEWROOT" -f "$TARBALL" --exclude='dev/*'
+size=$(stat -c%s "$TARBALL")
+PV -s ${size} <${TARBALL} | tar x$VERBOSE -I $GZIP_CMD -C "$NEWROOT" -f - --exclude='dev/*'
 
 # Make all directories writeable so we can delete image later (hello, Red Hat).
 find "$NEWROOT" -type d -a ! -perm /200 -exec chmod u+w {} +
