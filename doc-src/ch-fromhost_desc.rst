@@ -3,13 +3,14 @@ Synopsis
 
 ::
 
-  $ ch-fromhost [OPTION ...] (--cmd CMD | --file FILE | --nvidia ...) DIR
+  $ ch-fromhost [OPTION ...] (-c CMD | -f FILE | --nvidia ...) IMGDIR
 
 
 Description
 ===========
 
-Inject files from the host into the Charliecloud image directory :code:`DIR`.
+Inject files from the host into the Charliecloud image directory
+:code:`IMGDIR`.
 
 The purpose of this command is to provide host-specific files, such as GPU
 libraries, to a container. It should be run after :code:`ch-tar2dir` and
@@ -52,14 +53,14 @@ Additional arguments:
   :code:`-d`, :code:`--dest DST`
 
     Place files whose destination cannot be inferred in directory
-    :code:`DIR/DST`. If such a file is found and this option is not specified,
-    exit with an error.
+    :code:`IMGDIR/DST`. If such a file is found and this option is not
+    specified, exit with an error.
 
   :code:`-h`, :code:`--help`
     Print help and exit.
 
   :code:`--no-infer`
-    Do no try to infer the destination of any files.
+    Do not infer the type of any files.
 
   :code:`-v`, :code:`--verbose`
     Pist the injected files.
@@ -89,11 +90,11 @@ There are two alternate approaches for nVidia GPU libraries:
   2. Use :code:`nvidia-container-cli configure` to do the injecting. This
      would require that containers have a half-started state, where the
      namespaces are active and everything is mounted but :code:`pivot_root(2)`
-     has not been performed, but Charliecloud has no notion of a half-started
-     container.
+     has not been performed. This is not feasible because Charliecloud has no
+     notion of a half-started container.
 
 Further, while these alternate approaches would simplify or eliminate this
-script for nVidia GPUs, it would not solve the problem for other situations.
+script for nVidia GPUs, they would not solve the problem for other situations.
 
 
 Bugs
