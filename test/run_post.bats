@@ -223,8 +223,21 @@ fromhost_ls () {
     ch-run $IMG -- nvidia-smi -L
     ch-run $IMG -- sotest
 
-    # CUDA example
-    #FIXME
+    # CUDA sample
+    SAMPLE=/usr/local/cuda-9.1/samples/0_Simple/matrixMulCUBLAS/matrixMulCUBLAS
+    # should fail without ch-fromhost --nvidia
+    fromhost_clean $IMG
+    run ch-run $IMG -- $SAMPLE
+    echo "$output"
+    [[ $status -eq 127 ]]
+    [[ $output =~ 'matrixMulCUBLAS: error while loading shared libraries' ]]
+    # should succeed with it
+    fromhost_clean_p $IMG
+    ch-fromhost --nvidia $IMG
+    run ch-run $IMG -- $SAMPLE
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output =~ 'Comparing CUBLAS Matrix Multiply with CPU results: PASS' ]]
 }
 
 @test 'ch-fromhost --nvidia without GPU' {
