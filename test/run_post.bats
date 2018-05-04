@@ -228,8 +228,17 @@ fromhost_ls () {
 }
 
 @test 'ch-fromhost --nvidia without GPU' {
-    skip 'not implemented'
+    scope standard
+    prerequisites_ok fromhost
+    command -v nvidia-container-cli >/dev/null 2>&1 \
+        && skip 'nvidia-container-cli in $PATH'
+    IMG=$IMGDIR/fromhost
 
-    # --nvidia with no nvidia-container-cli gives proper error
-    #FIXME
+    # --nvidia gives proper error
+    run ch-fromhost -v --nvidia $IMG
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ 'nvidia-container-cli: not found' ]]
+    [[ $output =~ 'nvidia-container-cli failed' ]]
+    fromhost_clean_p $IMG
 }
