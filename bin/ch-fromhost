@@ -64,7 +64,7 @@ while [ $# -gt 0 ]; do
             ;;
         --nvidia)
             OUT=$(nvidia-container-cli list --binaries --libraries)
-            [ $? -eq 0 ] || fatal "nvidia-container-cli failed"
+            [ $? -eq 0 ] || fatal "nvidia-container-cli failed; does this host have GPUs?"
             ;;
         -v|--verbose)
             VERBOSE=yes
