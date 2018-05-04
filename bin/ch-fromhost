@@ -5,7 +5,34 @@ LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
 
 usage () {
     cat 1>&2 <<EOF
-Usage: FIXME
+Inject files from the host into an image directory.
+
+Usage:
+
+  $ ch-fromhost [OPTION ...] (-c CMD | -f FILE | --nvidia ...) IMGDIR
+
+Executables go in IMGDIR/usr/bin; shared libraries go in IMGDIR/usr/lib; other
+files as specified with --dest. If any shared libraries are specified, run
+"ldconfig -w" within the container using "ch-run -w" after injection.
+
+Which files (one or more required; can be repeated):
+
+  -c, --cmd CMD    listed in the stdout of CMD
+  -f, --file FILE  listed in file FILE
+      --nvidia     recommended by nVidia (via "nvidia-container-cli list")
+
+Options:
+
+  -d, --dest DST   files whose destination can't be inferred go in IMGDIR/DST
+  -h, --help       print this help and exit
+      --no-infer   don't infer destination for shared libraries and executables
+  -v, --verbose    list the injected files
+      --version    print version and exit
+
+For more information, see:
+
+  $ man ch-fromhost
+  https://hpc.github.io/charliecloud/command-usage.html#ch-fromhost
 EOF
     exit ${1:-1}
 }
