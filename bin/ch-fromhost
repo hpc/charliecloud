@@ -1,8 +1,4 @@
-#!/bin/bash
-
-# Note: The ${x:+y} construction yields $y if $x is set and not null, or $x
-# otherwise; here, to append a delimiter on second and subsequent iterations.
-# See: https://chris-lamb.co.uk/posts/joining-strings-in-posix-shell
+#!/bin/sh
 
 LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
 . ${LIBEXEC}/base.sh
@@ -23,11 +19,11 @@ FOUND_FILES=
 FOUND_LIBS_P=
 
 debug () {
-    [[ $VERBOSE ]] && printf "ch-fromhost: %s\n" "$1" 1>&2
+    [ $VERBOSE ] && printf "ch-fromhost: %s\n" "$1" 1>&2
 }
 
 ensure_nonempty () {
-    [[ $2 ]] || fatal "$1 must not be empty"
+    [ "$2" ] || fatal "$1 must not be empty"
 }
 
 fatal () {
@@ -46,7 +42,7 @@ while [ $# -gt 0 ]; do
         -c|--cmd)
             ensure_nonempty --cmd "$1"
             OUT=$($1)
-            [[ $? -eq 0 ]] || fatal "command failed: $1"
+            [ $? -eq 0 ] || fatal "command failed: $1"
             shift
             ;;
         -d|--dest)
@@ -57,7 +53,7 @@ while [ $# -gt 0 ]; do
         -f|--file)
             ensure_nonempty --file "$1"
             OUT=$(cat "$1")
-            [[ $? -eq 0 ]] || fatal "cannot read file: $1"
+            [ $? -eq 0 ] || fatal "cannot read file: $1"
             shift
             ;;
         -h|--help)
@@ -68,7 +64,7 @@ while [ $# -gt 0 ]; do
             ;;
         --nvidia)
             OUT=$(nvidia-container-cli list --binaries --libraries)
-            [[ $? -eq 0 ]] || fatal "nvidia-container-cli failed"
+            [ $? -eq 0 ] || fatal "nvidia-container-cli failed"
             ;;
         -v|--verbose)
             VERBOSE=yes
@@ -83,17 +79,19 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             ensure_nonempty "image path" "$OPT"
-            [[ -z $IMAGE ]] || fatal "duplicate image path: $OPT"
-            [[ -d $OPT ]] || fatal "image not a directory: $OPT"
+            [ -z $IMAGE ] || fatal "duplicate image path: $OPT"
+            [ -d $OPT ] || fatal "image not a directory: $OPT"
             IMAGE="$OPT"
             ;;
     esac
+    # This adds a delimiter newline only for the second and subsequent files.
+    # See: https://chris-lamb.co.uk/posts/joining-strings-in-posix-shell
     FOUND_FILES="${FOUND_FILES:+$FOUND_FILES$NEWLINE}$OUT"
 done
 
 debug "injecting into image: $IMAGE"
 
-[[ $VERBOSE ]] && echo "injecting ..." 1>&2
+[ $VERBOSE ] && echo "injecting ..." 1>&2
 OLD_IFS="$IFS"
 IFS="$NEWLINE"
 FOUND_FILE_P=
@@ -114,18 +112,18 @@ for FILE in $FOUND_FILES; do
                 ;;
         esac
     fi
-    [[ $VERBOSE ]] && echo "  $TYPE_: $FILE -> $DEST" 1>&2
-    [[ $DEST ]] || fatal "no destination for: $FILE"
-    [[ ${DEST:0:1} = '/' ]] || fatal "not an absolute path: $DEST"
-    [[ -d $IMAGE$DEST ]] || fatal "not a directory: $IMAGE$DEST"
-    cp --dereference --preserve=all $FILE "$IMAGE/$DEST"
-    [[ $? -eq 0 ]] || fatal "cannot inject: $FILE"
+    [ $VERBOSE ] && echo "  $TYPE_: $FILE -> $DEST" 1>&2
+    [ $DEST ] || fatal "no destination for: $FILE"
+    [ -z "${DEST%%/*}" ] || fatal "not an absolute path: $DEST"
+    [ -d $IMAGE$DEST ] || fatal "not a directory: $IMAGE$DEST"
+    cp --dereference --preserve=all "$FILE" "$IMAGE/$DEST"
+    [ $? -eq 0 ] || fatal "cannot inject: $FILE"
 done
 IFS="$OLD_IFS"
 
-[[ -z $FOUND_FILE_P ]] && fatal "empty file list"
+[ -z $FOUND_FILE_P ] && fatal "empty file list"
 
-if [[ $FOUND_LIBS_P && $INFER ]]; then
+if [ $FOUND_LIBS_P ] && [ $INFER ]; then
     debug "found shared library, running ldconfig"
     $CH_BIN/ch-run -w $IMAGE -- /sbin/ldconfig
 else
