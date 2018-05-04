@@ -13,7 +13,7 @@ Usage:
 
 Executables go in IMGDIR/usr/bin; shared libraries go in IMGDIR/usr/lib; other
 files as specified with --dest. If any shared libraries are specified, run
-"ldconfig -w" within the container using "ch-run -w" after injection.
+"ldconfig" within the container using "ch-run -w" after injection.
 
 Which files (one or more required; can be repeated):
 
