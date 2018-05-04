@@ -158,6 +158,17 @@ install: all
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
 	chmod 755 $(TEST)/chtest/Build $(TEST)/chtest/*.py
 	ln -sf ../../../../bin $(TEST)/bin
+#       shared library tests
+	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
+	install -pm 755 -t $(TEST)/sotest test/sotest/files_inferrable.txt \
+	                                  test/sotest/files_noninferrable.txt \
+                                          test/sotest/libsotest.so.1.0 \
+	                                  test/sotest/sotest \
+	                                  test/sotest/sotest.c
+	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so
+	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
+	install -pm 755 -t $(TEST)/sotest/bin test/sotest/bin/sotest
+	install -pm 755 -t $(TEST)/sotest/lib test/sotest/lib/libsotest.so.1.0
 #       Bats (if embedded)
 	if [ -d test/bats/bin ]; then \
 	    install -d $(TEST)/bats && \
