@@ -251,7 +251,8 @@ fromhost_ls () {
     run ch-fromhost -v --nvidia $IMG
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ 'nvidia-container-cli: not found' ]]
+    r="nvidia-container-cli: (command )?not found"
+    [[ $output =~ $r ]]
     [[ $output =~ 'nvidia-container-cli failed' ]]
     fromhost_clean_p $IMG
 }
