@@ -41,23 +41,16 @@ setup () {
     $MPIRUN_2 ch-run -b $INDIR -b $OUTDIR $IMG -- \
               pvbatch /mnt/0/cone.py /mnt/1
     ls -l $OUTDIR/cone*
-    if [[ $CHTEST_MULTINODE ]]; then
-        diff -u $INDIR/cone.1.vtk $OUTDIR/cone.vtk
-        cmp $INDIR/cone.smooth.png $OUTDIR/cone.png
-    else
-        diff -u $INDIR/cone.2.vtk $OUTDIR/cone.vtk
-        cmp $INDIR/cone.jagged.png $OUTDIR/cone.png
-    fi
+       diff -u $INDIR/cone.1.vtk $OUTDIR/cone.vtk \
+    || diff -u $INDIR/cone.2.vtk $OUTDIR/cone.vtk
+       cmp $INDIR/cone.smooth.png $OUTDIR/cone.png \
+    || cmp $INDIR/cone.jagged.png $OUTDIR/cone.png
 }
 
 @test "$EXAMPLE_TAG/cone ranks=N" {
     $MPIRUN_CORE ch-run -b $INDIR -b $OUTDIR $IMG -- \
                  pvbatch /mnt/0/cone.py /mnt/1
     ls -l $OUTDIR/cone*
-    if [[ $CHTEST_MULTINODE ]]; then
-        diff -u $INDIR/cone.1.vtk $OUTDIR/cone.vtk
-        cmp $INDIR/cone.smooth.png $OUTDIR/cone.png
-    else
-        cmp $INDIR/cone.jagged.png $OUTDIR/cone.png
-    fi
+       cmp $INDIR/cone.smooth.png $OUTDIR/cone.png \
+    || cmp $INDIR/cone.jagged.png $OUTDIR/cone.png
 }
