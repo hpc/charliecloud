@@ -5,7 +5,7 @@ export CFLAGS += -std=c11 -Wall
 
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
-	cd bin && $(MAKE) SETUID=$(SETUID) all
+	cd bin && $(MAKE) all
 	cd test && $(MAKE) all
 	cd examples/syscalls && $(MAKE) all
 
@@ -114,19 +114,6 @@ install: all
 	for scriptfile in $$(find bin -type f -executable -printf "%f\n"); do \
 	    sed -i "s#^LIBEXEC=.*#LIBEXEC=$(LIBEXEC_RUN)#" $(BIN)/$${scriptfile}; \
 	done
-#       Install ch-run setuid if either SETUID=yes is specified or the binary
-#       in the build directory is setuid.
-	if [ -n "$(SETUID)" ]; then \
-            if [ $$(id -u) -eq 0 ]; then \
-	        chown root $(BIN)/ch-run; \
-	        chmod u+s $(BIN)/ch-run; \
-	    else \
-	        sudo chown root $(BIN)/ch-run; \
-	        sudo chmod u+s $(BIN)/ch-run; \
-	    fi \
-	elif [ -u bin/ch-run ]; then \
-	    sudo chmod u+s $(BIN)/ch-run; \
-	fi
 #       executable helpers
 	install -d $(LIBEXEC_INST)
 	install -pm 644 -t $(LIBEXEC_INST) bin/base.sh bin/version.sh

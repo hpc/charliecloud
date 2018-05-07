@@ -138,41 +138,6 @@ Further reading:
   * `Debian <https://wiki.debian.org/UsrMerge>`_
 
 
-How does setuid mode work?
-==========================
-
-As noted above, :code:`ch-run` has a transition mode that uses setuid-root
-privileges instead of user namespaces. The goal of this mode is to let sites
-evaluate Charliecloud even on systems that do not have a Linux kernel that
-supports user namespaces. We plan to remove this code once user namespaces are
-more widely available, and we encourage sites to use the unprivileged,
-non-setuid mode in production.
-
-We haven taken care to (1) drop privileges temporarily upon program start and
-only re-acquire them when needed and (2) drop privileges permanently before
-executing user code. In order to reliably verify the latter, :code:`ch-run` in
-setuid mode will refuse to run if invoked directly by root.
-
-It may be better to use capabilities and setcap rather than setuid. However,
-this also relies on newer features, which would hamper the goal of broadly
-available testing. For example, NFSv3 does not support extended attributes,
-which are required for setcap files.
-
-Dropping privileges safely requires care. We follow the recommendations in
-"`Setuid demystified
-<https://www.usenix.org/legacy/events/sec02/full_papers/chen/chen.pdf>`_" as
-well as the `system call ordering
-<https://www.securecoding.cert.org/confluence/display/c/POS36-C.+Observe+correct+revocation+order+while+relinquishing+privileges>`_
-and `privilege drop verification
-<https://www.securecoding.cert.org/confluence/display/c/POS37-C.+Ensure+that+privilege+relinquishment+is+successful>`_
-recommendations of the SEI CERT C Coding Standard.
-
-We do not worry about the Linux-specific :code:`fsuid` and :code:`fsgid`,
-which track :code:`euid`/:code:`egid` unless specifically changed, which we
-don't do. Kernel bugs have existed that violate this invariant, but none are
-recent.
-
-
 :code:`ch-run` fails with "can't re-mount image read-only"
 ==========================================================
 
