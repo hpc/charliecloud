@@ -82,9 +82,6 @@ CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/bin" && pwd)"
 CH_BIN="$(readlink -f "$CH_BIN")"
 export PATH=$CH_BIN:$PATH
 CH_RUN_FILE="$(which ch-run)"
-if [[ -u $CH_RUN_FILE ]]; then
-    CH_RUN_SETUID=yes
-fi
 
 # User-private temporary directory in case multiple users are running the
 # tests simultaenously.

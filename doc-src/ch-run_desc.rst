@@ -21,9 +21,6 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`-g`, :code:`--gid=GID`
     run as group :code:`GID` within container
 
-  :code:`--is-setuid`
-    exit successfully if compiled for setuid, else fail
-
   :code:`--no-home`
     do not bind-mount your home directory (by default, your home directory is
     mounted at :code:`/home/$USER` in the container)

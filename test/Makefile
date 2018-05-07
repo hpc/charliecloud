@@ -30,7 +30,6 @@ test-run: run_auto.bats
 	bats run.bats run_uidgid.bats run_auto.bats run_post.bats
 	set -e; \
         if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
-	if ( ! bin/ch-run --is-setuid ); then \
 	for GUEST_USER in $$(id -un) root nobody; do \
 	    for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
 	        export GUEST_USER; \
@@ -38,7 +37,7 @@ test-run: run_auto.bats
 	        echo testing as: $$GUEST_USER $$GUEST_GROUP; \
 	        bats run_uidgid.bats; \
 	    done; \
-	done; fi; fi
+	done; fi
 
 .PHONY: test-test
 test-test: $(EXAMPLETESTS)

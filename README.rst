@@ -37,10 +37,6 @@ the performance and functionality already on offer.
 Container images can be built using Docker or anything else that can generate
 a standard Linux filesystem tree.
 
-Because user namespaces are available only in newer kernel versions, an
-experimental setuid mode is also provided to let sites evaluate Charliecloud
-even if they do not have user namespace-capable kernels readily available.
-
 How do I learn more?
 --------------------
 

@@ -34,12 +34,10 @@ load common
         echo "$output"
         [[ $status -eq 0 ]]
         [[ $output =~ Usage: ]]
-        # not setuid or setgid (ch-run tested elsewhere)
-        if [[ ! $i =~ .*/ch-run ]]; then
-            ls -l $i
-            [[ ! -u $i ]]
-            [[ ! -g $i ]]
-        fi
+        # not setuid or setgid
+        ls -l $i
+        [[ ! -u $i ]]
+        [[ ! -g $i ]]
     done
 }
 
