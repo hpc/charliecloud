@@ -87,3 +87,10 @@ load common
     # Remove since we don't want it hanging around later.
     rm -Rf --one-file-system $TAR $IMG
 }
+
+@test 'sotest executable works' {
+    scope standard
+    export LD_LIBRARY_PATH=./sotest
+    ldd sotest/sotest
+    sotest/sotest
+}

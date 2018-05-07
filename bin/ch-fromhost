@@ -1,0 +1,159 @@
+#!/bin/sh
+
+LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
+. ${LIBEXEC}/base.sh
+
+usage () {
+    cat 1>&2 <<EOF
+Inject files from the host into an image directory.
+
+Usage:
+
+  $ ch-fromhost [OPTION ...] (-c CMD | -f FILE | --nvidia ...) IMGDIR
+
+Executables go in IMGDIR/usr/bin; shared libraries go in IMGDIR/usr/lib; other
+files as specified with --dest. If any shared libraries are specified, run
+"ldconfig" within the container using "ch-run -w" after injection.
+
+Which files (one or more required; can be repeated):
+
+  -c, --cmd CMD    listed in the stdout of CMD
+  -f, --file FILE  listed in file FILE
+      --nvidia     recommended by nVidia (via "nvidia-container-cli list")
+
+Options:
+
+  -d, --dest DST   files whose destination can't be inferred go in IMGDIR/DST
+  -h, --help       print this help and exit
+      --no-infer   don't infer destination for shared libraries and executables
+  -v, --verbose    list the injected files
+      --version    print version and exit
+
+For more information, see:
+
+  $ man ch-fromhost
+  https://hpc.github.io/charliecloud/command-usage.html#ch-fromhost
+EOF
+    exit ${1:-1}
+}
+
+DEST_DEFAULT=
+IMAGE=
+INFER=yes
+NEWLINE='
+'
+FOUND_FILES=
+FOUND_LIBS_P=
+
+debug () {
+    [ $VERBOSE ] && printf "ch-fromhost: %s\n" "$1" 1>&2
+}
+
+ensure_nonempty () {
+    [ "$2" ] || fatal "$1 must not be empty"
+}
+
+fatal () {
+    printf "ch-fromhost: %s\n" "$1" 1>&2
+    exit 1
+}
+
+info () {
+    printf "ch-fromhost: %s\n" "$1" 1>&2
+}
+
+while [ $# -gt 0 ]; do
+    OPT="$1"; shift
+    OUT=
+    case $OPT in
+        -c|--cmd)
+            ensure_nonempty --cmd "$1"
+            OUT=$($1)
+            [ $? -eq 0 ] || fatal "command failed: $1"
+            shift
+            ;;
+        -d|--dest)
+            ensure_nonempty --dest "$1"
+            DEST_DEFAULT="$1"
+            shift
+            ;;
+        -f|--file)
+            ensure_nonempty --file "$1"
+            OUT=$(cat "$1")
+            [ $? -eq 0 ] || fatal "cannot read file: $1"
+            shift
+            ;;
+        -h|--help)
+            usage 0
+            ;;
+        --no-infer)
+            INFER=
+            ;;
+        --nvidia)
+            OUT=$(nvidia-container-cli list --binaries --libraries)
+            [ $? -eq 0 ] || fatal "nvidia-container-cli failed; does this host have GPUs?"
+            ;;
+        -v|--verbose)
+            VERBOSE=yes
+            ;;
+        --version)
+            version
+            exit 0
+            ;;
+        -*)
+            info "invalid option: $OPT"
+            usage
+            ;;
+        *)
+            ensure_nonempty "image path" "$OPT"
+            [ -z $IMAGE ] || fatal "duplicate image path: $OPT"
+            [ -d $OPT ] || fatal "image not a directory: $OPT"
+            IMAGE="$OPT"
+            ;;
+    esac
+    # This adds a delimiter newline only for the second and subsequent files.
+    # See: https://chris-lamb.co.uk/posts/joining-strings-in-posix-shell
+    FOUND_FILES="${FOUND_FILES:+$FOUND_FILES$NEWLINE}$OUT"
+done
+
+debug "injecting into image: $IMAGE"
+
+[ $VERBOSE ] && echo "injecting ..." 1>&2
+OLD_IFS="$IFS"
+IFS="$NEWLINE"
+FOUND_FILE_P=
+for FILE in $FOUND_FILES; do
+    FOUND_FILE_P=yes
+    TYPE_=unk
+    DEST="$DEST_DEFAULT"
+    if [ $INFER ]; then
+        case $FILE in
+            */bin*)
+                TYPE_=bin
+                DEST=/usr/bin
+                ;;
+            */lib*)
+                TYPE_=lib
+                DEST=/usr/lib
+                FOUND_LIBS_P=yes
+                ;;
+        esac
+    fi
+    [ $VERBOSE ] && echo "  $TYPE_: $FILE -> $DEST" 1>&2
+    [ $DEST ] || fatal "no destination for: $FILE"
+    [ -z "${DEST%%/*}" ] || fatal "not an absolute path: $DEST"
+    [ -d $IMAGE$DEST ] || fatal "not a directory: $IMAGE$DEST"
+    cp --dereference --preserve=all "$FILE" "$IMAGE/$DEST"
+    [ $? -eq 0 ] || fatal "cannot inject: $FILE"
+done
+IFS="$OLD_IFS"
+
+[ -z $FOUND_FILE_P ] && fatal "empty file list"
+
+if [ $FOUND_LIBS_P ] && [ $INFER ]; then
+    debug "found shared library, running ldconfig"
+    $CH_BIN/ch-run -w $IMAGE -- /sbin/ldconfig
+else
+    debug "no shared libraries found"
+fi
+
