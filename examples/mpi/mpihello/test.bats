@@ -29,13 +29,7 @@ setup () {
 
 @test "$EXAMPLE_TAG/host starts ranks" {
 
-    # If we're under Slurm, $CHTEST_MULTINODE will be true and $MPIRUN_CORE
-    # will already be srun. Otherwise, use mpirun to launch MPI jobs. In
-    # either case, we need mpirun in the path to get the host MPI version.
-    if [[ -z $CHTEST_MULTINODE ]]; then
-        MPIRUN_CORE='mpirun'
-    fi
-    ( command -v mpirun 2>&1 > /dev/null ) || skip 'no mpirun in path'
+    multiprocess_ok
     echo "starting ranks with: $MPIRUN_CORE"
 
     HOST_MPI=$(mpirun --version | head -1)
