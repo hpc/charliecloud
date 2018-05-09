@@ -39,7 +39,7 @@ if [[ $PKG_BUILD ]]; then
     exit
 fi
 
-make SETUID=$SETUID
+make
 bin/ch-run --version
 
 if [[ $INSTALL ]]; then

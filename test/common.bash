@@ -18,6 +18,10 @@ image_ok () {
     [[ $byte_ct -ge 3145728 ]]  # image is at least 3MiB
 }
 
+multiprocess_ok () {
+    [[ $CHTEST_MULTIPROCESS ]] || skip 'no multiprocess launch tool found'
+}
+
 need_docker () {
     # Skip test if $CH_TEST_SKIP_DOCKER is true. If argument provided, use
     # that tag as missing prerequisite sentinel file.
@@ -82,9 +86,6 @@ CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/bin" && pwd)"
 CH_BIN="$(readlink -f "$CH_BIN")"
 export PATH=$CH_BIN:$PATH
 CH_RUN_FILE="$(which ch-run)"
-if [[ -u $CH_RUN_FILE ]]; then
-    CH_RUN_SETUID=yes
-fi
 
 # User-private temporary directory in case multiple users are running the
 # tests simultaenously.
@@ -103,10 +104,12 @@ EXAMPLE_TAG=$(basename $BATS_TEST_DIRNAME)
 EXAMPLE_IMG=$IMGDIR/$EXAMPLE_TAG
 CHTEST_TARBALL=$TARDIR/chtest.tar.gz
 CHTEST_IMG=$IMGDIR/chtest
-CHTEST_MULTINODE=$SLURM_JOB_ID
-if [[ $CHTEST_MULTINODE ]]; then
-    MPIRUN_NODE='srun --ntasks-per-node 1'
-    MPIRUN_CORE='srun --cpus-per-task 1'
+if [[ $SLURM_JOB_ID ]]; then
+    CHTEST_MULTINODE=yes                    # can run on multiple nodes
+    CHTEST_MULTIPROCESS=yes                 # can run multiple processes
+    MPIRUN_NODE='srun --ntasks-per-node 1'  # command to run one process/node
+    MPIRUN_CORE='srun --cpus-per-task 1'    # command to run one process/core
+    MPIRUN_2='srun -n 2'                    # command to run two processes
     # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
     # documentation.
     if [[ -z $SLURM_CPUS_ON_NODE ]]; then
@@ -115,8 +118,21 @@ if [[ $CHTEST_MULTINODE ]]; then
     CHTEST_CORES_NODE=$SLURM_CPUS_ON_NODE
     CHTEST_CORES_TOTAL=$(($CHTEST_CORES_NODE * $SLURM_JOB_NUM_NODES))
 else
-    MPIRUN_NODE='mpirun --map-by ppr:1:node'
-    MPIRUN_CORE='mpirun'
+    CHTEST_MULTINODE=
+    if ( command -v mpirun >/dev/null 2>&1 ); then
+        CHTEST_MULTIPROCESS=yes
+        MPIRUN_NODE='mpirun --map-by ppr:1:node'
+        MPIRUN_CORE='mpirun'
+        MPIRUN_2='mpirun -np 2'
+    else
+        CHTEST_MULTIPROCESS=
+        MPIRUN_NODE=''
+        MPIRUN_CORE=false
+        MPIRUN_2=false
+    fi
+    # These still contain the total number of cores on the node even though we
+    # don't know how to start multi-process jobs, because some tests might
+    # look up this information themselves.
     CHTEST_CORES_NODE=$(getconf _NPROCESSORS_ONLN)
     CHTEST_CORES_TOTAL=$CHTEST_CORES_NODE
 fi

@@ -13,7 +13,8 @@ export PATH := $(CURDIR)/bats/bin:$(PATH)
 
 # Used by "make all" at top level to build these files for "make install".
 .PHONY: all
-all: build_auto.bats run_auto.bats
+all: build_auto.bats run_auto.bats \
+     sotest/bin/sotest sotest/lib/libsotest.so.1.0
 
 .PHONY: test
 test: test-build test-run test-test
@@ -26,10 +27,9 @@ test-build: build_auto.bats
 # directory, which I believe is assumed elsewhere in the test suite as well.
 .PHONY: test-run
 test-run: run_auto.bats
-	bats run.bats run_uidgid.bats run_auto.bats
+	bats run.bats run_uidgid.bats run_auto.bats run_post.bats
 	set -e; \
         if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
-	if ( ! bin/ch-run --is-setuid ); then \
 	for GUEST_USER in $$(id -un) root nobody; do \
 	    for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
 	        export GUEST_USER; \
@@ -37,7 +37,7 @@ test-run: run_auto.bats
 	        echo testing as: $$GUEST_USER $$GUEST_GROUP; \
 	        bats run_uidgid.bats; \
 	    done; \
-	done; fi; fi
+	done; fi
 
 .PHONY: test-test
 test-test: $(EXAMPLETESTS)
@@ -46,6 +46,8 @@ test-test: $(EXAMPLETESTS)
 .PHONY: clean
 clean:
 	rm -f *_auto.bats
+	rm -f sotest/sotest sotest/libsotest.so*
+	rm -f sotest/bin/sotest sotest/lib/libsotest.so*
 
 .PHONY: clean-docker
 clean-docker:
@@ -65,3 +67,15 @@ build_auto.bats: $(IMAGES)
 
 run_auto.bats: $(IMAGES)
 	./make-auto run $^ > $@
+
+sotest/bin/sotest: sotest/sotest
+	cp -a $^ $@
+sotest/lib/libsotest.so.1.0: sotest/libsotest.so.1.0
+	cp -a $^ $@
+
+sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0
+	$(CC) -o $@ -L./sotest -lsotest $^
+sotest/libsotest.so.1.0: sotest/libsotest.c
+	$(CC) -o $@ -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
+	ln -f -s libsotest.so.1.0 sotest/libsotest.so
+	ln -f -s libsotest.so.1.0 sotest/libsotest.so.1

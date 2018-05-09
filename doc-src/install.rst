@@ -11,7 +11,10 @@ normal users and admins can build and install it manually.
    case #188073, you must use the `cray branch
    <https://github.com/hpc/charliecloud/compare/cray>`_ to avoid crashing
    nodes during job completion. This is a Cray bug that Charliecloud happens
-   to tickle. Non-Cray build boxes and others at the same site can still use
+   to tickle. There is a patch available from Cray for CLE6.0 UP04 and UP05.
+   The fix is mainlined into Cray CLE6.0 UP06, released in March 2018. Versions
+   of Cray CLE6.0 prior to UP04 are unpatched and affected by the bug.
+   Non-Cray build boxes and others at the same site can still use
    the master branch.
 
 .. contents::
@@ -35,7 +38,7 @@ a bug.
 Run time
 --------
 
-Systems used for running images in the standard unprivileged mode need:
+Systems used for running images need:
 
 * Recent Linux kernel with :code:`CONFIG_USER_NS=y`. We recommend version 4.4
   or higher.
@@ -50,12 +53,6 @@ example, Debian Stretch needs sysctl
 a `kernel command line option and a sysctl
 <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_
 (that put you into "technology preview").
-
-.. note::
-
-   An experimental setuid mode is also provided that does not need user
-   namespaces. This should run on most currently supported Linux
-   distributions.
 
 Build time
 ----------
@@ -207,21 +204,11 @@ The recommended download method is :code:`git clone --recursive`.
 Build
 -----
 
-To build in the standard, unprivileged mode (recommended)::
+To build, simply::
 
   $ make
 
-To build in setuid mode (for testing if your kernel doesn't support the user
-namespace)::
-
-  $ make SETUID=yes
-
 To build the documentation, see :code:`doc-src/README`.
-
-.. warning::
-
-   Do not build as root. This is unsupported and may introduce security
-   problems.
 
 Install (optional)
 ------------------

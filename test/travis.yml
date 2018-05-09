@@ -15,40 +15,35 @@ compiler: gcc
 #   TARBALL=export   # build from "make export" tarball & use embedded Bats
 #   INSTALL=         # run from build directory
 #   INSTALL=yes      # make install to /usr/local, run that one
-#   SETUID=          # standard build (user + mount namespaces)
-#   SETUID=yes       # setuid build (mount namespace, setuid binary)
 #
-# Package builds can also be tested. In this case, INSTALL and SETUID are
-# ignored, as is the main test suite. These tests are much faster.
+# Package builds can also be tested. In this case, INSTALL is ignored, as is
+# the main test suite. These tests are much faster.
 #
 #   PKG_BUILD=yes    # build (but don't test) distribution packages, then exit
+#   INSTALL_PV=yes   # install pv ("pipe view")
 #
 env:
 # Quick test to fail fast in case something is really messed up.
-  - SETUID=    TARBALL=        INSTALL=     CH_TEST_SCOPE=quick
+  - TARBALL=        INSTALL=     CH_TEST_SCOPE=quick
 # Package building (also fast).
-  -            TARBALL=                     PKG_BUILD=yes
-  -            TARBALL=archive              PKG_BUILD=yes
+  - TARBALL=                     PKG_BUILD=yes
+  - TARBALL=archive              PKG_BUILD=yes
 # Complete matrix of TARBALL and INSTALL.
-  - SETUID=    TARBALL=        INSTALL=
-  - SETUID=    TARBALL=        INSTALL=yes
-  - SETUID=    TARBALL=archive INSTALL=
-  - SETUID=    TARBALL=archive INSTALL=yes
-  - SETUID=    TARBALL=export  INSTALL=
-  - SETUID=    TARBALL=export  INSTALL=yes
+  - TARBALL=        INSTALL=
+  - TARBALL=        INSTALL=yes
+  - TARBALL=archive INSTALL=
+  - TARBALL=archive INSTALL=yes
+  - TARBALL=export  INSTALL=
+  - TARBALL=export  INSTALL=yes
+# Extra conditions
+  - TARBALL=        INSTALL=     INSTALL_PV=yes
 # One full-scope test. This will finish last by a lot.
 # (Disabled because it gives a >10-minute gap in output, so Travis times out.)
-#  - SETUID=    TARBALL=        INSTALL=     CH_TEST_SCOPE=full
-# Setuid mode is only sort of supported, so don't test it as carefully.
-  - SETUID=yes TARBALL=        INSTALL=
-  - SETUID=yes TARBALL=        INSTALL=yes
-# - SETUID=yes TARBALL=archive INSTALL=
-# - SETUID=yes TARBALL=archive INSTALL=yes
-# - SETUID=yes TARBALL=export  INSTALL=
-# - SETUID=yes TARBALL=export  INSTALL=yes
+#  - TARBALL=        INSTALL=     CH_TEST_SCOPE=full
 
 install:
   - sudo apt-get install pigz
+  - if [ -n "$INSTALL_PV" ]; then sudo apt-get install pv; fi
   - sudo pip install sphinx sphinx-rtd-theme
 
 before_script:

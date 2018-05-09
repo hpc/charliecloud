@@ -27,34 +27,26 @@ load common
     touch $IMGDIR/bind2/file2
 }
 
+@test 'permissions test directories exist' {
+    scope standard
+    [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
+    for d in $CH_TEST_PERMDIRS; do
+        d=$d/perms_test
+        echo $d
+        test -d $d
+        test -d $d/pass
+        test -f $d/pass/file
+        test -d $d/nopass
+        test -d $d/nopass/dir
+        test -f $d/nopass/file
+    done
+}
+
 @test 'executables --help' {
     scope standard
     ch-tar2dir --help
     ch-run --help
     ch-ssh --help
-}
-
-@test 'setuid bit matches --is-setuid' {
-    scope quick
-    test $CH_RUN_FILE -ef $(which ch-run)
-    [[ -e $CH_RUN_FILE ]]
-    ls -l $CH_RUN_FILE
-    if ( ch-run --is-setuid ); then
-        [[ -n $CH_RUN_SETUID ]]
-        [[ -u $CH_RUN_FILE ]]
-        [[ $(stat -c %U $CH_RUN_FILE) = root ]]
-    else
-        [[ -z $CH_RUN_SETUID ]]
-        [[ ! -u $CH_RUN_FILE ]]
-        #[[ $(stat -c %U $CH_RUN_FILE) != root ]]
-    fi
-}
-
-@test 'setgid bit is off' {
-    scope quick
-    [[ -e $CH_RUN_FILE ]]
-    [[ ! -g $CH_RUN_FILE ]]
-    #[[ $(stat -c %G $CH_RUN_FILE) != root ]]
 }
 
 @test 'ch-run refuses to run if setgid' {
@@ -77,9 +69,8 @@ load common
     rm $CH_RUN_TMP
 }
 
-@test 'ch-run refuses to run if setuid but not compiled setuid' {
+@test 'ch-run refuses to run if setuid' {
     scope quick
-    [[ -z $CH_RUN_SETUID ]] || skip 'compiled setuid'
     [[ -n $CHTEST_HAVE_SUDO ]] || skip 'sudo not available'
     CH_RUN_TMP=$BATS_TMPDIR/ch-run.setuid
     cp -a $CH_RUN_FILE $CH_RUN_TMP
@@ -128,22 +119,8 @@ load common
     [[ $output =~ 'error (' ]]
 }
 
-@test 'ch-run -u and -g refused in setuid mode' {
-    scope quick
-    [[ -n $CH_RUN_SETUID ]] || skip 'not compiled for setuid'
-    run ch-run -u 65534
-    echo "$output"
-    [[ $status -eq 64 ]]
-    [[ $output =~ "ch-run: invalid option -- 'u'" ]]
-    run ch-run -g 65534
-    echo "$output"
-    [[ $status -eq 64 ]]
-    [[ $output =~ "ch-run: invalid option -- 'g'" ]]
-}
-
 @test 'syscalls/pivot_root' {
     scope quick
-    [[ -n $CH_RUN_SETUID ]] && skip 'pivot_root has no setuid mode'
     cd ../examples/syscalls
     ./pivot_root
 }
@@ -225,7 +202,6 @@ load common
 
 @test 'userns id differs' {
     scope quick
-    [[ -n $CH_RUN_SETUID ]] && skip 'setuid mode'
     host_ns=$(stat -Lc '%i' /proc/self/ns/user)
     echo "host:  $host_userns"
     guest_ns=$(ch-run $CHTEST_IMG -- stat -Lc '%i' /proc/self/ns/user)
@@ -542,21 +518,6 @@ EOF
     guest_size=$(ch-run $CHTEST_IMG -- stat -c %s /usr/bin/ch-ssh)
     echo "host: $host_size, guest: $guest_size"
     [[ $host_size -eq $guest_size ]]
-}
-
-@test 'permissions test directories exist' {
-    scope standard
-    [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
-    for d in $CH_TEST_PERMDIRS; do
-        d=$d/perms_test
-        echo $d
-        test -d $d
-        test -d $d/pass
-        test -f $d/pass/file
-        test -d $d/nopass
-        test -d $d/nopass/dir
-        test -f $d/nopass/file
-    done
 }
 
 @test 'relative path to image' {

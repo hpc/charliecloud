@@ -5,7 +5,7 @@ export CFLAGS += -std=c11 -Wall
 
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
-	cd bin && $(MAKE) SETUID=$(SETUID) all
+	cd bin && $(MAKE) all
 	cd test && $(MAKE) all
 	cd examples/syscalls && $(MAKE) all
 
@@ -26,15 +26,17 @@ clean:
 #
 ifeq ($(shell test -d .git && fgrep -q \~ VERSION && echo true),true)
 .PHONY: VERSION.full  # depends on git metadata, not a simple file
-VERSION.full:
+VERSION.full: VERSION
+	(git --version > /dev/null 2>&1) || \
+          (echo "This is a Git working directory but no git found." && false)
 	printf '%s+%s%s\n' \
-	       $$(cat VERSION) \
+	       $$(cat $<) \
 	       $$(git rev-parse --short HEAD) \
 	       $$(git diff-index --quiet HEAD || echo '.dirty') \
-	       > VERSION.full
+	       > $@
 else
 VERSION.full: VERSION
-	cp VERSION VERSION.full
+	cp $< $@
 endif
 bin/version.h: VERSION.full
 	echo "#define VERSION \"$$(cat $<)\"" > $@
@@ -78,6 +80,17 @@ export: VERSION.full man/charliecloud.1
 # default is to use that also for DESTDIR. If DESTDIR is provided in addition,
 # we use that for installation.
 #
+# PREFIX can be relative unless DESTDIR is set. Absolute paths are not
+# canonicalized.
+ifneq ($(PREFIX),)
+ifneq ($(shell echo "$(PREFIX)" | cut -c1),/)
+  ifdef DESTDIR
+    $(error PREFIX must be absolute if DESTDIR is set)
+  endif
+  override PREFIX := $(abspath $(PREFIX))
+  $(warning Relative PREFIX converted to $(PREFIX))
+endif
+endif
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 BIN := $(INSTALL_PREFIX)/bin
 DOC := $(INSTALL_PREFIX)/share/doc/charliecloud
@@ -101,19 +114,6 @@ install: all
 	for scriptfile in $$(find bin -type f -executable -printf "%f\n"); do \
 	    sed -i "s#^LIBEXEC=.*#LIBEXEC=$(LIBEXEC_RUN)#" $(BIN)/$${scriptfile}; \
 	done
-#       Install ch-run setuid if either SETUID=yes is specified or the binary
-#       in the build directory is setuid.
-	if [ -n "$(SETUID)" ]; then \
-            if [ $$(id -u) -eq 0 ]; then \
-	        chown root $(BIN)/ch-run; \
-	        chmod u+s $(BIN)/ch-run; \
-	    else \
-	        sudo chown root $(BIN)/ch-run; \
-	        sudo chmod u+s $(BIN)/ch-run; \
-	    fi \
-	elif [ -u bin/ch-run ]; then \
-	    sudo chmod u+s $(BIN)/ch-run; \
-	fi
 #       executable helpers
 	install -d $(LIBEXEC_INST)
 	install -pm 644 -t $(LIBEXEC_INST) bin/base.sh bin/version.sh
@@ -145,6 +145,17 @@ install: all
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
 	chmod 755 $(TEST)/chtest/Build $(TEST)/chtest/*.py
 	ln -sf ../../../../bin $(TEST)/bin
+#       shared library tests
+	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
+	install -pm 755 -t $(TEST)/sotest test/sotest/files_inferrable.txt \
+	                                  test/sotest/files_noninferrable.txt \
+                                          test/sotest/libsotest.so.1.0 \
+	                                  test/sotest/sotest \
+	                                  test/sotest/sotest.c
+	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so
+	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
+	install -pm 755 -t $(TEST)/sotest/bin test/sotest/bin/sotest
+	install -pm 755 -t $(TEST)/sotest/lib test/sotest/lib/libsotest.so.1.0
 #       Bats (if embedded)
 	if [ -d test/bats/bin ]; then \
 	    install -d $(TEST)/bats && \

@@ -37,6 +37,7 @@ load ../../../test/common
 setup () {
     scope full
     prerequisites_ok lammps
+    multiprocess_ok
     IMG=$IMGDIR/lammps
 }
 

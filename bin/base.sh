@@ -16,3 +16,16 @@ if ( command -v pigz >/dev/null 2>&1 ); then
 else
     export GZIP_CMD=gzip
 fi
+
+# Use pv to show a progress bar, if it's available. (We also don't want a
+# progress bar if stdin is not a terminal, but pv takes care of that.)
+if ( command -v pv >/dev/null 2>&1 ); then
+    PV() {
+        pv -pteb "$@"
+    }
+else
+    PV() {
+        # Arguments may be present, but we ignore them.
+        cat
+    }
+fi

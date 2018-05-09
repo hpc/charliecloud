@@ -20,14 +20,12 @@ int main(int argc, char ** argv)
 
    result = seteuid(target);
 
+   // setuid(2) fails with EINVAL in user namespaces and EPERM if not root.
    if (result == 0) {
       printf("RISK\tsetuid(2) succeeded for EUID=%u\n", target);
       return 1;
    } else if (errno == EINVAL) {
       printf("SAFE\tsetuid(2) failed as expected with EINVAL\n");
-      return 0;
-   } else if (errno == EPERM) {
-      printf("SAFE\tsetuid(2) failed as expected with EPERM\n");
       return 0;
    }
 

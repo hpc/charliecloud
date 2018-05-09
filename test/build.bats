@@ -34,12 +34,10 @@ load common
         echo "$output"
         [[ $status -eq 0 ]]
         [[ $output =~ Usage: ]]
-        # not setuid or setgid (ch-run tested elsewhere)
-        if [[ ! $i =~ .*/ch-run ]]; then
-            ls -l $i
-            [[ ! -u $i ]]
-            [[ ! -g $i ]]
-        fi
+        # not setuid or setgid
+        ls -l $i
+        [[ ! -u $i ]]
+        [[ ! -g $i ]]
     done
 }
 
@@ -86,4 +84,11 @@ load common
     image_ok $IMG
     # Remove since we don't want it hanging around later.
     rm -Rf --one-file-system $TAR $IMG
+}
+
+@test 'sotest executable works' {
+    scope standard
+    export LD_LIBRARY_PATH=./sotest
+    ldd sotest/sotest
+    sotest/sotest
 }

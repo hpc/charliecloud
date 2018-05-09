@@ -31,6 +31,8 @@ setup () {
                     | fgrep 'scope global' \
                     | tail -1 \
                     | sed -r 's/^.+inet ([0-9.]+).+/\1/')
+        # Spark workers require "mpirun". See issue #156.
+        command -v mpirun >/dev/null 2>&1 || skip "mpirun not in path"
         PERNODE='mpirun -pernode'
         PERNODE_PIDFILE=/tmp/spark-pernode.pid
     else

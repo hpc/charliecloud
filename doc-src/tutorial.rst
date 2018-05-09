@@ -150,8 +150,8 @@ can have value when debugging Charliecloud.
 
   $ sudo docker run -it hello /bin/bash
   # ls /
-  bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
-  boot  etc  lib   media  opt  root  sbin  sys  usr
+  bin   dev  hello  lib    media  opt   root  sbin  sys  usr
+  boot  etc  home   lib64  mnt    proc  run   srv   tmp  var
   # exit
   exit
 
@@ -687,7 +687,7 @@ demonstrate this.
   -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
   -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
-  $ ch-run -b . /var/tmp/mpihello -- sh -c 'cd /mnt/0 && make'
+  $ ch-run -b . --cd /mnt/0 /var/tmp/mpihello -- make
   mpicc -std=gnu11 -Wall hello.c -o hello
   $ ls -l
   total 32

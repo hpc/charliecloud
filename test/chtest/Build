@@ -24,16 +24,11 @@ cd $WORKDIR
 
 # "apk add" wants to install a bunch of files root:root. Thus, if we don't map
 # ourselves to root:root, we get thousands of errors about "Failed to set
-# ownership". Mapping is not available in setuid mode, so adjust the ch-run
-# arguments accordingly, and make some manual corrections below.
+# ownership".
 #
 # For most Build scripts, we'd simply error out with missing prerequisites,
 # but this is a core image that much of the test suite depends on.
-if ( ch-run --is-setuid ); then
-    CH_RUN="ch-run -w --no-home $IMG"
-else
-    CH_RUN="ch-run -u0 -g0 -w --no-home $IMG"
-fi
+CH_RUN="ch-run -u0 -g0 -w --no-home $IMG"
 
 ## Bootstrap base Alpine Linux.
 
@@ -58,17 +53,6 @@ $CH_RUN -- /sbin/apk.static \
            --allow-untrusted --initdb --update-cache \
            add alpine-base apk-tools \
   || true
-
-# apk doesn't install the busybox symlinks in setuid mode.
-if ( ch-run --is-setuid ); then
-    rm img/bin/sh
-    for i in $($CH_RUN -- /bin/busybox --list); do
-        ln -s /bin/busybox img/bin/$i
-    done
-    for i in env; do
-        ln -s /bin/busybox img/usr/bin/$i
-    done
-fi
 
 # Now that we've bootstrapped, we don't need apk.static any more. It wasn't
 # installed using apk, so it's not in the database and can just be rm'ed.
@@ -102,7 +86,7 @@ touch img/usr/bin/ch-ssh
 
 # Install test programs.
 cp -r $SRCDIR img/test
-$CH_RUN -- sh -c 'cd /test && make'
+$CH_RUN --cd /test -- make
 
 
 ## Tar it up.

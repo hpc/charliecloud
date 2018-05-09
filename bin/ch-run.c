@@ -1,11 +1,7 @@
 /* Copyright © Los Alamos National Security, LLC, and others. */
 
-/* Notes:
-
-   1. This program does not bother to free memory allocations, since they are
-      modest and the program is short-lived.
-   2. If you change any of the setuid code, consult the FAQ for some important
-      design goals. */
+/* Note: This program does not bother to free memory allocations, since they
+   are modest and the program is short-lived. */
 
 #define _GNU_SOURCE
 #include <argp.h>
@@ -18,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
+#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -69,15 +66,9 @@ const struct argp_option options[] = {
    { "write",       'w', 0,     0, "mount image read-write"},
    { "no-home",      -2, 0,     0, "do not bind-mount your home directory"},
    { "cd",          'c', "DIR", 0, "initial working directory in container"},
-#ifndef SETUID
    { "gid",         'g', "GID", 0, "run as GID within container" },
-#endif
-   { "is-setuid",    -1, 0,     0,
-     "exit successfully if compiled for setuid, else fail" },
    { "private-tmp", 't', 0,     0, "use container-private /tmp" },
-#ifndef SETUID
    { "uid",         'u', "UID", 0, "run as UID within container" },
-#endif
    { "verbose",     'v', 0,     0, "be more verbose (debug if repeated)" },
    { "version",     'V', 0,     0, "print version and exit" },
    { 0 }
@@ -108,11 +99,6 @@ void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
 void privs_verify_invoking();
 void setup_namespaces(uid_t cuid, gid_t cgid);
-#ifdef SETUID
-void privs_drop_permanently();
-void privs_drop_temporarily();
-void privs_restore();
-#endif
 
 struct args args;
 const struct argp argp = { options, parse_opt, args_doc, usage };
@@ -123,12 +109,9 @@ const struct argp argp = { options, parse_opt, args_doc, usage };
 int main(int argc, char * argv[])
 {
    privs_verify_invoking();
-#ifdef SETUID
-   privs_drop_temporarily();
-#endif
    memset(args.binds, 0, sizeof(args.binds));
-   args.container_gid = getgid();
-   args.container_uid = getuid();
+   args.container_gid = getegid();
+   args.container_uid = geteuid();
    args.initial_working_dir = NULL;
    args.private_home = false;
    args.private_tmp = false;
@@ -151,9 +134,6 @@ int main(int argc, char * argv[])
    enter_udss(args.newroot, args.writable, args.binds,
               args.private_tmp, args.private_home);
 
-#ifdef SETUID
-   privs_drop_permanently();
-#endif
    run_user_command(argc, argv, args.user_cmd_start); // should never return
    exit(EXIT_FAILURE);
 }
@@ -177,20 +157,6 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    struct stat st;
 
    LOG_IDS;
-
-#ifdef SETUID
-
-   privs_restore();
-
-   // Make the whole filesystem tree private. Otherwise, there's a big mess,
-   // as the manipulations of the shared mounts propagate into the parent
-   // namespace. Then the mount(MS_MOVE) call below fails with EINVAL, and
-   // nothing is cleaned up so the mounts are a big tangle and ch-tar2dir will
-   // delete your home directory. I think this is redundant with some of the
-   // below, but it doesn't seem to hurt.
-   Z_ (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL));
-
-#endif
 
    // Claim newroot for this namespace
    Zf (mount(newroot, newroot, NULL,
@@ -266,10 +232,6 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    Zf (chroot("."), "can't chroot(2) into new root");
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
 
-#ifdef SETUID
-   privs_drop_temporarily();
-#endif
-
    if (args.initial_working_dir != NULL)
       Zf (chdir(args.initial_working_dir),
           "can't cd to %s", args.initial_working_dir);
@@ -310,13 +272,6 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
    long l;
 
    switch (key) {
-   case -1:
-#ifdef SETUID
-      exit(EXIT_SUCCESS);
-#else
-      exit(EXIT_FAILURE);
-#endif
-      break;
    case -2:
       as->private_home = true;
       break;
@@ -392,69 +347,10 @@ void privs_verify_invoking()
    T_ (egid != 0);                           // no privilege
    T_ (egid == rgid && egid == sgid);        // no setuid or funny business
 
-   // Setuid must match the compiled mode.
-#ifdef SETUID
-   T_ (ruid != 0 && euid == 0 && suid == 0); // must be setuid root
-#else
+   // No UID privilege allowed either.
    T_ (euid != 0);                           // no privilege
    T_ (euid == ruid && euid == suid);        // no setuid or funny business
-#endif
 }
-
-/* Drop UID privileges permanently. */
-#ifdef SETUID
-void privs_drop_permanently()
-{
-   uid_t uid_wanted, ruid, euid, suid;
-   gid_t rgid, egid, sgid;
-
-   // Drop privileges.
-   uid_wanted = getuid();
-   T_ (uid_wanted != 0);  // abort if real UID is root
-   Z_ (setresuid(uid_wanted, uid_wanted, uid_wanted));
-
-   // Try to regain privileges; it should fail.
-   T_ (-1 == setuid(0));
-   T_ (-1 == setresuid(-1, 0, -1));
-
-   // UIDs should be unprivileged and the same.
-   Z_ (getresuid(&ruid, &euid, &suid));
-   T_ (ruid == uid_wanted);
-   T_ (uid_wanted == ruid && uid_wanted == euid && uid_wanted == suid);
-
-   // GIDs should be unprivileged and the same.
-   Z_ (getresgid(&rgid, &egid, &sgid));
-   T_ (rgid != 0);
-   T_ (rgid == egid && rgid == sgid);
-}
-#endif // SETUID
-
-/* Drop UID privileges temporarily; can be regained with privs_restore(). */
-#ifdef SETUID
-void privs_drop_temporarily()
-{
-   uid_t unpriv_uid = getuid();
-
-   if (unpriv_uid == 0) {
-      // Invoked as root, so descend to nobody.
-      unpriv_uid = 65534;
-   }
-
-   Z_ (setresuid(-1, unpriv_uid, -1));
-   T_ (unpriv_uid == geteuid());
-}
-#endif // SETUID
-
-/* Restore privileges that have been dropped with privs_drop_temporarily(). */
-#ifdef SETUID
-void privs_restore()
-{
-   uid_t ruid, euid, suid;
-
-   Z_ (setresuid(-1, 0, -1));
-   Z_ (getresuid(&ruid, &euid, &suid));
-}
-#endif // SETUID
 
 /* Replace the current process with user command and arguments. argv will be
    overwritten in order to avoid the need for copying it, because execvp()
@@ -489,6 +385,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
       fprintf(stderr, "\n");
    }
 
+   Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    execvp(argv[0], argv);  // only returns if error
    Tf (0, "can't execve(2) user command");
 }
@@ -496,18 +393,6 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
 /* Activate the desired isolation namespaces. */
 void setup_namespaces(uid_t cuid, gid_t cgid)
 {
-#ifdef SETUID
-
-   // can't change IDs from invoking
-   T_ (cuid == getuid());
-   T_ (cgid == getgid());
-
-   privs_restore();
-   Zf (unshare(CLONE_NEWNS), "can't init mount namespace");
-   privs_drop_temporarily();
-
-#else // not SETUID
-
    int fd;
    uid_t euid = -1;
    gid_t egid = -1;
@@ -541,6 +426,4 @@ void setup_namespaces(uid_t cuid, gid_t cgid)
    T_ (1 <= dprintf(fd, "%d %d 1\n", cgid, egid));
    Z_ (close(fd));
    LOG_IDS;
-
-#endif // not SETUID
 }
