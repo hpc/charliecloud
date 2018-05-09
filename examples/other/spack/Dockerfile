@@ -1,9 +1,6 @@
 # ch-test-scope: full
 FROM debian:stretch
 
-# Install required OS packages. Spack needs curl, git,
-# make, and unzip to install. The other packages (patch,
-# procps, etc.) are needed for Spack unit tests
 RUN apt-get update \
     && apt-get install -y \
     curl \
