@@ -271,6 +271,8 @@ We are tracking this problem in `issue #128
 <https://github.com/hpc/charliecloud/issues/128>`_. It is possible that we can
 do something in Charliecloud to make it work, but we don't know yet.
 
-.. image:: https://media.giphy.com/media/1mNBTj3g4jRCg/giphy.gif
-   :alt: Darth Vader bowling a strike with the help of the Force
-   :align: center
+.. Images by URL only works in Sphinx 1.6+. Debian Stretch has 1.4.9, so
+   remove it for now.
+   .. image:: https://media.giphy.com/media/1mNBTj3g4jRCg/giphy.gif
+      :alt: Darth Vader bowling a strike with the help of the Force
+      :align: center
