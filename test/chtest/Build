@@ -15,6 +15,7 @@ set -ex
 
 SRCDIR=$1
 TARBALL=$2
+TARBALL_UNCOMPRESSED=${TARBALL%.*}
 WORKDIR=$3
 MIRROR=http://dl-cdn.alpinelinux.org/alpine/v3.6
 APK_TOOLS=apk-tools-static-2.7.5-r0.apk
@@ -84,9 +85,14 @@ echo "tmpfs and host home are not overmounted" \
 # We want ch-ssh
 touch img/usr/bin/ch-ssh
 
-# Install test programs.
+# Test programs.
 cp -r $SRCDIR img/test
 $CH_RUN --cd /test -- make
+
+# Fixtures for /dev cleaning.
+touch img/dev/foo
+mkdir -p img/mnt/dev
+touch img/mnt/dev/foo
 
 
 ## Tar it up.
@@ -100,5 +106,10 @@ else
     GZIP_CMD=gzip
 fi
 
+# "docker export" tarballs don't have a leading "./" in their filenames. Match
+# that, but also make sure the /dev cleaning fixtures make it in both ways.
 cd img
-tar c . | $GZIP_CMD > $TARBALL
+tar cf $TARBALL_UNCOMPRESSED *
+tar rf $TARBALL_UNCOMPRESSED ./dev/foo ./mnt/dev/foo
+$GZIP_CMD -f $TARBALL_UNCOMPRESSED
+[[ -f $TARBALL ]]

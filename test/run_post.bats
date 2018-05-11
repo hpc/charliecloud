@@ -256,3 +256,10 @@ fromhost_ls () {
     [[ $output =~ 'nvidia-container-cli failed' ]]
     fromhost_clean_p $IMG
 }
+
+@test 'ch-tar2dir: /dev cleaning' {  # issue #157
+    scope standard
+    [[ ! -e $CHTEST_IMG/dev/foo ]]
+    [[ -e $CHTEST_IMG/mnt/dev/foo ]]
+    ch-run $CHTEST_IMG -- test -e /mnt/dev/foo
+}
