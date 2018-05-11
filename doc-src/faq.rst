@@ -276,3 +276,23 @@ do something in Charliecloud to make it work, but we don't know yet.
    .. image:: https://media.giphy.com/media/1mNBTj3g4jRCg/giphy.gif
       :alt: Darth Vader bowling a strike with the help of the Force
       :align: center
+
+How do I run X11 apps?
+======================
+
+X11 applications should "just work". For example, try this Dockerfile:
+
+.. code-block:: docker
+
+  FROM debian:stretch
+  RUN    apt-get update \
+      && apt-get install -y xterm
+
+Build it and unpack it to :code:`/var/tmp`. Then::
+
+  $ ch-run /scratch/ch/xterm -- xterm
+
+should pop an xterm.
+
+If your X11 application doesn't work, please file an issue so we can
+figure out why.
