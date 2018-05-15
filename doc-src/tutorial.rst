@@ -5,10 +5,9 @@ This tutorial will teach you how to create and run Charliecloud images, using
 both examples included with the source code as well as new ones you create
 from scratch.
 
-This tutorial assumes that: (a) Charliecloud is correctly installed as
-described in the previous section, (b) Docker is installed on the build
-system, (c) the executables are in your :code:`$PATH`, and (d) you have access
-to the examples in the source code.
+This tutorial assumes that: (a) the Charliecloud executables are in your path,
+(b) Docker is installed on the build system, and (c) the Charliecloud source
+code is available at :code:`/usr/local/src/charliecloud`.
 
 .. contents::
    :depth: 2
@@ -31,8 +30,8 @@ Charliecloud for your own applications.
 
 ::
 
-  $ cd ~/charliecloud/examples/serial/hello
-  $ ch-build -t hello ~/charliecloud
+  $ cd /usr/local/src/charliecloud/examples/serial/hello
+  $ ch-build -t hello /usr/local/src/charliecloud
   Sending build context to Docker daemon 15.67 MB
   [...]
   Successfully built 1136de7d4c0a
@@ -110,7 +109,7 @@ directory, which in this case is the Charliecloud source code.
 
 ::
 
-   $ ch-build -t hello ~/charliecloud
+   $ ch-build -t hello /usr/local/src/charliecloud
    Sending build context to Docker daemon 15.67 MB
    Step 1/4 : FROM debian:stretch
    ---> 86baf4e8cde9
@@ -121,11 +120,11 @@ directory, which in this case is the Charliecloud source code.
 
 Note that Docker prints each step of the Dockerfile as it's executed.
 
-:code:`ch-build` and many other Charliecloud commands wrap various
-privileged :code:`docker` commands. Thus, you will be prompted for a password
-to escalate as needed. Note however that most configurations of :code:`sudo`
-don't require a password on every invocation, so just because you aren't
-prompted doesn't mean privileged commands aren't running.
+:code:`ch-build` and many other Charliecloud commands wrap various privileged
+:code:`docker` commands. Thus, you will be prompted for a password to escalate
+as needed. Note however that most configurations of :code:`sudo` don't require
+a password on every invocation, so privileged commands may be running even if
+you're not prompted for a password.
 
 Share image and other standard Docker stuff
 -------------------------------------------

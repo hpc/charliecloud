@@ -179,7 +179,7 @@ Then, use that :code:`bats` to run the file you're interested in. For example,
 you can test the :code:`mpihello` example with::
 
   $ cd examples/mpi/mpihello
-  $ /home/charlie/charliecloud/test/bats/bin/bats test.bats
+  $ /usr/local/src/charliecloud/test/bats/bin/bats test.bats
    ✓ mpihello/serial
    ✓ mpihello/guest starts ranks
    ✓ mpihello/host starts ranks
