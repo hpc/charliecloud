@@ -6,7 +6,9 @@
 
 #define _GNU_SOURCE
 #include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -14,10 +16,16 @@
 #include <mpi.h>
 
 #define TAG 0
+#define MSG_OUT 8675309
+
+void fatal(char * fmt, ...);
+int op(int rank, int i);
+
+int rank, rank_ct;
 
 int main(int argc, char ** argv)
 {
-   int msg, rank, rank_ct;
+   int msg;
    struct stat st;
    MPI_Status mstat;
    char hostname[HOST_NAME_MAX+1];
@@ -35,18 +43,20 @@ int main(int argc, char ** argv)
 
    if (rank == 0) {
       for (int i = 1; i < rank_ct; i++) {
-         msg = i;
+         msg = MSG_OUT;
          MPI_Send(&msg, 1, MPI_INT, i, TAG, MPI_COMM_WORLD);
-         //printf("%d: sent msg=%d\n", rank, msg);
+         msg = 0;
          MPI_Recv(&msg, 1, MPI_INT, i, TAG, MPI_COMM_WORLD, &mstat);
-         //printf("%d: received msg=%d\n", rank, msg);
+         if (msg != op(i, MSG_OUT))
+            fatal("0: expected %d back but got %d", op(i, MSG_OUT), msg);
       }
    } else {
+      msg = 0;
       MPI_Recv(&msg, 1, MPI_INT, 0, TAG, MPI_COMM_WORLD, &mstat);
-      //printf("%d: received msg=%d\n", rank, msg);
-      msg = -rank;
+      if (msg != MSG_OUT)
+         fatal("%d: expected %d but got %d", rank, MSG_OUT, msg);
+      msg = op(rank, msg);
       MPI_Send(&msg, 1, MPI_INT, 0, TAG, MPI_COMM_WORLD);
-      //printf("%d: sent msg=%d\n", rank, msg);
    }
 
    if (rank == 0)
@@ -56,4 +66,23 @@ int main(int argc, char ** argv)
    if (rank == 0)
       printf("%d: finalize ok\n", rank);
    return 0;
+}
+
+void fatal(char * fmt, ...)
+{
+   va_list ap;
+
+   fprintf(stderr, "rank %d:", rank);
+
+   va_start(ap, fmt);
+   vfprintf(stderr, fmt, ap);
+   va_end(ap);
+
+   fprintf(stderr, "\n");
+   exit(EXIT_FAILURE);
+}
+
+int op(int rank, int i)
+{
+   return i * rank;
 }
