@@ -9,7 +9,8 @@ Description
 ===========
 
 Run command :code:`CMD` in a Charliecloud container using the flattened and
-unpacked image directory located at :code:`NEWROOT`.
+unpacked image directory located at :code:`NEWROOT`. Note: Your current home 
+directory is mounted at :code: `/home/$USER` in the container.
 
   :code:`-b`, :code:`--bind=SRC[:DST]`
     mount :code:`SRC` at guest :code:`DST` (default :code:`/mnt/0`,
