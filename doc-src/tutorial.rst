@@ -588,11 +588,14 @@ this with two chained Dockerfiles. First, we build a basic Debian image
    :language: docker
    :lines: 2-
 
-Then, we add OpenMPI with :code:`test/Dockerfile.openmpi`:
+Then, we add OpenMPI with :code:`test/Dockerfile.openmpi`. This is a complex
+Dockerfile that compiles several dependencies in addition to OpenMPI. For the
+purposes of this tutorial, you can skip most of it, but we felt it would be
+useful to show a real example.
 
 .. literalinclude:: ../test/Dockerfile.openmpi
    :language: docker
-   :lines: 2-50
+   :lines: 2-
 
 So what is going on here?
 
@@ -600,14 +603,17 @@ So what is going on here?
 
 2. Install a basic build system using the OS package manager.
 
-3. Download and untar OpenMPI. Note the use of variables to make adjusting the
-   URL and MPI version easier, as well as the explanation of why we're not
-   using :code:`apt-get`, given that OpenMPI is included in Debian.
+3. For a few dependencies and then OpenMPI itself:
 
-4. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
-   appropriate parallel build.
+   1. Download and untar. Note the use of variables to make adjusting the URL
+      and versions easier, as well as the explanation of why we're not using
+      :code:`apt-get`, given that several of these packages are included in
+      Debian.
 
-5. Clean up, in order to reduce the size of layers as well as the resulting
+   2. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
+      appropriate parallel build.
+
+4. Clean up, in order to reduce the size of layers as well as the resulting
    Charliecloud tarball (:code:`rm -Rf`).
 
 .. Finally, because it's a container image, you can be less tidy than you
@@ -798,11 +804,7 @@ parameters specifying the configuration path.
 
 The approach used in our example is to set the configuration directory to
 :code:`/mnt/0`. This is done in :code:`openmpi` (and hence
-:code:`mpihello`) with the :code:`--sysconfdir` argument:
-
-.. literalinclude:: ../test/Dockerfile.openmpi
-   :language: docker
-   :lines:    39-49
+:code:`mpihello`) with the :code:`--sysconfdir` argument (see above).
 
 The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with :code:`--bind`, that is
