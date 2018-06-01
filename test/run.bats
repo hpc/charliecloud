@@ -188,7 +188,9 @@ load common
     PATH=$BACKUP_PATH
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = "True" ]]
+    r='ch-run: \$PATH not set'
+    [[ $output =~ $r ]]
+    [[ $output =~ 'True' ]]
 }
 
 @test 'mountns id differs' {
