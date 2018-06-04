@@ -10,13 +10,16 @@
 #include <fcntl.h>
 #include <libgen.h>
 #include <sched.h>
+#include <semaphore.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/mount.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "charliecloud.h"
@@ -51,6 +54,21 @@ char * JOIN_CT_ENV[] =  { "OMPI_COMM_WORLD_LOCAL_SIZE",
                           NULL };
 char * JOIN_TAG_ENV[] = { "SLURM_STEP_ID",
                           NULL };
+
+/* Timeout in seconds for waiting for join semaphore. */
+#define JOIN_TIMEOUT 30
+
+/* Variables for coordinating --join. */
+struct {
+   bool winner_p;
+   char * sem_name;
+   sem_t * sem;
+   char * shm_name;
+   struct {
+      pid_t winner_pid;
+      int proc_left_ct;
+   } * shared;
+} join;
 
 
 /** Command line options **/
@@ -108,13 +126,16 @@ struct args {
 void enter_udss(char * newroot, bool writeable, struct bind * binds,
                 bool private_tmp, bool private_home);
 bool get_first_env(char ** array, char ** name, char ** value);
+void join_begin();
 int join_ct();
+void join_end();
 char * join_tag();
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
 static error_t parse_opt(int key, char * arg, struct argp_state * state);
 int parse_int(char * s, bool extra_ok, char * error_tag);
 void privs_verify_invoking();
+void sem_timedwait_relative(sem_t * sem, int timeout);
 void setup_namespaces(uid_t cuid, gid_t cgid);
 
 struct args args;
@@ -151,12 +172,20 @@ int main(int argc, char * argv[])
    INFO("newroot: %s", args.newroot);
    INFO("container uid: %u", args.container_uid);
    INFO("container gid: %u", args.container_gid);
-   INFO("join: %s %d %s\n", args.join ? "y" : "n", args.join_ct, args.join_tag);
-   INFO("private /tmp: %d\n", args.private_tmp);
+   INFO("join: %d %d %s", args.join, args.join_ct, args.join_tag);
+   INFO("private /tmp: %d", args.private_tmp);
 
-   setup_namespaces(args.container_uid, args.container_gid);
-   enter_udss(args.newroot, args.writable, args.binds,
-              args.private_tmp, args.private_home);
+   if (args.join)
+      join_begin();
+   if (!args.join || join.winner_p) {
+      setup_namespaces(args.container_uid, args.container_gid);
+      enter_udss(args.newroot, args.writable, args.binds,
+                 args.private_tmp, args.private_home);
+   } else {
+      //join_namespaces();
+   }
+   if (args.join)
+      join_end();
 
    run_user_command(argc, argv, args.user_cmd_start); // should never return
    exit(EXIT_FAILURE);
@@ -276,6 +305,49 @@ bool get_first_env(char ** array, char ** name, char ** value)
    return false;
 }
 
+/* Begin coordinated section of namespace joining. */
+void join_begin()
+{
+   int fd;
+
+   T_ (1 <= asprintf(&join.sem_name, "/ch-run.s.%s", args.join_tag));
+   T_ (1 <= asprintf(&join.shm_name, "/ch-run.m.%s", args.join_tag));
+
+   // Serialize.
+   join.sem = sem_open(join.sem_name, O_CREAT, 0600, 1);
+   T_ (join.sem != SEM_FAILED);
+   sem_timedwait_relative(join.sem, JOIN_TIMEOUT);
+
+   // Am I the winner?
+   fd = shm_open(join.shm_name, O_CREAT|O_EXCL|O_RDWR, 0600);
+   if (fd > 0) {
+      join.winner_p = true;
+      Z_ (ftruncate(fd, sizeof(*join.shared)));
+   } else if (errno == EEXIST) {
+      join.winner_p = false;
+      fd = shm_open(join.shm_name, O_RDWR, 0);
+      T_ (fd > 0);
+   } else {
+      T_ (0);
+   }
+
+   join.shared = mmap(NULL, sizeof(*join.shared), PROT_READ|PROT_WRITE,
+                      MAP_SHARED, fd, 0);
+   T_ (join.shared != NULL);
+   Z_ (close(fd));
+
+   if (join.winner_p) {
+      join.shared->winner_pid = getpid();
+      join.shared->proc_left_ct = args.join_ct;
+      // Keep lock; winner still serialized.
+   } else {
+      Z_ (sem_post(join.sem));
+      // Losers run in parallel (winner will be done by now).
+   }
+
+   INFO("join: winner pid: %d", join.shared->winner_pid);
+}
+
 /* Find an appropriate join count; assumes --join was specified or implied.
    Exit with error if no valid value is available. */
 int join_ct()
@@ -284,20 +356,47 @@ int join_ct()
    char * ev_name, * ev_value;
 
    if (args.join_ct != 0) {
-      DEBUG("peer group size from command line");
+      INFO("join: peer group size from command line");
       j = args.join_ct;
       goto end;
    }
 
    if (get_first_env(JOIN_CT_ENV, &ev_name, &ev_value)) {
-      DEBUG("peer group size from %s", ev_name);
+      INFO("join: peer group size from %s", ev_name);
       j = parse_int(ev_value, true, ev_name);
       goto end;
    }
 
 end:
-   Te(j > 0, "--join: no valid peer group size found");
+   Te(j > 0, "join: no valid peer group size found");
    return j;
+}
+
+/* End coordinated section of namespace joining. */
+void join_end()
+{
+   // Serialize (winner never released lock).
+   if (!join.winner_p)
+      sem_timedwait_relative(join.sem, JOIN_TIMEOUT);
+
+   join.shared->proc_left_ct--;
+   INFO("join: %d peers left excluding myself", join.shared->proc_left_ct);
+
+   // Parallelize.
+   Z_ (sem_post(join.sem));
+
+   if (join.shared->proc_left_ct <= 0) {
+      INFO("join: cleaning up IPC resources");
+      Te (join.shared->proc_left_ct == 0, "expected 0 peers left but found %d",
+          join.shared->proc_left_ct);
+      Z_ (sem_unlink(join.sem_name));
+      Z_ (shm_unlink(join.shm_name));
+   }
+
+   Z_ (munmap(join.shared, sizeof(*join.shared)));
+   Z_ (sem_close(join.sem));
+
+   INFO("join: done");
 }
 
 /* Find an appropriate join tag; assumes --join was specified or implied. Exit
@@ -308,22 +407,22 @@ char * join_tag()
    char * ev_name, * ev_value;
 
    if (args.join_tag != NULL) {
-      DEBUG("peer group tag from command line");
+      INFO("join: peer group tag from command line");
       tag = args.join_tag;
       goto end;
    }
 
    if (get_first_env(JOIN_TAG_ENV, &ev_name, &ev_value)) {
-      DEBUG("peer group tag from %s", ev_name);
+      INFO("join: peer group tag from %s", ev_name);
       tag = ev_value;
       goto end;
    }
 
-   DEBUG("peer group tag from getppid(2)");
+   INFO("join: peer group tag from getppid(2)");
    T_ (1 <= asprintf(&tag, "%d", getppid()));
 
 end:
-   Te(tag[0] != '\0', "--join: peer group tag cannot be empty string");
+   Te(tag[0] != '\0', "join: peer group tag cannot be empty string");
    return tag;
 }
 
@@ -503,6 +602,22 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    execvp(argv[0], argv);  // only returns if error
    Tf (0, "can't execve(2) user command");
+}
+
+/* Wait for semaphore sem for up to timeout seconds. If timeout or an error,
+   exit unsuccessfully. */
+void sem_timedwait_relative(sem_t * sem, int timeout)
+{
+   struct timespec deadline;
+
+   // sem_timedwait() requires a deadline rather than a timeout.
+   Z_ (clock_gettime(CLOCK_REALTIME, &deadline));
+   deadline.tv_sec += timeout;
+
+   if (sem_timedwait(sem, &deadline)) {
+      Ze (errno == ETIMEDOUT, "timeout waiting for join lock");
+      Tf (0, "failure waiting for join lock");
+   }
 }
 
 /* Activate the desired isolation namespaces. */

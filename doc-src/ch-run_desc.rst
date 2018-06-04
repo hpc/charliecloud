@@ -104,8 +104,9 @@ Caveats:
   bugs and is thus an unusual use case.)
 
 * If :code:`--join-ct` is too high or :code:`ch-run` itself crashes, IPC
-  resources such as semaphores and shared memory segments will be leaked. The
-  utilities :code:`ipcs(1)` and :code:`ipcrm(1)` can be used to clean up.
+  resources such as semaphores and shared memory segments will be leaked.
+  These appear as files :code:`/dev/shm` and can be removed with
+  :code:`rm(1)`.
 
 Examples
 ========

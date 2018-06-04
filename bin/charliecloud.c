@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "version.h"
 
@@ -29,8 +31,7 @@ void msg(int level, char * file, int line, int errno_, char * fmt, ...)
    if (level > verbose)
       return;
 
-   fputs(program_invocation_short_name, stderr);
-   fputs(": ", stderr);
+   fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
 
    if (fmt == NULL)
       fputs(verbose_levels[level], stderr);
