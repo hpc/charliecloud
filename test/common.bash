@@ -71,11 +71,6 @@ tarball_ok () {
 # Predictable sorting and collation
 export LC_ALL=C
 
-# Disable OpenMPI's process_vm_readv(2)-based single-copy mechanism because
-# processes in sibling user namespaces don't have permission to use this
-# system call on one another. See issue #126 and the FAQ.
-export OMPI_MCA_btl_vader_single_copy_mechanism=none
-
 # Set path to the right Charliecloud. This uses a symlink in this directory
 # called "bin" which points to the corresponding bin directory, either simply
 # up and over (source code) or set during "make install".

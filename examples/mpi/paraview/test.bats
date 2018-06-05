@@ -39,7 +39,7 @@ setup () {
 
 @test "$EXAMPLE_TAG/cone ranks=2" {
     multiprocess_ok
-    $MPIRUN_2 ch-run -b $INDIR -b $OUTDIR $IMG -- \
+    $MPIRUN_2 ch-run --join -b $INDIR -b $OUTDIR $IMG -- \
               pvbatch /mnt/0/cone.py /mnt/1
     ls -l $OUTDIR/cone*
        diff -u $INDIR/cone.1.vtk $OUTDIR/cone.vtk \
@@ -50,7 +50,7 @@ setup () {
 
 @test "$EXAMPLE_TAG/cone ranks=N" {
     multiprocess_ok
-    $MPIRUN_CORE ch-run -b $INDIR -b $OUTDIR $IMG -- \
+    $MPIRUN_CORE ch-run --join -b $INDIR -b $OUTDIR $IMG -- \
                  pvbatch /mnt/0/cone.py /mnt/1
     ls -l $OUTDIR/cone*
        cmp $INDIR/cone.smooth.png $OUTDIR/cone.png \
