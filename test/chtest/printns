@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Print out my namespace IDs, to stdout or (if specified) the path in $2.
+# Then, if $1 is specified, wait that number of seconds before existing.
+
+set -e
+
+pause=${1:-0}
+out=${2:-/dev/stdout}
+
+stat -L -c %n:%i /proc/self/ns/* > $out
+sleep $pause

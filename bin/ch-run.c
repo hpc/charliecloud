@@ -129,6 +129,8 @@ bool get_first_env(char ** array, char ** name, char ** value);
 void join_begin();
 int join_ct();
 void join_end();
+void join_namespace(pid_t pid, char * ns);
+void join_namespaces();
 char * join_tag();
 void log_ids(const char * func, int line);
 void run_user_command(int argc, char * argv[], int user_cmd_start);
@@ -181,9 +183,8 @@ int main(int argc, char * argv[])
       setup_namespaces(args.container_uid, args.container_gid);
       enter_udss(args.newroot, args.writable, args.binds,
                  args.private_tmp, args.private_home);
-   } else {
-      //join_namespaces();
-   }
+   } else
+      join_namespaces();
    if (args.join)
       join_end();
 
@@ -321,6 +322,7 @@ void join_begin()
    // Am I the winner?
    fd = shm_open(join.shm_name, O_CREAT|O_EXCL|O_RDWR, 0600);
    if (fd > 0) {
+      INFO("join: I won");
       join.winner_p = true;
       Z_ (ftruncate(fd, sizeof(*join.shared)));
    } else if (errno == EEXIST) {
@@ -341,11 +343,10 @@ void join_begin()
       join.shared->proc_left_ct = args.join_ct;
       // Keep lock; winner still serialized.
    } else {
+      INFO("join: winner pid: %d", join.shared->winner_pid);
       Z_ (sem_post(join.sem));
       // Losers run in parallel (winner will be done by now).
    }
-
-   INFO("join: winner pid: %d", join.shared->winner_pid);
 }
 
 /* Find an appropriate join count; assumes --join was specified or implied.
@@ -397,6 +398,31 @@ void join_end()
    Z_ (sem_close(join.sem));
 
    INFO("join: done");
+}
+
+/* Join a specific namespace. */
+void join_namespace(pid_t pid, char * ns)
+{
+   char * path;
+   int fd;
+
+   T_ (1 <= asprintf(&path, "/proc/%d/ns/%s", pid, ns));
+   fd = open(path, O_RDONLY);
+   if (fd == -1) {
+      if (errno == ENOENT) {
+         Te (0, "join: %s not found; is winner still running?", path);
+      } else {
+         Tf (0, "join: can't open %s", path);
+      }
+   }
+   Zf (setns(fd, 0), "can't join %s namespace of pid %d", ns, pid);
+}
+
+/* Join the existing namespaces created by the join winner. */
+void join_namespaces()
+{
+   join_namespace(join.shared->winner_pid, "user");
+   join_namespace(join.shared->winner_pid, "mnt");
 }
 
 /* Find an appropriate join tag; assumes --join was specified or implied. Exit

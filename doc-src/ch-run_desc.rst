@@ -103,10 +103,20 @@ Caveats:
   to start a debugger after the fact. (This is only required for code with
   bugs and is thus an unusual use case.)
 
-* If :code:`--join-ct` is too high or :code:`ch-run` itself crashes, IPC
-  resources such as semaphores and shared memory segments will be leaked.
-  These appear as files :code:`/dev/shm` and can be removed with
-  :code:`rm(1)`.
+* :code:`ch-run` instances race. The winner of this race sets up the
+  namespaces, and the other peers use the winner to find the namespaces to
+  join. Therefore, if the user command of the winner exits, any remaining
+  peers will not be able to join the namespaces, even if they are still
+  active. There is currently no general way to specify which :code:`ch-run`
+  should be the winner.
+
+* If :code:`--join-ct` is too high, the winning :code:`ch-run`'s user command
+  exits before all peers join, or :code:`ch-run` itself crashes, IPC resources
+  such as semaphores and shared memory segments will be leaked. These appear
+  as files in :code:`/dev/shm/` and can be removed with :code:`rm(1)`.
+
+* Many of the arguments given to the race losers, such as the image path and
+  :code:`--bind`, will be ignored in favor of what was given to the winner.
 
 Examples
 ========
