@@ -135,18 +135,18 @@ unset_vars () {
     ! fgrep -q 'join: cleaning up IPC' $BATS_TMPDIR/join.1.err
 
     # IPC resources present?
-    test -e /dev/shm/ch-run.m.foo
-    test -e /dev/shm/sem.ch-run.s.foo
+    test -e /dev/shm/ch-run_foo
+    test -e /dev/shm/sem.ch-run_foo
 
     # second peer (loser)
-    ch-run -v --join-ct=2 --join-tag=foo $CHTEST_IMG -- \
-           /test/printns 0 $BATS_TMPDIR/join.2.ns \
-           >& $BATS_TMPDIR/join.2.err
-    cat $BATS_TMPDIR/join.2.err
+    run ch-run -v --join-ct=2 --join-tag=foo $CHTEST_IMG -- \
+               /test/printns 0 $BATS_TMPDIR/join.2.ns \
+    echo "$output"
+    [[ $status -eq 0 ]]
     cat $BATS_TMPDIR/join.2.ns
-      fgrep -q 'join: 1 2' $BATS_TMPDIR/join.1.err
-      fgrep -q 'join: winner pid:' $BATS_TMPDIR/join.2.err
-      fgrep -q 'join: cleaning up IPC' $BATS_TMPDIR/join.2.err
+      echo "$output" | fgrep -q 'join: 1 2'
+      echo "$output" | fgrep -q 'join: winner pid:'
+      echo "$output" | fgrep -q 'join: cleaning up IPC'
 
     # same namespaces?
     for i in $(ls /proc/self/ns); do
@@ -189,8 +189,8 @@ unset_vars () {
     ! fgrep -q 'join: cleaning up IPC' $BATS_TMPDIR/join.2.err
 
     # IPC resources present?
-    test -e /dev/shm/ch-run.m.foo
-    test -e /dev/shm/sem.ch-run.s.foo
+    test -e /dev/shm/ch-run_foo
+    test -e /dev/shm/sem.ch-run_foo
 
     # third peer (loser, cleanup)
     ch-run -v --join-ct=3 --join-tag=foo $CHTEST_IMG -- \
@@ -218,9 +218,9 @@ unset_vars () {
     ipc_clean_p
 
     # Two peers, one node. Should be one of each of the namespaces.
-    #run $MPIRUN_2_1NODE ch-run -v --join $CHTEST_IMG -- /test/printns 2
-    #joined_ok 2 2 1 $status "$output"
-    #ipc_clean_p
+    run $MPIRUN_2_1NODE ch-run -v --join $CHTEST_IMG -- /test/printns 2
+    ipc_clean_p
+    joined_ok 2 2 1 $status "$output"
 
     # One peer per core across the allocation. Should be $CHTEST_NODES of each
     # of the namespaces.

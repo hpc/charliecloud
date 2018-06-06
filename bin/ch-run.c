@@ -311,8 +311,8 @@ void join_begin()
 {
    int fd;
 
-   T_ (1 <= asprintf(&join.sem_name, "/ch-run.s.%s", args.join_tag));
-   T_ (1 <= asprintf(&join.shm_name, "/ch-run.m.%s", args.join_tag));
+   T_ (1 <= asprintf(&join.sem_name, "/ch-run_%s", args.join_tag));
+   T_ (1 <= asprintf(&join.shm_name, "/ch-run_%s", args.join_tag));
 
    // Serialize.
    join.sem = sem_open(join.sem_name, O_CREAT, 0600, 1);
@@ -390,8 +390,8 @@ void join_end()
       INFO("join: cleaning up IPC resources");
       Te (join.shared->proc_left_ct == 0, "expected 0 peers left but found %d",
           join.shared->proc_left_ct);
-      Z_ (sem_unlink(join.sem_name));
-      Z_ (shm_unlink(join.shm_name));
+      Zf (sem_unlink(join.sem_name), "can't unlink sem: %s", join.sem_name);
+      Zf (shm_unlink(join.shm_name), "can't unlink shm: %s", join.shm_name);
    }
 
    Z_ (munmap(join.shared, sizeof(*join.shared)));

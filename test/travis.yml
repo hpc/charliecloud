@@ -45,6 +45,13 @@ install:
   - sudo apt-get install pigz
   - if [ -n "$INSTALL_PV" ]; then sudo apt-get install pv; fi
   - sudo pip install sphinx sphinx-rtd-theme
+# Ubuntu Trusty symlinks /dev/shm -> /run/shm; the latter is unavailable after
+# entering the namespaces and we get ENOENT. Work around this bug. See:
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=851427
+# https://wiki.debian.org/ReleaseGoals/RunDirectory
+  - sudo rm /dev/shm
+  - sudo mkdir /dev/shm
+  - sudo mount --bind /run/shm /dev/shm
 
 before_script:
   - getconf _NPROCESSORS_ONLN
