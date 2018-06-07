@@ -24,8 +24,8 @@ fromhost_ls () {
 
 @test 'ch-fromhost' {
     scope standard
-    prerequisites_ok fromhost
-    IMG=$IMGDIR/fromhost
+    prerequisites_ok debian9
+    IMG=$IMGDIR/debian9
 
     # --cmd
     fromhost_clean $IMG
@@ -188,11 +188,11 @@ fromhost_ls () {
 }
 
 @test 'ch-fromhost --nvidia with GPU' {
-    scope standard
-    prerequisites_ok fromhost
+    scope full
+    prerequisites_ok nvidia
     command -v nvidia-container-cli >/dev/null 2>&1 \
         || skip 'nvidia-container-cli not in $PATH'
-    IMG=$IMGDIR/fromhost
+    IMG=$IMGDIR/nvidia
 
     # nvidia-container-cli --version (to make sure it's linked correctly)
     nvidia-container-cli --version
@@ -241,11 +241,11 @@ fromhost_ls () {
 }
 
 @test 'ch-fromhost --nvidia without GPU' {
-    scope standard
-    prerequisites_ok fromhost
+    scope full
+    prerequisites_ok nvidia
     command -v nvidia-container-cli >/dev/null 2>&1 \
         && skip 'nvidia-container-cli in $PATH'
-    IMG=$IMGDIR/fromhost
+    IMG=$IMGDIR/nvidia
 
     # --nvidia gives proper error
     run ch-fromhost -v --nvidia $IMG
@@ -254,7 +254,6 @@ fromhost_ls () {
     r="nvidia-container-cli: (command )?not found"
     [[ $output =~ $r ]]
     [[ $output =~ 'nvidia-container-cli failed' ]]
-    fromhost_clean_p $IMG
 }
 
 @test 'ch-tar2dir: /dev cleaning' {  # issue #157

@@ -1,8 +1,8 @@
-# ch-test-scope: standard
+# ch-test-scope: full
 FROM ubuntu:16.04
 
 # OS packages needed
-ENV DEBIAN_FRONTENT noninteractive
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get install -y \
       gnupg-curl \
