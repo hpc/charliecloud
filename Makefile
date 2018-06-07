@@ -168,3 +168,9 @@ install: all
 	    ln -sf ../libexec/bats $(TEST)/bats/bin/bats && \
 	    ln -sf bats/bin/bats $(TEST)/bats; \
 	fi
+
+.PHONY: deb
+deb:
+	ln -s packaging/debian
+	debuild -d -i -us -uc
+	rm -f debian
