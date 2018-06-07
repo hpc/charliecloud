@@ -49,14 +49,6 @@ clean:
 	rm -f sotest/sotest sotest/libsotest.so*
 	rm -f sotest/bin/sotest sotest/lib/libsotest.so*
 
-.PHONY: clean-docker
-clean-docker:
-	sudo docker rm $$(sudo docker ps -aq) || true
-	sudo docker rmi -f $$(sudo docker images -q) || true
-#	For reasons I don't understand, sometimes you have to "docker rmi" a
-#	second time.
-	sudo docker rmi -f $$(sudo docker images -q) || true
-
 .PHONY: where-bats
 where-bats:
 	which bats
