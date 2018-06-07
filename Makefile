@@ -143,7 +143,7 @@ install: all
 	install -pm 755 -t $(TEST) test/make-perms-test
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
-	chmod 755 $(TEST)/chtest/Build $(TEST)/chtest/*.py
+	chmod 755 $(TEST)/chtest/{Build,*.py,printns}
 	ln -sf ../../../../bin $(TEST)/bin
 #       shared library tests
 	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
