@@ -390,7 +390,7 @@ EOF
     run ch-run $IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ "can't execve(2) user command: No such file or directory" ]]
+    [[ $output =~ "can't execve(2): true: No such file or directory" ]]
 
     # For each required file, we want a correct error if it's missing.
     for f in $FILES; do
@@ -410,7 +410,7 @@ EOF
         touch $IMG/$f  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        [[ $output =~ "can't execve(2) user command: No such file or directory" ]]
+        [[ $output =~ "can't execve(2): true: No such file or directory" ]]
     done
 
     # For all files, we want a correct error if it's not a regular file.
@@ -480,13 +480,13 @@ EOF
     mkdir $IMG/home  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ "can't execve(2) user command: No such file or directory" ]]
+    [[ $output =~ "can't execve(2): true: No such file or directory" ]]
 
     # Everything should be restored and back to the original error.
     run ch-run $IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ "can't execve(2) user command: No such file or directory" ]]
+    [[ $output =~ "can't execve(2): true: No such file or directory" ]]
 }
 
 @test 'ch-run --cd' {

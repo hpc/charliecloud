@@ -627,7 +627,7 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
 
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    execvp(argv[0], argv);  // only returns if error
-   Tf (0, "can't execve(2) user command");
+   Tf (0, "can't execve(2): %s", argv[0]);
 }
 
 /* Wait for semaphore sem for up to timeout seconds. If timeout or an error,
