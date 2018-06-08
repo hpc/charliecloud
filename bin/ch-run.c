@@ -188,9 +188,6 @@ int main(int argc, char * argv[])
    if (args.join)
       join_end();
 
-   if (args.initial_dir != NULL)
-      Zf (chdir(args.initial_dir), "can't cd to %s", args.initial_dir);
-
    run_user_command(argc, argv, args.user_cmd_start); // should never return
    exit(EXIT_FAILURE);
 }
@@ -605,6 +602,10 @@ void run_user_command(int argc, char * argv[], int user_cmd_start)
    for (int i = user_cmd_start; i < argc; i++)
       argv[i - user_cmd_start] = argv[i];
    argv[argc - user_cmd_start] = NULL;
+
+   // --cd
+   if (args.initial_dir != NULL)
+      Zf (chdir(args.initial_dir), "can't cd to %s", args.initial_dir);
 
    // Append /bin to $PATH if not already present. See FAQ.
    old_path = getenv("PATH");
