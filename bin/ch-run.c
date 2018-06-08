@@ -163,8 +163,9 @@ int main(int argc, char * argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &(args.user_cmd_start), &args));
    Te (args.user_cmd_start < argc - 1, "NEWROOT and/or CMD not specified");
    assert(args.binds[USER_BINDS_MAX].src == NULL);  // overrun in argp_parse?
-   args.newroot = realpath(argv[args.user_cmd_start++], NULL);
-   Tf (args.newroot != NULL, "couldn't resolve image path");
+   args.newroot = realpath(argv[args.user_cmd_start], NULL);
+   Tf (args.newroot != NULL, "can't find image: %s", argv[args.user_cmd_start]);
+   args.user_cmd_start++;
    if (args.join) {
       args.join_ct = join_ct();
       args.join_tag = join_tag();
