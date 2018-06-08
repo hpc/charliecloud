@@ -217,8 +217,9 @@ unset_vars () {
     multiprocess_ok
     ipc_clean_p
 
-    # Two peers, one node. Should be one of each of the namespaces.
-    run $MPIRUN_2_1NODE ch-run -v --join $CHTEST_IMG -- /test/printns 2
+    # Two peers, one node. Should be one of each of the namespaces. Make sure
+    # everyone chdir(2)s properly.
+    run $MPIRUN_2_1NODE ch-run -v --join --cd /test $CHTEST_IMG -- ./printns 2
     ipc_clean_p
     joined_ok 2 2 1 $status "$output"
 

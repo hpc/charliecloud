@@ -113,7 +113,7 @@ struct args {
    gid_t container_gid;
    uid_t container_uid;
    char * newroot;
-   char * initial_working_dir;
+   char * initial_dir;
    bool join;
    int join_ct;
    char * join_tag;
@@ -152,7 +152,7 @@ int main(int argc, char * argv[])
    memset(args.binds, 0, sizeof(args.binds));
    args.container_gid = getegid();
    args.container_uid = geteuid();
-   args.initial_working_dir = NULL;
+   args.initial_dir = NULL;
    args.join = false;
    args.join_ct = 0;
    args.join_tag = NULL;
@@ -187,6 +187,9 @@ int main(int argc, char * argv[])
       join_namespaces();
    if (args.join)
       join_end();
+
+   if (args.initial_dir != NULL)
+      Zf (chdir(args.initial_dir), "can't cd to %s", args.initial_dir);
 
    run_user_command(argc, argv, args.user_cmd_start); // should never return
    exit(EXIT_FAILURE);
@@ -285,10 +288,6 @@ void enter_udss(char * newroot, bool writable, struct bind * binds,
    Zf (syscall(SYS_pivot_root, newroot, path), "can't pivot_root(2)");
    Zf (chroot("."), "can't chroot(2) into new root");
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
-
-   if (args.initial_working_dir != NULL)
-      Zf (chdir(args.initial_working_dir),
-          "can't cd to %s", args.initial_working_dir);
 }
 
 /* Find the first environment variable in array that is set; put its name in
@@ -516,7 +515,7 @@ static error_t parse_opt(int key, char * arg, struct argp_state * state)
       as->join_tag = arg;
       break;
    case 'c':
-      as->initial_working_dir = arg;
+      as->initial_dir = arg;
       break;
    case 'b':
       for (i = 0; as->binds[i].src != NULL; i++)
