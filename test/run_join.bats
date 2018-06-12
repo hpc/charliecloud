@@ -57,7 +57,7 @@ joined_ok () {
     for i in $(ls /proc/self/ns); do
         printf '  namespace ID count; expected %d: %s: ' $namespace_ct $i 1>&2
         namespace_ct_found=$(  echo "$output" \
-                             | egrep "^/proc/self/ns/$i" \
+                             | egrep "^/proc/self/ns/$i:" \
                              | sort -u \
                              | wc -l)
         if [[ $namespace_ct -eq $namespace_ct_found ]]; then
@@ -151,7 +151,7 @@ unset_vars () {
     # same namespaces?
     for i in $(ls /proc/self/ns); do
         [[ 1 = $(  cat $BATS_TMPDIR/join.?.ns \
-                 | egrep "^/proc/self/ns/$i" | uniq | wc -l) ]]
+                 | egrep "^/proc/self/ns/$i:" | uniq | wc -l) ]]
     done
 
     ipc_clean_p
@@ -206,7 +206,7 @@ unset_vars () {
     # same namespaces?
     for i in $(ls /proc/self/ns); do
         [[ 1 = $(  cat $BATS_TMPDIR/join.?.ns \
-                 | egrep "^/proc/self/ns/$i" | uniq | wc -l) ]]
+                 | egrep "^/proc/self/ns/$i:" | uniq | wc -l) ]]
     done
 
     ipc_clean_p
