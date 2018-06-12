@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Charliecloud command reference &mdash; Charliecloud 0.2.4 documentation</title>
+  <title>4. Charliecloud command reference &mdash; Charliecloud 0.2.5 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.2.4 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.2.5 documentation" href="index.html"/>
         <link rel="next" title="5. VirtualBox appliance" href="virtualbox.html"/>
         <link rel="prev" title="3. Tutorial" href="tutorial.html"/> 
 
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                3adbb1f
+                7294994
               </div>
             
           
@@ -132,7 +132,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#ch-run">4.6. ch-run</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id10">4.6.1. Synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id11">4.6.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id12">4.6.3. Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#host-files-and-directories-available-in-container-via-bind-mounts">4.6.3. Host files and directories available in container via bind mounts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">4.6.4. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">4.6.5. Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ch-ssh">4.7. ch-ssh</a><ul>
@@ -520,6 +522,13 @@ unpacked image directory located at <code class="code docutils literal notransla
 <dd>initial working directory in container</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-g</span></code>, <code class="code docutils literal notranslate"><span class="pre">--gid=GID</span></code></dt>
 <dd>run as group <code class="code docutils literal notranslate"><span class="pre">GID</span></code> within container</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-j</span></code>, <code class="code docutils literal notranslate"><span class="pre">--join</span></code></dt>
+<dd>use the same container (namespaces) as peer <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocations</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--join-ct=N</span></code></dt>
+<dd>number of <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> peers (implies <code class="code docutils literal notranslate"><span class="pre">--join</span></code>; default: see below)</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--join-tag=TAG</span></code></dt>
+<dd>label for <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> peer group (implies <code class="code docutils literal notranslate"><span class="pre">--join</span></code>; default: see
+below)</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-home</span></code></dt>
 <dd>do not bind-mount your home directory (by default, your home directory is
 mounted at <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code> in the container)</dd>
@@ -541,12 +550,106 @@ the host)</dd>
 </dl>
 </div></blockquote>
 </div>
+<div class="section" id="host-files-and-directories-available-in-container-via-bind-mounts">
+<h3>4.6.3. Host files and directories available in container via bind mounts<a class="headerlink" href="#host-files-and-directories-available-in-container-via-bind-mounts" title="Permalink to this headline">¶</a></h3>
+<p>In addition to any directories specified by the user with <code class="code docutils literal notranslate"><span class="pre">--bind</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> has standard host files and directories that are bind-mounted
+in as well.</p>
+<p>The following host files and directories are bind-mounted at the same location
+in the container. These cannot be disabled.</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="code docutils literal notranslate"><span class="pre">/dev</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">/etc/passwd</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">/etc/group</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">/etc/hosts</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">/etc/resolv.conf</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">/proc</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">/sys</span></code></li>
+</ul>
+</div></blockquote>
+<p>Three additional bind mounts can be disabled by the user:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Your home directory (i.e., <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code>) is mounted at guest
+<code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code> by default. This is accomplished by mounting a new
+<code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> at <code class="code docutils literal notranslate"><span class="pre">/home</span></code>, which hides any image content under that
+path. If <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code> is specified, neither of these things happens
+and the image’s <code class="code docutils literal notranslate"><span class="pre">/home</span></code> is exposed unaltered.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> is shared with the host by default. If <code class="code docutils literal notranslate"><span class="pre">--private-tmp</span></code>
+is specified, a new <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> is mounted on the guest’s <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>
+instead.</li>
+<li>If file <code class="code docutils literal notranslate"><span class="pre">/usr/bin/ch-ssh</span></code> is present in the image, it is
+over-mounted with the <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code> binary in the same directory as
+<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="multiple-processes-in-the-same-container-with-join">
+<h3>4.6.4. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code><a class="headerlink" href="#multiple-processes-in-the-same-container-with-join" title="Permalink to this headline">¶</a></h3>
+<p>By default, different <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocations use different user and mount
+namespaces (i.e., different containers). While this has no impact on sharing
+most resources between invocations, there are a few important exceptions.
+These include:</p>
+<ol class="arabic simple">
+<li><code class="code docutils literal notranslate"><span class="pre">ptrace(2)</span></code>, used by debuggers and related tools. One can attach a
+debugger to processes in descendant namespaces, but not sibling namespaces.
+The practical effect of this is that (without <code class="code docutils literal notranslate"><span class="pre">--join</span></code>), you can’t
+run a command with <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> and then attach to it with a debugger
+also run with <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</li>
+<li><em>Cross-memory attach</em> (CMA) is used by cooperating processes to communicate
+by simply reading and writing one another’s memory. This is also not
+permitted between sibling namespaces. This affects various MPI
+implementations that use CMA to pass messages between ranks on the same
+node, because it’s faster than traditional shared memory.</li>
+</ol>
+<p><code class="code docutils literal notranslate"><span class="pre">--join</span></code> is designed to address this by placing related <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>
+commands (the “peer group”) in the same container. This is done by one of the
+peers creating the namespaces with <code class="code docutils literal notranslate"><span class="pre">unshare(2)</span></code> and the others joining
+with <code class="code docutils literal notranslate"><span class="pre">setns(2)</span></code>.</p>
+<p>To do so, we need to know the number of peers and a name for the group. These
+are specified by additional arguments that can (hopefully) be left at default
+values in most cases:</p>
+<ul class="simple">
+<li><code class="code docutils literal notranslate"><span class="pre">--join-ct</span></code> sets the number of peers. The default is the value of the
+first of the following environment variables that is defined:
+<code class="code docutils literal notranslate"><span class="pre">OMPI_COMM_WORLD_LOCAL_SIZE</span></code>, <code class="code docutils literal notranslate"><span class="pre">SLURM_STEP_TASKS_PER_NODE</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">SLURM_CPUS_ON_NODE</span></code>.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">--join-tag</span></code> sets the tag that names the peer group. The default is
+environment variable <code class="code docutils literal notranslate"><span class="pre">SLURM_STEP_ID</span></code>, if defined; otherwise, the PID
+of <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s parent. Tags can be re-used for peer groups that start
+at different times, i.e., once all peer <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> have replaced
+themselves with the user command, the tag can be re-used.</li>
+</ul>
+<p>Caveats:</p>
+<ul class="simple">
+<li>One cannot currently add peers after the fact, for example, if one decides
+to start a debugger after the fact. (This is only required for code with
+bugs and is thus an unusual use case.)</li>
+<li><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> instances race. The winner of this race sets up the
+namespaces, and the other peers use the winner to find the namespaces to
+join. Therefore, if the user command of the winner exits, any remaining
+peers will not be able to join the namespaces, even if they are still
+active. There is currently no general way to specify which <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>
+should be the winner.</li>
+<li>If <code class="code docutils literal notranslate"><span class="pre">--join-ct</span></code> is too high, the winning <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s user command
+exits before all peers join, or <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> itself crashes, IPC resources
+such as semaphores and shared memory segments will be leaked. These appear
+as files in <code class="code docutils literal notranslate"><span class="pre">/dev/shm/</span></code> and can be removed with <code class="code docutils literal notranslate"><span class="pre">rm(1)</span></code>.</li>
+<li>Many of the arguments given to the race losers, such as the image path and
+<code class="code docutils literal notranslate"><span class="pre">--bind</span></code>, will be ignored in favor of what was given to the winner.</li>
+</ul>
+</div>
 <div class="section" id="id12">
-<h3>4.6.3. Example<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<h3>4.6.5. Examples<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
 <p>Run the command <code class="code docutils literal notranslate"><span class="pre">echo</span> <span class="pre">hello</span></code> inside a Charliecloud container using the
 unpacked image at <code class="code docutils literal notranslate"><span class="pre">/data/foo</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/foo -- <span class="nb">echo</span> hello
 <span class="go">hello</span>
+</pre></div>
+</div>
+<p>Run an MPI job that can use CMA to communicate:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-run --join /data/foo -- bar
 </pre></div>
 </div>
 </div>
@@ -685,7 +788,7 @@ your site admin for a suitable location.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.4',
+            VERSION:'0.2.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

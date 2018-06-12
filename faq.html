@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>6. Frequently asked questions (FAQ) &mdash; Charliecloud 0.2.4 documentation</title>
+  <title>6. Frequently asked questions (FAQ) &mdash; Charliecloud 0.2.5 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.2.4 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.2.5 documentation" href="index.html"/>
         <link rel="prev" title="5. VirtualBox appliance" href="virtualbox.html"/> 
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                3adbb1f
+                7294994
               </div>
             
           
@@ -112,6 +112,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#my-ranks-can-t-talk-to-one-another-and-i-m-told-darth-vader-has-something-to-do-with-it">6.9.2. My ranks can’t talk to one another and I’m told Darth Vader has something to do with it</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#how-do-i-run-x11-apps">6.10. How do I run X11 apps?</a></li>
 </ul>
 </li>
 </ul>
@@ -192,6 +193,7 @@
 <li><a class="reference internal" href="#my-ranks-can-t-talk-to-one-another-and-i-m-told-darth-vader-has-something-to-do-with-it" id="id11">My ranks can’t talk to one another and I’m told Darth Vader has something to do with it</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id12">How do I run X11 apps?</a></li>
 </ul>
 </div>
 <div class="section" id="where-did-the-name-charliecloud-come-from">
@@ -423,8 +425,23 @@ same user namespace, at which point the problem goes away.</p>
 </ul>
 <p>We are tracking this problem in <a class="reference external" href="https://github.com/hpc/charliecloud/issues/128">issue #128</a>. It is possible that we can
 do something in Charliecloud to make it work, but we don’t know yet.</p>
-<img alt="Darth Vader bowling a strike with the help of the Force" class="align-center" src="https://media.giphy.com/media/1mNBTj3g4jRCg/giphy.gif" />
 </div>
+</div>
+<div class="section" id="how-do-i-run-x11-apps">
+<h2><a class="toc-backref" href="#id12">6.10. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h2>
+<p>X11 applications should “just work”. For example, try this Dockerfile:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
+<span class="k">RUN</span>    apt-get update <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> apt-get install -y xterm
+</pre></div>
+</div>
+<p>Build it and unpack it to <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>. Then:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /scratch/ch/xterm -- xterm
+</pre></div>
+</div>
+<p>should pop an xterm.</p>
+<p>If your X11 application doesn’t work, please file an issue so we can
+figure out why.</p>
 </div>
 </div>
 
@@ -469,7 +486,7 @@ do something in Charliecloud to make it work, but we don’t know yet.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.4',
+            VERSION:'0.2.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

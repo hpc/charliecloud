@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Tutorial &mdash; Charliecloud 0.2.4 documentation</title>
+  <title>3. Tutorial &mdash; Charliecloud 0.2.5 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.2.4 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.2.5 documentation" href="index.html"/>
         <link rel="next" title="4. Charliecloud command reference" href="command-usage.html"/>
         <link rel="prev" title="2. Testing" href="test.html"/> 
 
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                3adbb1f
+                7294994
               </div>
             
           
@@ -206,10 +206,9 @@
 <p>This tutorial will teach you how to create and run Charliecloud images, using
 both examples included with the source code as well as new ones you create
 from scratch.</p>
-<p>This tutorial assumes that: (a) Charliecloud is correctly installed as
-described in the previous section, (b) Docker is installed on the build
-system, (c) the executables are in your <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>, and (d) you have access
-to the examples in the source code.</p>
+<p>This tutorial assumes that: (a) the Charliecloud executables are in your path,
+(b) Docker is installed on the build system, and (c) the Charliecloud source
+code is available at <code class="code docutils literal notranslate"><span class="pre">/usr/local/src/charliecloud</span></code>.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#seconds-to-charliecloud" id="id1">90 seconds to Charliecloud</a></li>
@@ -264,8 +263,8 @@ commands executed in a container.</p>
 “hello world” Charliecloud container. If you like what you see, then proceed
 with the rest of the tutorial to understand what is happening and how to use
 Charliecloud for your own applications.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> ~/charliecloud/examples/serial/hello
-<span class="gp">$</span> ch-build -t hello ~/charliecloud
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /usr/local/src/charliecloud/examples/serial/hello
+<span class="gp">$</span> ch-build -t hello /usr/local/src/charliecloud
 <span class="go">Sending build context to Docker daemon 15.67 MB</span>
 <span class="go">[...]</span>
 <span class="go">Successfully built 1136de7d4c0a</span>
@@ -343,7 +342,7 @@ in the current directory, rather than at the root of the Docker context
 directory. (We will address the context directory later.)</p>
 <p>The two arguments here are a tag for the Docker image and the context
 directory, which in this case is the Charliecloud source code.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello ~/charliecloud
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello /usr/local/src/charliecloud
 <span class="go">Sending build context to Docker daemon 15.67 MB</span>
 <span class="go">Step 1/4 : FROM debian:stretch</span>
 <span class="go">---&gt; 86baf4e8cde9</span>
@@ -354,11 +353,11 @@ directory, which in this case is the Charliecloud source code.</p>
 </pre></div>
 </div>
 <p>Note that Docker prints each step of the Dockerfile as it’s executed.</p>
-<p><code class="code docutils literal notranslate"><span class="pre">ch-build</span></code> and many other Charliecloud commands wrap various
-privileged <code class="code docutils literal notranslate"><span class="pre">docker</span></code> commands. Thus, you will be prompted for a password
-to escalate as needed. Note however that most configurations of <code class="code docutils literal notranslate"><span class="pre">sudo</span></code>
-don’t require a password on every invocation, so just because you aren’t
-prompted doesn’t mean privileged commands aren’t running.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-build</span></code> and many other Charliecloud commands wrap various privileged
+<code class="code docutils literal notranslate"><span class="pre">docker</span></code> commands. Thus, you will be prompted for a password to escalate
+as needed. Note however that most configurations of <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> don’t require
+a password on every invocation, so privileged commands may be running even if
+you’re not prompted for a password.</p>
 </div>
 <div class="section" id="share-image-and-other-standard-docker-stuff">
 <h3><a class="toc-backref" href="#id6">3.3.3. Share image and other standard Docker stuff</a><a class="headerlink" href="#share-image-and-other-standard-docker-stuff" title="Permalink to this headline">¶</a></h3>
@@ -795,42 +794,144 @@ this with two chained Dockerfiles. First, we build a basic Debian image
     <span class="o">&amp;&amp;</span> apt-get install -y apt-utils
 </pre></div>
 </div>
-<p>Then, we add OpenMPI with <code class="code docutils literal notranslate"><span class="pre">test/Dockerfile.openmpi</span></code>:</p>
+<p>Then, we add OpenMPI with <code class="code docutils literal notranslate"><span class="pre">test/Dockerfile.openmpi</span></code>. This is a complex
+Dockerfile that compiles several dependencies in addition to OpenMPI. For the
+purposes of this tutorial, you can skip most of it, but we felt it would be
+useful to show a real example.</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian9</span>
 
-<span class="c"># OS packages needed to build OpenMPI.</span>
-<span class="k">RUN</span> apt-get install -y <span class="se">\</span>
+<span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
+<span class="c"># OpenMPI for use inside a container.</span>
+<span class="c">#</span>
+<span class="c"># This OpenMPI aspires to work close to optimally on clusters with any of the</span>
+<span class="c"># following interconnects:</span>
+<span class="c">#</span>
+<span class="c">#    - Ethernet (TCP/IP)</span>
+<span class="c">#    - InfiniBand (IB)</span>
+<span class="c">#    - Omni-Path (OPA)</span>
+<span class="c">#    - RDMA over Converged Ethernet (RoCE) interconnects</span>
+<span class="c">#</span>
+<span class="c"># with no environment variables, command line arguments, or additional</span>
+<span class="c"># configuration files. Thus, we try to implement decisions at build time.</span>
+<span class="c">#</span>
+<span class="c"># This is a work in progress, and we&#39;re very interested in feedback.</span>
+<span class="c">#</span>
+<span class="c"># OpenMPI has numerous ways to communicate messages [1]. The ones relevant to</span>
+<span class="c"># this build and the interconnects they support are:</span>
+<span class="c">#</span>
+<span class="c">#   Module        Eth   IB    OPA   RoCE    note  decision</span>
+<span class="c">#   ------------  ----  ----  ----  ----    ----  --------</span>
+<span class="c">#</span>
+<span class="c">#   ob1 : tcp      Y*    X     X     X      a     include</span>
+<span class="c">#   ob1 : openib   N     Y     Y     Y      b,c   exclude</span>
+<span class="c">#   cm  : psm2     N     N     Y*    N            include</span>
+<span class="c">#       : ucx      Y?    Y*    N     Y?     b,d   include</span>
+<span class="c">#</span>
+<span class="c">#   Y : supported</span>
+<span class="c">#   Y*: best choice for that interconnect</span>
+<span class="c">#   X : supported but sub-optimal</span>
+<span class="c">#</span>
+<span class="c">#   a : No RDMA, so performance will suffer.</span>
+<span class="c">#   b : Uses libibverbs.</span>
+<span class="c">#   c : Will be removed in OpenMPI 4.</span>
+<span class="c">#   d : Uses Mellanox libraries if available in preference to libibverbs.</span>
+<span class="c">#</span>
+<span class="c"># You can check what&#39;s available with:</span>
+<span class="c">#</span>
+<span class="c">#   $ ch-run /var/tmp/openmpi -- ompi_info | egrep &#39;(btl|mtl|pml)&#39;</span>
+<span class="c">#</span>
+<span class="c"># The other build decisions are:</span>
+<span class="c">#</span>
+<span class="c">#   1. PMI/PMIx: Include these so that we can use srun or any other PMI[x]</span>
+<span class="c">#      provider, with no matching OpenMPI needed on the host.</span>
+<span class="c">#</span>
+<span class="c">#   2. --disable-pty-support to avoid &quot;pipe function call failed when</span>
+<span class="c">#      setting up I/O forwarding subsystem&quot;.</span>
+<span class="c">#</span>
+<span class="c">#   3. --with-slurm=no so mpirun in the container doesn&#39;t try use Slurm to</span>
+<span class="c">#      launch processes, which will fail in inscrutable ways e.g. if srun is</span>
+<span class="c">#      not found. (If you do want Slurm launching processes, use srun or</span>
+<span class="c">#      mpirun outside the container.)</span>
+<span class="c">#</span>
+<span class="c"># [1]: https://github.com/open-mpi/ompi/blob/master/README</span>
+
+<span class="c"># OS packages needed to build this stuff.</span>
+<span class="k">RUN</span> apt-get install -y --no-install-suggests <span class="se">\</span>
+    cmake <span class="se">\</span>
+    devscripts <span class="se">\</span>
     file <span class="se">\</span>
     flex <span class="se">\</span>
     g++ <span class="se">\</span>
     gcc <span class="se">\</span>
     gfortran <span class="se">\</span>
+    git <span class="se">\</span>
     hwloc-nox <span class="se">\</span>
     less <span class="se">\</span>
     libdb5.3-dev <span class="se">\</span>
-    libfabric-dev <span class="se">\</span>
     libhwloc-dev <span class="se">\</span>
-    libibverbs-dev <span class="se">\</span>
+    libnl-3-dev <span class="se">\</span>
+    libnl-route-3-dev <span class="se">\</span>
     libnuma-dev <span class="se">\</span>
     libpmi2-0-dev <span class="se">\</span>
-    libpsm-infinipath1-dev <span class="se">\</span>
+    libsystemd-dev <span class="se">\</span>
+    libudev-dev <span class="se">\</span>
     make <span class="se">\</span>
-    wget
+    ninja-build <span class="se">\</span>
+    pandoc <span class="se">\</span>
+    pkg-config <span class="se">\</span>
+    wget <span class="se">\</span>
+    udev <span class="se">\</span>
+    valgrind
 
-<span class="c"># Compile OpenMPI. We can&#39;t use the Debian package because we need a specific</span>
-<span class="c"># version and we need to build a little differently:</span>
+<span class="k">WORKDIR</span><span class="s"> /usr/local/src</span>
+
+<span class="c"># libpsm2. These packages don&#39;t appear to be available anywhere in binary form</span>
+<span class="c"># as of 2018-05-24 [1], so compile from source.</span>
 <span class="c">#</span>
-<span class="c">#   1. --disable-pty-support to avoid &quot;pipe function call failed when</span>
-<span class="c">#      setting up I/O forwarding subsystem&quot;.</span>
+<span class="c"># Note that libpsm2 is x86_64 only [2].</span>
 <span class="c">#</span>
-<span class="c">#   2. --with-slurm=no so mpirun in the container doesn&#39;t try use Slurm to</span>
-<span class="c">#       launch processes, which will fail in inscrutable ways e.g. if srun is</span>
-<span class="c">#       not found. (If you do want Slurm launching processes, use srun or</span>
-<span class="c">#       mpirun outside the container.)</span>
-<span class="c">#</span>
+<span class="c"># [1]: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=862313</span>
+<span class="c"># [2]: https://lists.debian.org/debian-hpc/2017/12/msg00015.html</span>
+<span class="k">ENV</span><span class="s"> PSM2_VERSION 10.3-37-1</span>
+<span class="k">RUN</span> git clone --branch debian/<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
+              https://salsa.debian.org/hpc-team/libpsm2.git
+<span class="k">RUN</span>    <span class="nb">cd</span> libpsm2 <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> debuild -i -us -uc -b
+<span class="k">RUN</span> dpkg --install libpsm2-2_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   libpsm2-dev_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
+
+<span class="c"># libibverbs. The packages in Stretch are old, and they aren&#39;t seeing OPA. See</span>
+<span class="c"># https://packages.debian.org/source/sid/rdma-core for what the various</span>
+<span class="c"># packages are.</span>
+<span class="k">ENV</span><span class="s"> IBVERBS_VERSION 18.0-1</span>
+<span class="k">RUN</span> git clone --branch debian/<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
+              https://github.com/linux-rdma/rdma-core.git
+<span class="k">RUN</span>    <span class="nb">cd</span> rdma-core <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> debuild -i -us -uc -b
+<span class="k">RUN</span> dpkg --install ibacm_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   ibverbs-providers_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   ibverbs-utils_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   libibumad-dev_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   libibumad3_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   libibverbs-dev_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   libibverbs1_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   librdmacm-dev_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   librdmacm1_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   rdma-core_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+                   rdmacm-utils_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb
+
+<span class="c"># UCX. There is stuff to build Debian packages, but it seems not too polished.</span>
+<span class="k">ENV</span><span class="s"> UCX_VERSION 1.2.2</span>
+<span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
+              https://github.com/openucx/ucx.git
+<span class="k">RUN</span>    <span class="nb">cd</span> ucx <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> ./contrib/configure-release --prefix<span class="o">=</span>/usr <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
+
+<span class="c"># OpenMPI.</span>
 <span class="k">ENV</span><span class="s"> MPI_URL https://www.open-mpi.org/software/ompi/v2.1/downloads</span>
-<span class="k">ENV</span><span class="s"> MPI_VERSION 2.1.2</span>
-<span class="k">WORKDIR</span><span class="s"> /usr/src</span>
+<span class="k">ENV</span><span class="s"> MPI_VERSION 2.1.3</span>
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
@@ -838,24 +939,35 @@ this with two chained Dockerfiles. First, we build a basic Debian image
        <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
        ./configure --prefix<span class="o">=</span>/usr <span class="se">\</span>
                    --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
-                   --disable-pty-support <span class="se">\</span>
                    --with-pmi <span class="se">\</span>
                    --with-pmi-libdir<span class="o">=</span>/usr/lib/x86_64-linux-gnu <span class="se">\</span>
                    --with-pmix <span class="se">\</span>
+                   --with-psm2 <span class="se">\</span>
+                   --with-ucx <span class="se">\</span>
+                   --disable-pty-support <span class="se">\</span>
+                   --enable-mca-no-build<span class="o">=</span>btl-openib <span class="se">\</span>
                    --with-slurm<span class="o">=</span>no <span class="se">\</span>
     <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
 <span class="k">RUN</span> rm -Rf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
+
+<span class="c"># OpenMPI expects this program to exist, even if it&#39;s not used. Default is</span>
+<span class="c"># &quot;ssh : rsh&quot;, but that&#39;s not installed.</span>
+<span class="k">RUN</span> <span class="nb">echo</span> <span class="s1">&#39;plm_rsh_agent = false&#39;</span> &gt;&gt; /mnt/0/openmpi-mca-params.conf
 </pre></div>
 </div>
 <p>So what is going on here?</p>
 <ol class="arabic simple">
 <li>Use the latest Debian, Stretch, as the base image.</li>
 <li>Install a basic build system using the OS package manager.</li>
-<li>Download and untar OpenMPI. Note the use of variables to make adjusting the
-URL and MPI version easier, as well as the explanation of why we’re not
-using <code class="code docutils literal notranslate"><span class="pre">apt-get</span></code>, given that OpenMPI is included in Debian.</li>
+<li>For a few dependencies and then OpenMPI itself:<ol class="arabic">
+<li>Download and untar. Note the use of variables to make adjusting the URL
+and versions easier, as well as the explanation of why we’re not using
+<code class="code docutils literal notranslate"><span class="pre">apt-get</span></code>, given that several of these packages are included in
+Debian.</li>
 <li>Build and install OpenMPI. Note the <code class="code docutils literal notranslate"><span class="pre">getconf</span></code> trick to guess at an
 appropriate parallel build.</li>
+</ol>
+</li>
 <li>Clean up, in order to reduce the size of layers as well as the resulting
 Charliecloud tarball (<code class="code docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-Rf</span></code>).</li>
 </ol>
@@ -1025,20 +1137,7 @@ variety of approaches. Some application or frameworks take command-line
 parameters specifying the configuration path.</p>
 <p>The approach used in our example is to set the configuration directory to
 <code class="code docutils literal notranslate"><span class="pre">/mnt/0</span></code>. This is done in <code class="code docutils literal notranslate"><span class="pre">openmpi</span></code> (and hence
-<code class="code docutils literal notranslate"><span class="pre">mpihello</span></code>) with the <code class="code docutils literal notranslate"><span class="pre">--sysconfdir</span></code> argument:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-       <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-       ./configure --prefix<span class="o">=</span>/usr <span class="se">\</span>
-                   --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
-                   --disable-pty-support <span class="se">\</span>
-                   --with-pmi <span class="se">\</span>
-                   --with-pmi-libdir<span class="o">=</span>/usr/lib/x86_64-linux-gnu <span class="se">\</span>
-                   --with-pmix <span class="se">\</span>
-                   --with-slurm<span class="o">=</span>no <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
-</pre></div>
-</div>
+<code class="code docutils literal notranslate"><span class="pre">mpihello</span></code>) with the <code class="code docutils literal notranslate"><span class="pre">--sysconfdir</span></code> argument (see above).</p>
 <p>The effect is that the image contains a default MPI configuration, but if you
 specify a different configuration directory with <code class="code docutils literal notranslate"><span class="pre">--bind</span></code>, that is
 overmounted and used instead. For example:</p>
@@ -1411,7 +1510,7 @@ your site administrators for the latter.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.4',
+            VERSION:'0.2.5',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
