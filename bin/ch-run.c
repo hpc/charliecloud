@@ -65,8 +65,8 @@ struct {
    sem_t * sem;
    char * shm_name;
    struct {
-      pid_t winner_pid;
-      int proc_left_ct;
+      pid_t winner_pid;  // access anytime after initialization (write-once)
+      int proc_left_ct;  // access only while serial
    } * shared;
 } join;
 
@@ -380,9 +380,6 @@ void join_end()
    join.shared->proc_left_ct--;
    INFO("join: %d peers left excluding myself", join.shared->proc_left_ct);
 
-   // Parallelize.
-   Z_ (sem_post(join.sem));
-
    if (join.shared->proc_left_ct <= 0) {
       INFO("join: cleaning up IPC resources");
       Te (join.shared->proc_left_ct == 0, "expected 0 peers left but found %d",
@@ -390,6 +387,9 @@ void join_end()
       Zf (sem_unlink(join.sem_name), "can't unlink sem: %s", join.sem_name);
       Zf (shm_unlink(join.shm_name), "can't unlink shm: %s", join.shm_name);
    }
+
+   // Parallelize.
+   Z_ (sem_post(join.sem));
 
    Z_ (munmap(join.shared, sizeof(*join.shared)));
    Z_ (sem_close(join.sem));
