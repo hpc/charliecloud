@@ -37,7 +37,7 @@ check_process_ct () {
 
 # one from "Single Transfer Benchmarks"
 @test "$EXAMPLE_TAG/pingpong" {
-    run $MPIRUN_CORE ch-run $IMG -- $IMB_MPI1 $IMB_ARGS PingPong
+    run $MPIRUN_CORE ch-run --join $IMG -- $IMB_MPI1 $IMB_ARGS PingPong
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -47,7 +47,7 @@ check_process_ct () {
 
 # one from "Parallel Transfer Benchmarks"
 @test "$EXAMPLE_TAG/sendrecv" {
-    run $MPIRUN_CORE ch-run $IMG -- $IMB_MPI1 $IMB_ARGS Sendrecv
+    run $MPIRUN_CORE ch-run --join $IMG -- $IMB_MPI1 $IMB_ARGS Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -57,7 +57,7 @@ check_process_ct () {
 
 # one from "Collective Benchmarks"
 @test "$EXAMPLE_TAG/allreduce" {
-    run $MPIRUN_CORE ch-run $IMG -- $IMB_MPI1 $IMB_ARGS Allreduce
+    run $MPIRUN_CORE ch-run --join $IMG -- $IMB_MPI1 $IMB_ARGS Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"

@@ -27,7 +27,7 @@ test-build: build_auto.bats
 # directory, which I believe is assumed elsewhere in the test suite as well.
 .PHONY: test-run
 test-run: run_auto.bats
-	bats run.bats run_uidgid.bats run_auto.bats run_post.bats
+	bats run.bats run_uidgid.bats run_auto.bats run_join.bats run_post.bats
 	set -e; \
         if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
 	for GUEST_USER in $$(id -un) root nobody; do \

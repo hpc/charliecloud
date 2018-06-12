@@ -35,13 +35,19 @@
    FIXME: It would be nice if we could collapse these to fewer macros.
    However, when looking into that I ended up in preprocessor black magic
    (e.g. https://stackoverflow.com/a/2308651) that I didn't understand. */
-#define T_(x) if (!(x)) fatal(__FILE__, __LINE__, errno, NULL)
-#define Tf(x, ...) if (!(x)) fatal(__FILE__, __LINE__, errno, __VA_ARGS__)
-#define Te(x, ...) if (!(x)) fatal(__FILE__, __LINE__, 0, __VA_ARGS__)
-#define Z_(x) if (x) fatal(__FILE__, __LINE__, errno, NULL)
-#define Zf(x, ...) if (x) fatal(__FILE__, __LINE__, errno, __VA_ARGS__)
-#define Ze(x, ...) if (x) fatal(__FILE__, __LINE__, 0, __VA_ARGS__)
+#define T_(x)      if (!(x)) msg(0, __FILE__, __LINE__, errno, NULL)
+#define Tf(x, ...) if (!(x)) msg(0, __FILE__, __LINE__, errno, __VA_ARGS__)
+#define Te(x, ...) if (!(x)) msg(0, __FILE__, __LINE__, 0, __VA_ARGS__)
+#define Z_(x)      if (x)    msg(0, __FILE__, __LINE__, errno, NULL)
+#define Zf(x, ...) if (x)    msg(0, __FILE__, __LINE__, errno, __VA_ARGS__)
+#define Ze(x, ...) if (x)    msg(0, __FILE__, __LINE__, 0, __VA_ARGS__)
 
+#define FATAL(...)   msg(0, __FILE__, __LINE__, 0, __VA_ARGS__);
+#define WARNING(...) msg(1, __FILE__, __LINE__, 0, __VA_ARGS__);
+#define INFO(...)    msg(2, __FILE__, __LINE__, 0, __VA_ARGS__);
+#define DEBUG(...)   msg(3, __FILE__, __LINE__, 0, __VA_ARGS__);
 
-void fatal(char * file, int line, int errno_, char * fmt, ...);
+extern int verbose;
+
+void msg(int level, char * file, int line, int errno_, char * fmt, ...);
 void version(void);

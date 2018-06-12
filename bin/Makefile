@@ -2,6 +2,9 @@ bin := ch-run ch-ssh
 src := $(wildcard *.c)
 obj := $(src:.c=.o)
 
+CFLAGS += -pthread
+LDLIBS += -pthread -lrt
+
 .PHONY: all
 all: $(bin)
 

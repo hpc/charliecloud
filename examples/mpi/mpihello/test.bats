@@ -46,7 +46,7 @@ setup () {
     echo "guest version: $GV"
     [[ $HV = $GV ]] || skip "MPI versions: host $HV, guest $GV"
     # Actual test.
-    run $MPIRUN_CORE ch-run $IMG -- /hello/hello
+    run $MPIRUN_CORE ch-run --join $IMG -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(echo "$output" | fgrep 'ranks' | wc -l)
