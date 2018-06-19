@@ -8,7 +8,7 @@ LDLIBS += -pthread -lrt
 .PHONY: all
 all: $(bin)
 
-$(obj): charliecloud.h Makefile
+$(obj): charliecloud.h version.h Makefile
 $(bin): charliecloud.o
 
 .PHONY: clean
