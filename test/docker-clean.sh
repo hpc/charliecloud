@@ -8,7 +8,7 @@ set -e
 while true; do
     cmd='sudo docker ps -aq'
     cs_ct=$($cmd | wc -l)
-    echo "found $cs_ct images"
+    echo "found $cs_ct containers"
     [[ 0 -eq $cs_ct ]] && break
     sudo docker rm $($cmd)
 done
