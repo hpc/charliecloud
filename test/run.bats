@@ -49,6 +49,24 @@ load common
     ch-ssh --help
 }
 
+@test 'syscalls/pivot_root' {
+    scope quick
+    cd ../examples/syscalls
+    ./pivot_root
+}
+
+@test 'unpack chtest image' {
+    scope quick
+    if ( image_ok $CHTEST_IMG ); then
+        # image exists, remove so we can test new unpack
+        rm -Rf --one-file-system $CHTEST_IMG
+    fi
+    ch-tar2dir $CHTEST_TARBALL $IMGDIR  # new unpack
+    image_ok $CHTEST_IMG
+    ch-tar2dir $CHTEST_TARBALL $IMGDIR  # overwrite
+    image_ok $CHTEST_IMG
+}
+
 @test 'ch-run refuses to run if setgid' {
     scope quick
     CH_RUN_TMP=$BATS_TMPDIR/ch-run.setgid
@@ -117,24 +135,6 @@ load common
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'error (' ]]
-}
-
-@test 'syscalls/pivot_root' {
-    scope quick
-    cd ../examples/syscalls
-    ./pivot_root
-}
-
-@test 'unpack chtest image' {
-    scope quick
-    if ( image_ok $CHTEST_IMG ); then
-        # image exists, remove so we can test new unpack
-        rm -Rf --one-file-system $CHTEST_IMG
-    fi
-    ch-tar2dir $CHTEST_TARBALL $IMGDIR  # new unpack
-    image_ok $CHTEST_IMG
-    ch-tar2dir $CHTEST_TARBALL $IMGDIR  # overwrite
-    image_ok $CHTEST_IMG
 }
 
 @test 'ch-tar2dir errors' {
