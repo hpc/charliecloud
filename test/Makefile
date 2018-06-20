@@ -17,7 +17,10 @@ all: build_auto.bats run_auto.bats \
      sotest/bin/sotest sotest/lib/libsotest.so.1.0
 
 .PHONY: test
-test: test-build test-run test-test
+test: test-build test-run
+ifneq ($(CH_TEST_SCOPE),quick)
+test: test-test
+endif
 
 .PHONY: test-build
 test-build: build_auto.bats
@@ -27,7 +30,7 @@ test-build: build_auto.bats
 # directory, which I believe is assumed elsewhere in the test suite as well.
 .PHONY: test-run
 test-run: run_auto.bats
-	bats run.bats run_uidgid.bats run_auto.bats run_join.bats run_post.bats
+	bats run_first.bats run_auto.bats run/*.bats
 	set -e; \
         if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
 	for GUEST_USER in $$(id -un) root nobody; do \
@@ -35,7 +38,7 @@ test-run: run_auto.bats
 	        export GUEST_USER; \
 	        export GUEST_GROUP; \
 	        echo testing as: $$GUEST_USER $$GUEST_GROUP; \
-	        bats run_uidgid.bats; \
+	        bats run/ch-run_uidgid.bats; \
 	    done; \
 	done; fi
 

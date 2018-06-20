@@ -23,9 +23,7 @@ compiler: gcc
 #   INSTALL_PV=yes   # install pv ("pipe view")
 #
 env:
-# Quick test to fail fast in case something is really messed up.
-  - TARBALL=        INSTALL=     CH_TEST_SCOPE=quick
-# Package building (also fast).
+# Package building (fast).
   - TARBALL=                     PKG_BUILD=yes
   - TARBALL=archive              PKG_BUILD=yes
 # Complete matrix of TARBALL and INSTALL.

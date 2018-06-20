@@ -1,3 +1,13 @@
+Timing tests
+------------
+
+The "ts" utility from "moreutils" is quite handy:
+
+  $ CH_TEST_SCOPE=quick make test | ts -i '%M:%.S'
+
+Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
+
+
 How to write a test image
 -------------------------
 

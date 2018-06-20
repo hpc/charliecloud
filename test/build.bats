@@ -6,7 +6,7 @@ load common
 }
 
 @test 'documentations build' {
-    scope quick
+    scope standard
     command -v sphinx-build > /dev/null 2>&1 || skip "sphinx is not installed"
     test -d ../doc-src || skip "documentation source code absent"
     cd ../doc-src && make -j $(getconf _NPROCESSORS_ONLN)
@@ -87,7 +87,7 @@ load common
 }
 
 @test 'sotest executable works' {
-    scope standard
+    scope quick
     export LD_LIBRARY_PATH=./sotest
     ldd sotest/sotest
     sotest/sotest

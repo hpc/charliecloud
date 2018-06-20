@@ -1,6 +1,7 @@
-load common
+load ../common
 
 setup () {
+    scope standard
     if [[ -n $GUEST_USER ]]; then
         # Specific user requested for testing.
         [[ -n $GUEST_GROUP ]]
@@ -28,7 +29,6 @@ setup () {
 }
 
 @test 'user and group as specified' {
-    scope quick
     g=$(ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- id -un)
     [[ $GUEST_USER = $g ]]
     g=$(ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- id -u)
@@ -40,19 +40,16 @@ setup () {
 }
 
 @test 'chroot escape' {
-    scope standard
     # Try to escape a chroot(2) using the standard approach.
     ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- /test/chroot-escape
 }
 
 @test '/dev /proc /sys' {
-    scope standard
     # Read some files in /dev, /proc, and /sys that I shouldn't have access to.
     ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- /test/dev_proc_sys.py
 }
 
 @test 'filesystem permission enforcement' {
-    scope standard
     [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
     for d in $CH_TEST_PERMDIRS; do
         d="$d/perms_test/pass"
@@ -64,7 +61,6 @@ setup () {
 }
 
 @test 'mknod(2)' {
-    scope standard
     # Make some device files. If this works, we might be able to later read or
     # write them to do things we shouldn't. Try on all mount points.
     ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- \
@@ -72,7 +68,6 @@ setup () {
 }
 
 @test 'privileged IPv4 bind(2)' {
-    scope standard
     # Bind to privileged ports on all host IPv4 addresses.
     #
     # Some supported distributions don't have "hostname --all-ip-addresses".
@@ -82,7 +77,6 @@ setup () {
 }
 
 @test 'remount host root' {
-    scope standard
     # Re-mount the root filesystem. Notes:
     #
     #   - Because we have /dev from the host, we don't need to create a new
@@ -130,19 +124,16 @@ setup () {
 }
 
 @test 'setgroups(2)' {
-    scope standard
     # Can we change our supplemental groups?
     ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- /test/setgroups
 }
 
 @test 'seteuid(2)' {
-    scope standard
     # Try to seteuid(2) to another UID we shouldn't have access to
     ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- /test/setuid
 }
 
 @test 'signal process outside container' {
-    scope standard
     # Send a signal to a process we shouldn't be able to signal.
     ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- /test/signal_out.py
 }

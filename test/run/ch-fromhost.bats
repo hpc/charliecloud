@@ -1,4 +1,4 @@
-load common
+load ../common
 
 fromhost_clean () {
     [[ $1 ]]
@@ -256,9 +256,3 @@ fromhost_ls () {
     [[ $output =~ 'nvidia-container-cli failed' ]]
 }
 
-@test 'ch-tar2dir: /dev cleaning' {  # issue #157
-    scope standard
-    [[ ! -e $CHTEST_IMG/dev/foo ]]
-    [[ -e $CHTEST_IMG/mnt/dev/foo ]]
-    ch-run $CHTEST_IMG -- test -e /mnt/dev/foo
-}

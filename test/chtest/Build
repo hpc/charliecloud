@@ -9,7 +9,10 @@
 # common and we'd prefer not to introduce another dependency. For example,
 # it's a standard tool on Debian but only in EPEL for CentOS.
 #
-# ch-test-scope: quick
+# Most of the tests in scope quick use this image, but to save time, build the
+# image in standard scope and re-use for quick.
+#
+# ch-test-scope: standard
 
 set -ex
 

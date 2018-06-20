@@ -146,9 +146,12 @@ The test suite can be abbreviated or extended by setting the environment
 variable :code:`CH_TEST_SCOPE`. The valid values are:
 
 :code:`quick`
-  This tests the most important subset of Charliecloud functionality. Even
-  with a cold Docker cache, :code:`make test` should finish under 60 seconds.
-  It's handy for development.
+  This tests the most important subset of Charliecloud functionality. With a
+  hot Docker cache, :code:`make test` should finish in under 30 seconds. It's
+  handy for development.
+
+  **Note:** The :code:`quick` scope uses the results of a prior successful
+  completion of the :code:`standard` scope.
 
 :code:`standard`
   This adds testing of the remaining Charliecloud functionality and a

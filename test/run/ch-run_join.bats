@@ -1,7 +1,7 @@
-load common
+load ../common
 
 setup () {
-    scope quick
+    scope standard
 }
 
 ipc_clean_p () {
@@ -79,7 +79,6 @@ unset_vars () {
 
 
 @test 'ch-run --join: one peer, direct launch' {
-    scope standard
     unset_vars
     ipc_clean_p
 
@@ -117,7 +116,6 @@ unset_vars () {
 }
 
 @test 'ch-run --join: two peers, direct launch' {
-    scope standard
     unset_vars
     ipc_clean_p
     outfiles="$BATS_TMPDIR/join.?.*"
@@ -158,7 +156,6 @@ unset_vars () {
 }
 
 @test 'ch-run --join: three peers, direct launch' {
-    scope standard
     unset_vars
     ipc_clean_p
     outfiles="$BATS_TMPDIR/join.?.*"
@@ -213,7 +210,6 @@ unset_vars () {
 }
 
 @test 'ch-run --join: multiple peers, framework launch' {
-    scope standard
     multiprocess_ok
     ipc_clean_p
 
@@ -232,7 +228,6 @@ unset_vars () {
 }
 
 @test 'ch-run --join: peer group size errors' {
-    scope standard
     unset_vars
 
     # join count negative
@@ -336,7 +331,6 @@ unset_vars () {
 }
 
 @test 'ch-run --join: peer group tag errors' {
-    scope standard
     unset_vars
 
     # Use a join count of 1 throughout.

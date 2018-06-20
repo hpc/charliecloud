@@ -136,8 +136,9 @@ install: all
 	          $(DOC)/examples/syscalls/userns
 	find $(DOC)/examples -name Build -exec chmod 755 {} \;
 #       tests
-	install -d $(TEST)
+	install -d $(TEST) $(TEST)/run
 	install -pm 644 -t $(TEST) test/*.bats test/common.bash test/Makefile
+	install -pm 644 -t $(TEST)/run test/run/*.bats
 	install -pm 755 -t $(TEST) test/Build.*
 	install -pm 644 -t $(TEST) test/Dockerfile.* test/Docker_Pull.*
 	install -pm 755 -t $(TEST) test/make-perms-test
