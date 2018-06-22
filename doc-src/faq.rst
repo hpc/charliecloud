@@ -21,6 +21,53 @@ How do you spell Charliecloud?
 We try to be consistent with *Charliecloud* — one word, no camel case. That
 is, *Charlie Cloud* and *CharlieCloud* are both incorrect.
 
+How do I read the :code:`ch-run` error messages?
+================================================
+
+:code:`ch-run` error messages look like this::
+
+  $ ch-run foo -- echo hello
+  ch-run[25750]: can't find image: foo: No such file or directory (ch-run.c:107 2)
+
+There is a lot of information here, and it comes in this order:
+
+1. Name of the executable; always :code:`ch-run`.
+
+2. Process ID in square brackets; here :code:`25750`. This is useful when
+   debugging parallel :code:`ch-run` invocations.
+
+3. Colon.
+
+4. Main error message; here :code:`can't find image: foo`. This should be
+   informative as to what went wrong, and if it's not, please file an issue
+   because you may have found a usability bug. Note that in some cases you may
+   encounter the default message :code:`error`; if this happens and you're not
+   doing something very strange, that's also a usability bug.
+
+5. Colon (but note that the main error itself can contain colons too), if the
+   following item is present.
+
+6. Operating system's description of the the value of :code:`errno`; here
+   :code:`No such file or directory`. Omitted if not applicable.
+
+7. Open parenthesis.
+
+8. Name of the source file where the error occurred; here :code:`ch-run.c`.
+   This and the following item tell developers exactly where :code:`ch-run`
+   became confused, which greatly improves our ability to provide help and/or
+   debug.
+
+9. Source line where the error occurred.
+
+10. Value of :code:`errno` (see `C error codes in Linux
+    <http://www.virtsync.com/c-error-codes-include-errno>`_ for the full
+    list of possibilities).
+
+11. Close parenthesis.
+
+*Note:* Despite the structured format, the error messages are not guaranteed
+to be machine-readable.
+
 My app needs to write to :code:`/var/log`, :code:`/run`, etc.
 =============================================================
 
