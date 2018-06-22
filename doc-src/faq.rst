@@ -325,3 +325,35 @@ and :code:`ping` still can't get a raw socket.
 
 The recommended alternative is to simply try the thing you want to do, without
 testing connectivity using :code:`ping` first.
+
+Why is MATLAB trying to chgrp :code:`/dev/pts/0` and what can I do about it?
+============================================================================
+
+MATLAB and some other programs want pseudo-TTY (PTY) files to be group-owned
+by :code:`tty`. If it's not, Matlab will attempt to :code:`chown(2)` the file,
+which fails inside a container.
+
+The scenario in more detail is this. Assume you're user :code:`charlie`
+(UID=1000), your primary group is :code:`nerds` (GID=1001), :code:`/dev/pts/0`
+is the PTY file in question, and its ownership is :code:`charlie:tty`
+(:code:`1000:5`), as it should be. What happens in the container by default
+is:
+
+1. MATLAB :code:`stat(2)`\ s :code:`/dev/pts/0` and checks the GID.
+
+2. This GID is :code:`nogroup` (65534) because :code:`tty` (5) is not mapped
+   on the host side (and cannot be, because only one's EGID can be mapped in
+   an unprivileged user namespace).
+
+3. MATLAB concludes this is bad.
+
+4. MATLAB executes :code:`chown("/dev/pts/0", 1000, 5)`.
+
+5. This fails because GID 5 is not mapped on the guest side.
+
+6. MATLAB pukes.
+
+The workaround is to map your EGID of 1001 to 5 inside the container (instead
+of the default 1001:1001), i.e. :code:`--gid=5`. Then, step 4 succeeds because
+the call is mapped to :code:`chown("/dev/pts/0", 1000, 1001)` and MATLAB is
+happy.
