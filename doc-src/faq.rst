@@ -296,3 +296,32 @@ should pop an xterm.
 
 If your X11 application doesn't work, please file an issue so we can
 figure out why.
+
+Why does :code:`ping` not work?
+===============================
+
+:code:`ping` fails with "permission denied" under Charliecloud, even if you're
+UID 0 inside the container::
+
+  $ ch-run $IMG -- ping 8.8.8.8
+  PING 8.8.8.8 (8.8.8.8): 56 data bytes
+  ping: permission denied (are you root?)
+  $ ch-run --uid=0 $IMG -- ping 8.8.8.8
+  PING 8.8.8.8 (8.8.8.8): 56 data bytes
+  ping: permission denied (are you root?)
+
+This is because :code:`ping` needs a raw socket to construct the needed
+:code:`ICMP ECHO` packets, which requires capability :code:`CAP_NET_RAW` or
+root. Unprivileged users can normally use :code:`ping` because it's a setuid
+or setcap binary: it raises privilege using the filesystem bits on the
+executable to obtain a raw socket.
+
+Under Charliecloud, there are multiple reasons :code:`ping` can't get a raw
+socket. First, images are unpacked without privilege, meaning that setuid and
+setcap bits are lost. But even if you do get privilege in the container (e.g.,
+with :code:`--uid=0`), this only applies in the container. Charliecloud uses
+the host's network namespace, where your unprivileged host identity applies
+and :code:`ping` still can't get a raw socket.
+
+The recommended alternative is to simply try the thing you want to do, without
+testing connectivity using :code:`ping` first.
