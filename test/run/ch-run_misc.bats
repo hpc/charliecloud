@@ -144,11 +144,23 @@ EOF
 @test 'ch-run --bind errors' {
     scope quick
 
-    # too many binds (11)
-    run ch-run -b0 -b1 -b2 -b3 -b4 -b5 -b6 -b7 -b8 -b9 -b10 $CHTEST_IMG -- true
+    # more binds (11) than default destinations
+    run ch-run -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               -b $IMGDIR/bind1 \
+               $CHTEST_IMG -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ '--bind can be used at most 10 times' ]]
+    r="can't bind .+/bind1 to $CHTEST_IMG/mnt/10: No such file or directory"
+    [[ $output =~ $r ]]
 
     # no argument to --bind
     run ch-run $CHTEST_IMG -b

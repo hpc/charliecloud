@@ -1,5 +1,8 @@
 /* Copyright © Los Alamos National Security, LLC, and others. */
 
+#define _GNU_SOURCE
+#include <stdbool.h>
+
 /* Test some value, and if it's not what we expect, exit with an error. These
    are macros so we have access to the file and line number.
 
@@ -47,7 +50,36 @@
 #define INFO(...)    msg(2, __FILE__, __LINE__, 0, __VA_ARGS__);
 #define DEBUG(...)   msg(3, __FILE__, __LINE__, 0, __VA_ARGS__);
 
+
+/** Types **/
+
+struct bind {
+   char * src;
+   char * dst;
+};
+
+struct container {
+   struct bind * binds;
+   gid_t container_gid;
+   uid_t container_uid;
+   char * newroot;
+   bool join;
+   int join_ct;
+   char * join_tag;
+   bool private_home;
+   bool private_tmp;
+   bool writable;
+};
+
+
+/** External variables from charliecloud.c **/
+
 extern int verbose;
 
+
+/** Function prototypes from charliecloud.c **/
+
+void containerize(struct container * c);
 void msg(int level, char * file, int line, int errno_, char * fmt, ...);
+void run_user_command(char * argv[], char * initial_dir);
 void version(void);
