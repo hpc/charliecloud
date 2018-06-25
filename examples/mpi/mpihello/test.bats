@@ -1,8 +1,15 @@
 load ../../../test/common
 
 setup () {
-      scope full
-      IMG=$IMGDIR/mpihello
+    scope full
+    IMG=$IMGDIR/mpihello
+}
+
+count_ranks () {
+      echo "$1" \
+    | egrep '^0: init ok' \
+    | tail -1 \
+    | sed -r 's/^.+ ([0-9]+) ranks.+$/\1/'
 }
 
 @test "$EXAMPLE_TAG/serial" {
@@ -20,7 +27,7 @@ setup () {
     run ch-run $IMG -- mpirun --use-hwthread-cpus /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
-    rank_ct=$(echo "$output" | fgrep 'ranks' | wc -l)
+    rank_ct=$(count_ranks "$output")
     echo "found $rank_ct ranks, expected $CHTEST_CORES_NODE"
     [[ $rank_ct -eq $CHTEST_CORES_NODE ]]
     [[ $output =~ '0: send/receive ok' ]]
@@ -28,28 +35,16 @@ setup () {
 }
 
 @test "$EXAMPLE_TAG/host starts ranks" {
-
     multiprocess_ok
     echo "starting ranks with: $MPIRUN_CORE"
 
-    HOST_MPI=$(mpirun --version | head -1)
-    echo "host MPI:  $HOST_MPI"
     GUEST_MPI=$(ch-run $IMG -- mpirun --version | head -1)
     echo "guest MPI: $GUEST_MPI"
-    [[ $HOST_MPI =~ 'Open MPI' ]] || skip 'host mpirun is not OpenMPI'
-    re='[0-9]+\.[0-9]+\.[0-9]+'
-    [[ $HOST_MPI =~ $re ]]
-    HV=$BASH_REMATCH
-    echo "host version:  $HV"
-    [[ $GUEST_MPI =~ $re ]]
-    GV=$BASH_REMATCH
-    echo "guest version: $GV"
-    [[ $HV = $GV ]] || skip "MPI versions: host $HV, guest $GV"
-    # Actual test.
+
     run $MPIRUN_CORE ch-run --join $IMG -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
-    rank_ct=$(echo "$output" | fgrep 'ranks' | wc -l)
+    rank_ct=$(count_ranks "$output")
     echo "found $rank_ct ranks, expected $CHTEST_CORES_TOTAL"
     [[ $rank_ct -eq $CHTEST_CORES_TOTAL ]]
     [[ $output =~ '0: send/receive ok' ]]
