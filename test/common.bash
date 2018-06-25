@@ -119,7 +119,7 @@ else
     if ( command -v mpirun >/dev/null 2>&1 ); then
         CHTEST_MULTIPROCESS=yes
         MPIRUN_NODE='mpirun --map-by ppr:1:node'
-        MPIRUN_CORE='mpirun'
+        MPIRUN_CORE='mpirun --use-hwthread-cpus'
         MPIRUN_2='mpirun -np 2'
         MPIRUN_2_1NODE='mpirun -np 2'
     else

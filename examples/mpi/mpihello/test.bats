@@ -17,7 +17,7 @@ setup () {
 }
 
 @test "$EXAMPLE_TAG/guest starts ranks" {
-    run ch-run $IMG -- mpirun /hello/hello
+    run ch-run $IMG -- mpirun --use-hwthread-cpus /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(echo "$output" | fgrep 'ranks' | wc -l)
