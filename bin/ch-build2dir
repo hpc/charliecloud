@@ -18,10 +18,8 @@ Usage:
 Arguments:
 
   CONTEXT  Docker context directory
-  DEST     Directory in which to place image tarball and directory
-  ARGS     Additional arguments passed to ch-build
-
-You must have sufficient privilege (via sudo) to run the Docker commands.
+  DEST     directory in which to place image tarball and directory
+  ARGS     additional arguments passed to ch-build
 EOF
     exit ${1:-1}
 }

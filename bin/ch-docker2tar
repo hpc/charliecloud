@@ -15,7 +15,6 @@ Usage:
   $ $(basename $0) IMAGE OUTDIR
 
 You must have sufficient privilege (via sudo) to run the Docker commands.
-
 EOF
     exit ${1:-1}
 }

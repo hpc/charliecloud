@@ -11,10 +11,6 @@ Usage:
 
   $ ch-fromhost [OPTION ...] (-c CMD | -f FILE | --nvidia ...) IMGDIR
 
-Executables go in IMGDIR/usr/bin; shared libraries go in IMGDIR/usr/lib; other
-files as specified with --dest. If any shared libraries are specified, run
-"ldconfig" within the container using "ch-run -w" after injection.
-
 Which files (one or more required; can be repeated):
 
   -c, --cmd CMD    listed in the stdout of CMD
@@ -28,11 +24,6 @@ Options:
       --no-infer   don't infer destination for shared libraries and executables
   -v, --verbose    list the injected files
       --version    print version and exit
-
-For more information, see:
-
-  $ man ch-fromhost
-  https://hpc.github.io/charliecloud/command-usage.html#ch-fromhost
 EOF
     exit ${1:-1}
 }
