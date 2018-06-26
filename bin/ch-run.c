@@ -16,8 +16,6 @@
 
 /** Constants and macros **/
 
-/* Maximum number of user binds. */
-
 /* Environment variables used by --join parameters. */
 char * JOIN_CT_ENV[] =  { "OMPI_COMM_WORLD_LOCAL_SIZE",
                           "SLURM_STEP_TASKS_PER_NODE",
