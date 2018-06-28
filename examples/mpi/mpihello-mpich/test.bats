@@ -1,0 +1,1 @@
+../mpihello/test.bats

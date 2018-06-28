@@ -1,9 +1,8 @@
 load ../../../test/common
+load ./test
 
-setup () {
-    scope full
-    IMG=$IMGDIR/mpihello
-}
+# Note: This file is common for both mpihello flavors. Flavor-specific setup
+# is in test.bash.
 
 count_ranks () {
       echo "$1" \
@@ -24,7 +23,7 @@ count_ranks () {
 }
 
 @test "$EXAMPLE_TAG/guest starts ranks" {
-    run ch-run $IMG -- mpirun --use-hwthread-cpus /hello/hello
+    run ch-run $IMG -- mpirun $CHTEST_MPIRUN_NP /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(count_ranks "$output")
@@ -36,6 +35,7 @@ count_ranks () {
 
 @test "$EXAMPLE_TAG/host starts ranks" {
     multiprocess_ok
+    echo $CHTEST_MPI
     echo "starting ranks with: $MPIRUN_CORE"
 
     GUEST_MPI=$(ch-run $IMG -- mpirun --version | head -1)

@@ -20,6 +20,19 @@ image_ok () {
 
 multiprocess_ok () {
     [[ $CHTEST_MULTIPROCESS ]] || skip 'no multiprocess launch tool found'
+    # If the MPI in the container is MPICH, we only try host launch on Crays.
+    # For the other settings (workstation, other Linux clusters), it may or
+    # may not work; we simply haven't tried.
+    [[ $CHTEST_MPI = mpich && -z $CHTEST_CRAY ]] \
+        && skip 'MPICH untested'
+    # Conversely, if the MPI in the container is OpenMPI, the current examples
+    # do not use the Aries network but rather the "tcp" BTL, which has
+    # grotesquely poor performance. Thus, we skip those tests as
+    # well.
+    [[ $CHTEST_MPI = openmpi && $CHTEST_CRAY ]] \
+       && skip 'OpenMPI unsupported on Cray (issue #180)'
+    # Exit function successfully.
+    true
 }
 
 need_docker () {
@@ -94,6 +107,14 @@ export BATS_TMPDIR=$btnew
 TARDIR=$CH_TEST_TARDIR
 IMGDIR=$CH_TEST_IMGDIR
 
+# MPICH requires different handling from OpenMPI. Set a variable to enable
+# some kludges.
+if [[ $BATS_TEST_DIRNAME =~ 'mpich' ]]; then
+    CHTEST_MPI=mpich
+else
+    CHTEST_MPI=openmpi
+fi
+
 # Some test variables
 EXAMPLE_TAG=$(basename $BATS_TEST_DIRNAME)
 EXAMPLE_IMG=$IMGDIR/$EXAMPLE_TAG
@@ -102,10 +123,6 @@ CHTEST_IMG=$IMGDIR/chtest
 if [[ $SLURM_JOB_ID ]]; then
     CHTEST_MULTINODE=yes                    # can run on multiple nodes
     CHTEST_MULTIPROCESS=yes                 # can run multiple processes
-    MPIRUN_NODE='srun --ntasks-per-node 1'  # one process/node
-    MPIRUN_CORE='srun --cpus-per-task 1'    # one process/core
-    MPIRUN_2='srun -n2'                     # two processes on different nodes
-    MPIRUN_2_1NODE='srun -N1 -n2'           # two processes on one node
     # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
     # documentation.
     if [[ -z $SLURM_CPUS_ON_NODE ]]; then
@@ -114,12 +131,27 @@ if [[ $SLURM_JOB_ID ]]; then
     CHTEST_NODES=$SLURM_JOB_NUM_NODES
     CHTEST_CORES_NODE=$SLURM_CPUS_ON_NODE
     CHTEST_CORES_TOTAL=$(($CHTEST_CORES_NODE * $SLURM_JOB_NUM_NODES))
+    MPIRUN_NODE='srun --ntasks-per-node 1'  # one process/node
+    MPIRUN_CORE='srun --cpus-per-task 1'    # one process/core
+    MPIRUN_2='srun -n2'                     # two processes on different nodes
+    MPIRUN_2_1NODE='srun -N1 -n2'           # two processes on one node
 else
     CHTEST_MULTINODE=
+    CHTEST_NODES=1
+    CHTEST_CORES_NODE=$(getconf _NPROCESSORS_ONLN)
+    CHTEST_CORES_TOTAL=$CHTEST_CORES_NODE
     if ( command -v mpirun >/dev/null 2>&1 ); then
         CHTEST_MULTIPROCESS=yes
         MPIRUN_NODE='mpirun --map-by ppr:1:node'
-        MPIRUN_CORE='mpirun --use-hwthread-cpus'
+        echo $BATS_TEST_DIRNAME > /tmp/foo
+        if [[ $CHTEST_MPI = mpich ]]; then
+            # MPICH seems unable to count the hyperthreads, so kludge.
+            CHTEST_MPIRUN_NP="-np $CHTEST_CORES_NODE"
+        else
+            # OpenMPI
+            CHTEST_MPIRUN_NP='--use-hwthread-cpus'
+        fi
+        MPIRUN_CORE="mpirun $CHTEST_MPIRUN_NP"
         MPIRUN_2='mpirun -np 2'
         MPIRUN_2_1NODE='mpirun -np 2'
     else
@@ -129,12 +161,6 @@ else
         MPIRUN_2=false
         MPIRUN_2_1NODE=false
     fi
-    # These still contain the total number of cores on the node even though we
-    # don't know how to start multi-process jobs, because some tests might
-    # look up this information themselves.
-    CHTEST_NODES=1
-    CHTEST_CORES_NODE=$(getconf _NPROCESSORS_ONLN)
-    CHTEST_CORES_TOTAL=$CHTEST_CORES_NODE
 fi
 
 # If the variable CH_TEST_SKIP_DOCKER is true, we skip all the tests that

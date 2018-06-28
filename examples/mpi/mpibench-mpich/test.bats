@@ -1,0 +1,1 @@
+../mpibench/test.bats

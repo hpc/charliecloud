@@ -1,0 +1,13 @@
+# ch-test-scope: full
+FROM debian9
+
+# The MPICH example has a smaller scope than the OpenMPI example. We want to
+# provide an MPICH build that works on a single node and (via ch-fromhost
+# trickery) on Cray Aires systems. That's it for now.
+
+RUN apt-get install -y --no-install-suggests \
+    make \
+    mpich
+
+
+
