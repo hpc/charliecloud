@@ -24,11 +24,17 @@ a simple file copy, but that may change in the future.
 By default, file paths that contain the string :code:`/bin` are assumed to be
 executables and are placed in :code:`/usr/bin` within the container. File
 paths that contain the strings :code:`/lib` or :code:`.so` are assumed to be
-shared libraries and are placed in :code:`/usr/lib`. Other files are placed in
-the directory specified by :code:`--dest`.
+shared libraries and are placed in the first-priority directory reported by
+:code:`ldconfig`. Other files are placed in the directory specified by
+:code:`--dest`.
 
-If any of the files appear to be shared libraries, run :code:`ldconfig` inside
-the container (using :code:`ch-run -w`) after injection.
+You can see where shared libraries will go with::
+
+  $ ch-run $IMG -- ldconfig -v 2>/dev/null | egrep '^/' | cut -d: -f1 | head -1
+  /usr/local/lib
+
+If any shared libraries are injected, run :code:`ldconfig` inside the
+container (using :code:`ch-run -w`) after injection.
 
 
 Options

@@ -35,9 +35,10 @@ NEWLINE='
 '
 FOUND_FILES=
 FOUND_LIBS_P=
+LIB_DEST=
 
 debug () {
-    [ $VERBOSE ] && printf "ch-fromhost: %s\n" "$1" 1>&2
+    [ $VERBOSE ] && printf "%s\n" "$1" 1>&2
 }
 
 ensure_nonempty () {
@@ -109,7 +110,34 @@ done
 
 debug "injecting into image: $IMAGE"
 
-[ $VERBOSE ] && echo "injecting ..." 1>&2
+# First pass tests if we have any shared libraries in the list. If so, we need
+# to figure out where to put them.
+if [ $INFER ]; then
+    debug "checking for shared libraries"
+    for FILE in $FOUND_FILES; do
+        case $FILE in
+            */lib*)
+                FOUND_LIBS_P=yes
+                break
+                ;;
+        esac
+    done
+    if [ $FOUND_LIBS_P ]; then
+        # We want to put the libraries in the first directory that ldconfig
+        # searches, so that we can override (or overwrite) any of the same
+        # library that may already be in the image.
+        debug "asking ldconfig for shared library path"
+        $CH_BIN/ch-run -w $IMAGE -- /sbin/ldconfig  # cache may not be present
+        LIB_DEST=$(  $CH_BIN/ch-run $IMAGE -- /sbin/ldconfig -v 2> /dev/null \
+                   | egrep '^/' | cut -d: -f1 | head -1)
+        [ -z "${LIB_DEST%%/*}" ] || fatal "bad path from ldconfig: $LIB_DEST"
+        debug "shared library destination: $LIB_DEST"
+    else
+        debug "no shared libraries found"
+    fi
+fi
+
+debug "injecting"
 OLD_IFS="$IFS"
 IFS="$NEWLINE"
 FOUND_FILE_P=
@@ -125,12 +153,11 @@ for FILE in $FOUND_FILES; do
                 ;;
             */lib*)
                 TYPE_=lib
-                DEST=/usr/lib
-                FOUND_LIBS_P=yes
+                DEST="$LIB_DEST"
                 ;;
         esac
     fi
-    [ $VERBOSE ] && echo "  $TYPE_: $FILE -> $DEST" 1>&2
+    debug "  $TYPE_: $FILE -> $DEST"
     [ $DEST ] || fatal "no destination for: $FILE"
     [ -z "${DEST%%/*}" ] || fatal "not an absolute path: $DEST"
     [ -d $IMAGE$DEST ] || fatal "not a directory: $IMAGE$DEST"

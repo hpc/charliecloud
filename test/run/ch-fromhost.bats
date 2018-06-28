@@ -3,7 +3,7 @@ load ../common
 fromhost_clean () {
     [[ $1 ]]
     for file in {mnt,usr/bin}/sotest \
-                {mnt,usr/lib}/libsotest.so.1{.0,} \
+                {lib,mnt,usr/lib,usr/local/lib}/libsotest.so.1{.0,} \
                 /mnt/sotest.c \
                 /etc/ld.so.cache ; do
         rm -f $1/$file
@@ -22,7 +22,7 @@ fromhost_ls () {
     find $1 -xdev \( -name '*sotest*' -o -name 'ld.so.cache' \) -ls
 }
 
-@test 'ch-fromhost' {
+@test 'ch-fromhost (Debian)' {
     scope standard
     prerequisites_ok debian9
     IMG=$IMGDIR/debian9
@@ -32,13 +32,13 @@ fromhost_ls () {
     ch-fromhost -v --cmd 'cat sotest/files_inferrable.txt' $IMG
     fromhost_ls $IMG
     test -f $IMG/usr/bin/sotest
-    test -f $IMG/usr/lib/libsotest.so.1.0
-    test -L $IMG/usr/lib/libsotest.so.1
+    test -f $IMG/usr/local/lib/libsotest.so.1.0
+    test -L $IMG/usr/local/lib/libsotest.so.1
     ch-run $IMG -- /sbin/ldconfig -p | fgrep sotest
     ch-run $IMG -- sotest
     rm $IMG/usr/bin/sotest
-    rm $IMG/usr/lib/libsotest.so.1.0
-    rm $IMG/usr/lib/libsotest.so.1
+    rm $IMG/usr/local/lib/libsotest.so.1.0
+    rm $IMG/usr/local/lib/libsotest.so.1
     rm $IMG/etc/ld.so.cache
     fromhost_clean_p $IMG
 
@@ -85,7 +85,7 @@ fromhost_ls () {
     ch-fromhost -v --cmd 'echo sotest/bin/sotest' \
                    --no-infer --dest /usr/bin $IMG
     ch-fromhost -v --cmd 'echo sotest/lib/libsotest.so.1.0' \
-                   --no-infer --dest /usr/lib $IMG
+                   --no-infer --dest /usr/local/lib $IMG
     fromhost_ls $IMG
     ch-run $IMG -- /sbin/ldconfig -p | fgrep sotest || true
     run ch-run $IMG -- sotest
@@ -184,6 +184,26 @@ fromhost_ls () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'duplicate image path' ]]
+    fromhost_clean_p $IMG
+}
+
+@test 'ch-fromhost (CentOS)' {
+    scope full
+    prerequisites_ok centos7
+    IMG=$IMGDIR/centos7
+
+    fromhost_clean $IMG
+    ch-fromhost -v --file sotest/files_inferrable.txt $IMG
+    fromhost_ls $IMG
+        test -f $IMG/usr/bin/sotest
+    test -f $IMG/lib/libsotest.so.1.0
+    test -L $IMG/lib/libsotest.so.1
+    ch-run $IMG -- /sbin/ldconfig -p | fgrep sotest
+    ch-run $IMG -- sotest
+    rm $IMG/usr/bin/sotest
+    rm $IMG/lib/libsotest.so.1.0
+    rm $IMG/lib/libsotest.so.1
+    rm $IMG/etc/ld.so.cache
     fromhost_clean_p $IMG
 }
 
