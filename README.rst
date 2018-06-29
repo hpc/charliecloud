@@ -64,6 +64,7 @@ The core Charliecloud team at Los Alamos is:
 Patches (code, documentation, etc.) contributed by:
 
 * Reid Priedhorsky <reidpr@lanl.gov>
+* Rusty Davis <rustyd@lanl.gov>
 * Oliver Freyermuth <o.freyermuth@googlemail.com>
 * Christoph Junghans <junghans@lanl.gov>
 * Jordan Ogas <jogas@lanl.gov>
