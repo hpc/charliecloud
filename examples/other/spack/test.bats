@@ -2,6 +2,7 @@ load ../../../test/common
 
 setup() {
     scope full
+    [[ -z $CHTEST_CRAY ]] || skip 'issue #193 and Spack issue #8618'
     prerequisites_ok spack
     SPACK_IMG=$IMGDIR/spack
     export PATH=/spack/bin:$PATH
