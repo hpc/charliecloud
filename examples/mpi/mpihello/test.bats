@@ -35,7 +35,6 @@ count_ranks () {
 
 @test "$EXAMPLE_TAG/host starts ranks" {
     multiprocess_ok
-    echo $CHTEST_MPI
     echo "starting ranks with: $MPIRUN_CORE"
 
     GUEST_MPI=$(ch-run $IMG -- mpirun --version | head -1)

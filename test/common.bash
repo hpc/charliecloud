@@ -30,7 +30,7 @@ multiprocess_ok () {
     # grotesquely poor performance. Thus, we skip those tests as
     # well.
     [[ $CHTEST_MPI = openmpi && $CHTEST_CRAY ]] \
-       && skip 'OpenMPI unsupported on Cray (issue #180)'
+       && skip 'OpenMPI unsupported on Cray; issue #180'
     # Exit function successfully.
     true
 }
@@ -111,8 +111,21 @@ IMGDIR=$CH_TEST_IMGDIR
 # some kludges.
 if [[ $BATS_TEST_DIRNAME =~ 'mpich' ]]; then
     CHTEST_MPI=mpich
+    # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
+    # Slurm environment variables, it tries to launch even local ranks with
+    # "srun". This of course fails within the container. You can't turn it off
+    # by building with --without-slurm like OpenMPI, so we fall back to this
+    # environment variable at run time.
+    export HYDRA_LAUNCHER=fork
 else
     CHTEST_MPI=openmpi
+fi
+
+# Crays are special.
+if [[ -f /etc/opt/cray/release/cle-release ]]; then
+    CHTEST_CRAY=yes
+else
+    CHTEST_CRAY=
 fi
 
 # Some test variables
@@ -121,8 +134,6 @@ EXAMPLE_IMG=$IMGDIR/$EXAMPLE_TAG
 CHTEST_TARBALL=$TARDIR/chtest.tar.gz
 CHTEST_IMG=$IMGDIR/chtest
 if [[ $SLURM_JOB_ID ]]; then
-    CHTEST_MULTINODE=yes                    # can run on multiple nodes
-    CHTEST_MULTIPROCESS=yes                 # can run multiple processes
     # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
     # documentation.
     if [[ -z $SLURM_CPUS_ON_NODE ]]; then
@@ -131,26 +142,28 @@ if [[ $SLURM_JOB_ID ]]; then
     CHTEST_NODES=$SLURM_JOB_NUM_NODES
     CHTEST_CORES_NODE=$SLURM_CPUS_ON_NODE
     CHTEST_CORES_TOTAL=$(($CHTEST_CORES_NODE * $SLURM_JOB_NUM_NODES))
+else
+    CHTEST_NODES=1
+    CHTEST_CORES_NODE=$(getconf _NPROCESSORS_ONLN)
+    CHTEST_CORES_TOTAL=$CHTEST_CORES_NODE
+fi
+if [[ $CHTEST_MPI = mpich ]]; then
+    CHTEST_MPIRUN_NP="-np $CHTEST_CORES_NODE"
+else
+    CHTEST_MPIRUN_NP='--use-hwthread-cpus'
+fi
+if [[ $SLURM_JOB_ID ]]; then
+    CHTEST_MULTINODE=yes                    # can run on multiple nodes
+    CHTEST_MULTIPROCESS=yes                 # can run multiple processes
     MPIRUN_NODE='srun --ntasks-per-node 1'  # one process/node
     MPIRUN_CORE='srun --cpus-per-task 1'    # one process/core
     MPIRUN_2='srun -n2'                     # two processes on different nodes
     MPIRUN_2_1NODE='srun -N1 -n2'           # two processes on one node
 else
     CHTEST_MULTINODE=
-    CHTEST_NODES=1
-    CHTEST_CORES_NODE=$(getconf _NPROCESSORS_ONLN)
-    CHTEST_CORES_TOTAL=$CHTEST_CORES_NODE
     if ( command -v mpirun >/dev/null 2>&1 ); then
         CHTEST_MULTIPROCESS=yes
         MPIRUN_NODE='mpirun --map-by ppr:1:node'
-        echo $BATS_TEST_DIRNAME > /tmp/foo
-        if [[ $CHTEST_MPI = mpich ]]; then
-            # MPICH seems unable to count the hyperthreads, so kludge.
-            CHTEST_MPIRUN_NP="-np $CHTEST_CORES_NODE"
-        else
-            # OpenMPI
-            CHTEST_MPIRUN_NP='--use-hwthread-cpus'
-        fi
         MPIRUN_CORE="mpirun $CHTEST_MPIRUN_NP"
         MPIRUN_2='mpirun -np 2'
         MPIRUN_2_1NODE='mpirun -np 2'
