@@ -21,16 +21,17 @@ clean:
 # * If VERSION is an unadorned release (e.g. 0.2.3 not 0.2.3~pre), or there's
 #   no Git information available, VERSION.full is simply a copy of VERSION.
 #
-# * Otherwise, we add the Git commit and a note if the working directory
-#   contains uncommitted changes, e.g. "0.2.3~pre+ae24a4e.dirty".
-#
+# * Otherwise, we add the Git branch if the current branch is not master, the 
+#   Git commit, and a note if the working directory
+#   contains uncommitted changes, e.g. "0.2.3~pre+experimental.ae24a4e.dirty".
 ifeq ($(shell test -d .git && fgrep -q \~ VERSION && echo true),true)
 .PHONY: VERSION.full  # depends on git metadata, not a simple file
 VERSION.full: VERSION
 	(git --version > /dev/null 2>&1) || \
           (echo "This is a Git working directory but no git found." && false)
-	printf '%s+%s%s\n' \
+	printf '%s+%s%s%s\n' \
 	       $$(cat $<) \
+	       $$(git rev-parse --abbrev-ref HEAD | sed 's/.*/&./g' | sed 's/master.//g') \
 	       $$(git rev-parse --short HEAD) \
 	       $$(git diff-index --quiet HEAD || echo '.dirty') \
 	       > $@
