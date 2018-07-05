@@ -14,7 +14,7 @@ Where did the name Charliecloud come from?
 
 *Charlie* — Charles F. McMillan was director of Los Alamos National Laboratory
 from June 2011 until December 2017, i.e., at the time Charliecloud was started
-in early 2014. He is universally referred to as "Charlie" here.
+in early 2014. He is universally referred to as “Charlie” here.
 
 *cloud* — Charliecloud provides cloud-like flexibility for HPC systems.
 
@@ -46,15 +46,15 @@ There is a lot of information here, and it comes in this order:
 3. Colon.
 
 4. Main error message; here :code:`can't find image: foo`. This should be
-   informative as to what went wrong, and if it's not, please file an issue
+   informative as to what went wrong, and if it’s not, please file an issue,
    because you may have found a usability bug. Note that in some cases you may
-   encounter the default message :code:`error`; if this happens and you're not
-   doing something very strange, that's also a usability bug.
+   encounter the default message :code:`error`; if this happens and you’re not
+   doing something very strange, that’s also a usability bug.
 
-5. Colon (but note that the main error itself can contain colons too), if the
-   following item is present.
+5. Colon (but note that the main error itself can contain colons too), if and
+   only if the next item is present.
 
-6. Operating system's description of the the value of :code:`errno`; here
+6. Operating system’s description of the the value of :code:`errno`; here
    :code:`No such file or directory`. Omitted if not applicable.
 
 7. Open parenthesis.
@@ -75,7 +75,7 @@ There is a lot of information here, and it comes in this order:
 *Note:* Despite the structured format, the error messages are not guaranteed
 to be machine-readable.
 
-Tarball build fails with "No command specified"
+Tarball build fails with “No command specified”
 -----------------------------------------------
 
 The full error from :code:`ch-docker2tar` or :code:`ch-build2dir` is::
@@ -86,14 +86,14 @@ You will also see it with various plain Docker commands.
 
 This happens when there is no default command specified in the Dockerfile or
 any of its ancestors. Some base images specify one (e.g., Debian) and others
-don't (e.g., Alpine). Docker requires this even for commands that don't seem
+don’t (e.g., Alpine). Docker requires this even for commands that don’t seem
 like they should need it, such as :code:`docker create` (which is what trips
 up Charliecloud).
 
 The solution is to add a default command to your Dockerfile, such as
 :code:`CMD ["true"]`.
 
-:code:`ch-run` fails with "can't re-mount image read-only"
+:code:`ch-run` fails with “can't re-mount image read-only”
 ----------------------------------------------------------
 
 Normally, :code:`ch-run` re-mounts the image directory read-only within the
@@ -103,19 +103,20 @@ two solutions:
 
 1. Unpack the image into a different filesystem, such as :code:`tmpfs` or
    local disk. Consult your local admins for a recommendation. Note that
-   :code:`tmpfs` is a lot faster than Lustre.
+   Lustre is probably not a good idea because it can give poor performance for
+   you and also everyone else on the system.
 
-2. Use the :code:`-w` switch to leave the image mounted read-write. Note that
-   this has may have an impact on reproducibility (because the application can
-   change the image between runs) and/or stability (if there are multiple
-   application processes and one writes a file in the image that another is
-   reading or writing).
+2. Use the :code:`-w` switch to leave the image mounted read-write. This may
+   have an impact on reproducibility (because the application can change the
+   image between runs) and/or stability (if there are multiple application
+   processes and one writes a file in the image that another is reading or
+   writing).
 
 
 Unexpected behavior
 ===================
 
-:code:`--uid 0` lets me read files I can't otherwise!
+:code:`--uid 0` lets me read files I can’t otherwise!
 -----------------------------------------------------
 
 Some permission bits can give a surprising result with a container UID of 0.
@@ -134,7 +135,7 @@ For example::
   $ ch-run --uid 0 /var/tmp/hello cat ~/cantreadme
   surprise
 
-At first glance, it seems that we've found an escalation -- we were able to
+At first glance, it seems that we’ve found an escalation -- we were able to
 read a file inside a container that we could not read on the host! That seems
 bad.
 
@@ -145,7 +146,7 @@ However, what is really going on here is more prosaic but complicated:
 
 2. This include :code:`CAP_DAC_OVERRIDE`, which enables a process to
    read/write/execute a file or directory mostly regardless of its permission
-   bits. (This is why root isn't limited by permissions.)
+   bits. (This is why root isn’t limited by permissions.)
 
 3. Within the container, :code:`exec(2)` capability rules are followed.
    Normally, this basically means that all capabilities are dropped when
@@ -163,10 +164,10 @@ However, what is really going on here is more prosaic but complicated:
    :code:`reidpr:reidpr`) are available for all access with :code:`ch-run
    --uid 0`.
 
-This isn't a problem. The quirk applies only to files owned by the invoking
-user, because :code:`ch-run` is unprivileged outside the namespace, and thus
-he or she could simply :code:`chmod` the file to read it. Access inside and
-outside the container remains equivalent.
+This is not an escalation. The quirk applies only to files owned by the
+invoking user, because :code:`ch-run` is unprivileged outside the namespace,
+and thus he or she could simply :code:`chmod` the file to read it. Access
+inside and outside the container remains equivalent.
 
 References:
 
@@ -182,11 +183,11 @@ Newer Linux distributions replace some root-level directories, such as
 
 Some of these distributions (e.g., Fedora 24) have also dropped :code:`/bin`
 from the default :code:`$PATH`. This is a problem when the guest OS does *not*
-have a merged :code:`/usr` (e.g., Debian 8 "Jessie").
+have a merged :code:`/usr` (e.g., Debian 8 “Jessie”).
 
-While Charliecloud's general philosophy is not to manipulate environment
-variables, in this case, guests can be severely broken if :code:`/bin` is not
-in :code:`$PATH`. Thus, we add it if it's not there.
+While Charliecloud generally does not manipulate environment variables, in
+this case, guests can be very broken if :code:`/bin` is not in :code:`$PATH`.
+Thus, we add it if it’s not there.
 
 Further reading:
 
@@ -197,8 +198,8 @@ Further reading:
 Why does :code:`ping` not work?
 -------------------------------
 
-:code:`ping` fails with "permission denied" under Charliecloud, even if you're
-UID 0 inside the container::
+:code:`ping` fails with “permission denied” or similar under Charliecloud,
+even if you’re UID 0 inside the container::
 
   $ ch-run $IMG -- ping 8.8.8.8
   PING 8.8.8.8 (8.8.8.8): 56 data bytes
@@ -209,28 +210,28 @@ UID 0 inside the container::
 
 This is because :code:`ping` needs a raw socket to construct the needed
 :code:`ICMP ECHO` packets, which requires capability :code:`CAP_NET_RAW` or
-root. Unprivileged users can normally use :code:`ping` because it's a setuid
+root. Unprivileged users can normally use :code:`ping` because it’s a setuid
 or setcap binary: it raises privilege using the filesystem bits on the
 executable to obtain a raw socket.
 
-Under Charliecloud, there are multiple reasons :code:`ping` can't get a raw
+Under Charliecloud, there are multiple reasons :code:`ping` can’t get a raw
 socket. First, images are unpacked without privilege, meaning that setuid and
 setcap bits are lost. But even if you do get privilege in the container (e.g.,
 with :code:`--uid=0`), this only applies in the container. Charliecloud uses
-the host's network namespace, where your unprivileged host identity applies
-and :code:`ping` still can't get a raw socket.
+the host’s network namespace, where your unprivileged host identity applies
+and :code:`ping` still can’t get a raw socket.
 
 The recommended alternative is to simply try the thing you want to do, without
 testing connectivity using :code:`ping` first.
 
-Why is MATLAB trying to chgrp :code:`/dev/pts/0` and what can I do about it?
-----------------------------------------------------------------------------
+Why is MATLAB trying and failing to change the group of :code:`/dev/pts/0`?
+---------------------------------------------------------------------------
 
 MATLAB and some other programs want pseudo-TTY (PTY) files to be group-owned
-by :code:`tty`. If it's not, Matlab will attempt to :code:`chown(2)` the file,
+by :code:`tty`. If it’s not, Matlab will attempt to :code:`chown(2)` the file,
 which fails inside a container.
 
-The scenario in more detail is this. Assume you're user :code:`charlie`
+The scenario in more detail is this. Assume you’re user :code:`charlie`
 (UID=1000), your primary group is :code:`nerds` (GID=1001), :code:`/dev/pts/0`
 is the PTY file in question, and its ownership is :code:`charlie:tty`
 (:code:`1000:5`), as it should be. What happens in the container by default
@@ -239,7 +240,7 @@ is:
 1. MATLAB :code:`stat(2)`\ s :code:`/dev/pts/0` and checks the GID.
 
 2. This GID is :code:`nogroup` (65534) because :code:`tty` (5) is not mapped
-   on the host side (and cannot be, because only one's EGID can be mapped in
+   on the host side (and cannot be, because only one’s EGID can be mapped in
    an unprivileged user namespace).
 
 3. MATLAB concludes this is bad.
@@ -266,14 +267,14 @@ Because the image is mounted read-only by default, log files, caches, and
 other stuff cannot be written anywhere in the image. You have three options:
 
 1. Configure the application to use a different directory. :code:`/tmp` is
-   often a good choice, because it's shared with the host and fast.
+   often a good choice, because it’s shared with the host and fast.
 
 2. Use :code:`RUN` commands in your Dockerfile to create symlinks that point
    somewhere writeable, e.g. :code:`/tmp`, or :code:`/mnt/0` with
    :code:`ch-run --bind`.
 
 3. Run the image read-write with :code:`ch-run -w`. Be careful that multiple
-   containers do not try to write to the same image files.
+   containers do not try to write to the same files.
 
 Which specific :code:`sudo` commands are needed?
 ------------------------------------------------
@@ -296,12 +297,12 @@ on a case-by-case basis. (The latter includes :code:`sudo` if needed to invoke
              -o -name '*.sh' \) \
            -exec egrep -H '(sudo|\$DOCKER)' {} \;
 
-OpenMPI Charliecloud jobs don't work
+OpenMPI Charliecloud jobs don’t work
 ------------------------------------
 
-MPI can be finicky. This section documents some of the problems we've seen.
+MPI can be finicky. This section documents some of the problems we’ve seen.
 
-:code:`mpirun` can't launch jobs
+:code:`mpirun` can’t launch jobs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For example, you might see::
@@ -310,9 +311,9 @@ For example, you might see::
   App launch reported: 2 (out of 2) daemons - 0 (out of 1) procs
   [cn001:27101] PMIX ERROR: BAD-PARAM in file src/dstore/pmix_esh.c at line 996
 
-We're not yet sure why this happens — it may be a mismatch between the OpenMPI
+We’re not yet sure why this happens — it may be a mismatch between the OpenMPI
 builds inside and outside the container — but in our experience launching with
-:code:`srun` often works when :code:`mpirun` doesn't, so try that.
+:code:`srun` often works when :code:`mpirun` doesn’t, so try that.
 
 Communication between ranks on the same node fails
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -357,7 +358,7 @@ The `man page <http://man7.org/linux/man-pages/man2/process_vm_readv.2.html>`_
 reveals that these system calls require that the process have permission to
 :code:`ptrace(2)` one another, but sibling user namespaces `do not
 <http://man7.org/linux/man-pages/man2/ptrace.2.html>`_. (You *can*
-:code:`ptrace(2)` into a child namespace, which is why :code:`gdb` doesn't
+:code:`ptrace(2)` into a child namespace, which is why :code:`gdb` doesn’t
 require anything special in Charliecloud.)
 
 This problem is not specific to containers; for example, many settings of
@@ -379,13 +380,13 @@ So what can you do? There are a few options:
     $ export OMPI_MCA_btl_vader_single_copy_mechanism=none
 
   :code:`psm2` does not let you turn off CMA, but it does fall back to
-  two-copy if CMA doesn't work. However, this fallback crashed when we tried
+  two-copy if CMA doesn’t work. However, this fallback crashed when we tried
   it.
 
 * The kernel module `XPMEM
   <https://github.com/hjelmn/xpmem/tree/master/kernel>`_ enables a different
   single-copy approach. We have not yet tried this, and the module needs to be
-  evaluated for user namespace safety, but it's quite a bit faster than CMA on
+  evaluated for user namespace safety, but it’s quite a bit faster than CMA on
   benchmarks.
 
 .. Images by URL only works in Sphinx 1.6+. Debian Stretch has 1.4.9, so
@@ -397,7 +398,7 @@ So what can you do? There are a few options:
 How do I run X11 apps?
 ----------------------
 
-X11 applications should "just work". For example, try this Dockerfile:
+X11 applications should “just work”. For example, try this Dockerfile:
 
 .. code-block:: docker
 
@@ -411,5 +412,5 @@ Build it and unpack it to :code:`/var/tmp`. Then::
 
 should pop an xterm.
 
-If your X11 application doesn't work, please file an issue so we can
+If your X11 application doesn’t work, please file an issue so we can
 figure out why.
