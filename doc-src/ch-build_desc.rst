@@ -9,8 +9,8 @@ Description
 ===========
 
 Build a Docker image named :code:`TAG` described by Dockerfile
-:code:`./Dockerfile` or as specified. Pass the HTTP proxy environment
-variables through with :code:`--build-arg`.
+:code:`./Dockerfile` or as specified. This is a wrapper for :code:`docker
+build` with various enhancements.
 
 Sudo privileges are required to run the :code:`docker` command.
 
@@ -30,6 +30,23 @@ Arguments:
 
 Additional arguments are accepted and passed unchanged to :code:`docker
 build`.
+
+Improvements over plain :code:`docker build`
+============================================
+
+:code:`ch-build` adds the following features to :code:`docker build`:
+
+* If there is a file :code:`Dockerfile` in the current working directory and
+  :code:`-f` is not already specified, add :code:`-f $PWD/Dockerfile`.
+
+* Pass the HTTP proxy environment variables through with :code:`--build-arg`.
+
+.. note::
+
+   The suffix :code:`:latest` is somewhat misleading, as neither
+   :code:`ch-build` nor bare :code:`docker build` will notice if the base
+   :code:`FROM` image has been updated. Use :code:`--no-cache` to make sure
+   you have the latest base image, at the cost of rebuilding every layer.
 
 Examples
 ========

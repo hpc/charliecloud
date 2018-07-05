@@ -5,11 +5,11 @@ LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
 
 usage () {
     cat 1>&2 <<EOF
-Wrapper for "docker build" that works around some of its annoying behaviors.
+Wrapper for "docker build" with various enhancements.
 
 Usage:
 
-  $ $(basename $0) [ARGS ...]
+  $ $(basename $0) -t TAG [ARGS ...] CONTEXT
 
 ARGS are passed unchanged to "docker build" after the workaround arguments.
 EOF
