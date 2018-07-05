@@ -414,3 +414,65 @@ should pop an xterm.
 
 If your X11 application doesn’t work, please file an issue so we can
 figure out why.
+
+How do I create a tarball compatible with Charliecloud?
+-------------------------------------------------------------
+
+In contrast with best practices for source code, Charliecloud expects an image
+tarball to have either no top-level directory or a top-level directory that is
+exactly :code:`.` (dot). This is inherited from the format of :code:`docker
+export` tarballs. If you’re creating tarballs by other means, you may run into
+this issue.
+
+For example, let's try to re-pack the :code:`chtest` image directory. This
+fails with a rather opaque error message.
+
+::
+
+  $ cd $CH_TEST_IMGDIR
+  $ tar czf chtest2.tar.gz chtest
+  $ tar tf chtest2.tar.gz | head
+  chtest/
+  chtest/var/
+  chtest/var/run/
+  chtest/var/empty/
+  chtest/var/spool/
+  chtest/var/spool/cron/
+  chtest/var/spool/cron/crontabs
+  chtest/var/opt/
+  chtest/var/local/
+  chtest/var/log/
+  $ ch-tar2dir chtest2.tar.gz .
+  $ ls chtest2
+  chtest  dev  mnt  WEIRD_AL_YANKOVIC
+  $ ch-run ./chtest2 -- echo hello
+  ch-run[28780]: can't bind /etc/passwd to /var/tmp/images/chtest2/etc/passwd: No such file or directory (charliecloud.c:132 2)
+
+The workaround is to create the tarball from within the image directory. (If
+you do this immediately after the above, you'll need to remove the
+:code:`chtest2` directory first.)
+
+::
+
+  $ ch $CH_TEST_IMGDIR/chtest
+  $ tar czf ../chtest2.tar.gz .
+  $ cd ..
+  $ tar tf chtest2.tar.gz | head
+  ./
+  ./var/
+  ./var/run/
+  ./var/empty/
+  ./var/spool/
+  ./var/spool/cron/
+  ./var/spool/cron/crontabs
+  ./var/opt/
+  ./var/local/
+  ./var/log/
+  $ ch-tar2dir chtest2.tar.gz .
+  $ ls chtest2
+  bin  etc   lib    mnt   root  sbin  sys   tmp  var
+  dev  home  media  proc  run   srv   test  usr  WEIRD_AL_YANKOVIC
+  $ ch-run ./chtest2 -- echo hello
+  hello
+
+We are working on usability enhancements for this process.
