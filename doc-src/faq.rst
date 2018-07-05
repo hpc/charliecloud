@@ -6,8 +6,11 @@ Frequently asked questions (FAQ)
    :local:
 
 
+About the project
+=================
+
 Where did the name Charliecloud come from?
-==========================================
+------------------------------------------
 
 *Charlie* — Charles F. McMillan was director of Los Alamos National Laboratory
 from June 2011 until December 2017, i.e., at the time Charliecloud was started
@@ -16,13 +19,17 @@ in early 2014. He is universally referred to as "Charlie" here.
 *cloud* — Charliecloud provides cloud-like flexibility for HPC systems.
 
 How do you spell Charliecloud?
-==============================
+------------------------------
 
 We try to be consistent with *Charliecloud* — one word, no camel case. That
 is, *Charlie Cloud* and *CharlieCloud* are both incorrect.
 
+
+Errors
+======
+
 How do I read the :code:`ch-run` error messages?
-================================================
+------------------------------------------------
 
 :code:`ch-run` error messages look like this::
 
@@ -68,25 +75,8 @@ There is a lot of information here, and it comes in this order:
 *Note:* Despite the structured format, the error messages are not guaranteed
 to be machine-readable.
 
-My app needs to write to :code:`/var/log`, :code:`/run`, etc.
-=============================================================
-
-Because the image is mounted read-only by default, log files, caches, and
-other stuff cannot be written anywhere in the image. You have three options:
-
-1. Configure the application to use a different directory. :code:`/tmp` is
-   often a good choice, because it's shared with the host and fast.
-
-2. Use :code:`RUN` commands in your Dockerfile to create symlinks that point
-   somewhere writeable, e.g. :code:`/tmp`, or :code:`/mnt/0` with
-   :code:`ch-run --bind`.
-
-3. Run the image read-write with :code:`ch-run -w`. Be careful that multiple
-   containers do not try to write to the same image files.
-
-
 Tarball build fails with "No command specified"
-===============================================
+-----------------------------------------------
 
 The full error from :code:`ch-docker2tar` or :code:`ch-build2dir` is::
 
@@ -103,9 +93,30 @@ up Charliecloud).
 The solution is to add a default command to your Dockerfile, such as
 :code:`CMD ["true"]`.
 
+:code:`ch-run` fails with "can't re-mount image read-only"
+----------------------------------------------------------
+
+Normally, :code:`ch-run` re-mounts the image directory read-only within the
+container. This fails if the image resides on certain filesystems, such as NFS
+(see `issue #9 <https://github.com/hpc/charliecloud/issues/9>`_). There are
+two solutions:
+
+1. Unpack the image into a different filesystem, such as :code:`tmpfs` or
+   local disk. Consult your local admins for a recommendation. Note that
+   :code:`tmpfs` is a lot faster than Lustre.
+
+2. Use the :code:`-w` switch to leave the image mounted read-write. Note that
+   this has may have an impact on reproducibility (because the application can
+   change the image between runs) and/or stability (if there are multiple
+   application processes and one writes a file in the image that another is
+   reading or writing).
+
+
+Unexpected behavior
+===================
 
 :code:`--uid 0` lets me read files I can't otherwise!
-=====================================================
+-----------------------------------------------------
 
 Some permission bits can give a surprising result with a container UID of 0.
 For example::
@@ -163,9 +174,8 @@ References:
 * http://lxr.free-electrons.com/source/kernel/capability.c?v=4.2#L442
 * http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328
 
-
 Why is :code:`/bin` being added to my :code:`$PATH`?
-====================================================
+----------------------------------------------------
 
 Newer Linux distributions replace some root-level directories, such as
 :code:`/bin`, with symlinks to their counterparts in :code:`/usr`.
@@ -184,28 +194,89 @@ Further reading:
   * `Fedora <https://fedoraproject.org/wiki/Features/UsrMove>`_
   * `Debian <https://wiki.debian.org/UsrMerge>`_
 
+Why does :code:`ping` not work?
+-------------------------------
 
-:code:`ch-run` fails with "can't re-mount image read-only"
-==========================================================
+:code:`ping` fails with "permission denied" under Charliecloud, even if you're
+UID 0 inside the container::
 
-Normally, :code:`ch-run` re-mounts the image directory read-only within the
-container. This fails if the image resides on certain filesystems, such as NFS
-(see `issue #9 <https://github.com/hpc/charliecloud/issues/9>`_). There are
-two solutions:
+  $ ch-run $IMG -- ping 8.8.8.8
+  PING 8.8.8.8 (8.8.8.8): 56 data bytes
+  ping: permission denied (are you root?)
+  $ ch-run --uid=0 $IMG -- ping 8.8.8.8
+  PING 8.8.8.8 (8.8.8.8): 56 data bytes
+  ping: permission denied (are you root?)
 
-1. Unpack the image into a different filesystem, such as :code:`tmpfs` or
-   local disk. Consult your local admins for a recommendation. Note that
-   :code:`tmpfs` is a lot faster than Lustre.
+This is because :code:`ping` needs a raw socket to construct the needed
+:code:`ICMP ECHO` packets, which requires capability :code:`CAP_NET_RAW` or
+root. Unprivileged users can normally use :code:`ping` because it's a setuid
+or setcap binary: it raises privilege using the filesystem bits on the
+executable to obtain a raw socket.
 
-2. Use the :code:`-w` switch to leave the image mounted read-write. Note that
-   this has may have an impact on reproducibility (because the application can
-   change the image between runs) and/or stability (if there are multiple
-   application processes and one writes a file in the image that another is
-   reading or writing).
+Under Charliecloud, there are multiple reasons :code:`ping` can't get a raw
+socket. First, images are unpacked without privilege, meaning that setuid and
+setcap bits are lost. But even if you do get privilege in the container (e.g.,
+with :code:`--uid=0`), this only applies in the container. Charliecloud uses
+the host's network namespace, where your unprivileged host identity applies
+and :code:`ping` still can't get a raw socket.
 
+The recommended alternative is to simply try the thing you want to do, without
+testing connectivity using :code:`ping` first.
+
+Why is MATLAB trying to chgrp :code:`/dev/pts/0` and what can I do about it?
+----------------------------------------------------------------------------
+
+MATLAB and some other programs want pseudo-TTY (PTY) files to be group-owned
+by :code:`tty`. If it's not, Matlab will attempt to :code:`chown(2)` the file,
+which fails inside a container.
+
+The scenario in more detail is this. Assume you're user :code:`charlie`
+(UID=1000), your primary group is :code:`nerds` (GID=1001), :code:`/dev/pts/0`
+is the PTY file in question, and its ownership is :code:`charlie:tty`
+(:code:`1000:5`), as it should be. What happens in the container by default
+is:
+
+1. MATLAB :code:`stat(2)`\ s :code:`/dev/pts/0` and checks the GID.
+
+2. This GID is :code:`nogroup` (65534) because :code:`tty` (5) is not mapped
+   on the host side (and cannot be, because only one's EGID can be mapped in
+   an unprivileged user namespace).
+
+3. MATLAB concludes this is bad.
+
+4. MATLAB executes :code:`chown("/dev/pts/0", 1000, 5)`.
+
+5. This fails because GID 5 is not mapped on the guest side.
+
+6. MATLAB pukes.
+
+The workaround is to map your EGID of 1001 to 5 inside the container (instead
+of the default 1001:1001), i.e. :code:`--gid=5`. Then, step 4 succeeds because
+the call is mapped to :code:`chown("/dev/pts/0", 1000, 1001)` and MATLAB is
+happy.
+
+
+How do I ...
+============
+
+My app needs to write to :code:`/var/log`, :code:`/run`, etc.
+-------------------------------------------------------------
+
+Because the image is mounted read-only by default, log files, caches, and
+other stuff cannot be written anywhere in the image. You have three options:
+
+1. Configure the application to use a different directory. :code:`/tmp` is
+   often a good choice, because it's shared with the host and fast.
+
+2. Use :code:`RUN` commands in your Dockerfile to create symlinks that point
+   somewhere writeable, e.g. :code:`/tmp`, or :code:`/mnt/0` with
+   :code:`ch-run --bind`.
+
+3. Run the image read-write with :code:`ch-run -w`. Be careful that multiple
+   containers do not try to write to the same image files.
 
 Which specific :code:`sudo` commands are needed?
-================================================
+------------------------------------------------
 
 For running images, :code:`sudo` is not needed at all.
 
@@ -225,14 +296,13 @@ on a case-by-case basis. (The latter includes :code:`sudo` if needed to invoke
              -o -name '*.sh' \) \
            -exec egrep -H '(sudo|\$DOCKER)' {} \;
 
-
 OpenMPI Charliecloud jobs don't work
-=====================================
+------------------------------------
 
 MPI can be finicky. This section documents some of the problems we've seen.
 
 :code:`mpirun` can't launch jobs
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For example, you might see::
 
@@ -245,7 +315,7 @@ builds inside and outside the container — but in our experience launching with
 :code:`srun` often works when :code:`mpirun` doesn't, so try that.
 
 My ranks can't talk to one another and I'm told Darth Vader has something to do with it
----------------------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 OpenMPI has the notion of a *byte transport layer* (BTL), which is a module
 that defines how messages are passed from one rank to another. There are many
@@ -325,7 +395,7 @@ do something in Charliecloud to make it work, but we don't know yet.
       :align: center
 
 How do I run X11 apps?
-======================
+----------------------
 
 X11 applications should "just work". For example, try this Dockerfile:
 
@@ -343,64 +413,3 @@ should pop an xterm.
 
 If your X11 application doesn't work, please file an issue so we can
 figure out why.
-
-Why does :code:`ping` not work?
-===============================
-
-:code:`ping` fails with "permission denied" under Charliecloud, even if you're
-UID 0 inside the container::
-
-  $ ch-run $IMG -- ping 8.8.8.8
-  PING 8.8.8.8 (8.8.8.8): 56 data bytes
-  ping: permission denied (are you root?)
-  $ ch-run --uid=0 $IMG -- ping 8.8.8.8
-  PING 8.8.8.8 (8.8.8.8): 56 data bytes
-  ping: permission denied (are you root?)
-
-This is because :code:`ping` needs a raw socket to construct the needed
-:code:`ICMP ECHO` packets, which requires capability :code:`CAP_NET_RAW` or
-root. Unprivileged users can normally use :code:`ping` because it's a setuid
-or setcap binary: it raises privilege using the filesystem bits on the
-executable to obtain a raw socket.
-
-Under Charliecloud, there are multiple reasons :code:`ping` can't get a raw
-socket. First, images are unpacked without privilege, meaning that setuid and
-setcap bits are lost. But even if you do get privilege in the container (e.g.,
-with :code:`--uid=0`), this only applies in the container. Charliecloud uses
-the host's network namespace, where your unprivileged host identity applies
-and :code:`ping` still can't get a raw socket.
-
-The recommended alternative is to simply try the thing you want to do, without
-testing connectivity using :code:`ping` first.
-
-Why is MATLAB trying to chgrp :code:`/dev/pts/0` and what can I do about it?
-============================================================================
-
-MATLAB and some other programs want pseudo-TTY (PTY) files to be group-owned
-by :code:`tty`. If it's not, Matlab will attempt to :code:`chown(2)` the file,
-which fails inside a container.
-
-The scenario in more detail is this. Assume you're user :code:`charlie`
-(UID=1000), your primary group is :code:`nerds` (GID=1001), :code:`/dev/pts/0`
-is the PTY file in question, and its ownership is :code:`charlie:tty`
-(:code:`1000:5`), as it should be. What happens in the container by default
-is:
-
-1. MATLAB :code:`stat(2)`\ s :code:`/dev/pts/0` and checks the GID.
-
-2. This GID is :code:`nogroup` (65534) because :code:`tty` (5) is not mapped
-   on the host side (and cannot be, because only one's EGID can be mapped in
-   an unprivileged user namespace).
-
-3. MATLAB concludes this is bad.
-
-4. MATLAB executes :code:`chown("/dev/pts/0", 1000, 5)`.
-
-5. This fails because GID 5 is not mapped on the guest side.
-
-6. MATLAB pukes.
-
-The workaround is to map your EGID of 1001 to 5 inside the container (instead
-of the default 1001:1001), i.e. :code:`--gid=5`. Then, step 4 succeeds because
-the call is mapped to :code:`chown("/dev/pts/0", 1000, 1001)` and MATLAB is
-happy.
