@@ -314,23 +314,31 @@ We're not yet sure why this happens — it may be a mismatch between the OpenMPI
 builds inside and outside the container — but in our experience launching with
 :code:`srun` often works when :code:`mpirun` doesn't, so try that.
 
-My ranks can't talk to one another and I'm told Darth Vader has something to do with it
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Communication between ranks on the same node fails
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-OpenMPI has the notion of a *byte transport layer* (BTL), which is a module
-that defines how messages are passed from one rank to another. There are many
-different BTLs.
+OpenMPI has many ways to transfer messages between ranks. If the ranks are on
+the same node, it is faster to do these transfers using shared memory rather
+than involving the network stack. There are two ways to use shared memory.
 
-One is called :code:`vader`, and in OpenMPI 2.0 it enabled single-copy data
-transfers between ranks on the same node. Previously by default, and in the
-older :code:`sm` BTL, such messages had to be copied once into shared memory
-and a second time into the destination process. Single-copy enables the
-message to be copied directly from one rank to another. This gives significant
-performance improvements in `benchmarks
+The first and older method is to use POSIX or SysV shared memory segments.
+This approach uses two copies: one from Rank A to shared memory, and a second
+from shared memory to Rank B. For example, the :code:`sm` *byte transport
+layer* (BTL) does this.
+
+The second and newer method is to use the :code:`process_vm_readv(2)` and/or
+:code:`process_vm_writev(2)`) system calls to transfer messages directly from
+Rank A’s virtual memory to Rank B’s. This approach is known as *cross-memory
+attach* (CMA). It gives significant performance improvements in `benchmarks
 <https://blogs.cisco.com/performance/the-vader-shared-memory-transport-in-open-mpi-now-featuring-3-flavors-of-zero-copy>`_,
-though of course the real-world impact depends on the application.
+though of course the real-world impact depends on the application. For
+example, the :code:`vader` BTL (enabled by default in OpenMPI 2.0) and
+:code:`psm2` *matching transport layer* (MTL) do this.
 
-One manifestation of this is in the LAMMPS molecular dynamics application::
+The problem in Charliecloud is that the second approach does not work by
+default.
+
+We can demonstrate the problem with LAMMPS molecular dynamics application::
 
   $ srun --cpus-per-task 1 ch-run /var/tmp/lammps_mpi -- \
     lmp_mpi -log none -in /lammps/examples/melt/in.melt
@@ -339,8 +347,8 @@ One manifestation of this is in the LAMMPS molecular dynamics application::
   [cn002:21517] Read -1, expected 9792, errno = 1
   [... repeat thousands of times ...]
 
-With :code:`strace`, one can isolate the problem to the system call
-:code:`process_vm_readv(2)` (and perhaps also :code:`process_vm_writev(2)`)::
+With :code:`strace(1)`, one can isolate the problem to the system call noted
+above::
 
   process_vm_readv(...) = -1 EPERM (Operation not permitted)
   write(33, "[cn001:27673] Read -1, expected 6"..., 48) = 48
@@ -357,36 +365,28 @@ kernels with `YAMA
 <https://www.kernel.org/doc/Documentation/security/Yama.txt>`_ enabled will
 similarly disallow this access.
 
-Thus, :code:`vader` CMA does not currently work in Charliecloud by default. So
-what can you do?
+So what can you do? There are a few options:
 
-* The easiest thing is to simply turn off single-copy. For most applications,
-  we suspect the performance impact will be minimal, but you should of course
-  evaluate that yourself. To do so, either set an environment variable::
+* We recommend simply using the :code:`--join` family of arguments to
+  :code:`ch-run`. This puts a group of :code:`ch-run` peers in the same
+  namespaces; then, the system calls work. See the :ref:`man_ch-run` man page
+  for details.
 
-    export OMPI_MCA_btl_vader_single_copy_mechanism=none
+* You can also sometimes turn off single-copy. For example, for :code:`vader`,
+  set the MCA variable :code:`btl_vader_single_copy_mechanism` to
+  :code:`none`, e.g. with an environment variable::
 
-  or add an argument to :code:`mpirun`::
+    $ export OMPI_MCA_btl_vader_single_copy_mechanism=none
 
-    $ mpirun --mca btl_vader_single_copy_mechanism none ...
+  :code:`psm2` does not let you turn off CMA, but it does fall back to
+  two-copy if CMA doesn't work. However, this fallback crashed when we tried
+  it.
 
 * The kernel module `XPMEM
   <https://github.com/hjelmn/xpmem/tree/master/kernel>`_ enables a different
   single-copy approach. We have not yet tried this, and the module needs to be
   evaluated for user namespace safety, but it's quite a bit faster than CMA on
   benchmarks.
-
-* Wait. We are in communication with the OpenMPI developers on this, and they
-  may implement a fallback mechanism to keep your application working rather
-  than failing. This would, however, have the same performance impact as the
-  first approach.
-
-* Heroics. With sufficient shell voodoo, one could get all the ranks into the
-  same user namespace, at which point the problem goes away.
-
-We are tracking this problem in `issue #128
-<https://github.com/hpc/charliecloud/issues/128>`_. It is possible that we can
-do something in Charliecloud to make it work, but we don't know yet.
 
 .. Images by URL only works in Sphinx 1.6+. Debian Stretch has 1.4.9, so
    remove it for now.

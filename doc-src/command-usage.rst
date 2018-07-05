@@ -48,6 +48,8 @@ Inject files from the host into an image directory.
 
 .. include:: ./ch-fromhost_desc.rst
 
+.. _man_ch-run:
+
 ch-run
 ++++++
 
