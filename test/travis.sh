@@ -6,6 +6,7 @@
 # We start in the Charliecloud Git working directory.
 
 set -e
+PREFIX=/var/tmp
 
 # Remove sbin directories from $PATH (see issue #43). Assume none are first.
 echo $PATH
@@ -20,12 +21,15 @@ case $TARBALL in
     export)
         (cd doc-src && make)
         make export
+        mv charliecloud-*.tar.gz $PREFIX
+        cd $PREFIX
         tar xf charliecloud-*.tar.gz
         cd charliecloud-*
         ;;
     archive)
         # The Travis image already has Bats installed.
-        git archive HEAD --prefix=charliecloud/ -o charliecloud.tar
+        git archive HEAD --prefix=charliecloud/ -o $PREFIX/charliecloud.tar
+        cd $PREFIX
         tar xf charliecloud.tar
         cd charliecloud
         ;;
@@ -43,8 +47,8 @@ make
 bin/ch-run --version
 
 if [[ $INSTALL ]]; then
-    sudo make install PREFIX=/usr/local
-    cd /usr/local/share/doc/charliecloud
+    sudo make install PREFIX=$PREFIX
+    cd $PREFIX/share/doc/charliecloud
 fi
 
 cd test
