@@ -12,6 +12,20 @@ load common
     cd ../doc-src && make -j $(getconf _NPROCESSORS_ONLN)
 }
 
+@test 'version number seems sane' {
+    [[ $(echo $CH_VERSION | wc -l) -eq 1 ]]  # one line
+    [[ $CH_VERSION =~ ^0\.[0-9]+\.[0-9]+ ]]  # starts with a number triplet
+    # matches VERSION.full if available
+    if [[ -e $CH_BIN/../VERSION.full ]]; then
+        diff -u <(echo $CH_VERSION) $CH_BIN/../VERSION.full
+    fi
+    # matches Git version if available
+    if ( git rev-parse --is-inside-work-tree 2>&1 > /dev/null ); then
+        git_hash=$(git rev-parse --short HEAD)
+        [[ $CH_VERSION =~ $git_hash ]]
+    fi
+}
+
 @test 'executables seem sane' {
     scope quick
     # Assume that everything in $CH_BIN is ours if it starts with "ch-" and
@@ -23,12 +37,11 @@ load common
         i=$(echo $i | sed s/.c$//)
         echo
         echo $i
-        # --version: one line, starts with "0.", looks like a version number.
+        # --version
         run $i --version
         echo "$output"
         [[ $status -eq 0 ]]
-        [[ ${#lines[@]} -eq 1 ]]
-        [[ ${lines[0]} =~ 0\.[0-9]+\.[0-9]+ ]]
+        diff -u <(echo "$output") <(echo $CH_VERSION)
         # --help: returns 0, says "Usage:" somewhere.
         run $i --help
         echo "$output"
@@ -80,6 +93,7 @@ load common
     IMG=$TARDIR/test
     [[ ! -e $IMG ]]
     ch-build2dir .. $TARDIR --file=Dockerfile.alpine36
+    sudo docker tag test test:$CH_VERSION_DOCKER
     docker_ok test
     image_ok $IMG
     # Remove since we don't want it hanging around later.

@@ -63,6 +63,7 @@ for path in sys.argv[2:]:
     scope %(scope)s
     need_docker %(tag)s
     ch-build -t %(tag)s --file=%(path)s ..
+    sudo docker tag %(tag)s %(tag)s:$CH_VERSION_DOCKER
     docker_ok %(tag)s
 }"""
          else:
@@ -75,6 +76,8 @@ for path in sys.argv[2:]:
     need_docker %(tag)s
     sudo docker pull %(addr)s
     sudo docker tag %(addr)s %(tag)s
+    sudo docker tag %(tag)s %(tag)s:$CH_VERSION_DOCKER
+    docker_ok %(tag)s
 }"""
          template += """
 @test 'ch-docker2tar %(tag)s' {

@@ -1,5 +1,19 @@
+docker_tag_p () {
+    printf 'image tag %s ... ' $1
+    hash_=$(sudo docker images -q $1 | sort -u)
+    if [[ $hash_ ]]; then
+        echo $hash_
+        return 0
+    else
+        echo 'not found'
+        return 1
+    fi
+}
+
 docker_ok () {
-    sudo docker images | fgrep -q $1
+    docker_tag_p $1
+    docker_tag_p $1:latest
+    docker_tag_p $1:$(ch-run --version |& tr '~+' '--')
 }
 
 env_require () {
@@ -94,6 +108,14 @@ CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/bin" && pwd)"
 CH_BIN="$(readlink -f "$CH_BIN")"
 export PATH=$CH_BIN:$PATH
 CH_RUN_FILE="$(which ch-run)"
+if [[ ! -x $CH_BIN/ch-run ]]; then
+    printf 'Must build with "make" before running tests.\n\n' >&2
+    exit 1
+fi
+
+# Charliecloud version.
+CH_VERSION=$(ch-run --version 2>&1)
+CH_VERSION_DOCKER=$(echo $CH_VERSION | tr '~+' '--')
 
 # User-private temporary directory in case multiple users are running the
 # tests simultaenously.
@@ -207,10 +229,6 @@ if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
     # https://github.com/sstephenson/bats/issues/49
     printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
-    exit 1
-fi
-if [[ ! -x $CH_BIN/ch-run ]]; then
-    printf 'Must build with "make" before running tests.\n\n' >&2
     exit 1
 fi
 if ( mount | fgrep -q $IMGDIR ); then
