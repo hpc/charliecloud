@@ -137,6 +137,33 @@ load common
     rm -Rf --one-file-system "$tar" "$img"
 }
 
+@test 'ch-pull2tar' {
+    scope standard
+    # This test pulls from Docker Hub and unpacks into $ch_tardir;. We remove the
+    # image upon completion to keep $ch_imgdir clean at build time. 
+    need_docker
+    tag='alpine:3.6'
+    tar="${ch_tardir}/${tag}.tar.gz"
+    ch-pull2tar "$tag" "$ch_tardir"
+    [[ $status -eq 0 ]]
+    [[ -e $tar ]] 
+    rm "${ch_tardir}/${tag}.tar.gz"
+    [[ ! -e $tar ]]
+}
+
+@test 'ch-pull2dir' {
+    scope standard
+    # This test unpacks in $ch_tardir and is removed upon completion.
+    need_docker
+    tag='alpine:3.6'
+    img="${ch_tardir}/${tag}"
+    ch-pull2dir "$tag" "$ch_tardir"
+    [[ status -eq 0 ]]
+    [[ -d $img ]]
+    rm -Rf --one-file-system "$img"
+    [[ ! -d $img ]]
+}
+
 @test 'sotest executable works' {
     scope quick
     export LD_LIBRARY_PATH=./sotest
