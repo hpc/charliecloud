@@ -33,4 +33,4 @@ DIR=$2
 
 $DOCKER pull $DOCKER_IMAGE
 ch-docker2tar $DOCKER_IMAGE $DIR
-ch-tar2dir $DIR/$DOCKER_IMAGE.tar.gz $DIR
+ch-tar2dir $DIR/$(echo $DOCKER_IMAGE | sed 's/\//\./').tar.gz $DIR
