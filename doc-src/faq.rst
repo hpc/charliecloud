@@ -175,26 +175,6 @@ References:
 * http://lxr.free-electrons.com/source/kernel/capability.c?v=4.2#L442
 * http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328
 
-Why is :code:`/bin` being added to my :code:`$PATH`?
-----------------------------------------------------
-
-Newer Linux distributions replace some root-level directories, such as
-:code:`/bin`, with symlinks to their counterparts in :code:`/usr`.
-
-Some of these distributions (e.g., Fedora 24) have also dropped :code:`/bin`
-from the default :code:`$PATH`. This is a problem when the guest OS does *not*
-have a merged :code:`/usr` (e.g., Debian 8 “Jessie”).
-
-While Charliecloud generally does not manipulate environment variables, in
-this case, guests can be very broken if :code:`/bin` is not in :code:`$PATH`.
-Thus, we add it if it’s not there.
-
-Further reading:
-
-  * `The case for the /usr Merge <https://www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge/>`_
-  * `Fedora <https://fedoraproject.org/wiki/Features/UsrMove>`_
-  * `Debian <https://wiki.debian.org/UsrMerge>`_
-
 Why does :code:`ping` not work?
 -------------------------------
 

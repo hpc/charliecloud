@@ -152,6 +152,37 @@ Caveats:
 * Many of the arguments given to the race losers, such as the image path and
   :code:`--bind`, will be ignored in favor of what was given to the winner.
 
+Environment variables
+=====================
+
+:code:`ch-run` generally tries to leave environment variables unchanged, but
+in some cases, guests can be significantly broken unless environment variables
+are tweaked. This section lists those changes.
+
+* :code:`$HOME`: If the path to your home directory is not :code:`/home/$USER`
+  on the host, then an inherited :code:`$HOME` will be incorrect inside the
+  guest. This confuses some software, such as Spack.
+
+  Thus, we change :code:`$HOME` to :code:`/home/$USER`, unless
+  :code:`--no-home` is specified, in which case it is left unchanged.
+
+* :code:`$PATH`: Newer Linux distributions replace some root-level
+  directories, such as :code:`/bin`, with symlinks to their counterparts in
+  :code:`/usr`.
+
+  Some of these distributions (e.g., Fedora 24) have also dropped :code:`/bin`
+  from the default :code:`$PATH`. This is a problem when the guest OS does
+  *not* have a merged :code:`/usr` (e.g., Debian 8 “Jessie”). Thus, we add
+  :code:`/bin` to :code:`$PATH` if it's not already present.
+
+  Further reading:
+
+    * `The case for the /usr Merge <https://www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge/>`_
+    * `Fedora <https://fedoraproject.org/wiki/Features/UsrMove>`_
+    * `Debian <https://wiki.debian.org/UsrMerge>`_
+
+
+
 Examples
 ========
 

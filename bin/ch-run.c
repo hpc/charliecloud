@@ -64,6 +64,7 @@ struct args {
 
 /** Function prototypes **/
 
+void fix_environment(struct args * args);
 bool get_first_env(char ** array, char ** name, char ** value);
 int join_ct(int cli_ct);
 char * join_tag(char * cli_tag);
@@ -125,12 +126,41 @@ int main(int argc, char * argv[])
    INFO("private /tmp: %d", args.c.private_tmp);
 
    containerize(&args.c);
+   fix_environment(&args);
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }
 
 
 /** Supporting functions **/
+
+/* Adjust environment variables. */
+void fix_environment(struct args * args)
+{
+   char * old, * new;
+
+   // $HOME: Set to /home/$USER unless --no-home specified.
+   old = getenv("HOME");
+   if (!args->c.private_home) {
+      old = getenv("USER");
+      if (old == NULL) {
+         WARNING("$USER not set; cannot rewrite $HOME");
+      } else {
+         T_ (1 <= asprintf(&new, "/home/%s", old));
+         Z_ (setenv("HOME", new, 1));
+      }
+   }
+
+   // $PATH: Append /bin if not already present.
+   old = getenv("PATH");
+   if (old == NULL) {
+      WARNING("$PATH not set");
+   } else if (strstr(old, "/bin") != old && !strstr(old, ":/bin")) {
+      T_ (1 <= asprintf(&new, "%s:/bin", old));
+      Z_ (setenv("PATH", new, 1));
+      INFO("new $PATH: %s", new);
+   }
+}
 
 /* Find the first environment variable in array that is set; put its name in
    *name and its value in *value, and return true. If none are set, return

@@ -44,7 +44,45 @@ EOF
     [[ $host_size -eq $guest_size ]]
 }
 
-@test 'workaround for /bin not in $PATH' {
+@test '$HOME' {
+    scope quick
+    echo "host: $HOME"
+    [[ $HOME ]]
+    [[ $USER ]]
+
+    # default: set $HOME
+    run ch-run $CHTEST_IMG -- /bin/sh -c 'echo $HOME'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = /home/$USER ]]
+
+    # no change if --no-home
+    run ch-run --no-home $CHTEST_IMG -- /bin/sh -c 'echo $HOME'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = $HOME ]]
+
+    # puke if $HOME not set
+    home_tmp=$HOME
+    unset HOME
+    run ch-run $CHTEST_IMG -- /bin/sh -c 'echo $HOME'
+    export HOME=$home_tmp
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output =~ 'cannot find home directory: $HOME not set' ]]
+
+    # warn if $USER not set
+    user_tmp=$USER
+    unset USER
+    run ch-run $CHTEST_IMG -- /bin/sh -c 'echo $HOME'
+    export USER=$user_tmp
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output =~ '$USER not set; cannot rewrite $HOME' ]]
+    [[ $output =~ $HOME ]]
+}
+
+@test '$PATH: add /bin' {
     scope quick
     echo "$PATH"
     # if /bin is in $PATH, latter passes through unchanged
@@ -69,7 +107,7 @@ EOF
     [[ $output = $PATH2:/bin ]]
 }
 
-@test '$PATH unset' {
+@test '$PATH: unset' {
     scope standard
     BACKUP_PATH=$PATH
     unset PATH

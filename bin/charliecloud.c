@@ -146,10 +146,12 @@ void enter_udss(struct container * c)
           "can't mount tmpfs at %s", path);
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
+      oldpath = getenv("HOME");
+      Tf (oldpath != NULL, "cannot find home directory: $HOME not set");
       T_ (1 <= asprintf(&path, "%s/home/%s", c->newroot, getenv("USER")));
       Z_ (mkdir(path, 0755));
-      Zf (mount(getenv("HOME"), path, NULL, MS_REC|MS_BIND, NULL),
-          "can't bind %s to %s", getenv("HOME"), path);
+      Zf (mount(oldpath, path, NULL, MS_REC|MS_BIND, NULL),
+          "can't bind %s to %s", oldpath, path);
    }
    // Bind-mount /usr/bin/ch-ssh if it exists.
    T_ (1 <= asprintf(&path, "%s/usr/bin/ch-ssh", c->newroot));
@@ -354,23 +356,10 @@ void msg(int level, char * file, int line, int errno_, char * fmt, ...)
 /* Replace the current process with user command and arguments. */
 void run_user_command(char * argv[], char * initial_dir)
 {
-   char * old_path, * new_path;
-
    LOG_IDS;
 
    if (initial_dir != NULL)
       Zf (chdir(initial_dir), "can't cd to %s", initial_dir);
-
-   // Append /bin to $PATH if not already present. See FAQ.
-   old_path = getenv("PATH");
-   if (old_path == NULL) {
-      WARNING("$PATH not set");
-   } else if (   strstr(old_path, "/bin") != old_path
-              && !strstr(old_path, ":/bin")) {
-      T_ (1 <= asprintf(&new_path, "%s:/bin", old_path));
-      Z_ (setenv("PATH", new_path, 1));
-      INFO("new $PATH: %s", new_path);
-   }
 
    if (verbose >= 3) {
       fprintf(stderr, "argv:");
