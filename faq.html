@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>6. Frequently asked questions (FAQ) &mdash; Charliecloud 0.2.5 documentation</title>
+  <title>6. Frequently asked questions (FAQ) &mdash; Charliecloud 0.9.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.2.5 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.9.0 documentation" href="index.html"/>
         <link rel="prev" title="5. VirtualBox appliance" href="virtualbox.html"/> 
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                7294994
+                ef881ca
               </div>
             
           
@@ -99,20 +99,35 @@
 <li class="toctree-l1"><a class="reference internal" href="command-usage.html">4. Charliecloud command reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="virtualbox.html">5. VirtualBox appliance</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">6. Frequently asked questions (FAQ)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#where-did-the-name-charliecloud-come-from">6.1. Where did the name Charliecloud come from?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#how-do-you-spell-charliecloud">6.2. How do you spell Charliecloud?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc">6.3. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#tarball-build-fails-with-no-command-specified">6.4. Tarball build fails with “No command specified”</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#uid-0-lets-me-read-files-i-can-t-otherwise">6.5. <code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#why-is-bin-being-added-to-my-path">6.6. Why is <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-run-fails-with-can-t-re-mount-image-read-only">6.7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#which-specific-sudo-commands-are-needed">6.8. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#openmpi-charliecloud-jobs-don-t-work">6.9. OpenMPI Charliecloud jobs don’t work</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#mpirun-can-t-launch-jobs">6.9.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#my-ranks-can-t-talk-to-one-another-and-i-m-told-darth-vader-has-something-to-do-with-it">6.9.2. My ranks can’t talk to one another and I’m told Darth Vader has something to do with it</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#about-the-project">6.1. About the project</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#where-did-the-name-charliecloud-come-from">6.1.1. Where did the name Charliecloud come from?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-you-spell-charliecloud">6.1.2. How do you spell Charliecloud?</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#how-do-i-run-x11-apps">6.10. How do I run X11 apps?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#errors">6.2. Errors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-i-read-the-ch-run-error-messages">6.2.1. How do I read the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> error messages?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tarball-build-fails-with-no-command-specified">6.2.2. Tarball build fails with “No command specified”</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ch-run-fails-with-can-t-re-mount-image-read-only">6.2.3. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unexpected-behavior">6.3. Unexpected behavior</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#uid-0-lets-me-read-files-i-cant-otherwise">6.3.1. <code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#why-does-ping-not-work">6.3.2. Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0">6.3.3. Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#how-do-i">6.4. How do I …</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc">6.4.1. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#which-specific-sudo-commands-are-needed">6.4.2. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work">6.4.3. OpenMPI Charliecloud jobs don’t work</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mpirun-cant-launch-jobs">6.4.3.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#communication-between-ranks-on-the-same-node-fails">6.4.3.2. Communication between ranks on the same node fails</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-i-run-x11-apps">6.4.4. How do I run X11 apps?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-i-create-a-tarball-compatible-with-charliecloud">6.4.5. How do I create a tarball compatible with Charliecloud?</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -180,50 +195,87 @@
 <h1>6. Frequently asked questions (FAQ)<a class="headerlink" href="#frequently-asked-questions-faq" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#where-did-the-name-charliecloud-come-from" id="id1">Where did the name Charliecloud come from?</a></li>
-<li><a class="reference internal" href="#how-do-you-spell-charliecloud" id="id2">How do you spell Charliecloud?</a></li>
-<li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id3">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
-<li><a class="reference internal" href="#tarball-build-fails-with-no-command-specified" id="id4">Tarball build fails with “No command specified”</a></li>
-<li><a class="reference internal" href="#uid-0-lets-me-read-files-i-can-t-otherwise" id="id5"><code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></li>
-<li><a class="reference internal" href="#why-is-bin-being-added-to-my-path" id="id6">Why is <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>?</a></li>
-<li><a class="reference internal" href="#ch-run-fails-with-can-t-re-mount-image-read-only" id="id7"><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></li>
-<li><a class="reference internal" href="#which-specific-sudo-commands-are-needed" id="id8">Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
-<li><a class="reference internal" href="#openmpi-charliecloud-jobs-don-t-work" id="id9">OpenMPI Charliecloud jobs don’t work</a><ul>
-<li><a class="reference internal" href="#mpirun-can-t-launch-jobs" id="id10"><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></li>
-<li><a class="reference internal" href="#my-ranks-can-t-talk-to-one-another-and-i-m-told-darth-vader-has-something-to-do-with-it" id="id11">My ranks can’t talk to one another and I’m told Darth Vader has something to do with it</a></li>
+<li><a class="reference internal" href="#about-the-project" id="id1">About the project</a><ul>
+<li><a class="reference internal" href="#where-did-the-name-charliecloud-come-from" id="id2">Where did the name Charliecloud come from?</a></li>
+<li><a class="reference internal" href="#how-do-you-spell-charliecloud" id="id3">How do you spell Charliecloud?</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id12">How do I run X11 apps?</a></li>
+<li><a class="reference internal" href="#errors" id="id4">Errors</a><ul>
+<li><a class="reference internal" href="#how-do-i-read-the-ch-run-error-messages" id="id5">How do I read the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> error messages?</a></li>
+<li><a class="reference internal" href="#tarball-build-fails-with-no-command-specified" id="id6">Tarball build fails with “No command specified”</a></li>
+<li><a class="reference internal" href="#ch-run-fails-with-can-t-re-mount-image-read-only" id="id7"><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#unexpected-behavior" id="id8">Unexpected behavior</a><ul>
+<li><a class="reference internal" href="#uid-0-lets-me-read-files-i-cant-otherwise" id="id9"><code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></li>
+<li><a class="reference internal" href="#why-does-ping-not-work" id="id10">Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></li>
+<li><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0" id="id11">Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-do-i" id="id12">How do I …</a><ul>
+<li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id13">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
+<li><a class="reference internal" href="#which-specific-sudo-commands-are-needed" id="id14">Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
+<li><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work" id="id15">OpenMPI Charliecloud jobs don’t work</a></li>
+<li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id16">How do I run X11 apps?</a></li>
+<li><a class="reference internal" href="#how-do-i-create-a-tarball-compatible-with-charliecloud" id="id17">How do I create a tarball compatible with Charliecloud?</a></li>
+</ul>
+</li>
 </ul>
 </div>
+<div class="section" id="about-the-project">
+<h2><a class="toc-backref" href="#id1">6.1. About the project</a><a class="headerlink" href="#about-the-project" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="where-did-the-name-charliecloud-come-from">
-<h2><a class="toc-backref" href="#id1">6.1. Where did the name Charliecloud come from?</a><a class="headerlink" href="#where-did-the-name-charliecloud-come-from" title="Permalink to this headline">¶</a></h2>
+<h3><a class="toc-backref" href="#id2">6.1.1. Where did the name Charliecloud come from?</a><a class="headerlink" href="#where-did-the-name-charliecloud-come-from" title="Permalink to this headline">¶</a></h3>
 <p><em>Charlie</em> — Charles F. McMillan was director of Los Alamos National Laboratory
 from June 2011 until December 2017, i.e., at the time Charliecloud was started
 in early 2014. He is universally referred to as “Charlie” here.</p>
 <p><em>cloud</em> — Charliecloud provides cloud-like flexibility for HPC systems.</p>
 </div>
 <div class="section" id="how-do-you-spell-charliecloud">
-<h2><a class="toc-backref" href="#id2">6.2. How do you spell Charliecloud?</a><a class="headerlink" href="#how-do-you-spell-charliecloud" title="Permalink to this headline">¶</a></h2>
+<h3><a class="toc-backref" href="#id3">6.1.2. How do you spell Charliecloud?</a><a class="headerlink" href="#how-do-you-spell-charliecloud" title="Permalink to this headline">¶</a></h3>
 <p>We try to be consistent with <em>Charliecloud</em> — one word, no camel case. That
 is, <em>Charlie Cloud</em> and <em>CharlieCloud</em> are both incorrect.</p>
 </div>
-<div class="section" id="my-app-needs-to-write-to-var-log-run-etc">
-<h2><a class="toc-backref" href="#id3">6.3. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h2>
-<p>Because the image is mounted read-only by default, log files, caches, and
-other stuff cannot be written anywhere in the image. You have three options:</p>
+</div>
+<div class="section" id="errors">
+<h2><a class="toc-backref" href="#id4">6.2. Errors</a><a class="headerlink" href="#errors" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="how-do-i-read-the-ch-run-error-messages">
+<h3><a class="toc-backref" href="#id5">6.2.1. How do I read the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> error messages?</a><a class="headerlink" href="#how-do-i-read-the-ch-run-error-messages" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> error messages look like this:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run foo -- <span class="nb">echo</span> hello
+<span class="go">ch-run[25750]: can&#39;t find image: foo: No such file or directory (ch-run.c:107 2)</span>
+</pre></div>
+</div>
+<p>There is a lot of information here, and it comes in this order:</p>
 <ol class="arabic simple">
-<li>Configure the application to use a different directory. <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> is
-often a good choice, because it’s shared with the host and fast.</li>
-<li>Use <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands in your Dockerfile to create symlinks that point
-somewhere writeable, e.g. <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>, or <code class="code docutils literal notranslate"><span class="pre">/mnt/0</span></code> with
-<code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--bind</span></code>.</li>
-<li>Run the image read-write with <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>. Be careful that multiple
-containers do not try to write to the same image files.</li>
+<li>Name of the executable; always <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</li>
+<li>Process ID in square brackets; here <code class="code docutils literal notranslate"><span class="pre">25750</span></code>. This is useful when
+debugging parallel <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocations.</li>
+<li>Colon.</li>
+<li>Main error message; here <code class="code docutils literal notranslate"><span class="pre">can't</span> <span class="pre">find</span> <span class="pre">image:</span> <span class="pre">foo</span></code>. This should be
+informative as to what went wrong, and if it’s not, please file an issue,
+because you may have found a usability bug. Note that in some cases you may
+encounter the default message <code class="code docutils literal notranslate"><span class="pre">error</span></code>; if this happens and you’re not
+doing something very strange, that’s also a usability bug.</li>
+<li>Colon (but note that the main error itself can contain colons too), if and
+only if the next item is present.</li>
+<li>Operating system’s description of the the value of <code class="code docutils literal notranslate"><span class="pre">errno</span></code>; here
+<code class="code docutils literal notranslate"><span class="pre">No</span> <span class="pre">such</span> <span class="pre">file</span> <span class="pre">or</span> <span class="pre">directory</span></code>. Omitted if not applicable.</li>
+<li>Open parenthesis.</li>
+<li>Name of the source file where the error occurred; here <code class="code docutils literal notranslate"><span class="pre">ch-run.c</span></code>.
+This and the following item tell developers exactly where <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>
+became confused, which greatly improves our ability to provide help and/or
+debug.</li>
+<li>Source line where the error occurred.</li>
+<li>Value of <code class="code docutils literal notranslate"><span class="pre">errno</span></code> (see <a class="reference external" href="http://www.virtsync.com/c-error-codes-include-errno">C error codes in Linux</a> for the full
+list of possibilities).</li>
+<li>Close parenthesis.</li>
 </ol>
+<p><em>Note:</em> Despite the structured format, the error messages are not guaranteed
+to be machine-readable.</p>
 </div>
 <div class="section" id="tarball-build-fails-with-no-command-specified">
-<h2><a class="toc-backref" href="#id4">6.4. Tarball build fails with “No command specified”</a><a class="headerlink" href="#tarball-build-fails-with-no-command-specified" title="Permalink to this headline">¶</a></h2>
+<h3><a class="toc-backref" href="#id6">6.2.2. Tarball build fails with “No command specified”</a><a class="headerlink" href="#tarball-build-fails-with-no-command-specified" title="Permalink to this headline">¶</a></h3>
 <p>The full error from <code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code> or <code class="code docutils literal notranslate"><span class="pre">ch-build2dir</span></code> is:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">docker: Error response from daemon: No command specified.</span>
 </pre></div>
@@ -237,8 +289,29 @@ up Charliecloud).</p>
 <p>The solution is to add a default command to your Dockerfile, such as
 <code class="code docutils literal notranslate"><span class="pre">CMD</span> <span class="pre">[&quot;true&quot;]</span></code>.</p>
 </div>
-<div class="section" id="uid-0-lets-me-read-files-i-can-t-otherwise">
-<h2><a class="toc-backref" href="#id5">6.5. <code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a><a class="headerlink" href="#uid-0-lets-me-read-files-i-can-t-otherwise" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="ch-run-fails-with-can-t-re-mount-image-read-only">
+<h3><a class="toc-backref" href="#id7">6.2.3. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a><a class="headerlink" href="#ch-run-fails-with-can-t-re-mount-image-read-only" title="Permalink to this headline">¶</a></h3>
+<p>Normally, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> re-mounts the image directory read-only within the
+container. This fails if the image resides on certain filesystems, such as NFS
+(see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/9">issue #9</a>). There are
+two solutions:</p>
+<ol class="arabic simple">
+<li>Unpack the image into a different filesystem, such as <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> or
+local disk. Consult your local admins for a recommendation. Note that
+Lustre is probably not a good idea because it can give poor performance for
+you and also everyone else on the system.</li>
+<li>Use the <code class="code docutils literal notranslate"><span class="pre">-w</span></code> switch to leave the image mounted read-write. This may
+have an impact on reproducibility (because the application can change the
+image between runs) and/or stability (if there are multiple application
+processes and one writes a file in the image that another is reading or
+writing).</li>
+</ol>
+</div>
+</div>
+<div class="section" id="unexpected-behavior">
+<h2><a class="toc-backref" href="#id8">6.3. Unexpected behavior</a><a class="headerlink" href="#unexpected-behavior" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="uid-0-lets-me-read-files-i-cant-otherwise">
+<h3><a class="toc-backref" href="#id9">6.3.1. <code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a><a class="headerlink" href="#uid-0-lets-me-read-files-i-cant-otherwise" title="Permalink to this headline">¶</a></h3>
 <p>Some permission bits can give a surprising result with a container UID of 0.
 For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> whoami
@@ -279,10 +352,10 @@ directory only if its UID and GID are both mapped. In this case,
 <code class="code docutils literal notranslate"><span class="pre">reidpr:reidpr</span></code>) are available for all access with <code class="code docutils literal notranslate"><span class="pre">ch-run</span>
 <span class="pre">--uid</span> <span class="pre">0</span></code>.</li>
 </ol>
-<p>This isn’t a problem. The quirk applies only to files owned by the invoking
-user, because <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> is unprivileged outside the namespace, and thus
-he or she could simply <code class="code docutils literal notranslate"><span class="pre">chmod</span></code> the file to read it. Access inside and
-outside the container remains equivalent.</p>
+<p>This is not an escalation. The quirk applies only to files owned by the
+invoking user, because <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> is unprivileged outside the namespace,
+and thus he or she could simply <code class="code docutils literal notranslate"><span class="pre">chmod</span></code> the file to read it. Access
+inside and outside the container remains equivalent.</p>
 <p>References:</p>
 <ul class="simple">
 <li><a class="reference external" href="http://man7.org/linux/man-pages/man7/capabilities.7.html">http://man7.org/linux/man-pages/man7/capabilities.7.html</a></li>
@@ -290,44 +363,76 @@ outside the container remains equivalent.</p>
 <li><a class="reference external" href="http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328">http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328</a></li>
 </ul>
 </div>
-<div class="section" id="why-is-bin-being-added-to-my-path">
-<h2><a class="toc-backref" href="#id6">6.6. Why is <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> being added to my <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>?</a><a class="headerlink" href="#why-is-bin-being-added-to-my-path" title="Permalink to this headline">¶</a></h2>
-<p>Newer Linux distributions replace some root-level directories, such as
-<code class="code docutils literal notranslate"><span class="pre">/bin</span></code>, with symlinks to their counterparts in <code class="code docutils literal notranslate"><span class="pre">/usr</span></code>.</p>
-<p>Some of these distributions (e.g., Fedora 24) have also dropped <code class="code docutils literal notranslate"><span class="pre">/bin</span></code>
-from the default <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>. This is a problem when the guest OS does <em>not</em>
-have a merged <code class="code docutils literal notranslate"><span class="pre">/usr</span></code> (e.g., Debian 8 “Jessie”).</p>
-<p>While Charliecloud’s general philosophy is not to manipulate environment
-variables, in this case, guests can be severely broken if <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> is not
-in <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>. Thus, we add it if it’s not there.</p>
-<p>Further reading:</p>
-<blockquote>
-<div><ul class="simple">
-<li><a class="reference external" href="https://www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge/">The case for the /usr Merge</a></li>
-<li><a class="reference external" href="https://fedoraproject.org/wiki/Features/UsrMove">Fedora</a></li>
-<li><a class="reference external" href="https://wiki.debian.org/UsrMerge">Debian</a></li>
-</ul>
-</div></blockquote>
+<div class="section" id="why-does-ping-not-work">
+<h3><a class="toc-backref" href="#id10">6.3.2. Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a><a class="headerlink" href="#why-does-ping-not-work" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ping</span></code> fails with “permission denied” or similar under Charliecloud,
+even if you’re UID 0 inside the container:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run <span class="nv">$IMG</span> -- ping <span class="m">8</span>.8.8.8
+<span class="go">PING 8.8.8.8 (8.8.8.8): 56 data bytes</span>
+<span class="go">ping: permission denied (are you root?)</span>
+<span class="gp">$</span> ch-run --uid<span class="o">=</span><span class="m">0</span> <span class="nv">$IMG</span> -- ping <span class="m">8</span>.8.8.8
+<span class="go">PING 8.8.8.8 (8.8.8.8): 56 data bytes</span>
+<span class="go">ping: permission denied (are you root?)</span>
+</pre></div>
 </div>
-<div class="section" id="ch-run-fails-with-can-t-re-mount-image-read-only">
-<h2><a class="toc-backref" href="#id7">6.7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a><a class="headerlink" href="#ch-run-fails-with-can-t-re-mount-image-read-only" title="Permalink to this headline">¶</a></h2>
-<p>Normally, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> re-mounts the image directory read-only within the
-container. This fails if the image resides on certain filesystems, such as NFS
-(see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/9">issue #9</a>). There are
-two solutions:</p>
+<p>This is because <code class="code docutils literal notranslate"><span class="pre">ping</span></code> needs a raw socket to construct the needed
+<code class="code docutils literal notranslate"><span class="pre">ICMP</span> <span class="pre">ECHO</span></code> packets, which requires capability <code class="code docutils literal notranslate"><span class="pre">CAP_NET_RAW</span></code> or
+root. Unprivileged users can normally use <code class="code docutils literal notranslate"><span class="pre">ping</span></code> because it’s a setuid
+or setcap binary: it raises privilege using the filesystem bits on the
+executable to obtain a raw socket.</p>
+<p>Under Charliecloud, there are multiple reasons <code class="code docutils literal notranslate"><span class="pre">ping</span></code> can’t get a raw
+socket. First, images are unpacked without privilege, meaning that setuid and
+setcap bits are lost. But even if you do get privilege in the container (e.g.,
+with <code class="code docutils literal notranslate"><span class="pre">--uid=0</span></code>), this only applies in the container. Charliecloud uses
+the host’s network namespace, where your unprivileged host identity applies
+and <code class="code docutils literal notranslate"><span class="pre">ping</span></code> still can’t get a raw socket.</p>
+<p>The recommended alternative is to simply try the thing you want to do, without
+testing connectivity using <code class="code docutils literal notranslate"><span class="pre">ping</span></code> first.</p>
+</div>
+<div class="section" id="why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0">
+<h3><a class="toc-backref" href="#id11">6.3.3. Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a><a class="headerlink" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0" title="Permalink to this headline">¶</a></h3>
+<p>MATLAB and some other programs want pseudo-TTY (PTY) files to be group-owned
+by <code class="code docutils literal notranslate"><span class="pre">tty</span></code>. If it’s not, Matlab will attempt to <code class="code docutils literal notranslate"><span class="pre">chown(2)</span></code> the file,
+which fails inside a container.</p>
+<p>The scenario in more detail is this. Assume you’re user <code class="code docutils literal notranslate"><span class="pre">charlie</span></code>
+(UID=1000), your primary group is <code class="code docutils literal notranslate"><span class="pre">nerds</span></code> (GID=1001), <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>
+is the PTY file in question, and its ownership is <code class="code docutils literal notranslate"><span class="pre">charlie:tty</span></code>
+(<code class="code docutils literal notranslate"><span class="pre">1000:5</span></code>), as it should be. What happens in the container by default
+is:</p>
 <ol class="arabic simple">
-<li>Unpack the image into a different filesystem, such as <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> or
-local disk. Consult your local admins for a recommendation. Note that
-<code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> is a lot faster than Lustre.</li>
-<li>Use the <code class="code docutils literal notranslate"><span class="pre">-w</span></code> switch to leave the image mounted read-write. Note that
-this has may have an impact on reproducibility (because the application can
-change the image between runs) and/or stability (if there are multiple
-application processes and one writes a file in the image that another is
-reading or writing).</li>
+<li>MATLAB <code class="code docutils literal notranslate"><span class="pre">stat(2)</span></code>s <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code> and checks the GID.</li>
+<li>This GID is <code class="code docutils literal notranslate"><span class="pre">nogroup</span></code> (65534) because <code class="code docutils literal notranslate"><span class="pre">tty</span></code> (5) is not mapped
+on the host side (and cannot be, because only one’s EGID can be mapped in
+an unprivileged user namespace).</li>
+<li>MATLAB concludes this is bad.</li>
+<li>MATLAB executes <code class="code docutils literal notranslate"><span class="pre">chown(&quot;/dev/pts/0&quot;,</span> <span class="pre">1000,</span> <span class="pre">5)</span></code>.</li>
+<li>This fails because GID 5 is not mapped on the guest side.</li>
+<li>MATLAB pukes.</li>
+</ol>
+<p>The workaround is to map your EGID of 1001 to 5 inside the container (instead
+of the default 1001:1001), i.e. <code class="code docutils literal notranslate"><span class="pre">--gid=5</span></code>. Then, step 4 succeeds because
+the call is mapped to <code class="code docutils literal notranslate"><span class="pre">chown(&quot;/dev/pts/0&quot;,</span> <span class="pre">1000,</span> <span class="pre">1001)</span></code> and MATLAB is
+happy.</p>
+</div>
+</div>
+<div class="section" id="how-do-i">
+<h2><a class="toc-backref" href="#id12">6.4. How do I …</a><a class="headerlink" href="#how-do-i" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="my-app-needs-to-write-to-var-log-run-etc">
+<h3><a class="toc-backref" href="#id13">6.4.1. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h3>
+<p>Because the image is mounted read-only by default, log files, caches, and
+other stuff cannot be written anywhere in the image. You have three options:</p>
+<ol class="arabic simple">
+<li>Configure the application to use a different directory. <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> is
+often a good choice, because it’s shared with the host and fast.</li>
+<li>Use <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands in your Dockerfile to create symlinks that point
+somewhere writeable, e.g. <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>, or <code class="code docutils literal notranslate"><span class="pre">/mnt/0</span></code> with
+<code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--bind</span></code>.</li>
+<li>Run the image read-write with <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>. Be careful that multiple
+containers do not try to write to the same files.</li>
 </ol>
 </div>
 <div class="section" id="which-specific-sudo-commands-are-needed">
-<h2><a class="toc-backref" href="#id8">6.8. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a><a class="headerlink" href="#which-specific-sudo-commands-are-needed" title="Permalink to this headline">¶</a></h2>
+<h3><a class="toc-backref" href="#id14">6.4.2. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a><a class="headerlink" href="#which-specific-sudo-commands-are-needed" title="Permalink to this headline">¶</a></h3>
 <p>For running images, <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> is not needed at all.</p>
 <p>For building images, it depends on what you would like to support. For
 example, do you want to let users build images with Docker? Do you want to let
@@ -345,11 +450,11 @@ on a case-by-case basis. (The latter includes <code class="code docutils literal
 </pre></div>
 </div>
 </div>
-<div class="section" id="openmpi-charliecloud-jobs-don-t-work">
-<h2><a class="toc-backref" href="#id9">6.9. OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-don-t-work" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="openmpi-charliecloud-jobs-dont-work">
+<h3><a class="toc-backref" href="#id15">6.4.3. OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-dont-work" title="Permalink to this headline">¶</a></h3>
 <p>MPI can be finicky. This section documents some of the problems we’ve seen.</p>
-<div class="section" id="mpirun-can-t-launch-jobs">
-<h3><a class="toc-backref" href="#id10">6.9.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a><a class="headerlink" href="#mpirun-can-t-launch-jobs" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="mpirun-cant-launch-jobs">
+<h4>6.4.3.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs<a class="headerlink" href="#mpirun-cant-launch-jobs" title="Permalink to this headline">¶</a></h4>
 <p>For example, you might see:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -np <span class="m">1</span> ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">App launch reported: 2 (out of 2) daemons - 0 (out of 1) procs</span>
@@ -360,19 +465,25 @@ on a case-by-case basis. (The latter includes <code class="code docutils literal
 builds inside and outside the container — but in our experience launching with
 <code class="code docutils literal notranslate"><span class="pre">srun</span></code> often works when <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> doesn’t, so try that.</p>
 </div>
-<div class="section" id="my-ranks-can-t-talk-to-one-another-and-i-m-told-darth-vader-has-something-to-do-with-it">
-<h3><a class="toc-backref" href="#id11">6.9.2. My ranks can’t talk to one another and I’m told Darth Vader has something to do with it</a><a class="headerlink" href="#my-ranks-can-t-talk-to-one-another-and-i-m-told-darth-vader-has-something-to-do-with-it" title="Permalink to this headline">¶</a></h3>
-<p>OpenMPI has the notion of a <em>byte transport layer</em> (BTL), which is a module
-that defines how messages are passed from one rank to another. There are many
-different BTLs.</p>
-<p>One is called <code class="code docutils literal notranslate"><span class="pre">vader</span></code>, and in OpenMPI 2.0 it enabled single-copy data
-transfers between ranks on the same node. Previously by default, and in the
-older <code class="code docutils literal notranslate"><span class="pre">sm</span></code> BTL, such messages had to be copied once into shared memory
-and a second time into the destination process. Single-copy enables the
-message to be copied directly from one rank to another. This gives significant
-performance improvements in <a class="reference external" href="https://blogs.cisco.com/performance/the-vader-shared-memory-transport-in-open-mpi-now-featuring-3-flavors-of-zero-copy">benchmarks</a>,
-though of course the real-world impact depends on the application.</p>
-<p>One manifestation of this is in the LAMMPS molecular dynamics application:</p>
+<div class="section" id="communication-between-ranks-on-the-same-node-fails">
+<h4>6.4.3.2. Communication between ranks on the same node fails<a class="headerlink" href="#communication-between-ranks-on-the-same-node-fails" title="Permalink to this headline">¶</a></h4>
+<p>OpenMPI has many ways to transfer messages between ranks. If the ranks are on
+the same node, it is faster to do these transfers using shared memory rather
+than involving the network stack. There are two ways to use shared memory.</p>
+<p>The first and older method is to use POSIX or SysV shared memory segments.
+This approach uses two copies: one from Rank A to shared memory, and a second
+from shared memory to Rank B. For example, the <code class="code docutils literal notranslate"><span class="pre">sm</span></code> <em>byte transport
+layer</em> (BTL) does this.</p>
+<p>The second and newer method is to use the <code class="code docutils literal notranslate"><span class="pre">process_vm_readv(2)</span></code> and/or
+<code class="code docutils literal notranslate"><span class="pre">process_vm_writev(2)</span></code>) system calls to transfer messages directly from
+Rank A’s virtual memory to Rank B’s. This approach is known as <em>cross-memory
+attach</em> (CMA). It gives significant performance improvements in <a class="reference external" href="https://blogs.cisco.com/performance/the-vader-shared-memory-transport-in-open-mpi-now-featuring-3-flavors-of-zero-copy">benchmarks</a>,
+though of course the real-world impact depends on the application. For
+example, the <code class="code docutils literal notranslate"><span class="pre">vader</span></code> BTL (enabled by default in OpenMPI 2.0) and
+<code class="code docutils literal notranslate"><span class="pre">psm2</span></code> <em>matching transport layer</em> (MTL) do this.</p>
+<p>The problem in Charliecloud is that the second approach does not work by
+default.</p>
+<p>We can demonstrate the problem with LAMMPS molecular dynamics application:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun --cpus-per-task <span class="m">1</span> ch-run /var/tmp/lammps_mpi -- <span class="se">\</span>
   lmp_mpi -log none -in /lammps/examples/melt/in.melt
 <span class="go">[cn002:21512] Read -1, expected 6144, errno = 1</span>
@@ -381,8 +492,8 @@ though of course the real-world impact depends on the application.</p>
 <span class="go">[... repeat thousands of times ...]</span>
 </pre></div>
 </div>
-<p>With <code class="code docutils literal notranslate"><span class="pre">strace</span></code>, one can isolate the problem to the system call
-<code class="code docutils literal notranslate"><span class="pre">process_vm_readv(2)</span></code> (and perhaps also <code class="code docutils literal notranslate"><span class="pre">process_vm_writev(2)</span></code>):</p>
+<p>With <code class="code docutils literal notranslate"><span class="pre">strace(1)</span></code>, one can isolate the problem to the system call noted
+above:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">process_vm_readv(...) = -1 EPERM (Operation not permitted)</span>
 <span class="go">write(33, &quot;[cn001:27673] Read -1, expected 6&quot;..., 48) = 48</span>
 </pre></div>
@@ -395,40 +506,33 @@ require anything special in Charliecloud.)</p>
 <p>This problem is not specific to containers; for example, many settings of
 kernels with <a class="reference external" href="https://www.kernel.org/doc/Documentation/security/Yama.txt">YAMA</a> enabled will
 similarly disallow this access.</p>
-<p>Thus, <code class="code docutils literal notranslate"><span class="pre">vader</span></code> CMA does not currently work in Charliecloud by default. So
-what can you do?</p>
+<p>So what can you do? There are a few options:</p>
 <ul>
-<li><p class="first">The easiest thing is to simply turn off single-copy. For most applications,
-we suspect the performance impact will be minimal, but you should of course
-evaluate that yourself. To do so, either set an environment variable:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export OMPI_MCA_btl_vader_single_copy_mechanism=none</span>
+<li><p class="first">We recommend simply using the <code class="code docutils literal notranslate"><span class="pre">--join</span></code> family of arguments to
+<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>. This puts a group of <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> peers in the same
+namespaces; then, the system calls work. See the <a class="reference internal" href="command-usage.html#man-ch-run"><span class="std std-ref">ch-run</span></a> man page
+for details.</p>
+</li>
+<li><p class="first">You can also sometimes turn off single-copy. For example, for <code class="code docutils literal notranslate"><span class="pre">vader</span></code>,
+set the MCA variable <code class="code docutils literal notranslate"><span class="pre">btl_vader_single_copy_mechanism</span></code> to
+<code class="code docutils literal notranslate"><span class="pre">none</span></code>, e.g. with an environment variable:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none
 </pre></div>
 </div>
-<p>or add an argument to <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun --mca btl_vader_single_copy_mechanism none ...
-</pre></div>
-</div>
+<p><code class="code docutils literal notranslate"><span class="pre">psm2</span></code> does not let you turn off CMA, but it does fall back to
+two-copy if CMA doesn’t work. However, this fallback crashed when we tried
+it.</p>
 </li>
 <li><p class="first">The kernel module <a class="reference external" href="https://github.com/hjelmn/xpmem/tree/master/kernel">XPMEM</a> enables a different
 single-copy approach. We have not yet tried this, and the module needs to be
 evaluated for user namespace safety, but it’s quite a bit faster than CMA on
 benchmarks.</p>
 </li>
-<li><p class="first">Wait. We are in communication with the OpenMPI developers on this, and they
-may implement a fallback mechanism to keep your application working rather
-than failing. This would, however, have the same performance impact as the
-first approach.</p>
-</li>
-<li><p class="first">Heroics. With sufficient shell voodoo, one could get all the ranks into the
-same user namespace, at which point the problem goes away.</p>
-</li>
 </ul>
-<p>We are tracking this problem in <a class="reference external" href="https://github.com/hpc/charliecloud/issues/128">issue #128</a>. It is possible that we can
-do something in Charliecloud to make it work, but we don’t know yet.</p>
 </div>
 </div>
 <div class="section" id="how-do-i-run-x11-apps">
-<h2><a class="toc-backref" href="#id12">6.10. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h2>
+<h3><a class="toc-backref" href="#id16">6.4.4. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
 <p>X11 applications should “just work”. For example, try this Dockerfile:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
@@ -442,6 +546,63 @@ do something in Charliecloud to make it work, but we don’t know yet.</p>
 <p>should pop an xterm.</p>
 <p>If your X11 application doesn’t work, please file an issue so we can
 figure out why.</p>
+</div>
+<div class="section" id="how-do-i-create-a-tarball-compatible-with-charliecloud">
+<h3><a class="toc-backref" href="#id17">6.4.5. How do I create a tarball compatible with Charliecloud?</a><a class="headerlink" href="#how-do-i-create-a-tarball-compatible-with-charliecloud" title="Permalink to this headline">¶</a></h3>
+<p>In contrast with best practices for source code, Charliecloud expects an image
+tarball to have either no top-level directory or a top-level directory that is
+exactly <code class="code docutils literal notranslate"><span class="pre">.</span></code> (dot). This is inherited from the format of <code class="code docutils literal notranslate"><span class="pre">docker</span>
+<span class="pre">export</span></code> tarballs. If you’re creating tarballs by other means, you may run into
+this issue.</p>
+<p>For example, let’s try to re-pack the <code class="code docutils literal notranslate"><span class="pre">chtest</span></code> image directory. This
+fails with a rather opaque error message.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> <span class="nv">$CH_TEST_IMGDIR</span>
+<span class="gp">$</span> tar czf chtest2.tar.gz chtest
+<span class="gp">$</span> tar tf chtest2.tar.gz <span class="p">|</span> head
+<span class="go">chtest/</span>
+<span class="go">chtest/var/</span>
+<span class="go">chtest/var/run/</span>
+<span class="go">chtest/var/empty/</span>
+<span class="go">chtest/var/spool/</span>
+<span class="go">chtest/var/spool/cron/</span>
+<span class="go">chtest/var/spool/cron/crontabs</span>
+<span class="go">chtest/var/opt/</span>
+<span class="go">chtest/var/local/</span>
+<span class="go">chtest/var/log/</span>
+<span class="gp">$</span> ch-tar2dir chtest2.tar.gz .
+<span class="gp">$</span> ls chtest2
+<span class="go">chtest  dev  mnt  WEIRD_AL_YANKOVIC</span>
+<span class="gp">$</span> ch-run ./chtest2 -- <span class="nb">echo</span> hello
+<span class="go">ch-run[28780]: can&#39;t bind /etc/passwd to /var/tmp/images/chtest2/etc/passwd: No such file or directory (charliecloud.c:132 2)</span>
+</pre></div>
+</div>
+<p>The workaround is to create the tarball from within the image directory. (If
+you do this immediately after the above, you’ll need to remove the
+<code class="code docutils literal notranslate"><span class="pre">chtest2</span></code> directory first.)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch <span class="nv">$CH_TEST_IMGDIR</span>/chtest
+<span class="gp">$</span> tar czf ../chtest2.tar.gz .
+<span class="gp">$</span> <span class="nb">cd</span> ..
+<span class="gp">$</span> tar tf chtest2.tar.gz <span class="p">|</span> head
+<span class="go">./</span>
+<span class="go">./var/</span>
+<span class="go">./var/run/</span>
+<span class="go">./var/empty/</span>
+<span class="go">./var/spool/</span>
+<span class="go">./var/spool/cron/</span>
+<span class="go">./var/spool/cron/crontabs</span>
+<span class="go">./var/opt/</span>
+<span class="go">./var/local/</span>
+<span class="go">./var/log/</span>
+<span class="gp">$</span> ch-tar2dir chtest2.tar.gz .
+<span class="gp">$</span> ls chtest2
+<span class="go">bin  etc   lib    mnt   root  sbin  sys   tmp  var</span>
+<span class="go">dev  home  media  proc  run   srv   test  usr  WEIRD_AL_YANKOVIC</span>
+<span class="gp">$</span> ch-run ./chtest2 -- <span class="nb">echo</span> hello
+<span class="go">hello</span>
+</pre></div>
+</div>
+<p>We are working on usability enhancements for this process.</p>
+</div>
 </div>
 </div>
 
@@ -486,7 +647,7 @@ figure out why.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.5',
+            VERSION:'0.9.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

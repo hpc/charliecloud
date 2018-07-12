@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Testing &mdash; Charliecloud 0.2.5 documentation</title>
+  <title>2. Testing &mdash; Charliecloud 0.9.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.2.5 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.9.0 documentation" href="index.html"/>
         <link rel="next" title="3. Tutorial" href="tutorial.html"/>
         <link rel="prev" title="1. Installation" href="install.html"/> 
 
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                7294994
+                ef881ca
               </div>
             
           
@@ -311,9 +311,12 @@ test suites from the example’s perspective, so be patient.</p>
 variable <code class="code docutils literal notranslate"><span class="pre">CH_TEST_SCOPE</span></code>. The valid values are:</p>
 <dl class="docutils">
 <dt><code class="code docutils literal notranslate"><span class="pre">quick</span></code></dt>
-<dd>This tests the most important subset of Charliecloud functionality. Even
-with a cold Docker cache, <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code> should finish under 60 seconds.
-It’s handy for development.</dd>
+<dd><p class="first">This tests the most important subset of Charliecloud functionality. With a
+hot Docker cache, <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code> should finish in under 30 seconds. It’s
+handy for development.</p>
+<p class="last"><strong>Note:</strong> The <code class="code docutils literal notranslate"><span class="pre">quick</span></code> scope uses the results of a prior successful
+completion of the <code class="code docutils literal notranslate"><span class="pre">standard</span></code> scope.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">standard</span></code></dt>
 <dd><p class="first">This adds testing of the remaining Charliecloud functionality and a
 selection of the more important examples. It should finish in 5–10 minutes.</p>
@@ -399,7 +402,7 @@ manually building and unpacking it.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.5',
+            VERSION:'0.9.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

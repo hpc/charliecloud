@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Charliecloud command reference &mdash; Charliecloud 0.2.5 documentation</title>
+  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.0 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.2.5 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.9.0 documentation" href="index.html"/>
         <link rel="next" title="5. VirtualBox appliance" href="virtualbox.html"/>
         <link rel="prev" title="3. Tutorial" href="tutorial.html"/> 
 
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                7294994
+                ef881ca
               </div>
             
           
@@ -101,7 +101,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#ch-build">4.1. ch-build</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#synopsis">4.1.1. Synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#description">4.1.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#examples">4.1.3. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#improvements-over-plain-docker-build">4.1.3. Improvements over plain <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">4.1.4. Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ch-build2dir">4.2. ch-build2dir</a><ul>
@@ -134,7 +135,8 @@
 <li class="toctree-l3"><a class="reference internal" href="#id11">4.6.2. Description</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#host-files-and-directories-available-in-container-via-bind-mounts">4.6.3. Host files and directories available in container via bind mounts</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">4.6.4. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id12">4.6.5. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#environment-variables">4.6.5. Environment variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">4.6.6. Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ch-ssh">4.7. ch-ssh</a><ul>
@@ -231,8 +233,8 @@ behaviors.</p>
 <div class="section" id="description">
 <h3>4.1.2. Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h3>
 <p>Build a Docker image named <code class="code docutils literal notranslate"><span class="pre">TAG</span></code> described by Dockerfile
-<code class="code docutils literal notranslate"><span class="pre">./Dockerfile</span></code> or as specified. Pass the HTTP proxy environment
-variables through with <code class="code docutils literal notranslate"><span class="pre">--build-arg</span></code>.</p>
+<code class="code docutils literal notranslate"><span class="pre">./Dockerfile</span></code> or as specified. This is a wrapper for <code class="code docutils literal notranslate"><span class="pre">docker</span>
+<span class="pre">build</span></code> with various enhancements.</p>
 <p>Sudo privileges are required to run the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> command.</p>
 <p>Arguments:</p>
 <blockquote>
@@ -250,8 +252,24 @@ variables through with <code class="code docutils literal notranslate"><span cla
 <p>Additional arguments are accepted and passed unchanged to <code class="code docutils literal notranslate"><span class="pre">docker</span>
 <span class="pre">build</span></code>.</p>
 </div>
+<div class="section" id="improvements-over-plain-docker-build">
+<h3>4.1.3. Improvements over plain <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code><a class="headerlink" href="#improvements-over-plain-docker-build" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-build</span></code> adds the following features to <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code>:</p>
+<ul class="simple">
+<li>If there is a file <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> in the current working directory and
+<code class="code docutils literal notranslate"><span class="pre">-f</span></code> is not already specified, add <code class="code docutils literal notranslate"><span class="pre">-f</span> <span class="pre">$PWD/Dockerfile</span></code>.</li>
+<li>Pass the HTTP proxy environment variables through with <code class="code docutils literal notranslate"><span class="pre">--build-arg</span></code>.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The suffix <code class="code docutils literal notranslate"><span class="pre">:latest</span></code> is somewhat misleading, as neither
+<code class="code docutils literal notranslate"><span class="pre">ch-build</span></code> nor bare <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code> will notice if the base
+<code class="code docutils literal notranslate"><span class="pre">FROM</span></code> image has been updated. Use <code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code> to make sure
+you have the latest base image, at the cost of rebuilding every layer.</p>
+</div>
+</div>
 <div class="section" id="examples">
-<h3>4.1.3. Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<h3>4.1.4. Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <p>Create a Docker image tagged <code class="code docutils literal notranslate"><span class="pre">foo</span></code> and specified by the file
 <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> located in the current working directory. Use <code class="code docutils literal notranslate"><span class="pre">/bar</span></code>
 as the Docker context directory:</p>
@@ -400,10 +418,16 @@ a simple file copy, but that may change in the future.</p>
 <p>By default, file paths that contain the string <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> are assumed to be
 executables and are placed in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code> within the container. File
 paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/lib</span></code> or <code class="code docutils literal notranslate"><span class="pre">.so</span></code> are assumed to be
-shared libraries and are placed in <code class="code docutils literal notranslate"><span class="pre">/usr/lib</span></code>. Other files are placed in
-the directory specified by <code class="code docutils literal notranslate"><span class="pre">--dest</span></code>.</p>
-<p>If any of the files appear to be shared libraries, run <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> inside
-the container (using <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>) after injection.</p>
+shared libraries and are placed in the first-priority directory reported by
+<code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code>. Other files are placed in the directory specified by
+<code class="code docutils literal notranslate"><span class="pre">--dest</span></code>.</p>
+<p>You can see where shared libraries will go with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run <span class="nv">$IMG</span> -- ldconfig -v <span class="m">2</span>&gt;/dev/null <span class="p">|</span> egrep <span class="s1">&#39;^/&#39;</span> <span class="p">|</span> cut -d: -f1 <span class="p">|</span> head -1
+<span class="go">/usr/local/lib</span>
+</pre></div>
+</div>
+<p>If any shared libraries are injected, run <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> inside the
+container (using <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>) after injection.</p>
 </div>
 <div class="section" id="options">
 <h3>4.5.3. Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h3>
@@ -501,7 +525,7 @@ then run <code class="code docutils literal notranslate"><span class="pre">ldcon
 </div>
 </div>
 <div class="section" id="ch-run">
-<h2>4.6. ch-run<a class="headerlink" href="#ch-run" title="Permalink to this headline">¶</a></h2>
+<span id="man-ch-run"></span><h2>4.6. ch-run<a class="headerlink" href="#ch-run" title="Permalink to this headline">¶</a></h2>
 <p>Run a command in a Charliecloud container.</p>
 <div class="section" id="id10">
 <h3>4.6.1. Synopsis<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
@@ -640,8 +664,38 @@ as files in <code class="code docutils literal notranslate"><span class="pre">/d
 <code class="code docutils literal notranslate"><span class="pre">--bind</span></code>, will be ignored in favor of what was given to the winner.</li>
 </ul>
 </div>
+<div class="section" id="environment-variables">
+<h3>4.6.5. Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> generally tries to leave environment variables unchanged, but
+in some cases, guests can be significantly broken unless environment variables
+are tweaked. This section lists those changes.</p>
+<ul>
+<li><p class="first"><code class="code docutils literal notranslate"><span class="pre">$HOME</span></code>: If the path to your home directory is not <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>
+on the host, then an inherited <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> will be incorrect inside the
+guest. This confuses some software, such as Spack.</p>
+<p>Thus, we change <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> to <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>, unless
+<code class="code docutils literal notranslate"><span class="pre">--no-home</span></code> is specified, in which case it is left unchanged.</p>
+</li>
+<li><p class="first"><code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>: Newer Linux distributions replace some root-level
+directories, such as <code class="code docutils literal notranslate"><span class="pre">/bin</span></code>, with symlinks to their counterparts in
+<code class="code docutils literal notranslate"><span class="pre">/usr</span></code>.</p>
+<p>Some of these distributions (e.g., Fedora 24) have also dropped <code class="code docutils literal notranslate"><span class="pre">/bin</span></code>
+from the default <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>. This is a problem when the guest OS does
+<em>not</em> have a merged <code class="code docutils literal notranslate"><span class="pre">/usr</span></code> (e.g., Debian 8 “Jessie”). Thus, we add
+<code class="code docutils literal notranslate"><span class="pre">/bin</span></code> to <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code> if it’s not already present.</p>
+<p>Further reading:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="https://www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge/">The case for the /usr Merge</a></li>
+<li><a class="reference external" href="https://fedoraproject.org/wiki/Features/UsrMove">Fedora</a></li>
+<li><a class="reference external" href="https://wiki.debian.org/UsrMerge">Debian</a></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
 <div class="section" id="id12">
-<h3>4.6.5. Examples<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<h3>4.6.6. Examples<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
 <p>Run the command <code class="code docutils literal notranslate"><span class="pre">echo</span> <span class="pre">hello</span></code> inside a Charliecloud container using the
 unpacked image at <code class="code docutils literal notranslate"><span class="pre">/data/foo</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/foo -- <span class="nb">echo</span> hello
@@ -788,7 +842,7 @@ your site admin for a suitable location.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.2.5',
+            VERSION:'0.9.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
