@@ -135,5 +135,6 @@ setup () {
 
 @test 'signal process outside container' {
     # Send a signal to a process we shouldn't be able to signal.
+    [[ $(pgrep -c getty) -eq 0 ]] && skip 'no getty process found'
     ch-run $UID_ARGS $GID_ARGS $CHTEST_IMG -- /test/signal_out.py
 }

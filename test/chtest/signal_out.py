@@ -24,10 +24,10 @@ import signal
 import subprocess
 import sys
 
-pdata = subprocess.check_output(["pgrep", "-nl", "getty"])
-
-if (len(pdata) == 0):
-   print("ERROR\tno getty process found")
+try:
+   pdata = subprocess.check_output(["pgrep", "-nl", "getty"])
+except subprocess.CalledProcessError:
+   print("ERROR\tpgrep failed")
    sys.exit(1)
 
 pid = int(pdata.split()[0])
