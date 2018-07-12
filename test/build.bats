@@ -13,16 +13,12 @@ load common
 }
 
 @test 'version number seems sane' {
+    echo "version: $CH_VERSION"
     [[ $(echo $CH_VERSION | wc -l) -eq 1 ]]  # one line
     [[ $CH_VERSION =~ ^0\.[0-9]+\.[0-9]+ ]]  # starts with a number triplet
     # matches VERSION.full if available
     if [[ -e $CH_BIN/../VERSION.full ]]; then
         diff -u <(echo $CH_VERSION) $CH_BIN/../VERSION.full
-    fi
-    # matches Git version if available
-    if ( git rev-parse --is-inside-work-tree 2>&1 > /dev/null ); then
-        git_hash=$(git rev-parse --short HEAD)
-        [[ $CH_VERSION =~ $git_hash ]]
     fi
 }
 
