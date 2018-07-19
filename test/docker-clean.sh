@@ -10,7 +10,7 @@ while true; do
     cs_ct=$($cmd | wc -l)
     echo "found $cs_ct containers"
     [[ 0 -eq $cs_ct ]] && break
-    sudo docker rm $($cmd)
+    sudo docker rm "$($cmd)"
 done
 
 # Untag all images
@@ -19,7 +19,7 @@ while true; do
     tag_ct=$($cmd | wc -l)
     echo "found $tag_ct tagged images"
     [[ 0 -eq $tag_ct ]] && break
-    sudo docker rmi -f --no-prune $($cmd)
+    sudo docker rmi -f --no-prune "$($cmd)"
 done
 
 # If --all specified, remove all images.
@@ -29,6 +29,6 @@ if [[ $1 = --all ]]; then
         img_ct=$($cmd | wc -l)
         echo "found $img_ct images"
         [[ 0 -eq $img_ct ]] && break
-        sudo docker rmi -f $($cmd)
+        sudo docker rmi -f "$($cmd)"
     done
 fi

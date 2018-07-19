@@ -1,10 +1,10 @@
 #!/bin/sh
 
 LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. ${LIBEXEC}/base.sh
+. "${LIBEXEC}/base.sh"
 
-usage () {
-    cat 1>&2 <<EOF
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
 Inject files from the host into an image directory.
 
 Usage:
@@ -25,8 +25,7 @@ Options:
   -v, --verbose    list the injected files
       --version    print version and exit
 EOF
-    exit ${1:-1}
-}
+)
 
 DEST_DEFAULT=
 IMAGE=
@@ -38,7 +37,9 @@ FOUND_LIBS_P=
 LIB_DEST=
 
 debug () {
-    [ $VERBOSE ] && printf "%s\n" "$1" 1>&2
+    if [ "$VERBOSE" ]; then
+        printf '%s\n' "$1" 1>&2
+    fi
 }
 
 ensure_nonempty () {
@@ -46,13 +47,15 @@ ensure_nonempty () {
 }
 
 fatal () {
-    printf "ch-fromhost: %s\n" "$1" 1>&2
+    printf 'ch-fromhost: %s\n' "$1" 1>&2
     exit 1
 }
 
 info () {
-    printf "ch-fromhost: %s\n" "$1" 1>&2
+    printf 'ch-fromhost: %s\n' "$1" 1>&2
 }
+
+parse_basic_args "$@"
 
 while [ $# -gt 0 ]; do
     OPT="$1"; shift
@@ -60,8 +63,7 @@ while [ $# -gt 0 ]; do
     case $OPT in
         -c|--cmd)
             ensure_nonempty --cmd "$1"
-            OUT=$($1)
-            [ $? -eq 0 ] || fatal "command failed: $1"
+            OUT=$($1) || fatal "command failed: $1"
             shift
             ;;
         -d|--dest)
@@ -71,26 +73,18 @@ while [ $# -gt 0 ]; do
             ;;
         -f|--file)
             ensure_nonempty --file "$1"
-            OUT=$(cat "$1")
-            [ $? -eq 0 ] || fatal "cannot read file: $1"
+            OUT=$(cat "$1") || fatal "cannot read file: $1"
             shift
-            ;;
-        -h|--help)
-            usage 0
             ;;
         --no-infer)
             INFER=
             ;;
         --nvidia)
-            OUT=$(nvidia-container-cli list --binaries --libraries)
-            [ $? -eq 0 ] || fatal "nvidia-container-cli failed; does this host have GPUs?"
+               OUT=$(nvidia-container-cli list --binaries --libraries) \
+            || fatal "nvidia-container-cli failed; does this host have GPUs?"
             ;;
         -v|--verbose)
             VERBOSE=yes
-            ;;
-        --version)
-            version
-            exit 0
             ;;
         -*)
             info "invalid option: $OPT"
@@ -98,8 +92,8 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             ensure_nonempty "image path" "$OPT"
-            [ -z $IMAGE ] || fatal "duplicate image path: $OPT"
-            [ -d $OPT ] || fatal "image not a directory: $OPT"
+            [ -z "$IMAGE" ] || fatal "duplicate image path: $OPT"
+            [ -d "$OPT" ] || fatal "image not a directory: $OPT"
             IMAGE="$OPT"
             ;;
     esac
@@ -127,9 +121,10 @@ if [ $INFER ]; then
         # searches, so that we can override (or overwrite) any of the same
         # library that may already be in the image.
         debug "asking ldconfig for shared library path"
-        $CH_BIN/ch-run -w $IMAGE -- /sbin/ldconfig  # cache may not be present
-        LIB_DEST=$(  $CH_BIN/ch-run $IMAGE -- /sbin/ldconfig -v 2> /dev/null \
-                   | egrep '^/' | cut -d: -f1 | head -1)
+        "$CH_BIN"/ch-run -w "$IMAGE" -- /sbin/ldconfig  # cache maybe absent
+        LIB_DEST=$(  "$CH_BIN"/ch-run "$IMAGE" -- \
+                                      /sbin/ldconfig -v 2> /dev/null \
+                   | grep -E '^/' | cut -d: -f1 | head -1)
         [ -z "${LIB_DEST%%/*}" ] || fatal "bad path from ldconfig: $LIB_DEST"
         debug "shared library destination: $LIB_DEST"
     else
@@ -158,11 +153,11 @@ for FILE in $FOUND_FILES; do
         esac
     fi
     debug "  $TYPE_: $FILE -> $DEST"
-    [ $DEST ] || fatal "no destination for: $FILE"
+    [ "$DEST" ] || fatal "no destination for: $FILE"
     [ -z "${DEST%%/*}" ] || fatal "not an absolute path: $DEST"
-    [ -d $IMAGE$DEST ] || fatal "not a directory: $IMAGE$DEST"
-    cp --dereference --preserve=all "$FILE" "$IMAGE/$DEST"
-    [ $? -eq 0 ] || fatal "cannot inject: $FILE"
+    [ -d "$IMAGE$DEST" ] || fatal "not a directory: $IMAGE$DEST"
+       cp --dereference --preserve=all "$FILE" "$IMAGE/$DEST" \
+    || fatal "cannot inject: $FILE"
 done
 IFS="$OLD_IFS"
 
@@ -170,7 +165,7 @@ IFS="$OLD_IFS"
 
 if [ $FOUND_LIBS_P ] && [ $INFER ]; then
     debug "found shared library, running ldconfig"
-    $CH_BIN/ch-run -w $IMAGE -- /sbin/ldconfig
+    "$CH_BIN"/ch-run -w "$IMAGE" -- /sbin/ldconfig
 else
     debug "no shared libraries found"
 fi

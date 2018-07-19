@@ -1,28 +1,21 @@
 #!/bin/sh
 
 LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. ${LIBEXEC}/base.sh
+. "${LIBEXEC}/base.sh"
 
-usage () {
-    cat 1>&2 <<EOF
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
 Wrapper for "docker build" with various enhancements.
 
 Usage:
 
-  $ $(basename $0) -t TAG [ARGS ...] CONTEXT
+  $ $(basename "$0") -t TAG [ARGS ...] CONTEXT
 
 ARGS are passed unchanged to "docker build" after the workaround arguments.
 EOF
-    exit ${1:-1}
-}
+)
 
-if [ "$1" = "--help" ]; then
-    usage 0
-fi
-if [ "$1" = "--version" ]; then
-    version
-    exit 0
-fi
+parse_basic_args "$@"
 
 dockerfile=
 if [ -f Dockerfile ]; then
@@ -37,11 +30,12 @@ if [ -f Dockerfile ]; then
 fi
 
 # Coordinate this list with test "build.bats/proxy variables".
-sudo docker build --build-arg HTTP_PROXY=$HTTP_PROXY \
-                  --build-arg HTTPS_PROXY=$HTTPS_PROXY \
-                  --build-arg NO_PROXY=$NO_PROXY \
-                  --build-arg http_proxy=$http_proxy \
-                  --build-arg https_proxy=$https_proxy \
-                  --build-arg no_proxy=$no_proxy \
-                  $dockerfile \
-                  "$@"
+# shellcheck disable=SC2154
+docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
+              --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+              --build-arg NO_PROXY="$NO_PROXY" \
+              --build-arg http_proxy="$http_proxy" \
+              --build-arg https_proxy="$https_proxy" \
+              --build-arg no_proxy="$no_proxy" \
+              $dockerfile \
+              "$@"

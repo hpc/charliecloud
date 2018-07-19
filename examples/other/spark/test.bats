@@ -28,7 +28,7 @@ setup () {
         # guess and shouldn't be relied on for real code, but hopefully it
         # works for testing.
         MASTER_IP=$(  ip -o -f inet addr show \
-                    | fgrep 'scope global' \
+                    | grep -F 'scope global' \
                     | tail -1 \
                     | sed -r 's/^.+inet ([0-9.]+).+/\1/')
         # Spark workers require "mpirun". See issue #156.
@@ -41,7 +41,7 @@ setup () {
         PERNODE_PIDFILE=
     fi
     MASTER_URL="spark://$MASTER_IP:7077"
-    MASTER_LOG=$SPARK_LOG/*master.Master*.out
+    MASTER_LOG="$SPARK_LOG/*master.Master*.out"
 }
 
 @test "$EXAMPLE_TAG/configure" {
@@ -51,16 +51,16 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = 'u=rwx,g=,o=' ]]
     # create config
-    mkdir -p $SPARK_CONFIG
-    tee <<EOF > $SPARK_CONFIG/spark-env.sh
+    mkdir -p "$SPARK_CONFIG"
+    tee <<EOF > "$SPARK_CONFIG/spark-env.sh"
 SPARK_LOCAL_DIRS=/tmp/spark
 SPARK_LOG_DIR=$SPARK_LOG
 SPARK_WORKER_DIR=/tmp/spark
 SPARK_LOCAL_IP=127.0.0.1
 SPARK_MASTER_HOST=$MASTER_IP
 EOF
-    MY_SECRET=$(cat /dev/urandom | tr -dc 'a-z' | head -c 48)
-    tee <<EOF > $SPARK_CONFIG/spark-defaults.conf
+    MY_SECRET=$(cat /dev/urandom | tr -dc '0-9a-f' | head -c 48)
+    tee <<EOF > "$SPARK_CONFIG/spark-defaults.conf"
 spark.authenticate.true
 spark.authenticate.secret $MY_SECRET
 EOF
@@ -68,17 +68,20 @@ EOF
 
 @test "$EXAMPLE_TAG/start" {
     # remove old master logs so new one has predictable name
-    rm -Rf --one-file-system $SPARKLOG
+    rm -Rf --one-file-system "$SPARK_LOG"
     # start the master
-    ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/start-master.sh
+    ch-run -b "$SPARK_CONFIG" "$SPARK_IMG" -- /spark/sbin/start-master.sh
     sleep 7
+    # shellcheck disable=SC2086
     cat $MASTER_LOG
-    fgrep -q 'New state: ALIVE' $MASTER_LOG
+    # shellcheck disable=SC2086
+    grep -Fq 'New state: ALIVE' $MASTER_LOG
     # start the workers
-    $PERNODE ch-run -b $SPARK_CONFIG $SPARK_IMG -- \
-                   /spark/sbin/start-slave.sh $MASTER_URL &
+    # shellcheck disable=SC2086
+    $PERNODE ch-run -b "$SPARK_CONFIG" "$SPARK_IMG" -- \
+                   /spark/sbin/start-slave.sh "$MASTER_URL" &
     if [[ -n $PERNODE ]]; then
-        echo $! > $PERNODE_PIDFILE
+        echo $! > "$PERNODE_PIDFILE"
     fi
     sleep 7
 }
@@ -91,20 +94,21 @@ EOF
     # tells the workers to put their web interfaces on localhost. They still
     # connect to the master and get work OK.
     [[ -z $CHTEST_MULTINODE ]] && SLURM_NNODES=1
-    worker_ct=$(fgrep -c 'Registering worker' $MASTER_LOG || true)
+    # shellcheck disable=SC2086
+    worker_ct=$(grep -Fc 'Registering worker' $MASTER_LOG || true)
     echo "node count: $SLURM_NNODES; worker count: $worker_ct"
-    [[ $worker_ct -eq $SLURM_NNODES ]]
+    [[ $worker_ct -eq "$SLURM_NNODES" ]]
 }
 
 @test "$EXAMPLE_TAG/pi" {
-   run ch-run -b $SPARK_CONFIG $SPARK_IMG -- \
-               /spark/bin/spark-submit --master $MASTER_URL \
+   run ch-run -b "$SPARK_CONFIG" "$SPARK_IMG" -- \
+               /spark/bin/spark-submit --master "$MASTER_URL" \
                /spark/examples/src/main/python/pi.py 64
     echo "$output"
     [[ $status -eq 0 ]]
     # This computation converges quite slowly, so we only ask for two correct
     # digits of pi.
-    [[ $output =~ 'Pi is roughly 3.1' ]]
+    [[ $output = *'Pi is roughly 3.1'* ]]
 }
 
 @test "$EXAMPLE_TAG/stop" {
@@ -114,14 +118,15 @@ EOF
     # kills all the processes started by mpirun too -- except on the node
     # where we ran mpirun.
     if [[ -n $CHTEST_MULTINODE ]]; then
-        kill -9 $(cat $PERNODE_PIDFILE)
+        kill -9 "$(cat "$PERNODE_PIDFILE")"
     fi
-    ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-slave.sh
-    ch-run -b $SPARK_CONFIG $SPARK_IMG -- /spark/sbin/stop-master.sh
+    ch-run -b "$SPARK_CONFIG" "$SPARK_IMG" -- /spark/sbin/stop-slave.sh
+    ch-run -b "$SPARK_CONFIG" "$SPARK_IMG" -- /spark/sbin/stop-master.sh
     sleep 2
     # Any Spark processes left?
     # (Use egrep instead of fgrep so we don't match the grep process.)
-    $PERNODE ps aux | ( ! egrep [o]rg\.apache\.spark\.deploy )
+    # shellcheck disable=SC2086
+    $PERNODE ps aux | ( ! grep -E '[o]rg\.apache\.spark\.deploy' )
 }
 
 @test "$EXAMPLE_TAG/hang" {

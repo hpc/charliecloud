@@ -1,8 +1,8 @@
 docker_tag_p () {
-    printf 'image tag %s ... ' $1
-    hash_=$(sudo docker images -q $1 | sort -u)
+    printf 'image tag %s ... ' "$1"
+    hash_=$(sudo docker images -q "$1" | sort -u)
     if [[ $hash_ ]]; then
-        echo $hash_
+        echo "$hash_"
         return 0
     else
         echo 'not found'
@@ -11,23 +11,24 @@ docker_tag_p () {
 }
 
 docker_ok () {
-    docker_tag_p $1
-    docker_tag_p $1:latest
-    docker_tag_p $1:$(ch-run --version |& tr '~+' '--')
+    docker_tag_p "$1"
+    docker_tag_p "$1:latest"
+    docker_tag_p "$1:$(ch-run --version |& tr '~+' '--')"
 }
 
 env_require () {
     if [[ -z ${!1} ]]; then
-        printf "\$$1 is empty or not set\n\n" >&2
+        # shellcheck disable=SC2016
+        printf '$1 is empty or not set\n\n' >&2
         exit 1
     fi
 }
 
 image_ok () {
-    ls -ld $1 $1/WEIRD_AL_YANKOVIC || true
-    test -d $1
-    ls -ld $1 || true
-    byte_ct=$(du -s -B1 $1 | cut -f1)
+    ls -ld "$1" "$1/WEIRD_AL_YANKOVIC" || true
+    test -d "$1"
+    ls -ld "$1" || true
+    byte_ct=$(du -s -B1 "$1" | cut -f1)
     echo "$byte_ct"
     [[ $byte_ct -ge 3145728 ]]  # image is at least 3MiB
 }
@@ -54,11 +55,11 @@ need_docker () {
     # that tag as missing prerequisite sentinel file.
     PQ=$TARDIR/$1.pq_missing
     if [[ $PQ ]]; then
-        rm -f $PQ
+        rm -f "$PQ"
     fi
     if [[ $CH_TEST_SKIP_DOCKER ]]; then
         if [[ $PQ ]]; then
-            touch $PQ
+            touch "$PQ"
         fi
         skip 'Docker not found or user-skipped'
     fi
@@ -93,9 +94,9 @@ scope () {
 }
 
 tarball_ok () {
-    ls -ld $1 || true
-    test -f $1
-    test -s $1
+    ls -ld "$1" || true
+    test -f "$1"
+    test -s "$1"
 }
 
 # Predictable sorting and collation
@@ -107,10 +108,13 @@ export LC_ALL=C
 #
 # Note that sudo resets $PATH, so if you want to run any Charliecloud stuff
 # under sudo, you must use an absolute path.
-CH_BIN="$(cd "$(dirname ${BASH_SOURCE[0]})/bin" && pwd)"
+CH_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")/bin" && pwd)"
 CH_BIN="$(readlink -f "$CH_BIN")"
 export PATH=$CH_BIN:$PATH
-CH_RUN_FILE="$(which ch-run)"
+# shellcheck disable=SC2034
+CH_RUN_FILE=$(command -v ch-run)
+# shellcheck disable=SC2034
+CH_LIBEXEC=$(ch-build --libexec-path)
 if [[ ! -x $CH_BIN/ch-run ]]; then
     printf 'Must build with "make" before running tests.\n\n' >&2
     exit 1
@@ -118,15 +122,16 @@ fi
 
 # Charliecloud version.
 CH_VERSION=$(ch-run --version 2>&1)
-CH_VERSION_DOCKER=$(echo $CH_VERSION | tr '~+' '--')
+# shellcheck disable=SC2034
+CH_VERSION_DOCKER=$(echo "$CH_VERSION" | tr '~+' '--')
 
 # User-private temporary directory in case multiple users are running the
 # tests simultaenously.
 btnew=$BATS_TMPDIR/bats.tmp.$USER
-mkdir -p $btnew
-chmod 700 $btnew
+mkdir -p "$btnew"
+chmod 700 "$btnew"
 export BATS_TMPDIR=$btnew
-[[ $(stat -c '%a' $BATS_TMPDIR) = '700' ]]
+[[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
 
 # Separate directories for tarballs and images
 TARDIR=$CH_TEST_TARDIR
@@ -154,7 +159,7 @@ else
 fi
 
 # Some test variables
-EXAMPLE_TAG=$(basename $BATS_TEST_DIRNAME)
+EXAMPLE_TAG=$(basename "$BATS_TEST_DIRNAME")
 EXAMPLE_IMG=$IMGDIR/$EXAMPLE_TAG
 CHTEST_TARBALL=$TARDIR/chtest.tar.gz
 CHTEST_IMG=$IMGDIR/chtest
@@ -162,16 +167,15 @@ if [[ $SLURM_JOB_ID ]]; then
     # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
     # documentation.
     if [[ -z $SLURM_CPUS_ON_NODE ]]; then
-        SLURM_CPUS_ON_NODE=$(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f1)
+        SLURM_CPUS_ON_NODE=$(echo "$SLURM_JOB_CPUS_PER_NODE" | cut -d'(' -f1)
     fi
     CHTEST_NODES=$SLURM_JOB_NUM_NODES
     CHTEST_CORES_NODE=$SLURM_CPUS_ON_NODE
-    CHTEST_CORES_TOTAL=$(($CHTEST_CORES_NODE * $SLURM_JOB_NUM_NODES))
 else
     CHTEST_NODES=1
     CHTEST_CORES_NODE=$(getconf _NPROCESSORS_ONLN)
-    CHTEST_CORES_TOTAL=$CHTEST_CORES_NODE
 fi
+CHTEST_CORES_TOTAL=$((CHTEST_NODES * CHTEST_CORES_NODE))
 if [[ $CHTEST_MPI = mpich ]]; then
     CHTEST_MPIRUN_NP="-np $CHTEST_CORES_NODE"
 else
@@ -213,6 +217,7 @@ if [[ -z $CH_TEST_SCOPE ]]; then
 elif [[    $CH_TEST_SCOPE != quick \
         && $CH_TEST_SCOPE != standard \
         && $CH_TEST_SCOPE != full ]]; then
+    # shellcheck disable=SC2016
     printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' $CH_TEST_SCOPE >&2
     exit 1
 fi
@@ -221,6 +226,7 @@ fi
 if ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
+    # shellcheck disable=SC2034
     CHTEST_HAVE_SUDO=yes
 fi
 
@@ -234,7 +240,7 @@ if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
     exit 1
 fi
-if ( mount | fgrep -q $IMGDIR ); then
-    printf 'Something is mounted under %s.\n\n' $IMGDIR >&2
+if ( mount | grep -Fq "$IMGDIR" ); then
+    printf 'Something is mounted under %s.\n\n' "$IMGDIR" >&2
     exit 1
 fi

@@ -21,5 +21,5 @@ sudo ln -f -s /usr/local/bin/sphinx-build /usr/bin/sphinx-build
 
 # Need -d because dependencies can not be satisfied on trusty.
 # Need -fno-builtin -fPIC to hack around the broken 14.04 travis image.
-ln -s packaging/debian
+ln -s packaging/debian .
 DEB_CFLAGS_SET="-fno-builtin -fPIC" debuild -d -i -us -uc

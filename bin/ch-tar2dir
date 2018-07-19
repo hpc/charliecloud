@@ -1,28 +1,20 @@
 #!/bin/sh
 
 LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. ${LIBEXEC}/base.sh
+. "${LIBEXEC}/base.sh"
 
-usage () {
-    cat 1>&2 <<EOF
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
 Unpack a Docker export tarball into a directory.
 
 Usage:
 
-  $ $(basename $0) TARBALL DIR
+  $ $(basename "$0") TARBALL DIR
 EOF
-    exit ${1:-1}
-}
+)
 
-set -e
+parse_basic_args "$@"
 
-if [ "$1" = --help ]; then
-    usage 0
-fi
-if [ "$1" = --version ]; then
-    version
-    exit 0
-fi
 if [ "$1" = --verbose ]; then
     VERBOSE=v
     shift
@@ -36,7 +28,7 @@ NEWROOT="$2/$(basename "${TARBALL%.tar.gz}")"
 SENTINEL=WEIRD_AL_YANKOVIC
 
 # Is the tarball a regular file (or symlink) and readable?
-if [ ! -f "$TARBALL" -o ! -r "$TARBALL" ]; then
+if [ ! -f "$TARBALL" ] || [ ! -r "$TARBALL" ]; then
     echo "can't read $TARBALL" 1>&2
     exit 1
 fi
@@ -49,7 +41,7 @@ else
        && [ -d "$NEWROOT/lib" ] \
        && [ -d "$NEWROOT/usr" ]; then
         echo "replacing existing image $NEWROOT" 1>&2
-        rm -Rf --one-file-system $NEWROOT
+        rm -Rf --one-file-system "$NEWROOT"
     else
         echo "$NEWROOT exists but does not appear to be an image" 1>&2
         exit 1
@@ -60,8 +52,9 @@ mkdir "$NEWROOT"
 echo 'This directory is a Charliecloud container image.' > "$NEWROOT/$SENTINEL"
 # Use a pipe because PV ignores arguments if it's cat rather than PV.
 SIZE=$(stat -c%s "$TARBALL")
-  PV -s $SIZE < "$TARBALL" \
-| tar x$VERBOSE -I $GZIP_CMD -C "$NEWROOT" -f - \
+  pv_ -s "$SIZE" < "$TARBALL" \
+| gzip_ -dc \
+| tar x$VERBOSE -C "$NEWROOT" -f - \
       --anchored --exclude='dev/*' --exclude='./dev/*'
 # Make all directories writeable so we can delete image later (hello, Red Hat).
 find "$NEWROOT" -type d -a ! -perm /200 -exec chmod u+w {} +

@@ -1,45 +1,37 @@
 #!/bin/sh
 
 LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. ${LIBEXEC}/base.sh
+. "${LIBEXEC}/base.sh"
 
-set -e
-#set -x
-
-usage () {
-    cat 1>&2 <<EOF
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
 Flatten a Docker image into a Charliecloud image tarball.
 
 Usage:
 
-  $ $(basename $0) IMAGE OUTDIR
+  $ $(basename "$0") IMAGE OUTDIR
 
 You must have sufficient privilege (via sudo) to run the Docker commands.
 EOF
-    exit ${1:-1}
-}
+)
 
-if [ "$1" = "--help" ]; then
-    usage 0
-fi
-if [ "$1" = "--version" ]; then
-    version
-    exit 0
-fi
+parse_basic_args "$@"
+
 if [ "$#" -ne 2 ]; then
     usage
 fi
-IMAGE=$1
-OUTDIR=$2
-TAR=$OUTDIR/$(echo $IMAGE | sed 's/\//./g').tar.gz
 
-cid=$($DOCKER create --read-only $IMAGE)
-size=$($DOCKER image inspect $IMAGE --format='{{.Size}}')
-#$DOCKER ps -af "id=$cid"
-$DOCKER export $cid | PV -s $size | $GZIP_CMD -6 > $TAR
-$DOCKER rm $cid > /dev/null
+IMAGE="$1"
+OUTDIR="$2"
+TAR="$OUTDIR"/$(echo "$IMAGE" | sed 's/\//./g').tar.gz
+
+cid=$(docker_ create --read-only "$IMAGE")
+size=$(docker_ image inspect "$IMAGE" --format='{{.Size}}')
+#docker_ ps -af "id=$cid"
+docker_ export "$cid" | pv_ -s "$size" | gzip_ -6 > "$TAR"
+docker_ rm "$cid" > /dev/null
 # FIXME: This is brittle. We want the filename and size, but not the rest, so
 # we can't just ask ls. Another option is stat and numfmt, but the latter may
 # not be very portable.
-ls -lh $TAR | awk '{ print $5,$9 }'
+find "$TAR" -ls | awk '{ print $5,$9 }'
 

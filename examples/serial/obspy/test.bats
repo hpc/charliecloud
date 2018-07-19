@@ -14,5 +14,5 @@ setup () {
     # finer-grained exclusion mechanism.
     #
     # [1]: https://github.com/obspy/obspy/issues/1660
-    ch-run $IMG -- bash -c '. activate && obspy-runtests -d -x core -x signal'
+    ch-run "$IMG" -- bash -c '. activate && obspy-runtests -d -x core -x signal'
 }

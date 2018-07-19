@@ -1,19 +1,17 @@
 #!/bin/sh
 
 LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. ${LIBEXEC}/base.sh
+. "${LIBEXEC}/base.sh"
 
-set -e
-
-usage () {
-    cat 1>&2 <<EOF
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
 Build a Charliecloud image specified by \$PWD/Dockerfile and unpack it.
 Equivalent to ch-build, ch-docker2tar, ch-tar2dir sequence but somewhat less
 flexible.
 
 Usage:
 
-  $ $(basename $0) CONTEXT DEST [ARGS ...]
+  $ $(basename "$0") CONTEXT DEST [ARGS ...]
 
 Arguments:
 
@@ -21,28 +19,23 @@ Arguments:
   DEST     directory in which to place image tarball and directory
   ARGS     additional arguments passed to ch-build
 EOF
-    exit ${1:-1}
-}
+)
 
-if [ "$1" = "--help" ]; then
-    usage 0
-fi
-if [ "$1" = "--version" ]; then
-    version
-    exit 0
-fi
+parse_basic_args "$@"
+
 if [ "$#" -lt 2 ]; then
     usage
 fi
+
 CONTEXT="$1"
 DEST="$2"
 shift 2
 
-TAG=$(basename $PWD)
+TAG=$(basename "$PWD")
 
 set -x
 
-$CH_BIN/ch-build -t $TAG "$CONTEXT" "$@"
-$CH_BIN/ch-docker2tar $TAG "$DEST"
-$CH_BIN/ch-tar2dir "$DEST/$TAG.tar.gz" "$DEST"
+"$CH_BIN"/ch-build -t "$TAG" "$CONTEXT" "$@"
+"$CH_BIN"/ch-docker2tar "$TAG" "$DEST"
+"$CH_BIN"/ch-tar2dir "$DEST/$TAG.tar.gz" "$DEST"
 rm "$DEST/$TAG.tar.gz"

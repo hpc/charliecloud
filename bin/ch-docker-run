@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# bash is needed for arrays.
+# Bash is needed for arrays.
 
 LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. ${LIBEXEC}/base.sh
+. "${LIBEXEC}/base.sh"
 
-usage () {
-    cat 1>&2 <<EOF
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
 Run CMD in a Docker container TAG.
 
 Usage:
 
-  $ $(basename $0) [-i] [-b HOSTDIR:GUESTDIR ...] TAG CMD [ARGS ...]
+  $ $(basename "$0") [-i] [-b HOSTDIR:GUESTDIR ...] TAG CMD [ARGS ...]
 
 The special sauce is:
 
@@ -26,26 +26,17 @@ Options:
 
 You must have sufficient privilege (via sudo) to run the Docker commands.
 EOF
-    exit ${1:-1}
-}
-
-set -e
+)
 
 MOUNTS=( /etc/passwd:/etc/passwd \
          /etc/group:/etc/group )
 
-if [[ $1 = --help ]]; then
-    usage 0
-fi
-if [[ $1 = --version ]]; then
-    version
-    exit 0
-fi
+parse_basic_args "$@"
 
 while getopts 'b:ih' opt; do
     case $opt in
         i) INTERACTIVE=-it ;;
-        b) MOUNTS+=( $OPTARG ) ;;
+        b) MOUNTS+=( "$OPTARG" ) ;;
         h)
             usage 0
             ;;
@@ -54,7 +45,7 @@ while getopts 'b:ih' opt; do
             ;;
     esac
 done
-shift $(($OPTIND-1))
+shift $((OPTIND-1))
 
 if [[ $# -lt 2 ]]; then
     usage
@@ -70,9 +61,9 @@ fi
 echo 'bind mounts:'
 MOUNTARGS=''
 for (( i = 0; i < ${#MOUNTS[@]}; i++ )); do
-    echo ' ' ${MOUNTS[$i]}
+    echo ' ' "${MOUNTS[$i]}"
     MOUNTARGS+=" -v ${MOUNTS[$i]}"
 done
 
 set -x
-$DOCKER run --read-only -u $USER $INTERACTIVE $MOUNTARGS $TAG "$@"
+$DOCKER run --read-only -u "$USER" "$INTERACTIVE" "$MOUNTARGS" "$TAG" "$@"

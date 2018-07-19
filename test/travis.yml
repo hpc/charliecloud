@@ -47,9 +47,36 @@ install:
 # entering the namespaces and we get ENOENT. Work around this bug. See:
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=851427
 # https://wiki.debian.org/ReleaseGoals/RunDirectory
-  - sudo rm /dev/shm
+  - sudo rm /dev/shm  # will fail once it's a directory again
   - sudo mkdir /dev/shm
   - sudo mount --bind /run/shm /dev/shm
+# The following is the mess needed to get a working ShellCheck on Travis.
+# Approaches that don't work include:
+#
+#   - Static binary provided by ShellCheck upstream (0.5.0): Segfault due to
+#     Trusty bug [1]. The described workaround didn't work for me.
+#
+#   - Compile from source (0.5.0): Build is supposedly very long (30 minutes)
+#     and one must install the Haskell build environment.
+#
+#   - Travis-provided (0.4.6): Segfault again, I think for the same reason.
+#
+#   - Ubunty Trusty, i.e. plain "apt-get" (0.3.3): Super old.
+#
+#   - Debian Sid (0.4.7): glibc dependency too new, default dpkg can't read
+#     the .deb because it's xz-compressed, and only gain one point release.
+#
+# Once Travis finally gets around to upgrading Ubuntu [2], we should just
+# install the static binary.
+#
+# [1]: https://github.com/koalaman/shellcheck/issues/1053
+# [2]: https://github.com/travis-ci/travis-ci/issues/5821
+  - fgrep Trusty /etc/os-release
+  - sudo rm -f /usr/local/bin/shellcheck
+  - wget http://mirrors.kernel.org/ubuntu/pool/universe/s/shellcheck/shellcheck_0.4.6-1_amd64.deb
+  - sudo dpkg --install shellcheck_0.4.6-1_amd64.deb
+  - which shellcheck
+  - shellcheck --version
 
 before_script:
   - getconf _NPROCESSORS_ONLN
@@ -59,7 +86,6 @@ before_script:
   - export CH_TEST_TARDIR=/var/tmp/tarballs
   - export CH_TEST_IMGDIR=/var/tmp/images
   - export CH_TEST_PERMDIRS='/var/tmp /run'
-  - export CH_TEST_OMIT=mpi
   - unset JAVA_HOME  # otherwise Spark tries to use host's Java
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
 

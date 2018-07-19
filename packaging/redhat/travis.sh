@@ -17,8 +17,8 @@ mkdir -p $RPMBUILD/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 make VERSION.full
 VERSION=$(cat VERSION.full)
 
-tar czf $RPMBUILD/SOURCES/charliecloud-${VERSION}.tar.gz \
-    --xform "s#^\.#charliecloud-${VERSION}#" \
+tar czf $RPMBUILD/SOURCES/charliecloud-"${VERSION}".tar.gz \
+    --xform "s#^\\.#charliecloud-${VERSION}#" \
     --exclude=.git \
     .
 

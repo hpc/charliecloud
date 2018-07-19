@@ -44,27 +44,29 @@ setup () {
 lammps_try () {
     # These examples cd because some (not all) of the LAMMPS tests expect to
     # find things based on $CWD.
-    infiles=$(ch-run --cd /lammps/examples/$1 $IMG -- bash -c "ls in.*")
+    infiles=$(ch-run --cd "/lammps/examples/$1" "$IMG" -- bash -c "ls in.*")
     for i in $infiles; do
-        printf '\n\n%s\n' $i
-        $MPIRUN_CORE ch-run --join --cd /lammps/examples/$1 $IMG -- \
-                            lmp_mpi -log none -in $i
+        printf '\n\n%s\n' "$i"
+        # shellcheck disable=SC2086
+        $MPIRUN_CORE ch-run --join --cd /lammps/examples/$1 "$IMG" -- \
+                            lmp_mpi -log none -in "$i"
     done
 
 }
 
 @test "$EXAMPLE_TAG/using all cores" {
-    run $MPIRUN_CORE ch-run --join $IMG -- \
+    # shellcheck disable=SC2086
+    run $MPIRUN_CORE ch-run --join "$IMG" -- \
                             lmp_mpi -log none -in /lammps/examples/melt/in.melt
     echo "$output"
     [[ $status -eq 0 ]]
     ranks_found=$(  echo "$output" \
-                  | fgrep 'MPI tasks' \
+                  | grep -F 'MPI tasks' \
                   | tail -1 \
                   | sed -r 's/^.+with ([0-9]+) MPI tasks.+$/\1/')
     echo "ranks expected: $CHTEST_CORES_TOTAL"
     echo "ranks found: $ranks_found"
-    [[ $ranks_found -eq $CHTEST_CORES_TOTAL ]]
+    [[ $ranks_found -eq "$CHTEST_CORES_TOTAL" ]]
 }
 
 @test "$EXAMPLE_TAG/crack"    { lammps_try crack; }

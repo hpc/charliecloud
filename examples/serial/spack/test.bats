@@ -4,18 +4,18 @@ setup() {
     scope skip  # issue #204
     [[ -z $CHTEST_CRAY ]] || skip 'issue #193 and Spack issue #8618'
     prerequisites_ok spack
-    SPACK_IMG=$IMGDIR/spack
+    SPACK_IMG="$IMGDIR/spack"
     export PATH=/spack/bin:$PATH
 }
 
 @test "$EXAMPLE_TAG/version" {
-    ch-run $SPACK_IMG -- spack --version
+    ch-run "$SPACK_IMG" -- spack --version
 }
 
 @test "$EXAMPLE_TAG/compilers" {
-    ch-run $SPACK_IMG -- spack compilers
+    ch-run "$SPACK_IMG" -- spack compilers
 }
 
 @test "$EXAMPLE_TAG/spec" {
-    ch-run $SPACK_IMG -- spack spec netcdf
+    ch-run "$SPACK_IMG" -- spack spec netcdf
 }
