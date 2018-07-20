@@ -54,18 +54,18 @@
 /** Types **/
 
 struct bind {
-   char * src;
-   char * dst;
+   char *src;
+   char *dst;
 };
 
 struct container {
-   struct bind * binds;
+   struct bind *binds;
    gid_t container_gid;
    uid_t container_uid;
-   char * newroot;
+   char *newroot;
    bool join;
    int join_ct;
-   char * join_tag;
+   char *join_tag;
    bool private_home;
    bool private_tmp;
    bool writable;
@@ -79,7 +79,7 @@ extern int verbose;
 
 /** Function prototypes from charliecloud.c **/
 
-void containerize(struct container * c);
-void msg(int level, char * file, int line, int errno_, char * fmt, ...);
-void run_user_command(char * argv[], char * initial_dir);
+void containerize(struct container *c);
+void msg(int level, char *file, int line, int errno_, char *fmt, ...);
+void run_user_command(char *argv[], char *initial_dir);
 void version(void);

@@ -29,11 +29,11 @@ and backslashes are not interpreted.\n";
 #define ARGS_MAX 262143  // assume 2MB buffer and length of each argument >= 7
 
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
    int i, j;
-   char * ch_run_args;
-   char * args[ARGS_MAX+1];
+   char *ch_run_args;
+   char *args[ARGS_MAX+1];
 
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
