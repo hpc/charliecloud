@@ -65,8 +65,8 @@ RUN    cd mesa-${MESA_VERSION} \
 RUN rm -Rf mesa-${MESA_VERSION}*
 
 # ParaView.
-ENV PARAVIEW_MAJORMINOR 5.4
-ENV PARAVIEW_VERSION 5.4.1
+ENV PARAVIEW_MAJORMINOR 5.5
+ENV PARAVIEW_VERSION 5.5.2
 RUN wget -nv -O ParaView-v${PARAVIEW_VERSION}.tar.gz "https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v${PARAVIEW_MAJORMINOR}&type=binary&os=Sources&downloadFile=ParaView-v${PARAVIEW_VERSION}.tar.gz"
 RUN tar xf ParaView-v${PARAVIEW_VERSION}.tar.gz
 RUN mkdir ParaView-v${PARAVIEW_VERSION}.build
