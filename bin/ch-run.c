@@ -17,12 +17,12 @@
 /** Constants and macros **/
 
 /* Environment variables used by --join parameters. */
-char * JOIN_CT_ENV[] =  { "OMPI_COMM_WORLD_LOCAL_SIZE",
-                          "SLURM_STEP_TASKS_PER_NODE",
-                          "SLURM_CPUS_ON_NODE",
-                          NULL };
-char * JOIN_TAG_ENV[] = { "SLURM_STEP_ID",
-                          NULL };
+char *JOIN_CT_ENV[] =  { "OMPI_COMM_WORLD_LOCAL_SIZE",
+                         "SLURM_STEP_TASKS_PER_NODE",
+                         "SLURM_CPUS_ON_NODE",
+                         NULL };
+char *JOIN_TAG_ENV[] = { "SLURM_STEP_ID",
+                         NULL };
 
 
 /** Command line options **/
@@ -59,17 +59,17 @@ const struct argp_option options[] = {
 
 struct args {
    struct container c;
-   char * initial_dir;
+   char *initial_dir;
 };
 
 /** Function prototypes **/
 
-void fix_environment(struct args * args);
-bool get_first_env(char ** array, char ** name, char ** value);
+void fix_environment(struct args *args);
+bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
-char * join_tag(char * cli_tag);
-int parse_int(char * s, bool extra_ok, char * error_tag);
-static error_t parse_opt(int key, char * arg, struct argp_state * state);
+char *join_tag(char *cli_tag);
+int parse_int(char *s, bool extra_ok, char *error_tag);
+static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void privs_verify_invoking();
 
 
@@ -80,7 +80,7 @@ const struct argp argp = { options, parse_opt, args_doc, usage };
 
 /** Main **/
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
    struct args args;
    int arg_next;
@@ -135,9 +135,9 @@ int main(int argc, char * argv[])
 /** Supporting functions **/
 
 /* Adjust environment variables. */
-void fix_environment(struct args * args)
+void fix_environment(struct args *args)
 {
-   char * old, * new;
+   char *old, *new;
 
    // $HOME: Set to /home/$USER unless --no-home specified.
    old = getenv("HOME");
@@ -165,7 +165,7 @@ void fix_environment(struct args * args)
 /* Find the first environment variable in array that is set; put its name in
    *name and its value in *value, and return true. If none are set, return
    false, and *name and *value are undefined. */
-bool get_first_env(char ** array, char ** name, char ** value)
+bool get_first_env(char **array, char **name, char **value)
 {
    for (int i = 0; array[i] != NULL; i++) {
       *name = array[i];
@@ -182,7 +182,7 @@ bool get_first_env(char ** array, char ** name, char ** value)
 int join_ct(int cli_ct)
 {
    int j = 0;
-   char * ev_name, * ev_value;
+   char *ev_name, *ev_value;
 
    if (cli_ct != 0) {
       INFO("join: peer group size from command line");
@@ -203,10 +203,10 @@ end:
 
 /* Find an appropriate join tag; assumes --join was specified or implied. Exit
    with error if no valid value is found. */
-char * join_tag(char * cli_tag)
+char *join_tag(char *cli_tag)
 {
-   char * tag;
-   char * ev_name, * ev_value;
+   char *tag;
+   char *ev_name, *ev_value;
 
    if (cli_tag != NULL) {
       INFO("join: peer group tag from command line");
@@ -231,9 +231,9 @@ end:
 /* Parse an integer string arg and return the result. If an error occurs,
    print a message prefixed by error_tag and exit. If not extra_ok, additional
    characters remaining after the integer are an error. */
-int parse_int(char * s, bool extra_ok, char * error_tag)
+int parse_int(char *s, bool extra_ok, char *error_tag)
 {
-   char * end;
+   char *end;
    long l;
 
    errno = 0;
@@ -247,9 +247,9 @@ int parse_int(char * s, bool extra_ok, char * error_tag)
 }
 
 /* Parse one command line option. Called by argp_parse(). */
-static error_t parse_opt(int key, char * arg, struct argp_state * state)
+static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
-   struct args * args = state->input;
+   struct args *args = state->input;
    int i;
 
    switch (key) {

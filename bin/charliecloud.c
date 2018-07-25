@@ -43,17 +43,17 @@
 /** Constants **/
 
 /* Names of verbosity levels. */
-const char * VERBOSE_LEVELS[] = { "error", "warning", "info", "debug" };
+const char *VERBOSE_LEVELS[] = { "error", "warning", "info", "debug" };
 
 /* Default bind-mounts. */
-const char * DEFAULT_BINDS[] = { "/dev",
-                                 "/etc/passwd",
-                                 "/etc/group",
-                                 "/etc/hosts",
-                                 "/etc/resolv.conf",
-                                 "/proc",
-                                 "/sys",
-                                 NULL };
+const char *DEFAULT_BINDS[] = { "/dev",
+                                "/etc/passwd",
+                                "/etc/group",
+                                "/etc/hosts",
+                                "/etc/resolv.conf",
+                                "/proc",
+                                "/sys",
+                                NULL };
 
 
 /** External variables **/
@@ -67,26 +67,26 @@ int verbose;
 /* Variables for coordinating --join. */
 struct {
    bool winner_p;
-   char * sem_name;
-   sem_t * sem;
-   char * shm_name;
+   char *sem_name;
+   sem_t *sem;
+   char *shm_name;
    struct {
       pid_t winner_pid;  // access anytime after initialization (write-once)
       int proc_left_ct;  // access only while serial
-   } * shared;
+   } *shared;
 } join;
 
 
 /** Function prototypes **/
 
-void enter_udss(struct container * c);
-void join_begin(int join_ct, char * join_tag);
-void join_namespace(pid_t pid, char * ns);
+void enter_udss(struct container *c);
+void join_begin(int join_ct, char *join_tag);
+void join_namespace(pid_t pid, char *ns);
 void join_namespaces();
 void join_end();
-void log_ids(const char * func, int line);
-void sem_timedwait_relative(sem_t * sem, int timeout);
-void setup_namespaces(struct container * c);
+void log_ids(const char *func, int line);
+void sem_timedwait_relative(sem_t *sem, int timeout);
+void setup_namespaces(struct container *c);
 
 
 /** Functions **/
@@ -111,12 +111,12 @@ void containerize(struct container * c)
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
    in examples/syscalls/pivot_root.c. */
-void enter_udss(struct container * c)
+void enter_udss(struct container *c)
 {
-   char * base;
-   char * dir;
-   char * oldpath;
-   char * path;
+   char *base;
+   char *dir;
+   char *oldpath;
+   char *path;
    char bin[PATH_CHARS];
    struct stat st;
 
@@ -199,7 +199,7 @@ void enter_udss(struct container * c)
 }
 
 /* Begin coordinated section of namespace joining. */
-void join_begin(int join_ct, char * join_tag)
+void join_begin(int join_ct, char *join_tag)
 {
    int fd;
 
@@ -269,9 +269,9 @@ void join_end()
 }
 
 /* Join a specific namespace. */
-void join_namespace(pid_t pid, char * ns)
+void join_namespace(pid_t pid, char *ns)
 {
-   char * path;
+   char *path;
    int fd;
 
    T_ (1 <= asprintf(&path, "/proc/%d/ns/%s", pid, ns));
@@ -294,7 +294,7 @@ void join_namespaces()
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
-void log_ids(const char * func, int line)
+void log_ids(const char *func, int line)
 {
    uid_t ruid, euid, suid;
    gid_t rgid, egid, sgid;
@@ -326,7 +326,7 @@ void log_ids(const char * func, int line)
      1 : "warning" : always print
      1 : "info"    : print if verbose >= 2
      2 : "debug"   : print if verbose >= 3 */
-void msg(int level, char * file, int line, int errno_, char * fmt, ...)
+void msg(int level, char *file, int line, int errno_, char *fmt, ...)
 {
    va_list ap;
 
@@ -354,7 +354,7 @@ void msg(int level, char * file, int line, int errno_, char * fmt, ...)
 }
 
 /* Replace the current process with user command and arguments. */
-void run_user_command(char * argv[], char * initial_dir)
+void run_user_command(char *argv[], char *initial_dir)
 {
    LOG_IDS;
 
@@ -375,7 +375,7 @@ void run_user_command(char * argv[], char * initial_dir)
 
 /* Wait for semaphore sem for up to timeout seconds. If timeout or an error,
    exit unsuccessfully. */
-void sem_timedwait_relative(sem_t * sem, int timeout)
+void sem_timedwait_relative(sem_t *sem, int timeout)
 {
    struct timespec deadline;
 
@@ -390,7 +390,7 @@ void sem_timedwait_relative(sem_t * sem, int timeout)
 }
 
 /* Activate the desired isolation namespaces. */
-void setup_namespaces(struct container * c)
+void setup_namespaces(struct container *c)
 {
    int fd;
    uid_t euid = -1;
