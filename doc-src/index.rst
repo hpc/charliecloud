@@ -16,5 +16,5 @@ Overview
    test
    tutorial
    command-usage
-   virtualbox
+   vm
    faq
