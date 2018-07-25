@@ -47,13 +47,13 @@ const char *VERBOSE_LEVELS[] = { "error", "warning", "info", "debug" };
 
 /* Default bind-mounts. */
 const char *DEFAULT_BINDS[] = { "/dev",
-                                 "/etc/passwd",
-                                 "/etc/group",
-                                 "/etc/hosts",
-                                 "/etc/resolv.conf",
-                                 "/proc",
-                                 "/sys",
-                                 NULL };
+                                "/etc/passwd",
+                                "/etc/group",
+                                "/etc/hosts",
+                                "/etc/resolv.conf",
+                                "/proc",
+                                "/sys",
+                                NULL };
 
 
 /** External variables **/

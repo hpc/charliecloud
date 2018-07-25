@@ -18,11 +18,11 @@
 
 /* Environment variables used by --join parameters. */
 char *JOIN_CT_ENV[] =  { "OMPI_COMM_WORLD_LOCAL_SIZE",
-                          "SLURM_STEP_TASKS_PER_NODE",
-                          "SLURM_CPUS_ON_NODE",
-                          NULL };
+                         "SLURM_STEP_TASKS_PER_NODE",
+                         "SLURM_CPUS_ON_NODE",
+                         NULL };
 char *JOIN_TAG_ENV[] = { "SLURM_STEP_ID",
-                          NULL };
+                         NULL };
 
 
 /** Command line options **/
