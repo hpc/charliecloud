@@ -218,6 +218,16 @@ fromhost_ls () {
     # nvidia-container-cli --version (to make sure it's linked correctly)
     nvidia-container-cli --version
 
+    # Skip if nvidia-container-cli can't find CUDA.
+    run nvidia-container-cli list --binaries --libraries
+    echo "$output"
+    if [[ $status -eq 1 ]]; then
+        if [[ $output = *'cuda error'* ]]; then
+            skip "nvidia-container-cli can't find CUDA"
+        fi
+        false
+    fi
+
     # --nvidia
     ch-fromhost -v --nvidia $IMG
 
@@ -264,16 +274,33 @@ fromhost_ls () {
 @test 'ch-fromhost --nvidia without GPU' {
     scope full
     prerequisites_ok nvidia
-    command -v nvidia-container-cli >/dev/null 2>&1 \
-        && skip 'nvidia-container-cli in $PATH'
     IMG=$IMGDIR/nvidia
 
-    # --nvidia gives proper error
-    run ch-fromhost -v --nvidia $IMG
-    echo "$output"
-    [[ $status -eq 1 ]]
-    r="nvidia-container-cli: (command )?not found"
-    [[ $output =~ $r ]]
-    [[ $output =~ 'nvidia-container-cli failed' ]]
+    # --nvidia should give a proper error whether or not nvidia-container-cli
+    # is available.
+    if ( command -v nvidia-container-cli >/dev/null 2>&1 ); then
+        # nvidia-container-cli in $PATH
+        run nvidia-container-cli list --binaries --libraries
+        echo "$output"
+        if [[ $status -eq 0 ]]; then
+            # found CUDA; skip
+            skip 'nvidia-container-cli found CUDA'
+        else
+            [[ $status -eq 1 ]]
+            [[ $output = *'cuda error'* ]]
+            run ch-fromhost -v --nvidia $IMG
+            echo "$output"
+            [[ $status -eq 1 ]]
+            [[ $output = *'does this host have GPUs'* ]]
+        fi
+    else
+        # nvidia-container-cli not in $PATH
+        run ch-fromhost -v --nvidia $IMG
+        echo "$output"
+        [[ $status -eq 1 ]]
+        r="nvidia-container-cli: (command )?not found"
+        [[ $output =~ $r ]]
+        [[ $output =~ 'nvidia-container-cli failed' ]]
+    fi
 }
 
