@@ -255,7 +255,7 @@ fromhost_ls () {
     ch-run $IMG -- sotest
 
     # CUDA sample
-    SAMPLE=/usr/local/cuda-9.1/samples/0_Simple/matrixMulCUBLAS/matrixMulCUBLAS
+    SAMPLE=/matrixMulCUBLAS
     # should fail without ch-fromhost --nvidia
     fromhost_clean $IMG
     run ch-run $IMG -- $SAMPLE

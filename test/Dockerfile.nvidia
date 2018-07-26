@@ -1,4 +1,13 @@
 # ch-test-scope: full
+
+# This Dockerfile demonstrates a multi-stage build. With a single-stage build
+# that brings along the nVidia build environment, the resulting unpacked image
+# is 2.9 GiB; with the multi-stage build, it's 146 MiB.
+#
+# See: https://docs.docker.com/develop/develop-images/multistage-build
+
+
+## Stage 1: Install the nVidia build environment and build a sample app.
 FROM ubuntu:16.04
 
 # OS packages needed
@@ -20,3 +29,16 @@ RUN apt-get install -y cuda-toolkit-9-1
 # Build the sample app we'll use to test.
 WORKDIR /usr/local/cuda-9.1/samples/0_Simple/matrixMulCUBLAS
 RUN make
+
+
+## Stage 2: Copy the built sample app into a clean Ubuntu image.
+FROM ubuntu:16.04
+
+COPY --from=0 /usr/local/cuda-9.1/samples/0_Simple/matrixMulCUBLAS /
+
+# This is the one nVidia shared library that the sample app needs. We could be
+# smarter about finding this path. However, one thing to avoid is copying in
+# all of /usr/local/cuda-9.1/targets/x86_64-linux/lib, because that directory
+# is 1.3GiB.
+COPY --from=0 /usr/local/cuda-9.1/targets/x86_64-linux/lib/Libcublas.so.9.1.181 /usr/local/lib
+RUN ldconfig
