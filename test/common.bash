@@ -71,19 +71,22 @@ prerequisites_ok () {
 }
 
 scope () {
-    case $CH_TEST_SCOPE in
+    case $1 in  # $1 is the test's scope
         quick)
-            if [[ $1 != quick ]]; then
-                skip "$1 scope"
-            fi
-            ;;
+            ;;  # always run quick-scope tests
         standard)
-            if [[ $1 != standard && $1 != quick ]]; then
+            if [[ $CH_TEST_SCOPE = quick ]]; then
                 skip "$1 scope"
             fi
             ;;
         full)
-            ;;  # always run tests in full scope
+            if [[ $CH_TEST_SCOPE = quick || $CH_TEST_SCOPE = standard ]]; then
+                skip "$1 scope"
+            fi
+            ;;
+        skip)
+            skip "developer-skipped; see comments and/or issues"
+            ;;
         *)
             exit 1
     esac

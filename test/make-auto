@@ -29,7 +29,7 @@ for path in sys.argv[2:]:
 
    # Find scope
    with open(path) as fp:
-      m = re.search(r"ch-test-scope: (quick|standard|full)", fp.read())
+      m = re.search(r"ch-test-scope: (skip|quick|standard|full)", fp.read())
       if (m is None):
          print("%s: no valid scope specified" % path, file=sys.stderr)
          sys.exit(1)

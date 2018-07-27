@@ -1,3 +1,4 @@
+# ch-test-scope: skip (issue #64)
 FROM debian:stretch
 
 RUN    apt-get update \

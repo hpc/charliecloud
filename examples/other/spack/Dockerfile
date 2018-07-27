@@ -1,4 +1,4 @@
-# ch-test-scope: full
+# ch-test-scope: skip (issue #204)
 FROM debian9
 
 # Note: Spack is a bit of an odd duck testing wise. Because it's a package

@@ -1,8 +1,7 @@
 load ../../../test/common
 
 setup() {
-    scope full
-    skip 'issue #204 and Spack issue #8673'
+    scope skip  # issue #204
     [[ -z $CHTEST_CRAY ]] || skip 'issue #193 and Spack issue #8618'
     prerequisites_ok spack
     SPACK_IMG=$IMGDIR/spack
