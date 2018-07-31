@@ -40,5 +40,5 @@ COPY --from=0 /usr/local/cuda-9.1/samples/0_Simple/matrixMulCUBLAS /
 # smarter about finding this path. However, one thing to avoid is copying in
 # all of /usr/local/cuda-9.1/targets/x86_64-linux/lib, because that directory
 # is 1.3GiB.
-COPY --from=0 /usr/local/cuda-9.1/targets/x86_64-linux/lib/Libcublas.so.9.1.181 /usr/local/lib
+COPY --from=0 /usr/local/cuda-9.1/targets/x86_64-linux/lib/libcublas.so.9.1.181 /usr/local/lib
 RUN ldconfig
