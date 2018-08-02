@@ -2,7 +2,7 @@ Frequently asked questions (FAQ)
 ********************************
 
 .. contents::
-   :depth: 2
+   :depth: 3
    :local:
 
 
@@ -374,6 +374,55 @@ So what can you do? There are a few options:
    .. image:: https://media.giphy.com/media/1mNBTj3g4jRCg/giphy.gif
       :alt: Darth Vader bowling a strike with the help of the Force
       :align: center
+
+I get a bunch of independent rank-0 processes when launching with :code:`srun`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For example, you might be seeing this::
+
+  $ srun ch-run /var/tmp/mpihello -- /hello/hello
+  0: init ok cn036.localdomain, 1 ranks, userns 4026554634
+  0: send/receive ok
+  0: finalize ok
+  0: init ok cn035.localdomain, 1 ranks, userns 4026554634
+  0: send/receive ok
+  0: finalize ok
+
+We were expecting a two-rank MPI job, but instead we got two independent
+one-rank jobs that did not coordinate.
+
+MPI ranks start as normal, independent processes that must find one another
+somehow in order to sync up and begin the coupled parallel program; this
+happens in :code:`MPI_Init()`.
+
+There are lots of ways to do this coordination. Because we are launching with
+the host's Slurm, we need it to provide something for the containerized
+processes for such coordination. OpenMPI must be compiled to use what that
+Slurm has to offer, and Slurm must be told to offer it. What works for us is a
+something called "PMI2". You can see if your Slurm supports it with::
+
+  $ srun --mpi=list
+  srun: MPI types are...
+  srun: mpi/pmi2
+  srun: mpi/openmpi
+  srun: mpi/mpich1_shmem
+  srun: mpi/mpich1_p4
+  srun: mpi/lam
+  srun: mpi/none
+  srun: mpi/mvapich
+  srun: mpi/mpichmx
+  srun: mpi/mpichgm
+
+If :code:`pmi2` is not in the list, you must ask your admins to enable Slurm's
+PMI2 support. If it is in the list, but you're seeing this problem, that means
+it is not the default, and you need to tell Slurm you want it. Try::
+
+  $ export SLURM_MPI_TYPE=pmi2
+  $ srun ch-run /var/tmp/mpihello -- /hello/hello
+  0: init ok wc035.localdomain, 2 ranks, userns 4026554634
+  1: init ok wc036.localdomain, 2 ranks, userns 4026554634
+  0: send/receive ok
+  0: finalize ok
 
 How do I run X11 apps?
 ----------------------
