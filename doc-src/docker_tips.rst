@@ -18,7 +18,7 @@ responsibilities.
 
 Anyone who can run the :code:`docker` command or interact with the Docker
 daemon can `trivially escalate to root
-<http://reventlov.com/advisories/using-the-docker-command-to-root-the-host>`_.
+<http://web.archive.org/web/20170614013206/http://www.reventlov.com/advisories/using-the-docker-command-to-root-the-host>`_.
 This is considered a feature.
 
 For this reason, don't create the :code:`docker` group, as this will allow
