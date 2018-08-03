@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Tutorial &mdash; Charliecloud 0.9.0 documentation</title>
+  <title>3. Tutorial &mdash; Charliecloud 0.9.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.9.0 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.9.1 documentation" href="index.html"/>
         <link rel="next" title="4. Charliecloud command reference" href="command-usage.html"/>
         <link rel="prev" title="2. Testing" href="test.html"/> 
 
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                ef881ca
+                db16c7f
               </div>
             
           
@@ -138,7 +138,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="command-usage.html">4. Charliecloud command reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="virtualbox.html">5. VirtualBox appliance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vm.html">5. Pre-installed virtual machine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">6. Frequently asked questions (FAQ)</a></li>
 </ul>
 
@@ -1263,17 +1263,17 @@ module load charliecloud
 
 <span class="c1"># MPI version on host.</span>
 <span class="nb">printf</span> <span class="s1">&#39;host:      &#39;</span>
-mpirun --version <span class="p">|</span> egrep <span class="s1">&#39;^mpirun&#39;</span>
+mpirun --version <span class="p">|</span> grep -E <span class="s1">&#39;^mpirun&#39;</span>
 
 <span class="c1"># Unpack image.</span>
-srun ch-tar2dir <span class="nv">$TAR</span> <span class="nv">$IMGDIR</span>
+srun ch-tar2dir <span class="s2">&quot;</span><span class="nv">$TAR</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="nv">$IMGDIR</span><span class="s2">&quot;</span>
 
 <span class="c1"># MPI version in container.</span>
 <span class="nb">printf</span> <span class="s1">&#39;container: &#39;</span>
-ch-run <span class="nv">$IMG</span> -- mpirun --version <span class="p">|</span> egrep <span class="s1">&#39;^mpirun&#39;</span>
+ch-run <span class="s2">&quot;</span><span class="nv">$IMG</span><span class="s2">&quot;</span> -- mpirun --version <span class="p">|</span> grep -E <span class="s1">&#39;^mpirun&#39;</span>
 
 <span class="c1"># Run the app.</span>
-srun --cpus-per-task<span class="o">=</span><span class="m">1</span> ch-run <span class="nv">$IMG</span> -- /hello/hello
+srun --cpus-per-task<span class="o">=</span><span class="m">1</span> ch-run <span class="s2">&quot;</span><span class="nv">$IMG</span><span class="s2">&quot;</span> -- /hello/hello
 </pre></div>
 </div>
 <p>Note that this script both unpacks the image and runs it.</p>
@@ -1510,7 +1510,7 @@ your site administrators for the latter.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.9.0',
+            VERSION:'0.9.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

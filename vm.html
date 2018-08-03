@@ -1,0 +1,554 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>5. Pre-installed virtual machine &mdash; Charliecloud 0.9.1 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Charliecloud 0.9.1 documentation" href="index.html"/>
+        <link rel="next" title="6. Frequently asked questions (FAQ)" href="faq.html"/>
+        <link rel="prev" title="4. Charliecloud command reference" href="command-usage.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Charliecloud
+          
+
+          
+            
+            <img src="_static/logo-sidebar.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                db16c7f
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="test.html">2. Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">3. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command-usage.html">4. Charliecloud command reference</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Pre-installed virtual machine</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#import-and-use-an-ova-appliance-file-with-plain-virtualbox">5.1. Import and use an <code class="code docutils literal notranslate"><span class="pre">ova</span></code> appliance file with plain VirtualBox</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configure-virtualbox">5.1.1. Configure VirtualBox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#import-the-appliance">5.1.2. Import the appliance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#log-in-and-try-charliecloud">5.1.3. Log in and try Charliecloud</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#build-and-use-the-vm-with-vagrant">5.2. Build and use the VM with Vagrant</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#caveats-and-gotchas">5.2.1. Caveats and gotchas</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-vagrant-and-plugins">5.2.2. Install Vagrant and plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-and-provision">5.2.3. Build and provision</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#build-ova-appliance-file-with-vagrant-and-virtualbox">5.3. Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#remove-old-virtual-machine">5.3.1. Remove old virtual machine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">5.3.2. Build and provision</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#snapshot-for-distribution">5.3.3. Snapshot for distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-charliecloud">5.3.4. Test Charliecloud</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#export-appliance-ova-file">5.3.5. Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">6. Frequently asked questions (FAQ)</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Charliecloud</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>5. Pre-installed virtual machine</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pre-installed-virtual-machine">
+<span id="virtualbox-build"></span><h1>5. Pre-installed virtual machine<a class="headerlink" href="#pre-installed-virtual-machine" title="Permalink to this headline">¶</a></h1>
+<p>This page explains how to create and use a single-node virtual machine with
+Charliecloud and Docker pre-installed. This lets you:</p>
+<blockquote>
+<div><ul class="simple">
+<li>use Charliecloud on Macs and Windows</li>
+<li>quickly try out Charliecloud without installing anything</li>
+</ul>
+</div></blockquote>
+<p>You can use this CentOS 7 VM either with <a class="reference external" href="https://www.vagrantup.com">Vagrant</a> or with <a class="reference external" href="https://www.virtualbox.org/">VirtualBox</a> alone. Various settings are specified, but in
+most cases we have not done any particular tuning, so use your judgement, and
+feedback is welcome.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#import-and-use-an-ova-appliance-file-with-plain-virtualbox" id="id2">Import and use an <code class="code docutils literal notranslate"><span class="pre">ova</span></code> appliance file with plain VirtualBox</a><ul>
+<li><a class="reference internal" href="#configure-virtualbox" id="id3">Configure VirtualBox</a></li>
+<li><a class="reference internal" href="#import-the-appliance" id="id4">Import the appliance</a></li>
+<li><a class="reference internal" href="#log-in-and-try-charliecloud" id="id5">Log in and try Charliecloud</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#build-and-use-the-vm-with-vagrant" id="id6">Build and use the VM with Vagrant</a><ul>
+<li><a class="reference internal" href="#caveats-and-gotchas" id="id7">Caveats and gotchas</a></li>
+<li><a class="reference internal" href="#install-vagrant-and-plugins" id="id8">Install Vagrant and plugins</a></li>
+<li><a class="reference internal" href="#build-and-provision" id="id9">Build and provision</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#build-ova-appliance-file-with-vagrant-and-virtualbox" id="id10">Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a><ul>
+<li><a class="reference internal" href="#remove-old-virtual-machine" id="id11">Remove old virtual machine</a></li>
+<li><a class="reference internal" href="#id1" id="id12">Build and provision</a></li>
+<li><a class="reference internal" href="#snapshot-for-distribution" id="id13">Snapshot for distribution</a></li>
+<li><a class="reference internal" href="#test-charliecloud" id="id14">Test Charliecloud</a></li>
+<li><a class="reference internal" href="#export-appliance-ova-file" id="id15">Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">These instructions provide for an SSH server in the virtual machine guest
+that is accessible to anyone logged into the host. It is your
+responsibility to ensure this is safe and compliant with your
+organization’s policies, or modify the procedure accordingly.</p>
+</div>
+<div class="section" id="import-and-use-an-ova-appliance-file-with-plain-virtualbox">
+<h2><a class="toc-backref" href="#id2">5.1. Import and use an <code class="code docutils literal notranslate"><span class="pre">ova</span></code> appliance file with plain VirtualBox</a><a class="headerlink" href="#import-and-use-an-ova-appliance-file-with-plain-virtualbox" title="Permalink to this headline">¶</a></h2>
+<p>This procedure imports a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file (created using the instructions
+below) into VirtualBox and walks you through logging in and running a brief
+Hello World in Charliecloud. You will act as user <code class="code docutils literal notranslate"><span class="pre">charlie</span></code>, who has
+passwordless <code class="code docutils literal notranslate"><span class="pre">sudo</span></code>.</p>
+<p>The Charliecloud developers do not distribute a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file. You will
+need to get it from your site, a third party, or build it yourself with
+Vagrant using the instructions below.</p>
+<p>Prerequisite: Installed and working VirtualBox. (You do not need Vagrant.)</p>
+<div class="section" id="configure-virtualbox">
+<h3><a class="toc-backref" href="#id3">5.1.1. Configure VirtualBox</a><a class="headerlink" href="#configure-virtualbox" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Set <em>Preferences</em> → <em>Proxy</em> if needed at your site.</li>
+</ol>
+</div>
+<div class="section" id="import-the-appliance">
+<h3><a class="toc-backref" href="#id4">5.1.2. Import the appliance</a><a class="headerlink" href="#import-the-appliance" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Download the <code class="code docutils literal notranslate"><span class="pre">charliecloud_centos7.ova</span></code> file (or whatever your site
+has called it).</li>
+<li><em>File</em> → <em>Import appliance</em>. Choose <code class="code docutils literal notranslate"><span class="pre">charliecloud_centos7.ova</span></code> and click <em>Continue</em>.</li>
+<li>Review the settings.<ul>
+<li>CPU should match the number of cores in your system.</li>
+<li>RAM should be reasonable. Anywhere from 2GiB to half your system RAM will
+probably work.</li>
+<li>Check <em>Reinitialize the MAC address of all network cards</em>.</li>
+</ul>
+</li>
+<li>Click <em>Import</em>.</li>
+<li>Verify that the appliance’s port forwarding is acceptable to you and your
+site: <em>Details</em> → <em>Network</em> → <em>Adapter 1</em> → <em>Advanced</em> → <em>Port
+Forwarding</em>.</li>
+</ol>
+</div>
+<div class="section" id="log-in-and-try-charliecloud">
+<h3><a class="toc-backref" href="#id5">5.1.3. Log in and try Charliecloud</a><a class="headerlink" href="#log-in-and-try-charliecloud" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Start the VM by clicking the green arrow.</li>
+<li>Wait for it to boot.</li>
+<li>Click on the console window, where user <code class="code docutils literal notranslate"><span class="pre">charlie</span></code> is logged in. (If
+the VM “captures” your mouse pointer, type the key combination listed in
+the lower-right corner of the window to release it.)</li>
+<li>Change your password:</li>
+</ol>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo passwd charlie
+</pre></div>
+</div>
+<ol class="arabic simple" start="5">
+<li>SSH (from terminal on the host) into the VM using the password you just set.
+(Accessing the VM using SSH rather than the console is generally more
+pleasant, because you have a nice terminal with native copy-and-paste, etc.)</li>
+</ol>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh -p <span class="m">2222</span> charlie@localhost
+</pre></div>
+</div>
+<ol class="arabic simple" start="6">
+<li>Build and run a container:</li>
+</ol>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello -f /usr/local/src/charliecloud/examples/serial/hello <span class="se">\</span>
+           /usr/local/src/charliecloud
+<span class="gp">$</span> ch-docker2tar hello /var/tmp
+<span class="go">57M /var/tmp/hello.tar.gz</span>
+<span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
+<span class="go">creating new image /var/tmp/hello</span>
+<span class="go">/var/tmp/hello unpacked ok</span>
+<span class="gp">$</span> cat /etc/redhat-release
+<span class="go">CentOS Linux release 7.3.1611 (Core)</span>
+<span class="gp">$</span> ch-run /var/tmp/hello -- /bin/bash
+<span class="gp">&gt;</span> cat /etc/debian_version
+<span class="go">8.9</span>
+<span class="gp">&gt;</span> <span class="nb">exit</span>
+</pre></div>
+</div>
+<p>Congratulations! You’ve successfully used Charliecloud. Now all of your
+wildest dreams will come true.</p>
+<p>Shut down the VM at your leisure.</p>
+<p>Possible next steps:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Follow the <a class="reference internal" href="tutorial.html"><span class="doc">tutorial</span></a>.</li>
+<li>Run the <a class="reference internal" href="test.html#install-test-charliecloud"><span class="std std-ref">test suite</span></a> in
+<code class="code docutils literal notranslate"><span class="pre">/usr/share/doc/charliecloud/test</span></code>. (Note that the environment
+variables are already configured for you in this appliance.)</li>
+<li>Configure <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code> to be a <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code>, if you have enough RAM,
+for better performance.</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="build-and-use-the-vm-with-vagrant">
+<h2><a class="toc-backref" href="#id6">5.2. Build and use the VM with Vagrant</a><a class="headerlink" href="#build-and-use-the-vm-with-vagrant" title="Permalink to this headline">¶</a></h2>
+<p>This procedure builds and provisions an idiomatic Vagrant virtual machine. You
+should also read the Vagrantfile in <code class="code docutils literal notranslate"><span class="pre">packaging/vagrant</span></code> before
+proceeding. This contains the specific details on build and provisioning,
+which are not repeated here.</p>
+<p>Prerequisite: You already know how to use Vagrant.</p>
+<div class="section" id="caveats-and-gotchas">
+<h3><a class="toc-backref" href="#id7">5.2.1. Caveats and gotchas</a><a class="headerlink" href="#caveats-and-gotchas" title="Permalink to this headline">¶</a></h3>
+<p>In no particular order:</p>
+<ul class="simple">
+<li>While Vagrant supports a wide variety of host and virtual machine providers,
+this procedure is tested only on VirtualBox on a Mac. Current Vagrant
+versions should work, but we don’t track specifically which ones. (Anyone
+who wants to help us broaden this support, please get in touch.)</li>
+<li>Switching between proxy and no-proxy environments is not currently
+supported. If you have a mixed environment (e.g. laptops that travel between
+a corporate network and the wild), you may want to provide two separate
+images.</li>
+<li>Provisioning is not idempotent. Running the provisioners again will have
+undefined results.</li>
+<li>The documentation is not built. Use the web documentation instead of man
+pages.</li>
+</ul>
+</div>
+<div class="section" id="install-vagrant-and-plugins">
+<h3><a class="toc-backref" href="#id8">5.2.2. Install Vagrant and plugins</a><a class="headerlink" href="#install-vagrant-and-plugins" title="Permalink to this headline">¶</a></h3>
+<p>You can install VirtualBox and Vagrant either manually using website downloads
+or with Homebrew:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> brew cask install virtualbox virtualbox-extension-pack vagrant
+</pre></div>
+</div>
+<p>Sanity check:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant version
+<span class="go">Installed Version: 2.1.2</span>
+<span class="go">Latest Version: 2.1.2</span>
+
+<span class="go">You&#39;re running an up-to-date version of Vagrant!</span>
+</pre></div>
+</div>
+<p>Then, install the needed plugins:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant plugin install vagrant-disksize <span class="se">\</span>
+                         vagrant-proxyconf <span class="se">\</span>
+                         vagrant-reload <span class="se">\</span>
+                         vagrant-vbguest
+</pre></div>
+</div>
+</div>
+<div class="section" id="build-and-provision">
+<h3><a class="toc-backref" href="#id9">5.2.3. Build and provision</a><a class="headerlink" href="#build-and-provision" title="Permalink to this headline">¶</a></h3>
+<p>To build the VM and install Docker, Charliecloud, etc.:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> packaging/vagrant
+<span class="gp">$</span> <span class="nv">CH_VERSION</span><span class="o">=</span>v0.9.1 vagrant up
+</pre></div>
+</div>
+<p>This takes less than 5 minutes.</p>
+<p>If you want the head of the master branch, omit <code class="code docutils literal notranslate"><span class="pre">CH_VERSION</span></code>.</p>
+<p>Then, optionally run the Charliecloud tests:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant up --provision-with<span class="o">=</span><span class="nb">test</span>
+</pre></div>
+</div>
+<p>This runs the full Charliecloud test suite, which takes quite a while (maybe
+1–2 hours). Go have lunch, and then second lunch, and then third lunch.</p>
+<p>Note that the test output does not have a TTY, so you will not have the tidy
+checkmarks. The last test printed is the last one that completed, not the one
+currently running.</p>
+<p>If the tests don’t pass, that’s a bug. Please report it!</p>
+<p>Now you can <code class="code docutils literal notranslate"><span class="pre">vagrant</span> <span class="pre">ssh</span></code> and do all the usual Vagrant stuff.</p>
+</div>
+</div>
+<div class="section" id="build-ova-appliance-file-with-vagrant-and-virtualbox">
+<h2><a class="toc-backref" href="#id10">5.3. Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a><a class="headerlink" href="#build-ova-appliance-file-with-vagrant-and-virtualbox" title="Permalink to this headline">¶</a></h2>
+<p>This section uses Vagrant and the VirtualBox GUI to create a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file
+that you can provide to end users as described above. You should read the
+above section on using the VM with Vagrant as well.</p>
+<div class="section" id="remove-old-virtual-machine">
+<h3><a class="toc-backref" href="#id11">5.3.1. Remove old virtual machine</a><a class="headerlink" href="#remove-old-virtual-machine" title="Permalink to this headline">¶</a></h3>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If you are using a Vagrant virtual machine for your own use, make sure
+you’re not removing it here, unless you are sure it’s disposable.</p>
+</div>
+<p>Each time we create a new image to distribute, we start from scratch rather
+than updating the old image. Therefore, we must remove the old image.</p>
+<ol class="arabic">
+<li><p class="first">Destroy the old virtual machine:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> packaging/vagrant
+<span class="gp">$</span> vagrant destroy
+</pre></div>
+</div>
+</li>
+<li><p class="first">Remove deleted disk images from the VirtualBox media manager: <em>File</em> →
+<em>Virtual Media Manager</em>. Right click on and remove any <code class="code docutils literal notranslate"><span class="pre">.vmdk</span></code> with a
+red exclamation icon next to them.</p>
+</li>
+</ol>
+</div>
+<div class="section" id="id1">
+<h3><a class="toc-backref" href="#id12">5.3.2. Build and provision</a><a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>The most important difference with this build procedure is that a second user
+<code class="code docutils literal notranslate"><span class="pre">charlie</span></code> is created and endowed with passwordless <code class="code docutils literal notranslate"><span class="pre">sudo</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nv">CH_VERSION</span><span class="o">=</span>v0.9.1 vagrant up
+<span class="gp">$</span> vagrant --provision-with<span class="o">=</span>ova
+</pre></div>
+</div>
+</div>
+<div class="section" id="snapshot-for-distribution">
+<h3><a class="toc-backref" href="#id13">5.3.3. Snapshot for distribution</a><a class="headerlink" href="#snapshot-for-distribution" title="Permalink to this headline">¶</a></h3>
+<p>We want to distribute a small appliance file, but one that passes the tests.
+Running the tests greatly bloats the appliance. Therefore, we’ll take a
+snapshot of the powered-off VM named <code class="code docutils literal notranslate"><span class="pre">exportme</span></code>, run the tests, and then
+roll back to the snapshot before exporting.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant halt
+<span class="gp">$</span> VBoxManage modifyvm charliebox --defaultfrontend default
+<span class="gp">$</span> vagrant snapshot save exportme
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you wish to use the appliance yourself, and you prefer to use plain
+VirtualBox instead of Vagrant, now is a good time to clone the VM and use
+the clone. This will protect your VM from Vagrant’s attentions later.</p>
+</div>
+</div>
+<div class="section" id="test-charliecloud">
+<h3><a class="toc-backref" href="#id14">5.3.4. Test Charliecloud</a><a class="headerlink" href="#test-charliecloud" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant up --provision-with<span class="o">=</span><span class="nb">test</span>
+</pre></div>
+</div>
+<p>You might also show the console in the VirtualBox GUI and make sure
+<code class="code docutils literal notranslate"><span class="pre">charlie</span></code> is logged in.</p>
+</div>
+<div class="section" id="export-appliance-ova-file">
+<h3><a class="toc-backref" href="#id15">5.3.5. Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a><a class="headerlink" href="#export-appliance-ova-file" title="Permalink to this headline">¶</a></h3>
+<p>This creates a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file, which is a standard way to package a virtual
+machine image with metadata. Some else can then import it into their own
+VirtualBox, as described above. (In principle, other virtual machine emulators
+should work as well, but we haven’t tried.)</p>
+<p>These steps are done in the VirtualBox GUI because I haven’t figured
+out a way to produce a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> in Vagrant, only Vagrant “boxes”.</p>
+<ol class="arabic simple">
+<li>Shut down the VM (you can just power it off).</li>
+<li>Restore the snapshot <em>exportme</em>. (Don’t use <code class="code docutils literal notranslate"><span class="pre">vagrant</span> <span class="pre">shapshot</span>
+<span class="pre">restore</span></code> because it boots the snapshot and runs the provisioners again.)</li>
+<li><em>File</em> → <em>Export appliance</em>.</li>
+<li>Select your VM, <em>charliebox</em>. Click <em>Continue</em>.</li>
+<li>Configure the export:<ul>
+<li><em>Format</em>: OVF 2.0. (Note: Changing this menu resets the filename.)</li>
+<li><em>File</em>: Directory and filename you want. (The install procedure above
+uses <code class="code docutils literal notranslate"><span class="pre">charliecloud_centos7.ova</span></code>.)</li>
+<li><em>Write manifest file</em>: unchecked</li>
+</ul>
+</li>
+<li>Click <em>Continue</em>.</li>
+<li>Check the descriptive information and click <em>Export</em>. (For example, maybe
+you want to put the Charliecloud version in the <em>Version</em> field.)</li>
+<li>Distribute the resulting file, which should be about 800–900MiB.</li>
+</ol>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="faq.html" class="btn btn-neutral float-right" title="6. Frequently asked questions (FAQ)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="command-usage.html" class="btn btn-neutral" title="4. Charliecloud command reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014–2018, Los Alamos National Security, LLC.
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.9.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

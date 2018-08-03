@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installation &mdash; Charliecloud 0.9.0 documentation</title>
+  <title>1. Installation &mdash; Charliecloud 0.9.1 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.9.0 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.9.1 documentation" href="index.html"/>
         <link rel="next" title="2. Testing" href="test.html"/>
         <link rel="prev" title="Overview" href="index.html"/> 
 
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                ef881ca
+                db16c7f
               </div>
             
           
@@ -130,7 +130,7 @@
 <li class="toctree-l1"><a class="reference internal" href="test.html">2. Testing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">3. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command-usage.html">4. Charliecloud command reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="virtualbox.html">5. VirtualBox appliance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vm.html">5. Pre-installed virtual machine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">6. Frequently asked questions (FAQ)</a></li>
 </ul>
 
@@ -235,12 +235,6 @@ the master branch.</p>
 </ul>
 </li>
 </ul>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">These are general installation instructions. If you’d like specific,
-step-by-step directions for CentOS 7, section <a class="reference internal" href="virtualbox.html"><span class="doc">VirtualBox appliance</span></a> has these
-for a VirtualBox virtual machine.</p>
 </div>
 <div class="section" id="prequisites">
 <h2><a class="toc-backref" href="#id1">1.1. Prequisites</a><a class="headerlink" href="#prequisites" title="Permalink to this headline">¶</a></h2>
@@ -434,7 +428,7 @@ responsibilities.</p>
 <div class="section" id="docker-equals-root">
 <h4>1.4.1.1. <code class="code docutils literal notranslate"><span class="pre">docker</span></code> equals root<a class="headerlink" href="#docker-equals-root" title="Permalink to this headline">¶</a></h4>
 <p>Anyone who can run the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> command or interact with the Docker
-daemon can <a class="reference external" href="http://reventlov.com/advisories/using-the-docker-command-to-root-the-host">trivially escalate to root</a>.
+daemon can <a class="reference external" href="http://web.archive.org/web/20170614013206/http://www.reventlov.com/advisories/using-the-docker-command-to-root-the-host">trivially escalate to root</a>.
 This is considered a feature.</p>
 <p>For this reason, don’t create the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> group, as this will allow
 passwordless, unlogged escalation for anyone in the group.</p>
@@ -556,7 +550,7 @@ above variables are set.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.9.0',
+            VERSION:'0.9.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
