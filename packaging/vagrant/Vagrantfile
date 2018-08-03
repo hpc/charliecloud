@@ -1,0 +1,248 @@
+# This Vagrantfile builds a Centos 7 virtual machine with Charliecloud and
+# Docker installed. It is documented in the HTML docs.
+
+# A few design decisions:
+#
+# 1. We use the CentOS kernel (3.10 + lots of Red Hat patches) because it's
+#    easier than installing the upstream kernel and seems to work fine once
+#    user namespaces are turned on. Please let us know of any problems.
+#
+# 2. /tmp is the CentOS default: simply a directory on the root filesystem,
+#    but cleaned out on each boot. This is to avoid (a) configuring it to be a
+#    tmpfs and (b) to save swap.
+#
+# 3. We don't try any clever sizing of the VM appliance (e.g., number of
+#    vCPUs, RAM). End users should adjust these values, but we want to leave
+#    reasonable defaults in case they don't, even if they have a smallish
+#    host. For example, we don't want to configure the appliance to take
+#    advantage of your 96-core Beast Machine and then give it to some poor end
+#    user to run that 96-vCPU VM on their 4-core laptop.
+#
+# 4. No OpenMPI is installed. This saves build time, a little disk space, and
+#    the complexity of finding the right version to match the Charliecloud
+#    examples, while the cost is low: a few tests are skipped. Users who want
+#    to run single-node MPI apps in the VM should launch from within ch-run.
+
+# Prerequisites.
+Vagrant.require_version ">= 2.1.0"
+["disksize", "proxyconf", "reload", "vbguest"].each do |p|
+  if not Vagrant.has_plugin?("vagrant-#{p}")
+    raise("plugin vagrant-#{p} is required")
+  end
+end
+
+Vagrant.configure("2") do |c|
+
+  c.vm.box = "centos/7"  # https://app.vagrantup.com/centos/boxes/7
+  c.vm.hostname = "charliebox"
+
+  # Note: Vagrant sets up a port mapping from localhost:2222 to charliebox:22
+  # automatically, so we need no repeat that here.
+
+  # Set up proxies if appropriate.
+  if ENV["HTTP_PROXY"] or ENV["HTTPS_PROXY"] or ENV["NO_PROXY"]
+    if not (ENV["HTTP_PROXY"] and ENV["HTTPS_PROXY"] and ENV["NO_PROXY"])
+      raise("missing proxy variable(s)")
+    end
+    c.proxy.http = ENV["HTTP_PROXY"]
+    c.proxy.https = ENV["HTTPS_PROXY"]
+    c.proxy.no_proxy = ENV["NO_PROXY"]
+    c.vm.provision "proxy", type:"shell", privileged: true, inline: <<-EOF
+      echo 'Defaults env_keep+="ALL_PROXY all_proxy auto_proxy RSYNC_PROXY"' \
+          >> /etc/sudoers.d/proxy
+    EOF
+  end
+
+  # Don't inflict unexpected re-provisions on the user. They can always
+  # destroy and re-provision to get an updated base box if they want.
+  c.vm.box_check_update = false
+
+  # Configure the appliance.
+  c.vm.provider "virtualbox" do |vb|
+    vb.name = "charliebox"
+    vb.gui = false
+    vb.memory = "4096"
+    vb.cpus = 4
+    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+  end
+
+  # Increase the disk size so that the full-scope tests can finish.
+  c.disksize.size = '96GB'
+  c.vm.provision "disksize", type: "shell", privileged: true,
+                 inline: <<-EOF
+    set -e
+    parted /dev/sda resizepart 3 100%
+    pvresize /dev/sda3
+    lvextend --extents 100%PVS /dev/VolGroup00/LogVol00
+    xfs_growfs /
+    df -h
+  EOF
+
+  # Install a decent user environment.
+  c.vm.provision "environment", type: "shell", privileged: true,
+                 inline: <<-EOF
+    set -e
+    cd /tmp
+
+    # Basic stuff from standard repos.
+    yum makecache fast
+    yum-config-manager --setopt=deltarpm=0 --save
+    yum -y upgrade
+    yum -y install emacs \
+                   vim \
+                   wget
+
+    # Git from IUS. This also activates EPEL.
+    wget https://centos7.iuscommunity.org/ius-release.rpm
+    yum -y install epel-release
+    rpm --install ius-release.rpm
+    yum -y install git2u
+
+    # Utilities to make the shell scripts faster and more usable.
+    yum -y install pigz pv
+
+    # Add /usr/local/{bin,sbin} to $PATH.
+    echo 'export PATH=/usr/local/sbin:/usr/local/bin:$PATH' > /etc/profile.d/path.sh
+  EOF
+
+  # Configure namespaces. This needs a reboot for the kernel command line
+  # update to take effect.
+  #
+  # Note: This could be skipped if we installed an upstream kernel (e.g., via
+  # ElRepo). However, we're not aware of any advantages vs. the CentOS kernel
+  # for this use case.
+  c.vm.provision "namespaces", type: "shell", privileged: true,
+                 inline: <<-EOF
+    set -e
+    echo 'user.max_user_namespaces = 32767' > /etc/sysctl.d/51-userns.conf
+    grubby --args='namespace.unpriv_enable=1' --update-kernel=ALL
+  EOF
+  c.vm.provision :reload
+
+  # Install Docker.
+  #
+  # vagrant-proxyconf for Docker doesn't seem to work, so do it manually.
+  c.vm.provision "docker", type: "shell", privileged: true,
+                 inline: <<-EOF
+    set -e
+    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+    yum -y install docker-ce
+    if [[ $HTTP_PROXY ]]; then
+      echo 'configuring Docker proxy'
+      mkdir -p /etc/systemd/system/docker.service.d
+      cat << EOF2 > /etc/systemd/system/docker.service.d/http-proxy.conf
+[Service]
+Environment="HTTP_PROXY=$HTTP_PROXY"
+Environment="HTTPS_PROXY=$HTTPS_PROXY"
+EOF2
+    fi
+    systemctl enable docker
+    systemctl daemon-reload
+    systemctl restart docker
+    systemctl show --property=Environment docker
+    docker run hello-world
+  EOF
+
+  # Install Charliecloud.
+  c.vm.provision "charliecloud", type: "shell", privileged: false,
+                 env: { "CH_VERSION" => ENV["CH_VERSION"] },
+                 inline: <<-EOF
+    set -e
+    sudo tee /etc/profile.d/charliecloud.sh << 'EOF2'
+export CH_TEST_TARDIR=/var/tmp/tarballs
+export CH_TEST_IMGDIR=/var/tmp/images
+export CH_TEST_PERMDIRS=skip
+EOF2
+
+    cd /usr/local/src
+    sudo chmod 1777 .
+    git clone --recursive https://github.com/hpc/charliecloud.git
+
+    cd charliecloud
+    if [[ $CH_VERSION ]]; then
+      git checkout $CH_VERSION
+    fi
+    make
+    examples/syscalls/pivot_root
+    sudo make install PREFIX=/usr/local
+    which ch-run
+    ch-run --version
+  EOF
+
+  # Twiddle vagrant user so Charliecloud tests will pass (add to a second
+  # group, and permit sudo to UID 0 and GID != 0).
+  c.vm.provision "vagrant-user", type: "shell", privileged: true,
+                 inline: <<-EOF
+    set -e
+    usermod -aG users vagrant
+    echo '%vagrant ALL=(ALL:ALL) NOPASSWD: ALL' > /etc/sudoers.d/vagrant
+  EOF
+
+  # Remove unneeded packages.
+  c.vm.provision "cleanup", type: "shell", privileged: true,
+                 inline: <<-EOF
+    set -e
+    package-cleanup -y --oldkernels --count=1
+  EOF
+
+  # Prepare for .ova export. In this case, end users need not know or care
+  # that the VM was set up using Vagrant.
+  c.vm.provision "ova", type: "shell", run: "never", privileged: true,
+                 inline: <<-EOF
+    set -e
+
+    # Create a user "charlie" for the end user (see documentation).
+    #
+    # Strictly speaking, this is not necessary, as they could just use the
+    # existing "vagrant" user. However, I eventually concluded that I'd prefer
+    # to (1) keep the "charlie" user that we've been promoting for some time,
+    # and (2) leave the door open for other VM build schemes in the future.
+    adduser --password='*' --groups users,vagrant charlie
+
+    # chown(2) /usr/local/src/charliecloud to charlie so end user can update,
+    # rebuild, etc.
+    chown -R charlie:charlie /usr/local/src/charliecloud
+
+    # Automatically log in "charlie" on the console, so they have a way to get
+    # in if SSH isn't working.
+    cd /etc/systemd/system/getty.target.wants
+    rm -f getty@tty1.service
+    cp /lib/systemd/system/getty@.service getty@tty1.service
+    sed -ri 's|^ExecStart=.*$|ExecStart=-/sbin/agetty --autologin charlie --noclear %I|' getty@tty1.service
+
+    # Configure SSH to allow password logins. We would prefer to keep the
+    # Vagrant default of SSH keys only, but I can't figure out how to get the
+    # key into the VM in a way that's easy for end users.
+    sed -ri 's/^PasswordAuthentication no$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    systemctl restart sshd
+
+    # Lock out password login for root and vagrant, because the default
+    # password is well-known and we now allow password login.
+    passwd -l root
+    passwd -l vagrant
+
+  EOF
+
+  # Test Charliecloud (optional).
+  #
+  # Note: This will grow the image quite a bit. Don't run it before taking the
+  # snapshot to be distributed to end users.
+  c.vm.provision "test", type: "shell", run: "never", privileged: false,
+                 env: { "CH_TEST_SCOPE" => "full" },
+                 inline: <<-EOF
+    set -e
+    if ( id -u charlie ); then
+        user=charlie
+    else
+        user=vagrant
+    fi
+    echo "testing as: $user"
+    sudo -iu $user -- sh -c "\
+   cd /usr/local/share/doc/charliecloud/test \
+&& CH_TEST_SCOPE=$CH_TEST_SCOPE make test"
+  EOF
+
+end
+
+
+# vi: set ft=ruby

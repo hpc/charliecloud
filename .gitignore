@@ -77,6 +77,7 @@ test/sotest/*.so*
 test/sotest/sotest
 test/sotest/bin/sotest
 test/sotest/lib/*.so*
+packaging/vagrant/.vagrant
 
 # for Debian package
 *.debhelper.log

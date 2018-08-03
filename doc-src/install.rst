@@ -21,12 +21,6 @@ normal users and admins can build and install it manually.
    :depth: 2
    :local:
 
-.. note::
-
-   These are general installation instructions. If you'd like specific,
-   step-by-step directions for CentOS 7, section :doc:`virtualbox` has these
-   for a VirtualBox virtual machine.
-
 
 Prequisites
 ===========
