@@ -1,4 +1,4 @@
-# ch-test-scope: skip (issue #204)
+# ch-test-scope: full
 FROM debian9
 
 # Note: Spack is a bit of an odd duck testing wise. Because it's a package
@@ -32,10 +32,20 @@ RUN git clone --depth 1 $SPACK_REPO
 # Set up environment to use Spack. (We can't use setup-env.sh because the
 # Dockerfile shell is sh, not Bash.)
 ENV PATH /spack/bin:$PATH
+RUN spack compiler find --scope system
+
+# Test: Some basic commands.
+RUN which spack
+RUN spack --version
+RUN spack compiler list
+RUN spack compiler list --scope=system
+RUN spack compiler list --scope=user
 RUN spack compilers
+RUN spack spec netcdf
 
 # Test: Install a small package.
-RUN spack install libsigsegv
+RUN spack spec charliecloud
+RUN spack install charliecloud
 
 # Test: Run Spack test suite.
 # FIXME: Commented out because the suite fails. It's inconsistent; the number

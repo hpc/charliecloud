@@ -1,7 +1,7 @@
 load ../../../test/common
 
 setup() {
-    scope skip  # issue #204
+    scope full
     [[ -z $CHTEST_CRAY ]] || skip 'issue #193 and Spack issue #8618'
     prerequisites_ok spack
     SPACK_IMG="$IMGDIR/spack"
@@ -13,6 +13,13 @@ setup() {
 }
 
 @test "$EXAMPLE_TAG/compilers" {
+    echo "spack compiler list"
+    ch-run "$SPACK_IMG" -- spack compiler list
+    echo "spack compiler list --scope=system"
+    ch-run "$SPACK_IMG" -- spack compiler list --scope=system
+    echo "spack compiler list --scope=user"
+    ch-run "$SPACK_IMG" -- spack compiler list --scope=user
+    echo "spack compilers"
     ch-run "$SPACK_IMG" -- spack compilers
 }
 
