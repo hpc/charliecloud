@@ -3,7 +3,9 @@
 #define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <libgen.h>
+#include <pwd.h>
 #include <sched.h>
 #include <semaphore.h>
 #include <stdio.h>
@@ -47,8 +49,6 @@ const char *VERBOSE_LEVELS[] = { "error", "warning", "info", "debug" };
 
 /* Default bind-mounts. */
 const char *DEFAULT_BINDS[] = { "/dev",
-                                "/etc/passwd",
-                                "/etc/group",
                                 "/etc/hosts",
                                 "/etc/resolv.conf",
                                 "/proc",
@@ -87,6 +87,7 @@ void join_end();
 void log_ids(const char *func, int line);
 void sem_timedwait_relative(sem_t *sem, int timeout);
 void setup_namespaces(struct container *c);
+void setup_passwd(struct container *c);
 
 
 /** Functions **/
@@ -131,6 +132,8 @@ void enter_udss(struct container *c)
       Zf (mount(DEFAULT_BINDS[i], path, NULL, MS_REC|MS_BIND|MS_RDONLY, NULL),
           "can't bind %s to %s", (char *) DEFAULT_BINDS[i], path);
    }
+   // /etc/passwd and /etc/group
+   setup_passwd(c);
    // Container /tmp
    T_ (1 <= asprintf(&path, "%s%s", c->newroot, "/tmp"));
    if (c->private_tmp) {
@@ -425,6 +428,53 @@ void setup_namespaces(struct container *c)
    T_ (1 <= dprintf(fd, "%d %d 1\n", c->container_gid, egid));
    Z_ (close(fd));
    LOG_IDS;
+}
+
+/* Build /etc/passwd and /etc/group files and bind-mount them into newroot. We
+   do it this way so that we capture the relevant host username and group name
+   mappings regardless of where they come from. (We used to simply bind-mount
+   the host's /etc/passwd and /etc/group, but this fails for LDAP at least;
+   see issue #212.) After bind-mounting, we remove them on the host side;
+   they'll persist inside the container and then disappear completely when the
+   latter exits. */
+void setup_passwd(struct container *c)
+{
+   int fd;
+   char *path, *newpath;
+   struct group *g;
+   struct passwd *p;
+
+   // /etc/passwd
+   T_ (path = strdup("/tmp/ch-run_passwd.XXXXXX"));
+   T_ (-1 != (fd = mkstemp(path)));
+   if (c->container_uid != 0)
+      T_ (1 <= dprintf(fd, "root:x:0:0:root:/root:/bin/sh\n"));
+   if (c->container_uid != 65534)
+      T_ (1 <= dprintf(fd, "nobody:x:65534:65534:nobody:/:/bin/false\n"));
+   T_ (p = getpwuid(c->container_uid));
+   T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
+                    p->pw_name, c->container_uid, c->container_gid,
+                    p->pw_gecos, getenv("USER")));
+   Z_ (close(fd));
+   T_ (1 <= asprintf(&newpath, "%s/etc/passwd", c->newroot));
+   Zf (mount(path, newpath, NULL, MS_BIND, NULL),
+       "can't bind %s to %s", path, newpath);
+   Z_ (unlink(path));
+
+   // /etc/group
+   T_ (path = strdup("/tmp/ch-run_group.XXXXXX"));
+   T_ (-1 != (fd = mkstemp(path)));
+   if (c->container_gid != 0)
+      T_ (1 <= dprintf(fd, "root:x:0:\n"));
+   if (c->container_gid != 65534)
+      T_ (1 <= dprintf(fd, "nogroup:x:65534:\n"));
+   T_ (g = getgrgid(c->container_gid));
+   T_ (1 <= dprintf(fd, "%s:x:%u:\n", g->gr_name, c->container_gid));
+   Z_ (close(fd));
+   T_ (1 <= asprintf(&newpath, "%s/etc/group", c->newroot));
+   Zf (mount(path, newpath, NULL, MS_BIND, NULL),
+       "can't bind %s to %s", path, newpath);
+   Z_ (unlink(path));
 }
 
 /* Report the version number. */
