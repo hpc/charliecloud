@@ -92,7 +92,7 @@ void setup_namespaces(struct container *c);
 /** Functions **/
 
 /* Set up new namespaces or join existing namespaces. */
-void containerize(struct container * c)
+void containerize(struct container *c)
 {
    if (c->join)
       join_begin(c->join_ct, c->join_tag);
