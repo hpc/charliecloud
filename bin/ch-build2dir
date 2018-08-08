@@ -27,15 +27,15 @@ if [ "$#" -lt 2 ]; then
     usage
 fi
 
-CONTEXT="$1"
-DEST="$2"
+context="$1"
+dest="$2"
 shift 2
 
-TAG=$(basename "$PWD")
+tag=$(basename "$PWD")
 
 set -x
 
-"$CH_BIN"/ch-build -t "$TAG" "$CONTEXT" "$@"
-"$CH_BIN"/ch-docker2tar "$TAG" "$DEST"
-"$CH_BIN"/ch-tar2dir "$DEST/$TAG.tar.gz" "$DEST"
-rm "$DEST/$TAG.tar.gz"
+"${CH_BIN}"/ch-build -t "${tag}" "${context}" "$@"
+"${CH_BIN}"/ch-docker2tar "${tag}" "${dest}"
+"${CH_BIN}"/ch-tar2dir "${dest}/${tag}.tar.gz" "${dest}"
+rm "${dest}/${tag}.tar.gz"

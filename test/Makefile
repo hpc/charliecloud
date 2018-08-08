@@ -1,12 +1,12 @@
 export LC_ALL := C
-IMAGES :=      chtest/Build \
-               $(sort $(wildcard ./Build.*)) \
-               $(sort $(wildcard ./Dockerfile.*)) \
-               $(sort $(wildcard ./Docker_Pull.*)) \
-               $(sort $(wildcard ../examples/*/*/Build)) \
-               $(sort $(wildcard ../examples/*/*/Dockerfile)) \
-               $(sort $(wildcard ../examples/*/*/Docker_Pull))
-EXAMPLETESTS := $(sort $(wildcard ../examples/*/*/test.bats))
+images :=   chtest/Build \
+            $(sort $(wildcard ./Build.*)) \
+            $(sort $(wildcard ./Dockerfile.*)) \
+            $(sort $(wildcard ./Docker_Pull.*)) \
+            $(sort $(wildcard ../examples/*/*/Build)) \
+            $(sort $(wildcard ../examples/*/*/Dockerfile)) \
+            $(sort $(wildcard ../examples/*/*/Docker_Pull))
+examples := $(sort $(wildcard ../examples/*/*/test.bats))
 
 # Favor embedded Bats, if installed, over system Bats.
 export PATH := $(CURDIR)/bats/bin:$(PATH)
@@ -43,8 +43,8 @@ test-run: run_auto.bats
 	done; fi
 
 .PHONY: test-test
-test-test: $(EXAMPLETESTS)
-	bats $(EXAMPLETESTS)
+test-test: $(examples)
+	bats $(examples)
 
 .PHONY: clean
 clean:
@@ -57,10 +57,10 @@ where-bats:
 	which bats
 	bats --version
 
-build_auto.bats: $(IMAGES)
+build_auto.bats: $(images)
 	./make-auto build $^ > $@
 
-run_auto.bats: $(IMAGES)
+run_auto.bats: $(images)
 	./make-auto run $^ > $@
 
 sotest/bin/sotest: sotest/sotest

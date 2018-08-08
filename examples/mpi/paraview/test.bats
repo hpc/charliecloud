@@ -3,13 +3,12 @@ load ../../../test/common
 setup () {
     scope full
     prerequisites_ok paraview
-    IMG=$IMGDIR/paraview
-    INDIR=$BATS_TEST_DIRNAME
-    OUTDIR=$BATS_TMPDIR
-    if [[ $CHTEST_MULTINODE ]]; then
+    indir=$BATS_TEST_DIRNAME
+    outdir=$BATS_TMPDIR
+    if [[ $ch_multinode ]]; then
         # Bats only creates $BATS_TMPDIR on the first node.
         # shellcheck disable=SC2086
-        $MPIRUN_NODE mkdir -p "$BATS_TMPDIR"
+        ${ch_mpirun_node} mkdir -p "$BATS_TMPDIR"
     fi
 }
 
@@ -29,30 +28,30 @@ setup () {
 # We do not check .pvtp (and its companion .vtp) output because it's a
 # collection of XML files containing binary data and it seems too hairy to me.
 
-@test "$EXAMPLE_TAG/cone serial" {
-    ch-run -b "$INDIR" -b "$OUTDIR" "$IMG" -- \
+@test "${ch_tag}/cone serial" {
+    ch-run -b "${indir}" -b "${outdir}" "${ch_img}" -- \
            pvbatch /mnt/0/cone.py /mnt/1
-    ls -l "$OUTDIR"/cone*
-    diff -u "$INDIR/cone.serial.vtk" "$OUTDIR/cone.vtk"
-    cmp "$INDIR/cone.png" "$OUTDIR/cone.png"
+    ls -l "${outdir}"/cone*
+    diff -u "${indir}/cone.serial.vtk" "${outdir}/cone.vtk"
+    cmp "${indir}/cone.png" "${outdir}/cone.png"
 }
 
-@test "$EXAMPLE_TAG/cone ranks=2" {
+@test "${ch_tag}/cone ranks=2" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    $MPIRUN_2 ch-run --join -b "$INDIR" -b "$OUTDIR" "$IMG" -- \
+    ${ch_mpirun_2} ch-run --join -b "${indir}" -b "${outdir}" "${ch_img}" -- \
               pvbatch /mnt/0/cone.py /mnt/1
-    ls -l "$OUTDIR"/cone*
-    diff -u "$INDIR/cone.2ranks.vtk" "$OUTDIR/cone.vtk"
-    cmp "$INDIR/cone.png" "$OUTDIR/cone.png"
+    ls -l "${outdir}"/cone*
+    diff -u "${indir}/cone.2ranks.vtk" "${outdir}/cone.vtk"
+    cmp "${indir}/cone.png" "${outdir}/cone.png"
 }
 
-@test "$EXAMPLE_TAG/cone ranks=N" {
+@test "${ch_tag}/cone ranks=N" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    $MPIRUN_CORE ch-run --join -b "$INDIR" -b "$OUTDIR" "$IMG" -- \
+    ${ch_mpirun_core} ch-run --join -b "${indir}" -b "${outdir}" "${ch_img}" -- \
                  pvbatch /mnt/0/cone.py /mnt/1
-    ls -l "$OUTDIR"/cone*
-    diff -u "$INDIR/cone.nranks.vtk" "$OUTDIR/cone.vtk"
-    cmp "$INDIR/cone.png" "$OUTDIR/cone.png"
+    ls -l "${outdir}"/cone*
+    diff -u "${indir}/cone.nranks.vtk" "${outdir}/cone.vtk"
+    cmp "${indir}/cone.png" "${outdir}/cone.png"
 }

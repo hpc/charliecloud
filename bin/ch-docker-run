@@ -28,15 +28,15 @@ You must have sufficient privilege (via sudo) to run the Docker commands.
 EOF
 )
 
-MOUNTS=( /etc/passwd:/etc/passwd \
+mounts=( /etc/passwd:/etc/passwd \
          /etc/group:/etc/group )
 
 parse_basic_args "$@"
 
 while getopts 'b:ih' opt; do
     case $opt in
-        i) INTERACTIVE=-it ;;
-        b) MOUNTS+=( "$OPTARG" ) ;;
+        i) interactive=-it ;;
+        b) mounts+=( "$OPTARG" ) ;;
         h)
             usage 0
             ;;
@@ -51,19 +51,19 @@ if [[ $# -lt 2 ]]; then
     usage
 fi
 
-TAG="$1"
+tag="$1"
 shift
 
-if [[ $INTERACTIVE ]]; then
+if [[ $interactive ]]; then
     echo 'interactive mode'
 fi
 
 echo 'bind mounts:'
-MOUNTARGS=''
-for (( i = 0; i < ${#MOUNTS[@]}; i++ )); do
-    echo ' ' "${MOUNTS[$i]}"
-    MOUNTARGS+=" -v ${MOUNTS[$i]}"
+mount_args=''
+for (( i = 0; i < ${#mounts[@]}; i++ )); do
+    echo ' ' "${mounts[$i]}"
+    mount_args+=" -v ${mounts[$i]}"
 done
 
 set -x
-$DOCKER run --read-only -u "$USER" "$INTERACTIVE" "$MOUNTARGS" "$TAG" "$@"
+${DOCKER} run --read-only -u "${USER}" "${interactive}" "${mount_args}" "${tag}" "$@"

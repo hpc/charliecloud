@@ -5,19 +5,19 @@ setup () {
     prerequisites_ok hello
 }
 
-@test "$EXAMPLE_TAG/hello" {
-    run ch-run "$EXAMPLE_IMG" -- /hello/hello.sh
+@test "${ch_tag}/hello" {
+    run ch-run "${ch_img}" -- /hello/hello.sh
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = 'hello world' ]]
 }
 
-@test "$EXAMPLE_TAG/distribution sanity" {
+@test "${ch_tag}/distribution sanity" {
     # Try various simple things that should work in a basic Debian
     # distribution. (This does not test anything Charliecloud manipulates.)
-    ch-run "$EXAMPLE_IMG" -- /bin/bash -c true
-    ch-run "$EXAMPLE_IMG" -- /bin/true
-    ch-run "$EXAMPLE_IMG" -- find /etc -name 'a*'
-    ch-run "$EXAMPLE_IMG" -- sh -c 'echo foo | /bin/grep -E foo'
-    ch-run "$EXAMPLE_IMG" -- nice true
+    ch-run "${ch_img}" -- /bin/bash -c true
+    ch-run "${ch_img}" -- /bin/true
+    ch-run "${ch_img}" -- find /etc -name 'a*'
+    ch-run "${ch_img}" -- sh -c 'echo foo | /bin/grep -E foo'
+    ch-run "${ch_img}" -- nice true
 }

@@ -26,33 +26,33 @@ joined_ok () {
         return 1
     fi
     # number of processes
-    printf '  process count; expected %d: ' "$proc_ct_total" 1>&2
+    printf '  process count; expected %d: ' "${proc_ct_total}" 1>&2
     proc_ct_found=$(echo "$output" | grep -Ec 'join: 1 [0-9]+ [0-9a-z]+')
     if [[ $proc_ct_total -eq "$proc_ct_found" ]]; then
         printf 'ok\n'
     else
-        printf 'fail (%d)\n' "$proc_ct_found" 1>&2
+        printf 'fail (%d)\n' "${proc_ct_found}" 1>&2
         return 1
     fi
     # number of peers
-    printf '  peer group size; expected %d: ' "$peer_ct_node" 1>&2
+    printf '  peer group size; expected %d: ' "${peer_ct_node}" 1>&2
     peer_cts=$(  echo "$output" \
                | sed -rn 's/^ch-run\[[0-9]+\]: join: 1 ([0-9]+) .+$/\1/p')
     peer_ct_found=$(echo "$peer_cts" | sort -u)
-    peer_cts_found=$(echo "$peer_ct_found" | wc -l)
+    peer_cts_found=$(echo "${peer_ct_found}" | wc -l)
     if [[ $peer_cts_found -ne 1 ]]; then
-        printf 'fail (%d different counts reported)\n' "$peer_cts_found" 1>&2
+        printf 'fail (%d different counts reported)\n' "${peer_cts_found}" 1>&2
         return 1
     fi
     if [[ $peer_ct_found -eq "$peer_ct_node" ]]; then
         printf 'ok\n' 1>&2
     else
-        printf 'fail (%d)\n' "$peer_ct_found" 1>&2
+        printf 'fail (%d)\n' "${peer_ct_found}" 1>&2
         return 1
     fi
     # correct number of namespace IDs
     for i in /proc/self/ns/*; do
-        printf '  namespace count; expected %d: %s: ' "$namespace_ct" "$i" 1>&2
+        printf '  namespace count; expected %d: %s: ' "${namespace_ct}" "$i" 1>&2
         namespace_ct_found=$(  echo "$output" \
                              | grep -E "^$i:" \
                              | sort -u \
@@ -60,7 +60,7 @@ joined_ok () {
         if [[ $namespace_ct -eq "$namespace_ct_found" ]]; then
             printf 'ok\n' 1>&2
         else
-            printf 'fail (%d)\n' "$namespace_ct_found" 1>&2
+            printf 'fail (%d)\n' "${namespace_ct_found}" 1>&2
             return 1
         fi
     done
@@ -80,7 +80,7 @@ unset_vars () {
     ipc_clean_p
 
     # --join-ct
-    run ch-run -v --join-ct=1 "$CHTEST_IMG" -- /test/printns
+    run ch-run -v --join-ct=1 "${ch_timg}" -- /test/printns
     joined_ok 1 1 1 "$status" "$output"
     r='join: 1 1 [0-9]+ '   # status from getppid(2) is all digits
     [[ $output =~ $r ]]
@@ -88,24 +88,24 @@ unset_vars () {
     ipc_clean_p
 
     # join count from an environment variable
-    SLURM_CPUS_ON_NODE=1 run ch-run -v --join "$CHTEST_IMG" -- /test/printns
+    SLURM_CPUS_ON_NODE=1 run ch-run -v --join "${ch_timg}" -- /test/printns
     joined_ok 1 1 1 "$status" "$output"
     [[ $output = *'join: peer group size from SLURM_CPUS_ON_NODE'* ]]
     ipc_clean_p
 
     # join count from an environment variable with extra goop
-    SLURM_CPUS_ON_NODE=1foo ch-run --join "$CHTEST_IMG" -- /test/printns
+    SLURM_CPUS_ON_NODE=1foo ch-run --join "${ch_timg}" -- /test/printns
     joined_ok 1 1 1 "$status" "$output"
     [[ $output = *'join: peer group size from SLURM_CPUS_ON_NODE'* ]]
     ipc_clean_p
 
     # join tag
-    run ch-run -v --join-ct=1 --join-tag=foo "$CHTEST_IMG" -- /test/printns
+    run ch-run -v --join-ct=1 --join-tag=foo "${ch_timg}" -- /test/printns
     joined_ok 1 1 1 "$status" "$output"
     [[ $output = *'join: 1 1 foo'* ]]
     [[ $output = *'join: peer group tag from command line'* ]]
     ipc_clean_p
-    SLURM_STEP_ID=bar run ch-run -v --join-ct=1 "$CHTEST_IMG" -- /test/printns
+    SLURM_STEP_ID=bar run ch-run -v --join-ct=1 "${ch_timg}" -- /test/printns
     joined_ok 1 1 1 "$status" "$output"
     [[ $output = *'join: 1 1 bar'* ]]
     [[ $output = *'join: peer group tag from SLURM_STEP_ID'* ]]
@@ -118,7 +118,7 @@ unset_vars () {
     rm -f "$BATS_TMPDIR"/join.?.*
 
     # first peer (winner)
-    ch-run -v --join-ct=2 --join-tag=foo "$CHTEST_IMG" -- \
+    ch-run -v --join-ct=2 --join-tag=foo "${ch_timg}" -- \
            /test/printns 5 "$BATS_TMPDIR/join.1.ns" \
            >& "$BATS_TMPDIR/join.1.err" &
     sleep 1
@@ -133,7 +133,7 @@ unset_vars () {
     test -e /dev/shm/sem.ch-run_foo
 
     # second peer (loser)
-    run ch-run -v --join-ct=2 --join-tag=foo "$CHTEST_IMG" -- \
+    run ch-run -v --join-ct=2 --join-tag=foo "${ch_timg}" -- \
                /test/printns 0 "$BATS_TMPDIR/join.2.ns" \
     echo "$output"
     [[ $status -eq 0 ]]
@@ -157,7 +157,7 @@ unset_vars () {
     rm -f "$BATS_TMPDIR"/join.?.*
 
     # first peer (winner)
-    ch-run -v --join-ct=3 --join-tag=foo "$CHTEST_IMG" -- \
+    ch-run -v --join-ct=3 --join-tag=foo "${ch_timg}" -- \
            /test/printns 5 "$BATS_TMPDIR/join.1.ns" \
            >& "$BATS_TMPDIR/join.1.err" &
     sleep 1
@@ -169,7 +169,7 @@ unset_vars () {
     ! grep -Fq 'join: cleaning up IPC' "$BATS_TMPDIR/join.1.err"
 
     # second peer (loser, no cleanup)
-    ch-run -v --join-ct=3 --join-tag=foo "$CHTEST_IMG" -- \
+    ch-run -v --join-ct=3 --join-tag=foo "${ch_timg}" -- \
            /test/printns 0 "$BATS_TMPDIR/join.2.ns" \
            >& "$BATS_TMPDIR/join.2.err" &
     sleep 1
@@ -185,7 +185,7 @@ unset_vars () {
     test -e /dev/shm/sem.ch-run_foo
 
     # third peer (loser, cleanup)
-    ch-run -v --join-ct=3 --join-tag=foo "$CHTEST_IMG" -- \
+    ch-run -v --join-ct=3 --join-tag=foo "${ch_timg}" -- \
            /test/printns 0 "$BATS_TMPDIR/join.3.ns" \
            >& "$BATS_TMPDIR/join.3.err" &
     cat "$BATS_TMPDIR/join.3.err"
@@ -211,15 +211,15 @@ unset_vars () {
     # Two peers, one node. Should be one of each of the namespaces. Make sure
     # everyone chdir(2)s properly.
     # shellcheck disable=SC2086
-    run $MPIRUN_2_1NODE ch-run -v --join --cd /test "$CHTEST_IMG" -- ./printns 2
+    run ${ch_mpirun_2_1node} ch-run -v --join --cd /test "${ch_timg}" -- ./printns 2
     ipc_clean_p
     joined_ok 2 2 1 "$status" "$output"
 
-    # One peer per core across the allocation. Should be $CHTEST_NODES of each
+    # One peer per core across the allocation. Should be $ch_nodes of each
     # of the namespaces.
     # shellcheck disable=SC2086
-    run $MPIRUN_CORE ch-run -v --join "$CHTEST_IMG" -- /test/printns 4
-    joined_ok "$CHTEST_CORES_TOTAL" "$CHTEST_CORES_NODE" "$CHTEST_NODES" \
+    run $ch_mpirun_core ch-run -v --join "${ch_timg}" -- /test/printns 4
+    joined_ok "${ch_cores_total}" "${ch_cores_node}" "${ch_nodes}" \
               "$status" "$output"
     ipc_clean_p
 }
@@ -228,18 +228,18 @@ unset_vars () {
     unset_vars
 
     # --join but no join count
-    run ch-run --join "$CHTEST_IMG" -- true
+    run ch-run --join "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'join: no valid peer group size found' ]]
     ipc_clean_p
 
     # join count no digits
-    run ch-run --join-ct=a "$CHTEST_IMG" -- true
+    run ch-run --join-ct=a "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'join-ct: no digits found' ]]
-    SLURM_CPUS_ON_NODE=a run ch-run --join "$CHTEST_IMG" -- true
+    SLURM_CPUS_ON_NODE=a run ch-run --join "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'SLURM_CPUS_ON_NODE: no digits found' ]]
@@ -247,18 +247,18 @@ unset_vars () {
 
 
     # join count empty string
-    run ch-run --join-ct='' "$CHTEST_IMG" -- true
+    run ch-run --join-ct='' "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ '--join-ct: no digits found' ]]
-    SLURM_CPUS_ON_NODE=-1 run ch-run --join "$CHTEST_IMG" -- true
+    SLURM_CPUS_ON_NODE=-1 run ch-run --join "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'join: no valid peer group size found' ]]
     ipc_clean_p
 
     # --join-ct digits followed by extra goo (OK from environment variable)
-    run ch-run --join-ct=1a "$CHTEST_IMG" -- true
+    run ch-run --join-ct=1a "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ '--join-ct: extra characters after digits' ]]
@@ -268,48 +268,48 @@ unset_vars () {
     range_re='.*: .*out of range'
 
     # join count above INT_MAX
-    run ch-run --join-ct=2147483648 "$CHTEST_IMG" -- true
+    run ch-run --join-ct=2147483648 "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
     SLURM_CPUS_ON_NODE=2147483648 \
-        run ch-run --join "$CHTEST_IMG" -- true
+        run ch-run --join "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
     ipc_clean_p
 
     # join count below INT_MIN
-    run ch-run --join-ct=-2147483649 "$CHTEST_IMG" -- true
+    run ch-run --join-ct=-2147483649 "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
     SLURM_CPUS_ON_NODE=-2147483649 \
-        run ch-run --join "$CHTEST_IMG" -- true
+        run ch-run --join "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
     ipc_clean_p
 
     # join count above LONG_MAX
-    run ch-run --join-ct=9223372036854775808 "$CHTEST_IMG" -- true
+    run ch-run --join-ct=9223372036854775808 "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
     SLURM_CPUS_ON_NODE=9223372036854775808 \
-        run ch-run --join "$CHTEST_IMG" -- true
+        run ch-run --join "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
     ipc_clean_p
 
     # join count below LONG_MIN
-    run ch-run --join-ct=-9223372036854775809 "$CHTEST_IMG" -- true
+    run ch-run --join-ct=-9223372036854775809 "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
     SLURM_CPUS_ON_NODE=-9223372036854775809 \
-        run ch-run --join "$CHTEST_IMG" -- true
+        run ch-run --join "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
@@ -323,11 +323,11 @@ unset_vars () {
     export SLURM_CPUS_ON_NODE=1
 
     # join tag empty string
-    run ch-run --join-tag='' "$CHTEST_IMG" -- true
+    run ch-run --join-tag='' "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'join: peer group tag cannot be empty string' ]]
-    SLURM_STEP_ID='' run ch-run --join "$CHTEST_IMG" -- true
+    SLURM_STEP_ID='' run ch-run --join "${ch_timg}" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'join: peer group tag cannot be empty string' ]]
