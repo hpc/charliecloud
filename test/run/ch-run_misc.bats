@@ -40,6 +40,16 @@ EOF
     [[ $host_size -eq "$guest_size" ]]
 }
 
+@test 'optional default bind mounts silently skipped' {
+    scope standard
+
+    [[ ! -e "$CHTEST_IMG/var/opt/cray/alps/spool" ]]
+    [[ ! -e "$CHTEST_IMG/var/opt/cray/hugetlbfs" ]]
+
+    ch-run "$CHTEST_IMG" -- mount | ( ! grep -F /var/opt/cray/alps/spool )
+    ch-run "$CHTEST_IMG" -- mount | ( ! grep -F /var/opt/cray/hugetlbfs )
+}
+
 # shellcheck disable=SC2016
 @test '$HOME' {
     scope quick

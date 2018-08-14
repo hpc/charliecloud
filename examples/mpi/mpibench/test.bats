@@ -39,6 +39,7 @@ check_process_ct () {
 
 # one from "Single Transfer Benchmarks"
 @test "${ch_tag}/pingpong (guest launch)" {
+    [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
     # shellcheck disable=SC2086
     run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
     echo "$output"
@@ -61,6 +62,7 @@ check_process_ct () {
 
 # one from "Parallel Transfer Benchmarks"
 @test "${ch_tag}/sendrecv (guest launch)" {
+    [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
     # shellcheck disable=SC2086
     run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
@@ -83,6 +85,7 @@ check_process_ct () {
 
 # one from "Collective Benchmarks"
 @test "${ch_tag}/allreduce (guest launch)" {
+    [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
     # shellcheck disable=SC2086
     run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
     echo "$output"
