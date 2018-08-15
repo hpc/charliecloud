@@ -239,7 +239,7 @@ The most important difference with this build procedure is that a second user
 ::
 
    $ CH_VERSION=v0.9.1 vagrant up
-   $ vagrant --provision-with=ova
+   $ vagrant provision --provision-with=ova
 
 Snapshot for distribution
 -------------------------
