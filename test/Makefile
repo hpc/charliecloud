@@ -68,9 +68,13 @@ sotest/bin/sotest: sotest/sotest
 sotest/lib/libsotest.so.1.0: sotest/libsotest.so.1.0
 	cp -a $^ $@
 
+# We hardcode gcc here because some other compilers (hello, Intel) link the
+# resulting binaries with extra shared libraries that are then not copied into
+# the container. (Issue #227.)
+
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0
-	$(CC) -o $@ -L./sotest -lsotest $^
+	gcc -o $@ -L./sotest -lsotest $^
 sotest/libsotest.so.1.0: sotest/libsotest.c
-	$(CC) -o $@ -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
+	gcc -o $@ -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
 	ln -f -s libsotest.so.1.0 sotest/libsotest.so
 	ln -f -s libsotest.so.1.0 sotest/libsotest.so.1
