@@ -23,13 +23,8 @@ printf 'image:     %s\n' "$IMG"
 
 # Make Charliecloud available (varies by site).
 module purge
-module load openmpi
-module load sandbox
+module load friendly-testing
 module load charliecloud
-
-# MPI version on host.
-printf 'host:      '
-mpirun --version | grep -E '^mpirun'
 
 # Unpack image.
 srun ch-tar2dir "$TAR" "$IMGDIR"

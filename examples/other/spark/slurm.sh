@@ -17,7 +17,7 @@
 set -e
 
 if [[ -z $SLURM_JOB_ID ]]; then
-    echo "not running under Slurm"
+    echo "not running under Slurm" 1>&2
     exit 1
 fi
 
@@ -29,8 +29,7 @@ CONF="$HOME/slurm-$SLURM_JOB_ID.spark"
 
 # Make Charliecloud available (varies by site)
 module purge
-module load openmpi
-module load sandbox
+module load friendly-testing
 module load charliecloud
 
 # What IP address to use for master?
@@ -75,15 +74,16 @@ tail -7 /tmp/spark/log/*master*.out
 grep -Fq 'New state: ALIVE' /tmp/spark/log/*master*.out
 
 # Start the Spark workers
-mpirun -map-by '' -pernode ch-run -b "$CONF" "$IMG" -- \
-  /spark/sbin/start-slave.sh "$MASTER_URL" &
+srun sh -c "   ch-run -b '$CONF' '$IMG' -- \
+                      /spark/sbin/start-slave.sh $MASTER_URL \
+            && sleep infinity" &
 sleep 10
 grep -F worker /tmp/spark/log/*master*.out
 tail -3 /tmp/spark/log/*worker*.out
 
 # Compute pi
 ch-run -b "$CONF" "$IMG" -- \
-  /spark/bin/spark-submit --master "$MASTER_URL" \
-  /spark/examples/src/main/python/pi.py 1024
+       /spark/bin/spark-submit --master "$MASTER_URL" \
+       /spark/examples/src/main/python/pi.py 1024
 
 # Let Slurm kill the workers and master
