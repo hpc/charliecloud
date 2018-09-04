@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>6. Frequently asked questions (FAQ) &mdash; Charliecloud 0.9.1 documentation</title>
+  <title>6. Frequently asked questions (FAQ) &mdash; Charliecloud 0.9.2 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.9.1 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.9.2 documentation" href="index.html"/>
         <link rel="prev" title="5. Pre-installed virtual machine" href="vm.html"/> 
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                db16c7f
+                57f5de7
               </div>
             
           
@@ -114,6 +114,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#uid-0-lets-me-read-files-i-cant-otherwise">6.3.1. <code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#why-does-ping-not-work">6.3.2. Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0">6.3.3. Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ch-docker2tar-gives-incorrect-image-sizes">6.3.4. <code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code> gives incorrect image sizes</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#how-do-i">6.4. How do I …</a><ul>
@@ -211,19 +212,20 @@
 <li><a class="reference internal" href="#uid-0-lets-me-read-files-i-cant-otherwise" id="id9"><code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></li>
 <li><a class="reference internal" href="#why-does-ping-not-work" id="id10">Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></li>
 <li><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0" id="id11">Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></li>
+<li><a class="reference internal" href="#ch-docker2tar-gives-incorrect-image-sizes" id="id12"><code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code> gives incorrect image sizes</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#how-do-i" id="id12">How do I …</a><ul>
-<li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id13">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
-<li><a class="reference internal" href="#which-specific-sudo-commands-are-needed" id="id14">Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
-<li><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work" id="id15">OpenMPI Charliecloud jobs don’t work</a><ul>
-<li><a class="reference internal" href="#mpirun-cant-launch-jobs" id="id16"><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></li>
-<li><a class="reference internal" href="#communication-between-ranks-on-the-same-node-fails" id="id17">Communication between ranks on the same node fails</a></li>
-<li><a class="reference internal" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" id="id18">I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a></li>
+<li><a class="reference internal" href="#how-do-i" id="id13">How do I …</a><ul>
+<li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id14">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
+<li><a class="reference internal" href="#which-specific-sudo-commands-are-needed" id="id15">Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
+<li><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work" id="id16">OpenMPI Charliecloud jobs don’t work</a><ul>
+<li><a class="reference internal" href="#mpirun-cant-launch-jobs" id="id17"><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></li>
+<li><a class="reference internal" href="#communication-between-ranks-on-the-same-node-fails" id="id18">Communication between ranks on the same node fails</a></li>
+<li><a class="reference internal" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" id="id19">I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id19">How do I run X11 apps?</a></li>
-<li><a class="reference internal" href="#how-do-i-create-a-tarball-compatible-with-charliecloud" id="id20">How do I create a tarball compatible with Charliecloud?</a></li>
+<li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id20">How do I run X11 apps?</a></li>
+<li><a class="reference internal" href="#how-do-i-create-a-tarball-compatible-with-charliecloud" id="id21">How do I create a tarball compatible with Charliecloud?</a></li>
 </ul>
 </li>
 </ul>
@@ -420,11 +422,46 @@ of the default 1001:1001), i.e. <code class="code docutils literal notranslate">
 the call is mapped to <code class="code docutils literal notranslate"><span class="pre">chown(&quot;/dev/pts/0&quot;,</span> <span class="pre">1000,</span> <span class="pre">1001)</span></code> and MATLAB is
 happy.</p>
 </div>
+<div class="section" id="ch-docker2tar-gives-incorrect-image-sizes">
+<h3><a class="toc-backref" href="#id12">6.3.4. <code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code> gives incorrect image sizes</a><a class="headerlink" href="#ch-docker2tar-gives-incorrect-image-sizes" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code> often finishes before the progress bar is complete. For
+example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-docker2tar mpihello /var/tmp
+<span class="go"> 373MiB 0:00:21 [============================&gt;                 ] 65%</span>
+<span class="go">146M /var/tmp/mpihello.tar.gz</span>
+</pre></div>
+</div>
+<p>In this case, the <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code> contains 392 MB uncompressed:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> zcat /var/tmp/mpihello.tar.gz <span class="p">|</span> wc
+<span class="go">2740966 14631550 392145408</span>
+</pre></div>
+</div>
+<p>But Docker thinks the image is 597 MB:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker image inspect mpihello <span class="p">|</span> fgrep -i size
+<span class="go">        &quot;Size&quot;: 596952928,</span>
+<span class="go">        &quot;VirtualSize&quot;: 596952928,</span>
+</pre></div>
+</div>
+<p>We’ve also seen cases where the Docker-reported size is an <em>under</em>estimate:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-docker2tar spack /var/tmp
+<span class="go"> 423MiB 0:00:22 [============================================&gt;] 102%</span>
+<span class="go">162M /var/tmp/spack.tar.gz</span>
+<span class="gp">$</span> zcat /var/tmp/spack.tar.gz <span class="p">|</span> wc
+<span class="go">4181186 20317858 444212736</span>
+<span class="gp">$</span> sudo docker image inspect spack <span class="p">|</span> fgrep -i size
+<span class="go">        &quot;Size&quot;: 433812403,</span>
+<span class="go">        &quot;VirtualSize&quot;: 433812403,</span>
+</pre></div>
+</div>
+<p>We think that this is because Docker is computing size based on the size of
+the layers rather than the unpacked image. We do not currently have a fix; see
+<a class="reference external" href="https://github.com/hpc/charliecloud/issues/165">issue #165</a>.</p>
+</div>
 </div>
 <div class="section" id="how-do-i">
-<h2><a class="toc-backref" href="#id12">6.4. How do I …</a><a class="headerlink" href="#how-do-i" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id13">6.4. How do I …</a><a class="headerlink" href="#how-do-i" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="my-app-needs-to-write-to-var-log-run-etc">
-<h3><a class="toc-backref" href="#id13">6.4.1. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14">6.4.1. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h3>
 <p>Because the image is mounted read-only by default, log files, caches, and
 other stuff cannot be written anywhere in the image. You have three options:</p>
 <ol class="arabic simple">
@@ -438,7 +475,7 @@ containers do not try to write to the same files.</li>
 </ol>
 </div>
 <div class="section" id="which-specific-sudo-commands-are-needed">
-<h3><a class="toc-backref" href="#id14">6.4.2. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a><a class="headerlink" href="#which-specific-sudo-commands-are-needed" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15">6.4.2. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a><a class="headerlink" href="#which-specific-sudo-commands-are-needed" title="Permalink to this headline">¶</a></h3>
 <p>For running images, <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> is not needed at all.</p>
 <p>For building images, it depends on what you would like to support. For
 example, do you want to let users build images with Docker? Do you want to let
@@ -457,10 +494,10 @@ on a case-by-case basis. (The latter includes <code class="code docutils literal
 </div>
 </div>
 <div class="section" id="openmpi-charliecloud-jobs-dont-work">
-<h3><a class="toc-backref" href="#id15">6.4.3. OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-dont-work" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16">6.4.3. OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-dont-work" title="Permalink to this headline">¶</a></h3>
 <p>MPI can be finicky. This section documents some of the problems we’ve seen.</p>
 <div class="section" id="mpirun-cant-launch-jobs">
-<h4><a class="toc-backref" href="#id16">6.4.3.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a><a class="headerlink" href="#mpirun-cant-launch-jobs" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id17">6.4.3.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a><a class="headerlink" href="#mpirun-cant-launch-jobs" title="Permalink to this headline">¶</a></h4>
 <p>For example, you might see:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -np <span class="m">1</span> ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">App launch reported: 2 (out of 2) daemons - 0 (out of 1) procs</span>
@@ -472,7 +509,7 @@ builds inside and outside the container — but in our experience launching with
 <code class="code docutils literal notranslate"><span class="pre">srun</span></code> often works when <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> doesn’t, so try that.</p>
 </div>
 <div class="section" id="communication-between-ranks-on-the-same-node-fails">
-<h4><a class="toc-backref" href="#id17">6.4.3.2. Communication between ranks on the same node fails</a><a class="headerlink" href="#communication-between-ranks-on-the-same-node-fails" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id18">6.4.3.2. Communication between ranks on the same node fails</a><a class="headerlink" href="#communication-between-ranks-on-the-same-node-fails" title="Permalink to this headline">¶</a></h4>
 <p>OpenMPI has many ways to transfer messages between ranks. If the ranks are on
 the same node, it is faster to do these transfers using shared memory rather
 than involving the network stack. There are two ways to use shared memory.</p>
@@ -537,7 +574,7 @@ benchmarks.</p>
 </ul>
 </div>
 <div class="section" id="i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun">
-<h4><a class="toc-backref" href="#id18">6.4.3.3. I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a><a class="headerlink" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id19">6.4.3.3. I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a><a class="headerlink" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" title="Permalink to this headline">¶</a></h4>
 <p>For example, you might be seeing this:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">0: init ok cn036.localdomain, 1 ranks, userns 4026554634</span>
@@ -585,7 +622,7 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 </div>
 </div>
 <div class="section" id="how-do-i-run-x11-apps">
-<h3><a class="toc-backref" href="#id19">6.4.4. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20">6.4.4. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
 <p>X11 applications should “just work”. For example, try this Dockerfile:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
@@ -601,7 +638,7 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 figure out why.</p>
 </div>
 <div class="section" id="how-do-i-create-a-tarball-compatible-with-charliecloud">
-<h3><a class="toc-backref" href="#id20">6.4.5. How do I create a tarball compatible with Charliecloud?</a><a class="headerlink" href="#how-do-i-create-a-tarball-compatible-with-charliecloud" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id21">6.4.5. How do I create a tarball compatible with Charliecloud?</a><a class="headerlink" href="#how-do-i-create-a-tarball-compatible-with-charliecloud" title="Permalink to this headline">¶</a></h3>
 <p>In contrast with best practices for source code, Charliecloud expects an image
 tarball to have either no top-level directory or a top-level directory that is
 exactly <code class="code docutils literal notranslate"><span class="pre">.</span></code> (dot). This is inherited from the format of <code class="code docutils literal notranslate"><span class="pre">docker</span>
@@ -700,7 +737,7 @@ you do this immediately after the above, you’ll need to remove the
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.9.1',
+            VERSION:'0.9.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

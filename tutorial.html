@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Tutorial &mdash; Charliecloud 0.9.1 documentation</title>
+  <title>3. Tutorial &mdash; Charliecloud 0.9.2 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.9.1 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.9.2 documentation" href="index.html"/>
         <link rel="next" title="4. Charliecloud command reference" href="command-usage.html"/>
         <link rel="prev" title="2. Testing" href="test.html"/> 
 
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                db16c7f
+                57f5de7
               </div>
             
           
@@ -125,7 +125,6 @@
 <li class="toctree-l2"><a class="reference internal" href="#your-first-single-node-multi-process-jobs">3.6. Your first single-node, multi-process jobs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-host">3.6.1. Processes coordinated by host</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container">3.6.2. Processes coordinated by container</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration">3.6.3. Processes coordinated by container using host configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#your-first-multi-node-jobs">3.7. Your first multi-node jobs</a><ul>
@@ -239,14 +238,13 @@ code is available at <code class="code docutils literal notranslate"><span class
 <li><a class="reference internal" href="#your-first-single-node-multi-process-jobs" id="id20">Your first single-node, multi-process jobs</a><ul>
 <li><a class="reference internal" href="#processes-coordinated-by-host" id="id21">Processes coordinated by host</a></li>
 <li><a class="reference internal" href="#processes-coordinated-by-container" id="id22">Processes coordinated by container</a></li>
-<li><a class="reference internal" href="#processes-coordinated-by-container-using-host-configuration" id="id23">Processes coordinated by container using host configuration</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#your-first-multi-node-jobs" id="id24">Your first multi-node jobs</a><ul>
-<li><a class="reference internal" href="#interactive-mpi-hello-world" id="id25">Interactive MPI hello world</a></li>
-<li><a class="reference internal" href="#non-interactive-mpi-hello-world" id="id26">Non-interactive MPI hello world</a></li>
-<li><a class="reference internal" href="#interactive-apache-spark" id="id27">Interactive Apache Spark</a></li>
-<li><a class="reference internal" href="#non-interactive-apache-spark" id="id28">Non-interactive Apache Spark</a></li>
+<li><a class="reference internal" href="#your-first-multi-node-jobs" id="id23">Your first multi-node jobs</a><ul>
+<li><a class="reference internal" href="#interactive-mpi-hello-world" id="id24">Interactive MPI hello world</a></li>
+<li><a class="reference internal" href="#non-interactive-mpi-hello-world" id="id25">Non-interactive MPI hello world</a></li>
+<li><a class="reference internal" href="#interactive-apache-spark" id="id26">Interactive Apache Spark</a></li>
+<li><a class="reference internal" href="#non-interactive-apache-spark" id="id27">Non-interactive Apache Spark</a></li>
 </ul>
 </li>
 </ul>
@@ -292,7 +290,7 @@ Charliecloud you have (if not, please report a bug). For example:</p>
 </pre></div>
 </div>
 <p>A description of all commands is also collected later in this documentation; see
-<a class="reference internal" href="command-usage.html"><span class="doc">Charliecloud command reference</span></a>. In addition each executable has a man page.</p>
+<a class="reference internal" href="command-usage.html"><span class="doc">Charliecloud command reference</span></a>. In addition, each executable has a man page.</p>
 </div>
 <div class="section" id="your-first-user-defined-software-stack">
 <h2><a class="toc-backref" href="#id3">3.3. Your first user-defined software stack</a><a class="headerlink" href="#your-first-user-defined-software-stack" title="Permalink to this headline">¶</a></h2>
@@ -857,8 +855,7 @@ useful to show a real example.</p>
 
 <span class="c"># OS packages needed to build this stuff.</span>
 <span class="k">RUN</span> apt-get install -y --no-install-suggests <span class="se">\</span>
-    cmake <span class="se">\</span>
-    devscripts <span class="se">\</span>
+    autoconf <span class="se">\</span>
     file <span class="se">\</span>
     flex <span class="se">\</span>
     g++ <span class="se">\</span>
@@ -869,75 +866,61 @@ useful to show a real example.</p>
     less <span class="se">\</span>
     libdb5.3-dev <span class="se">\</span>
     libhwloc-dev <span class="se">\</span>
-    libnl-3-dev <span class="se">\</span>
-    libnl-route-3-dev <span class="se">\</span>
-    libnuma-dev <span class="se">\</span>
+    libnl-3-200 <span class="se">\</span>
+    libnl-route-3-200 <span class="se">\</span>
+    libnuma1 <span class="se">\</span>
     libpmi2-0-dev <span class="se">\</span>
-    libsystemd-dev <span class="se">\</span>
-    libudev-dev <span class="se">\</span>
     make <span class="se">\</span>
-    ninja-build <span class="se">\</span>
-    pandoc <span class="se">\</span>
-    pkg-config <span class="se">\</span>
     wget <span class="se">\</span>
-    udev <span class="se">\</span>
-    valgrind
+    udev
 
 <span class="k">WORKDIR</span><span class="s"> /usr/local/src</span>
 
-<span class="c"># libpsm2. These packages don&#39;t appear to be available anywhere in binary form</span>
-<span class="c"># as of 2018-05-24 [1], so compile from source.</span>
+<span class="c"># Use the Buster versions of libpsm2 (not present in Stretch) and libibverbs</span>
+<span class="c"># (too old in Stretch). Download manually because I&#39;m too lazy to set up</span>
+<span class="c"># package pinning.</span>
 <span class="c">#</span>
-<span class="c"># Note that libpsm2 is x86_64 only [2].</span>
-<span class="c">#</span>
-<span class="c"># [1]: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=862313</span>
-<span class="c"># [2]: https://lists.debian.org/debian-hpc/2017/12/msg00015.html</span>
-<span class="k">ENV</span><span class="s"> PSM2_VERSION 10.3-37-1</span>
-<span class="k">RUN</span> git clone --branch debian/<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
-              https://salsa.debian.org/hpc-team/libpsm2.git
-<span class="k">RUN</span>    <span class="nb">cd</span> libpsm2 <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> debuild -i -us -uc -b
-<span class="k">RUN</span> dpkg --install libpsm2-2_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   libpsm2-dev_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
-
-<span class="c"># libibverbs. The packages in Stretch are old, and they aren&#39;t seeing OPA. See</span>
-<span class="c"># https://packages.debian.org/source/sid/rdma-core for what the various</span>
-<span class="c"># packages are.</span>
-<span class="k">ENV</span><span class="s"> IBVERBS_VERSION 18.0-1</span>
-<span class="k">RUN</span> git clone --branch debian/<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
-              https://github.com/linux-rdma/rdma-core.git
-<span class="k">RUN</span>    <span class="nb">cd</span> rdma-core <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> debuild -i -us -uc -b
-<span class="k">RUN</span> dpkg --install ibacm_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   ibverbs-providers_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   ibverbs-utils_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   libibumad-dev_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   libibumad3_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   libibverbs-dev_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   libibverbs1_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   librdmacm-dev_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   librdmacm1_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   rdma-core_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                   rdmacm-utils_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb
+<span class="c"># Note that libpsm2 is x86_64 only:</span>
+<span class="c"># https://lists.debian.org/debian-hpc/2017/12/msg00015.html</span>
+<span class="k">ENV</span><span class="s"> DEB_URL http://http.us.debian.org/debian/pool/main</span>
+<span class="k">ENV</span><span class="s"> PSM2_VERSION 10.3.58-1</span>
+<span class="k">RUN</span> wget -nv <span class="nv">$DEB_URL</span>/libp/libpsm2/libpsm2-2_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
+<span class="k">RUN</span> wget -nv <span class="nv">$DEB_URL</span>/libp/libpsm2/libpsm2-dev_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
+<span class="k">ENV</span><span class="s"> IBVERBS_VERSION 19.0-1</span>
+<span class="k">RUN</span> <span class="k">for</span> i in ibacm <span class="se">\</span>
+             ibverbs-providers <span class="se">\</span>
+             ibverbs-utils <span class="se">\</span>
+             libibumad-dev <span class="se">\</span>
+             libibumad3 <span class="se">\</span>
+             libibverbs-dev <span class="se">\</span>
+             libibverbs1 <span class="se">\</span>
+             librdmacm-dev <span class="se">\</span>
+             librdmacm1 <span class="se">\</span>
+             rdma-core <span class="se">\</span>
+             rdmacm-utils <span class="p">;</span> <span class="se">\</span>
+    <span class="k">do</span> <span class="se">\</span>
+        wget -nv <span class="nv">$DEB_URL</span>/r/rdma-core/<span class="si">${</span><span class="nv">i</span><span class="si">}</span>_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="p">;</span> <span class="se">\</span>
+    <span class="k">done</span>
+<span class="k">RUN</span> dpkg --install *.deb
 
 <span class="c"># UCX. There is stuff to build Debian packages, but it seems not too polished.</span>
-<span class="k">ENV</span><span class="s"> UCX_VERSION 1.2.2</span>
+<span class="k">ENV</span><span class="s"> UCX_VERSION 1.3.1</span>
 <span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
               https://github.com/openucx/ucx.git
 <span class="k">RUN</span>    <span class="nb">cd</span> ucx <span class="se">\</span>
     <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> ./contrib/configure-release --prefix<span class="o">=</span>/usr <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> ./contrib/configure-release --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
     <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
 
 <span class="c"># OpenMPI.</span>
 <span class="k">ENV</span><span class="s"> MPI_URL https://www.open-mpi.org/software/ompi/v2.1/downloads</span>
-<span class="k">ENV</span><span class="s"> MPI_VERSION 2.1.3</span>
+<span class="k">ENV</span><span class="s"> MPI_VERSION 2.1.5</span>
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
     <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
        <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-       ./configure --prefix<span class="o">=</span>/usr <span class="se">\</span>
+       ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
                    --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
                    --with-pmi <span class="se">\</span>
                    --with-pmi-libdir<span class="o">=</span>/usr/lib/x86_64-linux-gnu <span class="se">\</span>
@@ -948,6 +931,7 @@ useful to show a real example.</p>
                    --enable-mca-no-build<span class="o">=</span>btl-openib <span class="se">\</span>
                    --with-slurm<span class="o">=</span>no <span class="se">\</span>
     <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
+<span class="k">RUN</span> ldconfig
 <span class="k">RUN</span> rm -Rf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
 
 <span class="c"># OpenMPI expects this program to exist, even if it&#39;s not used. Default is</span>
@@ -1078,13 +1062,11 @@ than we’ve discovered.</p>
 process is spawned in its own container, and because Charliecloud introduces
 minimal isolation, they can communicate as if they were running directly on
 the host.</p>
-<p>For example, using <code class="code docutils literal notranslate"><span class="pre">srun</span></code> and the <code class="code docutils literal notranslate"><span class="pre">mpihello</span></code> example above:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun --version
-<span class="go">mpirun (Open MPI) 2.1.2</span>
-<span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
+<p>For example, using Slurm <code class="code docutils literal notranslate"><span class="pre">srun</span></code> and the <code class="code docutils literal notranslate"><span class="pre">mpihello</span></code> example above:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
 <span class="go">4026531837</span>
 <span class="gp">$</span> ch-run /var/tmp/mpihello -- mpirun --version
-<span class="go">mpirun (Open MPI) 2.1.2</span>
+<span class="go">mpirun (Open MPI) 2.1.5</span>
 <span class="gp">$</span> srun -n4 ch-run /var/tmp/images/mpihello -- /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026554650</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026554652</span>
@@ -1094,23 +1076,21 @@ the host.</p>
 <span class="go">0: finalize ok</span>
 </pre></div>
 </div>
-<p>(If you don’t have Slurm, you can use <code class="code docutils literal notranslate"><span class="pre">mpirun</span> <span class="pre">-np</span> <span class="pre">4</span></code> instead of
-<code class="code docutils literal notranslate"><span class="pre">srun</span> <span class="pre">-n4</span></code>.)</p>
-<p>The advantage is that we can easily take advantage of host-specific things
-such as configurations; the disadvantage is that it introduces a close
-coupling between the host and container that can manifest in complex ways.</p>
-<p>For example, in our experience, while OpenMPI 1.10.2 on a Ubuntu host worked
-with 1.10.4 in the guest, both had to be compiled with the same options. The
-OpenMPI 1.10.2 packages that came with Ubuntu failed with
-“orte_util_nidmap_init failed” if run with the container 1.10.4.</p>
+<p>We recommend this approach because it lets you take advantage of difficult
+things already done by your site admins, such as configuring Slurm.</p>
+<p>If you don’t have Slurm, you can use <code class="code docutils literal notranslate"><span class="pre">mpirun</span> <span class="pre">-np</span> <span class="pre">4</span></code> instead of
+<code class="code docutils literal notranslate"><span class="pre">srun</span> <span class="pre">-n4</span></code>. However, this requires that the host have a compatible
+version of OpenMPI installed on the host. Which versions are compatible seems
+to be a moving target, but having the same versions inside and outside the
+container <em>usually</em> works.</p>
 </div>
 <div class="section" id="processes-coordinated-by-container">
 <h3><a class="toc-backref" href="#id22">3.6.2. Processes coordinated by container</a><a class="headerlink" href="#processes-coordinated-by-container" title="Permalink to this headline">¶</a></h3>
 <p>This approach starts a single container process, which then forks and
 coordinates the parallel work. The advantage is that this approach is
 completely independent of the host for dependency configuration and
-installation; the disadvantage is that it cannot take advantage of
-host-specific things such as configuration.</p>
+installation; the disadvantage is that it cannot take advantage of host things
+such as Slurm configuration.</p>
 <p>For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
@@ -1122,46 +1102,17 @@ host-specific things such as configuration.</p>
 </pre></div>
 </div>
 <p>Note that in this case, we use <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> rather than <code class="code docutils literal notranslate"><span class="pre">srun</span></code> because
-the Slurm client programs are not installed inside the container and we don’t
+the Slurm client programs are not installed inside the container, and we don’t
 want the host’s Slurm coordinating processes anyway.</p>
-</div>
-<div class="section" id="processes-coordinated-by-container-using-host-configuration">
-<h3><a class="toc-backref" href="#id23">3.6.3. Processes coordinated by container using host configuration</a><a class="headerlink" href="#processes-coordinated-by-container-using-host-configuration" title="Permalink to this headline">¶</a></h3>
-<p>This approach is a middle ground. The use case is when there is some
-host-specific configuration we want to use, but we don’t want to install the
-entire configured dependency on the host. It would be undesirable to copy this
-configuration into the image, because that would reduce its portability.</p>
-<p>The host configuration is communicated to the container by bind-mounting the
-relevant directory and then pointing the application to it. There are a
-variety of approaches. Some application or frameworks take command-line
-parameters specifying the configuration path.</p>
-<p>The approach used in our example is to set the configuration directory to
-<code class="code docutils literal notranslate"><span class="pre">/mnt/0</span></code>. This is done in <code class="code docutils literal notranslate"><span class="pre">openmpi</span></code> (and hence
-<code class="code docutils literal notranslate"><span class="pre">mpihello</span></code>) with the <code class="code docutils literal notranslate"><span class="pre">--sysconfdir</span></code> argument (see above).</p>
-<p>The effect is that the image contains a default MPI configuration, but if you
-specify a different configuration directory with <code class="code docutils literal notranslate"><span class="pre">--bind</span></code>, that is
-overmounted and used instead. For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -b /usr/local/etc /var/tmp/mpihello -- mpirun -np <span class="m">4</span> /hello/hello
-<span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
-<span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
-<span class="go">2: init ok cn001, 4 ranks, userns 4026532256</span>
-<span class="go">3: init ok cn001, 4 ranks, userns 4026532256</span>
-<span class="go">0: send/receive ok</span>
-<span class="go">0: finalize ok</span>
-</pre></div>
-</div>
-<p>A similar approach creates a dangling symlink with <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> that is
-resolved when the appropriate host directory is bind-mounted into
-<code class="code docutils literal notranslate"><span class="pre">/mnt</span></code>.</p>
 </div>
 </div>
 <div class="section" id="your-first-multi-node-jobs">
-<h2><a class="toc-backref" href="#id24">3.7. Your first multi-node jobs</a><a class="headerlink" href="#your-first-multi-node-jobs" title="Permalink to this headline">¶</a></h2>
-<p>This section assumes that you are using a Slurm cluster with a working OpenMPI
-2.1.2 installation and some type of node-local storage. A <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> will
-suffice, and we use <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code> for this tutorial. (Using <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>
-often works but can cause confusion because it’s shared by the container and
-host, yielding cycles in the directory tree.)</p>
+<h2><a class="toc-backref" href="#id23">3.7. Your first multi-node jobs</a><a class="headerlink" href="#your-first-multi-node-jobs" title="Permalink to this headline">¶</a></h2>
+<p>This section assumes that you are using a Slurm cluster and some type of
+node-local storage. A <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> will suffice, and we use <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>
+for this tutorial. (Using <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> often works but can cause confusion
+because it’s shared by the container and host, yielding cycles in the
+directory tree.)</p>
 <p>We cover three cases:</p>
 <ol class="arabic simple">
 <li>The MPI hello world example above, run interactively, with the host
@@ -1180,23 +1131,17 @@ mounted read-write with <code class="code docutils literal notranslate"><span cl
 </div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">The image can reside on most filesystems, but be aware of metadata impact.
+<p>The image can reside on most filesystems, but be aware of metadata impact.
 A non-trivial Charliecloud job may overwhelm a network filesystem, earning
-you the ire of your sysadmins and colleagues. (NFS sometimes does not work
-for read-only images; see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/9">issue #9</a>.)</p>
+you the ire of your sysadmins and colleagues.</p>
+<p class="last">NFS sometimes does not work for read-only images; see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/9">issue #9</a>.</p>
 </div>
 <div class="section" id="interactive-mpi-hello-world">
-<h3><a class="toc-backref" href="#id25">3.7.1. Interactive MPI hello world</a><a class="headerlink" href="#interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id24">3.7.1. Interactive MPI hello world</a><a class="headerlink" href="#interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
 <p>First, obtain an interactive allocation of nodes. This tutorial assumes an
 allocation of 4 nodes (but any number should work) and an interactive shell on
 one of those nodes. For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> salloc -N4
-</pre></div>
-</div>
-<p>We also need OpenMPI 2.1.2 available, in order to match the version of the
-libraries in the container:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun --version
-<span class="go">mpirun (Open MPI) 2.1.2</span>
 </pre></div>
 </div>
 <p>The next step is to distribute the image tarball to the compute nodes. To do
@@ -1228,10 +1173,11 @@ so, we run one instance of <code class="code docutils literal notranslate"><span
 <p>Success!</p>
 </div>
 <div class="section" id="non-interactive-mpi-hello-world">
-<h3><a class="toc-backref" href="#id26">3.7.2. Non-interactive MPI hello world</a><a class="headerlink" href="#non-interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25">3.7.2. Non-interactive MPI hello world</a><a class="headerlink" href="#non-interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
 <p>Production jobs are normally run non-interactively, via submission of a job
 script that runs when resources are available, placing output into a file.</p>
-<p>The MPI hello world example includes such a script, <code class="code docutils literal notranslate"><span class="pre">slurm.sh</span></code>:</p>
+<p>The MPI hello world example includes such a script,
+<code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello/slurm.sh</span></code>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
 <span class="c1">#SBATCH --time=0:10:00</span>
 
@@ -1257,13 +1203,8 @@ script that runs when resources are available, placing output into a file.</p>
 
 <span class="c1"># Make Charliecloud available (varies by site).</span>
 module purge
-module load openmpi
-module load sandbox
+module load friendly-testing
 module load charliecloud
-
-<span class="c1"># MPI version on host.</span>
-<span class="nb">printf</span> <span class="s1">&#39;host:      &#39;</span>
-mpirun --version <span class="p">|</span> grep -E <span class="s1">&#39;^mpirun&#39;</span>
 
 <span class="c1"># Unpack image.</span>
 srun ch-tar2dir <span class="s2">&quot;</span><span class="nv">$TAR</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="nv">$IMGDIR</span><span class="s2">&quot;</span>
@@ -1286,22 +1227,17 @@ srun --cpus-per-task<span class="o">=</span><span class="m">1</span> ch-run <spa
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat slurm-207745.out
 <span class="go">tarball:   /home/reidpr/mpihello.tar.gz</span>
 <span class="go">image:     /var/tmp/mpihello</span>
-<span class="go">host:      mpirun (Open MPI) 2.1.2</span>
-<span class="go">App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs</span>
 <span class="go">creating new image /var/tmp/mpihello</span>
 <span class="go">creating new image /var/tmp/mpihello</span>
 <span class="go">[...]</span>
 <span class="go">/var/tmp/mpihello unpacked ok</span>
 <span class="go">/var/tmp/mpihello unpacked ok</span>
-<span class="go">container: mpirun (Open MPI) 2.1.2</span>
-<span class="go">App launch reported: 4 (out of 4) daemons - 32 (out of 64) procs</span>
-<span class="go">2: init ok cn004, 64 ranks, userns 4026532604</span>
-<span class="go">3: init ok cn004, 64 ranks, userns 4026532606</span>
-<span class="go">4: init ok cn004, 64 ranks, userns 4026532608</span>
+<span class="go">container: mpirun (Open MPI) 2.1.5</span>
+<span class="go">0: init ok cn001.localdomain, 144 ranks, userns 4026554766</span>
+<span class="go">37: init ok cn002.localdomain, 144 ranks, userns 4026554800</span>
 <span class="go">[...]</span>
-<span class="go">63: init ok cn007, 64 ranks, userns 4026532630</span>
-<span class="go">30: init ok cn005, 64 ranks, userns 4026532628</span>
-<span class="go">27: init ok cn005, 64 ranks, userns 4026532622</span>
+<span class="go">96: init ok cn003.localdomain, 144 ranks, userns 4026554803</span>
+<span class="go">86: init ok cn003.localdomain, 144 ranks, userns 4026554793</span>
 <span class="go">0: send/receive ok</span>
 <span class="go">0: finalize ok</span>
 </pre></div>
@@ -1309,7 +1245,7 @@ srun --cpus-per-task<span class="o">=</span><span class="m">1</span> ch-run <spa
 <p>Success!</p>
 </div>
 <div class="section" id="interactive-apache-spark">
-<h3><a class="toc-backref" href="#id27">3.7.3. Interactive Apache Spark</a><a class="headerlink" href="#interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id26">3.7.3. Interactive Apache Spark</a><a class="headerlink" href="#interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
 <p>This example is in <code class="code docutils literal notranslate"><span class="pre">examples/spark</span></code>. Build a tarball and upload it to
 your cluster.</p>
 <p>Once you have an interactive job, unpack the tarball.</p>
@@ -1372,23 +1308,29 @@ correctly:</p>
 capability varies, the tutorial does not depend on it, but it can be
 informative. Refresh after each key step below.</p>
 <p>The Spark workers need to know how to reach the master. This is via a URL; you
-can derive it from the above, or consult the web interface. For example:</p>
+can get it from the log excerpt above, or consult the web interface. For
+example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nv">MASTER_URL</span><span class="o">=</span>spark://10.8.8.3:7077
 </pre></div>
 </div>
-<p>Next, start one worker on each compute node. This is a little ugly;
-<code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> will wait until everything is finished before returning, but we
-want to start the workers in the background, so we add <code class="code docutils literal notranslate"><span class="pre">&amp;</span></code> and introduce
-a race condition. (<code class="code docutils literal notranslate"><span class="pre">srun</span></code> has different, even less helpful behavior: it
-kills the worker as soon as it goes into the background.)</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -map-by <span class="s1">&#39;&#39;</span> -pernode ch-run -b ~/sparkconf /var/tmp/spark -- <span class="se">\</span>
-  /spark/sbin/start-slave.sh <span class="nv">$MASTER_URL</span> <span class="p">&amp;</span>
+<p>Next, start one worker on each compute node.</p>
+<p>In this tutorial, we start the workers using <code class="code docutils literal notranslate"><span class="pre">srun</span></code> in a way that
+prevents any subsequent <code class="code docutils literal notranslate"><span class="pre">srun</span></code> invocations from running until the Spark
+workers exit. For our purposes here, that’s OK, but it’s a big limitation for
+some jobs. (See <a class="reference external" href="https://github.com/hpc/charliecloud/issues/230">issue #230</a>.)</p>
+<p>Alternatives include <code class="code docutils literal notranslate"><span class="pre">pdsh</span></code>, which is the approach we use for the Spark
+tests (<code class="code docutils literal notranslate"><span class="pre">examples/other/spark/test.bats</span></code>), or a simple for loop of
+<code class="code docutils literal notranslate"><span class="pre">ssh</span></code> calls. Both of these are also quite clunky and do not scale well.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun sh -c <span class="s2">&quot;   ch-run -b ~/sparkconf /var/tmp/spark -- \</span>
+<span class="s2">                        spark/sbin/start-slave.sh </span><span class="nv">$MASTER_URL</span><span class="s2"> \</span>
+<span class="s2">              &amp;&amp; sleep infinity&quot;</span> <span class="p">&amp;</span>
 </pre></div>
 </div>
 <p>One of the advantages of Spark is that it’s resilient: if a worker becomes
-available, the computation simply proceeds without it. However, this can mask
-issues as well. For example, this example will run perfectly fine with just
-one worker on the same node as the master, which isn’t what we want.</p>
+unavailable, the computation simply proceeds without it. However, this can
+mask issues as well. For example, this example will run perfectly fine with
+just one worker, or all four workers on the same node, which aren’t what we
+want.</p>
 <p>Check the master log to see that the right number of workers registered:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span>  fgrep worker /tmp/spark/log/*master*.out
 <span class="go">17/02/24 22:52:24 INFO Master: Registering worker 127.0.0.1:39890 with 16 cores, 187.8 GB RAM</span>
@@ -1400,13 +1342,11 @@ one worker on the same node as the master, which isn’t what we want.</p>
 <p>Despite the workers calling themselves 127.0.0.1, they really are running
 across the allocation. (The confusion happens because of our
 <code class="code docutils literal notranslate"><span class="pre">$SPARK_LOCAL_IP</span></code> setting above.) This can be verified by examining logs
-on each compute node. For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh <span class="m">10</span>.8.8.4
-<span class="gp">$</span> tail -3 /tmp/spark/log/*worker*.out
+on each compute node. For example (note single quotes):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh <span class="m">10</span>.8.8.4 -- tail -3 <span class="s1">&#39;/tmp/spark/log/*worker*.out&#39;</span>
 <span class="go">17/02/24 22:52:24 INFO Worker: Connecting to master 10.8.8.3:7077...</span>
 <span class="go">17/02/24 22:52:24 INFO TransportClientFactory: Successfully created connection to /10.8.8.3:7077 after 263 ms (216 ms spent in bootstraps)</span>
 <span class="go">17/02/24 22:52:24 INFO Worker: Successfully registered with master spark://10.8.8.3:7077</span>
-<span class="gp">$</span> <span class="nb">exit</span>
 </pre></div>
 </div>
 <p>We can now start an interactive shell to do some Spark computing:</p>
@@ -1435,8 +1375,8 @@ on each compute node. For example:</p>
 as included with the Spark source code. (The voluminous logging output is
 omitted.)</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run -b ~/sparkconf /var/tmp/spark -- <span class="se">\</span>
-  /spark/bin/spark-submit --master <span class="nv">$MASTER_URL</span> <span class="se">\</span>
-  /spark/examples/src/main/python/pi.py <span class="m">1024</span>
+         /spark/bin/spark-submit --master <span class="nv">$MASTER_URL</span> <span class="se">\</span>
+         /spark/examples/src/main/python/pi.py <span class="m">1024</span>
 <span class="go">[...]</span>
 <span class="go">Pi is roughly 3.141211</span>
 <span class="go">[...]</span>
@@ -1446,14 +1386,14 @@ omitted.)</p>
 <p>Success! Next, we’ll run a similar job non-interactively.</p>
 </div>
 <div class="section" id="non-interactive-apache-spark">
-<h3><a class="toc-backref" href="#id28">3.7.4. Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27">3.7.4. Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
 <p>We’ll re-use much of the above to run the same computation non-interactively.
-For brevity, the Slurm script at <code class="code docutils literal notranslate"><span class="pre">examples/other/spark/slurm.h</span></code> is not
+For brevity, the Slurm script at <code class="code docutils literal notranslate"><span class="pre">examples/other/spark/slurm.sh</span></code> is not
 reproduced here.</p>
 <p>Submit it as follows. It requires three arguments: the tarball, the image
 directory to unpack into, and the high-speed network interface. Again, consult
 your site administrators for the latter.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch -N4 slurm.sh spark.tar.gz /var/tmp eth1
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch -N4 slurm.sh spark.tar.gz /var/tmp ib0
 <span class="go">Submitted batch job 86754</span>
 </pre></div>
 </div>
@@ -1510,7 +1450,7 @@ your site administrators for the latter.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.9.1',
+            VERSION:'0.9.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
