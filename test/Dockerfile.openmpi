@@ -86,7 +86,7 @@ WORKDIR /usr/local/src
 # Note that libpsm2 is x86_64 only:
 # https://lists.debian.org/debian-hpc/2017/12/msg00015.html
 ENV DEB_URL http://http.us.debian.org/debian/pool/main
-ENV PSM2_VERSION 10.3.58-1
+ENV PSM2_VERSION 10.3.58-2
 RUN wget -nv $DEB_URL/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb
 RUN wget -nv $DEB_URL/libp/libpsm2/libpsm2-dev_${PSM2_VERSION}_amd64.deb
 ENV IBVERBS_VERSION 19.0-1
