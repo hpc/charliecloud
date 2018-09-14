@@ -42,7 +42,17 @@ env:
 install:
   - sudo apt-get install pigz
   - if [ -n "$INSTALL_PV" ]; then sudo apt-get install pv; fi
-  - sudo pip install sphinx sphinx-rtd-theme
+# We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
+# issue #241). Travis provides images pre-installed with Python 3, but it's in
+# a virtualenv and unavailable by default under sudo, in package builds, and
+# maybe elsewhere. It's simpler and fast enough to install it with apt-get.
+#
+# Note: We get errors about "async def" in the Jinja2 dependency install,
+# because Python 3.4 from Trusty doesn't support that syntax, but these seem
+# to have no later effect.
+  - sudo apt-get install python3-pip
+  - pip3 --version
+  - sudo pip3 install sphinx sphinx-rtd-theme
 # Ubuntu Trusty symlinks /dev/shm -> /run/shm; the latter is unavailable after
 # entering the namespaces and we get ENOENT. Work around this bug. See:
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=851427
