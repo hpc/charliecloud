@@ -39,6 +39,11 @@ Vagrant.configure("2") do |c|
   c.vm.box = "centos/7"  # https://app.vagrantup.com/centos/boxes/7
   c.vm.hostname = "charliebox"
 
+  # Check for plugins: see issues https://github.com/hashicorp/vagrant/issues/10161
+  if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new("2.1.3")
+    config.vagrant.plugins = required_plugins
+  end
+
   # Note: Vagrant sets up a port mapping from localhost:2222 to charliebox:22
   # automatically, so we need no repeat that here.
 
