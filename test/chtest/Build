@@ -21,7 +21,7 @@ TARBALL=$2
 TARBALL_UNCOMPRESSED=${TARBALL%.*}
 WORKDIR=$3
 MIRROR=http://dl-cdn.alpinelinux.org/alpine/v3.6
-APK_TOOLS=$(curl -s http://dl-cdn.alpinelinux.org/alpine/v3.6/main/$(arch)/ | grep apk-tools-static | sed -e 's/<[^>]*>//g' | awk '{print $1}')
+APK_TOOLS=$(wget --quiet -O - http://dl-cdn.alpinelinux.org/alpine/v3.6/main/x86_64/ | grep apk-tools-static | sed -e 's/<[^>]*>//g' | awk '{print $1}')
 IMG="$WORKDIR/img"
 
 cd $WORKDIR
@@ -37,7 +37,7 @@ CH_RUN="ch-run -u0 -g0 -w --no-home $IMG"
 ## Bootstrap base Alpine Linux.
 
 # Download statically linked apk.
-curl -s $MIRROR/main/$(arch)/$APK_TOOLS -o $APK_TOOLS
+wget $MIRROR/main/x86_64/$APK_TOOLS
 
 # Bootstrap directories.
 mkdir img
