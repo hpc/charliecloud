@@ -26,7 +26,7 @@ fromhost_ls () {
 @test 'ch-fromhost (Debian)' {
     scope standard
     prerequisites_ok debian9
-    img=${ch_imdir}/debian9
+    img=${ch_imgdir}/debian9
 
     # --cmd
     fromhost_clean "$img"
@@ -191,7 +191,7 @@ fromhost_ls () {
 @test 'ch-fromhost (CentOS)' {
     scope full
     prerequisites_ok centos7
-    img=${ch_imdir}/centos7
+    img=${ch_imgdir}/centos7
 
     fromhost_clean "$img"
     ch-fromhost -v --file sotest/files_inferrable.txt "$img"
@@ -213,7 +213,7 @@ fromhost_ls () {
     prerequisites_ok nvidia
     command -v nvidia-container-cli >/dev/null 2>&1 \
         || skip 'nvidia-container-cli not in PATH'
-    img=${ch_imdir}/nvidia
+    img=${ch_imgdir}/nvidia
 
     # nvidia-container-cli --version (to make sure it's linked correctly)
     nvidia-container-cli --version
@@ -274,7 +274,7 @@ fromhost_ls () {
 @test 'ch-fromhost --nvidia without GPU' {
     scope full
     prerequisites_ok nvidia
-    img=${ch_imdir}/nvidia
+    img=${ch_imgdir}/nvidia
 
     # --nvidia should give a proper error whether or not nvidia-container-cli
     # is available.
