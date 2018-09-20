@@ -130,7 +130,7 @@ load common
     img="${ch_tardir}/test"
     [[ ! -e $img ]]
     ch-build2dir .. "${ch_tardir}" --file=Dockerfile.alpine36
-    sudo docker tag test "test:${ch_docker_version}"
+    sudo docker tag test "test:${ch_version_docker}"
     docker_ok test
     image_ok "$img"
     # Remove since we don't want it hanging around later.
