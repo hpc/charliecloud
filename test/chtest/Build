@@ -21,7 +21,7 @@ TARBALL=$2
 TARBALL_UNCOMPRESSED=${TARBALL%.*}
 WORKDIR=$3
 MIRROR=http://dl-cdn.alpinelinux.org/alpine/v3.6
-APK_TOOLS=apk-tools-static-2.7.5-r0.apk
+APK_TOOLS=$(wget --quiet -O - http://dl-cdn.alpinelinux.org/alpine/v3.6/main/x86_64/ | grep apk-tools-static | sed -e 's/<[^>]*>//g' | awk '{print $1}')
 IMG="$WORKDIR/img"
 
 cd $WORKDIR
