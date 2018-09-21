@@ -23,26 +23,12 @@
 #    examples, while the cost is low: a few tests are skipped. Users who want
 #    to run single-node MPI apps in the VM should launch from within ch-run.
 
-# Prerequisites.
-Vagrant.require_version ">= 2.1.0"
-if Gem::Version.new(Vagrant::VERSION) < Gem::Version.new("2.1.3")
-  required_plugins = [ 'disksize', 'proxyconf', 'reload', 'vbguest' ]
-  required_plugins.each do |plugin|
-    if !Vagrant.has_plugin?(plugin)
-      abort("Plugin '#{plugin}' not found. Install it with: vagrant plugin install '#{plugin}'.")
-    end
-  end
-end
-
+Vagrant.require_version ">= 2.1.3"
 Vagrant.configure("2") do |c|
 
   c.vm.box = "centos/7"  # https://app.vagrantup.com/centos/boxes/7
   c.vm.hostname = "charliebox"
-
-  # Check for plugins: see issues https://github.com/hashicorp/vagrant/issues/10161
-  if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new("2.1.3")
-    config.vagrant.plugins = required_plugins
-  end
+  c.vagrant.plugins = ['disksize', 'proxyconf', 'reload', 'vbguest']
 
   # Note: Vagrant sets up a port mapping from localhost:2222 to charliebox:22
   # automatically, so we need no repeat that here.
@@ -50,7 +36,7 @@ Vagrant.configure("2") do |c|
   # Set up proxies if appropriate.
   if ENV["HTTP_PROXY"] or ENV["HTTPS_PROXY"] or ENV["NO_PROXY"]
     if not (ENV["HTTP_PROXY"] and ENV["HTTPS_PROXY"] and ENV["NO_PROXY"])
-      abort("missing proxy variable(s). HTTP_PROXY, HTTPS_PROXY, and NO_PROXY must all be set or unset.")
+      abort("missing proxy variable(s): HTTP_PROXY HTTPS_PROXY and/or NO_PROXY")
     end
     c.proxy.http = ENV["HTTP_PROXY"]
     c.proxy.https = ENV["HTTPS_PROXY"]
