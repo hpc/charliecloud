@@ -5,11 +5,8 @@ setup () {
 }
 
 ipc_clean_p () {
-    [[ 0 = $(ipc_count) ]]
-}
-
-ipc_count () {
-    find /dev/shm -maxdepth 1 -name '*ch-run*' | wc -l
+    sem="$(find /dev/shm -maxdepth 1 -name '*ch-run*')"
+    [[ -z $sem ]]
 }
 
 joined_ok () {
@@ -235,6 +232,7 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'join: no valid peer group size found' ]]
+    ipc_clean_p
 
     # join count no digits
     run ch-run --join-ct=a "$CHTEST_IMG" -- true
@@ -245,6 +243,8 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'SLURM_CPUS_ON_NODE: no digits found' ]]
+    ipc_clean_p
+
 
     # join count empty string
     run ch-run --join-ct='' "$CHTEST_IMG" -- true
@@ -255,12 +255,14 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'join: no valid peer group size found' ]]
+    ipc_clean_p
 
     # --join-ct digits followed by extra goo (OK from environment variable)
     run ch-run --join-ct=1a "$CHTEST_IMG" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ '--join-ct: extra characters after digits' ]]
+    ipc_clean_p
 
     # Regex for out-of-range error.
     range_re='.*: .*out of range'
@@ -275,6 +277,7 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
+    ipc_clean_p
 
     # join count below INT_MIN
     run ch-run --join-ct=-2147483649 "$CHTEST_IMG" -- true
@@ -286,6 +289,7 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
+    ipc_clean_p
 
     # join count above LONG_MAX
     run ch-run --join-ct=9223372036854775808 "$CHTEST_IMG" -- true
@@ -297,6 +301,7 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
+    ipc_clean_p
 
     # join count below LONG_MIN
     run ch-run --join-ct=-9223372036854775809 "$CHTEST_IMG" -- true
@@ -308,6 +313,7 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ $range_re ]]
+    ipc_clean_p
 }
 
 @test 'ch-run --join: peer group tag errors' {
@@ -325,4 +331,5 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ 'join: peer group tag cannot be empty string' ]]
+    ipc_clean_p
 }
