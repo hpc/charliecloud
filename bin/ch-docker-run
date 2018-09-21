@@ -2,8 +2,8 @@
 
 # Bash is needed for arrays.
 
-LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. "${LIBEXEC}/base.sh"
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF

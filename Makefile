@@ -113,12 +113,12 @@ install: all
 	install -pm 755 -t $(BIN) $$(find bin -type f -executable)
 #       Modify scripts to relate to new libexec location.
 	for scriptfile in $$(find bin -type f -executable -printf "%f\n"); do \
-	    sed -i "s#^LIBEXEC=.*#LIBEXEC=$(LIBEXEC_RUN)#" $(BIN)/$${scriptfile}; \
+	    sed -i "s#^libexec=.*#libexec=$(LIBEXEC_RUN)#" $(BIN)/$${scriptfile}; \
 	done
 #       executable helpers
 	install -d $(LIBEXEC_INST)
 	install -pm 644 -t $(LIBEXEC_INST) bin/base.sh bin/version.sh
-	sed -i "s#^LIBEXEC=.*#LIBEXEC=$(LIBEXEC_RUN)#" $(LIBEXEC_INST)/base.sh
+	sed -i "s#^libexec=.*#libexec=$(LIBEXEC_RUN)#" $(LIBEXEC_INST)/base.sh
 #       man pages if they were built
 	if [ -f man/charliecloud.1 ]; then \
 	    install -d $(INSTALL_PREFIX)/share/man/man1; \
