@@ -28,7 +28,10 @@ Vagrant.configure("2") do |c|
 
   c.vm.box = "centos/7"  # https://app.vagrantup.com/centos/boxes/7
   c.vm.hostname = "charliebox"
-  c.vagrant.plugins = ['disksize', 'proxyconf', 'reload', 'vbguest']
+  c.vagrant.plugins = ['vagrant-disksize',
+                       'vagrant-proxyconf',
+                       'vagrant-reload',
+                       'vagrant-vbguest']
 
   # Note: Vagrant sets up a port mapping from localhost:2222 to charliebox:22
   # automatically, so we need no repeat that here.
