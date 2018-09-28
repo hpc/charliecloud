@@ -11,10 +11,10 @@ count_ranks () {
     | sed -r 's/^.+ ([0-9]+) ranks.+$/\1/'
 }
 
-@test "$EXAMPLE_TAG/serial" {
+@test "${ch_tag}/serial" {
     # This seems to start up the MPI infrastructure (daemons, etc.) within the
     # guest even though there's no mpirun.
-    run ch-run "$IMG" -- /hello/hello
+    run ch-run "$ch_img" -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *' 1 ranks'* ]]
@@ -22,32 +22,32 @@ count_ranks () {
     [[ $output = *'0: finalize ok'* ]]
 }
 
-@test "$EXAMPLE_TAG/guest starts ranks" {
+@test "${ch_tag}/guest starts ranks" {
     # shellcheck disable=SC2086
-    run ch-run "$IMG" -- mpirun $CHTEST_MPIRUN_NP /hello/hello
+    run ch-run "$ch_img" -- mpirun $ch_mpirun_np /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(count_ranks "$output")
-    echo "found $rank_ct ranks, expected $CHTEST_CORES_NODE"
-    [[ $rank_ct -eq "$CHTEST_CORES_NODE" ]]
+    echo "found ${rank_ct} ranks, expected ${ch_cores_node}"
+    [[ $rank_ct -eq "$ch_cores_node" ]]
     [[ $output = *'0: send/receive ok'* ]]
     [[ $output = *'0: finalize ok'* ]]
 }
 
-@test "$EXAMPLE_TAG/host starts ranks" {
+@test "${ch_tag}/host starts ranks" {
     multiprocess_ok
-    echo "starting ranks with: $MPIRUN_CORE"
+    echo "starting ranks with: ${mpirun_core}"
 
-    GUEST_MPI=$(ch-run "$IMG" -- mpirun --version | head -1)
-    echo "guest MPI: $GUEST_MPI"
+    guest_mpi=$(ch-run "$ch_img" -- mpirun --version | head -1)
+    echo "guest MPI: ${guest_mpi}"
 
     # shellcheck disable=SC2086
-    run $MPIRUN_CORE ch-run --join "$IMG" -- /hello/hello
+    run $ch_mpirun_core ch-run --join "$ch_img" -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(count_ranks "$output")
-    echo "found $rank_ct ranks, expected $CHTEST_CORES_TOTAL"
-    [[ $rank_ct -eq "$CHTEST_CORES_TOTAL" ]]
+    echo "found ${rank_ct} ranks, expected ${ch_cores_total}"
+    [[ $rank_ct -eq "$ch_cores_total" ]]
     [[ $output = *'0: send/receive ok'* ]]
     [[ $output = *'0: finalize ok'* ]]
 }

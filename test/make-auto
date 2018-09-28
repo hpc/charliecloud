@@ -41,17 +41,17 @@ for path in sys.argv[2:]:
          template = """\
 @test 'custom build %(tag)s' {
     scope %(scope)s
-    TARBALL=$TARDIR/%(tag)s.tar.gz
-    PQ=$TARDIR/%(tag)s.pq_missing
-    WORKDIR=$TARDIR/%(tag)s.tmp
-    rm -f "$PQ"
-    mkdir "$WORKDIR"
+    tarball=$ch_tardir/%(tag)s.tar.gz
+    pq=$ch_tardir/%(tag)s.pq_missing
+    workdir=$ch_tardir/%(tag)s.tmp
+    rm -f "$pq"
+    mkdir "$workdir"
     cd "%(d)s"
-    run ./%(f)s "$PWD" "$TARBALL" "$WORKDIR"
+    run ./%(f)s "$PWD" "$tarball" "$workdir"
     echo "$output"
-    rm -Rf "$WORKDIR"
+    rm -Rf "$workdir"
     if [[ $status -eq 65 ]]; then
-         touch "$PQ"
+         touch "$pq"
          skip 'prerequisites not met'
     fi
     [[ $status -eq 0 ]]
@@ -63,7 +63,7 @@ for path in sys.argv[2:]:
     scope %(scope)s
     need_docker %(tag)s
     ch-build -t %(tag)s --file="%(path)s" ..
-    sudo docker tag %(tag)s "%(tag)s:$CH_VERSION_DOCKER"
+    sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
     docker_ok %(tag)s
 }"""
          else:
@@ -76,16 +76,16 @@ for path in sys.argv[2:]:
     need_docker %(tag)s
     sudo docker pull %(addr)s
     sudo docker tag %(addr)s %(tag)s
-    sudo docker tag %(tag)s "%(tag)s:$CH_VERSION_DOCKER"
+    sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
     docker_ok %(tag)s
 }"""
          template += """
 @test 'ch-docker2tar %(tag)s' {
     scope %(scope)s
     need_docker
-    TARBALL="$TARDIR/%(tag)s.tar.gz"
-    ch-docker2tar %(tag)s "$TARDIR"
-    tarball_ok "$TARBALL"
+    tarball="$ch_tardir/%(tag)s.tar.gz"
+    ch-docker2tar %(tag)s "$ch_tardir"
+    tarball_ok "$tarball"
 }"""
       else:
          assert False, "unknown build type"
@@ -98,11 +98,11 @@ for path in sys.argv[2:]:
 @test 'ch-tar2dir %(tag)s' {
     scope %(scope)s
     prerequisites_ok %(tag)s
-    ch-tar2dir "$TARDIR/%(tag)s.tar.gz" "$IMGDIR"
+    ch-tar2dir "$ch_tardir/%(tag)s.tar.gz" "$ch_imgdir"
 }
 @test 'ch-run %(tag)s /bin/true' {
     scope %(scope)s
     prerequisites_ok %(tag)s
-    IMG="$IMGDIR/%(tag)s"
-    ch-run "$IMG" /bin/true
+    img="$ch_imgdir/%(tag)s"
+    ch-run "$img" /bin/true
 }""" % locals())

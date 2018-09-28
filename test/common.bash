@@ -12,8 +12,8 @@ docker_tag_p () {
 
 docker_ok () {
     docker_tag_p "$1"
-    docker_tag_p "$1:latest"
-    docker_tag_p "$1:$(ch-run --version |& tr '~+' '--')"
+    docker_tag_p "${1}:latest"
+    docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 env_require () {
@@ -25,7 +25,7 @@ env_require () {
 }
 
 image_ok () {
-    ls -ld "$1" "$1/WEIRD_AL_YANKOVIC" || true
+    ls -ld "$1" "${1}/WEIRD_AL_YANKOVIC" || true
     test -d "$1"
     ls -ld "$1" || true
     byte_ct=$(du -s -B1 "$1" | cut -f1)
@@ -34,17 +34,16 @@ image_ok () {
 }
 
 multiprocess_ok () {
-    [[ $CHTEST_MULTIPROCESS ]] || skip 'no multiprocess launch tool found'
+    [[ $ch_multiprocess ]] || skip 'no multiprocess launch tool found'
     # If the MPI in the container is MPICH, we only try host launch on Crays.
     # For the other settings (workstation, other Linux clusters), it may or
     # may not work; we simply haven't tried.
-    [[ $CHTEST_MPI = mpich && -z $CHTEST_CRAY ]] \
+    [[ $ch_mpi = mpich && -z $ch_cray ]] \
         && skip 'MPICH untested'
     # Conversely, if the MPI in the container is OpenMPI, the current examples
     # do not use the Aries network but rather the "tcp" BTL, which has
-    # grotesquely poor performance. Thus, we skip those tests as
-    # well.
-    [[ $CHTEST_MPI = openmpi && $CHTEST_CRAY ]] \
+    # grotesquely poor performance. Thus, we skip those tests as well.
+    [[ $ch_mpi = openmpi && $ch_cray ]] \
        && skip 'OpenMPI unsupported on Cray; issue #180'
     # Exit function successfully.
     true
@@ -53,20 +52,20 @@ multiprocess_ok () {
 need_docker () {
     # Skip test if $CH_TEST_SKIP_DOCKER is true. If argument provided, use
     # that tag as missing prerequisite sentinel file.
-    PQ=$TARDIR/$1.pq_missing
-    if [[ $PQ ]]; then
-        rm -f "$PQ"
+    pq=${ch_tardir}/${1}.pq_missing
+    if [[ $pq ]]; then
+        rm -f "$pq"
     fi
     if [[ $CH_TEST_SKIP_DOCKER ]]; then
-        if [[ $PQ ]]; then
-            touch "$PQ"
+        if [[ $pq ]]; then
+            touch "$pq"
         fi
         skip 'Docker not found or user-skipped'
     fi
 }
 
 prerequisites_ok () {
-    if [[ -f $TARDIR/$1.pq_missing ]]; then
+    if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
     fi
 }
@@ -77,12 +76,12 @@ scope () {
             ;;  # always run quick-scope tests
         standard)
             if [[ $CH_TEST_SCOPE = quick ]]; then
-                skip "$1 scope"
+                skip "${1} scope"
             fi
             ;;
         full)
             if [[ $CH_TEST_SCOPE = quick || $CH_TEST_SCOPE = standard ]]; then
-                skip "$1 scope"
+                skip "${1} scope"
             fi
             ;;
         skip)
@@ -108,22 +107,22 @@ export LC_ALL=C
 #
 # Note that sudo resets $PATH, so if you want to run any Charliecloud stuff
 # under sudo, you must use an absolute path.
-CH_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")/bin" && pwd)"
-CH_BIN="$(readlink -f "$CH_BIN")"
-export PATH=$CH_BIN:$PATH
+ch_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")/bin" && pwd)"
+ch_bin="$(readlink -f "${ch_bin}")"
+export PATH=$ch_bin:$PATH
 # shellcheck disable=SC2034
-CH_RUN_FILE=$(command -v ch-run)
+ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
-CH_LIBEXEC=$(ch-build --libexec-path)
-if [[ ! -x $CH_BIN/ch-run ]]; then
+ch_libexec=$(ch-build --libexec-path)
+if [[ ! -x ${ch_bin}/ch-run ]]; then
     printf 'Must build with "make" before running tests.\n\n' >&2
     exit 1
 fi
 
 # Charliecloud version.
-CH_VERSION=$(ch-run --version 2>&1)
+ch_version=$(ch-run --version 2>&1)
 # shellcheck disable=SC2034
-CH_VERSION_DOCKER=$(echo "$CH_VERSION" | tr '~+' '--')
+ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 
 # User-private temporary directory in case multiple users are running the
 # tests simultaenously.
@@ -133,14 +132,10 @@ chmod 700 "$btnew"
 export BATS_TMPDIR=$btnew
 [[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
 
-# Separate directories for tarballs and images
-TARDIR=$CH_TEST_TARDIR
-IMGDIR=$CH_TEST_IMGDIR
-
 # MPICH requires different handling from OpenMPI. Set a variable to enable
 # some kludges.
-if [[ $BATS_TEST_DIRNAME =~ 'mpich' ]]; then
-    CHTEST_MPI=mpich
+if [[ $BATS_TEST_DIRNAME = *'mpich'* ]]; then
+    ch_mpi=mpich
     # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
     # Slurm environment variables, it tries to launch even local ranks with
     # "srun". This of course fails within the container. You can't turn it off
@@ -148,60 +143,65 @@ if [[ $BATS_TEST_DIRNAME =~ 'mpich' ]]; then
     # environment variable at run time.
     export HYDRA_LAUNCHER=fork
 else
-    CHTEST_MPI=openmpi
+    ch_mpi=openmpi
 fi
 
 # Crays are special.
 if [[ -f /etc/opt/cray/release/cle-release ]]; then
-    CHTEST_CRAY=yes
+    ch_cray=yes
 else
-    CHTEST_CRAY=
+    ch_cray=
 fi
 
+# Separate directories for tarballs and images
+ch_imgdir=$CH_TEST_IMGDIR
+ch_tardir=$CH_TEST_TARDIR
+
 # Some test variables
-EXAMPLE_TAG=$(basename "$BATS_TEST_DIRNAME")
-EXAMPLE_IMG=$IMGDIR/$EXAMPLE_TAG
-CHTEST_TARBALL=$TARDIR/chtest.tar.gz
-CHTEST_IMG=$IMGDIR/chtest
+ch_tag=$(basename "$BATS_TEST_DIRNAME")
+ch_img=${ch_imgdir}/${ch_tag}
+ch_tar=${ch_tardir}/${ch_tag}.tar.gz
+ch_ttar=${ch_tardir}/chtest.tar.gz
+ch_timg=${ch_imgdir}/chtest
 if [[ $SLURM_JOB_ID ]]; then
     # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
     # documentation.
     if [[ -z $SLURM_CPUS_ON_NODE ]]; then
         SLURM_CPUS_ON_NODE=$(echo "$SLURM_JOB_CPUS_PER_NODE" | cut -d'(' -f1)
     fi
-    CHTEST_NODES=$SLURM_JOB_NUM_NODES
-    CHTEST_CORES_NODE=$SLURM_CPUS_ON_NODE
+    ch_nodes=$SLURM_JOB_NUM_NODES
+    ch_cores_node=$SLURM_CPUS_ON_NODE
 else
-    CHTEST_NODES=1
-    CHTEST_CORES_NODE=$(getconf _NPROCESSORS_ONLN)
+    ch_nodes=1
+    ch_cores_node=$(getconf _NPROCESSORS_ONLN)
 fi
-CHTEST_CORES_TOTAL=$((CHTEST_NODES * CHTEST_CORES_NODE))
-if [[ $CHTEST_MPI = mpich ]]; then
-    CHTEST_MPIRUN_NP="-np $CHTEST_CORES_NODE"
+ch_cores_total=$((ch_nodes * ch_cores_node))
+if [[ $ch_mpi = mpich ]]; then
+    ch_mpirun_np="-np ${ch_cores_node}"
 else
-    CHTEST_MPIRUN_NP='--use-hwthread-cpus'
+    ch_mpirun_np='--use-hwthread-cpus'
 fi
 if [[ $SLURM_JOB_ID ]]; then
-    CHTEST_MULTINODE=yes                    # can run on multiple nodes
-    CHTEST_MULTIPROCESS=yes                 # can run multiple processes
-    MPIRUN_NODE='srun --ntasks-per-node 1'  # one process/node
-    MPIRUN_CORE='srun --cpus-per-task 1'    # one process/core
-    MPIRUN_2='srun -n2'                     # two processes on different nodes
-    MPIRUN_2_1NODE='srun -N1 -n2'           # two processes on one node
+    ch_multinode=yes                           # can run on multiple nodes
+    ch_multiprocess=yes                        # can run multiple processes
+    ch_mpirun_node='srun --ntasks-per-node 1'  # one process/node
+    ch_mpirun_core='srun --cpus-per-task 1'    # one process/core
+    ch_mpirun_2='srun -n2'                     # two processes on diff nodes
+    ch_mpirun_2_1node='srun -N1 -n2'           # two processes on one node
 else
-    CHTEST_MULTINODE=
+    ch_multinode=
     if ( command -v mpirun >/dev/null 2>&1 ); then
-        CHTEST_MULTIPROCESS=yes
-        MPIRUN_NODE='mpirun --map-by ppr:1:node'
-        MPIRUN_CORE="mpirun $CHTEST_MPIRUN_NP"
-        MPIRUN_2='mpirun -np 2'
-        MPIRUN_2_1NODE='mpirun -np 2'
+        ch_multiprocess=yes
+        ch_mpirun_node='mpirun --map-by ppr:1:node'
+        ch_mpirun_core="mpirun ${ch_mpirun_np}"
+        ch_mpirun_2='mpirun -np 2'
+        ch_mpirun_2_1node='mpirun -np 2'
     else
-        CHTEST_MULTIPROCESS=
-        MPIRUN_NODE=''
-        MPIRUN_CORE=false
-        MPIRUN_2=false
-        MPIRUN_2_1NODE=false
+        ch_multiprocess=
+        ch_mpirun_node=''
+        ch_mpirun_core=false
+        ch_mpirun_2=false
+        ch_mpirun_2_1node=false
     fi
 fi
 
@@ -218,7 +218,7 @@ elif [[    $CH_TEST_SCOPE != quick \
         && $CH_TEST_SCOPE != standard \
         && $CH_TEST_SCOPE != full ]]; then
     # shellcheck disable=SC2016
-    printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' $CH_TEST_SCOPE >&2
+    printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' "$CH_TEST_SCOPE" >&2
     exit 1
 fi
 
@@ -227,7 +227,7 @@ if ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     # shellcheck disable=SC2034
-    CHTEST_HAVE_SUDO=yes
+    ch_have_sudo=yes
 fi
 
 # Do we have what we need?
@@ -240,7 +240,7 @@ if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
     exit 1
 fi
-if ( mount | grep -Fq "$IMGDIR" ); then
-    printf 'Something is mounted under %s.\n\n' "$IMGDIR" >&2
+if ( mount | grep -Fq "$ch_imgdir" ); then
+    printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
     exit 1
 fi
