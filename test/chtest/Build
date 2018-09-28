@@ -21,6 +21,10 @@ tarball=$2
 tarball_uncompressed=${tarball%.*}
 workdir=$3
 mirror=http://dl-cdn.alpinelinux.org/alpine/v3.6
+# Dynamically select apk-tools-static version. We would prefer to hard-code a
+# version (and upgrade on our schedule), but we can't because Alpine does not
+# keep old package versions. If we try, the build breaks every few months (for
+# example, see issue #242).
 apk_tools=$(  wget -qO - "${mirror}/main/x86_64" \
             | grep -F apk-tools-static \
             | sed -E 's/^.*(apk-tools-static-[0-9.r-]+\.apk).*$/\1/')
