@@ -22,8 +22,8 @@ fi
 if [ $# -lt 2 ]; then
     usage
 fi
-tarball="$1"
-newroot="${2}/$(basename "${tarball%.tar.gz}")"
+tarball=$1
+newroot=${2}/$(basename "${tarball%.tar.gz}")
 
 sentinel=WEIRD_AL_YANKOVIC
 
@@ -51,16 +51,16 @@ fi
 mkdir "$newroot"
 echo 'This directory is a Charliecloud container image.' > "${newroot}/${sentinel}"
 # Use a pipe because PV ignores arguments if it's cat rather than PV.
-size=$(stat -c%s "${tarball}")
-  pv_ -s "$size" < "${tarball}" \
+size=$(stat -c%s "$tarball")
+  pv_ -s "$size" < "$tarball" \
 | gzip_ -dc \
-| tar x$verbose -C "${newroot}" -f - \
+| tar x$verbose -C "$newroot" -f - \
       --anchored --exclude='dev/*' --exclude='./dev/*'
 # Make all directories writeable so we can delete image later (hello, Red Hat).
-find "${newroot}" -type d -a ! -perm /200 -exec chmod u+w {} +
+find "$newroot" -type d -a ! -perm /200 -exec chmod u+w {} +
 
 # Ensure directories that ch-run needs exist.
 mkdir -p "${newroot}/dev"
-for i in $(seq 0 9); do mkdir -p "${newroot}/mnt/$i"; done
+for i in $(seq 0 9); do mkdir -p "${newroot}/mnt/${i}"; done
 
 echo "${newroot} unpacked ok"

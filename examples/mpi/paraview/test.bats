@@ -8,7 +8,7 @@ setup () {
     if [[ $ch_multinode ]]; then
         # Bats only creates $BATS_TMPDIR on the first node.
         # shellcheck disable=SC2086
-        ${ch_mpirun_node} mkdir -p "$BATS_TMPDIR"
+        $ch_mpirun_node mkdir -p "$BATS_TMPDIR"
     fi
 }
 
@@ -29,9 +29,9 @@ setup () {
 # collection of XML files containing binary data and it seems too hairy to me.
 
 @test "${ch_tag}/cone serial" {
-    ch-run -b "${indir}" -b "${outdir}" "${ch_img}" -- \
+    ch-run -b "$indir" -b "$outdir" "$ch_img" -- \
            pvbatch /mnt/0/cone.py /mnt/1
-    ls -l "${outdir}"/cone*
+    ls -l "$outdir"/cone*
     diff -u "${indir}/cone.serial.vtk" "${outdir}/cone.vtk"
     cmp "${indir}/cone.png" "${outdir}/cone.png"
 }
@@ -39,9 +39,9 @@ setup () {
 @test "${ch_tag}/cone ranks=2" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    ${ch_mpirun_2} ch-run --join -b "${indir}" -b "${outdir}" "${ch_img}" -- \
+    $ch_mpirun_2 ch-run --join -b "$indir" -b "$outdir" "$ch_img" -- \
               pvbatch /mnt/0/cone.py /mnt/1
-    ls -l "${outdir}"/cone*
+    ls -l "$outdir"/cone*
     diff -u "${indir}/cone.2ranks.vtk" "${outdir}/cone.vtk"
     cmp "${indir}/cone.png" "${outdir}/cone.png"
 }
@@ -49,9 +49,9 @@ setup () {
 @test "${ch_tag}/cone ranks=N" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    ${ch_mpirun_core} ch-run --join -b "${indir}" -b "${outdir}" "${ch_img}" -- \
+    $ch_mpirun_core ch-run --join -b "$indir" -b "$outdir" "$ch_img" -- \
                  pvbatch /mnt/0/cone.py /mnt/1
-    ls -l "${outdir}"/cone*
+    ls -l "$outdir"/cone*
     diff -u "${indir}/cone.nranks.vtk" "${outdir}/cone.vtk"
     cmp "${indir}/cone.png" "${outdir}/cone.png"
 }

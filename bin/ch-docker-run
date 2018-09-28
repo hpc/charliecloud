@@ -51,7 +51,7 @@ if [[ $# -lt 2 ]]; then
     usage
 fi
 
-tag="$1"
+tag=$1
 shift
 
 if [[ $interactive ]]; then
@@ -66,4 +66,4 @@ for (( i = 0; i < ${#mounts[@]}; i++ )); do
 done
 
 set -x
-${DOCKER} run --read-only -u "${USER}" "${interactive}" "${mount_args}" "${tag}" "$@"
+docker_ run --read-only -u "$USER" "$interactive" "$mount_args" "$tag" "$@"

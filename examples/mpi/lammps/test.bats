@@ -47,7 +47,7 @@ lammps_try () {
     for i in $infiles; do
         printf '\n\n%s\n' "$i"
         # shellcheck disable=SC2086
-        ${mpirun_core} ch-run --join --cd /lammps/examples/$1 "${ch_img}" -- \
+        $mpirun_core ch-run --join --cd /lammps/examples/$1 "$ch_img" -- \
                             lmp_mpi -log none -in "$i"
     done
 
@@ -55,7 +55,7 @@ lammps_try () {
 
 @test "${ch_tag}/using all cores" {
     # shellcheck disable=SC2086
-    run ${mpirun_core} ch-run --join "${ch_img}" -- \
+    run $mpirun_core ch-run --join "$ch_img" -- \
                             lmp_mpi -log none -in /lammps/examples/melt/in.melt
     echo "$output"
     [[ $status -eq 0 ]]
@@ -64,7 +64,7 @@ lammps_try () {
                   | tail -1 \
                   | sed -r 's/^.+with ([0-9]+) MPI tasks.+$/\1/')
     echo "ranks expected: ${ch_cores_total}"
-    echo "ranks found: $ranks_found"
+    echo "ranks found: ${ranks_found}"
     [[ $ranks_found -eq "$ch_cores_total" ]]
 }
 
@@ -82,4 +82,4 @@ lammps_try () {
 # Perhaps related to --join?
 #
 @test "${ch_tag}/python"   { skip 'incompatible with --join'
-                                lammps_try python; }
+                             lammps_try python; }

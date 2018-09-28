@@ -58,7 +58,7 @@ info () {
 parse_basic_args "$@"
 
 while [ $# -gt 0 ]; do
-    opt="$1"; shift
+    opt=$1; shift
     out=
     case $opt in
         -c|--cmd)
@@ -68,7 +68,7 @@ while [ $# -gt 0 ]; do
             ;;
         -d|--dest)
             ensure_nonempty --dest "$1"
-            dest_default="$1"
+            dest_default=$1
             shift
             ;;
         -f|--file)
@@ -91,15 +91,15 @@ while [ $# -gt 0 ]; do
             usage
             ;;
         *)
-            ensure_nonempty "image path" "${opt}"
+            ensure_nonempty "image path" "$opt"
             [ -z "$image" ] || fatal "duplicate image path: ${opt}"
             [ -d "$opt" ] || fatal "image not a directory: ${opt}"
-            image="$opt"
+            image=$opt
             ;;
     esac
     # This adds a delimiter newline only for the second and subsequent files.
     # See: https://chris-lamb.co.uk/posts/joining-strings-in-posix-shell
-    found_files="${found_files:+${found_files}${newline}}${out}"
+    found_files=${found_files:+${found_files}${newline}}${out}
 done
 
 debug "injecting into image: ${image}"
@@ -121,8 +121,8 @@ if [ $infer ]; then
         # searches, so that we can override (or overwrite) any of the same
         # library that may already be in the image.
         debug "asking ldconfig for shared library path"
-        "${CH_BIN}"/ch-run -w "${image}" -- /sbin/ldconfig  # cache maybe absent
-        lib_dest=$(  "${CH_BIN}"/ch-run "${image}" -- \
+        "${CH_BIN}/ch-run" -w "$image" -- /sbin/ldconfig  # cache maybe absent
+        lib_dest=$(  "${CH_BIN}/ch-run" "$image" -- \
                                       /sbin/ldconfig -v 2> /dev/null \
                    | grep -E '^/' | cut -d: -f1 | head -1)
         [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
@@ -133,40 +133,39 @@ if [ $infer ]; then
 fi
 
 debug "injecting"
-old_ifs="$IFS"
-IFS="$newline"
+old_ifs=$IFS
+IFS=$newline
 found_file_p=
-for file in $found_files; do
+for f in $found_files; do
     found_file_p=yes
     type_=unk
-    dest="$dest_default"
+    d=$dest_default
     if [ $infer ]; then
         case $file in
             */bin*)
                 type_=bin
-                dest=/usr/bin
+                d=/usr/bin
                 ;;
             */lib*)
                 type_=lib
-                dest="$lib_dest"
+                d=$lib_dest
                 ;;
         esac
     fi
-    debug "  ${type_}: ${file} -> ${dest}"
-    [ "$dest" ] || fatal "no destination for: ${file}"
-    [ -z "${dest%%/*}" ] || fatal "not an absolute path: ${dest}"
-    [ -d "${image}${dest}" ] || fatal "not a directory: ${image}${dest}"
-       cp --dereference --preserve=all "$file" "${image}/${dest}" \
-    || fatal "cannot inject: ${file}"
+    debug "  ${type_}: ${f} -> ${d}"
+    [ "$d" ] || fatal "no destination for: ${f}"
+    [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
+    [ -d "${image}${d}" ] || fatal "not a directory: ${image}${d}"
+       cp --dereference --preserve=all "$f" "${image}/${d}" \
+    || fatal "cannot inject: ${f}"
 done
-IFS="$old_ifs"
+IFS=$old_ifs
 
 [ -z $found_file_p ] && fatal "empty file list"
 
 if [ $found_libs_p ] && [ $infer ]; then
     debug "found shared library, running ldconfig"
-    "${CH_BIN}"/ch-run -w "${image}" -- /sbin/ldconfig
+    "${CH_BIN}/ch-run" -w "$image" -- /sbin/ldconfig
 else
     debug "no shared libraries found"
 fi
-

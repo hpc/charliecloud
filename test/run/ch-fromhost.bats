@@ -7,7 +7,7 @@ fromhost_clean () {
                 /usr/local/cuda-9.1/targets/x86_64-linux/lib/libsotest.so.1{.0,} \
                 /mnt/sotest.c \
                 /etc/ld.so.cache ; do
-        rm -f "$1/$file"
+        rm -f "${1}/${file}"
     done
     fromhost_clean_p "$1"
 }

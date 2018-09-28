@@ -21,11 +21,11 @@ if [[ -z $SLURM_JOB_ID ]]; then
     exit 1
 fi
 
-tar="$1"
-img="$2"
-img="${img}/spark"
-dev="$3"
-conf="${HOME}/slurm-${SLURM_JOB_ID}.spark"
+tar=$1
+img=$2
+img=${img}/spark
+dev=$3
+conf=${HOME}/slurm-${SLURM_JOB_ID}.spark
 
 # Make Charliecloud available (varies by site)
 module purge
@@ -37,7 +37,7 @@ if [[ -z $dev ]]; then
     echo "no high-speed network device specified"
     exit 1
 fi
-master_ip=$(  ip -o -f inet addr show dev "${dev}" \
+master_ip=$(  ip -o -f inet addr show dev "$dev" \
             | sed -r 's/^.+inet ([0-9.]+).+/\1/')
 master_url=spark://${master_ip}:7077
 if [[ -n $master_ip ]]; then
@@ -48,11 +48,11 @@ else
 fi
 
 # Unpack image
-srun ch-tar2dir "${tar}" "${img}"
+srun ch-tar2dir "$tar" "$img"
 
 # Make Spark configuration
 mkdir "$conf"
-chmod 700 "${conf}"
+chmod 700 "$conf"
 cat <<EOF > "${conf}/spark-env.sh"
 SPARK_LOCAL_DIRS=/tmp/spark
 SPARK_LOG_DIR=/tmp/spark/log
@@ -68,7 +68,7 @@ EOF
 chmod 600 "${conf}/spark-defaults.sh"
 
 # Start the Spark master
-ch-run -b "${conf}" "${img}" -- /spark/sbin/start-master.sh
+ch-run -b "$conf" "$img" -- /spark/sbin/start-master.sh
 sleep 10
 tail -7 /tmp/spark/log/*master*.out
 grep -Fq 'New state: ALIVE' /tmp/spark/log/*master*.out
@@ -82,7 +82,7 @@ grep -F worker /tmp/spark/log/*master*.out
 tail -3 /tmp/spark/log/*worker*.out
 
 # Compute pi
-ch-run -b "${conf}" "${img}" -- \
-       /spark/bin/spark-submit --master "${master_url}" \
+ch-run -b "$conf" "$img" -- \
+       /spark/bin/spark-submit --master "$master_url" \
        /spark/examples/src/main/python/pi.py 1024
 # Let Slurm kill the workers and master

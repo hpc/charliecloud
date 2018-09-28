@@ -2,18 +2,18 @@ load ../common
 
 @test 'relative path to image' {  # issue #6
     scope quick
-    cd "$(dirname "${ch_timg}")" && ch-run "$(basename "${ch_timg}")" -- true
+    cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- true
 }
 
 @test 'symlink to image' {  # issue #50
     scope quick
-    ln -sf "${ch_timg}" "$BATS_TMPDIR/symlink-test"
-    ch-run "$BATS_TMPDIR/symlink-test" -- true
+    ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
+    ch-run "${BATS_TMPDIR}/symlink-test" -- true
 }
 
 @test 'mount image read-only' {
     scope quick
-    run ch-run "${ch_timg}" sh <<EOF
+    run ch-run "$ch_timg" sh <<EOF
 set -e
 test -w /WEIRD_AL_YANKOVIC
 dd if=/dev/zero bs=1 count=1 of=/WEIRD_AL_YANKOVIC
@@ -25,17 +25,17 @@ EOF
 
 @test 'mount image read-write' {
     scope quick
-    ch-run -w "${ch_timg}" -- sh -c 'echo writable > write'
-    ch-run -w "${ch_timg}" rm write
+    ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
+    ch-run -w "$ch_timg" rm write
 }
 
 @test '/usr/bin/ch-ssh' {
     scope quick
     ls -l "$ch_bin/ch-ssh"
-    ch-run "${ch_timg}" -- ls -l /usr/bin/ch-ssh
-    ch-run "${ch_timg}" -- test -x /usr/bin/ch-ssh
-    host_size=$(stat -c %s "$ch_bin/ch-ssh")
-    guest_size=$(ch-run "${ch_timg}" -- stat -c %s /usr/bin/ch-ssh)
+    ch-run "$ch_timg" -- ls -l /usr/bin/ch-ssh
+    ch-run "$ch_timg" -- test -x /usr/bin/ch-ssh
+    host_size=$(stat -c %s "${ch_bin}/ch-ssh")
+    guest_size=$(ch-run "$ch_timg" -- stat -c %s /usr/bin/ch-ssh)
     echo "host: ${host_size}, guest: ${guest_size}"
     [[ $host_size -eq "$guest_size" ]]
 }
@@ -49,14 +49,14 @@ EOF
 
     # default: set $HOME
     # shellcheck disable=SC2016
-    run ch-run "${ch_timg}" -- /bin/sh -c 'echo $HOME'
+    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = /home/$USER ]]
 
     # no change if --no-home
     # shellcheck disable=SC2016
-    run ch-run --no-home "${ch_timg}" -- /bin/sh -c 'echo $HOME'
+    run ch-run --no-home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "$HOME" ]]
@@ -65,7 +65,7 @@ EOF
     home_tmp=$HOME
     unset HOME
     # shellcheck disable=SC2016
-    run ch-run "${ch_timg}" -- /bin/sh -c 'echo $HOME'
+    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export HOME="$home_tmp"
     echo "$output"
     [[ $status -eq 1 ]]
@@ -76,7 +76,7 @@ EOF
     user_tmp=$USER
     unset USER
     # shellcheck disable=SC2016
-    run ch-run "${ch_timg}" -- /bin/sh -c 'echo $HOME'
+    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export USER=$user_tmp
     echo "$output"
     [[ $status -eq 0 ]]
@@ -93,14 +93,14 @@ EOF
     PATH2="$ch_bin:/bin:/usr/bin"
     echo "$PATH2"
     # shellcheck disable=SC2016
-    PATH=$PATH2 run ch-run "${ch_timg}" -- /bin/sh -c 'echo $PATH'
+    PATH=$PATH2 run ch-run "$ch_timg" -- /bin/sh -c 'echo $PATH'
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "$PATH2" ]]
     PATH2="/bin:$ch_bin:/usr/bin"
     echo "$PATH2"
     # shellcheck disable=SC2016
-    PATH=$PATH2 run ch-run "${ch_timg}" -- /bin/sh -c 'echo $PATH'
+    PATH=$PATH2 run ch-run "$ch_timg" -- /bin/sh -c 'echo $PATH'
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "$PATH2" ]]
@@ -108,7 +108,7 @@ EOF
     PATH2="$ch_bin:/usr/bin"
     echo "$PATH2"
     # shellcheck disable=SC2016
-    PATH=$PATH2 run ch-run "${ch_timg}" -- /bin/sh -c 'echo $PATH'
+    PATH=$PATH2 run ch-run "$ch_timg" -- /bin/sh -c 'echo $PATH'
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = $PATH2:/bin ]]
@@ -119,7 +119,7 @@ EOF
     scope standard
     old_path=$PATH
     unset PATH
-    run "${ch_runfile}" "${ch_timg}" -- \
+    run "$ch_runfile" "$ch_timg" -- \
         /usr/bin/python3 -c 'import os; print(os.getenv("PATH") is None)'
     PATH=$old_path
     echo "$output"
@@ -132,19 +132,19 @@ EOF
 @test 'ch-run --cd' {
     scope quick
     # Default initial working directory is /.
-    run ch-run "${ch_timg}" -- pwd
+    run ch-run "$ch_timg" -- pwd
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = '/' ]]
 
     # Specify initial working directory.
-    run ch-run --cd /dev "${ch_timg}" -- pwd
+    run ch-run --cd /dev "$ch_timg" -- pwd
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = '/dev' ]]
 
     # Error if directory does not exist.
-    run ch-run --cd /goops "${ch_timg}" -- true
+    run ch-run --cd /goops "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ "can't cd to /goops: No such file or directory" ]]
@@ -153,38 +153,41 @@ EOF
 @test 'ch-run --bind' {
     scope quick
     # one bind, default destination (/mnt/0)
-    ch-run -b "${ch_imgdir}/bind1" "${ch_timg}" -- cat /mnt/0/file1
+    ch-run -b "${ch_imgdir}/bind1" "$ch_timg" -- cat /mnt/0/file1
     # one bind, explicit destination
-    ch-run -b "${ch_imgdir}/bind1:/mnt/9" "${ch_timg}" -- cat /mnt/9/file1
+    ch-run -b "${ch_imgdir}/bind1:/mnt/9" "$ch_timg" -- cat /mnt/9/file1
 
     # two binds, default destination
-    ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2" "${ch_timg}" \
+    ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2" "$ch_timg" \
            -- cat /mnt/0/file1 /mnt/1/file2
     # two binds, explicit destinations
-    ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2:/mnt/9" "${ch_timg}" \
+    ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2:/mnt/9" \
+           "$ch_timg" \
            -- cat /mnt/8/file1 /mnt/9/file2
     # two binds, default/explicit
-    ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/mnt/9" "${ch_timg}" \
+    ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/mnt/9" "$ch_timg" \
            -- cat /mnt/0/file1 /mnt/9/file2
     # two binds, explicit/default
-    ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2" "${ch_timg}" \
+    ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2" "$ch_timg" \
            -- cat /mnt/8/file1 /mnt/1/file2
 
     # bind one source at two destinations
-    ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind1:/mnt/9" "${ch_timg}" \
+    ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind1:/mnt/9" \
+           "$ch_timg" \
            -- diff -u /mnt/8/file1 /mnt/9/file1
     # bind two sources at one destination
-    ch-run -b "${ch_imgdir}/bind1:/mnt/9" -b "${ch_imgdir}/bind2:/mnt/9" "${ch_timg}" \
+    ch-run -b "${ch_imgdir}/bind1:/mnt/9" -b "${ch_imgdir}/bind2:/mnt/9" \
+           "$ch_timg" \
            -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
 
     # omit tmpfs at /home, which shouldn't be empty
-    ch-run --no-home "${ch_timg}" -- cat /home/overmount-me
+    ch-run --no-home "$ch_timg" -- cat /home/overmount-me
     # overmount tmpfs at /home
-    ch-run -b "${ch_imgdir}/bind1:/home" "${ch_timg}" -- cat /home/file1
+    ch-run -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
     # bind to /home without overmount
-    ch-run --no-home -b "${ch_imgdir}/bind1:/home" "${ch_timg}" -- cat /home/file1
+    ch-run --no-home -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
     # omit default /home, with unrelated --bind
-    ch-run --no-home -b "${ch_imgdir}/bind1" "${ch_timg}" -- cat /mnt/0/file1
+    ch-run --no-home -b "${ch_imgdir}/bind1" "$ch_timg" -- cat /mnt/0/file1
 }
 
 @test 'ch-run --bind errors' {
@@ -202,66 +205,68 @@ EOF
                -b "${ch_imgdir}/bind1" \
                -b "${ch_imgdir}/bind1" \
                -b "${ch_imgdir}/bind1" \
-               "${ch_timg}" -- true
+               "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     r="can't bind .+/bind1 to ${ch_timg}/mnt/10: No such file or directory"
     [[ $output =~ $r ]]
 
     # no argument to --bind
-    run ch-run "${ch_timg}" -b
+    run ch-run "$ch_timg" -b
     echo "$output"
     [[ $status -eq 64 ]]
     [[ $output =~ 'option requires an argument' ]]
 
     # empty argument to --bind
-    run ch-run -b '' "${ch_timg}" -- true
+    run ch-run -b '' "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ '--bind: no source provided' ]]
 
     # source not provided
-    run ch-run -b :/mnt/9 "${ch_timg}" -- true
+    run ch-run -b :/mnt/9 "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ '--bind: no source provided' ]]
 
     # destination not provided
-    run ch-run -b "${ch_imgdir}/bind1:" "${ch_timg}" -- true
+    run ch-run -b "${ch_imgdir}/bind1:" "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ '--bind: no destination provided' ]]
 
     # source does not exist
-    run ch-run -b "${ch_imgdir}/hoops" "${ch_timg}" -- true
+    run ch-run -b "${ch_imgdir}/hoops" "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     r="can't bind .+/hoops to ${ch_timg}/mnt/0: No such file or directory"
     [[ $output =~ $r ]]
 
     # destination does not exist
-    run ch-run -b "${ch_imgdir}/bind1:/goops" "${ch_timg}" -- true
+    run ch-run -b "${ch_imgdir}/bind1:/goops" "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     r="can't bind .+/bind1 to ${ch_timg}/goops: No such file or directory"
     [[ $output =~ $r ]]
 
     # neither source nor destination exist
-    run ch-run -b "${ch_imgdir}/hoops:/goops" "${ch_timg}" -- true
+    run ch-run -b "${ch_imgdir}/hoops:/goops" "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     r="can't bind .+/hoops to ${ch_timg}/goops: No such file or directory"
     [[ $output =~ $r ]]
 
     # correct bind followed by source does not exist
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/9" -b "${ch_imgdir}/hoops" "${ch_timg}" -- true
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/9" -b "${ch_imgdir}/hoops" \
+               "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     r="can't bind .+/hoops to ${ch_timg}/mnt/1: No such file or directory"
     [[ $output =~ $r ]]
 
     # correct bind followed by destination does not exist
-    run ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/goops" "${ch_timg}" -- true
+    run ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/goops" \
+               "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     r="can't bind .+/bind2 to ${ch_timg}/goops: No such file or directory"
@@ -270,7 +275,7 @@ EOF
 
 @test 'broken image errors' {
     scope standard
-    img="$BATS_TMPDIR/broken-image"
+    img="${BATS_TMPDIR}/broken-image"
 
     # Create an image skeleton.
     dirs=$(echo {dev,proc,sys})
@@ -280,106 +285,106 @@ EOF
     mkdir -p "$img"
     for d in $dirs; do mkdir -p "${img}/$d"; done
     mkdir -p "${img}/etc" "${img}/home" "${img}/usr/bin" "${img}/tmp"
-    for f in ${files} ${files_optional}; do touch "${img}/$f"; done
+    for f in $files $files_optional; do touch "${img}/${f}"; done
 
     # This should start up the container OK but fail to find the user command.
-    run ch-run "${img}" -- true
+    run ch-run "$img" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): true: No such file or directory"* ]]
 
     # For each required file, we want a correct error if it's missing.
-    for f in ${files}; do
-        rm "${img}/$f"
+    for f in $files; do
+        rm "${img}/${f}"
         run ch-run "${img}" -- true
-        touch "${img}/$f"  # restore before test fails for idempotency
+        touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind .+ to /.+/$f: No such file or directory"
+        r="can't bind .+ to /.+/${f}: No such file or directory"
         [[ $output =~ $r ]]
     done
 
     # For each optional file, we want no error if it's missing.
-    for f in ${files_optional}; do
-        rm "${img}/$f"
-        run ch-run "${img}" -- true
-        touch "${img}/$f"  # restore before test fails for idempotency
+    for f in $files_optional; do
+        rm "${img}/${f}"
+        run ch-run "$img" -- true
+        touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
         [[ $output = *"can't execve(2): true: No such file or directory"* ]]
     done
 
     # For all files, we want a correct error if it's not a regular file.
-    for f in ${files} ${files_optional}; do
-        rm "${img}/$f"
-        mkdir "${img}/$f"
-        run ch-run "${img}" -- true
-        rmdir "${img}/$f"  # restore before test fails for idempotency
-        touch "${img}/$f"
+    for f in $files $files_optional; do
+        rm "${img}/${f}"
+        mkdir "${img}/${f}"
+        run ch-run "$img" -- true
+        rmdir "${img}/${f}"  # restore before test fails for idempotency
+        touch "${img}/${f}"
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind .+ to /.+/$f: Not a directory"
-        echo "expected: $r"
+        r="can't bind .+ to /.+/${f}: Not a directory"
+        echo "expected: ${r}"
         [[ $output =~ $r ]]
     done
 
     # For each directory, we want a correct error if it's missing.
     for d in $dirs tmp; do
-        rmdir "${img}/$d"
-        run ch-run "${img}" -- true
-        mkdir "${img}/$d"  # restore before test fails for idempotency
+        rmdir "${img}/${d}"
+        run ch-run "$img" -- true
+        mkdir "${img}/${d}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind .+ to /.+/$d: No such file or directory"
-        echo "expected: $r"
+        r="can't bind .+ to /.+/${d}: No such file or directory"
+        echo "expected: ${r}"
         [[ $output =~ $r ]]
     done
 
     # For each directory, we want a correct error if it's not a directory.
     for d in $dirs tmp; do
-        rmdir "${img}/$d"
-        touch "${img}/$d"
-        run ch-run "${img}" -- true
-        rm "${img}/$d"  # restore before test fails for idempotency
-        mkdir "${img}/$d"
+        rmdir "${img}/${d}"
+        touch "${img}/${d}"
+        run ch-run "$img" -- true
+        rm "${img}/${d}"  # restore before test fails for idempotency
+        mkdir "${img}/${d}"
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind .+ to /.+/$d: Not a directory"
-        echo "expected: $r"
+        r="can't bind .+ to /.+/${d}: Not a directory"
+        echo "expected: ${r}"
         [[ $output =~ $r ]]
     done
 
     # --private-tmp
     rmdir "${img}/tmp"
-    run ch-run --private-tmp "${img}" -- true
+    run ch-run --private-tmp "$img" -- true
     mkdir "${img}/tmp"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
     r="can't mount tmpfs at /.+/tmp: No such file or directory"
-    echo "expected: $r"
+    echo "expected: ${r}"
     [[ $output =~ $r ]]
 
     # /home without --private-home
     # FIXME: Not sure how to make the second mount(2) fail.
     rmdir "${img}/home"
-    run ch-run "${img}" -- true
+    run ch-run "$img" -- true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
     r="can't mount tmpfs at /.+/home: No such file or directory"
-    echo "expected: $r"
+    echo "expected: ${r}"
     [[ $output =~ $r ]]
 
     # --no-home shouldn't care if /home is missing
     rmdir "${img}/home"
-    run ch-run --no-home "${img}" -- true
+    run ch-run --no-home "$img" -- true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): true: No such file or directory"* ]]
 
     # Everything should be restored and back to the original error.
-    run ch-run "${img}" -- true
+    run ch-run "$img" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): true: No such file or directory"* ]]

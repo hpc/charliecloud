@@ -33,7 +33,7 @@ setup () {
         # Start Spark workers using pdsh. We would really prefer to do this
         # using srun, but that doesn't work; see issue #230.
         command -v pdsh >/dev/null 2>&1 || skip "pdsh not in path"
-        pernode="pdsh -R ssh -w $SLURM_NODELIST -- PATH='$PATH'"
+        pernode="pdsh -R ssh -w ${SLURM_NODELIST} -- PATH='${PATH}'"
     else
         master_ip=127.0.0.1
         pernode=
@@ -55,12 +55,12 @@ SPARK_LOCAL_DIRS=/tmp/spark
 SPARK_LOG_DIR=$spark_log
 SPARK_WORKER_DIR=/tmp/spark
 SPARK_LOCAL_IP=127.0.0.1
-SPARK_MASTER_HOST=$master_ip
+SPARK_MASTER_HOST=${master_ip}
 EOF
     my_secret=$(cat /dev/urandom | tr -dc '0-9a-f' | head -c 48)
     tee <<EOF > "${spark_config}/spark-defaults.conf"
 spark.authenticate.true
-spark.authenticate.secret $my_secret
+spark.authenticate.secret ${my_secret}
 EOF
 }
 
@@ -68,7 +68,7 @@ EOF
     # remove old master logs so new one has predictable name
     rm -Rf --one-file-system "$spark_log"
     # start the master
-    ch-run -b "${spark_config}" "${ch_img}" -- /spark/sbin/start-master.sh
+    ch-run -b "$spark_config" "$ch_img" -- /spark/sbin/start-master.sh
     sleep 7
     # shellcheck disable=SC2086
     cat $master_log
@@ -76,8 +76,8 @@ EOF
     grep -Fq 'New state: ALIVE' $master_log
     # start the workers
     # shellcheck disable=SC2086
-    ${pernode} ch-run -b "${spark_config}" "${ch_img}" -- \
-                    /spark/sbin/start-slave.sh "${master_url}"
+    $pernode ch-run -b "$spark_config" "$ch_img" -- \
+                    /spark/sbin/start-slave.sh "$master_url"
     sleep 7
 }
 
@@ -90,14 +90,14 @@ EOF
     # connect to the master and get work OK.
     [[ -z $ch_multinode ]] && SLURM_NNODES=1
     # shellcheck disable=SC2086
-    worker_ct=$(grep -Fc 'Registering worker' ${master_log} || true)
+    worker_ct=$(grep -Fc 'Registering worker' $master_log || true)
     echo "node count: $SLURM_NNODES; worker count: ${worker_ct}"
     [[ $worker_ct -eq "$SLURM_NNODES" ]]
 }
 
 @test "${ch_tag}/pi" {
-    run ch-run -b "${spark_config}" "${ch_img}" -- \
-               /spark/bin/spark-submit --master "${master_url}" \
+    run ch-run -b "$spark_config" "$ch_img" -- \
+               /spark/bin/spark-submit --master "$master_url" \
                /spark/examples/src/main/python/pi.py 64
     echo "$output"
     [[ $status -eq 0 ]]
@@ -107,13 +107,13 @@ EOF
 }
 
 @test "${ch_tag}/stop" {
-    ${pernode} ch-run -b "${spark_config}" "${ch_img}" -- /spark/sbin/stop-slave.sh
-    ch-run -b "${spark_config}" "${ch_img}" -- /spark/sbin/stop-master.sh
+    $pernode ch-run -b "$spark_config" "$ch_img" -- /spark/sbin/stop-slave.sh
+    ch-run -b "$spark_config" "$ch_img" -- /spark/sbin/stop-master.sh
     sleep 2
     # Any Spark processes left?
     # (Use egrep instead of fgrep so we don't match the grep process.)
     # shellcheck disable=SC2086
-    ${pernode} ps aux | ( ! grep -E '[o]rg\.apache\.spark\.deploy' )
+    $pernode ps aux | ( ! grep -E '[o]rg\.apache\.spark\.deploy' )
 }
 
 @test "${ch_tag}/hang" {

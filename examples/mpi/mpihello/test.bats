@@ -14,7 +14,7 @@ count_ranks () {
 @test "${ch_tag}/serial" {
     # This seems to start up the MPI infrastructure (daemons, etc.) within the
     # guest even though there's no mpirun.
-    run ch-run "${ch_img}" -- /hello/hello
+    run ch-run "$ch_img" -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *' 1 ranks'* ]]
@@ -24,7 +24,7 @@ count_ranks () {
 
 @test "${ch_tag}/guest starts ranks" {
     # shellcheck disable=SC2086
-    run ch-run "${ch_img}" -- mpirun ${ch_mpirun_np} /hello/hello
+    run ch-run "$ch_img" -- mpirun $ch_mpirun_np /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(count_ranks "$output")
@@ -38,11 +38,11 @@ count_ranks () {
     multiprocess_ok
     echo "starting ranks with: ${mpirun_core}"
 
-    guest_mpi=$(ch-run "${ch_img}" -- mpirun --version | head -1)
+    guest_mpi=$(ch-run "$ch_img" -- mpirun --version | head -1)
     echo "guest MPI: ${guest_mpi}"
 
     # shellcheck disable=SC2086
-    run ${mpirun_core} ch-run --join "${ch_img}" -- /hello/hello
+    run $mpirun_core ch-run --join "$ch_img" -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(count_ranks "$output")

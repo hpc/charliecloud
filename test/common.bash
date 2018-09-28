@@ -42,8 +42,7 @@ multiprocess_ok () {
         && skip 'MPICH untested'
     # Conversely, if the MPI in the container is OpenMPI, the current examples
     # do not use the Aries network but rather the "tcp" BTL, which has
-    # grotesquely poor performance. Thus, we skip those tests as
-    # well.
+    # grotesquely poor performance. Thus, we skip those tests as well.
     [[ $ch_mpi = openmpi && $ch_cray ]] \
        && skip 'OpenMPI unsupported on Cray; issue #180'
     # Exit function successfully.
@@ -110,7 +109,7 @@ export LC_ALL=C
 # under sudo, you must use an absolute path.
 ch_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")/bin" && pwd)"
 ch_bin="$(readlink -f "${ch_bin}")"
-export PATH=${ch_bin}:$PATH
+export PATH=$ch_bin:$PATH
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
@@ -123,7 +122,7 @@ fi
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
 # shellcheck disable=SC2034
-ch_version_docker=$(echo "${ch_version}" | tr '~+' '--')
+ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 
 # User-private temporary directory in case multiple users are running the
 # tests simultaenously.
@@ -135,7 +134,7 @@ export BATS_TMPDIR=$btnew
 
 # MPICH requires different handling from OpenMPI. Set a variable to enable
 # some kludges.
-if [[ $BATS_TEST_DIRNAME =~ 'mpich' ]]; then
+if [[ $BATS_TEST_DIRNAME = *'mpich'* ]]; then
     ch_mpi=mpich
     # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
     # Slurm environment variables, it tries to launch even local ranks with
@@ -177,7 +176,7 @@ else
     ch_cores_node=$(getconf _NPROCESSORS_ONLN)
 fi
 ch_cores_total=$((ch_nodes * ch_cores_node))
-if [[ ${ch_mpi} = mpich ]]; then
+if [[ $ch_mpi = mpich ]]; then
     ch_mpirun_np="-np ${ch_cores_node}"
 else
     ch_mpirun_np='--use-hwthread-cpus'
@@ -187,7 +186,7 @@ if [[ $SLURM_JOB_ID ]]; then
     ch_multiprocess=yes                        # can run multiple processes
     ch_mpirun_node='srun --ntasks-per-node 1'  # one process/node
     ch_mpirun_core='srun --cpus-per-task 1'    # one process/core
-    ch_mpirun_2='srun -n2'                     # two processes on different nodes
+    ch_mpirun_2='srun -n2'                     # two processes on diff nodes
     ch_mpirun_2_1node='srun -N1 -n2'           # two processes on one node
 else
     ch_multinode=
@@ -219,7 +218,7 @@ elif [[    $CH_TEST_SCOPE != quick \
         && $CH_TEST_SCOPE != standard \
         && $CH_TEST_SCOPE != full ]]; then
     # shellcheck disable=SC2016
-    printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' $CH_TEST_SCOPE >&2
+    printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' "$CH_TEST_SCOPE" >&2
     exit 1
 fi
 
@@ -241,7 +240,7 @@ if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
     exit 1
 fi
-if ( mount | grep -Fq "${ch_imgdir}" ); then
-    printf 'Something is mounted under %s.\n\n' "${ch_imgdir}" >&2
+if ( mount | grep -Fq "$ch_imgdir" ); then
+    printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
     exit 1
 fi

@@ -30,17 +30,17 @@ check_finalized () {
 check_process_ct () {
     ranks_expected="$1"
     echo "ranks expected: ${ranks_expected}"
-    ranks_found=$(  echo "${output}" \
+    ranks_found=$(  echo "$output" \
                   | grep -F '#processes =' \
                   | sed -r 's/^.+#processes = ([0-9]+)\s+$/\1/')
-    echo "ranks found: $ranks_found"
+    echo "ranks found: ${ranks_found}"
     [[ $ranks_found -eq "$ranks_expected" ]]
 }
 
 # one from "Single Transfer Benchmarks"
 @test "${ch_tag}/pingpong (guest launch)" {
     # shellcheck disable=SC2086
-    run ch-run "${ch_img}" -- mpirun ${ch_mpirun_np} "${imb_mpi1}" ${imb_args} PingPong
+    run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -50,7 +50,7 @@ check_process_ct () {
 @test "${ch_tag}/pingpong (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run ${mpirun_core} ch-run --join "${ch_img}" -- "${imb_mpi1}" ${imb_args} PingPong
+    run $mpirun_core ch-run --join "$ch_img" -- "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -61,41 +61,41 @@ check_process_ct () {
 # one from "Parallel Transfer Benchmarks"
 @test "${ch_tag}/sendrecv (guest launch)" {
     # shellcheck disable=SC2086
-    run ch-run "${ch_img}" -- mpirun ${ch_mpirun_np} "${imb_mpi1}" ${imb_args} Sendrecv
+    run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
-    check_process_ct "${ch_cores_node}" "${output}"
+    check_process_ct "$ch_cores_node" "$output"
     check_finalized "$output"
 }
 @test "${ch_tag}/sendrecv (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run ${mpirun_core} ch-run --join "${ch_img}" -- "${imb_mpi1}" ${img_args} Sendrecv
+    run $mpirun_core ch-run --join "$ch_img" -- "$imb_mpi1" $img_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
-    check_process_ct "$ch_cores_total" "${output}"
+    check_process_ct "$ch_cores_total" "$output"
     check_finalized "$output"
 }
 
 # one from "Collective Benchmarks"
 @test "${ch_tag}/allreduce (guest launch)" {
     # shellcheck disable=SC2086
-    run ch-run "${ch_img}" -- mpirun ${ch_mpirun_np} "${imb_mpi1}" ${img_args} Allreduce
+    run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $img_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
-    check_process_ct "${ch_cores_node}" "${output}"
+    check_process_ct "$ch_cores_node" "$output"
     check_finalized "$output"
 }
 @test "${ch_tag}/allreduce (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run ${mpirun_core} ch-run --join "${ch_img}" -- "${imb_mpi1}" ${img_args} Allreduce
+    run $mpirun_core ch-run --join "$ch_img" -- "$imb_mpi1" $img_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
-    check_process_ct "$ch_cores_total" "${output}"
+    check_process_ct "$ch_cores_total" "$output"
     check_finalized "$output"
 }

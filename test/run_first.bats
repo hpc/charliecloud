@@ -8,12 +8,12 @@ load common
         # or supporting directories, or nothing, then we're ok. Remove any
         # images (this makes test-build and test-run follow the same path when
         # run on the same or different machines). Otherwise, error.
-        for i in "${ch_imgdir}"/*; do
+        for i in "$ch_imgdir"/*; do
             if [[ -d $i && -f $i/WEIRD_AL_YANKOVIC ]]; then
-                echo "found image $i; removing"
-                rm -Rf --one-file-system "$i"
+                echo "found image ${i}; removing"
+                rm -Rf --one-file-system "${i}"
             else
-                echo "found non-image $i; aborting"
+                echo "found non-image ${i}; aborting"
                 false
             fi
         done
