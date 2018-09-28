@@ -42,7 +42,7 @@ count_ranks () {
     echo "guest MPI: ${guest_mpi}"
 
     # shellcheck disable=SC2086
-    run $mpirun_core ch-run --join "$ch_img" -- /hello/hello
+    run $ch_mpirun_core ch-run --join "$ch_img" -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(count_ranks "$output")

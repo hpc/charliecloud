@@ -134,7 +134,7 @@ unset_vars () {
 
     # second peer (loser)
     run ch-run -v --join-ct=2 --join-tag=foo "$ch_timg" -- \
-               /test/printns 0 "$PBATS_TMPDIR}/join.2.ns" \
+               /test/printns 0 "${BATS_TMPDIR}/join.2.ns" \
     echo "$output"
     [[ $status -eq 0 ]]
     cat "${BATS_TMPDIR}/join.2.ns"

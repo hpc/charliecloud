@@ -43,20 +43,21 @@ setup () {
 lammps_try () {
     # These examples cd because some (not all) of the LAMMPS tests expect to
     # find things based on $CWD.
-    infiles=$(ch-run --cd "/lammps/examples/${1}" "${ch_img}" -- bash -c "ls in.*")
+    infiles=$(ch-run --cd "/lammps/examples/${1}" "$ch_img" -- \
+                     bash -c "ls in.*")
     for i in $infiles; do
         printf '\n\n%s\n' "$i"
         # shellcheck disable=SC2086
-        $mpirun_core ch-run --join --cd /lammps/examples/$1 "$ch_img" -- \
-                            lmp_mpi -log none -in "$i"
+        $ch_mpirun_core ch-run --join --cd /lammps/examples/$1 "$ch_img" -- \
+                        lmp_mpi -log none -in "$i"
     done
 
 }
 
 @test "${ch_tag}/using all cores" {
     # shellcheck disable=SC2086
-    run $mpirun_core ch-run --join "$ch_img" -- \
-                            lmp_mpi -log none -in /lammps/examples/melt/in.melt
+    run $ch_mpirun_core ch-run --join "$ch_img" -- \
+                        lmp_mpi -log none -in /lammps/examples/melt/in.melt
     echo "$output"
     [[ $status -eq 0 ]]
     ranks_found=$(  echo "$output" \

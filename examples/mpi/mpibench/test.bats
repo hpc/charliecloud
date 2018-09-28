@@ -50,7 +50,8 @@ check_process_ct () {
 @test "${ch_tag}/pingpong (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run $mpirun_core ch-run --join "$ch_img" -- "$imb_mpi1" $imb_args PingPong
+    run $ch_mpirun_core ch-run --join "$ch_img" -- \
+                               "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -71,7 +72,8 @@ check_process_ct () {
 @test "${ch_tag}/sendrecv (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run $mpirun_core ch-run --join "$ch_img" -- "$imb_mpi1" $img_args Sendrecv
+    run $ch_mpirun_core ch-run --join "$ch_img" -- \
+                               "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -82,7 +84,7 @@ check_process_ct () {
 # one from "Collective Benchmarks"
 @test "${ch_tag}/allreduce (guest launch)" {
     # shellcheck disable=SC2086
-    run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $img_args Allreduce
+    run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -92,7 +94,8 @@ check_process_ct () {
 @test "${ch_tag}/allreduce (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run $mpirun_core ch-run --join "$ch_img" -- "$imb_mpi1" $img_args Allreduce
+    run $ch_mpirun_core ch-run --join "$ch_img" -- \
+                               "$imb_mpi1" $imb_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"

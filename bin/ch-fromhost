@@ -108,8 +108,8 @@ debug "injecting into image: ${image}"
 # to figure out where to put them.
 if [ $infer ]; then
     debug "checking for shared libraries"
-    for file in $found_files; do
-        case $file in
+    for f in $found_files; do
+        case $f in
             */lib*)
                 found_libs_p=yes
                 break
@@ -141,7 +141,7 @@ for f in $found_files; do
     type_=unk
     d=$dest_default
     if [ $infer ]; then
-        case $file in
+        case $f in
             */bin*)
                 type_=bin
                 d=/usr/bin
