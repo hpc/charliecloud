@@ -20,7 +20,7 @@ srcdir=$1
 tarball=$2
 tarball_uncompressed=${tarball%.*}
 workdir=$3
-mirror=http://dl-cdn.alpinelinux.org/alpine/v3.6
+mirror=http://dl-cdn.alpinelinux.org/alpine/v3.8
 # Dynamically select apk-tools-static version. We would prefer to hard-code a
 # version (and upgrade on our schedule), but we can't because Alpine does not
 # keep old package versions. If we try, the build breaks every few months (for
