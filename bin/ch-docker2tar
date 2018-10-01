@@ -30,7 +30,4 @@ size=$(docker_ image inspect "$image" --format='{{.Size}}')
 #docker_ ps -af "id=$cid"
 docker_ export "$cid" | pv_ -s "$size" | gzip_ -6 > "$tar"
 docker_ rm "$cid" > /dev/null
-# FIXME: This is brittle. We want the filename and size, but not the rest, so
-# we can't just ask ls. Another option is stat and numfmt, but the latter may
-# not be very portable.
-find "$tar" -ls | awk '{ print $5,$9 }'
+ls -lh "$tar"
