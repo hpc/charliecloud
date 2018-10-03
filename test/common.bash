@@ -1,3 +1,10 @@
+crayify_mpi_maybe () {
+    if [[ $ch_cray ]]; then
+        # shellcheck disable=SC2086
+        $ch_mpirun_node ch-fromhost --cray-mpi "$1"
+    fi
+}
+
 docker_tag_p () {
     printf 'image tag %s ... ' "$1"
     hash_=$(sudo docker images -q "$1" | sort -u)

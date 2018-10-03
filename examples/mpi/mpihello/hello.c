@@ -25,16 +25,23 @@ int rank, rank_ct;
 
 int main(int argc, char ** argv)
 {
-   int msg;
-   struct stat st;
-   MPI_Status mstat;
    char hostname[HOST_NAME_MAX+1];
+   char mpi_version[MPI_MAX_LIBRARY_VERSION_STRING];
+   int mpi_version_len;
+   int msg;
+   MPI_Status mstat;
+   struct stat st;
 
    stat("/proc/self/ns/user", &st);
 
    MPI_Init(&argc, &argv);
    MPI_Comm_size(MPI_COMM_WORLD, &rank_ct);
    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+   if (rank == 0) {
+      MPI_Get_library_version(mpi_version, &mpi_version_len);
+      printf("%d: MPI version:\n%s\n", rank, mpi_version);
+   }
 
    gethostname(hostname, HOST_NAME_MAX+1);
    printf("%d: init ok %s, %d ranks, userns %lu\n",

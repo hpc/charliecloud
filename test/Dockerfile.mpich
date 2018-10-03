@@ -5,9 +5,50 @@ FROM debian9
 # provide an MPICH build that works on a single node and (via ch-fromhost
 # trickery) on Cray Aires systems. That's it for now.
 
+# We build MPICH rather than install the Debian package because something
+# about Debian's build prevents applications from linking against
+# libmpi.so.12, which is the library we need to replace later. I have not
+# figured out what. While we're at it, tweak some other options as well to
+# produce a bare bones build.
+
 RUN apt-get install -y --no-install-suggests \
+    autoconf \
+    g++ \
+    gcc \
+    git \
+    libgfortran3 \
+    libpmi2-0-dev \
     make \
-    mpich
+    wget
 
+# We currently need our own patched patchelf; see issue #256.
+RUN git clone https://github.com/hpc/patchelf.git
+RUN    cd patchelf \
+    && git checkout shrink-soname \
+    && ./bootstrap.sh \
+    && ./configure --prefix=/usr/local \
+    && make install
+RUN rm -Rf patchelf
 
+ENV MPI_VERSION 3.2.1
+ENV MPI_URL http://www.mpich.org/static/downloads/${MPI_VERSION}
+RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz
+RUN tar xf mpich-${MPI_VERSION}.tar.gz
+RUN apt-get install -y --no-install-suggests file
 
+RUN    cd mpich-${MPI_VERSION} \
+    && CFLAGS=-O3 \
+       CXXFLAGS=-O3 \
+       ./configure --prefix=/usr/local \
+                   --disable-cxx \
+                   --disable-fortran \
+                   --disable-threads \
+                   --disable-rpath \
+                   --disable-static \
+                   --disable-wrapper-rpath \
+                   --without-ibverbs \
+                   --without-libfabric \
+                   --without-slurm \
+    && make -j$(getconf _NPROCESSORS_ONLN) install
+RUN rm -Rf mpich-${MPI_VERSION}*
+RUN ldconfig

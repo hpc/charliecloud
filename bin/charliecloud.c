@@ -54,6 +54,11 @@ const char *DEFAULT_BINDS[] = { "/dev",
                                 "/proc",
                                 "/sys",
                                 NULL };
+struct bind BINDS_OPTIONAL[] = {
+   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool" },
+   { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs" },
+   { NULL, NULL }
+};
 
 
 /** External variables **/
@@ -91,6 +96,22 @@ void setup_passwd(struct container *c);
 
 
 /** Functions **/
+
+/* Bind-mount a null-terminated array of struct bind objects. */
+void bind_mounts(struct bind *binds, char * newroot,
+                 enum bind_dep dep, unsigned long flags)
+{
+   char *dst;
+
+   for (int i = 0; binds[i].src != NULL; i++) {
+      T_ (1 <= asprintf(&dst, "%s%s", newroot, binds[i].dst));
+      if (dep == BD_OPTIONAL && !(path_exists(binds[i].src) && path_exists(dst)))
+         continue;
+      Zf (mount(binds[i].src, dst, NULL, MS_REC|MS_BIND|flags, NULL),
+          "can't bind %s to %s", binds[i].src, dst);
+   }
+}
+
 
 /* Set up new namespaces or join existing namespaces. */
 void containerize(struct container *c)
@@ -132,6 +153,8 @@ void enter_udss(struct container *c)
       Zf (mount(DEFAULT_BINDS[i], path, NULL, MS_REC|MS_BIND|MS_RDONLY, NULL),
           "can't bind %s to %s", (char *) DEFAULT_BINDS[i], path);
    }
+   // Bind-mount optional files and directories if host and guest paths exist.
+   bind_mounts(BINDS_OPTIONAL, c->newroot, BD_OPTIONAL, MS_RDONLY);
    // /etc/passwd and /etc/group
    setup_passwd(c);
    // Container /tmp
@@ -354,6 +377,18 @@ void msg(int level, char *file, int line, int errno_, char *fmt, ...)
 
    if (level == 0)
       exit(EXIT_FAILURE);
+}
+
+/* Return true if the given path exists, false otherwise. On error, exit. */
+bool path_exists(char * path) {
+   struct stat sb;
+
+   if (!stat(path, &sb))
+      return true;
+   else if (errno != ENOENT)
+      Tf (0, "can't stat: %s", path);
+
+   return false;
 }
 
 /* Replace the current process with user command and arguments. */

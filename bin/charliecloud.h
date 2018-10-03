@@ -58,6 +58,11 @@ struct bind {
    char *dst;
 };
 
+enum bind_dep {
+   BD_REQUIRED,  // both source and destination must exist
+   BD_OPTIONAL   // if either source or destination missing, do nothing
+};
+
 struct container {
    struct bind *binds;
    gid_t container_gid;
@@ -79,7 +84,10 @@ extern int verbose;
 
 /** Function prototypes from charliecloud.c **/
 
+void bind_mounts(struct bind *binds, char *newroot,
+                 enum bind_dep dep, unsigned long flags);
 void containerize(struct container *c);
 void msg(int level, char *file, int line, int errno_, char *fmt, ...);
+bool path_exists(char *path);
 void run_user_command(char *argv[], char *initial_dir);
 void version(void);
