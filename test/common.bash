@@ -1,7 +1,7 @@
 crayify_mpi_maybe () {
-    if [[ $CHTEST_CRAY ]]; then
+    if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
-        $MPIRUN_NODE ch-fromhost --cray-mpi "$1"
+        $ch_mpirun_node ch-fromhost --cray-mpi "$1"
     fi
 }
 

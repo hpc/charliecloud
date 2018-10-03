@@ -69,10 +69,10 @@ count_ranks () {
     [[ $output = *'0: finalize ok'* ]]
 }
 
-@test "$EXAMPLE_TAG/Cray bind mounts" {
-    [[ $CHTEST_CRAY ]] || skip 'host is not a Cray'
-    [[ $CHTEST_MPI = openmpi ]] && skip 'OpenMPI unsupported on Cray; issue #180'
+@test "${ch_tag}/Cray bind mounts" {
+    [[ $ch_cray ]] || skip 'host is not a Cray'
+    [[ $ch_mpi = openmpi ]] && skip 'OpenMPI unsupported on Cray; issue #180'
 
-    ch-run "$IMG" -- mount | grep -F /var/opt/cray/alps/spool
-    ch-run "$IMG" -- mount | grep -F /var/opt/cray/hugetlbfs
+    ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
+    ch-run "$ch_img" -- mount | grep -F /var/opt/cray/hugetlbfs
 }
