@@ -209,5 +209,8 @@ that allows Shifter containers to use the Cray Aires network. We particularly
 appreciate the help provided by Shane Canon and Doug Jacobsen during our
 implementation of :code:`--cray-mpi`.
 
+We appreciate the advice of Ryan Olson at nVidia on implementing
+:code:`--nvidia`.
+
 
 ..  LocalWords:  libmpi libmpich nvidia
