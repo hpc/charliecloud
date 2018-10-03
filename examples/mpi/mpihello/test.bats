@@ -12,14 +12,14 @@ count_ranks () {
 }
 
 @test "${ch_tag}/MPI version" {
-    run ch-run "$IMG" -- /hello/hello
+    run ch-run "$ch_img" -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
-    if [[ $CHTEST_MPI = openmpi ]]; then
+    if [[ $ch_mpi = openmpi ]]; then
         [[ $output = *'Open MPI'* ]]
     else
-        [[ $CHTEST_MPI = mpich ]]
-        if [[ $CHTEST_CRAY ]]; then
+        [[ $ch_mpi = mpich ]]
+        if [[ $ch_cray ]]; then
             [[ $output = *'CRAY MPICH'* ]]
         else
             [[ $output = *'MPICH Version:'* ]]

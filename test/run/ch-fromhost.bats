@@ -102,7 +102,7 @@ fromhost_ls () {
 @test 'ch-fromhost (CentOS)' {
     scope full
     prerequisites_ok centos7
-    img=$imgdir/centos7
+    img=${ch_imgdir}/centos7
 
     fromhost_clean "$img"
     ch-fromhost -v --file sotest/files_inferrable.txt "$img"
