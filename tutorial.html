@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Tutorial &mdash; Charliecloud 0.9.2 documentation</title>
+  <title>3. Tutorial &mdash; Charliecloud 0.9.3 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.9.2 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.9.3 documentation" href="index.html"/>
         <link rel="next" title="4. Charliecloud command reference" href="command-usage.html"/>
         <link rel="prev" title="2. Testing" href="test.html"/> 
 
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                57f5de7
+                13d436c
               </div>
             
           
@@ -882,11 +882,11 @@ useful to show a real example.</p>
 <span class="c">#</span>
 <span class="c"># Note that libpsm2 is x86_64 only:</span>
 <span class="c"># https://lists.debian.org/debian-hpc/2017/12/msg00015.html</span>
-<span class="k">ENV</span><span class="s"> DEB_URL http://http.us.debian.org/debian/pool/main</span>
-<span class="k">ENV</span><span class="s"> PSM2_VERSION 10.3.58-1</span>
-<span class="k">RUN</span> wget -nv <span class="nv">$DEB_URL</span>/libp/libpsm2/libpsm2-2_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
-<span class="k">RUN</span> wget -nv <span class="nv">$DEB_URL</span>/libp/libpsm2/libpsm2-dev_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
-<span class="k">ENV</span><span class="s"> IBVERBS_VERSION 19.0-1</span>
+<span class="k">ENV</span><span class="s"> DEB_URL http://snapshot.debian.org/archive/debian/20180928T210119Z/pool/main</span>
+<span class="k">ENV</span><span class="s"> PSM2_VERSION 10.3.58-2</span>
+<span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/libp/libpsm2/libpsm2-2_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
+<span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/libp/libpsm2/libpsm2-dev_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
+<span class="k">ENV</span><span class="s"> IBVERBS_VERSION 20.0-1</span>
 <span class="k">RUN</span> <span class="k">for</span> i in ibacm <span class="se">\</span>
              ibverbs-providers <span class="se">\</span>
              ibverbs-utils <span class="se">\</span>
@@ -899,7 +899,7 @@ useful to show a real example.</p>
              rdma-core <span class="se">\</span>
              rdmacm-utils <span class="p">;</span> <span class="se">\</span>
     <span class="k">do</span> <span class="se">\</span>
-        wget -nv <span class="nv">$DEB_URL</span>/r/rdma-core/<span class="si">${</span><span class="nv">i</span><span class="si">}</span>_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="p">;</span> <span class="se">\</span>
+        wget -nv <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/r/rdma-core/<span class="si">${</span><span class="nv">i</span><span class="si">}</span>_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_amd64.deb <span class="p">;</span> <span class="se">\</span>
     <span class="k">done</span>
 <span class="k">RUN</span> dpkg --install *.deb
 
@@ -1185,21 +1185,21 @@ script that runs when resources are available, placing output into a file.</p>
 
 <span class="nb">set</span> -e
 
-<span class="nv">TAR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span>
-<span class="nv">IMGDIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">&quot;</span>
-<span class="nv">IMG</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$2</span><span class="s2">/</span><span class="k">$(</span>basename <span class="s2">&quot;</span><span class="si">${</span><span class="nv">TAR</span><span class="p">%.tar.gz</span><span class="si">}</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">&quot;</span>
+<span class="nv">tar</span><span class="o">=</span><span class="nv">$1</span>
+<span class="nv">imgdir</span><span class="o">=</span><span class="nv">$2</span>
+<span class="nv">img</span><span class="o">=</span><span class="si">${</span><span class="nv">2</span><span class="si">}</span>/<span class="k">$(</span>basename <span class="s2">&quot;</span><span class="si">${</span><span class="nv">tar</span><span class="p">%.tar.gz</span><span class="si">}</span><span class="s2">&quot;</span><span class="k">)</span>
 
-<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$TAR</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$tar</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
     <span class="nb">echo</span> <span class="s1">&#39;no tarball specified&#39;</span> <span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span>
     <span class="nb">exit</span> <span class="m">1</span>
 <span class="k">fi</span>
-<span class="nb">printf</span> <span class="s1">&#39;tarball:   %s\n&#39;</span> <span class="s2">&quot;</span><span class="nv">$TAR</span><span class="s2">&quot;</span>
+<span class="nb">printf</span> <span class="s1">&#39;tarball:   %s\n&#39;</span> <span class="s2">&quot;</span><span class="nv">$tar</span><span class="s2">&quot;</span>
 
-<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$IMGDIR</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$imgdir</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
     <span class="nb">echo</span> <span class="s1">&#39;no image directory specified&#39;</span> <span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span>
     <span class="nb">exit</span> <span class="m">1</span>
 <span class="k">fi</span>
-<span class="nb">printf</span> <span class="s1">&#39;image:     %s\n&#39;</span> <span class="s2">&quot;</span><span class="nv">$IMG</span><span class="s2">&quot;</span>
+<span class="nb">printf</span> <span class="s1">&#39;image:     %s\n&#39;</span> <span class="s2">&quot;</span><span class="nv">$img</span><span class="s2">&quot;</span>
 
 <span class="c1"># Make Charliecloud available (varies by site).</span>
 module purge
@@ -1207,14 +1207,14 @@ module load friendly-testing
 module load charliecloud
 
 <span class="c1"># Unpack image.</span>
-srun ch-tar2dir <span class="s2">&quot;</span><span class="nv">$TAR</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="nv">$IMGDIR</span><span class="s2">&quot;</span>
+srun ch-tar2dir <span class="s2">&quot;</span><span class="nv">$tar</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="nv">$imgdir</span><span class="s2">&quot;</span>
 
 <span class="c1"># MPI version in container.</span>
 <span class="nb">printf</span> <span class="s1">&#39;container: &#39;</span>
-ch-run <span class="s2">&quot;</span><span class="nv">$IMG</span><span class="s2">&quot;</span> -- mpirun --version <span class="p">|</span> grep -E <span class="s1">&#39;^mpirun&#39;</span>
+ch-run <span class="s2">&quot;</span><span class="nv">$img</span><span class="s2">&quot;</span> -- mpirun --version <span class="p">|</span> grep -E <span class="s1">&#39;^mpirun&#39;</span>
 
 <span class="c1"># Run the app.</span>
-srun --cpus-per-task<span class="o">=</span><span class="m">1</span> ch-run <span class="s2">&quot;</span><span class="nv">$IMG</span><span class="s2">&quot;</span> -- /hello/hello
+srun --cpus-per-task<span class="o">=</span><span class="m">1</span> ch-run <span class="s2">&quot;</span><span class="nv">$img</span><span class="s2">&quot;</span> -- /hello/hello
 </pre></div>
 </div>
 <p>Note that this script both unpacks the image and runs it.</p>
@@ -1450,7 +1450,7 @@ your site administrators for the latter.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.9.2',
+            VERSION:'0.9.3',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

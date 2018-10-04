@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.2 documentation</title>
+  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.3 documentation</title>
   
 
   
@@ -35,7 +35,7 @@
 
   
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.9.2 documentation" href="index.html"/>
+    <link rel="top" title="Charliecloud 0.9.3 documentation" href="index.html"/>
         <link rel="next" title="5. Pre-installed virtual machine" href="vm.html"/>
         <link rel="prev" title="3. Tutorial" href="tutorial.html"/> 
 
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                57f5de7
+                13d436c
               </div>
             
           
@@ -124,10 +124,17 @@
 <li class="toctree-l2"><a class="reference internal" href="#ch-fromhost">4.5. ch-fromhost</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id7">4.5.1. Synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id8">4.5.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#options">4.5.3. Options</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#notes">4.5.4. Notes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#bugs">4.5.5. Bugs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id9">4.5.6. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#options">4.5.3. Options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#to-specify-which-files-to-inject">4.5.3.1. To specify which files to inject</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#to-specify-the-destination-within-the-image">4.5.3.2. To specify the destination within the image</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#additional-arguments">4.5.3.3. Additional arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#cray-mpi-prerequisites-and-quirks">4.5.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> prerequisites and quirks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#notes">4.5.5. Notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bugs">4.5.6. Bugs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">4.5.7. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#acknowledgements">4.5.8. Acknowledgements</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ch-run">4.6. ch-run</a><ul>
@@ -400,12 +407,17 @@ be repeated)</dd>
 <p>Inject files from the host into an image directory.</p>
 <div class="section" id="id7">
 <h3>4.5.1. Synopsis<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost <span class="o">[</span>OPTION ...<span class="o">]</span> <span class="o">(</span>-c CMD <span class="p">|</span> -f FILE <span class="p">|</span> --nvidia ...<span class="o">)</span> IMGDIR
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost <span class="o">[</span>OPTION ...<span class="o">]</span> <span class="o">[</span>FILE_OPTION ...<span class="o">]</span> IMGDIR
 </pre></div>
 </div>
 </div>
 <div class="section" id="id8">
 <h3>4.5.2. Description<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This command is experimental. Features may be incomplete and/or buggy.
+Please report any issues you find, so we can fix them!</p>
+</div>
 <p>Inject files from the host into the Charliecloud image directory
 <code class="code docutils literal notranslate"><span class="pre">IMGDIR</span></code>.</p>
 <p>The purpose of this command is to provide host-specific files, such as GPU
@@ -419,52 +431,94 @@ a simple file copy, but that may change in the future.</p>
 executables and are placed in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code> within the container. File
 paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/lib</span></code> or <code class="code docutils literal notranslate"><span class="pre">.so</span></code> are assumed to be
 shared libraries and are placed in the first-priority directory reported by
-<code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code>. Other files are placed in the directory specified by
-<code class="code docutils literal notranslate"><span class="pre">--dest</span></code>.</p>
-<p>You can see where shared libraries will go with:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run <span class="nv">$IMG</span> -- ldconfig -v <span class="m">2</span>&gt;/dev/null <span class="p">|</span> egrep <span class="s1">&#39;^/&#39;</span> <span class="p">|</span> cut -d: -f1 <span class="p">|</span> head -1
-<span class="go">/usr/local/lib</span>
-</pre></div>
-</div>
+<code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> (see <code class="code docutils literal notranslate"><span class="pre">--lib-path</span></code> below). Other files are placed in the
+directory specified by <code class="code docutils literal notranslate"><span class="pre">--dest</span></code>.</p>
 <p>If any shared libraries are injected, run <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> inside the
 container (using <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>) after injection.</p>
 </div>
 <div class="section" id="options">
 <h3>4.5.3. Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h3>
-<p>To specify which files to inject:</p>
+<div class="section" id="to-specify-which-files-to-inject">
+<h4>4.5.3.1. To specify which files to inject<a class="headerlink" href="#to-specify-which-files-to-inject" title="Permalink to this headline">¶</a></h4>
 <blockquote>
 <div><dl class="docutils">
 <dt><code class="code docutils literal notranslate"><span class="pre">-c</span></code>, <code class="code docutils literal notranslate"><span class="pre">--cmd</span> <span class="pre">CMD</span></code></dt>
 <dd>Inject files listed in the standard output of command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code>.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-f</span></code>, <code class="code docutils literal notranslate"><span class="pre">--file</span> <span class="pre">FILE</span></code></dt>
 <dd>Inject files listed in the file <code class="code docutils literal notranslate"><span class="pre">FILE</span></code>.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-p</span></code>, <code class="code docutils literal notranslate"><span class="pre">--path</span> <span class="pre">PATH</span></code></dt>
+<dd>Inject the file at <code class="code docutils literal notranslate"><span class="pre">PATH</span></code>.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code></dt>
+<dd>Cray-enable an MPICH installed inside the image. See important details
+below.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--nvidia</span></code></dt>
 <dd>Use <code class="code docutils literal notranslate"><span class="pre">nvidia-container-cli</span> <span class="pre">list</span></code> (from <code class="code docutils literal notranslate"><span class="pre">libnvidia-container</span></code>)
 to find executables and libraries to inject.</dd>
 </dl>
 </div></blockquote>
 <p>These can be repeated, and at least one must be specified.</p>
-<p>Additional arguments:</p>
+</div>
+<div class="section" id="to-specify-the-destination-within-the-image">
+<h4>4.5.3.2. To specify the destination within the image<a class="headerlink" href="#to-specify-the-destination-within-the-image" title="Permalink to this headline">¶</a></h4>
 <blockquote>
-<div><p><code class="code docutils literal notranslate"><span class="pre">-d</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dest</span> <span class="pre">DST</span></code></p>
+<div><dl class="docutils">
+<dt><code class="code docutils literal notranslate"><span class="pre">-d</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dest</span> <span class="pre">DST</span></code></dt>
+<dd>Place files specified later in directory <code class="code docutils literal notranslate"><span class="pre">IMGDIR/DST</span></code>, overriding the
+inferred destination, if any. If a file’s destination cannot be inferred
+and <code class="code docutils literal notranslate"><span class="pre">--dest</span></code> has not been specified, exit with an error. This can be
+repeated to place files in varying destinations.</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="additional-arguments">
+<h4>4.5.3.3. Additional arguments<a class="headerlink" href="#additional-arguments" title="Permalink to this headline">¶</a></h4>
 <blockquote>
-<div>Place files whose destination cannot be inferred in directory
-<code class="code docutils literal notranslate"><span class="pre">IMGDIR/DST</span></code>. If such a file is found and this option is not
-specified, exit with an error.</div></blockquote>
-<dl class="docutils">
+<div><dl class="docutils">
+<dt><code class="code docutils literal notranslate"><span class="pre">--lib-path</span></code></dt>
+<dd>Print the guest destination path for shared libraries inferred as
+described above.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-ldconfig</span></code></dt>
+<dd>Don’t run <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> even if we appear to have injected shared
+libraries.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-h</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt>
 <dd>Print help and exit.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--no-infer</span></code></dt>
-<dd>Do not infer the type of any files.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt>
-<dd>Pist the injected files.</dd>
+<dd>List the injected files.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt>
 <dd>Print version and exit.</dd>
 </dl>
 </div></blockquote>
 </div>
+</div>
+<div class="section" id="cray-mpi-prerequisites-and-quirks">
+<h3>4.5.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> prerequisites and quirks<a class="headerlink" href="#cray-mpi-prerequisites-and-quirks" title="Permalink to this headline">¶</a></h3>
+<p>The implementation of <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> for MPICH is messy, foul smelling,
+and brittle. It replaces or overrides the open source MPICH libraries
+installed in the container. Users should be aware of the following.</p>
+<ol class="arabic simple">
+<li>Containers must have the following software installed:<ol class="loweralpha">
+<li>Open source <a class="reference external" href="https://www.mpich.org/">MPICH</a>.</li>
+<li><a class="reference external" href="https://github.com/hpc/patchelf">PatchELF with our patches</a>. Use the
+<code class="code docutils literal notranslate"><span class="pre">shrink-soname</span></code> branch.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">libgfortran.so.3</span></code>, because Cray’s <code class="code docutils literal notranslate"><span class="pre">libmpi.so.12</span></code> links to
+it.</li>
+</ol>
+</li>
+<li>Applications must be linked to <code class="code docutils literal notranslate"><span class="pre">libmpi.so.12</span></code> (not e.g.
+<code class="code docutils literal notranslate"><span class="pre">libmpich.so.12</span></code>). How to configure MPICH to accomplish this is not
+yet clear to us; <code class="code docutils literal notranslate"><span class="pre">test/Dockerfile.mpich</span></code> does it, while the Debian
+packages do not.</li>
+<li>One of the <code class="code docutils literal notranslate"><span class="pre">cray-mpich-abi</span></code> modules must be loaded when
+<code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code> is invoked.</li>
+<li>Tested only for C programs compiled with GCC, and it probably won’t work
+otherwise. If you’d like to use another compiler or another programming
+language, please get in touch so we can implement the necessary support.</li>
+</ol>
+<p>Please file a bug if we missed anything above or if you know how to make the
+code better.</p>
+</div>
 <div class="section" id="notes">
-<h3>4.5.4. Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h3>
+<h3>4.5.5. Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h3>
 <p>Symbolic links are dereferenced, i.e., the files pointed to are injected, not
 the links themselves.</p>
 <p>As a corollary, do not include symlinks to shared libraries. These will be
@@ -489,15 +543,17 @@ notion of a half-started container.</li>
 script for nVidia GPUs, they would not solve the problem for other situations.</p>
 </div>
 <div class="section" id="bugs">
-<h3>4.5.5. Bugs<a class="headerlink" href="#bugs" title="Permalink to this headline">¶</a></h3>
-<p>File paths may not contain newlines.</p>
+<h3>4.5.6. Bugs<a class="headerlink" href="#bugs" title="Permalink to this headline">¶</a></h3>
+<p>File paths may not contain colons or newlines.</p>
 </div>
 <div class="section" id="id9">
-<h3>4.5.6. Examples<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<h3>4.5.7. Examples<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
 <p>Place shared library <code class="code docutils literal notranslate"><span class="pre">/usr/lib64/libfoo.so</span></code> at path
-<code class="code docutils literal notranslate"><span class="pre">/usr/lib/libfoo.so</span></code> within the image <code class="code docutils literal notranslate"><span class="pre">/var/tmp/baz</span></code> and
-executable <code class="code docutils literal notranslate"><span class="pre">/bin/bar</span></code> at path <code class="code docutils literal notranslate"><span class="pre">/usr/bin/bar</span></code>. Then, create
-appropriate symlinks to <code class="code docutils literal notranslate"><span class="pre">libfoo</span></code> and update the <code class="code docutils literal notranslate"><span class="pre">ld.so</span></code> cache.</p>
+<code class="code docutils literal notranslate"><span class="pre">/usr/lib/libfoo.so</span></code> (assuming <code class="code docutils literal notranslate"><span class="pre">/usr/lib</span></code> is the first directory
+searched by the dynamic loader in the image), within the image
+<code class="code docutils literal notranslate"><span class="pre">/var/tmp/baz</span></code> and executable <code class="code docutils literal notranslate"><span class="pre">/bin/bar</span></code> at path
+<code class="code docutils literal notranslate"><span class="pre">/usr/bin/bar</span></code>. Then, create appropriate symlinks to <code class="code docutils literal notranslate"><span class="pre">libfoo</span></code> and
+update the <code class="code docutils literal notranslate"><span class="pre">ld.so</span></code> cache.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat qux.txt
 <span class="go">/bin/bar</span>
 <span class="go">/usr/lib64/libfoo.so</span>
@@ -508,13 +564,18 @@ appropriate symlinks to <code class="code docutils literal notranslate"><span cl
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --cmd <span class="s1">&#39;cat qux.txt&#39;</span> /var/tmp/baz
 </pre></div>
 </div>
+<p>Same as above:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --path /bin/bar --path /usr/lib64/libfoo.so /var/tmp/baz
+</pre></div>
+</div>
+<p>Same as above, but place the files into <code class="code docutils literal notranslate"><span class="pre">/corge</span></code> instead (and the shared
+library will not be found by <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code>):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --dest /corge --file qux.txt /var/tmp/baz
+</pre></div>
+</div>
 <p>Same as above, and also place file <code class="code docutils literal notranslate"><span class="pre">/etc/quux</span></code> at <code class="code docutils literal notranslate"><span class="pre">/etc/quux</span></code>
 within the container:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat corge.txt
-<span class="go">/bin/bar</span>
-<span class="go">/etc/quux</span>
-<span class="go">/usr/lib64/libfoo.so</span>
-<span class="gp">$</span> ch-fromhost --file corge.txt --dest /etc /var/tmp/baz
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --file qux.txt --dest /etc --path /etc/quux /var/tmp/baz
 </pre></div>
 </div>
 <p>Inject the executables and libraries recommended by nVidia into the image, and
@@ -522,6 +583,15 @@ then run <code class="code docutils literal notranslate"><span class="pre">ldcon
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --nvidia /var/tmp/baz
 </pre></div>
 </div>
+</div>
+<div class="section" id="acknowledgements">
+<h3>4.5.8. Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h3>
+<p>This command was inspired by the similar <a class="reference external" href="http://www.nersc.gov/research-and-development/user-defined-images/">Shifter</a> feature
+that allows Shifter containers to use the Cray Aires network. We particularly
+appreciate the help provided by Shane Canon and Doug Jacobsen during our
+implementation of <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code>.</p>
+<p>We appreciate the advice of Ryan Olson at nVidia on implementing
+<code class="code docutils literal notranslate"><span class="pre">--nvidia</span></code>.</p>
 </div>
 </div>
 <div class="section" id="ch-run">
@@ -842,7 +912,7 @@ your site admin for a suitable location.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.9.2',
+            VERSION:'0.9.3',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
