@@ -218,69 +218,63 @@ EOF
                "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r="can't bind .+/bind1 to ${ch_timg}/mnt/10: No such file or directory"
-    [[ $output =~ $r ]]
+    [[ $output = *"can't bind: not found: ${ch_timg}/mnt/10"* ]]
 
     # no argument to --bind
     run ch-run "$ch_timg" -b
     echo "$output"
     [[ $status -eq 64 ]]
-    [[ $output =~ 'option requires an argument' ]]
+    [[ $output = *'option requires an argument'* ]]
 
     # empty argument to --bind
     run ch-run -b '' "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ '--bind: no source provided' ]]
+    [[ $output = *'--bind: no source provided'* ]]
 
     # source not provided
     run ch-run -b :/mnt/9 "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ '--bind: no source provided' ]]
+    [[ $output = *'--bind: no source provided'* ]]
 
     # destination not provided
     run ch-run -b "${ch_imgdir}/bind1:" "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output =~ '--bind: no destination provided' ]]
+    [[ $output = *'--bind: no destination provided'* ]]
 
     # source does not exist
     run ch-run -b "${ch_imgdir}/hoops" "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r="can't bind .+/hoops to ${ch_timg}/mnt/0: No such file or directory"
-    [[ $output =~ $r ]]
+    [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
 
     # destination does not exist
     run ch-run -b "${ch_imgdir}/bind1:/goops" "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r="can't bind .+/bind1 to ${ch_timg}/goops: No such file or directory"
-    [[ $output =~ $r ]]
+    [[ $output = *"can't bind: not found: ${ch_timg}/goops"* ]]
 
     # neither source nor destination exist
     run ch-run -b "${ch_imgdir}/hoops:/goops" "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r="can't bind .+/hoops to ${ch_timg}/goops: No such file or directory"
-    [[ $output =~ $r ]]
+    [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
 
     # correct bind followed by source does not exist
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/9" -b "${ch_imgdir}/hoops" \
-               "$ch_timg" -- true
+    run ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/hoops" "$ch_timg" -- \
+              true
     echo "$output"
     [[ $status -eq 1 ]]
-    r="can't bind .+/hoops to ${ch_timg}/mnt/1: No such file or directory"
-    [[ $output =~ $r ]]
+    [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
 
     # correct bind followed by destination does not exist
     run ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/goops" \
                "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    r="can't bind .+/bind2 to ${ch_timg}/goops: No such file or directory"
-    [[ $output =~ $r ]]
+    [[ $output = *"can't bind: not found: ${ch_timg}/goops"* ]]
 }
 
 @test 'broken image errors' {
@@ -305,17 +299,19 @@ EOF
 
     # For each required file, we want a correct error if it's missing.
     for f in $files; do
+        echo "required: ${f}"
         rm "${img}/${f}"
-        run ch-run "${img}" -- true
+        ls -l "${img}/${f}" || true
+        run ch-run "$img" -- true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind .+ to /.+/${f}: No such file or directory"
-        [[ $output =~ $r ]]
+        [[ $output = *"can't bind: not found: ${img}/${f}"* ]]
     done
 
     # For each optional file, we want no error if it's missing.
     for f in $files_optional; do
+        echo "optional: ${f}"
         rm "${img}/${f}"
         run ch-run "$img" -- true
         touch "${img}/${f}"  # restore before test fails for idempotency
@@ -326,6 +322,7 @@ EOF
 
     # For all files, we want a correct error if it's not a regular file.
     for f in $files $files_optional; do
+        echo "not a regular file: ${f}"
         rm "${img}/${f}"
         mkdir "${img}/${f}"
         run ch-run "$img" -- true
@@ -340,22 +337,22 @@ EOF
 
     # For each directory, we want a correct error if it's missing.
     for d in $dirs tmp; do
+        echo "required: ${d}"
         rmdir "${img}/${d}"
         run ch-run "$img" -- true
         mkdir "${img}/${d}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind .+ to /.+/${d}: No such file or directory"
-        echo "expected: ${r}"
-        [[ $output =~ $r ]]
+        [[ $output = *"can't bind: not found: ${img}/${d}"* ]]
     done
 
     # For each directory, we want a correct error if it's not a directory.
     for d in $dirs tmp; do
+        echo "not a directory: ${d}"
         rmdir "${img}/${d}"
         touch "${img}/${d}"
         run ch-run "$img" -- true
-        rm "${img}/${d}"  # restore before test fails for idempotency
+        rm "${img}/${d}"    # restore before test fails for idempotency
         mkdir "${img}/${d}"
         echo "$output"
         [[ $status -eq 1 ]]
