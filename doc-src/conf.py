@@ -230,6 +230,8 @@ man_pages = [
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-build2dir', 'ch-build2dir', u'Build a Charliecloud image from Dockerfile and unpack it',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-dir2tar', 'ch-dir2tar', u'Pack a directory into a Charliecloud tarball',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-docker2tar', 'ch-docker2tar', u'Flatten a Docker image into a Charliecloud image tarball',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-docker-run', 'ch-docker-run', u'Run a command in a Docker container',

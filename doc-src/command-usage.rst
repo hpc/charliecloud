@@ -34,6 +34,11 @@ Flatten a Docker image into a Charliecloud image tarball.
 
 .. include:: ./ch-docker2tar_desc.rst
 
+ch-dir2tar
+++++++++++
+
+.. include:: ./ch-dir2tar_desc.rst
+
 ch-docker-run
 +++++++++++++
 
