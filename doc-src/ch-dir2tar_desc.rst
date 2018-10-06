@@ -3,7 +3,7 @@ Synopsis
 
 ::
 
-  $ ch-tar2dir DIR TARBALL
+  $ ch-dir2tar DIR TARBALL
 
 Description
 ===========
