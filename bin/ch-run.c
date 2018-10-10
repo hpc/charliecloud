@@ -46,6 +46,7 @@ const struct argp_option options[] = {
    { "cd",          'c', "DIR", 0, "initial working directory in container"},
    { "gid",         'g', "GID", 0, "run as GID within container" },
    { "join",        'j', 0,     0, "use same container as peer ch-run" },
+   { "join-pid",     -5, "PID",     0, "Join a namespace using a PID" },
    { "join-ct",      -3, "N",   0, "number of ch-run peers (implies --join)" },
    { "join-tag",     -4, "TAG", 0, "label for peer group (implies --join)" },
    { "no-home",      -2, 0,     0, "do not bind-mount your home directory"},
@@ -94,6 +95,7 @@ int main(int argc, char *argv[])
    args.c.container_uid = geteuid();
    args.initial_dir = NULL;
    args.c.join = false;
+   args.c.join_pid = 0;
    args.c.join_ct = 0;
    args.c.join_tag = NULL;
    args.c.private_home = false;
@@ -108,7 +110,7 @@ int main(int argc, char *argv[])
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
    arg_next++;
 
-   if (args.c.join) {
+   if (args.c.join && !args.c.join_pid) {
       args.c.join_ct = join_ct(args.c.join_ct);
       args.c.join_tag = join_tag(args.c.join_tag);
    }
@@ -263,6 +265,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case -4: // --join-tag
       args->c.join = true;
       args->c.join_tag = arg;
+      break;
+   case -5: // --join-pid
+      args->c.join = true;
+      args->c.join_pid = parse_int(arg, false, "--join-pid");
       break;
    case 'c':
       args->initial_dir = arg;

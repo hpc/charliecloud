@@ -95,6 +95,7 @@ void enter_udss(struct container *c);
 void join_begin(int join_ct, char *join_tag);
 void join_namespace(pid_t pid, char *ns);
 void join_namespaces();
+void join_namespaces_by_pid(int pid);
 void join_end();
 void log_ids(const char *func, int line);
 bool path_exists(char *path);
@@ -147,6 +148,11 @@ char *cat(char *a, char *b)
 /* Set up new namespaces or join existing namespaces. */
 void containerize(struct container *c)
 {
+   if (c->join_pid) {
+      join_namespaces_by_pid(c->join_pid);   
+      return;
+   } 
+
    if (c->join)
       join_begin(c->join_ct, c->join_tag);
    if (!c->join || join.winner_p) {
@@ -326,6 +332,14 @@ void join_namespaces()
    join_namespace(join.shared->winner_pid, "user");
    join_namespace(join.shared->winner_pid, "mnt");
 }
+
+/* Join an existing namespaces by the join winner. */
+void join_namespaces_by_pid(int pid)
+{
+   join_namespace(pid, "user");
+   join_namespace(pid, "mnt");
+}
+
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
 void log_ids(const char *func, int line)

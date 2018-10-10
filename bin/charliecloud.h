@@ -70,6 +70,7 @@ struct container {
    char *newroot;
    bool join;
    int join_ct;
+   int  join_pid;
    char *join_tag;
    bool private_home;
    bool private_tmp;
