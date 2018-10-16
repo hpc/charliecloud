@@ -24,6 +24,9 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`-j`, :code:`--join`
     use the same container (namespaces) as peer :code:`ch-run` invocations
 
+  :code:`--join-pid`
+    joins an existing namespace using the pid of a process already in the namespace
+
   :code:`--join-ct=N`
     number of :code:`ch-run` peers (implies :code:`--join`; default: see below)
 
