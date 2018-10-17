@@ -34,13 +34,6 @@ Flatten a Docker image into a Charliecloud image tarball.
 
 .. include:: ./ch-docker2tar_desc.rst
 
-ch-docker-run
-+++++++++++++
-
-Run a command in a Docker container.
-
-.. include:: ./ch-docker-run_desc.rst
-
 ch-fromhost
 +++++++++++
 
