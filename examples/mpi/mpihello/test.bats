@@ -72,10 +72,11 @@ count_ranks () {
 @test "${ch_tag}/host starts join-pid" {
     multiprocess_ok
 
+    # shellcheck disable=SC2086
     run $ch_mpirun_2 ch-run -b $BATS_TMPDIR --join mpihell/ -- sh -c "echo This is a test > /mnt/0/charlie; sleep 31.415" &
     # Need to wait for the first namespace to be started
     sleep 2
-    pid=$(ps aux | grep "sleep 31.415" | grep -v grep  | grep -v mpirun | head -n 1 | awk '{print $2}')
+    pid=$(pgrep -f "sleep 31.415" | tail -n 1)
 
     # shellcheck disable=SC2086
     run ch-run -b $BATS_TMPDIR --join-pid=$pid "$ch_img" -- sh -c "sleep 1; cat /mnt/0/charlie"
