@@ -1,7 +1,7 @@
 #!/bin/sh
 
-LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. "${LIBEXEC}/base.sh"
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
 
 set -e
 
@@ -32,6 +32,6 @@ fi
 image=$1
 dest=$2
 
-"${CH_BIN}"/ch-pull2tar "$image" "$dest" > /dev/null
-"${CH_BIN}"/ch-tar2dir "${dest}/$(echo "$image" | sed 's/\//\./').tar.gz" "$dest"
+"${ch_bin}"/ch-pull2tar "$image" "$dest" > /dev/null
+"${ch_bin}"/ch-tar2dir "${dest}/$(echo "$image" | sed 's/\//\./').tar.gz" "$dest"
 rm "${dest}/${image}.tar.gz"
