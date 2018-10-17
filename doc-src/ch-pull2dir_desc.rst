@@ -47,9 +47,9 @@ Same as above except optional :code: `TAG` argument is assigned:
 
 ::
 
-  $ch-pull2tar alpine:latest
-  creating new image /var/tmp/alpine:latest
-  /var/tmp/alpine:latest unpacked ok
-  $ ls -lh /var/tmp
+  $ ch-pull2dir alpine:3.6 /var/tmp
+  creating new image /var/tmp/alpine:3.6
+  /var/tmp/alpine:3.6 unpacked ok
+  charlie@localhost:bin $ ls -lh /var/tmp
   total 0
-  drwxr-xr-x. 18 charlie 231 Oct  5 20:11 alpine:latest/
+  drwxrwxr-x. 18 charlie 231 Oct 17 08:05 alpine:3.6/
