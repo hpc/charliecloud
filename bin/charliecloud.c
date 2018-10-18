@@ -94,7 +94,7 @@ char *cat(char *a, char *b);
 void enter_udss(struct container *c);
 void join_begin(int join_ct, char *join_tag);
 void join_namespace(pid_t pid, char *ns);
-void join_namespaces();
+void join_namespaces(pid_t pid);
 void join_namespaces_by_pid(int pid);
 void join_end();
 void log_ids(const char *func, int line);
@@ -149,7 +149,7 @@ char *cat(char *a, char *b)
 void containerize(struct container *c)
 {
    if (c->join_pid) {
-      join_namespaces_by_pid(c->join_pid);   
+      join_namespaces(c->join_pid);   
       return;
    } 
    if (c->join)
@@ -158,7 +158,7 @@ void containerize(struct container *c)
       setup_namespaces(c);
       enter_udss(c);
    } else
-      join_namespaces();
+      join_namespaces(join.winner_p);
    if (c->join)
       join_end();
 
@@ -326,19 +326,11 @@ void join_namespace(pid_t pid, char *ns)
 }
 
 /* Join the existing namespaces created by the join winner. */
-void join_namespaces()
-{
-   join_namespace(join.shared->winner_pid, "user");
-   join_namespace(join.shared->winner_pid, "mnt");
-}
-
-/* Join an existing namespaces by the join winner. */
-void join_namespaces_by_pid(int pid)
+void join_namespaces(pid_t pid)
 {
    join_namespace(pid, "user");
    join_namespace(pid, "mnt");
 }
-
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
 void log_ids(const char *func, int line)

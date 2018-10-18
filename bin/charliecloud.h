@@ -64,17 +64,18 @@ enum bind_dep {
 };
 
 struct container {
-   struct bind *binds;
-   gid_t container_gid;
-   uid_t container_uid;
-   char *newroot;
-   bool join;
-   int join_ct;
-   int  join_pid;
-   char *join_tag;
-   bool private_home;
-   bool private_tmp;
-   bool writable;
+   struct bind *binds; //
+   gid_t container_gid; // The group id of the container
+   uid_t container_uid; // The user id of the container
+
+   char *newroot; // 
+   bool join; // Will a join occur
+   int join_ct; // The number of peers in a synchronized join
+   pid_t join_pid; // The pid we wish to join
+   char *join_tag; // kkll
+   bool private_home; //
+   bool private_tmp; //  
+   bool writable;   // Is the container file system writable
 };
 
 

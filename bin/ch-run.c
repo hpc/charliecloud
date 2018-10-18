@@ -46,7 +46,7 @@ const struct argp_option options[] = {
    { "cd",          'c', "DIR", 0, "initial working directory in container"},
    { "gid",         'g', "GID", 0, "run as GID within container" },
    { "join",        'j', 0,     0, "use same container as peer ch-run" },
-   { "join-pid",     -5, "PID",     0, "Join a namespace using a PID" },
+   { "join-pid",     -5, "PID", 0, "join a namespace using a PID" },
    { "join-ct",      -3, "N",   0, "number of ch-run peers (implies --join)" },
    { "join-tag",     -4, "TAG", 0, "label for peer group (implies --join)" },
    { "no-home",      -2, 0,     0, "do not bind-mount your home directory"},
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
    arg_next++;
 
-   if (args.c.join && !args.c.join_pid) {
+   if (args.c.join) {
       args.c.join_ct = join_ct(args.c.join_ct);
       args.c.join_tag = join_tag(args.c.join_tag);
    }
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
    INFO("newroot: %s", args.c.newroot);
    INFO("container uid: %u", args.c.container_uid);
    INFO("container gid: %u", args.c.container_gid);
-   INFO("join: %d %d %s", args.c.join, args.c.join_ct, args.c.join_tag);
+   INFO("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag, args.c.join_pid);
    INFO("private /tmp: %d", args.c.private_tmp);
 
    containerize(&args.c);
