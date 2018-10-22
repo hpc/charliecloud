@@ -35,8 +35,8 @@
 #   3. Here string, e.g. 'while IFS= read -r FILE; do ... done <<< "$FILES"'.
 #      This is a bashism.
 
-LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. "${LIBEXEC}/base.sh"
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
 
 set -e
 
@@ -72,16 +72,16 @@ Options:
 EOF
 )
 
-cray_mpi=        # Cray fixups requested
-#cray_openmpi=    # ... for OpenMPI
-cray_mpich=      # ... for MPICH
+cray_mpi=          # Cray fixups requested
+#cray_openmpi=     # ... for OpenMPI
+cray_mpich=        # ... for MPICH
 dest=
 image=
 newline='
 '
-inject_files=    # source:destination files to inject
-inject_mkdirs=   # directories to create in image (image-rooted)
-inject_unlinks=  # files to rm -f (not rmdir or rm -Rf) (image-rooted)
+inject_files=      # source:destination files to inject
+inject_mkdirs=     # directories to create in image (image-rooted)
+inject_unlinks=    # files to rm -f (not rmdir or rm -Rf) (image-rooted)
 lib_dest=
 lib_dest_print=
 lib_found=
@@ -233,7 +233,7 @@ if [ $lib_found ]; then
     # searches, so that we can override (or overwrite) any of the same library
     # that may already be in the image.
     debug "asking ldconfig for shared library destination"
-    lib_dest=$(  "$CH_BIN"/ch-run "$image" -- /sbin/ldconfig -Nv 2> /dev/null \
+    lib_dest=$(  "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv 2> /dev/null \
                | grep -E '^/' | cut -d: -f1 | head -1)
     [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
     debug "shared library destination: ${lib_dest}"
@@ -243,7 +243,7 @@ if [ $cray_mpi ]; then
     sentinel=/etc/opt/cray/release/cle-release
     [ -f $sentinel ] || fatal "not found: ${sentinel}: are you on a Cray?"
 
-    mpi_version=$("$CH_BIN"/ch-run "$image" -- mpirun --version || true)
+    mpi_version=$("${ch_bin}/ch-run" "$image" -- mpirun --version || true)
     case $mpi_version in
         *mpich*)
             cray_mpich=yes
@@ -359,13 +359,13 @@ if [ $cray_mpich ]; then
     #
     # Note: This currently requires our patched patchelf (issue #256).
     debug "fixing soname on libmpi.so.12"
-    "$CH_BIN"/ch-run -w "$image" -- \
+    "${ch_bin}/ch-run" -w "$image" -- \
         patchelf --set-soname libmpi.so.12 "$lib_dest/libmpi.so.12"
 fi
 
 if [ $lib_found ] && [ -z "$no_ldconfig" ]; then
     debug "running ldconfig"
-    "$CH_BIN"/ch-run -w "$image" -- /sbin/ldconfig
+    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
 else
     debug "not running ldconfig"
 fi

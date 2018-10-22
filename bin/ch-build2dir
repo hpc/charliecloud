@@ -1,7 +1,7 @@
 #!/bin/sh
 
-LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. "${LIBEXEC}/base.sh"
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
@@ -35,7 +35,7 @@ tag=$(basename "$PWD")
 
 set -x
 
-"$CH_BIN"/ch-build -t "$tag" "$context" "$@"
-"$CH_BIN"/ch-docker2tar "$tag" "$dest"
-"$CH_BIN"/ch-tar2dir "${dest}/${tag}.tar.gz" "$dest"
+"${ch_bin}"/ch-build -t "$tag" "$context" "$@"
+"${ch_bin}"/ch-docker2tar "$tag" "$dest"
+"${ch_bin}"/ch-tar2dir "${dest}/${tag}.tar.gz" "$dest"
 rm "${dest}/${tag}.tar.gz"
