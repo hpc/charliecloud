@@ -14,8 +14,9 @@ explains how the tests work and how to run them.
 Getting started
 ===============
 
-Charliecloud's tests are in the directory :code:`test`. To run them, go
-there::
+Charliecloud's tests are based in the directory :code:`test`, which is either
+at the top level of the source code or installed at
+:code:`$PREFIX/share/doc/charliecloud`. To run them, go there::
 
   $ cd test
 
@@ -170,11 +171,17 @@ Running a single test group
 ---------------------------
 
 For focused testing, you can run a single :code:`.bats` file directly with
-Bats. First, check which :code:`bats` executable the test suite is using::
+Bats. These are found at the following locations::
+
+  test
+  test/run
+  examples/*/*/test.bats
+
+First, check which :code:`bats` executable the test suite is using::
 
   $ make where-bats
   which bats
-  /home/charlie/charliecloud/test/bats/bin/bats
+  /usr/local/src/charliecloud/test/bats/bin/bats
   bats --version
   Bats 0.4.0
 
