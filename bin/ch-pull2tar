@@ -7,13 +7,13 @@ set -e
 
 usage () {
     cat 1>&2 <<EOF
-Download image via docker pull and flatten it.
+Download image via "docker pull" and flatten it to tarball.
 
 Usage:
 
   $ $(basename "$0") IMAGE DEST
 
-You must have sufficient privilege (via sudo) to run the Docker commands.
+You must have sufficient privilege (via sudo) to run Docker commands.
 EOF
     exit "${1:-1}"
 }
