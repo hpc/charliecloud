@@ -43,6 +43,20 @@ Inject files from the host into an image directory.
 
 .. _man_ch-run:
 
+ch-pull2dir
++++++++++++
+
+Download image via :code:`docker pull` and unpack it into directory.
+
+.. include:: ./ch-pull2dir_desc.rst
+
+ch-pull2tar
++++++++++++
+
+Download image via :code:`docker pull` and flatten it to tarball.
+
+.. include:: ./ch-pull2tar_desc.rst
+
 ch-run
 ++++++
 

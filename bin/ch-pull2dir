@@ -1,0 +1,37 @@
+#!/bin/sh
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+set -e
+
+usage () {
+    cat 1>&2 <<EOF
+Download image via "docker pull" and unpack it into directory.
+
+Usage:
+
+  $ $(basename "$0") IMAGE DEST
+
+You must have sufficient privilege (via sudo) to run Docker commands.
+EOF
+    exit "${1:-1}"
+}
+
+if [ "$1" = "--help" ]; then
+    usage 0
+fi
+if [ "$1" = "--version" ]; then
+    version
+    exit 0
+fi
+if [ "$#" -ne 2 ]; then
+    usage
+fi
+
+image=$1
+dest=$2
+
+"${ch_bin}/ch-pull2tar" "$image" "$dest"
+"${ch_bin}/ch-tar2dir" "${dest}/$(echo "$image" | sed 's/\//\./').tar.gz" "$dest"
+rm -v "${dest}/${image}.tar.gz"
