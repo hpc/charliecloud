@@ -267,7 +267,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join_tag = arg;
       break;
    case -5: // --join-pid
-      args->c.join = true;
       args->c.join_pid = parse_int(arg, false, "--join-pid");
       break;
    case 'c':

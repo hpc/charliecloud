@@ -95,7 +95,6 @@ void enter_udss(struct container *c);
 void join_begin(int join_ct, char *join_tag);
 void join_namespace(pid_t pid, char *ns);
 void join_namespaces(pid_t pid);
-void join_namespaces_by_pid(int pid);
 void join_end();
 void log_ids(const char *func, int line);
 bool path_exists(char *path);
@@ -158,7 +157,7 @@ void containerize(struct container *c)
       setup_namespaces(c);
       enter_udss(c);
    } else
-      join_namespaces(join.winner_p);
+      join_namespaces(join.shared->winner_pid);
    if (c->join)
       join_end();
 
@@ -317,7 +316,7 @@ void join_namespace(pid_t pid, char *ns)
    fd = open(path, O_RDONLY);
    if (fd == -1) {
       if (errno == ENOENT) {
-         Te (0, "join: %s not found; is winner still running?", path);
+         Te (0, "join: no PID %d: %s not found", pid, path);
       } else {
          Tf (0, "join: can't open %s", path);
       }
@@ -328,6 +327,7 @@ void join_namespace(pid_t pid, char *ns)
 /* Join the existing namespaces created by the join winner. */
 void join_namespaces(pid_t pid)
 {
+   INFO("join_namespaces: Joining pid  %d", pid);
    join_namespace(pid, "user");
    join_namespace(pid, "mnt");
 }

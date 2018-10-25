@@ -332,3 +332,86 @@ unset_vars () {
     [[ $output =~ 'join: peer group tag cannot be empty string' ]]
     ipc_clean_p
 }
+
+@test 'ch-run --join-pid: without join, direct launch' {
+    unset_vars
+    ipc_clean_p
+    rm -f "$BATS_TMPDIR"/join.?.*
+
+    # first peer
+    ch-run -v "$ch_timg" -- \
+           /test/printns 15 "${BATS_TMPDIR}/join.1.ns" \
+           >& "${BATS_TMPDIR}/join.1.err" &
+    sleep 1
+    cat "${BATS_TMPDIR}/join.1.err"
+    cat "${BATS_TMPDIR}/join.1.ns"
+    grep -Fq "join: 0 0 (null) 0" "${BATS_TMPDIR}/join.1.err"
+
+    pid=$(pgrep printns)
+
+    # second peer 
+    run ch-run -v --join-pid=$pid "$ch_timg" -- \
+               /test/printns 0 "${BATS_TMPDIR}/join.2.ns" \
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat "${BATS_TMPDIR}/join.2.ns"
+      echo "$output" | grep -Fq "join: 0 0 (null) $pid"
+
+    # same namespaces?
+    for i in /proc/self/ns/*; do
+        [[ 1 = $(  cat "$BATS_TMPDIR"/join.?.ns \
+                 | grep -E "^${i}:" | uniq | wc -l) ]]
+    done
+
+    ipc_clean_p
+}
+
+@test 'ch-run --join-pid: with join, direct launch' {
+    unset_vars
+    ipc_clean_p
+    rm -f "$BATS_TMPDIR"/join.?.*
+
+    # first peer
+    ch-run -v "$ch_timg" -- \
+           /test/printns 15 "${BATS_TMPDIR}/join.1.ns" \
+           >& "${BATS_TMPDIR}/join.1.err" &
+    sleep 1
+    cat "${BATS_TMPDIR}/join.1.err"
+    cat "${BATS_TMPDIR}/join.1.ns"
+    grep -Fq "join:" "${BATS_TMPDIR}/join.1.err"
+
+    pid=$(pgrep printns)
+
+    # second peer 
+    run ch-run -v --join-pid=$pid "$ch_timg" -- \
+               /test/printns 0 "${BATS_TMPDIR}/join.2.ns" \
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat "${BATS_TMPDIR}/join.2.ns"
+      echo "$output" | grep -Fq "join: 0 0 (null) $pid"
+
+    # same namespaces?
+    for i in /proc/self/ns/*; do
+        [[ 1 = $(  cat "$BATS_TMPDIR"/join.?.ns \
+                 | grep -E "^${i}:" | uniq | wc -l) ]]
+    done
+
+    ipc_clean_p
+}
+
+@test 'ch-run --join-pid: PID permission errors' {
+    run ch-run -v --join-pid=1 "$ch_timg" -- \
+               /test/printns 0
+    echo "$output"
+    [[ $status -eq 1 ]]
+    echo "$output" | grep -Fq "join: can't open /proc/1/ns/user: Permission denied"
+}
+
+@test 'ch-run --join-pid: invalid PID errors' {
+    pid=430172
+    run ch-run -v --join-pid=$pid "$ch_timg" -- \
+               /test/printns 0
+    echo "$output"
+    [[ $status -eq 1 ]]
+    echo "$output" | grep -Fq "join: no PID 430172: /proc/430172/ns/user not found"
+}
