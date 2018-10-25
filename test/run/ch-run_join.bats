@@ -340,7 +340,7 @@ unset_vars () {
 
     # first peer
     ch-run -v "$ch_timg" -- \
-           /test/printns 15 "${BATS_TMPDIR}/join.1.ns" \
+           /test/printns 120 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
     sleep 1
     cat "${BATS_TMPDIR}/join.1.err"
@@ -373,7 +373,7 @@ unset_vars () {
 
     # first peer
     ch-run -v "$ch_timg" -- \
-           /test/printns 15 "${BATS_TMPDIR}/join.1.ns" \
+           /test/printns 120 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
     sleep 1
     cat "${BATS_TMPDIR}/join.1.err"
