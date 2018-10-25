@@ -350,7 +350,7 @@ unset_vars () {
     pid=$(pgrep printns)
 
     # second peer 
-    run ch-run -v --join-pid=$pid "$ch_timg" -- \
+    run ch-run -v --join-pid="$pid" "$ch_timg" -- \
                /test/printns 0 "${BATS_TMPDIR}/join.2.ns" \
     echo "$output"
     [[ $status -eq 0 ]]
@@ -383,7 +383,7 @@ unset_vars () {
     pid=$(pgrep printns)
 
     # second peer 
-    run ch-run -v --join-pid=$pid "$ch_timg" -- \
+    run ch-run -v --join-pid="$pid" "$ch_timg" -- \
                /test/printns 0 "${BATS_TMPDIR}/join.2.ns" \
     echo "$output"
     [[ $status -eq 0 ]]
@@ -409,7 +409,7 @@ unset_vars () {
 
 @test 'ch-run --join-pid: invalid PID errors' {
     pid=430172
-    run ch-run -v --join-pid=$pid "$ch_timg" -- \
+    run ch-run -v --join-pid="$pid" "$ch_timg" -- \
                /test/printns 0
     echo "$output"
     [[ $status -eq 1 ]]
