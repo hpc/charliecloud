@@ -340,14 +340,14 @@ unset_vars () {
 
     # first peer
     ch-run -v "$ch_timg" -- \
-           /test/printns 120 "${BATS_TMPDIR}/join.1.ns" \
+           /test/printns 31.145 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
     sleep 1
     cat "${BATS_TMPDIR}/join.1.err"
     cat "${BATS_TMPDIR}/join.1.ns"
     grep -Fq "join: 0 0 (null) 0" "${BATS_TMPDIR}/join.1.err"
 
-    pid=$(pgrep printns)
+    pid=$(pgrep -f "printns 31.145")
 
     # second peer 
     run ch-run -v --join-pid="$pid" "$ch_timg" -- \
@@ -373,14 +373,14 @@ unset_vars () {
 
     # first peer
     ch-run -v "$ch_timg" -- \
-           /test/printns 120 "${BATS_TMPDIR}/join.1.ns" \
+           /test/printns 31.145 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
     sleep 1
     cat "${BATS_TMPDIR}/join.1.err"
     cat "${BATS_TMPDIR}/join.1.ns"
     grep -Fq "join:" "${BATS_TMPDIR}/join.1.err"
 
-    pid=$(pgrep printns)
+    pid=$(pgrep -f "printns 31.145")
 
     # second peer 
     run ch-run -v --join-pid="$pid" "$ch_timg" -- \
