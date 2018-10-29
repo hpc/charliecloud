@@ -49,10 +49,10 @@ FROM debian9
 #   2. --disable-pty-support to avoid "pipe function call failed when
 #      setting up I/O forwarding subsystem".
 #
-#   3. --with-slurm=no so mpirun in the container doesn't try use Slurm to
-#      launch processes, which will fail in inscrutable ways e.g. if srun is
-#      not found. (If you do want Slurm launching processes, use srun or
-#      mpirun outside the container.)
+#   3. --enable-mca-no-build=plm-slurm so in the case of host launches
+#      using srun the container is still built with support for slurm's
+#      pmix s2 component but will not use slurm's plm to start processes 
+#      in the container, which will cause issues.
 #
 # [1]: https://github.com/open-mpi/ompi/blob/master/README
 
@@ -85,11 +85,11 @@ WORKDIR /usr/local/src
 #
 # Note that libpsm2 is x86_64 only:
 # https://lists.debian.org/debian-hpc/2017/12/msg00015.html
-ENV DEB_URL http://http.us.debian.org/debian/pool/main
-ENV PSM2_VERSION 10.3.58-1
-RUN wget -nv $DEB_URL/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb
-RUN wget -nv $DEB_URL/libp/libpsm2/libpsm2-dev_${PSM2_VERSION}_amd64.deb
-ENV IBVERBS_VERSION 19.0-1
+ENV DEB_URL http://snapshot.debian.org/archive/debian/20180928T210119Z/pool/main
+ENV PSM2_VERSION 10.3.58-2
+RUN wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb
+RUN wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-dev_${PSM2_VERSION}_amd64.deb
+ENV IBVERBS_VERSION 20.0-1
 RUN for i in ibacm \
              ibverbs-providers \
              ibverbs-utils \
@@ -102,12 +102,12 @@ RUN for i in ibacm \
              rdma-core \
              rdmacm-utils ; \
     do \
-        wget -nv $DEB_URL/r/rdma-core/${i}_${IBVERBS_VERSION}_amd64.deb ; \
+        wget -nv ${DEB_URL}/r/rdma-core/${i}_${IBVERBS_VERSION}_amd64.deb ; \
     done
 RUN dpkg --install *.deb
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
-ENV UCX_VERSION 1.3.0
+ENV UCX_VERSION 1.3.1
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git
 RUN    cd ucx \
@@ -129,10 +129,10 @@ RUN    cd openmpi-${MPI_VERSION} \
                    --with-pmi-libdir=/usr/lib/x86_64-linux-gnu \
                    --with-pmix \
                    --with-psm2 \
-                   --with-slurm \
                    --with-ucx \
                    --disable-pty-support \
                    --enable-mca-no-build=btl-openib \
+                   --enable-mca-no-build=plm-slurm \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN ldconfig
 RUN rm -Rf openmpi-${MPI_VERSION}*
