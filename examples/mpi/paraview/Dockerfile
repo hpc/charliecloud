@@ -38,7 +38,7 @@ RUN rm -Rf llvm-${LLVM_VERSION}*
 
 # Mesa. We need a version newer than Debian provides.
 ENV MESA_VERSION 17.3.6
-RUN wget -nv ftp://ftp.freedesktop.org/pub/mesa/mesa-${MESA_VERSION}.tar.xz
+RUN wget -nv https://mesa.freedesktop.org/archive/mesa-${MESA_VERSION}.tar.xz
 RUN tar xf mesa-${MESA_VERSION}.tar.xz
 RUN    cd mesa-${MESA_VERSION} \
     && ./configure --prefix=/usr \
