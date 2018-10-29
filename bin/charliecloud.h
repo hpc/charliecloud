@@ -58,6 +58,11 @@ struct bind {
    char *dst;
 };
 
+enum bind_dep {
+   BD_REQUIRED,  // both source and destination must exist
+   BD_OPTIONAL   // if either source or destination missing, do nothing
+};
+
 struct container {
    struct bind *binds;
    gid_t container_gid;

@@ -1,10 +1,12 @@
+#!/bin/sh
+ 
 set -e
 
 # shellcheck disable=SC2034
-CH_BIN="$(cd "$(dirname "$0")" && pwd)"
+ch_bin="$(cd "$(dirname "$0")" && pwd)"
 
-LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. "${LIBEXEC}/version.sh"
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/version.sh"
 
 
 parse_basic_args () {
@@ -13,7 +15,7 @@ parse_basic_args () {
             usage 0
         fi
         if [ "$i" = --libexec-path ]; then
-            echo "$LIBEXEC"
+            echo "$libexec"
             exit 0
         fi
         if [ "$1" = --version ]; then

@@ -58,7 +58,7 @@ Charliecloud you have (if not, please report a bug). For example::
   0.2.0+4836ac1
 
 A description of all commands is also collected later in this documentation; see
-:doc:`command-usage`. In addition each executable has a man page.
+:doc:`command-usage`. In addition, each executable has a man page.
 
 Your first user-defined software stack
 ======================================
@@ -737,14 +737,12 @@ process is spawned in its own container, and because Charliecloud introduces
 minimal isolation, they can communicate as if they were running directly on
 the host.
 
-For example, using :code:`srun` and the :code:`mpihello` example above::
+For example, using Slurm :code:`srun` and the :code:`mpihello` example above::
 
-  $ mpirun --version
-  mpirun (Open MPI) 2.1.2
   $ stat -L --format='%i' /proc/self/ns/user
   4026531837
   $ ch-run /var/tmp/mpihello -- mpirun --version
-  mpirun (Open MPI) 2.1.2
+  mpirun (Open MPI) 2.1.5
   $ srun -n4 ch-run /var/tmp/images/mpihello -- /hello/hello
   0: init ok cn001, 4 ranks, userns 4026554650
   1: init ok cn001, 4 ranks, userns 4026554652
@@ -753,17 +751,14 @@ For example, using :code:`srun` and the :code:`mpihello` example above::
   0: send/receive ok
   0: finalize ok
 
-(If you don't have Slurm, you can use :code:`mpirun -np 4` instead of
-:code:`srun -n4`.)
+We recommend this approach because it lets you take advantage of difficult
+things already done by your site admins, such as configuring Slurm.
 
-The advantage is that we can easily take advantage of host-specific things
-such as configurations; the disadvantage is that it introduces a close
-coupling between the host and container that can manifest in complex ways.
-
-For example, in our experience, while OpenMPI 1.10.2 on a Ubuntu host worked
-with 1.10.4 in the guest, both had to be compiled with the same options. The
-OpenMPI 1.10.2 packages that came with Ubuntu failed with
-"orte_util_nidmap_init failed" if run with the container 1.10.4.
+If you don't have Slurm, you can use :code:`mpirun -np 4` instead of
+:code:`srun -n4`. However, this requires that the host have a compatible
+version of OpenMPI installed on the host. Which versions are compatible seems
+to be a moving target, but having the same versions inside and outside the
+container *usually* works.
 
 Processes coordinated by container
 ----------------------------------
@@ -771,8 +766,8 @@ Processes coordinated by container
 This approach starts a single container process, which then forks and
 coordinates the parallel work. The advantage is that this approach is
 completely independent of the host for dependency configuration and
-installation; the disadvantage is that it cannot take advantage of
-host-specific things such as configuration.
+installation; the disadvantage is that it cannot take advantage of host things
+such as Slurm configuration.
 
 For example::
 
@@ -785,52 +780,18 @@ For example::
   0: finalize ok
 
 Note that in this case, we use :code:`mpirun` rather than :code:`srun` because
-the Slurm client programs are not installed inside the container and we don't
+the Slurm client programs are not installed inside the container, and we don't
 want the host's Slurm coordinating processes anyway.
-
-
-Processes coordinated by container using host configuration
------------------------------------------------------------
-
-This approach is a middle ground. The use case is when there is some
-host-specific configuration we want to use, but we don't want to install the
-entire configured dependency on the host. It would be undesirable to copy this
-configuration into the image, because that would reduce its portability.
-
-The host configuration is communicated to the container by bind-mounting the
-relevant directory and then pointing the application to it. There are a
-variety of approaches. Some application or frameworks take command-line
-parameters specifying the configuration path.
-
-The approach used in our example is to set the configuration directory to
-:code:`/mnt/0`. This is done in :code:`openmpi` (and hence
-:code:`mpihello`) with the :code:`--sysconfdir` argument (see above).
-
-The effect is that the image contains a default MPI configuration, but if you
-specify a different configuration directory with :code:`--bind`, that is
-overmounted and used instead. For example::
-
-  $ ch-run -b /usr/local/etc /var/tmp/mpihello -- mpirun -np 4 /hello/hello
-  0: init ok cn001, 4 ranks, userns 4026532256
-  1: init ok cn001, 4 ranks, userns 4026532256
-  2: init ok cn001, 4 ranks, userns 4026532256
-  3: init ok cn001, 4 ranks, userns 4026532256
-  0: send/receive ok
-  0: finalize ok
-
-A similar approach creates a dangling symlink with :code:`RUN` that is
-resolved when the appropriate host directory is bind-mounted into
-:code:`/mnt`.
 
 
 Your first multi-node jobs
 ==========================
 
-This section assumes that you are using a Slurm cluster with a working OpenMPI
-2.1.2 installation and some type of node-local storage. A :code:`tmpfs` will
-suffice, and we use :code:`/var/tmp` for this tutorial. (Using :code:`/tmp`
-often works but can cause confusion because it's shared by the container and
-host, yielding cycles in the directory tree.)
+This section assumes that you are using a Slurm cluster and some type of
+node-local storage. A :code:`tmpfs` will suffice, and we use :code:`/var/tmp`
+for this tutorial. (Using :code:`/tmp` often works but can cause confusion
+because it's shared by the container and host, yielding cycles in the
+directory tree.)
 
 We cover three cases:
 
@@ -857,9 +818,10 @@ worked out how to do this yet. (See `issue #5
 
    The image can reside on most filesystems, but be aware of metadata impact.
    A non-trivial Charliecloud job may overwhelm a network filesystem, earning
-   you the ire of your sysadmins and colleagues. (NFS sometimes does not work
-   for read-only images; see `issue #9
-   <https://github.com/hpc/charliecloud/issues/9>`_.)
+   you the ire of your sysadmins and colleagues.
+
+   NFS sometimes does not work for read-only images; see `issue #9
+   <https://github.com/hpc/charliecloud/issues/9>`_.
 
 Interactive MPI hello world
 ---------------------------
@@ -869,12 +831,6 @@ allocation of 4 nodes (but any number should work) and an interactive shell on
 one of those nodes. For example::
 
   $ salloc -N4
-
-We also need OpenMPI 2.1.2 available, in order to match the version of the
-libraries in the container::
-
-  $ mpirun --version
-  mpirun (Open MPI) 2.1.2
 
 The next step is to distribute the image tarball to the compute nodes. To do
 so, we run one instance of :code:`ch-tar2dir` on each node::
@@ -910,10 +866,11 @@ Non-interactive MPI hello world
 Production jobs are normally run non-interactively, via submission of a job
 script that runs when resources are available, placing output into a file.
 
-The MPI hello world example includes such a script, :code:`slurm.sh`:
+The MPI hello world example includes such a script,
+:code:`examples/mpi/mpihello/slurm.sh`:
 
 .. literalinclude:: ../examples/mpi/mpihello/slurm.sh
-         :language: bash
+   :language: bash
 
 Note that this script both unpacks the image and runs it.
 
@@ -927,22 +884,17 @@ When the job is complete, look at the output::
   $ cat slurm-207745.out
   tarball:   /home/reidpr/mpihello.tar.gz
   image:     /var/tmp/mpihello
-  host:      mpirun (Open MPI) 2.1.2
-  App launch reported: 4 (out of 4) daemons - 3 (out of 4) procs
   creating new image /var/tmp/mpihello
   creating new image /var/tmp/mpihello
   [...]
   /var/tmp/mpihello unpacked ok
   /var/tmp/mpihello unpacked ok
-  container: mpirun (Open MPI) 2.1.2
-  App launch reported: 4 (out of 4) daemons - 32 (out of 64) procs
-  2: init ok cn004, 64 ranks, userns 4026532604
-  3: init ok cn004, 64 ranks, userns 4026532606
-  4: init ok cn004, 64 ranks, userns 4026532608
+  container: mpirun (Open MPI) 2.1.5
+  0: init ok cn001.localdomain, 144 ranks, userns 4026554766
+  37: init ok cn002.localdomain, 144 ranks, userns 4026554800
   [...]
-  63: init ok cn007, 64 ranks, userns 4026532630
-  30: init ok cn005, 64 ranks, userns 4026532628
-  27: init ok cn005, 64 ranks, userns 4026532622
+  96: init ok cn003.localdomain, 144 ranks, userns 4026554803
+  86: init ok cn003.localdomain, 144 ranks, userns 4026554793
   0: send/receive ok
   0: finalize ok
 
@@ -1019,25 +971,34 @@ capability varies, the tutorial does not depend on it, but it can be
 informative. Refresh after each key step below.
 
 The Spark workers need to know how to reach the master. This is via a URL; you
-can derive it from the above, or consult the web interface. For example::
+can get it from the log excerpt above, or consult the web interface. For
+example::
 
   $ MASTER_URL=spark://10.8.8.3:7077
 
-Next, start one worker on each compute node. This is a little ugly;
-:code:`mpirun` will wait until everything is finished before returning, but we
-want to start the workers in the background, so we add :code:`&` and introduce
-a race condition. (:code:`srun` has different, even less helpful behavior: it
-kills the worker as soon as it goes into the background.)
+Next, start one worker on each compute node.
+
+In this tutorial, we start the workers using :code:`srun` in a way that
+prevents any subsequent :code:`srun` invocations from running until the Spark
+workers exit. For our purposes here, that's OK, but it's a big limitation for
+some jobs. (See `issue #230
+<https://github.com/hpc/charliecloud/issues/230>`_.)
+
+Alternatives include :code:`pdsh`, which is the approach we use for the Spark
+tests (:code:`examples/other/spark/test.bats`), or a simple for loop of
+:code:`ssh` calls. Both of these are also quite clunky and do not scale well.
 
 ::
 
-  $ mpirun -map-by '' -pernode ch-run -b ~/sparkconf /var/tmp/spark -- \
-    /spark/sbin/start-slave.sh $MASTER_URL &
+  $ srun sh -c "   ch-run -b ~/sparkconf /var/tmp/spark -- \
+                          spark/sbin/start-slave.sh $MASTER_URL \
+                && sleep infinity" &
 
 One of the advantages of Spark is that it's resilient: if a worker becomes
-available, the computation simply proceeds without it. However, this can mask
-issues as well. For example, this example will run perfectly fine with just
-one worker on the same node as the master, which isn't what we want.
+unavailable, the computation simply proceeds without it. However, this can
+mask issues as well. For example, this example will run perfectly fine with
+just one worker, or all four workers on the same node, which aren't what we
+want.
 
 Check the master log to see that the right number of workers registered::
 
@@ -1050,14 +1011,12 @@ Check the master log to see that the right number of workers registered::
 Despite the workers calling themselves 127.0.0.1, they really are running
 across the allocation. (The confusion happens because of our
 :code:`$SPARK_LOCAL_IP` setting above.) This can be verified by examining logs
-on each compute node. For example::
+on each compute node. For example (note single quotes)::
 
-  $ ssh 10.8.8.4
-  $ tail -3 /tmp/spark/log/*worker*.out
+  $ ssh 10.8.8.4 -- tail -3 '/tmp/spark/log/*worker*.out'
   17/02/24 22:52:24 INFO Worker: Connecting to master 10.8.8.3:7077...
   17/02/24 22:52:24 INFO TransportClientFactory: Successfully created connection to /10.8.8.3:7077 after 263 ms (216 ms spent in bootstraps)
   17/02/24 22:52:24 INFO Worker: Successfully registered with master spark://10.8.8.3:7077
-  $ exit
 
 We can now start an interactive shell to do some Spark computing::
 
@@ -1091,8 +1050,8 @@ omitted.)
 ::
 
   $ ch-run -b ~/sparkconf /var/tmp/spark -- \
-    /spark/bin/spark-submit --master $MASTER_URL \
-    /spark/examples/src/main/python/pi.py 1024
+           /spark/bin/spark-submit --master $MASTER_URL \
+           /spark/examples/src/main/python/pi.py 1024
   [...]
   Pi is roughly 3.141211
   [...]
@@ -1105,7 +1064,7 @@ Non-interactive Apache Spark
 ----------------------------
 
 We'll re-use much of the above to run the same computation non-interactively.
-For brevity, the Slurm script at :code:`examples/other/spark/slurm.h` is not
+For brevity, the Slurm script at :code:`examples/other/spark/slurm.sh` is not
 reproduced here.
 
 Submit it as follows. It requires three arguments: the tarball, the image
@@ -1114,7 +1073,7 @@ your site administrators for the latter.
 
 ::
 
-  $ sbatch -N4 slurm.sh spark.tar.gz /var/tmp eth1
+  $ sbatch -N4 slurm.sh spark.tar.gz /var/tmp ib0
   Submitted batch job 86754
 
 Output::

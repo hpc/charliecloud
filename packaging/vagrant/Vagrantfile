@@ -23,18 +23,15 @@
 #    examples, while the cost is low: a few tests are skipped. Users who want
 #    to run single-node MPI apps in the VM should launch from within ch-run.
 
-# Prerequisites.
-Vagrant.require_version ">= 2.1.0"
-["disksize", "proxyconf", "reload", "vbguest"].each do |p|
-  if not Vagrant.has_plugin?("vagrant-#{p}")
-    raise("plugin vagrant-#{p} is required")
-  end
-end
-
+Vagrant.require_version ">= 2.1.3"
 Vagrant.configure("2") do |c|
 
   c.vm.box = "centos/7"  # https://app.vagrantup.com/centos/boxes/7
   c.vm.hostname = "charliebox"
+  c.vagrant.plugins = ['vagrant-disksize',
+                       'vagrant-proxyconf',
+                       'vagrant-reload',
+                       'vagrant-vbguest']
 
   # Note: Vagrant sets up a port mapping from localhost:2222 to charliebox:22
   # automatically, so we need no repeat that here.
@@ -42,7 +39,7 @@ Vagrant.configure("2") do |c|
   # Set up proxies if appropriate.
   if ENV["HTTP_PROXY"] or ENV["HTTPS_PROXY"] or ENV["NO_PROXY"]
     if not (ENV["HTTP_PROXY"] and ENV["HTTPS_PROXY"] and ENV["NO_PROXY"])
-      raise("missing proxy variable(s)")
+      abort("missing proxy variable(s): HTTP_PROXY HTTPS_PROXY and/or NO_PROXY")
     end
     c.proxy.http = ENV["HTTP_PROXY"]
     c.proxy.https = ENV["HTTPS_PROXY"]

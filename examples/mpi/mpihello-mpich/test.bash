@@ -1,4 +1,4 @@
 setup () {
     scope full
-    IMG=$IMGDIR/mpihello-mpich
+    crayify_mpi_maybe "$ch_img"
 }

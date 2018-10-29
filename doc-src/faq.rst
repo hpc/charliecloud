@@ -236,6 +236,42 @@ of the default 1001:1001), i.e. :code:`--gid=5`. Then, step 4 succeeds because
 the call is mapped to :code:`chown("/dev/pts/0", 1000, 1001)` and MATLAB is
 happy.
 
+:code:`ch-docker2tar` gives incorrect image sizes
+-------------------------------------------------
+
+:code:`ch-docker2tar` often finishes before the progress bar is complete. For
+example::
+
+  $ ch-docker2tar mpihello /var/tmp
+   373MiB 0:00:21 [============================>                 ] 65%
+  146M /var/tmp/mpihello.tar.gz
+
+In this case, the :code:`.tar.gz` contains 392 MB uncompressed::
+
+  $ zcat /var/tmp/mpihello.tar.gz | wc
+  2740966 14631550 392145408
+
+But Docker thinks the image is 597 MB::
+
+  $ sudo docker image inspect mpihello | fgrep -i size
+          "Size": 596952928,
+          "VirtualSize": 596952928,
+
+We've also seen cases where the Docker-reported size is an *under*\ estimate::
+
+  $ ch-docker2tar spack /var/tmp
+   423MiB 0:00:22 [============================================>] 102%
+  162M /var/tmp/spack.tar.gz
+  $ zcat /var/tmp/spack.tar.gz | wc
+  4181186 20317858 444212736
+  $ sudo docker image inspect spack | fgrep -i size
+          "Size": 433812403,
+          "VirtualSize": 433812403,
+
+We think that this is because Docker is computing size based on the size of
+the layers rather than the unpacked image. We do not currently have a fix; see
+`issue #165 <https://github.com/hpc/charliecloud/issues/165>`_.
+
 
 How do I ...
 ============

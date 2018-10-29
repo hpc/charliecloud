@@ -1,7 +1,7 @@
 #!/bin/sh
 
-LIBEXEC="$(cd "$(dirname "$0")" && pwd)"
-. "${LIBEXEC}/base.sh"
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
@@ -16,51 +16,51 @@ EOF
 parse_basic_args "$@"
 
 if [ "$1" = --verbose ]; then
-    VERBOSE=v
+    verbose=yes
     shift
 fi
 if [ $# -lt 2 ]; then
     usage
 fi
-TARBALL="$1"
-NEWROOT="$2/$(basename "${TARBALL%.tar.gz}")"
+tarball=$1
+newroot=${2}/$(basename "${tarball%.tar.gz}")
 
-SENTINEL=WEIRD_AL_YANKOVIC
+sentinel=WEIRD_AL_YANKOVIC
 
 # Is the tarball a regular file (or symlink) and readable?
-if [ ! -f "$TARBALL" ] || [ ! -r "$TARBALL" ]; then
-    echo "can't read $TARBALL" 1>&2
+if [ ! -f "$tarball" ] || [ ! -r "$tarball" ]; then
+    echo "can't read ${tarball}" 1>&2
     exit 1
 fi
 
-if [ ! -d "$NEWROOT" ]; then
-    echo "creating new image $NEWROOT"
+if [ ! -d "$newroot" ]; then
+    echo "creating new image ${newroot}"
 else
-    if    [ -f "$NEWROOT/$SENTINEL" ] \
-       && [ -d "$NEWROOT/bin" ] \
-       && [ -d "$NEWROOT/lib" ] \
-       && [ -d "$NEWROOT/usr" ]; then
-        echo "replacing existing image $NEWROOT" 1>&2
-        rm -Rf --one-file-system "$NEWROOT"
+    if    [ -f "${newroot}/${sentinel}" ] \
+       && [ -d "${newroot}/bin" ] \
+       && [ -d "${newroot}/lib" ] \
+       && [ -d "${newroot}/usr" ]; then
+        echo "replacing existing image ${newroot}" 1>&2
+        rm -Rf --one-file-system "${newroot}"
     else
-        echo "$NEWROOT exists but does not appear to be an image" 1>&2
+        echo "${newroot} exists but does not appear to be an image" 1>&2
         exit 1
     fi
 fi
 
-mkdir "$NEWROOT"
-echo 'This directory is a Charliecloud container image.' > "$NEWROOT/$SENTINEL"
+mkdir "$newroot"
+echo 'This directory is a Charliecloud container image.' > "${newroot}/${sentinel}"
 # Use a pipe because PV ignores arguments if it's cat rather than PV.
-SIZE=$(stat -c%s "$TARBALL")
-  pv_ -s "$SIZE" < "$TARBALL" \
+size=$(stat -c%s "$tarball")
+  pv_ -s "$size" < "$tarball" \
 | gzip_ -dc \
-| tar x$VERBOSE -C "$NEWROOT" -f - \
+| tar x$verbose -C "$newroot" -f - \
       --anchored --exclude='dev/*' --exclude='./dev/*'
 # Make all directories writeable so we can delete image later (hello, Red Hat).
-find "$NEWROOT" -type d -a ! -perm /200 -exec chmod u+w {} +
+find "$newroot" -type d -a ! -perm /200 -exec chmod u+w {} +
 
 # Ensure directories that ch-run needs exist.
-mkdir -p "$NEWROOT/dev"
-for i in $(seq 0 9); do mkdir -p "$NEWROOT/mnt/$i"; done
+mkdir -p "${newroot}/dev"
+for i in $(seq 0 9); do mkdir -p "${newroot}/mnt/${i}"; done
 
-echo "$NEWROOT unpacked ok"
+echo "${newroot} unpacked ok"

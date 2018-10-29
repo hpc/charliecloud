@@ -3,28 +3,28 @@
 set -e
 cd "$(dirname "$0")"
 
-CHBASE=$(dirname "$0")/../..
-CHBIN=$CHBASE/bin
-OUTDIR=/tmp
-OUTTAG=$(date -u +'%Y%m%dT%H%M%SZ')
-IMB=/usr/local/src/imb/src/IMB-MPI1
+chbase=$(dirname "$0")/../..
+chbin=${chbase}/bin
+outdir=/tmp
+outtag=$(date -u +'%Y%m%dT%H%M%SZ')
+imb=/usr/local/src/imb/src/IMB-MPI1
 
-if [[ $1 == build ]]; then
+if [[ "$1" == build ]]; then
     shift
-    "$CHBIN/ch-build" -t "$USER/mpibench" "$CHBASE"
-    "$CHBIN/ch-docker2tar" "$USER/mpibench" /tmp
-    "$CHBIN/ch-tar2dir" "/tmp/$USER.mpibench.tar.gz" /tmp/mpibench
+    "${chbin}/ch-build" -t "${USER}/mpibench" "$chbase"
+    "${chbin}/ch-docker2tar" "${USER}/mpibench" /tmp
+    "${chbin}/ch-tar2dir" "/tmp/${USER}.mpibench.tar.gz" /tmp/mpibench
 fi
 
 if [[ -n "$1" ]]; then
 
     echo "testing on host"
-    time mpirun -n "$1" "$IMB" \
-         > "$OUTDIR/mpibench.host.$OUTTAG.txt"
+    time mpirun -n "$1" "$imb" \
+         > "${outdir}/mpibench.host.${outtag}.txt"
 
     echo "testing in container"
-    time mpirun -n "$1" "$CHBIN/ch-run" /tmp/mpibench -- "$IMB" \
-         > "$OUTDIR/mpibench.guest.$OUTTAG.txt"
+    time mpirun -n "$1" "${chbin}/ch-run" /tmp/mpibench -- "$imb" \
+         > "${outdir}/mpibench.guest.${outtag}.txt"
 
-    echo "done; output in $OUTDIR"
+    echo "done; output in ${outdir}"
 fi

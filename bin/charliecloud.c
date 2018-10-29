@@ -3,7 +3,9 @@
 #define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <libgen.h>
+#include <pwd.h>
 #include <sched.h>
 #include <semaphore.h>
 #include <stdio.h>
@@ -46,14 +48,19 @@
 const char *VERBOSE_LEVELS[] = { "error", "warning", "info", "debug" };
 
 /* Default bind-mounts. */
-const char *DEFAULT_BINDS[] = { "/dev",
-                                "/etc/passwd",
-                                "/etc/group",
-                                "/etc/hosts",
-                                "/etc/resolv.conf",
-                                "/proc",
-                                "/sys",
-                                NULL };
+struct bind BINDS_REQUIRED[] = {
+   { "/dev",             "/dev" },
+   { "/etc/hosts",       "/etc/hosts" },
+   { "/etc/resolv.conf", "/etc/resolv.conf" },
+   { "/proc",            "/proc" },
+   { "/sys",             "/sys" },
+   { NULL, NULL }
+};
+struct bind BINDS_OPTIONAL[] = {
+   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool" },
+   { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs" },
+   { NULL, NULL }
+};
 
 
 /** External variables **/
@@ -79,17 +86,63 @@ struct {
 
 /** Function prototypes **/
 
+void bind_mount(char *src, char *dst, char *newroot,
+                enum bind_dep dep, unsigned long flags);
+void bind_mounts(struct bind *binds, char *newroot,
+                 enum bind_dep dep, unsigned long flags);
+char *cat(char *a, char *b);
 void enter_udss(struct container *c);
 void join_begin(int join_ct, char *join_tag);
 void join_namespace(pid_t pid, char *ns);
 void join_namespaces();
 void join_end();
 void log_ids(const char *func, int line);
+bool path_exists(char *path);
+void path_split(char *path, char **dir, char **base);
 void sem_timedwait_relative(sem_t *sem, int timeout);
 void setup_namespaces(struct container *c);
+void setup_passwd(struct container *c);
+void tmpfs_mount(char *dst, char *newroot, char *data);
 
 
 /** Functions **/
+
+/* Bind-mount the given path into the container image. */
+void bind_mount(char *src, char *dst, char *newroot,
+                enum bind_dep dep, unsigned long flags)
+{
+   char *dst_full = cat(newroot, dst);
+
+   if (!path_exists(src)) {
+      Te (dep == BD_OPTIONAL, "can't bind: not found: %s", src);
+      return;
+   }
+
+   if (!path_exists(dst_full)) {
+      Te (dep == BD_OPTIONAL, "can't bind: not found: %s", dst_full);
+      return;
+   }
+
+   Zf (mount(src, dst_full, NULL, MS_REC|MS_BIND|flags, NULL),
+       "can't bind %s to %s", src, dst_full);
+}
+
+/* Bind-mount a null-terminated array of struct bind objects. */
+void bind_mounts(struct bind *binds, char * newroot,
+                 enum bind_dep dep, unsigned long flags)
+{
+   for (int i = 0; binds[i].src != NULL; i++)
+      bind_mount(binds[i].src, binds[i].dst, newroot, dep, flags);
+}
+
+/* Concatenate strings a and b, then return the result. */
+char *cat(char *a, char *b)
+{
+   char *ret;
+
+   T_ (1 <= asprintf(&ret, "%s%s", a, b));
+   return ret;
+}
 
 /* Set up new namespaces or join existing namespaces. */
 void containerize(struct container *c)
@@ -113,87 +166,68 @@ void containerize(struct container *c)
    in examples/syscalls/pivot_root.c. */
 void enter_udss(struct container *c)
 {
-   char *base;
-   char *dir;
-   char *oldpath;
-   char *path;
-   char bin[PATH_CHARS];
-   struct stat st;
+   char *newroot_parent, *newroot_base;
 
    LOG_IDS;
 
-   // Claim newroot for this namespace
-   Zf (mount(c->newroot, c->newroot, NULL, MS_REC|MS_BIND|MS_PRIVATE, NULL),
-       c->newroot);
-   // Bind-mount default files and directories at the same host and guest path
-   for (int i = 0; DEFAULT_BINDS[i] != NULL; i++) {
-      T_ (1 <= asprintf(&path, "%s%s", c->newroot, DEFAULT_BINDS[i]));
-      Zf (mount(DEFAULT_BINDS[i], path, NULL, MS_REC|MS_BIND|MS_RDONLY, NULL),
-          "can't bind %s to %s", (char *) DEFAULT_BINDS[i], path);
-   }
-   // Container /tmp
-   T_ (1 <= asprintf(&path, "%s%s", c->newroot, "/tmp"));
+   path_split(c->newroot, &newroot_parent, &newroot_base);
+
+   // Claim new root for this namespace. We do need both calls to avoid
+   // pivot_root(2) failing with EBUSY later.
+   bind_mount(c->newroot, c->newroot, "", BD_REQUIRED, MS_PRIVATE);
+   bind_mount(newroot_parent, newroot_parent, "", BD_REQUIRED, MS_PRIVATE);
+   // Bind-mount default files and directories.
+   bind_mounts(BINDS_REQUIRED, c->newroot, BD_REQUIRED, MS_RDONLY);
+   bind_mounts(BINDS_OPTIONAL, c->newroot, BD_OPTIONAL, MS_RDONLY);
+   // /etc/passwd and /etc/group.
+   setup_passwd(c);
+   // Container /tmp.
    if (c->private_tmp) {
-      Zf (mount(NULL, path, "tmpfs", 0, 0), "can't mount tmpfs at %s", path);
+      tmpfs_mount("/tmp", c->newroot, NULL);
    } else {
-      Zf (mount("/tmp", path, NULL, MS_REC|MS_BIND, NULL),
-          "can't bind /tmp to %s", path);
+      bind_mount("/tmp", "/tmp", c->newroot, BD_REQUIRED, 0);
    }
+   // Container /home.
    if (!c->private_home) {
+      char *oldhome, *newhome;
       // Mount tmpfs on guest /home because guest root is read-only
-      T_ (1 <= asprintf(&path, "%s/home", c->newroot));
-      Zf (mount(NULL, path, "tmpfs", 0, "size=4m"),
-          "can't mount tmpfs at %s", path);
+      tmpfs_mount("/home", c->newroot, "size=4m");
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
-      oldpath = getenv("HOME");
-      Tf (oldpath != NULL, "cannot find home directory: $HOME not set");
-      T_ (1 <= asprintf(&path, "%s/home/%s", c->newroot, getenv("USER")));
-      Z_ (mkdir(path, 0755));
-      Zf (mount(oldpath, path, NULL, MS_REC|MS_BIND, NULL),
-          "can't bind %s to %s", oldpath, path);
+      oldhome = getenv("HOME");
+      Tf (oldhome != NULL, "cannot find home directory: $HOME not set");
+      newhome = cat("/home/", getenv("USER"));
+      Z_ (mkdir(cat(c->newroot, newhome), 0755));
+      bind_mount(oldhome, newhome, c->newroot, BD_REQUIRED, 0);
    }
    // Bind-mount /usr/bin/ch-ssh if it exists.
-   T_ (1 <= asprintf(&path, "%s/usr/bin/ch-ssh", c->newroot));
-   if (stat(path, &st)) {
-      T_ (errno == ENOENT);
-   } else {
-      T_ (-1 != readlink("/proc/self/exe", bin, PATH_CHARS));
-      bin[PATH_CHARS-1] = 0;  // guarantee string termination
-      dir = dirname(bin);
-      T_ (1 <= asprintf(&oldpath, "%s/ch-ssh", dir));
-      Zf (mount(oldpath, path, NULL, MS_BIND, NULL),
-          "can't bind %s to %s", oldpath, path);
+   if (path_exists(cat(c->newroot, "/usr/bin/ch-ssh"))) {
+      char chrun_file[PATH_CHARS];
+      T_ (-1 != readlink("/proc/self/exe", chrun_file, PATH_CHARS));
+      chrun_file[PATH_CHARS-1] = 0;  // guarantee string termination
+      bind_mount(cat(dirname(chrun_file), "/ch-ssh"), "/usr/bin/ch-ssh",
+                 c->newroot, BD_REQUIRED, 0);
    }
    // Bind-mount user-specified directories at guest DST and|or /mnt/i,
    // which must exist.
-   for (int i = 0; c->binds[i].src != NULL; i++) {
-      T_ (1 <= asprintf(&path, "%s%s", c->newroot, c->binds[i].dst));
-      Zf (mount(c->binds[i].src, path, NULL, MS_REC|MS_BIND, NULL),
-          "can't bind %s to %s", c->binds[i].src, path);
-   }
+   bind_mounts(c->binds, c->newroot, BD_REQUIRED, 0);
 
-   // Overmount / to avoid EINVAL if it's a rootfs
-   T_ (path = strdup(c->newroot));
-   dir = dirname(path);
-   T_ (path = strdup(c->newroot));
-   base = basename(path);
-   Z_ (mount(dir, dir, NULL, MS_REC|MS_BIND|MS_PRIVATE, NULL));
-   Z_ (chdir(dir));
-   Z_ (mount(dir, "/", NULL, MS_MOVE, NULL));
+   // Overmount / to avoid EINVAL if it's a rootfs.
+   Z_ (chdir(newroot_parent));
+   Z_ (mount(newroot_parent, "/", NULL, MS_MOVE, NULL));
    Z_ (chroot("."));
-   T_ (1 <= asprintf(&c->newroot, "/%s", base));
+   c->newroot = cat("/", newroot_base);
 
+   // Re-mount new root read-only unless --write or already read-only.
    if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {
-      // Re-mount image read-only
       Zf (mount(NULL, c->newroot, NULL, MS_REMOUNT|MS_BIND|MS_RDONLY, NULL),
           "can't re-mount image read-only (is it on NFS?)");
    }
    // Pivot into the new root. Use /dev because it's available even in
    // extremely minimal images.
-   T_ (1 <= asprintf(&path, "%s/dev", c->newroot));
    Zf (chdir(c->newroot), "can't chdir into new root");
-   Zf (syscall(SYS_pivot_root, c->newroot, path), "can't pivot_root(2)");
+   Zf (syscall(SYS_pivot_root, c->newroot, cat(c->newroot, "/dev")),
+       "can't pivot_root(2)");
    Zf (chroot("."), "can't chroot(2) into new root");
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
 }
@@ -203,8 +237,8 @@ void join_begin(int join_ct, char *join_tag)
 {
    int fd;
 
-   T_ (1 <= asprintf(&join.sem_name, "/ch-run_%s", join_tag));
-   T_ (1 <= asprintf(&join.shm_name, "/ch-run_%s", join_tag));
+   join.sem_name = cat("/ch-run_", join_tag);
+   join.shm_name = cat("/ch-run_", join_tag);
 
    // Serialize.
    join.sem = sem_open(join.sem_name, O_CREAT, 0600, 1);
@@ -353,6 +387,29 @@ void msg(int level, char *file, int line, int errno_, char *fmt, ...)
       exit(EXIT_FAILURE);
 }
 
+/* Return true if the given path exists, false otherwise. On error, exit. */
+bool path_exists(char *path)
+{
+   struct stat sb;
+
+   if (stat(path, &sb) == 0)
+      return true;
+
+   Tf (errno == ENOENT, "can't stat: %s", path);
+   return false;
+}
+
+/* Split path into dirname and basename. */
+void path_split(char *path, char **dir, char **base)
+{
+   char *path2;
+
+   T_ (path2 = strdup(path));
+   *dir = dirname(path2);
+   T_ (path2 = strdup(path));
+   *base = basename(path2);
+}
+
 /* Replace the current process with user command and arguments. */
 void run_user_command(char *argv[], char *initial_dir)
 {
@@ -425,6 +482,58 @@ void setup_namespaces(struct container *c)
    T_ (1 <= dprintf(fd, "%d %d 1\n", c->container_gid, egid));
    Z_ (close(fd));
    LOG_IDS;
+}
+
+/* Build /etc/passwd and /etc/group files and bind-mount them into newroot. We
+   do it this way so that we capture the relevant host username and group name
+   mappings regardless of where they come from. (We used to simply bind-mount
+   the host's /etc/passwd and /etc/group, but this fails for LDAP at least;
+   see issue #212.) After bind-mounting, we remove them on the host side;
+   they'll persist inside the container and then disappear completely when the
+   latter exits. */
+void setup_passwd(struct container *c)
+{
+   int fd;
+   char *path;
+   struct group *g;
+   struct passwd *p;
+
+   // /etc/passwd
+   T_ (path = strdup("/tmp/ch-run_passwd.XXXXXX"));
+   T_ (-1 != (fd = mkstemp(path)));
+   if (c->container_uid != 0)
+      T_ (1 <= dprintf(fd, "root:x:0:0:root:/root:/bin/sh\n"));
+   if (c->container_uid != 65534)
+      T_ (1 <= dprintf(fd, "nobody:x:65534:65534:nobody:/:/bin/false\n"));
+   T_ (p = getpwuid(c->container_uid));
+   T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
+                    p->pw_name, c->container_uid, c->container_gid,
+                    p->pw_gecos, getenv("USER")));
+   Z_ (close(fd));
+   bind_mount(path, "/etc/passwd", c->newroot, BD_REQUIRED, 0);
+   Z_ (unlink(path));
+
+   // /etc/group
+   T_ (path = strdup("/tmp/ch-run_group.XXXXXX"));
+   T_ (-1 != (fd = mkstemp(path)));
+   if (c->container_gid != 0)
+      T_ (1 <= dprintf(fd, "root:x:0:\n"));
+   if (c->container_gid != 65534)
+      T_ (1 <= dprintf(fd, "nogroup:x:65534:\n"));
+   T_ (g = getgrgid(c->container_gid));
+   T_ (1 <= dprintf(fd, "%s:x:%u:\n", g->gr_name, c->container_gid));
+   Z_ (close(fd));
+   bind_mount(path, "/etc/group", c->newroot, BD_REQUIRED, 0);
+   Z_ (unlink(path));
+}
+
+/* Mount a tmpfs at the given path. */
+void tmpfs_mount(char *dst, char *newroot, char *data)
+{
+   char *dst_full = cat(newroot, dst);
+
+   Zf (mount(NULL, dst_full, "tmpfs", 0, data),
+       "can't mount tmpfs at %s", dst_full);
 }
 
 /* Report the version number. */

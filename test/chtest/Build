@@ -16,15 +16,21 @@
 
 set -ex
 
-SRCDIR=$1
-TARBALL=$2
-TARBALL_UNCOMPRESSED=${TARBALL%.*}
-WORKDIR=$3
-MIRROR=http://dl-cdn.alpinelinux.org/alpine/v3.6
-APK_TOOLS=apk-tools-static-2.7.5-r0.apk
-IMG="$WORKDIR/img"
+srcdir=$1
+tarball=$2
+tarball_uncompressed=${tarball%.*}
+workdir=$3
+mirror=http://dl-cdn.alpinelinux.org/alpine/v3.8
+# Dynamically select apk-tools-static version. We would prefer to hard-code a
+# version (and upgrade on our schedule), but we can't because Alpine does not
+# keep old package versions. If we try, the build breaks every few months (for
+# example, see issue #242).
+apk_tools=$(  wget -qO - "${mirror}/main/x86_64" \
+            | grep -F apk-tools-static \
+            | sed -E 's/^.*(apk-tools-static-[0-9.r-]+\.apk).*$/\1/')
+img="${workdir}/img"
 
-cd $WORKDIR
+cd "$workdir"
 
 # "apk add" wants to install a bunch of files root:root. Thus, if we don't map
 # ourselves to root:root, we get thousands of errors about "Failed to set
@@ -32,12 +38,12 @@ cd $WORKDIR
 #
 # For most Build scripts, we'd simply error out with missing prerequisites,
 # but this is a core image that much of the test suite depends on.
-CH_RUN="ch-run -u0 -g0 -w --no-home $IMG"
+ch_run="ch-run -u0 -g0 -w --no-home ${img}"
 
 ## Bootstrap base Alpine Linux.
 
 # Download statically linked apk.
-wget $MIRROR/main/x86_64/$APK_TOOLS
+wget ${mirror}/main/x86_64/"${apk_tools}"
 
 # Bootstrap directories.
 mkdir img
@@ -45,15 +51,15 @@ mkdir img/{dev,etc,proc,sys,tmp}
 touch img/etc/{group,hosts,passwd,resolv.conf}
 
 # Bootstrap static apk.
-(cd img && tar xf ../$APK_TOOLS)
+(cd img && tar xf ../"${apk_tools}")
 mkdir img/etc/apk
-echo $MIRROR/main > img/etc/apk/repositories
+echo ${mirror}/main > img/etc/apk/repositories
 
 # Install the base system and a dynamically linked apk.
 #
 # This will give a few errors about chown failures. However, the install does
 # seem to work, so we ignore the failed exit code.
-$CH_RUN -- /sbin/apk.static \
+$ch_run -- /sbin/apk.static \
            --allow-untrusted --initdb --update-cache \
            add alpine-base apk-tools \
   || true
@@ -63,11 +69,11 @@ $CH_RUN -- /sbin/apk.static \
 rm img/sbin/apk.static.*
 
 # Install packages we need for our tests.
-$CH_RUN -- /sbin/apk add gcc make musl-dev python3 || true
+$ch_run -- /sbin/apk add gcc make musl-dev python3 || true
 
 # Validate the install.
-$CH_RUN -- /sbin/apk audit --system
-$CH_RUN -- /sbin/apk stats
+$ch_run -- /sbin/apk audit --system
+$ch_run -- /sbin/apk stats
 
 # Fix permissions.
 #
@@ -89,8 +95,8 @@ echo "tmpfs and host home are not overmounted" \
 touch img/usr/bin/ch-ssh
 
 # Test programs.
-cp -r $SRCDIR img/test
-$CH_RUN --cd /test -- make
+cp -r "$srcdir" img/test
+$ch_run --cd /test -- make
 
 # Fixtures for /dev cleaning.
 touch img/dev/foo
@@ -104,15 +110,15 @@ touch img/mnt/dev/foo
 # this script is part of the quick scope, which we'd like developers to use
 # frequently, so every second matters.
 if ( command -v pigz >/dev/null 2>&1 ); then
-    GZIP_CMD=pigz
+    gzip_cmd=pigz
 else
-    GZIP_CMD=gzip
+    gzip_cmd=gzip
 fi
 
 # "docker export" tarballs don't have a leading "./" in their filenames. Match
 # that, but also make sure the /dev cleaning fixtures make it in both ways.
 cd img
-tar cf $TARBALL_UNCOMPRESSED *
-tar rf $TARBALL_UNCOMPRESSED ./dev/foo ./mnt/dev/foo
-$GZIP_CMD -f $TARBALL_UNCOMPRESSED
-[[ -f $TARBALL ]]
+tar cf "$tarball_uncompressed" -- *
+tar rf "$tarball_uncompressed" ./dev/foo ./mnt/dev/foo
+$gzip_cmd -f "$tarball_uncompressed"
+[[ -f $tarball ]]
