@@ -327,7 +327,7 @@ void join_namespace(pid_t pid, char *ns)
 /* Join the existing namespaces created by the join winner. */
 void join_namespaces(pid_t pid)
 {
-   INFO("join_namespaces: Joining pid  %d", pid);
+   INFO("joining namespaces of pid %d", pid);
    join_namespace(pid, "user");
    join_namespace(pid, "mnt");
 }

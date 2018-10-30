@@ -65,16 +65,16 @@ enum bind_dep {
 
 struct container {
    struct bind *binds;
-   gid_t container_gid; // The container's gid
-   uid_t container_uid; // The container's uid
-   char *newroot;       // newroot
-   bool join;           // Is this a synchronous join?
-   int join_ct;         // Number of peers in a synchronous join
-   pid_t join_pid;      // The PID we wish to attach to
-   char *join_tag;      // The tag associated with a join
-   bool private_home;   // The home folder is private
-   bool private_tmp;    // The tmp folder is private
-   bool writable;       // The container has a writable file system
+   gid_t container_gid;
+   uid_t container_uid;
+   char *newroot;
+   bool join;           // is this a synchronized join?
+   int join_ct;         // number of peers in a synchronized join
+   pid_t join_pid;      // process in existing namespace to join
+   char *join_tag;      // identifier for synchronized join
+   bool private_home;
+   bool private_tmp;
+   bool writable;
 };
 
 
