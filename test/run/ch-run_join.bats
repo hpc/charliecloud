@@ -82,7 +82,7 @@ unset_vars () {
     # --join-ct
     run ch-run -v --join-ct=1 "$ch_timg" -- /test/printns
     joined_ok 1 1 1 "$status" "$output"
-    r='join: 1 1 [0-9]+ '   # status from getppid(2) is all digits
+    r='join: 1 1 [0-9]+ 0'   # status from getppid(2) is all digits
     [[ $output =~ $r ]]
     [[ $output = *'join: peer group size from command line'* ]]
     ipc_clean_p
@@ -102,12 +102,12 @@ unset_vars () {
     # join tag
     run ch-run -v --join-ct=1 --join-tag=foo "$ch_timg" -- /test/printns
     joined_ok 1 1 1 "$status" "$output"
-    [[ $output = *'join: 1 1 foo'* ]]
+    [[ $output = *'join: 1 1 foo 0'* ]]
     [[ $output = *'join: peer group tag from command line'* ]]
     ipc_clean_p
     SLURM_STEP_ID=bar run ch-run -v --join-ct=1 "$ch_timg" -- /test/printns
     joined_ok 1 1 1 "$status" "$output"
-    [[ $output = *'join: 1 1 bar'* ]]
+    [[ $output = *'join: 1 1 bar 0'* ]]
     [[ $output = *'join: peer group tag from SLURM_STEP_ID'* ]]
     ipc_clean_p
 }
@@ -138,9 +138,9 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 0 ]]
     cat "${BATS_TMPDIR}/join.2.ns"
-      echo "$output" | grep -Fq 'join: 1 2'
-      echo "$output" | grep -Fq 'join: winner pid:'
-      echo "$output" | grep -Fq 'join: cleaning up IPC'
+    echo "$output" | grep -Fq 'join: 1 2'
+    echo "$output" | grep -Fq 'join: winner pid:'
+    echo "$output" | grep -Fq 'join: cleaning up IPC'
 
     # same namespaces?
     for i in /proc/self/ns/*; do
@@ -331,4 +331,108 @@ unset_vars () {
     [[ $status -eq 1 ]]
     [[ $output =~ 'join: peer group tag cannot be empty string' ]]
     ipc_clean_p
+}
+
+@test 'ch-run --join-pid: without prior --join' {
+    unset_vars
+    ipc_clean_p
+    rm -f "$BATS_TMPDIR"/join.?.*
+
+    # First ch-run creates the namespaces with no joining at all.
+    # Funky sleep time is to make the printns process unique for pgrep.
+    ch-run -v "$ch_timg" -- \
+           /test/printns 5.001 "${BATS_TMPDIR}/join.1.ns" \
+           >& "${BATS_TMPDIR}/join.1.err" &
+    sleep 1
+    cat "${BATS_TMPDIR}/join.1.err"
+    cat "${BATS_TMPDIR}/join.1.ns"
+    grep -Fq "join: 0 0 (null) 0" "${BATS_TMPDIR}/join.1.err"
+
+    # PID of ch-run/printns above.
+    pid=$(pgrep -f "printns 5.001")
+
+    # Second ch-run joins the first's namespaces.
+    run ch-run -v --join-pid="$pid" "$ch_timg" -- \
+               /test/printns 0 "${BATS_TMPDIR}/join.2.ns"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat "${BATS_TMPDIR}/join.2.ns"
+      echo "$output" | grep -Fq "join: 0 0 (null) ${pid}"
+
+    # Same namespaces?
+    for i in /proc/self/ns/*; do
+        [[ 1 = $(  cat "$BATS_TMPDIR"/join.?.ns \
+                 | grep -E "^${i}:" | uniq | wc -l) ]]
+    done
+
+    ipc_clean_p
+}
+
+@test 'ch-run --join-pid: with prior --join' {
+    unset_vars
+    ipc_clean_p
+    rm -f "$BATS_TMPDIR"/join.?.*
+
+    # First of two peers (winner).
+    # Funky sleep time as above.
+    ch-run -v --join-ct=2 --join-tag=bar "$ch_timg" -- \
+           /test/printns 5.002 "${BATS_TMPDIR}/join.1.ns" \
+           >& "${BATS_TMPDIR}/join.1.err" &
+    sleep 1
+    cat "${BATS_TMPDIR}/join.1.err"
+    cat "${BATS_TMPDIR}/join.1.ns"
+      grep -Fq 'join: 1 2' "${BATS_TMPDIR}/join.1.err"
+      grep -Fq 'join: I won' "${BATS_TMPDIR}/join.1.err"
+    ! grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.1.err"
+
+    # PID of first peer.
+    pid=$(pgrep -f "printns 5.002")
+
+    # Second of two peers (loser).
+    ch-run -v --join-ct=2 --join-tag=bar "${ch_timg}" -- \
+           /test/printns 5.003 "${BATS_TMPDIR}/join.2.ns" \
+           >& "${BATS_TMPDIR}/join.2.err" &
+    sleep 1
+    cat "${BATS_TMPDIR}/join.2.err"
+    cat "${BATS_TMPDIR}/join.2.ns"
+      grep -Fq 'join: 1 2' "${BATS_TMPDIR}/join.2.err"
+      grep -Fq "join: winner pid: ${pid}" "${BATS_TMPDIR}/join.2.err"
+      grep -Fq 'join: 0 peers left' "${BATS_TMPDIR}/join.2.err"
+      grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.2.err"
+
+    # Third ch-run joins existing namespaces.
+    run ch-run -v --join-pid="$pid" "$ch_timg" -- \
+               /test/printns 0 "${BATS_TMPDIR}/join.3.ns"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat "${BATS_TMPDIR}/join.3.ns"
+      ( echo "$output" | grep -Fq "join: 0 0 (null) ${pid}" )
+    ! ( echo "$output" | grep -Fq 'join: I won' )
+    ! ( echo "$output" | grep -Fq "join: winner pid: ${pid}" )
+    ! ( echo "$output" | grep  -q 'join: .+ peers left' )
+    ! ( echo "$output" | grep -Fq 'join: cleaning up IPC' )
+
+    # Same namespaces?
+    for i in /proc/self/ns/*; do
+        [[ 1 = $(  cat "$BATS_TMPDIR"/join.?.ns \
+                 | grep -E "^${i}:" | uniq | wc -l) ]]
+    done
+
+    ipc_clean_p
+}
+
+@test 'ch-run --join-pid: errors' {
+
+    # Can't join namespaces of processes we don't own.
+    run ch-run -v --join-pid=1 "$ch_timg" -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"join: can't open /proc/1/ns/user: Permission denied"* ]]
+
+    # Can't join namespaces of processes that don't exist.
+    pid=2147483647
+    run ch-run -v --join-pid="$pid" "$ch_timg" -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"join: no PID ${pid}: /proc/${pid}/ns/user not found"* ]]
 }

@@ -68,9 +68,10 @@ struct container {
    gid_t container_gid;
    uid_t container_uid;
    char *newroot;
-   bool join;
-   int join_ct;
-   char *join_tag;
+   bool join;           // is this a synchronized join?
+   int join_ct;         // number of peers in a synchronized join
+   pid_t join_pid;      // process in existing namespace to join
+   char *join_tag;      // identifier for synchronized join
    bool private_home;
    bool private_tmp;
    bool writable;
