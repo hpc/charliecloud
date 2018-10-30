@@ -339,6 +339,7 @@ unset_vars () {
     rm -f "$BATS_TMPDIR"/join.?.*
 
     # first peer
+    # sleep 31.415 seconds so that the printns call will unique when we pgrep
     ch-run -v "$ch_timg" -- \
            /test/printns 31.145 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
@@ -346,7 +347,7 @@ unset_vars () {
     cat "${BATS_TMPDIR}/join.1.err"
     cat "${BATS_TMPDIR}/join.1.ns"
     grep -Fq "join: 0 0 (null) 0" "${BATS_TMPDIR}/join.1.err"
-
+    
     pid=$(pgrep -f "printns 31.145")
 
     # second peer 
@@ -372,6 +373,7 @@ unset_vars () {
     rm -f "$BATS_TMPDIR"/join.?.*
 
     # first peer
+        # sleep 31.415 seconds so that the printns call will unique when we pgrep
     ch-run -v "$ch_timg" -- \
            /test/printns 31.145 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
@@ -379,7 +381,7 @@ unset_vars () {
     cat "${BATS_TMPDIR}/join.1.err"
     cat "${BATS_TMPDIR}/join.1.ns"
     grep -Fq "join:" "${BATS_TMPDIR}/join.1.err"
-
+    
     pid=$(pgrep -f "printns 31.145")
 
     # second peer 
