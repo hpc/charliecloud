@@ -161,7 +161,8 @@ else
 fi
 
 # Separate directories for tarballs and images
-ch_imgdir=$CH_TEST_IMGDIR
+# This Ensures that the bind-error test works correctly see #143
+ch_imgdir=$(cd -P $CH_TEST_IMGDIR; cd .; cd -)
 ch_tardir=$CH_TEST_TARDIR
 
 # Some test variables
