@@ -49,10 +49,11 @@ FROM debian9
 #   2. --disable-pty-support to avoid "pipe function call failed when
 #      setting up I/O forwarding subsystem".
 #
-#   3. --with-slurm=no so mpirun in the container doesn't try use Slurm to
-#      launch processes, which will fail in inscrutable ways e.g. if srun is
-#      not found. (If you do want Slurm launching processes, use srun or
-#      mpirun outside the container.)
+#   3. --enable-mca-no-build=plm-slurm to support launching processes using
+#      the host's srun (i.e., the container OpenMPI needs to talk to the host
+#      Slurm's PMI) but prevent OpenMPI from invoking srun itself from within
+#      the container, where srun is not installed (the error messages from
+#      this are inscrutable).
 #
 # [1]: https://github.com/open-mpi/ompi/blob/master/README
 
@@ -85,12 +86,13 @@ WORKDIR /usr/local/src
 #
 # Note that libpsm2 is x86_64 only:
 # https://lists.debian.org/debian-hpc/2017/12/msg00015.html
-ENV DEB_URL http://snapshot.debian.org/archive/debian/20180928T210119Z/pool/main
-ENV PSM2_VERSION 10.3.58-2
+ENV DEB_URL http://snapshot.debian.org/archive/debian/20181030T084657Z/pool/main
+ENV PSM2_VERSION 11.2.68-1
 RUN wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb
 RUN wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-dev_${PSM2_VERSION}_amd64.deb
 ENV IBVERBS_VERSION 20.0-1
-RUN for i in ibacm \
+RUN set -e; \
+    for i in ibacm \
              ibverbs-providers \
              ibverbs-utils \
              libibumad-dev \
@@ -116,8 +118,8 @@ RUN    cd ucx \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 
 # OpenMPI.
-ENV MPI_URL https://www.open-mpi.org/software/ompi/v2.1/downloads
-ENV MPI_VERSION 2.1.5
+ENV MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
+ENV MPI_VERSION 3.1.3
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
 RUN tar xf openmpi-${MPI_VERSION}.tar.gz
 RUN    cd openmpi-${MPI_VERSION} \
@@ -132,7 +134,7 @@ RUN    cd openmpi-${MPI_VERSION} \
                    --with-ucx \
                    --disable-pty-support \
                    --enable-mca-no-build=btl-openib \
-                   --with-slurm=no \
+                   --enable-mca-no-build=plm-slurm \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN ldconfig
 RUN rm -Rf openmpi-${MPI_VERSION}*
