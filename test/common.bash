@@ -162,7 +162,7 @@ fi
 
 # Separate directories for tarballs and images
 # We use readlink because 
-ch_imgdir=$(readlink -f $CH_TEST_IMGDIR)
+ch_imgdir=$(readlink -f "$CH_TEST_IMGDIR")
 ch_tardir=$CH_TEST_TARDIR
 
 # Some test variables
