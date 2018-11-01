@@ -160,9 +160,15 @@ else
     ch_cray=
 fi
 
-# Separate directories for tarballs and images
-ch_imgdir=$CH_TEST_IMGDIR
-ch_tardir=$CH_TEST_TARDIR
+# Separate directories for tarballs and images.
+#
+# Canonicalize both so the have consistent paths and we can reliably use them
+# in tests (see issue #143). We use readlink(1) rather than realpath(2),
+# despite the admonition in the man page, because it's more portable [1].
+#
+# [1]: https://unix.stackexchange.com/a/136527
+ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
+ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
 
 # Some test variables
 ch_tag=$(basename "$BATS_TEST_DIRNAME")
