@@ -1,5 +1,5 @@
-Charliecloud command reference
-******************************
+Command reference
+*****************
 
 This section is a comprehensive description of the usage and arguments of the
 Charliecloud commands. Its content is identical to the commands' man pages.
