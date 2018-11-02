@@ -18,3 +18,4 @@ Overview
    command-usage
    vm
    faq
+   dev
