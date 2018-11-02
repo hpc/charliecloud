@@ -68,8 +68,10 @@ Issues, pull requests, and milestones
 * We use milestones to organize what is planned for, and what actually
   happened, in each version.
 
-* All but the most trivial changes should have an issue or a PR. The relevant
-  commit message should close the issue (but not PR) using the `GitHub syntax
+* All but the most trivial changes should have an issue or a `pull request
+  <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_ (PR).
+  The relevant commit message should close the issue (not PR) using the
+  `GitHub syntax
   <https://help.github.com/articles/closing-issues-using-keywords/>`_.
 
 * The standard workflow is:
@@ -103,9 +105,12 @@ Issues, pull requests, and milestones
   concerns, make separate issues and/or PRs. For example, PRs should not tidy
   unrelated code.
 
+* Best practice for non-trivial changes is to draft documentation and/or
+  tests, get feedback on that, and then implement.
+
 * If you are assigned an issue, that means you are actively working on it or
-  will do so in the near future. "I'll get to this eventually" should
-  not be assigned to you.
+  will do so in the near future. "I'll get to this later" should not be
+  assigned to you.
 
 * PR review:
 
@@ -123,6 +128,10 @@ Issues, pull requests, and milestones
   ready to go, without the project lead needing to consult both the list of
   PRs and their own list of review requests, and also to provide a way to
   request reviews from the project lead without also requesting merge.
+
+  Comments should all be packaged up into a single review; click *Start a
+  review* rather than *Add single comment*. Then the PR author gets only a
+  single notification instead of one for every comment you make.
 
 * Closing issues: We close issues when we've taken the requested action,
   decided not to take action, resolved the question, or actively determined an
@@ -145,11 +154,13 @@ What kind of issue is it?
 
 :code:`bug`
   Problem of some kind that needs to be fixed; i.e., something doesn't work.
-  This includes usability and documentation problems.
+  This includes usability and documentation problems. Should have steps to
+  reproduce with expected and actual behavior.
 
 :code:`enhancement`
   Things work, but it would be better if something was different. For example,
-  a new feature proposal or refactoring.
+  a new feature proposal or refactoring. Should have steps to reproduce with
+  desired and actual behavior.
 
 :code:`help wanted`
   The core team does not plan to address this issue, perhaps because we don't
@@ -168,11 +179,10 @@ What do we plan to do about it?
 For all of these, leave other tags in place, e.g. :code:`bug`.
 
 :code:`deferred`
-  We do not plan to do this, or accept PRs for it, but it's not completely
-  rejected. These issues stay open, because we do not consider the deferred
-  state resolved. If you do want to submit a PR, we welcome argument to remove
-  the tag; a successful argument is almost certainly a pre-requisite for an
-  accepted PR.
+  No plans to do this, but not rejected. These issues stay open, because we do
+  not consider the deferred state resolved. Submitting PRs on these issues is
+  risky; you probably want to argue successfully that it should be done before
+  starting work on it.
 
 :code:`duplicate`
   Same as some other previously reported issue. In addition to this tag,
@@ -206,9 +216,9 @@ Testing
 
 PRs will not be merged until they pass the tests.
 
-* Tests should pass on our development box in both standard and full scope.
-  (Note that some of the examples take quite a long time to build; the Docker
-  cache is your friend.)
+* Tests should pass on your development box as well as all relevant clusters,
+  in full scope. (Note that some of the examples take quite a long time to
+  build; the Docker cache is your friend.)
 
 * All the Travis tests should pass. If you're iterating trying to make Travis
   happy, consider interactive rebase, amending commits, or a throwaway branch.
@@ -278,7 +288,7 @@ Publishing to the web
 If you have write access to the repository, you can update the web
 documentation (i.e., http://hpc.github.io/charliecloud).
 
-Normally, :code:`doc` is normal directory ignored by Git. To publish to the
+Normally, :code:`doc` is a normal directory ignored by Git. To publish to the
 web, that diretory needs to contain a Git checkout of the :code:`gh-pages`
 branch (not a submodule). To set that up::
 
@@ -298,8 +308,8 @@ Coding style
 ============
 
 We haven't written down a comprehensive style guide. Generally, follow the
-style of the surrounding code, think in rectangles rather than lines, and
-avoid CamelCase.
+style of the surrounding code, think in rectangles rather than lines of code
+or text, and avoid CamelCase.
 
 Note that Reid is very picky about style, so don’t feel singled out if he
 complains (or even updates this section based on your patch!). He tries to be
@@ -324,6 +334,9 @@ Writing English
 * Use sentence case for titles, not title case.
 
 * If it's not a sentence, start with a lower-case character.
+
+* Use spell check. Keep your personal dictionary updated so your editor is not
+  filled with false positives.
 
 
 :code:`curl` vs. :code:`wget`
@@ -351,19 +364,25 @@ Variable conventions in shell scripts and :code:`.bats` files
 * Variables local to a given file: lower case, no prefix.
 
 * Bats: set in :code:`common.bash` and then used in :code:`.bats` files: lower
-  case, :code:`cht_` prefix.
+  case, :code:`ch_` prefix.
 
 * Surround lower-case variables expanded in strings with curly braces, unless
-  they're the only thing in the string. E.g.::
+  they're the only thing in the string. E.g.:
 
-    "${foo}/bar"
-    "$foo"
+  .. code-block:: none
 
-* Quote the entire string instead of just the variable when practical::
+    "${foo}/bar"  # yes
+    "$foo"        # yes
+    "$foo/bar"    # no
+    "${foo}"      # no
+
+* Quote the entire string instead of just the variable when practical:
+
+  .. code-block:: none
 
     "${foo}/bar"  # yes
     "${foo}"/bar  # no
-    "$foo"/bar"   # no
+    "$foo"/bar    # no
 
 
 ..  LocalWords:  milestoned gh nv cht Chacon's scottchacon
