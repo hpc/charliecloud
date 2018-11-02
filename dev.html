@@ -1,0 +1,609 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>7. Contributor’s guide &mdash; Charliecloud 0.9.4 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="6. Frequently asked questions (FAQ)" href="faq.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Charliecloud
+          
+
+          
+            
+            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                25b5fd4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="test.html">2. Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">3. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command-usage.html">4. Charliecloud command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vm.html">5. Pre-installed virtual machine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">6. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">7. Contributor’s guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#workflow">7.1. Workflow</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#branching-model">7.1.1. Branching model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#issues-pull-requests-and-milestones">7.1.2. Issues, pull requests, and milestones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#github-issue-and-pr-tags">7.1.3. GitHub issue and PR tags</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#what-kind-of-issue-is-it">7.1.3.1. What kind of issue is it?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#what-do-we-plan-to-do-about-it">7.1.3.2. What do we plan to do about it?</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#testing">7.1.4. Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">7.2. Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-build-the-documentation">7.2.1. How to build the documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#prerequisites">7.2.1.1. Prerequisites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#to-build-the-html">7.2.1.2. To build the HTML</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#publishing-to-the-web">7.2.1.3. Publishing to the web</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#coding-style">7.3. Coding style</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#writing-english">7.3.1. Writing English</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#curl-vs-wget">7.3.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">7.3.3. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Charliecloud</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>7. Contributor’s guide</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="contributor-s-guide">
+<h1>7. Contributor’s guide<a class="headerlink" href="#contributor-s-guide" title="Permalink to this headline">¶</a></h1>
+<p>This section is notes on contributing to Charliecloud development. Currently,
+it is messy and incomplete. Patches welcome!</p>
+<p>It documents public stuff only. If you are on the core team at LANL, also
+consult the internal documentation and other resources.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#workflow" id="id3">Workflow</a><ul>
+<li><a class="reference internal" href="#branching-model" id="id4">Branching model</a></li>
+<li><a class="reference internal" href="#issues-pull-requests-and-milestones" id="id5">Issues, pull requests, and milestones</a></li>
+<li><a class="reference internal" href="#github-issue-and-pr-tags" id="id6">GitHub issue and PR tags</a></li>
+<li><a class="reference internal" href="#testing" id="id7">Testing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#documentation" id="id8">Documentation</a><ul>
+<li><a class="reference internal" href="#how-to-build-the-documentation" id="id9">How to build the documentation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#coding-style" id="id10">Coding style</a><ul>
+<li><a class="reference internal" href="#writing-english" id="id11">Writing English</a></li>
+<li><a class="reference internal" href="#curl-vs-wget" id="id12"><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
+<li><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id13">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">We’re interested in and will consider all good-faith contributions. While
+it does make things easier and faster if you follow the guidelines here,
+they are not required. We’ll either clean it up for you or walk you through
+any necessary changes.</p>
+</div>
+<div class="section" id="workflow">
+<h2><a class="toc-backref" href="#id3">7.1. Workflow</a><a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="branching-model">
+<h3><a class="toc-backref" href="#id4">7.1.1. Branching model</a><a class="headerlink" href="#branching-model" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>We try to keep the branching model simple. Right now, we’re pretty similar
+to Scott Chacon’s “<a class="reference external" href="http://scottchacon.com/2011/08/31/github-flow.html">GitHub Flow</a>”: Master is stable;
+work on short-lived topic branches; use pull requests to ask for merging.</li>
+<li>Tagged versions currently get more testing. We are working to improve
+testing for normal commits on the master, but full parity is probably
+unlikely.</li>
+<li>Don’t work directly on master. Even the project lead doesn’t do this. While
+it may appear that some trivial fixes are being committed to the master
+directly, what’s really happening is that these are prototyped on a branch
+and then fast-forward merged after Travis passes.</li>
+<li>Keep history tidy. While it’s often difficult to avoid a branch history with
+commits called “try 2” and “fix Travis”, clean it up before submitting a PR.
+Interactive rebase is your friend.</li>
+<li>Feature branches should generally be rebased, rather than merged into, in
+order to track master. PRs with conflicts will generally not be merged.</li>
+<li>Feature branches are merged with either a merge commit or squash and rebase,
+which squashes all the branch’s commits into one and then rebases that
+commit onto master’s HEAD (called “squash and merge” by GitHub). This can be
+done either on the command line or in the GitHub web interface.<ul>
+<li>Merge commit message example:
+<code class="code docutils literal notranslate"><span class="pre">merge</span> <span class="pre">PR</span> <span class="pre">#268</span> <span class="pre">from</span> <span class="pre">&#64;j-ogas:</span> <span class="pre">remove</span> <span class="pre">ch-docker-run</span> <span class="pre">(closes</span> <span class="pre">#258)</span></code></li>
+<li>Squash and rebase commit message example:
+<code class="code docutils literal notranslate"><span class="pre">PR</span> <span class="pre">#270</span> <span class="pre">from</span> <span class="pre">me:</span> <span class="pre">document</span> <span class="pre">locations</span> <span class="pre">of</span> <span class="pre">.bats</span> <span class="pre">files</span></code></li>
+</ul>
+</li>
+<li>Feature branches in the main repo are deleted by the project lead after
+merging.</li>
+<li>Remove obsolete remote branches from your repo with <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">fetch</span> <span class="pre">--prune</span>
+<span class="pre">--all</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="issues-pull-requests-and-milestones">
+<h3><a class="toc-backref" href="#id5">7.1.2. Issues, pull requests, and milestones</a><a class="headerlink" href="#issues-pull-requests-and-milestones" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">We use milestones to organize what is planned for, and what actually
+happened, in each version.</p>
+</li>
+<li><p class="first">All but the most trivial changes should have an issue or a <a class="reference external" href="https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project">pull request</a> (PR).
+The relevant commit message should close the issue (not PR) using the
+<a class="reference external" href="https://help.github.com/articles/closing-issues-using-keywords/">GitHub syntax</a>.</p>
+</li>
+<li><p class="first">The standard workflow is:</p>
+<ol class="arabic simple">
+<li>Propose a change in an issue.</li>
+<li>Tag the issue with its kind (bug, enhancement, question).</li>
+<li>Get consensus on what to do and how to do it, with key information
+recorded in the issue.</li>
+<li>Assign the issue to a milestone.</li>
+<li>Submit a PR that refers to the issue.</li>
+<li>Review/iterate.</li>
+<li>Project lead merges. No one other than the project lead should be
+merging to or committing on master.</li>
+</ol>
+<p>Don’t tag or milestone the PR in this case, so that the change is only
+listed once in the various views.</p>
+</li>
+<li><p class="first">Bare PRs with no corresponding issue are also considered but should have
+reached consensus using other means, which should be stated in the PR. Tag
+and milestone the PR.</p>
+</li>
+<li><p class="first">We acknowledge submitted issues by tagging them.</p>
+</li>
+<li><p class="first">Issues and PRs should address a single concern. If there are multiple
+concerns, make separate issues and/or PRs. For example, PRs should not tidy
+unrelated code.</p>
+</li>
+<li><p class="first">Best practice for non-trivial changes is to draft documentation and/or
+tests, get feedback on that, and then implement.</p>
+</li>
+<li><p class="first">If you are assigned an issue, that means you are actively working on it or
+will do so in the near future. “I’ll get to this later” should not be
+assigned to you.</p>
+</li>
+<li><p class="first">PR review:</p>
+<ul class="simple">
+<li>If you think you’re done and it’s ready to merge: Tag the PR <code class="code docutils literal notranslate"><span class="pre">ready</span>
+<span class="pre">to</span> <span class="pre">merge</span></code>. Don’t request review from the project lead.</li>
+<li>If you think you’re done and want review from someone other than the
+project lead: Request review from that person using the GitHub web
+interface. Once the PR passes review, go to the previous item.</li>
+<li>If you’re not done but want feedback: Request review from the person you
+want to review, which can be the project lead.</li>
+</ul>
+<p>The purpose of this approach is to provide an easy way to see what PRs are
+ready to go, without the project lead needing to consult both the list of
+PRs and their own list of review requests, and also to provide a way to
+request reviews from the project lead without also requesting merge.</p>
+<p>Comments should all be packaged up into a single review; click <em>Start a
+review</em> rather than <em>Add single comment</em>. Then the PR author gets only a
+single notification instead of one for every comment you make.</p>
+</li>
+<li><p class="first">Closing issues: We close issues when we’ve taken the requested action,
+decided not to take action, resolved the question, or actively determined an
+issue is obsolete. It is OK for “stale” issues to sit around indefinitely
+awaiting this. Unlike many projects, we do not automatically close issues
+just because they’re old.</p>
+</li>
+<li><p class="first">Stale PRs, on the other hand, are to be avoided due to bit rot. We try to
+either merge or reject PRs in a timely manner.</p>
+</li>
+<li><p class="first">Closed issues can be re-opened if new information arises, for example a
+<code class="code docutils literal notranslate"><span class="pre">worksforme</span></code> issue with new reproduction steps. Please comment to ask
+for re-opening rather than doing it yourself.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="github-issue-and-pr-tags">
+<h3><a class="toc-backref" href="#id6">7.1.3. GitHub issue and PR tags</a><a class="headerlink" href="#github-issue-and-pr-tags" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="what-kind-of-issue-is-it">
+<h4>7.1.3.1. What kind of issue is it?<a class="headerlink" href="#what-kind-of-issue-is-it" title="Permalink to this headline">¶</a></h4>
+<dl class="docutils">
+<dt><code class="code docutils literal notranslate"><span class="pre">bug</span></code></dt>
+<dd>Problem of some kind that needs to be fixed; i.e., something doesn’t work.
+This includes usability and documentation problems. Should have steps to
+reproduce with expected and actual behavior.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">enhancement</span></code></dt>
+<dd>Things work, but it would be better if something was different. For example,
+a new feature proposal or refactoring. Should have steps to reproduce with
+desired and actual behavior.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">help</span> <span class="pre">wanted</span></code></dt>
+<dd>The core team does not plan to address this issue, perhaps because we don’t
+know how, but we think it would be good to address it. We hope someone from
+the community will volunteer.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">key</span> <span class="pre">issue</span></code></dt>
+<dd>A particularly important or notable issue.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">question</span></code></dt>
+<dd>Support request that does not report a problem or ask for a change.</dd>
+</dl>
+</div>
+<div class="section" id="what-do-we-plan-to-do-about-it">
+<h4>7.1.3.2. What do we plan to do about it?<a class="headerlink" href="#what-do-we-plan-to-do-about-it" title="Permalink to this headline">¶</a></h4>
+<p>For all of these, leave other tags in place, e.g. <code class="code docutils literal notranslate"><span class="pre">bug</span></code>.</p>
+<dl class="docutils">
+<dt><code class="code docutils literal notranslate"><span class="pre">deferred</span></code></dt>
+<dd>No plans to do this, but not rejected. These issues stay open, because we do
+not consider the deferred state resolved. Submitting PRs on these issues is
+risky; you probably want to argue successfully that it should be done before
+starting work on it.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">duplicate</span></code></dt>
+<dd>Same as some other previously reported issue. In addition to this tag,
+duplicates should refer to the other issue and be closed.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">obsolete</span></code></dt>
+<dd>No longer relevant, moot, etc. Close.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">erroneous</span></code></dt>
+<dd>Not a Charliecloud issue; close. <em>Use caution when blaming a problem on user
+error. Often (or usually) there is a documentation or usability bug that
+caused the “user error”.</em></dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">ready</span> <span class="pre">to</span> <span class="pre">merge</span></code></dt>
+<dd>PRs only. Adding this tag states that the PR is complete and requests it be
+merged to master. If the project lead requests changes, they’ll remove the
+tag. Re-add it when you’re ready to try again. Lead removes tag after
+merging.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">wontfix</span></code></dt>
+<dd>We are not going to do this, and we won’t merge PRs. Close issue after
+tagging, though sometimes you’ll want to leave a few days to allow for
+further discussion to catch mistaken tags.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">worksforme</span></code></dt>
+<dd>We cannot reproduce the issue. Typical workflow is to tag, then wait a few
+days for clarification before closing.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="testing">
+<h3><a class="toc-backref" href="#id7">7.1.4. Testing</a><a class="headerlink" href="#testing" title="Permalink to this headline">¶</a></h3>
+<p>PRs will not be merged until they pass the tests.</p>
+<ul class="simple">
+<li>Tests should pass on your development box as well as all relevant clusters,
+in full scope. (Note that some of the examples take quite a long time to
+build; the Docker cache is your friend.)</li>
+<li>All the Travis tests should pass. If you’re iterating trying to make Travis
+happy, consider interactive rebase, amending commits, or a throwaway branch.
+Don’t submit a PR with half a dozen “fix Travis” commits.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">test/docker-clean.sh</span></code> can be used to purge your Docker cache, either
+by removing all tags or deleting all containers and images. The former is
+generally preferred, as it lets you update only those base images that have
+actually changed (the ones that haven’t will be re-tagged).</li>
+</ul>
+</div>
+</div>
+<div class="section" id="documentation">
+<h2><a class="toc-backref" href="#id8">7.2. Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="how-to-build-the-documentation">
+<span id="doc-build"></span><h3><a class="toc-backref" href="#id9">7.2.1. How to build the documentation</a><a class="headerlink" href="#how-to-build-the-documentation" title="Permalink to this headline">¶</a></h3>
+<p>This documentation is built using Sphinx with the sphinx-rtd-theme. It lives
+in <code class="code docutils literal notranslate"><span class="pre">doc-src</span></code>.</p>
+<div class="section" id="prerequisites">
+<h4>7.2.1.1. Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><ul class="simple">
+<li>Python 3.5+</li>
+<li>Sphinx 1.4.9+</li>
+<li>docutils 0.13.1+</li>
+<li>sphinx-rtd-theme 0.2.4+</li>
+</ul>
+</div></blockquote>
+<p>Older versions may work but are untested.</p>
+</div>
+<div class="section" id="to-build-the-html">
+<h4>7.2.1.2. To build the HTML<a class="headerlink" href="#to-build-the-html" title="Permalink to this headline">¶</a></h4>
+<p>Install the prerequisites:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> pip3 install sphinx sphinx-rtd-theme
+</pre></div>
+</div>
+<p>Then:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> doc-src
+<span class="gp">$</span> make
+</pre></div>
+</div>
+<p>The HTML files are copied to <code class="code docutils literal notranslate"><span class="pre">doc</span></code> with <code class="code docutils literal notranslate"><span class="pre">rsync</span></code>. Anything to not
+copy is listed in <code class="code docutils literal notranslate"><span class="pre">RSYNC_EXCLUDE</span></code>.</p>
+<p>There is also a <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code> target that removes all the derived files
+as well as everything in <code class="code docutils literal notranslate"><span class="pre">doc</span></code>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you’re on Debian Stretch or some version of Ubuntu, this will silently
+install into <code class="code docutils literal notranslate"><span class="pre">~/.local</span></code>, leaving the <code class="code docutils literal notranslate"><span class="pre">sphinx-build</span></code> binary in
+<code class="code docutils literal notranslate"><span class="pre">~/.local/bin</span></code>, which is often not on your path. One workaround
+(untested) is to run <code class="code docutils literal notranslate"><span class="pre">pip3</span></code> as root, which violates principle of
+least privilege. A better workaround, assuming you can write to
+<code class="code docutils literal notranslate"><span class="pre">/usr/local</span></code>, is to add the undocumented and non-standard
+<code class="code docutils literal notranslate"><span class="pre">--system</span></code> argument to install in <code class="code docutils literal notranslate"><span class="pre">/usr/local</span></code> instead. (This
+matches previous <code class="code docutils literal notranslate"><span class="pre">pip</span></code> behavior.) See Debian bugs <a class="reference external" href="https://bugs.debian.org/725848">725848</a> and <a class="reference external" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856">820856</a>.</p>
+</div>
+</div>
+<div class="section" id="publishing-to-the-web">
+<h4>7.2.1.3. Publishing to the web<a class="headerlink" href="#publishing-to-the-web" title="Permalink to this headline">¶</a></h4>
+<p>If you have write access to the repository, you can update the web
+documentation (i.e., <a class="reference external" href="http://hpc.github.io/charliecloud">http://hpc.github.io/charliecloud</a>).</p>
+<p>Normally, <code class="code docutils literal notranslate"><span class="pre">doc</span></code> is a normal directory ignored by Git. To publish to the
+web, that diretory needs to contain a Git checkout of the <code class="code docutils literal notranslate"><span class="pre">gh-pages</span></code>
+branch (not a submodule). To set that up:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> rm -Rf doc
+<span class="gp">$</span> git clone git@github.com:hpc/charliecloud.git doc
+<span class="gp">$</span> <span class="nb">cd</span> doc
+<span class="gp">$</span> git checkout gh-pages
+</pre></div>
+</div>
+<p>To publish:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make web
+</pre></div>
+</div>
+<p>It sometimes takes a few minutes for the web pages to update.</p>
+</div>
+</div>
+</div>
+<div class="section" id="coding-style">
+<h2><a class="toc-backref" href="#id10">7.3. Coding style</a><a class="headerlink" href="#coding-style" title="Permalink to this headline">¶</a></h2>
+<p>We haven’t written down a comprehensive style guide. Generally, follow the
+style of the surrounding code, think in rectangles rather than lines of code
+or text, and avoid CamelCase.</p>
+<p>Note that Reid is very picky about style, so don’t feel singled out if he
+complains (or even updates this section based on your patch!). He tries to be
+nice about it.</p>
+<div class="section" id="writing-english">
+<h3><a class="toc-backref" href="#id11">7.3.1. Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">When describing what something does (e.g., your PR or a command), use the
+<a class="reference external" href="https://chris.beams.io/posts/git-commit/#imperative">imperative mood</a>,
+i.e., write the orders you are giving rather than describe what the thing
+does. For example, do:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Inject files from the host into an image directory.</div>
+<div class="line">Add <code class="code docutils literal notranslate"><span class="pre">--join-pid</span></code> option to <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</div>
+</div>
+</div></blockquote>
+<p>Do not (indicative mood):</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Injects files from the host into an image directory.</div>
+<div class="line">Adds <code class="code docutils literal notranslate"><span class="pre">--join-pid</span></code> option to <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</div>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first">Use sentence case for titles, not title case.</p>
+</li>
+<li><p class="first">If it’s not a sentence, start with a lower-case character.</p>
+</li>
+<li><p class="first">Use spell check. Keep your personal dictionary updated so your editor is not
+filled with false positives.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="curl-vs-wget">
+<h3><a class="toc-backref" href="#id12">7.3.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h3>
+<p>For URL downloading in shell code, including Dockerfiles, use <code class="code docutils literal notranslate"><span class="pre">wget</span> <span class="pre">-nv</span></code>.</p>
+<p>Both work fine for our purposes, and we need to use one or the other
+consistently. According to Debian’s popularity contest, 99.88% of reporting
+systems have <code class="code docutils literal notranslate"><span class="pre">wget</span></code> installed, vs. about 44% for <code class="code docutils literal notranslate"><span class="pre">curl</span></code>. On the
+other hand, <code class="code docutils literal notranslate"><span class="pre">curl</span></code> is in the minimal install of CentOS 7 while
+<code class="code docutils literal notranslate"><span class="pre">wget</span></code> is not.</p>
+<p>For now, Reid just picked <code class="code docutils literal notranslate"><span class="pre">wget</span></code> because he likes it better.</p>
+</div>
+<div class="section" id="variable-conventions-in-shell-scripts-and-bats-files">
+<h3><a class="toc-backref" href="#id13">7.3.3. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">Separate words with underscores.</p>
+</li>
+<li><p class="first">User-configured environment variables: all uppercase, <code class="code docutils literal notranslate"><span class="pre">CH_TEST_</span></code>
+prefix. Do not use in individual <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files; instead, provide an
+intermediate variable.</p>
+</li>
+<li><p class="first">Variables local to a given file: lower case, no prefix.</p>
+</li>
+<li><p class="first">Bats: set in <code class="code docutils literal notranslate"><span class="pre">common.bash</span></code> and then used in <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files: lower
+case, <code class="code docutils literal notranslate"><span class="pre">ch_</span></code> prefix.</p>
+</li>
+<li><p class="first">Surround lower-case variables expanded in strings with curly braces, unless
+they’re the only thing in the string. E.g.:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>&quot;${foo}/bar&quot;  # yes
+&quot;$foo&quot;        # yes
+&quot;$foo/bar&quot;    # no
+&quot;${foo}&quot;      # no
+</pre></div>
+</div>
+</li>
+<li><p class="first">Quote the entire string instead of just the variable when practical:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>&quot;${foo}/bar&quot;  # yes
+&quot;${foo}&quot;/bar  # no
+&quot;$foo&quot;/bar    # no
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="faq.html" class="btn btn-neutral" title="6. Frequently asked questions (FAQ)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014–2018, Los Alamos National Security, LLC
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

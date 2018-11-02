@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.3 documentation</title>
+  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.4 documentation</title>
   
 
   
@@ -26,25 +26,18 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.9.3 documentation" href="index.html"/>
-        <link rel="next" title="5. Pre-installed virtual machine" href="vm.html"/>
-        <link rel="prev" title="3. Tutorial" href="tutorial.html"/> 
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. Pre-installed virtual machine" href="vm.html" />
+    <link rel="prev" title="3. Tutorial" href="tutorial.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -61,7 +54,7 @@
 
           
             
-            <img src="_static/logo-sidebar.png" class="logo" />
+            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -69,7 +62,7 @@
             
             
               <div class="version">
-                13d436c
+                25b5fd4
               </div>
             
           
@@ -116,52 +109,60 @@
 <li class="toctree-l3"><a class="reference internal" href="#example">4.3.3. Example</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-docker-run">4.4. ch-docker-run</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ch-fromhost">4.4. ch-fromhost</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id5">4.4.1. Synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id6">4.4.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#options">4.4.3. Options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#to-specify-which-files-to-inject">4.4.3.1. To specify which files to inject</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#to-specify-the-destination-within-the-image">4.4.3.2. To specify the destination within the image</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#additional-arguments">4.4.3.3. Additional arguments</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-fromhost">4.5. ch-fromhost</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id7">4.5.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id8">4.5.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#options">4.5.3. Options</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#to-specify-which-files-to-inject">4.5.3.1. To specify which files to inject</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#to-specify-the-destination-within-the-image">4.5.3.2. To specify the destination within the image</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#additional-arguments">4.5.3.3. Additional arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cray-mpi-prerequisites-and-quirks">4.4.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> prerequisites and quirks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#notes">4.4.5. Notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bugs">4.4.6. Bugs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id7">4.4.7. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#acknowledgements">4.4.8. Acknowledgements</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#cray-mpi-prerequisites-and-quirks">4.5.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> prerequisites and quirks</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#notes">4.5.5. Notes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#bugs">4.5.6. Bugs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id9">4.5.7. Examples</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#acknowledgements">4.5.8. Acknowledgements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-pull2dir">4.5. ch-pull2dir</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id8">4.5.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">4.5.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id10">4.5.3. Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-run">4.6. ch-run</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id10">4.6.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id11">4.6.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#host-files-and-directories-available-in-container-via-bind-mounts">4.6.3. Host files and directories available in container via bind mounts</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">4.6.4. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#environment-variables">4.6.5. Environment variables</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id12">4.6.6. Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-pull2tar">4.6. ch-pull2tar</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id11">4.6.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">4.6.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id13">4.6.3. Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-ssh">4.7. ch-ssh</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id13">4.7.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id14">4.7.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id15">4.7.3. Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-run">4.7. ch-run</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id14">4.7.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">4.7.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#host-files-and-directories-available-in-container-via-bind-mounts">4.7.3. Host files and directories available in container via bind mounts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">4.7.4. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#environment-variables">4.7.5. Environment variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id16">4.7.6. Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-tar2dir">4.8. ch-tar2dir</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id16">4.8.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id17">4.8.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id18">4.8.3. Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-ssh">4.8. ch-ssh</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id17">4.8.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id18">4.8.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id19">4.8.3. Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-tar2dir">4.9. ch-tar2dir</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id20">4.9.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id21">4.9.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id22">4.9.3. Example</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="vm.html">5. Pre-installed virtual machine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">6. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">7. Contributor’s guide</a></li>
 </ul>
 
             
@@ -173,7 +174,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Charliecloud</a>
@@ -181,9 +182,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -364,55 +366,17 @@ directory <code class="code docutils literal notranslate"><span class="pre">OUTD
 </div>
 </div>
 </div>
-<div class="section" id="ch-docker-run">
-<h2>4.4. ch-docker-run<a class="headerlink" href="#ch-docker-run" title="Permalink to this headline">¶</a></h2>
-<p>Run a command in a Docker container.</p>
+<div class="section" id="ch-fromhost">
+<h2>4.4. ch-fromhost<a class="headerlink" href="#ch-fromhost" title="Permalink to this headline">¶</a></h2>
+<p>Inject files from the host into an image directory.</p>
 <div class="section" id="id5">
 <h3>4.4.1. Synopsis<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-docker-run <span class="o">[</span>-i<span class="o">]</span> <span class="o">[</span>-b HOSTDIR:GUESTDIR ...<span class="o">]</span> TAG CMD <span class="o">[</span>ARGS ...<span class="o">]</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost <span class="o">[</span>OPTION ...<span class="o">]</span> <span class="o">[</span>FILE_OPTION ...<span class="o">]</span> IMGDIR
 </pre></div>
 </div>
 </div>
 <div class="section" id="id6">
 <h3>4.4.2. Description<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
-<p>Runs the command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code> in a Docker container using the image named
-<code class="code docutils literal notranslate"><span class="pre">TAG</span></code>.</p>
-<p>Sudo privileges are required for <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">run</span></code>.</p>
-<p><code class="code docutils literal notranslate"><span class="pre">CMD</span></code> is run under your user ID. The users and groups inside the
-container match those on the host.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">This command is intended as a convenience for debugging images and
-Charliecloud. Routine use for running applications is not recommended.
-Instead, use <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
-</div>
-<p>Arguments:</p>
-<blockquote>
-<div><dl class="docutils">
-<dt><code class="code docutils literal notranslate"><span class="pre">-i</span></code></dt>
-<dd>run interactively with a pseudo-TTY</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">-b</span></code></dt>
-<dd>bind-mount <code class="code docutils literal notranslate"><span class="pre">HOSTDIR</span></code> at <code class="code docutils literal notranslate"><span class="pre">GUESTDIR</span></code> inside the container (can
-be repeated)</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt>
-<dd>print help and exit</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt>
-<dd>print version and exit</dd>
-</dl>
-</div></blockquote>
-</div>
-</div>
-<div class="section" id="ch-fromhost">
-<h2>4.5. ch-fromhost<a class="headerlink" href="#ch-fromhost" title="Permalink to this headline">¶</a></h2>
-<p>Inject files from the host into an image directory.</p>
-<div class="section" id="id7">
-<h3>4.5.1. Synopsis<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost <span class="o">[</span>OPTION ...<span class="o">]</span> <span class="o">[</span>FILE_OPTION ...<span class="o">]</span> IMGDIR
-</pre></div>
-</div>
-</div>
-<div class="section" id="id8">
-<h3>4.5.2. Description<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">This command is experimental. Features may be incomplete and/or buggy.
@@ -437,9 +401,9 @@ directory specified by <code class="code docutils literal notranslate"><span cla
 container (using <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>) after injection.</p>
 </div>
 <div class="section" id="options">
-<h3>4.5.3. Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h3>
+<h3>4.4.3. Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="to-specify-which-files-to-inject">
-<h4>4.5.3.1. To specify which files to inject<a class="headerlink" href="#to-specify-which-files-to-inject" title="Permalink to this headline">¶</a></h4>
+<h4>4.4.3.1. To specify which files to inject<a class="headerlink" href="#to-specify-which-files-to-inject" title="Permalink to this headline">¶</a></h4>
 <blockquote>
 <div><dl class="docutils">
 <dt><code class="code docutils literal notranslate"><span class="pre">-c</span></code>, <code class="code docutils literal notranslate"><span class="pre">--cmd</span> <span class="pre">CMD</span></code></dt>
@@ -459,7 +423,7 @@ to find executables and libraries to inject.</dd>
 <p>These can be repeated, and at least one must be specified.</p>
 </div>
 <div class="section" id="to-specify-the-destination-within-the-image">
-<h4>4.5.3.2. To specify the destination within the image<a class="headerlink" href="#to-specify-the-destination-within-the-image" title="Permalink to this headline">¶</a></h4>
+<h4>4.4.3.2. To specify the destination within the image<a class="headerlink" href="#to-specify-the-destination-within-the-image" title="Permalink to this headline">¶</a></h4>
 <blockquote>
 <div><dl class="docutils">
 <dt><code class="code docutils literal notranslate"><span class="pre">-d</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dest</span> <span class="pre">DST</span></code></dt>
@@ -471,7 +435,7 @@ repeated to place files in varying destinations.</dd>
 </div></blockquote>
 </div>
 <div class="section" id="additional-arguments">
-<h4>4.5.3.3. Additional arguments<a class="headerlink" href="#additional-arguments" title="Permalink to this headline">¶</a></h4>
+<h4>4.4.3.3. Additional arguments<a class="headerlink" href="#additional-arguments" title="Permalink to this headline">¶</a></h4>
 <blockquote>
 <div><dl class="docutils">
 <dt><code class="code docutils literal notranslate"><span class="pre">--lib-path</span></code></dt>
@@ -491,7 +455,7 @@ libraries.</dd>
 </div>
 </div>
 <div class="section" id="cray-mpi-prerequisites-and-quirks">
-<h3>4.5.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> prerequisites and quirks<a class="headerlink" href="#cray-mpi-prerequisites-and-quirks" title="Permalink to this headline">¶</a></h3>
+<h3>4.4.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> prerequisites and quirks<a class="headerlink" href="#cray-mpi-prerequisites-and-quirks" title="Permalink to this headline">¶</a></h3>
 <p>The implementation of <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> for MPICH is messy, foul smelling,
 and brittle. It replaces or overrides the open source MPICH libraries
 installed in the container. Users should be aware of the following.</p>
@@ -518,7 +482,7 @@ language, please get in touch so we can implement the necessary support.</li>
 code better.</p>
 </div>
 <div class="section" id="notes">
-<h3>4.5.5. Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h3>
+<h3>4.4.5. Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h3>
 <p>Symbolic links are dereferenced, i.e., the files pointed to are injected, not
 the links themselves.</p>
 <p>As a corollary, do not include symlinks to shared libraries. These will be
@@ -543,11 +507,11 @@ notion of a half-started container.</li>
 script for nVidia GPUs, they would not solve the problem for other situations.</p>
 </div>
 <div class="section" id="bugs">
-<h3>4.5.6. Bugs<a class="headerlink" href="#bugs" title="Permalink to this headline">¶</a></h3>
+<h3>4.4.6. Bugs<a class="headerlink" href="#bugs" title="Permalink to this headline">¶</a></h3>
 <p>File paths may not contain colons or newlines.</p>
 </div>
-<div class="section" id="id9">
-<h3>4.5.7. Examples<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id7">
+<h3>4.4.7. Examples<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <p>Place shared library <code class="code docutils literal notranslate"><span class="pre">/usr/lib64/libfoo.so</span></code> at path
 <code class="code docutils literal notranslate"><span class="pre">/usr/lib/libfoo.so</span></code> (assuming <code class="code docutils literal notranslate"><span class="pre">/usr/lib</span></code> is the first directory
 searched by the dynamic loader in the image), within the image
@@ -585,7 +549,7 @@ then run <code class="code docutils literal notranslate"><span class="pre">ldcon
 </div>
 </div>
 <div class="section" id="acknowledgements">
-<h3>4.5.8. Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h3>
+<h3>4.4.8. Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h3>
 <p>This command was inspired by the similar <a class="reference external" href="http://www.nersc.gov/research-and-development/user-defined-images/">Shifter</a> feature
 that allows Shifter containers to use the Cray Aires network. We particularly
 appreciate the help provided by Shane Canon and Doug Jacobsen during our
@@ -594,17 +558,117 @@ implementation of <code class="code docutils literal notranslate"><span class="p
 <code class="code docutils literal notranslate"><span class="pre">--nvidia</span></code>.</p>
 </div>
 </div>
-<div class="section" id="ch-run">
-<span id="man-ch-run"></span><h2>4.6. ch-run<a class="headerlink" href="#ch-run" title="Permalink to this headline">¶</a></h2>
-<p>Run a command in a Charliecloud container.</p>
+<div class="section" id="ch-pull2dir">
+<span id="man-ch-run"></span><h2>4.5. ch-pull2dir<a class="headerlink" href="#ch-pull2dir" title="Permalink to this headline">¶</a></h2>
+<p>Download image via <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code> and unpack it into directory.</p>
+<div class="section" id="id8">
+<h3>4.5.1. Synopsis<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-pull2dir IMAGE<span class="o">[</span>:TAG<span class="o">]</span> DIR
+</pre></div>
+</div>
+</div>
+<div class="section" id="id9">
+<h3>4.5.2. Description<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<p>Pull Docker image named <code class="code docutils literal notranslate"><span class="pre">IMAGE[:TAG]</span></code> from Docker Hub and extract it
+into a subdirectory of <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>. A temporary tarball is stored in
+<code class="code docutils literal notranslate"><span class="pre">DIR</span></code>.</p>
+<p>Sudo privileges are required to run the <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code> command.</p>
+<p>This runs the following command sequence: <code class="code docutils literal notranslate"><span class="pre">ch-pull2tar</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">ch-tar2dir</span></code>. See warning in the documentation for <code class="code docutils literal notranslate"><span class="pre">ch-tar2dir</span></code>.</p>
+<p>Additional arguments:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt>
+<dd>print help and exit</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt>
+<dd>print version and exit</dd>
+</dl>
+</div></blockquote>
+</div>
 <div class="section" id="id10">
-<h3>4.6.1. Synopsis<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<h3>4.5.3. Examples<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-pull2dir alpine /var/tmp
+<span class="go">Using default tag: latest</span>
+<span class="go">latest: Pulling from library/alpine</span>
+<span class="go">Digest: sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528</span>
+<span class="go">Status: Image is up to date for alpine:latest</span>
+<span class="go">-rw-r--r--. 1 charlie charlie 2.1M Oct  5 19:52 /var/tmp/alpine.tar.gz</span>
+<span class="go">creating new image /var/tmp/alpine</span>
+<span class="go">/var/tmp/alpine unpacked ok</span>
+<span class="go">removed &#39;/var/tmp/alpine.tar.gz&#39;</span>
+</pre></div>
+</div>
+<p>Same as above, except optional <code class="code docutils literal notranslate"><span class="pre">TAG</span></code> is specified:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-pull2dir alpine:3.6 /var/tmp
+<span class="go">3.6: Pulling from library/alpine</span>
+<span class="go">Digest: sha256:cc24af836d1377e092ecb4e8f0a4324c3b1aa2b5295c2239edcc7bbc86a9cbc6</span>
+<span class="go">Status: Image is up to date for alpine:3.6</span>
+<span class="go">-rw-r--r--. 1 charlie charlie 2.1M Oct  5 19:54 /var/tmp/alpine:3.6.tar.gz</span>
+<span class="go">creating new image /var/tmp/alpine:3.6</span>
+<span class="go">/var/tmp/alpine:3.6 unpacked ok</span>
+<span class="go">removed &#39;/var/tmp/alpine:3.6.tar.gz&#39;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="ch-pull2tar">
+<h2>4.6. ch-pull2tar<a class="headerlink" href="#ch-pull2tar" title="Permalink to this headline">¶</a></h2>
+<p>Download image via <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code> and flatten it to tarball.</p>
+<div class="section" id="id11">
+<h3>4.6.1. Synopsis<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-pull2tar IMAGE<span class="o">[</span>:TAG<span class="o">]</span> OUTDIR
+</pre></div>
+</div>
+</div>
+<div class="section" id="id12">
+<h3>4.6.2. Description<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<p>Pull a Docker image named <code class="code docutils literal notranslate"><span class="pre">IMAGE[:TAG]</span></code> from Docker Hub and flatten it
+into a Charliecloud tarball in directory <code class="code docutils literal notranslate"><span class="pre">OUTDIR</span></code>.</p>
+<p>This runs the following command sequence: <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code> but provides less flexibility than the individual
+commands.</p>
+<p>Sudo privileges are required for <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code>.</p>
+<p>Additional arguments:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt>
+<dd>print help and exit</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt>
+<dd>print version and exit</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="id13">
+<h3>4.6.3. Examples<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-pull2tar alpine /var/tmp
+<span class="go">Using default tag: latest</span>
+<span class="go">latest: Pulling from library/alpine</span>
+<span class="go">Digest: sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528</span>
+<span class="go">Status: Image is up to date for alpine:latest</span>
+<span class="go">-rw-r--r--. 1 charlie charlie 2.1M Oct  5 19:52 /var/tmp/alpine.tar.gz</span>
+</pre></div>
+</div>
+<p>Same as above, except optional <code class="code docutils literal notranslate"><span class="pre">TAG</span></code> is specified:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-pull2tar alpine:3.6
+<span class="go">3.6: Pulling from library/alpine</span>
+<span class="go">Digest: sha256:cc24af836d1377e092ecb4e8f0a4324c3b1aa2b5295c2239edcc7bbc86a9cbc6</span>
+<span class="go">Status: Image is up to date for alpine:3.6</span>
+<span class="go">-rw-r--r--. 1 charlie charlie 2.1M Oct  5 19:54 /var/tmp/alpine:3.6.tar.gz</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="ch-run">
+<h2>4.7. ch-run<a class="headerlink" href="#ch-run" title="Permalink to this headline">¶</a></h2>
+<p>Run a command in a Charliecloud container.</p>
+<div class="section" id="id14">
+<h3>4.7.1. Synopsis<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run <span class="o">[</span>OPTION...<span class="o">]</span> NEWROOT CMD <span class="o">[</span>ARG...<span class="o">]</span>
 </pre></div>
 </div>
 </div>
-<div class="section" id="id11">
-<h3>4.6.2. Description<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id15">
+<h3>4.7.2. Description<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <p>Run command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code> in a Charliecloud container using the flattened and
 unpacked image directory located at <code class="code docutils literal notranslate"><span class="pre">NEWROOT</span></code>.</p>
 <blockquote>
@@ -618,6 +682,8 @@ unpacked image directory located at <code class="code docutils literal notransla
 <dd>run as group <code class="code docutils literal notranslate"><span class="pre">GID</span></code> within container</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-j</span></code>, <code class="code docutils literal notranslate"><span class="pre">--join</span></code></dt>
 <dd>use the same container (namespaces) as peer <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocations</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--join-pid=PID</span></code></dt>
+<dd>join the namespaces of an existing process</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--join-ct=N</span></code></dt>
 <dd>number of <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> peers (implies <code class="code docutils literal notranslate"><span class="pre">--join</span></code>; default: see below)</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--join-tag=TAG</span></code></dt>
@@ -645,7 +711,7 @@ the host)</dd>
 </div></blockquote>
 </div>
 <div class="section" id="host-files-and-directories-available-in-container-via-bind-mounts">
-<h3>4.6.3. Host files and directories available in container via bind mounts<a class="headerlink" href="#host-files-and-directories-available-in-container-via-bind-mounts" title="Permalink to this headline">¶</a></h3>
+<h3>4.7.3. Host files and directories available in container via bind mounts<a class="headerlink" href="#host-files-and-directories-available-in-container-via-bind-mounts" title="Permalink to this headline">¶</a></h3>
 <p>In addition to any directories specified by the user with <code class="code docutils literal notranslate"><span class="pre">--bind</span></code>,
 <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> has standard host files and directories that are bind-mounted
 in as well.</p>
@@ -680,7 +746,7 @@ over-mounted with the <code class="code docutils literal notranslate"><span clas
 </div></blockquote>
 </div>
 <div class="section" id="multiple-processes-in-the-same-container-with-join">
-<h3>4.6.4. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code><a class="headerlink" href="#multiple-processes-in-the-same-container-with-join" title="Permalink to this headline">¶</a></h3>
+<h3>4.7.4. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code><a class="headerlink" href="#multiple-processes-in-the-same-container-with-join" title="Permalink to this headline">¶</a></h3>
 <p>By default, different <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocations use different user and mount
 namespaces (i.e., different containers). While this has no impact on sharing
 most resources between invocations, there are a few important exceptions.
@@ -735,7 +801,7 @@ as files in <code class="code docutils literal notranslate"><span class="pre">/d
 </ul>
 </div>
 <div class="section" id="environment-variables">
-<h3>4.6.5. Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h3>
+<h3>4.7.5. Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> generally tries to leave environment variables unchanged, but
 in some cases, guests can be significantly broken unless environment variables
 are tweaked. This section lists those changes.</p>
@@ -764,8 +830,8 @@ from the default <code class="code docutils literal notranslate"><span class="pr
 </li>
 </ul>
 </div>
-<div class="section" id="id12">
-<h3>4.6.6. Examples<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id16">
+<h3>4.7.6. Examples<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
 <p>Run the command <code class="code docutils literal notranslate"><span class="pre">echo</span> <span class="pre">hello</span></code> inside a Charliecloud container using the
 unpacked image at <code class="code docutils literal notranslate"><span class="pre">/data/foo</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/foo -- <span class="nb">echo</span> hello
@@ -779,17 +845,17 @@ unpacked image at <code class="code docutils literal notranslate"><span class="p
 </div>
 </div>
 <div class="section" id="ch-ssh">
-<h2>4.7. ch-ssh<a class="headerlink" href="#ch-ssh" title="Permalink to this headline">¶</a></h2>
+<h2>4.8. ch-ssh<a class="headerlink" href="#ch-ssh" title="Permalink to this headline">¶</a></h2>
 <p>Run a remote command in a Charliecloud container.</p>
-<div class="section" id="id13">
-<h3>4.7.1. Synopsis<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id17">
+<h3>4.8.1. Synopsis<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;NEWROOT [ARG...]&quot;</span>
 <span class="gp">$</span> ch-ssh <span class="o">[</span>OPTION...<span class="o">]</span> HOST CMD <span class="o">[</span>ARG...<span class="o">]</span>
 </pre></div>
 </div>
 </div>
-<div class="section" id="id14">
-<h3>4.7.2. Description<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id18">
+<h3>4.8.2. Description<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
 <p>Runs command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code> in a Charliecloud container on remote host
 <code class="code docutils literal notranslate"><span class="pre">HOST</span></code>. Use the content of environment variable <code class="code docutils literal notranslate"><span class="pre">CH_RUN_ARGS</span></code> as
 the arguments to <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> on the remote host.</p>
@@ -799,8 +865,8 @@ the arguments to <code class="code docutils literal notranslate"><span class="pr
 syntax.</p>
 </div>
 </div>
-<div class="section" id="id15">
-<h3>4.7.3. Example<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id19">
+<h3>4.8.3. Example<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
 <p>On host bar.example.com, run the command <code class="code docutils literal notranslate"><span class="pre">echo</span> <span class="pre">hello</span></code> inside a
 Charliecloud container using the unpacked image at <code class="code docutils literal notranslate"><span class="pre">/data/foo</span></code> with
 starting directory <code class="code docutils literal notranslate"><span class="pre">/baz</span></code>:</p>
@@ -814,16 +880,16 @@ starting directory <code class="code docutils literal notranslate"><span class="
 </div>
 </div>
 <div class="section" id="ch-tar2dir">
-<h2>4.8. ch-tar2dir<a class="headerlink" href="#ch-tar2dir" title="Permalink to this headline">¶</a></h2>
+<h2>4.9. ch-tar2dir<a class="headerlink" href="#ch-tar2dir" title="Permalink to this headline">¶</a></h2>
 <p>Unpack an image tarball into a directory.</p>
-<div class="section" id="id16">
-<h3>4.8.1. Synopsis<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id20">
+<h3>4.9.1. Synopsis<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tar2dir TARBALL DIR
 </pre></div>
 </div>
 </div>
-<div class="section" id="id17">
-<h3>4.8.2. Description<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id21">
+<h3>4.9.2. Description<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
 <p>Extract the tarball <code class="code docutils literal notranslate"><span class="pre">TARBALL</span></code> into a subdirectory of <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>.
 <code class="code docutils literal notranslate"><span class="pre">TARBALL</span></code> must contain a Linux filesystem image, e.g. as created by
 <code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code>.</p>
@@ -851,8 +917,8 @@ you and all your colleagues who use the same file system. Please consult
 your site admin for a suitable location.</p>
 </div>
 </div>
-<div class="section" id="id18">
-<h3>4.8.3. Example<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id22">
+<h3>4.9.3. Example<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -lh /var/tmp
 <span class="go">total 57M</span>
 <span class="go">-rw-r-----  1 reidpr reidpr  57M Feb 13 16:14 hello.tar.gz</span>
@@ -871,9 +937,7 @@ your site admin for a suitable location.</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -891,7 +955,7 @@ your site admin for a suitable location.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014–2018, Los Alamos National Security, LLC.
+        &copy; Copyright 2014–2018, Los Alamos National Security, LLC
 
     </p>
   </div> 
@@ -909,36 +973,24 @@ your site admin for a suitable location.</p>
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.9.3',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

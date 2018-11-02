@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Testing &mdash; Charliecloud 0.9.3 documentation</title>
+  <title>2. Testing &mdash; Charliecloud 0.9.4 documentation</title>
   
 
   
@@ -26,25 +26,18 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Charliecloud 0.9.3 documentation" href="index.html"/>
-        <link rel="next" title="3. Tutorial" href="tutorial.html"/>
-        <link rel="prev" title="1. Installation" href="install.html"/> 
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="3. Tutorial" href="tutorial.html" />
+    <link rel="prev" title="1. Installation" href="install.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -61,7 +54,7 @@
 
           
             
-            <img src="_static/logo-sidebar.png" class="logo" />
+            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -69,7 +62,7 @@
             
             
               <div class="version">
-                13d436c
+                25b5fd4
               </div>
             
           
@@ -114,6 +107,7 @@
 <li class="toctree-l1"><a class="reference internal" href="command-usage.html">4. Charliecloud command reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vm.html">5. Pre-installed virtual machine</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">6. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">7. Contributor’s guide</a></li>
 </ul>
 
             
@@ -125,7 +119,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Charliecloud</a>
@@ -133,9 +127,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -197,8 +192,9 @@ explains how the tests work and how to run them.</p>
 </div>
 <div class="section" id="getting-started">
 <h2><a class="toc-backref" href="#id1">2.1. Getting started</a><a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
-<p>Charliecloud’s tests are in the directory <code class="code docutils literal notranslate"><span class="pre">test</span></code>. To run them, go
-there:</p>
+<p>Charliecloud’s tests are based in the directory <code class="code docutils literal notranslate"><span class="pre">test</span></code>, which is either
+at the top level of the source code or installed at
+<code class="code docutils literal notranslate"><span class="pre">$PREFIX/share/doc/charliecloud</span></code>. To run them, go there:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> <span class="nb">test</span>
 </pre></div>
 </div>
@@ -333,10 +329,16 @@ selection of the more important examples. It should finish in 5–10 minutes.</p
 <div class="section" id="running-a-single-test-group">
 <h3><a class="toc-backref" href="#id8">2.3.2. Running a single test group</a><a class="headerlink" href="#running-a-single-test-group" title="Permalink to this headline">¶</a></h3>
 <p>For focused testing, you can run a single <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> file directly with
-Bats. First, check which <code class="code docutils literal notranslate"><span class="pre">bats</span></code> executable the test suite is using:</p>
+Bats. These are found at the following locations:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">test</span>
+<span class="go">test/run</span>
+<span class="go">examples/*/*/test.bats</span>
+</pre></div>
+</div>
+<p>First, check which <code class="code docutils literal notranslate"><span class="pre">bats</span></code> executable the test suite is using:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make where-bats
 <span class="go">which bats</span>
-<span class="go">/home/charlie/charliecloud/test/bats/bin/bats</span>
+<span class="go">/usr/local/src/charliecloud/test/bats/bin/bats</span>
 <span class="go">bats --version</span>
 <span class="go">Bats 0.4.0</span>
 </pre></div>
@@ -361,9 +363,7 @@ manually building and unpacking it.</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -381,7 +381,7 @@ manually building and unpacking it.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014–2018, Los Alamos National Security, LLC.
+        &copy; Copyright 2014–2018, Los Alamos National Security, LLC
 
     </p>
   </div> 
@@ -399,36 +399,24 @@ manually building and unpacking it.</p>
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'0.9.3',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>
