@@ -37,13 +37,14 @@ These phases can be tested independently on different systems.
 Testing is coordinated by :code:`make`. The test targets run one or more test
 suites. If any test suite has a failure, testing stops with an error message.
 
-The tests need three work directories with a dozen or so GB of available
+The tests need four work directories with a dozen or so GB of available
 space, in order to store image tarballs, unpacked image directories, and
 permission test fixtures. These are configured with environment variables; for
 example::
 
   $ export CH_TEST_TARDIR=/var/tmp/tarballs
   $ export CH_TEST_IMGDIR=/var/tmp/images
+  $ export CH_TEST_TMPDIR=/var/tmp
   $ export CH_TEST_PERMDIRS='/var/tmp /tmp'
 
 :code:`CH_TEST_PERMDIRS` can be set to :code:`skip` in order to skip the file

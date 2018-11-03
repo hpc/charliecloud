@@ -169,6 +169,7 @@ fi
 # [1]: https://unix.stackexchange.com/a/136527
 ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
+ch_tmpdir=$(readlink -ef "$CH_TEST_TMPDIR")
 
 # Some test variables
 ch_tag=$(basename "$BATS_TEST_DIRNAME")
@@ -246,6 +247,7 @@ fi
 # Do we have what we need?
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
+env_require CH_TEST_TMPDIR
 env_require CH_TEST_PERMDIRS
 if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e

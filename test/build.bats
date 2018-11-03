@@ -123,16 +123,17 @@ load common
 
 @test 'ch-build2dir' {
     scope standard
-    # This test unpacks into $ch_tardir so we don't put anything in $ch_imgdir
+    # This test unpacks into $ch_tmpdir so we don't put anything in $ch_imgdir
     # at build time. It removes the image on completion.
     need_docker
-    tar="${ch_tardir}/alpine36.tar.gz"
-    img="${ch_tardir}/test"
+    tar="${ch_tmpdir}/alpine36.tar.gz"
+    img="${ch_tmpdir}/test"
     [[ ! -e $img ]]
-    ch-build2dir .. "$ch_tardir" --file=Dockerfile.alpine36
+    ch-build2dir .. "$ch_tmpdir" --file=Dockerfile.alpine36
     sudo docker tag test "test:${ch_version_docker}"
     docker_ok test
     image_ok "$img"
+    ch-run "$img" -- /bin/true
     # Remove since we don't want it hanging around later.
     rm -Rf --one-file-system "$tar" "$img"
 }
@@ -140,30 +141,33 @@ load common
 @test 'ch-pull2tar' {
     scope standard
     # This test pulls an image from Dockerhub and packs it into a tarball at 
-    # $ch_tardir. It removes the tarball upon completetion to keep the number of
+    # $ch_tmpdir. It removes the tarball upon completetion to keep the number of
     # alpine36 tarballs to a minimum.
     need_docker
     tag='alpine:3.6'
-    tar="${ch_tardir}/${tag}.tar.gz"
-    ch-pull2tar "$tag" "$ch_tardir"
-    [[ $status -eq 0 ]]
-    [[ -e $tar ]] 
-    rm "${ch_tardir}/${tag}.tar.gz"
+    tar="${ch_tmpdir}/${tag}.tar.gz"
     [[ ! -e $tar ]]
+    img="${tar%.tar.gz}"
+    [[ ! -e $img ]]
+    ch-pull2tar "$tag" "$ch_tmpdir"
+    ch-tar2dir "$tar" "$ch_tmpdir"
+    image_ok "$img"
+    ch-run "$img" -- /bin/true
+    rm -Rf --one-file-system "$tar" "$img"
 }
 
 @test 'ch-pull2dir' {
     scope standard
-    # This test unpacks an image tarball pulled from Docker Hub into $ch_tardir
+    # This test unpacks an image tarball pulled from Docker Hub into $ch_tmpdir
     # to keep $ch_imgdir clean at build time. It removes the image upon completion. 
     need_docker
     tag='alpine:3.6'
-    img="${ch_tardir}/${tag}"
-    ch-pull2dir "$tag" "$ch_tardir"
-    [[ status -eq 0 ]]
-    [[ -d $img ]]
+    img="${ch_tmpdir}/${tag}"
+    [[ ! -e $img ]]
+    ch-pull2dir "$tag" "$ch_tmpdir"
+    image_ok "$img"
+    ch-run "$img" -- /bin/true
     rm -Rf --one-file-system "$img"
-    [[ ! -d $img ]]
 }
 
 @test 'sotest executable works' {
