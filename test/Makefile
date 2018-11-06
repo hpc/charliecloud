@@ -1,12 +1,15 @@
 export LC_ALL := C
-images :=   chtest/Build \
-            $(sort $(wildcard ./Build.*)) \
-            $(sort $(wildcard ./Dockerfile.*)) \
-            $(sort $(wildcard ./Docker_Pull.*)) \
-            $(sort $(wildcard ../examples/*/*/Build)) \
-            $(sort $(wildcard ../examples/*/*/Dockerfile)) \
-            $(sort $(wildcard ../examples/*/*/Docker_Pull))
-examples := $(sort $(wildcard ../examples/*/*/test.bats))
+images_ch := chtest/Build \
+             $(sort $(wildcard ./Build.*)) \
+             $(sort $(wildcard ./Dockerfile.*)) \
+             $(sort $(wildcard ./Docker_Pull.*))
+images_eg := $(sort $(wildcard ../examples/*/*/Build)) \
+             $(sort $(wildcard ../examples/*/*/Build.*)) \
+             $(sort $(wildcard ../examples/*/*/Dockerfile)) \
+             $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
+             $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
+             $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
+images := $(images_ch) $(images_eg)
 
 # Favor embedded Bats, if installed, over system Bats.
 export PATH := $(CURDIR)/bats/bin:$(PATH)
@@ -42,9 +45,13 @@ test-run: run_auto.bats
 	    done; \
 	done; fi
 
+# FIXME: This could be sped up by skipping bats if the image is out of scope.
 .PHONY: test-test
-test-test: $(examples)
-	bats $(examples)
+test-test: $(images_eg)
+	for image in $(images_eg); do \
+	    export CH_TEST_TAG=$$(./make-auto tag $$image); \
+	    bats $$(dirname $$image)/test.bats; \
+	done
 
 .PHONY: clean
 clean:

@@ -236,6 +236,8 @@ of the default 1001:1001), i.e. :code:`--gid=5`. Then, step 4 succeeds because
 the call is mapped to :code:`chown("/dev/pts/0", 1000, 1001)` and MATLAB is
 happy.
 
+.. _faq_docker2tar-size:
+
 :code:`ch-docker2tar` gives incorrect image sizes
 -------------------------------------------------
 

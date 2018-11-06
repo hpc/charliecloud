@@ -1,8 +1,12 @@
 load ../../../test/common
-load ./test
 
-# Note: This file is common for both mpihello flavors. Flavor-specific setup
-# is in test.bash.
+setup () {
+    scope full
+    prerequisites_ok "$ch_tag"
+    if [[ $ch_mpi = mpich ]]; then
+        crayify_mpi_maybe "$ch_img"
+    fi
+}
 
 count_ranks () {
       echo "$1" \

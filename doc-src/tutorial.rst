@@ -31,17 +31,21 @@ Charliecloud for your own applications.
 ::
 
   $ cd /usr/local/src/charliecloud/examples/serial/hello
-  $ ch-build -t hello /usr/local/src/charliecloud
-  Sending build context to Docker daemon 15.67 MB
+  $ ch-build -t hello .
+  Sending build context to Docker daemon  5.632kB
   [...]
   Successfully built 1136de7d4c0a
   $ ch-docker2tar hello /var/tmp
-  57M /var/tmp/hello.tar.gz
+   114MiB 0:00:03 [=============================================] 103%
+  -rw-r----- 1 reidpr reidpr 49M Nov 21 14:05 /var/tmp/hello.tar.gz
   $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
   creating new image /var/tmp/hello
   /var/tmp/hello unpacked ok
   $ ch-run /var/tmp/hello -- echo "I'm in a container"
   I'm in a container
+
+(See the :ref:`FAQ <faq_docker2tar-size>` for why the progress bar goes over
+100%.)
 
 Getting help
 ============
@@ -93,30 +97,32 @@ will encounter more complex Dockerfiles later in this tutorial.
      $ sudo docker pull debian:stretch
 
    There are various resources and scripts online to help automate this
-   process.
+   process, as well as :code:`test/docker-clean.sh`.
 
 Build Docker image
 ------------------
 
-Charliecloud provides a convenience wrapper around :code:`docker build` that
-works around some of its more irritating characteristics. In particular, it
-passes through any HTTP proxy variables, and by default it uses the Dockerfile
-in the current directory, rather than at the root of the Docker context
-directory. (We will address the context directory later.)
+Charliecloud provides a convenience wrapper :code:`ch-build` around
+:code:`docker build` that mitigates some of the latter's more irritating
+characteristics. In particular, it passes through any HTTP proxy variables,
+and by default it uses the Dockerfile in the current directory, rather than at
+the root of the Docker context directory. (We will address the context
+directory in more detail later.)
 
 The two arguments here are a tag for the Docker image and the context
-directory, which in this case is the Charliecloud source code.
+directory, which in this case is the current directory.
 
 ::
 
-   $ ch-build -t hello /usr/local/src/charliecloud
-   Sending build context to Docker daemon 15.67 MB
+   $ ch-build -t hello .
+   Sending build context to Docker daemon  5.632kB
    Step 1/4 : FROM debian:stretch
-   ---> 86baf4e8cde9
+    ---> be2868bebaba
    [...]
    Step 4/4 : RUN touch /usr/bin/ch-ssh
-   ---> 1136de7d4c0a
-   Successfully built 1136de7d4c0a
+    ---> e5920427a8f2
+   Successfully built e5920427a8f2
+   Successfully tagged hello:latest
 
 Note that Docker prints each step of the Dockerfile as it's executed.
 
@@ -632,24 +638,25 @@ code under active development.
 The general approach is the same as installing third-party software from
 source, but you use the :code:`COPY` instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
-the :code:`mpihello` Dockerfile uses this approach:
+:code:`examples/mpi/mpihello/Dockerfile.openmpi` uses this approach:
 
-.. literalinclude:: ../examples/mpi/mpihello/Dockerfile
+.. literalinclude:: ../examples/mpi/mpihello/Dockerfile.openmpi
    :language: docker
 
 These Dockerfile instructions:
 
 1. Copy the host directory :code:`examples/mpi/mpihello` to the image at path
-   :code:`/hello`. The host path is *relative to the context directory*;
-   Docker builds have no access to the host filesystem outside the context
-   directory. (This is so the Docker daemon can run on a different machine ---
-   the context directory is tarred up and sent to the daemon, even if it's on
-   the same machine.)
+   :code:`/hello`. The host path is relative to the *context directory*, which
+   is tarred up and sent to the Docker daemon. Docker builds have no access to
+   the host filesystem outside the context directory.
 
-   The convention for the Charliecloud examples is that the build directory is
-   always rooted at the top of the Charliecloud source code, but we could just
-   as easily have provided the :code:`mpihello` directory. In that case, the
-   source in :code:`COPY` would have been :code:`.`.
+   (Unlike the HPC custom, Docker comes from a world without network
+   filesystems. This tar-based approach lets the Docker daemon run on a
+   different node from the client without needing any shared filesystems.)
+
+   The convention for Charliecloud tests and examples is that the context is
+   the directory containing the Dockerfile in question, and a common pattern,
+   used here, is to copy in the entire context.
 
 2. :code:`cd` to :code:`/hello`.
 

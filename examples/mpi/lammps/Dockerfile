@@ -24,6 +24,6 @@ RUN    cd $LAMMPS_DIR/python \
 
 # Make another test input file.
 # Patch instead of including in.large.melt in full because LAMMPS is GPL.
-COPY examples/mpi/lammps/melt.patch /lammps/examples/melt
+COPY melt.patch /lammps/examples/melt
 RUN patch -p1 -o /lammps/examples/melt/in.large.melt \
                < /lammps/examples/melt/melt.patch
