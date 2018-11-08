@@ -108,7 +108,7 @@ info () {
 
 is_bin () {
     case $1 in
-        */bin*)
+        */bin*|*/sbin*)
             return 0
             ;;
         *)

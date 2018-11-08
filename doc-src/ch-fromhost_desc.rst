@@ -26,12 +26,12 @@ Injection is not atomic; if an error occurs partway through injection, the
 image is left in an undefined state. Injection is currently implemented using
 a simple file copy, but that may change in the future.
 
-By default, file paths that contain the string :code:`/bin` are assumed to be
-executables and are placed in :code:`/usr/bin` within the container. File
-paths that contain the strings :code:`/lib` or :code:`.so` are assumed to be
-shared libraries and are placed in the first-priority directory reported by
-:code:`ldconfig` (see :code:`--lib-path` below). Other files are placed in the
-directory specified by :code:`--dest`.
+By default, file paths that contain the strings :code:`/bin` or :code:`/sbin`
+are assumed to be executables and placed in :code:`/usr/bin` within the
+container. File paths that contain the strings :code:`/lib` or :code:`.so` are
+assumed to be shared libraries and are placed in the first-priority directory
+reported by :code:`ldconfig` (see :code:`--lib-path` below). Other files are
+placed in the directory specified by :code:`--dest`.
 
 If any shared libraries are injected, run :code:`ldconfig` inside the
 container (using :code:`ch-run -w`) after injection.
