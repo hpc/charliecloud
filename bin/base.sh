@@ -1,5 +1,3 @@
-#!/bin/sh
- 
 set -e
 
 # shellcheck disable=SC2034
