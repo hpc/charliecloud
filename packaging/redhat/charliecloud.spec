@@ -14,14 +14,6 @@ BuildRequires: python python-sphinx python-sphinx_rtd_theme rsync
 Charliecloud provides user-defined software stacks (UDSS) for
 high-performance computing (HPC) centers.
 
-%package doc
-Summary: Documentation and examples for %{name}
-Group: System Environment/Base
-
-%description doc
-This package contains documentation and examples
-for the %{name} package.
-
 %prep
 %setup -q
 # Required for CentOS 7 and older, which don't know of Docker lexer yet.
@@ -29,8 +21,6 @@ for the %{name} package.
 
 %build
 %{__make} %{?mflags}
-%{__make} -C doc-src %{?mflags}
-mv doc html
 
 %install
 LIBEXEC_POSTFIX=$(echo %{_libexecdir} | sed 's#^/usr/##')
@@ -58,8 +48,5 @@ rm -rf $RPM_BUILD_ROOT
 
 # Binaries
 %{_bindir}/ch-*
-
-%files doc
-%doc html
 
 %changelog
