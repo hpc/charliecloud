@@ -3,69 +3,63 @@ FROM nvcr.io/hpc/candle:20180326
 
 # The primary goals of this Dockerfile are:
 #   
-#    1. Provide users with a CANDLE image that builds from
-#       start to finish without user intervention.
+#    1. Provide users with a CANDLE image that builds from start to finish 
+#       without user intervention.
 #
-#    2. Supply data before runtime. Enable the container to
-#       run the Pilot1 P1B1 and Pilot3 P3B1 benchmarks on systems 
-#       without network access at run time.
+#    2. Supply data before runtime. Enable the container to run the Pilot1 
+#       P1B1 and Pilot3 P3B1 benchmarks on systems without network access 
+#       at run time.
 #       
-# This Dockerfile is an extenstion of NVIDIA's CANDLE Dockerfile, 
-# which can be found on their GPU catalog at:
+# This Dockerfile is an extenstion of NVIDIA's CANDLE Dockerfile, which 
+# can be found on their GPU catalog at:
 #   
-#    - https://ngc.nvidia.com/catalog/containers/hpc%2Fcandle
+#   - https://ngc.nvidia.com/catalog/containers/hpc%2Fcandle
 #
-# This Dockerfile requires an authenticated docker login to nvcr.io.
+# This Dockerfile requires an authenticated docker login to nvcr.io. To do
+# this you must:
 #
-# This Dockerfile is a work in progress. We are always interested 
-# in feedback.
+#   1. Create an account at https://ngc.nvidia.com/catalog/containers
+#   2. Click on "CONFIGURATION" located on primary naviation bar on the 
+#      left side of the website
+#   3. Click the "Get API Key" button
+#   4. Record the generated password (key)
+#   5. On the command line, login as follows:
+#       
+#       $ docker login nvcr.io
+#       
+#       Username: $oauthtoken       # Type this exactly. 
+#       Passowrd                    # Enter your your generated key
 #
-# The NVIDIA CANDLE Dockerfile does not build completely. Rather they
-# instruct the user to launch an interactive container and resume
-# building. From their image documentation:
+# This Dockerfile is a work in progress. We are always interested in 
+# feedback.
+#
+# The NVIDIA CANDLE Dockerfile does not build completely. Rather they 
+# instruct the user to launch an interactive container and resume building.
+# From their image documentation:
 # 
 #    To complete CANDLE setup, execute source /opt/candle_setup.sh Next, 
-#    copy the script located in ‘/opt/testscript.sh’ to some other 
-#    directory inside the container and execute it. This script clones the 
-#    CANDLE Benchmark and Tutorials suites and downloads the appropriate data 
-#    to run a CANDLE hyperparameter optimization sweep. 
+#    copy the script located in ‘/opt/testscript.sh’ to some other directory
+#    inside the container and execute it. This script clones the CANDLE 
+#    Benchmark and Tutorials suites and downloads the appropriate data to 
+#    run a CANDLE hyperparameter optimization sweep. 
 #
 # We prefer to encapsulate the entire build process within the Dockerfile. 
 # Therefore the remainder of this Dockerfile installs and configures the 
-# various dependancies required to run CANDLE (the steps that the user 
-# was expected to complete during runtime).
+# various dependancies required to run CANDLE (the steps that the user was 
+# expected to complete during runtime).
 
 # FIX: Remove.
 COPY docker-env.sh /
 
-RUN pip install --upgrade pip \
-    && pip install 'keras==2.1.3' \
-    && pip install 'appdirs==1.4.3' \
-    && pip install 'cycler==0.10.0' \
-    && pip install 'functools32==3.2.3.post2' \
-    && pip install 'h5py==2.7.1' \
-    && pip install 'hyperopt==0.1' \
-    && pip install 'matplotlib==2.0.0' \
-    && pip install 'olefile==0.44' \
-    && pip install 'opencv-python==3.2.0.6' \
-    && pip install 'pandas==0.20.1' \
-    && pip install 'packaging==16.8' \
-    && pip install 'Pillow==4.1.0' \
-    && pip install 'pyparsing==2.2.0' \
-    && pip install 'python-dateutil==2.6.0' \
-    && pip install 'pytz==2017.2' \
-    && pip install 'pyYAML==3.12' \
-    && pip install 'requests==2.18.2' \
-    && pip install 'scikit-learn==0.18.1' \
-    && pip install 'scipy==0.19.0' \
-    && pip install 'subprocess32==3.2.7' \
-    && pip install 'Theano==0.9.0' \
-    && pip install 'tqdm==4.11.2'
+COPY requirements.txt /opt
+
+WORKDIR /opt
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
 ENV PATH="/usr/bin:${PATH}"
 ENV BUILD_DIR /opt
 
-WORKDIR /opt
 RUN rm -rf swift-t 2> /dev/null
 
 RUN apt-get update -y && \
@@ -117,6 +111,12 @@ RUN git clone https://github.com/ECP-CANDLE/Benchmarks.git && \
 RUN mkdir -p /opt/Benchmarks/Data/Pilot1/ && \
     mkdir /opt/Benchmarks/Data/P3B1/
 
+# The CANDLE Benchmarks check the Benchmarks/Data directory for the
+# corresponding benchmark data at run time. If the data does not exist it
+# is downladed from the ftp.mcs.anl.gov URL. This will fail on systems 
+# or compute nodes that do not have network access at run time. We provide
+# the necessary benchmark data to run the example workflow on machines 
+# independent of network connectivity at run time.
 WORKDIR /opt/Benchmarks/Data/Pilot1
 RUN wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P1B1/P1B1.dev.train.csv && \
     wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P1B1/P1B1.dev.test.csv && \
@@ -126,8 +126,8 @@ RUN wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P1B1/P1B1.dev.train
 WORKDIR /opt/Benchmarks/Data/P3B1
 RUN wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P3B1/P3B1_data.tar.gz
 
-# Download the CANDLE/Tutortial and configure the workslow
-# script to run against the Pilot3/P3B1 data.
+# Download the CANDLE/Tutortial and configure the workslow script to run 
+# against the Pilot3/P3B1 data.
 WORKDIR /opt
 RUN git clone https://github.com/ECP-CANDLE/Tutorials.git
 WORKDIR /opt/Tutorials/2018/NIH/Supervisor
