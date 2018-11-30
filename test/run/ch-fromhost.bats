@@ -4,7 +4,8 @@ fromhost_clean () {
     [[ $1 ]]
     for file in /{lib,mnt,usr/bin}/sotest \
                 /{lib,mnt,usr/lib,usr/local/lib}/libsotest.so.1{.0,} \
-                /usr/local/cuda-9.1/targets/x86_64-linux/lib/libsotest.so.1{.0,} \
+                /usr/local/lib/libcuda.so* \
+                /usr/local/lib/libnvidia-* \
                 /mnt/sotest.c \
                 /etc/ld.so.cache ; do
         rm -f "${1}${file}"
