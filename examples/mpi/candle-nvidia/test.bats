@@ -6,7 +6,7 @@ setup () {
     source_script='source docker-env.sh'
 }
 
-gpu_ok {
+gpu_ok () {
     command -v nvidia-container-cli > /dev/null 2>&1 \
         || skip 'nvidia-container-cli not in PATH'
 
@@ -16,7 +16,7 @@ gpu_ok {
 
 @test "${ch_tag}/fromhost --nvidia" {
     gpu_ok
-    $ch-fromhost --nvidia -v "$ch_img"
+    ch-fromhost --nvidia -v "$ch_img"
     [[ $status -eq 0 ]]
 }
 
