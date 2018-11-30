@@ -26,7 +26,10 @@
 Vagrant.require_version ">= 2.1.3"
 Vagrant.configure("2") do |c|
 
-  c.vm.box = "centos/7"  # https://app.vagrantup.com/centos/boxes/7
+  c.vm.box = "centos/7"         # https://app.vagrantup.com/centos/boxes/7
+  c.vm.box_version = "~>1809"   # updates: https://blog.centos.org/?s=vagrant
+  c.vm.box_check_update = true  # warn if base box out of date
+
   c.vm.hostname = "charliebox"
   c.vagrant.plugins = ['vagrant-disksize',
                        'vagrant-proxyconf',
@@ -50,30 +53,15 @@ Vagrant.configure("2") do |c|
     EOF
   end
 
-  # Don't inflict unexpected re-provisions on the user. They can always
-  # destroy and re-provision to get an updated base box if they want.
-  c.vm.box_check_update = false
-
   # Configure the appliance.
   c.vm.provider "virtualbox" do |vb|
     vb.name = "charliebox"
     vb.gui = false
     vb.memory = "4096"
     vb.cpus = 4
+    c.disksize.size = '96GB'  # see also provisioner "disksize" below
     vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
   end
-
-  # Increase the disk size so that the full-scope tests can finish.
-  c.disksize.size = '96GB'
-  c.vm.provision "disksize", type: "shell", privileged: true,
-                 inline: <<-EOF
-    set -e
-    parted /dev/sda resizepart 3 100%
-    pvresize /dev/sda3
-    lvextend --extents 100%PVS /dev/VolGroup00/LogVol00
-    xfs_growfs /
-    df -h
-  EOF
 
   # Install a decent user environment.
   c.vm.provision "environment", type: "shell", privileged: true,
@@ -100,6 +88,35 @@ Vagrant.configure("2") do |c|
 
     # Add /usr/local/{bin,sbin} to $PATH.
     echo 'export PATH=/usr/local/sbin:/usr/local/bin:$PATH' > /etc/profile.d/path.sh
+  EOF
+
+  # Expand the root filesystem to use the full resized disk. This is needed so
+  # the full-scope tests can finish. Notes:
+  #
+  #   1. This is specific to the provisioning scheme selected by the base box.
+  #      See issue #285.
+  #
+  #   2. We install parted from Fedora 23 because the version of parted in
+  #      CentOS 7 (3.1-29) won't resize mounted partitions. Fedora 23's parted
+  #      is apparently the newest whose dependencies CentOS 7 still meets.
+  #
+  #   3. ---pretend-input-tty is an undocumented option (note third hyphen) to
+  #      convince parted to accept "yes" to the warning even without a TTY.
+  #      See: https://unix.stackexchange.com/a/365657
+  #
+  c.vm.provision "disksize", type: "shell", privileged: true,
+                 inline: <<-EOF
+    set -e
+    cd /tmp
+
+    yum -y install e2fsprogs
+    wget -nv https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/23/Everything/x86_64/os/Packages/p/parted-3.2-11.fc23.x86_64.rpm
+    rpm --upgrade parted-*.x86_64.rpm
+
+    parted /dev/sda ---pretend-input-tty resizepart 1 yes 100%
+    parted /dev/sda p
+    resize2fs /dev/sda1
+    df -h
   EOF
 
   # Configure namespaces. This needs a reboot for the kernel command line
