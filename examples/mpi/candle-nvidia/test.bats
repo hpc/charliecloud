@@ -33,7 +33,3 @@ gpu_ok () {
     ch-run -w "$ch_img" -- /bin/bash -c "$source_script && $run_workflow"
     [[ $status -eq 0 ]]
 }
-
-@test "${ch_tag}/revert image" {
-    ch-tar2dir "$ch_tar" "${ch_img%/*}"
-}
