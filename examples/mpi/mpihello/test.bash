@@ -1,3 +1,0 @@
-setup () {
-    scope full
-}

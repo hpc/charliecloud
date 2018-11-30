@@ -131,8 +131,25 @@ ch_version=$(ch-run --version 2>&1)
 # shellcheck disable=SC2034
 ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 
+# Separate directories for tarballs and images.
+#
+# Canonicalize both so the have consistent paths and we can reliably use them
+# in tests (see issue #143). We use readlink(1) rather than realpath(2),
+# despite the admonition in the man page, because it's more portable [1].
+#
+# [1]: https://unix.stackexchange.com/a/136527
+ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
+ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
+
+# Image information.
+ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
+ch_img=${ch_imgdir}/${ch_tag}
+ch_tar=${ch_tardir}/${ch_tag}.tar.gz
+ch_ttar=${ch_tardir}/chtest.tar.gz
+ch_timg=${ch_imgdir}/chtest
+
 # User-private temporary directory in case multiple users are running the
-# tests simultaenously.
+# tests simultaneously.
 btnew=$BATS_TMPDIR/bats.tmp.$USER
 mkdir -p "$btnew"
 chmod 700 "$btnew"
@@ -141,7 +158,7 @@ export BATS_TMPDIR=$btnew
 
 # MPICH requires different handling from OpenMPI. Set a variable to enable
 # some kludges.
-if [[ $BATS_TEST_DIRNAME = *'mpich'* ]]; then
+if [[ $ch_tag = *'-mpich' ]]; then
     ch_mpi=mpich
     # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
     # Slurm environment variables, it tries to launch even local ranks with
@@ -160,22 +177,7 @@ else
     ch_cray=
 fi
 
-# Separate directories for tarballs and images.
-#
-# Canonicalize both so the have consistent paths and we can reliably use them
-# in tests (see issue #143). We use readlink(1) rather than realpath(2),
-# despite the admonition in the man page, because it's more portable [1].
-#
-# [1]: https://unix.stackexchange.com/a/136527
-ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
-ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
-
-# Some test variables
-ch_tag=$(basename "$BATS_TEST_DIRNAME")
-ch_img=${ch_imgdir}/${ch_tag}
-ch_tar=${ch_tardir}/${ch_tag}.tar.gz
-ch_ttar=${ch_tardir}/chtest.tar.gz
-ch_timg=${ch_imgdir}/chtest
+# Slurm stuff.
 if [[ $SLURM_JOB_ID ]]; then
     # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
     # documentation.

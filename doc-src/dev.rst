@@ -304,6 +304,108 @@ To publish::
 It sometimes takes a few minutes for the web pages to update.
 
 
+Test suite
+==========
+
+Timing the tests
+----------------
+
+The :code:`ts` utility from :code:`moreutils` is quite handy. The following
+prepends each line with the elapsed time since the previous line::
+
+  $ CH_TEST_SCOPE=quick make test | ts -i '%M:%.S'
+
+Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
+
+Writing a test image using the standard workflow
+------------------------------------------------
+
+The Charliecloud test suite has a workflow that can build images by three
+methods:
+
+1. From a Dockerfile, using :code:`ch-build`.
+2. By pulling a Docker image, with :code:`docker pull`.
+3. By running a custom script.
+
+To create an image that will be built, unpacked, and basic tests run within,
+create a file in :code:`test/` called
+:code:`{Dockerfile,Docker_Pull,Build}.foo`. This will create an image tagged
+:code:`foo`.
+
+To create an image with its own tests, documentation, etc., create a directory
+in :code:`examples/*`. In this directory, place
+:code:`{Dockerfile,Docker_Pull,Build}[.foo]` to build the image and
+:code:`test.bats` with your tests. For example, the file
+:code:`examples/mpi/foo/Dockerfile` will create an image tagged :code:`foo`,
+and :code:`examples/mpi/foo/Dockerfile.bar` tagged :code:`foo-bar`. These
+images also get the basic tests.
+
+Image tags in the test suite must be unique.
+
+Each of these image build files must specify its scope for building and
+running, which must be greater than or equal than the scope of all tests in
+the corresponding :code:`test.bats`. Exactly one of the following strings must
+be in each file:
+
+.. code-block:: none
+
+  ch-test-scope: quick
+  ch-test-scope: standard
+  ch-test-scope: full
+
+Other stuff on the line (e.g., comment syntax) is ignored.
+
+Additional subdirectories can be symlinked into :code:`examples/` and will be
+integrated into the test suite. This allows you to create a site-specific test
+suite.
+
+Dockerfile:
+
+  * It's a Dockerfile.
+
+Docker_Pull:
+
+  * First line states the address to pull from Docker Hub.
+  * Second line is a scope expression as described above.
+  * Examples (these refer to the same image as of this writing):
+
+    .. code-block:: none
+
+      alpine:3.6
+      alpine@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d
+
+Build:
+
+  * Script or program that builds the image.
+
+  * Arguments:
+
+    * :code:`$1`: Absolute path to directory containing Build.
+    * :code:`$2`: Absolute path and name of gzipped tarball output.
+    * :code:`$3`: Absolute path to appropriate temporary directory.
+
+  * The script must not write anything in the current directory.
+
+  * Temporary directory can be used for whatever and need not be cleaned up.
+    It will be deleted by the test harness.
+
+  * The first entry in :code:`$PATH` will be the Charliecloud under test,
+    i.e., bare :code:`ch-*` commands will be the right ones.
+
+  * The tarball must not contain leading directory components; top-level
+    filesystem directories such as bin and usr must be at the root of the
+    tarball with no leading path (:code:`./` is acceptable).
+
+  * Any programming language is permitted. To be included in the Charliecloud
+    source code, a language already in the prerequisites is required.
+
+  * Exit codes:
+
+    * 0: Image tarball successfully created.
+    * 65: One or more prerequisites were not met.
+    * else: An error occurred.
+
+
 Coding style
 ============
 

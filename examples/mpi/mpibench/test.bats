@@ -1,13 +1,11 @@
 load ../../../test/common
-load ./test
-
-# Note: This file is common for both mpihello flavors. Flavor-specific setup
-# is in test.bash.
 
 setup () {
-    setup_specific
     scope full
-    imb_mpi1=/usr/local/src/mpi-benchmarks/src/IMB-MPI1
+    prerequisites_ok "$ch_tag"
+    if [[ $ch_mpi = mpich ]]; then
+        crayify_mpi_maybe "$ch_img"
+    fi
 
     # - One iteration because we just care about correctness, not performance.
     #   (If we let the benchmark choose, there is an overwhelming number of
@@ -16,6 +14,7 @@ setup () {
     #
     # - Large -npmin because we only want to test all cores.
     #
+    imb_mpi1=/usr/local/src/mpi-benchmarks/src/IMB-MPI1
     imb_args="-iter 1 -npmin 1000000000"
 }
 
