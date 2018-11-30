@@ -36,7 +36,7 @@ FROM nvcr.io/hpc/candle:20180326
 # was expected to complete during runtime).
 
 # FIX: Remove.
-COPY examples/mpi/candle-nvidia/docker-env.sh /
+COPY docker-env.sh /
 
 RUN pip install --upgrade pip \
     && pip install 'keras==2.1.3' \
