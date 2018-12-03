@@ -305,7 +305,6 @@ EOF
         run ch-run "$img" -- true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
-        echo "$output" >> ruff
         [[ $status -eq 1 ]]
         [[ $output =~ .*"can't bind: not found: "[/a-zA-Z._0-9-]*$f.* ]]
     done
