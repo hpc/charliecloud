@@ -307,7 +307,7 @@ EOF
         echo "$output"
         echo "$output" >> ruff
         [[ $status -eq 1 ]]
-        [[ $output =~ .*"can't bind: not found: "[\/a-zA-Z._0-9-]*$f.* ]]
+        [[ $output =~ .*"can't bind: not found: "[/a-zA-Z._0-9-]*$f.* ]]
     done
 
     # For each optional file, we want no error if it's missing.
@@ -344,7 +344,7 @@ EOF
         mkdir "${img}/${d}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        [[ $output =~ .*"can't bind: not found: "[\/a-zA-Z._0-9-]*$d.* ]]
+        [[ $output =~ .*"can't bind: not found: "[/a-zA-Z._0-9-]*$d.* ]]
     done
 
     # For each directory, we want a correct error if it's not a directory.
