@@ -4,6 +4,10 @@ setup () {
     scope standard
 }
 
+ipc_clean () {
+    rm -v /dev/shm/*ch-run*
+}
+
 ipc_clean_p () {
     sem="$(find /dev/shm -maxdepth 1 -name '*ch-run*')"
     [[ -z $sem ]]
@@ -74,6 +78,14 @@ unset_vars () {
     unset SLURM_STEP_TASKS_PER_NODE
 }
 
+
+@test 'ch-run --join: /dev/shm starts clean' {
+    if ( ! ipc_clean_p ); then
+        echo 'warning: /dev/shm contains leftover ch-run IPC'
+        ipc_clean
+        false
+    fi
+}
 
 @test 'ch-run --join: one peer, direct launch' {
     unset_vars
@@ -435,4 +447,12 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"join: no PID ${pid}: /proc/${pid}/ns/user not found"* ]]
+}
+
+@test 'ch-run --join: /dev/shm ends clean' {
+    if ( ! ipc_clean_p ); then
+        echo 'warning: /dev/shm contains leftover ch-run IPC'
+        ipc_clean
+        false
+    fi
 }
