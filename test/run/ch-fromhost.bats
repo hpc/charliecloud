@@ -2,14 +2,12 @@ load ../common
 
 fromhost_clean () {
     [[ $1 ]]
-    for file in /{lib,mnt,usr/bin}/sotest \
-                /{lib,mnt,usr/lib,usr/local/lib}/libsotest.so.1{.0,} \
-                /usr/local/lib/libcuda.so* \
-                /usr/local/lib/libnvidia-* \
-                /mnt/sotest.c \
-                /etc/ld.so.cache ; do
-        rm -f "${1}${file}"
-    done
+    rm -f "${1}"/{lib,mnt,usr/bin}/sotest \
+                "${1}"/{lib,mnt,usr/lib,usr/local/lib}/libsotest.so.1{.0,} \
+                "${1}/mnt/sotest.c" \
+                "${1}/etc/ld.so.cache" \
+                "${1}/usr/local/lib/libcuda"* \
+                "${1}/usr/local/lib/libnvidia"*
     ch-run -w "$1" -- /sbin/ldconfig  # restore default cache
     fromhost_clean_p "$1"
 }
@@ -335,8 +333,8 @@ fromhost_ls () {
     fromhost_clean "$img"
     run ch-run "$img" -- $sample
     echo "$output"
-    [[ $status -eq 127 ]]
-    [[ $output =~ 'matrixMulCUBLAS: error while loading shared libraries' ]]
+    [[ $status -eq 1 ]]
+    [[ $output = *'CUDA error at'* ]]
     # should succeed with it
     fromhost_clean_p "$img"
     ch-fromhost --nvidia "$img"
