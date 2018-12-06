@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>7. Contributor’s guide &mdash; Charliecloud 0.9.4 documentation</title>
+  <title>7. Contributor’s guide &mdash; Charliecloud 0.9.5 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                25b5fd4
+                149e224
               </div>
             
           
@@ -113,10 +113,15 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#coding-style">7.3. Coding style</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#writing-english">7.3.1. Writing English</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#curl-vs-wget">7.3.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">7.3.3. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-suite">7.3. Test suite</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#timing-the-tests">7.3.1. Timing the tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#writing-a-test-image-using-the-standard-workflow">7.3.2. Writing a test image using the standard workflow</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#coding-style">7.4. Coding style</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#writing-english">7.4.1. Writing English</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#curl-vs-wget">7.4.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">7.4.3. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
 </ul>
 </li>
 </ul>
@@ -202,10 +207,15 @@ consult the internal documentation and other resources.</p>
 <li><a class="reference internal" href="#how-to-build-the-documentation" id="id9">How to build the documentation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#coding-style" id="id10">Coding style</a><ul>
-<li><a class="reference internal" href="#writing-english" id="id11">Writing English</a></li>
-<li><a class="reference internal" href="#curl-vs-wget" id="id12"><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
-<li><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id13">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
+<li><a class="reference internal" href="#test-suite" id="id10">Test suite</a><ul>
+<li><a class="reference internal" href="#timing-the-tests" id="id11">Timing the tests</a></li>
+<li><a class="reference internal" href="#writing-a-test-image-using-the-standard-workflow" id="id12">Writing a test image using the standard workflow</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#coding-style" id="id13">Coding style</a><ul>
+<li><a class="reference internal" href="#writing-english" id="id14">Writing English</a></li>
+<li><a class="reference internal" href="#curl-vs-wget" id="id15"><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
+<li><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id16">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
 </ul>
 </li>
 </ul>
@@ -467,8 +477,104 @@ branch (not a submodule). To set that up:</p>
 </div>
 </div>
 </div>
+<div class="section" id="test-suite">
+<h2><a class="toc-backref" href="#id10">7.3. Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="timing-the-tests">
+<h3><a class="toc-backref" href="#id11">7.3.1. Timing the tests</a><a class="headerlink" href="#timing-the-tests" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="code docutils literal notranslate"><span class="pre">ts</span></code> utility from <code class="code docutils literal notranslate"><span class="pre">moreutils</span></code> is quite handy. The following
+prepends each line with the elapsed time since the previous line:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nv">CH_TEST_SCOPE</span><span class="o">=</span>quick make <span class="nb">test</span> <span class="p">|</span> ts -i <span class="s1">&#39;%M:%.S&#39;</span>
+</pre></div>
+</div>
+<p>Note: a skipped test isn’t free; I see ~0.15 seconds to do a skip.</p>
+</div>
+<div class="section" id="writing-a-test-image-using-the-standard-workflow">
+<h3><a class="toc-backref" href="#id12">7.3.2. Writing a test image using the standard workflow</a><a class="headerlink" href="#writing-a-test-image-using-the-standard-workflow" title="Permalink to this headline">¶</a></h3>
+<p>The Charliecloud test suite has a workflow that can build images by three
+methods:</p>
+<ol class="arabic simple">
+<li>From a Dockerfile, using <code class="code docutils literal notranslate"><span class="pre">ch-build</span></code>.</li>
+<li>By pulling a Docker image, with <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code>.</li>
+<li>By running a custom script.</li>
+</ol>
+<p>To create an image that will be built, unpacked, and basic tests run within,
+create a file in <code class="code docutils literal notranslate"><span class="pre">test/</span></code> called
+<code class="code docutils literal notranslate"><span class="pre">{Dockerfile,Docker_Pull,Build}.foo</span></code>. This will create an image tagged
+<code class="code docutils literal notranslate"><span class="pre">foo</span></code>.</p>
+<p>To create an image with its own tests, documentation, etc., create a directory
+in <code class="code docutils literal notranslate"><span class="pre">examples/*</span></code>. In this directory, place
+<code class="code docutils literal notranslate"><span class="pre">{Dockerfile,Docker_Pull,Build}[.foo]</span></code> to build the image and
+<code class="code docutils literal notranslate"><span class="pre">test.bats</span></code> with your tests. For example, the file
+<code class="code docutils literal notranslate"><span class="pre">examples/mpi/foo/Dockerfile</span></code> will create an image tagged <code class="code docutils literal notranslate"><span class="pre">foo</span></code>,
+and <code class="code docutils literal notranslate"><span class="pre">examples/mpi/foo/Dockerfile.bar</span></code> tagged <code class="code docutils literal notranslate"><span class="pre">foo-bar</span></code>. These
+images also get the basic tests.</p>
+<p>Image tags in the test suite must be unique.</p>
+<p>Each of these image build files must specify its scope for building and
+running, which must be greater than or equal than the scope of all tests in
+the corresponding <code class="code docutils literal notranslate"><span class="pre">test.bats</span></code>. Exactly one of the following strings must
+be in each file:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>ch-test-scope: quick
+ch-test-scope: standard
+ch-test-scope: full
+</pre></div>
+</div>
+<p>Other stuff on the line (e.g., comment syntax) is ignored.</p>
+<p>Additional subdirectories can be symlinked into <code class="code docutils literal notranslate"><span class="pre">examples/</span></code> and will be
+integrated into the test suite. This allows you to create a site-specific test
+suite.</p>
+<p>Dockerfile:</p>
+<blockquote>
+<div><ul class="simple">
+<li>It’s a Dockerfile.</li>
+</ul>
+</div></blockquote>
+<p>Docker_Pull:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">First line states the address to pull from Docker Hub.</p>
+</li>
+<li><p class="first">Second line is a scope expression as described above.</p>
+</li>
+<li><p class="first">Examples (these refer to the same image as of this writing):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>alpine:3.6
+alpine@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+<p>Build:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Script or program that builds the image.</li>
+<li>Arguments:<ul>
+<li><code class="code docutils literal notranslate"><span class="pre">$1</span></code>: Absolute path to directory containing Build.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">$2</span></code>: Absolute path and name of gzipped tarball output.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">$3</span></code>: Absolute path to appropriate temporary directory.</li>
+</ul>
+</li>
+<li>The script must not write anything in the current directory.</li>
+<li>Temporary directory can be used for whatever and need not be cleaned up.
+It will be deleted by the test harness.</li>
+<li>The first entry in <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code> will be the Charliecloud under test,
+i.e., bare <code class="code docutils literal notranslate"><span class="pre">ch-*</span></code> commands will be the right ones.</li>
+<li>The tarball must not contain leading directory components; top-level
+filesystem directories such as bin and usr must be at the root of the
+tarball with no leading path (<code class="code docutils literal notranslate"><span class="pre">./</span></code> is acceptable).</li>
+<li>Any programming language is permitted. To be included in the Charliecloud
+source code, a language already in the prerequisites is required.</li>
+<li>Exit codes:<ul>
+<li>0: Image tarball successfully created.</li>
+<li>65: One or more prerequisites were not met.</li>
+<li>else: An error occurred.</li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
 <div class="section" id="coding-style">
-<h2><a class="toc-backref" href="#id10">7.3. Coding style</a><a class="headerlink" href="#coding-style" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id13">7.4. Coding style</a><a class="headerlink" href="#coding-style" title="Permalink to this headline">¶</a></h2>
 <p>We haven’t written down a comprehensive style guide. Generally, follow the
 style of the surrounding code, think in rectangles rather than lines of code
 or text, and avoid CamelCase.</p>
@@ -476,7 +582,7 @@ or text, and avoid CamelCase.</p>
 complains (or even updates this section based on your patch!). He tries to be
 nice about it.</p>
 <div class="section" id="writing-english">
-<h3><a class="toc-backref" href="#id11">7.3.1. Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14">7.4.1. Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p class="first">When describing what something does (e.g., your PR or a command), use the
 <a class="reference external" href="https://chris.beams.io/posts/git-commit/#imperative">imperative mood</a>,
@@ -506,7 +612,7 @@ filled with false positives.</p>
 </ul>
 </div>
 <div class="section" id="curl-vs-wget">
-<h3><a class="toc-backref" href="#id12">7.3.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15">7.4.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h3>
 <p>For URL downloading in shell code, including Dockerfiles, use <code class="code docutils literal notranslate"><span class="pre">wget</span> <span class="pre">-nv</span></code>.</p>
 <p>Both work fine for our purposes, and we need to use one or the other
 consistently. According to Debian’s popularity contest, 99.88% of reporting
@@ -516,7 +622,7 @@ other hand, <code class="code docutils literal notranslate"><span class="pre">cu
 <p>For now, Reid just picked <code class="code docutils literal notranslate"><span class="pre">wget</span></code> because he likes it better.</p>
 </div>
 <div class="section" id="variable-conventions-in-shell-scripts-and-bats-files">
-<h3><a class="toc-backref" href="#id13">7.3.3. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16">7.4.3. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p class="first">Separate words with underscores.</p>
 </li>

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.4 documentation</title>
+  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.5 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                25b5fd4
+                149e224
               </div>
             
           
@@ -391,12 +391,12 @@ other hosts.</p>
 <p>Injection is not atomic; if an error occurs partway through injection, the
 image is left in an undefined state. Injection is currently implemented using
 a simple file copy, but that may change in the future.</p>
-<p>By default, file paths that contain the string <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> are assumed to be
-executables and are placed in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code> within the container. File
-paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/lib</span></code> or <code class="code docutils literal notranslate"><span class="pre">.so</span></code> are assumed to be
-shared libraries and are placed in the first-priority directory reported by
-<code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> (see <code class="code docutils literal notranslate"><span class="pre">--lib-path</span></code> below). Other files are placed in the
-directory specified by <code class="code docutils literal notranslate"><span class="pre">--dest</span></code>.</p>
+<p>By default, file paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> or <code class="code docutils literal notranslate"><span class="pre">/sbin</span></code>
+are assumed to be executables and placed in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code> within the
+container. File paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/lib</span></code> or <code class="code docutils literal notranslate"><span class="pre">.so</span></code> are
+assumed to be shared libraries and are placed in the first-priority directory
+reported by <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> (see <code class="code docutils literal notranslate"><span class="pre">--lib-path</span></code> below). Other files are
+placed in the directory specified by <code class="code docutils literal notranslate"><span class="pre">--dest</span></code>.</p>
 <p>If any shared libraries are injected, run <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> inside the
 container (using <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>) after injection.</p>
 </div>

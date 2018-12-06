@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Tutorial &mdash; Charliecloud 0.9.4 documentation</title>
+  <title>3. Tutorial &mdash; Charliecloud 0.9.5 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                25b5fd4
+                149e224
               </div>
             
           
@@ -257,12 +257,13 @@ commands executed in a container.</p>
 with the rest of the tutorial to understand what is happening and how to use
 Charliecloud for your own applications.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /usr/local/src/charliecloud/examples/serial/hello
-<span class="gp">$</span> ch-build -t hello /usr/local/src/charliecloud
-<span class="go">Sending build context to Docker daemon 15.67 MB</span>
+<span class="gp">$</span> ch-build -t hello .
+<span class="go">Sending build context to Docker daemon  5.632kB</span>
 <span class="go">[...]</span>
 <span class="go">Successfully built 1136de7d4c0a</span>
 <span class="gp">$</span> ch-docker2tar hello /var/tmp
-<span class="go">57M /var/tmp/hello.tar.gz</span>
+<span class="go"> 114MiB 0:00:03 [=============================================] 103%</span>
+<span class="go">-rw-r----- 1 reidpr reidpr 49M Nov 21 14:05 /var/tmp/hello.tar.gz</span>
 <span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
 <span class="go">creating new image /var/tmp/hello</span>
 <span class="go">/var/tmp/hello unpacked ok</span>
@@ -270,6 +271,8 @@ Charliecloud for your own applications.</p>
 <span class="go">I&#39;m in a container</span>
 </pre></div>
 </div>
+<p>(See the <a class="reference internal" href="faq.html#faq-docker2tar-size"><span class="std std-ref">FAQ</span></a> for why the progress bar goes over
+100%.)</p>
 </div>
 <div class="section" id="getting-help">
 <h2><a class="toc-backref" href="#id2">3.2. Getting help</a><a class="headerlink" href="#getting-help" title="Permalink to this headline">¶</a></h2>
@@ -308,7 +311,7 @@ supported.</p>
     <span class="o">&amp;&amp;</span> apt-get install -y openssh-client <span class="se">\</span>
     <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
 
-COPY examples/serial/hello hello
+COPY . hello
 
 <span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
@@ -323,26 +326,28 @@ be updated manually; in this case:</p>
 </pre></div>
 </div>
 <p class="last">There are various resources and scripts online to help automate this
-process.</p>
+process, as well as <code class="code docutils literal notranslate"><span class="pre">test/docker-clean.sh</span></code>.</p>
 </div>
 </div>
 <div class="section" id="build-docker-image">
 <h3><a class="toc-backref" href="#id5">3.3.2. Build Docker image</a><a class="headerlink" href="#build-docker-image" title="Permalink to this headline">¶</a></h3>
-<p>Charliecloud provides a convenience wrapper around <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code> that
-works around some of its more irritating characteristics. In particular, it
-passes through any HTTP proxy variables, and by default it uses the Dockerfile
-in the current directory, rather than at the root of the Docker context
-directory. (We will address the context directory later.)</p>
+<p>Charliecloud provides a convenience wrapper <code class="code docutils literal notranslate"><span class="pre">ch-build</span></code> around
+<code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code> that mitigates some of the latter’s more irritating
+characteristics. In particular, it passes through any HTTP proxy variables,
+and by default it uses the Dockerfile in the current directory, rather than at
+the root of the Docker context directory. (We will address the context
+directory in more detail later.)</p>
 <p>The two arguments here are a tag for the Docker image and the context
-directory, which in this case is the Charliecloud source code.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello /usr/local/src/charliecloud
-<span class="go">Sending build context to Docker daemon 15.67 MB</span>
+directory, which in this case is the current directory.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello .
+<span class="go">Sending build context to Docker daemon  5.632kB</span>
 <span class="go">Step 1/4 : FROM debian:stretch</span>
-<span class="go">---&gt; 86baf4e8cde9</span>
+<span class="go"> ---&gt; be2868bebaba</span>
 <span class="go">[...]</span>
 <span class="go">Step 4/4 : RUN touch /usr/bin/ch-ssh</span>
-<span class="go">---&gt; 1136de7d4c0a</span>
-<span class="go">Successfully built 1136de7d4c0a</span>
+<span class="go"> ---&gt; e5920427a8f2</span>
+<span class="go">Successfully built e5920427a8f2</span>
+<span class="go">Successfully tagged hello:latest</span>
 </pre></div>
 </div>
 <p>Note that Docker prints each step of the Dockerfile as it’s executed.</p>
@@ -960,12 +965,12 @@ code under active development.</p>
 <p>The general approach is the same as installing third-party software from
 source, but you use the <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
-the <code class="code docutils literal notranslate"><span class="pre">mpihello</span></code> Dockerfile uses this approach:</p>
+<code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello/Dockerfile.openmpi</span></code> uses this approach:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: full</span>
 <span class="k">FROM</span><span class="s"> openmpi</span>
 
 <span class="c"># This example</span>
-COPY /examples/mpi/mpihello /hello
+COPY . /hello
 <span class="k">WORKDIR</span><span class="s"> /hello</span>
 <span class="k">RUN</span> make clean <span class="o">&amp;&amp;</span> make
 </pre></div>
@@ -973,15 +978,15 @@ COPY /examples/mpi/mpihello /hello
 <p>These Dockerfile instructions:</p>
 <ol class="arabic">
 <li><p class="first">Copy the host directory <code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello</span></code> to the image at path
-<code class="code docutils literal notranslate"><span class="pre">/hello</span></code>. The host path is <em>relative to the context directory</em>;
-Docker builds have no access to the host filesystem outside the context
-directory. (This is so the Docker daemon can run on a different machine —
-the context directory is tarred up and sent to the daemon, even if it’s on
-the same machine.)</p>
-<p>The convention for the Charliecloud examples is that the build directory is
-always rooted at the top of the Charliecloud source code, but we could just
-as easily have provided the <code class="code docutils literal notranslate"><span class="pre">mpihello</span></code> directory. In that case, the
-source in <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> would have been <code class="code docutils literal notranslate"><span class="pre">.</span></code>.</p>
+<code class="code docutils literal notranslate"><span class="pre">/hello</span></code>. The host path is relative to the <em>context directory</em>, which
+is tarred up and sent to the Docker daemon. Docker builds have no access to
+the host filesystem outside the context directory.</p>
+<p>(Unlike the HPC custom, Docker comes from a world without network
+filesystems. This tar-based approach lets the Docker daemon run on a
+different node from the client without needing any shared filesystems.)</p>
+<p>The convention for Charliecloud tests and examples is that the context is
+the directory containing the Dockerfile in question, and a common pattern,
+used here, is to copy in the entire context.</p>
 </li>
 <li><p class="first"><code class="code docutils literal notranslate"><span class="pre">cd</span></code> to <code class="code docutils literal notranslate"><span class="pre">/hello</span></code>.</p>
 </li>
