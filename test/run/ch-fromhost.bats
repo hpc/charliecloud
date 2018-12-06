@@ -2,12 +2,12 @@ load ../common
 
 fromhost_clean () {
     [[ $1 ]]
-    rm -f "${1}"/{lib,mnt,usr/bin}/sotest \
-                "${1}"/{lib,mnt,usr/lib,usr/local/lib}/libsotest.so.1{.0,} \
-                "${1}"/mnt/sotest.c \
-                "${1}"/etc/ld.so.cache \
-                "${1}"/usr/local/lib/libcuda* \
-                "${1}"/usr/local/lib/libnvidia*
+    rm -f "$1"/{lib,mnt,usr/bin}/sotest \
+          "$1"/{lib,mnt,usr/lib,usr/local/lib}/libsotest.so.1{.0,} \
+          "$1"/mnt/sotest.c \
+          "$1"/etc/ld.so.cache \
+          "$1"/usr/local/lib/libcuda* \
+          "$1"/usr/local/lib/libnvidia*
     ch-run -w "$1" -- /sbin/ldconfig  # restore default cache
     fromhost_clean_p "$1"
 }
