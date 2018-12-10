@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: required
 language: c
 compiler: gcc
@@ -39,53 +39,27 @@ env:
 # (Disabled because it gives a >10-minute gap in output, so Travis times out.)
 #  - TARBALL=        INSTALL=     CH_TEST_SCOPE=full
 
+addons:
+  apt:
+    packages:
+      - fakeroot
+      - pigz
+      - python3-pip
+
 install:
-  - sudo apt-get install pigz
   - if [ -n "$INSTALL_PV" ]; then sudo apt-get install pv; fi
 # We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
 # issue #241). Travis provides images pre-installed with Python 3, but it's in
 # a virtualenv and unavailable by default under sudo, in package builds, and
 # maybe elsewhere. It's simpler and fast enough to install it with apt-get.
-#
-# Note: We get errors about "async def" in the Jinja2 dependency install,
-# because Python 3.4 from Trusty doesn't support that syntax, but these seem
-# to have no later effect.
-  - sudo apt-get install python3-pip
   - pip3 --version
   - sudo pip3 install sphinx sphinx-rtd-theme
-# Ubuntu Trusty symlinks /dev/shm -> /run/shm; the latter is unavailable after
-# entering the namespaces and we get ENOENT. Work around this bug. See:
-# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=851427
-# https://wiki.debian.org/ReleaseGoals/RunDirectory
-  - sudo rm /dev/shm  # will fail once it's a directory again
-  - sudo mkdir /dev/shm
-  - sudo mount --bind /run/shm /dev/shm
-# The following is the mess needed to get a working ShellCheck on Travis.
-# Approaches that don't work include:
-#
-#   - Static binary provided by ShellCheck upstream (0.5.0): Segfault due to
-#     Trusty bug [1]. The described workaround didn't work for me.
-#
-#   - Compile from source (0.5.0): Build is supposedly very long (30 minutes)
-#     and one must install the Haskell build environment.
-#
-#   - Travis-provided (0.4.6): Segfault again, I think for the same reason.
-#
-#   - Ubunty Trusty, i.e. plain "apt-get" (0.3.3): Super old.
-#
-#   - Debian Sid (0.4.7): glibc dependency too new, default dpkg can't read
-#     the .deb because it's xz-compressed, and only gain one point release.
-#
-# Once Travis finally gets around to upgrading Ubuntu [2], we should just
-# install the static binary.
-#
-# [1]: https://github.com/koalaman/shellcheck/issues/1053
-# [2]: https://github.com/travis-ci/travis-ci/issues/5821
-  - fgrep Trusty /etc/os-release
+# ShellCheck: Use upstream's binary build because it's newer than what comes
+# with Travis.
   - sudo rm -f /usr/local/bin/shellcheck
-  - wget http://mirrors.kernel.org/ubuntu/pool/universe/s/shellcheck/shellcheck_0.4.6-1_amd64.deb
-  - sudo dpkg --install shellcheck_0.4.6-1_amd64.deb
-  - which shellcheck
+  - wget -nv https://shellcheck.storage.googleapis.com/shellcheck-v0.6.0.linux.x86_64.tar.xz
+  - tar xvf shellcheck-v0.6.0.linux.x86_64.tar.xz
+  - sudo mv shellcheck-v0.6.0/shellcheck /usr/local/bin
   - shellcheck --version
 
 before_script:
