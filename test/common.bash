@@ -25,8 +25,7 @@ docker_ok () {
 
 env_require () {
     if [[ -z ${!1} ]]; then
-        # shellcheck disable=SC2016
-        printf "\$$1 is empty or not set\n\n" >&2
+        printf '$%s is empty or not set\n\n' "$1" >&2
         exit 1
     fi
 }
