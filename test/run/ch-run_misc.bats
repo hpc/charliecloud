@@ -1,15 +1,18 @@
 load ../common
 
+
 @test 'relative path to image' {  # issue #6
     scope quick
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- true
 }
+
 
 @test 'symlink to image' {  # issue #50
     scope quick
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
     ch-run "${BATS_TMPDIR}/symlink-test" -- true
 }
+
 
 @test 'mount image read-only' {
     scope quick
@@ -23,11 +26,13 @@ EOF
     [[ $output =~ 'Read-only file system' ]]
 }
 
+
 @test 'mount image read-write' {
     scope quick
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
 }
+
 
 @test '/usr/bin/ch-ssh' {
     scope quick
@@ -40,6 +45,7 @@ EOF
     [[ $host_size -eq "$guest_size" ]]
 }
 
+
 @test 'optional default bind mounts silently skipped' {
     scope standard
 
@@ -49,6 +55,7 @@ EOF
     ch-run "$ch_timg" -- mount | ( ! grep -F /var/opt/cray/alps/spool )
     ch-run "$ch_timg" -- mount | ( ! grep -F /var/opt/cray/hugetlbfs )
 }
+
 
 # shellcheck disable=SC2016
 @test '$HOME' {
@@ -80,7 +87,7 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
-    [[ $output = *'cannot find home directory: $HOME not set'* ]]
+    [[ $output = *'cannot find home directory: is $HOME set?'* ]]
 
     # warn if $USER not set
     user_tmp=$USER
@@ -94,6 +101,7 @@ EOF
     [[ $output = *'$USER not set; cannot rewrite $HOME'* ]]
     [[ $output = *"$HOME"* ]]
 }
+
 
 # shellcheck disable=SC2016
 @test '$PATH: add /bin' {
@@ -124,6 +132,7 @@ EOF
     [[ $output = $PATH2:/bin ]]
 }
 
+
 # shellcheck disable=SC2016
 @test '$PATH: unset' {
     scope standard
@@ -138,6 +147,7 @@ EOF
     [[ $output = *': $PATH not set'* ]]
     [[ $output = *'True'* ]]
 }
+
 
 @test 'ch-run --cd' {
     scope quick
@@ -159,6 +169,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output =~ "can't cd to /goops: No such file or directory" ]]
 }
+
 
 @test 'ch-run --bind' {
     scope quick
@@ -199,6 +210,7 @@ EOF
     # omit default /home, with unrelated --bind
     ch-run --no-home -b "${ch_imgdir}/bind1" "$ch_timg" -- cat /mnt/0/file1
 }
+
 
 @test 'ch-run --bind errors' {
     scope quick
@@ -275,6 +287,100 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't bind: not found: ${ch_timg}/goops"* ]]
+}
+
+
+@test 'ch-run --set-env' {
+    scope quick
+
+    # Quirk that is probably too obscure to put in the documentation: The
+    # string containing only two straight quotes does not round-trip through
+    # "printenv" or "env", though it does round-trip through Bash "set":
+    #
+    #   $ export foo="''"
+    #   $ echo [$foo]
+    #   ['']
+    #   $ set | fgrep foo
+    #   foo=''\'''\'''
+    #   $ eval $(set | fgrep foo)
+    #   $ echo [$foo]
+    #   ['']
+    #   $ printenv | fgrep foo
+    #   foo=''
+    #   $ eval $(printenv | fgrep foo)
+    #   $ echo $foo
+    #   []
+
+    # Valid inputs. Use Python to print the results to avoid ambiguity.
+    f_in=${BATS_TMPDIR}/env.txt
+    cat <<'EOF' > "$f_in"
+chse_a1=bar
+chse_a2=bar=baz
+chse_a3=bar baz
+chse_a4='bar'
+chse_a5=
+chse_a6=''
+chse_a7=''''
+
+chse_b1="bar"
+chse_b2=bar # baz
+chse_b3=$PATH
+ chse_b4=bar
+chse_b5= bar
+
+chse_c1=foo
+chse_c1=bar
+EOF
+    cat "$f_in"
+    output_expected=$(cat <<'EOF'
+(' chse_b4', 'bar')
+('chse_a1', 'bar')
+('chse_a2', 'bar=baz')
+('chse_a3', 'bar baz')
+('chse_a4', 'bar')
+('chse_a5', '')
+('chse_a6', '')
+('chse_a7', "''")
+('chse_b1', '"bar"')
+('chse_b2', 'bar # baz')
+('chse_b3', '$PATH')
+('chse_b5', ' bar')
+('chse_c1', 'bar')
+EOF
+)
+    run ch-run --set-env="$f_in" "$ch_timg" -- python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+}
+
+@test 'ch-run --set-env errors' {
+    scope quick
+    f_in=${BATS_TMPDIR}/env.txt
+
+    # file does not exist
+    run ch-run --set-env=doesnotexist.txt "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"--set-env: can't open:"* ]]
+    [[ $output = *"No such file or directory"* ]]
+
+    # Note: I'm not sure how to test an error during reading, i.e., getline(3)
+    # rather than fopen(3). Hence no test for "error reading".
+
+    # invalid line: missing '='
+    echo 'FOO bar' > "$f_in"
+    run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"--set-env: no delimiter: ${f_in}:1"* ]]
+
+    # invalid line: no name
+    echo '=bar' > "$f_in"
+    run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"--set-env: empty name: ${f_in}:1"* ]]
 }
 
 @test 'broken image errors' {

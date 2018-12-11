@@ -13,7 +13,6 @@
 
 #include "charliecloud.h"
 
-
 /** Constants and macros **/
 
 /* Environment variables used by --join parameters. */
@@ -43,28 +42,40 @@ const char args_doc[] = "NEWROOT CMD [ARG...]";
 const struct argp_option options[] = {
    { "bind",        'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
-   { "cd",          'c', "DIR", 0, "initial working directory in container"},
-   { "gid",         'g', "GID", 0, "run as GID within container" },
-   { "join",        'j', 0,     0, "use same container as peer ch-run" },
-   { "join-pid",     -5, "PID", 0, "join a namespace using a PID" },
-   { "join-ct",      -3, "N",   0, "number of ch-run peers (implies --join)" },
-   { "join-tag",     -4, "TAG", 0, "label for peer group (implies --join)" },
-   { "no-home",      -2, 0,     0, "do not bind-mount your home directory"},
-   { "private-tmp", 't', 0,     0, "use container-private /tmp" },
-   { "uid",         'u', "UID", 0, "run as UID within container" },
-   { "verbose",     'v', 0,     0, "be more verbose (debug if repeated)" },
-   { "version",     'V', 0,     0, "print version and exit" },
-   { "write",       'w', 0,     0, "mount image read-write"},
+   { "cd",          'c', "DIR",  0, "initial working directory in container"},
+   { "gid",         'g', "GID",  0, "run as GID within container" },
+   { "join",        'j', 0,      0, "use same container as peer ch-run" },
+   { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
+   { "join-ct",      -3, "N",    0, "number of ch-run peers (implies --join)" },
+   { "join-tag",     -4, "TAG",  0, "label for peer group (implies --join)" },
+   { "no-home",      -2, 0,      0, "do not bind-mount your home directory"},
+   { "private-tmp", 't', 0,      0, "use container-private /tmp" },
+   { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
+   { "uid",         'u', "UID",  0, "run as UID within container" },
+   { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
+   { "version",     'V', 0,      0, "print version and exit" },
+   { "write",       'w', 0,      0, "mount image read-write"},
    { 0 }
+};
+
+/* On possible future here is that fix_environment() ends up in charliecloud.c
+   and we add other actions such as SET, APPEND_PATH, etc. */
+enum env_action { END, SET_FILE, UNSET_GLOB };  // END must be zero
+
+struct env_delta {
+   enum env_action action;
+   char *arg;
 };
 
 struct args {
    struct container c;
+   struct env_delta *env_deltas;
    char *initial_dir;
 };
 
 /** Function prototypes **/
 
+void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
@@ -77,7 +88,6 @@ void privs_verify_invoking();
 /** Global variables **/
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
-
 
 /** Main **/
 
@@ -93,13 +103,15 @@ int main(int argc, char *argv[])
    T_ (args.c.binds = calloc(1, sizeof(struct bind)));
    args.c.container_gid = getegid();
    args.c.container_uid = geteuid();
-   args.initial_dir = NULL;
    args.c.join = false;
-   args.c.join_pid = 0;
    args.c.join_ct = 0;
+   args.c.join_pid = 0;
    args.c.join_tag = NULL;
    args.c.private_home = false;
    args.c.private_tmp = false;
+   args.c.old_home = getenv("HOME");
+   T_ (args.env_deltas = calloc(1, sizeof(struct env_delta)));
+   args.initial_dir = NULL;
    verbose = 1;  // in charliecloud.h
 
    Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
@@ -127,8 +139,8 @@ int main(int argc, char *argv[])
    INFO("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag, args.c.join_pid);
    INFO("private /tmp: %d", args.c.private_tmp);
 
-   containerize(&args.c);
    fix_environment(&args);
+   containerize(&args.c);
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }
@@ -136,31 +148,84 @@ int main(int argc, char *argv[])
 
 /** Supporting functions **/
 
+/* Append a new env_delta to an existing null-terminated list. */
+void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
+{
+   int i;
+
+   for (i = 0; (*ds)[i].action != END; i++) // count existing
+         ;
+   T_ (*ds = realloc(*ds, (i+2) * sizeof(struct env_delta)));
+   (*ds)[i+1].action = END;
+   (*ds)[i].action = act;
+   (*ds)[i].arg = arg;
+}
+
 /* Adjust environment variables. */
 void fix_environment(struct args *args)
 {
-   char *old, *new;
+   char *name, *old_value, *new_value;
 
    // $HOME: Set to /home/$USER unless --no-home specified.
-   old = getenv("HOME");
    if (!args->c.private_home) {
-      old = getenv("USER");
-      if (old == NULL) {
+      old_value = getenv("USER");
+      if (old_value == NULL) {
          WARNING("$USER not set; cannot rewrite $HOME");
       } else {
-         T_ (1 <= asprintf(&new, "/home/%s", old));
-         Z_ (setenv("HOME", new, 1));
+         T_ (1 <= asprintf(&new_value, "/home/%s", old_value));
+         Z_ (setenv("HOME", new_value, 1));
       }
    }
 
    // $PATH: Append /bin if not already present.
-   old = getenv("PATH");
-   if (old == NULL) {
+   old_value = getenv("PATH");
+   if (old_value == NULL) {
       WARNING("$PATH not set");
-   } else if (strstr(old, "/bin") != old && !strstr(old, ":/bin")) {
-      T_ (1 <= asprintf(&new, "%s:/bin", old));
-      Z_ (setenv("PATH", new, 1));
-      INFO("new $PATH: %s", new);
+   } else if (   strstr(old_value, "/bin") != old_value
+              && !strstr(old_value, ":/bin")) {
+      T_ (1 <= asprintf(&new_value, "%s:/bin", old_value));
+      Z_ (setenv("PATH", new_value, 1));
+      INFO("new $PATH: %s", new_value);
+   }
+
+   // --set-env and --unset-env.
+   for (int i = 0; args->env_deltas[i].action != END; i++) {
+      char *arg = args->env_deltas[i].arg;
+      if (args->env_deltas[i].action == SET_FILE) {
+         FILE *fp;
+         Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
+         for (int j = 1; true; j++) {
+            char *line = NULL;
+            size_t len = 0;
+            errno = 0;
+            if (-1 == getline(&line, &len, fp)) {
+               if (errno == 0)  // EOF
+                  break;
+               else             // error
+                  Tf (0, "--set-env: error reading: %s", arg);
+            }
+            if (strlen(line) == 0 || line[0] == '\n')
+               continue;                    // skip empty line
+            if (line[strlen(line) - 1] == '\n')
+               line[strlen(line) - 1] = 0;  // remove newline
+            new_value = line;
+            name = strsep(&new_value, "=");
+            Te (new_value != NULL, "--set-env: no delimiter: %s:%d", arg, j);
+            Te (strlen(name) != 0, "--set-env: empty name: %s:%d", arg, j);
+            if (   strlen(new_value) >= 2
+                && new_value[0] == '\''
+                && new_value[strlen(new_value) - 1] == '\'') {
+               new_value[strlen(new_value) - 1] = 0;  // strip trailing quote
+               new_value++;                           // strip leading
+            }
+            INFO("environment: %s=%s", name, new_value);
+            Z_ (setenv(name, new_value, 1));
+         }
+         fclose(fp);
+      } else {
+         T_ (args->env_deltas[i].action == UNSET_GLOB);
+         T_ (0);  // --unset-env not yet supported
+      }
    }
 }
 
@@ -268,6 +333,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case -5: // --join-pid
       args->c.join_pid = parse_int(arg, false, "--join-pid");
+      break;
+   case -6: // --set-env
+      env_delta_append(&(args->env_deltas), SET_FILE, arg);
       break;
    case 'c':
       args->initial_dir = arg;
