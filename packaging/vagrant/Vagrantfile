@@ -245,7 +245,8 @@ EOF2
                  env: { "CH_TEST_SCOPE" => "full" },
                  inline: <<-EOF
     set -e
-    if ( id -u charlie ); then
+    # Direct stderr to /dev/null since output shouldn't matter
+    if ( id -u charlie 2>/dev/null ); then
         user=charlie
     else
         user=vagrant
