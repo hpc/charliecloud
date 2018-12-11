@@ -148,9 +148,9 @@ char *cat(char *a, char *b)
 void containerize(struct container *c)
 {
    if (c->join_pid) {
-      join_namespaces(c->join_pid);   
+      join_namespaces(c->join_pid);
       return;
-   } 
+   }
    if (c->join)
       join_begin(c->join_ct, c->join_tag);
    if (!c->join || join.winner_p) {
