@@ -48,6 +48,7 @@ test-run: run_auto.bats
 # FIXME: This could be sped up by skipping bats if the image is out of scope.
 .PHONY: test-test
 test-test: $(images_eg)
+	set -e; \
 	for image in $(images_eg); do \
 	    export CH_TEST_TAG=$$(./make-auto tag $$image); \
 	    bats $$(dirname $$image)/test.bats; \
