@@ -26,7 +26,7 @@ docker_ok () {
 env_require () {
     if [[ -z ${!1} ]]; then
         # shellcheck disable=SC2016
-        printf '$1 is empty or not set\n\n' >&2
+        printf "\$$1 is empty or not set\n\n" >&2
         exit 1
     fi
 }
@@ -108,6 +108,17 @@ tarball_ok () {
 # Predictable sorting and collation
 export LC_ALL=C
 
+# Do we have what we need?
+env_require CH_TEST_TARDIR
+env_require CH_TEST_IMGDIR
+env_require CH_TEST_PERMDIRS
+if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
+    # Bash bug: [[ ... ]] expression doesn't exit with set -e
+    # https://github.com/sstephenson/bats/issues/49
+    printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
+    exit 1
+fi
+
 # Set path to the right Charliecloud. This uses a symlink in this directory
 # called "bin" which points to the corresponding bin directory, either simply
 # up and over (source code) or set during "make install".
@@ -140,6 +151,10 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # [1]: https://unix.stackexchange.com/a/136527
 ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
+if ( mount | grep -Fq "$ch_imgdir" ); then
+    printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
+    exit 1
+fi
 
 # Image information.
 ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
@@ -243,19 +258,4 @@ if ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
     # privileges, not specifically to run the commands we want to run.
     # shellcheck disable=SC2034
     ch_have_sudo=yes
-fi
-
-# Do we have what we need?
-env_require CH_TEST_TARDIR
-env_require CH_TEST_IMGDIR
-env_require CH_TEST_PERMDIRS
-if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
-    # Bash bug: [[ ... ]] expression doesn't exit with set -e
-    # https://github.com/sstephenson/bats/issues/49
-    printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
-    exit 1
-fi
-if ( mount | grep -Fq "$ch_imgdir" ); then
-    printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
-    exit 1
 fi
