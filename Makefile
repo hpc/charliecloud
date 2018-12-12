@@ -142,7 +142,7 @@ install: all
 	install -pm 644 -t $(TEST)/run test/run/*.bats
 	install -pm 755 -t $(TEST) test/Build.*
 	install -pm 644 -t $(TEST) test/Dockerfile.* test/Docker_Pull.*
-	install -pm 755 -t $(TEST) test/make-perms-test
+	install -pm 755 -t $(TEST) test/make-auto test/make-perms-test
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
 	chmod 755 $(TEST)/chtest/{Build,*.py,printns}
