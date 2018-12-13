@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5. Pre-installed virtual machine &mdash; Charliecloud 0.9.5 documentation</title>
+  <title>5. Pre-installed virtual machine &mdash; Charliecloud 0.9.6 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                149e224
+                f5dd210
               </div>
             
           
@@ -370,7 +370,7 @@ or with Homebrew:</p>
 <p>This takes less than 5 minutes.</p>
 <p>If you want the head of the master branch, omit <code class="code docutils literal notranslate"><span class="pre">CH_VERSION</span></code>.</p>
 <p>Then, optionally run the Charliecloud tests:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant up --provision-with<span class="o">=</span><span class="nb">test</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant provision --provision-with<span class="o">=</span><span class="nb">test</span>
 </pre></div>
 </div>
 <p>This runs the full Charliecloud test suite, which takes quite a while (maybe
@@ -438,7 +438,7 @@ the clone. This will protect your VM from Vagrant’s attentions later.</p>
 </div>
 <div class="section" id="test-charliecloud">
 <h3><a class="toc-backref" href="#id14">5.3.4. Test Charliecloud</a><a class="headerlink" href="#test-charliecloud" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant up --provision-with<span class="o">=</span><span class="nb">test</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant provision --provision-with<span class="o">=</span><span class="nb">test</span>
 </pre></div>
 </div>
 <p>You might also show the console in the VirtualBox GUI and make sure
