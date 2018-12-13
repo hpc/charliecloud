@@ -189,7 +189,7 @@ If you want the head of the master branch, omit :code:`CH_VERSION`.
 
 Then, optionally run the Charliecloud tests::
 
-  $ vagrant up --provision-with=test
+  $ vagrant provision --provision-with=test
 
 This runs the full Charliecloud test suite, which takes quite a while (maybe
 1–2 hours). Go have lunch, and then second lunch, and then third lunch.
@@ -266,7 +266,7 @@ Test Charliecloud
 
 ::
 
-   $ vagrant up --provision-with=test
+   $ vagrant provision --provision-with=test
 
 You might also show the console in the VirtualBox GUI and make sure
 :code:`charlie` is logged in.
