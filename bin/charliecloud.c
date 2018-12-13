@@ -171,6 +171,7 @@ void containerize(struct container *c)
 void enter_udss(struct container *c)
 {
    char *newroot_parent, *newroot_base;
+   int len;
 
    LOG_IDS;
 
@@ -207,8 +208,8 @@ void enter_udss(struct container *c)
    // Bind-mount /usr/bin/ch-ssh if it exists.
    if (path_exists(cat(c->newroot, "/usr/bin/ch-ssh"))) {
       char chrun_file[PATH_CHARS];
-      T_ (-1 != readlink("/proc/self/exe", chrun_file, PATH_CHARS));
-      chrun_file[PATH_CHARS-1] = 0;  // guarantee string termination
+      T_ (-1 != (len=readlink("/proc/self/exe", chrun_file, PATH_CHARS)));
+      chrun_file[ len <  PATH_CHARS ? len : PATH_CHARS-1] = 0; // guarantee string termination
       bind_mount(cat(dirname(chrun_file), "/ch-ssh"), "/usr/bin/ch-ssh",
                  c->newroot, BD_REQUIRED, 0);
    }
