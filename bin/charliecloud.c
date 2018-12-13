@@ -209,7 +209,7 @@ void enter_udss(struct container *c)
       char chrun_file[PATH_CHARS];
       int len = readlink("/proc/self/exe", chrun_file, PATH_CHARS);
       T_ (len >= 0);
-      chrun_file[ len<PATH_CHARS ? len : PATH_CHARS-1 ] = 0; // terminate; #314
+      chrun_file[ len<PATH_CHARS ? len : PATH_CHARS-1 ] = 0; // terminate; #315
       bind_mount(cat(dirname(chrun_file), "/ch-ssh"), "/usr/bin/ch-ssh",
                  c->newroot, BD_REQUIRED, 0);
    }
