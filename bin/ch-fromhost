@@ -64,6 +64,7 @@ Destination within image:
 
 Options:
 
+  --force          modify permissions in the image directory when needed
   --lib-path       print the inferred destination for shared libraries
   --no-ldconfig    don't run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
@@ -76,6 +77,7 @@ cray_mpi=          # Cray fixups requested
 #cray_openmpi=     # ... for OpenMPI
 cray_mpich=        # ... for MPICH
 dest=
+force=false
 image=
 newline='
 '
@@ -190,6 +192,9 @@ while [ $# -gt 0 ]; do
             queue_files "$out"
             shift
             ;;
+        --force)
+            force=true
+            ;;
         --lib-path)
             # Note: If this is specified along with one of the file
             # specification options, all the file gathering and checking work
@@ -235,6 +240,7 @@ if [ $lib_found ]; then
     debug "asking ldconfig for shared library destination"
     lib_dest=$(  "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv 2> /dev/null \
                | grep -E '^/' | cut -d: -f1 | head -1)
+    [ -n "${lib_dest}" ] || fatal "destination path from ldconfig is empty"
     [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
     debug "shared library destination: ${lib_dest}"
 fi
@@ -338,11 +344,16 @@ for file in $inject_files; do
     elif is_so "$f" && [ -z "$d" ]; then
         d=$lib_dest
         infer=" (inferred)"
+    else
+        d="${f%/*}"
     fi
     debug "  ${f} -> ${d}${infer}"
     [ "$d" ] || fatal "no destination for: ${f}"
     [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
     [ -d "${image}${d}" ] || fatal "not a directory: ${image}${d}"
+    [ ! -w "${image}${d}" ] && ${force} && chmod u+w "${image}${d}" \
+    && debug "  modifying permissions on ${image}${d}"
+    [ -w "${image}${d}" ] || info "directory not writable: ${image}${d}"
        cp --dereference --preserve=all "$f" "${image}${d}" \
     || fatal "cannot inject: ${f}"
 done
