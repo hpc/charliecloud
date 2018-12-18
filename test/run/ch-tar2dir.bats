@@ -10,17 +10,30 @@ load ../common
     image_ok "$ch_timg"
     ch-tar2dir "$ch_ttar" "$ch_imgdir"  # overwrite
     image_ok "$ch_timg"
+    # Did we raise hidden files correctly?
+    [[ -e $ch_timg/.hiddenfile1 ]]
+    [[ -e $ch_timg/..hiddenfile2 ]]
+    [[ -e $ch_timg/...hiddenfile3 ]]
 }
 
 @test 'ch-tar2dir: /dev cleaning' {  # issue #157
     scope standard
-    [[ ! -e $ch_timg/dev/foo ]]
-    [[ -e $ch_timg/mnt/dev/foo ]]
-    ch-run "$ch_timg" -- test -e /mnt/dev/foo
+    # Are all fixtures present in tarball?
+    present=$(tar tf "$ch_ttar" | grep -F deleteme)
+    [[ $(echo "$present" | wc -l) -eq 4 ]]
+    echo "$present" | grep -E '^img/dev/deleteme$'
+    echo "$present" | grep -E '^./dev/deleteme$'
+    echo "$present" | grep -E '^dev/deleteme$'
+    echo "$present" | grep -E '^img/mnt/dev/dontdeleteme$'
+    # Did we remove the right fixtures?
+    [[ -e $ch_timg/mnt/dev/dontdeleteme ]]
+    [[ $(ls -Aq "${ch_timg}/dev") -eq 0 ]]
+    ch-run "$ch_timg" -- test -e /mnt/dev/dontdeleteme
 }
 
 @test 'ch-tar2dir: errors' {
     scope quick
+
     # tarball doesn't exist
     run ch-tar2dir does_not_exist.tar.gz "$ch_imgdir"
     echo "$output"

@@ -43,7 +43,7 @@ ch_run="ch-run -u0 -g0 -w --no-home ${img}"
 ## Bootstrap base Alpine Linux.
 
 # Download statically linked apk.
-wget ${mirror}/main/x86_64/"${apk_tools}"
+wget "${mirror}/main/x86_64/${apk_tools}"
 
 # Bootstrap directories.
 mkdir img
@@ -51,7 +51,7 @@ mkdir img/{dev,etc,proc,sys,tmp}
 touch img/etc/{group,hosts,passwd,resolv.conf}
 
 # Bootstrap static apk.
-(cd img && tar xf ../"${apk_tools}")
+(cd img && tar xf "../${apk_tools}")
 mkdir img/etc/apk
 echo ${mirror}/main > img/etc/apk/repositories
 
@@ -99,9 +99,12 @@ cp -r "$srcdir" img/test
 $ch_run --cd /test -- make
 
 # Fixtures for /dev cleaning.
-touch img/dev/foo
+touch img/dev/deleteme
 mkdir -p img/mnt/dev
-touch img/mnt/dev/foo
+touch img/mnt/dev/dontdeleteme
+
+# Fixture to make sure we raise hidden files in non-tarbombs.
+touch img/.hiddenfile1 img/..hiddenfile2 img/...hiddenfile3
 
 
 ## Tar it up.
@@ -115,10 +118,17 @@ else
     gzip_cmd=gzip
 fi
 
-# "docker export" tarballs don't have a leading "./" in their filenames. Match
-# that, but also make sure the /dev cleaning fixtures make it in both ways.
-cd img
-tar cf "$tarball_uncompressed" -- *
-tar rf "$tarball_uncompressed" ./dev/foo ./mnt/dev/foo
+# Charliecloud supports images both with a single top level directory and
+# without (tarbomb). The Docker images in the test suite are all tarbombs
+# (because that's what "docker export" gives us), so use a containing
+# directory for this one.
+tar cf "$tarball_uncompressed" -- img
+
+# Add in the /dev fixtures in a couple more places. Note that this will cause
+# the tarball to no longer have a single root directory, but they'll be
+# removed during unpacking, restoring that condition.
+( cd img && tar rf "$tarball_uncompressed" ./dev/deleteme dev/deleteme )
+
+# Finalize the tarball.
 $gzip_cmd -f "$tarball_uncompressed"
 [[ -f $tarball ]]

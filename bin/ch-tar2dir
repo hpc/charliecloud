@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/base.sh"
 
@@ -49,17 +51,33 @@ else
 fi
 
 mkdir "$newroot"
-echo 'This directory is a Charliecloud container image.' > "${newroot}/${sentinel}"
 # Use a pipe because PV ignores arguments if it's cat rather than PV.
+#
+# See FAQ on /dev exclusion. --no-wildcards-match-slash is needed to prevent *
+# matching multiple directories; the tar default differs from sh behavior.
 size=$(stat -c%s "$tarball")
   pv_ -s "$size" < "$tarball" \
 | gzip_ -dc \
 | tar x$verbose -C "$newroot" -f - \
-      --anchored --exclude='dev/*' --exclude='./dev/*'
+      --anchored --no-wildcards-match-slash \
+      --exclude='dev/*' --exclude='*/dev/*'
 # Make all directories writeable so we can delete image later (hello, Red Hat).
 find "$newroot" -type d -a ! -perm /200 -exec chmod u+w {} +
 
+# If tarball had a single containing directory, move the contents up a level
+# and remove the containing directory. It is non-trivial in POSIX sh to deal
+# with hidden files; see https://unix.stackexchange.com/a/6397.
+files=$(ls -Aq "$newroot")
+if [ "$(echo "$files" | wc -l)" -eq 1 ]; then
+    ( cd "${newroot}/${files}"
+      for f in * .[!.]* ..?*; do
+          [ -e "$f" ] && mv -- "$f" ..
+      done )
+    rmdir "${newroot}/${files}"
+fi
+
 # Ensure directories that ch-run needs exist.
+echo 'This directory is a Charliecloud image.' > "${newroot}/${sentinel}"
 mkdir -p "${newroot}/dev"
 for i in $(seq 0 9); do mkdir -p "${newroot}/mnt/${i}"; done
 
