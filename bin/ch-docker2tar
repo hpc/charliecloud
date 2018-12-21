@@ -23,11 +23,18 @@ fi
 
 image=$1
 outdir=$2
-tar="$outdir"/$(echo "$image" | sed 's/\//./g').tar.gz
-
-cid=$(docker_ create --read-only "$image")
-size=$(docker_ image inspect "$image" --format='{{.Size}}')
+tar=$(echo "$image" | sed 's/\//./g').tar.gz
+dir="$outdir"/$(echo "$image")
+echo $tar
+echo $dir
+#cid=$(docker_ create --read-only "$image")
+#size=$(docker_ image inspect "$image" --format='{{.Size}}')
 #docker_ ps -af "id=$cid"
-docker_ export "$cid" | pv_ -s "$size" | gzip_ -6 > "$tar"
-docker_ rm "$cid" > /dev/null
+img unpack -o "$dir" "$image"
+cd $dir
+tar -czf ../"$tar" *
+cd ..
+rm -rf "$image"
+#docker_ export "$cid" | pv_ -s "$size" | gzip_ -6 > "$tar"
+#docker_ rm "$cid" > /dev/null
 ls -lh "$tar"

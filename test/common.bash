@@ -17,10 +17,29 @@ docker_tag_p () {
     fi
 }
 
+img_tag_p () {
+    printf 'image tag %s ... ' "$1"
+    hash_=$(img ls -q "$1" | sort -u)
+    if [[ $hash_ ]]; then
+        echo "$hash_"
+        return 0
+    else
+        echo 'not found'
+        return 1
+    fi
+}
+
+
 docker_ok () {
     docker_tag_p "$1"
     docker_tag_p "${1}:latest"
     docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
+}
+
+img_ok () {
+    img_tag_p "$1"
+    img_tag_p "${1}:latest"
+    img_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 env_require () {

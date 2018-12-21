@@ -35,7 +35,8 @@ tag=$(basename "$PWD")
 
 set -x
 
-"${ch_bin}"/ch-build -t "$tag" "$context" "$@"
+# $context has to be the last argument to img build
+"${ch_bin}"/ch-build -t "$tag" "$@" "$context" 
 "${ch_bin}"/ch-docker2tar "$tag" "$dest"
 "${ch_bin}"/ch-tar2dir "${dest}/${tag}.tar.gz" "$dest"
 rm "${dest}/${tag}.tar.gz"
