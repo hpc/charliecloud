@@ -49,10 +49,11 @@ FROM debian9
 #   2. --disable-pty-support to avoid "pipe function call failed when
 #      setting up I/O forwarding subsystem".
 #
-#   3. --with-slurm=no so mpirun in the container doesn't try use Slurm to
-#      launch processes, which will fail in inscrutable ways e.g. if srun is
-#      not found. (If you do want Slurm launching processes, use srun or
-#      mpirun outside the container.)
+#   3. --enable-mca-no-build=plm-slurm to support launching processes using
+#      the host's srun (i.e., the container OpenMPI needs to talk to the host
+#      Slurm's PMI) but prevent OpenMPI from invoking srun itself from within
+#      the container, where srun is not installed (the error messages from
+#      this are inscrutable).
 #
 # [1]: https://github.com/open-mpi/ompi/blob/master/README
 
