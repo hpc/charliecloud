@@ -1,4 +1,4 @@
-# ch-test-scope: quick
+# ch-test-scope: full
 FROM debian9
 
 # A key goal of this Dockerfile is to demonstrate best practices for building
