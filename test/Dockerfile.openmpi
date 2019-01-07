@@ -110,8 +110,8 @@ RUN dpkg --install *.deb
 ENV UCX_VERSION 1.3.1
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git
-COPY 0001-don-t-try-to-open-HFI-devices-with-UCX.patch ucx/ 
-RUN cd ucx \
+RUN mv 0001-don-t-try-to-open-HFI-devices-with-UCX.patch ucx/ \
+&& cd ucx \
 && git apply 0001-don-t-try-to-open-HFI-devices-with-UCX.patch \
 && ./autogen.sh \
     && ./contrib/configure-release --prefix=/usr/local \
