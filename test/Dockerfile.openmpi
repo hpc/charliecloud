@@ -76,6 +76,7 @@ RUN apt-get install -y --no-install-suggests \
     make \
     wget \
     udev
+
 COPY 0001-don-t-try-to-open-HFI-devices-with-UCX.patch /usr/local/src/
 WORKDIR /usr/local/src
 
