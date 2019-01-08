@@ -45,7 +45,7 @@ count_ranks () {
 @test "${ch_tag}/guest starts ranks" {
     [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
     # shellcheck disable=SC2086
-    run ch-run "$ch_img" -- mpirun $ch_mpirun_np /hello/hello
+    run ch-run "$ch_img" -- mpirun --host localhost $ch_mpirun_np /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(count_ranks "$output")
