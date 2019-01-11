@@ -16,6 +16,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/MPI version" {
+    [[ $ch_mpi = openmpi ]] && skip "pending ability to drop Slurm env variables issue #226"
     run ch-run "$ch_img" -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
@@ -32,6 +33,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/serial" {
+    [[ $ch_mpi = openmpi ]] && skip "pending ability to drop Slurm env variables issue #226"
     # This seems to start up the MPI infrastructure (daemons, etc.) within the
     # guest even though there's no mpirun.
     run ch-run "$ch_img" -- /hello/hello
