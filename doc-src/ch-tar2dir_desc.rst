@@ -10,12 +10,14 @@ Description
 
 Extract the tarball :code:`TARBALL` into a subdirectory of :code:`DIR`.
 :code:`TARBALL` must contain a Linux filesystem image, e.g. as created by
-:code:`ch-docker2tar`.
+:code:`ch-docker2tar`, and be compressed with :code:`gzip` or :code:`xz`. If
+:code:`TARBALL` has no extension, try appending :code:`.tar.gz` and
+:code:`.tar.xz`.
 
 Inside :code:`DIR`, a subdirectory will be created whose name corresponds to
-the name of the tarball with the :code:`.tar.gz` suffix removed. If such a
-directory exists already and appears to be a Charliecloud container image, it
-is removed and replaced. If the existing directory doesn't appear to be a
+the name of the tarball with :code:`.tar.gz` or other suffix removed. If such
+a directory exists already and appears to be a Charliecloud container image,
+it is removed and replaced. If the existing directory doesn't appear to be a
 container image, the script aborts with an error.
 
 Additional arguments:

@@ -359,11 +359,11 @@ Additional subdirectories can be symlinked into :code:`examples/` and will be
 integrated into the test suite. This allows you to create a site-specific test
 suite.
 
-Dockerfile:
+:code:`Dockerfile`:
 
   * It's a Dockerfile.
 
-Docker_Pull:
+:code:`Docker_Pull`:
 
   * First line states the address to pull from Docker Hub.
   * Second line is a scope expression as described above.
@@ -374,14 +374,19 @@ Docker_Pull:
       alpine:3.6
       alpine@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d
 
-Build:
+:code:`Build`:
 
   * Script or program that builds the image.
 
   * Arguments:
 
-    * :code:`$1`: Absolute path to directory containing Build.
-    * :code:`$2`: Absolute path and name of gzipped tarball output.
+    * :code:`$1`: Absolute path to directory containing :code:`Build`.
+
+    * :code:`$2`: Absolute path and name of output archive, without extension.
+      The script should use an archive format compatible with
+      :code:`ch-tar2dir` and append the appropriate extension (e.g.,
+      :code:`.tar.gz`).
+
     * :code:`$3`: Absolute path to appropriate temporary directory.
 
   * The script must not write anything in the current directory.
