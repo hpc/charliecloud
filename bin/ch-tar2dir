@@ -64,6 +64,7 @@ for ext in '' .tar.gz .tar.xz; do
             exit 1
             ;;
     esac
+    break
 done
 if [ -z "$tarball" ]; then
     echo "no input found" 1>&2
