@@ -106,7 +106,7 @@ files=$(ls -Aq "$newroot")
 if [ "$(echo "$files" | wc -l)" -eq 1 ]; then
     ( cd "${newroot}/${files}"
       for f in * .[!.]* ..?*; do
-          [ -e "$f" ] && mv -- "$f" ..
+          if [ -e "$f" ]; then mv -- "$f" ..; fi
       done )
     rmdir "${newroot}/${files}"
 fi
