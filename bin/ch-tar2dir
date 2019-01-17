@@ -7,13 +7,15 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Unpack a Docker export tarball into a directory.
+Unpack a filesystem tarball into a directory.
 
 Usage:
 
   $ $(basename "$0") TARBALL DIR
 EOF
 )
+
+sentinel=WEIRD_AL_YANKOVIC
 
 parse_basic_args "$@"
 
@@ -24,14 +26,48 @@ fi
 if [ $# -lt 2 ]; then
     usage
 fi
-tarball=$1
-newroot=${2}/$(basename "${tarball%.tar.gz}")
 
-sentinel=WEIRD_AL_YANKOVIC
-
-# Is the tarball a regular file (or symlink) and readable?
-if [ ! -f "$tarball" ] || [ ! -r "$tarball" ]; then
-    echo "can't read ${tarball}" 1>&2
+# Figure out the real tarball name. If the provided $1 already has a tar
+# extension, just test that name; if not, also append the plausible extensions
+# and try those too.
+for ext in '' .tar.gz .tar.xz; do
+    c=${1}${ext}
+    if [ ! -f "$c" ] || [ ! -r "$c" ]; then
+        echo "can't read: ${c}" 1>&2
+        case $1 in
+            *.tar.*)
+                break
+                ;;
+            *)
+                continue
+                ;;
+        esac
+    fi
+    tarball=$c
+    if [ -n "$ext" ]; then
+        echo "found: ${tarball}" 1>&2
+    fi
+    # Infer decompression argument because GNU tar is unable to do so if input
+    # is a pipe, and we want to keep PV. See:
+    # https://www.gnu.org/software/tar/manual/html_section/tar_68.html
+    case $tarball in
+        *.tar.gz)
+            newroot=${2}/$(basename "${tarball%.tar.gz}")
+            decompress=z
+            ;;
+        *.tar.xz)
+            newroot=${2}/$(basename "${tarball%.tar.xz}")
+            decompress=J
+            ;;
+        *)
+            echo "unknown extension: ${tarball}" 1>&2
+            exit 1
+            ;;
+    esac
+    break
+done
+if [ -z "$tarball" ]; then
+    echo "no input found" 1>&2
     exit 1
 fi
 
@@ -57,8 +93,7 @@ mkdir "$newroot"
 # matching multiple directories; the tar default differs from sh behavior.
 size=$(stat -c%s "$tarball")
   pv_ -s "$size" < "$tarball" \
-| gzip_ -dc \
-| tar x$verbose -C "$newroot" -f - \
+| tar x$decompress$verbose -C "$newroot" -f - \
       --anchored --no-wildcards-match-slash \
       --exclude='dev/*' --exclude='*/dev/*'
 # Make all directories writeable so we can delete image later (hello, Red Hat).
@@ -78,7 +113,8 @@ fi
 
 # Ensure directories that ch-run needs exist.
 echo 'This directory is a Charliecloud image.' > "${newroot}/${sentinel}"
-mkdir -p "${newroot}/dev"
+mkdir -p "${newroot}/dev" "${newroot}/etc" "${newroot}/proc" "${newroot}/sys"
+touch "${newroot}/etc/hosts" "${newroot}/etc/resolv.conf"
 for i in $(seq 0 9); do mkdir -p "${newroot}/mnt/${i}"; done
 
 echo "${newroot} unpacked ok"

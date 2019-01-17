@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Download an xz-compressed CentOS 7 tarball. These are the base images for
+# the official CentOS Docker images.
+#
+# https://github.com/CentOS/sig-cloud-instance-images
+#
+# ch-test-scope: standard
+
+set -ex
+
+srcdir=$1
+tarball=${2}.tar.xz
+workdir=$3
+
+wget -nv -O "$tarball" 'https://github.com/CentOS/sig-cloud-instance-images/blob/CentOS-7.6.1810/docker/centos-7-docker.tar.xz?raw=true'
