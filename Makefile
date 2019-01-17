@@ -135,7 +135,7 @@ install: all
 	chmod 755 $(DOC)/examples/serial/hello/hello.sh \
 	          $(DOC)/examples/syscalls/pivot_root \
 	          $(DOC)/examples/syscalls/userns \
-			  $(DOC)/examples/*/*/*.sh
+	          $(DOC)/examples/*/*/*.sh
 	find $(DOC)/examples -name Build -exec chmod 755 {} \;
 #       tests
 	install -d $(TEST) $(TEST)/run
