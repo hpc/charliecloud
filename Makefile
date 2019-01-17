@@ -134,7 +134,8 @@ install: all
 	done
 	chmod 755 $(DOC)/examples/serial/hello/hello.sh \
 	          $(DOC)/examples/syscalls/pivot_root \
-	          $(DOC)/examples/syscalls/userns
+	          $(DOC)/examples/syscalls/userns \
+			  $(DOC)/examples/*/*/*.sh
 	find $(DOC)/examples -name Build -exec chmod 755 {} \;
 #       tests
 	install -d $(TEST) $(TEST)/run
@@ -149,10 +150,10 @@ install: all
 	ln -sf ../../../../bin $(TEST)/bin
 #       shared library tests
 	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
-	install -pm 755 -t $(TEST)/sotest test/sotest/files_inferrable.txt \
-                                          test/sotest/libsotest.so.1.0 \
-	                                  test/sotest/sotest \
-	                                  test/sotest/sotest.c
+	install -pm 755 -t $(TEST)/sotest test/sotest/libsotest.so.1.0 \
+                                      test/sotest/sotest 
+	install -pm 644 -t $(TEST)/sotest test/sotest/files_inferrable.txt \
+                                      test/sotest/sotest.c
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
 	install -pm 755 -t $(TEST)/sotest/bin test/sotest/bin/sotest
