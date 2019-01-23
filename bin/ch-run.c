@@ -110,6 +110,7 @@ int main(int argc, char *argv[])
    args.c.private_home = false;
    args.c.private_tmp = false;
    args.c.old_home = getenv("HOME");
+   args.c.writable = false;
    T_ (args.env_deltas = calloc(1, sizeof(struct env_delta)));
    args.initial_dir = NULL;
    verbose = 1;  // in charliecloud.h
