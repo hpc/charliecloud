@@ -42,11 +42,16 @@ Systems used for running images need:
 * POSIX shell and utilities
 
 Some distributions need configuration changes to enable user namespaces. For
-example, Debian Stretch needs sysctl
-:code:`kernel.unprivileged_userns_clone=1`, and RHEL and CentOS 7.4 need both
-a `kernel command line option and a sysctl
-<https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_
-(that put you into "technology preview").
+example:
+
+* Debian Stretch `needs sysctl <https://superuser.com/a/1122977>`_
+  :code:`kernel.unprivileged_userns_clone=1`.
+
+* RHEL/CentOS 7.4 and 7.5 need both a `kernel command line option and a sysctl <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_.
+  *Important note:* Docker does not work with user namespaces, so skip step 4
+  of the Red Hat instructions, i.e., don't add :code:`--userns-remap` to the
+  Docker configuration (see `issue #97
+  <https://github.com/hpc/charliecloud/issues/97>`_).
 
 Build time
 ----------
