@@ -31,7 +31,7 @@ fi
 
 # Coordinate this list with test "build.bats/proxy variables".
 # shellcheck disable=SC2154
-docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
+img build --build-arg HTTP_PROXY="$HTTP_PROXY" \
               --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
               --build-arg NO_PROXY="$NO_PROXY" \
               --build-arg http_proxy="$http_proxy" \
