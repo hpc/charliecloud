@@ -41,10 +41,14 @@ env:
 
 addons:
   apt:
+    sources:
+      - sourceline: 'ppa:projectatomic/ppa'
     packages:
       - fakeroot
       - pigz
       - python3-pip
+      - skopeo
+      - skopeo-containers
 
 install:
   - if [ -n "$INSTALL_PV" ]; then sudo apt-get install pv; fi
@@ -61,6 +65,11 @@ install:
   - tar xvf shellcheck-v0.6.0.linux.x86_64.tar.xz
   - sudo mv shellcheck-v0.6.0/shellcheck /usr/local/bin
   - shellcheck --version
+# umoci provides a binary build; no appropriate Ubuntu packages AFAICT.
+  - wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.3/umoci.amd64
+  - sudo chmod 755 umoci.amd64
+  - sudo mv umoci.amd64 /usr/local/bin/umoci
+  - umoci --version
 
 before_script:
   - getconf _NPROCESSORS_ONLN
