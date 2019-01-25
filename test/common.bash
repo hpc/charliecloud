@@ -5,17 +5,17 @@ crayify_mpi_maybe () {
     fi
 }
 
-docker_tag_p () {
-    printf 'image tag %s ... ' "$1"
-    hash_=$(sudo docker images -q "$1" | sort -u)
-    if [[ $hash_ ]]; then
-        echo "$hash_"
-        return 0
-    else
-        echo 'not found'
-        return 1
-    fi
-}
+#docker_tag_p () {
+#    printf 'image tag %s ... ' "$1"
+#    hash_=$(sudo docker images -q "$1" | sort -u)
+#    if [[ $hash_ ]]; then
+#        echo "$hash_"
+#        return 0
+#    else
+#        echo 'not found'
+#        return 1
+#    fi
+#}
 
 img_tag_p () {
     printf 'image tag %s ... ' "$1"
@@ -28,7 +28,6 @@ img_tag_p () {
         return 1
     fi
 }
-
 
 docker_ok () {
     docker_tag_p "$1"
@@ -74,20 +73,20 @@ multiprocess_ok () {
     true
 }
 
-need_docker () {
-    # Skip test if $CH_TEST_SKIP_DOCKER is true. If argument provided, use
-    # that tag as missing prerequisite sentinel file.
-    pq=${ch_tardir}/${1}.pq_missing
-    if [[ $pq ]]; then
-        rm -f "$pq"
-    fi
-    if [[ $CH_TEST_SKIP_DOCKER ]]; then
-        if [[ $pq ]]; then
-            touch "$pq"
-        fi
-        skip 'Docker not found or user-skipped'
-    fi
-}
+#need_docker () {
+#    # Skip test if $CH_TEST_SKIP_DOCKER is true. If argument provided, use
+#    # that tag as missing prerequisite sentinel file.
+#    pq=${ch_tardir}/${1}.pq_missing
+#    if [[ $pq ]]; then
+#        rm -f "$pq"
+#    fi
+#    if [[ $CH_TEST_SKIP_DOCKER ]]; then
+#        if [[ $pq ]]; then
+#            touch "$pq"
+#        fi
+#        skip 'Docker not found or user-skipped'
+#    fi
+#}
 
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
@@ -271,9 +270,9 @@ elif [[    $CH_TEST_SCOPE != quick \
 fi
 
 # Do we have sudo?
-if ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
-    # This isn't super reliable; it returns true if we have *any* sudo
-    # privileges, not specifically to run the commands we want to run.
-    # shellcheck disable=SC2034
-    ch_have_sudo=yes
-fi
+#if ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
+#    # This isn't super reliable; it returns true if we have *any* sudo
+#    # privileges, not specifically to run the commands we want to run.
+#    # shellcheck disable=SC2034
+#    ch_have_sudo=yes
+#fi

@@ -55,7 +55,7 @@ for path in sys.argv[2:]:
          template = """\
 @test 'custom build %(tag)s' {
     scope %(scope)s
-    tarball=$ch_tardir/%(tag)s.tar.gz
+    tarball=$ch_tardir/%(tag)s
     pq=$ch_tardir/%(tag)s.pq_missing
     workdir=$ch_tardir/%(tag)s.tmp
     rm -f "$pq"
@@ -112,7 +112,7 @@ for path in sys.argv[2:]:
 @test 'ch-tar2dir %(tag)s' {
     scope %(scope)s
     prerequisites_ok %(tag)s
-    ch-tar2dir "$ch_tardir/%(tag)s.tar.gz" "$ch_imgdir"
+    ch-tar2dir "$ch_tardir/%(tag)s" "$ch_imgdir"
 }
 @test 'ch-run %(tag)s /bin/true' {
     scope %(scope)s

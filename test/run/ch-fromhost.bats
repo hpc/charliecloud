@@ -261,6 +261,19 @@ fromhost_ls () {
     [[ $status -eq 1 ]]
     [[ $output = *'duplicate image'* ]]
     fromhost_clean_p "$img"
+
+    # ldconfig gives no shared library path (#324)
+    #
+    # (I don't think this is the best way to get ldconfig to fail, but I
+    # couldn't come up with anything better. E.g., bad ld.so.conf or broken
+    # .so's seem to produce only warnings.)
+    mv "${img}/sbin/ldconfig" "${img}/sbin/ldconfig.foo"
+    run ch-fromhost --lib-path "$img"
+    mv "${img}/sbin/ldconfig.foo" "${img}/sbin/ldconfig"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'empty path from ldconfig'* ]]
+    fromhost_clean_p "$img"
 }
 
 @test 'ch-fromhost --cray-mpi not on a Cray' {

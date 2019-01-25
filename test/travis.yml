@@ -41,10 +41,16 @@ env:
 
 addons:
   apt:
+    sources:
+      - sourceline: 'ppa:projectatomic/ppa'
     packages:
       - fakeroot
       - pigz
       - python3-pip
+      - libseccomp-dev
+      - uidmap
+      - skopeo
+      - skopeo-containers
 
 install:
   - if [ -n "$INSTALL_PV" ]; then sudo apt-get install pv; fi
@@ -61,6 +67,17 @@ install:
   - tar xvf shellcheck-v0.6.0.linux.x86_64.tar.xz
   - sudo mv shellcheck-v0.6.0/shellcheck /usr/local/bin
   - shellcheck --version
+  # install stuff for img
+  - wget https://github.com/opencontainers/runc/releases/download/v1.0.0-rc6/runc.amd64 
+  - chmod 755 runc.amd64
+  - sudo mv runc.amd64 /usr/local/sbin/runc
+  - wget https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz  
+  - tar xvf go1.11.5.linux-amd64.tar.gz 
+# umoci provides a binary build; no appropriate Ubuntu packages AFAICT.
+  - wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.3/umoci.amd64
+  - sudo chmod 755 umoci.amd64
+  - sudo mv umoci.amd64 /usr/local/bin/umoci
+  - umoci --version
 
 before_script:
   - getconf _NPROCESSORS_ONLN

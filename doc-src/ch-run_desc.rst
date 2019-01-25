@@ -42,6 +42,9 @@ unpacked image directory located at :code:`NEWROOT`.
     use container-private :code:`/tmp` (by default, :code:`/tmp` is shared with
     the host)
 
+  :code:`--set-env=FILE`
+    set environment variables as specified in host path :code:`FILE`
+
   :code:`-u`, :code:`--uid=UID`
     run as user :code:`UID` within container
 
@@ -158,9 +161,22 @@ Caveats:
 Environment variables
 =====================
 
-:code:`ch-run` generally tries to leave environment variables unchanged, but
-in some cases, guests can be significantly broken unless environment variables
-are tweaked. This section lists those changes.
+:code:`ch-run` leaves environment variables unchanged, i.e. the host
+environment is passed through unaltered, except:
+
+* limited tweaks to avoid significant guest breakage; and
+* user-set variables via :code:`--set-env`
+
+This section describes these features.
+
+The default tweaks happen first, followed by :code:`--set-env`. The
+latter can be repeated arbitrarily many times, e.g. to add multiple
+variable sets.
+
+Default behavior
+----------------
+
+By default, :code:`ch-run` makes the following environment variable changes:
 
 * :code:`$HOME`: If the path to your home directory is not :code:`/home/$USER`
   on the host, then an inherited :code:`$HOME` will be incorrect inside the
@@ -184,7 +200,103 @@ are tweaked. This section lists those changes.
     * `Fedora <https://fedoraproject.org/wiki/Features/UsrMove>`_
     * `Debian <https://wiki.debian.org/UsrMerge>`_
 
+Setting environment variables with :code:`--set-env`
+---------------------------------------------------------
 
+The purpose of :code:`--set-env=FILE` is to set environment variables that
+cannot be inherited from the host shell, e.g. Dockerfile :code:`ENV`
+directives or other build-time configuration. :code:`FILE` is a host path to
+provide the greatest flexibility; guest paths can be specified by prepending
+the image path.
+
+Variable values in :code:`FILE` replace any already set. If a variable is
+repeated, the last value wins.
+
+The syntax of :code:`FILE` is key-value pairs separated by the first equals
+character (:code:`=`, ASCII 61), one per line, with optional single straight
+quotes (:code:`'`, ASCII 39) around the value. Empty lines are ignored.
+Newlines (ASCII 10) are not permitted in either key or value. No variable
+expansion, comments, etc. are provided. The value may be empty, but not the
+key. (This syntax is designed to accept the output of :code:`printenv` and be
+easily produced by other simple mechanisms.) Examples of valid lines:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Line
+     - Key
+     - Value
+   * - :code:`FOO=bar`
+     - :code:`FOO`
+     - :code:`bar`
+   * - :code:`FOO=bar=baz`
+     - :code:`FOO`
+     - :code:`bar=baz`
+   * - :code:`FLAGS=-march=foo -mtune=bar`
+     - :code:`FLAGS`
+     - :code:`-march=foo -mtune=bar`
+   * - :code:`FLAGS='-march=foo -mtune=bar'`
+     - :code:`FLAGS`
+     - :code:`-march=foo -mtune=bar`
+   * - :code:`FOO=`
+     - :code:`FOO`
+     - (empty string)
+   * - :code:`FOO=''`
+     - :code:`FOO`
+     - (empty string)
+   * - :code:`FOO=''''`
+     - :code:`FOO`
+     - :code:`''` (two single quotes)
+
+Example invalid lines:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Line
+     - Problem
+   * - :code:`FOO bar`
+     - no separator
+   * - :code:`=bar`
+     - key cannot be empty
+
+Example valid lines that are probably not what you want:
+
+.. Note: Plain leading space screws up ReST parser. We use ZERO WIDTH SPACE
+   U+200B, then plain space. This will copy and paste incorrectly, but that
+   seems unlikely.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Line
+     - Key
+     - Value
+     - Problem
+   * - :code:`FOO="bar"`
+     - :code:`FOO`
+     - :code:`"bar"`
+     - double quotes aren't stripped
+   * - :code:`FOO=bar # baz`
+     - :code:`FOO`
+     - :code:`bar # baz`
+     - comments not supported
+   * - :code:`PATH=$PATH:/opt/bin`
+     - :code:`PATH`
+     - :code:`$PATH:/opt/bin`
+     - variables not expanded
+   * - :code:`​ FOO=bar`
+     - :code:`​ FOO`
+     - :code:`bar`
+     - leading space in key
+   * - :code:`FOO= bar`
+     - :code:`FOO`
+     - :code:`​ bar`
+     - leading space in value
+
+Example Docker command to produce a valid :code:`FILE`::
+
+  $ docker inspect $TAG --format='{{range .Config.Env}}{{println .}}{{end}}'
 
 Examples
 ========
@@ -198,3 +310,5 @@ unpacked image at :code:`/data/foo`::
 Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
+
+..  LocalWords:  mtune

@@ -24,14 +24,15 @@ fi
 image=$1
 outdir=$2
 tar=$(echo "$image" | sed 's/\//./g').tar.gz
+#dir="$outdir"/$(echo "$image")
 dir="$outdir"/$(echo "$image")
-echo $tar
-echo $dir
 #cid=$(docker_ create --read-only "$image")
 #size=$(docker_ image inspect "$image" --format='{{.Size}}')
 #docker_ ps -af "id=$cid"
-img unpack -o "$dir" "$image"
+img unpack -o $dir "$image"
 cd $dir
+# TODO 755 is bad
+find . -type f -exec chmod 755 -- {} +
 tar -czf ../"$tar" *
 cd ..
 rm -rf "$image"

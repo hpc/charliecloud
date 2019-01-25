@@ -34,11 +34,32 @@ load ../common
 @test 'ch-tar2dir: errors' {
     scope quick
 
-    # tarball doesn't exist
+    # tarball doesn't exist (extension provided)
     run ch-tar2dir does_not_exist.tar.gz "$ch_imgdir"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't read does_not_exist.tar.gz"* ]]
+    [[ $output = *"can't read: does_not_exist.tar.gz"* ]]
+    ! [[ $output = *"can't read: does_not_exist.tar.gz.tar.gz"* ]]
+    ! [[ $output = *"can't read: does_not_exist.tar.xz"* ]]
+    [[ $output = *"no input found" ]]
+
+    # tarball doesn't exist (extension inferred, doesn't contain "tar")
+    run ch-tar2dir does_not_exist "$ch_imgdir"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't read: does_not_exist"* ]]
+    [[ $output = *"can't read: does_not_exist.tar.gz"* ]]
+    [[ $output = *"can't read: does_not_exist.tar.xz"* ]]
+    [[ $output = *"no input found"* ]]
+
+    # tarball doesn't exist (bad extension containing "tar")
+    run ch-tar2dir does_not_exist.tar.foo "$ch_imgdir"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't read: does_not_exist.tar.foo"* ]]
+    ! [[ $output = *"can't read: does_not_exist.tar.foo.tar.gz"* ]]
+    ! [[ $output = *"can't read: does_not_exist.tar.foo.tar.xz"* ]]
+    [[ $output = *"no input found"* ]]
 
     # tarball exists but isn't readable
     touch "${BATS_TMPDIR}/unreadable.tar.gz"
@@ -46,6 +67,19 @@ load ../common
     run ch-tar2dir "${BATS_TMPDIR}/unreadable.tar.gz" "$ch_imgdir"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't read ${BATS_TMPDIR}/unreadable.tar.gz"* ]]
+    [[ $output = *"can't read: ${BATS_TMPDIR}/unreadable.tar.gz"* ]]
+    [[ $output = *"no input found"* ]]
+
+    # file exists but has bad extension
+    touch "${BATS_TMPDIR}/foo.bar"
+    run ch-tar2dir "${BATS_TMPDIR}/foo.bar" "$ch_imgdir"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"unknown extension: ${BATS_TMPDIR}/foo.bar"* ]]
+    touch "${BATS_TMPDIR}/foo.tar.bar"
+    run ch-tar2dir "${BATS_TMPDIR}/foo.tar.bar" "$ch_imgdir"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"unknown extension: ${BATS_TMPDIR}/foo.tar.bar"* ]]
 }
 
