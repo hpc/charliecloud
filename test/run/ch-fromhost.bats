@@ -96,6 +96,13 @@ fromhost_ls () {
     ch-fromhost --file sotest/files_inferrable.txt "$img"
     ch-run "$img" -- sotest
     fromhost_clean "$img"
+
+    # destination directory not writeable (#323)
+    chmod -v u-w "${img}/mnt"
+    ch-fromhost --dest /mnt --path sotest/sotest.c "$img"
+    test -w "${img}/mnt"
+    test -f "${img}/mnt/sotest.c"
+    fromhost_clean "$img"
 }
 
 @test 'ch-fromhost (CentOS)' {
