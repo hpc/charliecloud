@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Build an Alpine Linux image using skopeo and umoci. This is a precursor to
+# proper support within the tools (issue #325).
+#
+# Note that this approach is a little contrived, in that we unpack the image
+# with umoci, tar it up, and then later in the test suite unpack it again
+# redundantly with ch-tar2dir. Many real workflows would just use the
+# umoci-unpacked image. (umoci does not support producing a tarball directly.)
+#
+# Warning: This image currently tests the case of a tarball with one top-level
+# directory and no hidden files. If you remove it, make sure regressions on
+# issue #332 are still tested.
+#
+# ch-test-scope: standard
+
+set -ex
+
+srcdir=$1
+tarball_gz=${2}.tar.gz
+workdir=$3
+
+cd "$workdir"
+
+if ( ! command -v skopeo >/dev/null 2>&1 ); then
+    echo 'skopeo not found' 1>&2
+    exit 65
+fi
+if ( ! command -v umoci >/dev/null 2>&1 ); then
+    echo 'umoci not found' 1>&2
+    exit 65
+fi
+
+skopeo copy docker://alpine:3.6 oci:./oci:alpine
+umoci unpack --rootless --image ./oci:alpine ./img
+
+( cd img && tar czf "$tarball_gz" -- rootfs )

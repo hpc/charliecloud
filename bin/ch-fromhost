@@ -233,8 +233,15 @@ if [ $lib_found ]; then
     # searches, so that we can override (or overwrite) any of the same library
     # that may already be in the image.
     debug "asking ldconfig for shared library destination"
-    lib_dest=$(  "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv 2> /dev/null \
-               | grep -E '^/' | cut -d: -f1 | head -1)
+    # "ldconfig -Nv" gives some pointless warnings on stderr even if
+    # successful; we don't want to show those to users. However, we don't want
+    # to simply pipe stderr to /dev/null because this hides real errors. Thus,
+    # use the following abomination to pipe stdout and stderr to *separate
+    # grep commands*. See: https://stackoverflow.com/a/31151808
+    lib_dest=$( { "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv \
+                  2>&1 1>&3 3>&- | grep -Ev '(^|dynamic linker, ignoring|given more than once)$' ; } \
+                3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
+    [ -n "$lib_dest" ] || fatal 'empty path from ldconfig'
     [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
     debug "shared library destination: ${lib_dest}"
 fi

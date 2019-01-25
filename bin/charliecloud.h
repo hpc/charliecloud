@@ -74,6 +74,7 @@ struct container {
    char *join_tag;      // identifier for synchronized join
    bool private_home;
    bool private_tmp;
+   char *old_home;      // host path to user's home directory (i.e. $HOME)
    bool writable;
 };
 

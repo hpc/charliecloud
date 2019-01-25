@@ -193,16 +193,15 @@ void enter_udss(struct container *c)
    }
    // Container /home.
    if (!c->private_home) {
-      char *oldhome, *newhome;
+      char *newhome;
       // Mount tmpfs on guest /home because guest root is read-only
       tmpfs_mount("/home", c->newroot, "size=4m");
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
-      oldhome = getenv("HOME");
-      Tf (oldhome != NULL, "cannot find home directory: $HOME not set");
+      Tf (c->old_home != NULL, "cannot find home directory: is $HOME set?");
       newhome = cat("/home/", getenv("USER"));
       Z_ (mkdir(cat(c->newroot, newhome), 0755));
-      bind_mount(oldhome, newhome, c->newroot, BD_REQUIRED, 0);
+      bind_mount(c->old_home, newhome, c->newroot, BD_REQUIRED, 0);
    }
    // Bind-mount /usr/bin/ch-ssh if it exists.
    if (path_exists(cat(c->newroot, "/usr/bin/ch-ssh"))) {
