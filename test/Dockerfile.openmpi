@@ -136,6 +136,7 @@ RUN    cd openmpi-${MPI_VERSION} \
                    --with-psm2 \
                    --with-ucx \
                    --disable-pty-support \
+		   --disable-builtin-atomics \
 		   --enable-mca-no-build=btl-openib,plm-slurm \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN ldconfig
