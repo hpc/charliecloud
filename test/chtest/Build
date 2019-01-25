@@ -28,7 +28,7 @@ mirror=http://dl-cdn.alpinelinux.org/alpine/v3.8
 apk_tools=$(  wget -qO - "${mirror}/main/x86_64" \
             | grep -F apk-tools-static \
             | sed -E 's/^.*(apk-tools-static-[0-9.r-]+\.apk).*$/\1/')
-img="${workdir}/img"
+img=${workdir}/img
 
 cd "$workdir"
 

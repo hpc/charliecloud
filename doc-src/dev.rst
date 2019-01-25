@@ -491,5 +491,13 @@ Variable conventions in shell scripts and :code:`.bats` files
     "${foo}"/bar  # no
     "$foo"/bar    # no
 
+* Don't quote variable assignments or other places where not needed (e.g.,
+  case statements). E.g.:
+
+  .. code-block:: none
+
+    foo=${bar}/baz    # yes
+    foo="${bar}/baz"  # no
+
 
 ..  LocalWords:  milestoned gh nv cht Chacon's scottchacon
