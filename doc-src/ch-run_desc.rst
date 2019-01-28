@@ -48,6 +48,10 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`-u`, :code:`--uid=UID`
     run as user :code:`UID` within container
 
+  :code:`--unset-env[=STRING]`
+    unset environment variables whose names contain :code:`STRING` (default:
+    all environment variables)
+
   :code:`-v`, :code:`--verbose`
     be more verbose (debug if repeated)
 
@@ -164,14 +168,16 @@ Environment variables
 :code:`ch-run` leaves environment variables unchanged, i.e. the host
 environment is passed through unaltered, except:
 
-* limited tweaks to avoid significant guest breakage; and
-* user-set variables via :code:`--set-env`
+* limited tweaks to avoid significant guest breakage; 
+* user-set variables via :code:`--set-env`; and
+* user-unser variables via :code:`--unset-ev`.
 
 This section describes these features.
 
-The default tweaks happen first, followed by :code:`--set-env`. The
-latter can be repeated arbitrarily many times, e.g. to add multiple
-variable sets.
+The default tweaks happen first, and then :code:`--set-env` and
+:code:`--unset-env` happen in the order specified on the command line. The
+latter two can be repeated arbitrarily many times, e.g. to add/remove multiple
+variable sets or add only some variables in a file.
 
 Default behavior
 ----------------
@@ -297,6 +303,37 @@ Example valid lines that are probably not what you want:
 Example Docker command to produce a valid :code:`FILE`::
 
   $ docker inspect $TAG --format='{{range .Config.Env}}{{println .}}{{end}}'
+
+Removing environment variables with :code:`--unset-env`
+-------------------------------------------------------
+
+The purpose of :code:`--unset-env[=STRING]` is to strip unwanted environment
+variables, e.g. to hide from a container the fact that it's running under
+SLURM (:code:`--unset-env=SLURM`).
+
+If specified, this option removes from the environment of the user command all
+variables whose names contain the substring :code:`STRING`. The comparison is
+case-sensitive. For example::
+
+  $ export FOOBAR=baz
+  $ ch-run $CH_TEST_IMGDIR/chtest -- /usr/bin/env | fgrep FOO
+  FOOBAR=baz
+  $ ch-run --unset-env=FOO $CH_TEST_IMGDIR/chtest -- /usr/bin/env | fgrep FOO
+  $
+
+If :code:`STRING` is not specified, then all environment variables are
+removed. For example::
+
+  $ ch-run --unset-env $CH_TEST_IMGDIR/chtest -- /usr/bin/env
+  $
+
+Note that some programs, such as shells, set some environment variables even
+if started with no init files. For example::
+
+  $ ch-run --unset-env $CH_TEST_IMGDIR/chtest -- sh -c /usr/bin/env
+  SHLVL=1
+  PWD=/
+  $
 
 Examples
 ========
