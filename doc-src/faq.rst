@@ -300,6 +300,16 @@ This yields false positives if you have a tarbomb image with a directory
 :code:`dev` at the second level containing stuff you care about. Hopefully
 this is rare, but please let us know if it is your use case.
 
+My password that contains digits doesn't work in VirtualBox console
+-------------------------------------------------------------------
+
+VirtualBox has confusing Num Lock behavior. Thus, you may be typing arrows,
+page up/down, etc. instead of digits, without noticing because console
+password fields give no feedback, not even whether a character has been typed.
+
+Try using the number row instead, toggling Num Lock key, or SSHing into the
+virtual machine.
+
 
 How do I ...
 ============
