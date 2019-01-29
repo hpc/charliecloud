@@ -383,6 +383,54 @@ EOF
     [[ $output = *"--set-env: empty name: ${f_in}:1"* ]]
 }
 
+@test 'ch-run --unset-env' {
+    # unset all
+    output_expected=''
+    ch-run --unset-env='*' "$ch_timg" -- /usr/bin/env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+
+    # Target variables with wildcard pattern.
+    f_in=${BATS_TMPDIR}/env.txt
+    cat <<'EOF' > "$f_in"
+chue_a1=bar
+chue_a2=bar=baz
+chue_a3=bar baz
+chue_a4='bar'
+chue_b1=bar
+chue_b2=bar=baz
+chue_b3=bar baz
+chue_b4='bar'
+EOF
+    output_expected=$(cat <<'EOF'
+('chue_b1', 'bar')
+('chue_b2', 'bar=baz')
+('chue_b3', 'bar baz')
+('chue_b4', 'bar')
+EOF
+)
+    run ch-run --set-env="$f_in" --unset-env='*_a*' "$ch_timg" -- python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chue_" in k]'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+
+    # Target variables by name
+    output_expected=$(cat <<'EOF'
+('chue_a1', 'bar')
+('chue_a4', 'bar')
+('chue_b1', 'bar')
+('chue_b2', 'bar=baz')
+('chue_b3', 'bar baz')
+('chue_b4', 'bar')
+EOF
+)
+    run ch-run --set-env="$f_in" --unset-env='chue_a2' --unset-env='chue_a3' "$ch_timg" -- python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chue_" in k]'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+}
+
 @test 'broken image errors' {
     scope standard
     img="${BATS_TMPDIR}/broken-image"

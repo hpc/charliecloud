@@ -6,6 +6,7 @@
 #define _GNU_SOURCE
 #include <argp.h>
 #include <assert.h>
+#include <fnmatch.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,23 +43,24 @@ const char args_doc[] = "NEWROOT CMD [ARG...]";
 const struct argp_option options[] = {
    { "bind",        'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
-   { "cd",          'c', "DIR",  0, "initial working directory in container"},
-   { "gid",         'g', "GID",  0, "run as GID within container" },
-   { "join",        'j', 0,      0, "use same container as peer ch-run" },
-   { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
-   { "join-ct",      -3, "N",    0, "number of ch-run peers (implies --join)" },
-   { "join-tag",     -4, "TAG",  0, "label for peer group (implies --join)" },
-   { "no-home",      -2, 0,      0, "do not bind-mount your home directory"},
-   { "private-tmp", 't', 0,      0, "use container-private /tmp" },
-   { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
-   { "uid",         'u', "UID",  0, "run as UID within container" },
-   { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
-   { "version",     'V', 0,      0, "print version and exit" },
-   { "write",       'w', 0,      0, "mount image read-write"},
+   { "cd",          'c', "DIR",     0, "initial working directory in container"},
+   { "gid",         'g', "GID",     0, "run as GID within container" },
+   { "join",        'j', 0,         0, "use same container as peer ch-run" },
+   { "join-pid",     -5, "PID",     0, "join a namespace using a PID" },
+   { "join-ct",      -3, "N",       0, "number of ch-run peers (implies --join)" },
+   { "join-tag",     -4, "TAG",     0, "label for peer group (implies --join)" },
+   { "no-home",      -2, 0,         0, "do not bind-mount your home directory"},
+   { "private-tmp", 't', 0,         0, "use container-private /tmp" },
+   { "set-env",      -6, "FILE",    0, "set environment variables in FILE"},
+   { "uid",         'u', "UID",     0, "run as UID within container" },
+   { "unset-env",    -7, "STRING",  0, "unset environment variable(s)" },
+   { "verbose",     'v', 0,         0, "be more verbose (debug if repeated)" },
+   { "version",     'V', 0,         0, "print version and exit" },
+   { "write",       'w', 0,         0, "mount image read-write"},
    { 0 }
 };
 
-/* On possible future here is that fix_environment() ends up in charliecloud.c
+/* One possible future here is that fix_environment() ends up in charliecloud.c
    and we add other actions such as SET, APPEND_PATH, etc. */
 enum env_action { END, SET_FILE, UNSET_GLOB };  // END must be zero
 
@@ -88,6 +90,7 @@ void privs_verify_invoking();
 /** Global variables **/
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
+extern char **environ;
 
 /** Main **/
 
@@ -166,6 +169,7 @@ void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
 void fix_environment(struct args *args)
 {
    char *name, *old_value, *new_value;
+   char **unset;
 
    // $HOME: Set to /home/$USER unless --no-home specified.
    if (!args->c.private_home) {
@@ -190,6 +194,8 @@ void fix_environment(struct args *args)
    }
 
    // --set-env and --unset-env.
+   unset = calloc(1, sizeof(char * ));
+   assert(unset != NULL);
    for (int i = 0; args->env_deltas[i].action != END; i++) {
       char *arg = args->env_deltas[i].arg;
       if (args->env_deltas[i].action == SET_FILE) {
@@ -197,7 +203,6 @@ void fix_environment(struct args *args)
          Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
          for (int j = 1; true; j++) {
             char *line = NULL;
-            size_t len = 0;
             errno = 0;
             if (-1 == getline(&line, &len, fp)) {
                if (errno == 0)  // EOF
@@ -225,7 +230,37 @@ void fix_environment(struct args *args)
          fclose(fp);
       } else {
          T_ (args->env_deltas[i].action == UNSET_GLOB);
-         T_ (0);  // --unset-env not yet supported
+         for(int j = 0; environ[j] != NULL; j++) {
+            old_value = strdup(environ[j]);
+            name = strsep(&old_value, "=");
+
+            /* The following horror appends each valid environment variable
+               targeted for deletion to the 'unset' array. Once all valid variables
+               are collected we then iterrate through the unset array calling unsetenv on
+               each element.
+
+               Note: Using strsep on environ caused issues. Likewise, calling unsetenv
+               directly on environ[j] (the more intuitive solution, and one I prefered) 
+               also gave me grief. I suspect it has to do with how environ updates when 
+               an environment varible is added/removed, especially since we are iterating 
+               through environ in this loop. */
+               
+            if (!fnmatch(arg, name, 0)) {
+               for (int k = 0; true; k++) {
+                  if (!unset[k]) {
+                     unset = realloc(unset, (k+2) * sizeof(char *));
+                     assert(unset != NULL);
+                     unset[k+1] = 0;
+                     unset[k] = strdup(name);
+                     break;
+                  }
+               }
+            }
+         }
+         for (int k = 0; unset[k] != NULL; k++) { // unset array names
+            INFO("environment: unset: %s", unset[k]);
+            Z_ (unsetenv(unset[k]));
+         }
       }
    }
 }
@@ -338,6 +373,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case -6: // --set-env
       env_delta_append(&(args->env_deltas), SET_FILE, arg);
       break;
+   case -7: // --unset-env
+      env_delta_append(&(args->env_deltas), UNSET_GLOB, arg);
+      break;;
    case 'c':
       args->initial_dir = arg;
       break;

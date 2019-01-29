@@ -48,9 +48,8 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`-u`, :code:`--uid=UID`
     run as user :code:`UID` within container
 
-  :code:`--unset-env[=STRING]`
-    unset environment variables whose names contain :code:`STRING` (default:
-    all environment variables)
+  :code:`--unset-env=STRING`
+    unset environment variables whose names contain :code:`STRING`
 
   :code:`-v`, :code:`--verbose`
     be more verbose (debug if repeated)
@@ -170,7 +169,7 @@ environment is passed through unaltered, except:
 
 * limited tweaks to avoid significant guest breakage; 
 * user-set variables via :code:`--set-env`; and
-* user-unser variables via :code:`--unset-ev`.
+* user-unser variables via :code:`--unset-env`.
 
 This section describes these features.
 
@@ -307,24 +306,41 @@ Example Docker command to produce a valid :code:`FILE`::
 Removing environment variables with :code:`--unset-env`
 -------------------------------------------------------
 
-The purpose of :code:`--unset-env[=STRING]` is to strip unwanted environment
+The purpose of :code:`--unset-env=STRING` is to strip unwanted environment
 variables, e.g. to hide from a container the fact that it's running under
-SLURM (:code:`--unset-env=SLURM`).
+SLURM (:code:`--unset-env='SLURM*'`).
 
-If specified, this option removes from the environment of the user command all
-variables whose names contain the substring :code:`STRING`. The comparison is
-case-sensitive. For example::
+The argument :code:`STRING` is a combination of alphanumeric characters and
+underscores (:code:`_` ASCII 95). Wildcard pattern matching as described in 
+:code: `fnmatch(3)` (without flags) is supported. Strings should begin and end 
+with single quotes (:code:`'` ASCII 39). Empty strings are permitted but
+not useful.
+
+.. warning::
+   Strings without single quotes, e.g. :code:`--unset-env=*` risk shell
+   expansion and can cause unexpected results.
+
+If specified, this option removes from the environment of the user all
+variables whose names contain the string pattern :code:`STRING`. For example::
 
   $ export FOOBAR=baz
   $ ch-run $CH_TEST_IMGDIR/chtest -- /usr/bin/env | fgrep FOO
   FOOBAR=baz
-  $ ch-run --unset-env=FOO $CH_TEST_IMGDIR/chtest -- /usr/bin/env | fgrep FOO
+  $ ch-run --unset-env='FOO' $CH_TEST_IMGDIR/chtest -- /usr/bin/env | fgrep FOO
   $
 
-If :code:`STRING` is not specified, then all environment variables are
+  $ export FIZZ=buzz
+  $ export FOO=bar
+  $ ch-run $CH_TEST_IMGDIR/chtest -- /usr/bin/env | grep ^F
+  FOO=bar
+  FIZZ=buzz
+  $ ch-run --unset-env='F*' $CH_TEST_IMGDIR/chtest -- /usr/bin/env | grep ^F
+  $
+
+If :code:`STRING` contains only :code:`'*'`, then all environment variables are
 removed. For example::
 
-  $ ch-run --unset-env $CH_TEST_IMGDIR/chtest -- /usr/bin/env
+  $ ch-run --unset-env='*' $CH_TEST_IMGDIR/chtest -- /usr/bin/env
   $
 
 Note that some programs, such as shells, set some environment variables even
