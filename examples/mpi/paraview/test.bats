@@ -29,7 +29,6 @@ setup () {
 # collection of XML files containing binary data and it seems too hairy to me.
 
 @test "${ch_tag}/cone serial" {
-    [[ $ch_mpi = openmpi ]] && skip "pending ability to drop Slurm env variables issue #226"
     ch-run -b "$indir" -b "$outdir" "$ch_img" -- \
            pvbatch /mnt/0/cone.py /mnt/1
     ls -l "$outdir"/cone*
