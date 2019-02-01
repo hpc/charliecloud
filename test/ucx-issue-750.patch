@@ -1,9 +1,4 @@
-From c9670b5a63ac14ad239610bde30ee61b2deee58d Mon Sep 17 00:00:00 2001
-From: Howard Pritchard <hppritcha@gmail.com>
-Date: Thu, 20 Dec 2018 14:36:53 -0700
-Subject: [PATCH] don't try to open HFI devices with UCX
-
-Signed-off-by: Howard Pritchard <hppritcha@gmail.com>
+This patch is used in Dockerfile.openmpi. See there for documentation.
 
 diff --git a/src/uct/ib/base/ib_device.c b/src/uct/ib/base/ib_device.c
 index feab36be..f9f0a06d 100644
@@ -23,6 +18,4 @@ index feab36be..f9f0a06d 100644
      /* Check device type*/
      switch (ibv_device->node_type) {
      case IBV_NODE_SWITCH:
--- 
-1.8.3.1
 

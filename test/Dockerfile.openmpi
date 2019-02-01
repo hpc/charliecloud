@@ -78,7 +78,6 @@ RUN apt-get install -y --no-install-suggests \
     wget \
     udev
 
-COPY 0001-don-t-try-to-open-HFI-devices-with-UCX.patch /usr/local/src/
 WORKDIR /usr/local/src
 
 # Use the Buster versions of libpsm2 (not present in Stretch) and libibverbs
@@ -109,17 +108,30 @@ RUN for i in ibacm \
 RUN dpkg --install *.deb
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
+#
+# Bug workaround: We patch UCX to work around UCX issue #750 [1], which causes
+# OpenMPI to crash in the presence of OPA hardware when the UCX module tries
+# and fails to initialize itself.
+#
+# [1]: https://github.com/openucx/ucx/issues/750
 ENV UCX_VERSION 1.3.1
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git
-RUN mv 0001-don-t-try-to-open-HFI-devices-with-UCX.patch ucx/ \
-&& cd ucx \
-&& git apply 0001-don-t-try-to-open-HFI-devices-with-UCX.patch \
-&& ./autogen.sh \
+COPY ucx-issue-750.patch ./ucx
+RUN cd ucx && git apply ucx-issue-750.patch
+RUN    cd ucx \
+    && ./autogen.sh \
     && ./contrib/configure-release --prefix=/usr/local \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 
 # OpenMPI.
+#
+# Bug workaround: Add "--disable-builtin-atomics" to avoid OpenMPI issue
+# #6014 [1], which tickles a compiler bug that causes hangs in "vader" module.
+# Debian Stretch's GCC 6.3.0 is not listed in that issue but does hang for us.
+# Remove this argument when we upgrade to OpenMPI 3.1.4 (issue #346).
+#
+# [1]: https://github.com/open-mpi/ompi/issues/6014
 ENV MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
 ENV MPI_VERSION 3.1.3
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
@@ -135,9 +147,9 @@ RUN    cd openmpi-${MPI_VERSION} \
                    --with-pmix \
                    --with-psm2 \
                    --with-ucx \
+                   --disable-builtin-atomics \
                    --disable-pty-support \
-		   --disable-builtin-atomics \
-		   --enable-mca-no-build=btl-openib,plm-slurm \
+                   --enable-mca-no-build=btl-openib,plm-slurm \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN ldconfig
 RUN rm -Rf openmpi-${MPI_VERSION}*
