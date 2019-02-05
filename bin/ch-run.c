@@ -203,6 +203,7 @@ void fix_environment(struct args *args)
          Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
          for (int j = 1; true; j++) {
             char *line = NULL;
+            size_t len = 0;
             errno = 0;
             if (-1 == getline(&line, &len, fp)) {
                if (errno == 0)  // EOF
