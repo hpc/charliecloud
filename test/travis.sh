@@ -26,6 +26,14 @@ case $TARBALL in
         tar xf charliecloud-*.tar.gz
         cd charliecloud-*
         ;;
+    export-bats)
+        (cd doc-src && make)
+        make export-bats
+        mv charliecloud-*.tar.gz "$PREFIX"
+        cd "$PREFIX"
+        tar xf charliecloud-*.tar.gz
+        cd charliecloud-*
+        ;;
     archive)
         # The Travis image already has Bats installed.
         git archive HEAD --prefix=charliecloud/ -o "$PREFIX/charliecloud.tar"
@@ -48,7 +56,7 @@ bin/ch-run --version
 
 if [[ $INSTALL ]]; then
     sudo make install PREFIX="$PREFIX"
-    cd "$PREFIX/share/doc/charliecloud"
+    cd "$PREFIX/libexec/charliecloud"
 fi
 
 cd test
