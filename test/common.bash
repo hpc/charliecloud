@@ -132,7 +132,7 @@ ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
 ch_libexec=$(ch-build --libexec-path)
 if [[ ! -x ${ch_bin}/ch-run ]]; then
-    printf 'ch-run not found in ${ch_bin} (build with "make"?).\n\n' >&2
+    printf "ch-run not found in %s (has charliecloud been built with \"make\"?).\n\n" "${ch_bin}" >&2
     exit 1
 fi
 
