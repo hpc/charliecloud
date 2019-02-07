@@ -50,7 +50,7 @@ if [[ $PKG_BUILD ]]; then
     # python3" but I have not been able to verify this.
 
         # FIXME: Debian package build is disabled (# )
-        [[ "$i" != '/packaging/debian/travis.sh' ]] || continue
+        [[ ! "$i" = 'packaging/debian/travis.sh' ]] || continue
         $i
     done
     exit
