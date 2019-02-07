@@ -72,9 +72,8 @@ export-bats: VERSION.full man/charliecloud.1
             -o ../../bats.tar
 	tar Af main.tar bats.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
-            -rf bats.tar \
+            -rf main.tar \
             man/*.1 VERSION.full
-	tar Af main.tar bats.tar
 	gzip -9 main.tar
 	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
 	rm bats.tar
