@@ -51,8 +51,19 @@ bin/version.sh: VERSION.full
 # You must "cd doc-src && make" before this will work.
 .PHONY: export
 export: VERSION.full man/charliecloud.1
+	git diff-index --quiet HEAD        # need clean working directory
+	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
+                         -o main.tar
+	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
+            -rf main.tar \
+            man/*.1 VERSION.full
+	gzip -9 main.tar
+	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
+	ls -lh charliecloud-$$(cat VERSION.full).tar.gz
+
+export-bats: VERSION.full man/charliecloud.1
 	test -d .git -a -f test/bats/.git  # need recursive Git checkout
-#	git diff-index --quiet HEAD        # need clean working directory
+	git diff-index --quiet HEAD        # need clean working directory
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
 	cd test/bats && \
@@ -61,8 +72,9 @@ export: VERSION.full man/charliecloud.1
             -o ../../bats.tar
 	tar Af main.tar bats.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
-            -rf main.tar \
+            -rf bats.tar \
             man/*.1 VERSION.full
+	tar Af main.tar bats.tar
 	gzip -9 main.tar
 	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
 	rm bats.tar
@@ -95,7 +107,6 @@ endif
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 BIN := $(INSTALL_PREFIX)/bin
 DOC := $(INSTALL_PREFIX)/share/doc/charliecloud
-TEST := $(DOC)/test
 # LIBEXEC_DIR is modeled after FHS 3.0 and
 # https://www.gnu.org/prep/standards/html_node/Directory-Variables.html. It
 # contains any executable helpers that are not needed in PATH. Default is
@@ -103,6 +114,7 @@ TEST := $(DOC)/test
 LIBEXEC_DIR ?= libexec/charliecloud
 LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
 LIBEXEC_RUN := $(PREFIX)/$(LIBEXEC_DIR)
+TEST := $(LIBEXEC_INST)/test
 .PHONY: install
 install: all
 	@test -n "$(PREFIX)" || \
@@ -129,14 +141,14 @@ install: all
 	install -pm 644 -t $(DOC) LICENSE README.rst
 #       examples
 	for i in examples/syscalls examples/{serial,mpi,other}/*; do \
-	    install -d $(DOC)/$$i; \
-	    install -pm 644 -t $(DOC)/$$i $$i/*; \
+	    install -d $(LIBEXEC_INST)/$$i; \
+	    install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done
-	chmod 755 $(DOC)/examples/serial/hello/hello.sh \
-	          $(DOC)/examples/syscalls/pivot_root \
-	          $(DOC)/examples/syscalls/userns \
-	          $(DOC)/examples/*/*/*.sh
-	find $(DOC)/examples -name Build -exec chmod 755 {} \;
+	chmod 755 $(LIBEXEC_INST)/examples/serial/hello/hello.sh \
+	          $(LIBEXEC_INST)/examples/syscalls/pivot_root \
+	          $(LIBEXEC_INST)/examples/syscalls/userns \
+	          $(LIBEXEC_INST)/examples/*/*/*.sh
+	find $(LIBEXEC_INST)/examples -name Build -exec chmod 755 {} \;
 #       tests
 	install -d $(TEST) $(TEST)/run
 	install -pm 644 -t $(TEST) test/*.bats test/common.bash test/Makefile
@@ -147,7 +159,7 @@ install: all
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
 	chmod 755 $(TEST)/chtest/{Build,*.py,printns}
-	ln -sf ../../../../bin $(TEST)/bin
+	ln -sf ../../../bin $(TEST)/bin
 #       shared library tests
 	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
 	install -pm 755 -t $(TEST)/sotest test/sotest/libsotest.so.1.0 \
