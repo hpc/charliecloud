@@ -104,6 +104,16 @@ tarball_ok () {
     test -s "$1"
 }
 
+unslurmify_environment_maybe () {
+    # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
+    # are present. Work around this by fooling OpenMPI into believing it's not
+    # in a Slurm allocation. Better to remove this function and use
+    # --unset-env when available (#345)?
+    if [[ -n $SLURM_JOBID && $ch_mpi = openmpi ]]; then
+        unset SLURM_JOBID SLURM_NODELIST
+    fi
+}
+
 # Predictable sorting and collation
 export LC_ALL=C
 

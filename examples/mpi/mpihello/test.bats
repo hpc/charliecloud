@@ -16,6 +16,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/MPI version" {
+    unslurmify_environment_maybe
     run ch-run "$ch_img" -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
@@ -32,6 +33,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/serial" {
+    unslurmify_environment_maybe
     # This seems to start up the MPI infrastructure (daemons, etc.) within the
     # guest even though there's no mpirun.
     run ch-run "$ch_img" -- /hello/hello
@@ -43,6 +45,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/guest starts ranks" {
+    unslurmify_environment_maybe
     [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
     # shellcheck disable=SC2086
     run ch-run "$ch_img" -- mpirun $ch_mpirun_np /hello/hello
