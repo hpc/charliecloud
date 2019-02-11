@@ -49,10 +49,11 @@ FROM debian9
 #   2. --disable-pty-support to avoid "pipe function call failed when
 #      setting up I/O forwarding subsystem".
 #
-#   3. --with-slurm=no so mpirun in the container doesn't try use Slurm to
-#      launch processes, which will fail in inscrutable ways e.g. if srun is
-#      not found. (If you do want Slurm launching processes, use srun or
-#      mpirun outside the container.)
+#   3. --enable-mca-no-build=plm-slurm to support launching processes using
+#      the host's srun (i.e., the container OpenMPI needs to talk to the host
+#      Slurm's PMI) but prevent OpenMPI from invoking srun itself from within
+#      the container, where srun is not installed (the error messages from
+#      this are inscrutable).
 #
 # [1]: https://github.com/open-mpi/ompi/blob/master/README
 
@@ -107,17 +108,32 @@ RUN for i in ibacm \
 RUN dpkg --install *.deb
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
+#
+# Bug workaround: We patch UCX to work around UCX issue #750 [1], which causes
+# OpenMPI to crash in the presence of OPA hardware when the UCX module tries
+# and fails to initialize itself.
+#
+# [1]: https://github.com/openucx/ucx/issues/750
 ENV UCX_VERSION 1.3.1
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git
+COPY ucx-issue-750.patch ./ucx
+RUN cd ucx && git apply ucx-issue-750.patch
 RUN    cd ucx \
     && ./autogen.sh \
     && ./contrib/configure-release --prefix=/usr/local \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 
 # OpenMPI.
-ENV MPI_URL https://www.open-mpi.org/software/ompi/v2.1/downloads
-ENV MPI_VERSION 2.1.5
+#
+# Bug workaround: Add "--disable-builtin-atomics" to avoid OpenMPI issue
+# #6014 [1], which tickles a compiler bug that causes hangs in "vader" module.
+# Debian Stretch's GCC 6.3.0 is not listed in that issue but does hang for us.
+# Remove this argument when we upgrade to OpenMPI 3.1.4 (issue #346).
+#
+# [1]: https://github.com/open-mpi/ompi/issues/6014
+ENV MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
+ENV MPI_VERSION 3.1.3
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
 RUN tar xf openmpi-${MPI_VERSION}.tar.gz
 RUN    cd openmpi-${MPI_VERSION} \
@@ -125,14 +141,15 @@ RUN    cd openmpi-${MPI_VERSION} \
        CXXFLAGS=-O3 \
        ./configure --prefix=/usr/local \
                    --sysconfdir=/mnt/0 \
+		   --with-slurm \
                    --with-pmi \
                    --with-pmi-libdir=/usr/lib/x86_64-linux-gnu \
                    --with-pmix \
                    --with-psm2 \
                    --with-ucx \
+                   --disable-builtin-atomics \
                    --disable-pty-support \
-                   --enable-mca-no-build=btl-openib \
-                   --with-slurm=no \
+                   --enable-mca-no-build=btl-openib,plm-slurm \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN ldconfig
 RUN rm -Rf openmpi-${MPI_VERSION}*

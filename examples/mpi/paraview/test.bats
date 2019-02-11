@@ -29,6 +29,7 @@ setup () {
 # collection of XML files containing binary data and it seems too hairy to me.
 
 @test "${ch_tag}/cone serial" {
+    unslurmify_environment_maybe
     ch-run -b "$indir" -b "$outdir" "$ch_img" -- \
            pvbatch /mnt/0/cone.py /mnt/1
     ls -l "$outdir"/cone*
