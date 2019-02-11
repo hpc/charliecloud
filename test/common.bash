@@ -30,6 +30,11 @@ env_require () {
     fi
 }
 
+fatal () {
+    printf '%s\n\n' "$1" >&2
+    exit 1
+}
+
 image_ok () {
     ls -ld "$1" "${1}/WEIRD_AL_YANKOVIC" || true
     test -d "$1"
@@ -148,8 +153,8 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # despite the admonition in the man page, because it's more portable [1].
 #
 # [1]: https://unix.stackexchange.com/a/136527
-ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
-ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
+ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR") || fatal "CH_TEST_IMGDIR does not exist"
+ch_tardir=$(readlink -ef "$CH_TEST_TARDIR") || fatal "CH_TEST_TARDIR does not exist"
 if ( mount | grep -Fq "$ch_imgdir" ); then
     printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
     exit 1
