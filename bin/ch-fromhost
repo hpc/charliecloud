@@ -350,6 +350,13 @@ for file in $inject_files; do
     [ "$d" ] || fatal "no destination for: ${f}"
     [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
     [ -d "${image}${d}" ] || fatal "not a directory: ${image}${d}"
+    if [ ! -w "${image}${d}" ]; then
+        # Some images unpack with unwriteable directories; fix. This seems
+        # like a bit of a kludge to me, so I'd like to remove this special
+        # case in the future if possible. (#323)
+        info "${image}${d} not writeable; fixing"
+        chmod u+w "${image}${d}" || fatal "can't chmod u+w: ${image}${d}"
+    fi
        cp --dereference --preserve=all "$f" "${image}${d}" \
     || fatal "cannot inject: ${f}"
 done
