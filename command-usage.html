@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.6 documentation</title>
+  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.7 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                f5dd210
+                4917f57
               </div>
             
           
@@ -142,7 +142,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#id15">4.7.2. Description</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#host-files-and-directories-available-in-container-via-bind-mounts">4.7.3. Host files and directories available in container via bind mounts</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">4.7.4. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#environment-variables">4.7.5. Environment variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#environment-variables">4.7.5. Environment variables</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#default-behavior">4.7.5.1. Default behavior</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#setting-environment-variables-with-set-env">4.7.5.2. Setting environment variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#id16">4.7.6. Examples</a></li>
 </ul>
 </li>
@@ -695,6 +699,8 @@ mounted at <code class="code docutils literal notranslate"><span class="pre">/ho
 <dt><code class="code docutils literal notranslate"><span class="pre">-t</span></code>, <code class="code docutils literal notranslate"><span class="pre">--private-tmp</span></code></dt>
 <dd>use container-private <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> (by default, <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> is shared with
 the host)</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--set-env=FILE</span></code></dt>
+<dd>set environment variables as specified in host path <code class="code docutils literal notranslate"><span class="pre">FILE</span></code></dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-u</span></code>, <code class="code docutils literal notranslate"><span class="pre">--uid=UID</span></code></dt>
 <dd>run as user <code class="code docutils literal notranslate"><span class="pre">UID</span></code> within container</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt>
@@ -802,9 +808,19 @@ as files in <code class="code docutils literal notranslate"><span class="pre">/d
 </div>
 <div class="section" id="environment-variables">
 <h3>4.7.5. Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h3>
-<p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> generally tries to leave environment variables unchanged, but
-in some cases, guests can be significantly broken unless environment variables
-are tweaked. This section lists those changes.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> leaves environment variables unchanged, i.e. the host
+environment is passed through unaltered, except:</p>
+<ul class="simple">
+<li>limited tweaks to avoid significant guest breakage; and</li>
+<li>user-set variables via <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code></li>
+</ul>
+<p>This section describes these features.</p>
+<p>The default tweaks happen first, followed by <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>. The
+latter can be repeated arbitrarily many times, e.g. to add multiple
+variable sets.</p>
+<div class="section" id="default-behavior">
+<h4>4.7.5.1. Default behavior<a class="headerlink" href="#default-behavior" title="Permalink to this headline">¶</a></h4>
+<p>By default, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> makes the following environment variable changes:</p>
 <ul>
 <li><p class="first"><code class="code docutils literal notranslate"><span class="pre">$HOME</span></code>: If the path to your home directory is not <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>
 on the host, then an inherited <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> will be incorrect inside the
@@ -829,6 +845,134 @@ from the default <code class="code docutils literal notranslate"><span class="pr
 </div></blockquote>
 </li>
 </ul>
+</div>
+<div class="section" id="setting-environment-variables-with-set-env">
+<h4>4.7.5.2. Setting environment variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code><a class="headerlink" href="#setting-environment-variables-with-set-env" title="Permalink to this headline">¶</a></h4>
+<p>The purpose of <code class="code docutils literal notranslate"><span class="pre">--set-env=FILE</span></code> is to set environment variables that
+cannot be inherited from the host shell, e.g. Dockerfile <code class="code docutils literal notranslate"><span class="pre">ENV</span></code>
+directives or other build-time configuration. <code class="code docutils literal notranslate"><span class="pre">FILE</span></code> is a host path to
+provide the greatest flexibility; guest paths can be specified by prepending
+the image path.</p>
+<p>Variable values in <code class="code docutils literal notranslate"><span class="pre">FILE</span></code> replace any already set. If a variable is
+repeated, the last value wins.</p>
+<p>The syntax of <code class="code docutils literal notranslate"><span class="pre">FILE</span></code> is key-value pairs separated by the first equals
+character (<code class="code docutils literal notranslate"><span class="pre">=</span></code>, ASCII 61), one per line, with optional single straight
+quotes (<code class="code docutils literal notranslate"><span class="pre">'</span></code>, ASCII 39) around the value. Empty lines are ignored.
+Newlines (ASCII 10) are not permitted in either key or value. No variable
+expansion, comments, etc. are provided. The value may be empty, but not the
+key. (This syntax is designed to accept the output of <code class="code docutils literal notranslate"><span class="pre">printenv</span></code> and be
+easily produced by other simple mechanisms.) Examples of valid lines:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Line</th>
+<th class="head">Key</th>
+<th class="head">Value</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">FOO=bar</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FOO</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">bar</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="code docutils literal notranslate"><span class="pre">FOO=bar=baz</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FOO</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">bar=baz</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">FLAGS=-march=foo</span> <span class="pre">-mtune=bar</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FLAGS</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">-march=foo</span> <span class="pre">-mtune=bar</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="code docutils literal notranslate"><span class="pre">FLAGS='-march=foo</span> <span class="pre">-mtune=bar'</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FLAGS</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">-march=foo</span> <span class="pre">-mtune=bar</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">FOO=</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FOO</span></code></td>
+<td>(empty string)</td>
+</tr>
+<tr class="row-odd"><td><code class="code docutils literal notranslate"><span class="pre">FOO=''</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FOO</span></code></td>
+<td>(empty string)</td>
+</tr>
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">FOO=''''</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FOO</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">''</span></code> (two single quotes)</td>
+</tr>
+</tbody>
+</table>
+<p>Example invalid lines:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Line</th>
+<th class="head">Problem</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">FOO</span> <span class="pre">bar</span></code></td>
+<td>no separator</td>
+</tr>
+<tr class="row-odd"><td><code class="code docutils literal notranslate"><span class="pre">=bar</span></code></td>
+<td>key cannot be empty</td>
+</tr>
+</tbody>
+</table>
+<p>Example valid lines that are probably not what you want:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Line</th>
+<th class="head">Key</th>
+<th class="head">Value</th>
+<th class="head">Problem</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">FOO=&quot;bar&quot;</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FOO</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">&quot;bar&quot;</span></code></td>
+<td>double quotes aren’t stripped</td>
+</tr>
+<tr class="row-odd"><td><code class="code docutils literal notranslate"><span class="pre">FOO=bar</span> <span class="pre">#</span> <span class="pre">baz</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FOO</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">bar</span> <span class="pre">#</span> <span class="pre">baz</span></code></td>
+<td>comments not supported</td>
+</tr>
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">PATH=$PATH:/opt/bin</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">PATH</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">$PATH:/opt/bin</span></code></td>
+<td>variables not expanded</td>
+</tr>
+<tr class="row-odd"><td><code class="code docutils literal notranslate"><span class="pre">​</span> <span class="pre">FOO=bar</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">​</span> <span class="pre">FOO</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">bar</span></code></td>
+<td>leading space in key</td>
+</tr>
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">FOO=</span> <span class="pre">bar</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">FOO</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">​</span> <span class="pre">bar</span></code></td>
+<td>leading space in value</td>
+</tr>
+</tbody>
+</table>
+<p>Example Docker command to produce a valid <code class="code docutils literal notranslate"><span class="pre">FILE</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> docker inspect <span class="nv">$TAG</span> --format<span class="o">=</span><span class="s1">&#39;{{range .Config.Env}}{{println .}}{{end}}&#39;</span>
+</pre></div>
+</div>
+</div>
 </div>
 <div class="section" id="id16">
 <h3>4.7.6. Examples<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
@@ -892,11 +1036,13 @@ starting directory <code class="code docutils literal notranslate"><span class="
 <h3>4.9.2. Description<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
 <p>Extract the tarball <code class="code docutils literal notranslate"><span class="pre">TARBALL</span></code> into a subdirectory of <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>.
 <code class="code docutils literal notranslate"><span class="pre">TARBALL</span></code> must contain a Linux filesystem image, e.g. as created by
-<code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code>.</p>
+<code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code>, and be compressed with <code class="code docutils literal notranslate"><span class="pre">gzip</span></code> or <code class="code docutils literal notranslate"><span class="pre">xz</span></code>. If
+<code class="code docutils literal notranslate"><span class="pre">TARBALL</span></code> has no extension, try appending <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">.tar.xz</span></code>.</p>
 <p>Inside <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>, a subdirectory will be created whose name corresponds to
-the name of the tarball with the <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code> suffix removed. If such a
-directory exists already and appears to be a Charliecloud container image, it
-is removed and replaced. If the existing directory doesn’t appear to be a
+the name of the tarball with <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code> or other suffix removed. If such
+a directory exists already and appears to be a Charliecloud container image,
+it is removed and replaced. If the existing directory doesn’t appear to be a
 container image, the script aborts with an error.</p>
 <p>Additional arguments:</p>
 <blockquote>

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installation &mdash; Charliecloud 0.9.6 documentation</title>
+  <title>1. Installation &mdash; Charliecloud 0.9.7 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                f5dd210
+                4917f57
               </div>
             
           
@@ -246,10 +246,15 @@ or higher.</li>
 <li>POSIX shell and utilities</li>
 </ul>
 <p>Some distributions need configuration changes to enable user namespaces. For
-example, Debian Stretch needs sysctl
-<code class="code docutils literal notranslate"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>, and RHEL and CentOS 7.4 need both
-a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>
-(that put you into “technology preview”).</p>
+example:</p>
+<ul class="simple">
+<li>Debian Stretch <a class="reference external" href="https://superuser.com/a/1122977">needs sysctl</a>
+<code class="code docutils literal notranslate"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>.</li>
+<li>RHEL/CentOS 7.4 and 7.5 need both a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>.
+<em>Important note:</em> Docker does not work with user namespaces, so skip step 4
+of the Red Hat instructions, i.e., don’t add <code class="code docutils literal notranslate"><span class="pre">--userns-remap</span></code> to the
+Docker configuration (see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/97">issue #97</a>).</li>
+</ul>
 </div>
 <div class="section" id="build-time">
 <h3><a class="toc-backref" href="#id3">1.1.2. Build time</a><a class="headerlink" href="#build-time" title="Permalink to this headline">¶</a></h3>

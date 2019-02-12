@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Tutorial &mdash; Charliecloud 0.9.6 documentation</title>
+  <title>3. Tutorial &mdash; Charliecloud 0.9.7 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                f5dd210
+                4917f57
               </div>
             
           
@@ -846,10 +846,11 @@ useful to show a real example.</p>
 <span class="c">#   2. --disable-pty-support to avoid &quot;pipe function call failed when</span>
 <span class="c">#      setting up I/O forwarding subsystem&quot;.</span>
 <span class="c">#</span>
-<span class="c">#   3. --with-slurm=no so mpirun in the container doesn&#39;t try use Slurm to</span>
-<span class="c">#      launch processes, which will fail in inscrutable ways e.g. if srun is</span>
-<span class="c">#      not found. (If you do want Slurm launching processes, use srun or</span>
-<span class="c">#      mpirun outside the container.)</span>
+<span class="c">#   3. --enable-mca-no-build=plm-slurm to support launching processes using</span>
+<span class="c">#      the host&#39;s srun (i.e., the container OpenMPI needs to talk to the host</span>
+<span class="c">#      Slurm&#39;s PMI) but prevent OpenMPI from invoking srun itself from within</span>
+<span class="c">#      the container, where srun is not installed (the error messages from</span>
+<span class="c">#      this are inscrutable).</span>
 <span class="c">#</span>
 <span class="c"># [1]: https://github.com/open-mpi/ompi/blob/master/README</span>
 
@@ -904,17 +905,32 @@ useful to show a real example.</p>
 <span class="k">RUN</span> dpkg --install *.deb
 
 <span class="c"># UCX. There is stuff to build Debian packages, but it seems not too polished.</span>
+<span class="c">#</span>
+<span class="c"># Bug workaround: We patch UCX to work around UCX issue #750 [1], which causes</span>
+<span class="c"># OpenMPI to crash in the presence of OPA hardware when the UCX module tries</span>
+<span class="c"># and fails to initialize itself.</span>
+<span class="c">#</span>
+<span class="c"># [1]: https://github.com/openucx/ucx/issues/750</span>
 <span class="k">ENV</span><span class="s"> UCX_VERSION 1.3.1</span>
 <span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
               https://github.com/openucx/ucx.git
+COPY ucx-issue-750.patch ./ucx
+<span class="k">RUN</span> <span class="nb">cd</span> ucx <span class="o">&amp;&amp;</span> git apply ucx-issue-750.patch
 <span class="k">RUN</span>    <span class="nb">cd</span> ucx <span class="se">\</span>
     <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
     <span class="o">&amp;&amp;</span> ./contrib/configure-release --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
     <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
 
 <span class="c"># OpenMPI.</span>
-<span class="k">ENV</span><span class="s"> MPI_URL https://www.open-mpi.org/software/ompi/v2.1/downloads</span>
-<span class="k">ENV</span><span class="s"> MPI_VERSION 2.1.5</span>
+<span class="c">#</span>
+<span class="c"># Bug workaround: Add &quot;--disable-builtin-atomics&quot; to avoid OpenMPI issue</span>
+<span class="c"># #6014 [1], which tickles a compiler bug that causes hangs in &quot;vader&quot; module.</span>
+<span class="c"># Debian Stretch&#39;s GCC 6.3.0 is not listed in that issue but does hang for us.</span>
+<span class="c"># Remove this argument when we upgrade to OpenMPI 3.1.4 (issue #346).</span>
+<span class="c">#</span>
+<span class="c"># [1]: https://github.com/open-mpi/ompi/issues/6014</span>
+<span class="k">ENV</span><span class="s"> MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads</span>
+<span class="k">ENV</span><span class="s"> MPI_VERSION 3.1.3</span>
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
@@ -922,14 +938,15 @@ useful to show a real example.</p>
        <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
        ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
                    --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
+		   --with-slurm <span class="se">\</span>
                    --with-pmi <span class="se">\</span>
                    --with-pmi-libdir<span class="o">=</span>/usr/lib/x86_64-linux-gnu <span class="se">\</span>
                    --with-pmix <span class="se">\</span>
                    --with-psm2 <span class="se">\</span>
                    --with-ucx <span class="se">\</span>
+                   --disable-builtin-atomics <span class="se">\</span>
                    --disable-pty-support <span class="se">\</span>
-                   --enable-mca-no-build<span class="o">=</span>btl-openib <span class="se">\</span>
-                   --with-slurm<span class="o">=</span>no <span class="se">\</span>
+                   --enable-mca-no-build<span class="o">=</span>btl-openib,plm-slurm <span class="se">\</span>
     <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
 <span class="k">RUN</span> ldconfig
 <span class="k">RUN</span> rm -Rf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*

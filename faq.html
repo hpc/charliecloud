@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>6. Frequently asked questions (FAQ) &mdash; Charliecloud 0.9.6 documentation</title>
+  <title>6. Frequently asked questions (FAQ) &mdash; Charliecloud 0.9.7 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                f5dd210
+                4917f57
               </div>
             
           
@@ -109,6 +109,8 @@
 <li class="toctree-l3"><a class="reference internal" href="#why-does-ping-not-work">6.3.2. Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0">6.3.3. Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ch-docker2tar-gives-incorrect-image-sizes">6.3.4. <code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code> gives incorrect image sizes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#my-second-level-directory-dev-is-empty">6.3.5. My second-level directory <code class="code docutils literal notranslate"><span class="pre">dev</span></code> is empty</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#my-password-that-contains-digits-doesn-t-work-in-virtualbox-console">6.3.6. My password that contains digits doesn’t work in VirtualBox console</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#how-do-i">6.4. How do I …</a><ul>
@@ -121,7 +123,6 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#how-do-i-run-x11-apps">6.4.4. How do I run X11 apps?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#how-do-i-create-a-tarball-compatible-with-charliecloud">6.4.5. How do I create a tarball compatible with Charliecloud?</a></li>
 </ul>
 </li>
 </ul>
@@ -209,19 +210,20 @@
 <li><a class="reference internal" href="#why-does-ping-not-work" id="id10">Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></li>
 <li><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0" id="id11">Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></li>
 <li><a class="reference internal" href="#ch-docker2tar-gives-incorrect-image-sizes" id="id12"><code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code> gives incorrect image sizes</a></li>
+<li><a class="reference internal" href="#my-second-level-directory-dev-is-empty" id="id13">My second-level directory <code class="code docutils literal notranslate"><span class="pre">dev</span></code> is empty</a></li>
+<li><a class="reference internal" href="#my-password-that-contains-digits-doesn-t-work-in-virtualbox-console" id="id14">My password that contains digits doesn’t work in VirtualBox console</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#how-do-i" id="id13">How do I …</a><ul>
-<li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id14">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
-<li><a class="reference internal" href="#which-specific-sudo-commands-are-needed" id="id15">Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
-<li><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work" id="id16">OpenMPI Charliecloud jobs don’t work</a><ul>
-<li><a class="reference internal" href="#mpirun-cant-launch-jobs" id="id17"><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></li>
-<li><a class="reference internal" href="#communication-between-ranks-on-the-same-node-fails" id="id18">Communication between ranks on the same node fails</a></li>
-<li><a class="reference internal" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" id="id19">I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a></li>
+<li><a class="reference internal" href="#how-do-i" id="id15">How do I …</a><ul>
+<li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id16">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
+<li><a class="reference internal" href="#which-specific-sudo-commands-are-needed" id="id17">Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
+<li><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work" id="id18">OpenMPI Charliecloud jobs don’t work</a><ul>
+<li><a class="reference internal" href="#mpirun-cant-launch-jobs" id="id19"><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></li>
+<li><a class="reference internal" href="#communication-between-ranks-on-the-same-node-fails" id="id20">Communication between ranks on the same node fails</a></li>
+<li><a class="reference internal" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" id="id21">I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id20">How do I run X11 apps?</a></li>
-<li><a class="reference internal" href="#how-do-i-create-a-tarball-compatible-with-charliecloud" id="id21">How do I create a tarball compatible with Charliecloud?</a></li>
+<li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id22">How do I run X11 apps?</a></li>
 </ul>
 </li>
 </ul>
@@ -453,11 +455,40 @@ example:</p>
 the layers rather than the unpacked image. We do not currently have a fix; see
 <a class="reference external" href="https://github.com/hpc/charliecloud/issues/165">issue #165</a>.</p>
 </div>
+<div class="section" id="my-second-level-directory-dev-is-empty">
+<h3><a class="toc-backref" href="#id13">6.3.5. My second-level directory <code class="code docutils literal notranslate"><span class="pre">dev</span></code> is empty</a><a class="headerlink" href="#my-second-level-directory-dev-is-empty" title="Permalink to this headline">¶</a></h3>
+<p>Some image tarballs, such as official Ubuntu Docker images, put device files
+in <code class="code docutils literal notranslate"><span class="pre">/dev</span></code>. These files prevent unpacking the tarball, because
+unprivileged users cannot create device files. Further, these files are not
+needed because <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> overmounts <code class="code docutils literal notranslate"><span class="pre">/dev</span></code> anyway.</p>
+<p>We cannot reliably prevent device files from being included in the tar,
+because often that is outside our control, e.g. <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">export</span></code> produces
+a tarball. Thus, we must exclude them at unpacking time.</p>
+<p>An additional complication is that <code class="code docutils literal notranslate"><span class="pre">ch-tar2dir</span></code> can handle tarballs both
+with a single top-level directory and without, i.e. “tarbombs”. For example,
+best practice use of <code class="code docutils literal notranslate"><span class="pre">tar</span></code> on the command line produces the former,
+while <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">export</span></code> (perhaps via <code class="code docutils literal notranslate"><span class="pre">ch-docker2tar</span></code>) produces a
+tarbomb.</p>
+<p>Thus, <code class="code docutils literal notranslate"><span class="pre">ch-tar2dir</span></code> uses <code class="code docutils literal notranslate"><span class="pre">tar</span> <span class="pre">--exclude</span></code> to exclude from unpacking
+everything under <code class="code docutils literal notranslate"><span class="pre">./dev</span></code> and <code class="code docutils literal notranslate"><span class="pre">*/dev</span></code>, i.e., directory <code class="code docutils literal notranslate"><span class="pre">dev</span></code>
+appearing at either the first or second level are forced to be empty.</p>
+<p>This yields false positives if you have a tarbomb image with a directory
+<code class="code docutils literal notranslate"><span class="pre">dev</span></code> at the second level containing stuff you care about. Hopefully
+this is rare, but please let us know if it is your use case.</p>
+</div>
+<div class="section" id="my-password-that-contains-digits-doesn-t-work-in-virtualbox-console">
+<h3><a class="toc-backref" href="#id14">6.3.6. My password that contains digits doesn’t work in VirtualBox console</a><a class="headerlink" href="#my-password-that-contains-digits-doesn-t-work-in-virtualbox-console" title="Permalink to this headline">¶</a></h3>
+<p>VirtualBox has confusing Num Lock behavior. Thus, you may be typing arrows,
+page up/down, etc. instead of digits, without noticing because console
+password fields give no feedback, not even whether a character has been typed.</p>
+<p>Try using the number row instead, toggling Num Lock key, or SSHing into the
+virtual machine.</p>
+</div>
 </div>
 <div class="section" id="how-do-i">
-<h2><a class="toc-backref" href="#id13">6.4. How do I …</a><a class="headerlink" href="#how-do-i" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id15">6.4. How do I …</a><a class="headerlink" href="#how-do-i" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="my-app-needs-to-write-to-var-log-run-etc">
-<h3><a class="toc-backref" href="#id14">6.4.1. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16">6.4.1. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h3>
 <p>Because the image is mounted read-only by default, log files, caches, and
 other stuff cannot be written anywhere in the image. You have three options:</p>
 <ol class="arabic simple">
@@ -471,7 +502,7 @@ containers do not try to write to the same files.</li>
 </ol>
 </div>
 <div class="section" id="which-specific-sudo-commands-are-needed">
-<h3><a class="toc-backref" href="#id15">6.4.2. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a><a class="headerlink" href="#which-specific-sudo-commands-are-needed" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17">6.4.2. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a><a class="headerlink" href="#which-specific-sudo-commands-are-needed" title="Permalink to this headline">¶</a></h3>
 <p>For running images, <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> is not needed at all.</p>
 <p>For building images, it depends on what you would like to support. For
 example, do you want to let users build images with Docker? Do you want to let
@@ -490,10 +521,10 @@ on a case-by-case basis. (The latter includes <code class="code docutils literal
 </div>
 </div>
 <div class="section" id="openmpi-charliecloud-jobs-dont-work">
-<h3><a class="toc-backref" href="#id16">6.4.3. OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-dont-work" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">6.4.3. OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-dont-work" title="Permalink to this headline">¶</a></h3>
 <p>MPI can be finicky. This section documents some of the problems we’ve seen.</p>
 <div class="section" id="mpirun-cant-launch-jobs">
-<h4><a class="toc-backref" href="#id17">6.4.3.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a><a class="headerlink" href="#mpirun-cant-launch-jobs" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id19">6.4.3.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a><a class="headerlink" href="#mpirun-cant-launch-jobs" title="Permalink to this headline">¶</a></h4>
 <p>For example, you might see:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -np <span class="m">1</span> ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">App launch reported: 2 (out of 2) daemons - 0 (out of 1) procs</span>
@@ -505,7 +536,7 @@ builds inside and outside the container — but in our experience launching with
 <code class="code docutils literal notranslate"><span class="pre">srun</span></code> often works when <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> doesn’t, so try that.</p>
 </div>
 <div class="section" id="communication-between-ranks-on-the-same-node-fails">
-<h4><a class="toc-backref" href="#id18">6.4.3.2. Communication between ranks on the same node fails</a><a class="headerlink" href="#communication-between-ranks-on-the-same-node-fails" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id20">6.4.3.2. Communication between ranks on the same node fails</a><a class="headerlink" href="#communication-between-ranks-on-the-same-node-fails" title="Permalink to this headline">¶</a></h4>
 <p>OpenMPI has many ways to transfer messages between ranks. If the ranks are on
 the same node, it is faster to do these transfers using shared memory rather
 than involving the network stack. There are two ways to use shared memory.</p>
@@ -570,7 +601,7 @@ benchmarks.</p>
 </ul>
 </div>
 <div class="section" id="i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun">
-<h4><a class="toc-backref" href="#id19">6.4.3.3. I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a><a class="headerlink" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id21">6.4.3.3. I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a><a class="headerlink" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" title="Permalink to this headline">¶</a></h4>
 <p>For example, you might be seeing this:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">0: init ok cn036.localdomain, 1 ranks, userns 4026554634</span>
@@ -618,7 +649,7 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 </div>
 </div>
 <div class="section" id="how-do-i-run-x11-apps">
-<h3><a class="toc-backref" href="#id20">6.4.4. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22">6.4.4. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
 <p>X11 applications should “just work”. For example, try this Dockerfile:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
@@ -632,62 +663,6 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 <p>should pop an xterm.</p>
 <p>If your X11 application doesn’t work, please file an issue so we can
 figure out why.</p>
-</div>
-<div class="section" id="how-do-i-create-a-tarball-compatible-with-charliecloud">
-<h3><a class="toc-backref" href="#id21">6.4.5. How do I create a tarball compatible with Charliecloud?</a><a class="headerlink" href="#how-do-i-create-a-tarball-compatible-with-charliecloud" title="Permalink to this headline">¶</a></h3>
-<p>In contrast with best practices for source code, Charliecloud expects an image
-tarball to have either no top-level directory or a top-level directory that is
-exactly <code class="code docutils literal notranslate"><span class="pre">.</span></code> (dot). This is inherited from the format of <code class="code docutils literal notranslate"><span class="pre">docker</span>
-<span class="pre">export</span></code> tarballs. If you’re creating tarballs by other means, you may run into
-this issue.</p>
-<p>For example, let’s try to re-pack the <code class="code docutils literal notranslate"><span class="pre">chtest</span></code> image directory. This
-fails with a rather opaque error message.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> <span class="nv">$CH_TEST_IMGDIR</span>
-<span class="gp">$</span> tar czf chtest2.tar.gz chtest
-<span class="gp">$</span> tar tf chtest2.tar.gz <span class="p">|</span> head
-<span class="go">chtest/</span>
-<span class="go">chtest/var/</span>
-<span class="go">chtest/var/run/</span>
-<span class="go">chtest/var/empty/</span>
-<span class="go">chtest/var/spool/</span>
-<span class="go">chtest/var/spool/cron/</span>
-<span class="go">chtest/var/spool/cron/crontabs</span>
-<span class="go">chtest/var/opt/</span>
-<span class="go">chtest/var/local/</span>
-<span class="go">chtest/var/log/</span>
-<span class="gp">$</span> ch-tar2dir chtest2.tar.gz .
-<span class="gp">$</span> ls chtest2
-<span class="go">chtest  dev  mnt  WEIRD_AL_YANKOVIC</span>
-<span class="gp">$</span> ch-run ./chtest2 -- <span class="nb">echo</span> hello
-<span class="go">ch-run[28780]: can&#39;t bind /etc/passwd to /var/tmp/images/chtest2/etc/passwd: No such file or directory (charliecloud.c:132 2)</span>
-</pre></div>
-</div>
-<p>The workaround is to create the tarball from within the image directory. (If
-you do this immediately after the above, you’ll need to remove the
-<code class="code docutils literal notranslate"><span class="pre">chtest2</span></code> directory first.)</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch <span class="nv">$CH_TEST_IMGDIR</span>/chtest
-<span class="gp">$</span> tar czf ../chtest2.tar.gz .
-<span class="gp">$</span> <span class="nb">cd</span> ..
-<span class="gp">$</span> tar tf chtest2.tar.gz <span class="p">|</span> head
-<span class="go">./</span>
-<span class="go">./var/</span>
-<span class="go">./var/run/</span>
-<span class="go">./var/empty/</span>
-<span class="go">./var/spool/</span>
-<span class="go">./var/spool/cron/</span>
-<span class="go">./var/spool/cron/crontabs</span>
-<span class="go">./var/opt/</span>
-<span class="go">./var/local/</span>
-<span class="go">./var/log/</span>
-<span class="gp">$</span> ch-tar2dir chtest2.tar.gz .
-<span class="gp">$</span> ls chtest2
-<span class="go">bin  etc   lib    mnt   root  sbin  sys   tmp  var</span>
-<span class="go">dev  home  media  proc  run   srv   test  usr  WEIRD_AL_YANKOVIC</span>
-<span class="gp">$</span> ch-run ./chtest2 -- <span class="nb">echo</span> hello
-<span class="go">hello</span>
-</pre></div>
-</div>
-<p>We are working on usability enhancements for this process.</p>
 </div>
 </div>
 </div>

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>7. Contributor’s guide &mdash; Charliecloud 0.9.6 documentation</title>
+  <title>7. Contributor’s guide &mdash; Charliecloud 0.9.7 documentation</title>
   
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                f5dd210
+                4917f57
               </div>
             
           
@@ -522,13 +522,13 @@ ch-test-scope: full
 <p>Additional subdirectories can be symlinked into <code class="code docutils literal notranslate"><span class="pre">examples/</span></code> and will be
 integrated into the test suite. This allows you to create a site-specific test
 suite.</p>
-<p>Dockerfile:</p>
+<p><code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
 <blockquote>
 <div><ul class="simple">
 <li>It’s a Dockerfile.</li>
 </ul>
 </div></blockquote>
-<p>Docker_Pull:</p>
+<p><code class="code docutils literal notranslate"><span class="pre">Docker_Pull</span></code>:</p>
 <blockquote>
 <div><ul>
 <li><p class="first">First line states the address to pull from Docker Hub.</p>
@@ -543,13 +543,16 @@ alpine@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d
 </li>
 </ul>
 </div></blockquote>
-<p>Build:</p>
+<p><code class="code docutils literal notranslate"><span class="pre">Build</span></code>:</p>
 <blockquote>
 <div><ul class="simple">
 <li>Script or program that builds the image.</li>
 <li>Arguments:<ul>
-<li><code class="code docutils literal notranslate"><span class="pre">$1</span></code>: Absolute path to directory containing Build.</li>
-<li><code class="code docutils literal notranslate"><span class="pre">$2</span></code>: Absolute path and name of gzipped tarball output.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">$1</span></code>: Absolute path to directory containing <code class="code docutils literal notranslate"><span class="pre">Build</span></code>.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">$2</span></code>: Absolute path and name of output archive, without extension.
+The script should use an archive format compatible with
+<code class="code docutils literal notranslate"><span class="pre">ch-tar2dir</span></code> and append the appropriate extension (e.g.,
+<code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code>).</li>
 <li><code class="code docutils literal notranslate"><span class="pre">$3</span></code>: Absolute path to appropriate temporary directory.</li>
 </ul>
 </li>
@@ -648,6 +651,13 @@ they’re the only thing in the string. E.g.:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>&quot;${foo}/bar&quot;  # yes
 &quot;${foo}&quot;/bar  # no
 &quot;$foo&quot;/bar    # no
+</pre></div>
+</div>
+</li>
+<li><p class="first">Don’t quote variable assignments or other places where not needed (e.g.,
+case statements). E.g.:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>foo=${bar}/baz    # yes
+foo=&quot;${bar}/baz&quot;  # no
 </pre></div>
 </div>
 </li>
