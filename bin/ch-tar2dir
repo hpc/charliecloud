@@ -30,12 +30,12 @@ fi
 # Figure out the real tarball name. If the provided $1 already has a tar
 # extension, just test that name; if not, also append the plausible extensions
 # and try those too.
-for ext in '' .tar.gz .tar.xz; do
+for ext in '' .tar.gz .tar.xz .tgz; do
     c=${1}${ext}
     if [ ! -f "$c" ] || [ ! -r "$c" ]; then
         echo "can't read: ${c}" 1>&2
         case $1 in
-            *.tar.*)
+            *.tar.*|*.tgz)
                 break
                 ;;
             *)
@@ -59,6 +59,10 @@ for ext in '' .tar.gz .tar.xz; do
             newroot=${2}/$(basename "${tarball%.tar.xz}")
             decompress=J
             ;;
+	*.tgz)
+	    newroot=${2}/$(basename "${tarball%.tgz}")
+	    decompress=z
+	    ;;
         *)
             echo "unknown extension: ${tarball}" 1>&2
             exit 1
