@@ -12,8 +12,7 @@ docker_tag_p () {
         echo "$hash_"
         return 0
     else
-        echo 'not found'
-        return 1
+        fatal 'not found'
     fi
 }
 
@@ -24,10 +23,7 @@ docker_ok () {
 }
 
 env_require () {
-    if [[ -z ${!1} ]]; then
-        printf '$%s is empty or not set\n\n' "$1" >&2
-        exit 1
-    fi
+    [[ ! -z ${!1} ]] || fatal "$1 is empty or not set"
 }
 
 fatal () {
@@ -81,6 +77,17 @@ prerequisites_ok () {
     fi
 }
 
+read_link () {
+    local path
+    local name
+    path=$(readlink "$1" "$2" 2> /dev/null)
+    if [[ "$path" = '' ]]; then
+        name="$3"
+        fatal "${name}=${2}: path does not exist"
+    fi
+    echo "$path"
+}
+
 scope () {
     case $1 in  # $1 is the test's scope
         quick)
@@ -99,7 +106,7 @@ scope () {
             skip "developer-skipped; see comments and/or issues"
             ;;
         *)
-            exit 1
+            fatal "esac: $LINENO"
     esac
 }
 
@@ -119,8 +126,7 @@ env_require CH_TEST_PERMDIRS
 if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
     # https://github.com/sstephenson/bats/issues/49
-    printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
-    exit 1
+    fatal 'Need at least Bash 4.1 for these tests'
 fi
 
 # Set path to the right Charliecloud. This uses a symlink in this directory
@@ -130,16 +136,13 @@ fi
 # Note that sudo resets $PATH, so if you want to run any Charliecloud stuff
 # under sudo, you must use an absolute path.
 ch_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")/bin" && pwd)"
-ch_bin="$(readlink -f "${ch_bin}")"
+ch_bin="$(read_link -f "${ch_bin}" 'ch_bin')"
 export PATH=$ch_bin:$PATH
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
 ch_libexec=$(ch-build --libexec-path)
-if [[ ! -x ${ch_bin}/ch-run ]]; then
-    printf 'Must build with "make" before running tests.\n\n' >&2
-    exit 1
-fi
+[[ -x ${ch_bin}/ch-run ]] || fatal "Must build with \"make\" before running tests"
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
@@ -153,11 +156,10 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # despite the admonition in the man page, because it's more portable [1].
 #
 # [1]: https://unix.stackexchange.com/a/136527
-ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR") || fatal "CH_TEST_IMGDIR does not exist"
-ch_tardir=$(readlink -ef "$CH_TEST_TARDIR") || fatal "CH_TEST_TARDIR does not exist"
+ch_imgdir=$(read_link -e "$CH_TEST_IMGDIR" 'CH_TEST_IMGDIR')
+ch_tardir=$(read_link -e "$CH_TEST_TARDIR" 'CH_TEST_TARDIR')
 if ( mount | grep -Fq "$ch_imgdir" ); then
-    printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
-    exit 1
+    fatal "Something is mounted at or under $ch_imgdir"
 fi
 
 # Image information.
@@ -259,8 +261,7 @@ elif [[    $CH_TEST_SCOPE != quick \
         && $CH_TEST_SCOPE != standard \
         && $CH_TEST_SCOPE != full ]]; then
     # shellcheck disable=SC2016
-    printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' "$CH_TEST_SCOPE" >&2
-    exit 1
+    fatal "$CH_TEST_SCOPE value \"$CH_TEST_SCOPE\" is invalid"
 fi
 
 # Do we have sudo?
