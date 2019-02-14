@@ -86,6 +86,8 @@ before_script:
   - export CH_TEST_PERMDIRS='/var/tmp /run'
   - unset JAVA_HOME  # otherwise Spark tries to use host's Java
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
+  - sudo usermod --add-subuids 10000-65536 rusty
+  - sudo usermod --add-subgids 10000-65536 rusty
 
 script:
   - test/travis.sh
