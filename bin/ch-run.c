@@ -43,20 +43,20 @@ const char args_doc[] = "NEWROOT CMD [ARG...]";
 const struct argp_option options[] = {
    { "bind",        'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
-   { "cd",          'c', "DIR",     0, "initial working directory in container"},
-   { "gid",         'g', "GID",     0, "run as GID within container" },
-   { "join",        'j', 0,         0, "use same container as peer ch-run" },
-   { "join-pid",     -5, "PID",     0, "join a namespace using a PID" },
-   { "join-ct",      -3, "N",       0, "number of ch-run peers (implies --join)" },
-   { "join-tag",     -4, "TAG",     0, "label for peer group (implies --join)" },
-   { "no-home",      -2, 0,         0, "do not bind-mount your home directory"},
-   { "private-tmp", 't', 0,         0, "use container-private /tmp" },
-   { "set-env",      -6, "FILE",    0, "set environment variables in FILE"},
-   { "uid",         'u', "UID",     0, "run as UID within container" },
-   { "unset-env",    -7, "STRING",  0, "unset environment variable(s)" },
-   { "verbose",     'v', 0,         0, "be more verbose (debug if repeated)" },
-   { "version",     'V', 0,         0, "print version and exit" },
-   { "write",       'w', 0,         0, "mount image read-write"},
+   { "cd",          'c', "DIR",  0, "initial working directory in container"},
+   { "gid",         'g', "GID",  0, "run as GID within container" },
+   { "join",        'j', 0,      0, "use same container as peer ch-run" },
+   { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
+   { "join-ct",      -3, "N",    0, "number of ch-run peers (implies --join)" },
+   { "join-tag",     -4, "TAG",  0, "label for peer group (implies --join)" },
+   { "no-home",      -2, 0,      0, "do not bind-mount your home directory"},
+   { "private-tmp", 't', 0,      0, "use container-private /tmp" },
+   { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
+   { "uid",         'u', "UID",  0, "run as UID within container" },
+   { "unset-env",    -7, "GLOB", 0, "unset environment variable(s)" },
+   { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
+   { "version",     'V', 0,      0, "print version and exit" },
+   { "write",       'w', 0,      0, "mount image read-write"},
    { 0 }
 };
 
@@ -90,12 +90,14 @@ void privs_verify_invoking();
 /** Global variables **/
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
-extern char **environ;
+extern char **environ;  // see environ(7)
+
 
 /** Main **/
 
 int main(int argc, char *argv[])
 {
+   bool argp_help_fmt_set;
    struct args args;
    int arg_next;
    int c_argc;
@@ -118,8 +120,17 @@ int main(int argc, char *argv[])
    args.initial_dir = NULL;
    verbose = 1;  // in charliecloud.h
 
-   Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
+   /* I couldn't find a way to set argp help defaults other than this
+      environment variable. Kludge sets/unsets only if not already set. */
+   if (getenv("ARGP_HELP_FMT"))
+      argp_help_fmt_set = true;
+   else {
+      argp_help_fmt_set = false;
+      Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
+   }
    Z_ (argp_parse(&argp, argc, argv, 0, &(arg_next), &args));
+   if (!argp_help_fmt_set)
+      Z_ (unsetenv("ARGP_HELP_FMT"));
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.newroot = realpath(argv[arg_next], NULL);
@@ -169,7 +180,6 @@ void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
 void fix_environment(struct args *args)
 {
    char *name, *old_value, *new_value;
-   char **unset;
 
    // $HOME: Set to /home/$USER unless --no-home specified.
    if (!args->c.private_home) {
@@ -194,8 +204,6 @@ void fix_environment(struct args *args)
    }
 
    // --set-env and --unset-env.
-   unset = calloc(1, sizeof(char * ));
-   assert(unset != NULL);
    for (int i = 0; args->env_deltas[i].action != END; i++) {
       char *arg = args->env_deltas[i].arg;
       if (args->env_deltas[i].action == SET_FILE) {
@@ -215,9 +223,8 @@ void fix_environment(struct args *args)
                continue;                    // skip empty line
             if (line[strlen(line) - 1] == '\n')
                line[strlen(line) - 1] = 0;  // remove newline
-            new_value = line;
-            name = strsep(&new_value, "=");
-            Te (new_value != NULL, "--set-env: no delimiter: %s:%d", arg, j);
+            split(&name, &new_value, line, '=');
+            Te (name != NULL, "--set-env: no delimiter: %s:%d", arg, j);
             Te (strlen(name) != 0, "--set-env: empty name: %s:%d", arg, j);
             if (   strlen(new_value) >= 2
                 && new_value[0] == '\''
@@ -231,37 +238,36 @@ void fix_environment(struct args *args)
          fclose(fp);
       } else {
          T_ (args->env_deltas[i].action == UNSET_GLOB);
-         for(int j = 0; environ[j] != NULL; j++) {
-            old_value = strdup(environ[j]);
-            name = strsep(&old_value, "=");
+         /* Removing variables from the environment is tricky, because there
+            is no standard library function to iterate through the
+            environment, and the environ global array can be re-ordered after
+            unsetenv(3) [1]. Thus, the only safe way without additional
+            storage is an O(n^2) search until no matches remain.
 
-            /* The following horror appends each valid environment variable
-               targeted for deletion to the 'unset' array. Once all valid variables
-               are collected we then iterrate through the unset array calling unsetenv on
-               each element.
+            It is legal to assign to environ [2]. We build up a copy, omitting
+            variables that match the glob, which is O(n), and then do so.
 
-               Note: Using strsep on environ caused issues. Likewise, calling unsetenv
-               directly on environ[j] (the more intuitive solution, and one I prefered) 
-               also gave me grief. I suspect it has to do with how environ updates when 
-               an environment varible is added/removed, especially since we are iterating 
-               through environ in this loop. */
-               
-            if (!fnmatch(arg, name, 0)) {
-               for (int k = 0; true; k++) {
-                  if (!unset[k]) {
-                     unset = realloc(unset, (k+2) * sizeof(char *));
-                     assert(unset != NULL);
-                     unset[k+1] = 0;
-                     unset[k] = strdup(name);
-                     break;
-                  }
-               }
+            [1]: https://unix.stackexchange.com/a/302987
+            [2]: http://man7.org/linux/man-pages/man3/exec.3p.html */
+         char **new_environ;
+         int old_i, new_i;
+         for (old_i = 0; environ[old_i] != NULL; old_i++)
+            ;
+         T_ (new_environ = calloc(old_i + 1, sizeof(char *)));
+         for (old_i = 0, new_i = 0; environ[old_i] != NULL; old_i++) {
+            int matchp;
+            split(&name, &old_value, environ[old_i], '=');
+            T_ (name != NULL);          // env lines should always have equals
+            matchp = fnmatch(arg, name, 0);
+            if (!matchp) {
+               INFO("environment: unset %s", name);
+            } else {
+               T_ (matchp == FNM_NOMATCH);
+               *(old_value - 1) = '=';  // rejoin line
+               new_environ[new_i++] = name;
             }
          }
-         for (int k = 0; unset[k] != NULL; k++) { // unset array names
-            INFO("environment: unset: %s", unset[k]);
-            Z_ (unsetenv(unset[k]));
-         }
+         environ = new_environ;
       }
    }
 }
@@ -375,6 +381,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       env_delta_append(&(args->env_deltas), SET_FILE, arg);
       break;
    case -7: // --unset-env
+      Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
       env_delta_append(&(args->env_deltas), UNSET_GLOB, arg);
       break;;
    case 'c':
