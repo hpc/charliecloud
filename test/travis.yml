@@ -49,6 +49,7 @@ addons:
       - python3-pip
       - skopeo
       - skopeo-containers
+      - buildah
 
 install:
   - if [ -n "$INSTALL_PV" ]; then sudo apt-get install pv; fi

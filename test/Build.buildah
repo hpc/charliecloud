@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Build a centos6 image using buildah to see if it's a good option for #184. 
+# Buildah requires a registries.conf file. In order to stremline the process 
+# we include a registries.conf file in this directory and manually include it
+# with a command-line parameter. 
+#
+# ch-test-scope: standard
+
+set -ex
+
+srcdir=$1
+tarball_gz=${2}.tar.gz
+workdir=$3
+
+buildah --registries-conf registries.conf bud -f Dockerfile.centos6 -t ceonts6 .
