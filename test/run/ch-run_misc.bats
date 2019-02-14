@@ -393,7 +393,8 @@ EOF
     run ch-run --unset-env=doesnotmatch "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
-    diff -u <(env | grep -Ev '^_=') <(echo "$output" | grep -Ev '^_=')
+    ex='^(_|HOME|PATH)='  # variables expected to change
+    diff -u <(env | grep -Ev "$ex") <(echo "$output" | grep -Ev "$ex")
 
     printf '\n# Everything\n\n'
     run ch-run --unset-env='*' "$ch_timg" -- env
@@ -402,7 +403,7 @@ EOF
     [[ $output = '' ]]
 
     printf '\n# Everything, plus shell re-adds\n\n'
-    run ch-run --unset-env='*' "$ch_timg" -- sh -c env
+    run ch-run --unset-env='*' "$ch_timg" -- /bin/sh -c env
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(printf 'SHLVL=1\nPWD=/\n') <(echo "$output")
