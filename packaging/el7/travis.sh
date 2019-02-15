@@ -42,7 +42,7 @@ date="$(date +"%a %b %d %Y")"
 
 # FIXME: figure out how to determine releases.
 echo "release: 1" > RELEASE.txt
-release=$(cat RELEASE.txt | sed 's,release: ,,g'
+release=$(cat RELEASE.txt | sed 's,release: ,,g')
 
 cp Dockerfile "Dockerfile.${version}-${release}"
 sed -i "s,@VERSION@,${version},g" "Dockerfile.${version}-${release}"
