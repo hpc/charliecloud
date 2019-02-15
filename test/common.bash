@@ -23,7 +23,7 @@ docker_ok () {
 }
 
 env_require () {
-    [[ ! -z ${!1} ]] || fatal "$1 is empty or not set"
+    [[ -n ${!1} ]] || fatal "$1 is empty or not set"
 }
 
 fatal () {
