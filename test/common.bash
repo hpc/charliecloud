@@ -1,3 +1,12 @@
+check_permdirs () {
+set -x
+    [[ "$CH_TEST_PERMDIRS" != 'skip' ]] || return
+    IFS=' ' read -ra pdirs <<< "$CH_TEST_PERMDIRS"
+    for d in "${pdirs[@]}"; do
+        read_link -e "$d" 'CH_TEST_PERMDIRS'
+    done
+}
+
 crayify_mpi_maybe () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
@@ -157,6 +166,7 @@ ch_tardir=$(read_link -e "$CH_TEST_TARDIR" 'CH_TEST_TARDIR')
 if ( mount | grep -Fq "$ch_imgdir" ); then
     fatal "Something is mounted at or under $ch_imgdir"
 fi
+check_permdirs
 
 # Image information.
 ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
