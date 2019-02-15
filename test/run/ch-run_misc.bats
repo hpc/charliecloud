@@ -657,4 +657,12 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): true: No such file or directory"* ]]
+
+    # At this point, there should be exactly two each of passwd and group
+    # temporary files. Remove them.
+    [[ $(find /tmp -maxdepth 1 -name 'ch-run_passwd*' | wc -l) -eq 2 ]]
+    [[ $(find /tmp -maxdepth 1 -name 'ch-run_group*' | wc -l) -eq 2 ]]
+    rm -v /tmp/ch-run_{passwd,group}*
+    [[ $(find /tmp -maxdepth 1 -name 'ch-run_passwd*' | wc -l) -eq 0 ]]
+    [[ $(find /tmp -maxdepth 1 -name 'ch-run_group*' | wc -l) -eq 0 ]]
 }
