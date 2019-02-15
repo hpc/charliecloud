@@ -80,9 +80,7 @@ prerequisites_ok () {
 read_link () {
     local path
     path=$(readlink "$1" "$2" 2> /dev/null)
-    if [[ "$path" = '' ]]; then
-        fatal "${3}=${2}: path does not exist"
-    fi
+    [[ ! "$path" = '' ]] || fatal "${3}=${2}: path does not exist"
     echo "$path"
 }
 
