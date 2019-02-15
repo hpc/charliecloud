@@ -26,6 +26,14 @@ case $TARBALL in
         tar xf charliecloud-*.tar.gz
         cd charliecloud-*
         ;;
+    export-bats)
+        (cd doc-src && make)
+        make export-bats
+        mv charliecloud-*.tar.gz "$PREFIX"
+        cd "$PREFIX"
+        tar xf charliecloud-*.tar.gz
+        cd charliecloud-*
+        ;;
     archive)
         # The Travis image already has Bats installed.
         git archive HEAD --prefix=charliecloud/ -o "$PREFIX/charliecloud.tar"
@@ -36,10 +44,15 @@ case $TARBALL in
 esac
 
 if [[ $PKG_BUILD ]]; then
-    for i in packaging/*/travis.sh; do $i; done
+    for i in packaging/*/travis.sh; do
     # FIXME: If we continue with the rest of the tests after building the
     # packages, they hang in "make test-all", I believe in test "ch-build
     # python3" but I have not been able to verify this.
+
+        # FIXME: Debian package build is disabled (# )
+        [[ ! "$i" = 'packaging/debian/travis.sh' ]] || continue
+        $i
+    done
     exit
 fi
 
@@ -48,7 +61,7 @@ bin/ch-run --version
 
 if [[ $INSTALL ]]; then
     sudo make install PREFIX="$PREFIX"
-    cd "$PREFIX/share/doc/charliecloud"
+    cd "$PREFIX/libexec/charliecloud"
 fi
 
 cd test
