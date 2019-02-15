@@ -79,11 +79,9 @@ prerequisites_ok () {
 
 read_link () {
     local path
-    local name
     path=$(readlink "$1" "$2" 2> /dev/null)
     if [[ "$path" = '' ]]; then
-        name="$3"
-        fatal "${name}=${2}: path does not exist"
+        fatal "${3}=${2}: path does not exist"
     fi
     echo "$path"
 }
