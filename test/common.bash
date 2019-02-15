@@ -104,16 +104,6 @@ tarball_ok () {
     test -s "$1"
 }
 
-unslurmify_environment_maybe () {
-    # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
-    # are present. Work around this by fooling OpenMPI into believing it's not
-    # in a Slurm allocation. Better to remove this function and use
-    # --unset-env when available (#345)?
-    if [[ -n $SLURM_JOBID && $ch_mpi = openmpi ]]; then
-        unset SLURM_JOBID SLURM_NODELIST
-    fi
-}
-
 # Predictable sorting and collation
 export LC_ALL=C
 
@@ -220,6 +210,7 @@ if [[ $ch_mpi = mpich ]]; then
 else
     ch_mpirun_np='--use-hwthread-cpus'
 fi
+ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
     ch_multinode=yes                           # can run on multiple nodes
     ch_multiprocess=yes                        # can run multiple processes
@@ -227,6 +218,12 @@ if [[ $SLURM_JOB_ID ]]; then
     ch_mpirun_core='srun --cpus-per-task 1'    # one process/core
     ch_mpirun_2='srun -n2'                     # two processes on diff nodes
     ch_mpirun_2_1node='srun -N1 -n2'           # two processes on one node
+    # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
+    # are present. Work around this by fooling OpenMPI into believing it's not
+    # in a Slurm allocation.
+    if [[ $ch_mpi = openmpi ]]; then
+        ch_unslurm='--unset-env=SLURM*'
+    fi
 else
     ch_multinode=
     if ( command -v mpirun >/dev/null 2>&1 ); then

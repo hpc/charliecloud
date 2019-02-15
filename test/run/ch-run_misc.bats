@@ -291,7 +291,7 @@ EOF
 
 
 @test 'ch-run --set-env' {
-    scope quick
+    scope standard
 
     # Quirk that is probably too obscure to put in the documentation: The
     # string containing only two straight quotes does not round-trip through
@@ -355,7 +355,7 @@ EOF
 }
 
 @test 'ch-run --set-env errors' {
-    scope quick
+    scope standard
     f_in=${BATS_TMPDIR}/env.txt
 
     # file does not exist
@@ -381,6 +381,158 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"--set-env: empty name: ${f_in}:1"* ]]
+}
+
+@test 'ch-run --unset-env' {
+    scope standard
+
+    export chue_1=foo
+    export chue_2=bar
+
+    printf '\n# Nothing\n\n'
+    run ch-run --unset-env=doesnotmatch "$ch_timg" -- env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ex='^(_|HOME|PATH)='  # variables expected to change
+    diff -u <(env | grep -Ev "$ex") <(echo "$output" | grep -Ev "$ex")
+
+    printf '\n# Everything\n\n'
+    run ch-run --unset-env='*' "$ch_timg" -- env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = '' ]]
+
+    printf '\n# Everything, plus shell re-adds\n\n'
+    run ch-run --unset-env='*' "$ch_timg" -- /bin/sh -c env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(printf 'SHLVL=1\nPWD=/\n') <(echo "$output")
+
+    printf '\n# Without wildcards\n\n'
+    run ch-run --unset-env=chue_1 "$ch_timg" -- env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(printf 'chue_2=bar\n') <(echo "$output" | grep -E '^chue_')
+
+    printf '\n# With wildcards\n\n'
+    run ch-run --unset-env='chue_*' "$ch_timg" -- env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -E '^chue_') = '' ]]
+
+    printf '\n# Empty string\n\n'
+    run ch-run --unset-env= "$ch_timg" -- env
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'--unset-env: GLOB must have non-zero length'* ]]
+}
+
+@test 'ch-run mixed --set-env and --unset-env' {
+    scope standard
+
+    # Input.
+    export chmix_a1=z
+    export chmix_a2=y
+    export chmix_a3=x
+    f1_in=${BATS_TMPDIR}/env1.txt
+    cat <<'EOF' > "$f1_in"
+chmix_b1=w
+chmix_b2=v
+EOF
+    f2_in=${BATS_TMPDIR}/env2.txt
+    cat <<'EOF' > "$f2_in"
+chmix_c1=u
+chmix_c2=t
+EOF
+
+    # unset, unset
+    output_expected=$(cat <<'EOF'
+chmix_a3=x
+EOF
+)
+    run ch-run --unset-env=chmix_a1 --unset-env=chmix_a2 "$ch_timg" -- \
+               sh -c 'env | grep -E ^chmix_ | sort'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+
+    echo '# set, set'
+    output_expected=$(cat <<'EOF'
+chmix_a1=z
+chmix_a2=y
+chmix_a3=x
+chmix_b1=w
+chmix_b2=v
+chmix_c1=u
+chmix_c2=t
+EOF
+)
+    run ch-run --set-env="$f1_in" --set-env="$f2_in" "$ch_timg" -- \
+               sh -c 'env | grep -E ^chmix_ | sort'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+
+    echo '# unset, set'
+    output_expected=$(cat <<'EOF'
+chmix_a2=y
+chmix_a3=x
+chmix_b1=w
+chmix_b2=v
+EOF
+)
+    run ch-run --unset-env=chmix_a1 --set-env="$f1_in" "$ch_timg" -- \
+               sh -c 'env | grep -E ^chmix_ | sort'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+
+    echo '# set, unset'
+    output_expected=$(cat <<'EOF'
+chmix_a1=z
+chmix_a2=y
+chmix_a3=x
+chmix_b1=w
+EOF
+)
+    run ch-run  --set-env="$f1_in" --unset-env=chmix_b2 "$ch_timg" -- \
+               sh -c 'env | grep -E ^chmix_ | sort'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+
+    echo '# unset, set, unset'
+    output_expected=$(cat <<'EOF'
+chmix_a2=y
+chmix_a3=x
+chmix_b1=w
+EOF
+)
+    run ch-run --unset-env=chmix_a1 \
+               --set-env="$f1_in" \
+               --unset-env=chmix_b2 \
+               "$ch_timg" -- sh -c 'env | grep -E ^chmix_ | sort'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+
+    echo '# set, unset, set'
+    output_expected=$(cat <<'EOF'
+chmix_a1=z
+chmix_a2=y
+chmix_a3=x
+chmix_b1=w
+chmix_c1=u
+chmix_c2=t
+EOF
+)
+    run ch-run --set-env="$f1_in" \
+               --unset-env=chmix_b2 \
+               --set-env="$f2_in" \
+               "$ch_timg" -- sh -c 'env | grep -E ^chmix_ | sort'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
 }
 
 @test 'broken image errors' {

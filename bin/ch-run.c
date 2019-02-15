@@ -6,6 +6,7 @@
 #define _GNU_SOURCE
 #include <argp.h>
 #include <assert.h>
+#include <fnmatch.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,13 +53,14 @@ const struct argp_option options[] = {
    { "private-tmp", 't', 0,      0, "use container-private /tmp" },
    { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
    { "uid",         'u', "UID",  0, "run as UID within container" },
+   { "unset-env",    -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
    { "version",     'V', 0,      0, "print version and exit" },
    { "write",       'w', 0,      0, "mount image read-write"},
    { 0 }
 };
 
-/* On possible future here is that fix_environment() ends up in charliecloud.c
+/* One possible future here is that fix_environment() ends up in charliecloud.c
    and we add other actions such as SET, APPEND_PATH, etc. */
 enum env_action { END, SET_FILE, UNSET_GLOB };  // END must be zero
 
@@ -88,11 +90,14 @@ void privs_verify_invoking();
 /** Global variables **/
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
+extern char **environ;  // see environ(7)
+
 
 /** Main **/
 
 int main(int argc, char *argv[])
 {
+   bool argp_help_fmt_set;
    struct args args;
    int arg_next;
    int c_argc;
@@ -115,8 +120,17 @@ int main(int argc, char *argv[])
    args.initial_dir = NULL;
    verbose = 1;  // in charliecloud.h
 
-   Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
+   /* I couldn't find a way to set argp help defaults other than this
+      environment variable. Kludge sets/unsets only if not already set. */
+   if (getenv("ARGP_HELP_FMT"))
+      argp_help_fmt_set = true;
+   else {
+      argp_help_fmt_set = false;
+      Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
+   }
    Z_ (argp_parse(&argp, argc, argv, 0, &(arg_next), &args));
+   if (!argp_help_fmt_set)
+      Z_ (unsetenv("ARGP_HELP_FMT"));
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.newroot = realpath(argv[arg_next], NULL);
@@ -209,9 +223,8 @@ void fix_environment(struct args *args)
                continue;                    // skip empty line
             if (line[strlen(line) - 1] == '\n')
                line[strlen(line) - 1] = 0;  // remove newline
-            new_value = line;
-            name = strsep(&new_value, "=");
-            Te (new_value != NULL, "--set-env: no delimiter: %s:%d", arg, j);
+            split(&name, &new_value, line, '=');
+            Te (name != NULL, "--set-env: no delimiter: %s:%d", arg, j);
             Te (strlen(name) != 0, "--set-env: empty name: %s:%d", arg, j);
             if (   strlen(new_value) >= 2
                 && new_value[0] == '\''
@@ -225,7 +238,36 @@ void fix_environment(struct args *args)
          fclose(fp);
       } else {
          T_ (args->env_deltas[i].action == UNSET_GLOB);
-         T_ (0);  // --unset-env not yet supported
+         /* Removing variables from the environment is tricky, because there
+            is no standard library function to iterate through the
+            environment, and the environ global array can be re-ordered after
+            unsetenv(3) [1]. Thus, the only safe way without additional
+            storage is an O(n^2) search until no matches remain.
+
+            It is legal to assign to environ [2]. We build up a copy, omitting
+            variables that match the glob, which is O(n), and then do so.
+
+            [1]: https://unix.stackexchange.com/a/302987
+            [2]: http://man7.org/linux/man-pages/man3/exec.3p.html */
+         char **new_environ;
+         int old_i, new_i;
+         for (old_i = 0; environ[old_i] != NULL; old_i++)
+            ;
+         T_ (new_environ = calloc(old_i + 1, sizeof(char *)));
+         for (old_i = 0, new_i = 0; environ[old_i] != NULL; old_i++) {
+            int matchp;
+            split(&name, &old_value, environ[old_i], '=');
+            T_ (name != NULL);          // env lines should always have equals
+            matchp = fnmatch(arg, name, 0);
+            if (!matchp) {
+               INFO("environment: unset %s", name);
+            } else {
+               T_ (matchp == FNM_NOMATCH);
+               *(old_value - 1) = '=';  // rejoin line
+               new_environ[new_i++] = name;
+            }
+         }
+         environ = new_environ;
       }
    }
 }
@@ -338,6 +380,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case -6: // --set-env
       env_delta_append(&(args->env_deltas), SET_FILE, arg);
       break;
+   case -7: // --unset-env
+      Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
+      env_delta_append(&(args->env_deltas), UNSET_GLOB, arg);
+      break;;
    case 'c':
       args->initial_dir = arg;
       break;

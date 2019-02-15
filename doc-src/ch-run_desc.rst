@@ -48,6 +48,9 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`-u`, :code:`--uid=UID`
     run as user :code:`UID` within container
 
+  :code:`--unset-env=GLOB`
+    unset environment variables whose names match :code:`GLOB`
+
   :code:`-v`, :code:`--verbose`
     be more verbose (debug if repeated)
 
@@ -164,14 +167,16 @@ Environment variables
 :code:`ch-run` leaves environment variables unchanged, i.e. the host
 environment is passed through unaltered, except:
 
-* limited tweaks to avoid significant guest breakage; and
-* user-set variables via :code:`--set-env`
+* limited tweaks to avoid significant guest breakage;
+* user-set variables via :code:`--set-env`; and
+* user-unset variables via :code:`--unset-env`.
 
 This section describes these features.
 
-The default tweaks happen first, followed by :code:`--set-env`. The
-latter can be repeated arbitrarily many times, e.g. to add multiple
-variable sets.
+The default tweaks happen first, and then :code:`--set-env` and
+:code:`--unset-env` in the order specified on the command line. The latter two
+can be repeated arbitrarily many times, e.g. to add/remove multiple variable
+sets or add only some variables in a file.
 
 Default behavior
 ----------------
@@ -200,8 +205,8 @@ By default, :code:`ch-run` makes the following environment variable changes:
     * `Fedora <https://fedoraproject.org/wiki/Features/UsrMove>`_
     * `Debian <https://wiki.debian.org/UsrMerge>`_
 
-Setting environment variables with :code:`--set-env`
----------------------------------------------------------
+Setting variables with :code:`--set-env`
+----------------------------------------
 
 The purpose of :code:`--set-env=FILE` is to set environment variables that
 cannot be inherited from the host shell, e.g. Dockerfile :code:`ENV`
@@ -297,6 +302,61 @@ Example valid lines that are probably not what you want:
 Example Docker command to produce a valid :code:`FILE`::
 
   $ docker inspect $TAG --format='{{range .Config.Env}}{{println .}}{{end}}'
+
+Removing variables with :code:`--unset-env`
+-------------------------------------------
+
+The purpose of :code:`--unset-env=GLOB` is to remove unwanted environment
+variables. The argument :code:`GLOB` is a glob pattern (`dialect
+<http://man7.org/linux/man-pages/man3/fnmatch.3.html>`_ :code:`fnmatch(3)`
+with no flags); all variables with matching names are removed from the
+environment.
+
+.. warning::
+
+   Because the shell also interprets glob patterns, if any wildcard characters
+   are in :code:`GLOB`, it is important to put it in single quotes to avoid
+   surprises.
+
+:code:`GLOB` must be a non-empty string.
+
+Example 1: Remove the single environment variable :code:`FOO`::
+
+  $ export FOO=bar
+  $ env | fgrep FOO
+  FOO=bar
+  $ ch-run --unset-env=FOO $CH_TEST_IMGDIR/chtest -- env | fgrep FOO
+  $
+
+Example 2: Hide from a container the fact that it's running in a Slurm
+allocation, by removing all variables beginning with :code:`SLURM`. You might
+want to do this to test an MPI program with one rank and no launcher::
+
+  $ salloc -N1
+  $ env | egrep '^SLURM' | wc
+     44      44    1092
+  $ ch-run $CH_TEST_IMGDIR/mpihello-openmpi -- /hello/hello
+  [... long error message ...]
+  $ ch-run --unset-env='SLURM*' $CH_TEST_IMGDIR/mpihello-openmpi -- /hello/hello
+  0: MPI version:
+  Open MPI v3.1.3, package: Open MPI root@c897a83f6f92 Distribution, ident: 3.1.3, repo rev: v3.1.3, Oct 29, 2018
+  0: init ok cn001.localdomain, 1 ranks, userns 4026532530
+  0: send/receive ok
+  0: finalize ok
+
+Example 3: Clear the environment completely (remove all variables)::
+
+  $ ch-run --unset-env='*' $CH_TEST_IMGDIR/chtest -- env
+  $
+
+Note that some programs, such as shells, set some environment variables even
+if started with no init files::
+
+  $ ch-run --unset-env='*' $CH_TEST_IMGDIR/debian9 -- bash --noprofile --norc -c env
+  SHLVL=1
+  PWD=/
+  _=/usr/bin/env
+  $
 
 Examples
 ========
