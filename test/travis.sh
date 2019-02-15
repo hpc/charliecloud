@@ -53,6 +53,8 @@ fi
 
 cd test
 
+mkdir -p "$CH_TEST_IMGDIR"
+mkdir -p "$CH_TEST_TARDIR"
 make where-bats
 make test
 
