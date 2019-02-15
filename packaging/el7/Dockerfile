@@ -20,10 +20,7 @@ RUN rpmdev-setuptree
 COPY charliecloud.spec /root/rpmbuild/SPECS
 COPY charliecloud-*.tar.gz /root/rpmbuild/SOURCES
 
-# @VERSION@ is replaced with the contents of VERSION.full; see travis.sh
-# @RELEASE@ is replaced with the contents of RELEASE.txt; see travis.sh
-# @DATE@    is replaced with the current date; see travis.sh
-
+# @VERSION@, @RELEASE@, and @DATE@ are replaced with contents in travis.sh.
 ARG version="@VERSION@"
 ARG release="@RELEASE@"
 ARG date="@DATE@"

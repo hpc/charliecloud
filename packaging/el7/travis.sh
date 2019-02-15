@@ -1,29 +1,34 @@
 #!/bin/bash
 
-# Build a container with rpmbuild and rpmlint; copy in charliecloud version,
-# release, and spec file into container image; build container and build 
-# charliecloud rpm based on the provided version and release.
-#
+# This script builds a centos 7 container that generates: 
+#   1. charliecloud.spec file, 
+#   2. charliecloud-{version}-{release}.el7.x86_64.rpm,
+#   3. charliecloud-doc-{version}-{release}.el7.x86_64.rpm; and
+# then installs and tests the generated artifacts within the container.
+
 # $PWD is assumed to be the root directory charliecloud source code
 
 set -e
 set -x
 
-err() {
-    echo "$1: $LINENO"
+fatal() {
+    printf '%s\n\n' "$1" >&2
     exit 1 
 }
 
 version="$(cat VERSION.full)"
 make export
 
-# Spec files do not allow special characters e.g., '-', '~'.
+# rpmbuild will not allow a spec file to have special characters (e.g., '~')
+# in Version. Thus, the contents of VERSION.txt are modified for non-
+# release commits, i.e, when VERSION.txt contains anything other than a 
+# simple version number.
 mv "charliecloud-${version}.tar.gz" "charliecloud-${version/~pre*/}.tar.gz"
 version="${version/~pre*/}"
 mv "charliecloud-${version}.tar.gz" packaging/el7/ \
-    || err "can't move tarball to packaging/el7/"
+    || fatal "can't move tarball to packaging/el7/"
 
-cd ./packaging/el7 || err "can't cd to packaging/el7"
+cd ./packaging/el7 || fatal "can't cd to packaging/el7"
 
 # FIXME: prefer to rename the top-level directory to 
 # charliecloud-${version} instead of unpacking tar, renaming, and then
@@ -35,8 +40,9 @@ rm -rf "charliecloud-${version}"
 
 date="$(date +"%a %b %d %Y")"
 
-# TODO: get release number from file e.g. RELEASE.txt
-release="1"
+# FIXME: figure out how to determine releases.
+echo "release: 1" > RELEASE.txt
+release=$(cat RELEASE.txt | sed 's,release: ,,g'
 
 cp Dockerfile "Dockerfile.${version}-${release}"
 sed -i "s,@VERSION@,${version},g" "Dockerfile.${version}-${release}"
