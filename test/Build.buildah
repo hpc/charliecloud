@@ -21,7 +21,7 @@ buildah push "$image_id" oci:./oci:centos6
 umoci unpack --rootless --image ./oci:centos6 ./centos6
 cd centos6
 # Enable files to be tarred
-find "$dir" -type f ! -perm /700 -exec chmod u+rw {} +
+find rootfs -type f ! -perm /700 -exec chmod u+rw {} +
 tar czf "$tarball_gz" -- rootfs
 # Enable files to be removed
 find rootfs -type d -a ! -perm /200 -exec chmod u+w {} +
