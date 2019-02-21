@@ -13,8 +13,10 @@ srcdir=$1
 tarball_gz=${2}.tar.gz
 workdir=$3
 
-buildah --registries-conf registries.conf bud -f Dockerfile.alpine -t alpine36 .
-image_id=$(buildah images | egrep centos | awk '{print $3}')
-buildah push "$image_id" oci:./oci:alpine36
-umoci unpack --rootless --image ./oci:alpine36 ./alpine36
-( cd img && tar czf "$tarball_gz" -- rootfs )
+buildah --registries-conf registries.conf bud -f Dockerfile.centos6 -t centos6 .
+image_id=$(buildah images centos | tail -n +2 | awk '{print $3}')
+buildah push "$image_id" oci:./oci:centos6
+umoci unpack --rootless --image ./oci:centos6 ./centos6
+cd centos6
+find . -type f -exec chmod 755 -- {} +
+tar czf "$tarball_gz" -- rootfs
