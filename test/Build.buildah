@@ -13,10 +13,19 @@ srcdir=$1
 tarball_gz=${2}.tar.gz
 workdir=$3
 
+# Buildah requires a registries.conf so we include it in place here
 buildah --registries-conf registries.conf bud -f Dockerfile.centos6 -t centos6 .
 image_id=$(buildah images centos | tail -n +2 | awk '{print $3}')
 buildah push "$image_id" oci:./oci:centos6
+# Use umoci to unpack the image to a rootfs
 umoci unpack --rootless --image ./oci:centos6 ./centos6
 cd centos6
-find . -type f -exec chmod 755 -- {} +
+# Enable files to be tarred
+find "$dir" -type f ! -perm /700 -exec chmod u+rw {} +
 tar czf "$tarball_gz" -- rootfs
+# Enable files to be removed
+find rootfs -type d -a ! -perm /200 -exec chmod u+w {} +
+cd ..
+# Folder must be removed before umoci unpack can unpack again
+# Specifically, rootfs and centos are the big ones to watch out for
+rm -rf centos6
