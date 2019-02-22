@@ -13,12 +13,18 @@
 #      exist, though it used to [1,2]. A secondary issue is that it required
 #      starting up a container [3], which we don't want.
 #
-#   2. Export to OCI image with "buildah push", flatten with umoci, and then
+#   2. "podman export". Podman (formerly kpod) is a container runtime [4]; it
+#      can create a container and then export its filesystem. The addition of
+#      the export command is why "buildah export" was removed [2]. We haven't
+#      looked into this in detail. It appears to be Buildah's recommended
+#      approach but would add a dependency.
+#
+#   3. Export to OCI image with "buildah push", flatten with umoci, and then
 #      tar up the resulting rootfs. The advantage here is that it uses only
 #      documented commands; the downside is that it introduces a redundant
 #      unpack/repack of tarballs
 #
-#   3. Build with "buildah bud --squash", export to OCI image with "buildah
+#   4. Build with "buildah bud --squash", export to OCI image with "buildah
 #      push", and manually copy out the tarball of the single layer. The main
 #      advantage is that we can do it with Buildah only; the disadvantages are
 #      (1) parsing JSON in shell is a kludge and (2) it only works with
@@ -26,11 +32,12 @@
 #      you have a multi-layer image, that will require some fooling around
 #      that I'm pretty sure is possible but haven't figured out yet.
 #
-# For now, this script uses approach 3.
+# For now, this script uses approach 4.
 #
 # [1]: https://github.com/containers/buildah/pull/170
 # [2]: https://github.com/containers/buildah/pull/245
 # [3]: https://github.com/containers/buildah/issues/1118
+# [4]: https://www.projectatomic.io/blog/2018/02/reintroduction-podman
 
 set -e
 
