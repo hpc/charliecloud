@@ -22,7 +22,7 @@ make export
 # rpmbuild will not allow a spec file to have special characters (e.g., '~')
 # in Version. Thus, the contents of VERSION.txt are modified for non-
 # release commits, i.e, when VERSION.txt contains anything other than a 
-# simple version number.
+# release version number.
 mv "charliecloud-${version}.tar.gz" "charliecloud-${version/~pre*/}.tar.gz"
 version="${version/~pre*/}"
 mv "charliecloud-${version}.tar.gz" packaging/el7/ \
@@ -40,7 +40,7 @@ rm -rf "charliecloud-${version}"
 
 date="$(date +"%a %b %d %Y")"
 
-# FIXME: figure out how to determine releases.
+# FIXME: Figure out how to determine changelog comments.
 echo "release: 1" > RELEASE.txt
 release=$(cat RELEASE.txt | sed 's,release: ,,g')
 

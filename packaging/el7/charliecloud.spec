@@ -3,18 +3,17 @@ Version:        VERSION
 Release:        RELEASE%{?dist}
 Summary:        Lightweight user-defined software stacks for high-performance computing
 License:        ASL 2.0
-URL:            https://github.com/hpc/%{name}
-# TODO: update source0 with URL (with pre-built documentation)
-Source0:        %{name}-%{version}.tar.gz
-BuildRequires:  gcc    >= 4.8.5
-BuildRequires:  make   >= 3.82
+URL:            https://hpc.github.io/%{name}/
+Source0:        https://github.com/hpc/%{name}/archive/v%{version}/%{name}-%{version}.tar.gz
+BuildRequires:  gcc  >= 4.8.5
+BuildRequires:  make >= 3.82
 
 %package doc
 Summary:        Charliecloud examples and test suite
 Requires:       %{name} = %{version}
-Requires:       bats   >= 0.4.0
-Requires:       bash   >= 4.2.46
-Requires:       wget   >= 1.14
+Requires:       bats >= 0.4.0
+Requires:       bash >= 4.2.46
+Requires:       wget >= 1.14
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -30,8 +29,8 @@ For more information visit: https://hpc.github.io/charliecloud/
 %description doc
 This package contains the Charliecloud test suite and examples.
 
-# Black magics to stop our python scripts from being byte compiled on Centos7, 
-# which otherwise results in rpmbuild failing to make the package. see:
+# Voodoo to stop our python scripts from being byte compiled on Centos7, 
+# which otherwise results in rpmbuild failing to build the package. see:
 # https://github.com/scylladb/scylla/issues/2235
 %global __os_install_post    \
      /usr/lib/rpm/redhat/brp-compress \
@@ -92,4 +91,4 @@ fi
 
 %changelog
 * DATE Jordan Ogas <jogas@lanl.gov> - VERSION-RELEASE.el7
-- Added initial EPEL7 package
+- Added initial package for Fedora/EPEL7
