@@ -62,13 +62,6 @@ install:
       pip3 --version;
       sudo pip3 install sphinx sphinx-rtd-theme;
     fi
-# ShellCheck: Use upstream's binary build because it's newer than what comes
-# with Travis.
-  - sudo rm -f /usr/local/bin/shellcheck
-  - wget -nv https://shellcheck.storage.googleapis.com/shellcheck-v0.6.0.linux.x86_64.tar.xz
-  - tar xvf shellcheck-v0.6.0.linux.x86_64.tar.xz
-  - sudo mv shellcheck-v0.6.0/shellcheck /usr/local/bin
-  - shellcheck --version
 # umoci provides a binary build; no appropriate Ubuntu packages AFAICT.
   - if [ -z "$MINIMAL_DEPS" ]; then
       wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.3/umoci.amd64;

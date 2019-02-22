@@ -38,10 +38,10 @@ check_process_ct () {
 
 # one from "Single Transfer Benchmarks"
 @test "${ch_tag}/pingpong (guest launch)" {
-    unslurmify_environment_maybe
     [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
     # shellcheck disable=SC2086
-    run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
+    run ch-run $ch_unslurm "$ch_img" -- \
+               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -62,10 +62,10 @@ check_process_ct () {
 
 # one from "Parallel Transfer Benchmarks"
 @test "${ch_tag}/sendrecv (guest launch)" {
-    unslurmify_environment_maybe
     [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
     # shellcheck disable=SC2086
-    run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
+    run ch-run $ch_unslurm "$ch_img" -- \
+               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -86,10 +86,10 @@ check_process_ct () {
 
 # one from "Collective Benchmarks"
 @test "${ch_tag}/allreduce (guest launch)" {
-    unslurmify_environment_maybe
     [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
     # shellcheck disable=SC2086
-    run ch-run "$ch_img" -- mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
+    run ch-run $ch_unslurm "$ch_img" -- \
+               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
