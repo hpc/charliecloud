@@ -10,17 +10,17 @@ compiler: gcc
 # it up in parallel. It would be nice if "make test-build" could be done
 # serially before splitting into parallel jobs.
 #
-#   TARBALL=         # build in Git checkout & use embedded Bats
-#   TARBALL=archive  # build from "git archive" tarball & use system Bats
-#   TARBALL=export   # build from "make export" tarball & use embedded Bats
-#   INSTALL=         # run from build directory
-#   INSTALL=yes      # make install to /usr/local, run that one
+#   TARBALL=          # build in Git checkout & use embedded Bats
+#   TARBALL=archive   # build from "git archive" tarball & use system Bats
+#   TARBALL=export    # build from "make export" tarball & use embedded Bats
+#   INSTALL=          # run from build directory
+#   INSTALL=yes       # make install to /usr/local, run that one
 #
 # Package builds can also be tested. In this case, INSTALL is ignored, as is
 # the main test suite. These tests are much faster.
 #
-#   PKG_BUILD=yes    # build (but don't test) distribution packages, then exit
-#   INSTALL_PV=yes   # install pv ("pipe view")
+#   PKG_BUILD=yes     # build (but don't test) distribution packages, then exit
+#   MINIMAL_DEPS=yes  # test with a minimal dependency set (no fancy tools)
 #
 env:
 # Package building (fast).
@@ -34,7 +34,7 @@ env:
   - TARBALL=export  INSTALL=
   - TARBALL=export  INSTALL=yes
 # Extra conditions
-  - TARBALL=        INSTALL=     INSTALL_PV=yes
+  - TARBALL=        INSTALL=     MINIMAL_DEPS=yes
 # One full-scope test. This will finish last by a lot.
 # (Disabled because it gives a >10-minute gap in output, so Travis times out.)
 #  - TARBALL=        INSTALL=     CH_TEST_SCOPE=full
@@ -44,22 +44,24 @@ addons:
     sources:
       - sourceline: 'ppa:projectatomic/ppa'
     packages:
+      - buildah
+      - cri-o-runc  # runc from Project Atomic PPA, not Ubuntu
       - fakeroot
       - pigz
+      - pv
       - python3-pip
       - skopeo
       - skopeo-containers
-      - cri-o-runc  # runc from Project Atomic PPA, not Ubuntu
-      - buildah
 
 install:
-  - if [ -n "$INSTALL_PV" ]; then sudo apt-get install pv; fi
 # We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
 # issue #241). Travis provides images pre-installed with Python 3, but it's in
 # a virtualenv and unavailable by default under sudo, in package builds, and
 # maybe elsewhere. It's simpler and fast enough to install it with apt-get.
-  - pip3 --version
-  - sudo pip3 install sphinx sphinx-rtd-theme
+  - if [ -z "$MINIMAL_DEPS" ]; then
+      pip3 --version;
+      sudo pip3 install sphinx sphinx-rtd-theme;
+    fi
 # ShellCheck: Use upstream's binary build because it's newer than what comes
 # with Travis.
   - sudo rm -f /usr/local/bin/shellcheck
@@ -68,16 +70,23 @@ install:
   - sudo mv shellcheck-v0.6.0/shellcheck /usr/local/bin
   - shellcheck --version
 # umoci provides a binary build; no appropriate Ubuntu packages AFAICT.
-  - wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.3/umoci.amd64
-  - sudo chmod 755 umoci.amd64
-  - sudo mv umoci.amd64 /usr/local/bin/umoci
-  - umoci --version
+  - if [ -z "$MINIMAL_DEPS" ]; then
+      wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.3/umoci.amd64;
+      sudo chmod 755 umoci.amd64;
+      sudo mv umoci.amd64 /usr/local/bin/umoci;
+      umoci --version;
+    fi
+# Tests should still pass with only the basics installed.
+  - if [ -n "$MINIMAL_DEPS" ]; then
+      sudo apt-get purge buildah cri-o-runc pv skopeo skopeo-containers;
+    fi
 
 before_script:
   - getconf _NPROCESSORS_ONLN
   - free -m
   - df -h
   - df -h /var/tmp
+  - export PATH=/usr/lib/cri-o-runc/sbin:$PATH
   - export CH_TEST_TARDIR=/var/tmp/tarballs
   - export CH_TEST_IMGDIR=/var/tmp/images
   - export CH_TEST_PERMDIRS='/var/tmp /run'
