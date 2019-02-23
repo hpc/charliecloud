@@ -123,6 +123,7 @@ int slurm_spank_task_init(spank_t sp, int ac, char **av){
     spank_getenv(sp, "HOME", old_home, PATH_MAX);
     c.old_home = old_home;
     c.writable = false;
+    c.sp = sp;
 
     slurm_info("Old home: %s", c.old_home);
 

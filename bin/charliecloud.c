@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <libgen.h>
+#include <limits.h>
 #include <pwd.h>
 #include <sched.h>
 #include <semaphore.h>
@@ -21,6 +22,10 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+
+#ifdef SPANKPLUGIN
+#include <slurm/spank.h>
+#endif
 
 #include "charliecloud.h"
 #include "version.h"
@@ -170,7 +175,7 @@ void containerize(struct container *c)
    in examples/syscalls/pivot_root.c. */
 void enter_udss(struct container *c)
 {
-   char *newroot_parent, *newroot_base;
+   char *newroot_parent, *newroot_base, *env_user;
 
    LOG_IDS;
 
@@ -199,9 +204,13 @@ void enter_udss(struct container *c)
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
       Tf (c->old_home != NULL, "cannot find home directory: is $HOME set?");
-      //newhome = cat("/home/", getenv("USER"));
-      // FIXME: use slurm_getenv
-      newhome = cat("/home/", "vagrant");
+#ifdef SPANKPLUGIN
+      T_ (env_user = (char*)malloc(LOGIN_NAME_MAX+1));
+      T_ (spank_getenv(c->sp, "USER", env_user, LOGIN_NAME_MAX));
+#else
+      env_user = getenv("USER");
+#endif
+      newhome = cat("/home/", env_user);
       Z_ (mkdir(cat(c->newroot, newhome), 0755));
       bind_mount(c->old_home, newhome, c->newroot, BD_REQUIRED, 0);
    }
@@ -501,7 +510,7 @@ void setup_namespaces(struct container *c)
 void setup_passwd(struct container *c)
 {
    int fd;
-   char *path;
+   char *path, *env_user;
    struct group *g;
    struct passwd *p;
 
@@ -513,11 +522,17 @@ void setup_passwd(struct container *c)
    if (c->container_uid != 65534)
       T_ (1 <= dprintf(fd, "nobody:x:65534:65534:nobody:/:/bin/false\n"));
    T_ (p = getpwuid(c->container_uid));
+
+   #ifdef SPANKPLUGIN
+         T_ (env_user = (char*)malloc(LOGIN_NAME_MAX+1));
+         T_ (spank_getenv(c->sp, "USER", env_user, LOGIN_NAME_MAX));
+   #else
+         env_user = getenv("USER");
+   #endif
+
    T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
                     p->pw_name, c->container_uid, c->container_gid,
-                    //p->pw_gecos, getenv("USER")));
-                    // FIXME: use slurm_getenv
-                    p->pw_gecos, "vagrant"));
+                    p->pw_gecos, env_user));
    Z_ (close(fd));
    bind_mount(path, "/etc/passwd", c->newroot, BD_REQUIRED, 0);
    Z_ (unlink(path));

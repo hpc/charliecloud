@@ -76,6 +76,9 @@ struct container {
    bool private_tmp;
    char *old_home;      // host path to user's home directory (i.e. $HOME)
    bool writable;
+#ifdef SPANKPLUGIN
+   spank_t sp;
+#endif
 };
 
 
