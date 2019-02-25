@@ -1,8 +1,7 @@
 check_permdirs () {
-set -x
     [[ "$CH_TEST_PERMDIRS" != 'skip' ]] || return
-    IFS=' ' read -ra pdirs <<< "$CH_TEST_PERMDIRS"
-    for d in "${pdirs[@]}"; do
+    IFS=' ' read pdirs <<< "$CH_TEST_PERMDIRS"
+    for d in ${pdirs[@]}; do
         read_link -e "$d" 'CH_TEST_PERMDIRS'
     done
 }
@@ -87,10 +86,11 @@ prerequisites_ok () {
 }
 
 read_link () {
-    local path
-    path=$(readlink "$1" "$2" 2> /dev/null)
-    [[ ! "$path" = '' ]] || fatal "${3}=${2}: path does not exist"
-    echo "$path"
+set -x
+    if ! readlink "$1" "$2" 2>&1 > /dev/null; then
+        fatal "${3}=${2}: path does not exist"
+    fi
+    echo "$2"
 }
 
 scope () {
