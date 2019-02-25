@@ -1,7 +1,8 @@
 check_permdirs () {
-    [[ "$CH_TEST_PERMDIRS" != 'skip' ]] || return
-    IFS=' ' read pdirs <<< "$CH_TEST_PERMDIRS"
-    for d in ${pdirs[@]}; do
+    # We turn it up to 11 (see spinal tap) for maximum CH_TEST_PERMDIRS arguments
+    for ((i=1; i<=11; i++)); do
+        d=$(cut -d ' ' -f"${i}" <<< "$CH_TEST_PERMDIRS")
+        [[ -n "$d" ]] || break
         read_link -e "$d" 'CH_TEST_PERMDIRS'
     done
 }
@@ -86,7 +87,6 @@ prerequisites_ok () {
 }
 
 read_link () {
-set -x
     if ! readlink "$1" "$2" 2>&1 > /dev/null; then
         fatal "${3}=${2}: path does not exist"
     fi
@@ -128,6 +128,7 @@ export LC_ALL=C
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
 env_require CH_TEST_PERMDIRS
+check_permdirs
 if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
     # https://github.com/sstephenson/bats/issues/49
@@ -166,7 +167,6 @@ ch_tardir=$(read_link -e "$CH_TEST_TARDIR" 'CH_TEST_TARDIR')
 if ( mount | grep -Fq "$ch_imgdir" ); then
     fatal "Something is mounted at or under $ch_imgdir"
 fi
-check_permdirs
 
 # Image information.
 ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
