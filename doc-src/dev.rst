@@ -411,6 +411,104 @@ suite.
     * else: An error occurred.
 
 
+Building RPMs
+=============
+
+We maintain :code:`.spec` files and infrastructure for building RPMs in the
+Charliecloud source code. This is for two purposes:
+
+  1. We maintain our own Fedora RPMs.
+  2. We want to be able to build an RPM of any commit.
+
+Item 2 is tested; i.e., if you break the RPM build, the test suite will fail.
+
+This section describes how to build the RPMs and the pain we've hopefully
+abstracted away.
+
+Prerequisites
+-------------
+
+  * Python 2.7
+  * Either:
+
+    * RPM-based system of roughly RHEL/CentOS 7 vintage or newer, with RPM
+      build tools installed
+    * System that can run Charliecloud containers
+
+:code:`rpmbuild` wrapper script
+-------------------------------
+
+While building the Charliecloud RPMs is not too weird, we provide a script to
+streamline it. The purpose is to (a) make it easy to build versions not
+matching the working directory, (b) use an arbitrary :code:`rpmbuild`
+directory, and (c) build in a Charliecloud container for non-RPM-based
+environments.
+
+Usage::
+
+  $ packaging/el7/build [OPTIONS] VERSION
+
+Options:
+
+  * :code:`--image=DIR` : Build in Charliecloud image directory :code:`DIR`.
+
+  * :code:`--rpmbuild=DIR` : Use RPM build directory root :code:`DIR`
+    (default: :code:`~/rpmbuild`).
+
+For example, to build a version 0.9.7 RPM, on an RPM system, and leave the
+results in :code:`~/rpmbuild/RPMS`::
+
+  $ packaging/el7/build 0.9.7-1
+
+To build a pre-release RPM of Git HEAD using the CentOS 7 image provided with
+the test suite (note that the test suite would also build the necessary image
+directory)::
+
+  $ bin/ch-build -t centos7 -f test/Dockerfile.centos7 test
+  $ bin/ch-docker2tar centos7 $CH_TEST_TARDIR
+  $ bin/ch-tar2dir centos7 $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
+  $ packaging/el7/build --image $CH_TEST_IMGDIR/centos7 HEAD
+
+Gotchas and quirks
+------------------
+
+RPM versions and releases
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If :code:`VERSION` is :code:`HEAD`, then the RPM version will be the content
+of :code:`VERSION.full` for that commit, including Git gobbledygook, and the
+RPM release will be :code:`0`. Note that such RPMs cannot be reliably upgraded
+because their version numbers are unordered.
+
+Otherwise, :code:`VERSION` should be a released Charliecloud version followed
+by a hyphen and the desired RPM release, e.g. :code:`0.9.7-3`.
+
+Other values of :code:`VERSION` (e.g., a branch name) may work but are not
+supported.
+
+Spec file and packaged source code come from different commits
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The spec file and :code:`build` script come from the working directory, but
+the package source is from the specified commit. This is what enables us to
+make additional RPM releases for a given Charliecloud release (e.g. 0.9.7-2).
+
+Corollaries of this policy are that the spec file and script can be any or no
+commit, and it's not possible to create an RPM of uncommitted source code.
+
+Changelog maintenance
+~~~~~~~~~~~~~~~~~~~~~
+
+The spec file changelog contains manually maintained release notes for all
+Charliecloud released versions and corresponding RPM releases. For released
+versions, :code:`build` verifies that the most recent changelog entry matches
+the given :code:`VERSION` argument. The timestamp is not automatically
+verified.
+
+For other Charliecloud versions, :code:`build` adds a generic changelog entry
+with the appropriate version stating that it's a pre-release RPM.
+
+
 Coding style
 ============
 
