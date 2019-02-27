@@ -23,11 +23,19 @@ fi
 
 image=$1
 outdir=$2
-tar="$outdir"/$(echo "$image" | sed 's/\//./g').tar.gz
+tar="$outdir"/$(echo "$image" | sed 's/\//./g').tar
 
 cid=$(docker_ create --read-only "$image")
-size=$(docker_ image inspect "$image" --format='{{.Size}}')
 #docker_ ps -af "id=$cid"
-docker_ export "$cid" | pv_ -s "$size" | gzip_ -6 > "$tar"
+docker_ export "$cid" > "${tar}"
 docker_ rm "$cid" > /dev/null
-ls -lh "$tar"
+
+# Experimenting with tar archive file appension and archive concatenation has
+# revealed some rather quirkly behavior with tar. See (#TODO: add PR #)
+docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' > docker-env
+tar cf docker-env.tar docker-env
+rm docker-env
+tar --concatenate --file=docker-env.tar "$tar"
+mv docker-env.tar "$tar"
+gzip_ -6 -f "$tar"
+ls -lh "${tar}.gz"
