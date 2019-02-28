@@ -26,11 +26,11 @@ env:
   - TARBALL=             INSTALL=
   - TARBALL=             INSTALL=yes
   - TARBALL=archive      INSTALL=
-  - TARBALL=archive      INSTALL=yes
+#  - TARBALL=archive      INSTALL=yes
   - TARBALL=export       INSTALL=
   - TARBALL=export       INSTALL=yes
   - TARBALL=export-bats  INSTALL=
-  - TARBALL=export-bats  INSTALL=yes
+#  - TARBALL=export-bats  INSTALL=yes
 # Extra conditions
   - TARBALL=        INSTALL=     INSTALL_PV=yes
 # One full-scope test. This will finish last by a lot.
