@@ -1,6 +1,6 @@
 Name:           charliecloud
-Version:        VERSION
-Release:        RELEASE%{?dist}
+Version:        @VERSION@
+Release:        @RELEASE@%{?dist}
 Summary:        Lightweight user-defined software stacks for high-performance computing
 License:        ASL 2.0
 URL:            https://hpc.github.io/%{name}/
@@ -21,16 +21,16 @@ operations or daemons and minimal configuration changes on center resources.
 This simple approach avoids most security risks while maintaining access to
 the performance and functionality already on offer.
 
-Container images can be built using Docker or anything else that can generate a 
-standard Linux filesystem tree.
+Container images can be built using Docker or anything else that can generate
+a standard Linux filesystem tree.
 
-For more information visit: https://hpc.github.io/charliecloud/
+For more information: https://hpc.github.io/charliecloud/
 
 %description doc
-This package contains the Charliecloud test suite and examples.
+Charliecloud test suite and examples.
 
-# Voodoo to stop our python scripts from being byte compiled on Centos7, 
-# which otherwise results in rpmbuild failing to build the package. see:
+# Voodoo to stop our python scripts from being byte compiled on Centos7, which
+# otherwise results in rpmbuild failing to build the package. see:
 # https://github.com/scylladb/scylla/issues/2235
 %global __os_install_post    \
      /usr/lib/rpm/redhat/brp-compress \
@@ -63,7 +63,7 @@ if [ $1 == 0 ]; then
 fi
 
 %files
-# Documentation 
+# Documentation
 %doc %{_datadir}/doc/%{name}/LICENSE
 %doc %{_datadir}/doc/%{name}/README.rst
 %doc %{_mandir}/man1/ch*
@@ -90,5 +90,3 @@ fi
 %doc %{_libexecdir}/%{name}/test
 
 %changelog
-* DATE Jordan Ogas <jogas@lanl.gov> - VERSION-RELEASE.el7
-- Added initial package for Fedora/EPEL7

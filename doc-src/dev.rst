@@ -444,6 +444,8 @@ matching the working directory, (b) use an arbitrary :code:`rpmbuild`
 directory, and (c) build in a Charliecloud container for non-RPM-based
 environments.
 
+The script must be run from the root of a Charliecloud Git working directory.
+
 Usage::
 
   $ packaging/el7/build [OPTIONS] VERSION
@@ -451,6 +453,9 @@ Usage::
 Options:
 
   * :code:`--image=DIR` : Build in Charliecloud image directory :code:`DIR`.
+
+  * :code:`--install` : Install the RPMs after building into the build
+    environment.
 
   * :code:`--rpmbuild=DIR` : Use RPM build directory root :code:`DIR`
     (default: :code:`~/rpmbuild`).
@@ -466,7 +471,7 @@ directory)::
 
   $ bin/ch-build -t centos7 -f test/Dockerfile.centos7 test
   $ bin/ch-docker2tar centos7 $CH_TEST_TARDIR
-  $ bin/ch-tar2dir centos7 $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
+  $ bin/ch-tar2dir $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
   $ packaging/el7/build --image $CH_TEST_IMGDIR/centos7 HEAD
 
 Gotchas and quirks

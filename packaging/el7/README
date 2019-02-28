@@ -1,3 +1,0 @@
-You will need to replace VERSION, RELEASE, and DATE in the .spec file.
-
-See travis.sh for an example of a build in a centos 7 container.
