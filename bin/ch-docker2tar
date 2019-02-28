@@ -29,9 +29,6 @@ cid=$(docker_ create --read-only "$image")
 #docker_ ps -af "id=$cid"
 docker_ export "$cid" > "${tar}"
 docker_ rm "$cid" > /dev/null
-
-# Experimenting with tar archive file appension and archive concatenation has
-# revealed some rather quirkly behavior with tar. See (#TODO: add PR #)
 docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' > docker-env
 tar cf docker-env.tar docker-env
 rm docker-env
