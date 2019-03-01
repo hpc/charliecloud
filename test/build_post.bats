@@ -6,7 +6,7 @@ load common
     img=${ch_imgdir}/centos7
 
     # Build and install RPMs into CentOS 7 image.
-    (cd .. && packaging/el7/build --install --image="$img" \
+    (cd .. && packaging/fedora/build --install --image="$img" \
                                   --rpmbuild="$BATS_TMPDIR/rpmbuild" HEAD)
 
     # Do installed RPMs look sane?

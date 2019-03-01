@@ -10,5 +10,6 @@ RUN yum -y install \
            gcc \
            make \
            rpm-build \
+           rpmlint \
            wget
 RUN yum clean all

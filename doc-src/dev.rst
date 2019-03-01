@@ -448,7 +448,7 @@ The script must be run from the root of a Charliecloud Git working directory.
 
 Usage::
 
-  $ packaging/el7/build [OPTIONS] VERSION
+  $ packaging/fedora/build [OPTIONS] VERSION
 
 Options:
 
@@ -463,7 +463,7 @@ Options:
 For example, to build a version 0.9.7 RPM, on an RPM system, and leave the
 results in :code:`~/rpmbuild/RPMS`::
 
-  $ packaging/el7/build 0.9.7-1
+  $ packaging/fedora/build 0.9.7-1
 
 To build a pre-release RPM of Git HEAD using the CentOS 7 image provided with
 the test suite (note that the test suite would also build the necessary image
@@ -472,7 +472,7 @@ directory)::
   $ bin/ch-build -t centos7 -f test/Dockerfile.centos7 test
   $ bin/ch-docker2tar centos7 $CH_TEST_TARDIR
   $ bin/ch-tar2dir $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
-  $ packaging/el7/build --image $CH_TEST_IMGDIR/centos7 HEAD
+  $ packaging/fedora/build --image $CH_TEST_IMGDIR/centos7 HEAD
 
 Gotchas and quirks
 ------------------

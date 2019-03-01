@@ -51,17 +51,6 @@ Charliecloud test suite and examples.
 %install
 %{__make} %{?mflags_install} install PREFIX=%{_prefix} DESTDIR=%{buildroot}
 
-%postun
-if [ $1 == 0 ]; then
-    rm -rf %{_libexecdir}/%{name}
-fi
-
-%postun doc
-if [ $1 == 0 ]; then
-    rm -rf %{_libexecdir}/%{name}/examples
-    rm -rf %{_libexecdir}/%{name}/test
-fi
-
 %files
 # Documentation
 %doc %{_datadir}/doc/%{name}/LICENSE
@@ -86,7 +75,7 @@ fi
 %files doc
 %doc %{_datadir}/doc/%{name}/LICENSE
 %doc %{_datadir}/doc/%{name}/README.rst
-%doc %{_libexecdir}/%{name}/examples
-%doc %{_libexecdir}/%{name}/test
+%{_libexecdir}/%{name}/examples
+%{_libexecdir}/%{name}/test
 
 %changelog

@@ -59,7 +59,8 @@ def main():
    # temporary clone so as not to mess up the WD.
    git_tmp = rpm_sources + '/charliecloud'
    print("# cloning branch %s into %s" % (branch, git_tmp))
-   cmd("git", "clone", "--branch", branch, ".", git_tmp)
+   cmd("git", "clone", "--single-branch", "--branch", branch, \
+       CH_BASE + '/.git', git_tmp)
 
    # Build tarball.
    print("# building docs")
@@ -80,7 +81,7 @@ def main():
    # Copy and patch spec file.
    rpm_vr = "%s-%s" % (ch_version, rpm_release)
    spec = "charliecloud-%s.spec" % rpm_vr
-   with open("%s/packaging/el7/charliecloud.spec" % CH_BASE, "rt") as in_, \
+   with open("%s/packaging/fedora/charliecloud.spec" % CH_BASE, "rt") as in_, \
         open("%s/%s" % (rpm_specs, spec), "wt") as out:
       print("# writing %s" % out.name)
       t = in_.read()
@@ -102,7 +103,7 @@ def main():
          assert False, "unimplemented"
       out.write(t)
 
-   # Build RPMs.
+   # Prep container args.
    container = []
    rpmbuild_args = []
    if (not args.image):
@@ -118,6 +119,10 @@ def main():
       rpmbuild_args += ["--define", "_topdir /usr/local/src"]
       container += [CH_BASE + "/bin/ch-run", "-w",
                     "-b", "%s:/usr/local/src" % args.rpmbuild, args.image, "--"]
+   # Lint spec file.
+   cmd(container, "rpmlint", "%s%s" % (rpm_specs, spec))
+
+   # Build RPMs.
    cmd(container, "rpmbuild", rpmbuild_args, "--version")
    cmd(container, "rpmbuild", rpmbuild_args, "-ba", "%s/%s" % (rpm_specs, spec))
    cmd(container, "ls", "-lh", rpms)
@@ -126,12 +131,21 @@ def main():
    if (args.install):
       print("# uninstalling (most errors can be ignored)")
       cmd_ok(container, "rpm", "--erase",
-             "charliecloud", "charliecloud-debuginfo", "charliecloud-doc")
+             "charliecloud", "charliecloud-doc")
       print("# installing")
-      for p in ("charliecloud", "charliecloud-debuginfo", "charliecloud-doc"):
+      for p in ("charliecloud", "charliecloud-doc"):
          cmd(container, "rpm", "--install",
              "%s/%s-%s.*.rpm" % (rpms, p, rpm_vr))
       cmd(container, "rpm", "-qa", "charliecloud*")
+      
+     # Lint RPMs.
+      for p in ("charliecloud", "charliecloud-doc"):
+         # FIXME: add ignore cases to image rpmlint; supress false positive
+         # errors and warnings.
+         try:
+            cmd(container, "rpmlint", "%s" % p)
+         except subprocess.CalledProcessError as x:
+            if (x.returncode != 64): raise
 
    # Success!
    print("# done")
@@ -184,5 +198,5 @@ if (__name__ == "__main__"):
 #   $ make export
 #   $ mv charliecloud-*.tar.gz $RPMBUILD_PATH/SOURCES
 
-#   $ packaging/el7/build-spec rpmbuild-path version release  # version can be HEAD or some other version
+#   $ packaging/fedora/build-spec rpmbuild-path version release  # version can be HEAD or some other version
 #   $ rpmbuild -ba ...
