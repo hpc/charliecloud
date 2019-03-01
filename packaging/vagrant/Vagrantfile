@@ -235,6 +235,8 @@ EOF2
     passwd -l root
     passwd -l vagrant
 
+    # Reboot the machine so the paswordless login takes affect
+    sudo reboot
   EOF
 
   # Test Charliecloud (optional).
