@@ -534,6 +534,24 @@ void setup_passwd(struct container *c)
    Z_ (unlink(path));
 }
 
+/* Split string str at first instance of delimiter del. Set *a to the part
+   before del, and *b to the part after. Both can be empty; if no token is
+   present, set both to NULL. Unlike strsep(3), str is unchanged; *a and *b
+   point into a new buffer allocated with malloc(3). This has two
+   implications: (1) the caller must free(3) *a but not *b, and (2) the parts
+   can be rejoined by setting *(*b-1) to del. The point here is to provide an
+   easier wrapper for strsep(3). */
+void split(char **a, char **b, char *str, char del)
+{
+   char delstr[2] = { del, 0 };
+   T_ (str != NULL);
+   str = strdup(str);
+   *b = str;
+   *a = strsep(b, delstr);
+   if (*b == NULL)
+      *a = NULL;
+}
+
 /* Mount a tmpfs at the given path. */
 void tmpfs_mount(char *dst, char *newroot, char *data)
 {

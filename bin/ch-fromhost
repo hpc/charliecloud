@@ -228,24 +228,6 @@ done
 
 [ "$image" ] || fatal "no image specified"
 
-if [ $lib_found ]; then
-    # We want to put the libraries in the first directory that ldconfig
-    # searches, so that we can override (or overwrite) any of the same library
-    # that may already be in the image.
-    debug "asking ldconfig for shared library destination"
-    # "ldconfig -Nv" gives some pointless warnings on stderr even if
-    # successful; we don't want to show those to users. However, we don't want
-    # to simply pipe stderr to /dev/null because this hides real errors. Thus,
-    # use the following abomination to pipe stdout and stderr to *separate
-    # grep commands*. See: https://stackoverflow.com/a/31151808
-    lib_dest=$( { "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv \
-                  2>&1 1>&3 3>&- | grep -Ev '(^|dynamic linker, ignoring|given more than once)$' ; } \
-                3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
-    [ -n "$lib_dest" ] || fatal 'empty path from ldconfig'
-    [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
-    debug "shared library destination: ${lib_dest}"
-fi
-
 if [ $cray_mpi ]; then
     sentinel=/etc/opt/cray/release/cle-release
     [ -f $sentinel ] || fatal "not found: ${sentinel}: are you on a Cray?"
@@ -264,6 +246,24 @@ if [ $cray_mpi ]; then
             fatal "can't find MPI in image"
             ;;
     esac
+fi
+
+if [ $lib_found ]; then
+    # We want to put the libraries in the first directory that ldconfig
+    # searches, so that we can override (or overwrite) any of the same library
+    # that may already be in the image.
+    debug "asking ldconfig for shared library destination"
+    # "ldconfig -Nv" gives some pointless warnings on stderr even if
+    # successful; we don't want to show those to users. However, we don't want
+    # to simply pipe stderr to /dev/null because this hides real errors. Thus,
+    # use the following abomination to pipe stdout and stderr to *separate
+    # grep commands*. See: https://stackoverflow.com/a/31151808
+    lib_dest=$( { "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv \
+                  2>&1 1>&3 3>&- | grep -Ev '(^|dynamic linker, ignoring|given more than once)$' ; } \
+                3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
+    [ -n "$lib_dest" ] || fatal 'empty path from ldconfig'
+    [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
+    debug "shared library destination: ${lib_dest}"
 fi
 
 if [ $lib_dest_print ]; then
@@ -350,6 +350,13 @@ for file in $inject_files; do
     [ "$d" ] || fatal "no destination for: ${f}"
     [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
     [ -d "${image}${d}" ] || fatal "not a directory: ${image}${d}"
+    if [ ! -w "${image}${d}" ]; then
+        # Some images unpack with unwriteable directories; fix. This seems
+        # like a bit of a kludge to me, so I'd like to remove this special
+        # case in the future if possible. (#323)
+        info "${image}${d} not writeable; fixing"
+        chmod u+w "${image}${d}" || fatal "can't chmod u+w: ${image}${d}"
+    fi
        cp --dereference --preserve=all "$f" "${image}${d}" \
     || fatal "cannot inject: ${f}"
 done
