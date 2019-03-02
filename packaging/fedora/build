@@ -16,7 +16,7 @@ import subprocess
 import time
 
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
-CH_RUN = [CH_BASE + "/bin/ch-run"]
+CH_RUN  = [CH_BASE + "/bin/ch-run"]
 
 def main():
 
@@ -27,27 +27,39 @@ def main():
    ap.add_argument("--install", action="store_true")
    ap.add_argument("--rpmbuild", metavar="DIR",
                    default="%s/rpmbuild" % os.getenv("HOME"))
+   ap.add_argument("--rpmlint", metavar="FILE",
+                   default="%s/packaging/fedora/charliecloud.rpmlintrc" % 
+                   CH_BASE)
    args = ap.parse_args()
    print("# Charliecloud root:  %s" % CH_BASE)
    print("""\
 # version:            %(version)s
 # image:              %(image)s
 # install:            %(install)s
-# rpmbuild root:      %(rpmbuild)s""" % args.__dict__)
+# rpmbuild root:      %(rpmbuild)s
+# rpmlint filter:     %(rpmlint)s""" % args.__dict__)
 
    # What's the real Git version?
    if (args.version == "HEAD"):
-      branch = subprocess.check_output(["git", "symbolic-ref",
-                                        "-q", "--short", "HEAD"])[:-1]
+      try:
+         branch = subprocess.check_output(["git", "symbolic-ref",
+                                           "-q", "--short", "HEAD"])[:-1]
+      except subprocess.CalledProcessError as x:
+         if (x.returncode == 1):
+            git_log = subprocess.Popen(("git", "log"), stdout=subprocess.PIPE)
+            top_line = subprocess.Popen(("head", "-n1"), stdin=git_log.stdout,
+                                         stdout=subprocess.PIPE)
+            commit = subprocess.Popen(("awk", "{print $2}"),
+                                      stdin=top_line.stdout)
       rpm_release = "0"
    else:
-      m = re.search(r"([0-9.]+)-([0-9]+)", args.version)
-      branch = "v" + m.group(1)
+      m           = re.search(r"([0-9.]+)-([0-9]+)", args.version)
+      branch      = "v" + m.group(1)
       rpm_release = m.group(2)
 
    # Create rpmbuild root
    rpm_sources = args.rpmbuild + '/SOURCES'
-   rpm_specs = args.rpmbuild + '/SPECS'
+   rpm_specs   = args.rpmbuild + '/SPECS'
    for d in (rpm_sources, rpm_specs):
       print("# mkdir -p %s" % d)
       try:
@@ -58,9 +70,14 @@ def main():
    # Get a clean Git checkout of the desired version. We do this by making a
    # temporary clone so as not to mess up the WD.
    git_tmp = rpm_sources + '/charliecloud'
-   print("# cloning branch %s into %s" % (branch, git_tmp))
-   cmd("git", "clone", "--single-branch", "--branch", branch, \
-       CH_BASE + '/.git', git_tmp)
+   if (branch == ""):
+      print("# cloning into %s and checking out commit %s" % (git_tmp, commit))
+      cmd("git", "clone", CH_BASE + '/.git', git_tmp)
+      cmd("git", "reset", "--hard", commit, cwd=git_tmp)
+   else:
+      print("# cloning branch %s into %s" % (branch, git_tmp))
+      cmd("git", "clone", "--single-branch", "--branch", branch, \
+           CH_BASE + '/.git', git_tmp)
 
    # Build tarball.
    print("# building docs")
@@ -74,13 +91,18 @@ def main():
    os.rename("%s/%s" % (git_tmp, ch_tarball),
              "%s/%s" % (rpm_sources, ch_tarball))
 
+   # Copy lint filter
+   rpmlintrc = 'charliecloud.rpmlintrc'
+   os.rename("%s/packaging/fedora/%s" % (git_tmp, rpmlintrc),
+             "%s/%s" % (rpm_sources, rpmlintrc))
+
    # Remove temporary Git directory.
    print("# rm -rf %s" % git_tmp)
    shutil.rmtree(git_tmp)
 
    # Copy and patch spec file.
    rpm_vr = "%s-%s" % (ch_version, rpm_release)
-   spec = "charliecloud-%s.spec" % rpm_vr
+   spec   = "charliecloud-%s.spec" % rpm_vr
    with open("%s/packaging/fedora/charliecloud.spec" % CH_BASE, "rt") as in_, \
         open("%s/%s" % (rpm_specs, spec), "wt") as out:
       print("# writing %s" % out.name)
@@ -103,24 +125,31 @@ def main():
          assert False, "unimplemented"
       out.write(t)
 
-   # Prep container args.
+   # Prepepare build and rpmlint arguments.
    container = []
    rpmbuild_args = []
+   rpmlint_args = []
    if (not args.image):
       rpmbuild_args += ["--define", "_topdir " + args.rpmbuild]
+      rpmlint_args  += ["--file", args.rpmlint]
+      rpms          = os.getenv("HOME") + "/rpmbuild/RPMS/x86_64"
    else:
       # Use /usr/local/src because rpmbuild fails with "%{_topdir}/BUILD"
       # shorter than "/usr/src/debug" (yes, really!) [1,2].
       #
       # [1]: https://access.redhat.com/solutions/1426113
       # [2]: https://gbenson.net/?p=367
-      rpms = "/usr/local/src/RPMS/x86_64"
-      rpm_specs = "/usr/local/src/SPECS"
+      rpms          = "/usr/local/src/RPMS/x86_64"
+      rpm_specs     = "/usr/local/src/SPECS"
+      rpm_source    = "/usr/local/src/SOURCES"
       rpmbuild_args += ["--define", "_topdir /usr/local/src"]
-      container += [CH_BASE + "/bin/ch-run", "-w",
-                    "-b", "%s:/usr/local/src" % args.rpmbuild, args.image, "--"]
+      rpmlint_args  += ["--file", "%s/%s" % (rpm_source, rpmlintrc)]
+      container     += [CH_BASE + "/bin/ch-run", "-w", 
+                        "-b", "%s:/usr/local/src" % args.rpmbuild, 
+                        args.image, "--"]
+      
    # Lint spec file.
-   cmd(container, "rpmlint", "%s%s" % (rpm_specs, spec))
+   cmd(container, "rpmlint", rpmlint_args, "%s/%s" % (rpm_specs, spec))
 
    # Build RPMs.
    cmd(container, "rpmbuild", rpmbuild_args, "--version")
@@ -131,21 +160,16 @@ def main():
    if (args.install):
       print("# uninstalling (most errors can be ignored)")
       cmd_ok(container, "rpm", "--erase",
-             "charliecloud", "charliecloud-doc")
+             "charliecloud", "charliecloud-debuginfo", "charliecloud-doc")
       print("# installing")
-      for p in ("charliecloud", "charliecloud-doc"):
+      for p in ("charliecloud", "charliecloud-debuginfo", "charliecloud-doc"):
          cmd(container, "rpm", "--install",
              "%s/%s-%s.*.rpm" % (rpms, p, rpm_vr))
       cmd(container, "rpm", "-qa", "charliecloud*")
-      
+
      # Lint RPMs.
       for p in ("charliecloud", "charliecloud-doc"):
-         # FIXME: add ignore cases to image rpmlint; supress false positive
-         # errors and warnings.
-         try:
-            cmd(container, "rpmlint", "%s" % p)
-         except subprocess.CalledProcessError as x:
-            if (x.returncode != 64): raise
+         cmd(container, "rpmlint", rpmlint_args, "%s" % p)
 
    # Success!
    print("# done")

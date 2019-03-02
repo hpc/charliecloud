@@ -37,8 +37,8 @@ EOF
 @test '/usr/bin/ch-ssh' {
     scope quick
     ls -l "$ch_bin/ch-ssh"
-    ch-run "$ch_timg" -- ls -l /usr/bin/ch-ssh
-    ch-run "$ch_timg" -- test -x /usr/bin/ch-ssh
+    ch-run --with-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
+    ch-run --with-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh
     host_size=$(stat -c %s "${ch_bin}/ch-ssh")
     guest_size=$(ch-run "$ch_timg" -- stat -c %s /usr/bin/ch-ssh)
     echo "host: ${host_size}, guest: ${guest_size}"

@@ -460,6 +460,9 @@ Options:
   * :code:`--rpmbuild=DIR` : Use RPM build directory root :code:`DIR`
     (default: :code:`~/rpmbuild`).
 
+  * :code:`--rpmlint=FILE` : Add rpmlintrc code:`FILE` to rpmlint arguments:
+    (default: :code:`packaging/fedora/charliecloud.rpmlintrc`).
+
 For example, to build a version 0.9.7 RPM, on an RPM system, and leave the
 results in :code:`~/rpmbuild/RPMS`::
 

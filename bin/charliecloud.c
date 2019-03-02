@@ -204,16 +204,16 @@ void enter_udss(struct container *c)
       bind_mount(c->old_home, newhome, c->newroot, BD_REQUIRED, 0);
    }
    // Bind-mount /usr/bin/ch-ssh if it exists.
-/* FIXME: deal with this properly
-   if (path_exists(cat(c->newroot, "/usr/bin/ch-ssh"))) {
-      char chrun_file[PATH_CHARS];
-      int len = readlink("/proc/self/exe", chrun_file, PATH_CHARS);
-      T_ (len >= 0);
-      chrun_file[ len<PATH_CHARS ? len : PATH_CHARS-1 ] = 0; // terminate; #315
-      bind_mount(cat(dirname(chrun_file), "/ch-ssh"), "/usr/bin/ch-ssh",
-                 c->newroot, BD_REQUIRED, 0);
+   if (c->ssh == true) {
+      if (path_exists(cat(c->newroot, "/usr/bin/ch-ssh"))) {
+         char chrun_file[PATH_CHARS];
+         int len = readlink("/proc/self/exe", chrun_file, PATH_CHARS);
+         T_ (len >= 0);
+         chrun_file[ len<PATH_CHARS ? len : PATH_CHARS-1 ] = 0; // terminate; #315
+         bind_mount(cat(dirname(chrun_file), "/ch-ssh"), "/usr/bin/ch-ssh",
+                    c->newroot, BD_REQUIRED, 0);
+      }
    }
-*/
    // Bind-mount user-specified directories at guest DST and|or /mnt/i,
    // which must exist.
    bind_mounts(c->binds, c->newroot, BD_REQUIRED, 0);

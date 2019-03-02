@@ -57,6 +57,7 @@ const struct argp_option options[] = {
    { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
    { "version",     'V', 0,      0, "print version and exit" },
    { "write",       'w', 0,      0, "mount image read-write"},
+   { "with-ssh",     -8, 0,      0, "bind ch-ssh into image"},
    { 0 }
 };
 
@@ -116,6 +117,7 @@ int main(int argc, char *argv[])
    args.c.private_tmp = false;
    args.c.old_home = getenv("HOME");
    args.c.writable = false;
+   args.c.ssh = false;
    T_ (args.env_deltas = calloc(1, sizeof(struct env_delta)));
    args.initial_dir = NULL;
    verbose = 1;  // in charliecloud.h
@@ -384,6 +386,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
       env_delta_append(&(args->env_deltas), UNSET_GLOB, arg);
       break;;
+   case -8: // --with-ssh
+      args->c.ssh = true;
    case 'c':
       args->initial_dir = arg;
       break;

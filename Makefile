@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 
 # Add some good stuff to CFLAGS.
-export CFLAGS += -std=c11 -Wall
+export CFLAGS += -std=c11 -Wall -g
 
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh

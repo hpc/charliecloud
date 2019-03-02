@@ -75,6 +75,7 @@ struct container {
    bool private_home;
    bool private_tmp;
    char *old_home;      // host path to user's home directory (i.e. $HOME)
+   bool ssh;
    bool writable;
 };
 
