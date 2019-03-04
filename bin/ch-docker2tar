@@ -27,12 +27,12 @@ tar="$outdir"/$(echo "$image" | sed 's/\//./g').tar
 
 cid=$(docker_ create --read-only "$image")
 #docker_ ps -af "id=$cid"
+echo "flatting '$image' to $tar"
 docker_ export "$cid" > "${tar}"
 docker_ rm "$cid" > /dev/null
 docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' > docker-env
-tar cf docker-env.tar docker-env
+tar -b1 -rf "$tar" docker-env
 rm docker-env
-tar --concatenate --file=docker-env.tar "$tar"
-mv docker-env.tar "$tar"
+echo "compressing $tar"
 gzip_ -6 -f "$tar"
 ls -lh "${tar}.gz"
