@@ -21,7 +21,7 @@ clean:
 # * If VERSION is an unadorned release (e.g. 0.2.3 not 0.2.3~pre), or there's
 #   no Git information available, VERSION.full is simply a copy of VERSION.
 #
-# * Otherwise, we add the Git branch if the current branch is not master, the 
+# * Otherwise, we add the Git branch if the current branch is not master, the
 #   Git commit, and a note if the working directory
 #   contains uncommitted changes, e.g. "0.2.3~pre+experimental.ae24a4e.dirty".
 ifeq ($(shell test -d .git && fgrep -q \~ VERSION && echo true),true)
@@ -151,7 +151,7 @@ install: all
 #       shared library tests
 	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
 	install -pm 755 -t $(TEST)/sotest test/sotest/libsotest.so.1.0 \
-	                                  test/sotest/sotest 
+	                                  test/sotest/sotest
 	install -pm 644 -t $(TEST)/sotest test/sotest/files_inferrable.txt \
 	                                  test/sotest/sotest.c
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so
