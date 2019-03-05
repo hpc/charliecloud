@@ -162,14 +162,24 @@ EOF2
                  env: { "CH_VERSION" => ENV["CH_VERSION"] },
                  inline: <<-EOF
     set -e
+    cd /usr/local/src
+    sudo chmod 1777 .
+
+    # CentOS/EPEL/IUI don't have the version of shadow-utils (newuidmap and
+    # newgidmap) we need for runc (used by Buildah), so install from source.
+    wget -nv https://github.com/shadow-maint/shadow/releases/download/4.6/shadow-4.6.tar.xz
+    tar xf shadow-4.6.tar.xz
+    (cd shadow-4.6 && ./configure && sudo make install)
+
+    # Install Buildah.
+    sudo yum -y install buildah
+
     sudo tee /etc/profile.d/charliecloud.sh << 'EOF2'
 export CH_TEST_TARDIR=/var/tmp/tarballs
 export CH_TEST_IMGDIR=/var/tmp/images
 export CH_TEST_PERMDIRS=skip
 EOF2
 
-    cd /usr/local/src
-    sudo chmod 1777 .
     git clone --recursive https://github.com/hpc/charliecloud.git
 
     cd charliecloud
@@ -190,6 +200,10 @@ EOF2
     set -e
     usermod -aG users vagrant
     echo '%vagrant ALL=(ALL:ALL) NOPASSWD: ALL' > /etc/sudoers.d/vagrant
+
+    # Configure subuids and subgids for runc.
+    sudo usermod --add-subuids 10000-65536 vagrant
+    sudo usermod --add-subgids 10000-65536 vagrant
   EOF
 
   # Remove unneeded packages.
@@ -217,6 +231,10 @@ EOF2
     # rebuild, etc.
     chown -R charlie:charlie /usr/local/src/charliecloud
 
+    # Configure subuids and subgids for runc.
+    sudo usermod --add-subuids 10000-65536 charlie
+    sudo usermod --add-subgids 10000-65536 charlie
+
     # Automatically log in "charlie" on the console, so they have a way to get
     # in if SSH isn't working.
     cd /etc/systemd/system/getty.target.wants
@@ -229,6 +247,10 @@ EOF2
     # key into the VM in a way that's easy for end users.
     sed -ri 's/^PasswordAuthentication no$/PasswordAuthentication yes/' /etc/ssh/sshd_config
     systemctl restart sshd
+
+    # Fix /etc/shadow permissions. Not clear where they were broken, but
+    # passwd(1) below fails without this.
+    sudo restorecon -v /etc/shadow
 
     # Lock out password login for root and vagrant, because the default
     # password is well-known and we now allow password login.
