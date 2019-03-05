@@ -5,27 +5,28 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Build a Charliecloud image specified by \$PWD/Dockerfile and unpack it.
-Equivalent to ch-build, ch-docker2tar, ch-tar2dir sequence but somewhat less
-flexible.
+Build a Charliecloud image and unpack it into a directory in one command.
 
 Usage:
 
-  $ $(basename "$0") CONTEXT DEST [ARGS ...]
+  $ $(basename "$0") -t TAG [ARGS ...] CONTEXT OUTDIR
 
-Arguments:
-
-  CONTEXT  Docker context directory
-  DEST     directory in which to place image tarball and directory
-  ARGS     additional arguments passed to ch-build
+ARGS are passed unchanged to "ch-build".
 EOF
 )
 
 parse_basic_args "$@"
 
-if [ "$#" -lt 2 ]; then
+if [ "$#" -lt 4 ]; then
     usage
 fi
+if [ "$1" ~!= -t ]; then
+    usage
+fi
+
+tag=$2
+context=$3
+dest=$4
 
 context=$1
 dest=$2

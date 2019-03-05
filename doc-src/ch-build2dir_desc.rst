@@ -3,28 +3,25 @@ Synopsis
 
 ::
 
-  $ ch-build2dir CONTEXT DEST [ARGS ...]
+  $ ch-build2dir -t TAG [ARGS ...] CONTEXT OUTDIR
 
 Description
 ===========
 
-Build a Docker image as specified by the file :code:`Dockerfile` in the
-current working directory and context directory :code:`CONTEXT`. Unpack it in
-:code:`DEST`.
+Build a Docker image named :code:`TAG` described by :code:`./Dockerfile` or as
+specified and unpack it into :code:`OUTDIR/TAG`. This is a wrapper for
+:code:`ch-build`, :code:`ch-docker2tar`, and :code:`ch-tar2dir`.
 
-Sudo privileges are required to run the :code:`docker` command.
-
-This runs the following command sequence: :code:`ch-build`,
-:code:`ch-docker2tar`, and :code:`ch-tar2dir` but provides less flexibility
-than the individual commands.
+See warning in man page for :code:`ch-tar2dir`.
 
 Arguments:
 
   :code:`CONTEXT`
     Docker context directory
 
-  :code:`DEST`
-    directory in which to place image tarball and directory
+  :code:`OUTDIR`
+    directory in which to place image directory (named :code:`TAG`) and
+    temporary tarball
 
   :code:`ARGS`
     additional arguments passed to :code:`ch-build`
@@ -34,3 +31,15 @@ Arguments:
 
   :code:`--version`
     print version and exit
+
+Examples
+========
+
+To build using :code:`./Dockerfile` and create image directory
+:code:`/var/tmp/foo`::
+
+  $ ch-build2dir -t foo . /var/tmp
+
+Same as above, but build with a different Dockerfile::
+
+  $ ch-build2dir -t foo -f ./Dockerfile.foo . /var/tmp

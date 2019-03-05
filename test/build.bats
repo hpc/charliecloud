@@ -126,12 +126,12 @@ load common
     # This test unpacks into $ch_tardir so we don't put anything in $ch_imgdir
     # at build time. It removes the image on completion.
     need_docker
-    tar="${ch_tardir}/alpine36.tar.gz"
-    img="${ch_tardir}/test"
+    tag=build2dir
+    tar="${ch_tardir}/${tag}.tar.gz"
+    img="${ch_tardir}/${tag}"
     [[ ! -e $img ]]
-    ch-build2dir .. "$ch_tardir" --file=Dockerfile.alpine36
-    sudo docker tag test "test:${ch_version_docker}"
-    docker_ok test
+    ch-build2dir -t $tag -f Dockerfile.alpine36 . "$ch_tardir"
+    docker_ok $tag
     image_ok "$img"
     # Remove since we don't want it hanging around later.
     rm -Rf --one-file-system "$tar" "$img"
