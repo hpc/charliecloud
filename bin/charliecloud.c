@@ -204,7 +204,7 @@ void enter_udss(struct container *c)
       bind_mount(c->old_home, newhome, c->newroot, BD_REQUIRED, 0);
    }
    // Bind-mount /usr/bin/ch-ssh if it exists.
-   if (c->ssh == true) {
+   if (c->ssh) {
       if (path_exists(cat(c->newroot, "/usr/bin/ch-ssh"))) {
          char chrun_file[PATH_CHARS];
          int len = readlink("/proc/self/exe", chrun_file, PATH_CHARS);
