@@ -27,6 +27,16 @@ if [ $# -lt 2 ]; then
     usage
 fi
 
+# Complain clearly if destination not valid (issue #340).
+if [ ! -e "${2}" ]; then
+    echo "can't unpack: ${2} does not exist" 1>&2
+    exit 1
+fi
+if [ ! -d "${2}" ]; then
+    echo "can't unpack: ${2} is not a directory" 1>&2
+    exit 1
+fi
+
 # Figure out the real tarball name. If the provided $1 already has a tar
 # extension, just test that name; if not, also append the plausible extensions
 # and try those too.
