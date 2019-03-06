@@ -16,6 +16,7 @@ done
 echo "$PATH"
 
 set -x
+
 case $TARBALL in
     export)
         (cd doc-src && make)

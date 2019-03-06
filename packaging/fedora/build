@@ -17,6 +17,7 @@ import time
 
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
 CH_RUN  = [CH_BASE + "/bin/ch-run"]
+PACKAGES = ["charliecloud", "charliecloud-doc"]
 
 def main():
 
@@ -27,17 +28,13 @@ def main():
    ap.add_argument("--install", action="store_true")
    ap.add_argument("--rpmbuild", metavar="DIR",
                    default="%s/rpmbuild" % os.getenv("HOME"))
-   ap.add_argument("--rpmlint", metavar="FILE",
-                   default="%s/packaging/fedora/charliecloud.rpmlintrc" % 
-                   CH_BASE)
    args = ap.parse_args()
    print("# Charliecloud root:  %s" % CH_BASE)
    print("""\
 # version:            %(version)s
 # image:              %(image)s
 # install:            %(install)s
-# rpmbuild root:      %(rpmbuild)s
-# rpmlint filter:     %(rpmlint)s""" % args.__dict__)
+# rpmbuild root:      %(rpmbuild)s""" % args.__dict__)
 
    # What's the real Git version?
    if (args.version == "HEAD"):
@@ -91,10 +88,10 @@ def main():
    os.rename("%s/%s" % (git_tmp, ch_tarball),
              "%s/%s" % (rpm_sources, ch_tarball))
 
-   # Copy lint filter
-   rpmlintrc = 'charliecloud.rpmlintrc'
-   os.rename("%s/packaging/fedora/%s" % (git_tmp, rpmlintrc),
-             "%s/%s" % (rpm_sources, rpmlintrc))
+   # Copy lint configuration.
+   # FIXME: Put version into destination sometime?
+   shutil.copy("%s/packaging/fedora/charliecloud.rpmlintrc" % CH_BASE,
+               "%s/charliecloud.rpmlintrc" % rpm_specs)
 
    # Remove temporary Git directory.
    print("# rm -rf %s" % git_tmp)
@@ -125,14 +122,14 @@ def main():
          assert False, "unimplemented"
       out.write(t)
 
-   # Prepepare build and rpmlint arguments.
+   # Prepare build and rpmlint arguments.
    container = []
    rpmbuild_args = []
    rpmlint_args = []
    if (not args.image):
+      rpms          = args.rpmbuild + "/RPMS/x86_64"
       rpmbuild_args += ["--define", "_topdir " + args.rpmbuild]
-      rpmlint_args  += ["--file", args.rpmlint]
-      rpms          = os.getenv("HOME") + "/rpmbuild/RPMS/x86_64"
+      rpmlint_args  += ["--file", "%s/charliecloud.rpmlintrc" % rpm_specs]
    else:
       # Use /usr/local/src because rpmbuild fails with "%{_topdir}/BUILD"
       # shorter than "/usr/src/debug" (yes, really!) [1,2].
@@ -141,15 +138,12 @@ def main():
       # [2]: https://gbenson.net/?p=367
       rpms          = "/usr/local/src/RPMS/x86_64"
       rpm_specs     = "/usr/local/src/SPECS"
-      rpm_source    = "/usr/local/src/SOURCES"
+      rpm_sources   = "/usr/local/src/SOURCES"
       rpmbuild_args += ["--define", "_topdir /usr/local/src"]
-      rpmlint_args  += ["--file", "%s/%s" % (rpm_source, rpmlintrc)]
-      container     += [CH_BASE + "/bin/ch-run", "-w", 
-                        "-b", "%s:/usr/local/src" % args.rpmbuild, 
+      rpmlint_args  += ["--file", "%s/charliecloud.rpmlintrc" % rpm_specs]
+      container     += [CH_BASE + "/bin/ch-run", "-w",
+                        "-b", "%s:/usr/local/src" % args.rpmbuild,
                         args.image, "--"]
-      
-   # Lint spec file.
-   cmd(container, "rpmlint", rpmlint_args, "%s/%s" % (rpm_specs, spec))
 
    # Build RPMs.
    cmd(container, "rpmbuild", rpmbuild_args, "--version")
@@ -159,17 +153,21 @@ def main():
    # Install RPMs.
    if (args.install):
       print("# uninstalling (most errors can be ignored)")
-      cmd_ok(container, "rpm", "--erase",
-             "charliecloud", "charliecloud-debuginfo", "charliecloud-doc")
+      cmd_ok(container, "rpm", "--erase", PACKAGES)
       print("# installing")
-      for p in ("charliecloud", "charliecloud-debuginfo", "charliecloud-doc"):
+      for p in PACKAGES:
          cmd(container, "rpm", "--install",
              "%s/%s-%s.*.rpm" % (rpms, p, rpm_vr))
       cmd(container, "rpm", "-qa", "charliecloud*")
 
-     # Lint RPMs.
-      for p in ("charliecloud", "charliecloud-doc"):
-         cmd(container, "rpmlint", rpmlint_args, "%s" % p)
+   # Lint RPMs and spec file. Last so problems that don't result in program
+   # returning error are more obvious.
+   print("# linting")
+   cmd(container, "rpmlint", rpmlint_args, "%s/%s" % (rpm_specs, spec))
+   for p in PACKAGES:
+      file_ = "%s/%s-%s.el7.x86_64.rpm" % (rpms, p, rpm_vr)
+      cmd(container, "test", "-e", file_)
+      cmd(container, "rpmlint", rpmlint_args, file_)
 
    # Success!
    print("# done")
@@ -205,22 +203,3 @@ def cmd_real(runf, *args, **kwargs):
 
 if (__name__ == "__main__"):
    main()
-
-
-# steps
-# * get a tarball
-# * get a spec file
-# * build if you're not on a Red Hat box
-
-# The following steps should result in working RPMs::
-
-#   $ RPMBUILD_PATH=/foo/bar  # if you don't like ~/rpmbuild
-#   $ mkdir $RPMBUILD_PATH/SOURCES
-#   $ CH_VERSION=v0.9.7
-#   $ git checkout $CH_VERSION
-#   $ make clean
-#   $ make export
-#   $ mv charliecloud-*.tar.gz $RPMBUILD_PATH/SOURCES
-
-#   $ packaging/fedora/build-spec rpmbuild-path version release  # version can be HEAD or some other version
-#   $ rpmbuild -ba ...

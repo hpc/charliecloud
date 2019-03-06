@@ -16,14 +16,7 @@ clean:
 	cd test && $(MAKE) clean
 	cd examples/syscalls && $(MAKE) clean
 
-# VERSION.full contains the version string reported by the executables.
-#
-# * If VERSION is an unadorned release (e.g. 0.2.3 not 0.2.3~pre), or there's
-#   no Git information available, VERSION.full is simply a copy of VERSION.
-#
-# * Otherwise, we add the Git branch if the current branch is not master, the
-#   Git commit, and a note if the working directory contains uncommitted
-#   changes, e.g. "0.2.3~pre+experimental.ae24a4e.dirty".
+# VERSION.full contains the version string reported by executables; see FAQ.
 ifeq ($(shell test -d .git && fgrep -q \~ VERSION && echo true),true)
 .PHONY: VERSION.full  # depends on git metadata, not a simple file
 VERSION.full: VERSION

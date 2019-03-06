@@ -35,12 +35,15 @@ EOF
 
 
 @test '/usr/bin/ch-ssh' {
+    # Note: --ch-ssh without /usr/bin/ch-ssh is in test "broken image errors".
     scope quick
     ls -l "$ch_bin/ch-ssh"
-    ch-run --with-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
-    ch-run --with-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh
+    ch-run --ch-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
+    ch-run --ch-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh
+    # Test bind-mount by comparing size rather than e.g. "ch-ssh --version"
+    # because ch-ssh won't run on Alpine (issue #4).
     host_size=$(stat -c %s "${ch_bin}/ch-ssh")
-    guest_size=$(ch-run "$ch_timg" -- stat -c %s /usr/bin/ch-ssh)
+    guest_size=$(ch-run --ch-ssh "$ch_timg" -- stat -c %s /usr/bin/ch-ssh)
     echo "host: ${host_size}, guest: ${guest_size}"
     [[ $host_size -eq "$guest_size" ]]
 }
@@ -543,7 +546,7 @@ EOF
     dirs=$(echo {dev,proc,sys})
     files=$(echo etc/{group,hosts,passwd,resolv.conf})
     # shellcheck disable=SC2116
-    files_optional=$(echo usr/bin/ch-ssh)
+    files_optional=  # formerly for ch-ssh (#378), but leave infrastructure
     mkdir -p "$img"
     for d in $dirs; do mkdir -p "${img}/$d"; done
     mkdir -p "${img}/etc" "${img}/home" "${img}/usr/bin" "${img}/tmp"
@@ -651,6 +654,12 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): true: No such file or directory"* ]]
+
+    # --ch-ssh but no /usr/bin/ch-ssh
+    run ch-run --ch-ssh "$img" -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"--ch-ssh: /usr/bin/ch-ssh not in image"* ]]
 
     # Everything should be restored and back to the original error.
     run ch-run "$img" -- true

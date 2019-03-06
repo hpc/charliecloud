@@ -65,6 +65,7 @@ enum bind_dep {
 
 struct container {
    struct bind *binds;
+   bool ch_ssh;         // bind /usr/bin/ch-ssh?
    gid_t container_gid;
    uid_t container_uid;
    char *newroot;
@@ -75,7 +76,6 @@ struct container {
    bool private_home;
    bool private_tmp;
    char *old_home;      // host path to user's home directory (i.e. $HOME)
-   bool ssh;
    bool writable;
 };
 

@@ -460,9 +460,6 @@ Options:
   * :code:`--rpmbuild=DIR` : Use RPM build directory root :code:`DIR`
     (default: :code:`~/rpmbuild`).
 
-  * :code:`--rpmlint=FILE` : Add rpmlintrc code:`FILE` to rpmlint arguments:
-    (default: :code:`packaging/fedora/charliecloud.rpmlintrc`).
-
 For example, to build a version 0.9.7 RPM, on an RPM system, and leave the
 results in :code:`~/rpmbuild/RPMS`::
 
@@ -494,14 +491,15 @@ by a hyphen and the desired RPM release, e.g. :code:`0.9.7-3`.
 Other values of :code:`VERSION` (e.g., a branch name) may work but are not
 supported.
 
-Spec file and packaged source code come from different commits
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Packaged source code and RPM build config come from different commits
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The spec file and :code:`build` script come from the working directory, but
-the package source is from the specified commit. This is what enables us to
-make additional RPM releases for a given Charliecloud release (e.g. 0.9.7-2).
+The spec file, :code:`build` script, :code:`.rpmlintrc`, etc. come from the
+working directory, but the package source is from the specified commit. This
+is what enables us to make additional RPM releases for a given Charliecloud
+release (e.g. 0.9.7-2).
 
-Corollaries of this policy are that the spec file and script can be any or no
+Corollaries of this policy are that RPM build configuration can be any or no
 commit, and it's not possible to create an RPM of uncommitted source code.
 
 Changelog maintenance
