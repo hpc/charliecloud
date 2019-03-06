@@ -2,6 +2,7 @@ load ../common
 
 @test 'build RPMs' {
     scope standard
+    prerequisites_ok centos7
     [[ -d ../.git ]] || skip "not in Git working directory"
     img=${ch_imgdir}/centos7
 
