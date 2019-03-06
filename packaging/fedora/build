@@ -38,16 +38,8 @@ def main():
 
    # What's the real Git version?
    if (args.version == "HEAD"):
-      try:
-         branch = subprocess.check_output(["git", "symbolic-ref",
-                                           "-q", "--short", "HEAD"])[:-1]
-      except subprocess.CalledProcessError as x:
-         if (x.returncode == 1):
-            git_log = subprocess.Popen(("git", "log"), stdout=subprocess.PIPE)
-            top_line = subprocess.Popen(("head", "-n1"), stdin=git_log.stdout,
-                                         stdout=subprocess.PIPE)
-            commit = subprocess.Popen(("awk", "{print $2}"),
-                                      stdin=top_line.stdout)
+      commit = subprocess.check_output(["git", "rev-parse",
+                                        "--verify", "HEAD"])[:-1]
       rpm_release = "0"
    else:
       m           = re.search(r"([0-9.]+)-([0-9]+)", args.version)
@@ -67,14 +59,9 @@ def main():
    # Get a clean Git checkout of the desired version. We do this by making a
    # temporary clone so as not to mess up the WD.
    git_tmp = rpm_sources + '/charliecloud'
-   if (branch == ""):
-      print("# cloning into %s and checking out commit %s" % (git_tmp, commit))
-      cmd("git", "clone", CH_BASE + '/.git', git_tmp)
-      cmd("git", "reset", "--hard", commit, cwd=git_tmp)
-   else:
-      print("# cloning branch %s into %s" % (branch, git_tmp))
-      cmd("git", "clone", "--single-branch", "--branch", branch, \
-           CH_BASE + '/.git', git_tmp)
+   print("# cloning into %s and checking out commit %s" % (git_tmp, commit))
+   cmd("git", "clone", '.', git_tmp)
+   cmd("git", "checkout", commit, cwd=git_tmp)
 
    # Build tarball.
    print("# building docs")
