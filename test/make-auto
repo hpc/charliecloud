@@ -99,7 +99,7 @@ for path in sys.argv[2:]:
     need_docker
     tarball="$ch_tardir/%(tag)s.tar.gz"
     ch-docker2tar %(tag)s "$ch_tardir"
-    tar -tf "$tarball" | grep -F docker-env
+    tar -tf "$tarball" | grep -F environment
     tarball_ok "$tarball"
 }"""
       else:

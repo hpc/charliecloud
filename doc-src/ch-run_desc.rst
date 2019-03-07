@@ -42,9 +42,8 @@ unpacked image directory located at :code:`NEWROOT`.
     use container-private :code:`/tmp` (by default, :code:`/tmp` is shared with
     the host)
 
-  :code:`--set-env[=FILE]`
-    set environment variables as specified in host path :code:`FILE` 
-    (default: code:`IMAGE_ROOT/docker-env`)
+  :code:`--set-env=FILE`
+    set environment variables as specified in host path :code:`FILE`
 
   :code:`-u`, :code:`--uid=UID`
     run as user :code:`UID` within container
@@ -209,7 +208,7 @@ By default, :code:`ch-run` makes the following environment variable changes:
 Setting variables with :code:`--set-env`
 ----------------------------------------
 
-The purpose of :code:`--set-env[=FILE]` is to set environment variables that
+The purpose of :code:`--set-env=FILE` is to set environment variables that
 cannot be inherited from the host shell, e.g. Dockerfile :code:`ENV`
 directives or other build-time configuration. :code:`FILE` is a host path to
 provide the greatest flexibility; guest paths can be specified by prepending
@@ -303,9 +302,6 @@ Example valid lines that are probably not what you want:
 Example Docker command to produce a valid :code:`FILE`::
 
   $ docker inspect $TAG --format='{{range .Config.Env}}{{println .}}{{end}}'
-
-If a code:`FILE` is not provided, code:`--set-env` will default to the 
-code:`docker-env` file located in the top-level directory of the image path.
 
 Removing variables with :code:`--unset-env`
 -------------------------------------------

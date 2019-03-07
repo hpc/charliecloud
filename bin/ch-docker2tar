@@ -30,9 +30,9 @@ cid=$(docker_ create --read-only "$image")
 echo "flatting '$image' to $tar"
 docker_ export "$cid" > "${tar}"
 docker_ rm "$cid" > /dev/null
-docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' > docker-env
-tar -b1 -rf "$tar" docker-env
-rm docker-env
+docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' > environment
+tar -b1 -rf "$tar" environment
+rm environment
 echo "compressing $tar"
 gzip_ -6 -f "$tar"
 ls -lh "${tar}.gz"
