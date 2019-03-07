@@ -19,7 +19,7 @@ unpacked image directory located at :code:`NEWROOT`.
     initial working directory in container
 
   :code:`--ch-ssh`
-    bind statically linked :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`
+    bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`
 
   :code:`-g`, :code:`--gid=GID`
     run as group :code:`GID` within container
