@@ -65,6 +65,7 @@ and optionally:
 * `Docker <https://www.docker.com/>`_ 17.03+
 * internet access or Docker configured for a local Docker hub
 * root access using :code:`sudo`
+* :code:`mktemp(1)`
 
 Older versions of Docker may work but are untested. We know that 1.7.1 does
 not work.
