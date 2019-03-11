@@ -51,10 +51,10 @@ docker_ rm "$cid" > /dev/null
 #    top-level directory (i.e., is a tarbomb).
 #
 echo "adding environment"
-temp=$(mktemp ch-docker2tar.XXXXXX)
+temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
 docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' \
         > "$temp"
-tar rf "$tar" -b1 --xform="s/${temp}/environment/" "$temp"
+tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
 rm "$temp"
 
 # Finish up.
