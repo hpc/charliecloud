@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.7 documentation</title>
+  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.8 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                4917f57
+                e7b7fdf
               </div>
             
           
@@ -144,7 +144,8 @@
 <li class="toctree-l3"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">4.7.4. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#environment-variables">4.7.5. Environment variables</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#default-behavior">4.7.5.1. Default behavior</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#setting-environment-variables-with-set-env">4.7.5.2. Setting environment variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#setting-variables-with-set-env">4.7.5.2. Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#removing-variables-with-unset-env">4.7.5.3. Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#id16">4.7.6. Examples</a></li>
@@ -682,6 +683,8 @@ unpacked image directory located at <code class="code docutils literal notransla
 <code class="code docutils literal notranslate"><span class="pre">/mnt/1</span></code>, etc.)</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-c</span></code>, <code class="code docutils literal notranslate"><span class="pre">--cd=DIR</span></code></dt>
 <dd>initial working directory in container</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--ch-ssh</span></code></dt>
+<dd>bind <code class="code docutils literal notranslate"><span class="pre">ch-ssh(1)</span></code> into container at <code class="code docutils literal notranslate"><span class="pre">/usr/bin/ch-ssh</span></code></dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-g</span></code>, <code class="code docutils literal notranslate"><span class="pre">--gid=GID</span></code></dt>
 <dd>run as group <code class="code docutils literal notranslate"><span class="pre">GID</span></code> within container</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-j</span></code>, <code class="code docutils literal notranslate"><span class="pre">--join</span></code></dt>
@@ -703,6 +706,8 @@ the host)</dd>
 <dd>set environment variables as specified in host path <code class="code docutils literal notranslate"><span class="pre">FILE</span></code></dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-u</span></code>, <code class="code docutils literal notranslate"><span class="pre">--uid=UID</span></code></dt>
 <dd>run as user <code class="code docutils literal notranslate"><span class="pre">UID</span></code> within container</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--unset-env=GLOB</span></code></dt>
+<dd>unset environment variables whose names match <code class="code docutils literal notranslate"><span class="pre">GLOB</span></code></dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt>
 <dd>be more verbose (debug if repeated)</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-w</span></code>, <code class="code docutils literal notranslate"><span class="pre">--write</span></code></dt>
@@ -811,13 +816,15 @@ as files in <code class="code docutils literal notranslate"><span class="pre">/d
 <p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> leaves environment variables unchanged, i.e. the host
 environment is passed through unaltered, except:</p>
 <ul class="simple">
-<li>limited tweaks to avoid significant guest breakage; and</li>
-<li>user-set variables via <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code></li>
+<li>limited tweaks to avoid significant guest breakage;</li>
+<li>user-set variables via <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>; and</li>
+<li>user-unset variables via <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code>.</li>
 </ul>
 <p>This section describes these features.</p>
-<p>The default tweaks happen first, followed by <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>. The
-latter can be repeated arbitrarily many times, e.g. to add multiple
-variable sets.</p>
+<p>The default tweaks happen first, and then <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code> in the order specified on the command line. The latter two
+can be repeated arbitrarily many times, e.g. to add/remove multiple variable
+sets or add only some variables in a file.</p>
 <div class="section" id="default-behavior">
 <h4>4.7.5.1. Default behavior<a class="headerlink" href="#default-behavior" title="Permalink to this headline">¶</a></h4>
 <p>By default, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> makes the following environment variable changes:</p>
@@ -846,8 +853,8 @@ from the default <code class="code docutils literal notranslate"><span class="pr
 </li>
 </ul>
 </div>
-<div class="section" id="setting-environment-variables-with-set-env">
-<h4>4.7.5.2. Setting environment variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code><a class="headerlink" href="#setting-environment-variables-with-set-env" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="setting-variables-with-set-env">
+<h4>4.7.5.2. Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code><a class="headerlink" href="#setting-variables-with-set-env" title="Permalink to this headline">¶</a></h4>
 <p>The purpose of <code class="code docutils literal notranslate"><span class="pre">--set-env=FILE</span></code> is to set environment variables that
 cannot be inherited from the host shell, e.g. Dockerfile <code class="code docutils literal notranslate"><span class="pre">ENV</span></code>
 directives or other build-time configuration. <code class="code docutils literal notranslate"><span class="pre">FILE</span></code> is a host path to
@@ -970,6 +977,58 @@ easily produced by other simple mechanisms.) Examples of valid lines:</p>
 </table>
 <p>Example Docker command to produce a valid <code class="code docutils literal notranslate"><span class="pre">FILE</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> docker inspect <span class="nv">$TAG</span> --format<span class="o">=</span><span class="s1">&#39;{{range .Config.Env}}{{println .}}{{end}}&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="removing-variables-with-unset-env">
+<h4>4.7.5.3. Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code><a class="headerlink" href="#removing-variables-with-unset-env" title="Permalink to this headline">¶</a></h4>
+<p>The purpose of <code class="code docutils literal notranslate"><span class="pre">--unset-env=GLOB</span></code> is to remove unwanted environment
+variables. The argument <code class="code docutils literal notranslate"><span class="pre">GLOB</span></code> is a glob pattern (<a class="reference external" href="http://man7.org/linux/man-pages/man3/fnmatch.3.html">dialect</a> <code class="code docutils literal notranslate"><span class="pre">fnmatch(3)</span></code>
+with no flags); all variables with matching names are removed from the
+environment.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Because the shell also interprets glob patterns, if any wildcard characters
+are in <code class="code docutils literal notranslate"><span class="pre">GLOB</span></code>, it is important to put it in single quotes to avoid
+surprises.</p>
+</div>
+<p><code class="code docutils literal notranslate"><span class="pre">GLOB</span></code> must be a non-empty string.</p>
+<p>Example 1: Remove the single environment variable <code class="code docutils literal notranslate"><span class="pre">FOO</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">FOO</span><span class="o">=</span>bar
+<span class="gp">$</span> env <span class="p">|</span> fgrep FOO
+<span class="go">FOO=bar</span>
+<span class="gp">$</span> ch-run --unset-env<span class="o">=</span>FOO <span class="nv">$CH_TEST_IMGDIR</span>/chtest -- env <span class="p">|</span> fgrep FOO
+<span class="gp">$</span>
+</pre></div>
+</div>
+<p>Example 2: Hide from a container the fact that it’s running in a Slurm
+allocation, by removing all variables beginning with <code class="code docutils literal notranslate"><span class="pre">SLURM</span></code>. You might
+want to do this to test an MPI program with one rank and no launcher:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> salloc -N1
+<span class="gp">$</span> env <span class="p">|</span> egrep <span class="s1">&#39;^SLURM&#39;</span> <span class="p">|</span> wc
+<span class="go">   44      44    1092</span>
+<span class="gp">$</span> ch-run <span class="nv">$CH_TEST_IMGDIR</span>/mpihello-openmpi -- /hello/hello
+<span class="go">[... long error message ...]</span>
+<span class="gp">$</span> ch-run --unset-env<span class="o">=</span><span class="s1">&#39;SLURM*&#39;</span> <span class="nv">$CH_TEST_IMGDIR</span>/mpihello-openmpi -- /hello/hello
+<span class="go">0: MPI version:</span>
+<span class="go">Open MPI v3.1.3, package: Open MPI root@c897a83f6f92 Distribution, ident: 3.1.3, repo rev: v3.1.3, Oct 29, 2018</span>
+<span class="go">0: init ok cn001.localdomain, 1 ranks, userns 4026532530</span>
+<span class="go">0: send/receive ok</span>
+<span class="go">0: finalize ok</span>
+</pre></div>
+</div>
+<p>Example 3: Clear the environment completely (remove all variables):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --unset-env<span class="o">=</span><span class="s1">&#39;*&#39;</span> <span class="nv">$CH_TEST_IMGDIR</span>/chtest -- env
+<span class="gp">$</span>
+</pre></div>
+</div>
+<p>Note that some programs, such as shells, set some environment variables even
+if started with no init files:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --unset-env<span class="o">=</span><span class="s1">&#39;*&#39;</span> <span class="nv">$CH_TEST_IMGDIR</span>/debian9 -- bash --noprofile --norc -c env
+<span class="go">SHLVL=1</span>
+<span class="go">PWD=/</span>
+<span class="go">_=/usr/bin/env</span>
+<span class="gp">$</span>
 </pre></div>
 </div>
 </div>
