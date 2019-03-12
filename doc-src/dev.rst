@@ -229,20 +229,16 @@ PRs will not be merged until they pass the tests.
   generally preferred, as it lets you update only those base images that have
   actually changed (the ones that haven't will be re-tagged).
 
+.. _doc-build:
 
 Documentation
 =============
 
-.. _doc-build:
-
-How to build the documentation
-------------------------------
-
 This documentation is built using Sphinx with the sphinx-rtd-theme. It lives
 in :code:`doc-src`.
 
-Prerequisites
-~~~~~~~~~~~~~
+Dependencies
+------------
 
   * Python 3.5+
   * Sphinx 1.4.9+
@@ -252,9 +248,9 @@ Prerequisites
 Older versions may work but are untested.
 
 To build the HTML
-~~~~~~~~~~~~~~~~~
+-----------------
 
-Install the prerequisites::
+Install the dependencies::
 
   $ pip3 install sphinx sphinx-rtd-theme
 
@@ -283,7 +279,7 @@ as well as everything in :code:`doc`.
    <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856>`_.
 
 Publishing to the web
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 If you have write access to the repository, you can update the web
 documentation (i.e., http://hpc.github.io/charliecloud).
@@ -402,12 +398,20 @@ suite.
     tarball with no leading path (:code:`./` is acceptable).
 
   * Any programming language is permitted. To be included in the Charliecloud
-    source code, a language already in the prerequisites is required.
+    source code, a language already in the test suite dependencies is
+    required.
+
+  * The script must test for its dependencies and fail with appropriate error
+    message and exit code if something is missing. To be included in the
+    Charliecloud source code, all dependencies must be something we are
+    willing to install and test.
 
   * Exit codes:
 
     * 0: Image tarball successfully created.
-    * 65: One or more prerequisites were not met.
+    * 65: One or more dependencies were not met.
+    * 126 or 127: No interpreter available for script language (the shell
+      takes care of this).
     * else: An error occurred.
 
 
@@ -425,8 +429,8 @@ Item 2 is tested; i.e., if you break the RPM build, the test suite will fail.
 This section describes how to build the RPMs and the pain we've hopefully
 abstracted away.
 
-Prerequisites
--------------
+Dependencies
+------------
 
   * Python 2.7
   * Either:
@@ -549,9 +553,51 @@ Writing English
 * Use spell check. Keep your personal dictionary updated so your editor is not
   filled with false positives.
 
+.. _dependency-policy:
+
+Dependency policy
+-----------------
+
+Specific dependencies (prerequisites) are stated elsewhere in the
+documentation. This section describes our policy on which dependencies are
+acceptable.
+
+Generally
+~~~~~~~~~
+
+All dependencies must be stated and justified in the documentation.
+
+We want Charliecloud to run on as many systems as practical, so we work hard
+to keep dependencies minimal. However, because Charliecloud depends on new-ish
+kernel features, we do depend on standards of similar vintage.
+
+Core functionality should be available even on small systems with basic Linux
+distributions, so dependencies for run-time and build-time are only the bare
+essentials. Exceptions, to be used judiciously:
+
+  * Features that add convenience rather than functionality may have
+    additional dependencies that are reasonably expected on most systems where
+    the convenience would be used.
+
+  * Features that only work if some other software is present (example: the
+    Docker wrapper scripts) can add dependencies of that other software.
+
+The test suite is tricky, because we need a test framework and to set up
+complex test fixtures. We have not yet figured out how to do this at
+reasonable expense with dependencies as tight as run- and build-time, so there
+are systems that do support Charliecloud but cannot run the test suite.
+
+Building the documentation needs Sphinx features that have not made their way
+into common distributions (i.e., RHEL), so we use recent versions of Sphinx
+and provide a source distribution with pre-built documentation.
+
+Building the RPMs should work on RPM-based distributions with a kernel new
+enough to support Charliecloud. You might need to install additional packages
+(but not from third-party repositories).
+
 
 :code:`curl` vs. :code:`wget`
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For URL downloading in shell code, including Dockerfiles, use :code:`wget -nv`.
 

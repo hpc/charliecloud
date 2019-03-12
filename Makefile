@@ -1,4 +1,4 @@
-SHELL=/bin/bash
+SHELL=/bin/sh
 
 # Add some good stuff to CFLAGS.
 export CFLAGS += -std=c11 -Wall -g
@@ -136,7 +136,8 @@ install: all
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) LICENSE README.rst
 #       examples
-	for i in examples/syscalls examples/{serial,mpi,other}/*; do \
+	for i in examples/syscalls \
+	         examples/serial/* example/mpi/* examples/other/**; do \
 	    install -d $(LIBEXEC_INST)/$$i; \
 	    install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done
@@ -155,7 +156,9 @@ install: all
 	install -pm 755 -t $(TEST) test/make-auto test/make-perms-test
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
-	chmod 755 $(TEST)/chtest/{Build,*.py,printns}
+	chmod 755 $(TEST)/chtest/Build \
+	          $(TEST)/chtest/*.py \
+	          $(TEST)/chtest/printns
 	ln -sf ../../../bin $(TEST)/bin
 #       shared library tests
 	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
