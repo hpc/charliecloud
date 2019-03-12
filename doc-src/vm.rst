@@ -264,9 +264,9 @@ roll back to the snapshot before exporting.
 Test Charliecloud
 -----------------
 
-::
+Restart and test::
 
-   $ vagrant provision --provision-with=test
+   $ vagrant up --provision-with=test
 
 You might also show the console in the VirtualBox GUI and make sure
 :code:`charlie` is logged in.
