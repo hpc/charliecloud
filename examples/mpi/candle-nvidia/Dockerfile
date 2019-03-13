@@ -15,21 +15,6 @@ FROM nvcr.io/hpc/candle:20180326
 #   
 #   - https://ngc.nvidia.com/catalog/containers/hpc%2Fcandle
 #
-# This Dockerfile requires an authenticated docker login to nvcr.io. To do
-# this you must:
-#
-#   1. Create an account at https://ngc.nvidia.com/catalog/containers
-#   2. Click on "CONFIGURATION" located on primary naviation bar on the 
-#      left side of the website
-#   3. Click the "Get API Key" button
-#   4. Record the generated password (key)
-#   5. On the command line, login as follows:
-#       
-#       $ docker login nvcr.io
-#       
-#       Username: $oauthtoken       # Type this exactly. 
-#       Passowrd                    # Enter your your generated key
-#
 # This Dockerfile is a work in progress. We are always interested in 
 # feedback.
 #
@@ -47,9 +32,6 @@ FROM nvcr.io/hpc/candle:20180326
 # Therefore the remainder of this Dockerfile installs and configures the 
 # various dependancies required to run CANDLE (the steps that the user was 
 # expected to complete during runtime).
-
-# FIX: Remove.
-COPY docker-env.sh /
 
 COPY requirements.txt /opt
 
@@ -94,16 +76,15 @@ RUN chmod +x $TURBINE_PATH/bin/turbine && \
 ENV PATH="${BUILD_DIR}/swift-t/stc/bin/:${TURBINE_PATH}/bin:${PATH}"
 ENV TURBINE_LAUNCH_OPTIONS --allow-run-as-root
 
-RUN git clone https://github.com/emews/EQ-R.git
+# Install our forked EQ-R.
+RUN git clone https://github.com/j-ogas/EQ-R.git
 WORKDIR $BUILD_DIR/EQ-R/src
 
 RUN ./bootstrap
-RUN cp settings.template.sh settings.sh
-RUN sed -i 's@^R_LOCAL_LIB=.*@R_LOCAL_LIB=/usr/local/lib/R/site-library@' ./settings.sh && \
-    sed -i 's@^TCL_INCLUDE=.*@TCL_INCLUDE=/usr/include/tcl@' ./settings.sh && \
-    sed -i 's@^TCL_LIB=.*@TCL_LIB=/usr/lib@' ./settings.sh && \
-    bash -c 'source settings.sh && ./configure --prefix=/opt/EQ-R && make install && make clean'
 
+RUN ./configure --prefix=/opt/EQ-R --with-tcl-include=/usr/include/tcl --with-rinside=/usr/local/lib/R/site-library/RInside --with-rcpp=/usr/local/lib/R/site-library/Rcpp --with-r=/usr/share/R && make install && make clean
+
+# Install CANDLE Benchmarks.
 WORKDIR /opt
 RUN git clone https://github.com/ECP-CANDLE/Benchmarks.git && \
     cd Benchmarks && git checkout frameworks
