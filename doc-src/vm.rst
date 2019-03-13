@@ -75,7 +75,8 @@ Log in and try Charliecloud
    the VM "captures" your mouse pointer, type the key combination listed in
    the lower-right corner of the window to release it.)
 
-4. Change your password:
+4. Change your password. (You must use :code:`sudo` because you have
+   passwordless :code:`sudo` but don't know your password.)
 
 ::
 
