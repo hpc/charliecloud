@@ -29,6 +29,18 @@ Charliecloud is a simple system with limited dependencies. If your system
 meets these prerequisites but Charliecloud doesn't work, please report that as
 a bug.
 
+Supported architectures
+-----------------------
+
+Charliecloud should work on any architecture supported by the Linux kernel,
+and we have run Charliecloud containers on x86-64, ARM, and Power. However, it
+is currently tested only on x86_64, and we know the test suite contains
+assumptions of that architecture (see issue `#248
+<https://github.com/hpc/charliecloud/issues/248>`_).
+
+Most container build software is also fairly portable; e.g., see `Docker's
+supported platforms <https://docs.docker.com/install/#supported-platforms>`_.
+
 Run time
 --------
 
