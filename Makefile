@@ -137,7 +137,7 @@ install: all
 	install -pm 644 -t $(DOC) LICENSE README.rst
 #       examples
 	for i in examples/syscalls \
-	         examples/serial/* example/mpi/* examples/other/**; do \
+	         examples/serial/* examples/mpi/* examples/other/*; do \
 	    install -d $(LIBEXEC_INST)/$$i; \
 	    install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done
