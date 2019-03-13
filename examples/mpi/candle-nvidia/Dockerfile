@@ -7,31 +7,30 @@ FROM nvcr.io/hpc/candle:20180326
 #       without user intervention.
 #
 #    2. Supply data before runtime. Enable the container to run the Pilot1 
-#       P1B1 and Pilot3 P3B1 benchmarks on systems without network access 
-#       at run time.
+#       P1B1 and Pilot3 P3B1 benchmarks on systems without network access at 
+#       run time.
 #       
-# This Dockerfile is an extenstion of NVIDIA's CANDLE Dockerfile, which 
-# can be found on their GPU catalog at:
+# This Dockerfile is an extenstion of NVIDIA's CANDLE Dockerfile, which can be 
+# found on their GPU catalog at:
 #   
 #   - https://ngc.nvidia.com/catalog/containers/hpc%2Fcandle
 #
-# This Dockerfile is a work in progress. We are always interested in 
-# feedback.
+# This Dockerfile is a work in progress. We are always interested in feedback.
 #
-# The NVIDIA CANDLE Dockerfile does not build completely. Rather they 
-# instruct the user to launch an interactive container and resume building.
-# From their image documentation:
+# The NVIDIA CANDLE Dockerfile does not build completely. Rather they instruct 
+# the user to launch an interactive container and resume building. From their 
+# image documentation:
 # 
-#    To complete CANDLE setup, execute source /opt/candle_setup.sh Next, 
-#    copy the script located in ‘/opt/testscript.sh’ to some other directory
-#    inside the container and execute it. This script clones the CANDLE 
-#    Benchmark and Tutorials suites and downloads the appropriate data to 
-#    run a CANDLE hyperparameter optimization sweep. 
+#    To complete CANDLE setup, execute source /opt/candle_setup.sh Next, copy 
+#    the script located in ‘/opt/testscript.sh’ to some other directory inside 
+#    the container and execute it. This script clones the CANDLE Benchmark and 
+#    Tutorials suites and downloads the appropriate data to run a CANDLE 
+#    hyperparameter optimization sweep. 
 #
 # We prefer to encapsulate the entire build process within the Dockerfile. 
-# Therefore the remainder of this Dockerfile installs and configures the 
-# various dependancies required to run CANDLE (the steps that the user was 
-# expected to complete during runtime).
+# Therefore the remainder of this Dockerfile installs and configures the various
+# dependancies required to run CANDLE (the steps that the user was expected to 
+# complete during runtime).
 
 COPY requirements.txt /opt
 
@@ -76,7 +75,10 @@ RUN chmod +x $TURBINE_PATH/bin/turbine && \
 ENV PATH="${BUILD_DIR}/swift-t/stc/bin/:${TURBINE_PATH}/bin:${PATH}"
 ENV TURBINE_LAUNCH_OPTIONS --allow-run-as-root
 
-# Install our forked EQ-R.
+# Install our forked EQ-R. At the time of this writing the upstream EQ-R 
+# Makefile is broken (https://github.com/emews/EQ-R/pull/6). Our forked version
+# addresses the issue and ensures that this Dockerfile will continue to build
+# properly going forward.
 RUN git clone https://github.com/j-ogas/EQ-R.git
 WORKDIR $BUILD_DIR/EQ-R/src
 
