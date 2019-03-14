@@ -79,3 +79,5 @@ Charliecloud test suite and examples.
 %{_libexecdir}/%{name}/test
 
 %changelog
+* Thu Mar 14 2019  <jogas@lanl.gov> 0.9.8-1
+- Add initial Fedora/EPEL package.

@@ -51,7 +51,7 @@ def main():
       rpm_release = "0"
    else:
       m           = re.search(r"([0-9.]+)-([0-9]+)", args.version)
-      branch      = "v" + m.group(1)
+      commit      = "v" + m.group(1)
       rpm_release = m.group(2)
 
    # Create rpmbuild root
@@ -94,7 +94,10 @@ def main():
 
    # Copy and patch spec file.
    rpm_vr = "%s-%s" % (ch_version, rpm_release)
-   spec   = "charliecloud-%s.spec" % rpm_vr
+   if ("~pre" not in ch_version):
+      spec = "charliecloud.spec"
+   else:
+      spec = "charliecloud-%s.spec" % rpm_vr
    with open("%s/packaging/fedora/charliecloud.spec" % CH_BASE, "rt") as in_, \
         open("%s/%s" % (rpm_specs, spec), "wt") as out:
       print("# writing %s" % out.name)
@@ -112,9 +115,6 @@ def main():
 * %s %s <%s@%s> %s
 - Pre-release package. See Git history for what is going on.
 """ % (timestamp, name, moniker, domain, rpm_vr))
-      else:
-         # Last changelog entry must match version.
-         assert False, "unimplemented"
       out.write(t)
 
    # Prepare build and rpmlint arguments.
