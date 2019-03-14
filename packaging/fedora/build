@@ -13,6 +13,7 @@ import re
 import shutil
 import socket
 import subprocess
+import sys
 import time
 
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
@@ -94,6 +95,8 @@ def main():
 
    # Copy and patch spec file.
    rpm_vr = "%s-%s" % (ch_version, rpm_release)
+   # Fedora requires no version in spec file. Add a version for pre-release
+   # specs to make it hard to upload one to Fedora by mistake.
    if ("~pre" not in ch_version):
       spec = "charliecloud.spec"
    else:
@@ -115,6 +118,12 @@ def main():
 * %s %s <%s@%s> %s
 - Pre-release package. See Git history for what is going on.
 """ % (timestamp, name, moniker, domain, rpm_vr))
+      else:
+         # Verify requested version matches changelog.
+         m = re.search(r"%changelog\n.+?([0-9.-]+)\n", t)
+         if (m.group(1) != rpm_vr):
+            print("requested version %s != changelog %s" % (rpm_vr, m.group(1)))
+            sys.exit(1)
       out.write(t)
 
    # Prepare build and rpmlint arguments.
