@@ -27,7 +27,7 @@ a standard Linux filesystem tree.
 For more information: https://hpc.github.io/charliecloud/
 
 %description doc
-Charliecloud test suite and examples.
+Charliecloud test suite, examples, and documentation.
 
 # Voodoo to stop our python scripts from being byte compiled on Centos7, which
 # otherwise results in rpmbuild failing to build the package. see:
