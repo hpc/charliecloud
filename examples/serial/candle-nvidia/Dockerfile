@@ -31,7 +31,10 @@ FROM nvcr.io/hpc/candle:20180326
 # Therefore the remainder of this Dockerfile installs and configures the various
 # dependancies required to run CANDLE (the steps that the user was expected to 
 # complete during runtime).
-
+#
+# The resulting container will enable end users to run CANDLE on a single node 
+# with GPU(s). Multinode runs via srun fail, it is unclear whether or not CANDLE
+# is designed to run in parallel; the examples appear to be executed in serial.
 COPY requirements.txt /opt
 
 WORKDIR /opt
@@ -94,7 +97,7 @@ RUN git clone https://github.com/ECP-CANDLE/Benchmarks.git && \
 RUN mkdir -p /opt/Benchmarks/Data/Pilot1/ && \
     mkdir /opt/Benchmarks/Data/P3B1/
 
-# The CANDLE Benchmarks check the Benchmarks/Data directory for the 
+# The CANDLE Benchmarks check the Benchmarks/Data directory for the
 # corresponding benchmark data at run time. If the data does not exist it is 
 # downladed from the ftp.mcs.anl.gov URL. This will fail on systems or compute 
 # nodes that do not have network access at run time. We provide the necessary 
@@ -109,7 +112,7 @@ RUN wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P1B1/P1B1.dev.train
 WORKDIR /opt/Benchmarks/Data/P3B1
 RUN wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P3B1/P3B1_data.tar.gz
 
-# Download the CANDLE/Tutortial and configure the workslow script to run against
+# Download the CANDLE/Tutortial and configure the workslow script to run with
 # the Pilot3/P3B1 data.
 WORKDIR /opt
 RUN git clone https://github.com/ECP-CANDLE/Tutorials.git
