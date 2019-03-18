@@ -76,9 +76,9 @@ ENV PATH="${BUILD_DIR}/swift-t/stc/bin/:${TURBINE_PATH}/bin:${PATH}"
 ENV TURBINE_LAUNCH_OPTIONS --allow-run-as-root
 
 # Install our forked EQ-R. At the time of this writing the upstream EQ-R 
-# Makefile is broken (https://github.com/emews/EQ-R/pull/6). Our forked version
+# Makefile was broken (https://github.com/emews/EQ-R/pull/6). Our forked version
 # addresses the issue and ensures that this Dockerfile will continue to build
-# properly going forward.
+# properly going forward, regardless of upstream changes.
 RUN git clone https://github.com/j-ogas/EQ-R.git
 WORKDIR $BUILD_DIR/EQ-R/src
 
@@ -94,12 +94,12 @@ RUN git clone https://github.com/ECP-CANDLE/Benchmarks.git && \
 RUN mkdir -p /opt/Benchmarks/Data/Pilot1/ && \
     mkdir /opt/Benchmarks/Data/P3B1/
 
-# The CANDLE Benchmarks check the Benchmarks/Data directory for the
-# corresponding benchmark data at run time. If the data does not exist it
-# is downladed from the ftp.mcs.anl.gov URL. This will fail on systems 
-# or compute nodes that do not have network access at run time. We provide
-# the necessary benchmark data to run the example workflow on machines 
-# independent of network connectivity at run time.
+# The CANDLE Benchmarks check the Benchmarks/Data directory for the 
+# corresponding benchmark data at run time. If the data does not exist it is 
+# downladed from the ftp.mcs.anl.gov URL. This will fail on systems or compute 
+# nodes that do not have network access at run time. We provide the necessary 
+# benchmark data to run the example workflow on machines independent of network
+# connectivity at run time.
 WORKDIR /opt/Benchmarks/Data/Pilot1
 RUN wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P1B1/P1B1.dev.train.csv && \
     wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P1B1/P1B1.dev.test.csv && \
@@ -109,8 +109,8 @@ RUN wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P1B1/P1B1.dev.train
 WORKDIR /opt/Benchmarks/Data/P3B1
 RUN wget http://ftp.mcs.anl.gov/pub/candle/public/benchmarks/P3B1/P3B1_data.tar.gz
 
-# Download the CANDLE/Tutortial and configure the workslow script to run 
-# against the Pilot3/P3B1 data.
+# Download the CANDLE/Tutortial and configure the workslow script to run against
+# the Pilot3/P3B1 data.
 WORKDIR /opt
 RUN git clone https://github.com/ECP-CANDLE/Tutorials.git
 WORKDIR /opt/Tutorials/2018/NIH/Supervisor
