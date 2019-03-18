@@ -1,12 +1,3 @@
-check_permdirs () {
-    # We turn it up to 11 (see spinal tap) for maximum CH_TEST_PERMDIRS arguments
-    for ((i=1; i<=11; i++)); do
-        d=$(cut -d ' ' -f"${i}" <<< "$CH_TEST_PERMDIRS")
-        [[ -n "$d" ]] || break
-        read_link -e "$d" 'CH_TEST_PERMDIRS'
-    done
-}
-
 crayify_mpi_maybe () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
@@ -128,7 +119,6 @@ export LC_ALL=C
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
 env_require CH_TEST_PERMDIRS
-check_permdirs
 if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
     # https://github.com/sstephenson/bats/issues/49
