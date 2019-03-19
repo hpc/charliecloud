@@ -1,6 +1,6 @@
 BINS := chroot-escape mknods setgroups setuid
 ALL := $(BINS)
-CFLAGS := -std=gnu11 -Wall
+CFLAGS := -std=c11 -Wall -Werror
 
 .PHONY: all
 all: $(ALL)
