@@ -50,7 +50,6 @@ addons:
       - pv
       - python3-pip
       - skopeo
-      - skopeo-containers
 
 install:
 # We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
@@ -70,7 +69,7 @@ install:
     fi
 # Tests should still pass with only the basics installed.
   - if [ -n "$MINIMAL_DEPS" ]; then
-      sudo apt-get purge buildah cri-o-runc pv skopeo skopeo-containers;
+      sudo apt-get purge buildah cri-o-runc pv skopeo;
     fi
 
 before_script:
