@@ -1,4 +1,5 @@
 # ch-test-scope: full
+# ch-test-arch-exclude: aarch64  # issue #391
 FROM debian9
 
 # A key goal of this Dockerfile is to demonstrate best practices for building
@@ -84,8 +85,9 @@ WORKDIR /usr/local/src
 # (too old in Stretch). Download manually because I'm too lazy to set up
 # package pinning.
 #
-# Note that libpsm2 is x86_64 only:
-# https://lists.debian.org/debian-hpc/2017/12/msg00015.html
+# Note that libpsm2 is x86-64 only:
+#   https://packages.debian.org/buster/libpsm2-2
+#   https://lists.debian.org/debian-hpc/2017/12/msg00015.html
 ENV DEB_URL http://snapshot.debian.org/archive/debian/20180928T210119Z/pool/main
 ENV PSM2_VERSION 10.3.58-2
 RUN wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb

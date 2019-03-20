@@ -1,3 +1,9 @@
+arch_exclude () {
+    if [[ $1 = $(uname -m) ]]; then
+        skip 'unsupported architecture'
+    fi
+}
+
 crayify_mpi_maybe () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
