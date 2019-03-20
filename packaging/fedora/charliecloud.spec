@@ -15,8 +15,8 @@ Summary:        Lightweight user-defined software stacks for high-performance co
 License:        ASL 2.0
 URL:            https://hpc.github.io/%{name}/
 Source0:        https://github.com/hpc/%{name}/releases/download/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires:  gcc    >= 4.8.5
-BuildRequires:  make   >= 3.82
+BuildRequires:  gcc  >= 4.8.5
+BuildRequires:  make >= 3.82
 
 %if %{with python3}
 BuildRequires: python >= 3.4
@@ -108,6 +108,7 @@ EOF
 %files test
 %{_libexecdir}/%{name}/examples
 %{_libexecdir}/%{name}/test
+#TODO: Add fourth package, devel for c files.
 %exclude %{_libexecdir}/%{name}/examples/*/*.c
 %exclude %{_libexecdir}/%{name}/test/*/*.c
 
