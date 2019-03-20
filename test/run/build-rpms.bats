@@ -17,7 +17,8 @@ load ../common
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
-    [[ $output = *'charliecloud-doc-'* ]]
+    [[ $output = *'charliecloud-test-'* ]]
+    [[ $output = *'charliecloud-devel-'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -29,22 +30,34 @@ load ../common
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/lib/debug/usr/bin/ch-run.debug'* ]]
     [[ $output = *'/usr/lib/debug/usr/libexec/charliecloud/test/sotest/lib/libsotest.so.1.0.debug'* ]]
-    run ch-run "$img" -- rpm -ql "charliecloud-doc"
+    run ch-run "$img" -- rpm -ql "charliecloud-test"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/libexec/charliecloud/examples/mpi/lammps/Dockerfile'* ]]
     [[ $output = *'/usr/libexec/charliecloud/test/Build.centos7xz'* ]]
     [[ $output = *'/usr/libexec/charliecloud/test/sotest/lib/libsotest.so.1.0'* ]]
+    run ch-run "$img" -- rpm -ql "charliecloud-devel"
+    echo "$output"
+    [[ $output = *'/usr/libexec/charliecloud/examples/mpi/mpihello/hello.c'* ]]
+    [[ $output = *'/usr/libexec/charliecloud/examples/syscalls/pivot_root.c'* ]]
+    [[ $output = *'/usr/libexec/charliecloud/examples/syscalls/userns.c'* ]]
+    [[ $output = *'/usr/libexec/charliecloud/test/chtest/chroot-escape.c'* ]]
+    [[ $output = *'/usr/libexec/charliecloud/test/chtest/mknods.c'* ]]
+    [[ $output = *'/usr/libexec/charliecloud/test/chtest/setgroups.c'* ]]
+    [[ $output = *'/usr/libexec/charliecloud/test/chtest/setuid.c'* ]]
+    [[ $output = *'/usr/libexec/charliecloud/test/sotest/sotest.c'* ]]
 
     # Uninstall to avoid interfering with the rest of the test suite.
-    run ch-run -w "$img" -- rpm -v --erase charliecloud-doc \
+    run ch-run -w "$img" -- rpm -v --erase charliecloud-devel \
                                            charliecloud-debuginfo \
+                                           charliecloud-test \
                                            charliecloud
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
-    [[ $output = *'charliecloud-doc-'* ]]
+    [[ $output = *'charliecloud-test-'* ]]
+    [[ $output = *'charliecloud-devel-'* ]]
 
     # All gone?
     run ch-run "$img" -- rpm -qa "charliecloud*"
