@@ -2,7 +2,6 @@ load ../../../test/common
 
 setup () {
     scope full
-    arch_exclude aarch64  # issue #391
     prerequisites_ok paraview
     indir=$BATS_TEST_DIRNAME
     outdir=$BATS_TMPDIR
@@ -10,6 +9,9 @@ setup () {
         # Bats only creates $BATS_TMPDIR on the first node.
         # shellcheck disable=SC2086
         $ch_mpirun_node mkdir -p "$BATS_TMPDIR"
+    fi
+    if [[ $ch_cray ]]; then
+        crayify_mpi_maybe "$ch_img"
     fi
 }
 
