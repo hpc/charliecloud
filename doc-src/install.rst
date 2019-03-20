@@ -86,6 +86,7 @@ To run the test suite, you also need:
 * Bash 4.1+, for Bats and to make programming the tests tractable
 * Python 2.7+, for building some of the tests
 * Wget, to download stuff for some of the test images
+* root access via :code:`sudo` (optional), to test filesystem permissions enforcement
 
 Image building software tested, with varying levels of thoroughness:
 

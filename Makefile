@@ -6,7 +6,10 @@ export CFLAGS += -std=c11 -Wall -g
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
-	cd test && $(MAKE) all
+#       only descend into test/ if the right Python is available
+	if (command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')"); then \
+	    cd test && $(MAKE) all; \
+	fi
 	cd examples/syscalls && $(MAKE) all
 
 .PHONY: clean
