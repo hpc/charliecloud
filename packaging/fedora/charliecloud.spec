@@ -1,17 +1,14 @@
 # Charliecloud fedora package spec file
 #
-# TODO: gripe about lack of recommends or suggested package
-#
 # Contributors:
-#    Dan Love            @loveshack
+#    Dave Love           @loveshack
 #    Michael Jennings    @mej
 #    Jordan Ogas         @jogas
 #    Reid Priedhorksy    @reidpr
 
 %define versionize_script() (sed -i 's,/env python,/%1,g' %2)
 
-%bcond_with python3
-%bcond_with test
+%bcond_with python2
 
 %{!?build_cflags:%global build_cflags $RPM_OPT_FLAGS}
 %{!?build_ldflags:%global build_ldflags %nil}
@@ -26,10 +23,10 @@ Source0:        https://github.com/hpc/%{name}/releases/download/v%{version}/%{n
 BuildRequires:  gcc  >= 4.8.5
 BuildRequires:  make >= 3.82
 
-%if %{with python3}
-BuildRequires: python >= 3.4
-%else
+%if %{with python2}
 BuildRequires: python >= 2.7
+%else
+BuildRequires: python >= 3.4
 %endif
 
 %package test
@@ -39,15 +36,10 @@ Requires:  bats >= 0.4.0
 Requires:  bash >= 4.2.46
 Requires:  wget >= 1.14
 
-%package devel
-Summary:   Charliecloud example C files
-Requires:  %{name}%{?_isa}      = %{version}-%{release}
-Requires:  %{name}-test%{?_isa} = %{version}-%{release}
-
-%if %{with python3}
-Requires: python >= 3.4
-%else
+%if %{with python2}
 Requires: python >= 2.7
+%else
+Requires: python >= 3.4
 %endif
 
 %description
@@ -65,18 +57,15 @@ For more information: https://hpc.github.io/charliecloud/
 Charliecloud test suite and examples. The test suite takes advantage of
 container image builders such as Docker, Skopeo, and Buildah.
 
-%description devel
-Charliecloud test suite and example C files.
-
 %prep
 %setup -q
 
-%if %{with python3}
-%{versionize_script python3 test/make-auto}
-%{versionize_script python3 test/make-perms-test}
-%else
+%if %{with python2}
 %{versionize_script python2 test/make-auto}
 %{versionize_script python2 test/make-perms-test}
+%else
+%{versionize_script python3 test/make-auto}
+%{versionize_script python3 test/make-perms-test}
 %endif
 
 %build
@@ -88,17 +77,23 @@ Charliecloud test suite and example C files.
 %check
 
 # Don't try to compile python files with /usr/bin/python
+%if %{with python2}
+%{?el7:%global __python %__python2}
+%else
 %{?el7:%global __python %__python3}
+%endif
 
 cat > README.EL7 <<EOF
-For RHEL7 you must enable user namespaces and increase the number of available 
-user namespaces to a non-zero number (note the number below is taken from the 
-default for RHEL8):
+For RHEL7 you must increase the number of available user namespaces to a non-
+zero number (note the number below is taken from the default for RHEL8):
+
+  echo user.max_user_namespaces=3171 >/etc/sysctl.d/51-userns.conf
+  systemctl -p
+
+Note for versions below RHEL7.6, you will also need to enable user namespaces:
 
   grubby --args=namespace.unpriv_enable=1 --update-kernel=ALL
-  echo user.max_user_namespaces=3171 >/etc/sysctl.d/51-userns.conf
-
-Reboot.
+  systemctl -p
 
 EOF
 
@@ -127,14 +122,6 @@ EOF
 %files test
 %{_libexecdir}/%{name}/examples
 %{_libexecdir}/%{name}/test
-%exclude %{_libexecdir}/%{name}/examples/*/*.c
-%exclude %{_libexecdir}/%{name}/examples/*/*/*.c
-%exclude %{_libexecdir}/%{name}/test/*/*.c
-
-%files devel
-%{_libexecdir}/%{name}/examples/*/*.c
-%{_libexecdir}/%{name}/examples/*/*/*.c
-%{_libexecdir}/%{name}/test/*/*.c
 
 %changelog
 * Thu Mar 14 2019  <jogas@lanl.gov> 0.9.8-1
