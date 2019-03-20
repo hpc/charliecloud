@@ -1,5 +1,4 @@
-# TODO: add comments: credit Dan Love, gripe about lack of 'recommends' or 
-# 'suggests', running test suite, etc.
+# TODO: credit Dan Love, gripe about lack of 'recommends' or 'suggests'
 
 %define versionize_script() (sed -i 's,#!/bin/env python,#!/bin/%1,g' %2)
 
@@ -50,7 +49,7 @@ a standard Linux filesystem tree.
 For more information: https://hpc.github.io/charliecloud/
 
 %description test
-Charliecloud test suite and examples. The test suite will take advantage of
+Charliecloud test suite and examples. The test suite takes advantage of
 container image builders such as Docker, Skopeo, and Buildah.
 
 %prep
@@ -75,8 +74,8 @@ container image builders such as Docker, Skopeo, and Buildah.
 %{?el7:%global __python %__python3}
 
 cat > README.EL7 <<EOF
-To run in RHEL7 you must increase the number of user available user namespaces
-to a non-zero number (note the number below is take from the default for RHEL8):
+To run in RHEL7 you must increase the number of available user namespaces to a 
+non-zero number (note the number below is taken from the default for RHEL8):
 
   echo user.max_user_namespaces=3171 >/etc/sysctl.d/51-userns.conf
   # FIXME: Must we reboot?
