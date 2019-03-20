@@ -7,7 +7,7 @@
 # versions, e.g., '0.9.8~pre+epelpackage.41fe9fd'.
 addFilter(r'invalid-url')
 
-# charliecloud-doc
+# charliecloud-test
 
 # Charliecloud is a container runtime. The libsotest objects are test suite
 # resources that are injected into a container (guest), these objects are not
@@ -16,13 +16,9 @@ addFilter(r'no-ldconfig-symlink')
 addFilter(r'library-without-ldconfig-postin')
 addFilter(r'library-without-ldconfig-postun')
 
-# The example/*.c and test/*.c files are example files that illustrate various
-# details of the charliecloud runtime. For all intents and purposes, they are
-# part of our documentation.
-addFilter(r'devel-file-in-non-devel-package')
-
 # The symlink to /usr/bin is created and does exist.
 addFilter(r'dangling-relative-symlink')
 
-# We use ch-run --version to check that charliecloud has been installed.
-addFilter(r'E: specfile-error sh: ch-run: command not found')
+# The test and devel packages are extensions of the primary charliecloud 
+# package.
+addFilter(r'W: no-documentation')

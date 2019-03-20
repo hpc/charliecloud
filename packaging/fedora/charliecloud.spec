@@ -25,11 +25,16 @@ BuildRequires: python >= 2.7
 %endif
 
 %package test
-Summary:       Charliecloud examples and test suite
-Requires:      %{name}%{?_isa} = %{version}-%{release}
-Requires:      bats >= 0.4.0
-Requires:      bash >= 4.2.46
-Requires:      wget >= 1.14
+Summary:   Charliecloud examples and test suite
+Requires:  %{name}%{?_isa} = %{version}-%{release}
+Requires:  bats >= 0.4.0
+Requires:  bash >= 4.2.46
+Requires:  wget >= 1.14
+
+%package devel
+Summary:   Charliecloud example C files
+Requires:  %{name}%{?_isa}      = %{version}-%{release}
+Requires:  %{name}-test%{?_isa} = %{version}-%{release}
 
 %if %{with python3}
 Requires: python >= 3.4
@@ -52,6 +57,9 @@ For more information: https://hpc.github.io/charliecloud/
 Charliecloud test suite and examples. The test suite takes advantage of
 container image builders such as Docker, Skopeo, and Buildah.
 
+%description devel
+Charliecloud test suite and example C files.
+
 %prep
 %setup -q
 
@@ -68,7 +76,6 @@ container image builders such as Docker, Skopeo, and Buildah.
 %make_install PREFIX=%{_prefix}
 
 %check
-%(ch-run --version)
 
 # Don't try to complie python files with /usr/bin/python
 %{?el7:%global __python %__python3}
@@ -108,9 +115,14 @@ EOF
 %files test
 %{_libexecdir}/%{name}/examples
 %{_libexecdir}/%{name}/test
-#TODO: Add fourth package, devel for c files.
 %exclude %{_libexecdir}/%{name}/examples/*/*.c
+%exclude %{_libexecdir}/%{name}/examples/*/*/*.c
 %exclude %{_libexecdir}/%{name}/test/*/*.c
+
+%files devel
+%{_libexecdir}/%{name}/examples/*/*.c
+%{_libexecdir}/%{name}/examples/*/*/*.c
+%{_libexecdir}/%{name}/test/*/*.c
 
 %changelog
 * Thu Mar 14 2019  <jogas@lanl.gov> 0.9.8-1
