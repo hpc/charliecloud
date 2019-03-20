@@ -23,3 +23,6 @@ addFilter(r'devel-file-in-non-devel-package')
 
 # The symlink to /usr/bin is created and does exist.
 addFilter(r'dangling-relative-symlink')
+
+# We use ch-run --version to check that charliecloud has been installed.
+addFilter(r'E: specfile-error sh: ch-run: command not found')
