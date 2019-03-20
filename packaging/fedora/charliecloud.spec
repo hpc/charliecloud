@@ -1,6 +1,14 @@
-# TODO: credit Dan Love, gripe about lack of 'recommends' or 'suggests'
+# Charliecloud fedora package spec file
+#
+# TODO: gripe about lack of recommends or suggested package
+#
+# Contributors:
+#    Dan Love            @loveshack
+#    Michael Jennings    @mej
+#    Jordan Ogas         @jogas
+#    Reid Priedhorksy    @reidpr
 
-%define versionize_script() (sed -i 's,#!/bin/env python,#!/bin/%1,g' %2)
+%define versionize_script() (sed -i 's,/env python,/%1,g' %2)
 
 %bcond_with python3
 %bcond_with test
@@ -65,8 +73,10 @@ Charliecloud test suite and example C files.
 
 %if %{with python3}
 %{versionize_script python3 test/make-auto}
+%{versionize_script python3 test/make-perms-test}
 %else
 %{versionize_script python2 test/make-auto}
+%{versionize_script python2 test/make-perms-test}
 %endif
 
 %build
@@ -77,17 +87,19 @@ Charliecloud test suite and example C files.
 
 %check
 
-# Don't try to complie python files with /usr/bin/python
+# Don't try to compile python files with /usr/bin/python
 %{?el7:%global __python %__python3}
 
 cat > README.EL7 <<EOF
-To run in RHEL7 you must increase the number of available user namespaces to a 
-non-zero number (note the number below is taken from the default for RHEL8):
+For RHEL7 you must enable user namespaces and increase the number of available 
+user namespaces to a non-zero number (note the number below is taken from the 
+default for RHEL8):
 
+  grubby --args=namespace.unpriv_enable=1 --update-kernel=ALL
   echo user.max_user_namespaces=3171 >/etc/sysctl.d/51-userns.conf
-  # FIXME: Must we reboot?
-  # FIXME: In our vagrant file we do set enable user namespaces via grubby,
-  # do we still need to? 
+
+Reboot.
+
 EOF
 
 %files
