@@ -13,6 +13,11 @@
 %{!?build_cflags:%global build_cflags $RPM_OPT_FLAGS}
 %{!?build_ldflags:%global build_ldflags %nil}
 
+# openSUSE assigns _prefix/lib to _libexecdir
+%if 0%{?suse_version}
+%define _libexecdir %{_prefix}/libexec
+%endif
+
 Name:           charliecloud
 Version:        @VERSION@
 Release:        @RELEASE@%{?dist}
@@ -24,9 +29,9 @@ BuildRequires:  gcc  >= 4.8.5
 BuildRequires:  make >= 3.82
 
 %if %{with python2}
-BuildRequires: python >= 2.7
+BuildRequires: /usr/bin/python2
 %else
-BuildRequires: python >= 3.4
+BuildRequires: /usr/bin/python3
 %endif
 
 %package test
@@ -37,9 +42,9 @@ Requires:  bash >= 4.2.46
 Requires:  wget >= 1.14
 
 %if %{with python2}
-Requires: python >= 2.7
+Requires: /usr/bin/python2
 %else
-Requires: python >= 3.4
+Requires: /usr/bin/python3
 %endif
 
 %description
@@ -94,14 +99,17 @@ Note for versions below RHEL7.6, you will also need to enable user namespaces:
 
   grubby --args=namespace.unpriv_enable=1 --update-kernel=ALL
   systemctl -p
+EOF
 
+cat > README.tests <<EOF
+Charliecloud comes with a fairly comprehensive Bats test suite. For testing
+instructions visit: https://hpc.github.io/charliecloud/test.html
 EOF
 
 %files
 %license LICENSE
 %doc %{_datadir}/doc/%{name}/LICENSE 
-%doc %{_datadir}/doc/%{name}/README.rst 
-%{?_el7:%doc ${_datadir}/%{name}/README.EL7}
+%doc %{_datadir}/doc/%{name}/README.rst %{?_el7:README.EL7}
 %doc %{_mandir}/man1/ch*
 
 # Helper scripts
@@ -120,6 +128,7 @@ EOF
 %{_bindir}/ch-ssh
 
 %files test
+%doc README.tests
 %{_libexecdir}/%{name}/examples
 %{_libexecdir}/%{name}/test
 
