@@ -8,17 +8,22 @@
 addFilter(r'invalid-url')
 
 # charliecloud-test
-
-# Charliecloud is a container runtime. The libsotest objects are test suite
-# resources that are injected into a container (guest), these objects are not
-# used on the host.
+# Charliecloud is a container runtime. These shared objects are never used in 
+# the host environment; rather, they are compiled by the test suite (both 
+# running and examination of which serve as end-user documentation) and injected
+# into the container (guest) via utility script 'ch-fromhost'. The ldconfig 
+# links are generated inside the container runtime environment. For more 
+# information, see the test file: test/run/ch-fromhost.bats (line 108).
 addFilter(r'no-ldconfig-symlink')
 addFilter(r'library-without-ldconfig-postin')
 addFilter(r'library-without-ldconfig-postun')
 
+# The test suite has a few C files, e.g. userns.c, pivot_root.c, 
+# chroot-escape.c, sotest.c, setgroups.c, mknods.c, setuid.c, etc., that 
+# document — line-by-line in some cases — various components of the open source
+# runtime. These C files serve to show end users how containers work; some of
+# them are used explicitly during test suite runtime.
+addFilter(r'devel-file-in-non-devel-package')
+
 # The symlink to /usr/bin is created and does exist.
 addFilter(r'dangling-relative-symlink')
-
-# The test and devel packages are extensions of the primary charliecloud 
-# package.
-addFilter(r'W: no-documentation')
