@@ -43,8 +43,11 @@ addons:
     sources:
       - sourceline: 'ppa:projectatomic/ppa'
     packages:
-      - buildah
-      - cri-o-runc  # runc from Project Atomic PPA, not Ubuntu
+# Package version 1.0.0-rc6-1~ubuntu16.04.2~ppa73, current as of 3/21/2019,
+# fails with "invalid argument". See issue #398. For now, install manually via
+# wget and dpkg below.
+#      - buildah
+#      - cri-o-runc  # runc from Project Atomic PPA, not Ubuntu
       - fakeroot
       - pigz
       - pv
@@ -52,6 +55,10 @@ addons:
       - skopeo
 
 install:
+# Issue #398. See above.
+  - wget -nv http://ppa.launchpad.net/projectatomic/ppa/ubuntu/pool/main/c/cri-o-runc/cri-o-runc_1.0.0-rc6-1~ubuntu16.04.2~ppa72_amd64.deb
+  - sudo dpkg --install cri-o-runc_1.0.0-rc6-1~ubuntu16.04.2~ppa72_amd64.deb
+  - sudo apt-get install buildah
 # We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
 # issue #241). Travis provides images pre-installed with Python 3, but it's in
 # a virtualenv and unavailable by default under sudo, in package builds, and
