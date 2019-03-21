@@ -108,7 +108,7 @@ EOF
 
 %files
 %license LICENSE
-%doc %{_datadir}/doc/%{name}/LICENSE 
+%doc %{_datadir}/doc/%{name}/LICENSE
 %doc %{_datadir}/doc/%{name}/README.rst %{?_el7:README.EL7}
 %doc %{_mandir}/man1/ch*
 
