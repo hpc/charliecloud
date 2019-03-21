@@ -351,6 +351,12 @@ be in each file:
 
 Other stuff on the line (e.g., comment syntax) is ignored.
 
+Similarly, you can exclude an architecture with e.g.:
+
+.. code-block:: none
+
+  ch-test-arch-exclude: aarch64  # ARM not supported upstream
+
 Additional subdirectories can be symlinked into :code:`examples/` and will be
 integrated into the test suite. This allows you to create a site-specific test
 suite.

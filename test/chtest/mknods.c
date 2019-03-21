@@ -5,7 +5,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <sys/stat.h>
+#include <sys/sysmacros.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -19,6 +21,7 @@ int main(int argc, char ** argv)
    char * dir;
    int i, j;
    unsigned maj, min;
+   bool open_ok;
    char * path;
 
    for (i = 1; i < argc; i++) {
@@ -30,10 +33,10 @@ int main(int argc, char ** argv)
             printf("ERROR\tasprintf() failed with errno=%d\n", errno);
             return 1;
          }
-         fprintf(stderr, "trying to mknod %s\n", path);
+         fprintf(stderr, "trying to mknod %s: ", path);
          dev = makedev(maj, min);
          if (mknod(path, S_IFCHR | 0500, dev)) {
-            // could not create device, make sure it's an error we expected
+            // Could not create device; make sure it's an error we expected.
             switch (errno) {
             case EACCES:
             case EINVAL:   // e.g. /sys/firmware/efi/efivars
@@ -41,21 +44,45 @@ int main(int argc, char ** argv)
             case ENOTDIR:  // for bind-mounted files e.g. /etc/passwd
             case EPERM:
             case EROFS:
+               fprintf(stderr, "failed as expected with errno=%d\n", errno);
                break;
             default:
+               fprintf(stderr, "failed with unexpected errno\n");
                printf("ERROR\tmknod(2) failed on %s with errno=%d\n",
                       path, errno);
                return 1;
             }
          } else {
-            // created device OK, now try to remove it
+            // Device created; safe if we can't open it (see issue #381).
+            fprintf(stderr, "succeeded\n");
+            fprintf(stderr, "trying to open %s: ", path);
+            if (open(path, O_RDONLY) != -1) {
+               fprintf(stderr, "succeeded\n");
+               open_ok = true;
+            } else {
+               open_ok = false;
+               switch (errno) {
+               case EACCES:
+                  fprintf(stderr, "failed as expected with errno=%d\n", errno);
+                  break;
+               default:
+                  fprintf(stderr, "failed with unexpected errno\n");
+                  printf("ERROR\topen(2) failed on %s with errno=%d\n",
+                         path, errno);
+                  return 1;
+               }
+            }
+            // Remove the device, whether or not we were able to open it.
             if (unlink(path)) {
-               printf("ERROR\tmknod(2) succeeded on %s and then unlink(2) "
-                      "failed with errno=%d", path, errno);
+               printf("ERROR\tunlink(2) failed on %s with errno=%d",
+                      path, errno);
                return 1;
             }
-            printf("RISK\tmknod(2) succeeded on %s (now removed)\n", path);
-            return 1;
+            if (open_ok) {
+               printf("RISK\tmknod(2), open(2) succeeded on %s (now removed)\n",
+                      path);
+               return 1;
+            }
          }
       }
    }

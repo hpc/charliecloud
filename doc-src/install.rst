@@ -34,9 +34,7 @@ Supported architectures
 
 Charliecloud should work on any architecture supported by the Linux kernel,
 and we have run Charliecloud containers on x86-64, ARM, and Power. However, it
-is currently tested only on x86_64, and we know the test suite contains
-assumptions of that architecture (see issue `#248
-<https://github.com/hpc/charliecloud/issues/248>`_).
+is currently tested only on x86_64 and ARM.
 
 Most container build software is also fairly portable; e.g., see `Docker's
 supported platforms <https://docs.docker.com/install/#supported-platforms>`_.
@@ -72,10 +70,10 @@ Systems used for building images need the run-time dependencies, plus
 something to actually build the images.
 
 A common choice is `Docker <https://www.docker.com/>`_, along with internet
-access or configuration for a local Docker repository. Our wrapper scripts
-for Docker need Docker 17.03+ and expect to run the :code:`docker` command
-under :code:`sudo`. (Older versions of Docker may work but are untested. We
-know that 1.7.1 does not work.)
+access or configuration for a local Docker repository. Our wrapper scripts for
+Docker expect to run the :code:`docker` command under :code:`sudo` and need
+Docker 17.03+ and :code:`mktemp(1)`. (Older versions of Docker may work but
+are untested. We know that 1.7.1 does not work.)
 
 Test suite
 ----------
@@ -95,9 +93,6 @@ Image building software tested, with varying levels of thoroughness:
 * `Buildah <https://github.com/containers/buildah>`_
 * `skopeo <https://github.com/containers/skopeo>`_ and
   `umoci <https://github.com/openSUSE/umoci>`_
-
-Most of the test images are built with Docker, so the test suite is less
-thorough if it's not installed.
 
 Bats can be installed at the system level or embedded in the Charliecloud
 source code. If it's in both places, the latter is used.

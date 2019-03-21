@@ -357,6 +357,23 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
+@test 'ch-run --set-env from Dockerfile' {
+    scope standard
+    prerequisites_ok debian9
+    img=${ch_imgdir}/debian9
+
+    output_expected=$(cat <<'EOF'
+chse_dockerfile=foo
+EOF
+)
+
+    run ch-run --set-env="${img}/environment" "$img" -- \
+               sh -c 'env | grep -E "^chse_"'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+}
+
 @test 'ch-run --set-env errors' {
     scope standard
     f_in=${BATS_TMPDIR}/env.txt

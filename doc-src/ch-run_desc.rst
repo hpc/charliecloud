@@ -217,6 +217,10 @@ directives or other build-time configuration. :code:`FILE` is a host path to
 provide the greatest flexibility; guest paths can be specified by prepending
 the image path.
 
+:code:`ch-docker2tar(1)` lists variables specified at build time in
+Dockerfiles in the image in file :code:`/environment`. To set these variables:
+:code:`--set-env=$IMG/environment`.
+
 Variable values in :code:`FILE` replace any already set. If a variable is
 repeated, the last value wins.
 
@@ -301,10 +305,6 @@ Example valid lines that are probably not what you want:
      - :code:`FOO`
      - :code:`​ bar`
      - leading space in value
-
-Example Docker command to produce a valid :code:`FILE`::
-
-  $ docker inspect $TAG --format='{{range .Config.Env}}{{println .}}{{end}}'
 
 Removing variables with :code:`--unset-env`
 -------------------------------------------

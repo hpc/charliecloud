@@ -274,7 +274,7 @@ EOF2
     fi
     echo "testing as: $user"
     sudo -iu $user -- sh -c "\
-   cd /usr/local/share/doc/charliecloud/test \
+   cd /usr/local/libexec/charliecloud/test \
 && CH_TEST_SCOPE=$CH_TEST_SCOPE make test"
   EOF
 
