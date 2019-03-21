@@ -77,7 +77,6 @@ before_script:
   - free -m
   - df -h
   - df -h /var/tmp
-  - export PATH=/usr/lib/cri-o-runc/sbin:$PATH
   - export CH_TEST_TARDIR=/var/tmp/tarballs
   - export CH_TEST_IMGDIR=/var/tmp/images
   - export CH_TEST_PERMDIRS='/var/tmp /run'
