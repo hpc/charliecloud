@@ -13,6 +13,12 @@
 %{!?build_cflags:%global build_cflags $RPM_OPT_FLAGS}
 %{!?build_ldflags:%global build_ldflags %nil}
 
+# openSUSE assigns _prefix/lib to _libexecdir
+%if 0%{?suse_version}
+%define _libexecdir %{_prefix}/libexec
+%endif
+
+
 Name:           charliecloud
 Version:        @VERSION@
 Release:        @RELEASE@%{?dist}
@@ -24,9 +30,9 @@ BuildRequires:  gcc  >= 4.8.5
 BuildRequires:  make >= 3.82
 
 %if %{with python2}
-BuildRequires: python >= 2.7
+BuildRequires: /usr/bin/python2
 %else
-BuildRequires: python >= 3.4
+BuildRequires: /usr/bin/python3
 %endif
 
 %package test
@@ -37,9 +43,9 @@ Requires:  bash >= 4.2.46
 Requires:  wget >= 1.14
 
 %if %{with python2}
-Requires: python >= 2.7
+Requires: /usr/bin/python2
 %else
-Requires: python >= 3.4
+Requires: /usr/bin/python3
 %endif
 
 %description
