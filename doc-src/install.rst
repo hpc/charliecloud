@@ -82,7 +82,7 @@ To run the test suite, you also need:
 
 * `Bats <https://github.com/sstephenson/bats>`_ 0.4.0
 * Bash 4.1+, for Bats and to make programming the tests tractable
-* Python 2.7+, for building some of the tests
+* Python 2.7 or 3.4+, for building some of the tests
 * Wget, to download stuff for some of the test images
 * root access via :code:`sudo` (optional), to test filesystem permissions enforcement
 

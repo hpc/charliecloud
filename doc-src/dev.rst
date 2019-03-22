@@ -240,7 +240,7 @@ in :code:`doc-src`.
 Dependencies
 ------------
 
-  * Python 3.5+
+  * Python 3.4+
   * Sphinx 1.4.9+
   * docutils 0.13.1+
   * sphinx-rtd-theme 0.2.4+
@@ -438,7 +438,7 @@ abstracted away.
 Dependencies
 ------------
 
-  * Python 2.7
+  * Python 2.7 or 3.4+
   * Either:
 
     * RPM-based system of roughly RHEL/CentOS 7 vintage or newer, with RPM
