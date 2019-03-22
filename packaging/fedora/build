@@ -8,6 +8,7 @@ import argparse
 import errno
 import os
 import pipes
+import platform
 import pwd
 import re
 import shutil
@@ -18,6 +19,7 @@ import time
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
 CH_RUN  = [CH_BASE + "/bin/ch-run"]
 PACKAGES = ["charliecloud", "charliecloud-debuginfo", "charliecloud-doc"]
+ARCH = platform.machine()
 
 def main():
 
@@ -122,7 +124,7 @@ def main():
    rpmbuild_args = []
    rpmlint_args = []
    if (not args.image):
-      rpms          = args.rpmbuild + "/RPMS/x86_64"
+      rpms          = "%s/RPMS/%s" % (args.rpmbuild, ARCH)
       rpmbuild_args += ["--define", "_topdir " + args.rpmbuild]
       rpmlint_args  += ["--file", "%s/charliecloud.rpmlintrc" % rpm_specs]
    else:
@@ -131,7 +133,7 @@ def main():
       #
       # [1]: https://access.redhat.com/solutions/1426113
       # [2]: https://gbenson.net/?p=367
-      rpms          = "/usr/local/src/RPMS/x86_64"
+      rpms          = "/usr/local/src/RPMS/%s" % ARCH
       rpm_specs     = "/usr/local/src/SPECS"
       rpm_sources   = "/usr/local/src/SOURCES"
       rpmbuild_args += ["--define", "_topdir /usr/local/src"]
@@ -160,7 +162,7 @@ def main():
    print("# linting")
    cmd(container, "rpmlint", rpmlint_args, "%s/%s" % (rpm_specs, spec))
    for p in PACKAGES:
-      file_ = "%s/%s-%s.el7.x86_64.rpm" % (rpms, p, rpm_vr)
+      file_ = "%s/%s-%s.el7.%s.rpm" % (rpms, p, rpm_vr, ARCH)
       cmd(container, "test", "-e", file_)
       cmd(container, "rpmlint", rpmlint_args, file_)
 

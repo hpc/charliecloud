@@ -129,7 +129,6 @@ Vagrant.configure("2") do |c|
                  inline: <<-EOF
     set -e
     echo 'user.max_user_namespaces = 32767' > /etc/sysctl.d/51-userns.conf
-    grubby --args='namespace.unpriv_enable=1' --update-kernel=ALL
   EOF
   c.vm.provision :reload
 
@@ -274,7 +273,7 @@ EOF2
     fi
     echo "testing as: $user"
     sudo -iu $user -- sh -c "\
-   cd /usr/local/share/doc/charliecloud/test \
+   cd /usr/local/libexec/charliecloud/test \
 && CH_TEST_SCOPE=$CH_TEST_SCOPE make test"
   EOF
 
