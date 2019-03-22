@@ -16,7 +16,7 @@ Getting started
 
 Charliecloud's tests are based in the directory :code:`test`, which is either
 at the top level of the source code or installed at
-:code:`$PREFIX/share/doc/charliecloud`. To run them, go there::
+:code:`$PREFIX/libexec/charliecloud`. To run them, go there::
 
   $ cd test
 
