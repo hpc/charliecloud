@@ -9,6 +9,7 @@
 
 */
 
+#define _DEFAULT_SOURCE
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>

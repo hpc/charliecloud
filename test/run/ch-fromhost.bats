@@ -2,12 +2,17 @@ load ../common
 
 fromhost_clean () {
     [[ $1 ]]
-    rm -f "$1"/{lib,mnt,usr/bin}/sotest \
-          "$1"/{lib,mnt,usr/lib,usr/local/lib}/libsotest.so.1{.0,} \
-          "$1"/mnt/sotest.c \
-          "$1"/etc/ld.so.cache \
-          "$1"/usr/local/lib/libcuda* \
-          "$1"/usr/local/lib/libnvidia*
+    # We used to delete only specific paths, but this turned into an unwieldy
+    # mess of wildcards that obscured the original specificity purpose.
+    rm -f "${1}/ld.so.cache"
+    find "$1" -xdev \(           \
+         -name 'libcuda*'        \
+      -o -name 'libnvidia*'      \
+      -o -name libsotest.so.1    \
+      -o -name libsotest.so.1.0  \
+      -o -name sotest            \
+      -o -name sotest.c          \
+    \) -print -delete
     ch-run -w "$1" -- /sbin/ldconfig  # restore default cache
     fromhost_clean_p "$1"
 }
@@ -29,28 +34,27 @@ fromhost_ls () {
     prerequisites_ok debian9
     img=${ch_imgdir}/debian9
 
-    # inferred path is what we expect
-    [[ $(ch-fromhost --lib-path "$img") = /usr/local/lib ]]
+    libpath=$(ch-fromhost --lib-path "$img")
+    echo "libpath: ${libpath}"
 
     # --file
     fromhost_clean "$img"
     ch-fromhost -v --file sotest/files_inferrable.txt "$img"
     fromhost_ls "$img"
     test -f "${img}/usr/bin/sotest"
-    test -f "${img}/usr/local/lib/libsotest.so.1.0"
-    test -L "${img}/usr/local/lib/libsotest.so.1"
+    test -f "${img}${libpath}/libsotest.so.1.0"
+    test -L "${img}${libpath}/libsotest.so.1"
     ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest
     ch-run "$img" -- sotest
     rm "${img}/usr/bin/sotest"
-    rm "${img}/usr/local/lib/libsotest.so.1.0"
-    rm "${img}/usr/local/lib/libsotest.so.1"
+    rm "${img}${libpath}/libsotest.so.1.0"
+    rm "${img}${libpath}/libsotest.so.1"
     ch-run -w "$img" -- /sbin/ldconfig
     fromhost_clean_p "$img"
 
     # --cmd
     ch-fromhost -v --cmd 'cat sotest/files_inferrable.txt' "$img"
     ch-run "$img" -- sotest
-    fromhost_clean "$img"
 
     # --path
     ch-fromhost -v --path sotest/bin/sotest \
@@ -82,9 +86,9 @@ fromhost_ls () {
 
     # --no-ldconfig
     ch-fromhost -v --no-ldconfig --file sotest/files_inferrable.txt "$img"
-    test -f "${img}/usr/bin/sotest"
-    test -f "${img}/usr/local/lib/libsotest.so.1.0"
-    ! test -L "${img}/usr/local/lib/libsotest.so.1"
+      test -f "${img}/usr/bin/sotest"
+      test -f "${img}${libpath}/libsotest.so.1.0"
+    ! test -L "${img}${libpath}/libsotest.so.1"
     ! ( ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest )
     run ch-run "$img" -- sotest
     echo "$output"
