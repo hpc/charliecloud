@@ -1,6 +1,7 @@
 /* Try to drop the last supplemental group, and print a message to stdout
    describing what happened. */
 
+#define _DEFAULT_SOURCE
 #include <errno.h>
 #include <grp.h>
 #include <stdio.h>

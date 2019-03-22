@@ -5,6 +5,16 @@
 #
 # https://github.com/CentOS/sig-cloud-instance-images
 #
+# This GitHub repository is arranged with CentOS version and architecture in
+# different branches. However, the matrix is not complete: by branch, you can
+# download any architecture at the latest version, or a specific version of
+# x86_64, but not a specific version of aarch64. Therefore, we download by
+# commit hash.
+#
+# To check what version is in a tarball (on any architecture):
+#
+#   $ tar xf centos-7-${arch}-docker.tar.xz --to-stdout ./etc/centos-release
+#
 # ch-test-scope: standard
 
 set -ex
@@ -13,4 +23,20 @@ srcdir=$1
 tarball=${2}.tar.xz
 workdir=$3
 
-wget -nv -O "$tarball" 'https://github.com/CentOS/sig-cloud-instance-images/blob/CentOS-7.6.1810/docker/centos-7-docker.tar.xz?raw=true'
+# 7.6.1810
+arch=$(uname -m)
+case $arch in
+    aarch64)
+        commit=ccc35e0
+        ;;
+    x86_64)
+        commit=9a389e1
+        ;;
+    *)
+        echo 'unsupported architecture' 1>&2
+        exit 1
+esac
+
+url="https://github.com/CentOS/sig-cloud-instance-images/blob/${commit}/docker/centos-7-${arch}-docker.tar.xz?raw=true"
+
+wget -nv -O "$tarball" "$url"

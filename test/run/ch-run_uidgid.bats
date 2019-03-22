@@ -103,8 +103,9 @@ setup () {
             printf 'RISK\tsuccessful mount\n'
             return 1
             ;;
-        1)  ;&  # "incorrect invocation of permissions" (we care which)
-        255)    # undocumented
+        1)   ;&  # "incorrect invocation or permissions" (we care which)
+        111) ;&  # undocumented
+        255)     # undocumented
             if [[ $output = *'ermission denied'* ]]; then
                 printf 'SAFE\tmount exit %d, permission denied\n' "$status"
                 return 0
