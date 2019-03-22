@@ -33,7 +33,7 @@ addFilter(r'library-without-ldconfig-postun')
 
 # The test suite has a few C files, e.g. userns.c, pivot_root.c, 
 # chroot-escape.c, sotest.c, setgroups.c, mknods.c, setuid.c, etc., that 
-# document — line-by-line in some cases — various components of the open source
+# document -- line-by-line in some cases -- various components of the open source
 # runtime. These C files serve to show end users how containers work; some of
 # them are used explicitly during test suite runtime.
 addFilter(r'devel-file-in-non-devel-package')
