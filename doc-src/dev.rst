@@ -22,59 +22,12 @@ consult the internal documentation and other resources.
 Workflow
 ========
 
-Branching model
----------------
+We try to keep procedures and the Git branching model simple. Right now, we're
+pretty similar to Scott Chacon's “`GitHub Flow
+<http://scottchacon.com/2011/08/31/github-flow.html>`_”: Master is stable;
+work on short-lived topic branches; use pull requests to ask for merging; keep issues organized with tags and milestones.
 
-* We try to keep the branching model simple. Right now, we're pretty similar
-  to Scott Chacon's “`GitHub Flow
-  <http://scottchacon.com/2011/08/31/github-flow.html>`_”: Master is stable;
-  work on short-lived topic branches; use pull requests to ask for merging.
-
-* Tagged versions currently get more testing. We are working to improve
-  testing for normal commits on the master, but full parity is probably
-  unlikely.
-
-* Don't work directly on master. Even the project lead doesn't do this. While
-  it may appear that some trivial fixes are being committed to the master
-  directly, what's really happening is that these are prototyped on a branch
-  and then fast-forward merged after Travis passes.
-
-* Keep history tidy. While it's often difficult to avoid a branch history with
-  commits called "try 2" and "fix Travis", clean it up before submitting a PR.
-  Interactive rebase is your friend.
-
-* Feature branches should generally be rebased, rather than merged into, in
-  order to track master. PRs with conflicts will generally not be merged.
-
-* Feature branches are merged with either a merge commit or squash and rebase,
-  which squashes all the branch's commits into one and then rebases that
-  commit onto master's HEAD (called "squash and merge" by GitHub). This can be
-  done either on the command line or in the GitHub web interface.
-
-  * Merge commit message example:
-    :code:`merge PR #268 from @j-ogas: remove ch-docker-run (closes #258)`
-  * Squash and rebase commit message example:
-    :code:`PR #270 from me: document locations of .bats files`
-
-* Feature branches in the main repo are deleted by the project lead after
-  merging.
-
-* Remove obsolete remote branches from your repo with :code:`git fetch --prune
-  --all`.
-
-Issues, pull requests, and milestones
--------------------------------------
-
-* We use milestones to organize what is planned for, and what actually
-  happened, in each version.
-
-* All but the most trivial changes should have an issue or a `pull request
-  <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_ (PR).
-  The relevant commit message should close the issue (not PR) using the
-  `GitHub syntax
-  <https://help.github.com/articles/closing-issues-using-keywords/>`_.
-
-* The standard workflow is:
+The standard workflow is:
 
   1. Propose a change in an issue.
 
@@ -83,71 +36,209 @@ Issues, pull requests, and milestones
   3. Get consensus on what to do and how to do it, with key information
      recorded in the issue.
 
-  4. Assign the issue to a milestone.
+  4. Submit a PR that refers to the issue.
 
-  5. Submit a PR that refers to the issue.
+  5. Assign the issue to a milestone.
 
   6. Review/iterate.
 
-  7. Project lead merges. No one other than the project lead should be
-     merging to or committing on master.
+  7. Project lead merges.
 
-  Don't tag or milestone the PR in this case, so that the change is only
-  listed once in the various views.
+Core team members may deliberate in public on GitHub or internally, whichever
+they are comfortable with, making sure to follow LANL policy and taking into
+account the probable desires of the recipient as well.
 
-* Bare PRs with no corresponding issue are also considered but should have
-  reached consensus using other means, which should be stated in the PR. Tag
-  and milestone the PR.
+Milestones
+----------
 
-* We acknowledge submitted issues by tagging them.
+We use milestones to organize what we plan to do next and what happened in a
+given release. There are two groups of milestones:
 
-* Issues and PRs should address a single concern. If there are multiple
-  concerns, make separate issues and/or PRs. For example, PRs should not tidy
-  unrelated code.
+* :code:`next` contains the issues that we plan to complete soon but have not
+  yet landed on a specific release. Generally, we avoid putting PRs in here
+  because of their ticking clocks.
 
-* Best practice for non-trivial changes is to draft documentation and/or
-  tests, get feedback on that, and then implement.
+* Each release has a milestone. These are dated with the target date for that
+  release. We put an issue in when it has actually landed in that release or
+  we are willing to delay that release until it does. We put a PR in when we
+  think it's reasonably likely to be merged for that release.
 
-* If you are assigned an issue, that means you are actively working on it or
-  will do so in the near future. "I'll get to this later" should not be
-  assigned to you.
+If an issue is assigned to a person, that means they are actively leading the
+work on it or will do so in the near future. Typically this happens when the
+issue ends up in :code:`next`. Issues in a status of "I'll get to this later"
+should not be assigned to a person.
 
-* PR review:
+Peer review
+-----------
 
-  * If you think you're done and it's ready to merge: Tag the PR :code:`ready
-    to merge`. Don't request review from the project lead.
+**Issues and pull requests.** The standard workflow is to introduce a
+change in in issue, get consensus on what to do, and then create a `pull
+request <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_
+(PR) for the implementation. The issue, not the PR, should be tagged and
+milestoned so a given change shows up only once in the various views.
 
-  * If you think you're done and want review from someone other than the
-    project lead: Request review from that person using the GitHub web
-    interface. Once the PR passes review, go to the previous item.
+If consensus is obtained through other means (e.g., in-person discussion),
+then open a PR directly. In this case, the PR should be tagged and milestoned,
+since there is no issue.
 
-  * If you're not done but want feedback: Request review from the person you
-    want to review, which can be the project lead.
+Trivial changes (e.g., fix Travis, fix a regression within a release,
+code formatting) can be done without an issue or PR.
 
-  The purpose of this approach is to provide an easy way to see what PRs are
-  ready to go, without the project lead needing to consult both the list of
-  PRs and their own list of review requests, and also to provide a way to
-  request reviews from the project lead without also requesting merge.
+**Address a single concern.** When possible, issues and PRs should address
+completely one self-contained change. If there are multiple concerns, make
+separate issues and/or PRs. For example, PRs should not tidy unrelated code,
+and non-essential complications should be split into a follow-on issue.
 
-  Comments should all be packaged up into a single review; click *Start a
-  review* rather than *Add single comment*. Then the PR author gets only a
-  single notification instead of one for every comment you make.
+**Documentation and tests first.** The best practice for significant changes
+is to draft documentation and/or tests first, get feedback on that, and then
+implement the code. Reviews of the form "you need a completely different
+approach" are no fun.
 
-* Closing issues: We close issues when we've taken the requested action,
-  decided not to take action, resolved the question, or actively determined an
-  issue is obsolete. It is OK for "stale" issues to sit around indefinitely
-  awaiting this. Unlike many projects, we do not automatically close issues
-  just because they're old.
+**Tests must pass.** PRs will not be merged until they pass the tests. While
+this most saliently includes Travis, the tests should also pass on your
+development box as well as all relevant clusters (if appropriate for the
+changes).
 
-* Stale PRs, on the other hand, are to be avoided due to bit rot. We try to
-  either merge or reject PRs in a timely manner.
+**No close keywords in PRs.** While GitHub will interpret issue-closing
+keywords (variations on `"closes", "fixes", and "resolves"
+<https://help.github.com/en/articles/closing-issues-using-keywords>`_) in PR
+descriptions, don't use this feature, because often the specific issues a PR
+closes change over time, and we don't want to have to edit the description to
+deal with that. We also want this information in only one place (the commit
+log). Instead, use "addresses", and we'll edit the keywords into the commit
+message(s) at merge time if needed.
 
-* Closed issues can be re-opened if new information arises, for example a
-  :code:`worksforme` issue with new reproduction steps. Please comment to ask
-  for re-opening rather than doing it yourself.
+**PR review procedure.** When your PR is ready for review — which may or may
+not be when you want it considered for merging — do one or both of:
 
-GitHub issue and PR tags
-------------------------
+* Request review from the person(s) you want to look at it. If you think it
+  may be ready for merge, that should include the project lead. The purpose of
+  requsting review is so the person is notified you need their help.
+
+* If you think it may be ready to merge (even if you're not sure), then also
+  tag the PR :code:`ready to merge`. The purpose of this is so the project
+  lead can see which PRs are ready to consider for merging. If the project
+  lead decides it's ready, they will merge; otherwise, they'll untag.
+
+In both cases, the person from whom you requested review now owns the branch,
+and you should stop work on it unless and until you get it back.
+
+Do not hesitate to pester your reviewer if you haven't heard back promptly.
+
+*Special case 1:* Often, the review consists of code changes, and the reviewer
+will want you to assess those changes. GitHub doesn't let you request review
+from the PR submitter, so this must be done with a comment, either online or
+offline.
+
+*Special case 2:* GitHub will not let you request review from external people,
+so this needs to be done with a comment too. Generally you should ask the
+original bug reporter to review, to make sure it solves their problem.
+
+**Use multi-comment reviews.** Review comments should all be packaged up into
+a single review; click *Start a review* rather than *Add single comment*. Then
+the PR author gets only a single notification instead of one for every comment
+you make, and it's clear when they branch is theirs again.
+
+Branching and merging
+---------------------
+
+**Don't commit directly to master.** Even the project lead doesn't do this.
+While it may appear that some trivial fixes are being committed to the master
+directly, what's really happening is that these are prototyped on a branch and
+then fast-forward merged after the tests pass.
+
+**Merging to master.** Only the project lead should do this.
+
+**Branch merge procedure.** Generally, branches are merged in the GitHub web
+interface with the *Squash and merge* button, which is :code:`git merge
+--squash` under the hood. This squashes the branch into a single commit on
+master. Commit message example::
+
+  PR #268 from @j-ogas: remove ch-docker-run (closes #258)
+
+If the branch closes multiple issues and it's reasonable to separate those
+issues into independent commits, then the branch is rebased, interactively
+squashed, and force-pushed into a tidy history with close instructions, then
+merged in the web interface with *Create a merge commit*. Example history and
+commit messages::
+
+  * 18aa2b8 merge PR #254 from @j-ogas and me: Dockerfile.openmpi: use snapshot
+  |\
+  | * 79fa89a upgrade to ibverbs 20.0-1 (closes #250)
+  | * 385ce16 Dockerfile.debian9: use snapshot.debian.org (closes #249)
+  |/
+  * 322df2f ...
+
+The reason to prefer merge via web interface is that GitHub often doesn't
+notice merges done on the command line.
+
+After merge, the branch is deleted via the web interface.
+
+**Branch history tidiness.** Commit frequently at semantically relevant times,
+and keep in mind that this history will probably be squashed per above. It is
+not necessary to rebase or squash to keep branch history tidy. But, don't go
+crazy. Commit messages like "try 2" and "fix Travis again" are a bad sign; so
+are carefully proofread ones. Commit messages that are brief, technically
+relevant, and quick to write are what you want on feature branches.
+
+**Keep branches up to date.** Merge master into your branch, rather than
+rebasing. This lets you resolve conflicts once rather than multiple times as
+rebase works through a stack of commits.
+
+Note that PRs with merge conflicts will generally not be merged. Resolve
+conflicts before asking for merge.
+
+**Remove obsolete branches.** Keep your repo free of old branches with
+:code:`git branch -d` (or :code:`-D`) and :code:`git fetch --prune --all`.
+
+Miscellaneous issue and pull request notes
+------------------------------------------
+
+**Acknowledging issues.** Issues and PRs submitted from outside should be
+acknowledged promptly, including adding or correcting tags.
+
+**Closing issues.** We close issues when we've taken the requested action,
+decided not to take action, resolved the question, or actively determined an
+issue is obsolete. It is OK for "stale" issues to sit around indefinitely
+awaiting this. Unlike many projects, we do not automatically close issues just
+because they're old.
+
+**Closing PR.** Stale PRs, on the other hand, are to be avoided due to bit
+rot. We try to either merge or reject PRs in a timely manner.
+
+**Re-opening issues.** Closed issues can be re-opened if new information
+arises, for example a :code:`worksforme` issue with new reproduction steps.
+
+Continuous integration testing
+------------------------------
+
+**Quality of testing.** Tagged versions currently get more testing for various
+reasons. We are working to improve testing for normal commits on master, but
+full parity is probably unlikely.
+
+**Travis budget.** Because we're on the free tier, we only get 5 Travis jobs
+running at a time. Currently, each job takes about ten minutes, there are
+seven of them per tested commit, and PRs double this (once on the branch and
+once with a test merge commit). The resource is there for your use, so take
+advantage of it, but be mindful of the cost, since your fellow developers
+might be trying to get in too.
+
+Things you can do include testing locally first, cancelling jobs you know will
+fail or that won't give you additional information, and not pushing every
+commit (Travis tests only the most recent commit in a pushed group).
+
+**Iterating with Travis.** When trying to make Travis happy, use a throwaway
+branch that you force-push or squash-merge. Don't submit a PR with half a
+dozen "fix Travis" commits.
+
+**Purging Docker cache.** :code:`test/docker-clean.sh` can be used to purge
+your Docker cache, either by removing all tags or deleting all containers and
+images. The former is generally preferred, as it lets you update only those
+base images that have actually changed (the ones that haven't will be
+re-tagged).
+
+GitHub tags
+-----------
 
 What kind of issue is it?
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -171,7 +262,8 @@ What kind of issue is it?
   A particularly important or notable issue.
 
 :code:`question`
-  Support request that does not report a problem or ask for a change.
+  Support request that does not report a problem or ask for a change. Close
+  these after the question is answered or several days with no activity.
 
 What do we plan to do about it?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,10 +289,10 @@ For all of these, leave other tags in place, e.g. :code:`bug`.
   caused the "user error".*
 
 :code:`ready to merge`
-  PRs only. Adding this tag states that the PR is complete and requests it be
-  merged to master. If the project lead requests changes, they'll remove the
-  tag. Re-add it when you're ready to try again. Lead removes tag after
-  merging.
+  PRs only. Adding this tag speculates that the PR is complete and requests it
+  be considered for merging to master. If the project lead requests changes,
+  they'll remove the tag. Re-add it when you're ready to try again. Lead
+  removes tag after merging.
 
 :code:`wontfix`
   We are not going to do this, and we won't merge PRs. Close issue after
@@ -210,24 +302,6 @@ For all of these, leave other tags in place, e.g. :code:`bug`.
 :code:`worksforme`
   We cannot reproduce the issue. Typical workflow is to tag, then wait a few
   days for clarification before closing.
-
-Testing
--------
-
-PRs will not be merged until they pass the tests.
-
-* Tests should pass on your development box as well as all relevant clusters,
-  in full scope. (Note that some of the examples take quite a long time to
-  build; the Docker cache is your friend.)
-
-* All the Travis tests should pass. If you're iterating trying to make Travis
-  happy, consider interactive rebase, amending commits, or a throwaway branch.
-  Don't submit a PR with half a dozen "fix Travis" commits.
-
-* :code:`test/docker-clean.sh` can be used to purge your Docker cache, either
-  by removing all tags or deleting all containers and images. The former is
-  generally preferred, as it lets you update only those base images that have
-  actually changed (the ones that haven't will be re-tagged).
 
 
 Documentation
