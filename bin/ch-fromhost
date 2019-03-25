@@ -306,22 +306,32 @@ if [ $cray_mpich ]; then
 fi
 
 if [ $cray_openmpi ]; then
+    
     # MPI_ROOT and MPIHOME are the base of the OpenMPI install tree
     # using MPIHOME as some users unset MPI_ROOT
         [ "$MPIHOME" ] \
     || fatal "MPIHOME not set; is module openmpi loaded?"
-
+    
     # Inject libmpi from the host
-    lib_mpi=$(readlink -f "$MPIHOME/lib/libmpi.so")
-    queue_files "$lib_mpi"
-
-    queue_files "$(  ldd "$lib_mpi" \
+    host_libmpi=$(readlink -f "$MPIHOME/lib/libmpi.so")
+        [ -f "$host_libmpi" ] \
+    || fatal "not found: ${host_libmpi}; is module openmpi loaded?"
+    queue_files "$host_libmpi"
+    queue_files "$(  ldd "$host_libmpi" \
                    | grep -E "/usr|/opt" \
                    | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')" 
-    
+
     # This is appears to be the only .so required from /lib64
     queue_files /lib64/liblustreapi.so
 
+    # FIXME: This is done to remove libmpi from the image before injecting
+    # from the host to workaround paraview linking to the original libmpi
+    image_libmpi=$(ch-run /var/tmp/images/paraview/ -- /sbin/ldconfig -p \
+                   | grep -m 1 libmpi.so \
+                   | sed 's/.*> //' )    
+    debug " rm -f $(readlink -f "$image/$image_libmpi")"
+    # Not using queue_unlink as that prepends the image location
+    rm -f "$(readlink -f "$image/$image_libmpi")"
 fi
 
 if [ $cray_mpich ] || [ $cray_openmpi ]; then
@@ -396,6 +406,12 @@ if [ $cray_mpich ]; then
     debug "fixing soname on libmpi.so.12"
     "${ch_bin}/ch-run" -w "$image" -- \
         patchelf --set-soname libmpi.so.12 "$lib_dest/libmpi.so.12"
+fi
+
+if [ $cray_openmpi ]; then
+    # Restore libmpi.so symlink
+    debug "ln -s $(readlink "$MPIHOME/lib/libmpi.so") "${image}${lib_dest}/libmpi.so"
+    ln -s $(readlink "$MPIHOME/lib/libmpi.so") "${image}${lib_dest}/libmpi.so"
 fi
 
 if [ $lib_found ] && [ -z "$no_ldconfig" ]; then
