@@ -231,6 +231,7 @@ done
 if [ $cray_mpi ]; then
     sentinel=/etc/opt/cray/release/cle-release
     [ -f $sentinel ] || fatal "not found: ${sentinel}: are you on a Cray?"
+    
     mpi_version=$("${ch_bin}/ch-run" "$image" -- mpirun --version || true)
     case $mpi_version in
         *mpich*)
@@ -326,7 +327,7 @@ if [ $cray_openmpi ]; then
 
     # FIXME: This is done to remove libmpi from the image before injecting
     # from the host to workaround paraview linking to the original libmpi
-    image_libmpi=$(ch-run /var/tmp/images/paraview/ -- /sbin/ldconfig -p \
+    image_libmpi=$("${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -p \
                    | grep -m 1 libmpi.so \
                    | sed 's/.*> //' )    
     debug " rm -f $(readlink -f "$image/$image_libmpi")"
@@ -334,7 +335,7 @@ if [ $cray_openmpi ]; then
     rm -f "$(readlink -f "$image/$image_libmpi")"
 fi
 
-if [ $cray_mpich ] || [ $cray_openmpi ]; then
+if [ $cray_mpi ]; then
     # Setup files/directories required for MPI on Cray platform
 
     # ALPS libraries require the contents of this directory to be present at
@@ -410,8 +411,9 @@ fi
 
 if [ $cray_openmpi ]; then
     # Restore libmpi.so symlink
-    debug "ln -s $(readlink "$MPIHOME/lib/libmpi.so") "${image}${lib_dest}/libmpi.so"
-    ln -s $(readlink "$MPIHOME/lib/libmpi.so") "${image}${lib_dest}/libmpi.so"
+    debug "ln -s $(readlink "$MPIHOME/lib/libmpi.so") ${image}${lib_dest}/libmpi.so"
+        [ -f "$MPIHOME/lib/libmpi.so" ] ||
+    ln -s "$(readlink "$MPIHOME/lib/libmpi.so")" "${image}${lib_dest}/libmpi.so"
 fi
 
 if [ $lib_found ] && [ -z "$no_ldconfig" ]; then
