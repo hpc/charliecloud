@@ -2,7 +2,7 @@ load ../../../test/common
 
 setup () {
     scope full
-    prerequisites_ok paraview
+    prerequisites_ok "$ch_tag"
     indir=$BATS_TEST_DIRNAME
     outdir=$BATS_TMPDIR
     if [[ $ch_multinode ]]; then
