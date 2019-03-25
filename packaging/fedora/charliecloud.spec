@@ -6,17 +6,20 @@
 #    Jordan Ogas         @jogas
 #    Reid Priedhorksy    @reidpr
 
+
+# Since SUSE conditionals are not allowed by Fedora we define the libexecdir 
+# to ensure proper building.
+%define _libexecdir %{_prefix}/libexec
+
+# Fedora requires python files to specify a version, e.g., /usr/bin/python3,
+# /usr/bin/python2.
 %define versionize_script() (sed -i 's,/env python,/%1,g' %2)
 
+# Enable users with spec file to build with python2.
 %bcond_with python2
 
 %{!?build_cflags:%global build_cflags $RPM_OPT_FLAGS}
 %{!?build_ldflags:%global build_ldflags %nil}
-
-# openSUSE assigns _prefix/lib to _libexecdir
-%if 0%{?suse_version}
-%define _libexecdir %{_prefix}/libexec
-%endif
 
 Name:           charliecloud
 Version:        @VERSION@
@@ -25,8 +28,7 @@ Summary:        Lightweight user-defined software stacks for high-performance co
 License:        ASL 2.0
 URL:            https://hpc.github.io/%{name}/
 Source0:        https://github.com/hpc/%{name}/releases/download/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires:  gcc  >= 4.8.5
-BuildRequires:  make >= 3.82
+BuildRequires:  gcc
 
 %if %{with python2}
 BuildRequires: /usr/bin/python2
@@ -37,9 +39,9 @@ BuildRequires: /usr/bin/python3
 %package test
 Summary:   Charliecloud examples and test suite
 Requires:  %{name}%{?_isa} = %{version}-%{release}
-Requires:  bats >= 0.4.0
-Requires:  bash >= 4.2.46
-Requires:  wget >= 1.14
+Requires:  bats
+Requires:  bash
+Requires:  wget
 
 %if %{with python2}
 Requires: /usr/bin/python2
@@ -101,6 +103,7 @@ Note for versions below RHEL7.6, you will also need to enable user namespaces:
   systemctl -p
 EOF
 
+# README for test suite; obsolete in 0.9.9.
 cat > README.tests <<EOF
 Charliecloud comes with a fairly comprehensive Bats test suite. For testing
 instructions visit: https://hpc.github.io/charliecloud/test.html
@@ -108,9 +111,9 @@ EOF
 
 %files
 %license LICENSE
-%doc %{_datadir}/doc/%{name}/LICENSE
-%doc %{_datadir}/doc/%{name}/README.rst %{?_el7:README.EL7}
-%doc %{_mandir}/man1/ch*
+%doc README.rst %{?el7:README.EL7}
+%{_mandir}/man1/ch*
+%exclude %{_datadir}/doc/%{name}
 
 # Helper scripts
 %{_libexecdir}/%{name}/base.sh
@@ -131,6 +134,7 @@ EOF
 %doc README.tests
 %{_libexecdir}/%{name}/examples
 %{_libexecdir}/%{name}/test
+%exclude %{_datadir}/doc/%{name}
 
 %changelog
 * Thu Mar 14 2019  <jogas@lanl.gov> 0.9.8-1
