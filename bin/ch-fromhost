@@ -334,7 +334,7 @@ if [ $cray_openmpi ]; then
     rm -f "$(readlink -f "$image/$image_libmpi")"
 fi
 
-if [ $cray_mpich ] || [ $cray_openmpi ]; then
+if [ $cray_mpi ]; then
     # Setup files/directories required for MPI on Cray platform
 
     # ALPS libraries require the contents of this directory to be present at
