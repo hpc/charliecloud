@@ -326,7 +326,7 @@ if [ $cray_openmpi ]; then
 
     # FIXME: This is done to remove libmpi from the image before injecting
     # from the host to workaround paraview linking to the original libmpi
-    image_libmpi=$(ch-run /var/tmp/images/paraview/ -- /sbin/ldconfig -p \
+    image_libmpi=$(ch-run "$image" -- /sbin/ldconfig -p \
                    | grep -m 1 libmpi.so \
                    | sed 's/.*> //' )    
     debug " rm -f $(readlink -f "$image/$image_libmpi")"
