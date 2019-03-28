@@ -224,9 +224,6 @@ if [[ $SLURM_JOB_ID ]]; then
     # in a Slurm/ALPS allocation.
     if [[ $ch_mpi = openmpi ]]; then
         ch_unslurm='--unset-env=SLURM*'
-        if [[ $ch_cray ]]; then
-            ch_unslurm='--unset-env=SLURM* --unset-env=ALPS*'
-        fi
     fi
 else
     ch_multinode=
