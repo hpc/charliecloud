@@ -35,8 +35,8 @@ load ../../../test/common
 # [2]: https://ci.lammps.org/job/lammps/job/master/job/testing/lastSuccessfulBuild/console
 
 setup () {
-    scope full
-    prerequisites_ok lammps
+    scope quick
+    prerequisites_ok "$ch_tag"
     multiprocess_ok
     if [[ $ch_cray ]]; then
         crayify_mpi_maybe "$ch_img"
