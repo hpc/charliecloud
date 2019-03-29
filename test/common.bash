@@ -219,9 +219,9 @@ if [[ $SLURM_JOB_ID ]]; then
     ch_mpirun_core='srun --cpus-per-task 1'    # one process/core
     ch_mpirun_2='srun -n2'                     # two processes on diff nodes
     ch_mpirun_2_1node='srun -N1 -n2'           # two processes on one node
-    # OpenMPI 3.1 pukes when guest-launched and Slurm or ALPS environment variables
+    # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
     # are present. Work around this by fooling OpenMPI into believing it's not
-    # in a Slurm/ALPS allocation.
+    # in a Slurm allocation.
     if [[ $ch_mpi = openmpi ]]; then
         ch_unslurm='--unset-env=SLURM*'
     fi

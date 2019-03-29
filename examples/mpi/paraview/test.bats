@@ -2,7 +2,8 @@ load ../../../test/common
 
 setup () {
     scope full
-    prerequisites_ok "$ch_tag"
+    arch_exclude aarch64  # issue #391
+    prerequisites_ok paraview
     indir=$BATS_TEST_DIRNAME
     outdir=$BATS_TMPDIR
     if [[ $ch_multinode ]]; then

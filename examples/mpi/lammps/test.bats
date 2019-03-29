@@ -36,7 +36,8 @@ load ../../../test/common
 
 setup () {
     scope full
-    prerequisites_ok "$ch_tag"
+    arch_exclude aarch64  # issue #391
+    prerequisites_ok lammps
     multiprocess_ok
     if [[ $ch_cray ]]; then
         crayify_mpi_maybe "$ch_img"
