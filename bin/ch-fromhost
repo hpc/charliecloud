@@ -231,7 +231,7 @@ done
 if [ $cray_mpi ]; then
     sentinel=/etc/opt/cray/release/cle-release
     [ -f $sentinel ] || fatal "not found: ${sentinel}: are you on a Cray?"
-    
+
     mpi_version=$("${ch_bin}/ch-run" "$image" -- mpirun --version || true)
     case $mpi_version in
         *mpich*)
