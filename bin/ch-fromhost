@@ -411,7 +411,7 @@ fi
 
 if [ $cray_openmpi ]; then
     # Restore libmpi.so symlink
-    debug "ln -s $(readlink "$MPIHOME/lib/libmpi.so") "${image}${lib_dest}/libmpi.so""
+    debug "ln -s $(readlink "$MPIHOME/lib/libmpi.so") ${image}${lib_dest}/libmpi.so"
         [ -f "$MPIHOME/lib/libmpi.so" ] ||
     ln -s "$(readlink "$MPIHOME/lib/libmpi.so")" "${image}${lib_dest}/libmpi.so"
 fi
