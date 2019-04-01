@@ -1,5 +1,4 @@
 # ch-test-scope: full
-# ch-test-arch-exclude: aarch64  # issue #391
 FROM debian9
 
 # A key goal of this Dockerfile is to demonstrate best practices for building
@@ -73,6 +72,8 @@ RUN apt-get install -y --no-install-suggests \
     libhwloc-dev \
     libnl-3-200 \
     libnl-route-3-200 \
+    libnl-3-dev \
+    libnl-route-3-dev \
     libnuma1 \
     libpmi2-0-dev \
     make \
@@ -85,14 +86,13 @@ WORKDIR /usr/local/src
 # (too old in Stretch). Download manually because I'm too lazy to set up
 # package pinning.
 #
-# Note that libpsm2 is x86-64 only:
-#   https://packages.debian.org/buster/libpsm2-2
-#   https://lists.debian.org/debian-hpc/2017/12/msg00015.html
-ENV DEB_URL http://snapshot.debian.org/archive/debian/20180928T210119Z/pool/main
-ENV PSM2_VERSION 10.3.58-2
+# Note that libpsm2 is x86_64 only:
+# https://lists.debian.org/debian-hpc/2017/12/msg00015.html
+ENV DEB_URL http://snapshot.debian.org/archive/debian/20190326T095837Z/pool/main
+ENV PSM2_VERSION 11.2.78-1
 RUN wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb
 RUN wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-dev_${PSM2_VERSION}_amd64.deb
-ENV IBVERBS_VERSION 20.0-1
+ENV IBVERBS_VERSION 22.1-1
 RUN for i in ibacm \
              ibverbs-providers \
              ibverbs-utils \
@@ -116,7 +116,7 @@ RUN dpkg --install *.deb
 # and fails to initialize itself.
 #
 # [1]: https://github.com/openucx/ucx/issues/750
-ENV UCX_VERSION 1.3.1
+ENV UCX_VERSION 1.5.1
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git
 COPY ucx-issue-750.patch ./ucx
@@ -126,16 +126,9 @@ RUN    cd ucx \
     && ./contrib/configure-release --prefix=/usr/local \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 
-# OpenMPI.
-#
-# Bug workaround: Add "--disable-builtin-atomics" to avoid OpenMPI issue
-# #6014 [1], which tickles a compiler bug that causes hangs in "vader" module.
-# Debian Stretch's GCC 6.3.0 is not listed in that issue but does hang for us.
-# Remove this argument when we upgrade to OpenMPI 3.1.4 (issue #346).
-#
-# [1]: https://github.com/open-mpi/ompi/issues/6014
-ENV MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
-ENV MPI_VERSION 3.1.3
+ENV MPI_URL https://download.open-mpi.org/nightly/open-mpi/v3.1.x
+ENV MPI_VERSION v3.1.x-201903130305-7412e88
+
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
 RUN tar xf openmpi-${MPI_VERSION}.tar.gz
 RUN    cd openmpi-${MPI_VERSION} \
@@ -149,7 +142,6 @@ RUN    cd openmpi-${MPI_VERSION} \
                    --with-pmix \
                    --with-psm2 \
                    --with-ucx \
-                   --disable-builtin-atomics \
                    --disable-pty-support \
                    --enable-mca-no-build=btl-openib,plm-slurm \
     && make -j$(getconf _NPROCESSORS_ONLN) install
