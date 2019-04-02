@@ -45,7 +45,7 @@ srcdir=$1
 tarball_gz=${2}.tar.gz
 workdir=$3
 
-tag=alpine36
+tag=alpine39
 
 cd "$srcdir"
 
