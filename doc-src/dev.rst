@@ -72,7 +72,7 @@ Peer review
 -----------
 
 **Issues and pull requests.** The standard workflow is to introduce a
-change in in issue, get consensus on what to do, and then create a `pull
+change in an issue, get consensus on what to do, and then create a `pull
 request <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_
 (PR) for the implementation. The issue, not the PR, should be tagged and
 milestoned so a given change shows up only once in the various views.
