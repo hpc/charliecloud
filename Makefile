@@ -1,4 +1,4 @@
-SHELL=/bin/bash
+SHELL=/bin/sh
 
 # Add some good stuff to CFLAGS.
 export CFLAGS += -std=c11 -Wall -g
@@ -6,7 +6,10 @@ export CFLAGS += -std=c11 -Wall -g
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
-	cd test && $(MAKE) all
+#       only descend into test/ if the right Python is available
+	if (command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')"); then \
+	    cd test && $(MAKE) all; \
+	fi
 	cd examples/syscalls && $(MAKE) all
 
 .PHONY: clean
@@ -136,7 +139,8 @@ install: all
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) LICENSE README.rst
 #       examples
-	for i in examples/syscalls examples/{serial,mpi,other}/*; do \
+	for i in examples/syscalls \
+	         examples/serial/* examples/mpi/* examples/other/*; do \
 	    install -d $(LIBEXEC_INST)/$$i; \
 	    install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done
@@ -155,7 +159,9 @@ install: all
 	install -pm 755 -t $(TEST) test/make-auto test/make-perms-test
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
-	chmod 755 $(TEST)/chtest/{Build,*.py,printns}
+	chmod 755 $(TEST)/chtest/Build \
+	          $(TEST)/chtest/*.py \
+	          $(TEST)/chtest/printns
 	ln -sf ../../../bin $(TEST)/bin
 #       shared library tests
 	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib

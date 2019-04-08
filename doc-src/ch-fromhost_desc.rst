@@ -92,8 +92,8 @@ Additional arguments
     Print version and exit.
 
 
-:code:`--cray-mpi` prerequisites and quirks
-===========================================
+:code:`--cray-mpi` dependencies and quirks
+==========================================
 
 The implementation of :code:`--cray-mpi` for MPICH is messy, foul smelling,
 and brittle. It replaces or overrides the open source MPICH libraries

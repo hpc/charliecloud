@@ -126,10 +126,10 @@ load common
     # This test unpacks into $ch_tardir so we don't put anything in $ch_imgdir
     # at build time. It removes the image on completion.
     need_docker
-    tar="${ch_tardir}/alpine36.tar.gz"
+    tar="${ch_tardir}/alpine39.tar.gz"
     img="${ch_tardir}/test"
     [[ ! -e $img ]]
-    ch-build2dir .. "$ch_tardir" --file=Dockerfile.alpine36
+    ch-build2dir .. "$ch_tardir" --file=Dockerfile.alpine39
     sudo docker tag test "test:${ch_version_docker}"
     docker_ok test
     image_ok "$img"
@@ -141,9 +141,9 @@ load common
     scope standard
     # This test pulls an image from Dockerhub and packs it into a tarball at
     # $ch_tardir. It removes the tarball upon completetion to keep the number
-    # of alpine36 tarballs to a minimum.
+    # of Alpine tarballs to a minimum.
     need_docker
-    tag='alpine:3.6'
+    tag='alpine:3.9'
     tar="${ch_tardir}/${tag}.tar.gz"
     ch-pull2tar "$tag" "$ch_tardir"
     [[ $status -eq 0 ]]
@@ -158,7 +158,7 @@ load common
     # $ch_tardir to keep $ch_imgdir clean at build time. It removes the image
     # upon completion.
     need_docker
-    tag='alpine:3.6'
+    tag='alpine:3.9'
     img="${ch_tardir}/${tag}"
     ch-pull2dir "$tag" "$ch_tardir"
     [[ status -eq 0 ]]
