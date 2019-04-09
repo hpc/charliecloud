@@ -50,6 +50,17 @@ else
     }
 fi
 
+# Use fuse low-level API if it's available. ("command -v" is POSIX.1-2008.)
+if ( command -v squashfuse_ll >/dev/null 2>&1 ); then
+    squashfuse_ () {
+        squashfuse_ll "$@"
+    }
+else
+    squashfuse_ () {
+        squashfuse "$@"
+    }
+fi
+
 # Use pv to show a progress bar, if it's available. (We also don't want a
 # progress bar if stdin is not a terminal, but pv takes care of that.)
 if ( command -v pv >/dev/null 2>&1 ); then
