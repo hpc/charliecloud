@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/base.sh"
@@ -17,26 +17,26 @@ EOF
 
 parse_basic_args "$@"
 
-if [ "$#" -lt 4 ]; then
-    usage
-fi
-if [ "$1" ~!= -t ]; then
-    usage
-fi
+[[ "$#" -gt 3 ]] || usage
 
-tag=$2
-context=$3
-dest=$4
+# FIXME: the following block of code only works with bash. All of our utility
+# scripts are POSIX sh.
 
-context=$1
-dest=$2
-shift 2
-
-tag=$(basename "$PWD")
+args=("${@:1:$#-1}") # all but last arg
+dest="${*: -1}"    # last arg
+while [[ "$#" -gt 0 ]]; do
+    opt=$1; shift
+    case "$opt" in
+       --tag|-t)
+            tag="$1"
+            ;;
+    esac
+done
 
 set -x
-
-"${ch_bin}"/ch-build -t "$tag" "$context" "$@"
+"${ch_bin}"/ch-build "${args[@]}"
 "${ch_bin}"/ch-docker2tar "$tag" "$dest"
 "${ch_bin}"/ch-tar2dir "${dest}/${tag}.tar.gz" "$dest"
-rm "${dest}/${tag}.tar.gz"
+
+# FIXME: removing the tarball artifact will cause make-auto to break
+# rm "${dest}/${tag}.tar.gz"
