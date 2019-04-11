@@ -34,6 +34,18 @@ load ../common
 @test 'ch-tar2dir: errors' {
     scope quick
 
+    # destination doesn't exist
+    run ch-tar2dir "$ch_timg" /doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't unpack: /doesnotexist does not exist"* ]]
+
+    # destination is not a directory
+    run ch-tar2dir "$ch_timg" /bin/false
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't unpack: /bin/false is not a directory"* ]]
+
     # tarball doesn't exist (extension provided)
     run ch-tar2dir does_not_exist.tar.gz "$ch_imgdir"
     echo "$output"

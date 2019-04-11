@@ -20,12 +20,14 @@ srcdir=$1
 tarball_uncompressed=${2}.tar
 tarball=${tarball_uncompressed}.gz
 workdir=$3
-mirror=http://dl-cdn.alpinelinux.org/alpine/v3.8
+
+arch=$(uname -m)
+mirror=http://dl-cdn.alpinelinux.org/alpine/v3.9
 # Dynamically select apk-tools-static version. We would prefer to hard-code a
 # version (and upgrade on our schedule), but we can't because Alpine does not
 # keep old package versions. If we try, the build breaks every few months (for
 # example, see issue #242).
-apk_tools=$(  wget -qO - "${mirror}/main/x86_64" \
+apk_tools=$(  wget -qO - "${mirror}/main/${arch}" \
             | grep -F apk-tools-static \
             | sed -E 's/^.*(apk-tools-static-[0-9.r-]+\.apk).*$/\1/')
 img=${workdir}/img
@@ -43,7 +45,7 @@ ch_run="ch-run -u0 -g0 -w --no-home ${img}"
 ## Bootstrap base Alpine Linux.
 
 # Download statically linked apk.
-wget "${mirror}/main/x86_64/${apk_tools}"
+wget "${mirror}/main/${arch}/${apk_tools}"
 
 # Bootstrap directories.
 mkdir img
@@ -96,7 +98,7 @@ touch img/usr/bin/ch-ssh
 
 # Test programs.
 cp -r "$srcdir" img/test
-$ch_run --cd /test -- make
+$ch_run --cd /test -- sh -c 'make clean && make'
 
 # Fixtures for /dev cleaning.
 touch img/dev/deleteme

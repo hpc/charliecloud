@@ -22,24 +22,34 @@ normal users and admins can build and install it manually.
    :local:
 
 
-Prequisites
-===========
+Dependencies
+============
 
-Charliecloud is a simple system with limited prerequisites. If your system
+Charliecloud is a simple system with limited dependencies. If your system
 meets these prerequisites but Charliecloud doesn't work, please report that as
 a bug.
+
+Supported architectures
+-----------------------
+
+Charliecloud should work on any architecture supported by the Linux kernel,
+and we have run Charliecloud containers on x86-64, ARM, and Power. However, it
+is currently tested only on x86_64 and ARM.
+
+Most container build software is also fairly portable; e.g., see `Docker's
+supported platforms <https://docs.docker.com/install/#supported-platforms>`_.
 
 Run time
 --------
 
 Systems used for running images need:
 
-* Recent Linux kernel with :code:`CONFIG_USER_NS=y`. We recommend version 4.4
+* Recent Linux kernel with user namespaces enabled. We recommend version 4.4
   or higher.
 
-* C compiler and standard library
+* C11 compiler and standard library
 
-* POSIX shell and utilities
+* POSIX.1-2017 shell and utilities
 
 Some distributions need configuration changes to enable user namespaces. For
 example:
@@ -56,32 +66,33 @@ example:
 Build time
 ----------
 
-Systems used for building images need the run-time prerequisites, plus:
+Systems used for building images need the run-time dependencies, plus
+something to actually build the images.
 
-* Bash 4.1+
-
-and optionally:
-
-* `Docker <https://www.docker.com/>`_ 17.03+
-* internet access or Docker configured for a local Docker hub
-* root access using :code:`sudo`
-
-Older versions of Docker may work but are untested. We know that 1.7.1 does
-not work.
+A common choice is `Docker <https://www.docker.com/>`_, along with internet
+access or configuration for a local Docker repository. Our wrapper scripts for
+Docker expect to run the :code:`docker` command under :code:`sudo` and need
+Docker 17.03+ and :code:`mktemp(1)`. (Older versions of Docker may work but
+are untested. We know that 1.7.1 does not work.)
 
 Test suite
 ----------
 
-In order to run the test suite on a run or build system (you can test each
-mode independently), you also need:
+To run the test suite, you also need:
 
-* Bash 4.1+
-* Python 2.6+
 * `Bats <https://github.com/sstephenson/bats>`_ 0.4.0
-* wget
+* Bash 4.1+, for Bats and to make programming the tests tractable
+* Python 2.7 or 3.4+, for building some of the tests
+* Wget, to download stuff for some of the test images
+* root access via :code:`sudo` (optional), to test filesystem permissions enforcement
 
-Note that without Docker on the build system, some of the test suite will be
-skipped.
+Image building software tested, with varying levels of thoroughness:
+
+* Shell scripts with various manual bootstrap and :code:`ch-run`
+* Docker
+* `Buildah <https://github.com/containers/buildah>`_
+* `skopeo <https://github.com/containers/skopeo>`_ and
+  `umoci <https://github.com/openSUSE/umoci>`_
 
 Bats can be installed at the system level or embedded in the Charliecloud
 source code. If it's in both places, the latter is used.

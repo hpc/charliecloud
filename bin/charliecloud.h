@@ -65,6 +65,7 @@ enum bind_dep {
 
 struct container {
    struct bind *binds;
+   bool ch_ssh;         // bind /usr/bin/ch-ssh?
    gid_t container_gid;
    uid_t container_uid;
    char *newroot;

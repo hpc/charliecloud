@@ -1,12 +1,15 @@
-SHELL=/bin/bash
+SHELL=/bin/sh
 
 # Add some good stuff to CFLAGS.
-export CFLAGS += -std=c11 -Wall
+export CFLAGS += -std=c11 -Wall -g
 
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
-	cd test && $(MAKE) all
+#       only descend into test/ if the right Python is available
+	if (command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')"); then \
+	    cd test && $(MAKE) all; \
+	fi
 	cd examples/syscalls && $(MAKE) all
 
 .PHONY: clean
@@ -16,14 +19,7 @@ clean:
 	cd test && $(MAKE) clean
 	cd examples/syscalls && $(MAKE) clean
 
-# VERSION.full contains the version string reported by the executables.
-#
-# * If VERSION is an unadorned release (e.g. 0.2.3 not 0.2.3~pre), or there's
-#   no Git information available, VERSION.full is simply a copy of VERSION.
-#
-# * Otherwise, we add the Git branch if the current branch is not master, the 
-#   Git commit, and a note if the working directory
-#   contains uncommitted changes, e.g. "0.2.3~pre+experimental.ae24a4e.dirty".
+# VERSION.full contains the version string reported by executables; see FAQ.
 ifeq ($(shell test -d .git && fgrep -q \~ VERSION && echo true),true)
 .PHONY: VERSION.full  # depends on git metadata, not a simple file
 VERSION.full: VERSION
@@ -31,7 +27,10 @@ VERSION.full: VERSION
           (echo "This is a Git working directory but no git found." && false)
 	printf '%s+%s%s%s\n' \
 	       $$(cat $<) \
-	       $$(git rev-parse --abbrev-ref HEAD | sed 's/.*/&./g' | sed 's/master.//g') \
+	       $$(  git rev-parse --abbrev-ref HEAD \
+	          | sed 's/[^A-Za-z0-9]//g' \
+	          | sed 's/$$/./g' \
+	          | sed 's/master.//g') \
 	       $$(git rev-parse --short HEAD) \
 	       $$(git diff-index --quiet HEAD || echo '.dirty') \
 	       > $@
@@ -44,25 +43,37 @@ bin/version.h: VERSION.full
 bin/version.sh: VERSION.full
 	echo "version () { echo 1>&2 '$$(cat $<)'; }" > $@
 
-# Yes, this is bonkers. We keep it around even though normal "git archive" or
-# the zip files on Github work, because it provides an easy way to create a
-# self-contained tarball with embedded Bats and man pages.
+# These targets provide tarballs of HEAD (not the Git working directory) that
+# are self-contained, including the source code as well as the man pages
+# (both) and Bats (export-bats). To use them in an unclean working directory,
+# set $CH_UNCLEAN_EXPORT_OK to non-empty.
 #
-# You must "cd doc-src && make" before this will work.
-.PHONY: export
-export: VERSION.full man/charliecloud.1
-	test -d .git -a -f test/bats/.git  # need recursive Git checkout
-#	git diff-index --quiet HEAD        # need clean working directory
+# You must "cd doc-src && make" before they will work. The targets depend on
+# the man pages but don't know how to build them.
+#
+# They are phony because I haven't figured out their real dependencies.
+.PHONY: main.tar
+main.tar: VERSION.full man/charliecloud.1
+	git diff-index --quiet HEAD || [ -n "$$CH_MAKE_EXPORT_UNCLEAN_OK" ]
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
+	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
+            -rf main.tar man/*.1 VERSION.full
+
+.PHONY: export
+export: main.tar
+	gzip -9 main.tar
+	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
+	ls -lh charliecloud-$$(cat VERSION.full).tar.gz
+
+.PHONY: export-bats
+export-bats: main.tar
+	test -d .git -a -f test/bats/.git  # need recursive Git checkout
 	cd test/bats && \
           git archive HEAD \
             --prefix=charliecloud-$$(cat ../../VERSION.full)/test/bats/ \
             -o ../../bats.tar
 	tar Af main.tar bats.tar
-	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
-            -rf main.tar \
-            man/*.1 VERSION.full
 	gzip -9 main.tar
 	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
 	rm bats.tar
@@ -95,7 +106,6 @@ endif
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 BIN := $(INSTALL_PREFIX)/bin
 DOC := $(INSTALL_PREFIX)/share/doc/charliecloud
-TEST := $(DOC)/test
 # LIBEXEC_DIR is modeled after FHS 3.0 and
 # https://www.gnu.org/prep/standards/html_node/Directory-Variables.html. It
 # contains any executable helpers that are not needed in PATH. Default is
@@ -103,6 +113,7 @@ TEST := $(DOC)/test
 LIBEXEC_DIR ?= libexec/charliecloud
 LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
 LIBEXEC_RUN := $(PREFIX)/$(LIBEXEC_DIR)
+TEST := $(LIBEXEC_INST)/test
 .PHONY: install
 install: all
 	@test -n "$(PREFIX)" || \
@@ -128,30 +139,34 @@ install: all
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) LICENSE README.rst
 #       examples
-	for i in examples/syscalls examples/{serial,mpi,other}/*; do \
-	    install -d $(DOC)/$$i; \
-	    install -pm 644 -t $(DOC)/$$i $$i/*; \
+	for i in examples/syscalls \
+	         examples/serial/* examples/mpi/* examples/other/*; do \
+	    install -d $(LIBEXEC_INST)/$$i; \
+	    install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done
-	chmod 755 $(DOC)/examples/serial/hello/hello.sh \
-	          $(DOC)/examples/syscalls/pivot_root \
-	          $(DOC)/examples/syscalls/userns \
-	          $(DOC)/examples/*/*/*.sh
-	find $(DOC)/examples -name Build -exec chmod 755 {} \;
+	chmod 755 $(LIBEXEC_INST)/examples/serial/hello/hello.sh \
+	          $(LIBEXEC_INST)/examples/syscalls/pivot_root \
+	          $(LIBEXEC_INST)/examples/syscalls/userns \
+	          $(LIBEXEC_INST)/examples/*/*/*.sh
+	find $(LIBEXEC_INST)/examples -name Build -exec chmod 755 {} \;
 #       tests
 	install -d $(TEST) $(TEST)/run
 	install -pm 644 -t $(TEST) test/*.bats test/common.bash test/Makefile
 	install -pm 644 -t $(TEST)/run test/run/*.bats
 	install -pm 755 -t $(TEST) test/Build.*
 	install -pm 644 -t $(TEST) test/Dockerfile.* test/Docker_Pull.*
+	install -pm 644 -t $(TEST) test/*.patch
 	install -pm 755 -t $(TEST) test/make-auto test/make-perms-test
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
-	chmod 755 $(TEST)/chtest/{Build,*.py,printns}
-	ln -sf ../../../../bin $(TEST)/bin
+	chmod 755 $(TEST)/chtest/Build \
+	          $(TEST)/chtest/*.py \
+	          $(TEST)/chtest/printns
+	ln -sf ../../../bin $(TEST)/bin
 #       shared library tests
 	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
 	install -pm 755 -t $(TEST)/sotest test/sotest/libsotest.so.1.0 \
-	                                  test/sotest/sotest 
+	                                  test/sotest/sotest
 	install -pm 644 -t $(TEST)/sotest test/sotest/files_inferrable.txt \
 	                                  test/sotest/sotest.c
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so

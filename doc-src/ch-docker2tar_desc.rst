@@ -11,6 +11,10 @@ Description
 Flattens the Docker image tagged :code:`IMAGE` into a Charliecloud tarball in
 directory :code:`OUTDIR`.
 
+The Docker environment (e.g., :code:`ENV` statements) is placed in a file in
+the tarball at :code:`./environment`, in a form suitable for :code:`ch-run
+--set-env`.
+
 Sudo privileges are required to run :code:`docker export`.
 
 Additional arguments:

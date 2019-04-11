@@ -58,12 +58,12 @@ load common
     for i in "$ch_bin"/ch-*; do
         echo "shellcheck: ${i}"
         [[ ! $(file "$i") = *'shell script'* ]] && continue
-        shellcheck -e SC1090,SC2154 "$i"
+        shellcheck -e SC1090,SC2002,SC2154 "$i"
     done
     # libraries for user executables
     for i in "$ch_libexec"/*.sh; do
         echo "shellcheck: ${i}"
-        shellcheck -s sh -e SC1090 "$i"
+        shellcheck -s sh -e SC1090,SC2002 "$i"
     done
     # BATS scripts
     #
@@ -76,14 +76,14 @@ load common
         | shellcheck -s bash -e SC1090,SC2002,SC2154,SC2164 -
     done < <( find . ../examples -name bats -prune -o -name '*.bats' -print0 )
     # libraries for BATS scripts
-    shellcheck -s bash -e SC2034 ./common.bash
+    shellcheck -s bash -e SC2002,SC2034 ./common.bash
     # misc shell scripts
     if [[ -e ../packaging ]]; then
         misc=". ../examples ../packaging"
     else
         misc=". ../examples"
     fi
-    shellcheck -e SC2034 chtest/Build
+    shellcheck -e SC2002,SC2034 chtest/Build
     # shellcheck disable=SC2086
     while IFS= read -r -d '' i; do
         echo "shellcheck: ${i}"
@@ -140,25 +140,26 @@ load common
 
 @test 'ch-pull2tar' {
     scope standard
-    # This test pulls an image from Dockerhub and packs it into a tarball at 
-    # $ch_tardir. It removes the tarball upon completetion to keep the number of
-    # alpine36 tarballs to a minimum.
+    # This test pulls an image from Dockerhub and packs it into a tarball at
+    # $ch_tardir. It removes the tarball upon completetion to keep the number
+    # of Alpine tarballs to a minimum.
     need_docker
-    tag='alpine:3.6'
+    tag='alpine:3.9'
     tar="${ch_tardir}/${tag}.tar.gz"
     ch-pull2tar "$tag" "$ch_tardir"
     [[ $status -eq 0 ]]
-    [[ -e $tar ]] 
+    [[ -e $tar ]]
     rm "${ch_tardir}/${tag}.tar.gz"
     [[ ! -e $tar ]]
 }
 
 @test 'ch-pull2dir' {
     scope standard
-    # This test unpacks an image tarball pulled from Docker Hub into $ch_tardir
-    # to keep $ch_imgdir clean at build time. It removes the image upon completion. 
+    # This test unpacks an image tarball pulled from Docker Hub into
+    # $ch_tardir to keep $ch_imgdir clean at build time. It removes the image
+    # upon completion.
     need_docker
-    tag='alpine:3.6'
+    tag='alpine:3.9'
     img="${ch_tardir}/${tag}"
     ch-pull2dir "$tag" "$ch_tardir"
     [[ status -eq 0 ]]

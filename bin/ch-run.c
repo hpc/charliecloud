@@ -44,6 +44,7 @@ const struct argp_option options[] = {
    { "bind",        'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
    { "cd",          'c', "DIR",  0, "initial working directory in container"},
+   { "ch-ssh",       -8, 0,      0, "bind ch-ssh into image"},
    { "gid",         'g', "GID",  0, "run as GID within container" },
    { "join",        'j', 0,      0, "use same container as peer ch-run" },
    { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
@@ -106,6 +107,7 @@ int main(int argc, char *argv[])
    privs_verify_invoking();
 
    T_ (args.c.binds = calloc(1, sizeof(struct bind)));
+   args.c.ch_ssh = false;
    args.c.container_gid = getegid();
    args.c.container_uid = geteuid();
    args.c.join = false;
@@ -384,6 +386,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
       env_delta_append(&(args->env_deltas), UNSET_GLOB, arg);
       break;;
+   case -8: // --ch-ssh
+      args->c.ch_ssh = true;
+      break;
    case 'c':
       args->initial_dir = arg;
       break;

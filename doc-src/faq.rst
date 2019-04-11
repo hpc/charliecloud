@@ -116,6 +116,46 @@ two solutions:
 Unexpected behavior
 ===================
 
+What do the version numbers mean?
+---------------------------------
+
+Released versions of Charliecloud have a pretty standard version number, e.g.
+0.9.7.
+
+Work leading up to a released version also has version numbers, to satisfy
+tools that require them and to give the executables something useful to report
+on :code:`--version`, but these can be quite messy. We refer to such versions
+informally as *pre-releases*, but Charliecloud does not have formal
+pre-releases such as alpha, beta, or release candidate.
+
+*Pre-release version numbers are not in order*, because this work is in a DAG
+rather than linear, except they precede the version we are working towards. If
+you're dealing with these versions, use Git.
+
+Pre-release version numbers are the version we are working towards, followed
+by: :code:`~pre`, the branch name if not :code:`master` with non-alphanumerics
+removed, the commit hash, and finally :code:`dirty` if the working directory
+had uncommitted changes.
+
+Examples:
+
+  * :code:`0.2.0` : Version 0.2.0. Released versions don't include Git
+    information, even if built in a Git working directory.
+
+  * :code:`0.2.1~pre` : Some snapshot of work leading up to 0.2.1, built from
+    source code where the Git information has been lost, e.g. the tarballs
+    Github provides. This should make you wary because you don't have any
+    provenance. It might even be uncommitted work or an abandoned branch.
+
+  * :code:`0.2.1~pre.1a99f42` : Master branch commit 1a99f42, built from a
+    clean working directory (i.e., no changes since that commit).
+
+  * :code:`0.2.1~pre.foo1.0729a78` : Commit 0729a78 on branch :code:`foo-1`,
+    :code:`foo_1`, etc. built from clean working directory.
+
+  * :code:`0.2.1~pre.foo1.0729a78.dirty` : Commit 0729a78 on one of those
+    branches, plus un-committed changes.
+
 :code:`--uid 0` lets me read files I can’t otherwise!
 -----------------------------------------------------
 
