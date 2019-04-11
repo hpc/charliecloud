@@ -121,6 +121,23 @@ load common
     [[ $empty_ct -eq 0 ]]
 }
 
+@test 'ch-build2dir' {
+    scope standard
+    # This test unpacks into $ch_tardir so we don't put anything in $ch_imgdir
+    # at build time. It removes the image on completion.
+    need_docker
+    outdir="${BATS_TMPDIR}"
+    tar="${outdir}/alpine39.tar.gz"
+    img="${outdir}/alpine39"
+    [[ ! -e $img ]] || rm -rf --one-file-system "$img"
+    ch-build2dir -t alpine39 --file=Dockerfile.alpine39 . "$outdir"
+    sudo docker tag test "test:${ch_version_docker}"
+    docker_ok test
+    image_ok "$img"
+    # Remove since we don't want it hanging around later.
+    rm -Rf --one-file-system "$tar" "$img"
+}
+
 @test 'ch-pull2tar' {
     scope standard
     # This test pulls an image from Dockerhub and packs it into a tarball at 

@@ -21,7 +21,7 @@ Arguments:
 
   :code:`OUTDIR`
     directory in which to place image directory (named :code:`TAG`) and
-    tarball
+    temporary tarball
 
   :code:`ARGS`
     additional arguments passed to :code:`ch-build`
