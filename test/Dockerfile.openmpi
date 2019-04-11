@@ -1,4 +1,5 @@
 # ch-test-scope: full
+# ch-test-arch-exclude: aarch64  # issue #391
 FROM debian9
 
 # A key goal of this Dockerfile is to demonstrate best practices for building
@@ -72,7 +73,6 @@ RUN apt-get install -y --no-install-suggests \
     libhwloc-dev \
     libnl-3-200 \
     libnl-route-3-200 \
-    libnl-3-dev \
     libnl-route-3-dev \
     libnuma1 \
     libpmi2-0-dev \
@@ -86,13 +86,16 @@ WORKDIR /usr/local/src
 # (too old in Stretch). Download manually because I'm too lazy to set up
 # package pinning.
 #
-# Note that libpsm2 is x86_64 only:
-# https://lists.debian.org/debian-hpc/2017/12/msg00015.html
-ENV DEB_URL http://snapshot.debian.org/archive/debian/20190326T095837Z/pool/main
-ENV PSM2_VERSION 11.2.78-1
+# Note that libpsm2 is x86-64 only:
+#   https://packages.debian.org/buster/libpsm2-2
+#   https://lists.debian.org/debian-hpc/2017/12/msg00015.html
+ENV DEB_URL http://snapshot.debian.org/archive/debian/20181231T220010Z/pool/main
+ENV PSM2_VERSION 11.2.68-4
 RUN wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb
 RUN wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-dev_${PSM2_VERSION}_amd64.deb
-ENV IBVERBS_VERSION 22.1-1
+
+# This version was chosen as it did not conflict with the host drivers
+# ENV IBVERBS_VERSION 21.0-1
 RUN for i in ibacm \
              ibverbs-providers \
              ibverbs-utils \
@@ -110,27 +113,25 @@ RUN for i in ibacm \
 RUN dpkg --install *.deb
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
-#
-# Bug workaround: We patch UCX to work around UCX issue #750 [1], which causes
-# OpenMPI to crash in the presence of OPA hardware when the UCX module tries
-# and fails to initialize itself.
-#
-# [1]: https://github.com/openucx/ucx/issues/750
 ENV UCX_VERSION 1.5.1
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git
-COPY ucx-issue-750.patch ./ucx
-RUN cd ucx && git apply ucx-issue-750.patch
 RUN    cd ucx \
     && ./autogen.sh \
     && ./contrib/configure-release --prefix=/usr/local \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 
-ENV MPI_URL https://download.open-mpi.org/nightly/open-mpi/v3.1.x
-ENV MPI_VERSION v3.1.x-201903130305-7412e88
-
+# OpenMPI.
+# We patch OpenMPI's ucx pml (Point-to-point Management Layer) plugin to not
+# activate on systems with Intel or Cray HSNs, this allows the PSM2/uGNI
+# plugins to function offering the best performance. This is to work around
+# the fact that the ucx pml has the highest priority.
+ENV MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
+ENV MPI_VERSION 3.1.4
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
 RUN tar xf openmpi-${MPI_VERSION}.tar.gz
+COPY dont-init-ucx-on-intel-cray.patch ./openmpi-${MPI_VERSION}
+RUN cd openmpi-${MPI_VERSION} && git apply dont-init-ucx-on-intel-cray.patch
 RUN    cd openmpi-${MPI_VERSION} \
     && CFLAGS=-O3 \
        CXXFLAGS=-O3 \
