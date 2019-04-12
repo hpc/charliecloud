@@ -17,6 +17,7 @@
 #include <sys/mount.h>
 #include <sys/prctl.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <time.h>
@@ -98,6 +99,7 @@ void join_namespaces(pid_t pid);
 void join_end();
 void log_ids(const char *func, int line);
 bool path_exists(char *path);
+unsigned long path_mount_flags(char *path);
 void path_split(char *path, char **dir, char **base);
 void sem_timedwait_relative(sem_t *sem, int timeout);
 void setup_namespaces(struct container *c);
@@ -226,7 +228,11 @@ void enter_udss(struct container *c)
 
    // Re-mount new root read-only unless --write or already read-only.
    if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {
-      Zf (mount(NULL, c->newroot, NULL, MS_REMOUNT|MS_BIND|MS_RDONLY, NULL),
+      unsigned long flags =   path_mount_flags(c->newroot)
+                            | MS_REMOUNT  // Re-mount ...
+                            | MS_BIND     // only this mount point ...
+                            | MS_RDONLY;  // read-only.
+      Zf (mount(NULL, c->newroot, NULL, flags, NULL),
           "can't re-mount image read-only (is it on NFS?)");
    }
    // Pivot into the new root. Use /dev because it's available even in
@@ -404,6 +410,38 @@ bool path_exists(char *path)
 
    Tf (errno == ENOENT, "can't stat: %s", path);
    return false;
+}
+
+/* Return the mount flags of the file system containing path, suitable for
+   passing to mount(2).
+
+   This is messy because, the flags we get from statvfs(3) are ST_* while the
+   flags needed by mount(2) are MS_*. My glibc has a comment in bits/statvfs.h
+   that the ST_* "should be kept in sync with" the MS_* flags, and the values
+   do seem to match, but there are additional undocumented flags in there.
+   Also, the kernel contains a test "unprivileged-remount-test.c" that
+   manually translates the flags. Thus, I wasn't comfortable simply passing
+   the output of statvfs(3) to mount(2). */
+unsigned long path_mount_flags(char *path)
+{
+   struct statvfs sv;
+   unsigned long known_flags =   ST_MANDLOCK   | ST_NOATIME  | ST_NODEV
+                               | ST_NODIRATIME | ST_NOEXEC   | ST_NOSUID
+                               | ST_RDONLY     | ST_RELATIME | ST_SYNCHRONOUS;
+
+   Z_ (statvfs(path, &sv));
+   Ze (sv.f_flag & ~known_flags, "unknown mount flags: 0x%lx %s",
+       sv.f_flag & ~known_flags, path);
+
+   return   (sv.f_flag & ST_MANDLOCK    ? MS_MANDLOCK    : 0)
+          | (sv.f_flag & ST_NOATIME     ? MS_NOATIME     : 0)
+          | (sv.f_flag & ST_NODEV       ? MS_NODEV       : 0)
+          | (sv.f_flag & ST_NODIRATIME  ? MS_NODIRATIME  : 0)
+          | (sv.f_flag & ST_NOEXEC      ? MS_NOEXEC      : 0)
+          | (sv.f_flag & ST_NOSUID      ? MS_NOSUID      : 0)
+          | (sv.f_flag & ST_RDONLY      ? MS_RDONLY      : 0)
+          | (sv.f_flag & ST_RELATIME    ? MS_RELATIME    : 0)
+          | (sv.f_flag & ST_SYNCHRONOUS ? MS_SYNCHRONOUS : 0);
 }
 
 /* Split path into dirname and basename. */
