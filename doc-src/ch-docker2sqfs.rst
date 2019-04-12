@@ -1,7 +1,7 @@
 :orphan:
 
 ch-docker2sqfs man page
-++++++++++++++++++++++
++++++++++++++++++++++++
 
 .. include:: ./ch-docker2sqfs_desc.rst
 .. include:: ./bugs.rst
