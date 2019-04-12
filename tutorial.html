@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Tutorial &mdash; Charliecloud 0.9.8 documentation</title>
+  <title>3. Tutorial &mdash; Charliecloud 0.9.9 documentation</title>
   
 
   
@@ -19,33 +19,35 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="4. Charliecloud command reference" href="command-usage.html" />
     <link rel="prev" title="2. Testing" href="test.html" /> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -62,7 +64,7 @@
             
             
               <div class="version">
-                e7b7fdf
+                b62f300
               </div>
             
           
@@ -311,7 +313,7 @@ supported.</p>
     <span class="o">&amp;&amp;</span> apt-get install -y openssh-client <span class="se">\</span>
     <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
 
-COPY . hello
+<span class="k">COPY</span> . hello
 
 <span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
@@ -786,7 +788,8 @@ this with two chained Dockerfiles. First, we build a basic Debian image
 (<code class="code docutils literal notranslate"><span class="pre">test/Dockerfile.debian9</span></code>):</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
 
-<span class="k">ENV</span><span class="s"> DEBIAN_FRONTEND noninteractive</span>
+<span class="k">ENV</span> chse_dockerfile foo
+<span class="k">ENV</span> DEBIAN_FRONTEND noninteractive
 
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
     <span class="o">&amp;&amp;</span> apt-get install -y apt-utils
@@ -796,7 +799,8 @@ this with two chained Dockerfiles. First, we build a basic Debian image
 Dockerfile that compiles several dependencies in addition to OpenMPI. For the
 purposes of this tutorial, you can skip most of it, but we felt it would be
 useful to show a real example.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian9</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-arch-exclude: aarch64  # issue #391</span>
+<span class="k">FROM</span><span class="s"> debian9</span>
 
 <span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
 <span class="c"># OpenMPI for use inside a container.</span>
@@ -881,13 +885,14 @@ useful to show a real example.</p>
 <span class="c"># (too old in Stretch). Download manually because I&#39;m too lazy to set up</span>
 <span class="c"># package pinning.</span>
 <span class="c">#</span>
-<span class="c"># Note that libpsm2 is x86_64 only:</span>
-<span class="c"># https://lists.debian.org/debian-hpc/2017/12/msg00015.html</span>
-<span class="k">ENV</span><span class="s"> DEB_URL http://snapshot.debian.org/archive/debian/20180928T210119Z/pool/main</span>
-<span class="k">ENV</span><span class="s"> PSM2_VERSION 10.3.58-2</span>
+<span class="c"># Note that libpsm2 is x86-64 only:</span>
+<span class="c">#   https://packages.debian.org/buster/libpsm2-2</span>
+<span class="c">#   https://lists.debian.org/debian-hpc/2017/12/msg00015.html</span>
+<span class="k">ENV</span> DEB_URL http://snapshot.debian.org/archive/debian/20180928T210119Z/pool/main
+<span class="k">ENV</span> PSM2_VERSION <span class="m">10</span>.3.58-2
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/libp/libpsm2/libpsm2-2_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/libp/libpsm2/libpsm2-dev_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
-<span class="k">ENV</span><span class="s"> IBVERBS_VERSION 20.0-1</span>
+<span class="k">ENV</span> IBVERBS_VERSION <span class="m">20</span>.0-1
 <span class="k">RUN</span> <span class="k">for</span> i in ibacm <span class="se">\</span>
              ibverbs-providers <span class="se">\</span>
              ibverbs-utils <span class="se">\</span>
@@ -911,10 +916,10 @@ useful to show a real example.</p>
 <span class="c"># and fails to initialize itself.</span>
 <span class="c">#</span>
 <span class="c"># [1]: https://github.com/openucx/ucx/issues/750</span>
-<span class="k">ENV</span><span class="s"> UCX_VERSION 1.3.1</span>
+<span class="k">ENV</span> UCX_VERSION <span class="m">1</span>.3.1
 <span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
               https://github.com/openucx/ucx.git
-COPY ucx-issue-750.patch ./ucx
+<span class="k">COPY</span> ucx-issue-750.patch ./ucx
 <span class="k">RUN</span> <span class="nb">cd</span> ucx <span class="o">&amp;&amp;</span> git apply ucx-issue-750.patch
 <span class="k">RUN</span>    <span class="nb">cd</span> ucx <span class="se">\</span>
     <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
@@ -929,8 +934,8 @@ COPY ucx-issue-750.patch ./ucx
 <span class="c"># Remove this argument when we upgrade to OpenMPI 3.1.4 (issue #346).</span>
 <span class="c">#</span>
 <span class="c"># [1]: https://github.com/open-mpi/ompi/issues/6014</span>
-<span class="k">ENV</span><span class="s"> MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads</span>
-<span class="k">ENV</span><span class="s"> MPI_VERSION 3.1.3</span>
+<span class="k">ENV</span> MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
+<span class="k">ENV</span> MPI_VERSION <span class="m">3</span>.1.3
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
@@ -984,10 +989,11 @@ source, but you use the <code class="code docutils literal notranslate"><span cl
 host filesystem (rather than the network via HTTP) to the image. For example,
 <code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello/Dockerfile.openmpi</span></code> uses this approach:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: full</span>
+<span class="c"># ch-test-arch-exclude: aarch64  # issue #391</span>
 <span class="k">FROM</span><span class="s"> openmpi</span>
 
 <span class="c"># This example</span>
-COPY . /hello
+<span class="k">COPY</span> . /hello
 <span class="k">WORKDIR</span><span class="s"> /hello</span>
 <span class="k">RUN</span> make clean <span class="o">&amp;&amp;</span> make
 </pre></div>
@@ -1435,7 +1441,7 @@ your site administrators for the latter.</p>
         <a href="command-usage.html" class="btn btn-neutral float-right" title="4. Charliecloud command reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="test.html" class="btn btn-neutral" title="2. Testing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="test.html" class="btn btn-neutral float-left" title="2. Testing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -1460,26 +1466,16 @@ your site administrators for the latter.</p>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

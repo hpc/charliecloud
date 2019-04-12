@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.8 documentation</title>
+  <title>4. Charliecloud command reference &mdash; Charliecloud 0.9.9 documentation</title>
   
 
   
@@ -19,33 +19,35 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="5. Pre-installed virtual machine" href="vm.html" />
     <link rel="prev" title="3. Tutorial" href="tutorial.html" /> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -62,7 +64,7 @@
             
             
               <div class="version">
-                e7b7fdf
+                b62f300
               </div>
             
           
@@ -118,7 +120,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#additional-arguments">4.4.3.3. Additional arguments</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#cray-mpi-prerequisites-and-quirks">4.4.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> prerequisites and quirks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cray-mpi-dependencies-and-quirks">4.4.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> dependencies and quirks</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#notes">4.4.5. Notes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#bugs">4.4.6. Bugs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id7">4.4.7. Examples</a></li>
@@ -350,6 +352,9 @@ than the individual commands.</p>
 <h3>4.3.2. Description<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <p>Flattens the Docker image tagged <code class="code docutils literal notranslate"><span class="pre">IMAGE</span></code> into a Charliecloud tarball in
 directory <code class="code docutils literal notranslate"><span class="pre">OUTDIR</span></code>.</p>
+<p>The Docker environment (e.g., <code class="code docutils literal notranslate"><span class="pre">ENV</span></code> statements) is placed in a file in
+the tarball at <code class="code docutils literal notranslate"><span class="pre">./environment</span></code>, in a form suitable for <code class="code docutils literal notranslate"><span class="pre">ch-run</span>
+<span class="pre">--set-env</span></code>.</p>
 <p>Sudo privileges are required to run <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">export</span></code>.</p>
 <p>Additional arguments:</p>
 <blockquote>
@@ -459,8 +464,8 @@ libraries.</dd>
 </div></blockquote>
 </div>
 </div>
-<div class="section" id="cray-mpi-prerequisites-and-quirks">
-<h3>4.4.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> prerequisites and quirks<a class="headerlink" href="#cray-mpi-prerequisites-and-quirks" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="cray-mpi-dependencies-and-quirks">
+<h3>4.4.4. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> dependencies and quirks<a class="headerlink" href="#cray-mpi-dependencies-and-quirks" title="Permalink to this headline">¶</a></h3>
 <p>The implementation of <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> for MPICH is messy, foul smelling,
 and brittle. It replaces or overrides the open source MPICH libraries
 installed in the container. Users should be aware of the following.</p>
@@ -860,6 +865,9 @@ cannot be inherited from the host shell, e.g. Dockerfile <code class="code docut
 directives or other build-time configuration. <code class="code docutils literal notranslate"><span class="pre">FILE</span></code> is a host path to
 provide the greatest flexibility; guest paths can be specified by prepending
 the image path.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-docker2tar(1)</span></code> lists variables specified at build time in
+Dockerfiles in the image in file <code class="code docutils literal notranslate"><span class="pre">/environment</span></code>. To set these variables:
+<code class="code docutils literal notranslate"><span class="pre">--set-env=$IMG/environment</span></code>.</p>
 <p>Variable values in <code class="code docutils literal notranslate"><span class="pre">FILE</span></code> replace any already set. If a variable is
 repeated, the last value wins.</p>
 <p>The syntax of <code class="code docutils literal notranslate"><span class="pre">FILE</span></code> is key-value pairs separated by the first equals
@@ -975,10 +983,6 @@ easily produced by other simple mechanisms.) Examples of valid lines:</p>
 </tr>
 </tbody>
 </table>
-<p>Example Docker command to produce a valid <code class="code docutils literal notranslate"><span class="pre">FILE</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> docker inspect <span class="nv">$TAG</span> --format<span class="o">=</span><span class="s1">&#39;{{range .Config.Env}}{{println .}}{{end}}&#39;</span>
-</pre></div>
-</div>
 </div>
 <div class="section" id="removing-variables-with-unset-env">
 <h4>4.7.5.3. Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code><a class="headerlink" href="#removing-variables-with-unset-env" title="Permalink to this headline">¶</a></h4>
@@ -1151,7 +1155,7 @@ your site admin for a suitable location.</p>
         <a href="vm.html" class="btn btn-neutral float-right" title="5. Pre-installed virtual machine" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="tutorial.html" class="btn btn-neutral" title="3. Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="tutorial.html" class="btn btn-neutral float-left" title="3. Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -1176,26 +1180,16 @@ your site admin for a suitable location.</p>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
