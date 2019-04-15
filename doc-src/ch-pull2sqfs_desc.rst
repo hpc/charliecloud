@@ -25,7 +25,7 @@ Additional arguments:
 
 Examples
 ========
-# TODO put real output in example
+# FIXME create example with real output
 ::
 
   $ ch-pull2sqfs alpine /var/tmp

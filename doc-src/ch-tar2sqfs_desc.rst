@@ -8,7 +8,9 @@ Synopsis
 Description
 ===========
 
-Create Charliecloud squashfs with name matching :code:`TARBALL` under directory :code:`OUTDIR`
+Create Charliecloud squashfs from :code:`TARBALL`  in directory :code:`OUTDIR`
+
+The resulting squashfs has a name corresponding to :code:`TARBALL` with a :code:`.sqfs` suffix
 
 Executes :code:`ch-tar2dir` and :code:`ch-dir2sqfs`
 
@@ -29,16 +31,21 @@ Additional arguments:
 
 Example
 =======
-# TODO create example with real output when ready
+# FIXME create example with real output
 ::
 
   $ ls -lh /var/tmp
   total 57M
   -rw-r-----  1 reidpr reidpr  57M Feb 13 16:14 hello.tar.gz
-  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
-  creating new image /var/tmp/hello
-  /var/tmp/hello unpacked ok
-  $ ls -lh /var/tmp
-  total 57M
-  drwxr-x--- 22 reidpr reidpr 4.0K Feb 13 16:29 hello
-  -rw-r-----  1 reidpr reidpr  57M Feb 13 16:14 hello.tar.gz
+  $ ch-docker2tar debian9 .
+  rgoff 15
+  $ ls -lh
+  total 55M
+  -rw-rw-r-- 1 rgoff rgoff 55M Apr 15 14:30 debian9.tar.gz
+  $ ch-tar2sqfs debian9.tar.gz .
+  creating new squashfs image /var/tmp/sqfs/hello.sqfs
+  squashed ok
+  $ ls -lh
+  total 110M
+  -rw-rw-r-- 1 rgoff rgoff 55M Apr 15 14:30 debian9.tar.gz
+  -rw-rw-r-- 1 rgoff rgoff 55M Apr 15 14:30 debian9.sqfs

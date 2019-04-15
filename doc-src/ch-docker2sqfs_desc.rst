@@ -13,6 +13,8 @@ directory :code:`OUTDIR`.
 
 Executes :code:`ch-docker2tar`, then :code:`ch-tar2sqfs`
 
+Intermediate files and directories are removed.
+
 Sudo privileges are required to run :code:`docker export`.
 
 Additional arguments:
@@ -25,10 +27,11 @@ Additional arguments:
 
 Example
 =======
-# TODO put real output in example
+# FIXME create example with real output
 ::
 
   $ ch-docker2sqfs hello /var/tmp
-  57M /var/tmp/hello.tar.gz
+  creating new squashfs image /var/tmp/hello.sqfs
+  squashed ok
   $ ls -lh /var/tmp
-  -rw-r-----  1 reidpr reidpr  57M Feb 13 16:14 hello.tar.gz
+  -rw-r-----  1 reidpr reidpr  57M Feb 13 16:14 hello.sqfs

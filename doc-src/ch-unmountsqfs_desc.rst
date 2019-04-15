@@ -8,8 +8,8 @@ Synopsis
 Description
 ===========
 
-Unmounts Charliecloud squashfs in target directory :code:`MOUNTDIR`
-Removes empty :code:`MOUNTDIR` after unmounting
+Unmounts Charliecloud squashfs at target directory :code:`MOUNTDIR`
+Removes empty :code:`MOUNTDIR` after successful unmounting
 
 Additional arguments:
 
@@ -48,6 +48,6 @@ Example
   -rw-rw-r--  1 shane shane 50 Apr  9 15:41 WEIRD_AL_YANKOVIC
   $ ch-unmountsqfs /var/tmp/debian
   $ ls -lh /var/tmp/debian
-  total 0
+  ls: cannot access /var/tmp/debian: No such file or directory
   
 

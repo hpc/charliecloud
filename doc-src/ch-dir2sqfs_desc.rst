@@ -3,13 +3,13 @@ Synopsis
 
 ::
 
-  $ ch-dir2sqfs DIR OUTDIR
+  $ ch-dir2sqfs IMGDIR OUTDIR
 
 Description
 ===========
 
-Create Charliecloud squashfs from directory :code:`DIR` under directory :code:`OUTDIR`
-with the same name as :code:`DIR`, with suffix :code:`.sqfs`
+Create Charliecloud squashfs from image directory :code:`IMGDIR` under directory :code:`OUTDIR`
+with the same name as :code:`IMGDIR`, with suffix :code:`.sqfs`
 
 Additional arguments:
 
@@ -25,7 +25,7 @@ Additional arguments:
 
 Example
 =======
-# TODO add example output when complete
+# FIXME create example with real output
 ::
 
   $ ls -lh /var/tmp
@@ -38,3 +38,10 @@ Example
   total 57M
   drwxr-x--- 22 reidpr reidpr 4.0K Feb 13 16:29 hello
   -rw-r-----  1 reidpr reidpr  57M Feb 13 16:14 hello.tar.gz
+  ch-dir2sqfs /var/tmp/hello /var/tmp
+  creating new squashfs image /var/tmp/sqfs/hello.sqfs
+  squashed /var/tmp/hello ok
+  ls -lh /var/tmp
+  drwxr-x--- 22 reidpr reidpr 4.0K Feb 13 16:29 hello
+  -rw-r-----  1 reidpr reidpr  57M Feb 13 16:14 hello.tar.gz
+  -rw-r--r-- 16 reidpr reidpr  57M Feb 13 17:12 hello.sqfs

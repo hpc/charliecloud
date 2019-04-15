@@ -9,7 +9,9 @@ Description
 ===========
 
 Mounts Charliecloud squashfs :code:`SQFS` in target empty directory :code:`MOUNTDIR`
-Creates :code:`MOUNTDIR` if it does not exist
+Creates :code:`MOUNTDIR` if it does not exist.
+
+:code:`MOUNTDIR` MUST be empty.
 
 Additional arguments:
 
@@ -21,7 +23,7 @@ Additional arguments:
 
 Example
 =======
-# TODO put real output in example section
+# FIXME create example with real output
 ::
 
   $ ls -lh /var/tmp/debian
