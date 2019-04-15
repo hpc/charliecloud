@@ -123,19 +123,22 @@ load common
 
 @test 'ch-build2dir' {
     scope standard
-    # This test unpacks into $ch_tardir so we don't put anything in $ch_imgdir
-    # at build time. It removes the image on completion.
     need_docker
-    outdir="${BATS_TMPDIR}"
-    tar="${outdir}/build2dir.tar.gz"
-    img="${outdir}/build2dir"
-    [[ ! -e $img ]] || rm -rf --one-file-system "$img"
-    ch-build2dir -t build2dir --file=Dockerfile.alpine39 . "$outdir"
-    sudo docker tag build2dir "build2dir:${ch_version_docker}"
-    docker_ok build2dir
-    image_ok "$img"
+    outdir=${BATS_TMPDIR}
+    tar=${outdir}/build2dir.tar.gz
+    img=${outdir}/build2dir
+    # Remove image if it already exists.
+    [[ -e $img ]] && rm -rf --one-file-system "$img"
+    # Repeat twice to test build-new as well as overwrite existing image.
+    for i in 1 2; do
+        ch-build2dir -t build2dir --file=Dockerfile.alpine39 . "$outdir"
+        [[ ! -e $tar ]]
+        sudo docker tag build2dir "build2dir:${ch_version_docker}"
+        docker_ok build2dir
+        image_ok "$img"
+    done
     # Remove since we don't want it hanging around later.
-    rm -Rf --one-file-system "$tar" "$img"
+    rm -Rf --one-file-system "$img"
 }
 
 @test 'ch-pull2tar' {

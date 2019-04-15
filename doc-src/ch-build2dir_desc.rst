@@ -8,13 +8,15 @@ Synopsis
 Description
 ===========
 
-Build a Docker image named :code:`TAG` described by :code:`./Dockerfile` or as
-specified and unpack it into :code:`OUTDIR/TAG`. This is a wrapper for
-:code:`ch-build`, :code:`ch-docker2tar`, and :code:`ch-tar2dir`.
-
-See warning in man page for :code:`ch-tar2dir`.
+Build a Docker image named :code:`TAG` described by a Dockerfile (default
+:code:`./Dockerfile`) and unpack it into :code:`OUTDIR/TAG`. This is a wrapper
+for :code:`ch-build`, :code:`ch-docker2tar`, and :code:`ch-tar2dir`; see also
+those man pages.
 
 Arguments:
+
+  :code:`ARGS`
+    additional arguments passed to :code:`ch-build`
 
   :code:`CONTEXT`
     Docker context directory
@@ -23,8 +25,8 @@ Arguments:
     directory in which to place image directory (named :code:`TAG`) and
     temporary tarball
 
-  :code:`ARGS`
-    additional arguments passed to :code:`ch-build`
+  :code:`-t TAG`
+    name (tag) of Docker image to build
 
   :code:`--help`
     print help and exit
