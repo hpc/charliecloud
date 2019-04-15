@@ -17,6 +17,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/MPI version" {
+    [[ $ch_cray ]] && skip 'issue #411'
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- /hello/hello
     echo "$output"
@@ -34,6 +35,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/serial" {
+    [[ $ch_cray ]] && skip 'issue #411'
     # This seems to start up the MPI infrastructure (daemons, etc.) within the
     # guest even though there's no mpirun.
     # shellcheck disable=SC2086

@@ -33,6 +33,7 @@ setup () {
 # collection of XML files containing binary data and it seems too hairy to me.
 
 @test "${ch_tag}/cone serial" {
+    [[ $ch_cray ]] && skip 'issue #411'
     # shellcheck disable=SC2086
     ch-run $ch_unslurm -b "$indir" -b "$outdir" "$ch_img" -- \
            pvbatch /mnt/0/cone.py /mnt/1

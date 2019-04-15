@@ -22,7 +22,7 @@ tarball=${tarball_uncompressed}.gz
 workdir=$3
 
 arch=$(uname -m)
-mirror=http://dl-cdn.alpinelinux.org/alpine/v3.8
+mirror=http://dl-cdn.alpinelinux.org/alpine/v3.9
 # Dynamically select apk-tools-static version. We would prefer to hard-code a
 # version (and upgrade on our schedule), but we can't because Alpine does not
 # keep old package versions. If we try, the build breaks every few months (for
