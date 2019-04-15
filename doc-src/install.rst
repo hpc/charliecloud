@@ -75,6 +75,10 @@ Docker expect to run the :code:`docker` command under :code:`sudo` and need
 Docker 17.03+ and :code:`mktemp(1)`. (Older versions of Docker may work but
 are untested. We know that 1.7.1 does not work.)
 
+Optional build-time dependencies:
+
+* Bash 4.1+, for :code:`ch-build2dir`
+
 Test suite
 ----------
 
