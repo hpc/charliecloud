@@ -4,9 +4,7 @@ setup () {
     scope full
     arch_exclude aarch64  # issue #391
     prerequisites_ok "$ch_tag"
-    if [[ $ch_cray ]]; then
-        crayify_mpi_maybe "$ch_img"
-    fi
+    crayify_mpi_maybe "$ch_img"
 
     # - One iteration because we just care about correctness, not performance.
     #   (If we let the benchmark choose, there is an overwhelming number of
