@@ -1,0 +1,28 @@
+#!/bin/bash
+# ch-test-scope: standard
+
+# Generate image directory using ch-pull2dir and stage it for testing.
+
+set -e
+
+srcdir=$1
+tarball_gz="${2}.tar.gz"
+workdir=$3
+
+imgtag='alpine:3.9'
+tag='ch-pull2dir'
+
+
+cd "$srcdir"
+
+if ( ! command -v docker &> /dev/null); then
+    echo 'docker not found' 1>&2
+    exit 65
+fi
+
+ch-pull2dir "$imgtag" "$workdir"
+
+mv "${workdir}/${imgtag}" "${workdir}/${tag}"
+cd "${workdir}/${tag}"
+tar czf "../${tag}.tar.gz" *
+mv "${workdir}/${tag}.tar.gz" "$tarball_gz"
