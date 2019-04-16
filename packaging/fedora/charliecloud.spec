@@ -11,7 +11,7 @@
 %define _libexecdir %{_prefix}/libexec
 
 # Python files should specify a version, e.g., python3, python2.
-%define versionize_script() (sed -i 's,/env python,/%1,g' %2)
+%define versionize_script() (sed -i 's,/env python,/env %1,g' %2)
 
 %{!?build_cflags:%global build_cflags $RPM_OPT_FLAGS}
 %{!?build_ldflags:%global build_ldflags %nil}
@@ -61,8 +61,6 @@ container image builders such as Docker, Skopeo, and Buildah.
 %install
 %make_install PREFIX=%{_prefix}
 
-%check
-
 # Don't try to compile python files with /usr/bin/python
 %{?el7:%global __python %__python3}
 
@@ -79,10 +77,12 @@ Note for versions below RHEL7.6, you will also need to enable user namespaces:
   systemctl -p
 EOF
 
-cat > README.tests <<EOF
+cat > README.TESTS <<EOF
 Charliecloud comes with a fairly comprehensive Bats test suite. For testing
 instructions visit: https://hpc.github.io/charliecloud/test.html
 EOF
+
+%check
 
 %files
 %license LICENSE
@@ -106,7 +106,7 @@ EOF
 %{_bindir}/ch-ssh
 
 %files test
-%doc README.tests
+%doc README.TESTS
 %{_libexecdir}/%{name}/examples
 %{_libexecdir}/%{name}/test
 %exclude %{_datadir}/doc/%{name}
