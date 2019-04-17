@@ -135,9 +135,19 @@ install: all
 	    install -d $(INSTALL_PREFIX)/share/man/man1; \
 	    install -pm 644 -t $(INSTALL_PREFIX)/share/man/man1 man/*.1; \
 	fi
-#       misc "documentation"
+#       license and readme
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) LICENSE README.rst
+#		html files if they were built
+	if (ls -A doc | grep -q .); then \
+		cp -r doc $(DOC)/html; \
+		for i in $$(find $(DOC)/html -type d); do \
+			chmod 775 $$i; \
+		done; \
+		for i in $$(find $(DOC)/html -type f); do \
+			chmod 644 $$i; \
+		done; \
+	fi
 #       examples
 	for i in examples/syscalls \
 	         examples/serial/* examples/mpi/* examples/other/*; do \
