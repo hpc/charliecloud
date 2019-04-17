@@ -19,6 +19,9 @@ Sudo privileges are required to run :code:`docker export`.
 
 Additional arguments:
 
+  :code:`--nocompress`
+    do not perform compression
+
   :code:`--help`
     print help and exit
 

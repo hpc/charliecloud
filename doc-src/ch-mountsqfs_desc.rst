@@ -11,7 +11,7 @@ Description
 Mounts Charliecloud squashfs :code:`SQFS` in target empty directory :code:`MOUNTDIR`
 Creates :code:`MOUNTDIR` if it does not exist.
 
-:code:`MOUNTDIR` MUST be empty.
+:code:`MOUNTDIR` must be empty, or must not exist.
 
 Additional arguments:
 

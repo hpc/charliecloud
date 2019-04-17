@@ -11,7 +11,7 @@ Description
 Flattens the Docker image tagged :code:`IMAGE` into a Charliecloud squashfs in
 directory :code:`OUTDIR`.
 
-Executes :code:`ch-docker2tar`, then :code:`ch-tar2sqfs`
+Executes :code:`ch-docker2tar` with :code:`--nocompress`, then :code:`ch-tar2sqfs`
 
 Intermediate files and directories are removed.
 
