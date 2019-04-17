@@ -58,7 +58,7 @@ main.tar: VERSION.full man/charliecloud.1
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
-            -rf main.tar man/*.1 VERSION.full
+            -rf main.tar man/*.1 VERSION.full doc
 
 .PHONY: export
 export: main.tar
@@ -138,7 +138,7 @@ install: all
 #       license and readme
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) LICENSE README.rst
-#		html files if they were built
+#	html files if they were built
 	if (ls -A doc | grep -q .); then \
 		cp -r doc $(DOC)/html; \
 		for i in $$(find $(DOC)/html -type d); do \
