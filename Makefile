@@ -58,7 +58,7 @@ main.tar: VERSION.full man/charliecloud.1
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
-            -rf main.tar man/*.1 VERSION.full doc
+            -rf main.tar doc man/*.1 VERSION.full
 
 .PHONY: export
 export: main.tar
@@ -141,8 +141,9 @@ install: all
 #	html files if they were built
 	if (ls -A doc | grep -q .); then \
 		cp -r doc $(DOC)/html; \
+		rm -f $(DOC)/html/.nojekyll; \
 		for i in $$(find $(DOC)/html -type d); do \
-			chmod 775 $$i; \
+			chmod 755 $$i; \
 		done; \
 		for i in $$(find $(DOC)/html -type f); do \
 			chmod 644 $$i; \
