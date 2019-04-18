@@ -39,6 +39,7 @@ setup () {
     arch_exclude aarch64  # issue #391
     prerequisites_ok lammps
     multiprocess_ok
+    crayify_mpi_maybe "$ch_img"
 }
 
 lammps_try () {
