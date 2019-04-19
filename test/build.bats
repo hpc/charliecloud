@@ -121,56 +121,6 @@ load common
     [[ $empty_ct -eq 0 ]]
 }
 
-@test 'ch-build2dir' {
-    scope standard
-    need_docker
-    outdir=${BATS_TMPDIR}
-    tar=${outdir}/build2dir.tar.gz
-    img=${outdir}/build2dir
-    # Remove image if it already exists.
-    [[ -e $img ]] && rm -rf --one-file-system "$img"
-    # Repeat twice to test build-new as well as overwrite existing image.
-    for i in 1 2; do
-        ch-build2dir -t build2dir --file=Dockerfile.alpine39 . "$outdir"
-        [[ ! -e $tar ]]
-        sudo docker tag build2dir "build2dir:${ch_version_docker}"
-        docker_ok build2dir
-        image_ok "$img"
-    done
-    # Remove since we don't want it hanging around later.
-    rm -Rf --one-file-system "$img"
-}
-
-@test 'ch-pull2tar' {
-    scope standard
-    # This test pulls an image from Dockerhub and packs it into a tarball at
-    # $ch_tardir. It removes the tarball upon completetion to keep the number
-    # of Alpine tarballs to a minimum.
-    need_docker
-    tag='alpine:3.9'
-    tar="${ch_tardir}/${tag}.tar.gz"
-    ch-pull2tar "$tag" "$ch_tardir"
-    [[ $status -eq 0 ]]
-    [[ -e $tar ]]
-    rm "${ch_tardir}/${tag}.tar.gz"
-    [[ ! -e $tar ]]
-}
-
-@test 'ch-pull2dir' {
-    scope standard
-    # This test unpacks an image tarball pulled from Docker Hub into
-    # $ch_tardir to keep $ch_imgdir clean at build time. It removes the image
-    # upon completion.
-    need_docker
-    tag='alpine:3.9'
-    img="${ch_tardir}/${tag}"
-    ch-pull2dir "$tag" "$ch_tardir"
-    [[ status -eq 0 ]]
-    [[ -d $img ]]
-    rm -Rf --one-file-system "$img"
-    [[ ! -d $img ]]
-}
-
 @test 'sotest executable works' {
     scope quick
     export LD_LIBRARY_PATH=./sotest
