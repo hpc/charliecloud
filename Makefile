@@ -52,9 +52,9 @@ bin/version.sh: VERSION.full
 # the man pages but don't know how to build them.
 #
 # They are phony because I haven't figured out their real dependencies.
-.PHONY: main.tar doc/index.html
-main.tar: VERSION.full man/charliecloud.1
-	git diff-index --quiet HEAD || [ -n "$$CH_MAKE_EXPORT_UNCLEAN_OK" ]
+.PHONY: main.tar
+main.tar: VERSION.full man/charliecloud.1 doc/index.html
+#	git diff-index --quiet HEAD || [ -n "$$CH_MAKE_EXPORT_UNCLEAN_OK" ]
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
@@ -78,6 +78,9 @@ export-bats: main.tar
 	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
 	rm bats.tar
 	ls -lh charliecloud-$$(cat VERSION.full).tar.gz
+
+#html:
+#	find doc -type f -name index.html | grep ^.
 
 # PREFIX is the prefix expected at runtime (usually /usr or /usr/local for
 #  system-wide installations).
