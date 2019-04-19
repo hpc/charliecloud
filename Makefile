@@ -54,7 +54,7 @@ bin/version.sh: VERSION.full
 # They are phony because I haven't figured out their real dependencies.
 .PHONY: main.tar
 main.tar: VERSION.full man/charliecloud.1 doc/index.html
-#	git diff-index --quiet HEAD || [ -n "$$CH_MAKE_EXPORT_UNCLEAN_OK" ]
+	git diff-index --quiet HEAD || [ -n "$$CH_MAKE_EXPORT_UNCLEAN_OK" ]
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
