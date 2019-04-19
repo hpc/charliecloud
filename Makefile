@@ -52,7 +52,7 @@ bin/version.sh: VERSION.full
 # the man pages but don't know how to build them.
 #
 # They are phony because I haven't figured out their real dependencies.
-.PHONY: main.tar
+.PHONY: main.tar doc/index.html
 main.tar: VERSION.full man/charliecloud.1
 	git diff-index --quiet HEAD || [ -n "$$CH_MAKE_EXPORT_UNCLEAN_OK" ]
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
@@ -139,7 +139,7 @@ install: all
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) LICENSE README.rst
 #	html files if they were built
-	if (ls -A doc | grep -q .); then \
+	if [ -f doc/index.html ]; then \
 		cp -r doc $(DOC)/html; \
 		rm -f $(DOC)/html/.nojekyll; \
 		for i in $$(find $(DOC)/html -type d); do \
