@@ -62,6 +62,6 @@ setup () {
     cmp "${indir}/cone.png" "${outdir}/cone.png"
 }
 
-@test "${ch_tag}/revert image MPI" {
-    revert_mpi "$ch_tag"
+@test "${ch_tag}/revert image" {
+    revert_crayify "$ch_tag"
 }

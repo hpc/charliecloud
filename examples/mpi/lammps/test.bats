@@ -90,6 +90,6 @@ lammps_try () {
 @test "${ch_tag}/python"   { skip 'incompatible with --join'
                              lammps_try python; }
 
-@test "${ch_tag}/revert image MPI" {
-    revert_mpi "$ch_tag"
+@test "${ch_tag}/revert image" {
+    revert_crayify "$ch_tag"
 }
