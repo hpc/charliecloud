@@ -107,6 +107,14 @@ tarball_ok () {
     test -s "$1"
 }
 
+revert_mpi () {
+    if [[ $ch_cray ]]; then
+        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
+    else
+        skip 'image mpi not modified'
+    fi
+}
+
 # Predictable sorting and collation
 export LC_ALL=C
 

@@ -36,8 +36,6 @@ check_process_ct () {
 
 # one from "Single Transfer Benchmarks"
 @test "${ch_tag}/pingpong (guest launch)" {
-    [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
-    [[ $ch_cray && $ch_mpi = openmpi ]] && skip "issue #380"
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
                mpirun $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
@@ -50,8 +48,6 @@ check_process_ct () {
 
 # one from "Parallel Transfer Benchmarks"
 @test "${ch_tag}/sendrecv (guest launch)" {
-    [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
-    [[ $ch_cray && $ch_mpi = openmpi ]] && skip "issue #380"
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
                mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
@@ -75,8 +71,7 @@ check_process_ct () {
 }
 
 @test "${ch_tag}/crayify image MPI" {
-    run crayify_mpi_or_skip "$ch_img"
-    [[ $status -eq 0 ]]
+    crayify_mpi_or_skip "$ch_img"
 }
 
 @test "${ch_tag}/pingpong (host launch)" {
@@ -115,10 +110,6 @@ check_process_ct () {
     check_finalized "$output"
 }
 
-@test "${ch_tag}/Revert image MPI" {
-    if [[ $ch_cray ]]; then
-        ch-tar2dir "$ch_tardir/$ch_tag" "$ch_imgdir"
-    else
-        skip 'Image MPI not modified'
-    fi
+@test "${ch_tag}/revert image MPI" {
+    revert_mpi "$ch_tag"
 }

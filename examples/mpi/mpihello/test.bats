@@ -26,8 +26,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/crayify image MPI" {
-    run crayify_mpi_or_skip "$ch_img"
-    [[ $status -eq 0 ]]
+    crayify_mpi_or_skip "$ch_img"
 }
 
 @test "${ch_tag}/MPI version" {
@@ -84,10 +83,6 @@ count_ranks () {
     ch-run "$ch_img" -- mount | grep -F /var/opt/cray/hugetlbfs
 }
 
-@test "${ch_tag}/Revert image MPI" {
-    if [[ $ch_cray ]]; then
-        ch-tar2dir "$ch_tardir/$ch_tag" "$ch_imgdir"
-    else
-        skip 'Image MPI not modified'
-    fi
+@test "${ch_tag}/revert image MPI" {
+    revert_mpi "$ch_tag"
 }

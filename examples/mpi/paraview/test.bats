@@ -29,6 +29,10 @@ setup () {
 # We do not check .pvtp (and its companion .vtp) output because it's a
 # collection of XML files containing binary data and it seems too hairy to me.
 
+@test "${ch_tag}/crayify image MPI" {
+    crayify_mpi_or_skip "$ch_img"
+}
+
 @test "${ch_tag}/cone serial" {
     # shellcheck disable=SC2086
     ch-run $ch_unslurm -b "$indir" -b "$outdir" "$ch_img" -- \
@@ -36,11 +40,6 @@ setup () {
     ls -l "$outdir"/cone*
     diff -u "${indir}/cone.serial.vtk" "${outdir}/cone.vtk"
     cmp "${indir}/cone.png" "${outdir}/cone.png"
-}
-
-@test "${ch_tag}/crayify image MPI" {
-    run crayify_mpi_or_skip "$ch_img"
-    [[ $status -eq 0 ]]
 }
 
 @test "${ch_tag}/cone ranks=2" {
@@ -63,10 +62,6 @@ setup () {
     cmp "${indir}/cone.png" "${outdir}/cone.png"
 }
 
-@test "${ch_tag}/Revert image MPI" {
-    if [[ $ch_cray ]]; then
-        ch-tar2dir "$ch_tardir/$ch_tag" "$ch_imgdir"
-    else
-        skip 'Image MPI not modified'
-    fi
+@test "${ch_tag}/revert image MPI" {
+    revert_mpi "$ch_tag"
 }
