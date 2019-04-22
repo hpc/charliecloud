@@ -52,11 +52,6 @@ multiprocess_ok () {
     # may not work; we simply haven't tried.
     [[ $ch_mpi = mpich && -z $ch_cray ]] \
         && skip 'MPICH untested'
-    # Conversely, if the MPI in the container is OpenMPI, the current examples
-    # do not use the Aries network but rather the "tcp" BTL, which has
-    # grotesquely poor performance. Thus, we skip those tests as well.
-    [[ $ch_mpi = openmpi && $ch_cray ]] \
-       && skip 'OpenMPI unsupported on Cray; issue #180'
     # Exit function successfully.
     true
 }

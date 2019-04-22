@@ -1,41 +1,41 @@
-#!/bin/sh
+#!/bin/bash
 
 libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/base.sh"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Build a Charliecloud image specified by \$PWD/Dockerfile and unpack it.
-Equivalent to ch-build, ch-docker2tar, ch-tar2dir sequence but somewhat less
-flexible.
+Build a Charliecloud image and unpack it into a directory in one command.
 
 Usage:
 
-  $ $(basename "$0") CONTEXT DEST [ARGS ...]
+  $ $(basename "$0") -t TAG [ARGS ...] CONTEXT OUTDIR
 
-Arguments:
-
-  CONTEXT  Docker context directory
-  DEST     directory in which to place image tarball and directory
-  ARGS     additional arguments passed to ch-build
+ARGS are passed unchanged to "ch-build".
 EOF
 )
 
 parse_basic_args "$@"
 
-if [ "$#" -lt 2 ]; then
-    usage
-fi
+[[ $# -gt 3 ]] || usage
 
-context=$1
-dest=$2
-shift 2
-
-tag=$(basename "$PWD")
+# Strip off last argument, so we can pass the rest to ch-build. Note this is
+# essentially impossible to do robustly in POSIX sh.
+args=("${@:1:$#-1}") # all but last arg
+outdir="${*: -1}"    # last arg
+# Parse -t, because we need TAG in this script.
+while [[ $# -gt 0 ]]; do
+    opt=$1; shift
+    case $opt in
+       --tag|-t)
+            tag=$1
+            ;;
+    esac
+done
 
 set -x
 
-"${ch_bin}"/ch-build -t "$tag" "$context" "$@"
-"${ch_bin}"/ch-docker2tar "$tag" "$dest"
-"${ch_bin}"/ch-tar2dir "${dest}/${tag}.tar.gz" "$dest"
-rm "${dest}/${tag}.tar.gz"
+"${ch_bin}"/ch-build "${args[@]}"
+"${ch_bin}"/ch-docker2tar "$tag" "$outdir"
+"${ch_bin}"/ch-tar2dir "${outdir}/${tag}.tar.gz" "$outdir"
+rm "${outdir}/${tag}.tar.gz"

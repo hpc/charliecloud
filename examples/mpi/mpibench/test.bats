@@ -4,9 +4,7 @@ setup () {
     scope full
     arch_exclude aarch64  # issue #391
     prerequisites_ok "$ch_tag"
-    if [[ $ch_mpi = mpich ]]; then
-        crayify_mpi_maybe "$ch_img"
-    fi
+    crayify_mpi_maybe "$ch_img"
 
     # - One iteration because we just care about correctness, not performance.
     #   (If we let the benchmark choose, there is an overwhelming number of
@@ -40,6 +38,7 @@ check_process_ct () {
 # one from "Single Transfer Benchmarks"
 @test "${ch_tag}/pingpong (guest launch)" {
     [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
+    [[ $ch_cray && $ch_mpi = openmpi ]] && skip "issue #380"
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
                mpirun $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
@@ -64,6 +63,7 @@ check_process_ct () {
 # one from "Parallel Transfer Benchmarks"
 @test "${ch_tag}/sendrecv (guest launch)" {
     [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
+    [[ $ch_cray && $ch_mpi = openmpi ]] && skip "issue #380"
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
                mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
@@ -88,6 +88,7 @@ check_process_ct () {
 # one from "Collective Benchmarks"
 @test "${ch_tag}/allreduce (guest launch)" {
     [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
+    [[ $ch_cray && $ch_mpi = openmpi ]] && skip "issue #380"
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
                mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce

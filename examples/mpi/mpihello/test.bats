@@ -4,9 +4,7 @@ setup () {
     scope full
     arch_exclude aarch64  # issue #391
     prerequisites_ok "$ch_tag"
-    if [[ $ch_mpi = mpich ]]; then
-        crayify_mpi_maybe "$ch_img"
-    fi
+    crayify_mpi_maybe "$ch_img"
 }
 
 count_ranks () {
@@ -47,6 +45,7 @@ count_ranks () {
 
 @test "${ch_tag}/guest starts ranks" {
     [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
+    [[ $ch_cray && $ch_mpi = openmpi ]] && skip "issue #380"
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- mpirun $ch_mpirun_np /hello/hello
     echo "$output"
@@ -78,7 +77,6 @@ count_ranks () {
 
 @test "${ch_tag}/Cray bind mounts" {
     [[ $ch_cray ]] || skip 'host is not a Cray'
-    [[ $ch_mpi = openmpi ]] && skip 'OpenMPI unsupported on Cray; issue #180'
 
     ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
     ch-run "$ch_img" -- mount | grep -F /var/opt/cray/hugetlbfs

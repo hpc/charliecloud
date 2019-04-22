@@ -1,5 +1,5 @@
 # ch-test-scope: quick
-FROM alpine:3.6
+FROM alpine:3.9
 
 RUN apk add --no-cache bc
 
