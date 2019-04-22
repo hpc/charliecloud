@@ -83,6 +83,6 @@ count_ranks () {
     ch-run "$ch_img" -- mount | grep -F /var/opt/cray/hugetlbfs
 }
 
-@test "${ch_tag}/revert image MPI" {
+@test "${ch_tag}/revert image" {
     revert_mpi "$ch_tag"
 }

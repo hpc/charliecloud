@@ -110,6 +110,6 @@ check_process_ct () {
     check_finalized "$output"
 }
 
-@test "${ch_tag}/revert image MPI" {
+@test "${ch_tag}/revert image" {
     revert_mpi "$ch_tag"
 }
