@@ -200,6 +200,7 @@ unset_vars () {
     ch-run -v --join-ct=3 --join-tag=foo "$ch_timg" -- \
            /test/printns 0 "${BATS_TMPDIR}/join.3.ns" \
            >& "${BATS_TMPDIR}/join.3.err" &
+    sleep 1
     cat "${BATS_TMPDIR}/join.3.err"
     cat "${BATS_TMPDIR}/join.3.ns"
       grep -Fq 'join: 1 3' "${BATS_TMPDIR}/join.3.err"
