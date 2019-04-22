@@ -125,7 +125,7 @@ RUN    cd ucx \
 # OpenMPI.
 #
 # Patch OpenMPI to disable UCX plugin on systems with Intel or Cray HSNs. UCX
-# has inferior performance than PSM2/uGNI but higher priority than the ob1 pml.
+# has inferior performance than PSM2/uGNI but higher priority.
 ENV MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
 ENV MPI_VERSION 3.1.4
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
