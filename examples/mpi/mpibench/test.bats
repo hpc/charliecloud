@@ -70,7 +70,7 @@ check_process_ct () {
     check_finalized "$output"
 }
 
-@test "${ch_tag}/crayify image MPI" {
+@test "${ch_tag}/crayify image" {
     crayify_mpi_or_skip "$ch_img"
 }
 
@@ -111,5 +111,5 @@ check_process_ct () {
 }
 
 @test "${ch_tag}/revert image" {
-    revert_crayify "$ch_tag"
+    revert_crayify
 }

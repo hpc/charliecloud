@@ -29,7 +29,7 @@ setup () {
 # We do not check .pvtp (and its companion .vtp) output because it's a
 # collection of XML files containing binary data and it seems too hairy to me.
 
-@test "${ch_tag}/crayify image MPI" {
+@test "${ch_tag}/crayify image" {
     crayify_mpi_or_skip "$ch_img"
 }
 
@@ -63,5 +63,5 @@ setup () {
 }
 
 @test "${ch_tag}/revert image" {
-    revert_crayify "$ch_tag"
+    revert_crayify
 }

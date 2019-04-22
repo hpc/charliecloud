@@ -25,7 +25,7 @@ count_ranks () {
     [[ $output = *'0: finalize ok'* ]]
 }
 
-@test "${ch_tag}/crayify image MPI" {
+@test "${ch_tag}/crayify image" {
     crayify_mpi_or_skip "$ch_img"
 }
 
@@ -84,5 +84,5 @@ count_ranks () {
 }
 
 @test "${ch_tag}/revert image" {
-    revert_crayify "$ch_tag"
+    revert_crayify
 }

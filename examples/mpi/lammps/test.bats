@@ -55,7 +55,7 @@ lammps_try () {
 
 }
 
-@test "${ch_tag}/crayify image MPI" {
+@test "${ch_tag}/crayify image" {
     crayify_mpi_or_skip "$ch_img"
 }
 
@@ -91,5 +91,5 @@ lammps_try () {
                              lammps_try python; }
 
 @test "${ch_tag}/revert image" {
-    revert_crayify "$ch_tag"
+    revert_crayify
 }
