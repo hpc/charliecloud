@@ -11,7 +11,6 @@ setup () {
         # shellcheck disable=SC2086
         $ch_mpirun_node mkdir -p "$BATS_TMPDIR"
     fi
-    crayify_mpi_maybe "$ch_img"
 }
 
 # The first two tests demonstrate ParaView as an "executable" to process a
@@ -39,6 +38,11 @@ setup () {
     cmp "${indir}/cone.png" "${outdir}/cone.png"
 }
 
+@test "${ch_tag}/crayify image MPI" {
+    run crayify_mpi_or_skip "$ch_img"
+    [[ $status -eq 0 ]]
+}
+
 @test "${ch_tag}/cone ranks=2" {
     multiprocess_ok
     # shellcheck disable=SC2086
@@ -57,4 +61,12 @@ setup () {
     ls -l "$outdir"/cone*
     diff -u "${indir}/cone.nranks.vtk" "${outdir}/cone.vtk"
     cmp "${indir}/cone.png" "${outdir}/cone.png"
+}
+
+@test "${ch_tag}/Revert image MPI" {
+    if [[ $ch_cray ]]; then
+        ch-tar2dir "$ch_tardir/$ch_tag" "$ch_imgdir"
+    else
+        skip 'Image MPI not modified'
+    fi
 }

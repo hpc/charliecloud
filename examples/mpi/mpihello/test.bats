@@ -4,7 +4,6 @@ setup () {
     scope full
     arch_exclude aarch64  # issue #391
     prerequisites_ok "$ch_tag"
-    crayify_mpi_maybe "$ch_img"
 }
 
 count_ranks () {
@@ -12,6 +11,23 @@ count_ranks () {
     | grep -E '^0: init ok' \
     | tail -1 \
     | sed -r 's/^.+ ([0-9]+) ranks.+$/\1/'
+}
+
+@test "${ch_tag}/guest starts ranks" {
+    # shellcheck disable=SC2086
+    run ch-run $ch_unslurm "$ch_img" -- mpirun $ch_mpirun_np /hello/hello
+    echo "$output"
+    [[ $status -eq 0 ]]
+    rank_ct=$(count_ranks "$output")
+    echo "found ${rank_ct} ranks, expected ${ch_cores_node}"
+    [[ $rank_ct -eq "$ch_cores_node" ]]
+    [[ $output = *'0: send/receive ok'* ]]
+    [[ $output = *'0: finalize ok'* ]]
+}
+
+@test "${ch_tag}/crayify image MPI" {
+    run crayify_mpi_or_skip "$ch_img"
+    [[ $status -eq 0 ]]
 }
 
 @test "${ch_tag}/MPI version" {
@@ -43,20 +59,6 @@ count_ranks () {
     [[ $output = *'0: finalize ok'* ]]
 }
 
-@test "${ch_tag}/guest starts ranks" {
-    [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
-    [[ $ch_cray && $ch_mpi = openmpi ]] && skip "issue #380"
-    # shellcheck disable=SC2086
-    run ch-run $ch_unslurm "$ch_img" -- mpirun $ch_mpirun_np /hello/hello
-    echo "$output"
-    [[ $status -eq 0 ]]
-    rank_ct=$(count_ranks "$output")
-    echo "found ${rank_ct} ranks, expected ${ch_cores_node}"
-    [[ $rank_ct -eq "$ch_cores_node" ]]
-    [[ $output = *'0: send/receive ok'* ]]
-    [[ $output = *'0: finalize ok'* ]]
-}
-
 @test "${ch_tag}/host starts ranks" {
     multiprocess_ok
     echo "starting ranks with: ${mpirun_core}"
@@ -80,4 +82,12 @@ count_ranks () {
 
     ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
     ch-run "$ch_img" -- mount | grep -F /var/opt/cray/hugetlbfs
+}
+
+@test "${ch_tag}/Revert image MPI" {
+    if [[ $ch_cray ]]; then
+        ch-tar2dir "$ch_tardir/$ch_tag" "$ch_imgdir"
+    else
+        skip 'Image MPI not modified'
+    fi
 }

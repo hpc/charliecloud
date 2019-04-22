@@ -4,10 +4,12 @@ arch_exclude () {
     fi
 }
 
-crayify_mpi_maybe () {
+crayify_mpi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
         $ch_mpirun_node ch-fromhost --cray-mpi "$1"
+    else
+        skip 'host is not cray'
     fi
 }
 

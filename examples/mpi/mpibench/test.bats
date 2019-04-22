@@ -4,7 +4,6 @@ setup () {
     scope full
     arch_exclude aarch64  # issue #391
     prerequisites_ok "$ch_tag"
-    crayify_mpi_maybe "$ch_img"
 
     # - One iteration because we just care about correctness, not performance.
     #   (If we let the benchmark choose, there is an overwhelming number of
@@ -48,17 +47,6 @@ check_process_ct () {
     check_process_ct 2 "$output"
     check_finalized "$output"
 }
-@test "${ch_tag}/pingpong (host launch)" {
-    multiprocess_ok
-    # shellcheck disable=SC2086
-    run $ch_mpirun_core ch-run --join "$ch_img" -- \
-                               "$imb_mpi1" $imb_args PingPong
-    echo "$output"
-    [[ $status -eq 0 ]]
-    check_errors "$output"
-    check_process_ct 2 "$output"
-    check_finalized "$output"
-}
 
 # one from "Parallel Transfer Benchmarks"
 @test "${ch_tag}/sendrecv (guest launch)" {
@@ -73,6 +61,36 @@ check_process_ct () {
     check_process_ct "$ch_cores_node" "$output"
     check_finalized "$output"
 }
+
+# one from "Collective Benchmarks"
+@test "${ch_tag}/allreduce (guest launch)" {
+    # shellcheck disable=SC2086
+    run ch-run $ch_unslurm "$ch_img" -- \
+               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
+    echo "$output"
+    [[ $status -eq 0 ]]
+    check_errors "$output"
+    check_process_ct "$ch_cores_node" "$output"
+    check_finalized "$output"
+}
+
+@test "${ch_tag}/crayify image MPI" {
+    run crayify_mpi_or_skip "$ch_img"
+    [[ $status -eq 0 ]]
+}
+
+@test "${ch_tag}/pingpong (host launch)" {
+    multiprocess_ok
+    # shellcheck disable=SC2086
+    run $ch_mpirun_core ch-run --join "$ch_img" -- \
+                               "$imb_mpi1" $imb_args PingPong
+    echo "$output"
+    [[ $status -eq 0 ]]
+    check_errors "$output"
+    check_process_ct 2 "$output"
+    check_finalized "$output"
+}
+
 @test "${ch_tag}/sendrecv (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
@@ -85,19 +103,6 @@ check_process_ct () {
     check_finalized "$output"
 }
 
-# one from "Collective Benchmarks"
-@test "${ch_tag}/allreduce (guest launch)" {
-    [[ $ch_cray && $ch_mpi = mpich ]] && skip "issue #255"
-    [[ $ch_cray && $ch_mpi = openmpi ]] && skip "issue #380"
-    # shellcheck disable=SC2086
-    run ch-run $ch_unslurm "$ch_img" -- \
-               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
-    echo "$output"
-    [[ $status -eq 0 ]]
-    check_errors "$output"
-    check_process_ct "$ch_cores_node" "$output"
-    check_finalized "$output"
-}
 @test "${ch_tag}/allreduce (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
@@ -108,4 +113,12 @@ check_process_ct () {
     check_errors "$output"
     check_process_ct "$ch_cores_total" "$output"
     check_finalized "$output"
+}
+
+@test "${ch_tag}/Revert image MPI" {
+    if [[ $ch_cray ]]; then
+        ch-tar2dir "$ch_tardir/$ch_tag" "$ch_imgdir"
+    else
+        skip 'Image MPI not modified'
+    fi
 }
