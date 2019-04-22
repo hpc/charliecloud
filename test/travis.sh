@@ -54,15 +54,20 @@ fi
 cd test
 
 make where-bats
-make test
+make test-build
 
-# To test without Docker, move the binary out of the way.
-DOCKER=$(command -v docker)
-sudo mv "$DOCKER" "$DOCKER.tmp"
+if [[ $SUDO_RM_AFTER_BUILD ]]; then
+    sudo rm /etc/sudoers.d/travis
+fi
+if [[ $SUDO_AVOID_AFTER_BUILD ]]; then
+    export CH_TEST_DONT_SUDO=yes
+fi
+if ( sudo -v ); then
+    echo "have sudo"
+else
+    echo "don't have sudo"
+fi
+echo "\$CH_TEST_DONT_SUDO=$CH_TEST_DONT_SUDO"
 
-make test
-
-# For Travis, this isn't really necessary, since the VM will go away
-# immediately after this script exits. However, restore the binary to enable
-# testing this script in other environments.
-sudo mv "$DOCKER.tmp" "$DOCKER"
+make test-run
+make test-test

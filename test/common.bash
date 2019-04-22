@@ -259,8 +259,9 @@ elif [[    $CH_TEST_SCOPE != quick \
     exit 1
 fi
 
-# Do we have sudo?
-if ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
+# Do we have and want sudo?
+if    [[ -z $CH_TEST_DONT_SUDO ]] \
+   && ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     # shellcheck disable=SC2034
