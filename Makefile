@@ -80,9 +80,6 @@ export-bats: main.tar
 	rm bats.tar
 	ls -lh charliecloud-$$(cat VERSION.full).tar.gz
 
-#html:
-#	find doc -type f -name index.html | grep ^.
-
 # PREFIX is the prefix expected at runtime (usually /usr or /usr/local for
 #  system-wide installations).
 #  More: https://www.gnu.org/prep/standards/html_node/Directory-Variables.html
