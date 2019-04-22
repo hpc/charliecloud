@@ -58,7 +58,8 @@ main.tar: VERSION.full man/charliecloud.1 doc/index.html
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
-            -rf main.tar doc man/*.1 VERSION.full
+	    --exclude='.*' \
+	    -rf main.tar doc man/*.1 VERSION.full
 
 .PHONY: export
 export: main.tar
