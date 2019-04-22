@@ -37,7 +37,7 @@ load ../../../test/common
 setup () {
     scope full
     arch_exclude aarch64  # issue #391
-    prerequisites_ok "$ch_tag" 
+    prerequisites_ok "$ch_tag"
     multiprocess_ok
 }
 
