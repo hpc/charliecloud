@@ -1,0 +1,41 @@
+#!/bin/sh
+#TODO start this
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Convert a Charliecloud tarball image into a Charliecloud squashfs image.
+
+Usage:
+
+  $ $(basename "$0") TARBALL OUTDIR [ARGS ...]
+
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$1" = --verbose ]; then
+    verbose=yes
+    shift
+fi
+if [ "$#" -lt 2 ]; then
+    usage
+fi
+
+image=$1
+outdir=$2
+
+shift 2
+
+imagedir=$(basename -- "$image")
+imagedir="${imagedir%%.*}"
+
+"${ch_bin}/ch-tar2dir" "$image" /tmp > /dev/null
+if [ -n "$verbose" ]; then
+    "${ch_bin}/ch-dir2squash" "--verbose" "/tmp/${imagedir}" "$outdir" "$@"
+  else
+    "${ch_bin}/ch-dir2squash" "/tmp/${imagedir}" "$outdir" "$@"
+fi
+rm -rf "/tmp/${imagedir}"

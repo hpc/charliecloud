@@ -1,0 +1,79 @@
+#!/bin/sh
+
+set -e
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Pack a filesystem directory into a squashfs.
+
+Usage:
+
+  $ $(basename "$0") INDIR OUTDIR [ARGS ...]
+EOF
+)
+
+sentinel=WEIRD_AL_YANKOVIC
+
+parse_basic_args "$@"
+
+if [ "$1" = --verbose ]; then
+    verbose=yes
+    shift
+fi
+if [ $# -lt 2 ]; then
+    usage
+fi
+
+indir=$1
+outdir=$2
+
+shift 2
+
+# Check input directory exists
+if [ ! -e "$indir" ]; then
+    echo "can't squash: ${indir} does not exist" 1>&2
+    exit 1
+fi
+# Check input directory is a directory
+if [ ! -d "$indir" ]; then
+    echo "can't squash: ${indir} is not a directory" 1>&2
+    exit 1
+fi
+# Check input directory is a charliecloud image
+if [ ! -e "${indir}/${sentinel}" ]; then
+    echo "${indir} is NOT a Charliecloud iamge" 1>&2
+    exit 1
+fi
+
+# Check OUTDIR exists and is a directory
+if [ ! -e "$outdir" ]; then
+    echo "can't squash: ${outdir} does not exist" 1>&2
+    exit 1
+fi
+if [ ! -d "$outdir" ]; then
+    echo "can't squash: ${outdir} is not a directory" 1>&2
+    exit 1
+fi
+
+# If squashfs exists overwrite it with -noappend
+image=$(basename "${indir}")
+if [ ! -e "${outdir}/${image}.sqfs" ]; then
+    if [ -n "$verbose" ]; then
+        mksquashfs "$indir" "${outdir}/${image}.sqfs" "$@"
+        echo "squashed ${outdir}/${image}.sqfs OK"
+      else
+        mksquashfs "${indir}" "${outdir}/${image}.sqfs" -quiet "$@"
+        echo "squashed ${outdir}/${image}.sqfs OK"
+    fi
+  else
+    if [ -n "$verbose" ]; then
+        mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
+        echo "squashed ${outdir}/${image}.sqfs OK"
+      else
+        mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend -quiet "$@"
+        echo "squashed ${outdir}/${image}.sqfs OK"
+    fi
+fi

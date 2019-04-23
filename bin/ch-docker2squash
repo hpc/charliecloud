@@ -1,0 +1,44 @@
+#!/bin/sh
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Flatten a Docker image into a Charliecloud image squashfs.
+
+Usage:
+
+  $ $(basename "$0") IMAGE OUTDIR [ARGS ...]
+
+You must have sufficient privilege (via sudo) to run the Docker commands.
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$1" = --verbose ]; then
+    verbose=yes
+    shift
+fi
+if [ "$#" -lt 2 ]; then
+    usage
+fi
+
+image=$1
+outdir=$2
+
+shift 2
+
+# Get image as a directory
+"${ch_bin}/ch-docker2tar" "$image" /tmp > /dev/null
+"${ch_bin}/ch-tar2dir" "/tmp/${image}.tar.gz" /tmp > /dev/null
+
+# Create squashfs, and clean up intermediate files and folders.
+if [ -n "$verbose" ]; then
+    "${ch_bin}/ch-dir2squash" "--verbose" "/tmp/${image}" "$outdir" "$@"
+  else
+    "${ch_bin}/ch-dir2squash" "/tmp/${image}" "$outdir" "$@"
+fi
+rm -rf "/tmp/${image}.tar.gz"
+rm -rf "/tmp/${image}"

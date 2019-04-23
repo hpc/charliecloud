@@ -1,0 +1,28 @@
+#!/bin/sh
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Unmount Charliecloud squashfs in MOUNTDIR, removes MOUNTDIR on success
+
+Usage:
+
+  $ $(basename "$0") MOUNTDIR
+
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$#" -ne 1 ]; then
+    usage
+fi
+
+mountdir=$1
+# unmount container with fusermount
+if fusermount -u "$mountdir"; then
+  rm -rf "$mountdir"
+  echo "unmounted and removed ${mountdir}"
+fi

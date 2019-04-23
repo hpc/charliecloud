@@ -1,0 +1,44 @@
+#!/bin/sh
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Mount Charliecloud squashfs in new subdirectory of PARENTDIR
+
+Usage:
+
+  $ $(basename "$0") SQFS PARENTDIR
+
+
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$#" -ne 2 ]; then
+    usage
+fi
+
+image=$1
+parentdir=$2
+
+# Make MOUNTDIR if it does not already exist
+
+imgdir="${parentdir}"/$(basename -s .sqfs "$image")
+
+# Check if image direcoty directory exists
+if [ -e "$imgdir" ]; then
+    echo "can't mount: ${imgdir} already exists" 1>&2
+    exit 1
+fi
+
+mkdir -p "$imgdir"
+
+# Check imgdir is empty, mount if so.
+if [ -z "$(ls -A "$imgdir")" ]; then
+   squashfuse_ "$image" "$imgdir"
+  else
+   echo "ERROR ${imgdir} not empty, cannot mount" 1>&2 && exit 1
+fi

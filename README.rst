@@ -71,6 +71,7 @@ Patches (code, documentation, etc.) contributed by:
 * Matthew Vernon <mv3@sanger.ac.uk>
 * Peter Wienemann <wienemann@physik.uni-bonn.de>
 * Lowell Wofford <lowell@lanl.gov>
+* Shane Goff <rgoff@lanl.gov>
 
 How can I participate?
 ----------------------
