@@ -1,0 +1,26 @@
+diff --git a/ompi/mca/pml/ucx/pml_ucx_component.c b/ompi/mca/pml/ucx/pml_ucx_component.c
+index ff0040f18c..e8cf903860 100644
+--- a/ompi/mca/pml/ucx/pml_ucx_component.c
++++ b/ompi/mca/pml/ucx/pml_ucx_component.c
+@@ -14,6 +14,9 @@
+ 
+ #include <ucm/api/ucm.h>
+ 
++#ifdef HAVE_UNISTD_H
++#include <unistd.h>
++#endif
+ 
+ static int mca_pml_ucx_component_register(void);
+ static int mca_pml_ucx_component_open(void);
+@@ -131,6 +134,11 @@ mca_pml_ucx_component_init(int* priority, bool enable_progress_threads,
+ {
+     int ret;
+ 
++    if ((0 == access("/sys/class/ugni/", F_OK) || (0 == access("/sys/class/hfi1/", F_OK)))){
++	     PML_UCX_VERBOSE(1, "Cray or Intel HSN detected, removing UCX from consideration");
++	     return NULL;
++    }
++
+     if ( (ret = mca_pml_ucx_init()) != 0) {
+         return NULL;
+     }

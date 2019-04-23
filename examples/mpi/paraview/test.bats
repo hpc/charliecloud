@@ -11,6 +11,7 @@ setup () {
         # shellcheck disable=SC2086
         $ch_mpirun_node mkdir -p "$BATS_TMPDIR"
     fi
+    crayify_mpi_maybe "$ch_img"
 }
 
 # The first two tests demonstrate ParaView as an "executable" to process a

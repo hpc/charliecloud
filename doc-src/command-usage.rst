@@ -4,6 +4,10 @@ Charliecloud command reference
 This section is a comprehensive description of the usage and arguments of the
 Charliecloud commands. Its content is identical to the commands' man pages.
 
+.. contents::
+   :depth: 1
+   :local:
+
 .. WARNING: The one-line summaries below are duplicated in list man_pages in
    conf.py. Any updates need to be made there also.
 
@@ -23,7 +27,7 @@ behaviors.
 ch-build2dir
 ++++++++++++
 
-Build a Charliecloud image from Dockerfile and unpack it.
+Build a Charliecloud image and unpack it into a directory in one command.
 
 .. include:: ./ch-build2dir_desc.rst
 
