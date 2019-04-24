@@ -111,5 +111,5 @@ check_process_ct () {
 }
 
 @test "${ch_tag}/revert image" {
-    revert_crayify
+    unpack_img_all_nodes "$ch_cray"
 }

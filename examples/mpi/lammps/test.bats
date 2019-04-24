@@ -91,5 +91,5 @@ lammps_try () {
                              lammps_try python; }
 
 @test "${ch_tag}/revert image" {
-    revert_crayify
+    unpack_img_all_nodes "$ch_cray"
 }

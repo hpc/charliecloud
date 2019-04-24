@@ -9,7 +9,7 @@ crayify_mpi_or_skip () {
         # shellcheck disable=SC2086
         $ch_mpirun_node ch-fromhost --cray-mpi "$1"
     else
-        skip 'host is not cray'
+        skip 'host is not a Cray'
     fi
 }
 
@@ -107,11 +107,11 @@ tarball_ok () {
     test -s "$1"
 }
 
-revert_crayify () {
-    if [[ $ch_cray ]]; then
+unpack_img_all_nodes () {
+    if [[ $1 ]]; then
         $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
     else
-        skip 'image mpi not modified'
+        skip 'not needed'
     fi
 }
 
