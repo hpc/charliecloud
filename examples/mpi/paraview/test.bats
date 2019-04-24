@@ -11,7 +11,6 @@ setup () {
         # shellcheck disable=SC2086
         $ch_mpirun_node mkdir -p "$BATS_TMPDIR"
     fi
-    crayify_mpi_maybe "$ch_img"
 }
 
 # The first two tests demonstrate ParaView as an "executable" to process a
@@ -29,6 +28,10 @@ setup () {
 #
 # We do not check .pvtp (and its companion .vtp) output because it's a
 # collection of XML files containing binary data and it seems too hairy to me.
+
+@test "${ch_tag}/crayify image" {
+    crayify_mpi_or_skip "$ch_img"
+}
 
 @test "${ch_tag}/cone serial" {
     # shellcheck disable=SC2086
@@ -57,4 +60,8 @@ setup () {
     ls -l "$outdir"/cone*
     diff -u "${indir}/cone.nranks.vtk" "${outdir}/cone.vtk"
     cmp "${indir}/cone.png" "${outdir}/cone.png"
+}
+
+@test "${ch_tag}/revert image" {
+    unpack_img_all_nodes "$ch_cray"
 }

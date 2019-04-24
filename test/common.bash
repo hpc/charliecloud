@@ -4,10 +4,12 @@ arch_exclude () {
     fi
 }
 
-crayify_mpi_maybe () {
+crayify_mpi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
         $ch_mpirun_node ch-fromhost --cray-mpi "$1"
+    else
+        skip 'host is not a Cray'
     fi
 }
 
@@ -103,6 +105,14 @@ tarball_ok () {
     ls -ld "$1" || true
     test -f "$1"
     test -s "$1"
+}
+
+unpack_img_all_nodes () {
+    if [[ $1 ]]; then
+        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
+    else
+        skip 'not needed'
+    fi
 }
 
 # Predictable sorting and collation
