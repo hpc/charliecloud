@@ -67,6 +67,11 @@ Charliecloud test suite and examples.
 %{_bindir}/ch-pull2dir
 %{_bindir}/ch-pull2tar
 %{_bindir}/ch-tar2dir
+%{_bindir}/ch-tar2squash
+%{_bindir}/ch-docker2squash
+%{_bindir}/ch-mount
+%{_bindir}/ch-umount
+%{_bindir}/ch-dir2squash
 
 # Binaries
 %{_bindir}/ch-run
