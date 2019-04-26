@@ -61,7 +61,7 @@ tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
 rm "$temp"
 
 # Finish up.
-if [ ! -n "$nocompress" ]; then
+if [ -z "$nocompress" ]; then
     echo "compressing"
     cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
     rm "$tar"
