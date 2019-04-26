@@ -16,7 +16,10 @@ EOF
 )
 
 parse_basic_args "$@"
-
+if [ "$1" = --nocompress ]; then
+    nocompress=yes
+    shift
+fi
 if [ "$#" -ne 2 ]; then
     usage
 fi
@@ -58,7 +61,11 @@ tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
 rm "$temp"
 
 # Finish up.
-echo "compressing"
-cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
-rm "$tar"
-ls -lh "${tar}.gz"
+if [ ! -n "$nocompress" ]; then
+    echo "compressing"
+    cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
+    rm "$tar"
+    ls -lh "${tar}.gz"
+  else
+    ls -lh "${tar}"
+fi

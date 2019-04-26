@@ -40,7 +40,7 @@ fi
 # Figure out the real tarball name. If the provided $1 already has a tar
 # extension, just test that name; if not, also append the plausible extensions
 # and try those too.
-for ext in '' .tar.gz .tar.xz .tgz; do
+for ext in '' .tar.gz .tar.xz .tgz .tar; do
     c=${1}${ext}
     if [ ! -f "$c" ] || [ ! -r "$c" ]; then
         echo "can't read: ${c}" 1>&2
@@ -60,7 +60,13 @@ for ext in '' .tar.gz .tar.xz .tgz; do
     # Infer decompression argument because GNU tar is unable to do so if input
     # is a pipe, and we want to keep PV. See:
     # https://www.gnu.org/software/tar/manual/html_section/tar_68.html
+    echo $tarball
     case $tarball in
+            *.tar)
+                newroot=${2}/$(basename "${tarball%.tar}")
+                #decompress=z
+                echo "we did it"
+                ;;
         *.tar.gz)
             newroot=${2}/$(basename "${tarball%.tar.gz}")
             decompress=z

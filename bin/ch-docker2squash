@@ -31,14 +31,13 @@ outdir=$2
 shift 2
 
 # Get image as a directory
-"${ch_bin}/ch-docker2tar" "$image" /tmp > /dev/null
-"${ch_bin}/ch-tar2dir" "/tmp/${image}.tar.gz" /tmp > /dev/null
-
+"${ch_bin}/ch-docker2tar" "--nocompress" "$image" /tmp > /dev/null
+"${ch_bin}/ch-tar2dir" "/tmp/${image}.tar" /tmp > /dev/null
 # Create squashfs, and clean up intermediate files and folders.
 if [ -n "$verbose" ]; then
     "${ch_bin}/ch-dir2squash" "--verbose" "/tmp/${image}" "$outdir" "$@"
   else
     "${ch_bin}/ch-dir2squash" "/tmp/${image}" "$outdir" "$@"
 fi
-rm -rf "/tmp/${image}.tar.gz"
+rm -rf "/tmp/${image}.tar"
 rm -rf "/tmp/${image}"
