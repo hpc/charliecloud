@@ -60,7 +60,6 @@ for ext in '' .tar.gz .tar.xz .tgz .tar; do
     # Infer decompression argument because GNU tar is unable to do so if input
     # is a pipe, and we want to keep PV. See:
     # https://www.gnu.org/software/tar/manual/html_section/tar_68.html
-    echo $tarball
     case $tarball in
             *.tar)
                 newroot=${2}/$(basename "${tarball%.tar}")
