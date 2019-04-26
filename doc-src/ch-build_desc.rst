@@ -3,24 +3,38 @@ Synopsis
 
 ::
 
-  $ ch-build -t TAG [ARGS ...] CONTEXT
+  $ ch-build [-b buildah|docker] -t TAG [ARGS ...] CONTEXT
 
 Description
 ===========
 
-Build a Docker image named :code:`TAG` described by Dockerfile
-:code:`./Dockerfile` or as specified. This is a wrapper for :code:`docker
-build` with various enhancements.
+Build an image named :code:`TAG` described by a Dockerfile (default
+:code:`./Dockerfile`) using the specified image builder. Place the result into
+the builder's backend storage.
 
-Sudo privileges are required to run the :code:`docker` command.
+Supported builders:
+
+  * Buildah (:code:`buildah build-using-dockerfile` a.k.a. :code:`buildah bud`)
+  * Docker (:code:`docker build`)
 
 Arguments:
 
-  :code:`--file`
-    Dockerfile to use (default: :code:`./Dockerfile`)
+  :code:`-b`, :code:`--builder`
+    Builder to use; one of :code:`buildah` or :code:`docker`. If the option is
+    not specified, use the value of environment variable :code:`CH_BUILDER`.
+    If neither are specified, try builders in the above order (alphabetical)
+    and use the first one in :code:`$PATH`.
 
-  :code:`-t`
-    name (tag) of Docker image to build
+  :code:`--builder-info`
+    Print the builder to be used and its version, then exit.
+
+  :code:`-f`, :code:`--file`
+    Dockerfile to use (default: :code:`./Dockerfile`). Note that calling your
+    Dockerfile anything other than :code:`Dockerfile` will confuse people.
+
+
+  :code:`-t TAG`
+    name (tag) of image to build
 
   :code:`--help`
     print help and exit
@@ -28,32 +42,40 @@ Arguments:
   :code:`--version`
     print version and exit
 
-Additional arguments are accepted and passed unchanged to :code:`docker
-build`.
+Additional arguments are passed unchanged to the underlying builder.
 
-Improvements over plain :code:`docker build`
-============================================
+Key improvements over unwrapped builders
+========================================
 
-:code:`ch-build` adds the following features to :code:`docker build`:
+Using :code:`ch-build` is not required; you can also use the builders
+directly. However, this command hides the vagaries of making the builders work
+smoothly with Charliecloud and adds some conveniences. These improvements
+include:
+
+* Pass HTTP proxy environment variables into the build environment.
 
 * If there is a file :code:`Dockerfile` in the current working directory and
   :code:`-f` is not already specified, add :code:`-f $PWD/Dockerfile`.
 
-* Pass the HTTP proxy environment variables through with :code:`--build-arg`.
+* (Buildah only.) Use :code:`ch-run-oci` instead of the default :code:`runc`
+  to execute :code:`RUN` steps.
 
-.. note::
+Bugs
+====
 
-   The suffix :code:`:latest` is somewhat misleading, as neither
-   :code:`ch-build` nor bare :code:`docker build` will notice if the base
-   :code:`FROM` image has been updated. Use :code:`--no-cache` to make sure
-   you have the latest base image, at the cost of rebuilding every layer.
+The tag suffix :code:`:latest` is somewhat misleading, as by default neither
+:code:`ch-build` nor bare builders will notice if the base :code:`FROM` image
+has been updated. Use :code:`--pull` to make sure you have the latest base
+image.
 
 Examples
 ========
 
-Create a Docker image tagged :code:`foo` and specified by the file
+Create an image tagged :code:`foo` and specified by the file
 :code:`Dockerfile` located in the current working directory. Use :code:`/bar`
-as the Docker context directory::
+as the Docker context directory. Use whatever builder is available.
+
+::
 
   $ ch-build -t foo /bar
 
@@ -61,9 +83,16 @@ Equivalent to above::
 
   $ ch-build -t foo --file=./Dockerfile /bar
 
-Instead, use the Dockerfile :code:`/baz/qux.docker`::
+Instead, use the Dockerfile :code:`/bar/Dockerfile.baz`::
 
-  $ ch-build -t foo --file=/baz/qux.docker /bar
+  $ ch-build -t foo --file=/bar/Dockerfile.baz /bar
 
-Note that calling your Dockerfile anything other than :code:`Dockerfile` will
-confuse people.
+Equivalent to the first example, but use Buildah (or error if :code:`buildah`
+is not in your path)::
+
+  $ ch-build -b buildah -t foo /bar
+
+Equivalent to above::
+
+  $ export CH_BUILDER=buildah
+  $ ch-build -t foo /bar

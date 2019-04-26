@@ -3,10 +3,12 @@ Synopsis
 
 ::
 
-  $ ch-docker2tar IMAGE OUTDIR
+  $ ch-builder2tar [-b BUILDER] IMAGE OUTDIR
 
 Description
 ===========
+
+**FIXME**
 
 Flattens the Docker image tagged :code:`IMAGE` into a Charliecloud tarball in
 directory :code:`OUTDIR`.

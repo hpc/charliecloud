@@ -19,8 +19,7 @@ Charliecloud commands. Its content is identical to the commands' man pages.
 ch-build
 ++++++++
 
-Wrapper for :code:`docker build` that works around some of its annoying
-behaviors.
+Build an image and place it in the builder's backend storage.
 
 .. include:: ./ch-build_desc.rst
 
@@ -31,10 +30,10 @@ Build a Charliecloud image and unpack it into a directory in one command.
 
 .. include:: ./ch-build2dir_desc.rst
 
-ch-docker2tar
-+++++++++++++
+ch-builder2tar
+++++++++++++++
 
-Flatten a Docker image into a Charliecloud image tarball.
+Flatten a builder image into a Charliecloud image tarball.
 
 .. include:: ./ch-docker2tar_desc.rst
 
@@ -67,6 +66,13 @@ ch-run
 Run a command in a Charliecloud container.
 
 .. include:: ./ch-run_desc.rst
+
+ch-run-oci
+++++++++++
+
+**FIXME**
+
+.. include:: ./ch-run-oci_desc.rst
 
 ch-ssh
 ++++++

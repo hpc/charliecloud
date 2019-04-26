@@ -240,6 +240,8 @@ man_pages = [
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-run', 'ch-run', u'Run a command in a Charliecloud container',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-run-oci', 'ch-run-oci', u'FIXME',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-ssh', 'ch-ssh', u'Run a remote command in a Charliecloud container',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-tar2dir', 'ch-tar2dir', u'Unpack an image tarball into a directory',
