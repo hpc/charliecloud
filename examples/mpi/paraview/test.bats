@@ -2,7 +2,7 @@ load ../../../test/common
 
 setup () {
     scope full
-    arch_exclude aarch64  # issue #391
+    arch_exclude aarch64  # issue #415
     prerequisites_ok paraview
     indir=$BATS_TEST_DIRNAME
     outdir=$BATS_TMPDIR

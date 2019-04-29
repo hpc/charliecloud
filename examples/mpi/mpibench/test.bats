@@ -2,7 +2,6 @@ load ../../../test/common
 
 setup () {
     scope full
-    arch_exclude aarch64  # issue #391
     prerequisites_ok "$ch_tag"
     if [[ $ch_mpi = mpich ]]; then
         crayify_mpi_maybe "$ch_img"
@@ -50,6 +49,7 @@ check_process_ct () {
     check_finalized "$output"
 }
 @test "${ch_tag}/pingpong (host launch)" {
+    arch_exclude aarch64  # issue 392
     multiprocess_ok
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run --join "$ch_img" -- \
@@ -74,6 +74,7 @@ check_process_ct () {
     check_finalized "$output"
 }
 @test "${ch_tag}/sendrecv (host launch)" {
+    arch_exclude aarch64  # issue 392
     multiprocess_ok
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run --join "$ch_img" -- \
@@ -98,6 +99,7 @@ check_process_ct () {
     check_finalized "$output"
 }
 @test "${ch_tag}/allreduce (host launch)" {
+    arch_exclude aarch64  # issue 392
     multiprocess_ok
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run --join "$ch_img" -- \
