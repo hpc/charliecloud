@@ -573,7 +573,7 @@ EOF
     run ch-run "$img" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't execve(2): true: No such file or directory"* ]]
+    [[ $output = *"can't execve(2): true: No"*"directory"* ]]
 
     # For each required file, we want a correct error if it's missing.
     for f in $files; do
@@ -682,7 +682,7 @@ EOF
     run ch-run "$img" -- true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't execve(2): true: No such file or directory"* ]]
+    [[ $output = *"can't execve(2): true: No"*"directory"* ]]
 
     # At this point, there should be exactly two each of passwd and group
     # temporary files. Remove them.
