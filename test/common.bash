@@ -4,10 +4,12 @@ arch_exclude () {
     fi
 }
 
-crayify_mpi_maybe () {
+crayify_mpi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
         $ch_mpirun_node ch-fromhost --cray-mpi "$1"
+    else
+        skip 'host is not a Cray'
     fi
 }
 
@@ -52,11 +54,6 @@ multiprocess_ok () {
     # may not work; we simply haven't tried.
     [[ $ch_mpi = mpich && -z $ch_cray ]] \
         && skip 'MPICH untested'
-    # Conversely, if the MPI in the container is OpenMPI, the current examples
-    # do not use the Aries network but rather the "tcp" BTL, which has
-    # grotesquely poor performance. Thus, we skip those tests as well.
-    [[ $ch_mpi = openmpi && $ch_cray ]] \
-       && skip 'OpenMPI unsupported on Cray; issue #180'
     # Exit function successfully.
     true
 }
@@ -108,6 +105,14 @@ tarball_ok () {
     ls -ld "$1" || true
     test -f "$1"
     test -s "$1"
+}
+
+unpack_img_all_nodes () {
+    if [[ $1 ]]; then
+        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
+    else
+        skip 'not needed'
+    fi
 }
 
 # Predictable sorting and collation
@@ -264,8 +269,9 @@ elif [[    $CH_TEST_SCOPE != quick \
     exit 1
 fi
 
-# Do we have sudo?
-if ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
+# Do we have and want sudo?
+if    [[ -z $CH_TEST_DONT_SUDO ]] \
+   && ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     # shellcheck disable=SC2034

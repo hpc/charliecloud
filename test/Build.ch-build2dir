@@ -1,0 +1,23 @@
+#!/bin/bash
+# ch-test-scope: standard
+
+# Generate image directory using ch-build2dir and stage it for testing.
+
+set -e
+
+srcdir=$1
+tarball_gz=${2}.tar.gz
+workdir=$3
+
+tag=build2dir
+
+if ( ! command -v docker &> /dev/null); then
+    echo 'docker not found' 1>&2
+    exit 65
+fi
+
+cd "$srcdir"
+ch-build2dir -t $tag --file=Dockerfile.alpine39 . "$workdir"
+cd "$workdir"
+tar czf ${tag}.tar.gz $tag
+mv ${tag}.tar.gz "$tarball_gz"
