@@ -66,6 +66,7 @@ Charliecloud test suite and examples.
 %{_bindir}/ch-fromhost
 %{_bindir}/ch-pull2dir
 %{_bindir}/ch-pull2tar
+%{_bindir}/ch-run-oci
 %{_bindir}/ch-tar2dir
 
 # Binaries

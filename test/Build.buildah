@@ -76,7 +76,8 @@ buildah --root "${workdir}/storage" --runroot "${workdir}/runroot" \
         --build-arg http_proxy="$http_proxy" \
         --build-arg https_proxy="$https_proxy" \
         --build-arg no_proxy="$no_proxy" \
-        --squash --layers=true -t $tag -f ./Dockerfile.${tag} .
+        --runtime "${srcdir}/../bin/ch-run-oci" \
+        --squash --layers=true -t $tag -f ./Dockerfile.${tag} . < /dev/null
 
 cd "$workdir"
 

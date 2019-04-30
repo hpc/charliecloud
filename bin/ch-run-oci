@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+
+import argparse
+import inspect
+import json
+import logging
+import os
+import pathlib
+import re
+import signal
+import subprocess
+import sys
+import time
+import types
+
+CH_BIN = os.path.dirname(os.path.abspath(
+           inspect.getframeinfo(inspect.currentframe()).filename))
+OCI_VERSION_MIN = "1.0.0"
+OCI_VERSION_MAX = "1.0.0"
+
+args = None   # CLI Namespace
+l = None      # logger object
+state = None  # state object
+
+
+def main():
+   global l, args, state
+   l = log_setup()
+   l.debug("--- starting ------------------------------------")
+   l.debug("args: %s" % sys.argv)
+   l.debug("environment: %s" % { k: v for (k, v) in os.environ.items()
+                                 if k.startswith("CH_RUN_OCI_") })
+   args = args_parse()
+   l.debug("CLI: %s" % args)
+   if (args.op.__name__ == "op_" + os.getenv("CH_RUN_OCI_HANG", default="")):
+      l.debug("hanging before %s per CH_RUN_OCI_HANG" % args.op.__name__)
+      sleep_forever()
+      assert False, "unreachable code reached"
+   state = state_load()
+   args.op()
+   l.debug("done")
+
+
+def args_parse():
+   ap = argparse.ArgumentParser()
+   ap.add_argument("--version", action="store_true")
+   sps = ap.add_subparsers()
+
+   sp = sps.add_parser("create")
+   sp.set_defaults(op=op_create)
+   sp.add_argument("--bundle", required=True, metavar="DIR")
+   sp.add_argument("--console-socket", metavar="PATH")
+   sp.add_argument("--pid-file", required=True, metavar="FILE")
+   sp.add_argument("--no-new-keyring", action="store_true")
+   sp.add_argument("cid", metavar="CONTAINER_ID")
+
+   sp = sps.add_parser("delete")
+   sp.set_defaults(op=op_delete)
+   sp.add_argument("cid", metavar="CONTAINER_ID")
+
+   sp = sps.add_parser("kill")
+   sp.set_defaults(op=op_kill)
+   sp.add_argument("cid", metavar="CONTAINER_ID")
+   sp.add_argument("signal", metavar="SIGNAL")
+
+   sp = sps.add_parser("start")
+   sp.set_defaults(op=op_start)
+   sp.add_argument("cid", metavar="CONTAINER_ID")
+
+   sp = sps.add_parser("state")
+   sp.set_defaults(op=op_state)
+   sp.add_argument("cid", metavar="CONTAINER_ID")
+
+   args_ = ap.parse_args()
+
+   # Ridiculous kludge to print version number.
+   if (args_.version):
+      cmd = CH_BIN + "/ch-run"
+      os.execl(cmd, cmd, "--version")
+
+   bundle_ = bundle_from_cid(args_.cid)
+   if ("bundle" in args_ and args_.bundle != bundle_):
+      fatal("bundle argument \"%s\" differs from inferred bundle \"%s\""
+            % (args_.bundle, bundle_))
+   args_.bundle = bundle_
+
+   pid_file_ = pid_file_from_bundle(args_.bundle)
+   if ("pid_file" in args_ and args_.pid_file != pid_file_):
+      fatal("pid_file argument \"%s\"% differs from inferred \"%s\""
+            % (args_.pid_file, pid_file_))
+   args_.pid_file = pid_file_
+
+   return args_
+
+
+def bundle_from_cid(cid):
+   m = re.search(r"^buildah-buildah(.+)$", cid)
+   if (m is None):
+      fatal("cannot parse container ID: %s" % cid)
+   return "/tmp/buildah%s" % m.groups(1)
+
+
+def debug_lines(s):
+   for line in s.splitlines():
+      l.debug(line)
+
+
+def fatal(msg):
+   l.critical(msg)
+   sys.exit(1)
+
+
+def log_setup():
+   # Always set up a logger on stderr that only prints errors.
+   l_ = logging.getLogger(None)
+   l_.setLevel(logging.NOTSET)
+   h = logging.StreamHandler(sys.stderr)
+   h.setLevel(logging.ERROR)
+   h.setFormatter(logging.Formatter("%s[%%(process)s]: %%(message)s"
+                                    % os.path.basename(sys.argv[0])))
+   l_.addHandler(h)
+   # If environment variable, set up a file logger at DEBUG level too.
+   file_ = os.getenv("CH_RUN_OCI_LOGFILE")
+   if (file_ is not None):
+      h = logging.FileHandler(file_)
+      h.setLevel(logging.DEBUG)
+      h.setFormatter(logging.Formatter("%(process)5d %(asctime)s %(message)s"))
+      l_.addHandler(h)
+   return l_
+
+
+def op_create():
+   # Validate arguments.
+   if (args.console_socket):
+      fatal("--console-socket not supported")
+
+   # Start dummy supervisor.
+   if (state.pid is not None):
+      fatal("container already created")
+   pid = os.fork()
+   if (pid == 0):
+      # Child; the only reason to exist is so Buildah sees a process when it
+      # looks for one. Sleep until told to exit.
+      #
+      # Note: I looked into changing the process title and this turns out to
+      # be remarkably hairy unless you use a 3rd-party module.
+      def exit_(sig, frame):
+         l.debug("dummy supervisor: done")
+         sys.exit(0)
+      signal.signal(signal.SIGTERM, exit_)
+      l.debug("dummy supervisor: starting")
+      sleep_forever()
+   else:
+      state.pid = pid
+      with open(args.pid_file, "wt") as fp:
+         print("%d" % pid, file=fp)
+      l.debug("dummy supervisor started with pid %d" % pid)
+
+
+def op_delete():
+   l.debug("delete operation is a no-op")
+
+
+def op_kill():
+   l.debug("kill operation is a no-op")
+
+
+def op_start():
+   c = state.config
+
+   # Unsupported features to barf about.
+   if (state.pid is None):
+      fatal("can't start: not created yet")
+   if (c["process"].get("terminal", False)):
+      fatal("not supported: pseudoterminals")
+   if ("annotations" in c):
+      fatal("not supported: annotations")
+   if ("hooks" in c):
+      fatal("not supported: hooks")
+   for d in c["linux"]["namespaces"]:
+      if ("path" in d):
+         fatal("not supported: joining existing namespaces")
+   if ("intelRdt" in c["linux"]):
+      fatal("not supported: Intel RDT")
+
+   # Environment file.
+   with open(args.bundle + "/environment", "wt") as fp:
+      for line in c["process"]["env"]:
+         l.debug("env: %s" % line)
+         print(line, file=fp)
+
+   # Build command line.
+   cmd = CH_BIN + "/ch-run"
+   ca = [cmd,
+         "--cd", c["process"]["cwd"],
+         "--no-home",
+         "--gid", str(c["process"]["user"]["gid"]),
+         "--uid", str(c["process"]["user"]["uid"]),
+         "--unset-env=*", "--set-env=%s/environment" % args.bundle]
+   if (not c["root"].get("readonly", False)):
+      ca.append("--write")
+   ca += [c["root"]["path"], "--"]
+   ca += c["process"]["args"]
+
+   # Fix up root filesystem.
+   rootfs = args.bundle + "/mnt/rootfs"
+   pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
+   pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
+
+   # Execute user command. We can't execv(2) because we have to do cleanup
+   # after it exits.
+   pathlib.Path(args.bundle + "/user_started").touch(exist_ok=True)
+   l.debug("user command: %s" % ca)
+   # Standard output disappears, so send stdout to stderr.
+   subprocess.run(ca, stdout=2)
+   pathlib.Path(args.bundle + "/user_done").touch(exist_ok=True)
+   l.debug("user command done")
+
+   # Stop dummy supervisor.
+   if (state.pid is None):
+      fatal("no dummy supervisor PID found")
+   try:
+      os.kill(state.pid, signal.SIGTERM)
+      state.pid = None
+      os.unlink(args.pid_file)
+   except OSError as x:
+      fatal("can't kill PID %d: %s (%d)" % (state.pid, x.strerror, x.errno))
+
+
+def op_state():
+   def status():
+      if (state.user_command_started):
+         if (state.user_command_done):
+            return "stopped"
+         else:
+            return "running"
+      if (state.pid is None):
+         return "creating"
+      else:
+         return "created"
+   st = { "ociVersion": OCI_VERSION_MAX,
+          "id": args.cid,
+          "status": status(),
+          "bundle": args.bundle }
+   if (state.pid is not None):
+      st["pid"] = state.pid
+   out = json.dumps(st, indent=2)
+   debug_lines(out)
+   print(out)
+
+
+def sleep_forever():
+   while True:
+      time.sleep(60)  # can't provide infinity here
+
+
+def pid_file_from_bundle(bundle):
+   return bundle + "/pid"
+
+
+def state_load():
+   st = types.SimpleNamespace()
+
+   st.config = json.load(open(args.bundle + "/config.json"))
+   #debug_lines(json.dumps(st.config, indent=2))
+
+   try:
+      fp = open(args.pid_file)
+      st.pid = int(fp.read())
+      l.debug("found supervisor pid: %d" % st.pid)
+   except FileNotFoundError:
+      st.pid = None
+      l.debug("no supervisor pid found")
+
+   st.user_command_started = os.path.isfile(args.bundle + "/user_started")
+   st.user_command_done = os.path.isfile(args.bundle + "/user_done")
+
+   return st
+
+
+if (__name__ == "__main__"):
+   main()
