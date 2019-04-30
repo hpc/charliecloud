@@ -65,7 +65,7 @@ if [ ! -e "${outdir}/${image}.sqfs" ]; then
         mksquashfs "$indir" "${outdir}/${image}.sqfs" "$@"
         echo "squashed ${outdir}/${image}.sqfs OK"
       else
-        mksquashfs "${indir}" "${outdir}/${image}.sqfs" -quiet "$@"
+        mksquashfs "${indir}" "${outdir}/${image}.sqfs" "$@"
         echo "squashed ${outdir}/${image}.sqfs OK"
     fi
   else
@@ -73,7 +73,7 @@ if [ ! -e "${outdir}/${image}.sqfs" ]; then
         mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
         echo "squashed ${outdir}/${image}.sqfs OK"
       else
-        mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend -quiet "$@"
+        mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
         echo "squashed ${outdir}/${image}.sqfs OK"
     fi
 fi
