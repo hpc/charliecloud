@@ -1,6 +1,6 @@
 # ch-test-scope: full
 # ch-test-arch-exclude: aarch64  # issue #415
-# FROM openmpi
+FROM openmpi
 WORKDIR /usr/src
 
 RUN apt-get install -y \
