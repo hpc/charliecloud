@@ -79,6 +79,11 @@ prerequisites_ok () {
     fi
 }
 
+need_squashfs () {
+    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
+    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
+}
+
 scope () {
     case $1 in  # $1 is the test's scope
         quick)
