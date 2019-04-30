@@ -10,7 +10,7 @@
 %{?el7:%global __python %__python3}
 
 # Fedora does not allow SUSE conditionals, thus we define libexecdir to ensure
-# consitency.
+# consistency.
 %define _libexecdir %{_prefix}/libexec
 
 # Specify python version of a given file

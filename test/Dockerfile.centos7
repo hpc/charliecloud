@@ -9,7 +9,7 @@ RUN yum -y install \
            bats \
            gcc \
            make \
-           python34 \
+           python36 \
            rpm-build \
            rpmlint \
            wget
