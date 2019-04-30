@@ -19,8 +19,10 @@ compiler: gcc
 #
 # Additional options:
 #
-#   PKG_BUILD=yes     # build (but don't test) distribution packages, then exit
-#   MINIMAL_DEPS=yes  # test with a minimal dependency set (no fancy tools)
+#   MINIMAL_DEPS            # test with minimal dependencies (no fancy tools)
+#   NO_DOCKER               # remove Docker before testing
+#   SUDO_RM_AFTER_BUILD     # remove sudo privileges after build
+#   SUDO_AVOID_AFTER_BUILD  # set CH_TEST_DONT_SUDO after build
 #
 env:
 # Complete matrix of TARBALL and INSTALL.
@@ -33,7 +35,10 @@ env:
   - TARBALL=export-bats  INSTALL=
 #  - TARBALL=export-bats  INSTALL=yes
 # Extra conditions
-  - TARBALL=        INSTALL=     MINIMAL_DEPS=yes
+  - TARBALL=             INSTALL=     MINIMAL_DEPS=yes
+  - TARBALL=             INSTALL=     NO_DOCKER=yes
+  - TARBALL=             INSTALL=     SUDO_RM_AFTER_BUILD=yes
+  - TARBALL=             INSTALL=     SUDO_AVOID_AFTER_BUILD=yes
 # One full-scope test. This will finish last by a lot.
 # (Disabled because it gives a >10-minute gap in output, so Travis times out.)
 #  - TARBALL=        INSTALL=     CH_TEST_SCOPE=full
@@ -87,6 +92,9 @@ before_script:
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
   - sudo usermod --add-subuids 10000-65536 $USER
   - sudo usermod --add-subgids 10000-65536 $USER
+  - if [ -n "$NO_DOCKER" ]; then
+      sudo rm $(command -v docker);
+    fi
 
 script:
   - test/travis.sh
