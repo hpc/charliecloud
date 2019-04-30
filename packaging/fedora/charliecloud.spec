@@ -6,11 +6,14 @@
 #    Jordan Ogas         @jogas
 #    Reid Priedhorksy    @reidpr
 
+# Don't try to compile python files with /usr/bin/python
+%{?el7:%global __python %__python3}
+
 # Fedora does not allow SUSE conditionals, thus we define libexecdir to ensure
-# consitent building.
+# consitency.
 %define _libexecdir %{_prefix}/libexec
 
-# Python files should specify a version, e.g., python3, python2.
+# Specify python version of a given file
 %define versionize_script() (sed -i 's,/env python,/env %1,g' %2)
 
 %{!?build_cflags:%global build_cflags $RPM_OPT_FLAGS}
@@ -26,7 +29,7 @@ Source0:        https://github.com/hpc/%{name}/releases/download/v%{version}/%{n
 BuildRequires:  gcc
 BuildRequires:  /usr/bin/python3
 
-%package test
+%package   test
 Summary:   Charliecloud examples and test suite
 Requires:  %{name}%{?_isa} = %{version}-%{release}
 Requires:  bats
@@ -61,9 +64,6 @@ container image builders such as Docker, Skopeo, and Buildah.
 %install
 %make_install PREFIX=%{_prefix}
 
-# Don't try to compile python files with /usr/bin/python
-%{?el7:%global __python %__python3}
-
 cat > README.EL7 <<EOF
 For RHEL7 you must increase the number of available user namespaces to a non-
 zero number (note the number below is taken from the default for RHEL8):
@@ -90,20 +90,10 @@ EOF
 %{_mandir}/man1/ch*
 %exclude %{_datadir}/doc/%{name}
 
-# Helper scripts
+# Binaries and helper scripts
 %{_libexecdir}/%{name}/base.sh
 %{_libexecdir}/%{name}/version.sh
-%{_bindir}/ch-build
-%{_bindir}/ch-build2dir
-%{_bindir}/ch-docker2tar
-%{_bindir}/ch-fromhost
-%{_bindir}/ch-pull2dir
-%{_bindir}/ch-pull2tar
-%{_bindir}/ch-tar2dir
-
-# Binaries
-%{_bindir}/ch-run
-%{_bindir}/ch-ssh
+%{_bindir}/ch-*
 
 %files test
 %doc README.TESTS
@@ -112,5 +102,5 @@ EOF
 %exclude %{_datadir}/doc/%{name}
 
 %changelog
-* Thu Mar 14 2019  <jogas@lanl.gov> 0.9.8-1
+* Thu Mar 14 2019 <jogas@lanl.gov> @VERSION@-@RELEASE@
 - Add initial Fedora/EPEL package.
