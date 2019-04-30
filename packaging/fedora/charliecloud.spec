@@ -80,6 +80,7 @@ Charliecloud test suite and examples.
 %files doc
 %doc %{_datadir}/doc/%{name}/LICENSE
 %doc %{_datadir}/doc/%{name}/README.rst
+%doc %{_datadir}/doc/%{name}/html
 %{_libexecdir}/%{name}/examples
 %{_libexecdir}/%{name}/test
 

@@ -73,7 +73,7 @@ EOF
 )
 
 cray_mpi=          # Cray fixups requested
-#cray_openmpi=     # ... for OpenMPI
+cray_openmpi=      # ... for OpenMPI
 cray_mpich=        # ... for MPICH
 dest=
 image=
@@ -238,8 +238,6 @@ if [ $cray_mpi ]; then
             cray_mpich=yes
             ;;
         *'Open MPI'*)
-            # FIXME: remove when implemented
-            # shellcheck disable=SC2034
             cray_openmpi=yes
             ;;
         *)
@@ -306,20 +304,54 @@ if [ $cray_mpich ]; then
     queue_files /opt/cray/alps/default/lib64/libalpslli.so.0.0.0
     queue_files /opt/cray/wlm_detect/default/lib64/libwlm_detect.so.0.0.0
     #queue_files /opt/cray/alps/default/lib64/libalps.so.0.0.0
+fi
 
-    # libwlm_detect.so requires this file to be present.
-    queue_mkdir /etc/opt/cray/wlm_detect
-    queue_files /etc/opt/cray/wlm_detect/active_wlm /etc/opt/cray/wlm_detect
+if [ $cray_openmpi ]; then
+    # Both MPI_ROOT and MPIHOME are the base of the OpenMPI install tree.
+    # We use MPIHOME because some users unset MPI_ROOT.
+    #
+    # Note also that the OpenMPI module name is not standardized.
+       [ "$MPIHOME" ] \
+    || fatal "MPIHOME not set; is OpenMPI module loaded?"
 
+    # Inject libmpi from the host
+    host_libmpi=${MPIHOME}/lib/libmpi.so
+        [ -f "$host_libmpi" ] \
+    || fatal "not found: ${host_libmpi}; is OpenMPI module loaded?"
+    queue_files "$host_libmpi"
+    queue_files "$(  ldd "$host_libmpi" \
+                   | grep -E "/usr|/opt" \
+                   | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')"
+    # This appears to be the only dependency in /lib64 that we can't get from
+    # glibc in the image.
+    queue_files /lib64/liblustreapi.so
+
+    # Remove libmpi.so* from image. This works around ParaView
+    # dlopen(3)-related errors that we don't understand.
+    image_libmpis=$(  "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -p \
+                    | sed -nr 's|^.* => (/.*/libmpi\.so([0-9.]+)?)$|\1|p')
+    [ "$image_libmpis" ] || fatal "can't find libmpi.so* in image"
+    for f in $image_libmpis; do
+        queue_unlink "$f"
+        queue_unlink "$("${ch_bin}/ch-run" "$image" -- readlink -f "$f")"
+    done
+fi
+
+if [ $cray_mpi ]; then
     # ALPS libraries require the contents of this directory to be present at
     # the same path as the host. Create the mount point here, then ch-run
     # bind-mounts it later.
     queue_mkdir /var/opt/cray/alps/spool
 
-    # Cray MPICH needs a pile of hugetlbfs filesystems at an arbitrary path
-    # (it searched /proc/mounts). ch-run bind-mounts to here later.
+    # libwlm_detect.so requires this file to be present.
+    queue_mkdir /etc/opt/cray/wlm_detect
+    queue_files /etc/opt/cray/wlm_detect/active_wlm /etc/opt/cray/wlm_detect
+
+    # uGNI needs a pile of hugetlbfs filesystems at paths that are arbitrary
+    # but in a specific order in /proc/mounts. ch-run bind-mounts here later.
     queue_mkdir /var/opt/cray/hugetlbfs
 fi
+
 
 [ "$inject_files" ] || fatal "empty file list"
 

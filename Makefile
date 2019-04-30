@@ -53,12 +53,13 @@ bin/version.sh: VERSION.full
 #
 # They are phony because I haven't figured out their real dependencies.
 .PHONY: main.tar
-main.tar: VERSION.full man/charliecloud.1
+main.tar: VERSION.full man/charliecloud.1 doc/index.html
 	git diff-index --quiet HEAD || [ -n "$$CH_MAKE_EXPORT_UNCLEAN_OK" ]
 	git archive HEAD --prefix=charliecloud-$$(cat VERSION.full)/ \
                          -o main.tar
 	tar --xform=s,^,charliecloud-$$(cat VERSION.full)/, \
-            -rf main.tar man/*.1 VERSION.full
+	    --exclude='.*' \
+	    -rf main.tar doc man/*.1 VERSION.full
 
 .PHONY: export
 export: main.tar
@@ -135,9 +136,20 @@ install: all
 	    install -d $(INSTALL_PREFIX)/share/man/man1; \
 	    install -pm 644 -t $(INSTALL_PREFIX)/share/man/man1 man/*.1; \
 	fi
-#       misc "documentation"
+#       license and readme
 	install -d $(DOC)
 	install -pm 644 -t $(DOC) LICENSE README.rst
+#	html files if they were built
+	if [ -f doc/index.html ]; then \
+		cp -r doc $(DOC)/html; \
+		rm -f $(DOC)/html/.nojekyll; \
+		for i in $$(find $(DOC)/html -type d); do \
+			chmod 755 $$i; \
+		done; \
+		for i in $$(find $(DOC)/html -type f); do \
+			chmod 644 $$i; \
+		done; \
+	fi
 #       examples
 	for i in examples/syscalls \
 	         examples/serial/* examples/mpi/* examples/other/*; do \

@@ -234,8 +234,11 @@ than updating the old image. Therefore, we must remove the old image.
 Build and provision
 -------------------
 
-The most important difference with this build procedure is that a second user
-:code:`charlie` is created and endowed with passwordless :code:`sudo`.
+The most important differences with this build procedure have to do with
+login. A second user :code:`charlie` is created and endowed with passwordless
+:code:`sudo`; SSH will allow login with password; and the console will
+automatically log in :code:`charlie`. You need to reboot for the latter to
+take effect (which is done in the next step).
 
 ::
 
