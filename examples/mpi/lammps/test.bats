@@ -37,9 +37,8 @@ load ../../../test/common
 setup () {
     scope full
     arch_exclude aarch64  # issue #391
-    prerequisites_ok lammps
+    prerequisites_ok "$ch_tag"
     multiprocess_ok
-    crayify_mpi_maybe "$ch_img"
 }
 
 lammps_try () {
@@ -54,6 +53,10 @@ lammps_try () {
                         lmp_mpi -log none -in "$i"
     done
 
+}
+
+@test "${ch_tag}/crayify image" {
+    crayify_mpi_or_skip "$ch_img"
 }
 
 @test "${ch_tag}/using all cores" {
@@ -86,3 +89,7 @@ lammps_try () {
 #
 @test "${ch_tag}/python"   { skip 'incompatible with --join'
                              lammps_try python; }
+
+@test "${ch_tag}/revert image" {
+    unpack_img_all_nodes "$ch_cray"
+}

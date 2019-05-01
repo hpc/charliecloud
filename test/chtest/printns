@@ -1,12 +1,29 @@
-#!/bin/sh
+#!/usr/bin/env python3
 
 # Print out my namespace IDs, to stdout or (if specified) the path in $2.
-# Then, if $1 is specified, wait that number of seconds before existing.
+# Then, if $1 is specified, wait that number of seconds before exiting.
 
-set -e
+import glob
+import os
+import socket
+import sys
+import time
 
-pause=${1:-0}
-out=${2:-/dev/stdout}
+if (len(sys.argv) > 1):
+   pause = float(sys.argv[1])
+else:
+   pause = 0
 
-stat -L -c %n:$(hostname -s):%i /proc/self/ns/* > $out
-sleep $pause
+if (len(sys.argv) > 2):
+   out = open(sys.argv[2], "wt")
+else:
+   out = sys.stdout
+
+hostname = socket.gethostname()
+
+for ns in glob.glob("/proc/self/ns/*"):
+   stat = os.stat(ns)
+   print("%s:%s:%d" % (ns, hostname, stat.st_ino), file=out, flush=True)
+
+if (pause):
+   time.sleep(pause)
