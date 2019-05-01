@@ -42,7 +42,7 @@
 set -e
 
 srcdir=$1
-tarball_gz=${2}.tar.gz
+tarball=${2}.tar.gz
 workdir=$3
 
 tag=alpine39
@@ -53,23 +53,13 @@ if ( ! command -v buildah >/dev/null 2>&1 ); then
     echo 'buildah not found' 1>&2
     exit 65
 fi
-if ( ! command -v runc >/dev/null 2>&1 ); then
-    echo 'runc not found' 1>&2
-    exit 65
-fi
 
-# Basic registries.conf file; needed for Buildah to use public Docker Hub.
-registries_conf=$(cat <<'EOF'
-[registries.search]
-registries = ['docker.io']
-EOF
-)
-
-# Build image in Buildah local storage. (Note: This hangs after "Storing
-# signatures" if $PWD is not $srcdir.)
-buildah --root "${workdir}/storage" --runroot "${workdir}/runroot" \
-        --registries-conf <(echo "$registries_conf") \
-        build-using-dockerfile \
+# Build image in Buildah local storage. Notes:
+#
+# - This hangs after "Storing signatures" if $PWD is not $srcdir.
+# - Adding "--squash" makes layer caching not work.
+#
+buildah build-using-dockerfile \
         --build-arg HTTP_PROXY="$HTTP_PROXY" \
         --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
         --build-arg NO_PROXY="$NO_PROXY" \
@@ -77,25 +67,35 @@ buildah --root "${workdir}/storage" --runroot "${workdir}/runroot" \
         --build-arg https_proxy="$https_proxy" \
         --build-arg no_proxy="$no_proxy" \
         --runtime "${srcdir}/../bin/ch-run-oci" \
-        --squash --layers=true -t $tag -f ./Dockerfile.${tag} . < /dev/null
+        --layers=true -t $tag -f ./Dockerfile.${tag} . < /dev/null
 
 cd "$workdir"
 
-# Export an OCI image directory.
-buildah --root ./storage --runroot ./runroot push $tag "oci:./oci"
+# Possible workflows to create a tarball:
+#
+#   1. "buildah commit --squash", then "push". This gives a tarball rather
+#      than a directory; the latter better supports SquashFS.
+#
+#   2. "buildah inspect --format='{{.OCIv1.RootFS}}'" gives us the root
+#      filesystem hash but we'd have to find the rest of its path somehow.
+#
+#   3. "buildah mount" and "unmount". This gives a directory but requires
+#      wrapping everything with "buildah unshare".
+#
+# Currently we do #3.
 
-# Extract the tarball containing the single-layer image from the OCI directory.
-manifest=$(sed -E 's|^.+"application/vnd.oci.image.manifest.v1\+json","digest":"sha256:([0-9a-f]+)".+$|\1|' oci/index.json)
-echo "manifest: ${manifest}"
-layer_ct=$(grep -Eo 'application/vnd.oci.image.layer.v1.tar\+gzip' \
-                    "oci/blobs/sha256/${manifest}" | wc -l)
-if [[ $layer_ct -ne 1 ]]; then
-    echo "one layer required; found $layer_ct" 1>&2
-    exit 1
-fi
-layer=$(sed -E 's|^.+"application/vnd.oci.image.layer.v1.tar\+gzip","digest":"sha256:([0-9a-f]+)".+$|\1|' "oci/blobs/sha256/${manifest}")
-echo "layer: ${layer}"
+echo "starting Buildah container"
+container=$(buildah from $tag)
 
-# Move the layer tarball to the output (not copy, because the OCI image will
-# be deleted when we're done, so OK to break it).
-mv "oci/blobs/sha256/${layer}" "$tarball_gz"
+# On my development box, the container rootfs is accessible from the host
+# (i.e., without "buildah unshare"), but I'm guessing that depends on the
+# storage driver, so we use "unshare" per "buildah mount" complaints.
+buildah unshare -- /bin/sh /dev/stdin <<EOF
+rootfs=\$(buildah mount $container)
+echo "container root: \$rootfs"
+cd \$rootfs && tar czf "$tarball" .
+buildah umount $container > /dev/null
+EOF
+
+echo "stopping Buildah container"
+buildah rm "$container" > /dev/null
