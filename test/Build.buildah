@@ -48,6 +48,7 @@ workdir=$3
 tag=alpine39
 
 cd "$srcdir"
+export PATH=$srcdir/../bin:$PATH
 
 if ( ! command -v buildah >/dev/null 2>&1 ); then
     echo 'buildah not found' 1>&2
@@ -66,7 +67,7 @@ buildah build-using-dockerfile \
         --build-arg http_proxy="$http_proxy" \
         --build-arg https_proxy="$https_proxy" \
         --build-arg no_proxy="$no_proxy" \
-        --runtime "${srcdir}/../bin/ch-run-oci" \
+        --runtime ch-run-oci \
         --layers=true -t $tag -f ./Dockerfile.${tag} . < /dev/null
 
 cd "$workdir"
