@@ -570,10 +570,10 @@ EOF
     for f in $files $files_optional; do touch "${img}/${f}"; done
 
     # This should start up the container OK but fail to find the user command.
-    run ch-run "$img" -- true
+    run ch-run "$img" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't execve(2): true: No"*"directory"* ]]
+    [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # For each required file, we want a correct error if it's missing.
     for f in $files; do
@@ -679,10 +679,10 @@ EOF
     [[ $output = *"--ch-ssh: /usr/bin/ch-ssh not in image"* ]]
 
     # Everything should be restored and back to the original error.
-    run ch-run "$img" -- true
+    run ch-run "$img" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't execve(2): true: No"*"directory"* ]]
+    [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # At this point, there should be exactly two each of passwd and group
     # temporary files. Remove them.
