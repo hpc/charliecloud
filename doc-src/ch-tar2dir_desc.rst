@@ -25,9 +25,6 @@ Additional arguments:
   :code:`--help`
     print help and exit
 
-  :code:`--verbose`
-    be more verbose
-
   :code:`--version`
     print version and exit
 
