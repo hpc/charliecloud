@@ -48,11 +48,8 @@ addons:
     sources:
       - sourceline: 'ppa:projectatomic/ppa'
     packages:
-# Package version 1.0.0-rc6-1~ubuntu16.04.2~ppa73, current as of 3/21/2019,
-# fails with "invalid argument". See issue #398. For now, skip it since a
-# working .deb is no longer available.
-#      - buildah
-#      - cri-o-runc  # runc from Project Atomic PPA, not Ubuntu
+      - buildah
+      - cri-o-runc  # runc from Project Atomic PPA, not Ubuntu
       - fakeroot
       - pigz
       - pv
