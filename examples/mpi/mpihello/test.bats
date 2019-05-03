@@ -58,6 +58,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/host starts ranks" {
+    arch_exclude aarch64  # issue 392
     multiprocess_ok
     echo "starting ranks with: ${mpirun_core}"
 
