@@ -17,7 +17,7 @@ load ../common
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
-    [[ $output = *'charliecloud-doc-'* ]]
+    [[ $output = *'charliecloud-test-'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -29,7 +29,7 @@ load ../common
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/lib/debug/usr/bin/ch-run.debug'* ]]
     [[ $output = *'/usr/lib/debug/usr/libexec/charliecloud/test/sotest/lib/libsotest.so.1.0.debug'* ]]
-    run ch-run "$img" -- rpm -ql "charliecloud-doc"
+    run ch-run "$img" -- rpm -ql "charliecloud-test"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/libexec/charliecloud/examples/mpi/lammps/Dockerfile'* ]]
@@ -37,14 +37,14 @@ load ../common
     [[ $output = *'/usr/libexec/charliecloud/test/sotest/lib/libsotest.so.1.0'* ]]
 
     # Uninstall to avoid interfering with the rest of the test suite.
-    run ch-run -w "$img" -- rpm -v --erase charliecloud-doc \
+    run ch-run -w "$img" -- rpm -v --erase charliecloud-test \
                                            charliecloud-debuginfo \
                                            charliecloud
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
-    [[ $output = *'charliecloud-doc-'* ]]
+    [[ $output = *'charliecloud-test-'* ]]
 
     # All gone?
     run ch-run "$img" -- rpm -qa "charliecloud*"
