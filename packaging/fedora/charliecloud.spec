@@ -27,7 +27,6 @@ License:        ASL 2.0
 URL:            https://hpc.github.io/%{name}/
 Source0:        https://github.com/hpc/%{name}/releases/download/v%{version}/%{name}-%{version}.tar.gz
 BuildRequires:  gcc
-BuildRequires:  /usr/bin/python3
 
 %package   test
 Summary:   Charliecloud examples and test suite
