@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+
+import sys
+
+import lark
+
+# Note: We don't use %ignore because it sometimes crashes Lark with
+# "Unexpected token Token($END, '')". E.g., NEWLINE has this problem. The tree
+# is cleaned up below by Ignore.
+GRAMMAR = r"""
+?start: line+
+
+?line: instruction
+     | BLANK_LINE
+     | COMMENT
+
+?instruction: from_
+
+from_: "FROM"i WS IMAGE_NAME NEWLINE
+IMAGE_NAME: /[A-Za-z0-9._-]+/
+
+WS: /[ \t]+/
+BLANK_LINE: WS? NEWLINE
+COMMENT: WS? /#[^\n]*/ NEWLINE
+NEWLINE: "\n"
+"""
+
+IGNORE = { "BLANK_LINE", "COMMENT", "NEWLINE", "WS" }
+
+# Use LALR(1) parser because Earley has some non-deterministic behavior
+# (comments sometimes in tree, sometimes not).
+parser = lark.Lark(GRAMMAR, parser="lalr", propagate_positions=True)
+text = open(sys.argv[1], "rt").read()
+tree = parser.parse(text)
+
+def token(tree, type_):
+   for tok in tree.children:
+      if tok.type == type_:
+         return tok
+   return None
+
+class Ignore(lark.Visitor):
+   def __default__(self, tree):
+      tree.children = [i for i in tree.children
+                       if (   not isinstance(i, lark.lexer.Token)
+                           or i.type not in IGNORE)]
+
+class Main(lark.Visitor):
+   def from_(self, tree):
+      print(tree)
+      name = token(tree, "IMAGE_NAME").value
+      print("%d: FROM %s" % (tree.meta.line, name))
+
+Ignore().visit(tree)
+print(tree.pretty())
+Main().visit(tree)
+
+#for tok in tree.iter_subtrees():
+#   print(tok.line, tok)
+

@@ -1,0 +1,10 @@
+# This Dockerfile aims to have at least one of everything, to exercise the
+# comprehensiveness of Dockerfile feature support.
+#
+# See: https://docs.docker.com/engine/reference/builder
+#
+# ch-test-scope: standard
+
+FROM alpine
+
+ # leading whitespace comment
