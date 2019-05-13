@@ -16,10 +16,6 @@ EOF
 
 parse_basic_args "$@"
 
-if [ "$1" = --verbose ]; then
-    verbose=yes
-    shift
-fi
 if [ "$#" -lt 2 ]; then
     usage
 fi
@@ -33,9 +29,5 @@ imagedir=$(basename -- "$image")
 imagedir="${imagedir%%.*}"
 
 "${ch_bin}/ch-tar2dir" "$image" /tmp > /dev/null
-if [ -n "$verbose" ]; then
-    "${ch_bin}/ch-dir2squash" "--verbose" "/tmp/${imagedir}" "$outdir" "$@"
-  else
-    "${ch_bin}/ch-dir2squash" "/tmp/${imagedir}" "$outdir" "$@"
-fi
+"${ch_bin}/ch-dir2squash" "/tmp/${imagedir}" "$outdir" "$@"
 rm -rf "/tmp/${imagedir}"
