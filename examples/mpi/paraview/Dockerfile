@@ -1,5 +1,5 @@
 # ch-test-scope: full
-# ch-test-arch-exclude: aarch64  # issue #391
+# ch-test-arch-exclude: aarch64  # issue #415
 FROM openmpi
 WORKDIR /usr/src
 
@@ -38,7 +38,7 @@ RUN    cd llvm-${LLVM_VERSION}.build \
 RUN rm -Rf llvm-${LLVM_VERSION}*
 
 # Mesa. We need a version newer than Debian provides.
-ENV MESA_VERSION 17.3.6
+ENV MESA_VERSION 18.0.5
 RUN wget -nv https://mesa.freedesktop.org/archive/mesa-${MESA_VERSION}.tar.xz
 RUN tar xf mesa-${MESA_VERSION}.tar.xz
 RUN    cd mesa-${MESA_VERSION} \

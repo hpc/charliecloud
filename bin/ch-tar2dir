@@ -19,10 +19,6 @@ sentinel=WEIRD_AL_YANKOVIC
 
 parse_basic_args "$@"
 
-if [ "$1" = --verbose ]; then
-    verbose=yes
-    shift
-fi
 if [ $# -lt 2 ]; then
     usage
 fi
@@ -112,7 +108,7 @@ mkdir "$newroot"
 # matching multiple directories; the tar default differs from sh behavior.
 size=$(stat -c%s "$tarball")
   pv_ -s "$size" < "$tarball" \
-| tar x$decompress$verbose -C "$newroot" -f - \
+| tar x$decompress -C "$newroot" -f - \
       --anchored --no-wildcards-match-slash \
       --exclude='dev/*' --exclude='*/dev/*'
 # Make all directories writeable so we can delete image later (hello, Red Hat).

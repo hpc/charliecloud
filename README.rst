@@ -22,10 +22,6 @@ addresses needs such as:
 
 * usability and comprehensibility.
 
-**WARNING: Cray CLE in recent versions** has a bug that crashes nodes when
-cleaning up after some jobs, including if Charliecloud has been used. See the
-installation instructions for a workaround.
-
 How does it work?
 -----------------
 
