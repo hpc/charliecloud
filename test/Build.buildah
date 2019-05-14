@@ -60,9 +60,10 @@ fi
 # - This hangs after "Storing signatures" if $PWD is not $srcdir.
 # - Adding "--squash" makes layer caching not work.
 #
-BUILDAH_ISOLATION=rootless \
+#--userns-uid-map '0:999:1' --userns-gid-map '0:888:1' \
+
+BUILDAH_ISOLATION=rootless  --root "${workdir}/storge" --runroot "${workdir}/runroot"\
 buildah build-using-dockerfile \
-        --userns-uid-map '0:999:1' --userns-gid-map '0:888:1' \
         --build-arg HTTP_PROXY="$HTTP_PROXY" \
         --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
         --build-arg NO_PROXY="$NO_PROXY" \
@@ -70,6 +71,8 @@ buildah build-using-dockerfile \
         --build-arg https_proxy="$https_proxy" \
         --build-arg no_proxy="$no_proxy" \
         --runtime ch-run-oci \
+        --debug \
+        --userns host \
         --layers=true -t $tag -f ./Dockerfile.${tag} . < /dev/null
 
 cd "$workdir"

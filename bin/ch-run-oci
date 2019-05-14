@@ -50,20 +50,30 @@ def args_parse():
    #   $ ln -s ch-run-oci newgidmap
    #
    if (sys.argv[0].endswith("/newuidmap")):
-      with open("/proc/%s/uid_map" % sys.argv[1], "wt") as fp:
-         line = "%s %d 1" % (sys.argv[2], os.geteuid())
-         l.debug("writing uid map: %s" % line)
-         fp.write(line + "\n")
+      cmd = "/usr/bin" + "/newuidmap"
+      output = subprocess.run([cmd, sys.argv[1], '0', '1000', '1'], stdout=subprocess.PIPE)
+      l.debug("Ran newuidmap")
+      l.debug(output)
+      l.debug("WUT")
+      #with open("/proc/%s/uid_map" % sys.argv[1], "wt") as fp:
+      #   line = "%s %d 1" % (sys.argv[2], os.geteuid())
+      #   l.debug("writing uid map: %s" % line)
+      #   fp.write(line + "\n")
       sys.exit(0)
    if (sys.argv[0].endswith("/newgidmap")):
-      with open("/proc/%s/setgroups" % sys.argv[1], "wt") as fp:
-         line = "deny"
-         l.debug("writing setgroups: %s" % line)
-         fp.write(line + "\n")
-      with open("/proc/%s/gid_map" % sys.argv[1], "wt") as fp:
-         line = "%s %d 1" % (sys.argv[2], os.getegid())
-         l.debug("writing gid map: %s" % line)
-         fp.write(line + "\n")
+      cmd = "/usr/bin/" + "/newgidmap"
+      l.debug("Ran newgidmap")
+      output = subprocess.run([cmd, sys.argv[1], '0', '1000', '1', '1', '10000', '41'], stdout=subprocess.PIPE)
+      l.debug(output)
+      l.debug("Wut")
+      #with open("/proc/%s/setgroups" % sys.argv[1], "wt") as fp:
+      #   line = "deny"
+      #   l.debug("writing setgroups: %s" % line)
+      #   fp.write(line + "\n")
+      #with open("/proc/%s/gid_map" % sys.argv[1], "wt") as fp:
+      #   line = "%s %d 1" % (sys.argv[2], os.getegid())
+      #   l.debug("writing gid map: %s" % line)
+      #   fp.write(line + "\n")
       sys.exit(0)
 
    ap = argparse.ArgumentParser()
@@ -139,7 +149,7 @@ def log_setup():
    l_ = logging.getLogger(None)
    l_.setLevel(logging.NOTSET)
    h = logging.StreamHandler(sys.stderr)
-   h.setLevel(logging.ERROR)
+   h.setLevel(logging.DEBUG)
    h.setFormatter(logging.Formatter("%s[%%(process)s]: %%(message)s"
                                     % os.path.basename(sys.argv[0])))
    l_.addHandler(h)
@@ -164,6 +174,7 @@ def op_create():
    pid = os.fork()
    if (pid == 0):
       # Child; the only reason to exist is so Buildah sees a process when it
+
       # looks for one. Sleep until told to exit.
       #
       # Note: I looked into changing the process title and this turns out to
