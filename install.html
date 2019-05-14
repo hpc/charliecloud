@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installation &mdash; Charliecloud 0.9.9 documentation</title>
+  <title>1. Installation &mdash; Charliecloud 0.9.10 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                b62f300
+                56d8504
               </div>
             
           
@@ -196,41 +196,34 @@
 <p>This section describes how to build and install Charliecloud. For some
 distributions, this can be done using your package manager; otherwise, both
 normal users and admins can build and install it manually.</p>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last"><strong>If you are installing on a Cray</strong> and have not applied the patch for Cray
-case #188073, you must use the <a class="reference external" href="https://github.com/hpc/charliecloud/compare/cray">cray branch</a> to avoid crashing
-nodes during job completion. This is a Cray bug that Charliecloud happens
-to tickle. There is a patch available from Cray for CLE6.0 UP04 and UP05.
-The fix is mainlined into Cray CLE6.0 UP06, released in March 2018. Versions
-of Cray CLE6.0 prior to UP04 are unpatched and affected by the bug.
-Non-Cray build boxes and others at the same site can still use
-the master branch.</p>
-</div>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#dependencies" id="id1">Dependencies</a><ul>
-<li><a class="reference internal" href="#supported-architectures" id="id2">Supported architectures</a></li>
-<li><a class="reference internal" href="#run-time" id="id3">Run time</a></li>
-<li><a class="reference internal" href="#build-time" id="id4">Build time</a></li>
-<li><a class="reference internal" href="#test-suite" id="id5">Test suite</a></li>
+<li><p><a class="reference internal" href="#dependencies" id="id1">Dependencies</a></p>
+<ul>
+<li><p><a class="reference internal" href="#supported-architectures" id="id2">Supported architectures</a></p></li>
+<li><p><a class="reference internal" href="#run-time" id="id3">Run time</a></p></li>
+<li><p><a class="reference internal" href="#build-time" id="id4">Build time</a></p></li>
+<li><p><a class="reference internal" href="#test-suite" id="id5">Test suite</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#package-manager-install" id="id6">Package manager install</a><ul>
-<li><a class="reference internal" href="#debian" id="id7">Debian</a></li>
-<li><a class="reference internal" href="#gentoo" id="id8">Gentoo</a></li>
-<li><a class="reference internal" href="#rpm-based-distributions" id="id9">RPM-based distributions</a></li>
+<li><p><a class="reference internal" href="#package-manager-install" id="id6">Package manager install</a></p>
+<ul>
+<li><p><a class="reference internal" href="#debian" id="id7">Debian</a></p></li>
+<li><p><a class="reference internal" href="#gentoo" id="id8">Gentoo</a></p></li>
+<li><p><a class="reference internal" href="#rpm-based-distributions" id="id9">RPM-based distributions</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#manual-build-and-install" id="id10">Manual build and install</a><ul>
-<li><a class="reference internal" href="#download" id="id11">Download</a></li>
-<li><a class="reference internal" href="#build" id="id12">Build</a></li>
-<li><a class="reference internal" href="#install-optional" id="id13">Install (optional)</a></li>
+<li><p><a class="reference internal" href="#manual-build-and-install" id="id10">Manual build and install</a></p>
+<ul>
+<li><p><a class="reference internal" href="#download" id="id11">Download</a></p></li>
+<li><p><a class="reference internal" href="#build" id="id12">Build</a></p></li>
+<li><p><a class="reference internal" href="#install-optional" id="id13">Install (optional)</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#docker-tips" id="id14">Docker tips</a><ul>
-<li><a class="reference internal" href="#understand-the-security-implications-of-docker" id="id15">Understand the security implications of Docker</a></li>
-<li><a class="reference internal" href="#configuring-for-a-proxy" id="id16">Configuring for a proxy</a></li>
+<li><p><a class="reference internal" href="#docker-tips" id="id14">Docker tips</a></p>
+<ul>
+<li><p><a class="reference internal" href="#understand-the-security-implications-of-docker" id="id15">Understand the security implications of Docker</a></p></li>
+<li><p><a class="reference internal" href="#configuring-for-a-proxy" id="id16">Configuring for a proxy</a></p></li>
 </ul>
 </li>
 </ul>
@@ -252,20 +245,20 @@ supported platforms</a>.</p>
 <h3><a class="toc-backref" href="#id3">1.1.2. Run time</a><a class="headerlink" href="#run-time" title="Permalink to this headline">¶</a></h3>
 <p>Systems used for running images need:</p>
 <ul class="simple">
-<li>Recent Linux kernel with user namespaces enabled. We recommend version 4.4
-or higher.</li>
-<li>C11 compiler and standard library</li>
-<li>POSIX.1-2017 shell and utilities</li>
+<li><p>Recent Linux kernel with user namespaces enabled. We recommend version 4.4
+or higher.</p></li>
+<li><p>C11 compiler and standard library</p></li>
+<li><p>POSIX.1-2017 shell and utilities</p></li>
 </ul>
 <p>Some distributions need configuration changes to enable user namespaces. For
 example:</p>
 <ul class="simple">
-<li>Debian Stretch <a class="reference external" href="https://superuser.com/a/1122977">needs sysctl</a>
-<code class="code docutils literal notranslate"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>.</li>
-<li>RHEL/CentOS 7.4 and 7.5 need both a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>.
+<li><p>Debian Stretch <a class="reference external" href="https://superuser.com/a/1122977">needs sysctl</a>
+<code class="code docutils literal notranslate"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>.</p></li>
+<li><p>RHEL/CentOS 7.4 and 7.5 need both a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>.
 <em>Important note:</em> Docker does not work with user namespaces, so skip step 4
 of the Red Hat instructions, i.e., don’t add <code class="code docutils literal notranslate"><span class="pre">--userns-remap</span></code> to the
-Docker configuration (see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/97">issue #97</a>).</li>
+Docker configuration (see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/97">issue #97</a>).</p></li>
 </ul>
 </div>
 <div class="section" id="build-time">
@@ -277,32 +270,36 @@ access or configuration for a local Docker repository. Our wrapper scripts for
 Docker expect to run the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> command under <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> and need
 Docker 17.03+ and <code class="code docutils literal notranslate"><span class="pre">mktemp(1)</span></code>. (Older versions of Docker may work but
 are untested. We know that 1.7.1 does not work.)</p>
+<p>Optional build-time dependencies:</p>
+<ul class="simple">
+<li><p>Bash 4.1+, for <code class="code docutils literal notranslate"><span class="pre">ch-build2dir</span></code></p></li>
+</ul>
 </div>
 <div class="section" id="test-suite">
 <h3><a class="toc-backref" href="#id5">1.1.4. Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h3>
 <p>To run the test suite, you also need:</p>
 <ul class="simple">
-<li><a class="reference external" href="https://github.com/sstephenson/bats">Bats</a> 0.4.0</li>
-<li>Bash 4.1+, for Bats and to make programming the tests tractable</li>
-<li>Python 2.7 or 3.4+, for building some of the tests</li>
-<li>Wget, to download stuff for some of the test images</li>
-<li>root access via <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> (optional), to test filesystem permissions enforcement</li>
+<li><p><a class="reference external" href="https://github.com/sstephenson/bats">Bats</a> 0.4.0</p></li>
+<li><p>Bash 4.1+, for Bats and to make programming the tests tractable</p></li>
+<li><p>Python 2.7 or 3.4+, for building some of the tests</p></li>
+<li><p>Wget, to download stuff for some of the test images</p></li>
+<li><p>root access via <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> (optional), to test filesystem permissions enforcement</p></li>
 </ul>
 <p>Image building software tested, with varying levels of thoroughness:</p>
 <ul class="simple">
-<li>Shell scripts with various manual bootstrap and <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></li>
-<li>Docker</li>
-<li><a class="reference external" href="https://github.com/containers/buildah">Buildah</a></li>
-<li><a class="reference external" href="https://github.com/containers/skopeo">skopeo</a> and
-<a class="reference external" href="https://github.com/openSUSE/umoci">umoci</a></li>
+<li><p>Shell scripts with various manual bootstrap and <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></p></li>
+<li><p>Docker</p></li>
+<li><p><a class="reference external" href="https://github.com/containers/buildah">Buildah</a></p></li>
+<li><p><a class="reference external" href="https://github.com/containers/skopeo">skopeo</a> and
+<a class="reference external" href="https://github.com/openSUSE/umoci">umoci</a></p></li>
 </ul>
 <p>Bats can be installed at the system level or embedded in the Charliecloud
 source code. If it’s in both places, the latter is used.</p>
 <p>To embed Bats, either:</p>
 <ul class="simple">
-<li>Download Charliecloud using <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>, which will check
-out Bats as a submodule in <code class="code docutils literal notranslate"><span class="pre">test/bats</span></code>.</li>
-<li>Unpack the Bats zip file or tarball in <code class="code docutils literal notranslate"><span class="pre">test/bats</span></code>.</li>
+<li><p>Download Charliecloud using <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>, which will check
+out Bats as a submodule in <code class="code docutils literal notranslate"><span class="pre">test/bats</span></code>.</p></li>
+<li><p>Unpack the Bats zip file or tarball in <code class="code docutils literal notranslate"><span class="pre">test/bats</span></code>.</p></li>
 </ul>
 <p>To check an embedded Bats:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> test/bats/bin/bats --version
@@ -327,20 +324,20 @@ particularly welcome!</p>
 <div class="section" id="debian">
 <h3><a class="toc-backref" href="#id7">1.2.1. Debian</a><a class="headerlink" href="#debian" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud has been proposed for inclusion in Debian; see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/95">issue 95</a>.</p>
-<table border="1" class="colwidths-auto docutils">
-<tbody valign="top">
-<tr class="row-odd"><td>Distribution versions</td>
-<td>proposed for <em>Buster</em> and <em>Stretch backports</em></td>
+<table class="colwidths-auto docutils align-center">
+<tbody>
+<tr class="row-odd"><td><p>Distribution versions</p></td>
+<td><p>proposed for <em>Buster</em> and <em>Stretch backports</em></p></td>
 </tr>
-<tr class="row-even"><td>Maintainers</td>
-<td>Lucas Nussbaum (<code class="code docutils literal notranslate"><span class="pre">lucas&#64;debian.org</span></code>)
-and Peter Wienemann (<code class="code docutils literal notranslate"><span class="pre">wienemann&#64;physik.uni-bonn.de</span></code>)</td>
+<tr class="row-even"><td><p>Maintainers</p></td>
+<td><p>Lucas Nussbaum (<code class="code docutils literal notranslate"><span class="pre">lucas&#64;debian.org</span></code>)
+and Peter Wienemann (<code class="code docutils literal notranslate"><span class="pre">wienemann&#64;physik.uni-bonn.de</span></code>)</p></td>
 </tr>
-<tr class="row-odd"><td>Bug reports to</td>
-<td>Charliecloud’s GitHub issue tracker</td>
+<tr class="row-odd"><td><p>Bug reports to</p></td>
+<td><p>Charliecloud’s GitHub issue tracker</p></td>
 </tr>
-<tr class="row-even"><td>Packaging source code</td>
-<td>in Charliecloud: <code class="code docutils literal notranslate"><span class="pre">packaging/debian</span></code></td>
+<tr class="row-even"><td><p>Packaging source code</p></td>
+<td><p>in Charliecloud: <code class="code docutils literal notranslate"><span class="pre">packaging/debian</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -348,19 +345,19 @@ and Peter Wienemann (<code class="code docutils literal notranslate"><span class
 <div class="section" id="gentoo">
 <h3><a class="toc-backref" href="#id8">1.2.2. Gentoo</a><a class="headerlink" href="#gentoo" title="Permalink to this headline">¶</a></h3>
 <p>A native package for Gentoo is available.</p>
-<table border="1" class="colwidths-auto docutils">
-<tbody valign="top">
-<tr class="row-odd"><td>Package name</td>
-<td><a class="reference external" href="https://packages.gentoo.org/packages/sys-cluster/charliecloud">sys-cluster/charliecloud</a></td>
+<table class="colwidths-auto docutils align-center">
+<tbody>
+<tr class="row-odd"><td><p>Package name</p></td>
+<td><p><a class="reference external" href="https://packages.gentoo.org/packages/sys-cluster/charliecloud">sys-cluster/charliecloud</a></p></td>
 </tr>
-<tr class="row-even"><td>Maintainer</td>
-<td>Oliver Freyermuth (<code class="code docutils literal notranslate"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</td>
+<tr class="row-even"><td><p>Maintainer</p></td>
+<td><p>Oliver Freyermuth (<code class="code docutils literal notranslate"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</p></td>
 </tr>
-<tr class="row-odd"><td>Bug reports to</td>
-<td><a class="reference external" href="https://bugs.gentoo.org/buglist.cgi?quicksearch=sys-cluster%2Fcharliecloud">Gentoo Bugzilla</a></td>
+<tr class="row-odd"><td><p>Bug reports to</p></td>
+<td><p><a class="reference external" href="https://bugs.gentoo.org/buglist.cgi?quicksearch=sys-cluster%2Fcharliecloud">Gentoo Bugzilla</a></p></td>
 </tr>
-<tr class="row-even"><td>Packaging source code</td>
-<td><a class="reference external" href="https://gitweb.gentoo.org/repo/gentoo.git/tree/sys-cluster/charliecloud">Gentoo ebuild repository</a></td>
+<tr class="row-even"><td><p>Packaging source code</p></td>
+<td><p><a class="reference external" href="https://gitweb.gentoo.org/repo/gentoo.git/tree/sys-cluster/charliecloud">Gentoo ebuild repository</a></p></td>
 </tr>
 </tbody>
 </table>
@@ -381,19 +378,19 @@ and Peter Wienemann (<code class="code docutils literal notranslate"><span class
 <h3><a class="toc-backref" href="#id9">1.2.3. RPM-based distributions</a><a class="headerlink" href="#rpm-based-distributions" title="Permalink to this headline">¶</a></h3>
 <p>An RPM <code class="code docutils literal notranslate"><span class="pre">.spec</span></code> file is provided in the Charliecloud source code. We are
 actively seeking distribution packagers to adapt this into official packages!</p>
-<table border="1" class="colwidths-auto docutils">
-<tbody valign="top">
-<tr class="row-odd"><td>Repositories</td>
-<td>none yet</td>
+<table class="colwidths-auto docutils align-center">
+<tbody>
+<tr class="row-odd"><td><p>Repositories</p></td>
+<td><p>none yet</p></td>
 </tr>
-<tr class="row-even"><td>Maintainer</td>
-<td>Oliver Freyermuth (<code class="code docutils literal notranslate"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</td>
+<tr class="row-even"><td><p>Maintainer</p></td>
+<td><p>Oliver Freyermuth (<code class="code docutils literal notranslate"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</p></td>
 </tr>
-<tr class="row-odd"><td>Bug reports to</td>
-<td>Charliecloud’s GitHub issue tracker</td>
+<tr class="row-odd"><td><p>Bug reports to</p></td>
+<td><p>Charliecloud’s GitHub issue tracker</p></td>
 </tr>
-<tr class="row-even"><td>Packaging source code</td>
-<td>in Charliecloud: <code class="code docutils literal notranslate"><span class="pre">packaging/redhat</span></code></td>
+<tr class="row-even"><td><p>Packaging source code</p></td>
+<td><p>in Charliecloud: <code class="code docutils literal notranslate"><span class="pre">packaging/redhat</span></code></p></td>
 </tr>
 </tbody>
 </table>
