@@ -62,9 +62,9 @@ fi
 #
 #--userns-uid-map '0:999:1' --userns-gid-map '0:888:1' \
 
-BUILDAH_ISOLATION=rootless
-buildah --root "${workdir}/storage" --runroot "${workdir}/runroot" \
-        build-using-dockerfile \
+# --root "${workdir}/storage" --runroot "${workdir}/runroot" \
+#BUILDAH_ISOLATION=rootless
+buildah build-using-dockerfile \
         --build-arg HTTP_PROXY="$HTTP_PROXY" \
         --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
         --build-arg NO_PROXY="$NO_PROXY" \
@@ -72,8 +72,6 @@ buildah --root "${workdir}/storage" --runroot "${workdir}/runroot" \
         --build-arg https_proxy="$https_proxy" \
         --build-arg no_proxy="$no_proxy" \
         --runtime ch-run-oci \
-        --debug \
-        --userns host \
         --layers=true -t $tag -f ./Dockerfile.${tag} . < /dev/null
 
 cd "$workdir"
