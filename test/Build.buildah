@@ -62,8 +62,9 @@ fi
 #
 #--userns-uid-map '0:999:1' --userns-gid-map '0:888:1' \
 
-BUILDAH_ISOLATION=rootless  --root "${workdir}/storge" --runroot "${workdir}/runroot"\
-buildah build-using-dockerfile \
+BUILDAH_ISOLATION=rootless
+buildah --root "${workdir}/storage" --runroot "${workdir}/runroot" \
+        build-using-dockerfile \
         --build-arg HTTP_PROXY="$HTTP_PROXY" \
         --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
         --build-arg NO_PROXY="$NO_PROXY" \
