@@ -5,6 +5,12 @@
 #
 # ch-test-scope: standard
 
-FROM alpine
+#FROM alpine
+#FROM alpine@cdf98d1859c1  # skopeo pukes on this
+FROM alpine:3.9
+#FROM alpine:3.9 AS stage1
+
+RUN apk add --no-cache bc
+RUN ["echo", "hello \nworld"]
 
  # leading whitespace comment

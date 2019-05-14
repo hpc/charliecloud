@@ -1,31 +1,48 @@
 #!/usr/bin/env python3
 
+# dependencies: skopeo, umoci, lark
+
+import inspect
+import json
+import os
+import pathlib
+import subprocess
 import sys
 
 import lark
 
-# Note: We don't use %ignore because it sometimes crashes Lark with
-# "Unexpected token Token($END, '')". E.g., NEWLINE has this problem. The tree
-# is cleaned up below by Ignore.
 GRAMMAR = r"""
-?start: line+
+?start: ( instruction | _COMMENT )+
 
-?line: instruction
-     | BLANK_LINE
-     | COMMENT
+?instruction: ( from_ | run )
 
-?instruction: from_
+from_: "FROM"i ID [ from_tag | from_digest ] [ from_alias ] _NEWLINE
+from_tag: ":" ID
+from_digest: "@" HEXID
+from_alias: "AS"i ID
 
-from_: "FROM"i WS IMAGE_NAME NEWLINE
-IMAGE_NAME: /[A-Za-z0-9._-]+/
+run: "RUN"i ( run_exec | run_shell ) _NEWLINE
 
-WS: /[ \t]+/
-BLANK_LINE: WS? NEWLINE
-COMMENT: WS? /#[^\n]*/ NEWLINE
-NEWLINE: "\n"
+run_exec: _string_list
+run_shell: LINE
+
+ID: /[A-Za-z0-9_.-]+/
+HEXID: /[a-fA-F0-9]+/
+LINE: /[^[][^\n]+/
+
+_string_list: "[" STRING_QUOTED ( "," STRING_QUOTED )* "]"
+
+_COMMENT: /#[^\n]*/ _NEWLINE
+_NEWLINE: "\n"+
+
+%import common.ESCAPED_STRING -> STRING_QUOTED
+%import common.WS_INLINE
+%ignore WS_INLINE
 """
 
-IGNORE = { "BLANK_LINE", "COMMENT", "NEWLINE", "WS" }
+CH_BIN = os.path.dirname(os.path.abspath(
+           inspect.getframeinfo(inspect.currentframe()).filename))
+WORKDIR = "/var/tmp/a"
 
 # Use LALR(1) parser because Earley has some non-deterministic behavior
 # (comments sometimes in tree, sometimes not).
@@ -33,28 +50,134 @@ parser = lark.Lark(GRAMMAR, parser="lalr", propagate_positions=True)
 text = open(sys.argv[1], "rt").read()
 tree = parser.parse(text)
 
-def token(tree, type_):
-   for tok in tree.children:
-      if tok.type == type_:
-         return tok
+
+def cmd(args, env=None):
+   print(args)
+   print("\033[33m", end="", flush=True)
+   subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   print("\033[0m", end="", flush=True)
+
+
+def terminal(tree, type_):
+   for i in tree.children:
+      if (isinstance(i, lark.lexer.Token) and i.type == type_):
+         return i.value
    return None
 
-class Ignore(lark.Visitor):
-   def __default__(self, tree):
-      tree.children = [i for i in tree.children
-                       if (   not isinstance(i, lark.lexer.Token)
-                           or i.type not in IGNORE)]
+def terminals(tree, type_):
+   for i in tree.children:
+      if (isinstance(i, lark.lexer.Token) and i.type == type_):
+         yield i.value
+
+# Dockerfile spec does not say how to unescape strings, so let's JSON it.
+def unescape(string_literal):
+   return json.loads(string_literal)
+
+
+class Instruction(object):
+
+   def __init__(self, tree):
+      self.lineno = tree.meta.line
+      self.tree = tree
+
+   def __str__(self):
+      return "%3s " % self.lineno
+
+   # Return the value of first immediate subtree childname's first immediate
+   # child terminal of type type_, or None if either the child or terminal
+   # does not exist.
+   def child(self, childname, type_):
+      children = self.tree.find_data(childname)
+      try:
+         child = next(children)
+      except StopIteration:
+         return None  # no child subtree named childname
+      return terminal(child, type_)
+
+   def execute(self):
+      print("warning: ignoring unimplemented instruction")
+
+   # Return value of first immediate child terminal of type type_, or None if
+   # not found.
+   def terminal(self, type_):
+      return terminal(self.tree, type_)
+
+   # Yield values of all immediate child terminals of type type_, or empty
+   # list if none found.
+   def terminals(self, type_):
+      return terminals(self.tree, type_)
+
+
+class Run(Instruction):
+
+   def __str__(self):
+      return "%sRUN %s" % (super().__str__(), self.cmd)
+
+   def execute(self):
+      rootfs = WORKDIR + "/img/rootfs"
+      pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
+      pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
+      args = [CH_BIN + "/ch-run", "-w", "--uid=0", "--gid=0",
+              rootfs, "--"] + self.cmd
+      cmd(args)
+
+
+class I_from_(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.name = self.terminal("ID")
+      self.alias = self.child("from_alias", "ID")
+      self.tag = self.child("from_tag", "ID")
+      self.digest = self.child("from_digest", "HEXID")
+
+   def __str__(self):
+      alias = "AS %s" % self.alias if self.alias else ""
+      return "%sFROM %s %s" % (super().__str__(), self.fullname, alias)
+
+   @property
+   def fullname(self):
+      if (self.tag is not None):
+         return "%s:%s" % (self.name, self.tag)
+      elif (self.digest is not None):
+         return "%s@%s" % (self.name, self.digest)
+      else:
+         return self.name
+
+   def execute(self):
+      os.mkdir(WORKDIR)
+      # This works with newuidmap and newgidmap not installed.
+      cmd(["skopeo", "copy", "docker://" + self.fullname,
+           "oci:%s/oci_%s" % (WORKDIR, self.fullname)])
+      cmd(["umoci", "unpack", "--rootless",
+           "--image", "%s/oci_%s" % (WORKDIR, self.fullname),
+           WORKDIR + "/img"])
+
+
+class I_run_exec(Run):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.cmd = [unescape(i) for i in self.terminals("STRING_QUOTED")]
+
+
+class I_run_shell(Run):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.cmd = ["/bin/sh", "-c", self.terminal("LINE")]
+
 
 class Main(lark.Visitor):
-   def from_(self, tree):
-      print(tree)
-      name = token(tree, "IMAGE_NAME").value
-      print("%d: FROM %s" % (tree.meta.line, name))
 
-Ignore().visit(tree)
+   def __default__(self, tree):
+      class_ = "I_" + tree.data
+      if (class_ in globals()):
+         inst = globals()[class_](tree)
+         print(inst)
+         inst.execute()
+
+
 print(tree.pretty())
 Main().visit(tree)
-
-#for tok in tree.iter_subtrees():
-#   print(tok.line, tok)
 
