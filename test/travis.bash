@@ -42,11 +42,12 @@ esac
 
 make
 bin/ch-run --version
-version=$(cat VERSION.full)
 
 if [[ $INSTALL ]]; then
     sudo make install PREFIX="$PREFIX"
-    cd "$PREFIX/libexec/charliecloud-$version"
+    ch_test="${PREFIX}/bin/ch-test"
+else
+    ch_test=$(readlink -f ./bin/ch-test)
 fi
 
 if [[ $SUDO_RM_FIRST ]]; then
@@ -56,8 +57,7 @@ sudo -v || true
 
 cd test
 
-make where-bats
-make test-build
+"$ch_test" build
 
 if [[ $SUDO_RM_AFTER_BUILD ]]; then
     sudo rm /etc/sudoers.d/travis
@@ -68,5 +68,5 @@ fi
 sudo -v || true
 echo "\$CH_TEST_DONT_SUDO=$CH_TEST_DONT_SUDO"
 
-make test-run
-make test-test
+"$ch_test" run
+"$ch_test" examples

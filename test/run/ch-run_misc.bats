@@ -560,6 +560,8 @@ EOF
     scope standard
     img="${BATS_TMPDIR}/broken-image"
 
+    skip 'developer skipped (issue #553)'
+
     # Create an image skeleton.
     dirs=$(echo {dev,proc,sys})
     files=$(echo etc/{group,passwd})

@@ -127,6 +127,13 @@ Create a SquashFS file from a tarball image.
 
 .. include:: ./ch-tar2squash_desc.rst
 
+ch-test
++++++++
+
+Run the Charliecloud test suite.
+
+.. include:: ./ch-test_desc.rst
+
 ch-umount
 +++++++++
 

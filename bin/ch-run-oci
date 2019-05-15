@@ -98,7 +98,8 @@ def bundle_from_cid(cid):
    m = re.search(r"^buildah-buildah(.+)$", cid)
    if (m is None):
       fatal("cannot parse container ID: %s" % cid)
-   return "/tmp/buildah%s" % m.groups(1)
+   # Hacked from /tmp to /var/tmp
+   return "/var/tmp/buildah%s" % m.groups(1)
 
 
 def debug_lines(s):
@@ -340,7 +341,6 @@ def state_load():
 
    st.config = json.load(open(args.bundle + "/config.json"))
    #debug_lines(json.dumps(st.config, indent=2))
-
    v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
    v_actual = distutils.version.LooseVersion(st.config["ociVersion"])
    v_max = distutils.version.LooseVersion(OCI_VERSION_MAX)

@@ -1,0 +1,306 @@
+#!/bin/bash
+
+check_builder () {
+    case $CH_BUILDER in
+    ch-grow)
+        printf "checking builder (ch-grow) sanity...\n"
+        if (! command -v umoci &> /dev/null); then
+            fatal 'builder: ch-grow: missing umoci'
+        fi
+        if (! command -v skopeo &> /dev/null); then
+            fatal 'builder: ch-grow: missing skopeo'
+        fi
+        if (! command -v python3 &> /dev/null); then
+            fatal 'builder: ch-grow: missing python3'
+        fi
+        if (! python3 -c "import lark" &> /dev/null); then
+            fatal "builder: ch-grow: missing python3 module 'lark-parser'"
+        fi
+        ;;
+    buildah)
+        # TODO: determine how to handle all the various ch-build buildah cases,
+        # e.g., buildah, buildah-runc, buildah-setuid
+        echo "checking builder (buildah) sanity..."
+        v_buildah=$(buildah --version | cut -d ' ' -f3)
+        if [[ -z $v_buildah ]]; then
+            fatal 'builder: buildah: not installed'
+        fi
+        b_major=$(echo "$v_buildah" | cut -d '.' -f1)
+        b_minor=$(echo "$v_buildah" | cut -d '.' -f2)
+        b_build=$(echo "$v_buildah" | cut -d '.' -f3)
+        if [[ $b_major -lt  1 ]] \
+        || [[ $b_minor -lt 11 ]] \
+        || [[ $b_build -lt  2 ]]; then
+            fatal 'builder: buildah: version must be 1.11.2 or greater'
+        fi
+        if (buildah rm "ch-test_$version" &> /dev/null); then
+            echo "removing test container ch-test_$version"
+        fi
+        if (! buildah from --name "ch-test_$version" scratch &> /dev/null); then
+            fatal 'builder: buildah: sanity check failed (is buildah working?)'
+        fi
+        if (! buildah containers | awk '{print $4}' | \
+              grep -w "ch-test_$version" &> /dev/null); then
+                  fatal 'builder: buildah: sanity check failed (is buildah working?)'
+        fi
+        ;;
+    docker)
+        echo "checking builder (docker) sanity..."
+        if (! command -v docker &> /dev/null); then
+            fatal 'builder: docker: not installed'
+        fi
+        if (! docker run hello-world &> /dev/null); then
+            fatal 'builder: docker: run hello failed'
+        fi
+        ;;
+    *)
+        fatal "builder: $CH_BUILDER: not supported"
+    esac
+}
+
+fatal () {
+    printf 'fatal: %s\n\n' "$1" 1>&2
+    exit 1
+}
+
+perm_dirs () {
+    printf '\nfile permission enforcement tests:\n'
+    if [[ $CH_TEST_PERMDIRS == 'skip' ]] || [[ -n $CH_TEST_DONT_SUDO ]] || (! sudo -v &> /dev/null); then
+        printf 'skipping file permission tests...\n'
+        return 0
+    fi
+    # shellcheck disable=SC2068
+    for d in ${CH_TEST_PERMDIRS[@]}; do
+        if [[ -d "${d}/perms_test" ]]; then
+            printf "%s/perms_test exists (consider removing; later tests may fail). \n" "$d"
+            continue
+        else
+            sudo ./make-perms-test "$d" "$USER" nobody
+        fi
+    done
+    echo
+}
+
+print_dry () {
+    if [[ $phase == clean ]]; then
+        echo "rm -rf $CH_TEST_TARDIR"
+        echo "rm -rf $CH_TEST_IMGDIR"
+        if [[ ! $CH_TEST_PERMDIRS == skip ]]; then
+            # shellcheck disable=SC2068
+            for d in ${CH_TEST_PERMDIRS[@]}; do
+                printf 'rm -rf %s/perms_test\n' "${d}"
+            done
+        fi
+    else
+        if [[ ! $phase == run ]]; then
+            printf 'file permission enforcement tests:\n'
+            # shellcheck disable=SC2068
+            for d in ${CH_TEST_PERMDIRS[@]}; do
+                printf 'sudo ./make-perms-test %s %s nobody\n' "$d" "$USER"
+            done
+            echo
+        fi
+        case $phase in
+        build) echo "make test-build";;
+        run)   echo "make test-run";;
+        all)   echo "make test";;
+        esac
+    fi
+    exit 0
+}
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+. "${libexec}/version.sh"
+
+
+bin_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+top_dir=${bin_dir%/*}
+version=$("${bin_dir}/ch-run" --version 2>&1)
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Run the Charliecloud test suite.
+
+Usage:
+
+  $ $(basename "$0") [ARGS ...] PHASE
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$#" -lt 1 ]; then
+    usage
+    exit 0
+fi
+
+# Ensure ch-run has been compiled (issue #329).
+if (! "${bin_dir}/ch-run" --version &> /dev/null); then
+    fatal 'ch-run not found (did you build with make?)'
+fi
+
+# Ensure namespaces are configured properly.
+if (! "${bin_dir}/ch-checkns" &> /dev/null); then
+    fatal 'namespace sanity check (ch-checkns) failed'
+fi
+
+# Ensure bats is installed.
+if (! bats --version &> /dev/null); then
+    if (! "${top_dir}/test/bats/bin/bats" --version &> /dev/null); then
+        fatal 'dependency: bats is not installed'
+    fi
+fi
+
+# Ensure we have bash 4.1 or higher
+if (bash -c 'set -e; [[ 1 = 0 ]]; exit 0'); then
+    # Bash bug: [[ ... ]] expression doesn't exit with set -e
+    # https://github.com/sstephenson/bats/issues/49
+    fatal 'dependency: bash: need at least Bash 4.1 for these tests.'
+fi
+
+# Ensure BATS_TMPDIR is set to /tmp (issue #278)
+if [[ -n $BATS_TMPDIR ]]; then
+    if [[ ! $BATS_TMPDIR == /tmp ]]; then
+        echo "setting BATS_TMPDIR=/tmp (was $BATS_TMPDIR; issue #278)"
+        export BATS_TMPDIR=/tmp
+    fi
+fi
+
+# Determine local vs prefix test installation.
+if [[ -d "${top_dir}/test" ]]; then
+    # local install
+    testdir=${top_dir}/test
+else
+    # prefix installation
+    testdir=${top_dir%/charliecloud}/libexec/charliecloud-${version}/test
+fi
+
+# Check for test directory
+if [[ ! -d $testdir ]]; then
+    fatal "Unable to locate the Charliecloud test suite"
+fi
+
+cd "$testdir" || fatal 'cannot cd into the test directory'
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    opt=$1; shift
+    case $opt in
+    build|run|examples|all|clean)
+        [[ -z $phase ]] || fatal 'phase: can only assign once'
+        phase=$opt
+        ;;
+    -b|--builder)
+        [[ -z $builder ]] || fatal 'builder: can only assign once'
+        export CH_BUILDER=$1; shift
+        ;;
+    -p|--prefix)
+        [[ -z $prefix ]] || fatal 'prefix: can only assign once'
+        export CH_TEST_IMGDIR="${1}/img"
+        export CH_TEST_TARDIR="${1}/tar"
+        export CH_TEST_PERMDIRS=$1
+        shift
+        ;;
+    -s|--scope)
+        [[ -z $scope ]] || fatal 'scope: can only assign once'
+        export CH_TEST_SCOPE=$1; shift
+        ;;
+    --no-sudo)
+        no_sudo=true
+        export CH_TEST_DONT_SUDO=yes
+        ;;
+    --dry-run)
+        dry=true
+        ;;
+    *)
+        fatal "unrecognized argument: $opt"
+    esac
+done
+
+if [[ -z $phase ]]; then
+    fatal 'test phase not specified'
+fi
+
+if [[ -n $no_sudo ]]; then
+    export CH_TEST_PERMDIRS=skip
+fi
+
+# Use defaults if variables are not set.
+export CH_TEST_TARDIR=${CH_TEST_TARDIR:-/var/tmp/tar}
+export CH_TEST_IMGDIR=${CH_TEST_IMGDIR:-/var/tmp/img}
+export CH_TEST_PERMDIRS=${CH_TEST_PERMDIRS:-'/var/tmp /tmp'}
+export CH_TEST_SCOPE=${CH_TEST_SCOPE:-standard}
+export CH_BUILDER=${CH_BUILDER:-ch-grow}
+export CH_GROW_STORAGE=${CH_GROW_STORAGE:-/var/tmp/ch-grow}
+
+if [[ -z $CH_TEST_DONT_SUDO ]]; then
+    printf '\n%s\t%s\n' CH_TEST_DONT_SUDO "(is empty)"
+else
+    printf '\n%s\t%s\n' CH_TEST_DONT_SUDO "(is set)"
+fi
+printf '%s\t\t%s\n'   CH_TEST_TARDIR    "$CH_TEST_TARDIR"
+printf '%s\t\t%s\n'   CH_TEST_IMGDIR    "$CH_TEST_IMGDIR"
+printf '%s\t%s\n'     CH_TEST_PERMDIRS  "$CH_TEST_PERMDIRS"
+printf '%s\t\t%s\n'   CH_TEST_SCOPE     "$CH_TEST_SCOPE"
+printf '%s\t\t%s\n'   CH_BUILDER        "$CH_BUILDER"
+if [[ $CH_BUILDER == 'ch-grow' ]]; then
+    printf '%s\t\t%s\n' CH_GROW_STORAGE   "$CH_GROW_STORAGE"
+fi
+printf '\ntest root directory:\t%s\n\n' "$testdir"
+
+if [[ -n $dry ]]; then
+    print_dry
+fi
+
+# Create test directories for TAR and IMG. This is to avoid cryptic bats error
+# (#347) that occurs when setting a CH_TEST_IMGDIR or CH_TEST_TARDIR variables
+# to a path where there are two or more subdirectories that do not exist.
+if [[ ! -d $CH_TEST_TARDIR ]]; then
+     mkdir -p "$CH_TEST_TARDIR"
+fi
+if [[ ! -d $CH_TEST_IMGDIR ]]; then
+    mkdir -p "$CH_TEST_IMGDIR"
+fi
+
+# Execute phase
+case $phase in
+    build)
+        check_builder
+        perm_dirs
+        make test-build
+    ;;
+    run)
+        make test-run
+    ;;
+    examples)
+        make test-test
+    ;;
+    all)
+        check_builder
+        perm_dirs
+        make test
+    ;;
+    clean)
+        echo "removing $CH_TEST_TARDIR..."
+        echo "removing $CH_TEST_IMGDIR..."
+        rm -rf "$CH_TEST_TARDIR"
+        rm -rf "$CH_TEST_IMGDIR"
+
+        if [[ $CH_TEST_PERMDIRS == 'skip' ]]; then
+            echo "phase: clean: CH_TEST_PERMDIRS set to 'skip' (skipping)"
+        elif [[ -n $CH_TEST_DONT_SUDO ]]; then
+            echo "phase: clean: CH_TEST_DONT_SUDO is set (skipping)"
+        elif (! sudo -v &> /dev/null); then
+            echo "phase: clean: you don't appear to have sudo for CH_TEST_PERMDIRS removal (skipping)"
+        else
+            # shellcheck disable=SC2068
+            for f in ${CH_TEST_PERMDIRS[@]}; do
+                if [[ -d "${f}/perms_test" ]]; then
+                    echo "removing ${f}/perms_test..."
+                    sudo rm -rf "${f}/perms_test"
+                fi
+            done
+        fi
+    ;;
+esac
