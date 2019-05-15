@@ -32,5 +32,6 @@ fi
 image=$1
 dest=$2
 
-docker_ pull "$image"
+#docker_ pull "$image"
+
 "${ch_bin}/ch-docker2tar" "$image" "$dest"

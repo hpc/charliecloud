@@ -26,10 +26,14 @@ state = None  # state object
 def main():
    global l, args, state
    l = log_setup()
-   l.debug("--- starting ------------------------------------")
-   l.debug("args: %s" % sys.argv)
-   l.debug("environment: %s" % { k: v for (k, v) in os.environ.items()
-                                 if k.startswith("CH_RUN_OCI_") })
+   #l.debug("--- starting ------------------------------------")
+   #l.debug("args: %s" % sys.argv)
+   #l.debug("environment: %s" % { k: v for (k, v) in os.environ.items()
+   #                              if k.startswith("CH_RUN_OCI_") })
+   if len(sys.argv) == 1:
+       print("Usage: ")
+       exit(0)
+
    args = args_parse()
    l.debug("CLI: %s" % args)
    if (args.op.__name__ == "op_" + os.getenv("CH_RUN_OCI_HANG", default="")):
@@ -63,7 +67,7 @@ def args_parse():
    if (sys.argv[0].endswith("/newgidmap")):
       cmd = "/usr/bin/" + "/newgidmap"
       l.debug("Ran newgidmap")
-      output = subprocess.run([cmd, sys.argv[1], '0', '1000', '1', '1', '10000', '41'], stdout=subprocess.PIPE)
+      output = subprocess.run([cmd, sys.argv[1], '0', '1000', '1'], stdout=subprocess.PIPE)
       l.debug(output)
       l.debug("Wut")
       #with open("/proc/%s/setgroups" % sys.argv[1], "wt") as fp:
@@ -157,7 +161,7 @@ def log_setup():
    file_ = os.getenv("CH_RUN_OCI_LOGFILE")
    if (file_ is not None):
       h = logging.FileHandler(file_)
-      h.setLevel(logging.DEBUG)
+      h.setLevel(logging.ERROR)
       h.setFormatter(logging.Formatter("%(process)5d %(asctime)s %(message)s"))
       l_.addHandler(h)
    return l_

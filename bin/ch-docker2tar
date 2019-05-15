@@ -23,15 +23,15 @@ fi
 
 image=$1
 outdir=$2
-tar=${outdir}/$(echo "$image" | sed 's/\//./g').tar
+tar=${outdir}/$(echo "$image" | sed 's/\//./g').tar.gz
 
-# Export the image to tarball.
-echo "exporting"
-cid=$(docker_ create --read-only "$image")
-size=$(docker_ image inspect "$image" --format='{{.Size}}')
-#docker_ ps -af "id=$cid"
-docker_ export "$cid" | pv_ -s "$size" > "$tar"
-docker_ rm "$cid" > /dev/null
+## Export the image to tarball.
+#echo "exporting"
+#cid=$(docker_ create --read-only "$image")
+#size=$(docker_ image inspect "$image" --format='{{.Size}}')
+##docker_ ps -af "id=$cid"
+#docker_ export "$cid" | pv_ -s "$size" > "$tar"
+#docker_ rm "$cid" > /dev/null
 
 # Add the Docker environment variables in ./environment for later consumption
 # by "ch-run --set-env".
@@ -50,15 +50,35 @@ docker_ rm "$cid" > /dev/null
 # 3. This assumes that the tarball from Docker does not have a single
 #    top-level directory (i.e., is a tarbomb).
 #
-echo "adding environment"
-temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
-docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' \
-        > "$temp"
-tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
-rm "$temp"
 
-# Finish up.
-echo "compressing"
-cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
-rm "$tar"
-ls -lh "${tar}.gz"
+#echo "adding environment"
+#temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
+#docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' \
+#        > "$temp"
+#tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
+#rm "$temp"
+#
+## Finish up.
+#echo "compressing"
+#cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
+#rm "$tar"
+#ls -lh "${tar}.gz"
+
+echo "starting Buildah container"
+container=$(buildah from $image)
+
+# On my development box, the container rootfs is accessible from the host
+# (i.e., without "buildah unshare"), but I'm guessing that depends on the
+# storage driver, so we use "unshare" per "buildah mount" complaints.
+
+# Does not currently work if the container is extracted into the current 
+# directory. Tar complains that the "file changed as we read it"
+buildah unshare -- /bin/sh /dev/stdin <<EOF
+rootfs=\$(buildah mount $container)
+echo "container root: \$rootfs"
+cd \$rootfs && tar czf "$tar" .
+buildah umount $container > /dev/null
+EOF
+
+echo "stopping Buildah container"
+buildah rm "$container" > /dev/null
