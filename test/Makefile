@@ -27,7 +27,7 @@ endif
 
 .PHONY: test-build
 test-build: build_auto.bats
-	bats build.bats build_auto.bats build_post.bats
+	bats build.bats build_auto.bats build_squashfs.bats build_post.bats
 
 # Note: This will will not find ch-run correctly if $CWD is not the test
 # directory, which I believe is assumed elsewhere in the test suite as well.
