@@ -104,7 +104,7 @@ ifneq ($(shell echo "$(PREFIX)" | cut -c1),/)
   $(warning Relative PREFIX converted to $(PREFIX))
 endif
 endif
-VERSION := $(shell cat VERSION)
+VERSION := $(shell cat VERSION.full)
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 BIN := $(INSTALL_PREFIX)/bin
 DOC := $(INSTALL_PREFIX)/share/doc/charliecloud-$(VERSION)
