@@ -45,7 +45,7 @@ esac
 
 make
 bin/ch-run --version
-version=$(cat VERSION)
+version=$(cat VERSION.full)
 
 if [[ $INSTALL ]]; then
     sudo make install PREFIX="$PREFIX"
