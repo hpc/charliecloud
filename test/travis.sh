@@ -45,10 +45,11 @@ esac
 
 make
 bin/ch-run --version
+version=$(cat VERSION)
 
 if [[ $INSTALL ]]; then
     sudo make install PREFIX="$PREFIX"
-    cd "$PREFIX/libexec/charliecloud"
+    cd "$PREFIX/libexec/charliecloud-$version"
 fi
 
 cd test
