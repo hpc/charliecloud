@@ -5,6 +5,7 @@ import inspect
 import json
 import os
 import pathlib
+import stat
 import subprocess
 import sys
 
@@ -19,7 +20,13 @@ CH_BIN = os.path.dirname(os.path.abspath(
 GRAMMAR = r"""
 ?start: ( instruction | _COMMENT )+
 
-?instruction: ( from_ | run )
+?instruction: ( cmd | env | from_ | run )
+
+cmd: "CMD"i LINE_GREEDY _NEWLINES
+
+env: "ENV"i ( env_space | env_equals ) _NEWLINES
+env_space: WORD WORD_SEP LINE_GREEDY
+env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
 from_: "FROM"i ID [ from_tag | from_digest ] [ from_alias ] _NEWLINES
 from_tag: ":" ID
@@ -27,19 +34,21 @@ from_digest: "@" HEXID
 from_alias: "AS"i ID
 
 run: "RUN"i ( run_exec | run_shell ) _NEWLINES
-
 run_exec: _string_list
 run_shell: LINE
 
 ID: /[A-Za-z0-9_.-]+/
 HEXID: /[a-fA-F0-9]+/
-//LINE: /[^[][^\n]+/      // FIXME: Exclude leading bracket or it eats lists.
-LINE: /[^[ \t\n]/ ( LINE_CONTINUATION | /[^\n]/ )+
+LINE:        /[^[ \t\n]/ ( LINE_CONTINUE | /[^\n]/ )+  // doesn't eat lists
+LINE_GREEDY: /[^ \t\n]/ ( LINE_CONTINUE | /[^\n]/ )+  // eats lists
+//WORD: /[^ \t\n=]/+
+WORD: /[a-z0-9_]/+
+WORD_SEP: /[ \t]/+
 
 _string_list: "[" STRING_QUOTED ( "," STRING_QUOTED )* "]"
 
-LINE_CONTINUATION: "\\\n"
-%ignore LINE_CONTINUATION
+LINE_CONTINUE: "\\\n"
+%ignore LINE_CONTINUE
 
 _COMMENT: /#[^\n]*/ _NEWLINES
 _NEWLINES: "\n"+
@@ -63,6 +72,7 @@ def main():
    global cli
    ap = argparse.ArgumentParser()
    ap.add_argument("-n", "--dry-run", action="store_true")
+   ap.add_argument("--stop-after-parse", action="store_true")
    ap.add_argument("-s", "--storage", metavar="DIR", default="/var/tmp/ch-grow")
    ap.add_argument("--verbose", action="store_true")
    ap.add_argument("dockerfile", metavar="DOCKERFILE")
@@ -75,8 +85,11 @@ def main():
    text = open(cli.dockerfile, "rt").read()
    tree = parser.parse(text)
 
-   mkdir(cli.storage)
    DEBUG(tree.pretty())
+   if (cli.stop_after_parse):
+      sys.exit(0)
+
+   mkdir(cli.storage)
    Main_Loop().visit(tree)
 
 
@@ -99,7 +112,9 @@ class Instruction(object):
       self.tree = tree
 
    def __str__(self):
-      return "%3s " % self.lineno
+      return ("%3s %s %s"
+              % (self.lineno, self.__class__.__name__.split("_")[1].upper(),
+                 self.str_()))
 
    # Return the value of first immediate subtree childname's first immediate
    # child terminal of type type_, or None if either the child or terminal
@@ -117,7 +132,10 @@ class Instruction(object):
          self.execute_()
 
    def execute_(self):
-      print("warning: ignoring unimplemented instruction")
+      pass
+
+   def str_(self):
+      return "(unimplemented)"
 
    # Return value of first immediate child terminal of type type_, or None if
    # not found.
@@ -130,19 +148,22 @@ class Instruction(object):
       return terminals(self.tree, type_)
 
 
-class Run(Instruction):
+class I_cmd(Instruction):
+   pass
 
-   def __str__(self):
-      return "%sRUN %s" % (super().__str__(), self.cmd)
 
-   def execute_(self):
-      rootfs = cli.storage + "/img/rootfs"
-      pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
-      pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
-      args = [CH_BIN + "/ch-run", "-w", "--uid=0", "--gid=0",
-              rootfs, "--"] + self.cmd
-      cmd(args)
+class I_env_space(Instruction):
 
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.terminal("WORD")
+      value = self.terminal("LINE")
+      if (not value.startswith('"')):
+         value = '"' + value + '"'
+      self.value = unescape(value)
+
+   def str_(self):
+      return "%s=%s" % (self.key, self.value)
 
 class I_from_(Instruction):
 
@@ -154,10 +175,6 @@ class I_from_(Instruction):
       self.digest = self.child("from_digest", "HEXID")
       if (self.tag is None and self.digest is None):
          self.tag = "latest"
-
-   def __str__(self):
-      alias = "AS %s" % self.alias if self.alias else ""
-      return "%sFROM %s %s" % (super().__str__(), self.fullname, alias)
 
    @property
    def fullname(self):
@@ -175,6 +192,34 @@ class I_from_(Instruction):
       cmd(["umoci", "unpack", "--rootless",
            "--image", "%s/oci_%s" % (cli.storage, self.fullname),
            cli.storage + "/img"])
+      # CentOS likes to leave unwriteable directories, so fix that.
+      def reraise(x):
+         raise
+      for (root, dirs, files) in \
+          os.walk(cli.storage + "/img", topdown=True, onerror=reraise):
+         st = os.stat(root, follow_symlinks=False)
+         if (not st.st_mode & 0o200):
+            DEBUG("fixing bad permissions: %s %s"
+                  % (stat.filemode(st.st_mode), root))
+            os.chmod(root, st.st_mode | 0o200)
+
+   def str_(self):
+      alias = "AS %s" % self.alias if self.alias else ""
+      return "%s %s" % (self.fullname, alias)
+
+
+class Run(Instruction):
+
+   def execute_(self):
+      rootfs = cli.storage + "/img/rootfs"
+      pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
+      pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
+      args = [CH_BIN + "/ch-run", "-w", "--uid=0", "--gid=0",
+              rootfs, "--"] + self.cmd
+      cmd(args)
+
+   def str_(self):
+      return str(self.cmd)
 
 
 class I_run_exec(Run):
