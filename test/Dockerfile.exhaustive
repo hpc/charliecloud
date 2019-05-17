@@ -14,3 +14,7 @@ RUN apk add --no-cache bc
 RUN ["echo", "hello \nworld"]
 
  # leading whitespace comment
+
+# TODO:
+# comment with trailing backslash (line continuation does not work in comments)
+# escaped newlines are finding their way through to the commands
