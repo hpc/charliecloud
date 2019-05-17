@@ -20,42 +20,40 @@ CH_BIN = os.path.dirname(os.path.abspath(
 GRAMMAR = r"""
 ?start: ( instruction | _COMMENT )+
 
-?instruction: ( cmd | env | from_ | run )
+?instruction: _WS? ( cmd | env | from_ | run )
 
-cmd: "CMD"i LINE_GREEDY _NEWLINES
+cmd: "CMD"i LINE _NEWLINES
 
-env: "ENV"i ( env_space | env_equals ) _NEWLINES
-env_space: WORD WORD_SEP LINE_GREEDY
+env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
+env_space: WORD _WS LINE
+env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i ID [ from_tag | from_digest ] [ from_alias ] _NEWLINES
+from_: "FROM"i _WS ID [ from_tag | from_digest ] [ from_alias ] _NEWLINES
 from_tag: ":" ID
 from_digest: "@" HEXID
 from_alias: "AS"i ID
 
-run: "RUN"i ( run_exec | run_shell ) _NEWLINES
+run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec: _string_list
-run_shell: LINE
+run_shell: LINE_NOLIST
 
 ID: /[A-Za-z0-9_.-]+/
 HEXID: /[a-fA-F0-9]+/
-LINE:        /[^[ \t\n]/ ( LINE_CONTINUE | /[^\n]/ )+  // doesn't eat lists
-LINE_GREEDY: /[^ \t\n]/ ( LINE_CONTINUE | /[^\n]/ )+  // eats lists
-//WORD: /[^ \t\n=]/+
-WORD: /[a-z0-9_]/+
-WORD_SEP: /[ \t]/+
+LINE: ( LINE_CONTINUE | /[^\n]/ )+
+LINE_NOLIST: /[^[]/ ( LINE_CONTINUE | /[^\n]/ )+
+WORD: /[^ \t\n=]/+
 
-_string_list: "[" STRING_QUOTED ( "," STRING_QUOTED )* "]"
+_string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 
 LINE_CONTINUE: "\\\n"
 %ignore LINE_CONTINUE
 
-_COMMENT: /#[^\n]*/ _NEWLINES
-_NEWLINES: "\n"+
+_COMMENT: _WS? /#[^\n]*/ _NEWLINES
+_NEWLINES: _WS? "\n"+
+_WS: /[ \t]/+
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
-%import common.WS_INLINE
-%ignore WS_INLINE
 """
 
 
@@ -63,6 +61,9 @@ _NEWLINES: "\n"+
 
 # Command line arguments.
 cli = None
+
+# Image state object.
+state = None
 
 
 ## Main ##
@@ -72,12 +73,15 @@ def main():
    global cli
    ap = argparse.ArgumentParser()
    ap.add_argument("-n", "--dry-run", action="store_true")
-   ap.add_argument("--stop-after-parse", action="store_true")
+   ap.add_argument("--parse-only", action="store_true")
    ap.add_argument("-s", "--storage", metavar="DIR", default="/var/tmp/ch-grow")
    ap.add_argument("--verbose", action="store_true")
    ap.add_argument("dockerfile", metavar="DOCKERFILE")
    cli = ap.parse_args()
    DEBUG(cli)
+
+   global state
+   state = State()
 
    # Use LALR(1) parser because Earley has some non-deterministic behavior
    # (comments sometimes in tree, sometimes not).
@@ -86,7 +90,7 @@ def main():
    tree = parser.parse(text)
 
    DEBUG(tree.pretty())
-   if (cli.stop_after_parse):
+   if (cli.parse_only):
       sys.exit(0)
 
    mkdir(cli.storage)
@@ -139,8 +143,8 @@ class Instruction(object):
 
    # Return value of first immediate child terminal of type type_, or None if
    # not found.
-   def terminal(self, type_):
-      return terminal(self.tree, type_)
+   def terminal(self, type_, index=0):
+      return terminal(self.tree, type_, index)
 
    # Yield values of all immediate child terminals of type type_, or empty
    # list if none found.
@@ -152,7 +156,25 @@ class I_cmd(Instruction):
    pass
 
 
-class I_env_space(Instruction):
+class Env(Instruction):
+
+   def str_(self):
+      return "%s='%s'" % (self.key, self.value)
+
+   def execute_(self):
+      state.env[self.key] = self.value
+
+class I_env_equals(Env):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.terminal("WORD", 0)
+      self.value = self.terminal("WORD", 1)
+      if (self.value is None):
+         self.value = self.terminal("STRING_QUOTED")
+
+
+class I_env_space(Env):
 
    def __init__(self, *args):
       super().__init__(*args)
@@ -162,8 +184,6 @@ class I_env_space(Instruction):
          value = '"' + value + '"'
       self.value = unescape(value)
 
-   def str_(self):
-      return "%s=%s" % (self.key, self.value)
 
 class I_from_(Instruction):
 
@@ -202,6 +222,7 @@ class I_from_(Instruction):
             DEBUG("fixing bad permissions: %s %s"
                   % (stat.filemode(st.st_mode), root))
             os.chmod(root, st.st_mode | 0o200)
+      state.env_reset()
 
    def str_(self):
       alias = "AS %s" % self.alias if self.alias else ""
@@ -214,9 +235,9 @@ class Run(Instruction):
       rootfs = cli.storage + "/img/rootfs"
       pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
       pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
-      args = [CH_BIN + "/ch-run", "-w", "--uid=0", "--gid=0",
+      args = [CH_BIN + "/ch-run", "-w", "--no-home", "--uid=0", "--gid=0",
               rootfs, "--"] + self.cmd
-      cmd(args)
+      cmd(args, env=state.env_build)
 
    def str_(self):
       return str(self.cmd)
@@ -233,7 +254,31 @@ class I_run_shell(Run):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.cmd = ["/bin/sh", "-c", self.terminal("LINE")]
+      # FIXME: Can't figure out how to remove continuations at parse time.
+      cmd = self.terminal("LINE_NOLIST").replace("\\\n", "")
+      self.cmd = ["/bin/sh", "-c", cmd]
+
+
+## Supporting classes ##
+
+class State(object):
+
+   def __init__(self):
+      self.env_reset()
+
+   @property
+   def env_build(self):
+      return { **self.arg, **self.env }
+
+   def env_reset(self):
+      self.arg = {}
+      for i in ( "http_proxy", "https_proxy", "ftp_proxy", "no_proxy" ):
+         for j in (i, i.upper()):
+            try:
+               self.arg[j] = os.environ[j]
+            except KeyError:
+               pass
+      self.env = { "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" }
 
 
 ## Supporting functions ###
@@ -244,14 +289,23 @@ def DEBUG(*args, **kwargs):
       print(flush=True, file=sys.stderr, *args, **kwargs)
       print("\033[0m", file=sys.stderr, flush=True, end="")
 
+def FATAL(*args, **kwargs):
+   print("\033[31m", file=sys.stderr, flush=True, end="")
+   print(flush=True, file=sys.stderr, *args, **kwargs)
+   print("\033[0m", file=sys.stderr, flush=True, end="")
+   sys.exit(1)
+
 def INFO(*args, **kwargs):
    print(flush=True, *args, **kwargs)
 
 def cmd(args, env=None):
-   DEBUG("executing: " + str(args))
+   DEBUG("environment: %s" % env)
+   DEBUG("executing: %s" % args)
    INFO("\033[33m", end="")
-   subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
    INFO("\033[0m", end="")
+   if (cp.returncode):
+      FATAL("%s failed with return code %d" % (args[0], cp.returncode))
 
 def mkdir(path):
    try:
@@ -260,10 +314,10 @@ def mkdir(path):
    except FileExistsError:
       DEBUG("using existing directory: " + path)
 
-def terminal(tree, type_):
-   for i in tree.children:
-      if (isinstance(i, lark.lexer.Token) and i.type == type_):
-         return i.value
+def terminal(tree, type_, index=0):
+   for (i, t) in enumerate(terminals(tree, type_)):
+      if (i == index):
+         return t
    return None
 
 def terminals(tree, type_):
