@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-# dependencies: skopeo, umoci, lark
-
 import argparse
 import inspect
 import json
@@ -11,6 +9,12 @@ import subprocess
 import sys
 
 import lark
+
+
+## Constants ##
+
+CH_BIN = os.path.dirname(os.path.abspath(
+           inspect.getframeinfo(inspect.currentframe()).filename))
 
 GRAMMAR = r"""
 ?start: ( instruction | _COMMENT )+
@@ -45,33 +49,48 @@ _NEWLINES: "\n"+
 %ignore WS_INLINE
 """
 
-CH_BIN = os.path.dirname(os.path.abspath(
-           inspect.getframeinfo(inspect.currentframe()).filename))
-WORKDIR = "/var/tmp/a"
+
+## Globals ##
+
+# Command line arguments.
+cli = None
 
 
-def cmd(args, env=None):
-   #print(args)
-   print("\033[33m", end="", flush=True)
-   subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
-   print("\033[0m", end="", flush=True)
+## Main ##
+
+def main():
+
+   global cli
+   ap = argparse.ArgumentParser()
+   ap.add_argument("-n", "--dry-run", action="store_true")
+   ap.add_argument("-s", "--storage", metavar="DIR", default="/var/tmp/ch-grow")
+   ap.add_argument("--verbose", action="store_true")
+   ap.add_argument("dockerfile", metavar="DOCKERFILE")
+   cli = ap.parse_args()
+   DEBUG(cli)
+
+   # Use LALR(1) parser because Earley has some non-deterministic behavior
+   # (comments sometimes in tree, sometimes not).
+   parser = lark.Lark(GRAMMAR, parser="lalr", propagate_positions=True)
+   text = open(cli.dockerfile, "rt").read()
+   tree = parser.parse(text)
+
+   mkdir(cli.storage)
+   DEBUG(tree.pretty())
+   Main_Loop().visit(tree)
 
 
-def terminal(tree, type_):
-   for i in tree.children:
-      if (isinstance(i, lark.lexer.Token) and i.type == type_):
-         return i.value
-   return None
+class Main_Loop(lark.Visitor):
 
-def terminals(tree, type_):
-   for i in tree.children:
-      if (isinstance(i, lark.lexer.Token) and i.type == type_):
-         yield i.value
+   def __default__(self, tree):
+      class_ = "I_" + tree.data
+      if (class_ in globals()):
+         inst = globals()[class_](tree)
+         INFO(inst)
+         inst.execute()
 
-# Dockerfile spec does not say how to unescape strings, so let's JSON it.
-def unescape(string_literal):
-   return json.loads(string_literal)
 
+## Instruction classes ##
 
 class Instruction(object):
 
@@ -94,7 +113,7 @@ class Instruction(object):
       return terminal(child, type_)
 
    def execute(self):
-      if (not args.dry_run):
+      if (not cli.dry_run):
          self.execute_()
 
    def execute_(self):
@@ -117,7 +136,7 @@ class Run(Instruction):
       return "%sRUN %s" % (super().__str__(), self.cmd)
 
    def execute_(self):
-      rootfs = WORKDIR + "/img/rootfs"
+      rootfs = cli.storage + "/img/rootfs"
       pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
       pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
       args = [CH_BIN + "/ch-run", "-w", "--uid=0", "--gid=0",
@@ -133,6 +152,8 @@ class I_from_(Instruction):
       self.alias = self.child("from_alias", "ID")
       self.tag = self.child("from_tag", "ID")
       self.digest = self.child("from_digest", "HEXID")
+      if (self.tag is None and self.digest is None):
+         self.tag = "latest"
 
    def __str__(self):
       alias = "AS %s" % self.alias if self.alias else ""
@@ -148,13 +169,12 @@ class I_from_(Instruction):
          return self.name
 
    def execute_(self):
-      os.mkdir(WORKDIR)
       # This works with newuidmap and newgidmap not installed.
       cmd(["skopeo", "copy", "docker://" + self.fullname,
-           "oci:%s/oci_%s" % (WORKDIR, self.fullname)])
+           "oci:%s/oci_%s" % (cli.storage, self.fullname)])
       cmd(["umoci", "unpack", "--rootless",
-           "--image", "%s/oci_%s" % (WORKDIR, self.fullname),
-           WORKDIR + "/img"])
+           "--image", "%s/oci_%s" % (cli.storage, self.fullname),
+           cli.storage + "/img"])
 
 
 class I_run_exec(Run):
@@ -171,29 +191,50 @@ class I_run_shell(Run):
       self.cmd = ["/bin/sh", "-c", self.terminal("LINE")]
 
 
-class Main(lark.Visitor):
+## Supporting functions ###
 
-   def __default__(self, tree):
-      class_ = "I_" + tree.data
-      if (class_ in globals()):
-         inst = globals()[class_](tree)
-         print(inst)
-         inst.execute()
+def DEBUG(*args, **kwargs):
+   if (cli.verbose):
+      print("\033[36m", file=sys.stderr, flush=True, end="")
+      print(flush=True, file=sys.stderr, *args, **kwargs)
+      print("\033[0m", file=sys.stderr, flush=True, end="")
+
+def INFO(*args, **kwargs):
+   print(flush=True, *args, **kwargs)
+
+def cmd(args, env=None):
+   DEBUG("executing: " + str(args))
+   INFO("\033[33m", end="")
+   subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   INFO("\033[0m", end="")
+
+def mkdir(path):
+   try:
+      os.mkdir(path)
+      DEBUG("created directory: " + path)
+   except FileExistsError:
+      DEBUG("using existing directory: " + path)
+
+def terminal(tree, type_):
+   for i in tree.children:
+      if (isinstance(i, lark.lexer.Token) and i.type == type_):
+         return i.value
+   return None
+
+def terminals(tree, type_):
+   for i in tree.children:
+      if (isinstance(i, lark.lexer.Token) and i.type == type_):
+         yield i.value
+
+def unescape(string_literal):
+   # Dockerfile spec does not say how to unescape strings, so let's JSON it.
+   return json.loads(string_literal)
 
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-n", "--dry-run", action="store_true")
-ap.add_argument("dockerfile", metavar="DOCKERFILE")
+## Bootstrap ##
 
-args = ap.parse_args()
-print(args)
+if (__name__ == "__main__"):
+   main()
 
-# Use LALR(1) parser because Earley has some non-deterministic behavior
-# (comments sometimes in tree, sometimes not).
-parser = lark.Lark(GRAMMAR, parser="lalr", propagate_positions=True)
-text = open(args.dockerfile, "rt").read()
-tree = parser.parse(text)
 
-print(tree.pretty())
-Main().visit(tree)
 
