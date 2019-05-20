@@ -204,31 +204,23 @@ fi
 
 # Slurm stuff.
 if [[ $SLURM_JOB_ID ]]; then
-    # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
-    # documentation.
-    if [[ -z $SLURM_CPUS_ON_NODE ]]; then
-        SLURM_CPUS_ON_NODE=$(echo "$SLURM_JOB_CPUS_PER_NODE" | cut -d'(' -f1)
-    fi
     ch_nodes=$SLURM_JOB_NUM_NODES
-    ch_cores_node=$SLURM_CPUS_ON_NODE
 else
     ch_nodes=1
-    ch_cores_node=$(getconf _NPROCESSORS_ONLN)
 fi
+# Using one rank per thread can exhaust hardware contexts in some situations
+# resulting in communication failure, use one rank per physcial core to avoid this
+ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 4 | wc -l)
 ch_cores_total=$((ch_nodes * ch_cores_node))
-if [[ $ch_mpi = mpich ]]; then
-    ch_mpirun_np="-np ${ch_cores_node}"
-else
-    ch_mpirun_np='--use-hwthread-cpus'
-fi
+ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
-    ch_multinode=yes                           # can run on multiple nodes
-    ch_multiprocess=yes                        # can run multiple processes
-    ch_mpirun_node='srun --ntasks-per-node 1'  # one process/node
-    ch_mpirun_core='srun --cpus-per-task 1'    # one process/core
-    ch_mpirun_2='srun -n2'                     # two processes on diff nodes
-    ch_mpirun_2_1node='srun -N1 -n2'           # two processes on one node
+    ch_multinode=yes                                          # can run on multiple nodes
+    ch_multiprocess=yes                                       # can run multiple processes
+    ch_mpirun_node='srun --ntasks-per-node 1'                 # one process/node
+    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"    # one process/core
+    ch_mpirun_2='srun -n2'                                    # two processes on diff nodes
+    ch_mpirun_2_1node='srun -N1 -n2'                          # two processes on one node
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
     # are present. Work around this by fooling OpenMPI into believing it's not
     # in a Slurm allocation.
