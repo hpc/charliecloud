@@ -15,7 +15,7 @@ crayify_mpi_or_skip () {
 
 docker_tag_p () {
     printf 'image tag %s ... ' "$1"
-    hash_=$(sudo docker images -q "$1" | sort -u)
+   # hash_=$(sudo docker images -q "$1" | sort -u)
     if [[ $hash_ ]]; then
         echo "$hash_"
         return 0
@@ -26,9 +26,10 @@ docker_tag_p () {
 }
 
 docker_ok () {
-    docker_tag_p "$1"
-    docker_tag_p "${1}:latest"
-    docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
+   # docker_tag_p "$1"
+   # docker_tag_p "${1}:latest"
+   # docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
+   true 
 }
 
 env_require () {

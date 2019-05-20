@@ -11,7 +11,9 @@ while true; do
     echo "found $cs_ct containers"
     [[ 0 -eq $cs_ct ]] && break
     # shellcheck disable=SC2046
-    sudo docker rm $($cmd)
+    #$sudo docker rm $($cmd)
+    buildah rm --all
+    buildah rmi --force --all
 done
 
 # Untag all images. This fails with:
@@ -26,7 +28,7 @@ if [[ $1 != --all ]]; then
         echo "found $tag_ct tagged images"
         [[ 0 -eq $tag_ct ]] && break
         # shellcheck disable=SC2046
-        sudo docker rmi -f --no-prune $($cmd)
+        #sudo docker rmi -f --no-prune $($cmd)
     done
 fi
 
@@ -38,6 +40,6 @@ if [[ $1 = --all ]]; then
         echo "found $img_ct images"
         [[ 0 -eq $img_ct ]] && break
         # shellcheck disable=SC2046
-        sudo docker rmi -f $($cmd)
+        #sudo docker rmi -f $($cmd)
     done
 fi

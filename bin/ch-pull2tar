@@ -31,7 +31,8 @@ fi
 
 image=$1
 dest=$2
-
+echo image is $image
 #docker_ pull "$image"
+buildah pull "$image"
 
 "${ch_bin}/ch-docker2tar" "$image" "$dest"

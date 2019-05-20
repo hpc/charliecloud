@@ -42,7 +42,7 @@
 set -e
 
 srcdir=$1
-tarball=${2}.tar.gz
+tarball=${2}.tar
 workdir=$3
 
 tag=alpine39
@@ -89,18 +89,25 @@ cd "$workdir"
 #
 # Currently we do #3.
 
-echo "starting Buildah container"
-container=$(buildah from $tag)
+#echo "starting Buildah container"
+#container=$(buildah from $tag)
 
 # On my development box, the container rootfs is accessible from the host
 # (i.e., without "buildah unshare"), but I'm guessing that depends on the
 # storage driver, so we use "unshare" per "buildah mount" complaints.
-buildah unshare -- /bin/sh /dev/stdin <<EOF
-rootfs=\$(buildah mount $container)
-echo "container root: \$rootfs"
-cd \$rootfs && tar czf "$tarball" .
-buildah umount $container > /dev/null
-EOF
+#buildah unshare -- /bin/sh /dev/stdin <<EOF
+#rootfs=\$(buildah mount $container)
+#echo "container root: \$rootfs"
+#cd \$rootfs && tar czf "$tarball" .
+#buildah umount $container > /dev/null
+#EOF
 
-echo "stopping Buildah container"
-buildah rm "$container" > /dev/null
+#echo "stopping Buildah container"
+#buildah rm "$container" > /dev/null
+
+
+echo "starting Buildah container"
+container=$(podman create $tag)
+podman export $container -o $tarball
+podman rm $container
+gzip "$tarball"
