@@ -5,6 +5,7 @@ import inspect
 import json
 import os
 import pathlib
+import shutil
 import stat
 import subprocess
 import sys
@@ -76,8 +77,12 @@ def main():
    ap.add_argument("--parse-only", action="store_true")
    ap.add_argument("-s", "--storage", metavar="DIR", default="/var/tmp/ch-grow")
    ap.add_argument("--verbose", action="store_true")
+   ap.add_argument("name", metavar="NAME")
    ap.add_argument("dockerfile", metavar="DOCKERFILE")
    cli = ap.parse_args()
+   if (":" not in cli.name):
+      cli.name += ":latest"
+   INFO("growing: %s" % dir_image(cli.name))
    DEBUG(cli)
 
    global state
@@ -93,7 +98,6 @@ def main():
    if (cli.parse_only):
       sys.exit(0)
 
-   mkdir(cli.storage)
    Main_Loop().visit(tree)
 
 
@@ -164,6 +168,7 @@ class Env(Instruction):
    def execute_(self):
       state.env[self.key] = self.value
 
+
 class I_env_equals(Env):
 
    def __init__(self, *args):
@@ -205,23 +210,40 @@ class I_from_(Instruction):
       else:
          return self.name
 
-   def execute_(self):
+   def base_copy(self):
+      DEBUG("copying: %s -> %s" % (self.fullname, cli.name))
+      rmtree(dir_image(cli.name))
+      shutil.copytree(dir_image(self.fullname), dir_image(cli.name),
+                      symlinks=True)
+
+   def base_pull(self):
+      mkdirs(dir_ocis())
+      rmtree(dir_image_tmp())
       # This works with newuidmap and newgidmap not installed.
       cmd(["skopeo", "copy", "docker://" + self.fullname,
-           "oci:%s/oci_%s" % (cli.storage, self.fullname)])
+           "oci:%s/%s" % (dir_ocis(), self.fullname)])
       cmd(["umoci", "unpack", "--rootless",
-           "--image", "%s/oci_%s" % (cli.storage, self.fullname),
-           cli.storage + "/img"])
+           "--image", "%s/%s" % (dir_ocis(), self.fullname), dir_image_tmp()])
+      rmtree(dir_image(self.fullname))
+      os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
+      rmtree(dir_image_tmp())
       # CentOS likes to leave unwriteable directories, so fix that.
       def reraise(x):
          raise
       for (root, dirs, files) in \
-          os.walk(cli.storage + "/img", topdown=True, onerror=reraise):
+          os.walk(dir_image(self.fullname), topdown=True, onerror=reraise):
          st = os.stat(root, follow_symlinks=False)
          if (not st.st_mode & 0o200):
             DEBUG("fixing bad permissions: %s %s"
                   % (stat.filemode(st.st_mode), root))
             os.chmod(root, st.st_mode | 0o200)
+
+   def execute_(self):
+      mkdirs(dir_images())
+      if (not os.path.isdir(dir_image(self.fullname))):
+         DEBUG("image not found, pulling: %s" % self.fullname)
+         self.base_pull()
+      self.base_copy()
       state.env_reset()
 
    def str_(self):
@@ -232,7 +254,7 @@ class I_from_(Instruction):
 class Run(Instruction):
 
    def execute_(self):
-      rootfs = cli.storage + "/img/rootfs"
+      rootfs = dir_image(cli.name)
       pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
       pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
       args = [CH_BIN + "/ch-run", "-w", "--no-home", "--uid=0", "--gid=0",
@@ -307,12 +329,26 @@ def cmd(args, env=None):
    if (cp.returncode):
       FATAL("%s failed with return code %d" % (args[0], cp.returncode))
 
-def mkdir(path):
-   try:
-      os.mkdir(path)
-      DEBUG("created directory: " + path)
-   except FileExistsError:
-      DEBUG("using existing directory: " + path)
+def dir_image_tmp():
+   return "%s/img/tmp" % cli.storage
+
+def dir_images():
+   return "%s/img" % cli.storage
+
+def dir_image(image):
+   return "%s/%s" % (dir_images(), image)
+
+def dir_ocis():
+   return "%s/oci" % cli.storage
+
+def mkdirs(path):
+   DEBUG("ensuring directory: " + path)
+   os.makedirs(path, exist_ok=True)
+
+def rmtree(path):
+   if (os.path.isdir(path)):
+      DEBUG("deleting directory: " + path)
+      shutil.rmtree(path)
 
 def terminal(tree, type_, index=0):
    for (i, t) in enumerate(terminals(tree, type_)):
