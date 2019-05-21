@@ -23,8 +23,24 @@ image=$1
 outdir=$2
 shift 2
 
-imagedir=$(basename -- "$image")
-imagedir="${imagedir%%.*}"
+case $image in
+        *.tar)
+            imagedir=$(basename "$image" .tar )
+            ;;
+        *.tar.gz)
+            imagedir=$(basename "$image" .tar.gz )
+            ;;
+        *.tar.xz)
+            imagedir=$(basename "$image" .tar.xz)
+            ;;
+        *.tgz)
+            imagedir=$(basename "$image" .tgz )
+            ;;
+        *)
+            echo "unknown extension: ${image}" 1>&2
+            exit 1
+            ;;
+esac
 # mktemp is used for intermediate files to avoid heavy metadata loads on
 # certain filesystems
 temp=$(mktemp -d --tmpdir ch-tar2squash.XXXXXX)
