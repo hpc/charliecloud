@@ -62,12 +62,12 @@ Patches (code, documentation, etc.) contributed by:
 * Reid Priedhorsky <reidpr@lanl.gov>
 * Rusty Davis <rustyd@lanl.gov>
 * Oliver Freyermuth <o.freyermuth@googlemail.com>
+* Shane Goff <rgoff@lanl.gov>
 * Christoph Junghans <junghans@lanl.gov>
 * Jordan Ogas <jogas@lanl.gov>
 * Matthew Vernon <mv3@sanger.ac.uk>
 * Peter Wienemann <wienemann@physik.uni-bonn.de>
 * Lowell Wofford <lowell@lanl.gov>
-* Shane Goff <rgoff@lanl.gov>
 
 How can I participate?
 ----------------------
