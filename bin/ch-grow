@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import ast
 import inspect
-import json
 import os
 import pathlib
 import re
@@ -18,6 +18,20 @@ import lark
 
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
+
+ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
+                 "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
+                 "FTP_PROXY": os.environ.get("FTP_PROXY"),
+                 "NO_PROXY": os.environ.get("NO_PROXY"),
+                 "http_proxy": os.environ.get("http_proxy"),
+                 "https_proxy": os.environ.get("https_proxy"),
+                 "ftp_proxy": os.environ.get("ftp_proxy"),
+                 "no_proxy": os.environ.get("no_proxy"),
+                 # GNU tar, when it thinks it's running as root, tries to
+                 # chown(2) and chgrp(2) files to whatever's in the tarball.
+                 "TAR_OPTIONS": "--no-same-owner" }
+
+ENV_DEFAULTS = { "PATH": "/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" }
 
 GRAMMAR = r"""
 ?start: ( instruction | _COMMENT )+
@@ -186,6 +200,7 @@ class I_env_equals(Env):
       self.value = self.terminal("WORD", 1)
       if (self.value is None):
          self.value = self.terminal("STRING_QUOTED")
+      self.value = variables_sub(self.value, state.env_build)
 
 
 class I_env_space(Env):
@@ -197,6 +212,7 @@ class I_env_space(Env):
       if (not value.startswith('"')):
          value = '"' + value + '"'
       self.value = unescape(value)
+      self.value = variables_sub(self.value, state.env_build)
 
 
 class I_from_(Instruction):
@@ -236,6 +252,7 @@ class I_from_(Instruction):
       rmtree(dir_image(self.fullname))
       os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
       rmtree(dir_image_tmp())
+      image_fixup(dir_image(self.fullname))
       # CentOS likes to leave directories unwriteable by anyone, and files
       # unreadable by anyone, so fix that.
       def reraise(x):
@@ -271,8 +288,8 @@ class Run(Instruction):
       rootfs = dir_image(cli.tag)
       pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
       pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
-      args = [CH_BIN + "/ch-run", "-w", "--no-home", "--uid=0", "--gid=0",
-              rootfs, "--"] + self.cmd
+      args = [CH_BIN + "/ch-run", "-w", "--no-home", "--no-passwd",
+              "--uid=0", "--gid=0", rootfs, "--"] + self.cmd
       cmd(args, env=state.env_build)
 
    def str_(self):
@@ -283,7 +300,8 @@ class I_run_exec(Run):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.cmd = [unescape(i) for i in self.terminals("STRING_QUOTED")]
+      self.cmd = [    variables_sub(unescape(i), state.env_build)
+                  for i in self.terminals("STRING_QUOTED")]
 
 
 class I_run_shell(Run):
@@ -307,14 +325,8 @@ class State(object):
       return { **self.arg, **self.env }
 
    def env_reset(self):
-      self.arg = {}
-      for i in ( "http_proxy", "https_proxy", "ftp_proxy", "no_proxy" ):
-         for j in (i, i.upper()):
-            try:
-               self.arg[j] = os.environ[j]
-            except KeyError:
-               pass
-      self.env = { "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" }
+      self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
+      self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
 
 
 ## Supporting functions ###
@@ -355,6 +367,36 @@ def dir_image(image):
 def dir_ocis():
    return "%s/oci" % cli.storage
 
+def file_ensure_exists(path):
+   with open(path, "a") as fp:
+      pass
+
+def file_write(path, content):
+   with open(path, "wt") as fp:
+      fp.write(content)
+
+def image_fixup(path):
+   DEBUG("fixing up image: %s" % path)
+   # Metadata directory.
+   mkdirs("%s/ch/bin" % path)
+   # Mount points.
+   file_ensure_exists("%s/etc/hosts" % path)
+   file_ensure_exists("%s/etc/resolv.conf" % path)
+   # /etc/{passwd,group}
+   file_write("%s/etc/passwd" % path, """\
+root:x:0:0:root:/root:/bin/sh
+nobody:x:65534:65534:nobody:/:/bin/false
+""")
+   file_write("%s/etc/group" % path, """\
+root:x:0:
+nogroup:x:65534:
+""")
+   # Kludges to work around expectations of real root, not UID 0 in a
+   # unprivileged user namespace.
+   #
+   # Debian "apt" and friends want to chgrp(1) files.
+   os.symlink("/bin/true", "%s/ch/bin/chgrp" % path)
+
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)
    os.makedirs(path, exist_ok=True)
@@ -375,9 +417,27 @@ def terminals(tree, type_):
       if (isinstance(i, lark.lexer.Token) and i.type == type_):
          yield i.value
 
-def unescape(string_literal):
-   # Dockerfile spec does not say how to unescape strings, so let's JSON it.
-   return json.loads(string_literal)
+def variables_sub(s, variables):
+   # FIXME: This should go in the grammar rather than being a regex kludge.
+   #
+   # Dockerfile spec does not say what to do if substituting a value that's
+   # not set. We ignore those subsitutions. This is probably wrong (the shell
+   # substitutes the empty string).
+   for (k, v) in variables.items():
+      #DEBUG("s: %s, k: %s, v: %s" % (s, k, v))
+      s = re.sub(r"(?<!\\)\${%s}" % k, v, s)
+   return s
+
+def unescape(sl):
+   # FIXME: This is also ugly and should go in the grammar.
+   #
+   # The Dockerfile spec does not precisely define string escaping, but I'm
+   # guessing it's the Go rules. You will note that we are using Python rules.
+   # This is wrong but close enough for now (see also gripe in previous
+   # paragraph).
+   if (not (sl.startswith('"') and sl.endswith('"'))):
+      FATAL("string literal not quoted")
+   return ast.literal_eval(sl)
 
 
 ## Bootstrap ##
