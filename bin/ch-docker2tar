@@ -25,85 +25,72 @@ image=$1
 outdir=$2
 tar=${outdir}/$(echo "$image" | sed 's/\//./g').tar
 
-## Export the image to tarball.
-#echo "exporting"
-#cid=$(docker_ create --read-only "$image")
-#size=$(docker_ image inspect "$image" --format='{{.Size}}')
-##docker_ ps -af "id=$cid"
-#docker_ export "$cid" | pv_ -s "$size" > "$tar"
-#docker_ rm "$cid" > /dev/null
+if [ -z "$CH_BUILDER" ]; then
+    echo "You need to define \$CH_BUILDER before running ch-docker2tar"
+fi
 
-# Add the Docker environment variables in ./environment for later consumption
-# by "ch-run --set-env".
-#
-# 1. mktemp(1) isn't POSIX, but it seemed very likely to be installed if
-#    Docker is, and I couldn't find a more portable way of securely creating
-#    temporary files. (In particular, I would have preferred to pipe in the
-#    data rather than creating and deleting a temporary file.)
-#
-# 2. Blocking factor 1 (-b1) for tar is a bug workaround. Without this switch,
-#    tar 1.26, which is in RHEL, corrupts the tarball instead of appending to
-#    it. This doesn't happen in 1.29 in Debian Stretch, and building GNU tar
-#    from Git source was too hard, so I couldn't bisect a specific commit that
-#    fixed the bug to learn what exactly was going on. (See PR #371.)
-#
-# 3. This assumes that the tarball from Docker does not have a single
-#    top-level directory (i.e., is a tarbomb).
-#
+case $CH_BUILDER in
+        docker)  
+        # Export the image to tarball.
+        echo "exporting"
+        cid=$(docker_ create --read-only "$image")
+        size=$(docker_ image inspect "$image" --format='{{.Size}}')
+        #docker_ ps -af "id=$cid"
+        docker_ export "$cid" | pv_ -s "$size" > "$tar"
+        docker_ rm "$cid" > /dev/null
+
+        # Add the Docker environment variables in ./environment for later consumption
+        # by "ch-run --set-env".
+        #
+        # 1. mktemp(1) isn't POSIX, but it seemed very likely to be installed if
+        #    Docker is, and I couldn't find a more portable way of securely creating
+        #    temporary files. (In particular, I would have preferred to pipe in the
+        #    data rather than creating and deleting a temporary file.)
+        #
+        # 2. Blocking factor 1 (-b1) for tar is a bug workaround. Without this switch,
+        #    tar 1.26, which is in RHEL, corrupts the tarball instead of appending to
+        #    it. This doesn't happen in 1.29 in Debian Stretch, and building GNU tar
+        #    from Git source was too hard, so I couldn't bisect a specific commit that
+        #    fixed the bug to learn what exactly was going on. (See PR #371.)
+        #
+        # 3. This assumes that the tarball from Docker does not have a single
+        #    top-level directory (i.e., is a tarbomb).
+        #
+
+        echo "adding environment"
+        temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
+        buildah inspect --format '{{.OCIv1.Config.Env}}' $image > "$temp"
+        #docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' \
+        #        > "$temp"
+        tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
+        rm "$temp"
 
 
-## Finish up.
-#echo "compressing"
-#cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
-#rm "$tar"
-#ls -lh "${tar}.gz"
+        # Finish up.
+        echo "compressing"
+        cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
+        rm "$tar"
+        ls -lh "${tar}.gz"
+        ;;
+        buildah)
+        container=$(podman create $image)
 
-echo "starting Buildah container"
-container=$(podman create $image)
+        # Not sure what the best POSIX compliant way of doing this is*
+        case "$tar" in
+            *:*) temp_tar=$(echo $tar | sed 's/://g')
+                 podman export $container -o $temp_tar
+                 mv $temp_tar $tar;;
+            *)   podman export $container -o $tar;;
+        esac
+        podman rm $container
 
-# Not sure what the best POSIX compliant way of doing this is*
-case "$tar" in
-    *:*) temp_tar=$(echo $tar | sed 's/://g')
-         podman export $container -o $temp_tar
-         mv $temp_tar $tar;;
-    *)   podman export $container -o $tar;;
+        echo "adding environment"
+        temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
+        buildah inspect --format '{{.OCIv1.Config.Env}}' $image > "$temp"
+        tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
+        rm "$temp"
+
+        echo "compressing"
+        gzip "${tar}"
+        ;;
 esac
-podman rm $container
-
-echo "adding environment"
-temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
-buildah inspect --format '{{.OCIv1.Config.Env}}' $image > "$temp"
-#docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' \
-#        > "$temp"
-tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
-rm "$temp"
-
-
-echo "compressing"
-# The following version was not working
-gzip "$tar"
-
-#cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
-
-#rm "$tar"
-#ls -lh "${tar}.gz"
-
-
-#container=$(buildah from $image)
-
-# On my development box, the container rootfs is accessible from the host
-# (i.e., without "buildah unshare"), but I'm guessing that depends on the
-# storage driver, so we use "unshare" per "buildah mount" complaints.
-
-# Does not currently work if the container is extracted into the current 
-# directory. Tar complains that the "file changed as we read it"
-
-#buildah unshare -- /bin/sh /dev/stdin <<EOF
-#rootfs=\$(buildah mount $container)
-#echo "container root: \$rootfs"
-#cd \$rootfs && tar czf "$tar" .
-#buildah umount $container > /dev/null
-#EOF
-
-#echo "stopping Buildah container"
-#buildah rm "$container" > /dev/null

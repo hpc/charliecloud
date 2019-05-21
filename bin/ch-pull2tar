@@ -29,10 +29,19 @@ if [ "$#" -ne 2 ]; then
     usage
 fi
 
+if [ -z "$CH_BUILDER" ]; then
+    echo "You need to define \$CH_BUILDER before running ch-pull2tar"
+fi
+
 image=$1
 dest=$2
-echo image is $image
-#docker_ pull "$image"
-buildah pull "$image"
 
+case $CH_BUILDER in
+    docker)
+        docker_ pull "$image"
+        ;; 
+    buildah)
+        buildah pull "$image"
+        ;;
+esac
 "${ch_bin}/ch-docker2tar" "$image" "$dest"

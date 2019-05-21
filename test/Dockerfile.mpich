@@ -33,7 +33,9 @@ RUN rm -Rf patchelf
 ENV MPI_VERSION 3.2.1
 ENV MPI_URL http://www.mpich.org/static/downloads/${MPI_VERSION}
 RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz
-RUN tar xf mpich-${MPI_VERSION}.tar.gz
+# This is just temporary until I modify ch-run-oci to set TAR_OPTIONS
+RUN tar xf mpich-${MPI_VERSION}.tar.gz --no-same-owner
+#RUN tar xf mpich-${MPI_VERSION}.tar.gz
 RUN apt-get install -y --no-install-suggests file
 
 RUN    cd mpich-${MPI_VERSION} \

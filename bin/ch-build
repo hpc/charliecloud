@@ -29,25 +29,34 @@ if [ -f Dockerfile ]; then
     done
 fi
 
-# Coordinate this list with test "build.bats/proxy variables".
-#docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
-#              --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
-#              --build-arg NO_PROXY="$NO_PROXY" \
-#              --build-arg http_proxy="$http_proxy" \
-#              --build-arg https_proxy="$https_proxy" \
-#              --build-arg no_proxy="$no_proxy" \
-#              $dockerfile \
-#              "$@"
+# Check if CH_BUILDER is defined in the environment
+if [ -z "$CH_BUILDER" ]; then 
+    echo "You need to define \$CH_BUILDER before running ch-build"
+fi
 
-# shellcheck disable=SC2154
-# if -f is not defined and there is no file named Dockerfile in the 
-# directory, it fails with a very confusing error message
-buildah build-using-dockerfile \
-        --build-arg HTTP_PROXY="$HTTP_PROXY" \
-        --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
-        --build-arg NO_PROXY="$NO_PROXY" \
-        --build-arg http_proxy="$http_proxy" \
-        --build-arg https_proxy="$https_proxy" \
-        --build-arg no_proxy="$no_proxy" \
-        --runtime ch-run-oci \
-        --layers=true "$@" . < /dev/null
+case $CH_BUILDER in
+        docker) 
+                # Coordinate this list with test "build.bats/proxy variables".
+                docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                              --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                              --build-arg NO_PROXY="$NO_PROXY" \
+                              --build-arg http_proxy="$http_proxy" \
+                              --build-arg https_proxy="$https_proxy" \
+                              --build-arg no_proxy="$no_proxy" \
+                              $dockerfile \
+                              "$@"
+        ;;
+        buildah)
+                # shellcheck disable=SC2154
+                buildah build-using-dockerfile \
+                        --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                        --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                        --build-arg NO_PROXY="$NO_PROXY" \
+                        --build-arg http_proxy="$http_proxy" \
+                        --build-arg https_proxy="$https_proxy" \
+                        --build-arg no_proxy="$no_proxy" \
+                        --runtime ch-run-oci \
+                        --layers=true "$@" . < /dev/null
+                ;;
+        esac
+
