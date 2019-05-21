@@ -44,6 +44,7 @@ case $TARBALL in
 esac
 
 make
+ln -s bin/ch-run-oci bin/newgidmap bin/newuidmap
 bin/ch-run --version
 
 if [[ $INSTALL ]]; then
