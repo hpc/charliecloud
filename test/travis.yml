@@ -94,6 +94,7 @@ install:
     # Get Kevin's custom version of buildah
   - if [ -n "$MINIMAL_DEPS" ]; then
       mkdir buildah  
+      export GOPATH=`pwd`
       git clone https://github.com/kpelzel/buildah.git ./src/github.com/containers/buildah 
       cd ./src/github.com/containers/buildah
       PATH=/usr/lib/go-1.10/bin:$PATH make runc all SECURITYTAGS="apparmor seccomp"
