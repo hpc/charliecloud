@@ -213,10 +213,15 @@ def op_start():
       fatal("not supported: Intel RDT")
 
    # Environment file.
-   with open(args.bundle + "/environment", "wt") as fp:
+   with open(args.bundle + "/mnt/rootfs/etc/environment", "wt") as fp:
+      # Inject TAR_OPTIONS env variable before we being writing
+      # This ensure that tar will function properly in an unprvileged container
+      c["process"]["env"].append("TAR_OPTIONS=--no-same-owner")
+      l.debug(c["process"]["env"]) 
       for line in c["process"]["env"]:
          l.debug("env: %s" % line)
          print(line, file=fp)
+      
 
    # Build command line.
    cmd = CH_BIN + "/ch-run"
