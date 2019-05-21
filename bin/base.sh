@@ -50,13 +50,15 @@ else
     }
 fi
 
-# Use fuse low-level API if it's available. ("command -v" is POSIX.1-2008.)
+# Use fuse low-level API if it's available.
 if ( command -v squashfuse_ll >/dev/null 2>&1 ); then
     squashfuse_ () {
         squashfuse_ll "$@"
     }
 else
     squashfuse_ () {
+        echo "WARNING:" 1>&2 
+        echo "Low-level FUSE API unavailable, squashfuse will be slower" 1>&2
         squashfuse "$@"
     }
 fi

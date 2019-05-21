@@ -20,7 +20,7 @@ Sudo privileges are required to run :code:`docker export`.
 Additional arguments:
 
   :code:`--nocompress`
-    do not perform compression
+    do not compress tarball
 
   :code:`--help`
     print help and exit

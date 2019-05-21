@@ -1,16 +1,15 @@
 #!/bin/sh
-#TODO start this
+
 libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/base.sh"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Convert a Charliecloud tarball image into a Charliecloud squashfs image.
+Convert a Charliecloud tarball image into a Charliecloud SquashFS file.
 
 Usage:
 
   $ $(basename "$0") TARBALL OUTDIR [ARGS ...]
-
 EOF
 )
 
@@ -22,12 +21,13 @@ fi
 
 image=$1
 outdir=$2
-
 shift 2
 
 imagedir=$(basename -- "$image")
 imagedir="${imagedir%%.*}"
-
-"${ch_bin}/ch-tar2dir" "$image" /tmp > /dev/null
-"${ch_bin}/ch-dir2squash" "/tmp/${imagedir}" "$outdir" "$@"
-rm -rf "/tmp/${imagedir}"
+# mktemp is used for intermediate files to avoid heavy metadata loads on
+# certain filesystems
+temp=$(mktemp --tmpdir ch-tar2squash.XXXXXX)
+"${ch_bin}/ch-tar2dir" "$image" "$temp"
+"${ch_bin}/ch-dir2squash" "${temp}/${imagedir}" "$outdir" "$@"
+rm -rf --one-file-system $temp

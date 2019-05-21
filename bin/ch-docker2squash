@@ -5,7 +5,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Flatten a Docker image into a Charliecloud image squashfs.
+Flatten a Docker image into a Charliecloud SquashFS file.
 
 Usage:
 
@@ -23,13 +23,14 @@ fi
 
 image=$1
 outdir=$2
-
 shift 2
 
+# mktemp is used for intermediate files to avoid heavy metadata loads on
+# certain filesystems
+temp=$(mktemp --tmpdir ch-dir2squash.XXXXXX)
 # Get image as a directory
-"${ch_bin}/ch-docker2tar" "--nocompress" "$image" /tmp > /dev/null
-"${ch_bin}/ch-tar2dir" "/tmp/${image}.tar" /tmp > /dev/null
+"${ch_bin}/ch-docker2tar" --nocompress "$image" "$temp"
+"${ch_bin}/ch-tar2dir" "${temp}/${image}.tar" "$temp"
 # Create squashfs, and clean up intermediate files and folders.
-"${ch_bin}/ch-dir2squash" "/tmp/${image}" "$outdir" "$@"
-rm -rf "/tmp/${image}.tar"
-rm -rf "/tmp/${image}"
+"${ch_bin}/ch-dir2squash" "${temp}/${image}" "$outdir" "$@"
+rm -rf --one-file-system $temp

@@ -57,11 +57,10 @@ for ext in '' .tar.gz .tar.xz .tgz .tar; do
     # is a pipe, and we want to keep PV. See:
     # https://www.gnu.org/software/tar/manual/html_section/tar_68.html
     case $tarball in
-            *.tar)
-                newroot=${2}/$(basename "${tarball%.tar}")
-                #decompress=z
-                echo "we did it"
-                ;;
+        *.tar)
+            newroot=${2}/$(basename "${tarball%.tar}")
+            decompress=
+            ;;
         *.tar.gz)
             newroot=${2}/$(basename "${tarball%.tar.gz}")
             decompress=z
@@ -70,10 +69,10 @@ for ext in '' .tar.gz .tar.xz .tgz .tar; do
             newroot=${2}/$(basename "${tarball%.tar.xz}")
             decompress=J
             ;;
-	*.tgz)
-	    newroot=${2}/$(basename "${tarball%.tgz}")
-	    decompress=z
-	    ;;
+        *.tgz)
+            newroot=${2}/$(basename "${tarball%.tgz}")
+            decompress=z
+            ;;
         *)
             echo "unknown extension: ${tarball}" 1>&2
             exit 1

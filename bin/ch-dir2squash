@@ -7,11 +7,13 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Pack a filesystem directory into a squashfs.
+Pack a filesystem directory into a SquashFS file.
 
 Usage:
 
   $ $(basename "$0") INDIR OUTDIR [ARGS ...]
+
+ARGS are passed unchanged to "mksquashfs".
 EOF
 )
 
@@ -25,7 +27,6 @@ fi
 
 indir=$1
 outdir=$2
-
 shift 2
 
 # Check input directory exists
@@ -36,11 +37,6 @@ fi
 # Check input directory is a directory
 if [ ! -d "$indir" ]; then
     echo "can't squash: ${indir} is not a directory" 1>&2
-    exit 1
-fi
-# Check input directory is a charliecloud image
-if [ ! -e "${indir}/${sentinel}" ]; then
-    echo "${indir} is NOT a Charliecloud iamge" 1>&2
     exit 1
 fi
 
@@ -54,12 +50,13 @@ if [ ! -d "$outdir" ]; then
     exit 1
 fi
 
-# If squashfs exists overwrite it with -noappend
+# Ensure directories that ch-run needs exist.
+echo 'This directory is a Charliecloud image.' > "${indir}/${sentinel}"
+mkdir -p "${indir}/dev" "${indir}/etc" "${indir}/proc" "${indir}/sys"
+touch "${indir}/etc/hosts" "${indir}/etc/resolv.conf"
+for i in $(seq 0 9); do mkdir -p "${indir}/mnt/${i}"; done
+
+# Create SquashFS file
 image=$(basename "${indir}")
-if [ ! -e "${outdir}/${image}.sqfs" ]; then
-    mksquashfs "$indir" "${outdir}/${image}.sqfs" "$@"
-    echo "squashed ${outdir}/${image}.sqfs OK"
-  else
-    mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
-    echo "squashed ${outdir}/${image}.sqfs OK"
-fi
+mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
+echo "squashed ${outdir}/${image}.sqfs OK"
