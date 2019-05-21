@@ -95,6 +95,7 @@ install:
   - if [ -n "$MINIMAL_DEPS" ]; then
       mkdir buildah  
       export GOPATH=`pwd`
+      sudo ln -s /usr/local/go/bin/go /usr/bin/go
       git clone https://github.com/kpelzel/buildah.git ./src/github.com/containers/buildah 
       cd ./src/github.com/containers/buildah
       PATH=/usr/lib/go-1.10/bin:$PATH make runc all SECURITYTAGS="apparmor seccomp"
