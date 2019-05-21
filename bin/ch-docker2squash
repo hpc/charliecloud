@@ -27,10 +27,10 @@ shift 2
 
 # mktemp is used for intermediate files to avoid heavy metadata loads on
 # certain filesystems
-temp=$(mktemp --tmpdir ch-dir2squash.XXXXXX)
+temp=$(mktemp -d --tmpdir ch-dir2squash.XXXXXX)
 # Get image as a directory
 "${ch_bin}/ch-docker2tar" --nocompress "$image" "$temp"
 "${ch_bin}/ch-tar2dir" "${temp}/${image}.tar" "$temp"
 # Create squashfs, and clean up intermediate files and folders.
 "${ch_bin}/ch-dir2squash" "${temp}/${image}" "$outdir" "$@"
-rm -rf --one-file-system $temp
+rm -rf --one-file-system "$temp"

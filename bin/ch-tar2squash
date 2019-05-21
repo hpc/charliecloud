@@ -27,7 +27,7 @@ imagedir=$(basename -- "$image")
 imagedir="${imagedir%%.*}"
 # mktemp is used for intermediate files to avoid heavy metadata loads on
 # certain filesystems
-temp=$(mktemp --tmpdir ch-tar2squash.XXXXXX)
+temp=$(mktemp -d --tmpdir ch-tar2squash.XXXXXX)
 "${ch_bin}/ch-tar2dir" "$image" "$temp"
 "${ch_bin}/ch-dir2squash" "${temp}/${imagedir}" "$outdir" "$@"
-rm -rf --one-file-system $temp
+rm -rf --one-file-system "$temp"
