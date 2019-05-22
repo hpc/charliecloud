@@ -115,7 +115,6 @@ before_script:
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
   - sudo usermod --add-subuids 10000-65536 $USER
   - sudo usermod --add-subgids 10000-65536 $USER
-  - ln -s 
   - if [ -n "$NO_DOCKER" ]; then
       sudo rm $(command -v docker);
     fi
