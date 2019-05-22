@@ -103,10 +103,10 @@ install:
       make runc all SECURITYTAGS="apparmor seccomp";
       sudo make install install.runc;
       cd ../../../../..;
-      registries_conf=$(cat <<'EOF'
-      [registries.search]
-      registries = ['docker.io']
-      EOF 
+      registries_conf=$(cat <<'EOF' \
+      [registries.search] \
+      registries = ['docker.io'] \
+      EOF \
       );
       echo "$registries_conf" | sudo tee /etc/containers/registries.conf > /dev/null;
 
