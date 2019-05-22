@@ -18,6 +18,12 @@ ENV chse_3 \"value3\"
 ENV chse_4=value4 chse_5="value5 foo" chse_7=\"value7\"
 #ENV chse_4=value4 chse_5="value5 foo" chse_6=value6\ foo chse_7=\"value7\"
 
+RUN pwd
+WORKDIR /usr/local/src
+RUN pwd
+COPY --chown=foo:bar Dockerfile.* run .
+RUN ls --color=no -lh
+
 RUN apk add --no-cache bc
 RUN ["echo", "hello \n${chse_2} \${chse_2} ${NOTSET}"]
 RUN echo 'hello ${chse_2}' "hello ${chse_2}"
@@ -27,3 +33,4 @@ RUN env
 
 # TODO:
 # comment with trailing backslash (line continuation does not work in comments)
+# test WORKDIR with variable

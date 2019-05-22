@@ -2,7 +2,9 @@
 
 import argparse
 import ast
+import glob
 import inspect
+import itertools
 import os
 import pathlib
 import re
@@ -36,9 +38,13 @@ ENV_DEFAULTS = { "PATH": "/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/
 GRAMMAR = r"""
 ?start: ( instruction | _COMMENT )+
 
-?instruction: _WS? ( cmd | env | from_ | run )
+?instruction: _WS? ( cmd | copy | env | from_ | run | workdir )
 
-cmd: "CMD"i LINE _NEWLINES
+cmd: "CMD"i _WS LINE _NEWLINES
+
+copy: "COPY"i ( _WS copy_chown )? ( copy_shell ) _NEWLINES
+copy_chown: "--chown" "=" /[^ \t\n]+/
+copy_shell: _WS WORD ( _WS WORD )+
 
 env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
 env_space: WORD _WS LINE
@@ -51,13 +57,14 @@ from_digest: "@" HEXID
 from_alias: "AS"i ID
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
-run_exec: _string_list
-run_shell: LINE_NOLIST
+run_exec.2: _string_list
+run_shell: LINE
+
+workdir: "WORKDIR"i _WS LINE _NEWLINES
 
 ID: /[A-Za-z0-9_.-]+/
 HEXID: /[a-fA-F0-9]+/
 LINE: ( LINE_CONTINUE | /[^\n]/ )+
-LINE_NOLIST: /[^[]/ ( LINE_CONTINUE | /[^\n]/ )+
 WORD: /[^ \t\n=]/+
 
 _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
@@ -94,6 +101,7 @@ def main():
    ap.add_argument("--verbose", action="store_true")
    ap.add_argument("-t", "--tag", metavar="NAME")
    ap.add_argument("dockerfile", metavar="DOCKERFILE")
+   ap.add_argument("context", metavar="CONTEXT_DIR")
    cli = ap.parse_args()
    if (cli.tag is None):
       m = re.search(r"(([^/]+)/)?Dockerfile(\.(.+))?$",
@@ -113,7 +121,7 @@ def main():
 
    # Use LALR(1) parser because Earley has some non-deterministic behavior
    # (comments sometimes in tree, sometimes not).
-   parser = lark.Lark(GRAMMAR, parser="lalr", propagate_positions=True)
+   parser = lark.Lark(GRAMMAR, parser="earley", propagate_positions=True)
    text = open(cli.dockerfile, "rt").read()
    tree = parser.parse(text)
 
@@ -181,6 +189,49 @@ class Instruction(object):
 
 class I_cmd(Instruction):
    pass
+
+
+class Copy(Instruction):
+
+   def str_(self):
+      return "%s -> %s" % (self.srcs, repr(self.dst))
+
+   def execute_(self):
+      # The Dockerfile spec for COPY is complex and messy. This implementation
+      # is not conforming but hopefully comes close. Known nonconformance:
+      #
+      # 1. We use the Python glob semantics instead of the Go ones.
+      #
+      # 2. With "docker build" COPY seems to follow cp(1) semantics if the
+      #    destination is an existing directory: sources are copied to within
+      #    that directory regardless of whether it has trailing slash. This
+      #    contrasts with the spec's implication that this only happens if a
+      #    trailing slash is present; otherwise, the destination is replaced.
+      #
+      # 3. Spec does not say what to do with symlinks. If the source is a
+      #    symlink to a file, we copy the link target to a regular file;
+      #    otherwise, we copy symlinks themselves.
+      srcs = itertools.chain.from_iterable(glob.glob(cli.context + "/" + i)
+                                           for i in self.srcs)
+      dst = dir_image(cli.tag) + "/"
+      if (not self.dst.startswith("/")):
+         dst += state.workdir + "/"
+      dst += self.dst
+      if (dst.endswith("/")):
+         dst = dst[:-1]
+         mkdirs(dir_image(cli.tag) + dst)
+      for src in srcs:
+         cp(src, dst)
+
+
+class I_copy_shell(Copy):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      paths = [variables_sub(i, state.env_build)
+               for i in self.terminals("WORD")]
+      self.srcs = paths[:-1]
+      self.dst = paths[-1]
 
 
 class Env(Instruction):
@@ -275,7 +326,7 @@ class I_from_(Instruction):
          DEBUG("image not found, pulling: %s" % self.fullname)
          self.base_pull()
       self.base_copy()
-      state.env_reset()
+      state.reset()
 
    def str_(self):
       alias = "AS %s" % self.alias if self.alias else ""
@@ -289,7 +340,8 @@ class Run(Instruction):
       pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
       pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
       args = [CH_BIN + "/ch-run", "-w", "--no-home", "--no-passwd",
-              "--uid=0", "--gid=0", rootfs, "--"] + self.cmd
+              "--cd", state.workdir, "--uid=0", "--gid=0",
+              rootfs, "--"] + self.cmd
       cmd(args, env=state.env_build)
 
    def str_(self):
@@ -309,8 +361,22 @@ class I_run_shell(Run):
    def __init__(self, *args):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
-      cmd = self.terminal("LINE_NOLIST").replace("\\\n", "")
+      cmd = self.terminal("LINE").replace("\\\n", "")
       self.cmd = ["/bin/sh", "-c", cmd]
+
+
+class I_workdir(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.path = variables_sub(self.terminal("LINE"), state.env_build)
+
+   def str_(self):
+      return self.path
+
+   def execute_(self):
+      mkdirs(dir_image(cli.tag) + self.path)
+      state.chdir(self.path)
 
 
 ## Supporting classes ##
@@ -318,13 +384,20 @@ class I_run_shell(Run):
 class State(object):
 
    def __init__(self):
-      self.env_reset()
+      self.reset()
 
    @property
    def env_build(self):
       return { **self.arg, **self.env }
 
-   def env_reset(self):
+   def chdir(self, path):
+      if (path.startswith("/")):
+         self.workdir = path
+      else:
+         self.workdir += "/" + path
+
+   def reset(self):
+      self.workdir = "/"
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
       self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
 
@@ -354,6 +427,16 @@ def cmd(args, env=None):
    INFO("\033[0m", end="")
    if (cp.returncode):
       FATAL("%s failed with return code %d" % (args[0], cp.returncode))
+
+def cp(src, dst):
+   DEBUG("copying: %s -> %s" % (src, dst))
+   if (os.path.isdir(src)):
+      if (os.path.isdir(dst)):  # FIXME: excessive stat(2) with many sources?
+         dst += "/" + os.path.basename(src)
+      shutil.copytree(src, dst, symlinks=False)
+   else:
+      shutil.copy2(src, dst)
+
 
 def dir_image_tmp():
    return "%s/img/tmp" % cli.storage
@@ -394,7 +477,8 @@ nogroup:x:65534:
    # Kludges to work around expectations of real root, not UID 0 in a
    # unprivileged user namespace.
    #
-   # Debian "apt" and friends want to chgrp(1) files.
+   # Debian "apt" and friends want to chown(1) and chgrp(1) files.
+   os.symlink("/bin/true", "%s/ch/bin/chown" % path)
    os.symlink("/bin/true", "%s/ch/bin/chgrp" % path)
 
 def mkdirs(path):
