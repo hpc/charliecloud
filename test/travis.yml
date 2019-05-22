@@ -95,7 +95,7 @@ install:
   - if [ -n "$MINIMAL_DEPS" ]; then
       mkdir buildah && cd buildah
       export GOPATH=`pwd`
-      sudo ln -s /usr/local/go/bin/go /usr/bin/go
+      sudo ln -s /usr/local/go/bin/go /bin/go
       git clone https://github.com/kpelzel/buildah.git ./src/github.com/containers/buildah 
       cd ./src/github.com/containers/buildah
       git checkout 556c5465ec47
