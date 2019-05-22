@@ -102,6 +102,7 @@ install:
       git checkout 556c5465ec47;
       make runc all SECURITYTAGS="apparmor seccomp";
       sudo make install install.runc;
+      cd $HOME
     fi
 
 before_script:
