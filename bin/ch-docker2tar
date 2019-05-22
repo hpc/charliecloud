@@ -90,7 +90,7 @@ case $CH_BUILDER in
         #        > /g' && echo "" > "$temp"
         #buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\> /g' > "$temp"
         buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\n/g'  > "$temp"
-        echo "" >> $temp
+        echo "" >> "$temp"
         #buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\/g' \
         #       >  $temp
 
