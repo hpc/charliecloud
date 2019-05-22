@@ -99,7 +99,7 @@ install:
       git clone https://github.com/kpelzel/buildah.git ./src/github.com/containers/buildah 
       cd ./src/github.com/containers/buildah
       git checkout 556c5465ec47
-      PATH=/usr/lib/go-1.10/bin:$PATH make runc all SECURITYTAGS="apparmor seccomp"
+      make runc all SECURITYTAGS="apparmor seccomp"
       sudo make install install.runc
     fi
 
