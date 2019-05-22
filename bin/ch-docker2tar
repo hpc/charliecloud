@@ -86,10 +86,17 @@ case $CH_BUILDER in
         echo "adding environment"
         temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
         # shellcheck disable=SC1004
-        buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\
-                > /g' && echo "" > "$temp"
+        #buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\
+        #        > /g' && echo "" > "$temp"
+        #buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\> /g' > "$temp"
+        buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\n/g'  > $temp 
+        echo "" >> $temp
+        #buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\/g' \
+        #       >  $temp
+
+        #buildah inspect --format '{{.OCIv1.Config.Env}}' $image > "$temp"
         tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
-        rm "$temp"
+        #rm "$temp"
 
         echo "compressing"
         gzip "${tar}"
