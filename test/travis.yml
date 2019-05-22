@@ -101,8 +101,8 @@ install:
       cd ./src/github.com/containers/buildah;
       git checkout 556c5465ec47;
       make runc all SECURITYTAGS="apparmor seccomp";
-      sudo mv buildah /usr/local/bin/buildah
-      ls /usr/local/bin/build*
+      sudo mv buildah /usr/local/bin/buildah;
+      ls /usr/local/bin/build*;
     fi
 
 before_script:
