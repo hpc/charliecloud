@@ -93,7 +93,7 @@ install:
       sudo apt-get purge buildah cri-o-runc pv skopeo;
     fi
     # Get Kevin's custom version of buildah
-  - if [ -n "$MINIMAL_DEPS" ]; then
+  - if [ -z "$MINIMAL_DEPS" ]; then
       mkdir buildah && cd buildah;
       export GOPATH=`pwd`;
       sudo ln -s /usr/local/go/bin/go /bin/go;
