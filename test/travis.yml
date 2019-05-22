@@ -90,7 +90,7 @@ install:
     fi
 # Tests should still pass with only the basics installed.
   - if [ -n "$MINIMAL_DEPS" ]; then
-      sudo apt-get purge buildah cri-o-runc pv skopeo;
+      sudo apt-get purge cri-o-runc pv skopeo;
     fi
     # Get Kevin's custom version of buildah
   - if [ -n "$MINIMAL_DEPS" ]; then
@@ -102,7 +102,6 @@ install:
       git checkout 556c5465ec47;
       make runc all SECURITYTAGS="apparmor seccomp";
       sudo mv buildah /usr/local/bin/buildah;
-      ls /usr/local/bin/build*;
     fi
 
 before_script:
