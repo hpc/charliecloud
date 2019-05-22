@@ -102,7 +102,7 @@ install:
       git checkout 556c5465ec47;
       make runc all SECURITYTAGS="apparmor seccomp";
       sudo mv buildah /usr/local/bin/buildah
-      #sudo make install install.runc;
+      ls /usr/local/bin/build*
     fi
 
 before_script:
