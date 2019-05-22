@@ -70,6 +70,7 @@ addons:
       - libselinux1-dev 
       - go-md2man
       - golang-1.10
+      - podman
 
 install:
 # We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
@@ -100,7 +101,8 @@ install:
       cd ./src/github.com/containers/buildah;
       git checkout 556c5465ec47;
       make runc all SECURITYTAGS="apparmor seccomp";
-      sudo make install install.runc;
+      sudo mv buildah /usr/local/bin/buildah
+      #sudo make install install.runc;
     fi
 
 before_script:

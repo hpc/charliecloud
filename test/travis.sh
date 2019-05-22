@@ -46,8 +46,7 @@ esac
 make
 ln -s bin/ch-run-oci bin/newgidmap 
 ln -s bin/ch-run-oci bin/newuidmap
-which buildah
-ls /usr/local/bin/buildah
+ls -lh /usr/local/bin/buildah
 bin/ch-run --version
 
 if [[ $INSTALL ]]; then
