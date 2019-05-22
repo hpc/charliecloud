@@ -59,10 +59,7 @@ case $CH_BUILDER in
 
         echo "adding environment"
         temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
-        #buildah inspect --format '{{.OCIv1.Config.Env}}' $image > "$temp"
-        buildah inspect --format '{{.OCIv1.Config.Env}}' $image | tr -d "[]" | sed -e 's/[ \t][ \t]*/\
-                > /g' && echo "" > "$temp"
-        #docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' \
+        docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' \
         #        > "$temp"
         tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
         rm "$temp"
@@ -75,20 +72,22 @@ case $CH_BUILDER in
         ls -lh "${tar}.gz"
         ;;
         buildah)
-        container=$(podman create $image)
+        container=$(podman create "$image")
 
         # Not sure what the best POSIX compliant way of doing this is*
         case "$tar" in
-            *:*) temp_tar=$(echo $tar | sed 's/://g')
-                 podman export $container -o $temp_tar
-                 mv $temp_tar $tar;;
-            *)   podman export $container -o $tar;;
+            *:*) temp_tar=$(echo "$tar" | sed 's/://g')
+                 podman export "$container" -o "$temp_tar";
+                 mv "$temp_tar" "$tar";
+            *)   podman export "$container" -o "$tar";
         esac
-        podman rm $container
+        podman rm "$container"
 
         echo "adding environment"
         temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
-        buildah inspect --format '{{.OCIv1.Config.Env}}' $image > "$temp"
+        # shellcheck disable=SC1004
+        buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\
+                > /g' && echo "" > "$temp"
         tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
         rm "$temp"
 
