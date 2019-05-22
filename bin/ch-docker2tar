@@ -59,7 +59,9 @@ case $CH_BUILDER in
 
         echo "adding environment"
         temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
-        buildah inspect --format '{{.OCIv1.Config.Env}}' $image > "$temp"
+        #buildah inspect --format '{{.OCIv1.Config.Env}}' $image > "$temp"
+        buildah inspect --format '{{.OCIv1.Config.Env}}' $image | tr -d "[]" | sed -e 's/[ \t][ \t]*/\
+                > /g' && echo "" > "$temp"
         #docker_ inspect "$image" --format='{{range .Config.Env}}{{println .}}{{end}}' \
         #        > "$temp"
         tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
