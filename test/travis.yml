@@ -70,6 +70,7 @@ addons:
       - libselinux1-dev 
       - go-md2man
       - golang-1.10
+      - podman
 
 install:
 # We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
