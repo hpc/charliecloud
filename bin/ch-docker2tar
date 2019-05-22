@@ -78,8 +78,8 @@ case $CH_BUILDER in
         case "$tar" in
             *:*) temp_tar=$(echo "$tar" | sed 's/://g')
                  podman export "$container" -o "$temp_tar";
-                 mv "$temp_tar" "$tar";
-            *)   podman export "$container" -o "$tar";
+                 mv "$temp_tar" "$tar";;
+            *)   podman export "$container" -o "$tar";;
         esac
         podman rm "$container"
 
