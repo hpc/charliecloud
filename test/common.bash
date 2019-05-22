@@ -16,13 +16,13 @@ crayify_mpi_or_skip () {
 docker_tag_p () {
     printf 'image tag %s ... ' "$1"
    # hash_=$(sudo docker images -q "$1" | sort -u)
-    if [[ $hash_ ]]; then
-        echo "$hash_"
-        return 0
-    else
-        echo 'not found'
-        return 1
-    fi
+    #if [[ $hash_ ]]; then
+    #    echo "$hash_"
+    #    return 0
+    #else
+    #    echo 'not found'
+    #    return 1
+    #fi
 }
 
 docker_ok () {
