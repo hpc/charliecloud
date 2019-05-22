@@ -118,6 +118,7 @@ before_script:
     [registries.search]
     registries = ['docker.io']
     EOF 
+    )
   - echo "$registries_conf" | sudo tee /etc/containers/registries.conf > /dev/null
   - unset JAVA_HOME  # otherwise Spark tries to use host's Java
   - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
