@@ -222,7 +222,7 @@ def op_start():
          l.debug("env: %s" % line)
          print(line, file=fp)
       
-
+    
    # Build command line.
    cmd = CH_BIN + "/ch-run"
    ca = [cmd,
@@ -240,6 +240,44 @@ def op_start():
    rootfs = args.bundle + "/mnt/rootfs"
    pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
    pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
+
+   true = pathlib.Path(rootfs + "/bin/true")
+   chown = pathlib.Path(rootfs + "/bin/chown")
+   chgrp = pathlib.Path(rootfs + "/usr/bin/chgrp")
+   dpkg_statoverride = pathlib.Path(rootfs + "/usr/bin/dpkg-statoverride")
+   groupadd = pathlib.Path(rootfs + "/usr/sbin/groupadd")
+   adduser = pathlib.Path(rootfs + "/usr/sbin/adduser")
+
+   os.listdir(rootfs + "/usr/bin")
+   try:
+       chown.unlink()
+       chown.symlink_to(true)
+   except FileNotFoundError:
+       pass
+
+   try:
+       chgrp.unlink()
+       chgrp.symlink_to(true)
+   except FileNotFoundError:
+       pass
+
+   try:
+       dpkg_statoverride.unlink()
+       dpkg_statoverride.symlink_to(true)
+   except FileNotFoundError:
+       pass
+
+   try:
+       groupadd.unlink()
+       groupadd.symlink_to(true)
+   except FileNotFoundError:
+       pass
+
+   try:
+       adduser.unlink()
+       adduser.symlink_to(true)
+   except FileNotFoundError:
+       pass
 
    # Execute user command. We can't execv(2) because we have to do cleanup
    # after it exits.
