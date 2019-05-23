@@ -208,8 +208,10 @@ if [[ $SLURM_JOB_ID ]]; then
 else
     ch_nodes=1
 fi
-# Using one rank per thread can exhaust hardware contexts in some situations
-# resulting in communication failure, use one rank per physcial core to avoid this
+# Using one rank per thread can exhaust hardware contexts resulting in 
+# communication failure, use one rank per physcial core to avoid this.
+# There are ways to do this with Slurm but they rely on how Slurm was setup
+# This seems to be the most portable way to do this.
 ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 4 | wc -l)
 ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_np="-np ${ch_cores_node}"
