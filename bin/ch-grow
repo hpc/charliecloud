@@ -303,7 +303,6 @@ class I_from_(Instruction):
       rmtree(dir_image(self.fullname))
       os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
       rmtree(dir_image_tmp())
-      image_fixup(dir_image(self.fullname))
       # CentOS likes to leave directories unwriteable by anyone, and files
       # unreadable by anyone, so fix that.
       def reraise(x):
@@ -326,6 +325,7 @@ class I_from_(Instruction):
          DEBUG("image not found, pulling: %s" % self.fullname)
          self.base_pull()
       self.base_copy()
+      image_fixup(dir_image(self.fullname))
       state.reset()
 
    def str_(self):
@@ -437,7 +437,6 @@ def cp(src, dst):
    else:
       shutil.copy2(src, dst)
 
-
 def dir_image_tmp():
    return "%s/img/tmp" % cli.storage
 
@@ -475,11 +474,12 @@ root:x:0:
 nogroup:x:65534:
 """)
    # Kludges to work around expectations of real root, not UID 0 in a
-   # unprivileged user namespace.
+   # unprivileged user namespace. See also the default environment.
    #
-   # Debian "apt" and friends want to chown(1) and chgrp(1) files.
-   os.symlink("/bin/true", "%s/ch/bin/chown" % path)
-   os.symlink("/bin/true", "%s/ch/bin/chgrp" % path)
+   # Debian "apt" and friends want to chown(2), chgrp(2), etc. in various ways.
+   symlink("/bin/true", "%s/ch/bin/chown" % path)
+   symlink("/bin/true", "%s/ch/bin/chgrp" % path)
+   symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
 
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)
@@ -489,6 +489,17 @@ def rmtree(path):
    if (os.path.isdir(path)):
       DEBUG("deleting directory: " + path)
       shutil.rmtree(path)
+
+def symlink(target, source):
+   try:
+      os.symlink(target, source)
+   except FileExistsError:
+      if (not os.path.islink(source)):
+         FATAL("can't symlink: source exists and isn't a symlink: %s"
+               % source)
+      if (os.readlink(source) != target):
+         FATAL("can't symlink: %s exists; want target %s but existing is %s"
+               % (source, target, os.readlink(source)))
 
 def terminal(tree, type_, index=0):
    for (i, t) in enumerate(terminals(tree, type_)):
@@ -509,7 +520,7 @@ def variables_sub(s, variables):
    # substitutes the empty string).
    for (k, v) in variables.items():
       #DEBUG("s: %s, k: %s, v: %s" % (s, k, v))
-      s = re.sub(r"(?<!\\)\${%s}" % k, v, s)
+      s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
    return s
 
 def unescape(sl):
