@@ -1,10 +1,14 @@
 # ch-test-scope: standard
 FROM debian:stretch
 
+ENV DEBIAN_FRONTEND noninteractive
+
 # Install needed OS packages.
 RUN    apt-get update \
     && apt-get install -y less openjdk-8-jre-headless procps python wget \
     && rm -rf /var/lib/apt/lists/*
+RUN     apt-get update \
+        && apt-get install -y fontconfig-config
 
 # We want ch-ssh
 RUN touch /usr/bin/ch-ssh
