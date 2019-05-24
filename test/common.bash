@@ -15,22 +15,42 @@ crayify_mpi_or_skip () {
 
 docker_tag_p () {
     printf 'image tag %s ... ' "$1"
-   # hash_=$(sudo docker images -q "$1" | sort -u)
-    #if [[ $hash_ ]]; then
-    #    echo "$hash_"
-    #    return 0
-    #else
-    #    echo 'not found'
-    #    return 1
-    #fi
+     hash_=$(sudo docker images -q "$1" | sort -u)
+    if [[ $hash_ ]]; then
+        echo "$hash_"
+        return 0
+    else
+        echo 'not found'
+        return 1
+    fi
+}
+
+buildah_tag_p () {
+    printf 'image tag %s ... ' "$1"
+     hash_=$(buildah images -q "$1" | sort -u)
+    if [[ $hash_ ]]; then
+        echo "$hash_"
+        return 0
+    else
+        echo 'not found'
+        return 1
+    fi
 }
 
 docker_ok () {
-   # docker_tag_p "$1"
-   # docker_tag_p "${1}:latest"
-   # docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
+   docker_tag_p "$1"
+   docker_tag_p "${1}:latest"
+   docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
    true 
 }
+
+buildah_ok () {
+   buildah_tag_p "$1"
+   buildah_tag_p "${1}:latest"
+   buildah_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
+   true 
+}
+
 
 env_require () {
     if [[ -z ${!1} ]]; then
