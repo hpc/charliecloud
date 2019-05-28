@@ -82,7 +82,7 @@ ENV TURBINE_LAUNCH_OPTIONS --allow-run-as-root
 # Makefile was broken (https://github.com/emews/EQ-R/pull/6). Our forked version
 # addresses the issue and ensures that this Dockerfile will continue to build
 # properly going forward, regardless of upstream changes.
-RUN git clone https://github.com/j-ogas/EQ-R.git
+RUN git clone https://github.com/emews/EQ-R.git
 WORKDIR $BUILD_DIR/EQ-R/src
 
 RUN ./bootstrap
