@@ -1,14 +1,14 @@
 export LC_ALL := C
 images_ch := chtest/Build \
-		 $(sort $(wildcard ./Build.*)) \
-		 $(sort $(wildcard ./Dockerfile.*)) \
-		 $(sort $(wildcard ./Docker_Pull.*))
+	     $(sort $(wildcard ./Build.*)) \
+	     $(sort $(wildcard ./Dockerfile.*)) \
+	     $(sort $(wildcard ./Docker_Pull.*))
 images_eg := $(sort $(wildcard ../examples/*/*/Build)) \
-		 $(sort $(wildcard ../examples/*/*/Build.*)) \
-		 $(sort $(wildcard ../examples/*/*/Dockerfile)) \
-		 $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
-		 $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
-		 $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
+	     $(sort $(wildcard ../examples/*/*/Build.*)) \
+	     $(sort $(wildcard ../examples/*/*/Dockerfile)) \
+	     $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
+	     $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
+	     $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
 images := $(images_ch) $(images_eg)
 
 # Favor embedded Bats, if installed, over system Bats.
@@ -38,10 +38,10 @@ test-run: run_auto.bats
 	if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
 	for GUEST_USER in $$(id -un) root nobody; do \
 		for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
-		export GUEST_USER; \
-		export GUEST_GROUP; \
-		echo testing as: $$GUEST_USER $$GUEST_GROUP; \
-		bats run/ch-run_uidgid.bats; \
+			export GUEST_USER; \
+			export GUEST_GROUP; \
+			echo testing as: $$GUEST_USER $$GUEST_GROUP; \
+			bats run/ch-run_uidgid.bats; \
 		done; \
 	done; fi
 
