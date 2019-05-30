@@ -1,9 +1,9 @@
 @test 'custom build %(tag)s' {
     scope %(scope)s
     %(arch_exclude)s
-    tarball=$ch_tardir/%(tag)s
-    pq=$ch_tardir/%(tag)s.pq_missing
-    workdir=$ch_tardir/%(tag)s.tmp
+    tarball="${ch_tardir}/%(tag)s"
+    pq="${ch_tardir}/%(tag)s.pq_missing"
+    workdir="${ch_tardir}/%(tag)s.tmp"
     rm -f "$pq"
     mkdir "$workdir"
     cd "%(dirname)s"
