@@ -31,12 +31,12 @@ Build a Charliecloud image and unpack it into a directory in one command.
 
 .. include:: ./ch-build2dir_desc.rst
 
-ch-docker2tar
-+++++++++++++
+ch-builder2tar
+++++++++++++++
 
-Flatten a Docker image into a Charliecloud image tarball.
+Flatten a builder image into a Charliecloud image tarball.
 
-.. include:: ./ch-docker2tar_desc.rst
+.. include:: ./ch-builder2tar_desc.rst
 
 ch-fromhost
 +++++++++++

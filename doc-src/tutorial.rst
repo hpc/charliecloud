@@ -35,7 +35,7 @@ Charliecloud for your own applications.
   Sending build context to Docker daemon  5.632kB
   [...]
   Successfully built 1136de7d4c0a
-  $ ch-docker2tar hello /var/tmp
+  $ ch-builder2tar hello /var/tmp
    114MiB 0:00:03 [=============================================] 103%
   -rw-r----- 1 reidpr reidpr 49M Nov 21 14:05 /var/tmp/hello.tar.gz
   $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
@@ -169,7 +169,7 @@ arbitrary directory, here :code:`/var/tmp`.
 
 ::
 
-  $ ch-docker2tar hello /var/tmp
+  $ ch-builder2tar hello /var/tmp
   57M /var/tmp/hello.tar.gz
 
 Distribute tarball

@@ -17,25 +17,22 @@ EOF
 
 parse_basic_args "$@"
 
-dockerfile=
-if [ -f Dockerfile ]; then
-    dockerfile="--file=$PWD/Dockerfile"
-    for arg in "$@"; do
-        if [ "${arg#--file}" != "$arg" ]; then
-            # --file already specified, don't override
-            dockerfile=
-            break
-        fi
-    done
-fi
+builder_choose
+echo "building with: ${CH_BUILDER}"
 
-# Coordinate this list with test "build.bats/proxy variables".
-# shellcheck disable=SC2154
-docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
-              --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
-              --build-arg NO_PROXY="$NO_PROXY" \
-              --build-arg http_proxy="$http_proxy" \
-              --build-arg https_proxy="$https_proxy" \
-              --build-arg no_proxy="$no_proxy" \
-              $dockerfile \
-              "$@"
+case $CH_BUILDER in
+    ch-grow)
+        "${ch_bin}/ch-grow" "$@"
+        ;;
+    docker)
+        # Coordinate this list with test "build.bats/proxy variables".
+        # shellcheck disable=SC2154
+        docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                      --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                      --build-arg NO_PROXY="$NO_PROXY" \
+                      --build-arg http_proxy="$http_proxy" \
+                      --build-arg https_proxy="$https_proxy" \
+                      --build-arg no_proxy="$no_proxy" \
+                      "$@"
+        ;;
+esac

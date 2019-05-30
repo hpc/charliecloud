@@ -217,9 +217,9 @@ directives or other build-time configuration. :code:`FILE` is a host path to
 provide the greatest flexibility; guest paths can be specified by prepending
 the image path.
 
-:code:`ch-docker2tar(1)` lists variables specified at build time in
-Dockerfiles in the image in file :code:`/environment`. To set these variables:
-:code:`--set-env=$IMG/environment`.
+:code:`ch-builder2tar(1)` lists variables specified at build time in
+Dockerfiles in the image in file :code:`/ch/environment`. To set these
+variables: :code:`--set-env=$IMG/ch/environment`.
 
 Variable values in :code:`FILE` replace any already set. If a variable is
 repeated, the last value wins.

@@ -29,11 +29,12 @@ ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "https_proxy": os.environ.get("https_proxy"),
                  "ftp_proxy": os.environ.get("ftp_proxy"),
                  "no_proxy": os.environ.get("no_proxy"),
+                 "PATH": "/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                  # GNU tar, when it thinks it's running as root, tries to
                  # chown(2) and chgrp(2) files to whatever's in the tarball.
                  "TAR_OPTIONS": "--no-same-owner" }
 
-ENV_DEFAULTS = { "PATH": "/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" }
+ENV_DEFAULTS = { }
 
 GRAMMAR = r"""
 ?start: ( instruction | _COMMENT )+
@@ -95,17 +96,22 @@ def main():
 
    global cli
    ap = argparse.ArgumentParser()
+   ap.add_argument("-f", "--file", metavar="DOCKERFILE")
    ap.add_argument("-n", "--dry-run", action="store_true")
    ap.add_argument("--parse-only", action="store_true")
-   ap.add_argument("-s", "--storage", metavar="DIR", default="/var/tmp/ch-grow")
-   ap.add_argument("--verbose", action="store_true")
+   ap.add_argument("-s", "--storage", metavar="DIR",
+                   default=os.environ.get("CH_GROW_STORAGE",
+                                          "/var/tmp/ch-grow"))
    ap.add_argument("-t", "--tag", metavar="NAME")
-   ap.add_argument("dockerfile", metavar="DOCKERFILE")
+   ap.add_argument("--verbose", action="store_true")
+   ap.add_argument("--version", action=Version)
    ap.add_argument("context", metavar="CONTEXT_DIR")
    cli = ap.parse_args()
+   if (cli.file is None):
+      cli.file = cli.context + "/Dockerfile"
    if (cli.tag is None):
       m = re.search(r"(([^/]+)/)?Dockerfile(\.(.+))?$",
-                    os.path.abspath(cli.dockerfile))
+                    os.path.abspath(cli.file))
       if (m is not None):
          if m.group(4):    # extension
             cli.tag = m.group(4)
@@ -122,7 +128,7 @@ def main():
    # Use LALR(1) parser because Earley has some non-deterministic behavior
    # (comments sometimes in tree, sometimes not).
    parser = lark.Lark(GRAMMAR, parser="earley", propagate_positions=True)
-   text = open(cli.dockerfile, "rt").read()
+   text = open(cli.file, "rt").read()
    tree = parser.parse(text)
 
    DEBUG(tree.pretty())
@@ -241,6 +247,9 @@ class Env(Instruction):
 
    def execute_(self):
       state.env[self.key] = self.value
+      with open("%s/ch/environment" % dir_image(cli.tag), "wt") as fp:
+         for (k, v) in state.env.items():
+            print("%s=%s" % (k, v), file=fp)
 
 
 class I_env_equals(Env):
@@ -302,6 +311,7 @@ class I_from_(Instruction):
            "--image", "%s/%s" % (dir_ocis(), self.fullname), dir_image_tmp()])
       rmtree(dir_image(self.fullname))
       os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
+      image_fixup(dir_image(self.fullname))
       rmtree(dir_image_tmp())
       # CentOS likes to leave directories unwriteable by anyone, and files
       # unreadable by anyone, so fix that.
@@ -325,7 +335,6 @@ class I_from_(Instruction):
          DEBUG("image not found, pulling: %s" % self.fullname)
          self.base_pull()
       self.base_copy()
-      image_fixup(dir_image(self.fullname))
       state.reset()
 
    def str_(self):
@@ -402,6 +411,19 @@ class State(object):
       self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
 
 
+class Version(argparse.Action):
+
+   # This gross kludge lets us print the version number without managing a
+   # version.py file.
+
+   def __init__(self, *args, **kwargs):
+      super().__init__(nargs=0, *args, **kwargs)
+
+   def __call__(self, parser, namespace, values, option_string=None):
+      cmd = CH_BIN + "/ch-run"
+      os.execl(cmd, cmd, "--version")
+
+
 ## Supporting functions ###
 
 def DEBUG(*args, **kwargs):
@@ -461,6 +483,7 @@ def image_fixup(path):
    DEBUG("fixing up image: %s" % path)
    # Metadata directory.
    mkdirs("%s/ch/bin" % path)
+   file_ensure_exists("%s/ch/environment" % path)
    # Mount points.
    file_ensure_exists("%s/etc/hosts" % path)
    file_ensure_exists("%s/etc/resolv.conf" % path)

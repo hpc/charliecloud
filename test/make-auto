@@ -38,6 +38,9 @@ load common
 for path in sys.argv[2:]:
 
    (dirname, basename) = os.path.split(path)
+   if (basename == "make-auto"):
+      print("skipping: %s" % basename, file=sys.stderr)
+      continue
    if (dirname == ""): dirname = "."
    tag = tag_from_path(path)
 
@@ -78,17 +81,18 @@ for path in sys.argv[2:]:
 }"""
       elif ("Dockerfile" in basename or "Docker_Pull" in basename):
          if ("Dockerfile" in basename):
+            unpack_needs_docker = False
             template = """\
 @test 'ch-build %(tag)s' {
     scope %(scope)s
     %(arch_exclude)s
-    need_docker %(tag)s
     ch-build -t %(tag)s --file="%(path)s" "%(dirname)s"
-    sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
-    docker_ok %(tag)s
+    #sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
+    builder_ok %(tag)s
 }"""
          else:
             assert ("Docker_Pull" in basename)
+            unpack_needs_docker = True
             with open(path) as fp:
                addr = fp.readline().rstrip()
             template = """\
@@ -99,16 +103,20 @@ for path in sys.argv[2:]:
     sudo docker pull %(addr)s
     sudo docker tag %(addr)s %(tag)s
     sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
-    docker_ok %(tag)s
+    builder_ok %(tag)s
 }"""
+         if (unpack_needs_docker):
+            need_docker = "need_docker %s" % tag
+         else:
+            need_docker = ""
          template += """
-@test 'ch-docker2tar %(tag)s' {
+@test 'ch-builder2tar %(tag)s' {
     scope %(scope)s
     %(arch_exclude)s
-    need_docker
+    %(need_docker)s
     tarball="$ch_tardir/%(tag)s.tar.gz"
-    ch-docker2tar %(tag)s "$ch_tardir"
-    tar -tf "$tarball" | grep -E '^environment$'
+    ch-builder2tar %(tag)s "$ch_tardir"
+    tar -tf "$tarball" | grep -E '^(\./)?ch/environment$'
     tarball_ok "$tarball"
 }"""
       else:

@@ -4,6 +4,33 @@ arch_exclude () {
     fi
 }
 
+builder_tag_p () {
+    printf 'image tag %s ... ' "$1"
+    case $CH_BUILDER in
+        ch-grow)
+            if [[ -d ${CH_GROW_STORAGE}/img/${1} ]]; then
+                echo "ok"
+                return 0
+            fi
+            ;;
+        docker)
+            hash_=$(sudo docker images -q "$1" | sort -u)
+            if [[ $hash_ ]]; then
+                echo "$hash_"
+                return 0
+            fi
+            ;;
+    esac
+    echo 'not found'
+    return 1
+}
+
+builder_ok () {
+    #docker_tag_p "$1"
+    builder_tag_p "${1}:latest"
+    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
+}
+
 crayify_mpi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
@@ -11,24 +38,6 @@ crayify_mpi_or_skip () {
     else
         skip 'host is not a Cray'
     fi
-}
-
-docker_tag_p () {
-    printf 'image tag %s ... ' "$1"
-    hash_=$(sudo docker images -q "$1" | sort -u)
-    if [[ $hash_ ]]; then
-        echo "$hash_"
-        return 0
-    else
-        echo 'not found'
-        return 1
-    fi
-}
-
-docker_ok () {
-    docker_tag_p "$1"
-    docker_tag_p "${1}:latest"
-    docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 env_require () {
@@ -59,17 +68,17 @@ multiprocess_ok () {
 }
 
 need_docker () {
-    # Skip test if $CH_TEST_SKIP_DOCKER is true. If argument provided, use
-    # that tag as missing prerequisite sentinel file.
+    # Skip test if $CH_BUILDER is not Docker. If argument provided, use that
+    # tag as missing prerequisite sentinel file.
     pq=${ch_tardir}/${1}.pq_missing
     if [[ $pq ]]; then
         rm -f "$pq"
     fi
-    if [[ $CH_TEST_SKIP_DOCKER ]]; then
+    if [[ $CH_BUILDER != docker ]]; then
         if [[ $pq ]]; then
             touch "$pq"
         fi
-        skip 'Docker not found or user-skipped'
+        skip 'requires Docker'
     fi
 }
 
@@ -164,6 +173,9 @@ ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
 if ( mount | grep -Fq "$ch_imgdir" ); then
     printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
     exit 1
+fi
+if [[ $CH_BUILDER = ch-grow ]]; then
+    export CH_GROW_STORAGE=$ch_tardir/_ch-grow
 fi
 
 # Image information.
