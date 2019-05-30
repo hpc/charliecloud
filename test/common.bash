@@ -106,7 +106,7 @@ scope () {
     esac
 }
 
-tarball_ok () {
+archive_ok () {
     ls -ld "$1" || true
     test -f "$1"
     test -s "$1"
@@ -118,6 +118,18 @@ unpack_img_all_nodes () {
     else
         skip 'not needed'
     fi
+}
+
+archive_ls () {
+    image="$1"
+    case $image in
+        *.sqfs)
+            unsquashfs -l "$image" | grep 'squashfs-root/environment'
+            ;;
+        *)
+            tar -tf "$image" | grep -E '^environment$'
+            ;;
+    esac
 }
 
 # Predictable sorting and collation
@@ -166,10 +178,7 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # [1]: https://unix.stackexchange.com/a/136527
 ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
-if ( mount | grep -Fq "$ch_imgdir" ); then
-    printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
-    exit 1
-fi
+ch_mounts="$ch_imgdir/mounts"
 
 # Image information.
 ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
