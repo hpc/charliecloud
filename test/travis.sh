@@ -54,7 +54,7 @@ fi
 if [[ $SUDO_RM_FIRST ]]; then
     sudo rm /etc/sudoers.d/travis
 fi
-sudo -v
+sudo -v || true
 
 cd test
 
@@ -67,7 +67,7 @@ fi
 if [[ $SUDO_AVOID_AFTER_BUILD ]]; then
     export CH_TEST_DONT_SUDO=yes
 fi
-sudo -v
+sudo -v || true
 echo "\$CH_TEST_DONT_SUDO=$CH_TEST_DONT_SUDO"
 
 make test-run
