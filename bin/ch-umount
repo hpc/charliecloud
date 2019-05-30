@@ -21,7 +21,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 mountdir=$1
-if fusermount -u "$mountdir"; then
-  rm -rf --one-file-system "$mountdir"
-  echo "unmounted and removed ${mountdir}"
+if ( fusermount -u "$mountdir" ); then
+    rm -rf --one-file-system "$mountdir"
+    echo "unmounted and removed ${mountdir}"
 fi
