@@ -2,7 +2,8 @@ load ../../../test/common
 
 setup () {
     scope full
-    arch_exclude aarch64  # issue #415
+    arch_exclude aarch64     # issue #415
+    builder_exclude ch-grow  # haven't tried yet
     prerequisites_ok paraview
     indir=$BATS_TEST_DIRNAME
     outdir=$BATS_TMPDIR

@@ -21,7 +21,7 @@ ENV chse_4=value4 chse_5="value5 foo" chse_7=\"value7\"
 RUN pwd
 WORKDIR /usr/local/src
 RUN pwd
-COPY --chown=foo:bar Dockerfile.* run .
+COPY --chown=foo:bar Dockerfile.* run ./
 RUN ls --color=no -lh
 
 RUN apk add --no-cache bc

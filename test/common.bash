@@ -1,6 +1,12 @@
 arch_exclude () {
-    if [[ $1 = $(uname -m) ]]; then
-        skip 'unsupported architecture'
+    if [[ $1 = "$(uname -m)" ]]; then
+        skip "unsupported architecture: $(uname -m)"
+    fi
+}
+
+builder_exclude () {
+    if [[ $1 = "$CH_BUILDER" ]]; then
+        skip "unsupported builder: $CH_BUILDER"
     fi
 }
 

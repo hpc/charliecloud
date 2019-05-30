@@ -1,5 +1,6 @@
 # ch-test-scope: full
-# ch-test-arch-exclude: aarch64  # issue #415
+# ch-test-arch-exclude: aarch64     # issue #415
+# ch-test-builder-exclude: ch-grow  # deferred
 FROM openmpi
 WORKDIR /usr/src
 
