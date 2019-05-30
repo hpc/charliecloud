@@ -178,7 +178,7 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # [1]: https://unix.stackexchange.com/a/136527
 ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
-ch_mounts="$ch_imgdir/mounts"
+ch_mounts="${ch_imgdir}/mounts"
 
 # Image information.
 ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it

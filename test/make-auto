@@ -58,7 +58,7 @@ for path in sys.argv[2:]:
       arch_exclude = "\n".join("arch_exclude %s" % i for i in
                         re.findall(r"ch-test-arch-exclude: (\w+)", text))
 
-   # Build a archive: different test for each type.
+   # Build an archive: different test for each type.
    if (mode == "build"):
       if ("Build" in basename):
          template = get_template('build_custom.bats')
@@ -70,7 +70,6 @@ for path in sys.argv[2:]:
             with open(path) as fp:
                addr = fp.readline().rstrip()
             template = get_template('pull_docker.bats')
-                     #+ "\n\n" + get_template('docker_to_archive.bats')
          template += "\n\n" + get_template('docker_to_archive.bats')
       else:
          assert False, "unknown build type"
