@@ -4,6 +4,7 @@
 # See: https://docs.docker.com/engine/reference/builder
 #
 # ch-test-scope: standard
+# ch-test-builder-exclude: docker
 
 #FROM alpine
 #FROM alpine@cdf98d1859c1  # skopeo pukes on this

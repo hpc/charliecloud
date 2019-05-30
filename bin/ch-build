@@ -18,6 +18,10 @@ EOF
 parse_basic_args "$@"
 
 builder_choose
+if [ "$1" = --print-builder ]; then
+    echo "$CH_BUILDER"
+    exit 0
+fi
 echo "building with: ${CH_BUILDER}"
 
 case $CH_BUILDER in

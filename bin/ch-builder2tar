@@ -29,7 +29,7 @@ tar_gzipped=${tar}.gz
 builder_choose
 echo "building with: ${CH_BUILDER}"
 
-if   [ "$CH_BUILDER" = ch-grow ]; then
+if [ "$CH_BUILDER" = ch-grow ]; then
 
     case $image in
         *:*)
@@ -75,7 +75,7 @@ elif [ "$CH_BUILDER" = docker ]; then
     temp=$(mktemp --tmpdir ch-builder2tar.XXXXXX)
     docker_ inspect "$image" \
             --format='{{range .Config.Env}}{{println .}}{{end}}' > "$temp"
-    tar rf "$tar" -b1 -P --xform="s|${temp}|/ch/environment|" "$temp"
+    tar rf "$tar" -b1 -P --xform="s|${temp}|ch/environment|" "$temp"
     rm "$temp"
 
     # Finish up.

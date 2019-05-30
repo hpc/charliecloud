@@ -162,6 +162,12 @@ if [[ ! -x ${ch_bin}/ch-run ]]; then
     exit 1
 fi
 
+# Tests require explicitly set builder.
+if [[ -z "$CH_BUILDER" ]]; then
+    CH_BUILDER=$(ch-build --print-builder)
+    export CH_BUILDER
+fi
+
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
 # shellcheck disable=SC2034
