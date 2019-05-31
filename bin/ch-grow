@@ -12,11 +12,17 @@ import shutil
 import stat
 import subprocess
 import sys
+import types
 
 try:
    import lark
 except ImportError:
-   pass  # friendly error later
+   # Friendly error later; kludge here so we can still get --version etc.
+   m = types.ModuleType("lark")
+   class Visitor_Mock(object):
+      pass
+   m.Visitor = Visitor_Mock
+   lark = m
 
 
 ## Constants ##

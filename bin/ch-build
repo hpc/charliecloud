@@ -42,7 +42,7 @@ if [ "$1" = --print-builder ]; then  # undocumented; for test suite
     echo "$CH_BUILDER"
     exit 0
 fi
-if [ -n $builder_info ]; then
+if [ -n "$builder_info" ]; then
     printf "builder: %s: " "$CH_BUILDER"
     case $CH_BUILDER in
         ch-grow)
