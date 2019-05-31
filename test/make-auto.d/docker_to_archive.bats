@@ -2,7 +2,7 @@
     scope %(scope)s
     %(arch_exclude)s
     need_docker
-    if ( command -v squashfuse ); then
+    if ( squashfs_ready ); then
         archive="${ch_tardir}/%(tag)s.sqfs"
         ch-docker2squash %(tag)s "$ch_tardir"
     else

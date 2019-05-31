@@ -84,6 +84,10 @@ need_squashfs () {
     ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
 }
 
+squashfs_ready () {
+    ( command -v mksquashfs && command -v squashfuse )
+}
+
 scope () {
     case $1 in  # $1 is the test's scope
         quick)
