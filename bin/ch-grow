@@ -13,7 +13,10 @@ import stat
 import subprocess
 import sys
 
-import lark
+try:
+   import lark
+except ImportError:
+   pass  # friendly error later
 
 
 ## Constants ##
@@ -133,6 +136,16 @@ environment variables:
             cli.tag = m.group(2)
    if (":" not in cli.tag):
       cli.tag += ":latest"
+
+   try:
+      import lark
+   except ImportError:
+      FATAL('missing dependency: Python module "lark"')
+   if (not shutil.which("skopeo")):
+      FATAL("missing dependency: skopeo")
+   if (not shutil.which("umoci")):
+      FATAL("missing dependency: umoci")
+
    INFO("growing: %s" % dir_image(cli.tag))
    DEBUG(cli)
 
