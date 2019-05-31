@@ -19,8 +19,7 @@ Charliecloud commands. Its content is identical to the commands' man pages.
 ch-build
 ++++++++
 
-Wrapper for :code:`docker build` that works around some of its annoying
-behaviors.
+Build an image and place it in the builder's back-end storage.
 
 .. include:: ./ch-build_desc.rst
 
@@ -45,7 +44,12 @@ Inject files from the host into an image directory.
 
 .. include:: ./ch-fromhost_desc.rst
 
-.. _man_ch-run:
+ch-grow
++++++++
+
+Build an image from a Dockerfile; completely unprivileged.
+
+.. include:: ./ch-grow_desc.rst
 
 ch-pull2dir
 +++++++++++
@@ -60,6 +64,8 @@ ch-pull2tar
 Download image via :code:`docker pull` and flatten it to tarball.
 
 .. include:: ./ch-pull2tar_desc.rst
+
+.. _man_ch-run:
 
 ch-run
 ++++++

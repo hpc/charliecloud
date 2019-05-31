@@ -5,21 +5,57 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Wrapper for "docker build" with various enhancements.
+Build an image and place it in the builder's back-end storage.
 
 Usage:
 
-  $ $(basename "$0") -t TAG [ARGS ...] CONTEXT
+  $ $(basename "$0") [-b BUILDER] [--builder-info] -t TAG [ARGS ...] CONTEXT
 
-ARGS are passed unchanged to "docker build" after the workaround arguments.
+BUILDER is one of: ch-grow docker.
+ARGS are passed unchanged to the underlying builder.
 EOF
 )
 
 parse_basic_args "$@"
 
+# This is rather kludgey, because we want to pull off certain arguments and
+# then pass on the rest.
+while true; do
+    case $1 in
+        -b|--builder)
+            shift
+            CH_BUILDER=$1
+            shift
+            ;;
+        --builder-info)
+            builder_info=yes
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
 builder_choose
-if [ "$1" = --print-builder ]; then
+if [ "$1" = --print-builder ]; then  # undocumented; for test suite
     echo "$CH_BUILDER"
+    exit 0
+fi
+if [ -n $builder_info ]; then
+    printf "builder: %s: " "$CH_BUILDER"
+    case $CH_BUILDER in
+        ch-grow)
+            "${ch_bin}/ch-grow" --version
+            ;;
+        docker)
+            docker --version  # no wrapper: sudo not needed for --version
+            ;;
+        *)
+            echo "unknown builder" 1>&2
+            exit 1
+            ;;
+    esac
     exit 0
 fi
 echo "building with: ${CH_BUILDER}"

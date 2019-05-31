@@ -95,17 +95,31 @@ state = None
 def main():
 
    global cli
-   ap = argparse.ArgumentParser()
-   ap.add_argument("-f", "--file", metavar="DOCKERFILE")
-   ap.add_argument("-n", "--dry-run", action="store_true")
-   ap.add_argument("--parse-only", action="store_true")
+   ap = argparse.ArgumentParser(
+      formatter_class=argparse.RawDescriptionHelpFormatter,
+      description="Build an image from a Dockerfile; completely unprivileged.",
+      epilog="""\
+environment variables:
+  CH_GROW_STORAGE       default for --storage
+""")
+   ap.add_argument("-f", "--file", metavar="DOCKERFILE",
+                   help="Dockerfile to use (default: CONTEXT/Dockerfile)")
+   ap.add_argument("-n", "--dry-run", action="store_true",
+                   help="don't execute instructions")
+   ap.add_argument("--parse-only", action="store_true",
+                   help="stop after parsing the Dockerfile")
    ap.add_argument("-s", "--storage", metavar="DIR",
                    default=os.environ.get("CH_GROW_STORAGE",
-                                          "/var/tmp/ch-grow"))
-   ap.add_argument("-t", "--tag", metavar="NAME")
-   ap.add_argument("--verbose", action="store_true")
-   ap.add_argument("--version", action=Version)
-   ap.add_argument("context", metavar="CONTEXT_DIR")
+                                          "/var/tmp/ch-grow"),
+                   help="state and images directory (default: /var/tmp/ch-grow)")
+   ap.add_argument("-t", "--tag", metavar="TAG",
+                   help="name of image to create (default: inferred)")
+   ap.add_argument("--verbose", action="store_true",
+                   help="print extra debugging chatter")
+   ap.add_argument("--version", action=Version,
+                   help="print version and exit")
+   ap.add_argument("context", metavar="CONTEXT",
+                   help="context directory")
    cli = ap.parse_args()
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
