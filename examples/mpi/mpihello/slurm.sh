@@ -14,10 +14,10 @@ fatal () {
     exit 1
 }
 
-[[ -n $tar ]] || fatal'no tarball specified'
+[[ -n "$tar" ]] || fatal'no tarball specified'
 printf 'tarball:   %s\n' "$tar"
 
-[[ -n $imgdir ]] || fatal 'no image directory specified'
+[[ -n "$imgdir" ]] || fatal 'no image directory specified'
 printf 'image:     %s\n' "$img"
 
 # Make Charliecloud available (varies by site).

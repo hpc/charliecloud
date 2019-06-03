@@ -24,8 +24,8 @@ if [ $# -lt 2 ]; then
 fi
 
 # Complain clearly if destination not valid (issue #340).
-[ -e "${2}" ] || fatal "can't unpack: ${2} does not exist"
-[ -d "${2}" ] || fatal "can't unpack: ${2} is not a directory"
+[ -e "$2" ] || fatal "can't unpack: $2 does not exist"
+[ -d "$2" ] || fatal "can't unpack: $2 is not a directory"
 
 # Figure out the real tarball name. If the provided $1 already has a tar
 # extension, just test that name; if not, also append the plausible extensions
@@ -33,7 +33,7 @@ fi
 for ext in '' .tar.gz .tar.xz .tgz; do
     c=${1}${ext}
     if [ ! -f "$c" ] || [ ! -r "$c" ]; then
-        echo "can't read: ${c}" 1>&2
+        echo "can't read: $c" 1>&2
         case $1 in
             *.tar.*|*.tgz)
                 break
@@ -45,7 +45,7 @@ for ext in '' .tar.gz .tar.xz .tgz; do
     fi
     tarball=$c
     if [ -n "$ext" ]; then
-        echo "found: ${tarball}" 1>&2
+        echo "found: $tarball" 1>&2
     fi
     # Infer decompression argument because GNU tar is unable to do so if input
     # is a pipe, and we want to keep PV. See:
@@ -64,7 +64,7 @@ for ext in '' .tar.gz .tar.xz .tgz; do
 	    decompress=z
 	    ;;
         *)
-            fatal "unknown extension: ${tarball}"
+            fatal "unknown extension: $tarball"
             ;;
     esac
     break
@@ -75,16 +75,16 @@ if [ -z "$tarball" ]; then
 fi
 
 if [ ! -d "$newroot" ]; then
-    echo "creating new image ${newroot}"
+    echo "creating new image $newroot"
 else
     if    [ -f "${newroot}/${sentinel}" ] \
        && [ -d "${newroot}/bin" ] \
        && [ -d "${newroot}/lib" ] \
        && [ -d "${newroot}/usr" ]; then
-        echo "replacing existing image ${newroot}" 1>&2
-        rm -Rf --one-file-system "${newroot}"
+        echo "replacing existing image $newroot" 1>&2
+        rm -Rf --one-file-system "$newroot"
     else
-        fatal "${newroot} exists but does not appear to be an image"
+        fatal "$newroot exists but does not appear to be an image"
     fi
 fi
 
@@ -119,4 +119,4 @@ mkdir -p "${newroot}/dev" "${newroot}/etc" "${newroot}/proc" "${newroot}/sys"
 touch "${newroot}/etc/hosts" "${newroot}/etc/resolv.conf"
 for i in $(seq 0 9); do mkdir -p "${newroot}/mnt/${i}"; done
 
-echo "${newroot} unpacked ok"
+echo "$newroot unpacked ok"
