@@ -27,7 +27,7 @@ docker_tag_p () {
 
 buildah_tag_p () {
     printf 'image tag %s ... ' "$1"
-     hash_=$(buildah images -q "$1" | sort -u)
+     hash_=$(buildah_ images -q "$1" | sort -u)
     if [[ $hash_ ]]; then
         echo "$hash_"
         return 0
@@ -51,6 +51,9 @@ buildah_ok () {
    true 
 }
 
+buildah_ () {
+   buildah --no-uidmap "$@"
+}
 
 env_require () {
     if [[ -z ${!1} ]]; then

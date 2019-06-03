@@ -5,7 +5,7 @@
 set -e
 
 # Remove all containers.
-buildah rm --all
+buildah_ rm --all
 #while true; do
     #cmd='sudo docker ps -aq'
     #cs_ct=$($cmd | wc -l)

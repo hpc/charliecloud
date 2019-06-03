@@ -39,6 +39,10 @@ else
     }
 fi
 
+buildah_ () {
+    buildah --no-uidmap "$@"
+}
+
 # Use parallel gzip if it's available. ("command -v" is POSIX.1-2008.)
 if ( command -v pigz >/dev/null 2>&1 ); then
     gzip_ () {

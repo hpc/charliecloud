@@ -90,7 +90,7 @@ install:
     fi
 # Tests should still pass with only the basics installed.
   - if [ -n "$MINIMAL_DEPS" ]; then
-      sudo apt-get purge buildah cri-o-runc pv skopeo;
+      sudo apt-get purge cri-o-runc pv skopeo;
     fi
     # Get Kevin's custom version of buildah
   - if [ -z "$MINIMAL_DEPS" ]; then
@@ -99,7 +99,7 @@ install:
       sudo ln -s /usr/local/go/bin/go /usr/bin/go;
       git clone https://github.com/kpelzel/buildah.git ./src/github.com/containers/buildah;
       cd ./src/github.com/containers/buildah;
-      git checkout 556c5465ec47;
+      git checkout fully-rootless;
       make runc all SECURITYTAGS="apparmor seccomp";
       sudo make install install.runc;
       cd ../../../../..;

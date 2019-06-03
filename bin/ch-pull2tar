@@ -41,7 +41,7 @@ case $CH_BUILDER in
         docker_ pull "$image"
         ;; 
     buildah)
-        buildah pull "$image"
+        buildah_ pull "$image"
         ;;
 esac
 "${ch_bin}/ch-docker2tar" "$image" "$dest"

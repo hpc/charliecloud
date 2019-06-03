@@ -85,7 +85,7 @@ for path in sys.argv[2:]:
     #need_docker %(tag)s
     ch-build -t %(tag)s --file="%(path)s" "%(dirname)s"
     #sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
-    buildah tag %(tag)s "%(tag)s:$ch_version_docker"
+    buildah_ tag %(tag)s "%(tag)s:$ch_version_docker"
     #docker_ok %(tag)s
     buildah_ok %(tag)s
 }"""
@@ -99,11 +99,11 @@ for path in sys.argv[2:]:
     %(arch_exclude)s
     #need_docker %(tag)s
     #sudo docker pull %(addr)s
-    buildah pull %(addr)s
+    buildah_ pull %(addr)s
     #sudo docker tag %(addr)s %(tag)s
-    buildah tag %(addr)s %(tag)s
+    buildah_ tag %(addr)s %(tag)s
     #sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
-    buildah tag %(tag)s "%(tag)s:$ch_version_docker"
+    buildah_ tag %(tag)s "%(tag)s:$ch_version_docker"
     #docker_ok %(tag)s
     buildah_ok %(tag)s
 }"""
