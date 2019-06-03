@@ -9,16 +9,15 @@ tar=$1
 imgdir=$2
 img=${2}/$(basename "${tar%.tar.gz}")
 
-if [[ -z $tar ]]; then
-    echo 'no tarball specified' 1>&2
+fatal () {
+    printf '%s\n\n' "$1" 2>&1
     exit 1
-fi
+}
+
+[[ -n $tar ]] || fatal'no tarball specified'
 printf 'tarball:   %s\n' "$tar"
 
-if [[ -z $imgdir ]]; then
-    echo 'no image directory specified' 1>&2
-    exit 1
-fi
+[[ -n $imgdir ]] || fatal 'no image directory specified'
 printf 'image:     %s\n' "$img"
 
 # Make Charliecloud available (varies by site).

@@ -24,14 +24,8 @@ if [ $# -lt 2 ]; then
 fi
 
 # Complain clearly if destination not valid (issue #340).
-if [ ! -e "${2}" ]; then
-    echo "can't unpack: ${2} does not exist" 1>&2
-    exit 1
-fi
-if [ ! -d "${2}" ]; then
-    echo "can't unpack: ${2} is not a directory" 1>&2
-    exit 1
-fi
+[ -e "${2}" ] || fatal "can't unpack: ${2} does not exist"
+[ -d "${2}" ] || fatal "can't unpack: ${2} is not a directory"
 
 # Figure out the real tarball name. If the provided $1 already has a tar
 # extension, just test that name; if not, also append the plausible extensions
@@ -70,8 +64,7 @@ for ext in '' .tar.gz .tar.xz .tgz; do
 	    decompress=z
 	    ;;
         *)
-            echo "unknown extension: ${tarball}" 1>&2
-            exit 1
+            fatal "unknown extension: ${tarball}"
             ;;
     esac
     break
@@ -91,8 +84,7 @@ else
         echo "replacing existing image ${newroot}" 1>&2
         rm -Rf --one-file-system "${newroot}"
     else
-        echo "${newroot} exists but does not appear to be an image" 1>&2
-        exit 1
+        fatal "${newroot} exists but does not appear to be an image"
     fi
 fi
 

@@ -6,6 +6,10 @@ ch_bin="$(cd "$(dirname "$0")" && pwd)"
 libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/version.sh"
 
+fatal () {
+    printf '%s\n\n' "$1" 1>&2
+    exit 1
+}
 
 parse_basic_args () {
     for i in "$@"; do

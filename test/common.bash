@@ -38,6 +38,11 @@ env_require () {
     fi
 }
 
+fatal () {
+    printf '%s\n\n' "$1" 1>&2
+    exit 1
+}
+
 image_ok () {
     ls -ld "$1" "${1}/WEIRD_AL_YANKOVIC" || true
     test -d "$1"
@@ -125,8 +130,7 @@ env_require CH_TEST_PERMDIRS
 if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
     # https://github.com/sstephenson/bats/issues/49
-    printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
-    exit 1
+    fatal 'Need at least Bash 4.1 for these tests'
 fi
 
 # Set path to the right Charliecloud. This uses a symlink in this directory
@@ -142,10 +146,8 @@ export PATH=$ch_bin:$PATH
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
 ch_libexec=$(ch-build --libexec-path)
-if [[ ! -x ${ch_bin}/ch-run ]]; then
-    printf 'Must build with "make" before running tests.\n\n' >&2
-    exit 1
-fi
+[[ -x ${ch_bin}/ch-run ]] \
+    || fatal 'Must build with "make" before running tests'
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
@@ -162,8 +164,7 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
 if ( mount | grep -Fq "$ch_imgdir" ); then
-    printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
-    exit 1
+    fatal "Something is mounted at or under $ch_imgdir"
 fi
 
 # Image information.
@@ -265,8 +266,7 @@ elif [[    $CH_TEST_SCOPE != quick \
         && $CH_TEST_SCOPE != standard \
         && $CH_TEST_SCOPE != full ]]; then
     # shellcheck disable=SC2016
-    printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' "$CH_TEST_SCOPE" >&2
-    exit 1
+    fatal "\$CH_TEST_SCOPE value $CH_TEST_SCOPE is invalid"
 fi
 
 # Do we have and want sudo?
