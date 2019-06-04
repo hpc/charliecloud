@@ -61,22 +61,22 @@ for path in sys.argv[2:]:
    # Build an archive: different test for each type.
    if (mode == "build"):
       if ("Build" in basename):
-         template = get_template('build_custom.bats')
+         template = get_template('build_custom.bats.in')
       elif ("Dockerfile" in basename or "Docker_Pull" in basename):
          if ("Dockerfile" in basename):
-            template = get_template('build_docker.bats')
+            template = get_template('build_docker.bats.in')
          else:
             assert ("Docker_Pull" in basename)
             with open(path) as fp:
                addr = fp.readline().rstrip()
-            template = get_template('pull_docker.bats')
-         template += "\n\n" + get_template('docker_to_archive.bats')
+            template = get_template('pull_docker.bats.in')
+         template += "\n\n" + get_template('docker_to_archive.bats.in')
       else:
          assert False, "unknown build type"
       print("\n" + template % locals())
 
    # Unpack archive and run: same for all types.
    if (mode == "run"):
-      template = get_template('unpack.bats') + "\n\n" \
-               + get_template('run_image.bats')
+      template = get_template('unpack.bats.in') + "\n\n" \
+               + get_template('run_image.bats.in')
       print("\n" + template % locals())

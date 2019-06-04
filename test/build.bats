@@ -74,7 +74,7 @@ load common
         echo "shellcheck: ${i}"
           sed -r $'s/(@test .+) \{/\\1\\\n{/g' "$i" \
         | shellcheck -s bash -e SC1090,SC2002,SC2154,SC2164 -
-    done < <( find . ../examples -name bats -not \( -path '*/make-auto.d' -prune -o \) -prune -o -name '*.bats' -print0 )
+    done < <( find . ../examples -name bats -prune -o -name '*.bats' -print0 )
     # libraries for BATS scripts
     shellcheck -s bash -e SC2002,SC2034 ./common.bash
     # misc shell scripts
