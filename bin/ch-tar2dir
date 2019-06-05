@@ -33,7 +33,7 @@ fi
 for ext in '' .tar.gz .tar.xz .tgz; do
     c=${1}${ext}
     if [ ! -f "$c" ] || [ ! -r "$c" ]; then
-        echo "can't read: $c" 1>&2
+        info "can't read: $c"
         case $1 in
             *.tar.*|*.tgz)
                 break
@@ -45,7 +45,7 @@ for ext in '' .tar.gz .tar.xz .tgz; do
     fi
     tarball=$c
     if [ -n "$ext" ]; then
-        echo "found: $tarball" 1>&2
+        info "found: $tarball"
     fi
     # Infer decompression argument because GNU tar is unable to do so if input
     # is a pipe, and we want to keep PV. See:
@@ -69,19 +69,16 @@ for ext in '' .tar.gz .tar.xz .tgz; do
     esac
     break
 done
-if [ -z "$tarball" ]; then
-    echo "no input found" 1>&2
-    exit 1
-fi
+[ -n "$tarball" ] || fatal "no input found"
 
 if [ ! -d "$newroot" ]; then
-    echo "creating new image $newroot"
+    info "creating new image $newroot"
 else
     if    [ -f "${newroot}/${sentinel}" ] \
        && [ -d "${newroot}/bin" ] \
        && [ -d "${newroot}/lib" ] \
        && [ -d "${newroot}/usr" ]; then
-        echo "replacing existing image $newroot" 1>&2
+        info "replacing existing image $newroot"
         rm -Rf --one-file-system "$newroot"
     else
         fatal "$newroot exists but does not appear to be an image"

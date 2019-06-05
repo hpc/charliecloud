@@ -87,23 +87,8 @@ lib_dest_print=
 lib_found=
 no_ldconfig=
 
-debug () {
-    if [ "$verbose" ]; then
-        printf '%s\n' "$1" 1>&2
-    fi
-}
-
 ensure_nonempty () {
     [ "$2" ] || fatal "$1 must not be empty"
-}
-
-fatal () {
-    printf 'ch-fromhost: %s\n' "$1" 1>&2
-    exit 1
-}
-
-info () {
-    printf 'ch-fromhost: %s\n' "$1" 1>&2
 }
 
 is_bin () {

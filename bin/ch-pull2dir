@@ -5,8 +5,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 set -e
 
-usage () {
-    cat 1>&2 <<EOF
+usage=$(cat <<EOF
 Download image via "docker pull" and unpack it into directory.
 
 Usage:
@@ -15,16 +14,10 @@ Usage:
 
 You must have sufficient privilege (via sudo) to run Docker commands.
 EOF
-    exit "${1:-1}"
-}
+)
 
-if [ "$1" = "--help" ]; then
-    usage 0
-fi
-if [ "$1" = "--version" ]; then
-    version
-    exit 0
-fi
+parse_basic_args
+
 if [ "$#" -ne 2 ]; then
     usage
 fi

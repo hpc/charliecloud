@@ -32,14 +32,14 @@ docker_ok () {
 }
 
 env_require () {
-    if [[ -z ${!1} ]]; then
-        printf '$%s is empty or not set\n\n' "$1" >&2
-        exit 1
-    fi
+    [[ -n ${!1} ]] || fatal "\$$1 is empty or not set"
 }
 
 fatal () {
-    printf '%s\n\n' "$1" 1>&2
+    # extra newlines because error shows up in clutter
+    echo 1>&2
+    echo "ERROR: $1" 1>&2
+    echo 1>&2
     exit 1
 }
 

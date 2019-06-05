@@ -1,14 +1,26 @@
 set -e
 
 # shellcheck disable=SC2034
-ch_bin="$(cd "$(dirname "$0")" && pwd)"
+ch_bin=$(cd "$(dirname "$0")" && pwd)
 
-libexec="$(cd "$(dirname "$0")" && pwd)"
+libexec=$(cd "$(dirname "$0")" && pwd)
 . "${libexec}/version.sh"
 
+progname=$(basename "$0")
+
+debug () {
+    if [ "$verbose" ]; then
+        echo "$1" 1>&2
+    fi
+}
+
 fatal () {
-    printf '%s\n\n' "$1" 1>&2
+    echo "$progname: $1" 1>&2
     exit 1
+}
+
+info () {
+    echo "$progname: $1" 1>&2
 }
 
 parse_basic_args () {
