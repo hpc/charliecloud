@@ -5,7 +5,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Convert a Charliecloud tarball image into a Charliecloud SquashFS file.
+Convert tarball into a SquashFS file.
 
 Usage:
 
@@ -25,24 +25,23 @@ shift 2
 
 case $image in
         *.tar)
-            imagedir=$(basename "$image" .tar )
+            extension=tar
             ;;
         *.tar.gz)
-            imagedir=$(basename "$image" .tar.gz )
+            extension=tar.gz
             ;;
         *.tar.xz)
-            imagedir=$(basename "$image" .tar.xz)
+            extension=tar.xz
             ;;
         *.tgz)
-            imagedir=$(basename "$image" .tgz )
+            extension=tgz
             ;;
         *)
             echo "unknown extension: ${image}" 1>&2
             exit 1
             ;;
 esac
-# mktemp is used for intermediate files to avoid heavy metadata loads on
-# certain filesystems
+imagedir=$(basename "$image" ".${extension}")
 temp=$(mktemp -d --tmpdir ch-tar2squash.XXXXXX)
 "${ch_bin}/ch-tar2dir" "$image" "$temp"
 "${ch_bin}/ch-dir2squash" "${temp}/${imagedir}" "$outdir" "$@"

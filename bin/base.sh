@@ -57,8 +57,8 @@ if ( command -v squashfuse_ll >/dev/null 2>&1 ); then
     }
 else
     squashfuse_ () {
-        echo "WARNING:" 1>&2 
-        echo "Low-level FUSE API unavailable, squashfuse will be slower" 1>&2
+        echo "WARNING:" 1>&2
+        echo "Low-level FUSE API unavailable; squashfuse will be slower" 1>&2
         squashfuse "$@"
     }
 fi

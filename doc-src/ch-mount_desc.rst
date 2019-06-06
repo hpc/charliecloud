@@ -8,11 +8,9 @@ Synopsis
 Description
 ===========
 
-Creates new empty directory with name corresponding to :code:`SQFS`
-under :code:`PARENTDIR` with suffix :code:`.sqfs` removed,
-then mounts :code:`SQFS` in this new directory. 
-
-If this new directory exists, the program will exit with an error.
+Create new empty directory named :code:`SQFS` with suffix (e.g.,
+:code:`.sqfs`) removed, then mount :code:`SQFS` on this new directory. This
+new directory must not already exist.
 
 Additional arguments:
 

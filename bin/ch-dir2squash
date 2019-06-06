@@ -13,7 +13,7 @@ Usage:
 
   $ $(basename "$0") INDIR OUTDIR [ARGS ...]
 
-ARGS are passed unchanged to "mksquashfs".
+ARGS are passed unchanged to mksquashfs.
 EOF
 )
 
@@ -59,4 +59,4 @@ for i in $(seq 0 9); do mkdir -p "${indir}/mnt/${i}"; done
 # Create SquashFS file
 image=$(basename "${indir}")
 mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
-echo "squashed ${outdir}/${image}.sqfs OK"
+ls -lh "${outdir}/${image}.sqfs"

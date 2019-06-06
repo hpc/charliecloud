@@ -8,17 +8,15 @@ Synopsis
 Description
 ===========
 
-Flattens the Docker image tagged :code:`IMAGE` into a Charliecloud SquashFS
-file in directory :code:`OUTDIR`.
+Flattens the Docker image tagged :code:`IMAGE` into a SquashFS file in
+:code:`OUTDIR`.
 
-Executes :code:`ch-docker2tar` with :code:`--nocompress`,
-then :code:`ch-tar2sqfs`
-
+Wrapper for :code:`ch-docker2tar --nocompress` and :code:`ch-tar2sqfs`.
 Intermediate files and directories are removed.
 
 Sudo privileges are required to run :code:`docker export`.
 
-Optional :code:`ARGS` will be passed to :code:`mksquashfs`
+Optional :code:`ARGS` passed to :code:`mksquashfs` unchanged.
 
 Additional arguments:
 

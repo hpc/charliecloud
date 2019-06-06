@@ -8,11 +8,11 @@ Synopsis
 Description
 ===========
 
-Create Charliecloud SquashFS file from image directory :code:`IMGDIR` under 
-directory :code:`OUTDIR` with the same name as :code:`IMGDIR`,
-with suffix :code:`.sqfs`
+Create Charliecloud SquashFS file from image directory :code:`IMGDIR` under
+directory :code:`OUTDIR`, named as last component of :code:`IMGDIR` plus
+suffix :code:`.sqfs`.
 
-Optional :code:`ARGS` will be passed to :code:`mksquashfs`
+Optional :code:`ARGS` will passed to :code:`mksquashfs` unchanged.
 
 Additional arguments:
 
@@ -27,19 +27,10 @@ Example
 
 ::
 
-  $ ls -lh /tmp/
-  total 0
+  $ ls -ld /var/tmp/debian
   drwxrwxr-x 21 charlie charlie 286 Apr 23 14:40 debian
-  $ ch-dir2squash /tmp/debian /tmp
+  $ ch-dir2squash /var/tmp/debian /var/tmp
   Parallel mksquashfs: Using 6 processors
-  Creating 4.0 filesystem on /tmp/debian.sqfs, block size 131072.
-  [=========================================================================/] 5323/5323 100%
-
-  .
-  .
-  .
-  squashed /tmp/debian.sqfs OK
-  $ ls -lh /tmp
-  total 41M
-  drwxrwxr-x 21 charlie charlie 286 Apr 23 14:40 debian
-  -rw-r--r--  1 charlie charlie 41M Apr 23 14:41 debian.sqfs
+  Creating 4.0 filesystem on /var/tmp/debian.sqfs, block size 131072.
+  [...]
+  -rw-r--r--  1 charlie charlie 41M Apr 23 14:41 /var/tmp/debian.sqfs

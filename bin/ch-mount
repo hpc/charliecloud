@@ -5,11 +5,14 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Mount Charliecloud SquashFS file in new subdirectory of PARENTDIR
+Mount Charliecloud SquashFS file using FUSE.
 
 Usage:
 
   $ $(basename "$0") SQFS PARENTDIR
+
+The mount point is a new directory under PARENTDIR named SQFS but with the
+first extension removed.
 EOF
 )
 

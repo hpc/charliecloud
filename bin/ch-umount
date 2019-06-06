@@ -5,7 +5,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Unmount Charliecloud SquashFS file in MOUNTDIR, removes MOUNTDIR on success
+Unmount squash filesystem mounted at MOUNTDIR and remove MOUNTDIR.
 
 Usage:
 
@@ -22,6 +22,6 @@ fi
 
 mountdir=$1
 if ( fusermount -u "$mountdir" ); then
-    rm -rf --one-file-system "$mountdir"
+    rmdir "$mountdir"
     echo "unmounted and removed ${mountdir}"
 fi

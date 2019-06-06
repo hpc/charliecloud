@@ -8,8 +8,8 @@ Synopsis
 Description
 ===========
 
-Unmounts Charliecloud SquashFS file at target directory :code:`MOUNTDIR`.
-Removes empty :code:`MOUNTDIR` after successful unmounting.
+Unmount Charliecloud SquashFS file at target directory :code:`MOUNTDIR`.
+Remove empty :code:`MOUNTDIR` after successful unmounting.
 
 Additional arguments:
 
@@ -24,10 +24,10 @@ Example
 
 ::
 
-  $ ls /tmp/debian
-  bin   dev          etc   lib    media  opt   root  sbin  sys  usr  WEIRD_AL_YANKOVIC
-  boot  environment  home  lib64  mnt    proc  run   srv   tmp  var
-  $ ch-umount /tmp/debian
-  unmounted and removed /tmp/debian
-  $ ls -lh /tmp/debian
+  $ ls /var/tmp/debian
+  bin   dev   etc   lib    media  opt   root  sbin  sys  usr  WEIRD_AL_YANKOVIC
+  boot  home  lib64  mnt    proc  run   srv   tmp  var
+  $ ch-umount /var/tmp/debian
+  unmounted and removed /var/tmp/debian
+  $ ls -lh /var/tmp/debian
   ls: cannot access /tmp/debian: No such file or directory
