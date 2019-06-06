@@ -208,21 +208,21 @@ if [[ $SLURM_JOB_ID ]]; then
 else
     ch_nodes=1
 fi
-# Using one rank per thread can exhaust hardware contexts resulting in 
-# communication failure, use one rank per physcial core to avoid this.
-# There are ways to do this with Slurm but they rely on how Slurm was setup
-# This seems to be the most portable way to do this.
-ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 4 | wc -l)
+# One rank per hyperthread can exhaust hardware contexts, resulting in
+# communication failure. Use one rank per core to avoid this. There are ways
+# to do this with Slurm, but they need Slurm configuration that seems
+# unreliably present. This seems to be the most portable way to do this.
+ch_cores_node=$(lscpu -p | tail -n +5 | wc -l)
 ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
-    ch_multinode=yes                                          # can run on multiple nodes
-    ch_multiprocess=yes                                       # can run multiple processes
-    ch_mpirun_node='srun --ntasks-per-node 1'                 # one process/node
-    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"    # one process/core
-    ch_mpirun_2='srun -n2'                                    # two processes on diff nodes
-    ch_mpirun_2_1node='srun -N1 -n2'                          # two processes on one node
+    ch_multinode=yes     # can run on multiple nodes
+    ch_multiprocess=yes  # can run multiple processes
+    ch_mpirun_node='srun --ntasks-per-node 1'               # 1 rank/node
+    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"  # 1 rank/core
+    ch_mpirun_2='srun -n2'                                  # 2 ranks, 2 nodes
+    ch_mpirun_2_1node='srun -N1 -n2'                        # 2 ranks, 1 node
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
     # are present. Work around this by fooling OpenMPI into believing it's not
     # in a Slurm allocation.
