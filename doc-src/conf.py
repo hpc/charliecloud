@@ -230,9 +230,15 @@ man_pages = [
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-build2dir', 'ch-build2dir', u'Build a Charliecloud image from Dockerfile and unpack it',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-dir2squash', 'ch-dir2squash', u'Create a squash file from an image directory',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-docker2squash', 'ch-docker2squash', u'Flatten a Docker image into a Charliecloud squash file',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-docker2tar', 'ch-docker2tar', u'Flatten a Docker image into a Charliecloud image tarball',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-fromhost', 'ch-fromhost', u'Inject files from the host into an image directory',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-mount', 'ch-mount', u'Mount a squash file using FUSE',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-pull2dir', 'ch-pull2dir', u'Pull image from Docker Hub, flatten and unpack it',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
@@ -243,6 +249,10 @@ man_pages = [
     ('ch-ssh', 'ch-ssh', u'Run a remote command in a Charliecloud container',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1),
     ('ch-tar2dir', 'ch-tar2dir', u'Unpack an image tarball into a directory',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-tar2squash', 'ch-tar2squash', u'Convert a tarball to a squash file',
+     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
+    ('ch-umount', 'ch-umount', u'Unount a FUSE mounted squash file',
      [u'Reid Priedhorsky, Tim Randles, and others'], 1)
 ]
 

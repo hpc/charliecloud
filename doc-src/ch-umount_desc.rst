@@ -30,4 +30,4 @@ Example
   $ ch-umount /var/tmp/debian
   unmounted and removed /var/tmp/debian
   $ ls -lh /var/tmp/debian
-  ls: cannot access /tmp/debian: No such file or directory
+  ls: cannot access /var/tmp/debian: No such file or directory

@@ -31,18 +31,19 @@ Example
 
 ::
 
-  $ ls -lh /tmp
+  $ ls -lh /var/tmp
   total 0
   $ docker image list
   REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
   debian              stretch             2d337f242f07        3 weeks ago         101MB
+  $ ch-docker2squash debian /var/tmp
   Parallel mksquashfs: Using 6 processors
-  Creating 4.0 filesystem on /tmp/debian.sqfs, block size 131072.
+  Creating 4.0 filesystem on /var/tmp/debian.sqfs, block size 131072.
   [=============================================================-] 5323/5323 100%
 
   .
   .
   .
-  squashed /tmp/debian.sqfs OK
-  $ ls -lh /tmp
+  squashed /var/tmp/debian.sqfs OK
+  $ ls -lh /var/tmp
   -rw-r--r-- 1 charlie charlie 41M Apr 23 14:37 debian.sqfs

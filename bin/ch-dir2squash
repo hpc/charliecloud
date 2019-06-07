@@ -51,10 +51,11 @@ if [ ! -d "$outdir" ]; then
 fi
 
 # Ensure directories that ch-run needs exist.
-echo 'This directory is a Charliecloud image.' > "${indir}/${sentinel}"
-mkdir -p "${indir}/dev" "${indir}/etc" "${indir}/proc" "${indir}/sys"
-touch "${indir}/etc/hosts" "${indir}/etc/resolv.conf"
-for i in $(seq 0 9); do mkdir -p "${indir}/mnt/${i}"; done
+temp=$(mktemp -d --tmpdir ch-dir2squash.XXXXXX)
+echo 'This directory is a Charliecloud image.' > "${temp}/${sentinel}"
+mkdir -p "${temp}/dev" "${temp}/etc" "${temp}/proc" "${temp}/sys"
+touch "${temp}/etc/hosts" "${temp}/etc/resolv.conf"
+for i in $(seq 0 9); do mkdir -p "${temp}/mnt/${i}"; done
 
 # Create SquashFS file
 image=$(basename "${indir}")

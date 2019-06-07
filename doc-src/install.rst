@@ -51,6 +51,16 @@ example:
   Docker configuration (see `issue #97
   <https://github.com/hpc/charliecloud/issues/97>`_).
 
+If you would like to use the squashfs workflow you must also install squashfuse
+  For CentOS or RHEL based distros:
+  :code:`sudo yum install squashfuse`
+  Debian based distro users may need extra steps. You can
+  :code:`sudo apt install squashfuse`
+  But this will only install a slower version of squashfuse.
+  If you are running images for more than testing you should follow the documentation at
+  https://github.com/vasi/squashfuse to build from source to install :code:`squashfuse_ll`
+  
+
 Build time
 ----------
 
@@ -66,6 +76,7 @@ are untested. We know that 1.7.1 does not work.)
 Optional build-time dependencies:
 
 * Bash 4.1+, for :code:`ch-build2dir`
+* squashfs-tools for creating squash files
 
 Test suite
 ----------

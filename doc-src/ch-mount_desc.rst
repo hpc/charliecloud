@@ -22,13 +22,13 @@ Additional arguments:
 
 Example
 =======
-# FIXME create example with real output
+
 ::
 
-  $ ls -lh /tmp
+  $ ls -lh /var/tmp
   total 41M
   -rw-r--r-- 1 charlie charlie 41M Apr 23 14:41 debian.sqfs
-  $ ch-mount /tmp/debian.sqfs /tmp
-  $ ls /tmp/debian
+  $ ch-mount /var/tmp/debian.sqfs /var/tmp
+  $ ls /var/tmp/debian
   bin   dev          etc   lib    media  opt   root  sbin  sys  usr  WEIRD_AL_YANKOVIC
   boot  environment  home  lib64  mnt    proc  run   srv   tmp  var

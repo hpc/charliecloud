@@ -127,10 +127,3 @@ load common
     ldd sotest/sotest
     sotest/sotest
 }
-
-
-@test 'squashfs ready' {
-    scope standard
-    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
-    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
-}

@@ -25,9 +25,8 @@ fi
 image=$1
 parentdir=$2
 
-# Make MOUNTDIR if it does not already exist
-
-imgdir="${parentdir}"/$(basename -s .sqfs "$image")
+imgdir="${image%.*}"
+imgdir="${parentdir}"/$(basename "$imgdir")
 
 # Check if image directory exists
 if [ -e "$imgdir" ]; then

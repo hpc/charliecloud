@@ -28,7 +28,7 @@ Example
 
   $ ch-tar2squash /var/tmp/debian.tar.gz /var/tmp
   Parallel mksquashfs: Using 6 processors
-  Creating 4.0 filesystem on /tmp/debian.sqfs, block size 131072.
+  Creating 4.0 filesystem on /var/tmp/debian.sqfs, block size 131072.
   [...]
   -rw-r--r-- 1 charlie charlie 41M Apr 23 14:50 debian.sqfs
   $ ls -lh /var/tmp/debian*

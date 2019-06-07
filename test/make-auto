@@ -56,7 +56,7 @@ for path in sys.argv[2:]:
       scope = m.group(1)
       # ch-test-arch-exclude
       arch_exclude = "\n".join("arch_exclude %s" % i for i in
-                        re.findall(r"ch-test-arch-exclude: (\w+)", text))
+                               re.findall(r"ch-test-arch-exclude: (\w+)", text))
 
    # Build an archive: different test for each type.
    if (mode == "build"):
@@ -77,6 +77,8 @@ for path in sys.argv[2:]:
 
    # Unpack archive and run: same for all types.
    if (mode == "run"):
-      template = get_template('unpack.bats.in') + "\n\n" \
-               + get_template('run_image.bats.in')
+      template = "\n\n".join(get_template(i + ".bats.in") for i in ("unpack", "run_image"))
+      # template = ( get_template('unpack.bats.in') 
+      #             + "\n\n"
+      #             + get_template('run_image.bats.in'))
       print("\n" + template % locals())

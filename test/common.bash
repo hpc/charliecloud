@@ -124,7 +124,7 @@ unpack_img_all_nodes () {
     fi
 }
 
-archive_ls () {
+archive_grep () {
     image="$1"
     case $image in
         *.sqfs)
