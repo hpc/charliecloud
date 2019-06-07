@@ -127,3 +127,8 @@ load common
     ldd sotest/sotest
     sotest/sotest
 }
+
+@test 'squashfs ready' {
+    scope standard
+    need_squashfs
+}
