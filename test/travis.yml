@@ -75,7 +75,7 @@ install:
     fi
 # Tests should still pass with only the basics installed.
   - if [ -n "$MINIMAL_DEPS" ]; then
-      sudo apt-get purge buildah cri-o-runc pv skopeo;
+      sudo apt-get purge buildah cri-o-runc pv skopeo squashfuse;
     fi
 
 before_script:
