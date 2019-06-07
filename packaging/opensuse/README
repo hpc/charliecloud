@@ -1,0 +1,17 @@
+openSUSE packages are maintained and built using the openSUSE Build
+Service (OBS) at https://build.opensuse.org
+
+To use OBS to create your own charliecloud packages, you'll need to
+create a user account and then copy the packaging from the devel
+package at:
+
+https://build.opensuse.org/package/show/network:cluster/charliecloud
+
+This can be done from the web interface clicking on "Branch package".
+
+Then you will be able to fetch locally all the packaging files from
+your copy (or branch), make your changes and send them to OBS that will
+build packages and create package repositories for your branch.
+
+The beginner's guide on how to use OBS with the osc command-line tool
+can be found at https://openbuildservice.org/help/manuals/obs-beginners-guide/

@@ -168,6 +168,28 @@ A live ebuild is also available and can be keyworded via::
 
   $ echo "~sys-cluster/charliecloud-9999 \*\*" >> /etc/portage/package.accept_keywords
 
+openSUSE and SUSE
+-----------------
+
+Charliecloud is included in openSUSE Tumbleweed.
+For SUSE Linux Enterprise users, it's available via
+`SUSE Package Hub
+<https://packagehub.suse.com/packages/charliecloud/>`_.
+
+.. list-table::
+   :widths: auto
+
+   * - Package name
+     - :code:`charliecloud`, :code:`charliecloud-doc` and :code:`charliecloud-examples`
+   * - Maintainers
+     - Ana Guerrero Lopez (:code:`aguerrero@suse.com`)
+       and Christian Goll (:code:`cgoll@suse.com`)
+   * - Bug reports to
+     - `openSUSE Bugzilla <https://en.opensuse.org/openSUSE:Submitting_bug_reports>`_
+   * - Packaging source code
+     - `openSUSE Build Service <https://build.opensuse.org/package/show/network:cluster/charliecloud>`_
+
+
 RPM-based distributions
 -----------------------
 
