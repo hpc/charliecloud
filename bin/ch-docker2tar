@@ -24,6 +24,7 @@ fi
 image=$1
 outdir=$2
 tar=${outdir}/$(echo "$image" | sed 's/\//./g').tar
+tar_gz=${outdir}/$(echo "$image" | sed 's/\//./g').tar.gz
 
 if [ -z "$CH_BUILDER" ]; then
     echo "You need to define \$CH_BUILDER before running ch-docker2tar"
@@ -64,7 +65,6 @@ case $CH_BUILDER in
         tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
         rm "$temp"
 
-
         # Finish up.
         echo "compressing"
         cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
@@ -72,33 +72,40 @@ case $CH_BUILDER in
         ls -lh "${tar}.gz"
         ;;
         buildah)
-        container=$(podman create "$image")
+        # Export an OCI image directory.
+        buildah --no-uidmap push $image "oci:./oci"
 
-        # Not sure what the best POSIX compliant way of doing this is*
-        case "$tar" in
-            *:*) temp_tar=$(echo "$tar" | sed 's/://g')
-                 podman export "$container" -o "$temp_tar";
-                 mv "$temp_tar" "$tar";;
-            *)   podman export "$container" -o "$tar";;
-        esac
-        podman rm "$container"
+        manifest=$(sed -E 's|^.+"application/vnd.oci.image.manifest.v1\+json","digest":"sha256:([0-9a-f]+)".+$|\1|' oci/index.json)
+        echo Manifest: $manifest
+        layer_ct=$(grep -Eo 'application/vnd.oci.image.layer.v1.tar' \
+            "oci/blobs/sha256/${manifest}" | wc -l)
+        echo Layer Count: $layer_ct
 
+        if [[ $layer_ct -ne 1 ]]; then
+            echo "one layer required; found $layer_ct" 1>&2
+            exit 1
+        fi
+        echo "Manifest contents: "
+        cat oci/blobs/sha256/${manifest}
+        echo ""
+        layer=$(sed -E 's|^.+"application/vnd.oci.image.layer.v1.tar","digest":"sha256:([0-9a-f]+)".+$|\1|' "oci/blobs/sha256/${manifest}")
+        echo Layer: $layer
+        # Move the layer tarball to the output (not copy, because the OCI image will
+        # be deleted when we're done, so OK to break it).
+        mv "oci/blobs/sha256/${layer}" "$tar_gz"
         echo "adding environment"
+        gunzip "$tar_gz"
+
         temp=$(mktemp --tmpdir ch-docker2tar.XXXXXX)
         # shellcheck disable=SC1004
-        #buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\
-        #        > /g' && echo "" > "$temp"
-        #buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\> /g' > "$temp"
         buildah_ inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\n/g'  > "$temp"
         echo "" >> "$temp"
-        #buildah inspect --format '{{.OCIv1.Config.Env}}' "$image" | tr -d "[]" | sed -e 's/[ \t][ \t]*/\/g' \
-        #       >  $temp
-
-        #buildah inspect --format '{{.OCIv1.Config.Env}}' $image > "$temp"
         tar rf "$tar" -b1 -P --xform="s|${temp}|environment|" "$temp"
-        #rm "$temp"
 
         echo "compressing"
-        gzip "${tar}"
+        cat "$tar" | pv_ -s "$size" | gzip_ -6 > "${tar}.gz"
+        rm "$tar"
+        rm -rf "oci"
+        ls -lh "${tar}.gz"
         ;;
 esac

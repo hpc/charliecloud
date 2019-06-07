@@ -48,6 +48,8 @@ case $CH_BUILDER in
         ;;
         buildah)
                 # shellcheck disable=SC2154
+                export BUILDAH_ISOLATION=rootless
+                export STORAGE_DRIVER=vfs
                 buildah_ build-using-dockerfile \
                         --build-arg HTTP_PROXY="$HTTP_PROXY" \
                         --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
@@ -56,7 +58,7 @@ case $CH_BUILDER in
                         --build-arg https_proxy="$https_proxy" \
                         --build-arg no_proxy="$no_proxy" \
                         --runtime ch-run-oci \
-                        --layers=true "$@" . < /dev/null
+                        --squash "$@" . < /dev/null
                 ;;
         esac
 
