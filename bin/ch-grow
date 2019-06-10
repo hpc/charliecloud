@@ -117,6 +117,8 @@ environment variables:
                    help="don't execute instructions")
    ap.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
+   ap.add_argument("--print-storage", action="store_true",
+                   help="print the state and images directory, then exit")
    ap.add_argument("-s", "--storage", metavar="DIR",
                    default=os.environ.get("CH_GROW_STORAGE",
                                           "/var/tmp/ch-grow"),
@@ -130,6 +132,9 @@ environment variables:
    ap.add_argument("context", metavar="CONTEXT",
                    help="context directory")
    cli = ap.parse_args()
+   if (cli.print_storage):
+      print(cli.storage)
+      sys.exit(0)
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
    if (cli.tag is None):

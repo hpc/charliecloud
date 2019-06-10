@@ -40,7 +40,8 @@ if [ "$CH_BUILDER" = ch-grow ]; then
     esac
 
     echo "exporting and compressing"
-    ( cd "${CH_GROW_STORAGE}/img/${image}" && tar cf - . ) \
+    storage=$("${ch_bin}/ch-grow" --print-storage /doesnotexist)
+    ( cd "${storage}/img/${image}" && tar cf - . ) \
         | pv_ | gzip_ -6 > "$tar_gzipped"
 
 elif [ "$CH_BUILDER" = docker ]; then
@@ -49,7 +50,6 @@ elif [ "$CH_BUILDER" = docker ]; then
     echo "exporting"
     cid=$(docker_ create --read-only "$image")
     size=$(docker_ image inspect "$image" --format='{{.Size}}')
-    #docker_ ps -af "id=$cid"
     docker_ export "$cid" | pv_ -s "$size" > "$tar"
     docker_ rm "$cid" > /dev/null
 

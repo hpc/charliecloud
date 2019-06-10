@@ -32,6 +32,8 @@ builder_tag_p () {
 }
 
 builder_ok () {
+    # FIXME: Currently we make fairly limited tagging for some builders.
+    # Uncomment below when they can be supported by all the builders.
     #docker_tag_p "$1"
     builder_tag_p "${1}:latest"
     #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
@@ -163,7 +165,7 @@ if [[ ! -x ${ch_bin}/ch-run ]]; then
 fi
 
 # Tests require explicitly set builder.
-if [[ -z "$CH_BUILDER" ]]; then
+if [[ -z $CH_BUILDER ]]; then
     CH_BUILDER=$(ch-build --print-builder)
     export CH_BUILDER
 fi

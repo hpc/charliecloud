@@ -69,7 +69,8 @@ Additional dependencies for specific components:
 
   * Bash 4.1+
 
-* :code:`ch-grow`, our internal unprivileged image builder
+* :code:`ch-grow`, our internal unprivileged image builder (no specific
+  dependency versions documented yet)
 
   * `skopeo <https://github.com/containers/skopeo>`_
   * `umoci <https://github.com/openSUSE/umoci>`_
