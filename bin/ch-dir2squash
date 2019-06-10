@@ -17,8 +17,6 @@ ARGS are passed unchanged to mksquashfs.
 EOF
 )
 
-sentinel=WEIRD_AL_YANKOVIC
-
 parse_basic_args "$@"
 
 if [ $# -lt 2 ]; then
@@ -52,12 +50,32 @@ fi
 
 # Ensure directories that ch-run needs exist.
 temp=$(mktemp -d --tmpdir ch-dir2squash.XXXXXX)
-echo 'This directory is a Charliecloud image.' > "${temp}/${sentinel}"
-mkdir -p "${temp}/dev" "${temp}/etc" "${temp}/proc" "${temp}/sys"
-touch "${temp}/etc/hosts" "${temp}/etc/resolv.conf"
-for i in $(seq 0 9); do mkdir -p "${temp}/mnt/${i}"; done
+for dir in dev etc proc sys; do
+    if [ ! -d "${indir}/${dir}" ]; then
+        mkdir -p "${temp}/${dir}"
+    fi
+done
+for i in hosts resolve.conf; do
+    if [ ! -e "${indir}/etc/${i}" ]; then
+        if [ ! -d "${temp}/etc" ]; then
+            mkdir -p "${temp}/etc"
+        fi
+        touch "${temp}/etc/${i}"
+    fi
+done
+for i in $(seq 0 9); do 
+    if [ ! -e "${indir}/mnt/${i}" ]; then
+        mkdir -p "${temp}/mnt/${i}"
+    fi
+done
 
 # Create SquashFS file
 image=$(basename "${indir}")
 mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
+
+# append directories and files if they did not already exist
+if [ "$(ls -A "$temp")" ]; then
+    mksquashfs "$temp" "${outdir}/${image}.sqfs"
+fi
+
 ls -lh "${outdir}/${image}.sqfs"
