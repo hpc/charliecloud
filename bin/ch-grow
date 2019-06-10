@@ -368,6 +368,8 @@ class I_from_(Instruction):
             fix("%s/%s" % (root, path), 0o400)
 
    def execute_(self):
+      if (cli.tag == self.fullname):
+         FATAL("output image name same as FROM: %s" % self.fullname)
       mkdirs(dir_images())
       if (not os.path.isdir(dir_image(self.fullname))):
          DEBUG("image not found, pulling: %s" % self.fullname)
