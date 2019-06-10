@@ -1,5 +1,5 @@
-bin := ch-run ch-ssh
-src := $(wildcard *.c)
+bin := ch-run ch-ssh ch-checkns
+src := ch-run.c ch-ssh.c
 obj := $(src:.c=.o)
 
 CFLAGS += -pthread
@@ -9,7 +9,9 @@ LDLIBS += -pthread -lrt
 all: $(bin)
 
 $(obj): charliecloud.h version.h Makefile
-$(bin): charliecloud.o
+ch-run: charliecloud.o
+ch-ssh: charliecloud.o
+ch-checkns:
 
 .PHONY: clean
 clean:

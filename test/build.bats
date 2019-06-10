@@ -30,18 +30,22 @@ load common
     # if we have, the test makes duplicate demands, but that's low cost.
     while IFS= read -r -d '' i; do
         i=${i%.c}
-        echo
-        echo "$i"
-        # --version
-        run "$i" --version
-        echo "$output"
-        [[ $status -eq 0 ]]
-        diff -u <(echo "${output}") <(echo "$ch_version")
-        # --help: returns 0, says "Usage:" somewhere.
-        run "$i" --help
-        echo "$output"
-        [[ $status -eq 0 ]]
-        [[ $output =~ Usage: ]]
+        case "$i" in
+        ch-ssh|ch-run) #ch-checkns has no --[version|help] flags
+            echo
+            echo "$i"
+            # --version
+            run "$i" --version
+            echo "$output"
+            [[ $status -eq 0 ]]
+            diff -u <(echo "${output}") <(echo "$ch_version")
+            # --help: returns 0, says "Usage:" somewhere.
+            run "$i" --help
+            echo "$output"
+            [[ $status -eq 0 ]]
+            [[ $output =~ Usage: ]]
+        ;;
+        esac
         # not setuid or setgid
         ls -l "$i"
         [[ ! -u $i ]]
