@@ -57,8 +57,9 @@ If you would like to use the squashfs workflow you must also install squashfuse
   Debian based distro users may need extra steps. You can
   :code:`sudo apt install squashfuse`
   But this will only install a slower version of squashfuse.
+  
   If you are running images for more than testing you should follow the documentation at
-  https://github.com/vasi/squashfuse to build from source to install :code:`squashfuse_ll`
+  https://github.com/vasi/squashfuse to install from source.
   
 
 Build time
