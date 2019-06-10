@@ -9,7 +9,7 @@ load common
     scope standard
     command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
     test -d ../doc-src || skip 'documentation source code absent'
-    cd ../doc-src && make -j "$(getconf _NPROCESSORS_ONLN)"
+    (cd ../doc-src && make -j "$(getconf _NPROCESSORS_ONLN)")
     ./docs-sane
 }
 
