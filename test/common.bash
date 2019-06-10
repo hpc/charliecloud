@@ -212,7 +212,7 @@ fi
 # communication failure. Use one rank per core to avoid this. There are ways
 # to do this with Slurm, but they need Slurm configuration that seems
 # unreliably present. This seems to be the most portable way to do this.
-ch_cores_node=$(lscpu -p | tail -n +5 | wc -l)
+ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 2 | wc -l)
 ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
