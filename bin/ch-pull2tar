@@ -7,7 +7,7 @@ set -e
 
 usage () {
     cat 1>&2 <<EOF
-Download image via "docker pull" and flatten it to tarball.
+Pull image from a Docker Hub and flatten into tarball.
 
 Usage:
 
