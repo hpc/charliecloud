@@ -42,8 +42,8 @@ load common
     done
 }
 
-@test 'syscalls/pivot_root' {
+@test 'checkns' {
     scope quick
-    cd ../examples/syscalls
-    ./pivot_root
+    cd ./bin
+    ./ch-checkns
 }
