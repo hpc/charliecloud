@@ -515,9 +515,11 @@ def file_ensure_exists(path):
    with open(path, "a") as fp:
       pass
 
-def file_write(path, content):
+def file_write(path, content, mode=None):
    with open(path, "wt") as fp:
       fp.write(content)
+      if (mode is not None):
+         os.chmod(fp.fileno(), mode)
 
 def image_fixup(path):
    DEBUG("fixing up image: %s" % path)
@@ -539,7 +541,7 @@ nogroup:x:65534:
    # Kludges to work around expectations of real root, not UID 0 in a
    # unprivileged user namespace. See also the default environment.
    #
-   # Debian "apt" and friends want to chown(2), chgrp(2), etc. in various ways.
+   # Debian "apt" and friends want to chown(1), chgrp(1), etc. in various ways.
    symlink("/bin/true", "%s/ch/bin/chown" % path)
    symlink("/bin/true", "%s/ch/bin/chgrp" % path)
    symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)

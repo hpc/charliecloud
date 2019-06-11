@@ -4,6 +4,7 @@ FROM centos:7
 # This image has two purposes: (1) demonstrate we can build a CentOS 7 image
 # and (2) provide a build environment for Charliecloud RPMs.
 
+# Install packages we actually need.
 RUN yum -y install epel-release
 RUN yum -y install \
            bats \
@@ -13,4 +14,24 @@ RUN yum -y install \
            rpm-build \
            rpmlint \
            wget
+
+# Like apt(8), Yum/RPM like to chown(2), etc., if they believe they are root.
+# This fails in an unprivileged user namespace because UID 0 is fake. Unlike
+# apt, RPM makes these system calls directly, so there's no opportunity for
+# kludges like linking chown(1) to true(1). For example:
+#
+#    Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
+#  Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64
+#  error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726: cpio: chown
+#    Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4
+#  error: dbus-1:1.10.24-13.el7_6.x86_64: install failed
+#  error: dbus-1:1.10.24-12.el7.x86_64: erase skipped
+#
+# We can instead use fakeroot(1), though there seems to be a performance
+# impact. In the interest of time, we demonstrate this by upgrading a single
+# package, though "yum upgrade" seems to pretty reliably tickle the problem.
+RUN          yum -y install fakeroot
+RUN fakeroot yum -y upgrade dbus
+
+# Clean up.
 RUN yum clean all
