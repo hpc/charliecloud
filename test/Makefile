@@ -1,15 +1,15 @@
 export LC_ALL := C
 images_ch := chtest/Build \
-	     $(sort $(wildcard ./Build.*)) \
-	     $(sort $(wildcard ./Dockerfile.*)) \
-	     $(sort $(wildcard ./Docker_Pull.*))
+	      $(sort $(wildcard ./Build.*)) \
+	      $(sort $(wildcard ./Dockerfile.*)) \
+	      $(sort $(wildcard ./Docker_Pull.*))
 images_eg := $(sort $(wildcard ../examples/*/*/Build)) \
-	     $(sort $(wildcard ../examples/*/*/Build.*)) \
-	     $(sort $(wildcard ../examples/*/*/Dockerfile)) \
-	     $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
-	     $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
-	     $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
-images :=    $(images_ch) $(images_eg)
+	      $(sort $(wildcard ../examples/*/*/Build.*)) \
+	      $(sort $(wildcard ../examples/*/*/Dockerfile)) \
+	      $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
+	      $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
+	      $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
+images :=   $(images_ch) $(images_eg)
 
 # Favor embedded Bats, if installed, over system Bats.
 export PATH := $(CURDIR)/bats/bin:$(PATH)
@@ -17,7 +17,7 @@ export PATH := $(CURDIR)/bats/bin:$(PATH)
 # Used by "make all" at top level to build these files for "make install".
 .PHONY: all
 all: build_auto.bats run_auto.bats \
-	 sotest/bin/sotest sotest/lib/libsotest.so.1.0
+	sotest/bin/sotest sotest/lib/libsotest.so.1.0
 
 .PHONY: test
 test: test-build test-run
