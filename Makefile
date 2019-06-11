@@ -103,14 +103,15 @@ ifneq ($(shell echo "$(PREFIX)" | cut -c1),/)
   $(warning Relative PREFIX converted to $(PREFIX))
 endif
 endif
+VERSION := $(shell cat VERSION.full)
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 BIN := $(INSTALL_PREFIX)/bin
-DOC := $(INSTALL_PREFIX)/share/doc/charliecloud
+DOC := $(INSTALL_PREFIX)/share/doc/charliecloud-$(VERSION)
 # LIBEXEC_DIR is modeled after FHS 3.0 and
 # https://www.gnu.org/prep/standards/html_node/Directory-Variables.html. It
 # contains any executable helpers that are not needed in PATH. Default is
 # libexec/charliecloud which will be preprended with the PREFIX.
-LIBEXEC_DIR ?= libexec/charliecloud
+LIBEXEC_DIR ?= libexec/charliecloud-$(VERSION)
 LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
 LIBEXEC_RUN := $(PREFIX)/$(LIBEXEC_DIR)
 .PHONY: install
