@@ -1,5 +1,4 @@
 # ch-test-scope: full
-# ch-test-arch-exclude: aarch64  # issue #392
 FROM openmpi
 WORKDIR /
 
