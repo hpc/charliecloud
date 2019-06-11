@@ -39,6 +39,7 @@ else
     }
 fi
 
+# Use buildah with our flag to avoid using uidmap
 buildah_ () {
     buildah --no-uidmap "$@"
 }

@@ -111,7 +111,7 @@ for path in sys.argv[2:]:
 @test 'ch-docker2tar %(tag)s' {
     scope %(scope)s
     %(arch_exclude)s
-    need_docker
+    #need_docker
     tarball="$ch_tardir/%(tag)s.tar.gz"
     ch-docker2tar %(tag)s "$ch_tardir"
     tar -tf "$tarball" | grep -E '^environment$'

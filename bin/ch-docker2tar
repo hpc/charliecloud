@@ -73,7 +73,7 @@ case $CH_BUILDER in
         ;;
         buildah)
         # Export an OCI image directory.
-        buildah --no-uidmap push $image "oci:./oci"
+        buildah_ push $image "oci:./oci"
 
         manifest=$(sed -E 's|^.+"application/vnd.oci.image.manifest.v1\+json","digest":"sha256:([0-9a-f]+)".+$|\1|' oci/index.json)
         echo Manifest: "$manifest"
@@ -88,6 +88,7 @@ case $CH_BUILDER in
         echo "Manifest contents: "
         cat "oci/blobs/sha256/${manifest}"
         echo ""
+        # The blob can be either a tar or a tar.gz
         layer=$(sed -E 's|^.+"application/vnd.oci.image.layer.v1.(tar\|tar\+gzip)","digest":"sha256:([0-9a-f]+)".+$|\2|' "oci/blobs/sha256/${manifest}")
 
         echo Layer: "$layer"

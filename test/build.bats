@@ -41,7 +41,7 @@ load common
         run "$i" --help
         echo "$output"
         [[ $status -eq 0 ]]
-        [[ $output =~ sage: ]]
+        [[ $output =~ Usage: ]]
         # not setuid or setgid
         ls -l "$i"
         [[ ! -u $i ]]

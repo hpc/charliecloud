@@ -570,7 +570,7 @@ EOF
     for f in $files $files_optional; do touch "${img}/${f}"; done
 
     # This should start up the container OK but fail to find the user command.
-    run ch-run "$img" -- true
+    run ch-run "$img" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): true: No such file or directory"* ]]
@@ -580,7 +580,7 @@ EOF
         echo "required: ${f}"
         rm "${img}/${f}"
         ls -l "${img}/${f}" || true
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
@@ -593,7 +593,7 @@ EOF
     for f in $files_optional; do
         echo "optional: ${f}"
         rm "${img}/${f}"
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
@@ -605,7 +605,7 @@ EOF
         echo "not a regular file: ${f}"
         rm "${img}/${f}"
         mkdir "${img}/${f}"
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         rmdir "${img}/${f}"  # restore before test fails for idempotency
         touch "${img}/${f}"
         echo "$output"
@@ -619,7 +619,7 @@ EOF
     for d in $dirs tmp; do
         echo "required: ${d}"
         rmdir "${img}/${d}"
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         mkdir "${img}/${d}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
@@ -633,7 +633,7 @@ EOF
         echo "not a directory: ${d}"
         rmdir "${img}/${d}"
         touch "${img}/${d}"
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         rm "${img}/${d}"    # restore before test fails for idempotency
         mkdir "${img}/${d}"
         echo "$output"
@@ -645,7 +645,7 @@ EOF
 
     # --private-tmp
     rmdir "${img}/tmp"
-    run ch-run --private-tmp "$img" -- true
+    run ch-run --private-tmp "$img" -- /bin/true
     mkdir "${img}/tmp"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
@@ -656,7 +656,7 @@ EOF
     # /home without --private-home
     # FIXME: Not sure how to make the second mount(2) fail.
     rmdir "${img}/home"
-    run ch-run "$img" -- true
+    run ch-run "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
@@ -666,20 +666,20 @@ EOF
 
     # --no-home shouldn't care if /home is missing
     rmdir "${img}/home"
-    run ch-run --no-home "$img" -- true
+    run ch-run --no-home "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't execve(2): true: No such file or directory"* ]]
+    [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # --ch-ssh but no /usr/bin/ch-ssh
-    run ch-run --ch-ssh "$img" -- true
+    run ch-run --ch-ssh "$img" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"--ch-ssh: /usr/bin/ch-ssh not in image"* ]]
 
     # Everything should be restored and back to the original error.
-    run ch-run "$img" -- true
+    run ch-run "$img" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): true: No such file or directory"* ]]
