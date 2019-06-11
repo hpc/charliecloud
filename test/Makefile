@@ -1,14 +1,14 @@
 export LC_ALL := C
 images_ch := chtest/Build \
-	         $(sort $(wildcard ./Build.*)) \
-	         $(sort $(wildcard ./Dockerfile.*)) \
-	         $(sort $(wildcard ./Docker_Pull.*))
+	     $(sort $(wildcard ./Build.*)) \
+	     $(sort $(wildcard ./Dockerfile.*)) \
+	     $(sort $(wildcard ./Docker_Pull.*))
 images_eg := $(sort $(wildcard ../examples/*/*/Build)) \
-	         $(sort $(wildcard ../examples/*/*/Build.*)) \
-	         $(sort $(wildcard ../examples/*/*/Dockerfile)) \
-	         $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
-	         $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
-	         $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
+	     $(sort $(wildcard ../examples/*/*/Build.*)) \
+	     $(sort $(wildcard ../examples/*/*/Dockerfile)) \
+	     $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
+	     $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
+	     $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
 images :=    $(images_ch) $(images_eg)
 
 # Favor embedded Bats, if installed, over system Bats.
@@ -38,20 +38,21 @@ test-run: run_auto.bats
 	if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
 	    for GUEST_USER in $$(id -un) root nobody; do \
 	        for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
-	        export GUEST_USER; \
-	        export GUEST_GROUP; \
-	        echo testing as: $$GUEST_USER $$GUEST_GROUP; \
-	        bats run/ch-run_uidgid.bats; \
+	            export GUEST_USER; \
+	            export GUEST_GROUP; \
+	            echo testing as: $$GUEST_USER $$GUEST_GROUP; \
+	            bats run/ch-run_uidgid.bats; \
+	        done; \
 	    done; \
-	done; fi
+	fi
 
 # FIXME: This could be sped up by skipping bats if the image is out of scope.
 .PHONY: test-test
 test-test: $(images_eg)
 	set -e; \
 	for image in $(images_eg); do \
-	export CH_TEST_TAG=$$(./make-auto tag $$image); \
-	bats $$(dirname $$image)/test.bats; \
+	    export CH_TEST_TAG=$$(./make-auto tag $$image); \
+	    bats $$(dirname $$image)/test.bats; \
 	done
 
 .PHONY: clean
@@ -120,7 +121,7 @@ LIBEXEC_DIR	?= libexec/charliecloud
 LIBEXEC_INST 	:= $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
 LIBEXEC_RUN 	:= $(PREFIX)/$(LIBEXEC_DIR)
 EXAMPLES 	:= $(LIBEXEC_INST)/examples
-TEST 	:= $(LIBEXEC_INST)/test
+TEST            := $(LIBEXEC_INST)/test
 
 .PHONY: install
 install: all
