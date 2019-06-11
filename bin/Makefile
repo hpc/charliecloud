@@ -11,7 +11,7 @@ all: $(bin)
 $(obj): charliecloud.h version.h Makefile
 ch-run: charliecloud.o
 ch-ssh: charliecloud.o
-ch-checkns:
+ch-checkns: ch-checkns.c
 
 .PHONY: clean
 clean:
