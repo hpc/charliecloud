@@ -1,15 +1,15 @@
 export LC_ALL := C
 images_ch := chtest/Build \
-	     $(sort $(wildcard ./Build.*)) \
-	     $(sort $(wildcard ./Dockerfile.*)) \
-	     $(sort $(wildcard ./Docker_Pull.*))
+	         $(sort $(wildcard ./Build.*)) \
+	         $(sort $(wildcard ./Dockerfile.*)) \
+	         $(sort $(wildcard ./Docker_Pull.*))
 images_eg := $(sort $(wildcard ../examples/*/*/Build)) \
-	     $(sort $(wildcard ../examples/*/*/Build.*)) \
-	     $(sort $(wildcard ../examples/*/*/Dockerfile)) \
-	     $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
-	     $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
-	     $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
-images := $(images_ch) $(images_eg)
+	         $(sort $(wildcard ../examples/*/*/Build.*)) \
+	         $(sort $(wildcard ../examples/*/*/Dockerfile)) \
+	         $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
+	         $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
+	         $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
+images :=    $(images_ch) $(images_eg)
 
 # Favor embedded Bats, if installed, over system Bats.
 export PATH := $(CURDIR)/bats/bin:$(PATH)
@@ -36,13 +36,13 @@ test-run: run_auto.bats
 	bats run_first.bats run_auto.bats run/*.bats
 	set -e; \
 	if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
-	for GUEST_USER in $$(id -un) root nobody; do \
-		for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
-			export GUEST_USER; \
-			export GUEST_GROUP; \
-			echo testing as: $$GUEST_USER $$GUEST_GROUP; \
-			bats run/ch-run_uidgid.bats; \
-		done; \
+	    for GUEST_USER in $$(id -un) root nobody; do \
+	        for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
+	        export GUEST_USER; \
+	        export GUEST_GROUP; \
+	        echo testing as: $$GUEST_USER $$GUEST_GROUP; \
+	        bats run/ch-run_uidgid.bats; \
+	    done; \
 	done; fi
 
 # FIXME: This could be sped up by skipping bats if the image is out of scope.
@@ -50,8 +50,8 @@ test-run: run_auto.bats
 test-test: $(images_eg)
 	set -e; \
 	for image in $(images_eg); do \
-		export CH_TEST_TAG=$$(./make-auto tag $$image); \
-		bats $$(dirname $$image)/test.bats; \
+	export CH_TEST_TAG=$$(./make-auto tag $$image); \
+	bats $$(dirname $$image)/test.bats; \
 	done
 
 .PHONY: clean
@@ -120,52 +120,52 @@ LIBEXEC_DIR	?= libexec/charliecloud
 LIBEXEC_INST 	:= $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
 LIBEXEC_RUN 	:= $(PREFIX)/$(LIBEXEC_DIR)
 EXAMPLES 	:= $(LIBEXEC_INST)/examples
-TEST 		:= $(LIBEXEC_INST)/test
+TEST 	:= $(LIBEXEC_INST)/test
 
 .PHONY: install
 install: all
 	mkdir -p $(EXAMPLES)
 	chmod 755 $(EXAMPLES)
 	cd ../ && for i in examples/*; do \
-		cp -rp $$i $(EXAMPLES); \
+	cp -rp $$i $(EXAMPLES); \
 	done
 	chmod 755 $$(find $(EXAMPLES) -type d)
 	chmod 755 $(EXAMPLES)/serial/hello/hello.sh \
-		  $(EXAMPLES)/syscalls/pivot_root \
-		  $(EXAMPLES)/syscalls/userns \
-		  $(EXAMPLES)/*/*/*.sh;
+	          $(EXAMPLES)/syscalls/pivot_root \
+	          $(EXAMPLES)/syscalls/userns \
+	          $(EXAMPLES)/*/*/*.sh;
 #	tests
 	cd ../ && cp -rp test $(TEST)
 	chmod 755 $$(find $(TEST) -type d)
 	chmod 755 $$(find $(TEST) -name 'Build.*' -or \
-				  -name 'make-auto' -or \
-				  -name 'make-perms-test')
+	                          -name 'make-auto' -or \
+	                          -name 'make-perms-test')
 	chmod 644 $$(find $(TEST) -name '*.bats' -or \
-				  -name '*.bash' -or \
-			          -name 'Dockerfile.*' -or \
-				  -name 'Docker_Pull.*' -or \
-				  -name 'Makefile' -or \
-			          -name '*.patch')
+	                          -name '*.bash' -or \
+	                          -name 'Dockerfile.*' -or \
+	                          -name 'Docker_Pull.*' -or \
+	                          -name 'Makefile' -or \
+	                          -name '*.patch')
 	chmod 644 $$(find $(TEST)/chtest -type f)
 	chmod 755 $$(find $(TEST)/chtest -name 'Build' -or \
-		  			 -name '*.py' -or \
-		  		         -name 'printns')
+	                                 -name '*.py' -or \
+	                                 -name 'printns')
 	ln -sf ../../..//bin $(TEST)/bin;
 #	shared library tests
 	chmod 755 $$(find $(TEST)/sotest -name 'libsotest.so*' -or \
-					 -name 'sotest')
+	                                 -name 'sotest')
 	chmod 644 $$(find $(TEST)/sotest -name '*.txt' -or \
-				         -name '*.c')
+	                                 -name '*.c')
 	cd sotest \
-		&& ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so \
-		&& ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
+	&& ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so \
+	&& ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
 	rm -f $$(find $(TEST) -name GITKEEP)
 #	Bats (if embedded);
 	if [ -d test/bats/bin ]; then \
-		cp -rp bats $(TEST)/bats; \
-		chmod 644 $(TEST)/bats $(find -name '*.md' -or \
-					      -name 'LICENSE'); \
-		chmod 755 $$(find $(TEST)/bats -type d); \
-		ln -sf ./bats/libexec/bats $(TEST)/bats/bin/bats && \
-		ln -sf ./bats/bin/bats $(TEST)/bats; \
+	cp -rp bats $(TEST)/bats; \
+	chmod 644 $(TEST)/bats $$(find -name '*.md' -or \
+	                               -name 'LICENSE'); \
+	chmod 755 $$(find $(TEST)/bats -type d); \
+	ln -sf ./bats/libexec/bats $(TEST)/bats/bin/bats && \
+	ln -sf ./bats/bin/bats $(TEST)/bats; \
 	fi

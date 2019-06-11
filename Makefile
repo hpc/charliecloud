@@ -1,4 +1,5 @@
 SHELL=/bin/sh
+PYTHON=$(shell command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')")
 
 # Add some good stuff to CFLAGS.
 export CFLAGS += -std=c11 -Wall -g
@@ -7,9 +8,7 @@ export CFLAGS += -std=c11 -Wall -g
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
 #       only descend into test/ if the right Python is available
-	if (command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')"); then \
-	    cd test && $(MAKE) all; \
-	fi
+	[ -z $(PYTHON) ] || cd test && $(MAKE) all
 	cd examples/syscalls && $(MAKE) all
 
 .PHONY: clean
@@ -140,19 +139,17 @@ install: all
 	install -pm 644 -t $(DOC) LICENSE README.rst
 #	html files if they were built
 	if [ -f doc/index.html ]; then \
-		cp -r doc $(DOC)/html; \
-		rm -f $(DOC)/html/.nojekyll; \
-		for i in $$(find $(DOC)/html -type d); do \
-			chmod 755 $$i; \
-		done; \
-		for i in $$(find $(DOC)/html -type f); do \
-			chmod 644 $$i; \
-		done; \
+	cp -r doc $(DOC)/html; \
+	rm -f $(DOC)/html/.nojekyll; \
+	for i in $$(find $(DOC)/html -type d); do \
+	chmod 755 $$i; \
+	done; \
+	for i in $$(find $(DOC)/html -type f); do \
+	chmod 644 $$i; \
+	done; \
 	fi
 #	install test suite and examples if the right python is found
-	if (command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')"); then \
-	    cd test && $(MAKE) install $(PREFIX); \
-	fi
+	[ -z $(PYTHON) ] || cd test && $(MAKE) install $(PREFIX)
 
 .PHONY: deb
 deb:
