@@ -88,8 +88,15 @@ case $CH_BUILDER in
         echo "Manifest contents: "
         cat oci/blobs/sha256/${manifest}
         echo ""
-        layer=$(sed -E 's|^.+"application/vnd.oci.image.layer.v1.tar","digest":"sha256:([0-9a-f]+)".+$|\1|' "oci/blobs/sha256/${manifest}")
+        layer=$(sed -E 's|^.+"application/vnd.oci.image.layer.v1.(tar\|tar\+gzip)","digest":"sha256:([0-9a-f]+)".+$|\2|' "oci/blobs/sha256/${manifest}")
+
+        # if the output is not the filename
+		#if [[ $layer =~ [a-f0-9]* ]]; then
+		#	layer=$(sed -E 's|^.+"application/vnd.oci.image.layer.v1.tar\+gzip","digest":"sha256:([0-9a-f]+)".+$|\1|' "oci/blobs/sha256/${manifest}")
+        #    echo "Did a thing"
+		#fi
         echo Layer: $layer
+        file layer
         # Move the layer tarball to the output (not copy, because the OCI image will
         # be deleted when we're done, so OK to break it).
         mv "oci/blobs/sha256/${layer}" "$tar_gz"
