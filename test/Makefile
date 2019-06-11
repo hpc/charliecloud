@@ -112,12 +112,14 @@ ifneq ($(shell echo "$(PREFIX)" | cut -c1),/)
   $(warning Relative PREFIX converted to $(PREFIX))
 endif
 endif
+	fi
+VERSION := $(shell cat ../VERSION.full)
 INSTALL_PREFIX := $(if $(DESTDIR),$(DESTDIR)/$(PREFIX),$(PREFIX))
 # LIBEXEC_DIR is modeled after FHS 3.0 and
 # # https://www.gnu.org/prep/standards/html_node/Directory-Variables.html. It
 # # contains any executable helpers that are not needed in PATH. Default is
 # # libexec/charliecloud which will be preprended with the PREFIX.
-LIBEXEC_DIR	?= libexec/charliecloud
+LIBEXEC_DIR	?= libexec/charliecloud-$(VERSION)
 LIBEXEC_INST 	:= $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
 LIBEXEC_RUN 	:= $(PREFIX)/$(LIBEXEC_DIR)
 EXAMPLES 	:= $(LIBEXEC_INST)/examples
@@ -161,12 +163,12 @@ install: all
 	&& ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so \
 	&& ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
 	rm -f $$(find $(TEST) -name GITKEEP)
-#	Bats (if embedded);
+#	Bats (if embedded)
 	if [ -d test/bats/bin ]; then \
-	cp -rp bats $(TEST)/bats; \
-	chmod 644 $(TEST)/bats $$(find -name '*.md' -or \
-	                               -name 'LICENSE'); \
-	chmod 755 $$(find $(TEST)/bats -type d); \
-	ln -sf ./bats/libexec/bats $(TEST)/bats/bin/bats && \
-	ln -sf ./bats/bin/bats $(TEST)/bats; \
+	    cp -rp bats $(TEST)/bats; \
+	    chmod 644 $(TEST)/bats $$(find -name '*.md' -or \
+	                                   -name 'LICENSE'); \
+	    chmod 755 $$(find $(TEST)/bats -type d); \
+	    ln -sf ./bats/libexec/bats $(TEST)/bats/bin/bats; \
+	    ln -sf ./bats/bin/bats $(TEST)/bats; \
 	fi
