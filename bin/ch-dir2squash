@@ -75,7 +75,8 @@ mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
 
 # append directories and files if they did not already exist
 if [ "$(ls -A "$temp")" ]; then
-    mksquashfs "$temp" "${outdir}/${image}.sqfs"
+    mksquashfs "$temp" "${outdir}/${image}.sqfs" -no-recovery
 fi
 
+rm -rf --one-file-system "$temp"
 ls -lh "${outdir}/${image}.sqfs"

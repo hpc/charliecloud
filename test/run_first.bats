@@ -3,6 +3,7 @@ load common
 @test 'prepare images directory' {
     scope standard
     shopt -s nullglob  # globs that match nothing yield empty string
+    rmdir "${ch_imgdir}/mounts" || true
     if [[ -e $ch_imgdir ]]; then
         # Images directory exists. If all it contains is Charliecloud images
         # or supporting directories, or nothing, then we're ok. Remove any
