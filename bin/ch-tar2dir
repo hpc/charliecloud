@@ -96,7 +96,7 @@ size=$(stat -c%s "$tarball")
       --anchored --no-wildcards-match-slash \
       --exclude='dev/*' --exclude='*/dev/*'
 # Make all directories writeable so we can delete image later (hello, Red Hat).
-find "${newroot}" -type d -a ! -perm /200 -exec chmod u+w {} +
+find "$newroot" -type d -a ! -perm /200 -exec chmod u+w {} +
 
 # If tarball had a single containing directory, move the contents up a level
 # and remove the containing directory. It is non-trivial in POSIX sh to deal

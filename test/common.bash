@@ -7,7 +7,7 @@ arch_exclude () {
 crayify_mpi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
-        "${ch_mpirun_node}" ch-fromhost --cray-mpi "${1}"
+        $ch_mpirun_node ch-fromhost --cray-mpi "$1"
     else
         skip 'host is not a Cray'
     fi
@@ -40,13 +40,13 @@ fatal () {
     echo 1>&2
     echo "ERROR: ${1}" 1>&2
     echo 1>&2
+    exit 1
 }
 
 info () {
     echo 1>&2
     echo "${1}" 1>&2
     echo 1>&2
-    exit 1
 }
 
 image_ok () {
@@ -118,7 +118,7 @@ tarball_ok () {
 
 unpack_img_all_nodes () {
     if [[ $1 ]]; then
-        "${ch_mpirun_node}" ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "${ch_imgdir}"
+        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
     else
         skip 'not needed'
     fi
