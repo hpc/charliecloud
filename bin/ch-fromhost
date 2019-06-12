@@ -88,7 +88,7 @@ lib_found=
 no_ldconfig=
 
 ensure_nonempty () {
-    [ "$2" ] || fatal "$1 must not be empty"
+    [ "$2" ] || fatal "${1} must not be empty"
 }
 
 is_bin () {

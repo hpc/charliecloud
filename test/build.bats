@@ -36,7 +36,7 @@ load common
         run "$i" --version
         echo "$output"
         [[ $status -eq 0 ]]
-        diff -u <(echo "${output}") <(echo "$ch_version")
+        diff -u <(echo "$output") <(echo "$ch_version")
         # --help: returns 0, says "Usage:" somewhere.
         run "$i" --help
         echo "$output"

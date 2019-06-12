@@ -7,7 +7,7 @@ arch_exclude () {
 crayify_mpi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
-        $ch_mpirun_node ch-fromhost --cray-mpi "$1"
+        "${ch_mpirun_node}" ch-fromhost --cray-mpi "${1}"
     else
         skip 'host is not a Cray'
     fi
@@ -32,13 +32,19 @@ docker_ok () {
 }
 
 env_require () {
-    [[ -n ${!1} ]] || fatal "\$$1 is empty or not set"
+    [[ -n ${!1} ]] || fatal "\$${1} is empty or not set"
 }
 
 fatal () {
     # extra newlines because error shows up in clutter
     echo 1>&2
-    echo "ERROR: $1" 1>&2
+    echo "ERROR: ${1}" 1>&2
+    echo 1>&2
+}
+
+info () {
+    echo 1>&2
+    echo "${1}" 1>&2
     echo 1>&2
     exit 1
 }
@@ -89,9 +95,7 @@ scope () {
         quick)
             ;;  # always run quick-scope tests
         standard)
-            if [[ $CH_TEST_SCOPE = quick ]]; then
-                skip "${1} scope"
-            fi
+            [[ ! $CH_TEST_SCOPE = quick ]] || skip "${1} scope"
             ;;
         full)
             if [[ $CH_TEST_SCOPE = quick || $CH_TEST_SCOPE = standard ]]; then
@@ -114,7 +118,7 @@ tarball_ok () {
 
 unpack_img_all_nodes () {
     if [[ $1 ]]; then
-        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
+        "${ch_mpirun_node}" ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "${ch_imgdir}"
     else
         skip 'not needed'
     fi
@@ -164,7 +168,7 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
 if ( mount | grep -Fq "$ch_imgdir" ); then
-    fatal "Something is mounted at or under $ch_imgdir"
+    fatal "Something is mounted at or under ${ch_imgdir}"
 fi
 
 # Image information.
@@ -266,7 +270,7 @@ elif [[    $CH_TEST_SCOPE != quick \
         && $CH_TEST_SCOPE != standard \
         && $CH_TEST_SCOPE != full ]]; then
     # shellcheck disable=SC2016
-    fatal "\$CH_TEST_SCOPE value $CH_TEST_SCOPE is invalid"
+    fatal "\$CH_TEST_SCOPE value ${CH_TEST_SCOPE} is invalid"
 fi
 
 # Do we have and want sudo?

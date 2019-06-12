@@ -15,12 +15,12 @@ debug () {
 }
 
 fatal () {
-    echo "$progname: $1" 1>&2
+    echo "${progname}: ${1}" 1>&2
     exit 1
 }
 
 info () {
-    echo "$progname: $1" 1>&2
+    echo "${progname}: ${1}" 1>&2
 }
 
 parse_basic_args () {

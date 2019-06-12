@@ -22,49 +22,49 @@ joined_ok () {
     output="$5"       # output
     echo "$output"
     # exit success
-    printf '  exit status: ' 1>&2
+    info '  exit status: '
     if [[ $status -eq 0 ]]; then
-        printf 'ok\n' 1>&2
+        info 'ok'
     else
-        printf 'fail (%d)\n' "$status" 1>&2
+        info "fail: ${status}"
         return 1
     fi
     # number of processes
-    printf '  process count; expected %d: ' "$proc_ct_total" 1>&2
+    info "  process count; expected ${proc_ct_total}: "
     proc_ct_found=$(echo "$output" | grep -Ec 'join: 1 [0-9]+ [0-9a-z]+')
     if [[ $proc_ct_total -eq "$proc_ct_found" ]]; then
-        printf 'ok\n'
+        info 'ok'
     else
-        printf 'fail (%d)\n' "$proc_ct_found" 1>&2
+        info "fail: ${proc_ct_found}"
         return 1
     fi
     # number of peers
-    printf '  peer group size; expected %d: ' "$peer_ct_node" 1>&2
+    info "  peer group size; expected: ${peer_ct_node}: "
     peer_cts=$(  echo "$output" \
                | sed -rn 's/^ch-run\[[0-9]+\]: join: 1 ([0-9]+) .+$/\1/p')
     peer_ct_found=$(echo "$peer_cts" | sort -u)
     peer_cts_found=$(echo "$peer_ct_found" | wc -l)
     if [[ $peer_cts_found -ne 1 ]]; then
-        printf 'fail (%d different counts reported)\n' "$peer_cts_found" 1>&2
+        info "fail: (${peer_cts_found} different counts reported)"
         return 1
     fi
     if [[ $peer_ct_found -eq "$peer_ct_node" ]]; then
-        printf 'ok\n' 1>&2
+        info 'ok'
     else
-        printf 'fail (%d)\n' "$peer_ct_found" 1>&2
+        info "fail: ${peer_ct_found}"
         return 1
     fi
     # correct number of namespace IDs
     for i in /proc/self/ns/*; do
-        printf '  namespace count; expected %d: %s: ' "$namespace_ct" "$i" 1>&2
+        info "  namespace count; expected ${namespace_ct}: ${i}: "
         namespace_ct_found=$(  echo "$output" \
                              | grep -E "^${i}:" \
                              | sort -u \
                              | wc -l)
         if [[ $namespace_ct -eq "$namespace_ct_found" ]]; then
-            printf 'ok\n' 1>&2
+            info 'ok'
         else
-            printf 'fail (%d)\n' "$namespace_ct_found" 1>&2
+            info "fail: ${namespace_ct_found}"
             return 1
         fi
     done

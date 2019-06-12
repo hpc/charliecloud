@@ -409,38 +409,38 @@ EOF
     export chue_1=foo
     export chue_2=bar
 
-    printf '\n# Nothing\n\n'
+    info '# Nothing'
     run ch-run --unset-env=doesnotmatch "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
     ex='^(_|HOME|PATH)='  # variables expected to change
     diff -u <(env | grep -Ev "$ex") <(echo "$output" | grep -Ev "$ex")
 
-    printf '\n# Everything\n\n'
+    info '# Everything'
     run ch-run --unset-env='*' "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = '' ]]
 
-    printf '\n# Everything, plus shell re-adds\n\n'
+    info '# Everything, plus shell re-adds'
     run ch-run --unset-env='*' "$ch_timg" -- /bin/sh -c env
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(printf 'SHLVL=1\nPWD=/\n') <(echo "$output")
 
-    printf '\n# Without wildcards\n\n'
+    info '# Without wildcards'
     run ch-run --unset-env=chue_1 "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(printf 'chue_2=bar\n') <(echo "$output" | grep -E '^chue_')
 
-    printf '\n# With wildcards\n\n'
+    info '# With wildcards'
     run ch-run --unset-env='chue_*' "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $(echo "$output" | grep -E '^chue_') = '' ]]
 
-    printf '\n# Empty string\n\n'
+    info '# Empty string'
     run ch-run --unset-env= "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 1 ]]

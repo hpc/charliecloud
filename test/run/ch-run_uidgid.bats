@@ -100,29 +100,29 @@ setup () {
     # busybox seems to use the same list
     case $status in
         0)      # "success"
-            printf 'RISK\tsuccessful mount\n'
+            info 'RISK    successful mount'
             return 1
             ;;
         1)   ;&  # "incorrect invocation or permissions" (we care which)
         111) ;&  # undocumented
         255)     # undocumented
             if [[ $output = *'ermission denied'* ]]; then
-                printf 'SAFE\tmount exit %d, permission denied\n' "$status"
+                info "SAFE    mount exit ${status}, permission denied"
                 return 0
             elif [[ $dev = 'rootfs' && $output =~ 'No such device' ]]; then
-                printf 'SAFE\tmount exit %d, no such device' "$status"
+                info "SAFE    mount exit ${status}, no such device"
                 return 0
             else
-                printf 'RISK\tmount exit %d w/o known explanation\n' "$status"
+                info "RISK    mount exit ${status} w/o known explanation"
                 return 1
             fi
             ;;
         32)     # "mount failed"
-            printf 'SAFE\tmount exited with code 32\n'
+            info "SAFE    mount exited with code 32"
             return 0
             ;;
     esac
-    printf 'ERROR\tunknown exit code: %s\n' "$status"
+    info "ERROR   unknown exit code: ${status}"
     return 1
 }
 
