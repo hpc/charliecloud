@@ -17,7 +17,7 @@ You must have sufficient privilege (via sudo) to run Docker commands.
 EOF
 )
 
-parse_basic_args
+parse_basic_args "$@"
 
 if [ "$#" -ne 2 ]; then
     usage
