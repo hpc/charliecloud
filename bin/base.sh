@@ -9,9 +9,7 @@ libexec=$(cd "$(dirname "$0")" && pwd)
 progname=$(basename "$0")
 
 debug () {
-    if [ "$verbose" ]; then
-        echo "$1" 1>&2
-    fi
+    echo "$1" 1>&2
 }
 
 fatal () {

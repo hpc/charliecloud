@@ -5,6 +5,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 set -e
 
+# shellcheck disable=SC2034
 usage=$(cat <<EOF
 Download image via "docker pull" and unpack it into directory.
 

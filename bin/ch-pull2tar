@@ -5,7 +5,8 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 set -e
 
-usage=$(<<EOF
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
 Download image via "docker pull" and flatten it to tarball.
 
 Usage:
