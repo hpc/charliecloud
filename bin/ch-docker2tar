@@ -73,16 +73,16 @@ case $CH_BUILDER in
         ;;
         buildah)
         # Export an OCI image directory.
-        buildah_ push $image "oci:./oci"
+        buildah_ push "$image" "oci:./oci"
 
-        manifest=$(sed -E 's|^.+"application/vnd.oci.image.manifest.v1\+json","digest":"sha256:([0-9a-f]+)".+$|\1|' oci/index.json)
+        manifest=$(sed -E 's|^.+"application/vnd.oci.image.manifest.v1\+json","digest":"sha256:([0-9a-f]+)".+$|\1|i' oci/index.json)
         echo Manifest: "$manifest"
-        layer_ct=$(grep -Eo 'application/vnd.oci.image.layer.v1.tar' \
-            "oci/blobs/sha256/${manifest}" | wc -l)
+        layer_ct=$(grep -Eoc 'application/vnd.oci.image.layer.v1.tar' \
+            "oci/blobs/sha256/${manifest}")
         echo Layer Count: "$layer_ct"
 
-        if [ $layer_ct -ne 1 ]; then
-            echo "one layer required; found $layer_ct" 1>&2
+        if [ "$layer_ct" -ne 1 ]; then
+            echo One layer required; found "$layer_ct" 1>&2
             exit 1
         fi
         echo "Manifest contents: "
