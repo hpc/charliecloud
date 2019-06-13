@@ -111,6 +111,8 @@ RUN for i in ibacm \
     do \
         wget -nv ${DEB_URL}/r/rdma-core/${i}_${IBVERBS_VERSION}_$(dpkg --print-architecture).deb ; \
     done
+
+# Install the .debs we collected. UCX needs these.
 RUN dpkg --install *.deb
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
