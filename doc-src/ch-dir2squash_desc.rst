@@ -27,8 +27,6 @@ Example
 
 ::
 
-  $ ls -ld /var/tmp/debian
-  drwxrwxr-x 21 charlie charlie 286 Apr 23 14:40 debian
   $ ch-dir2squash /var/tmp/debian /var/tmp
   Parallel mksquashfs: Using 6 processors
   Creating 4.0 filesystem on /var/tmp/debian.sqfs, block size 131072.

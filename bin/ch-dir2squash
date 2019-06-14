@@ -48,14 +48,15 @@ if [ ! -d "$outdir" ]; then
     exit 1
 fi
 
-# Ensure directories that ch-run needs exist.
+# Ensure directories and files that ch-run needs exist. Only provide what
+# isn't already in the image, because mksquash will create duplicates.
 temp=$(mktemp -d --tmpdir ch-dir2squash.XXXXXX)
 for dir in dev etc proc sys; do
     if [ ! -d "${indir}/${dir}" ]; then
         mkdir -p "${temp}/${dir}"
     fi
 done
-for i in hosts resolve.conf; do
+for i in hosts resolv.conf; do
     if [ ! -e "${indir}/etc/${i}" ]; then
         if [ ! -d "${temp}/etc" ]; then
             mkdir -p "${temp}/etc"
@@ -63,20 +64,16 @@ for i in hosts resolve.conf; do
         touch "${temp}/etc/${i}"
     fi
 done
-for i in $(seq 0 9); do 
+for i in $(seq 0 9); do
     if [ ! -e "${indir}/mnt/${i}" ]; then
         mkdir -p "${temp}/mnt/${i}"
     fi
 done
 
-# Create SquashFS file
+# Create SquashFS file.
 image=$(basename "${indir}")
 mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
-
-# append directories and files if they did not already exist
-if [ "$(ls -A "$temp")" ]; then
-    mksquashfs "$temp" "${outdir}/${image}.sqfs" -no-recovery
-fi
+mksquashfs "$temp" "${outdir}/${image}.sqfs" -no-recovery
 
 rm -rf --one-file-system "$temp"
 ls -lh "${outdir}/${image}.sqfs"

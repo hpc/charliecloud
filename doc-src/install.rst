@@ -39,6 +39,12 @@ Systems used for running images need:
 
 * POSIX.1-2017 shell and utilities
 
+The SquashFS workflow requires FUSE and `Squashfuse
+<https://github.com/vasi/squashfus>`_. Note that distribution packages of
+Squashfuse often provide only the "high level" executables; the "low level"
+executables have better performance. These can be installed from source on any
+distribution.
+
 Some distributions need configuration changes to enable user namespaces. For
 example:
 
@@ -50,17 +56,6 @@ example:
   of the Red Hat instructions, i.e., don't add :code:`--userns-remap` to the
   Docker configuration (see `issue #97
   <https://github.com/hpc/charliecloud/issues/97>`_).
-
-If you would like to use the squashfs workflow you must also install squashfuse
-  For CentOS or RHEL based distros:
-  :code:`sudo yum install squashfuse`
-  Debian based distro users may need extra steps. You can
-  :code:`sudo apt install squashfuse`
-  But this will only install a slower version of squashfuse.
-  
-  If you are running images for more than testing you should follow the documentation at
-  https://github.com/vasi/squashfuse to install from source.
-  
 
 Build time
 ----------
@@ -77,7 +72,7 @@ are untested. We know that 1.7.1 does not work.)
 Optional build-time dependencies:
 
 * Bash 4.1+, for :code:`ch-build2dir`
-* squashfs-tools for creating squash files
+* :code:`squashfs-tools` for creating SquashFS image files
 
 Test suite
 ----------

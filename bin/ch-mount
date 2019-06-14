@@ -25,8 +25,8 @@ fi
 image=$1
 parentdir=$2
 
-imgdir="${image%.*}"
-imgdir="${parentdir}"/$(basename "$imgdir")
+imgdir=${image%.*}
+imgdir=${parentdir}/$(basename "$imgdir")
 
 # Check if image directory exists
 if [ -e "$imgdir" ]; then

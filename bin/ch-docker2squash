@@ -27,7 +27,7 @@ shift 2
 
 # mktemp is used for intermediate files to avoid heavy metadata loads on
 # certain filesystems
-temp=$(mktemp -d --tmpdir ch-dir2squash.XXXXXX)
+temp=$(mktemp -d --tmpdir ch-docker2squash.XXXXXX)
 # Get image as a directory
 "${ch_bin}/ch-docker2tar" --nocompress "$image" "$temp"
 "${ch_bin}/ch-tar2dir" "${temp}/${image}.tar" "$temp"

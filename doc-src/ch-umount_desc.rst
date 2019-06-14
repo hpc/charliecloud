@@ -25,9 +25,9 @@ Example
 ::
 
   $ ls /var/tmp/debian
-  bin   dev   etc   lib    media  opt   root  sbin  sys  usr  WEIRD_AL_YANKOVIC
-  boot  home  lib64  mnt    proc  run   srv   tmp  var
+  bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
+  boot  etc  lib   media  opt  root  sbin  sys  usr  WEIRD_AL_YANKOVIC
   $ ch-umount /var/tmp/debian
   unmounted and removed /var/tmp/debian
-  $ ls -lh /var/tmp/debian
+  $ ls /var/tmp/debian
   ls: cannot access /var/tmp/debian: No such file or directory
