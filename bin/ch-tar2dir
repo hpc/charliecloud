@@ -7,7 +7,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Unpack a filesystem tarball into a directory.
+Unpack an image tarball into a directory.
 
 Usage:
 

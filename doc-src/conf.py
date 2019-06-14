@@ -91,9 +91,8 @@ exclude_patterns = ['_build']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-import sphinx_rtd_theme
 html_theme = 'sphinx_rtd_theme'
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
 highlight_language = 'console'
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -220,40 +219,51 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-#
-# WARNING: Any updates also need to be made in command-usage.rst.
-#
 man_pages = [
-    ('charliecloud', 'charliecloud', u'Lightweight user-defined software stacks for high-performance computing',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-build', 'ch-build', u'Wrapper for "docker build" that works around some of its annoying behaviors',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-build2dir', 'ch-build2dir', u'Build a Charliecloud image from Dockerfile and unpack it',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-dir2squash', 'ch-dir2squash', u'Create a squash file from an image directory',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-docker2squash', 'ch-docker2squash', u'Flatten a Docker image into a Charliecloud squash file',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-docker2tar', 'ch-docker2tar', u'Flatten a Docker image into a Charliecloud image tarball',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-fromhost', 'ch-fromhost', u'Inject files from the host into an image directory',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-mount', 'ch-mount', u'Mount a squash file using FUSE',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-pull2dir', 'ch-pull2dir', u'Pull image from Docker Hub, flatten and unpack it',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-pull2tar', 'ch-pull2tar', u'Pull image from Docker Hub and flatten into tarball',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-run', 'ch-run', u'Run a command in a Charliecloud container',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-ssh', 'ch-ssh', u'Run a remote command in a Charliecloud container',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-tar2dir', 'ch-tar2dir', u'Unpack an image tarball into a directory',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-tar2squash', 'ch-tar2squash', u'Convert a tarball to a squash file',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1),
-    ('ch-umount', 'ch-umount', u'Unount a FUSE mounted squash file',
-     [u'Reid Priedhorsky, Tim Randles, and others'], 1)
+   ("charliecloud", "charliecloud",
+    "Lightweight user-defined software stacks for high-performance computing",
+    [], 1),
+   ("ch-build", "ch-build",
+    'Wrapper for "docker build" with various enhancements',
+    [], 1),
+   ("ch-build2dir", "ch-build2dir",
+    "Build a Charliecloud image from Dockerfile and unpack it into a directory",
+    [], 1),
+   ("ch-dir2squash", "ch-dir2squash",
+    "Create a squash file from an image directory",
+    [], 1),
+   ("ch-docker2squash", "ch-docker2squash",
+    "Flatten a Docker image into a Charliecloud squash file",
+    [], 1),
+   ("ch-docker2tar", "ch-docker2tar",
+    "Flatten a Docker image into a Charliecloud image tarball",
+    [], 1),
+   ("ch-fromhost", "ch-fromhost",
+    "Inject files from the host into an image directory",
+    [], 1),
+   ("ch-mount", "ch-mount",
+    "Mount a squash file using FUSE",
+    [], 1),
+   ("ch-pull2dir", "ch-pull2dir",
+    "Pull image from a Docker Hub and unpack into directory",
+    [], 1),
+   ("ch-pull2tar", "ch-pull2tar",
+    "Pull image from a Docker Hub and flatten into tarball",
+    [], 1),
+   ("ch-run", "ch-run",
+    "Run a command in a Charliecloud container",
+    [], 1),
+   ("ch-ssh", "ch-ssh",
+    "Run a remote command in a Charliecloud container",
+    [], 1),
+   ("ch-tar2dir", "ch-tar2dir",
+    "Unpack an image tarball into a directory",
+    [], 1),
+   ("ch-tar2squash", "ch-tar2squash",
+    "Convert a tarball to a squash file",
+    [], 1),
+   ("ch-umount", "ch-umount", "Unount a FUSE mounted squash file",
+    [], 1),
 ]
 
 # If true, show URL addresses after external links.
