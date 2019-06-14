@@ -8,9 +8,6 @@ Charliecloud commands. Its content is identical to the commands' man pages.
    :depth: 1
    :local:
 
-.. WARNING: The one-line summaries below are duplicated in list man_pages in
-   conf.py. Any updates need to be made there also.
-
 .. Note the unusual heading level. This is so the man page .rst files can
    still use double underscores as their top-level headers, which in turn lets
    us do things like include docker_tips.rst. You will also find this in the
@@ -19,15 +16,14 @@ Charliecloud commands. Its content is identical to the commands' man pages.
 ch-build
 ++++++++
 
-Wrapper for :code:`docker build` that works around some of its annoying
-behaviors.
+Wrapper for :code:`docker build` with various enhancements.
 
 .. include:: ./ch-build_desc.rst
 
 ch-build2dir
 ++++++++++++
 
-Build a Charliecloud image and unpack it into a directory in one command.
+Build a Charliecloud image from Dockerfile and unpack it into a directory.
 
 .. include:: ./ch-build2dir_desc.rst
 
@@ -50,14 +46,14 @@ Inject files from the host into an image directory.
 ch-pull2dir
 +++++++++++
 
-Download image via :code:`docker pull` and unpack it into directory.
+Pull image from a Docker Hub and unpack into directory.
 
 .. include:: ./ch-pull2dir_desc.rst
 
 ch-pull2tar
 +++++++++++
 
-Download image via :code:`docker pull` and flatten it to tarball.
+Pull image from a Docker Hub and flatten into tarball.
 
 .. include:: ./ch-pull2tar_desc.rst
 

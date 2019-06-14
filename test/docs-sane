@@ -1,0 +1,144 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# This script performs sanity checking on the documentation:
+#
+#   1. Man page consistency.
+#
+#      a. man/charliecloud.1 exists.
+#
+#      b. Every executable FOO in bin has:
+#
+#           - doc-src/FOO.rst
+#           - doc-src/FOO_desc.rst
+#           - man/FOO.1
+#           - a section in doc-src/command-usage.rst
+#           - an entry under "See also" in charliecloud.1
+#
+#      c. There aren't the things in (b) except for the executables (modulo a
+#         few execeptions for the other documentation source files).
+#
+#      d. Summary in "FOO --help" matches the man page and command-usage.rst.
+
+from __future__ import print_function
+
+import glob
+import re
+import os
+import subprocess
+import sys
+
+
+CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/..")
+
+win = True
+
+
+def main():
+   check_man()
+   if (win):
+      print("ok")
+      sys.exit(0)
+   else:
+      sys.exit(1)
+
+def check_man():
+
+   os.chdir(CH_BASE + "/bin")
+
+   execs = { f for f in os.listdir(".")
+             if (os.path.isfile(f) and os.stat(f).st_mode & 0o111) }
+   helps = { x: help_get(x) for x in execs }
+
+   os.chdir(CH_BASE + "/doc-src")
+
+   man_rsts = set(glob.glob("ch-*.rst"))
+   man_rsts_expected = (  { i + ".rst" for i in execs }
+                        | { i + "_desc.rst" for i in execs })
+   lose_lots("unexpected .rst", man_rsts - man_rsts_expected)
+   lose_lots("missing .rst",    man_rsts_expected - man_rsts)
+
+   sect_matches = set(re.finditer(r"\n([a-z0-9-]+)\n\++\n\n([^\n]+)\n",
+                                  open("command-usage.rst").read()))
+
+   sects = { m.group(1) for m in sect_matches }
+   sects_expected = execs
+   lose_lots("unexpected § in command-usage.rst", sects - sects_expected)
+   lose_lots("missing § in command-usage.rst",    sects_expected - sects)
+
+   sect_helps = { m.group(1): m.group(2) for m in sect_matches }
+   lose_lots("bad summary in command-usage.rst",
+             {     "%s: %s" % (p, s)
+               for (p, s) in sect_helps.items()
+               if (p in helps and summary_unrest(s) != helps[p]) })
+
+   sees = { m.group(0) for m in re.finditer(r"ch-[a-z0-9]+\(1\)",
+                                            open("charliecloud.rst").read()) }
+   sees_expected = { i + "(1)" for i in execs }
+   lose_lots("unexpected see-also in charliecloud.rst", sees - sees_expected)
+   lose_lots("missing see-also in charliecloud.rst",    sees_expected - sees)
+
+   conf = {}
+   execfile("./conf.py", conf)
+   for (docname, name, desc, authors, section) in conf["man_pages"]:
+      if (docname != name):
+         lose("conf.py: startdocname != name: %s != %s" % (docname, name))
+      if (len(authors) != 0):
+         lose("conf.py: bad authors: %s: %s" % (name, authors))
+      if (section != 1):
+         lose("conf.py: bad section: %s: %s != 1" % (name, section))
+      if (name != "charliecloud"):
+         if (name not in helps):
+            lose("conf.py: unexpected man page: %s" % name)
+         elif (desc + "." != helps[name]):
+            lose("conf.py: bad summary: %s: %s" % (name, desc))
+
+   os.chdir(CH_BASE + "/man")
+
+   mans = set(glob.glob("*.1")) - { "charliecloud.1" }
+   mans_expected = { i + ".1" for i in execs }
+   lose_lots("unexpected man", mans - mans_expected)
+   lose_lots("missing man",    mans_expected - mans)
+
+
+try:
+   execfile  # Python 2
+except NameError:
+   # Python 3; provide our own. See: https://stackoverflow.com/questions/436198
+   def execfile(path, globals_):
+      with open(path, "rb") as fp:
+         code = compile(fp.read(), path, "exec")
+         exec(code, globals_)
+
+def help_get(prog):
+   try:
+      out = subprocess.check_output(["./" + prog, "--help"],
+                                    stderr=subprocess.STDOUT)
+   except Exception as x:
+      lose("%s --help failed: %s" % (prog, str(x)))
+      return None
+   m = re.search(r"^(?:[Uu]sage:[^\n]+\n| +[^\n]+\n|\n)*([^\n]+)\n", out)
+   if (m is None):
+      lose("%s --help: no summary found" % prog)
+      return None
+   else:
+      return m.group(1)
+
+def lose(msg):
+   print(msg)
+   global win
+   win = False
+
+def lose_lots(prefix, losers):
+   for loser in losers:
+      lose("%s: %s" % (prefix, loser))
+
+def summary_unrest(rest):
+   t = rest
+   t = t.replace(r":code:`", '"')
+   t = t.replace(r"`", '"')
+   return t
+
+
+if (__name__ == "__main__"):
+   main()
