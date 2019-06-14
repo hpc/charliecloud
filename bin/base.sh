@@ -9,7 +9,9 @@ libexec=$(cd "$(dirname "$0")" && pwd)
 progname=$(basename "$0")
 
 debug () {
-    echo "$1" 1>&2
+    if [ -n "$verbose" ]; then
+        echo "${progname}: ${1}:" 1>&2
+    fi
 }
 
 fatal () {
@@ -29,6 +31,10 @@ parse_basic_args () {
         if [ "$i" = --libexec-path ]; then
             echo "$libexec"
             exit 0
+        fi
+        if [ "$1" = --verbose ]; then
+            verbose=yes
+            return 0
         fi
         if [ "$1" = --version ]; then
             version

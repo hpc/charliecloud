@@ -107,22 +107,22 @@ setup () {
         111) ;&  # undocumented
         255)     # undocumented
             if [[ $output = *'ermission denied'* ]]; then
-                info "SAFE    mount exit ${status}, permission denied"
+                printf 'SAFE\tmount exit %d, permission denied\n' "$status"
                 return 0
             elif [[ $dev = 'rootfs' && $output =~ 'No such device' ]]; then
-                info "SAFE    mount exit ${status}, no such device"
+                printf 'SAFE\tmount exit %d, no such device' "$status"
                 return 0
             else
-                info "RISK    mount exit ${status} w/o known explanation"
+                printf 'RISK\tmount exit %d w/o known explanation\n' "$status"
                 return 1
             fi
             ;;
         32)     # "mount failed"
-            info "SAFE    mount exited with code 32"
+            printf 'SAFE\tmount exited with code 32\n'
             return 0
             ;;
     esac
-    info "ERROR   unknown exit code: ${status}"
+    printf 'ERROR\tunknown exit code: %s\n' "$status"
     return 1
 }
 

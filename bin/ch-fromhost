@@ -125,7 +125,7 @@ queue_files () {
                 ;;
         esac
         if is_so "$f"; then
-            [ -z "$verbose" ] || debug "found shared library: ${f}"
+             debug "found shared library: ${f}"
             lib_found=yes
         fi
         # This adds a delimiter only for the second and subsequent files.
@@ -195,9 +195,6 @@ while [ $# -gt 0 ]; do
             queue_files "$1"
             shift
             ;;
-        -v|--verbose)
-            verbose=yes
-            ;;
         -*)
             info "invalid option: ${opt}"
             usage
@@ -246,7 +243,7 @@ if [ $lib_found ]; then
                 3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
     [ -n "$lib_dest" ] || fatal 'empty path from ldconfig'
     [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
-    [ -z "$verbose" ] || debug "shared library destination: ${lib_dest}"
+     debug "shared library destination: ${lib_dest}"
 fi
 
 if [ $lib_dest_print ]; then
@@ -340,16 +337,16 @@ fi
 
 [ "$inject_files" ] || fatal "empty file list"
 
-[ -z "$verbose" ] || debug "injecting into image: ${image}"
+ debug "injecting into image: ${image}"
 
 old_ifs="$IFS"
 IFS="$newline"
 for u in $inject_unlinks; do
-    [ -z "$verbose" ] || debug "  rm -f ${image}${u}"
+     debug "  rm -f ${image}${u}"
     rm -f "${image}${u}"
 done
 for d in $inject_mkdirs; do
-    [ -z "$verbose" ] || debug "  mkdir -p ${image}${d}"
+     debug "  mkdir -p ${image}${d}"
     mkdir -p "${image}${d}"
 done
 for file in $inject_files; do
@@ -363,7 +360,7 @@ for file in $inject_files; do
         d=$lib_dest
         infer=" (inferred)"
     fi
-    [ -z "$verbose" ] || debug "  ${f} -> ${d}${infer}"
+     debug "  ${f} -> ${d}${infer}"
     [ "$d" ] || fatal "no destination for: ${f}"
     [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
     [ -d "${image}${d}" ] || fatal "not a directory: ${image}${d}"
@@ -381,7 +378,7 @@ IFS="$old_ifs"
 
 if [ $cray_mpich ]; then
     # Restore libmpi.so symlink (it's part of several chains).
-    [ -z "$verbose" ] || debug "  ln -s libmpi.so.12 ${image}${lib_dest}/libmpi.so"
+     debug "  ln -s libmpi.so.12 ${image}${lib_dest}/libmpi.so"
     ln -s libmpi.so.12 "${image}${lib_dest}/libmpi.so"
 
     # Patch libmpi.so.12 so its soname is "libmpi.so.12" instead of e.g.
@@ -389,14 +386,14 @@ if [ $cray_mpich ]; then
     # LD_LIBRARY_PATH, and LD_LIBRARY_PATH is to be avoided.
     #
     # Note: This currently requires our patched patchelf (issue #256).
-    [ -z "$verbose" ] || debug "fixing soname on libmpi.so.12"
+     debug "fixing soname on libmpi.so.12"
     "${ch_bin}/ch-run" -w "$image" -- \
         patchelf --set-soname libmpi.so.12 "$lib_dest/libmpi.so.12"
 fi
 
 if [ $lib_found ] && [ -z "$no_ldconfig" ]; then
-    [ -z "$verbose" ] || debug "running ldconfig"
+     debug "running ldconfig"
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
 else
-    [ -z "$verbose" ] || debug "not running ldconfig"
+     debug "not running ldconfig"
 fi
