@@ -45,6 +45,14 @@ count_ranks () {
     fi
 }
 
+@test "${ch_tag}/check for non-fatal MPI errors" {
+   multiprocess_ok
+   output=$($ch_mpirun_core ch-run --join "$ch_img" -- \
+                            /hello/hello 2>&1 1>/dev/null)
+   echo "$output"
+   [[ -z "$output" ]]
+}
+
 @test "${ch_tag}/serial" {
     # This seems to start up the MPI infrastructure (daemons, etc.) within the
     # guest even though there's no mpirun.
