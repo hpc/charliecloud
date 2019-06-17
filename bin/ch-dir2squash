@@ -7,7 +7,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Pack a filesystem directory into a SquashFS file.
+Create a SquashFS file from an image directory.
 
 Usage:
 

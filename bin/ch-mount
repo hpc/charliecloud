@@ -5,7 +5,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Mount Charliecloud SquashFS file using FUSE.
+Mount a SquashFS image file using FUSE.
 
 Usage:
 
