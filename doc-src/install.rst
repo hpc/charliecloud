@@ -39,6 +39,12 @@ Systems used for running images need:
 
 * POSIX.1-2017 shell and utilities
 
+The SquashFS workflow requires FUSE and `Squashfuse
+<https://github.com/vasi/squashfus>`_. Note that distribution packages of
+Squashfuse often provide only the "high level" executables; the "low level"
+executables have better performance. These can be installed from source on any
+distribution.
+
 Some distributions need configuration changes to enable user namespaces. For
 example:
 
@@ -66,6 +72,7 @@ are untested. We know that 1.7.1 does not work.)
 Optional build-time dependencies:
 
 * Bash 4.1+, for :code:`ch-build2dir`
+* :code:`squashfs-tools` for creating SquashFS image files
 
 Test suite
 ----------

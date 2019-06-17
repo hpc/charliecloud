@@ -27,6 +27,20 @@ Build a Charliecloud image from Dockerfile and unpack it into a directory.
 
 .. include:: ./ch-build2dir_desc.rst
 
+ch-dir2squash
++++++++++++++
+
+Create a SquashFS file from an image directory.
+
+.. include:: ./ch-dir2squash_desc.rst
+
+ch-docker2squash
+++++++++++++++++
+
+Flatten a Docker image into a Charliecloud SquashFS file.
+
+.. include:: ./ch-docker2squash_desc.rst
+
 ch-docker2tar
 +++++++++++++
 
@@ -42,6 +56,13 @@ Inject files from the host into an image directory.
 .. include:: ./ch-fromhost_desc.rst
 
 .. _man_ch-run:
+
+ch-mount
+++++++++
+
+Mount a SquashFS image file using FUSE.
+
+.. include:: ./ch-mount_desc.rst
 
 ch-pull2dir
 +++++++++++
@@ -77,3 +98,17 @@ ch-tar2dir
 Unpack an image tarball into a directory.
 
 .. include:: ./ch-tar2dir_desc.rst
+
+ch-tar2squash
++++++++++++++
+
+Create a SquashFS file from a tarball image.
+
+.. include:: ./ch-tar2squash_desc.rst
+
+ch-umount
++++++++++
+
+Unmount a FUSE mounted squash filesystem and remove the mount point.
+
+.. include:: ./ch-umount_desc.rst

@@ -55,6 +55,7 @@ addons:
       - pv
       - python3-pip
       - skopeo
+      - squashfuse
 
 install:
 # We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
@@ -74,7 +75,7 @@ install:
     fi
 # Tests should still pass with only the basics installed.
   - if [ -n "$MINIMAL_DEPS" ]; then
-      sudo apt-get purge buildah cri-o-runc pv skopeo;
+      sudo apt-get purge buildah cri-o-runc pv skopeo squashfuse;
     fi
 
 before_script:

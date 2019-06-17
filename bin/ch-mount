@@ -1,0 +1,38 @@
+#!/bin/sh
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Mount a SquashFS image file using FUSE.
+
+Usage:
+
+  $ $(basename "$0") SQFS PARENTDIR
+
+The mount point is a new directory under PARENTDIR named SQFS but with the
+first extension removed.
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$#" -ne 2 ]; then
+    usage
+fi
+
+image=$1
+parentdir=$2
+
+imgdir=${image%.*}
+imgdir=${parentdir}/$(basename "$imgdir")
+
+# Check if image directory exists
+if [ -e "$imgdir" ]; then
+    echo "can't mount: ${imgdir} already exists" 1>&2
+    exit 1
+fi
+
+mkdir -p "$imgdir"
+squashfuse_ "$image" "$imgdir"
