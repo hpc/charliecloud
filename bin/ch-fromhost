@@ -67,7 +67,7 @@ Options:
   --lib-path       print the inferred destination for shared libraries
   --no-ldconfig    don't run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
-  -v, --verbose    list the injected files
+  --verbose    list the injected files
   --version        print version and exit
 EOF
 )
@@ -194,6 +194,9 @@ while [ $# -gt 0 ]; do
             ensure_nonempty --path "$1"
             queue_files "$1"
             shift
+            ;;
+        --verbose)
+            [ -n $verbose ] || verbose=yes
             ;;
         -*)
             info "invalid option: ${opt}"

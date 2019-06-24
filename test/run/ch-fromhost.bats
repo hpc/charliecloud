@@ -39,7 +39,7 @@ fromhost_ls () {
 
     # --file
     fromhost_clean "$img"
-    ch-fromhost -v --file sotest/files_inferrable.txt "$img"
+    ch-fromhost --verbose --file sotest/files_inferrable.txt "$img"
     fromhost_ls "$img"
     test -f "${img}/usr/bin/sotest"
     test -f "${img}${libpath}/libsotest.so.1.0"
@@ -53,24 +53,24 @@ fromhost_ls () {
     fromhost_clean_p "$img"
 
     # --cmd
-    ch-fromhost -v --cmd 'cat sotest/files_inferrable.txt' "$img"
+    ch-fromhost --verbose --cmd 'cat sotest/files_inferrable.txt' "$img"
     ch-run "$img" -- sotest
 
     # --path
-    ch-fromhost -v --path sotest/bin/sotest \
+    ch-fromhost --verbose --path sotest/bin/sotest \
                    --path sotest/lib/libsotest.so.1.0 \
                    "$img"
     ch-run "$img" -- sotest
     fromhost_clean "$img"
 
     # --cmd and --file
-    ch-fromhost -v --cmd 'cat sotest/files_inferrable.txt' \
+    ch-fromhost --verbose --cmd 'cat sotest/files_inferrable.txt' \
                    --file sotest/files_inferrable.txt "$img"
     ch-run "$img" -- sotest
     fromhost_clean "$img"
 
     # --dest
-    ch-fromhost -v --file sotest/files_inferrable.txt \
+    ch-fromhost --verbose --file sotest/files_inferrable.txt \
                    --dest /mnt "$img" \
                    --path sotest/sotest.c
     ch-run "$img" -- sotest
@@ -78,14 +78,14 @@ fromhost_ls () {
     fromhost_clean "$img"
 
     # --dest overrides inference, but ldconfig still run
-    ch-fromhost -v --dest /lib \
+    ch-fromhost --verbose --dest /lib \
                    --file sotest/files_inferrable.txt \
                    "$img"
     ch-run "$img" -- /lib/sotest
     fromhost_clean "$img"
 
     # --no-ldconfig
-    ch-fromhost -v --no-ldconfig --file sotest/files_inferrable.txt "$img"
+    ch-fromhost --verbose --no-ldconfig --file sotest/files_inferrable.txt "$img"
       test -f "${img}/usr/bin/sotest"
       test -f "${img}${libpath}/libsotest.so.1.0"
     ! test -L "${img}${libpath}/libsotest.so.1"
@@ -102,7 +102,7 @@ fromhost_ls () {
     fromhost_clean "$img"
 
     # destination directory not writeable (#323)
-    chmod -v u-w "${img}/mnt"
+    chmod --verbose u-w "${img}/mnt"
     ch-fromhost --dest /mnt --path sotest/sotest.c "$img"
     test -w "${img}/mnt"
     test -f "${img}/mnt/sotest.c"
@@ -115,7 +115,7 @@ fromhost_ls () {
     img=${ch_imgdir}/centos7
 
     fromhost_clean "$img"
-    ch-fromhost -v --file sotest/files_inferrable.txt "$img"
+    ch-fromhost --verbose --file sotest/files_inferrable.txt "$img"
     fromhost_ls "$img"
     test -f "${img}/usr/bin/sotest"
     test -f "${img}/lib/libsotest.so.1.0"
@@ -163,20 +163,20 @@ fromhost_ls () {
     fromhost_clean_p "$img"
 
     # file that needs --dest but not specified
-    run ch-fromhost -v --path sotest/sotest.c "$img"
+    run ch-fromhost --verbose --path sotest/sotest.c "$img"
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'no destination for: sotest/sotest.c'* ]]
     fromhost_clean_p "$img"
 
     # file with colon in name
-    run ch-fromhost -v --path 'foo:bar' "$img"
+    run ch-fromhost --verbose --path 'foo:bar' "$img"
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"paths can't contain colon: foo:bar"* ]]
     fromhost_clean_p "$img"
     # file with newlines in name
-    run ch-fromhost -v --path $'foo\nbar' "$img"
+    run ch-fromhost --verbose --path $'foo\nbar' "$img"
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"no destination for: foo"* ]]
@@ -308,7 +308,7 @@ fromhost_ls () {
 @test 'ch-fromhost --nvidia with GPU' {
     scope full
     prerequisites_ok nvidia
-    command -v nvidia-container-cli >/dev/null 2>&1 \
+    command --verbose nvidia-container-cli >/dev/null 2>&1 \
         || skip 'nvidia-container-cli not in PATH'
     img=${ch_imgdir}/nvidia
 
@@ -326,7 +326,7 @@ fromhost_ls () {
     fi
 
     # --nvidia
-    ch-fromhost -v --nvidia "$img"
+    ch-fromhost --verbose --nvidia "$img"
 
     # nvidia-smi runs in guest
     ch-run "$img" -- nvidia-smi -L
@@ -375,7 +375,7 @@ fromhost_ls () {
 
     # --nvidia should give a proper error whether or not nvidia-container-cli
     # is available.
-    if ( command -v nvidia-container-cli >/dev/null 2>&1 ); then
+    if ( command --verbose nvidia-container-cli >/dev/null 2>&1 ); then
         # nvidia-container-cli in $PATH
         run nvidia-container-cli list --binaries --libraries
         echo "$output"
@@ -385,14 +385,14 @@ fromhost_ls () {
         else
             [[ $status -eq 1 ]]
             [[ $output = *'cuda error'* ]]
-            run ch-fromhost -v --nvidia "$img"
+            run ch-fromhost --verbose --nvidia "$img"
             echo "$output"
             [[ $status -eq 1 ]]
             [[ $output = *'does this host have GPUs'* ]]
         fi
     else
         # nvidia-container-cli not in $PATH
-        run ch-fromhost -v --nvidia "$img"
+        run ch-fromhost --verbose --nvidia "$img"
         echo "$output"
         [[ $status -eq 1 ]]
         r="nvidia-container-cli: (command )?not found"
