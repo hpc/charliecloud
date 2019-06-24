@@ -9,9 +9,7 @@ LDLIBS += -pthread -lrt
 all: $(bin)
 
 $(obj): charliecloud.h version.h Makefile
-ch-run: charliecloud.o
-ch-ssh: charliecloud.o
-ch-checkns: ch-checkns.c
+$(bin): charliecloud.o
 
 .PHONY: clean
 clean:

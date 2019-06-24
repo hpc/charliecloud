@@ -42,12 +42,28 @@
 #include <stdio.h>
 #include <sched.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#include "charliecloud.h"
+
+
+const char usage[] = "\
+Usage: ch-checkns\n\
+\n\
+Ensure Linux containers are able to run on the system.\n\
+\n\
+Example:\n\
+\n\
+  $ ch-checkns\n\
+  ok\n\
+\n";
+
 #define TRY(x) if (x) fatal_errno(__LINE__)
+
 
 void fatal_errno(int line)
 {
@@ -55,8 +71,18 @@ void fatal_errno(int line)
    exit(1);
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
+
+   if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
+      fprintf(stderr, usage);
+      return 0;
+   }
+   if (argc >= 2 && strcmp(argv[1], "--version") == 0) {
+      version();
+      return 0;
+   }
+
    /* Ensure that our image directory exists. It doesn't really matter what's
       in it. */
    if (mkdir("/tmp/newroot", 0755) && errno != EEXIST)
