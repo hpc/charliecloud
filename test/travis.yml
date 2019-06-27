@@ -63,7 +63,7 @@ install:
       sudo pip3 install lark-parser;
     fi
 # umoci provides a binary build; no appropriate Ubuntu package for Xenial.
-  - if [ -z "$MINIMAL_DEPS" ]; then
+  - if [ -z "$MINIMAL_DEPS" ] || [ "$CH_BUILDER" = ch-grow ]; then
       wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64;
       sudo chmod 755 umoci.amd64;
       sudo mv umoci.amd64 /usr/local/bin/umoci;

@@ -1,4 +1,4 @@
-@test 'ch-docker2archive %(tag)s' {
+@test 'builder to archive %(tag)s' {
     scope %(scope)s
     %(exclude)s
     %(need_docker)s
