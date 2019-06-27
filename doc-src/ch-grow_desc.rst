@@ -8,6 +8,11 @@ Synopsis
 Description
 ===========
 
+.. warning::
+
+   This script is experimental. Please report the bugs you find so we can fix
+   them!
+
 Build an image named :code:`TAG` as specified in :code:`DOCKERFILE`; use
 :code:`ch-run(1)` to execute :code:`RUN` instructions. This builder is
 completely unprivileged, with no setuid/setgid/setcap helpers.

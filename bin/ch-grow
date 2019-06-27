@@ -163,8 +163,6 @@ environment variables:
    global state
    state = State()
 
-   # Use LALR(1) parser because Earley has some non-deterministic behavior
-   # (comments sometimes in tree, sometimes not).
    parser = lark.Lark(GRAMMAR, parser="earley", propagate_positions=True)
    text = open(cli.file, "rt").read()
    tree = parser.parse(text)
@@ -604,6 +602,3 @@ def unescape(sl):
 
 if (__name__ == "__main__"):
    main()
-
-
-

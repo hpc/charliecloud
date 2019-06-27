@@ -13,7 +13,7 @@ into the builder's back-end storage.
 
 Using this script is *not* required for a working Charliecloud image. You can
 also use any builder that can produce a Linux filesystem tree directly,
-whether or not it is in the list below. However, this command hides the
+whether or not it is in the list below. However, this script hides the
 vagaries of making the supported builders work smoothly with Charliecloud and
 adds some conveniences (e.g., pass HTTP proxy environment variables to the
 build environment if the builder doesn't do this by default).
@@ -66,8 +66,8 @@ Examples
 ========
 
 Create an image tagged :code:`foo` and specified by the file
-:code:`Dockerfile` located in the current working directory. Use :code:`/bar`
-as the Docker context directory. Use the default builder.
+:code:`Dockerfile` located in the context directory. Use :code:`/bar` as the
+Docker context directory. Use the default builder.
 
 ::
 
