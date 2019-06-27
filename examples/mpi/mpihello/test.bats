@@ -45,7 +45,7 @@ count_ranks () {
     fi
 }
 
-@test "${ch_tag}/check for non-fatal MPI errors" {
+@test "${ch_tag}/empty stderr" {
    multiprocess_ok
    output=$($ch_mpirun_core ch-run --join "$ch_img" -- \
                             /hello/hello 2>&1 1>/dev/null)
