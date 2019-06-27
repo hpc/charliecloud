@@ -90,10 +90,10 @@ WORKDIR /usr/local/src
 #   https://lists.debian.org/debian-hpc/2017/12/msg00015.html
 ENV DEB_URL http://snapshot.debian.org/archive/debian/20181126T030749Z/pool/main
 ENV PSM2_VERSION 11.2.68-3
-RUN    [ "$(dpkg --print-architecture)" = "amd64" ] \
-    || wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb \
-                ${DEB_URL}/libp/libpsm2/libpsm2-dev_${PSM2_VERSION}_amd64.deb
-
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ] ; then \
+      wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb \
+               ${DEB_URL}/libp/libpsm2/libpsm2-dev_${PSM2_VERSION}_amd64.deb ; \
+    fi
 # As of 5/2/2019, this is not the newest libibverbs. However, it is the
 # newest that doesn't crash on our test systems.
 ENV IBVERBS_VERSION 20.0-1
@@ -112,6 +112,9 @@ RUN for i in ibacm \
         wget -nv ${DEB_URL}/r/rdma-core/${i}_${IBVERBS_VERSION}_$(dpkg --print-architecture).deb ; \
     done
 
+# Install the .debs we collected. UCX needs these.
+RUN dpkg --install *.deb
+
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
 ENV UCX_VERSION 1.3.1
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
@@ -120,9 +123,6 @@ RUN    cd ucx \
     && ./autogen.sh \
     && ./contrib/configure-release --prefix=/usr/local \
     && make -j$(getconf _NPROCESSORS_ONLN) install
-
-# Install the .debs we collected.
-RUN dpkg --install *.deb
 
 # OpenMPI.
 #

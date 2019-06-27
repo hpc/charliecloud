@@ -54,6 +54,8 @@ The core Charliecloud team at Los Alamos is:
 
 * Reid Priedhorsky <reidpr@lanl.gov>, co-founder and BDFL
 * Tim Randles <trandles@lanl.gov>, co-founder
+* Rusty Davis <rustyd@lanl.gov>
+* Hunter Easterday <heasterday@lanl.gov>
 * Michael Jennings <mej@lanl.gov>
 * Jordan Ogas <jogas@lanl.gov>
 
@@ -61,7 +63,9 @@ Patches (code, documentation, etc.) contributed by:
 
 * Reid Priedhorsky <reidpr@lanl.gov>
 * Rusty Davis <rustyd@lanl.gov>
+* Hunter Easterday <heasterday@lanl.gov>
 * Oliver Freyermuth <o.freyermuth@googlemail.com>
+* Shane Goff <rgoff@lanl.gov>
 * Christoph Junghans <junghans@lanl.gov>
 * Jordan Ogas <jogas@lanl.gov>
 * Matthew Vernon <mv3@sanger.ac.uk>

@@ -39,6 +39,12 @@ Systems used for running images need:
 
 * POSIX.1-2017 shell and utilities
 
+The SquashFS workflow requires FUSE and `Squashfuse
+<https://github.com/vasi/squashfus>`_. Note that distribution packages of
+Squashfuse often provide only the "high level" executables; the "low level"
+executables have better performance. These can be installed from source on any
+distribution.
+
 Some distributions need configuration changes to enable user namespaces. For
 example:
 
@@ -65,9 +71,9 @@ are untested. We know that 1.7.1 does not work.)
 
 Additional dependencies for specific components:
 
-* :code:`ch-build2dir`
+* To create SquashFS image files: :code:`squashfs-tools`
 
-  * Bash 4.1+
+* :code:`ch-build2dir`: Bash 4.1+
 
 * :code:`ch-grow`, our internal unprivileged image builder (no specific
   dependency versions documented yet)
@@ -177,6 +183,28 @@ If may necessary to accept keywords first, e.g.::
 A live ebuild is also available and can be keyworded via::
 
   $ echo "~sys-cluster/charliecloud-9999 \*\*" >> /etc/portage/package.accept_keywords
+
+openSUSE and SUSE
+-----------------
+
+Charliecloud is included in openSUSE Tumbleweed.
+For SUSE Linux Enterprise users, it's available via
+`SUSE Package Hub
+<https://packagehub.suse.com/packages/charliecloud/>`_.
+
+.. list-table::
+   :widths: auto
+
+   * - Package name
+     - :code:`charliecloud`, :code:`charliecloud-doc` and :code:`charliecloud-examples`
+   * - Maintainers
+     - Ana Guerrero Lopez (:code:`aguerrero@suse.com`)
+       and Christian Goll (:code:`cgoll@suse.com`)
+   * - Bug reports to
+     - `openSUSE Bugzilla <https://en.opensuse.org/openSUSE:Submitting_bug_reports>`_
+   * - Packaging source code
+     - `openSUSE Build Service <https://build.opensuse.org/package/show/network:cluster/charliecloud>`_
+
 
 RPM-based distributions
 -----------------------

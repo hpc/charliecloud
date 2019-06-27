@@ -34,8 +34,10 @@ env:
   - CH_BUILDER=docker        TARBALL=export       INSTALL=yes
   - CH_BUILDER=docker        TARBALL=export-bats  INSTALL=
 # - CH_BUILDER=docker        TARBALL=export-bats  INSTALL=yes
-# Extra conditions
+# Other builders
   - CH_BUILDER=ch-grow       TARBALL= INSTALL=
+  - CH_BUILDER=ch-grow       TARBALL= INSTALL= MINIMAL_DEPS=yes
+# Extra conditions with Docker
   - CH_BUILDER=docker        TARBALL= INSTALL= MINIMAL_DEPS=yes
   - CH_BUILDER=docker        TARBALL= INSTALL= SUDO_RM_AFTER_BUILD=yes
   - CH_BUILDER=docker        TARBALL= INSTALL= SUDO_AVOID_AFTER_BUILD=yes
@@ -54,7 +56,7 @@ addons:
 install:
 # Install conditional packages.
   - if [ -z "$MINIMAL_DEPS" ]; then
-      sudo apt-get install buildah cri-o-runc pigz pv skopeo;
+      sudo apt-get install buildah cri-o-runc pigz pv skopeo squashfuse;
     fi
   - if [ "$CH_BUILDER" = ch-grow ]; then
       sudo apt-get install skopeo;

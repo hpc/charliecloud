@@ -96,6 +96,15 @@ prerequisites_ok () {
     fi
 }
 
+need_squashfs () {
+    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
+    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
+}
+
+squashfs_ready () {
+    ( command -v mksquashfs && command -v squashfuse )
+}
+
 scope () {
     case $1 in  # $1 is the test's scope
         quick)
@@ -118,7 +127,7 @@ scope () {
     esac
 }
 
-tarball_ok () {
+archive_ok () {
     ls -ld "$1" || true
     test -f "$1"
     test -s "$1"
@@ -130,6 +139,18 @@ unpack_img_all_nodes () {
     else
         skip 'not needed'
     fi
+}
+
+archive_grep () {
+    image="$1"
+    case $image in
+        *.sqfs)
+            unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
+            ;;
+        *)
+            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
+            ;;
+    esac
 }
 
 # Predictable sorting and collation
@@ -184,10 +205,7 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # [1]: https://unix.stackexchange.com/a/136527
 ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
-if ( mount | grep -Fq "$ch_imgdir" ); then
-    printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
-    exit 1
-fi
+ch_mounts="${ch_imgdir}/mounts"
 if [[ $CH_BUILDER = ch-grow ]]; then
     export CH_GROW_STORAGE=$ch_tardir/_ch-grow
 fi
@@ -230,31 +248,25 @@ fi
 
 # Slurm stuff.
 if [[ $SLURM_JOB_ID ]]; then
-    # $SLURM_NTASKS isn't always set, nor is $SLURM_CPUS_ON_NODE despite the
-    # documentation.
-    if [[ -z $SLURM_CPUS_ON_NODE ]]; then
-        SLURM_CPUS_ON_NODE=$(echo "$SLURM_JOB_CPUS_PER_NODE" | cut -d'(' -f1)
-    fi
     ch_nodes=$SLURM_JOB_NUM_NODES
-    ch_cores_node=$SLURM_CPUS_ON_NODE
 else
     ch_nodes=1
-    ch_cores_node=$(getconf _NPROCESSORS_ONLN)
 fi
+# One rank per hyperthread can exhaust hardware contexts, resulting in
+# communication failure. Use one rank per core to avoid this. There are ways
+# to do this with Slurm, but they need Slurm configuration that seems
+# unreliably present. This seems to be the most portable way to do this.
+ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 2 | wc -l)
 ch_cores_total=$((ch_nodes * ch_cores_node))
-if [[ $ch_mpi = mpich ]]; then
-    ch_mpirun_np="-np ${ch_cores_node}"
-else
-    ch_mpirun_np='--use-hwthread-cpus'
-fi
+ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
-    ch_multinode=yes                           # can run on multiple nodes
-    ch_multiprocess=yes                        # can run multiple processes
-    ch_mpirun_node='srun --ntasks-per-node 1'  # one process/node
-    ch_mpirun_core='srun --cpus-per-task 1'    # one process/core
-    ch_mpirun_2='srun -n2'                     # two processes on diff nodes
-    ch_mpirun_2_1node='srun -N1 -n2'           # two processes on one node
+    ch_multinode=yes     # can run on multiple nodes
+    ch_multiprocess=yes  # can run multiple processes
+    ch_mpirun_node='srun --ntasks-per-node 1'               # 1 rank/node
+    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"  # 1 rank/core
+    ch_mpirun_2='srun -n2'                                  # 2 ranks, 2 nodes
+    ch_mpirun_2_1node='srun -N1 -n2'                        # 2 ranks, 1 node
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
     # are present. Work around this by fooling OpenMPI into believing it's not
     # in a Slurm allocation.

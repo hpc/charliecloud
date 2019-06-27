@@ -1,0 +1,10 @@
+@test 'unpack %(tag)s' {
+    scope %(scope)s
+    %(exclude)s
+    prerequisites_ok %(tag)s
+    if [[ -e "${ch_tardir}/%(tag)s.sqfs" ]]; then
+        unsquashfs -d "${ch_imgdir}/%(tag)s" "${ch_tardir}/%(tag)s.sqfs"
+    else
+        ch-tar2dir "${ch_tardir}/%(tag)s" "$ch_imgdir"
+    fi
+}

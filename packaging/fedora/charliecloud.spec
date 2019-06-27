@@ -9,8 +9,7 @@
 # Don't try to compile python files with /usr/bin/python
 %{?el7:%global __python %__python3}
 
-# Fedora does not allow SUSE conditionals, thus we define libexecdir to ensure
-# consistency.
+# Define libexecdir to ensure consistency.
 %define _libexecdir %{_prefix}/libexec
 
 # Specify python version of a given file
@@ -54,6 +53,7 @@ container image builders such as Docker, Skopeo, and Buildah.
 %prep
 %setup -q
 
+%{versionize_script python3 test/docs-sane}
 %{versionize_script python3 test/make-auto}
 %{versionize_script python3 test/make-perms-test}
 
@@ -76,29 +76,22 @@ Note for versions below RHEL7.6, you will also need to enable user namespaces:
   systemctl -p
 EOF
 
-cat > README.TESTS <<EOF
-Charliecloud comes with a fairly comprehensive Bats test suite. For testing
-instructions visit: https://hpc.github.io/charliecloud/test.html
-EOF
-
 %check
 
 %files
 %license LICENSE
-%doc README.rst %{?el7:README.EL7}
+%doc doc README.rst %{?el7:README.EL7}
 %{_mandir}/man1/ch*
-%exclude %{_datadir}/doc/%{name}
 
 # Binaries and helper scripts
-%{_libexecdir}/%{name}/base.sh
-%{_libexecdir}/%{name}/version.sh
+%{_libexecdir}/%{name}-%{version}/base.sh
+%{_libexecdir}/%{name}-%{version}/version.sh
 %{_bindir}/ch-*
 
 %files test
-%doc README.TESTS
-%{_libexecdir}/%{name}/examples
-%{_libexecdir}/%{name}/test
-%exclude %{_datadir}/doc/%{name}
+%{_libexecdir}/%{name}-%{version}/examples
+%{_libexecdir}/%{name}-%{version}/test
+%exclude %{_datadir}/doc/%{name}-%{version}
 
 %changelog
 * Thu Mar 14 2019 <jogas@lanl.gov> @VERSION@-@RELEASE@
