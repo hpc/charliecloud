@@ -5,37 +5,74 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Wrapper for "docker build" with various enhancements.
+Build an image and place it in the builder's back-end storage.
 
 Usage:
 
-  $ $(basename "$0") -t TAG [ARGS ...] CONTEXT
+  $ $(basename "$0") [-b BUILDER] [--builder-info] -t TAG [ARGS ...] CONTEXT
 
-ARGS are passed unchanged to "docker build" after the workaround arguments.
+BUILDER is one of: ch-grow docker.
+ARGS are passed unchanged to the underlying builder.
 EOF
 )
 
 parse_basic_args "$@"
 
-dockerfile=
-if [ -f Dockerfile ]; then
-    dockerfile="--file=$PWD/Dockerfile"
-    for arg in "$@"; do
-        if [ "${arg#--file}" != "$arg" ]; then
-            # --file already specified, don't override
-            dockerfile=
+# This is rather kludgey, because we want to pull off certain arguments and
+# then pass on the rest.
+while true; do
+    case $1 in
+        -b|--builder)
+            shift
+            CH_BUILDER=$1
+            shift
+            ;;
+        --builder-info)
+            builder_info=yes
+            shift
+            ;;
+        *)
             break
-        fi
-    done
-fi
+            ;;
+    esac
+done
 
-# Coordinate this list with test "build.bats/proxy variables".
-# shellcheck disable=SC2154
-docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
-              --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
-              --build-arg NO_PROXY="$NO_PROXY" \
-              --build-arg http_proxy="$http_proxy" \
-              --build-arg https_proxy="$https_proxy" \
-              --build-arg no_proxy="$no_proxy" \
-              $dockerfile \
-              "$@"
+builder_choose
+if [ "$1" = --print-builder ]; then  # undocumented; for test suite
+    echo "$CH_BUILDER"
+    exit 0
+fi
+if [ -n "$builder_info" ]; then
+    printf "builder: %s: " "$CH_BUILDER"
+    case $CH_BUILDER in
+        ch-grow)
+            "${ch_bin}/ch-grow" --version
+            ;;
+        docker)
+            docker --version  # no wrapper: sudo not needed for --version
+            ;;
+        *)
+            echo "unknown builder" 1>&2
+            exit 1
+            ;;
+    esac
+    exit 0
+fi
+echo "building with: ${CH_BUILDER}"
+
+case $CH_BUILDER in
+    ch-grow)
+        "${ch_bin}/ch-grow" "$@"
+        ;;
+    docker)
+        # Coordinate this list with test "build.bats/proxy variables".
+        # shellcheck disable=SC2154
+        docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                      --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                      --build-arg NO_PROXY="$NO_PROXY" \
+                      --build-arg http_proxy="$http_proxy" \
+                      --build-arg https_proxy="$https_proxy" \
+                      --build-arg no_proxy="$no_proxy" \
+                      "$@"
+        ;;
+esac

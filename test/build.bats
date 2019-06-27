@@ -42,7 +42,7 @@ load common
         run "$i" --help
         echo "$output"
         [[ $status -eq 0 ]]
-        [[ $output =~ Usage: ]]
+        [[ $output = *'sage:'* ]]
         # not setuid or setgid
         ls -l "$i"
         [[ ! -u $i ]]
@@ -50,6 +50,11 @@ load common
     done < <( find "$ch_bin" -name 'ch-*' -a \( -executable -o -name '*.c' \) \
                    -print0 )
 
+}
+
+@test 'ch-build --builder-info' {
+    scope standard
+    ch-build --builder-info
 }
 
 @test 'lint shell scripts' {

@@ -16,7 +16,7 @@ Charliecloud commands. Its content is identical to the commands' man pages.
 ch-build
 ++++++++
 
-Wrapper for :code:`docker build` with various enhancements.
+Build an image and place it in the builder's back-end storage.
 
 .. include:: ./ch-build_desc.rst
 
@@ -26,6 +26,13 @@ ch-build2dir
 Build a Charliecloud image from Dockerfile and unpack it into a directory.
 
 .. include:: ./ch-build2dir_desc.rst
+
+ch-builder2tar
+++++++++++++++
+
+Flatten a builder image into a Charliecloud image tarball.
+
+.. include:: ./ch-builder2tar_desc.rst
 
 ch-dir2squash
 +++++++++++++
@@ -41,13 +48,6 @@ Flatten a Docker image into a Charliecloud SquashFS file.
 
 .. include:: ./ch-docker2squash_desc.rst
 
-ch-docker2tar
-+++++++++++++
-
-Flatten a Docker image into a Charliecloud image tarball.
-
-.. include:: ./ch-docker2tar_desc.rst
-
 ch-fromhost
 +++++++++++
 
@@ -55,7 +55,12 @@ Inject files from the host into an image directory.
 
 .. include:: ./ch-fromhost_desc.rst
 
-.. _man_ch-run:
+ch-grow
++++++++
+
+Build an image from a Dockerfile; completely unprivileged.
+
+.. include:: ./ch-grow_desc.rst
 
 ch-mount
 ++++++++
@@ -77,6 +82,8 @@ ch-pull2tar
 Pull image from a Docker Hub and flatten into tarball.
 
 .. include:: ./ch-pull2tar_desc.rst
+
+.. _man_ch-run:
 
 ch-run
 ++++++

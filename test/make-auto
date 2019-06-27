@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import itertools
 import os
 import os.path
 import re
@@ -42,6 +43,9 @@ load common
 for path in sys.argv[2:]:
 
    (dirname, basename) = os.path.split(path)
+   if (basename == "make-auto"):
+      print("skipping: %s" % basename, file=sys.stderr)
+      continue
    if (dirname == ""): dirname = "."
    tag = tag_from_path(path)
 
@@ -54,9 +58,12 @@ for path in sys.argv[2:]:
          print("%s: no valid scope specified" % path, file=sys.stderr)
          sys.exit(1)
       scope = m.group(1)
-      # ch-test-arch-exclude
-      arch_exclude = "\n".join("arch_exclude %s" % i for i in
-                               re.findall(r"ch-test-arch-exclude: (\w+)", text))
+      # Exclusions.
+      exclude = "\n".join(itertools.chain(
+         (         "arch_exclude %s" % i
+          for i in re.findall(r"ch-test-arch-exclude: ([-\w]+)", text)),
+         (         "builder_exclude %s" % i
+          for i in re.findall(r"ch-test-builder-exclude: ([-\w]+)", text))))
 
    # Build an archive: different test for each type.
    if (mode == "build"):
@@ -64,12 +71,18 @@ for path in sys.argv[2:]:
          template = get_template('build_custom.bats.in')
       elif ("Dockerfile" in basename or "Docker_Pull" in basename):
          if ("Dockerfile" in basename):
+            unpack_needs_docker = False
             template = get_template('build_docker.bats.in')
          else:
             assert ("Docker_Pull" in basename)
+            unpack_needs_docker = True
             with open(path) as fp:
                addr = fp.readline().rstrip()
             template = get_template('pull_docker.bats.in')
+         if (unpack_needs_docker):
+            need_docker = "need_docker %s" % tag
+         else:
+            need_docker = ""
          template += "\n\n" + get_template('docker_to_archive.bats.in')
       else:
          assert False, "unknown build type"
@@ -77,8 +90,6 @@ for path in sys.argv[2:]:
 
    # Unpack archive and run: same for all types.
    if (mode == "run"):
-      template = "\n\n".join(get_template(i + ".bats.in") for i in ("unpack", "run_image"))
-      # template = ( get_template('unpack.bats.in') 
-      #             + "\n\n"
-      #             + get_template('run_image.bats.in'))
+      template = "\n\n".join(get_template(i + ".bats.in")
+                             for i in ("unpack", "run_image"))
       print("\n" + template % locals())

@@ -1,6 +1,6 @@
 @test 'ch-run %(tag)s /bin/true' {
     scope %(scope)s
-    %(arch_exclude)s
+    %(exclude)s
     prerequisites_ok %(tag)s
     if [[ -e "${ch_tardir}/%(tag)s.sqfs" ]]; then
         ch-mount "${ch_tardir}/%(tag)s".sqfs "$ch_mounts"

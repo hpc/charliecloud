@@ -1,0 +1,37 @@
+# This Dockerfile aims to have at least one of everything, to exercise the
+# comprehensiveness of Dockerfile feature support.
+#
+# See: https://docs.docker.com/engine/reference/builder
+#
+# ch-test-scope: standard
+# ch-test-builder-exclude: docker
+
+#FROM alpine
+#FROM alpine@cdf98d1859c1  # skopeo pukes on this
+FROM alpine:3.9
+#FROM alpine:3.9 AS stage1
+
+ENV chse_1 value1 with spaces and trailing space 
+ENV chse_2 "value2"
+ENV chse_2a chse2: ${chse_2}
+ENV chse_2b="chse2: ${chse_2}"
+ENV chse_3 \"value3\"
+ENV chse_4=value4 chse_5="value5 foo" chse_7=\"value7\"
+#ENV chse_4=value4 chse_5="value5 foo" chse_6=value6\ foo chse_7=\"value7\"
+
+RUN pwd
+WORKDIR /usr/local/src
+RUN pwd
+COPY --chown=foo:bar Dockerfile.* run ./
+RUN ls --color=no -lh
+
+RUN apk add --no-cache bc
+RUN ["echo", "hello \n${chse_2} \${chse_2} ${NOTSET}"]
+RUN echo 'hello ${chse_2}' "hello ${chse_2}"
+RUN env
+
+ # leading whitespace comment
+
+# TODO:
+# comment with trailing backslash (line continuation does not work in comments)
+# test WORKDIR with variable

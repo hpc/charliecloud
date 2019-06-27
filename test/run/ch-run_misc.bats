@@ -367,7 +367,7 @@ chse_dockerfile=foo
 EOF
 )
 
-    run ch-run --set-env="${img}/environment" "$img" -- \
+    run ch-run --set-env="${img}/ch/environment" "$img" -- \
                sh -c 'env | grep -E "^chse_"'
     echo "$output"
     [[ $status -eq 0 ]]
