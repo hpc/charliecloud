@@ -5,18 +5,6 @@ This section describes how to build and install Charliecloud. For some
 distributions, this can be done using your package manager; otherwise, both
 normal users and admins can build and install it manually.
 
-.. warning::
-
-   **If you are installing on a Cray** and have not applied the patch for Cray
-   case #188073, you must use the `cray branch
-   <https://github.com/hpc/charliecloud/compare/cray>`_ to avoid crashing
-   nodes during job completion. This is a Cray bug that Charliecloud happens
-   to tickle. There is a patch available from Cray for CLE6.0 UP04 and UP05.
-   The fix is mainlined into Cray CLE6.0 UP06, released in March 2018. Versions
-   of Cray CLE6.0 prior to UP04 are unpatched and affected by the bug.
-   Non-Cray build boxes and others at the same site can still use
-   the master branch.
-
 .. contents::
    :depth: 2
    :local:
@@ -51,6 +39,12 @@ Systems used for running images need:
 
 * POSIX.1-2017 shell and utilities
 
+The SquashFS workflow requires FUSE and `Squashfuse
+<https://github.com/vasi/squashfus>`_. Note that distribution packages of
+Squashfuse often provide only the "high level" executables; the "low level"
+executables have better performance. These can be installed from source on any
+distribution.
+
 Some distributions need configuration changes to enable user namespaces. For
 example:
 
@@ -75,9 +69,19 @@ Docker expect to run the :code:`docker` command under :code:`sudo` and need
 Docker 17.03+ and :code:`mktemp(1)`. (Older versions of Docker may work but
 are untested. We know that 1.7.1 does not work.)
 
-Optional build-time dependencies:
+Additional dependencies for specific components:
 
-* Bash 4.1+, for :code:`ch-build2dir`
+* To create SquashFS image files: :code:`squashfs-tools`
+
+* :code:`ch-build2dir`: Bash 4.1+
+
+* :code:`ch-grow`, our internal unprivileged image builder (no specific
+  dependency versions documented yet)
+
+  * `skopeo <https://github.com/containers/skopeo>`_
+  * `umoci <https://github.com/openSUSE/umoci>`_
+  * Python module :code:`lark`
+    (`lark-parser <https://pypi.org/project/lark-parser/>`_ on PyPI)
 
 Test suite
 ----------
@@ -179,6 +183,28 @@ If may necessary to accept keywords first, e.g.::
 A live ebuild is also available and can be keyworded via::
 
   $ echo "~sys-cluster/charliecloud-9999 \*\*" >> /etc/portage/package.accept_keywords
+
+openSUSE and SUSE
+-----------------
+
+Charliecloud is included in openSUSE Tumbleweed.
+For SUSE Linux Enterprise users, it's available via
+`SUSE Package Hub
+<https://packagehub.suse.com/packages/charliecloud/>`_.
+
+.. list-table::
+   :widths: auto
+
+   * - Package name
+     - :code:`charliecloud`, :code:`charliecloud-doc` and :code:`charliecloud-examples`
+   * - Maintainers
+     - Ana Guerrero Lopez (:code:`aguerrero@suse.com`)
+       and Christian Goll (:code:`cgoll@suse.com`)
+   * - Bug reports to
+     - `openSUSE Bugzilla <https://en.opensuse.org/openSUSE:Submitting_bug_reports>`_
+   * - Packaging source code
+     - `openSUSE Build Service <https://build.opensuse.org/package/show/network:cluster/charliecloud>`_
+
 
 RPM-based distributions
 -----------------------

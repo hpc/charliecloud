@@ -1,0 +1,604 @@
+#!/usr/bin/env python3
+
+import argparse
+import ast
+import glob
+import inspect
+import itertools
+import os
+import pathlib
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import types
+
+try:
+   import lark
+except ImportError:
+   # Friendly error later; kludge here so we can still get --version etc.
+   m = types.ModuleType("lark")
+   class Visitor_Mock(object):
+      pass
+   m.Visitor = Visitor_Mock
+   lark = m
+
+
+## Constants ##
+
+CH_BIN = os.path.dirname(os.path.abspath(
+           inspect.getframeinfo(inspect.currentframe()).filename))
+
+ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
+                 "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
+                 "FTP_PROXY": os.environ.get("FTP_PROXY"),
+                 "NO_PROXY": os.environ.get("NO_PROXY"),
+                 "http_proxy": os.environ.get("http_proxy"),
+                 "https_proxy": os.environ.get("https_proxy"),
+                 "ftp_proxy": os.environ.get("ftp_proxy"),
+                 "no_proxy": os.environ.get("no_proxy"),
+                 "PATH": "/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                 # GNU tar, when it thinks it's running as root, tries to
+                 # chown(2) and chgrp(2) files to whatever's in the tarball.
+                 "TAR_OPTIONS": "--no-same-owner" }
+
+ENV_DEFAULTS = { }
+
+GRAMMAR = r"""
+?start: ( instruction | _COMMENT )+
+
+?instruction: _WS? ( cmd | copy | env | from_ | run | workdir )
+
+cmd: "CMD"i _WS LINE _NEWLINES
+
+copy: "COPY"i ( _WS copy_chown )? ( copy_shell ) _NEWLINES
+copy_chown: "--chown" "=" /[^ \t\n]+/
+copy_shell: _WS WORD ( _WS WORD )+
+
+env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
+env_space: WORD _WS LINE
+env_equalses: env_equals ( _WS env_equals )*
+env_equals: WORD "=" ( WORD | STRING_QUOTED )
+
+from_: "FROM"i _WS ID [ from_tag | from_digest ] [ from_alias ] _NEWLINES
+from_tag: ":" ID
+from_digest: "@" HEXID
+from_alias: "AS"i ID
+
+run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
+run_exec.2: _string_list
+run_shell: LINE
+
+workdir: "WORKDIR"i _WS LINE _NEWLINES
+
+ID: /[A-Za-z0-9_.-]+/
+HEXID: /[a-fA-F0-9]+/
+LINE: ( LINE_CONTINUE | /[^\n]/ )+
+WORD: /[^ \t\n=]/+
+
+_string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
+
+LINE_CONTINUE: "\\\n"
+%ignore LINE_CONTINUE
+
+_COMMENT: _WS? /#[^\n]*/ _NEWLINES
+_NEWLINES: _WS? "\n"+
+_WS: /[ \t]/+
+
+%import common.ESCAPED_STRING -> STRING_QUOTED
+"""
+
+
+## Globals ##
+
+# Command line arguments.
+cli = None
+
+# Image state object.
+state = None
+
+
+## Main ##
+
+def main():
+
+   global cli
+   ap = argparse.ArgumentParser(
+      formatter_class=argparse.RawDescriptionHelpFormatter,
+      description="Build an image from a Dockerfile; completely unprivileged.",
+      epilog="""\
+environment variables:
+  CH_GROW_STORAGE       default for --storage
+""")
+   ap.add_argument("-f", "--file", metavar="DOCKERFILE",
+                   help="Dockerfile to use (default: CONTEXT/Dockerfile)")
+   ap.add_argument("-n", "--dry-run", action="store_true",
+                   help="don't execute instructions")
+   ap.add_argument("--parse-only", action="store_true",
+                   help="stop after parsing the Dockerfile")
+   ap.add_argument("--print-storage", action="store_true",
+                   help="print the state and images directory, then exit")
+   ap.add_argument("-s", "--storage", metavar="DIR",
+                   default=os.environ.get("CH_GROW_STORAGE",
+                                          "/var/tmp/ch-grow"),
+                   help="state and images directory (default: /var/tmp/ch-grow)")
+   ap.add_argument("-t", "--tag", metavar="TAG",
+                   help="name of image to create (default: inferred)")
+   ap.add_argument("--verbose", action="store_true",
+                   help="print extra debugging chatter")
+   ap.add_argument("--version", action=Version,
+                   help="print version and exit")
+   ap.add_argument("context", metavar="CONTEXT",
+                   help="context directory")
+   cli = ap.parse_args()
+   if (cli.print_storage):
+      print(cli.storage)
+      sys.exit(0)
+   if (cli.file is None):
+      cli.file = cli.context + "/Dockerfile"
+   if (cli.tag is None):
+      m = re.search(r"(([^/]+)/)?Dockerfile(\.(.+))?$",
+                    os.path.abspath(cli.file))
+      if (m is not None):
+         if m.group(4):    # extension
+            cli.tag = m.group(4)
+         elif m.group(2):  # containing directory
+            cli.tag = m.group(2)
+   if (":" not in cli.tag):
+      cli.tag += ":latest"
+
+   try:
+      import lark
+   except ImportError:
+      FATAL('missing dependency: Python module "lark"')
+   if (not shutil.which("skopeo")):
+      FATAL("missing dependency: skopeo")
+   if (not shutil.which("umoci")):
+      FATAL("missing dependency: umoci")
+
+   INFO("growing: %s" % dir_image(cli.tag))
+   DEBUG(cli)
+
+   global state
+   state = State()
+
+   parser = lark.Lark(GRAMMAR, parser="earley", propagate_positions=True)
+   text = open(cli.file, "rt").read()
+   tree = parser.parse(text)
+
+   DEBUG(tree.pretty())
+   if (cli.parse_only):
+      sys.exit(0)
+
+   Main_Loop().visit(tree)
+
+
+class Main_Loop(lark.Visitor):
+
+   def __default__(self, tree):
+      class_ = "I_" + tree.data
+      if (class_ in globals()):
+         inst = globals()[class_](tree)
+         INFO(inst)
+         inst.execute()
+
+
+## Instruction classes ##
+
+class Instruction(object):
+
+   def __init__(self, tree):
+      self.lineno = tree.meta.line
+      self.tree = tree
+
+   def __str__(self):
+      return ("%3s %s %s"
+              % (self.lineno, self.__class__.__name__.split("_")[1].upper(),
+                 self.str_()))
+
+   # Return the value of first immediate subtree childname's first immediate
+   # child terminal of type type_, or None if either the child or terminal
+   # does not exist.
+   def child(self, childname, type_):
+      children = self.tree.find_data(childname)
+      try:
+         child = next(children)
+      except StopIteration:
+         return None  # no child subtree named childname
+      return terminal(child, type_)
+
+   def execute(self):
+      if (not cli.dry_run):
+         self.execute_()
+
+   def execute_(self):
+      pass
+
+   def str_(self):
+      return "(unimplemented)"
+
+   # Return value of first immediate child terminal of type type_, or None if
+   # not found.
+   def terminal(self, type_, index=0):
+      return terminal(self.tree, type_, index)
+
+   # Yield values of all immediate child terminals of type type_, or empty
+   # list if none found.
+   def terminals(self, type_):
+      return terminals(self.tree, type_)
+
+
+class I_cmd(Instruction):
+   pass
+
+
+class Copy(Instruction):
+
+   def str_(self):
+      return "%s -> %s" % (self.srcs, repr(self.dst))
+
+   def execute_(self):
+      # The Dockerfile spec for COPY is complex and messy. This implementation
+      # is not conforming but hopefully comes close. Known nonconformance:
+      #
+      # 1. We use the Python glob semantics instead of the Go ones.
+      #
+      # 2. With "docker build" COPY seems to follow cp(1) semantics if the
+      #    destination is an existing directory: sources are copied to within
+      #    that directory regardless of whether it has trailing slash. This
+      #    contrasts with the spec's implication that this only happens if a
+      #    trailing slash is present; otherwise, the destination is replaced.
+      #
+      # 3. Spec does not say what to do with symlinks. If the source is a
+      #    symlink to a file, we copy the link target to a regular file;
+      #    otherwise, we copy symlinks themselves.
+      srcs = itertools.chain.from_iterable(glob.glob(cli.context + "/" + i)
+                                           for i in self.srcs)
+      dst = dir_image(cli.tag) + "/"
+      if (not self.dst.startswith("/")):
+         dst += state.workdir + "/"
+      dst += self.dst
+      if (dst.endswith("/")):
+         dst = dst[:-1]
+         mkdirs(dir_image(cli.tag) + dst)
+      for src in srcs:
+         cp(src, dst)
+
+
+class I_copy_shell(Copy):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      paths = [variables_sub(i, state.env_build)
+               for i in self.terminals("WORD")]
+      self.srcs = paths[:-1]
+      self.dst = paths[-1]
+
+
+class Env(Instruction):
+
+   def str_(self):
+      return "%s='%s'" % (self.key, self.value)
+
+   def execute_(self):
+      state.env[self.key] = self.value
+      with open("%s/ch/environment" % dir_image(cli.tag), "wt") as fp:
+         for (k, v) in state.env.items():
+            print("%s=%s" % (k, v), file=fp)
+
+
+class I_env_equals(Env):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.terminal("WORD", 0)
+      self.value = self.terminal("WORD", 1)
+      if (self.value is None):
+         self.value = self.terminal("STRING_QUOTED")
+      self.value = variables_sub(self.value, state.env_build)
+
+
+class I_env_space(Env):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.terminal("WORD")
+      value = self.terminal("LINE")
+      if (not value.startswith('"')):
+         value = '"' + value + '"'
+      self.value = unescape(value)
+      self.value = variables_sub(self.value, state.env_build)
+
+
+class I_from_(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.name = self.terminal("ID")
+      self.alias = self.child("from_alias", "ID")
+      self.tag = self.child("from_tag", "ID")
+      self.digest = self.child("from_digest", "HEXID")
+      if (self.tag is None and self.digest is None):
+         self.tag = "latest"
+
+   @property
+   def fullname(self):
+      if (self.tag is not None):
+         return "%s:%s" % (self.name, self.tag)
+      elif (self.digest is not None):
+         return "%s@%s" % (self.name, self.digest)
+      else:
+         return self.name
+
+   def base_copy(self):
+      DEBUG("copying: %s -> %s" % (self.fullname, cli.tag))
+      rmtree(dir_image(cli.tag))
+      shutil.copytree(dir_image(self.fullname), dir_image(cli.tag),
+                      symlinks=True)
+
+   def base_pull(self):
+      mkdirs(dir_ocis())
+      rmtree(dir_image_tmp())
+      # This works with newuidmap and newgidmap not installed.
+      cmd(["skopeo", "copy", "docker://" + self.fullname,
+           "oci:%s/%s" % (dir_ocis(), self.fullname)])
+      cmd(["umoci", "unpack", "--rootless",
+           "--image", "%s/%s" % (dir_ocis(), self.fullname), dir_image_tmp()])
+      rmtree(dir_image(self.fullname))
+      os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
+      image_fixup(dir_image(self.fullname))
+      rmtree(dir_image_tmp())
+      # CentOS likes to leave directories unwriteable by anyone, and files
+      # unreadable by anyone, so fix that.
+      def reraise(x):
+         raise
+      def fix(path, mode):
+         st = os.stat(path, follow_symlinks=False)
+         if (not st.st_mode & mode):
+            DEBUG("fixing bad permissions: %s %s"
+                  % (stat.filemode(st.st_mode), path))
+            os.chmod(path, st.st_mode | mode)
+      for (root, dirs, files) in \
+          os.walk(dir_image(self.fullname), topdown=True, onerror=reraise):
+         fix(root, 0o200)
+         for path in files:
+            fix("%s/%s" % (root, path), 0o400)
+
+   def execute_(self):
+      if (cli.tag == self.fullname):
+         FATAL("output image name same as FROM: %s" % self.fullname)
+      mkdirs(dir_images())
+      if (not os.path.isdir(dir_image(self.fullname))):
+         DEBUG("image not found, pulling: %s" % self.fullname)
+         self.base_pull()
+      self.base_copy()
+      state.reset()
+
+   def str_(self):
+      alias = "AS %s" % self.alias if self.alias else ""
+      return "%s %s" % (self.fullname, alias)
+
+
+class Run(Instruction):
+
+   def execute_(self):
+      rootfs = dir_image(cli.tag)
+      pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
+      pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
+      args = [CH_BIN + "/ch-run", "-w", "--no-home", "--no-passwd",
+              "--cd", state.workdir, "--uid=0", "--gid=0",
+              rootfs, "--"] + self.cmd
+      cmd(args, env=state.env_build)
+
+   def str_(self):
+      return str(self.cmd)
+
+
+class I_run_exec(Run):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.cmd = [    variables_sub(unescape(i), state.env_build)
+                  for i in self.terminals("STRING_QUOTED")]
+
+
+class I_run_shell(Run):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      # FIXME: Can't figure out how to remove continuations at parse time.
+      cmd = self.terminal("LINE").replace("\\\n", "")
+      self.cmd = ["/bin/sh", "-c", cmd]
+
+
+class I_workdir(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.path = variables_sub(self.terminal("LINE"), state.env_build)
+
+   def str_(self):
+      return self.path
+
+   def execute_(self):
+      mkdirs(dir_image(cli.tag) + self.path)
+      state.chdir(self.path)
+
+
+## Supporting classes ##
+
+class State(object):
+
+   def __init__(self):
+      self.reset()
+
+   @property
+   def env_build(self):
+      return { **self.arg, **self.env }
+
+   def chdir(self, path):
+      if (path.startswith("/")):
+         self.workdir = path
+      else:
+         self.workdir += "/" + path
+
+   def reset(self):
+      self.workdir = "/"
+      self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
+      self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
+
+
+class Version(argparse.Action):
+
+   # This gross kludge lets us print the version number without managing a
+   # version.py file.
+
+   def __init__(self, *args, **kwargs):
+      super().__init__(nargs=0, *args, **kwargs)
+
+   def __call__(self, parser, namespace, values, option_string=None):
+      cmd = CH_BIN + "/ch-run"
+      os.execl(cmd, cmd, "--version")
+
+
+## Supporting functions ###
+
+def DEBUG(*args, **kwargs):
+   if (cli.verbose):
+      print("\033[36m", file=sys.stderr, flush=True, end="")
+      print(flush=True, file=sys.stderr, *args, **kwargs)
+      print("\033[0m", file=sys.stderr, flush=True, end="")
+
+def FATAL(*args, **kwargs):
+   print("\033[31m", file=sys.stderr, flush=True, end="")
+   print(flush=True, file=sys.stderr, *args, **kwargs)
+   print("\033[0m", file=sys.stderr, flush=True, end="")
+   sys.exit(1)
+
+def INFO(*args, **kwargs):
+   print(flush=True, *args, **kwargs)
+
+def cmd(args, env=None):
+   DEBUG("environment: %s" % env)
+   DEBUG("executing: %s" % args)
+   INFO("\033[33m", end="")
+   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   INFO("\033[0m", end="")
+   if (cp.returncode):
+      FATAL("%s failed with return code %d" % (args[0], cp.returncode))
+
+def cp(src, dst):
+   DEBUG("copying: %s -> %s" % (src, dst))
+   if (os.path.isdir(src)):
+      if (os.path.isdir(dst)):  # FIXME: excessive stat(2) with many sources?
+         dst += "/" + os.path.basename(src)
+      shutil.copytree(src, dst, symlinks=False)
+   else:
+      shutil.copy2(src, dst)
+
+def dir_image_tmp():
+   return "%s/img/tmp" % cli.storage
+
+def dir_images():
+   return "%s/img" % cli.storage
+
+def dir_image(image):
+   return "%s/%s" % (dir_images(), image)
+
+def dir_ocis():
+   return "%s/oci" % cli.storage
+
+def file_ensure_exists(path):
+   with open(path, "a") as fp:
+      pass
+
+def file_write(path, content, mode=None):
+   with open(path, "wt") as fp:
+      fp.write(content)
+      if (mode is not None):
+         os.chmod(fp.fileno(), mode)
+
+def image_fixup(path):
+   DEBUG("fixing up image: %s" % path)
+   # Metadata directory.
+   mkdirs("%s/ch/bin" % path)
+   file_ensure_exists("%s/ch/environment" % path)
+   # Mount points.
+   file_ensure_exists("%s/etc/hosts" % path)
+   file_ensure_exists("%s/etc/resolv.conf" % path)
+   # /etc/{passwd,group}
+   file_write("%s/etc/passwd" % path, """\
+root:x:0:0:root:/root:/bin/sh
+nobody:x:65534:65534:nobody:/:/bin/false
+""")
+   file_write("%s/etc/group" % path, """\
+root:x:0:
+nogroup:x:65534:
+""")
+   # Kludges to work around expectations of real root, not UID 0 in a
+   # unprivileged user namespace. See also the default environment.
+   #
+   # Debian "apt" and friends want to chown(1), chgrp(1), etc. in various ways.
+   symlink("/bin/true", "%s/ch/bin/chown" % path)
+   symlink("/bin/true", "%s/ch/bin/chgrp" % path)
+   symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
+
+def mkdirs(path):
+   DEBUG("ensuring directory: " + path)
+   os.makedirs(path, exist_ok=True)
+
+def rmtree(path):
+   if (os.path.isdir(path)):
+      DEBUG("deleting directory: " + path)
+      shutil.rmtree(path)
+
+def symlink(target, source):
+   try:
+      os.symlink(target, source)
+   except FileExistsError:
+      if (not os.path.islink(source)):
+         FATAL("can't symlink: source exists and isn't a symlink: %s"
+               % source)
+      if (os.readlink(source) != target):
+         FATAL("can't symlink: %s exists; want target %s but existing is %s"
+               % (source, target, os.readlink(source)))
+
+def terminal(tree, type_, index=0):
+   for (i, t) in enumerate(terminals(tree, type_)):
+      if (i == index):
+         return t
+   return None
+
+def terminals(tree, type_):
+   for i in tree.children:
+      if (isinstance(i, lark.lexer.Token) and i.type == type_):
+         yield i.value
+
+def variables_sub(s, variables):
+   # FIXME: This should go in the grammar rather than being a regex kludge.
+   #
+   # Dockerfile spec does not say what to do if substituting a value that's
+   # not set. We ignore those subsitutions. This is probably wrong (the shell
+   # substitutes the empty string).
+   for (k, v) in variables.items():
+      #DEBUG("s: %s, k: %s, v: %s" % (s, k, v))
+      s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
+   return s
+
+def unescape(sl):
+   # FIXME: This is also ugly and should go in the grammar.
+   #
+   # The Dockerfile spec does not precisely define string escaping, but I'm
+   # guessing it's the Go rules. You will note that we are using Python rules.
+   # This is wrong but close enough for now (see also gripe in previous
+   # paragraph).
+   if (not (sl.startswith('"') and sl.endswith('"'))):
+      FATAL("string literal not quoted")
+   return ast.literal_eval(sl)
+
+
+## Bootstrap ##
+
+if (__name__ == "__main__"):
+   main()

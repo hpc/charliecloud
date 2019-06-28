@@ -45,11 +45,17 @@ esac
 
 make
 bin/ch-run --version
+version=$(cat VERSION.full)
 
 if [[ $INSTALL ]]; then
     sudo make install PREFIX="$PREFIX"
-    cd "$PREFIX/libexec/charliecloud"
+    cd "$PREFIX/libexec/charliecloud-$version"
 fi
+
+if [[ $SUDO_RM_FIRST ]]; then
+    sudo rm /etc/sudoers.d/travis
+fi
+sudo -v || true
 
 cd test
 
@@ -62,11 +68,7 @@ fi
 if [[ $SUDO_AVOID_AFTER_BUILD ]]; then
     export CH_TEST_DONT_SUDO=yes
 fi
-if ( sudo -v ); then
-    echo "have sudo"
-else
-    echo "don't have sudo"
-fi
+sudo -v || true
 echo "\$CH_TEST_DONT_SUDO=$CH_TEST_DONT_SUDO"
 
 make test-run

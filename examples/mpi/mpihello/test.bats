@@ -2,7 +2,6 @@ load ../../../test/common
 
 setup () {
     scope full
-    arch_exclude aarch64  # issue #391
     prerequisites_ok "$ch_tag"
 }
 
@@ -44,6 +43,14 @@ count_ranks () {
             [[ $output = *'MPICH Version:'* ]]
         fi
     fi
+}
+
+@test "${ch_tag}/empty stderr" {
+   multiprocess_ok
+   output=$($ch_mpirun_core ch-run --join "$ch_img" -- \
+                            /hello/hello 2>&1 1>/dev/null)
+   echo "$output"
+   [[ -z "$output" ]]
 }
 
 @test "${ch_tag}/serial" {

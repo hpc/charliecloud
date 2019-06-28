@@ -502,7 +502,9 @@ Building RPMs
 We maintain :code:`.spec` files and infrastructure for building RPMs in the
 Charliecloud source code. This is for two purposes:
 
-  1. We maintain our own Fedora RPMs.
+  1. We maintain our own Fedora RPMs (see `packaging guidelines
+     <https://docs.fedoraproject.org/en-US/packaging-guidelines/>`_).
+
   2. We want to be able to build an RPM of any commit.
 
 Item 2 is tested; i.e., if you break the RPM build, the test suite will fail.
@@ -555,7 +557,7 @@ the test suite (note that the test suite would also build the necessary image
 directory)::
 
   $ bin/ch-build -t centos7 -f test/Dockerfile.centos7 test
-  $ bin/ch-docker2tar centos7 $CH_TEST_TARDIR
+  $ bin/ch-builder2tar centos7 $CH_TEST_TARDIR
   $ bin/ch-tar2dir $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
   $ packaging/fedora/build --image $CH_TEST_IMGDIR/centos7 HEAD
 
@@ -590,11 +592,12 @@ commit, and it's not possible to create an RPM of uncommitted source code.
 Changelog maintenance
 ~~~~~~~~~~~~~~~~~~~~~
 
-The spec file changelog contains manually maintained release notes for all
-Charliecloud released versions and corresponding RPM releases. For released
-versions, :code:`build` verifies that the most recent changelog entry matches
-the given :code:`VERSION` argument. The timestamp is not automatically
-verified.
+The spec file contains a manually maintained changelog. Add a new entry for
+each new RPM release; do not include the Charliecloud release notes.
+
+For released versions, :code:`build` verifies that the most recent changelog
+entry matches the given :code:`VERSION` argument. The timestamp is not
+automatically verified.
 
 For other Charliecloud versions, :code:`build` adds a generic changelog entry
 with the appropriate version stating that it's a pre-release RPM.

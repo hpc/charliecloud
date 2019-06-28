@@ -14,11 +14,12 @@ import re
 import shutil
 import socket
 import subprocess
+import sys
 import time
 
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
 CH_RUN  = [CH_BASE + "/bin/ch-run"]
-PACKAGES = ["charliecloud", "charliecloud-debuginfo", "charliecloud-doc"]
+PACKAGES = ["charliecloud", "charliecloud-debuginfo", "charliecloud-test"]
 ARCH = platform.machine()
 
 def main():
@@ -53,7 +54,7 @@ def main():
       rpm_release = "0"
    else:
       m           = re.search(r"([0-9.]+)-([0-9]+)", args.version)
-      branch      = "v" + m.group(1)
+      commit      = "v" + m.group(1)
       rpm_release = m.group(2)
 
    # Create rpmbuild root
@@ -96,7 +97,12 @@ def main():
 
    # Copy and patch spec file.
    rpm_vr = "%s-%s" % (ch_version, rpm_release)
-   spec   = "charliecloud-%s.spec" % rpm_vr
+   # Fedora requires no version in spec file. Add a version for pre-release
+   # specs to make it hard to upload one to Fedora by mistake.
+   if ("~pre" not in ch_version):
+      spec = "charliecloud.spec"
+   else:
+      spec = "charliecloud-%s.spec" % rpm_vr
    with open("%s/packaging/fedora/charliecloud.spec" % CH_BASE, "rt") as in_, \
         open("%s/%s" % (rpm_specs, spec), "wt") as out:
       print("# writing %s" % out.name)
@@ -115,8 +121,11 @@ def main():
 - Pre-release package. See Git history for what is going on.
 """ % (timestamp, name, moniker, domain, rpm_vr))
       else:
-         # Last changelog entry must match version.
-         assert False, "unimplemented"
+         # Verify requested version matches changelog.
+         m = re.search(r"%changelog\n.+?([0-9.-]+)\n", t)
+         if (m.group(1) != rpm_vr):
+            print("requested version %s != changelog %s" % (rpm_vr, m.group(1)))
+            sys.exit(1)
       out.write(t)
 
    # Prepare build and rpmlint arguments.

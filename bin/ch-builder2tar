@@ -1,0 +1,96 @@
+#!/bin/sh
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Flatten a builder image into a Charliecloud image tarball.
+
+Usage:
+
+  $ $(basename "$0") IMAGE OUTDIR
+
+You must have sufficient privilege (via sudo) to run the Docker commands.
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$1" = --nocompress ]; then
+    nocompress=yes
+    shift
+fi
+
+if [ "$#" -ne 2 ]; then
+    usage
+fi
+
+image=$1
+outdir=$2
+tar=${outdir}/$(echo "$image" | sed 's/\//./g').tar
+tar_gzipped=${tar}.gz
+
+builder_choose
+echo "building with: ${CH_BUILDER}"
+
+if [ "$CH_BUILDER" = ch-grow ]; then
+
+    case $image in
+        *:*)
+            ;;
+        *)
+            image="${image}:latest"
+            ;;
+    esac
+
+    echo "exporting"
+    storage=$("${ch_bin}/ch-grow" --print-storage /doesnotexist)
+    ( cd "${storage}/img/${image}" && tar cf - . ) | pv_ > "$tar"
+
+elif [ "$CH_BUILDER" = docker ]; then
+
+    # Export the image to tarball.
+    echo "exporting"
+    cid=$(docker_ create --read-only "$image")
+    size=$(docker_ image inspect "$image" --format='{{.Size}}')
+    docker_ export "$cid" | pv_ -s "$size" > "$tar"
+    docker_ rm "$cid" > /dev/null
+
+    # Add the Docker environment variables in /ch/environment for later
+    # consumption by "ch-run --set-env".
+    #
+    # 1. mktemp(1) isn't POSIX, but it seemed very likely to be installed if
+    #    Docker is, and I couldn't find a more portable way of securely
+    #    creating temporary files. (In particular, I would've preferred to
+    #    pipe rather than creating and deleting a temporary file.)
+    #
+    # 2. Blocking factor 1 (-b1) for tar is a bug workaround. Without this
+    #    switch, tar 1.26, which is in RHEL, corrupts the tarball instead of
+    #    appending to it. This doesn't happen in 1.29 in Debian Stretch, and
+    #    building GNU tar from Git source was too hard, so I couldn't bisect a
+    #    specific commit that fixed the bug to learn what exactly was going
+    #    on. (See PR #371.)
+    #
+    # 3. This assumes that the tarball from Docker does not have a single
+    #    top-level directory (i.e., is a tarbomb).
+    #
+    echo "adding environment"
+    temp=$(mktemp --tmpdir ch-builder2tar.XXXXXX)
+    docker_ inspect "$image" \
+            --format='{{range .Config.Env}}{{println .}}{{end}}' > "$temp"
+    tar rf "$tar" -b1 -P --xform="s|${temp}|ch/environment|" "$temp"
+    rm "$temp"
+
+fi
+
+if [ "$nocompress" ]; then
+    ls -lh "$tar"
+else
+    echo "compressing"
+    pv_ < "$tar" | gzip_ -6 > "$tar_gzipped"
+    rm "$tar"
+    ls -lh "$tar_gzipped"
+fi
+
+

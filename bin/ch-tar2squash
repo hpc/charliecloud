@@ -1,0 +1,48 @@
+#!/bin/sh
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Create a SquashFS file from a tarball image.
+
+Usage:
+
+  $ $(basename "$0") TARBALL OUTDIR [ARGS ...]
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$#" -lt 2 ]; then
+    usage
+fi
+
+image=$1
+outdir=$2
+shift 2
+
+case $image in
+        *.tar)
+            extension=tar
+            ;;
+        *.tar.gz)
+            extension=tar.gz
+            ;;
+        *.tar.xz)
+            extension=tar.xz
+            ;;
+        *.tgz)
+            extension=tgz
+            ;;
+        *)
+            echo "unknown extension: ${image}" 1>&2
+            exit 1
+            ;;
+esac
+imagedir=$(basename "$image" ".${extension}")
+temp=$(mktemp -d --tmpdir ch-tar2squash.XXXXXX)
+"${ch_bin}/ch-tar2dir" "$image" "$temp"
+"${ch_bin}/ch-dir2squash" "${temp}/${imagedir}" "$outdir" "$@"
+rm -rf --one-file-system "$temp"

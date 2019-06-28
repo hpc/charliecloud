@@ -7,7 +7,7 @@ set -e
 
 usage () {
     cat 1>&2 <<EOF
-Download image via "docker pull" and unpack it into directory.
+Pull image from a Docker Hub and unpack into directory.
 
 Usage:
 

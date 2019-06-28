@@ -3,14 +3,14 @@ load ../common
 
 @test 'relative path to image' {  # issue #6
     scope quick
-    cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- true
+    cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
 
 @test 'symlink to image' {  # issue #50
     scope quick
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
-    ch-run "${BATS_TMPDIR}/symlink-test" -- true
+    ch-run "${BATS_TMPDIR}/symlink-test" -- /bin/true
 }
 
 
@@ -167,7 +167,7 @@ EOF
     [[ $output = '/dev' ]]
 
     # Error if directory does not exist.
-    run ch-run --cd /goops "$ch_timg" -- true
+    run ch-run --cd /goops "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output =~ "can't cd to /goops: No such file or directory" ]]
@@ -230,7 +230,7 @@ EOF
                -b "${ch_imgdir}/bind1" \
                -b "${ch_imgdir}/bind1" \
                -b "${ch_imgdir}/bind1" \
-               "$ch_timg" -- true
+               "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't bind: not found: ${ch_timg}/mnt/10"* ]]
@@ -242,37 +242,37 @@ EOF
     [[ $output = *'option requires an argument'* ]]
 
     # empty argument to --bind
-    run ch-run -b '' "$ch_timg" -- true
+    run ch-run -b '' "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'--bind: no source provided'* ]]
 
     # source not provided
-    run ch-run -b :/mnt/9 "$ch_timg" -- true
+    run ch-run -b :/mnt/9 "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'--bind: no source provided'* ]]
 
     # destination not provided
-    run ch-run -b "${ch_imgdir}/bind1:" "$ch_timg" -- true
+    run ch-run -b "${ch_imgdir}/bind1:" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'--bind: no destination provided'* ]]
 
     # source does not exist
-    run ch-run -b "${ch_imgdir}/hoops" "$ch_timg" -- true
+    run ch-run -b "${ch_imgdir}/hoops" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
 
     # destination does not exist
-    run ch-run -b "${ch_imgdir}/bind1:/goops" "$ch_timg" -- true
+    run ch-run -b "${ch_imgdir}/bind1:/goops" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't bind: not found: ${ch_timg}/goops"* ]]
 
     # neither source nor destination exist
-    run ch-run -b "${ch_imgdir}/hoops:/goops" "$ch_timg" -- true
+    run ch-run -b "${ch_imgdir}/hoops:/goops" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
@@ -286,7 +286,7 @@ EOF
 
     # correct bind followed by destination does not exist
     run ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/goops" \
-               "$ch_timg" -- true
+               "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't bind: not found: ${ch_timg}/goops"* ]]
@@ -367,7 +367,7 @@ chse_dockerfile=foo
 EOF
 )
 
-    run ch-run --set-env="${img}/environment" "$img" -- \
+    run ch-run --set-env="${img}/ch/environment" "$img" -- \
                sh -c 'env | grep -E "^chse_"'
     echo "$output"
     [[ $status -eq 0 ]]
@@ -570,17 +570,17 @@ EOF
     for f in $files $files_optional; do touch "${img}/${f}"; done
 
     # This should start up the container OK but fail to find the user command.
-    run ch-run "$img" -- true
+    run ch-run "$img" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't execve(2): true: No such file or directory"* ]]
+    [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # For each required file, we want a correct error if it's missing.
     for f in $files; do
         echo "required: ${f}"
         rm "${img}/${f}"
         ls -l "${img}/${f}" || true
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
@@ -593,11 +593,11 @@ EOF
     for f in $files_optional; do
         echo "optional: ${f}"
         rm "${img}/${f}"
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        [[ $output = *"can't execve(2): true: No such file or directory"* ]]
+        [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
     done
 
     # For all files, we want a correct error if it's not a regular file.
@@ -605,7 +605,7 @@ EOF
         echo "not a regular file: ${f}"
         rm "${img}/${f}"
         mkdir "${img}/${f}"
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         rmdir "${img}/${f}"  # restore before test fails for idempotency
         touch "${img}/${f}"
         echo "$output"
@@ -619,7 +619,7 @@ EOF
     for d in $dirs tmp; do
         echo "required: ${d}"
         rmdir "${img}/${d}"
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         mkdir "${img}/${d}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
@@ -633,7 +633,7 @@ EOF
         echo "not a directory: ${d}"
         rmdir "${img}/${d}"
         touch "${img}/${d}"
-        run ch-run "$img" -- true
+        run ch-run "$img" -- /bin/true
         rm "${img}/${d}"    # restore before test fails for idempotency
         mkdir "${img}/${d}"
         echo "$output"
@@ -645,7 +645,7 @@ EOF
 
     # --private-tmp
     rmdir "${img}/tmp"
-    run ch-run --private-tmp "$img" -- true
+    run ch-run --private-tmp "$img" -- /bin/true
     mkdir "${img}/tmp"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
@@ -656,7 +656,7 @@ EOF
     # /home without --private-home
     # FIXME: Not sure how to make the second mount(2) fail.
     rmdir "${img}/home"
-    run ch-run "$img" -- true
+    run ch-run "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
@@ -666,23 +666,23 @@ EOF
 
     # --no-home shouldn't care if /home is missing
     rmdir "${img}/home"
-    run ch-run --no-home "$img" -- true
+    run ch-run --no-home "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't execve(2): true: No such file or directory"* ]]
+    [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # --ch-ssh but no /usr/bin/ch-ssh
-    run ch-run --ch-ssh "$img" -- true
+    run ch-run --ch-ssh "$img" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"--ch-ssh: /usr/bin/ch-ssh not in image"* ]]
 
     # Everything should be restored and back to the original error.
-    run ch-run "$img" -- true
+    run ch-run "$img" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't execve(2): true: No such file or directory"* ]]
+    [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # At this point, there should be exactly two each of passwd and group
     # temporary files. Remove them.

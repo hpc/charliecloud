@@ -73,8 +73,9 @@ struct container {
    int join_ct;         // number of peers in a synchronized join
    pid_t join_pid;      // process in existing namespace to join
    char *join_tag;      // identifier for synchronized join
-   bool private_home;
-   bool private_tmp;
+   bool private_home;   // don't bind user home directory
+   bool private_passwd; // don't bind custom /etc/{passwd,group}
+   bool private_tmp;    // don't bind host's /tmp
    char *old_home;      // host path to user's home directory (i.e. $HOME)
    bool writable;
 };

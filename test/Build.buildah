@@ -60,7 +60,7 @@ fi
 # - This hangs after "Storing signatures" if $PWD is not $srcdir.
 # - Adding "--squash" makes layer caching not work.
 #
-BUILDAH_ISOLATION=rootless \
+export BUILDAH_ISOLATION=rootless \
 buildah build-using-dockerfile \
         --userns-uid-map '0:999:1' --userns-gid-map '0:888:1' \
         --build-arg HTTP_PROXY="$HTTP_PROXY" \

@@ -9,9 +9,9 @@ Description
 ===========
 
 Build a Docker image named :code:`TAG` described by a Dockerfile (default
-:code:`./Dockerfile`) and unpack it into :code:`OUTDIR/TAG`. This is a wrapper
-for :code:`ch-build`, :code:`ch-docker2tar`, and :code:`ch-tar2dir`; see also
-those man pages.
+:code:`$CONTEXT/Dockerfile`) and unpack it into :code:`OUTDIR/TAG`. This is a
+wrapper for :code:`ch-build`, :code:`ch-builder2tar`, and :code:`ch-tar2dir`;
+see also those man pages.
 
 Arguments:
 

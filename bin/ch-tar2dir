@@ -7,7 +7,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Unpack a filesystem tarball into a directory.
+Unpack an image tarball into a directory.
 
 Usage:
 
@@ -19,10 +19,6 @@ sentinel=WEIRD_AL_YANKOVIC
 
 parse_basic_args "$@"
 
-if [ "$1" = --verbose ]; then
-    verbose=yes
-    shift
-fi
 if [ $# -lt 2 ]; then
     usage
 fi
@@ -40,7 +36,7 @@ fi
 # Figure out the real tarball name. If the provided $1 already has a tar
 # extension, just test that name; if not, also append the plausible extensions
 # and try those too.
-for ext in '' .tar.gz .tar.xz .tgz; do
+for ext in '' .tar.gz .tar.xz .tgz .tar; do
     c=${1}${ext}
     if [ ! -f "$c" ] || [ ! -r "$c" ]; then
         echo "can't read: ${c}" 1>&2
@@ -61,6 +57,10 @@ for ext in '' .tar.gz .tar.xz .tgz; do
     # is a pipe, and we want to keep PV. See:
     # https://www.gnu.org/software/tar/manual/html_section/tar_68.html
     case $tarball in
+        *.tar)
+            newroot=${2}/$(basename "${tarball%.tar}")
+            decompress=
+            ;;
         *.tar.gz)
             newroot=${2}/$(basename "${tarball%.tar.gz}")
             decompress=z
@@ -69,10 +69,10 @@ for ext in '' .tar.gz .tar.xz .tgz; do
             newroot=${2}/$(basename "${tarball%.tar.xz}")
             decompress=J
             ;;
-	*.tgz)
-	    newroot=${2}/$(basename "${tarball%.tgz}")
-	    decompress=z
-	    ;;
+        *.tgz)
+            newroot=${2}/$(basename "${tarball%.tgz}")
+            decompress=z
+            ;;
         *)
             echo "unknown extension: ${tarball}" 1>&2
             exit 1
@@ -107,7 +107,7 @@ mkdir "$newroot"
 # matching multiple directories; the tar default differs from sh behavior.
 size=$(stat -c%s "$tarball")
   pv_ -s "$size" < "$tarball" \
-| tar x$decompress$verbose -C "$newroot" -f - \
+| tar x$decompress -C "$newroot" -f - \
       --anchored --no-wildcards-match-slash \
       --exclude='dev/*' --exclude='*/dev/*'
 # Make all directories writeable so we can delete image later (hello, Red Hat).

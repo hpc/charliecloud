@@ -3,62 +3,65 @@ Synopsis
 
 ::
 
-  $ ch-build [-b buildah|docker] -t TAG [ARGS ...] CONTEXT
+  $ ch-build [-b BUILDER] [--builder-info] -t TAG [ARGS ...] CONTEXT
 
 Description
 ===========
 
-Build an image named :code:`TAG` described by a Dockerfile (default
-:code:`./Dockerfile`) using the specified image builder. Place the result into
-the builder's backend storage.
+Build an image named :code:`TAG` described by a Dockerfile. Place the result
+into the builder's back-end storage.
 
-Supported builders:
+Using this script is *not* required for a working Charliecloud image. You can
+also use any builder that can produce a Linux filesystem tree directly,
+whether or not it is in the list below. However, this script hides the
+vagaries of making the supported builders work smoothly with Charliecloud and
+adds some conveniences (e.g., pass HTTP proxy environment variables to the
+build environment if the builder doesn't do this by default).
 
-  * Buildah (:code:`buildah build-using-dockerfile` a.k.a. :code:`buildah bud`)
-  * Docker (:code:`docker build`)
+Supported builders, unprivileged:
 
-Arguments:
+  * :code:`ch-grow`: our internal builder
 
-  :code:`-b`, :code:`--builder`
-    Builder to use; one of :code:`buildah` or :code:`docker`. If the option is
-    not specified, use the value of environment variable :code:`CH_BUILDER`.
-    If neither are specified, try builders in the above order (alphabetical)
-    and use the first one in :code:`$PATH`.
+Supported builders, privileged:
+
+  * :code:`buildah-runc`: Buildah in "rootless" mode with setuid
+    helpers, using the default :code:`runc` for :code:`RUN` instructions
+
+  * :code:`buildah-setuid`: Buildah in "rootless" mode with setuid helpers,
+    using :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions
+
+  * :code:`docker`: Docker
+
+Specifying the builder, in descending order of priority:
+
+  :code:`-b`, :code:`--builder BUILDER`
+    Command line option.
+
+  :code:`$CH_BUILDER`
+    Environment variable
+
+  Default
+    :code:`docker` if Docker is installed; otherwise, :code:`ch-grow`.
+
+Other arguments:
 
   :code:`--builder-info`
     Print the builder to be used and its version, then exit.
 
-  :code:`-f`, :code:`--file`
-    Dockerfile to use (default: :code:`./Dockerfile`). Note that calling your
-    Dockerfile anything other than :code:`Dockerfile` will confuse people.
-
+  :code:`-f`, :code:`--file DOCKERFILE`
+    Dockerfile to use (default: :code:`$CONTEXT/Dockerfile`)
 
   :code:`-t TAG`
-    name (tag) of image to build
+    Name (tag) of Docker image to build.
 
   :code:`--help`
-    print help and exit
+    Print help and exit.
 
   :code:`--version`
-    print version and exit
+    Print version and exit.
 
-Additional arguments are passed unchanged to the underlying builder.
-
-Key improvements over unwrapped builders
-========================================
-
-Using :code:`ch-build` is not required; you can also use the builders
-directly. However, this command hides the vagaries of making the builders work
-smoothly with Charliecloud and adds some conveniences. These improvements
-include:
-
-* Pass HTTP proxy environment variables into the build environment.
-
-* If there is a file :code:`Dockerfile` in the current working directory and
-  :code:`-f` is not already specified, add :code:`-f $PWD/Dockerfile`.
-
-* (Buildah only.) Use :code:`ch-run-oci` instead of the default :code:`runc`
-  to execute :code:`RUN` steps.
+Additional arguments are accepted and passed unchanged to the underlying
+builder.
 
 Bugs
 ====
@@ -72,8 +75,8 @@ Examples
 ========
 
 Create an image tagged :code:`foo` and specified by the file
-:code:`Dockerfile` located in the current working directory. Use :code:`/bar`
-as the Docker context directory. Use whatever builder is available.
+:code:`Dockerfile` located in the context directory. Use :code:`/bar` as the
+Docker context directory. Use the default builder.
 
 ::
 
@@ -81,18 +84,18 @@ as the Docker context directory. Use whatever builder is available.
 
 Equivalent to above::
 
-  $ ch-build -t foo --file=./Dockerfile /bar
+  $ ch-build -t foo --file=/bar/Dockerfile /bar
 
-Instead, use the Dockerfile :code:`/bar/Dockerfile.baz`::
+Instead, use :code:`/bar/Dockerfile.baz`::
 
   $ ch-build -t foo --file=/bar/Dockerfile.baz /bar
 
-Equivalent to the first example, but use Buildah (or error if :code:`buildah`
-is not in your path)::
+Equivalent to the first example, but use :code:`ch-grow` even if Docker is
+installed::
 
-  $ ch-build -b buildah -t foo /bar
+  $ ch-build -b ch-grow -t foo /bar
 
 Equivalent to above::
 
-  $ export CH_BUILDER=buildah
+  $ export CH_BUILDER=ch-grow
   $ ch-build -t foo /bar

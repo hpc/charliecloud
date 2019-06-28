@@ -50,7 +50,8 @@ const struct argp_option options[] = {
    { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",      -3, "N",    0, "number of ch-run peers (implies --join)" },
    { "join-tag",     -4, "TAG",  0, "label for peer group (implies --join)" },
-   { "no-home",      -2, 0,      0, "do not bind-mount your home directory"},
+   { "no-home",      -2, 0,      0, "don't bind-mount your home directory"},
+   { "no-passwd",    -9, 0,      0, "don't bind-moust /etc/{passwd,group}"},
    { "private-tmp", 't', 0,      0, "use container-private /tmp" },
    { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
    { "uid",         'u', "UID",  0, "run as UID within container" },
@@ -115,6 +116,7 @@ int main(int argc, char *argv[])
    args.c.join_pid = 0;
    args.c.join_tag = NULL;
    args.c.private_home = false;
+   args.c.private_passwd = false;
    args.c.private_tmp = false;
    args.c.old_home = getenv("HOME");
    args.c.writable = false;
@@ -388,6 +390,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;;
    case -8: // --ch-ssh
       args->c.ch_ssh = true;
+      break;
+   case -9: // --no-passwd
+      args->c.private_passwd = true;
       break;
    case 'c':
       args->initial_dir = arg;
