@@ -32,9 +32,70 @@ tar=${outdir}/$(echo "$image" | sed 's/\//./g').tar
 tar_gzipped=${tar}.gz
 
 builder_choose
-echo "building with: ${CH_BUILDER}"
+echo "builder: ${CH_BUILDER}"
 
-if [ "$CH_BUILDER" = ch-grow ]; then
+case $CH_BUILDER in
+
+buildah*)
+    # FIXME: check that the variant is valid.
+
+    # Possible methods to create a tarball:
+    #
+    #   1. "buildah from", "buildah commit --squash", export to OCI image with
+    #      "buildah push", manually copy out the tarball of the single layer.
+    #      This requires rooting around in the OCI image (brittle in shell)
+    #      and doesn't let us choose whether the tarball is compressed.
+    #
+    #   2. Above, but flatten with "umoci" and then tar up the resulting
+    #      rootfs. The advantage here is that it uses only documented
+    #      commands; the downsides are that it introduces a redundant
+    #      unpack/repack of tarballs and a dependency.
+    #
+    #   3. "buildah inspect --format='{{.OCIv1.RootFS}}'" gives us the root
+    #      filesystem hash but we'd have to find the rest of its path somehow.
+    #
+    #   4. "buildah mount" and "unmount" and tar up the rootfs directory. This
+    #      requires wrapping everything with "buildah unshare", which is a
+    #      rather ugly subshell. Also, I'm not sure how to get pv(1) in there.
+    #
+    #      (On my box, the container rootfs is accessible without "buildah
+    #      unshare" but I'm guessing that depends on the storage driver.)
+    #
+    #   5. "buildah export". The main problem here is that the subcommand does
+    #      not exist, though it used to [1,2]. A secondary issue is that it
+    #      required starting up a container [3], which we don't want.
+    #
+    #   6. "podman export". Podman (formerly kpod) is a container runtime [4];
+    #      it can create a container and then export its filesystem. The
+    #      addition of the export command is why "buildah export" was removed
+    #      [2]. We haven't looked into this in detail. It appears to be
+    #      Buildah's recommended approach but would add a dependency.
+    #
+    # Currently we do #3.
+    #
+    # [1]: https://github.com/containers/buildah/pull/170
+    # [2]: https://github.com/containers/buildah/pull/245
+    # [3]: https://github.com/containers/buildah/issues/1118
+    # [4]: https://www.projectatomic.io/blog/2018/02/reintroduction-podman
+
+    tar_abs=$(readlink -f "$tar")
+    echo "starting Buildah container"
+    container=$(buildah from $image)
+
+    buildah unshare -- /bin/sh /dev/stdin <<EOF
+      rootfs=\$(buildah mount $container)
+      echo "container root: \$rootfs"
+      echo "exporting"
+      cd \$rootfs && tar cf "$tar_abs" .
+      buildah umount $container > /dev/null
+EOF
+
+    echo "stopping Buildah container"
+    buildah rm "$container" > /dev/null
+
+    ;;
+
+ch-grow)
 
     case $image in
         *:*)
@@ -48,7 +109,9 @@ if [ "$CH_BUILDER" = ch-grow ]; then
     storage=$("${ch_bin}/ch-grow" --print-storage /doesnotexist)
     ( cd "${storage}/img/${image}" && tar cf - . ) | pv_ > "$tar"
 
-elif [ "$CH_BUILDER" = docker ]; then
+    ;;
+
+docker)
 
     # Export the image to tarball.
     echo "exporting"
@@ -82,7 +145,13 @@ elif [ "$CH_BUILDER" = docker ]; then
     tar rf "$tar" -b1 -P --xform="s|${temp}|ch/environment|" "$temp"
     rm "$temp"
 
-fi
+    ;;
+
+*)
+    echo "unknown builder: $CH_BUILDER" 1>&2
+    exit 1
+    ;;
+esac
 
 if [ "$nocompress" ]; then
     ls -lh "$tar"
