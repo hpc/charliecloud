@@ -36,6 +36,6 @@ done
 set -x
 
 "${ch_bin}"/ch-build "${args[@]}"
-"${ch_bin}"/ch-docker2tar "$tag" "$outdir"
+"${ch_bin}"/ch-builder2tar "$tag" "$outdir"
 "${ch_bin}"/ch-tar2dir "${outdir}/${tag}.tar.gz" "$outdir"
 rm "${outdir}/${tag}.tar.gz"

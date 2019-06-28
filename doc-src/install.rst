@@ -69,10 +69,19 @@ Docker expect to run the :code:`docker` command under :code:`sudo` and need
 Docker 17.03+ and :code:`mktemp(1)`. (Older versions of Docker may work but
 are untested. We know that 1.7.1 does not work.)
 
-Optional build-time dependencies:
+Additional dependencies for specific components:
 
-* Bash 4.1+, for :code:`ch-build2dir`
-* :code:`squashfs-tools` for creating SquashFS image files
+* To create SquashFS image files: :code:`squashfs-tools`
+
+* :code:`ch-build2dir`: Bash 4.1+
+
+* :code:`ch-grow`, our internal unprivileged image builder (no specific
+  dependency versions documented yet)
+
+  * `skopeo <https://github.com/containers/skopeo>`_
+  * `umoci <https://github.com/openSUSE/umoci>`_
+  * Python module :code:`lark`
+    (`lark-parser <https://pypi.org/project/lark-parser/>`_ on PyPI)
 
 Test suite
 ----------

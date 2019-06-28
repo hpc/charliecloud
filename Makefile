@@ -169,7 +169,9 @@ install: all
 	install -pm 755 -t $(TEST) test/Build.*
 	install -pm 644 -t $(TEST) test/Dockerfile.* test/Docker_Pull.*
 	install -pm 644 -t $(TEST) test/*.patch
-	install -pm 755 -t $(TEST) test/make-auto test/make-perms-test
+	install -pm 755 -t $(TEST) test/docs-sane \
+                                   test/make-auto \
+                                   test/make-perms-test
 	install -d $(TEST)/chtest
 	install -pm 644 -t $(TEST)/chtest test/chtest/*
 	chmod 755 $(TEST)/chtest/Build \
@@ -181,6 +183,7 @@ install: all
 	install -pm 755 -t $(TEST)/sotest test/sotest/libsotest.so.1.0 \
 	                                  test/sotest/sotest
 	install -pm 644 -t $(TEST)/sotest test/sotest/files_inferrable.txt \
+	                                  test/sotest/libsotest.c \
 	                                  test/sotest/sotest.c
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1

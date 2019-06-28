@@ -1,5 +1,6 @@
 # ch-test-scope: full
-# ch-test-arch-exclude: aarch64  # only x86-64 and ppc64le supported by nVidia
+# ch-test-arch-exclude: aarch64     # only x86-64, ppc64le supported by nVidia
+# ch-test-builder-exclude: ch-grow  # multi-stage build not yet supported
 
 # This Dockerfile demonstrates a multi-stage build. With a single-stage build
 # that brings along the nVidia build environment, the resulting unpacked image

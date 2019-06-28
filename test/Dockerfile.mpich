@@ -13,6 +13,7 @@ FROM debian9
 
 RUN apt-get install -y --no-install-suggests \
     autoconf \
+    file \
     g++ \
     gcc \
     git \
@@ -34,7 +35,6 @@ ENV MPI_VERSION 3.2.1
 ENV MPI_URL http://www.mpich.org/static/downloads/${MPI_VERSION}
 RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz
 RUN tar xf mpich-${MPI_VERSION}.tar.gz
-RUN apt-get install -y --no-install-suggests file
 
 RUN    cd mpich-${MPI_VERSION} \
     && CFLAGS=-O3 \

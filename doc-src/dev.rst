@@ -557,7 +557,7 @@ the test suite (note that the test suite would also build the necessary image
 directory)::
 
   $ bin/ch-build -t centos7 -f test/Dockerfile.centos7 test
-  $ bin/ch-docker2tar centos7 $CH_TEST_TARDIR
+  $ bin/ch-builder2tar centos7 $CH_TEST_TARDIR
   $ bin/ch-tar2dir $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
   $ packaging/fedora/build --image $CH_TEST_IMGDIR/centos7 HEAD
 

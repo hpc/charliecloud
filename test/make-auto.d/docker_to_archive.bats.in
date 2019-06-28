@@ -1,13 +1,13 @@
-@test 'ch-docker2archive %(tag)s' {
+@test 'builder to archive %(tag)s' {
     scope %(scope)s
-    %(arch_exclude)s
-    need_docker
+    %(exclude)s
+    %(need_docker)s
     if ( squashfs_ready ); then
         archive="${ch_tardir}/%(tag)s.sqfs"
         ch-docker2squash %(tag)s "$ch_tardir"
     else
         archive="${ch_tardir}/%(tag)s.tar.gz"
-        ch-docker2tar %(tag)s "$ch_tardir"
+        ch-builder2tar %(tag)s "$ch_tardir"
     fi
     archive_grep "$archive"
     archive_ok "$archive"

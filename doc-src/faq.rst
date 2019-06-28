@@ -78,7 +78,7 @@ to be machine-readable.
 Tarball build fails with “No command specified”
 -----------------------------------------------
 
-The full error from :code:`ch-docker2tar` or :code:`ch-build2dir` is::
+The full error from :code:`ch-builder2tar` or :code:`ch-build2dir` is::
 
   docker: Error response from daemon: No command specified.
 
@@ -278,13 +278,13 @@ happy.
 
 .. _faq_docker2tar-size:
 
-:code:`ch-docker2tar` gives incorrect image sizes
--------------------------------------------------
+:code:`ch-builder2tar` gives incorrect image sizes
+--------------------------------------------------
 
-:code:`ch-docker2tar` often finishes before the progress bar is complete. For
+:code:`ch-builder2tar` often finishes before the progress bar is complete. For
 example::
 
-  $ ch-docker2tar mpihello /var/tmp
+  $ ch-builder2tar mpihello /var/tmp
    373MiB 0:00:21 [============================>                 ] 65%
   146M /var/tmp/mpihello.tar.gz
 
@@ -301,7 +301,7 @@ But Docker thinks the image is 597 MB::
 
 We've also seen cases where the Docker-reported size is an *under*\ estimate::
 
-  $ ch-docker2tar spack /var/tmp
+  $ ch-builder2tar spack /var/tmp
    423MiB 0:00:22 [============================================>] 102%
   162M /var/tmp/spack.tar.gz
   $ zcat /var/tmp/spack.tar.gz | wc
@@ -329,7 +329,7 @@ a tarball. Thus, we must exclude them at unpacking time.
 An additional complication is that :code:`ch-tar2dir` can handle tarballs both
 with a single top-level directory and without, i.e. “tarbombs”. For example,
 best practice use of :code:`tar` on the command line produces the former,
-while :code:`docker export` (perhaps via :code:`ch-docker2tar`) produces a
+while :code:`docker export` (perhaps via :code:`ch-builder2tar`) produces a
 tarbomb.
 
 Thus, :code:`ch-tar2dir` uses :code:`tar --exclude` to exclude from unpacking
