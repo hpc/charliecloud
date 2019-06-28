@@ -1,4 +1,5 @@
 # ch-test-scope: standard
+# ch-test-builder-exclude: buildah-runc  ("mkdir /run/runc: permission denied")
 FROM centos:7
 
 # This image has two purposes: (1) demonstrate we can build a CentOS 7 image

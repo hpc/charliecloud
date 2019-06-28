@@ -13,6 +13,13 @@ builder_exclude () {
 builder_tag_p () {
     printf 'image tag %s ... ' "$1"
     case $CH_BUILDER in
+        buildah*)
+            hash_=$(buildah images -q "$1" | sort -u)
+            if [[ $hash_ ]]; then
+                echo "$hash_"
+                return 0
+            fi
+            ;;
         ch-grow)
             if [[ -d ${CH_GROW_STORAGE}/img/${1} ]]; then
                 echo "ok"

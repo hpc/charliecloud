@@ -79,7 +79,7 @@ case $CH_BUILDER in
                 --build-arg no_proxy="$no_proxy" \
                 --isolation=rootless \
                 --layers=true \
-                --runtime $runtime \
+                --runtime="$runtime" \
                 "$@" < /dev/null
 
         ;;

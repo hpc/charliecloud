@@ -72,7 +72,7 @@ def check_man():
                for (p, s) in sect_helps.items()
                if (p in helps and summary_unrest(s) != helps[p]) })
 
-   sees = { m.group(0) for m in re.finditer(r"ch-[a-z0-9]+\(1\)",
+   sees = { m.group(0) for m in re.finditer(r"ch-[a-z0-9-]+\(1\)",
                                             open("charliecloud.rst").read()) }
    sees_expected = { i + "(1)" for i in execs }
    lose_lots("unexpected see-also in charliecloud.rst", sees - sees_expected)

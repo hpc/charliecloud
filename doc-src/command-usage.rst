@@ -95,7 +95,7 @@ Run a command in a Charliecloud container.
 ch-run-oci
 ++++++++++
 
-**FIXME**
+OCI wrapper for :code:`ch-run`.
 
 .. include:: ./ch-run-oci_desc.rst
 

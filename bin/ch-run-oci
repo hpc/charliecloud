@@ -43,30 +43,7 @@ def main():
 
 def args_parse():
 
-   # FIXME: gross kludge to work (sort of) as newuidmap and newgidmap. To use:
-   #
-   #   $ cd charliecloud/bin
-   #   $ ln -s ch-run-oci newuidmap
-   #   $ ln -s ch-run-oci newgidmap
-   #
-   if (sys.argv[0].endswith("/newuidmap")):
-      with open("/proc/%s/uid_map" % sys.argv[1], "wt") as fp:
-         line = "%s %d 1" % (sys.argv[2], os.geteuid())
-         l.debug("writing uid map: %s" % line)
-         fp.write(line + "\n")
-      sys.exit(0)
-   if (sys.argv[0].endswith("/newgidmap")):
-      with open("/proc/%s/setgroups" % sys.argv[1], "wt") as fp:
-         line = "deny"
-         l.debug("writing setgroups: %s" % line)
-         fp.write(line + "\n")
-      with open("/proc/%s/gid_map" % sys.argv[1], "wt") as fp:
-         line = "%s %d 1" % (sys.argv[2], os.getegid())
-         l.debug("writing gid map: %s" % line)
-         fp.write(line + "\n")
-      sys.exit(0)
-
-   ap = argparse.ArgumentParser()
+   ap = argparse.ArgumentParser(description='OCI wrapper for "ch-run".')
    ap.add_argument("--version", action="store_true")
    sps = ap.add_subparsers()
 
