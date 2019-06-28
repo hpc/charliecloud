@@ -52,7 +52,7 @@ buildah_ok () {
 }
 
 buildah_ () {
-   buildah --no-uidmap "$@"
+   buildah --ignore-chown-errors "$@"
 }
 
 env_require () {

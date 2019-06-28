@@ -41,7 +41,7 @@ fi
 
 # Use buildah with our flag to avoid using uidmap
 buildah_ () {
-    buildah --no-uidmap "$@"
+    buildah --ignore-chown-errors "$@"
 }
 
 # Use parallel gzip if it's available. ("command -v" is POSIX.1-2008.)
