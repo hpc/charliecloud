@@ -224,6 +224,23 @@ actively seeking distribution packagers to adapt this into official packages!
    * - Packaging source code
      - in Charliecloud: :code:`packaging/redhat`
 
+NixOS
+-----
+
+Charliecloud is available as a Nix package; see `See Nixpkgs repository
+<https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/virtualization/charliecloud>`_.
+
+.. list-table::
+   :widths: auto
+
+   * - Distribution versions
+     - *Unstable* channel
+   * - Maintainers
+     - Bruno Bzeznik (:code:`Bruno@bzizou.net`)
+   * - Bug reports to
+     - Nixos's GitHub issue tracker
+   * - Packaging source code
+     - Nixpkgs repository <https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/virtualization/charliecloud/default.nix>`_.
 
 Manual build and install
 ========================
