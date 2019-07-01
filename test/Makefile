@@ -10,14 +10,14 @@ images_eg := $(sort $(wildcard ../examples/*/*/Build)) \
              $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
              $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
 images := $(images_ch) $(images_eg)
+sotests := sotest/bin/sotest sotest/lib/libsotest.so.1.0
 
 # Favor embedded Bats, if installed, over system Bats.
 export PATH := $(CURDIR)/bats/bin:$(PATH)
 
 # Used by "make all" at top level to build these files for "make install".
 .PHONY: all
-all: build_auto.bats run_auto.bats \
-     sotest/bin/sotest sotest/lib/libsotest.so.1.0
+all: build_auto.bats run_auto.bats $(sotests)
 
 .PHONY: test
 test: test-build test-run
@@ -26,13 +26,13 @@ test: test-test
 endif
 
 .PHONY: test-build
-test-build: build_auto.bats
+test-build: build_auto.bats $(sotests)
 	bats build.bats build_auto.bats build_post.bats
 
 # Note: This will will not find ch-run correctly if $CWD is not the test
 # directory, which I believe is assumed elsewhere in the test suite as well.
 .PHONY: test-run
-test-run: run_auto.bats
+test-run: run_auto.bats $(sotests)
 	bats run_first.bats run_auto.bats run/*.bats
 	set -e; \
         if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
@@ -65,10 +65,10 @@ where-bats:
 	which bats
 	bats --version
 
-build_auto.bats: $(images)
+build_auto.bats: $(images) make-auto
 	./make-auto build $^ > $@
 
-run_auto.bats: $(images)
+run_auto.bats: $(images) make-auto
 	./make-auto run $^ > $@
 
 sotest/bin/sotest: sotest/sotest
@@ -81,8 +81,8 @@ sotest/lib/libsotest.so.1.0: sotest/libsotest.so.1.0
 # the container. (Issue #227.)
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0
-	gcc -o $@ -L./sotest -lsotest $^
+	gcc -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^
 sotest/libsotest.so.1.0: sotest/libsotest.c
-	gcc -o $@ -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
+	gcc -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
 	ln -f -s libsotest.so.1.0 sotest/libsotest.so
 	ln -f -s libsotest.so.1.0 sotest/libsotest.so.1

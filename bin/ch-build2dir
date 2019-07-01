@@ -5,7 +5,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Build a Charliecloud image and unpack it into a directory in one command.
+Build a Charliecloud image from Dockerfile and unpack it into a directory.
 
 Usage:
 
@@ -36,6 +36,6 @@ done
 set -x
 
 "${ch_bin}"/ch-build "${args[@]}"
-"${ch_bin}"/ch-docker2tar "$tag" "$outdir"
+"${ch_bin}"/ch-builder2tar "$tag" "$outdir"
 "${ch_bin}"/ch-tar2dir "${outdir}/${tag}.tar.gz" "$outdir"
 rm "${outdir}/${tag}.tar.gz"

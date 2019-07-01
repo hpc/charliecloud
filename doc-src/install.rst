@@ -39,6 +39,12 @@ Systems used for running images need:
 
 * POSIX.1-2017 shell and utilities
 
+The SquashFS workflow requires FUSE and `Squashfuse
+<https://github.com/vasi/squashfus>`_. Note that distribution packages of
+Squashfuse often provide only the "high level" executables; the "low level"
+executables have better performance. These can be installed from source on any
+distribution.
+
 Some distributions need configuration changes to enable user namespaces. For
 example:
 
@@ -63,9 +69,19 @@ Docker expect to run the :code:`docker` command under :code:`sudo` and need
 Docker 17.03+ and :code:`mktemp(1)`. (Older versions of Docker may work but
 are untested. We know that 1.7.1 does not work.)
 
-Optional build-time dependencies:
+Additional dependencies for specific components:
 
-* Bash 4.1+, for :code:`ch-build2dir`
+* To create SquashFS image files: :code:`squashfs-tools`
+
+* :code:`ch-build2dir`: Bash 4.1+
+
+* :code:`ch-grow`, our internal unprivileged image builder (no specific
+  dependency versions documented yet)
+
+  * `skopeo <https://github.com/containers/skopeo>`_
+  * `umoci <https://github.com/openSUSE/umoci>`_
+  * Python module :code:`lark`
+    (`lark-parser <https://pypi.org/project/lark-parser/>`_ on PyPI)
 
 Test suite
 ----------
@@ -208,6 +224,23 @@ actively seeking distribution packagers to adapt this into official packages!
    * - Packaging source code
      - in Charliecloud: :code:`packaging/redhat`
 
+NixOS
+-----
+
+Charliecloud is available as a Nix package; see `See Nixpkgs repository
+<https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/virtualization/charliecloud>`_.
+
+.. list-table::
+   :widths: auto
+
+   * - Distribution versions
+     - *Unstable* channel
+   * - Maintainers
+     - Bruno Bzeznik (:code:`Bruno@bzizou.net`)
+   * - Bug reports to
+     - Nixos's GitHub issue tracker
+   * - Packaging source code
+     - Nixpkgs repository <https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/virtualization/charliecloud/default.nix>`_.
 
 Manual build and install
 ========================

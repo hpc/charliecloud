@@ -19,26 +19,28 @@ compiler: gcc
 #
 # Additional options:
 #
+#   CH_BUILDER              # which builder to use
 #   MINIMAL_DEPS            # test with minimal dependencies (no fancy tools)
-#   NO_DOCKER               # remove Docker before testing
 #   SUDO_RM_AFTER_BUILD     # remove sudo privileges after build
 #   SUDO_AVOID_AFTER_BUILD  # set CH_TEST_DONT_SUDO after build
 #
 env:
-# Complete matrix of TARBALL and INSTALL.
-  - TARBALL=             INSTALL=
-  - TARBALL=             INSTALL=yes
-  - TARBALL=archive      INSTALL=
-#  - TARBALL=archive      INSTALL=yes
-  - TARBALL=export       INSTALL=
-  - TARBALL=export       INSTALL=yes
-  - TARBALL=export-bats  INSTALL=
-#  - TARBALL=export-bats  INSTALL=yes
-# Extra conditions
-  - TARBALL=             INSTALL=     MINIMAL_DEPS=yes
-  - TARBALL=             INSTALL=     NO_DOCKER=yes
-  - TARBALL=             INSTALL=     SUDO_RM_AFTER_BUILD=yes
-  - TARBALL=             INSTALL=     SUDO_AVOID_AFTER_BUILD=yes
+# Complete matrix of TARBALL and INSTALL using Docker.
+  - CH_BUILDER=docker        TARBALL=             INSTALL=
+  - CH_BUILDER=docker        TARBALL=             INSTALL=yes
+  - CH_BUILDER=docker        TARBALL=archive      INSTALL=
+# - CH_BUILDER=docker        TARBALL=archive      INSTALL=yes
+  - CH_BUILDER=docker        TARBALL=export       INSTALL=
+  - CH_BUILDER=docker        TARBALL=export       INSTALL=yes
+  - CH_BUILDER=docker        TARBALL=export-bats  INSTALL=
+# - CH_BUILDER=docker        TARBALL=export-bats  INSTALL=yes
+# Other builders
+  - CH_BUILDER=ch-grow       TARBALL= INSTALL=
+  - CH_BUILDER=ch-grow       TARBALL= INSTALL= MINIMAL_DEPS=yes
+# Extra conditions with Docker
+  - CH_BUILDER=docker        TARBALL= INSTALL= MINIMAL_DEPS=yes
+  - CH_BUILDER=docker        TARBALL= INSTALL= SUDO_RM_AFTER_BUILD=yes
+  - CH_BUILDER=docker        TARBALL= INSTALL= SUDO_AVOID_AFTER_BUILD=yes
 # One full-scope test. This will finish last by a lot.
 # (Disabled because it gives a >10-minute gap in output, so Travis times out.)
 #  - TARBALL=        INSTALL=     CH_TEST_SCOPE=full
@@ -48,33 +50,31 @@ addons:
     sources:
       - sourceline: 'ppa:projectatomic/ppa'
     packages:
-      - buildah
-      - cri-o-runc  # runc from Project Atomic PPA, not Ubuntu
-      - fakeroot
-      - pigz
-      - pv
       - python3-pip
-      - skopeo
+      - python3-setuptools
 
 install:
+# Install conditional packages.
+  - if [ -z "$MINIMAL_DEPS" ]; then
+      sudo apt-get install buildah cri-o-runc pigz pv skopeo squashfuse;
+    fi
+  - if [ "$CH_BUILDER" = ch-grow ]; then
+      sudo apt-get install skopeo;
+      sudo pip3 install lark-parser;
+    fi
+# umoci provides a binary build; no appropriate Ubuntu package for Xenial.
+  - if [ -z "$MINIMAL_DEPS" ] || [ "$CH_BUILDER" = ch-grow ]; then
+      wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64;
+      sudo chmod 755 umoci.amd64;
+      sudo mv umoci.amd64 /usr/local/bin/umoci;
+      umoci --version;
+    fi
 # We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
 # issue #241). Travis provides images pre-installed with Python 3, but it's in
 # a virtualenv and unavailable by default under sudo, in package builds, and
 # maybe elsewhere. It's simpler and fast enough to install it with apt-get.
   - if [ -z "$MINIMAL_DEPS" ]; then
-      pip3 --version;
       sudo pip3 install sphinx sphinx-rtd-theme;
-    fi
-# umoci provides a binary build; no appropriate Ubuntu packages AFAICT.
-  - if [ -z "$MINIMAL_DEPS" ]; then
-      wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.3/umoci.amd64;
-      sudo chmod 755 umoci.amd64;
-      sudo mv umoci.amd64 /usr/local/bin/umoci;
-      umoci --version;
-    fi
-# Tests should still pass with only the basics installed.
-  - if [ -n "$MINIMAL_DEPS" ]; then
-      sudo apt-get purge buildah cri-o-runc pv skopeo;
     fi
 
 before_script:
@@ -86,10 +86,16 @@ before_script:
   - export CH_TEST_IMGDIR=/var/tmp/images
   - export CH_TEST_PERMDIRS='/var/tmp /run'
   - unset JAVA_HOME  # otherwise Spark tries to use host's Java
-  - for d in $CH_TEST_PERMDIRS; do sudo test/make-perms-test $d $USER nobody; done
+  - for d in $CH_TEST_PERMDIRS; do
+      sudo test/make-perms-test $d $USER nobody;
+    done
+  - test -n "$CH_BUILDER"  # no default builder for Travis
   - sudo usermod --add-subuids 10000-65536 $USER
   - sudo usermod --add-subgids 10000-65536 $USER
-  - if [ -n "$NO_DOCKER" ]; then
+  - if [ "$CH_BUILDER" = ch-grow ]; then
+      export SUDO_RM_FIRST=yes;
+    fi
+  - if [ "$CH_BUILDER" != docker ]; then
       sudo rm $(command -v docker);
     fi
 

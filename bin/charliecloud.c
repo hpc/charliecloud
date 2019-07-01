@@ -186,7 +186,8 @@ void enter_udss(struct container *c)
    bind_mounts(BINDS_REQUIRED, c->newroot, BD_REQUIRED, MS_RDONLY);
    bind_mounts(BINDS_OPTIONAL, c->newroot, BD_OPTIONAL, MS_RDONLY);
    // /etc/passwd and /etc/group.
-   setup_passwd(c);
+   if (!c->private_passwd)
+      setup_passwd(c);
    // Container /tmp.
    if (c->private_tmp) {
       tmpfs_mount("/tmp", c->newroot, NULL);

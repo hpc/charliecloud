@@ -1,0 +1,32 @@
+#!/bin/sh
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Unmount a FUSE mounted squash filesystem and remove the mount point.
+
+Usage:
+
+  $ $(basename "$0") MOUNTDIR
+
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ "$#" -ne 1 ]; then
+    usage
+fi
+
+mountdir=$1
+if ( mountpoint -q "$mountdir" ); then
+    if ( fusermount -u "$mountdir" ); then
+        rmdir "$mountdir"
+        echo "unmounted and removed ${mountdir}"
+    fi
+else
+    echo "cant unmount: ${mountdir} is not a mountpoint"
+    exit 1
+fi

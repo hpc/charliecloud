@@ -1,0 +1,18 @@
+@test 'custom build %(tag)s' {
+    scope %(scope)s
+    %(exclude)s
+    tarball="${ch_tardir}/%(tag)s"
+    pq="${ch_tardir}/%(tag)s.pq_missing"
+    workdir="${ch_tardir}/%(tag)s.tmp"
+    rm -f "$pq"
+    mkdir "$workdir"
+    cd "%(dirname)s"
+    run ./%(basename)s "$PWD" "$tarball" "$workdir"
+    echo "$output"
+    rm -Rf "$workdir"
+    if [[ $status -eq 65 ]]; then
+         touch "$pq"
+         skip 'prerequisites not met'
+    fi
+    [[ $status -eq 0 ]]
+}

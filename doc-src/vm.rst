@@ -96,7 +96,7 @@ Log in and try Charliecloud
 
   $ ch-build -t hello -f /usr/local/src/charliecloud/examples/serial/hello \
              /usr/local/src/charliecloud
-  $ ch-docker2tar hello /var/tmp
+  $ ch-builder2tar hello /var/tmp
   57M /var/tmp/hello.tar.gz
   $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
   creating new image /var/tmp/hello

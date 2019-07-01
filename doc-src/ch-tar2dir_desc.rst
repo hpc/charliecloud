@@ -10,7 +10,7 @@ Description
 
 Extract the tarball :code:`TARBALL` into a subdirectory of :code:`DIR`.
 :code:`TARBALL` must contain a Linux filesystem image, e.g. as created by
-:code:`ch-docker2tar`, and be compressed with :code:`gzip` or :code:`xz`. If
+:code:`ch-builder2tar`, and be compressed with :code:`gzip` or :code:`xz`. If
 :code:`TARBALL` has no extension, try appending :code:`.tar.gz` and
 :code:`.tar.xz`.
 
