@@ -81,8 +81,8 @@ sotest/lib/libsotest.so.1.0: sotest/libsotest.so.1.0
 # the container. (Issue #227.)
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0
-	gcc -o $@ -L./sotest -lsotest $^
+	gcc -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^
 sotest/libsotest.so.1.0: sotest/libsotest.c
-	gcc -o $@ -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
+	gcc -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
 	ln -f -s libsotest.so.1.0 sotest/libsotest.so
 	ln -f -s libsotest.so.1.0 sotest/libsotest.so.1
