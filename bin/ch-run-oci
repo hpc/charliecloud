@@ -5,6 +5,7 @@ import inspect
 import json
 import logging
 import os
+import packaging.version
 import pathlib
 import re
 import signal
@@ -264,6 +265,12 @@ def state_load():
 
    st.config = json.load(open(args.bundle + "/config.json"))
    #debug_lines(json.dumps(st.config, indent=2))
+
+   v_min = packaging.version.parse(OCI_VERSION_MIN)
+   v_actual = packaging.version.parse(st.config["ociVersion"])
+   v_max = packaging.version.parse(OCI_VERSION_MAX)
+   if (not v_min <= v_actual <= v_max):
+      fatal("unsupported OCI version: %s" % st.config["ociVersion"])
 
    try:
       fp = open(args.pid_file)
