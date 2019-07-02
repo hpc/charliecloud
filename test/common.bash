@@ -297,12 +297,6 @@ else
     fi
 fi
 
-# If the variable CH_TEST_SKIP_DOCKER is true, we skip all the tests that
-# depend on Docker. It's true if user-set or command "docker" is not in $PATH.
-if ( ! command -v docker >/dev/null 2>&1 ); then
-    CH_TEST_SKIP_DOCKER=yes
-fi
-
 # Validate CH_TEST_SCOPE and set if empty.
 if [[ -z $CH_TEST_SCOPE ]]; then
     CH_TEST_SCOPE=standard
