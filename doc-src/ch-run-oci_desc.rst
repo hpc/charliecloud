@@ -8,6 +8,14 @@ Synopsis
 Description
 ===========
 
+.. note::
+
+   This command is experimental. Features may be incomplete and/or buggy. The
+   quality of code is not yet up to the usual Charliecloud standards, and
+   error handling is poor. Please report any issues you find, so we can fix
+   them!
+
+
 Open Containers Initiative (OCI) wrapper for :code:`ch-run(1)`. You probably
 don't want to run this command directly; it is intended to interface with
 other software that expects an OCI runtime. The current goal is to support
@@ -47,8 +55,8 @@ versions are offered.
 Operations
 ==========
 
-The following operations are supported. One operation is not supported,
-:code:`kill`. For comparison, see also:
+All OCI operations are accepted, but some are no-ops or merely scaffolding to
+satisfy the caller. For comparison, see also:
 
 * `OCI runtime and lifecycle spec
   <https://github.com/opencontainers/runtime-spec/blob/master/runtime.md>`_
@@ -72,8 +80,9 @@ Arguments:
     where :code:`YYY` matches :code:`CONTAINER_ID` below.
 
   :code:`--pid-file FILE`
-    Filename to write the "container" process PID to. (Note that for
-    Charliecloud, the process given is fake; see above.)
+    Filename to write the "container" process PID to. Note that for
+    Charliecloud, the process given is fake; see above. This must be
+    :code:`DIR/pid`, where :code:`DIR` is given by :code:`--bundle`.
 
   :code:`--no-new-keyring`
     Ignored. (Charliecloud does not implement session keyrings.)
@@ -90,6 +99,23 @@ Unsupported arguments:
     Buildah, redirect its input from :code:`/dev/null` to prevent it from
     requesting a pseudoterminal.
 
+:code:`delete`
+--------------
+
+::
+
+   $ ch-run-oci delete CONTAINER_ID
+
+Clean up the OCI-related scaffolding for specified container.
+
+:code:`kill`
+------------
+
+::
+
+   $ ch-run-oci kill CONTAINER_ID
+
+No-op.
 
 :code:`start`
 -------------
@@ -110,15 +136,6 @@ container.
 
 Print the state of the given container on standard output as an OCI compliant
 JSON document.
-
-:code:`delete`
---------------
-
-::
-
-   $ ch-run-oci delete CONTAINER_ID
-
-Clean up the OCI-related scaffolding for specified container.
 
 Unsupported OCI features
 ========================
