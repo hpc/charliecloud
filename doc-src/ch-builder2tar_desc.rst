@@ -3,32 +3,33 @@ Synopsis
 
 ::
 
-  $ ch-builder2tar IMAGE OUTDIR
+  $ ch-builder2tar [-b BUILDER] [--nocompress] IMAGE OUTDIR
 
 Description
 ===========
 
-**FIXME**
-
-Flattens the Docker image tagged :code:`IMAGE` into a Charliecloud tarball in
+Flatten the builder image tagged :code:`IMAGE` into a Charliecloud tarball in
 directory :code:`OUTDIR`.
 
-The Docker environment (e.g., :code:`ENV` statements) is placed in a file in
-the tarball at :code:`$IMAGE/ch/environment`, in a form suitable for
+The builder-specified environment (e.g., :code:`ENV` statements) is placed in
+a file in the tarball at :code:`$IMAGE/ch/environment`, in a form suitable for
 :code:`ch-run --set-env`.
 
-Sudo privileges are required to run :code:`docker export`.
+See :code:`ch-build(1)` for details on specifying the builder.
 
 Additional arguments:
 
+  :code:`-b`, :code:`--builder BUILDER`
+    Use specified builder; if not given, use :code:`$CH_BUILDER` or default.
+
   :code:`--nocompress`
-    do not compress tarball
+    Do not compress tarball.
 
   :code:`--help`
-    print help and exit
+    Print help and exit.
 
   :code:`--version`
-    print version and exit
+    Print version and exit.
 
 Example
 =======

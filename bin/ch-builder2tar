@@ -9,9 +9,7 @@ Flatten a builder image into a Charliecloud image tarball.
 
 Usage:
 
-  $ $(basename "$0") IMAGE OUTDIR
-
-You must have sufficient privilege (via sudo) to run the Docker commands.
+  $ $(basename "$0") [-b BUILDER] [--nocompress] IMAGE OUTDIR
 EOF
 )
 
@@ -34,10 +32,23 @@ EOF
 
 parse_basic_args "$@"
 
-if [ "$1" = --nocompress ]; then
-    nocompress=yes
-    shift
-fi
+# Kludgey argument parsing.
+while true; do
+    case $1 in
+        -b|--builder)
+            shift
+            CH_BUILDER=$1
+            shift
+            ;;
+        --nocompress)
+            nocompress=yes
+            shift
+            ;;
+        *)
+            break
+            ;;
+        esac
+done
 
 if [ "$#" -ne 2 ]; then
     usage
