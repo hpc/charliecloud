@@ -94,7 +94,8 @@ load common
     while IFS= read -r -d '' i; do
         echo "shellcheck: ${i}"
         shellcheck -e SC2002 "$i"
-    done < <( find $misc -name bats -prune -o -name '*.sh' -print0 )
+    done < <( find $misc -name bats -prune \
+                         -o \( -name '*.sh' -o -name '*.bash' \) -print0 )
 }
 
 @test 'proxy variables' {

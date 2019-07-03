@@ -72,77 +72,16 @@ addons:
       - python3-setuptools
 
 install:
-# Install conditional packages.
-  - if [ -z "$MINIMAL_DEPS" ]; then
-      sudo apt-get install pigz pv skopeo squashfuse;
-    fi
-  - if [ "$CH_BUILDER" = ch-grow ]; then
-      sudo apt-get install skopeo;
-      sudo pip3 install lark-parser;
-    fi
-# Project Atomic PPA provides buggy Buildah for Xenial, and we need Kevin's
-# patched version, so build from source.
-  - case $CH_BUILDER in;
-      buildah*);
-        add-apt-repository -y ppa:alexlarsson/flatpak;
-        add-apt-repository -y ppa:gophers/archive;
-        apt-get -y install libapparmor-dev libdevmapper-dev libglib2.0-dev \
-                           libgpgme11-dev libostree-dev libseccomp-dev \
-                           libselinux1-dev skopeo-containers go-md2man;
-        apt-get -y install golang-1.10;
-        which go; go --version;
-        mkdir /usr/local/src/go;
-        cd /usr/local/src/go;
-        export GOPATH=$(pwd);
-        git clone https://github.com/containers/buildah \
-                  src/github.com/containers/buildah;
-        cd src/github.com/containers/buildah;
-        git checkout v1.9.0;
-        make runc all SECURITYTAGS="apparmor seccomp";
-        sudo make install install.runc;
-        which buildah; buildah --version;
-        which runc; runc --version;
-        printf "[registries.search]\nregistries = ['docker.io']\n" \
-               > /etc/containers/registries.conf;
-      ;; ;
-    esac
-# umoci provides a binary build; no appropriate Ubuntu package for Xenial.
-  - if [ -z "$MINIMAL_DEPS" ] || [ "$CH_BUILDER" = ch-grow ]; then
-      wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64;
-      sudo chmod 755 umoci.amd64;
-      sudo mv umoci.amd64 /usr/local/bin/umoci;
-      umoci --version;
-    fi
-# We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
-# issue #241). Travis provides images pre-installed with Python 3, but it's in
-# a virtualenv and unavailable by default under sudo, in package builds, and
-# maybe elsewhere. It's simpler and fast enough to install it with apt-get.
-  - if [ -z "$MINIMAL_DEPS" ]; then
-      sudo pip3 install sphinx sphinx-rtd-theme;
-    fi
+  - echo $SHELL
+  - set -ex
+  - . test/travis-install.bash  # source b/c we're setting variables
 
 before_script:
-  - getconf _NPROCESSORS_ONLN
-  - free -m
-  - df -h
-  - df -h /var/tmp
-  - export CH_TEST_TARDIR=/var/tmp/tarballs
-  - export CH_TEST_IMGDIR=/var/tmp/images
-  - export CH_TEST_PERMDIRS='/var/tmp /run'
-  - unset JAVA_HOME  # otherwise Spark tries to use host's Java
-  - for d in $CH_TEST_PERMDIRS; do
-      sudo test/make-perms-test $d $USER nobody;
-    done
-  - test -n "$CH_BUILDER"  # no default builder for Travis
-  - sudo usermod --add-subuids 10000-65536 $USER
-  - sudo usermod --add-subgids 10000-65536 $USER
-  - if [ "$CH_BUILDER" != docker ]; then
-      export SUDO_RM_FIRST=yes;
-      sudo rm $(command -v docker);
-    fi
+  - set -ex
+  - . test/travis-before.bash
 
 script:
-  - test/travis.sh
+  - test/travis.bash
 
 after_script:
   - free -m
