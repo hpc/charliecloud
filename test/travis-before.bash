@@ -1,5 +1,7 @@
 # shellcheck shell=bash
 
+set -ex
+
 getconf _NPROCESSORS_ONLN
 free -m
 df -h
@@ -23,3 +25,5 @@ if [[ $CH_BUILDER != docker ]]; then
     export SUDO_RM_FIRST=yes
     sudo rm "$(command -v docker)"
 fi
+
+set +ex

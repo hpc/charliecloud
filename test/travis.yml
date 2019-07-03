@@ -8,6 +8,9 @@ compiler: gcc
 # divided the matrix into "stages"; if any stage has a failure, testing stops
 # and the remaining stages are skipped. Note that some stages are conditional.
 #
+# Note: Matrixing of variables that happens at the top level is not supported
+# within stages: https://github.com/travis-ci/travis-ci/issues/8295.
+#
 # We do not do any full-scope tests, because they give a >10-minute gap in
 # output, so Travis times out.
 #
@@ -30,38 +33,60 @@ compiler: gcc
 #   SUDO_RM_AFTER_BUILD     # remove sudo after build
 #   SUDO_AVOID_AFTER_BUILD  # set CH_TEST_DONT_SUDO after build
 #
+
 stages:
   - quick
   - builders
   - install
   - misc
+
+stage_quick: &stage_quick
+  stage: quick
+stage_builders: &stage_builders
+  stage: builders
+stage_install: &stage_install
+  stage: install
+  if: branch = master OR type = pull_request
+stage_misc: &stage_misc
+  stage: misc
+  if: branch = master OR type = pull_request
+
 jobs:
   include:
-    - stage: quick
-      env:
-        - CH_BUILDER=docker CH_TEST_SCOPE=quick
-    - stage: builders
-      env:
-        - CH_BUILDER=buildah-runc
-        - CH_BUILDER=buildah-setuid
-        - CH_BUILDER=ch-grow
-        - CH_BUILDER=docker
-    - stage: install
-      if: branch = master OR type = pull_request
-      env:
-        - CH_BUILDER=buildah-runc    TARBALL=export       INSTALL=yes
-        - CH_BUILDER=buildah-setuid  TARBALL=export       INSTALL=yes
-        - CH_BUILDER=ch-grow         TARBALL=export       INSTALL=yes
-        - CH_BUILDER=docker          TARBALL=export       INSTALL=yes
-        - CH_BUILDER=docker          TARBALL=export-bats  INSTALL=yes
-    - stage: misc
-      if: branch = master OR type = pull_request
-      env:
-        - CH_BUILDER=buildah-setuid  MINIMAL_DEPS=yes
-        - CH_BUILDER=ch-grow         MINIMAL_DEPS=yes
-        - CH_BUILDER=docker          MINIMAL_DEPS=yes
-        - CH_BUILDER=docker          SUDO_RM_AFTER_BUILD=yes
-        - CH_BUILDER=docker          SUDO_AVOID_AFTER_BUILD=yes
+
+    - <<: *stage_quick
+      env: CH_BUILDER=docker CH_TEST_SCOPE=quick
+
+    - <<: *stage_builders
+      env: CH_BUILDER=buildah-runc
+    - <<: *stage_builders
+      env: CH_BUILDER=buildah-setuid
+    - <<: *stage_builders
+      env: CH_BUILDER=ch-grow
+    - <<: *stage_builders
+      env: CH_BUILDER=docker
+
+    - <<: *stage_install
+      env: CH_BUILDER=buildah-runc    TARBALL=export       INSTALL=yes
+    - <<: *stage_install
+      env: CH_BUILDER=buildah-setuid  TARBALL=export       INSTALL=yes
+    - <<: *stage_install
+      env: CH_BUILDER=ch-grow         TARBALL=export       INSTALL=yes
+    - <<: *stage_install
+      env: CH_BUILDER=docker          TARBALL=export       INSTALL=yes
+    - <<: *stage_install
+      env: CH_BUILDER=docker          TARBALL=export-bats  INSTALL=yes
+
+    - <<: *stage_misc
+      env: CH_BUILDER=buildah-setuid  MINIMAL_DEPS=yes
+    - <<: *stage_misc
+      env: CH_BUILDER=ch-grow         MINIMAL_DEPS=yes
+    - <<: *stage_misc
+      env: CH_BUILDER=docker          MINIMAL_DEPS=yes
+    - <<: *stage_misc
+      env: CH_BUILDER=docker          SUDO_RM_AFTER_BUILD=yes
+    - <<: *stage_misc
+      env: CH_BUILDER=docker          SUDO_AVOID_AFTER_BUILD=yes
 
 addons:
   apt:
@@ -72,12 +97,9 @@ addons:
       - python3-setuptools
 
 install:
-  - echo $SHELL
-  - set -ex
   - . test/travis-install.bash  # source b/c we're setting variables
 
 before_script:
-  - set -ex
   - . test/travis-before.bash
 
 script:

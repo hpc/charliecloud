@@ -1,5 +1,9 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2164
+
+set -ex
+
+# Make /usr/local/src writeable for everyone.
+sudo chmod 1777 /usr/local/src
 
 # Install conditional packages.
 if [[ -z "$MINIMAL_DEPS" ]]; then
@@ -13,15 +17,15 @@ fi
 # Project Atomic PPA provides buggy Buildah for Xenial, and we need Kevin's
 # patched version, so build from source.
 if [[ $CH_BUILDER = buildah* ]]; then
-    add-apt-repository -y ppa:alexlarsson/flatpak
-    add-apt-repository -y ppa:gophers/archive
-    apt-get -y install libapparmor-dev libdevmapper-dev libglib2.0-dev \
-                       libgpgme11-dev libostree-dev libseccomp-dev \
-                       libselinux1-dev skopeo-containers go-md2man
-    apt-get -y install golang-1.10
-    command -v go && go --version
+    sudo add-apt-repository -y ppa:alexlarsson/flatpak
+    sudo apt-get update
+    sudo apt-get -y install libapparmor-dev libdevmapper-dev libglib2.0-dev \
+                            libgpgme11-dev libostree-dev libseccomp-dev \
+                            libselinux1-dev skopeo-containers go-md2man
+    sudo apt-get --purge autoremove
+    command -v go && go version
     mkdir /usr/local/src/go
-    cd /usr/local/src/go
+    pushd /usr/local/src/go
     export GOPATH=$PWD
     git clone https://github.com/containers/buildah \
               src/github.com/containers/buildah
@@ -31,10 +35,11 @@ if [[ $CH_BUILDER = buildah* ]]; then
     sudo make install install.runc
     command -v buildah && buildah --version
     command -v runc && runc --version
-    cat <<'EOF' > /etc/containers/registries.conf
+    cat <<'EOF' | sudo tee /etc/containers/registries.conf
 [registries.search]
   registries = ['docker.io']
 EOF
+    popd
 fi
 
 # umoci provides a binary build; no appropriate Ubuntu package for Xenial.
@@ -52,3 +57,5 @@ fi
 if [[ -z $MINIMAL_DEPS ]]; then
     sudo pip3 install sphinx sphinx-rtd-theme
 fi
+
+set +ex
