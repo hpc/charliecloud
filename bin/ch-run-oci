@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import packaging.version
-import pathlib
 import re
 import signal
 import subprocess
@@ -112,6 +111,52 @@ def fatal(msg):
    sys.exit(1)
 
 
+def file_ensure_exists(path):
+   with open(path, "a") as fp:
+      pass
+
+
+def file_write(path, content, mode=None):
+   with open(path, "wt") as fp:
+      fp.write(content)
+      if (mode is not None):
+         os.chmod(fp.fileno(), mode)
+
+
+def image_fixup(path):
+   l.debug("fixing up image: %s" % path)
+   # Metadata directory.
+   mkdirs("%s/ch/bin" % path)
+   # Mount points.
+   file_ensure_exists("%s/etc/hosts" % path)
+   file_ensure_exists("%s/etc/resolv.conf" % path)
+   # /etc/{passwd,group}
+   file_write("%s/etc/passwd" % path, """\
+root:x:0:0:root:/root:/bin/sh
+nobody:x:65534:65534:nobody:/:/bin/false
+""")
+   file_write("%s/etc/group" % path, """\
+root:x:0:
+nogroup:x:65534:
+""")
+   # Kludges to work around expectations of real root, not UID 0 in a
+   # unprivileged user namespace. See also the default environment.
+   #
+   # Debian apt/dpkg/etc. want to chown(1), chgrp(1), etc. in various ways.
+   symlink("/bin/true", "%s/ch/bin/chown" % path)
+   symlink("/bin/true", "%s/ch/bin/chgrp" % path)
+   symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
+   # Debian package management also wants to mess around with users. This is
+   # causing problems with /etc/gshadow and other files. These links don't
+   # work if they are in /ch/bin, I think because dpkg is resetting the path?
+   # For now we'll do this, but I don't like it. fakeroot(1) also solves the
+   # problem (see issue #472).
+   symlink("/bin/true", "%s/usr/sbin/groupadd" % path, clobber=True)
+   symlink("/bin/true", "%s/usr/sbin/useradd" % path, clobber=True)
+   symlink("/bin/true", "%s/usr/sbin/usermod" % path, clobber=True)
+   symlink("/bin/true", "%s/usr/bin/chage" % path, clobber=True)
+
+
 def log_setup():
    # Always set up a logger on stderr that only prints errors.
    l_ = logging.getLogger(None)
@@ -129,6 +174,11 @@ def log_setup():
       h.setFormatter(logging.Formatter("%(process)5d %(asctime)s %(message)s"))
       l_.addHandler(h)
    return l_
+
+
+def mkdirs(path):
+   l.debug("ensuring directory: " + path)
+   os.makedirs(path, exist_ok=True)
 
 
 def op_create():
@@ -168,6 +218,9 @@ def op_kill():
 
 
 def op_start():
+   # Note: Contrary to the implication of its name, the "start" operation
+   # blocks until the user command is done.
+
    c = state.config
 
    # Unsupported features to barf about.
@@ -185,9 +238,14 @@ def op_start():
    if ("intelRdt" in c["linux"]):
       fatal("not supported: Intel RDT")
 
-   # Environment file.
+   # Environment file. This is a list of lines, not a dict.
+   #
+   # GNU tar, when it thinks it's running as root, tries to chown(2) and
+   # chgrp(2) files to whatever's in the tarball. --no-same-owner avoids this.
    with open(args.bundle + "/environment", "wt") as fp:
-      for line in c["process"]["env"]:
+      for line in (  c["process"]["env"]                  # from Dockerfile
+                   + [ "TAR_OPTIONS=--no-same-owner" ]):  # ours
+         line = re.sub(r"^(PATH=)", "\\1/ch/bin:", line)
          l.debug("env: %s" % line)
          print(line, file=fp)
 
@@ -196,6 +254,7 @@ def op_start():
    ca = [cmd,
          "--cd", c["process"]["cwd"],
          "--no-home",
+         "--no-passwd",
          "--gid", str(c["process"]["user"]["gid"]),
          "--uid", str(c["process"]["user"]["uid"]),
          "--unset-env=*", "--set-env=%s/environment" % args.bundle]
@@ -205,17 +264,15 @@ def op_start():
    ca += c["process"]["args"]
 
    # Fix up root filesystem.
-   rootfs = args.bundle + "/mnt/rootfs"
-   pathlib.Path(rootfs + "/etc/resolv.conf").touch(exist_ok=True)
-   pathlib.Path(rootfs + "/etc/hosts").touch(exist_ok=True)
+   image_fixup(args.bundle + "/mnt/rootfs")
 
    # Execute user command. We can't execv(2) because we have to do cleanup
    # after it exits.
-   pathlib.Path(args.bundle + "/user_started").touch(exist_ok=True)
+   file_ensure_exists(args.bundle + "/user_started")
    l.debug("user command: %s" % ca)
    # Standard output disappears, so send stdout to stderr.
-   subprocess.run(ca, stdout=2)
-   pathlib.Path(args.bundle + "/user_done").touch(exist_ok=True)
+   cp = subprocess.run(ca, stdout=2)
+   file_ensure_exists(args.bundle + "/user_done")
    l.debug("user command done")
 
    # Stop dummy supervisor.
@@ -227,6 +284,10 @@ def op_start():
       os.unlink(args.pid_file)
    except OSError as x:
       fatal("can't kill PID %d: %s (%d)" % (state.pid, x.strerror, x.errno))
+
+   # Puke if user command failed.
+   if (cp.returncode != 0):
+      fatal("user command failed: %d" % cp.returncode)
 
 
 def op_state():
@@ -254,6 +315,20 @@ def op_state():
 def sleep_forever():
    while True:
       time.sleep(60)  # can't provide infinity here
+
+
+def symlink(target, source, clobber=False):
+   if (clobber and os.path.isfile(source)):
+      os.unlink(source)
+   try:
+      os.symlink(target, source)
+   except FileExistsError:
+      if (not os.path.islink(source)):
+         FATAL("can't symlink: source exists and isn't a symlink: %s"
+               % source)
+      if (os.readlink(source) != target):
+         FATAL("can't symlink: %s exists; want target %s but existing is %s"
+               % (source, target, os.readlink(source)))
 
 
 def pid_file_from_bundle(bundle):

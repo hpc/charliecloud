@@ -30,6 +30,7 @@ RUN yum -y install \
 # We can instead use fakeroot(1), though there seems to be a performance
 # impact. In the interest of time, we demonstrate this by upgrading a single
 # package, though "yum upgrade" seems to pretty reliably tickle the problem.
+# See issue #472.
 RUN          yum -y install fakeroot
 RUN fakeroot yum -y upgrade dbus
 

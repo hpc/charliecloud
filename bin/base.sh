@@ -17,7 +17,7 @@ builder_choose () {
         fi
     fi
     case $CH_BUILDER in
-        buildah-runc|ch-grow|docker)
+        buildah-runc|buildah-setuid|ch-grow|docker)
             ;;
         *)
             echo "unknown builder: $CH_BUILDER" 1>&2
