@@ -8,7 +8,7 @@ Synopsis
 Description
 ===========
 
-Ensure charliecloud containers can run.
+Check ch-run prerequisites, e.g., namespaces and pivot_root(2).
 
 Example
 =======

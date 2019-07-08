@@ -37,8 +37,7 @@ Flatten a builder image into a Charliecloud image tarball.
 ch-checkns
 ++++++++++
 
-Check if the Charliecloud prerequisites, e.g., pivot_root(2) and Linux
-Namepsaces, function as needed on the system.
+Check ch-run prerequisites, e.g., namespaces and pivot_root(2).
 
 .. include:: ./ch-checkns_desc.rst
 

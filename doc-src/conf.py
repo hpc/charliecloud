@@ -233,7 +233,7 @@ man_pages = [
     "Flatten a builder image into a Charliecloud image tarball",
     [], 1),
     ("ch-checkns", "ch-checkns",
-     "Check if namespace and pivot_root work on the systemm",
+     "Check ch-run prerequisites, e.g., namespaces and pivot_root(2)",
     [], 1),
    ("ch-dir2squash", "ch-dir2squash",
     "Create a SquashFS file from an image directory",

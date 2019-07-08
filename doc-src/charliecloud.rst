@@ -13,6 +13,7 @@ See also
 ch-build(1),
 ch-build2dir(1),
 ch-builder2tar(1),
+ch-checkns(1),
 ch-dir2squash(1),
 ch-docker2squash(1),
 ch-fromhost(1),

@@ -54,7 +54,7 @@
 const char usage[] = "\
 Usage: ch-checkns\n\
 \n\
-Ensure Linux containers are able to run on the system.\n\
+Check ch-run prerequisites, e.g., namespaces and pivot_root(2).\n\
 \n\
 Example:\n\
 \n\
