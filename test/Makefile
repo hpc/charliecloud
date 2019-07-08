@@ -88,53 +88,55 @@ sotest/libsotest.so.1.0: sotest/libsotest.c
 	ln -f -s libsotest.so.1.0 sotest/libsotest.so
 	ln -f -s libsotest.so.1.0 sotest/libsotest.so.1
 
-EXAMPLES := $(LIBEXEC_INST)/examples
-TEST     := $(LIBEXEC_INST)/test
-
 .PHONY: install
 install: all
-	mkdir -p $(EXAMPLES)
-	chmod 755 $(EXAMPLES)
-	cd ../ && for i in examples/*; do \
-	cp -rp $$i $(EXAMPLES); \
+	cd ../ && \
+	for i in examples/syscalls \
+	         examples/serial/* examples/mpi/* examples/others/* do \
+		install -d $(LIBEXEC_INST)/$$i; \
+		install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done
-	chmod 755 $$(find $(EXAMPLES) -type d)
-	chmod 755 $(EXAMPLES)/serial/hello/hello.sh \
-	          $(EXAMPLES)/syscalls/pivot_root \
-	          $(EXAMPLES)/syscalls/userns \
-	          $(EXAMPLES)/*/*/*.sh;
+	chmod 755 $(LIBEXEC_INST)/examples/serial/hello/hello.sh \
+	          $(LIBEXEC_INST)/examples/syscalls/pivot_root \
+	          $(LIBEXEC_INST)/examples/syscalls/userns \
+	          $(LIBEXEC_INST)/examples/*/*/*.sh
+	find $(LIBEXEC_INST)/examples -name Build -exec chmod 755 {} \;
 #	tests
-	cd ../ && cp -rp test $(TEST)
-	chmod 755 $$(find $(TEST) -type d)
-	chmod 755 $$(find $(TEST) -name 'Build.*' -or \
-	                          -name 'make-auto' -or \
-	                          -name 'make-perms-test')
-	chmod 644 $$(find $(TEST) -name '*.bats' -or \
-	                          -name '*.bash' -or \
-	                          -name 'Dockerfile.*' -or \
-	                          -name 'Docker_Pull.*' -or \
-	                          -name 'Makefile' -or \
-	                          -name '*.patch')
-	chmod 644 $$(find $(TEST)/chtest -type f)
-	chmod 755 $$(find $(TEST)/chtest -name 'Build' -or \
-	                                 -name '*.py' -or \
-	                                 -name 'printns')
-	ln -sf ../../..//bin $(TEST)/bin;
+	install -d $(TEST) $(TEST)/run
+	install -pm 644 -t $(TEST) *.bats common.bash Makefile
+	install -pm 644 -t $(TEST)/run run/*.bats
+	install -pm 755 -t $(TEST) Build.*
+	install -pm 644 -t $(TEST) Dockerfile.* Docker_Pull.*
+	install -pm 644 -t $(TEST) *.patch
+	install -pm 755 -t $(TEST) docs-sane \
+                               make-auto \
+                               make-perms-test
+	install -d $(TEST)/chtest
+	install -pm 644 -t $(TEST)/chtest chtest/*
+	chmod 755 $(TEST)/chtest/Build \
+	          $(TEST)/chtest/*.py \
+	          $(TEST)/chtest/printns
+	ln -sf ../../../bin $(TEST)/bin
 #	shared library tests
-	chmod 755 $$(find $(TEST)/sotest -name 'libsotest.so*' -or \
-	                                 -name 'sotest')
-	chmod 644 $$(find $(TEST)/sotest -name '*.txt' -or \
-	                                 -name '*.c')
-	cd sotest \
-	&& ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so \
-	&& ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
-	rm -f $$(find $(TEST) -name GITKEEP)
+	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
+	install -pm 755 -t $(TEST)/sotest sotest/libsotest.so.1.0 \
+	                                  sotest/sotest
+	install -pm 644 -t $(TEST)/sotest sotest/files_inferrable.txt \
+	                                  sotest/libsotest.c \
+	                                  sotest/sotest.c
+	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so
+	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
+	install -pm 755 -t $(TEST)/sotest/bin sotest/bin/sotest
+	install -pm 755 -t $(TEST)/sotest/lib sotest/lib/libsotest.so.1.0
 #	Bats (if embedded)
 	if [ -d test/bats/bin ]; then \
-	    cp -rp bats $(TEST)/bats; \
-	    chmod 644 $(TEST)/bats $$(find -name '*.md' -or \
-	                                   -name 'LICENSE'); \
-	    chmod 755 $$(find $(TEST)/bats -type d); \
-	    ln -sf ./bats/libexec/bats $(TEST)/bats/bin/bats; \
-	    ln -sf ./bats/bin/bats $(TEST)/bats; \
+	    install -d $(TEST)/bats && \
+	    install -pm 644 -t $(TEST)/bats bats/CONDUCT.md \
+	                                    bats/LICENSE \
+	                                    bats/README.md && \
+	    install -d $(TEST)/bats/libexec && \
+	    install -pm 755 -t $(TEST)/bats/libexec bats/libexec/* && \
+	    install -d $(TEST)/bats/bin && \
+	    ln -sf ../libexec/bats $(TEST)/bats/bin/bats && \
+	    ln -sf bats/bin/bats $(TEST)/bats; \
 	fi
