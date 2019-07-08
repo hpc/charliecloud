@@ -88,9 +88,9 @@ In this phase, image building and associated functionality is tested.
    ✓ executables seem sane
   [...]
    ✓ ch-build obspy
-   ✓ ch-docker2tar obspy
+   ✓ ch-builder2tar obspy
    ✓ docker pull dockerpull
-   ✓ ch-docker2tar dockerpull
+   ✓ ch-builder2tar dockerpull
    ✓ nothing unexpected in tarball directory
 
   41 tests, 0 failures

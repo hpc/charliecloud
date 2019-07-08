@@ -7,7 +7,7 @@ set -e
 
 usage () {
     cat 1>&2 <<EOF
-Download image via "docker pull" and flatten it to tarball.
+Pull image from a Docker Hub and flatten into tarball.
 
 Usage:
 
@@ -33,4 +33,4 @@ image=$1
 dest=$2
 
 docker_ pull "$image"
-"${ch_bin}/ch-docker2tar" "$image" "$dest"
+"${ch_bin}/ch-builder2tar" "$image" "$dest"

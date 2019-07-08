@@ -10,4 +10,4 @@ clean:
 $(BINS): Makefile
 
 %: %.c
-	gcc $(CFLAGS) $< -o $@
+	gcc $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $< -o $@

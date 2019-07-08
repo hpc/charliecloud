@@ -2,10 +2,15 @@
 
 from __future__ import print_function
 
+import itertools
 import os
 import os.path
 import re
 import sys
+
+def get_template(template_name):
+   with open('make-auto.d/%s' % template_name, 'r') as fp:
+      return fp.read().strip()
 
 def tag_from_path(path):
    (dirname, basename) = os.path.split(path)
@@ -38,6 +43,9 @@ load common
 for path in sys.argv[2:]:
 
    (dirname, basename) = os.path.split(path)
+   if (basename == "make-auto"):
+      print("skipping: %s" % basename, file=sys.stderr)
+      continue
    if (dirname == ""): dirname = "."
    tag = tag_from_path(path)
 
@@ -50,85 +58,38 @@ for path in sys.argv[2:]:
          print("%s: no valid scope specified" % path, file=sys.stderr)
          sys.exit(1)
       scope = m.group(1)
-      # ch-test-arch-exclude
-      arch_exclude = "\n".join("arch_exclude %s" % i for i in
-                               re.findall(r"ch-test-arch-exclude: (\w+)", text))
+      # Exclusions.
+      exclude = "\n".join(itertools.chain(
+         (         "arch_exclude %s" % i
+          for i in re.findall(r"ch-test-arch-exclude: ([-\w]+)", text)),
+         (         "builder_exclude %s" % i
+          for i in re.findall(r"ch-test-builder-exclude: ([-\w]+)", text))))
 
-   # Build a tarball: different test for each type.
+   # Build an archive: different test for each type.
    if (mode == "build"):
       if ("Build" in basename):
-         template = """\
-@test 'custom build %(tag)s' {
-    scope %(scope)s
-    %(arch_exclude)s
-    tarball=$ch_tardir/%(tag)s
-    pq=$ch_tardir/%(tag)s.pq_missing
-    workdir=$ch_tardir/%(tag)s.tmp
-    rm -f "$pq"
-    mkdir "$workdir"
-    cd "%(dirname)s"
-    run ./%(basename)s "$PWD" "$tarball" "$workdir"
-    echo "$output"
-    rm -Rf "$workdir"
-    if [[ $status -eq 65 ]]; then
-         touch "$pq"
-         skip 'prerequisites not met'
-    fi
-    [[ $status -eq 0 ]]
-}"""
+         template = get_template('build_custom.bats.in')
       elif ("Dockerfile" in basename or "Docker_Pull" in basename):
          if ("Dockerfile" in basename):
-            template = """\
-@test 'ch-build %(tag)s' {
-    scope %(scope)s
-    %(arch_exclude)s
-    need_docker %(tag)s
-    ch-build -t %(tag)s --file="%(path)s" "%(dirname)s"
-    sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
-    docker_ok %(tag)s
-}"""
+            unpack_needs_docker = False
+            template = get_template('build_docker.bats.in')
          else:
             assert ("Docker_Pull" in basename)
+            unpack_needs_docker = True
             with open(path) as fp:
                addr = fp.readline().rstrip()
-            template = """\
-@test 'docker pull %(tag)s' {
-    scope %(scope)s
-    %(arch_exclude)s
-    need_docker %(tag)s
-    sudo docker pull %(addr)s
-    sudo docker tag %(addr)s %(tag)s
-    sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
-    docker_ok %(tag)s
-}"""
-         template += """
-@test 'ch-docker2tar %(tag)s' {
-    scope %(scope)s
-    %(arch_exclude)s
-    need_docker
-    tarball="$ch_tardir/%(tag)s.tar.gz"
-    ch-docker2tar %(tag)s "$ch_tardir"
-    tar -tf "$tarball" | grep -E '^environment$'
-    tarball_ok "$tarball"
-}"""
+            template = get_template('pull_docker.bats.in')
+         if (unpack_needs_docker):
+            need_docker = "need_docker %s" % tag
+         else:
+            need_docker = ""
+         template += "\n\n" + get_template('docker_to_archive.bats.in')
       else:
          assert False, "unknown build type"
       print("\n" + template % locals())
 
-   # Unpack tarball and run: same for all types.
+   # Unpack archive and run: same for all types.
    if (mode == "run"):
-      print()
-      print("""\
-@test 'ch-tar2dir %(tag)s' {
-    scope %(scope)s
-    %(arch_exclude)s
-    prerequisites_ok %(tag)s
-    ch-tar2dir "$ch_tardir/%(tag)s" "$ch_imgdir"
-}
-@test 'ch-run %(tag)s /bin/true' {
-    scope %(scope)s
-    %(arch_exclude)s
-    prerequisites_ok %(tag)s
-    img="$ch_imgdir/%(tag)s"
-    ch-run "$img" /bin/true
-}""" % locals())
+      template = "\n\n".join(get_template(i + ".bats.in")
+                             for i in ("unpack", "run_image"))
+      print("\n" + template % locals())

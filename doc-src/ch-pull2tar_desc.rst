@@ -12,7 +12,7 @@ Pull a Docker image named :code:`IMAGE[:TAG]` from Docker Hub and flatten it
 into a Charliecloud tarball in directory :code:`OUTDIR`.
 
 This runs the following command sequence: :code:`docker pull`,
-:code:`ch-docker2tar` but provides less flexibility than the individual
+:code:`ch-builder2tar` but provides less flexibility than the individual
 commands.
 
 Sudo privileges are required for :code:`docker pull`.

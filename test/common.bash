@@ -1,7 +1,42 @@
 arch_exclude () {
-    if [[ $1 = $(uname -m) ]]; then
-        skip 'unsupported architecture'
+    if [[ $1 = "$(uname -m)" ]]; then
+        skip "unsupported architecture: $(uname -m)"
     fi
+}
+
+builder_exclude () {
+    if [[ $1 = "$CH_BUILDER" ]]; then
+        skip "unsupported builder: $CH_BUILDER"
+    fi
+}
+
+builder_tag_p () {
+    printf 'image tag %s ... ' "$1"
+    case $CH_BUILDER in
+        ch-grow)
+            if [[ -d ${CH_GROW_STORAGE}/img/${1} ]]; then
+                echo "ok"
+                return 0
+            fi
+            ;;
+        docker)
+            hash_=$(sudo docker images -q "$1" | sort -u)
+            if [[ $hash_ ]]; then
+                echo "$hash_"
+                return 0
+            fi
+            ;;
+    esac
+    echo 'not found'
+    return 1
+}
+
+builder_ok () {
+    # FIXME: Currently we make fairly limited tagging for some builders.
+    # Uncomment below when they can be supported by all the builders.
+    #docker_tag_p "$1"
+    builder_tag_p "${1}:latest"
+    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 crayify_mpi_or_skip () {
@@ -11,24 +46,6 @@ crayify_mpi_or_skip () {
     else
         skip 'host is not a Cray'
     fi
-}
-
-docker_tag_p () {
-    printf 'image tag %s ... ' "$1"
-    hash_=$(sudo docker images -q "$1" | sort -u)
-    if [[ $hash_ ]]; then
-        echo "$hash_"
-        return 0
-    else
-        echo 'not found'
-        return 1
-    fi
-}
-
-docker_ok () {
-    docker_tag_p "$1"
-    docker_tag_p "${1}:latest"
-    docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 env_require () {
@@ -59,17 +76,17 @@ multiprocess_ok () {
 }
 
 need_docker () {
-    # Skip test if $CH_TEST_SKIP_DOCKER is true. If argument provided, use
-    # that tag as missing prerequisite sentinel file.
+    # Skip test if $CH_BUILDER is not Docker. If argument provided, use that
+    # tag as missing prerequisite sentinel file.
     pq=${ch_tardir}/${1}.pq_missing
     if [[ $pq ]]; then
         rm -f "$pq"
     fi
-    if [[ $CH_TEST_SKIP_DOCKER ]]; then
+    if [[ $CH_BUILDER != docker ]]; then
         if [[ $pq ]]; then
             touch "$pq"
         fi
-        skip 'Docker not found or user-skipped'
+        skip 'requires Docker'
     fi
 }
 
@@ -77,6 +94,15 @@ prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
     fi
+}
+
+need_squashfs () {
+    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
+    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
+}
+
+squashfs_ready () {
+    ( command -v mksquashfs && command -v squashfuse )
 }
 
 scope () {
@@ -101,7 +127,7 @@ scope () {
     esac
 }
 
-tarball_ok () {
+archive_ok () {
     ls -ld "$1" || true
     test -f "$1"
     test -s "$1"
@@ -113,6 +139,18 @@ unpack_img_all_nodes () {
     else
         skip 'not needed'
     fi
+}
+
+archive_grep () {
+    image="$1"
+    case $image in
+        *.sqfs)
+            unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
+            ;;
+        *)
+            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
+            ;;
+    esac
 }
 
 # Predictable sorting and collation
@@ -147,6 +185,12 @@ if [[ ! -x ${ch_bin}/ch-run ]]; then
     exit 1
 fi
 
+# Tests require explicitly set builder.
+if [[ -z $CH_BUILDER ]]; then
+    CH_BUILDER=$(ch-build --print-builder)
+    export CH_BUILDER
+fi
+
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
 # shellcheck disable=SC2034
@@ -161,9 +205,9 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # [1]: https://unix.stackexchange.com/a/136527
 ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
-if ( mount | grep -Fq "$ch_imgdir" ); then
-    printf 'Something is mounted at or under %s.\n\n' "$ch_imgdir" >&2
-    exit 1
+ch_mounts="${ch_imgdir}/mounts"
+if [[ $CH_BUILDER = ch-grow ]]; then
+    export CH_GROW_STORAGE=$ch_tardir/_ch-grow
 fi
 
 # Image information.

@@ -1,0 +1,7 @@
+@test 'ch-build %(tag)s' {
+    scope %(scope)s
+    %(exclude)s
+    ch-build -t %(tag)s --file="%(path)s" "%(dirname)s"
+    #sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
+    builder_ok %(tag)s
+}

@@ -65,6 +65,7 @@ Patches (code, documentation, etc.) contributed by:
 * Rusty Davis <rustyd@lanl.gov>
 * Hunter Easterday <heasterday@lanl.gov>
 * Oliver Freyermuth <o.freyermuth@googlemail.com>
+* Shane Goff <rgoff@lanl.gov>
 * Christoph Junghans <junghans@lanl.gov>
 * Jordan Ogas <jogas@lanl.gov>
 * Matthew Vernon <mv3@sanger.ac.uk>

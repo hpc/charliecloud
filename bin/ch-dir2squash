@@ -1,0 +1,79 @@
+#!/bin/sh
+
+set -e
+
+libexec="$(cd "$(dirname "$0")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Create a SquashFS file from an image directory.
+
+Usage:
+
+  $ $(basename "$0") INDIR OUTDIR [ARGS ...]
+
+ARGS are passed unchanged to mksquashfs.
+EOF
+)
+
+parse_basic_args "$@"
+
+if [ $# -lt 2 ]; then
+    usage
+fi
+
+indir=$1
+outdir=$2
+shift 2
+
+# Check input directory exists
+if [ ! -e "$indir" ]; then
+    echo "can't squash: ${indir} does not exist" 1>&2
+    exit 1
+fi
+# Check input directory is a directory
+if [ ! -d "$indir" ]; then
+    echo "can't squash: ${indir} is not a directory" 1>&2
+    exit 1
+fi
+
+# Check OUTDIR exists and is a directory
+if [ ! -e "$outdir" ]; then
+    echo "can't squash: ${outdir} does not exist" 1>&2
+    exit 1
+fi
+if [ ! -d "$outdir" ]; then
+    echo "can't squash: ${outdir} is not a directory" 1>&2
+    exit 1
+fi
+
+# Ensure directories and files that ch-run needs exist. Only provide what
+# isn't already in the image, because mksquash will create duplicates.
+temp=$(mktemp -d --tmpdir ch-dir2squash.XXXXXX)
+for dir in dev etc proc sys; do
+    if [ ! -d "${indir}/${dir}" ]; then
+        mkdir -p "${temp}/${dir}"
+    fi
+done
+for i in hosts resolv.conf; do
+    if [ ! -e "${indir}/etc/${i}" ]; then
+        if [ ! -d "${temp}/etc" ]; then
+            mkdir -p "${temp}/etc"
+        fi
+        touch "${temp}/etc/${i}"
+    fi
+done
+for i in $(seq 0 9); do
+    if [ ! -e "${indir}/mnt/${i}" ]; then
+        mkdir -p "${temp}/mnt/${i}"
+    fi
+done
+
+# Create SquashFS file.
+image=$(basename "${indir}")
+mksquashfs "${indir}" "${outdir}/${image}.sqfs" -noappend "$@"
+mksquashfs "$temp" "${outdir}/${image}.sqfs" -no-recovery
+
+rm -rf --one-file-system "$temp"
+ls -lh "${outdir}/${image}.sqfs"
