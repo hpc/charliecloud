@@ -34,6 +34,14 @@ Flatten a builder image into a Charliecloud image tarball.
 
 .. include:: ./ch-builder2tar_desc.rst
 
+ch-checkns
+++++++++++
+
+Check if the Charliecloud prerequisites, e.g., pivot_root(2) and Linux
+Namepsaces, function as needed on the system.
+
+.. include:: ./ch-checkns_desc.rst
+
 ch-dir2squash
 +++++++++++++
 
