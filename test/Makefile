@@ -92,7 +92,7 @@ sotest/libsotest.so.1.0: sotest/libsotest.c
 install: all
 	cd ../ && \
 	for i in examples/syscalls \
-	         examples/serial/* examples/mpi/* examples/others/* do \
+	         examples/serial/* examples/mpi/* examples/other/*; do \
 		install -d $(LIBEXEC_INST)/$$i; \
 		install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done

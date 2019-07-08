@@ -112,8 +112,9 @@ DOCDIR ?= $(INSTALL_PREFIX)/share/doc/charliecloud-$(VERSION)
 # contains any executable helpers that are not needed in PATH. Default is
 # libexec/charliecloud which will be preprended with the PREFIX.
 LIBEXEC_DIR ?= libexec/charliecloud-$(VERSION)
-LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
-LIBEXEC_RUN := $(PREFIX)/$(LIBEXEC_DIR)
+export LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
+LIBEXEC_RUN  := $(PREFIX)/$(LIBEXEC_DIR)
+export TEST  := $(LIBEXEC_INST)/test
 .PHONY: install
 install: all
 	@test -n "$(PREFIX)" || \
@@ -150,7 +151,7 @@ install: all
 	    done; \
 	fi
 #	install test suite and examples if the right python is found
-	[ -z $(PYTHON) ] || cd test && $(MAKE) install $(PREFIX)
+	[ -z $(PYTHON) ] || $(MAKE) install $(PREFIX) -C test
 
 .PHONY: deb
 deb:
