@@ -113,6 +113,7 @@ except NameError:
 def help_get(prog):
    try:
       out = subprocess.check_output(["./" + prog, "--help"],
+                                    universal_newlines=True,
                                     stderr=subprocess.STDOUT)
    except Exception as x:
       lose("%s --help failed: %s" % (prog, str(x)))
