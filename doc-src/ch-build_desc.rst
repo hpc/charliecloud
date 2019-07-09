@@ -20,17 +20,22 @@ build environment if the builder doesn't do this by default).
 
 Supported builders, unprivileged:
 
-  * :code:`ch-grow`: our internal builder
+  * :code:`buildah`: Buildah in "rootless" mode with no setuid helpers, using
+    :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions. This
+    currently requires a patched Buildah; see the install instructions.
+
+  * :code:`ch-grow`: Our internal builder.
 
 Supported builders, privileged:
 
   * :code:`buildah-runc`: Buildah in "rootless" mode with setuid
-    helpers, using the default :code:`runc` for :code:`RUN` instructions
+    helpers, using the default :code:`runc` for :code:`RUN` instructions.
 
   * :code:`buildah-setuid`: Buildah in "rootless" mode with setuid helpers,
-    using :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions
+    using :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN`
+    instructions.
 
-  * :code:`docker`: Docker
+  * :code:`docker`: Docker.
 
 Specifying the builder, in descending order of priority:
 

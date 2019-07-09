@@ -77,14 +77,45 @@ Additional dependencies for specific components:
 
 * :code:`ch-build2dir`: Bash 4.1+
 
-Buildah (privileged)
-~~~~~~~~~~~~~~~~~~~~
+Buildah (privileged or unprivileged)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Charliecloud can use the "rootless" mode of stock Buildah, which requires the
-setuid helpers :code:`newuidmap` and :code:`newgidmap`.
+setuid (i.e., privileged) helpers :code:`newuidmap` and :code:`newgidmap`.
 
-Version 1.9.0 worked for us; version 1.8 packaged by the `Project Atomic PPA
-<https://launchpad.net/~projectatomic>`_ did not.
+For a fully unprivileged workflow, Charliecloud can also use a patched Buildah
+that does not require the setuid helpers. You need branch
+:code:`chown-error-tolerant-patch` from `our fork of Buildah
+<https://github.com/hpc/buildah>`_. (We are working with Buildah upstream to
+merge our patches.)
+
+.. note::
+
+   To configure Buildah in rootless mode, which is what Charliecloud uses,
+   make sure your config files are in :code:`~/.config/containers` and they
+   are correct. Particularly if your system also has configuration in
+   :code:`/etc/containers`, problems can be very hard to diagnose.
+
+..
+   For example, with different mistakes in
+   :code:`~/.config/containers/storage.conf` and
+   :code:`/etc/containers/storage.conf` present or absent, and all in rootless
+   mode, we have seen various combinations of:
+
+     * error messages about configuration
+     * error messages about :code:`lchown`
+     * using :code:`storage.conf` from :code:`/etc/containers` instead of
+       :code:`~/.config/containers`
+     * using default config documented for rootless
+     * using default config documented for rootful
+     * exiting zero
+     * exiting non-zero
+     * completing the build
+     * not completing the build
+
+   We assume this will be straightened out over time, but for the time being,
+   if you encounter strange problems with Buildah, check that your config
+   resides only in :code:`~/.config/containers` and is correct.
 
 :code:`ch-grow` (unprivileged)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
