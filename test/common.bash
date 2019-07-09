@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+
 arch_exclude () {
     if [[ $1 = "$(uname -m)" ]]; then
         skip "unsupported architecture: $(uname -m)"
@@ -13,6 +15,13 @@ builder_exclude () {
 builder_tag_p () {
     printf 'image tag %s ... ' "$1"
     case $CH_BUILDER in
+        buildah*)
+            hash_=$(buildah images -q "$1" | sort -u)
+            if [[ $hash_ ]]; then
+                echo "$hash_"
+                return 0
+            fi
+            ;;
         ch-grow)
             if [[ -d ${CH_GROW_STORAGE}/img/${1} ]]; then
                 echo "ok"
@@ -205,16 +214,22 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # [1]: https://unix.stackexchange.com/a/136527
 ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
+# shellcheck disable=SC2034
 ch_mounts="${ch_imgdir}/mounts"
 if [[ $CH_BUILDER = ch-grow ]]; then
     export CH_GROW_STORAGE=$ch_tardir/_ch-grow
 fi
 
 # Image information.
+# shellcheck disable=SC2034
 ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
+# shellcheck disable=SC2034
 ch_img=${ch_imgdir}/${ch_tag}
+# shellcheck disable=SC2034
 ch_tar=${ch_tardir}/${ch_tag}.tar.gz
+# shellcheck disable=SC2034
 ch_ttar=${ch_tardir}/chtest.tar.gz
+# shellcheck disable=SC2034
 ch_timg=${ch_imgdir}/chtest
 
 # User-private temporary directory in case multiple users are running the
@@ -257,6 +272,7 @@ fi
 # to do this with Slurm, but they need Slurm configuration that seems
 # unreliably present. This seems to be the most portable way to do this.
 ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 2 | wc -l)
+# shellcheck disable=SC2034
 ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
@@ -271,9 +287,11 @@ if [[ $SLURM_JOB_ID ]]; then
     # are present. Work around this by fooling OpenMPI into believing it's not
     # in a Slurm allocation.
     if [[ $ch_mpi = openmpi ]]; then
+        # shellcheck disable=SC2034
         ch_unslurm='--unset-env=SLURM*'
     fi
 else
+    # shellcheck disable=SC2034
     ch_multinode=
     if ( command -v mpirun >/dev/null 2>&1 ); then
         ch_multiprocess=yes
@@ -284,16 +302,13 @@ else
     else
         ch_multiprocess=
         ch_mpirun_node=''
+        # shellcheck disable=SC2034
         ch_mpirun_core=false
+        # shellcheck disable=SC2034
         ch_mpirun_2=false
+        # shellcheck disable=SC2034
         ch_mpirun_2_1node=false
     fi
-fi
-
-# If the variable CH_TEST_SKIP_DOCKER is true, we skip all the tests that
-# depend on Docker. It's true if user-set or command "docker" is not in $PATH.
-if ( ! command -v docker >/dev/null 2>&1 ); then
-    CH_TEST_SKIP_DOCKER=yes
 fi
 
 # Validate CH_TEST_SCOPE and set if empty.

@@ -256,6 +256,8 @@ man_pages = [
    ("ch-run", "ch-run",
     "Run a command in a Charliecloud container",
     [], 1),
+   ("ch-run-oci", "ch-run-oci", 'OCI wrapper for "ch-run"',
+    [], 1),
    ("ch-ssh", "ch-ssh",
     "Run a remote command in a Charliecloud container",
     [], 1),

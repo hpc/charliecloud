@@ -92,6 +92,13 @@ Run a command in a Charliecloud container.
 
 .. include:: ./ch-run_desc.rst
 
+ch-run-oci
+++++++++++
+
+OCI wrapper for :code:`ch-run`.
+
+.. include:: ./ch-run-oci_desc.rst
+
 ch-ssh
 ++++++
 

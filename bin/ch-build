@@ -45,6 +45,9 @@ fi
 if [ -n "$builder_info" ]; then
     printf "builder: %s: " "$CH_BUILDER"
     case $CH_BUILDER in
+        buildah*)
+            buildah --version
+            ;;
         ch-grow)
             "${ch_bin}/ch-grow" --version
             ;;
@@ -61,6 +64,25 @@ fi
 echo "building with: ${CH_BUILDER}"
 
 case $CH_BUILDER in
+    buildah*)
+        if [ "$CH_BUILDER" = buildah-runc ]; then
+            runtime=runc
+        else
+            runtime=${ch_bin}/ch-run-oci
+        fi
+        buildah build-using-dockerfile \
+                --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                --build-arg NO_PROXY="$NO_PROXY" \
+                --build-arg http_proxy="$http_proxy" \
+                --build-arg https_proxy="$https_proxy" \
+                --build-arg no_proxy="$no_proxy" \
+                --isolation=rootless \
+                --layers=true \
+                --runtime="$runtime" \
+                "$@" < /dev/null
+
+        ;;
     ch-grow)
         "${ch_bin}/ch-grow" "$@"
         ;;

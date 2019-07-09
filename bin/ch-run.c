@@ -51,7 +51,7 @@ const struct argp_option options[] = {
    { "join-ct",      -3, "N",    0, "number of ch-run peers (implies --join)" },
    { "join-tag",     -4, "TAG",  0, "label for peer group (implies --join)" },
    { "no-home",      -2, 0,      0, "don't bind-mount your home directory"},
-   { "no-passwd",    -9, 0,      0, "don't bind-moust /etc/{passwd,group}"},
+   { "no-passwd",    -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp", 't', 0,      0, "use container-private /tmp" },
    { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
    { "uid",         'u', "UID",  0, "run as UID within container" },

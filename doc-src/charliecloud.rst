@@ -21,6 +21,7 @@ ch-mount(1),
 ch-pull2dir(1),
 ch-pull2tar(1),
 ch-run(1),
+ch-run-oci(1),
 ch-ssh(1),
 ch-tar2dir(1)
 ch-tar2dir(1),

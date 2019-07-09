@@ -17,6 +17,10 @@ Charliecloud is a simple system with limited dependencies. If your system
 meets these prerequisites but Charliecloud doesn't work, please report that as
 a bug.
 
+Note that we do not rigorously track dependency versions. We update the
+versions stated below as we encounter problems, but they are not tight bounds
+and may be out of date.
+
 Supported architectures
 -----------------------
 
@@ -61,13 +65,11 @@ Build time
 ----------
 
 Systems used for building images need the run-time dependencies, plus
-something to actually build the images.
+something to actually build the images. Sub-sections list Charliecloud
+dependencies for each builder; see also the builders' documentation.
 
-A common choice is `Docker <https://www.docker.com/>`_, along with internet
-access or configuration for a local Docker repository. Our wrapper scripts for
-Docker expect to run the :code:`docker` command under :code:`sudo` and need
-Docker 17.03+ and :code:`mktemp(1)`. (Older versions of Docker may work but
-are untested. We know that 1.7.1 does not work.)
+All builders require internet access (e.g., for public Docker Hub) or
+configuration for a local image repository (e.g., a private Docker Hub).
 
 Additional dependencies for specific components:
 
@@ -75,13 +77,31 @@ Additional dependencies for specific components:
 
 * :code:`ch-build2dir`: Bash 4.1+
 
-* :code:`ch-grow`, our internal unprivileged image builder (no specific
-  dependency versions documented yet)
+Buildah (privileged)
+~~~~~~~~~~~~~~~~~~~~
 
-  * `skopeo <https://github.com/containers/skopeo>`_
-  * `umoci <https://github.com/openSUSE/umoci>`_
-  * Python module :code:`lark`
-    (`lark-parser <https://pypi.org/project/lark-parser/>`_ on PyPI)
+Charliecloud can use the "rootless" mode of stock Buildah, which requires the
+setuid helpers :code:`newuidmap` and :code:`newgidmap`.
+
+Version 1.9.0 worked for us; version 1.8 packaged by the `Project Atomic PPA
+<https://launchpad.net/~projectatomic>`_ did not.
+
+:code:`ch-grow` (unprivileged)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is our internal unprivileged image builder and requires:
+
+* `skopeo <https://github.com/containers/skopeo>`_
+* `umoci <https://github.com/openSUSE/umoci>`_
+* Python module :code:`lark`
+  (`lark-parser <https://pypi.org/project/lark-parser/>`_ on PyPI)
+
+Docker (privileged)
+~~~~~~~~~~~~~~~~~~~
+
+Our wrapper scripts for Docker expect to run the :code:`docker` command under
+:code:`sudo` and need Docker 17.03+ and :code:`mktemp(1)`. Older versions of
+Docker may work but are untested. We know that 1.7.1 does not work.
 
 Test suite
 ----------

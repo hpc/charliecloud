@@ -4,6 +4,9 @@
 # See: https://docs.docker.com/engine/reference/builder
 #
 # ch-test-scope: standard
+# ch-test-builder-exclude: buildah
+# ch-test-builder-exclude: buildah-runc
+# ch-test-builder-exclude: buildah-setuid
 # ch-test-builder-exclude: docker
 
 #FROM alpine

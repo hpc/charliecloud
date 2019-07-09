@@ -734,4 +734,424 @@ Variable conventions in shell scripts and :code:`.bats` files
     foo="${bar}/baz"  # no
 
 
+OCI technical notes
+===================
+
+This section describes our analysis of the Open Container Initiative (OCI)
+specification and implications for our implementation in :code:`ch-run-oci`.
+Anything relevant for users goes in that man page; here is for technical
+details. The main goals are to guide Charliecloud development and provide and
+opportunity for peer-review of our work.
+
+Currently, :code:`ch-run-oci` is only tested with Buildah. These notes
+describe what we are seeing from Buildah's runtime expectations.
+
+Gotchas
+-------
+
+Namespaces
+~~~~~~~~~~
+
+Buildah sets up its own user and mount namespaces before invoking the runtime,
+though it does not change the root directory. We do not understand why. In
+particular, this means that you cannot see the container root filesystem it
+provides without joining those namespaces. To do so:
+
+#. Export :code:`CH_RUN_OCI_LOGFILE` with some logfile path.
+#. Export :code:`CH_RUN_OCI_DEBUG_HANG` with the step you want to examine
+   (e.g., :code:`create`).
+#. Run :code:`ch-build -b buildah`.
+#. Make note of the PID in the logfile.
+#. :code:`$ nsenter -U -m -t $PID bash`
+
+Supervisor process and maintaining state
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+OCI (and thus Buildah) expects a process that exists throughout the life of
+the container. This conflicts with Charliecloud's lack of a supervisor process.
+
+**FIXME**
+
+Bundle directory
+----------------
+
+* OCI documentation (very incomplete): https://github.com/opencontainers/runtime-spec/blob/master/bundle.md
+
+The bundle directory defines the container and is used to communicate between
+Buildah and the runtime. The root filesystem (:code:`mnt/rootfs`) is mounted
+within Buildah's namespaces, so you'll want to join them before examination.
+
+:code:`ch-run-oci` has restrictions on bundle directory path so it can be
+inferred from the container ID (see the man page). This lets us store state in
+the bundle directory instead of maintaining a second location for container
+state.
+
+Example::
+
+   # cd /tmp/buildah265508516
+   # ls -lR . | head -40
+   .:
+   total 12
+   -rw------- 1 root root 3138 Apr 25 16:39 config.json
+   d--------- 2 root root   40 Apr 25 16:39 empty
+   -rw-r--r-- 1 root root  200 Mar  9  2015 hosts
+   d--x------ 3 root root   60 Apr 25 16:39 mnt
+   -rw-r--r-- 1 root root   79 Apr 19 20:23 resolv.conf
+
+   ./empty:
+   total 0
+
+   ./mnt:
+   total 0
+   drwxr-x--- 19 root root 380 Apr 25 16:39 rootfs
+
+   ./mnt/rootfs:
+   total 0
+   drwxr-xr-x  2 root root 1680 Apr  8 14:30 bin
+   drwxr-xr-x  2 root root   40 Apr  8 14:30 dev
+   drwxr-xr-x 15 root root  720 Apr  8 14:30 etc
+   drwxr-xr-x  2 root root   40 Apr  8 14:30 home
+   [...]
+
+Observations:
+
+#. The weird permissions on :code:`empty` (000) and :code:`mnt` (100) persist
+   within the namespaces, so you'll want to be namespace root to look around.
+
+#. :code:`hosts` and :code:`resolv.conf` are identical to the host's.
+
+#. :code:`empty` is still an empty directory with in the namespaces. What is
+   this for?
+
+#. :code:`mnt/rootfs` contains the container root filesystem. It is a tmpfs.
+   No other new filesystems are mounted within the namespaces.
+
+:code:`config.json`
+-------------------
+
+* OCI documentation:
+
+  * https://github.com/opencontainers/runtime-spec/blob/master/config.md
+  * https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md
+
+This is the meat of the container configuration. Below is an example
+:code:`config.json` along with commentary and how it maps to :code:`ch-run`
+arguments. This was pretty-printed with :code:`jq . config.json`, and we
+re-ordered the keys to match the documentation.
+
+There are a number of additional keys that appear in the documentation but not
+in this example. These are all unsupported, either by ignoring them or
+throwing an error. The :code:`ch-run-oci` man page documents comprehensively
+what OCI features are and are not supported.
+
+.. code-block:: javascript
+   :dedent: 0
+
+   {
+     "ociVersion": "1.0.0",
+
+We validate that this is "1.0.0".
+
+.. code-block:: javascript
+   :dedent: 0
+
+     "root": {
+       "path": "/tmp/buildah115496812/mnt/rootfs"
+     },
+
+Path to root filesystem; maps to :code:`NEWROOT`. If key :code:`readonly` is
+:code:`false` or absent, add :code:`--write`.
+
+.. code-block:: javascript
+   :dedent: 0
+
+     "mounts": [
+       {
+         "destination": "/dev",
+         "type": "tmpfs",
+         "source": "/dev",
+         "options": [
+           "private",
+           "strictatime",
+           "noexec",
+           "nosuid",
+           "mode=755",
+           "size=65536k"
+         ]
+       },
+       {
+         "destination": "/dev/mqueue",
+         "type": "mqueue",
+         "source": "mqueue",
+         "options": [
+           "private",
+           "nodev",
+           "noexec",
+           "nosuid"
+         ]
+       },
+       {
+         "destination": "/dev/pts",
+         "type": "devpts",
+         "source": "pts",
+         "options": [
+           "private",
+           "noexec",
+           "nosuid",
+           "newinstance",
+           "ptmxmode=0666",
+           "mode=0620"
+         ]
+       },
+       {
+         "destination": "/dev/shm",
+         "type": "tmpfs",
+         "source": "shm",
+         "options": [
+           "private",
+           "nodev",
+           "noexec",
+           "nosuid",
+           "mode=1777",
+           "size=65536k"
+         ]
+       },
+       {
+         "destination": "/proc",
+         "type": "proc",
+         "source": "/proc",
+         "options": [
+           "private",
+           "nodev",
+           "noexec",
+           "nosuid"
+         ]
+       },
+       {
+         "destination": "/sys",
+         "type": "bind",
+         "source": "/sys",
+         "options": [
+           "rbind",
+           "private",
+           "nodev",
+           "noexec",
+           "nosuid",
+           "ro"
+         ]
+       },
+       {
+         "destination": "/etc/hosts",
+         "type": "bind",
+         "source": "/tmp/buildah115496812/hosts",
+         "options": [
+           "rbind"
+         ]
+       },
+       {
+         "destination": "/etc/resolv.conf",
+         "type": "bind",
+         "source": "/tmp/buildah115496812/resolv.conf",
+         "options": [
+           "rbind"
+         ]
+       }
+     ],
+
+This says what filesystems to mount in the container. It is a mix; it has
+tmpfses, bind-mounts of both files and directories, and other
+non-device-backed filesystems. The docs suggest a lot of flexibility,
+including stuff that won't work in an unprivileged user namespace (e.g.,
+filesystems backed by a block device).
+
+The things that matter seem to be the same as Charliecloud defaults.
+Therefore, for now we just ignore mounts.
+
+We do add :code:`--no-home` in OCI mode.
+
+.. code-block:: javascript
+   :dedent: 0
+
+     "process": {
+       "terminal": true,
+
+This says that Buildah wants a pseudoterminal allocated. Charliecloud does not
+currently support that, so we error in this case.
+
+However, Buildah can be persuaded to set this :code:`false` if you redirect
+its standard input from :code:`/dev/null`, which is the current workaround.
+Things work fine.
+
+.. code-block:: javascript
+   :dedent: 0
+
+       "cwd": "/",
+
+Maps to :code:`--cd`.
+
+.. code-block:: javascript
+   :dedent: 0
+
+       "args": [
+         "/bin/sh",
+         "-c",
+         "apk add --no-cache bc"
+       ],
+
+Maps to :code:`CMD [ARG ...]`. Note that we do not run :code:`ch-run` via the
+shell, so there aren't worries about shell parsing.
+
+.. code-block:: javascript
+   :dedent: 0
+
+       "env": [
+         "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+         "https_proxy=http://proxyout.lanl.gov:8080",
+         "no_proxy=localhost,127.0.0.1,.lanl.gov",
+         "HTTP_PROXY=http://proxyout.lanl.gov:8080",
+         "HTTPS_PROXY=http://proxyout.lanl.gov:8080",
+         "NO_PROXY=localhost,127.0.0.1,.lanl.gov",
+         "http_proxy=http://proxyout.lanl.gov:8080"
+       ],
+
+Environment for the container. The spec does not say whether this is the
+complete environment or whether it should be added to some default
+environment.
+
+We treat it as a complete environment, i.e., place the variables in a file and
+then :code:`--unset-env='*' --set-env=FILE`.
+
+.. code-block:: javascript
+   :dedent: 0
+
+       "rlimits": [
+         {
+           "type": "RLIMIT_NOFILE",
+           "hard": 1048576,
+           "soft": 1048576
+         }
+       ]
+
+Process limits Buildah wants us to set with :code:`setrlimit(2)`. Ignored.
+
+.. code-block:: javascript
+   :dedent: 0
+
+       "capabilities": {
+         ...
+       },
+
+Long list of capabilities that Buildah wants. Ignored. (Charliecloud provides
+security by remaining an unprivileged process.)
+
+.. code-block:: javascript
+   :dedent: 0
+
+       "user": {
+         "uid": 0,
+         "gid": 0
+       },
+     },
+
+Maps to :code:`--uid=0 --gid=0`.
+
+.. code-block:: javascript
+   :dedent: 0
+
+     "linux": {
+       "namespaces": [
+         {
+           "type": "pid"
+         },
+         {
+           "type": "ipc"
+         },
+         {
+           "type": "mount"
+         },
+         {
+           "type": "user"
+         }
+       ],
+
+Namespaces that Buildah wants. Ignored; Charliecloud just does user and mount.
+
+.. code-block:: javascript
+   :dedent: 0
+
+       "uidMappings": [
+         {
+           "hostID": 0,
+           "containerID": 0,
+           "size": 1
+         },
+         {
+           "hostID": 1,
+           "containerID": 1,
+           "size": 65536
+         }
+       ],
+       "gidMappings": [
+         {
+           "hostID": 0,
+           "containerID": 0,
+           "size": 1
+         },
+         {
+           "hostID": 1,
+           "containerID": 1,
+           "size": 65536
+         }
+       ],
+
+Describes the identity map between the namespace and host. Buildah wants it
+much larger than Charliecloud's single entry and asks for container root to be
+host root, which we can't do. Ignored.
+
+.. code-block:: javascript
+   :dedent: 0
+
+       "maskedPaths": [
+         "/proc/acpi",
+         "/proc/kcore",
+         ...
+       ],
+       "readonlyPaths": [
+         "/proc/asound",
+         "/proc/bus",
+         ...
+       ]
+
+Spec says to "mask over the provided paths ... so they cannot be read" and
+"sed the provided paths as readonly". Ignored. (Unprivileged user namespace
+protects us.)
+
+.. code-block:: javascript
+   :dedent: 0
+
+     }
+   }
+
+End of example.
+
+State
+-----
+
+The OCI spec does not say how the JSON document describing state should be
+given to the caller. Buildah is happy to get it on the runtime's standard
+output.
+
+:code:`ch-run-oci` provides an OCI compliant state document. Status
+:code:`creating` will never be returned, because the create operation is
+essentially a no-op, and annotations are not supported, so the
+:code:`annotations` key will never be given.
+
+Additional sources
+------------------
+
+* :code:`buildah` man page: https://github.com/containers/buildah/blob/master/docs/buildah.md
+* :code:`buildah bud` man page: https://github.com/containers/buildah/blob/master/docs/buildah-bud.md
+* :code:`runc create` man page: https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md
+* https://github.com/opencontainers/runtime-spec/blob/master/runtime.md
+
 ..  LocalWords:  milestoned gh nv cht Chacon's scottchacon
