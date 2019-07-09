@@ -73,6 +73,28 @@ check_process_ct () {
     crayify_mpi_or_skip "$ch_img"
 }
 
+# This test compares OpenMPI's point to point bandwidth with all high speed
+# plugins enabled against the performance just using tcp. If they are within an
+# arbitrary range of each other (70%) the performance is assumed to be lacking.
+@test "${ch_tag}/using the high-speed network (host launch)" {
+    [[ $ch_mpi = "mpich" ]] && skip "Only testing OpenMPI"
+    [[ $SLURM_NNODES = "1" ]] && skip "Multinode only"
+    [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
+    multiprocess_ok
+    # shellcheck disable=SC2086
+    hsn_enabled_bw=$($ch_mpirun_2 ch-run --join "$ch_img" -- \
+                     "$imb_mpi1" $imb_args Sendrecv | tail -n +35 \
+                     | sort -nrk6 | head -1 | awk '{print $6}')
+    disable_hsn_openmpi
+    # shellcheck disable=SC2086
+    hsn_disabled_bw=$($ch_mpirun_2 ch-run --join "$ch_img" -- \
+                      "$imb_mpi1" $imb_args Sendrecv | tail -n +35 \
+                      | sort -nrk6 | head -1 | awk '{print $6}')
+    echo "Max bandwidth with high speed network: $hsn_enabled_bw MB/s"
+    echo "Max bandwidth without high speed network: $hsn_disabled_bw MB/s"
+    [[ $(echo "$hsn_disabled_bw < ($hsn_enabled_bw * .7)" | bc) -eq 1 ]]
+}
+
 @test "${ch_tag}/pingpong (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086

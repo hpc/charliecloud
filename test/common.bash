@@ -48,6 +48,16 @@ crayify_mpi_or_skip () {
     fi
 }
 
+# Force OpenMPI to use TCP instead of the high speed network (HSN)
+disable_hsn_openmpi() {
+    if [[ -d /dev/infiniband ]] ; then
+        export OMPI_MCA_pml=ob1
+        export OMPI_MCA_btl=tcp,self
+    else
+        skip "No high speed network detected"
+    fi
+}
+
 env_require () {
     if [[ -z ${!1} ]]; then
         printf '$%s is empty or not set\n\n' "$1" >&2
