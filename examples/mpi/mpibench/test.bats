@@ -86,7 +86,6 @@ check_process_ct () {
 # plugins enabled against the performance just using tcp. If they are within an
 # arbitrary range of each other (70%) the performance is assumed to be lacking.
 @test "${ch_tag}/using the high-speed network (host launch)" {
-    [[ $ch_mpi = "mpich" ]] && skip "Only testing OpenMPI"
     [[ $SLURM_NNODES = "1" ]] && skip "Multinode only"
     [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
     multiprocess_ok
