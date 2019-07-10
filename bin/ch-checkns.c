@@ -54,7 +54,7 @@
 const char usage[] = "\
 Usage: ch-checkns\n\
 \n\
-Check \"ch-run\" prerequisites, e.g., namespaces and pivot_root(2).\n\
+Check \"ch-run\" prerequisites, e.g., namespaces and \"pivot_root(2)\".\n\
 \n\
 Example:\n\
 \n\
