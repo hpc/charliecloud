@@ -169,7 +169,7 @@ void containerize(struct container *c)
 
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
-   in examples/syscalls/pivot_root.c. */
+   in bin/ch-checkns.c. */
 void enter_udss(struct container *c)
 {
    char *newroot_parent, *newroot_base;

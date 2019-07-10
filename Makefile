@@ -10,14 +10,12 @@ all: VERSION.full bin/version.h bin/version.sh
 	if (command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')"); then \
 	    cd test && $(MAKE) all; \
 	fi
-	cd examples/syscalls && $(MAKE) all
 
 .PHONY: clean
 clean:
 	cd bin && $(MAKE) clean
 	cd doc-src && $(MAKE) clean
 	cd test && $(MAKE) clean
-	cd examples/syscalls && $(MAKE) clean
 
 # VERSION.full contains the version string reported by executables; see FAQ.
 ifeq ($(shell test -d .git && fgrep -q \~ VERSION && echo true),true)
@@ -152,14 +150,11 @@ install: all
 		done; \
 	fi
 #       examples
-	for i in examples/syscalls \
-	         examples/serial/* examples/mpi/* examples/other/*; do \
+	for i in examples/serial/* examples/mpi/* examples/other/*; do \
 	    install -d $(LIBEXEC_INST)/$$i; \
 	    install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done
 	chmod 755 $(LIBEXEC_INST)/examples/serial/hello/hello.sh \
-	          $(LIBEXEC_INST)/examples/syscalls/pivot_root \
-	          $(LIBEXEC_INST)/examples/syscalls/userns \
 	          $(LIBEXEC_INST)/examples/*/*/*.sh
 	find $(LIBEXEC_INST)/examples -name Build -exec chmod 755 {} \;
 #       tests

@@ -59,6 +59,7 @@ Session.vim
 VERSION.full
 a.out
 
+bin/ch-checkns
 bin/ch-run
 bin/ch-ssh
 bin/version.sh
@@ -66,8 +67,6 @@ bin/version.h
 doc/
 doc-src/_build
 examples/mpi/mpihello/hello
-examples/syscalls/pivot_root
-examples/syscalls/userns
 man/*.1
 test/build_auto.bats
 test/build_auto-quick.bats

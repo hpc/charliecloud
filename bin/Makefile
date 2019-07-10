@@ -1,5 +1,5 @@
-bin := ch-run ch-ssh
-src := $(wildcard *.c)
+bin := ch-run ch-ssh ch-checkns
+src := ch-run.c ch-ssh.c
 obj := $(src:.c=.o)
 
 CFLAGS += -pthread
