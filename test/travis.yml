@@ -58,6 +58,8 @@ jobs:
       env: CH_BUILDER=docker CH_TEST_SCOPE=quick
 
     - <<: *stage_builders
+      env: CH_BUILDER=buildah
+    - <<: *stage_builders
       env: CH_BUILDER=buildah-runc
     - <<: *stage_builders
       env: CH_BUILDER=buildah-setuid
@@ -67,9 +69,9 @@ jobs:
       env: CH_BUILDER=docker
 
     - <<: *stage_install
-      env: CH_BUILDER=buildah-runc    TARBALL=export       INSTALL=yes
+      env: CH_BUILDER=buildah         TARBALL=export       INSTALL=yes
     - <<: *stage_install
-      env: CH_BUILDER=buildah-setuid  TARBALL=export       INSTALL=yes
+      env: CH_BUILDER=buildah-runc    TARBALL=export       INSTALL=yes
     - <<: *stage_install
       env: CH_BUILDER=ch-grow         TARBALL=export       INSTALL=yes
     - <<: *stage_install
@@ -78,7 +80,7 @@ jobs:
       env: CH_BUILDER=docker          TARBALL=export-bats  INSTALL=yes
 
     - <<: *stage_misc
-      env: CH_BUILDER=buildah-setuid  MINIMAL_DEPS=yes
+      env: CH_BUILDER=buildah         MINIMAL_DEPS=yes
     - <<: *stage_misc
       env: CH_BUILDER=ch-grow         MINIMAL_DEPS=yes
     - <<: *stage_misc
