@@ -46,8 +46,7 @@ load common
     done
 }
 
-@test 'checkns' {
+@test 'ch-checkns' {
     scope quick
-    cd ./bin
-    ./ch-checkns
+    bin/ch-checkns
 }

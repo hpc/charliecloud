@@ -8,10 +8,12 @@ Synopsis
 Description
 ===========
 
-Check ch-run prerequisites, e.g., namespaces and pivot_root(2).
+Check :code:`ch-run` prerequisites, e.g., namespaces and :code:`pivot_root(2)`.
 
 Example
 =======
+
+::
 
   $ ch-checkns
   ok

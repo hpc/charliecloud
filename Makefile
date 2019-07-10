@@ -150,8 +150,7 @@ install: all
 		done; \
 	fi
 #       examples
-	for i in examples/serial/* \
-	    examples/mpi/* examples/other/*; do \
+	for i in examples/serial/* examples/mpi/* examples/other/*; do \
 	    install -d $(LIBEXEC_INST)/$$i; \
 	    install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done
