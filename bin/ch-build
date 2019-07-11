@@ -65,12 +65,22 @@ echo "building with: ${CH_BUILDER}"
 
 case $CH_BUILDER in
     buildah*)
-        if [ "$CH_BUILDER" = buildah-runc ]; then
-            runtime=runc
-        else
-            runtime=${ch_bin}/ch-run-oci
-        fi
-        buildah build-using-dockerfile \
+        case $CH_BUILDER in
+            buildah)
+                runtime=${ch_bin}/ch-run-oci
+                ignore_chown=--ignore-chown-errors
+                ;;
+            buildah-runc)
+                runtime=runc
+                # ignore_chown: leave unset
+                ;;
+            buildah-setuid)
+                runtime=${ch_bin}/ch-run-oci
+                # ignore_chown: leave unset
+                ;;
+        esac
+        buildah $ignore_chown \
+                build-using-dockerfile \
                 --build-arg HTTP_PROXY="$HTTP_PROXY" \
                 --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
                 --build-arg NO_PROXY="$NO_PROXY" \
@@ -81,7 +91,6 @@ case $CH_BUILDER in
                 --layers=true \
                 --runtime="$runtime" \
                 "$@" < /dev/null
-
         ;;
     ch-grow)
         "${ch_bin}/ch-grow" "$@"
