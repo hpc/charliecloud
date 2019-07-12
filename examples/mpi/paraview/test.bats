@@ -2,7 +2,6 @@ load ../../../test/common
 
 setup () {
     scope full
-    builder_exclude ch-grow  # haven't tried yet
     prerequisites_ok paraview
     indir=$BATS_TEST_DIRNAME
     outdir=$BATS_TMPDIR

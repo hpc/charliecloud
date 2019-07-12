@@ -1,6 +1,6 @@
 @test 'docker pull %(tag)s' {
     scope %(scope)s
-    %(exclude)s
+    %(build_exclude)s
     need_docker %(tag)s
     sudo docker pull %(addr)s
     sudo docker tag %(addr)s %(tag)s
