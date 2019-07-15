@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>charliecloud man page &mdash; Charliecloud 0.9.10 documentation</title>
+  <title>charliecloud man page &mdash; Charliecloud 0.10 documentation</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                56d8504
+                b7493d7
               </div>
             
           
@@ -200,20 +200,18 @@ based: <a class="reference external" href="https://www.usenix.org/publications/l
 </div>
 <div class="section" id="who-is-responsible">
 <h2>Who is responsible?<a class="headerlink" href="#who-is-responsible" title="Permalink to this headline">¶</a></h2>
-<p>The core Charliecloud team at Los Alamos is:</p>
+<p>Contributors:</p>
 <ul class="simple">
-<li><p>Reid Priedhorsky &lt;<a class="reference external" href="mailto:reidpr&#37;&#52;&#48;lanl&#46;gov">reidpr<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;, co-founder and BDFL</p></li>
-<li><p>Tim Randles &lt;<a class="reference external" href="mailto:trandles&#37;&#52;&#48;lanl&#46;gov">trandles<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;, co-founder</p></li>
-<li><p>Michael Jennings &lt;<a class="reference external" href="mailto:mej&#37;&#52;&#48;lanl&#46;gov">mej<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
-<li><p>Jordan Ogas &lt;<a class="reference external" href="mailto:jogas&#37;&#52;&#48;lanl&#46;gov">jogas<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
-</ul>
-<p>Patches (code, documentation, etc.) contributed by:</p>
-<ul class="simple">
-<li><p>Reid Priedhorsky &lt;<a class="reference external" href="mailto:reidpr&#37;&#52;&#48;lanl&#46;gov">reidpr<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
 <li><p>Rusty Davis &lt;<a class="reference external" href="mailto:rustyd&#37;&#52;&#48;lanl&#46;gov">rustyd<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
+<li><p>Hunter Easterday &lt;<a class="reference external" href="mailto:heasterday&#37;&#52;&#48;lanl&#46;gov">heasterday<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
 <li><p>Oliver Freyermuth &lt;<a class="reference external" href="mailto:o&#46;freyermuth&#37;&#52;&#48;googlemail&#46;com">o<span>&#46;</span>freyermuth<span>&#64;</span>googlemail<span>&#46;</span>com</a>&gt;</p></li>
+<li><p>Shane Goff &lt;<a class="reference external" href="mailto:rgoff&#37;&#52;&#48;lanl&#46;gov">rgoff<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
+<li><p>Michael Jennings &lt;<a class="reference external" href="mailto:mej&#37;&#52;&#48;lanl&#46;gov">mej<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
 <li><p>Christoph Junghans &lt;<a class="reference external" href="mailto:junghans&#37;&#52;&#48;lanl&#46;gov">junghans<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
 <li><p>Jordan Ogas &lt;<a class="reference external" href="mailto:jogas&#37;&#52;&#48;lanl&#46;gov">jogas<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
+<li><p>Kevin Pelzel &lt;<a class="reference external" href="mailto:kpelzel&#37;&#52;&#48;lanl&#46;gov">kpelzel<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
+<li><p>Reid Priedhorsky &lt;<a class="reference external" href="mailto:reidpr&#37;&#52;&#48;lanl&#46;gov">reidpr<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;, co-founder and project lead</p></li>
+<li><p>Tim Randles &lt;<a class="reference external" href="mailto:trandles&#37;&#52;&#48;lanl&#46;gov">trandles<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;, co-founder</p></li>
 <li><p>Matthew Vernon &lt;<a class="reference external" href="mailto:mv3&#37;&#52;&#48;sanger&#46;ac&#46;uk">mv3<span>&#64;</span>sanger<span>&#46;</span>ac<span>&#46;</span>uk</a>&gt;</p></li>
 <li><p>Peter Wienemann &lt;<a class="reference external" href="mailto:wienemann&#37;&#52;&#48;physik&#46;uni-bonn&#46;de">wienemann<span>&#64;</span>physik<span>&#46;</span>uni-bonn<span>&#46;</span>de</a>&gt;</p></li>
 <li><p>Lowell Wofford &lt;<a class="reference external" href="mailto:lowell&#37;&#52;&#48;lanl&#46;gov">lowell<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
@@ -255,13 +253,29 @@ distribution’s bug reporting procedures.</p>
 </div>
 <div class="section" id="see-also">
 <h2>See also<a class="headerlink" href="#see-also" title="Permalink to this headline">¶</a></h2>
-<p>ch-build(1), ch-build2dir(1), ch-docker2tar(1), ch-pull2dir(1),
-ch-pull2tar(1), ch-run(1), ch-ssh(1), ch-tar2dir(1)</p>
+<p>ch-build(1),
+ch-build2dir(1),
+ch-builder2tar(1),
+ch-checkns(1),
+ch-dir2squash(1),
+ch-docker2squash(1),
+ch-fromhost(1),
+ch-grow(1),
+ch-mount(1),
+ch-pull2dir(1),
+ch-pull2tar(1),
+ch-run(1),
+ch-run-oci(1),
+ch-ssh(1),
+ch-tar2dir(1)
+ch-tar2dir(1),
+ch-tar2squash(1),
+ch-umount(1)</p>
 <p>Full documentation at: &lt;<a class="reference external" href="https://hpc.github.io/charliecloud">https://hpc.github.io/charliecloud</a>&gt;</p>
 </div>
 <div class="section" id="note">
 <h2>Note<a class="headerlink" href="#note" title="Permalink to this headline">¶</a></h2>
-<p>These man pages are for Charliecloud version 0.9.10 (Git commit 56d8504).</p>
+<p>These man pages are for Charliecloud version 0.10 (Git commit b7493d7).</p>
 </div>
 </div>
 

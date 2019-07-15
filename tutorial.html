@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Tutorial &mdash; Charliecloud 0.9.10 documentation</title>
+  <title>3. Tutorial &mdash; Charliecloud 0.10 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                56d8504
+                b7493d7
               </div>
             
           
@@ -268,7 +268,7 @@ Charliecloud for your own applications.</p>
 <span class="go">Sending build context to Docker daemon  5.632kB</span>
 <span class="go">[...]</span>
 <span class="go">Successfully built 1136de7d4c0a</span>
-<span class="gp">$</span> ch-docker2tar hello /var/tmp
+<span class="gp">$</span> ch-builder2tar hello /var/tmp
 <span class="go"> 114MiB 0:00:03 [=============================================] 103%</span>
 <span class="go">-rw-r----- 1 reidpr reidpr 49M Nov 21 14:05 /var/tmp/hello.tar.gz</span>
 <span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
@@ -393,7 +393,7 @@ can have value when debugging Charliecloud.</p>
 <p>Next, we flatten the Docker image into a tarball, which is then a plain file
 amenable to standard file manipulation commands. This tarball is placed in an
 arbitrary directory, here <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-docker2tar hello /var/tmp
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-builder2tar hello /var/tmp
 <span class="go">57M /var/tmp/hello.tar.gz</span>
 </pre></div>
 </div>
@@ -895,10 +895,10 @@ useful to show a real example.</p>
 <span class="c">#   https://lists.debian.org/debian-hpc/2017/12/msg00015.html</span>
 <span class="k">ENV</span> DEB_URL http://snapshot.debian.org/archive/debian/20181126T030749Z/pool/main
 <span class="k">ENV</span> PSM2_VERSION <span class="m">11</span>.2.68-3
-<span class="k">RUN</span>    <span class="o">[</span> <span class="s2">&quot;</span><span class="k">$(</span>dpkg --print-architecture<span class="k">)</span><span class="s2">&quot;</span> <span class="o">=</span> <span class="s2">&quot;amd64&quot;</span> <span class="o">]</span> <span class="se">\</span>
-    <span class="o">||</span> wget -nv <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/libp/libpsm2/libpsm2-2_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
-                <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/libp/libpsm2/libpsm2-dev_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb
-
+<span class="k">RUN</span> <span class="k">if</span> <span class="o">[</span> <span class="s2">&quot;</span><span class="k">$(</span>dpkg --print-architecture<span class="k">)</span><span class="s2">&quot;</span> <span class="o">=</span> <span class="s2">&quot;amd64&quot;</span> <span class="o">]</span> <span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
+      wget -nv <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/libp/libpsm2/libpsm2-2_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb <span class="se">\</span>
+               <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/libp/libpsm2/libpsm2-dev_<span class="si">${</span><span class="nv">PSM2_VERSION</span><span class="si">}</span>_amd64.deb <span class="p">;</span> <span class="se">\</span>
+    <span class="k">fi</span>
 <span class="c"># As of 5/2/2019, this is not the newest libibverbs. However, it is the</span>
 <span class="c"># newest that doesn&#39;t crash on our test systems.</span>
 <span class="k">ENV</span> IBVERBS_VERSION <span class="m">20</span>.0-1
@@ -917,6 +917,9 @@ useful to show a real example.</p>
         wget -nv <span class="si">${</span><span class="nv">DEB_URL</span><span class="si">}</span>/r/rdma-core/<span class="si">${</span><span class="nv">i</span><span class="si">}</span>_<span class="si">${</span><span class="nv">IBVERBS_VERSION</span><span class="si">}</span>_<span class="k">$(</span>dpkg --print-architecture<span class="k">)</span>.deb <span class="p">;</span> <span class="se">\</span>
     <span class="k">done</span>
 
+<span class="c"># Install the .debs we collected. UCX needs these.</span>
+<span class="k">RUN</span> dpkg --install *.deb
+
 <span class="c"># UCX. There is stuff to build Debian packages, but it seems not too polished.</span>
 <span class="k">ENV</span> UCX_VERSION <span class="m">1</span>.3.1
 <span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
@@ -925,9 +928,6 @@ useful to show a real example.</p>
     <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
     <span class="o">&amp;&amp;</span> ./contrib/configure-release --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
     <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
-
-<span class="c"># Install the .debs we collected.</span>
-<span class="k">RUN</span> dpkg --install *.deb
 
 <span class="c"># OpenMPI.</span>
 <span class="c">#</span>

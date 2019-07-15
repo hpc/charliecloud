@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>7. Contributor’s guide &mdash; Charliecloud 0.9.10 documentation</title>
+  <title>7. Contributor’s guide &mdash; Charliecloud 0.10 documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                56d8504
+                b7493d7
               </div>
             
           
@@ -138,6 +138,18 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">7.5.3. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#oci-technical-notes">7.6. OCI technical notes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#gotchas">7.6.1. Gotchas</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#namespaces">7.6.1.1. Namespaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#supervisor-process-and-maintaining-state">7.6.1.2. Supervisor process and maintaining state</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#bundle-directory">7.6.2. Bundle directory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#config-json">7.6.3. <code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#state">7.6.4. State</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-sources">7.6.5. Additional sources</a></li>
 </ul>
 </li>
 </ul>
@@ -247,6 +259,15 @@ consult the internal documentation and other resources.</p>
 <li><p><a class="reference internal" href="#writing-english" id="id24">Writing English</a></p></li>
 <li><p><a class="reference internal" href="#dependency-policy" id="id25">Dependency policy</a></p></li>
 <li><p><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id26">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#oci-technical-notes" id="id27">OCI technical notes</a></p>
+<ul>
+<li><p><a class="reference internal" href="#gotchas" id="id28">Gotchas</a></p></li>
+<li><p><a class="reference internal" href="#bundle-directory" id="id29">Bundle directory</a></p></li>
+<li><p><a class="reference internal" href="#config-json" id="id30"><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></p></li>
+<li><p><a class="reference internal" href="#state" id="id31">State</a></p></li>
+<li><p><a class="reference internal" href="#additional-sources" id="id32">Additional sources</a></p></li>
 </ul>
 </li>
 </ul>
@@ -725,7 +746,7 @@ results in <code class="code docutils literal notranslate"><span class="pre">~/r
 the test suite (note that the test suite would also build the necessary image
 directory):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-build -t centos7 -f test/Dockerfile.centos7 <span class="nb">test</span>
-<span class="gp">$</span> bin/ch-docker2tar centos7 <span class="nv">$CH_TEST_TARDIR</span>
+<span class="gp">$</span> bin/ch-builder2tar centos7 <span class="nv">$CH_TEST_TARDIR</span>
 <span class="gp">$</span> bin/ch-tar2dir <span class="nv">$CH_TEST_TARDIR</span>/centos7.tar.gz <span class="nv">$CH_TEST_IMGDIR</span>
 <span class="gp">$</span> packaging/fedora/build --image <span class="nv">$CH_TEST_IMGDIR</span>/centos7 HEAD
 </pre></div>
@@ -878,6 +899,372 @@ foo=&quot;${bar}/baz&quot;  # no
 </pre></div>
 </div>
 </li>
+</ul>
+</div>
+</div>
+<div class="section" id="oci-technical-notes">
+<h2><a class="toc-backref" href="#id27">7.6. OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
+<p>This section describes our analysis of the Open Container Initiative (OCI)
+specification and implications for our implementation in <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code>.
+Anything relevant for users goes in that man page; here is for technical
+details. The main goals are to guide Charliecloud development and provide and
+opportunity for peer-review of our work.</p>
+<p>Currently, <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> is only tested with Buildah. These notes
+describe what we are seeing from Buildah’s runtime expectations.</p>
+<div class="section" id="gotchas">
+<h3><a class="toc-backref" href="#id28">7.6.1. Gotchas</a><a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="namespaces">
+<h4>7.6.1.1. Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h4>
+<p>Buildah sets up its own user and mount namespaces before invoking the runtime,
+though it does not change the root directory. We do not understand why. In
+particular, this means that you cannot see the container root filesystem it
+provides without joining those namespaces. To do so:</p>
+<ol class="arabic simple">
+<li><p>Export <code class="code docutils literal notranslate"><span class="pre">CH_RUN_OCI_LOGFILE</span></code> with some logfile path.</p></li>
+<li><p>Export <code class="code docutils literal notranslate"><span class="pre">CH_RUN_OCI_DEBUG_HANG</span></code> with the step you want to examine
+(e.g., <code class="code docutils literal notranslate"><span class="pre">create</span></code>).</p></li>
+<li><p>Run <code class="code docutils literal notranslate"><span class="pre">ch-build</span> <span class="pre">-b</span> <span class="pre">buildah</span></code>.</p></li>
+<li><p>Make note of the PID in the logfile.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">$</span> <span class="pre">nsenter</span> <span class="pre">-U</span> <span class="pre">-m</span> <span class="pre">-t</span> <span class="pre">$PID</span> <span class="pre">bash</span></code></p></li>
+</ol>
+</div>
+<div class="section" id="supervisor-process-and-maintaining-state">
+<h4>7.6.1.2. Supervisor process and maintaining state<a class="headerlink" href="#supervisor-process-and-maintaining-state" title="Permalink to this headline">¶</a></h4>
+<p>OCI (and thus Buildah) expects a process that exists throughout the life of
+the container. This conflicts with Charliecloud’s lack of a supervisor process.</p>
+<p><strong>FIXME</strong></p>
+</div>
+</div>
+<div class="section" id="bundle-directory">
+<h3><a class="toc-backref" href="#id29">7.6.2. Bundle directory</a><a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>OCI documentation (very incomplete): <a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/bundle.md">https://github.com/opencontainers/runtime-spec/blob/master/bundle.md</a></p></li>
+</ul>
+<p>The bundle directory defines the container and is used to communicate between
+Buildah and the runtime. The root filesystem (<code class="code docutils literal notranslate"><span class="pre">mnt/rootfs</span></code>) is mounted
+within Buildah’s namespaces, so you’ll want to join them before examination.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> has restrictions on bundle directory path so it can be
+inferred from the container ID (see the man page). This lets us store state in
+the bundle directory instead of maintaining a second location for container
+state.</p>
+<p>Example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">#</span> <span class="nb">cd</span> /tmp/buildah265508516
+<span class="gp">#</span> ls -lR . <span class="p">|</span> head -40
+<span class="go">.:</span>
+<span class="go">total 12</span>
+<span class="go">-rw------- 1 root root 3138 Apr 25 16:39 config.json</span>
+<span class="go">d--------- 2 root root   40 Apr 25 16:39 empty</span>
+<span class="go">-rw-r--r-- 1 root root  200 Mar  9  2015 hosts</span>
+<span class="go">d--x------ 3 root root   60 Apr 25 16:39 mnt</span>
+<span class="go">-rw-r--r-- 1 root root   79 Apr 19 20:23 resolv.conf</span>
+
+<span class="go">./empty:</span>
+<span class="go">total 0</span>
+
+<span class="go">./mnt:</span>
+<span class="go">total 0</span>
+<span class="go">drwxr-x--- 19 root root 380 Apr 25 16:39 rootfs</span>
+
+<span class="go">./mnt/rootfs:</span>
+<span class="go">total 0</span>
+<span class="go">drwxr-xr-x  2 root root 1680 Apr  8 14:30 bin</span>
+<span class="go">drwxr-xr-x  2 root root   40 Apr  8 14:30 dev</span>
+<span class="go">drwxr-xr-x 15 root root  720 Apr  8 14:30 etc</span>
+<span class="go">drwxr-xr-x  2 root root   40 Apr  8 14:30 home</span>
+<span class="go">[...]</span>
+</pre></div>
+</div>
+<p>Observations:</p>
+<ol class="arabic simple">
+<li><p>The weird permissions on <code class="code docutils literal notranslate"><span class="pre">empty</span></code> (000) and <code class="code docutils literal notranslate"><span class="pre">mnt</span></code> (100) persist
+within the namespaces, so you’ll want to be namespace root to look around.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">hosts</span></code> and <code class="code docutils literal notranslate"><span class="pre">resolv.conf</span></code> are identical to the host’s.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">empty</span></code> is still an empty directory with in the namespaces. What is
+this for?</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">mnt/rootfs</span></code> contains the container root filesystem. It is a tmpfs.
+No other new filesystems are mounted within the namespaces.</p></li>
+</ol>
+</div>
+<div class="section" id="config-json">
+<h3><a class="toc-backref" href="#id30">7.6.3. <code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>OCI documentation:</p>
+<ul>
+<li><p><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/config.md">https://github.com/opencontainers/runtime-spec/blob/master/config.md</a></p></li>
+<li><p><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md">https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md</a></p></li>
+</ul>
+</li>
+</ul>
+<p>This is the meat of the container configuration. Below is an example
+<code class="code docutils literal notranslate"><span class="pre">config.json</span></code> along with commentary and how it maps to <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>
+arguments. This was pretty-printed with <code class="code docutils literal notranslate"><span class="pre">jq</span> <span class="pre">.</span> <span class="pre">config.json</span></code>, and we
+re-ordered the keys to match the documentation.</p>
+<p>There are a number of additional keys that appear in the documentation but not
+in this example. These are all unsupported, either by ignoring them or
+throwing an error. The <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> man page documents comprehensively
+what OCI features are and are not supported.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;ociVersion&quot;</span><span class="o">:</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>We validate that this is “1.0.0”.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;root&quot;</span><span class="o">:</span> <span class="p">{</span>
+    <span class="s2">&quot;path&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/mnt/rootfs&quot;</span>
+  <span class="p">},</span>
+</pre></div>
+</div>
+<p>Path to root filesystem; maps to <code class="code docutils literal notranslate"><span class="pre">NEWROOT</span></code>. If key <code class="code docutils literal notranslate"><span class="pre">readonly</span></code> is
+<code class="code docutils literal notranslate"><span class="pre">false</span></code> or absent, add <code class="code docutils literal notranslate"><span class="pre">--write</span></code>.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;mounts&quot;</span><span class="o">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;strictatime&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mode=755&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;size=65536k&quot;</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/mqueue&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nosuid&quot;</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/pts&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;devpts&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;pts&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;newinstance&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ptmxmode=0666&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mode=0620&quot;</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/shm&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;shm&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mode=1777&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;size=65536k&quot;</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;proc&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nosuid&quot;</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="s2">&quot;rbind&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ro&quot;</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/etc/hosts&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/hosts&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="s2">&quot;rbind&quot;</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/etc/resolv.conf&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/resolv.conf&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="s2">&quot;rbind&quot;</span>
+      <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+</pre></div>
+</div>
+<p>This says what filesystems to mount in the container. It is a mix; it has
+tmpfses, bind-mounts of both files and directories, and other
+non-device-backed filesystems. The docs suggest a lot of flexibility,
+including stuff that won’t work in an unprivileged user namespace (e.g.,
+filesystems backed by a block device).</p>
+<p>The things that matter seem to be the same as Charliecloud defaults.
+Therefore, for now we just ignore mounts.</p>
+<p>We do add <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code> in OCI mode.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;process&quot;</span><span class="o">:</span> <span class="p">{</span>
+    <span class="s2">&quot;terminal&quot;</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>This says that Buildah wants a pseudoterminal allocated. Charliecloud does not
+currently support that, so we error in this case.</p>
+<p>However, Buildah can be persuaded to set this <code class="code docutils literal notranslate"><span class="pre">false</span></code> if you redirect
+its standard input from <code class="code docutils literal notranslate"><span class="pre">/dev/null</span></code>, which is the current workaround.
+Things work fine.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;cwd&quot;</span><span class="o">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>Maps to <code class="code docutils literal notranslate"><span class="pre">--cd</span></code>.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;args&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;/bin/sh&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;apk add --no-cache bc&quot;</span>
+    <span class="p">],</span>
+</pre></div>
+</div>
+<p>Maps to <code class="code docutils literal notranslate"><span class="pre">CMD</span> <span class="pre">[ARG</span> <span class="pre">...]</span></code>. Note that we do not run <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> via the
+shell, so there aren’t worries about shell parsing.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;env&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;https_proxy=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;no_proxy=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;HTTP_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;HTTPS_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;NO_PROXY=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;http_proxy=http://proxyout.lanl.gov:8080&quot;</span>
+    <span class="p">],</span>
+</pre></div>
+</div>
+<p>Environment for the container. The spec does not say whether this is the
+complete environment or whether it should be added to some default
+environment.</p>
+<p>We treat it as a complete environment, i.e., place the variables in a file and
+then <code class="code docutils literal notranslate"><span class="pre">--unset-env='*'</span> <span class="pre">--set-env=FILE</span></code>.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;rlimits&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;RLIMIT_NOFILE&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;hard&quot;</span><span class="o">:</span> <span class="mi">1048576</span><span class="p">,</span>
+        <span class="s2">&quot;soft&quot;</span><span class="o">:</span> <span class="mi">1048576</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+</pre></div>
+</div>
+<p>Process limits Buildah wants us to set with <code class="code docutils literal notranslate"><span class="pre">setrlimit(2)</span></code>. Ignored.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;capabilities&quot;</span><span class="o">:</span> <span class="p">{</span>
+      <span class="p">...</span>
+    <span class="p">},</span>
+</pre></div>
+</div>
+<p>Long list of capabilities that Buildah wants. Ignored. (Charliecloud provides
+security by remaining an unprivileged process.)</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;user&quot;</span><span class="o">:</span> <span class="p">{</span>
+      <span class="s2">&quot;uid&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="s2">&quot;gid&quot;</span><span class="o">:</span> <span class="mi">0</span>
+    <span class="p">},</span>
+  <span class="p">},</span>
+</pre></div>
+</div>
+<p>Maps to <code class="code docutils literal notranslate"><span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code>.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;linux&quot;</span><span class="o">:</span> <span class="p">{</span>
+    <span class="s2">&quot;namespaces&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;pid&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;ipc&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;mount&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;user&quot;</span>
+      <span class="p">}</span>
+    <span class="p">],</span>
+</pre></div>
+</div>
+<p>Namespaces that Buildah wants. Ignored; Charliecloud just does user and mount.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;uidMappings&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">1</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">65536</span>
+      <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;gidMappings&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">1</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">65536</span>
+      <span class="p">}</span>
+    <span class="p">],</span>
+</pre></div>
+</div>
+<p>Describes the identity map between the namespace and host. Buildah wants it
+much larger than Charliecloud’s single entry and asks for container root to be
+host root, which we can’t do. Ignored.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;maskedPaths&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;/proc/acpi&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;/proc/kcore&quot;</span><span class="p">,</span>
+      <span class="p">...</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;readonlyPaths&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;/proc/asound&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;/proc/bus&quot;</span><span class="p">,</span>
+      <span class="p">...</span>
+    <span class="p">]</span>
+</pre></div>
+</div>
+<p>Spec says to “mask over the provided paths … so they cannot be read” and
+“sed the provided paths as readonly”. Ignored. (Unprivileged user namespace
+protects us.)</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>End of example.</p>
+</div>
+<div class="section" id="state">
+<h3><a class="toc-backref" href="#id31">7.6.4. State</a><a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h3>
+<p>The OCI spec does not say how the JSON document describing state should be
+given to the caller. Buildah is happy to get it on the runtime’s standard
+output.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> provides an OCI compliant state document. Status
+<code class="code docutils literal notranslate"><span class="pre">creating</span></code> will never be returned, because the create operation is
+essentially a no-op, and annotations are not supported, so the
+<code class="code docutils literal notranslate"><span class="pre">annotations</span></code> key will never be given.</p>
+</div>
+<div class="section" id="additional-sources">
+<h3><a class="toc-backref" href="#id32">7.6.5. Additional sources</a><a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah.md">https://github.com/containers/buildah/blob/master/docs/buildah.md</a></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span> <span class="pre">bud</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah-bud.md">https://github.com/containers/buildah/blob/master/docs/buildah-bud.md</a></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">runc</span> <span class="pre">create</span></code> man page: <a class="reference external" href="https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md">https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md</a></p></li>
+<li><p><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/runtime.md">https://github.com/opencontainers/runtime-spec/blob/master/runtime.md</a></p></li>
 </ul>
 </div>
 </div>
