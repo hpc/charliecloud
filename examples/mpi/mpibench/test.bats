@@ -83,8 +83,9 @@ check_process_ct () {
 }
 
 # This test compares OpenMPI's point to point bandwidth with all high speed
-# plugins enabled against the performance just using tcp. If they are within an
-# arbitrary range of each other (70%) the performance is assumed to be lacking.
+# plugins enabled against the performance just using tcp. If the performance of
+# the former is not at least double that of tcp the former's performance is
+# assumed to be lacking.
 @test "${ch_tag}/using the high-speed network (host launch)" {
     multiprocess_ok
     [[ $SLURM_NNODES = "1" ]] && skip "Multinode only"
@@ -100,7 +101,7 @@ check_process_ct () {
                       | sort -nrk6 | head -1 | awk '{print $6}')
     echo "Max bandwidth with high speed network: $hsn_enabled_bw MB/s"
     echo "Max bandwidth without high speed network: $hsn_disabled_bw MB/s"
-    [[ $(echo "$hsn_disabled_bw < ($hsn_enabled_bw * .7)" | bc) -eq 1 ]]
+    [[ ${hsn_disabled_bw%\.*} -lt $((${hsn_enabled_bw%\.*} / 2)) ]]
 }
 
 @test "${ch_tag}/pingpong (host launch)" {
