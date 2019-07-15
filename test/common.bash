@@ -7,7 +7,16 @@ arch_exclude () {
 }
 
 builder_exclude () {
+    # $1: builder to exclude
+    # $2: tag for prerequisites file
+    if [[ $# -ne 2 ]]; then
+        echo "builder_exclude needs 2 arguments" 1>&2
+        false
+    fi
+    pq=${ch_tardir}/${2}.pq_missing
+    rm -f "$pq"
     if [[ $1 = "$CH_BUILDER" ]]; then
+        touch "$pq"
         skip "unsupported builder: $CH_BUILDER"
     fi
 }
@@ -88,11 +97,11 @@ need_docker () {
     # Skip test if $CH_BUILDER is not Docker. If argument provided, use that
     # tag as missing prerequisite sentinel file.
     pq=${ch_tardir}/${1}.pq_missing
-    if [[ $pq ]]; then
+    if [[ $1 ]]; then
         rm -f "$pq"
     fi
     if [[ $CH_BUILDER != docker ]]; then
-        if [[ $pq ]]; then
+        if [[ $1 ]]; then
             touch "$pq"
         fi
         skip 'requires Docker'
