@@ -152,8 +152,11 @@ environment variables:
             cli.tag = m.group(2)
    if (":" not in cli.tag):
       cli.tag += ":latest"
-   cli.build_arg = {arg.split("=")[0] : arg.split("=")[1]
-                    for arg in itertools.chain.from_iterable(cli.build_arg)}
+   if (cli_build_arg is not None):
+       cli.build_arg = {arg.split("=")[0] : arg.split("=")[1]
+                        for arg in itertools.chain.from_iterable(cli.build_arg)}
+   else:
+       cli.build_arg = {}
 
    try:
       import lark
