@@ -262,7 +262,7 @@ EOF2
   # Note: This will grow the image quite a bit. Don't run it before taking the
   # snapshot to be distributed to end users.
   c.vm.provision "test", type: "shell", run: "never", privileged: false,
-                 env: { "CH_TEST_SCOPE" => "full" },
+                 env: { "CH_TEST_SCOPE" => "full", "CH_VERSION" => "0.10"},
                  inline: <<-EOF
     set -e
     if ( id -u charlie 2>/dev/null ); then  # issue #309
@@ -272,7 +272,7 @@ EOF2
     fi
     echo "testing as: $user"
     sudo -iu $user -- sh -c "\
-   cd /usr/local/libexec/charliecloud/test \
+   cd /usr/local/libexec/charliecloud-$CH_VERSION/test \
 && CH_TEST_SCOPE=$CH_TEST_SCOPE make test"
   EOF
 
