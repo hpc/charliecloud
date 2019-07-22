@@ -1,7 +1,7 @@
 load common
 
 @test 'prepare images directory' {
-    scope standard
+    scope quick
     shopt -s nullglob  # globs that match nothing yield empty string
     if [[ -e $ch_imgdir ]]; then
         # Images directory exists. If all it contains is Charliecloud images
@@ -46,8 +46,7 @@ load common
     done
 }
 
-@test 'syscalls/pivot_root' {
+@test 'ch-checkns' {
     scope quick
-    cd ../examples/syscalls
-    ./pivot_root
+    bin/ch-checkns
 }

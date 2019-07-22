@@ -32,10 +32,10 @@ location is configurable. In descending order of priority:
 
 .. note::
 
-   Images are stored unpacked, so place sure your storage directory on a
-   filesystem that can handle the metadata traffic for large numbers of small
-   files. For example, the Charliecloud test suite uses approximately 400,000
-   files and directories.
+   Images are stored unpacked, so place your storage directory on a filesystem
+   that can handle the metadata traffic for large numbers of small files. For
+   example, the Charliecloud test suite uses approximately 400,000 files and
+   directories.
 
 Other arguments:
 

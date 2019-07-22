@@ -9,18 +9,46 @@ Flatten a builder image into a Charliecloud image tarball.
 
 Usage:
 
-  $ $(basename "$0") IMAGE OUTDIR
-
-You must have sufficient privilege (via sudo) to run the Docker commands.
+  $ $(basename "$0") [-b BUILDER] [--nocompress] IMAGE OUTDIR
 EOF
 )
 
+# Note regarding the environment variables file /ch/environment, which for
+# many builders is appended to the exported tarball:
+#
+# 1. mktemp(1) isn't POSIX, but it seemed very likely to be installed if any
+#    fancy builder is, and I couldn't find a more portable way of securely
+#    creating temporary files. (In particular, I would've preferred to pipe
+#    rather than creating and deleting a temporary file.)
+#
+# 2. Blocking factor 1 (-b1) for tar is a bug workaround. Without this switch,
+#    tar 1.26, which is in RHEL, corrupts the tarball instead of appending to
+#    it. This doesn't happen in 1.29 in Debian Stretch, and building GNU tar
+#    from Git source was too hard, so I couldn't bisect a specific commit that
+#    fixed the bug to learn what exactly was going on. (See PR #371.)
+#
+# 3. This assumes that the exported tarball does not have a single top-level
+#    directory (i.e., is a tarbomb).
+
 parse_basic_args "$@"
 
-if [ "$1" = --nocompress ]; then
-    nocompress=yes
-    shift
-fi
+# Kludgey argument parsing.
+while true; do
+    case $1 in
+        -b|--builder)
+            shift
+            CH_BUILDER=$1
+            shift
+            ;;
+        --nocompress)
+            nocompress=yes
+            shift
+            ;;
+        *)
+            break
+            ;;
+        esac
+done
 
 if [ "$#" -ne 2 ]; then
     usage
@@ -32,9 +60,77 @@ tar=${outdir}/$(echo "$image" | sed 's/\//./g').tar
 tar_gzipped=${tar}.gz
 
 builder_choose
-echo "building with: ${CH_BUILDER}"
+echo "builder: ${CH_BUILDER}"
 
-if [ "$CH_BUILDER" = ch-grow ]; then
+case $CH_BUILDER in
+
+buildah*)
+    # FIXME: check that the variant is valid.
+
+    # Possible methods to create a tarball:
+    #
+    #   1. "buildah from", "buildah commit --squash", export to OCI image with
+    #      "buildah push", manually copy out the tarball of the single layer.
+    #      This requires rooting around in the OCI image (brittle in shell)
+    #      and doesn't let us choose whether the tarball is compressed.
+    #
+    #   2. Above, but flatten with "umoci" and then tar up the resulting
+    #      rootfs. The advantage here is that it uses only documented
+    #      commands; the downsides are that it introduces a redundant
+    #      unpack/repack of tarballs and a dependency.
+    #
+    #   3. "buildah inspect --format='{{.OCIv1.RootFS}}'" gives us the root
+    #      filesystem hash but we'd have to find the rest of its path somehow.
+    #
+    #   4. "buildah mount" and "unmount" and tar up the rootfs directory. This
+    #      requires wrapping everything with "buildah unshare", which is a
+    #      rather ugly subshell. Also, I'm not sure how to get pv(1) in there.
+    #
+    #      (On my box, the container rootfs is accessible without "buildah
+    #      unshare" but I'm guessing that depends on the storage driver.)
+    #
+    #   5. "buildah export". The main problem here is that the subcommand does
+    #      not exist, though it used to [1,2]. A secondary issue is that it
+    #      required starting up a container [3], which we don't want.
+    #
+    #   6. "podman export". Podman (formerly kpod) is a container runtime [4];
+    #      it can create a container and then export its filesystem. The
+    #      addition of the export command is why "buildah export" was removed
+    #      [2]. We haven't looked into this in detail. It appears to be
+    #      Buildah's recommended approach but would add a dependency.
+    #
+    # Currently we do #3.
+    #
+    # [1]: https://github.com/containers/buildah/pull/170
+    # [2]: https://github.com/containers/buildah/pull/245
+    # [3]: https://github.com/containers/buildah/issues/1118
+    # [4]: https://www.projectatomic.io/blog/2018/02/reintroduction-podman
+
+    tar_abs=$(readlink -f "$tar")
+    echo "starting Buildah container"
+    container=$(buildah from "$image")
+
+    buildah unshare -- /bin/sh /dev/stdin <<EOF
+      rootfs=\$(buildah mount $container)
+      echo "container root: \$rootfs"
+      echo "exporting"
+      cd \$rootfs && tar cf "$tar_abs" .
+      buildah umount $container > /dev/null
+EOF
+
+    echo "stopping Buildah container"
+    buildah rm "$container" > /dev/null
+
+    echo "adding environment"
+    temp=$(mktemp --tmpdir ch-builder2tar.XXXXXX)
+    buildah inspect --format='{{range .OCIv1.Config.Env}}{{println .}}{{end}}' \
+            "$image" > "$temp"
+    tar rf "$tar" -b1 -P --xform="s|${temp}|ch/environment|" "$temp"
+    rm "$temp"
+
+    ;;
+
+ch-grow)
 
     case $image in
         *:*)
@@ -48,7 +144,9 @@ if [ "$CH_BUILDER" = ch-grow ]; then
     storage=$("${ch_bin}/ch-grow" --print-storage /doesnotexist)
     ( cd "${storage}/img/${image}" && tar cf - . ) | pv_ > "$tar"
 
-elif [ "$CH_BUILDER" = docker ]; then
+    ;;
+
+docker)
 
     # Export the image to tarball.
     echo "exporting"
@@ -57,24 +155,6 @@ elif [ "$CH_BUILDER" = docker ]; then
     docker_ export "$cid" | pv_ -s "$size" > "$tar"
     docker_ rm "$cid" > /dev/null
 
-    # Add the Docker environment variables in /ch/environment for later
-    # consumption by "ch-run --set-env".
-    #
-    # 1. mktemp(1) isn't POSIX, but it seemed very likely to be installed if
-    #    Docker is, and I couldn't find a more portable way of securely
-    #    creating temporary files. (In particular, I would've preferred to
-    #    pipe rather than creating and deleting a temporary file.)
-    #
-    # 2. Blocking factor 1 (-b1) for tar is a bug workaround. Without this
-    #    switch, tar 1.26, which is in RHEL, corrupts the tarball instead of
-    #    appending to it. This doesn't happen in 1.29 in Debian Stretch, and
-    #    building GNU tar from Git source was too hard, so I couldn't bisect a
-    #    specific commit that fixed the bug to learn what exactly was going
-    #    on. (See PR #371.)
-    #
-    # 3. This assumes that the tarball from Docker does not have a single
-    #    top-level directory (i.e., is a tarbomb).
-    #
     echo "adding environment"
     temp=$(mktemp --tmpdir ch-builder2tar.XXXXXX)
     docker_ inspect "$image" \
@@ -82,7 +162,13 @@ elif [ "$CH_BUILDER" = docker ]; then
     tar rf "$tar" -b1 -P --xform="s|${temp}|ch/environment|" "$temp"
     rm "$temp"
 
-fi
+    ;;
+
+*)
+    Echo "unknown builder: $CH_BUILDER" 1>&2
+    exit 1
+    ;;
+esac
 
 if [ "$nocompress" ]; then
     ls -lh "$tar"
