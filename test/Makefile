@@ -91,14 +91,11 @@ sotest/libsotest.so.1.0: sotest/libsotest.c
 .PHONY: install
 install: all
 	cd ../ && \
-	for i in examples/syscalls \
-	         examples/serial/* examples/mpi/* examples/other/*; do \
+	for i in examples/serial/* examples/mpi/* examples/other/*; do \
 		install -d $(LIBEXEC_INST)/$$i; \
 		install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
 	done
 	chmod 755 $(LIBEXEC_INST)/examples/serial/hello/hello.sh \
-	          $(LIBEXEC_INST)/examples/syscalls/pivot_root \
-	          $(LIBEXEC_INST)/examples/syscalls/userns \
 	          $(LIBEXEC_INST)/examples/*/*/*.sh
 	find $(LIBEXEC_INST)/examples -name Build -exec chmod 755 {} \;
 #	tests
