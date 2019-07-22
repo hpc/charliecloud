@@ -139,12 +139,12 @@ install: all
 	install -pm 644 -t $(DOCDIR) LICENSE README.rst
 #	html files if they were built
 	if [ -f doc/index.html ]; then \
-	    cp -r doc $(DOC)/html; \
-	    rm -f $(DOC)/html/.nojekyll; \
-	    for i in $$(find $(DOC)/html -type d); do \
+	    cp -r doc $(DOCDIR)/html; \
+	    rm -f $(DOCDIR)/html/.nojekyll; \
+	    for i in $$(find $(DOCDIR)/html -type d); do \
 	        chmod 755 $$i; \
 	    done; \
-	    for i in $$(find $(DOC)/html -type f); do \
+	    for i in $$(find $(DOCDIR)/html -type f); do \
 	        chmod 644 $$i; \
 	    done; \
 	fi
