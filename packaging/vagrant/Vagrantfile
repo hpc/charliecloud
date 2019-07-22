@@ -186,7 +186,6 @@ EOF2
       git checkout $CH_VERSION
     fi
     make
-    examples/syscalls/pivot_root
     sudo make install PREFIX=/usr/local
     which ch-run
     ch-run --version

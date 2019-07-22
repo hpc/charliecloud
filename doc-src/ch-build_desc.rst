@@ -18,10 +18,24 @@ vagaries of making the supported builders work smoothly with Charliecloud and
 adds some conveniences (e.g., pass HTTP proxy environment variables to the
 build environment if the builder doesn't do this by default).
 
-Supported builders:
+Supported builders, unprivileged:
 
-  * :code:`ch-grow`: our internal builder; unprivileged
-  * :code:`docker`: Docker; privileged
+  * :code:`buildah`: Buildah in "rootless" mode with no setuid helpers, using
+    :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions. This
+    currently requires a patched Buildah; see the install instructions.
+
+  * :code:`ch-grow`: Our internal builder.
+
+Supported builders, privileged:
+
+  * :code:`buildah-runc`: Buildah in "rootless" mode with setuid
+    helpers, using the default :code:`runc` for :code:`RUN` instructions.
+
+  * :code:`buildah-setuid`: Buildah in "rootless" mode with setuid helpers,
+    using :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN`
+    instructions.
+
+  * :code:`docker`: Docker.
 
 Specifying the builder, in descending order of priority:
 
@@ -32,7 +46,7 @@ Specifying the builder, in descending order of priority:
     Environment variable
 
   Default
-    Docker if it is installed; otherwise, :code:`ch-grow(1)`.
+    :code:`docker` if Docker is installed; otherwise, :code:`ch-grow`.
 
 Other arguments:
 

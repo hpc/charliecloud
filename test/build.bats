@@ -15,8 +15,8 @@ load common
 
 @test 'version number seems sane' {
     echo "version: ${ch_version}"
-    [[ $(echo "$ch_version" | wc -l) -eq 1 ]]  # one line
-    [[ $ch_version =~ ^0\.[0-9]+\.[0-9]+ ]]  # starts with a number triplet
+    [[ $(echo "$ch_version" | wc -l) -eq 1 ]]   # one line
+    [[ $ch_version =~ ^0\.[0-9]+(\.[0-9]+)? ]]  # starts with right numbers
     # matches VERSION.full if available
     if [[ -e $ch_bin/../VERSION.full ]]; then
         diff -u <(echo "$ch_version") "${ch_bin}/../VERSION.full"
@@ -94,7 +94,8 @@ load common
     while IFS= read -r -d '' i; do
         echo "shellcheck: ${i}"
         shellcheck -e SC2002 "$i"
-    done < <( find $misc -name bats -prune -o -name '*.sh' -print0 )
+    done < <( find $misc -name bats -prune \
+                         -o \( -name '*.sh' -o -name '*.bash' \) -print0 )
 }
 
 @test 'proxy variables' {

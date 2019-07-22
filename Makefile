@@ -9,14 +9,12 @@ all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
 #       only descend into test/ if the right Python is available
 	[ -z $(PYTHON) ] || cd test && $(MAKE) all
-	cd examples/syscalls && $(MAKE) all
 
 .PHONY: clean
 clean:
 	cd bin && $(MAKE) clean
 	cd doc-src && $(MAKE) clean
 	cd test && $(MAKE) clean
-	cd examples/syscalls && $(MAKE) clean
 
 # VERSION.full contains the version string reported by executables; see FAQ.
 ifeq ($(shell test -d .git && fgrep -q \~ VERSION && echo true),true)
