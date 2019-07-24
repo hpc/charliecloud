@@ -125,7 +125,8 @@ This is our internal unprivileged image builder and requires:
 * `skopeo <https://github.com/containers/skopeo>`_
 * `umoci <https://github.com/openSUSE/umoci>`_
 * Python module :code:`lark`
-  (`lark-parser <https://pypi.org/project/lark-parser/>`_ on PyPI)
+  (`lark_parser <https://pypi.org/project/lark_parser/>`_ on PyPI) 
+  Install with `pip3 install lark_parser`
 
 Docker (privileged)
 ~~~~~~~~~~~~~~~~~~~
