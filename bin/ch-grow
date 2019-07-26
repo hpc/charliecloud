@@ -14,10 +14,42 @@ import subprocess
 import sys
 import types
 
+
+## Logging functions ##
+
+# These are here so we can use them when we try to import lark.
+
+def DEBUG(*args, **kwargs):
+   if (cli.verbose):
+      print("\033[36m", file=sys.stderr, flush=True, end="")
+      print(flush=True, file=sys.stderr, *args, **kwargs)
+      print("\033[0m", file=sys.stderr, flush=True, end="")
+
+def FATAL(*args, **kwargs):
+   print("\033[31m", file=sys.stderr, flush=True, end="")
+   print(flush=True, file=sys.stderr, *args, **kwargs)
+   print("\033[0m", file=sys.stderr, flush=True, end="")
+   sys.exit(1)
+
+def INFO(*args, **kwargs):
+   print(flush=True, *args, **kwargs)
+
+
+## Import Lark ##
+
+# This is messy because:
+#
+# 1. There are two packages on PyPI that give a "lark" module.
+# 2. We need --version and --help even if Lark is not installed.
+
 try:
    import lark
+   try:
+      lark.Visitor
+   except AttributeError:
+      FATAL('bad dependency: found "lark" but need "lark-parser"')
 except ImportError:
-   # Friendly error later; kludge here so we can still get --version etc.
+   # Mock up a lark module so the rest of the file parses.
    m = types.ModuleType("lark")
    class Visitor_Mock(object):
       pass
@@ -463,21 +495,6 @@ class Version(argparse.Action):
 
 
 ## Supporting functions ###
-
-def DEBUG(*args, **kwargs):
-   if (cli.verbose):
-      print("\033[36m", file=sys.stderr, flush=True, end="")
-      print(flush=True, file=sys.stderr, *args, **kwargs)
-      print("\033[0m", file=sys.stderr, flush=True, end="")
-
-def FATAL(*args, **kwargs):
-   print("\033[31m", file=sys.stderr, flush=True, end="")
-   print(flush=True, file=sys.stderr, *args, **kwargs)
-   print("\033[0m", file=sys.stderr, flush=True, end="")
-   sys.exit(1)
-
-def INFO(*args, **kwargs):
-   print(flush=True, *args, **kwargs)
 
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
