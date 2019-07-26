@@ -91,6 +91,7 @@ EOF
 %files test
 %{_libexecdir}/%{name}-%{version}/examples
 %{_libexecdir}/%{name}-%{version}/test
+%doc test/README.md
 %exclude %{_datadir}/doc/%{name}-%{version}
 
 %changelog
