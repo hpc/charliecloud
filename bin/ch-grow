@@ -56,8 +56,9 @@ copy: "COPY"i ( _WS copy_chown )? ( copy_shell ) _NEWLINES
 copy_chown: "--chown" "=" /[^ \t\n]+/
 copy_shell: _WS WORD ( _WS WORD )+
 
-arg: "ARG"i _WS ( arg_set ) _NEWLINES
-arg_set: WORD
+arg: "ARG"i _WS ( arg_bare | arg_equals ) _NEWLINES
+arg_bare: WORD
+arg_equals: WORD "=" ( WORD | STRING_QUOTED )
 
 env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
 env_space: WORD _WS LINE
@@ -114,6 +115,9 @@ def main():
 environment variables:
   CH_GROW_STORAGE       default for --storage
 """)
+   ap.add_argument("--build-arg", action="append", default=None,
+                   metavar="KEY=VALUE",
+                   help="set build-time variables")
    ap.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
    ap.add_argument("-n", "--dry-run", action="store_true",
@@ -128,8 +132,6 @@ environment variables:
                    help="state and images directory (default: /var/tmp/ch-grow)")
    ap.add_argument("-t", "--tag", metavar="TAG",
                    help="name of image to create (default: inferred)")
-   ap.add_argument("--build-arg", action="append", nargs="+", metavar="ARG=VALUE",
-                   help="set build-time variables")
    ap.add_argument("--verbose", action="store_true",
                    help="print extra debugging chatter")
    ap.add_argument("--version", action=Version,
@@ -152,11 +154,18 @@ environment variables:
             cli.tag = m.group(2)
    if (":" not in cli.tag):
       cli.tag += ":latest"
-   if (cli.build_arg is not None):
-       cli.build_arg = {arg.split("=")[0] : arg.split("=")[1]
-                        for arg in itertools.chain.from_iterable(cli.build_arg)}
-   else:
-       cli.build_arg = {}
+   def build_arg_get(arg):
+      kv = arg.split("=")
+      if (len(kv) == 2):
+         return kv
+      else:
+         v = os.getenv(kv[0])
+         if (v is None):
+            FATAL("--build-arg: %s: no value and not in environment" % kv[0])
+         return (kv[0], v)
+   if (cli.build_arg is None):
+      cli.build_arg = list()
+   cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
 
    try:
       import lark
@@ -182,6 +191,9 @@ environment variables:
       sys.exit(0)
 
    Main_Loop().visit(tree)
+
+   if (len(cli.build_arg) != 0):
+      FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
 
 
 class Main_Loop(lark.Visitor):
@@ -287,18 +299,45 @@ class I_copy_shell(Copy):
 
 class Arg(Instruction):
 
-   def str_(self):
-      return "%s='%s'" % (self.key, self.value)
-
-   def execute_(self):
-      state.arg[self.key] = self.value
-
-class I_arg_set(Arg):
-
    def __init__(self, *args):
       super().__init__(*args)
       self.key = self.terminal("WORD", 0)
-      self.value = cli.build_arg[self.key]
+      if (self.key in cli.build_arg):
+         self.value = cli.build_arg[self.key]
+         del cli.build_arg[self.key]
+      else:
+         self.value = self.value_default()
+      if (self.value is not None):
+         self.value = variables_sub(self.value, state.env_build)
+
+   def str_(self):
+      if (self.value is None):
+         return self.key
+      else:
+         return "%s='%s'" % (self.key, self.value)
+
+   def execute_(self):
+      if (self.value is not None):
+         state.arg[self.key] = self.value
+
+class I_arg_bare(Arg):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+
+   def value_default(self):
+      return None
+
+class I_arg_equals(Arg):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+
+   def value_default(self):
+      v = self.terminal("WORD", 1)
+      if (v is None):
+         v = unescape(self.terminal("STRING_QUOTED"))
+      return v
 
 class Env(Instruction):
 
@@ -319,7 +358,7 @@ class I_env_equals(Env):
       self.key = self.terminal("WORD", 0)
       self.value = self.terminal("WORD", 1)
       if (self.value is None):
-         self.value = self.terminal("STRING_QUOTED")
+         self.value = unescape(self.terminal("STRING_QUOTED"))
       self.value = variables_sub(self.value, state.env_build)
 
 
@@ -489,14 +528,14 @@ class Version(argparse.Action):
 
 def DEBUG(*args, **kwargs):
    if (cli.verbose):
-      print("\033[36m", file=sys.stderr, flush=True, end="")
+      color("36m", sys.stderr)
       print(flush=True, file=sys.stderr, *args, **kwargs)
-      print("\033[0m", file=sys.stderr, flush=True, end="")
+      color("0m", sys.stderr)
 
 def FATAL(*args, **kwargs):
-   print("\033[31m", file=sys.stderr, flush=True, end="")
+   color("31m", sys.stderr)
    print(flush=True, file=sys.stderr, *args, **kwargs)
-   print("\033[0m", file=sys.stderr, flush=True, end="")
+   color("0m", sys.stderr)
    sys.exit(1)
 
 def INFO(*args, **kwargs):
@@ -505,11 +544,15 @@ def INFO(*args, **kwargs):
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
-   INFO("\033[33m", end="")
+   color("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
-   INFO("\033[0m", end="")
+   color("0m", sys.stdout)
    if (cp.returncode):
       FATAL("%s failed with return code %d" % (args[0], cp.returncode))
+
+def color(color, fp):
+   if (fp.isatty()):
+      print("\033[" + color, end="", flush=True, file=fp)
 
 def cp(src, dst):
    DEBUG("copying: %s -> %s" % (src, dst))
