@@ -122,6 +122,8 @@ environment variables:
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
    ap.add_argument("-n", "--dry-run", action="store_true",
                    help="don't execute instructions")
+   ap.add_argument("--no-cache", action="store_true",
+                   help="ignored (layer caching not yet supported)")
    ap.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    ap.add_argument("--print-storage", action="store_true",

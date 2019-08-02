@@ -57,6 +57,9 @@ Other arguments:
   :code:`-n`, :code:`--dry-run`
     Do not actually excute any Dockerfile instructions.
 
+  :code:`--no-cache`
+    Ignored (:code:`ch-grow` does not yet support layer caching).
+
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
 
