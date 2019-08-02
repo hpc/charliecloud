@@ -79,6 +79,7 @@ case $CH_BUILDER in
                 # ignore_chown: leave unset
                 ;;
         esac
+        BUILDAH_LAYERS=true \
         buildah $ignore_chown \
                 build-using-dockerfile \
                 --build-arg HTTP_PROXY="$HTTP_PROXY" \
@@ -88,7 +89,6 @@ case $CH_BUILDER in
                 --build-arg https_proxy="$https_proxy" \
                 --build-arg no_proxy="$no_proxy" \
                 --isolation=rootless \
-                --layers=true \
                 --runtime="$runtime" \
                 "$@" < /dev/null
         ;;
