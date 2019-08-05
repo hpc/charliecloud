@@ -19,7 +19,7 @@ import time
 
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
 CH_RUN  = [CH_BASE + "/bin/ch-run"]
-PACKAGES = ["charliecloud", "charliecloud-debuginfo", "charliecloud-test"]
+PACKAGES = ["charliecloud", "charliecloud-debuginfo", "charliecloud-doc"]
 ARCH = platform.machine()
 
 def main():
@@ -75,16 +75,20 @@ def main():
    cmd("git", "checkout", commit, cwd=git_tmp)
 
    # Build tarball.
+   # TODO: modify the doc build requirement for make export on the fly here. We
+   # don't need to build the docs twice (we build them in the container as part
+   # of the rpmbuild process)
    print("# building docs")
    cmd("make", "-j2", cwd=git_tmp+"/doc-src")
    print("# building source tarball")
    cmd("make", "export", cwd=git_tmp)
    ch_version = open(git_tmp + "/VERSION.full").read()[:-1]
    ch_tarball = "charliecloud-%s.tar.gz" % ch_version
+   spec_tarball = "v%s.tar.gz" % ch_version
    print("# Charliecloud version: %s" % ch_version)
    print("# source tarball: %s" % ch_tarball)
    os.rename("%s/%s" % (git_tmp, ch_tarball),
-             "%s/%s" % (rpm_sources, ch_tarball))
+             "%s/%s" % (rpm_sources, spec_tarball))
 
    # Copy lint configuration.
    # FIXME: Put version into destination sometime?
@@ -142,7 +146,7 @@ def main():
       #
       # [1]: https://access.redhat.com/solutions/1426113
       # [2]: https://gbenson.net/?p=367
-      rpms          = "/usr/local/src/RPMS/%s" % ARCH
+      rpms          = "/usr/local/src/RPMS"
       rpm_specs     = "/usr/local/src/SPECS"
       rpm_sources   = "/usr/local/src/SOURCES"
       rpmbuild_args += ["--define", "_topdir /usr/local/src"]
@@ -162,8 +166,12 @@ def main():
       cmd_ok(container, "rpm", "--erase", PACKAGES)
       print("# installing")
       for p in PACKAGES:
-         cmd(container, "rpm", "--install",
-             "%s/%s-%s.*.rpm" % (rpms, p, rpm_vr))
+         if p == 'charliecloud-doc':
+            cmd(container, "rpm", "--install",
+                "%s/noarch/%s-%s*.rpm" % (rpms, p, rpm_vr))
+         else:
+            cmd(container, "rpm", "--install",
+                "%s/%s/%s-%s*.rpm" % (rpms, ARCH, p, rpm_vr))
       cmd(container, "rpm", "-qa", "charliecloud*")
 
    # Lint RPMs and spec file. Last so problems that don't result in program
@@ -171,7 +179,10 @@ def main():
    print("# linting")
    cmd(container, "rpmlint", rpmlint_args, "%s/%s" % (rpm_specs, spec))
    for p in PACKAGES:
-      file_ = "%s/%s-%s.el7.%s.rpm" % (rpms, p, rpm_vr, ARCH)
+      if p == 'charliecloud-doc':
+        file_ = "%s/noarch/%s-%s.el7.noarch.rpm" % (rpms, p, rpm_vr)
+      else:
+        file_ = "%s/%s/%s-%s.el7.%s.rpm" % (rpms, ARCH, p, rpm_vr, ARCH)
       cmd(container, "test", "-e", file_)
       cmd(container, "rpmlint", rpmlint_args, file_)
 

@@ -19,20 +19,31 @@ addFilter(r'missing-call-to-chdir-with-chroot')
 # The only files under /usr/lib are those placed there by rpmbuild.
 addFilter(r'only-non-binary-in-usr-lib')
 
+# charliecloud-doc
+
+# We don't want to repackage sphinx_rtd_theme bits (e.g., css, js, and fonts).
+# To get around this we must use symlinks.
+addFilter(r'hardcoded-library-path')
+addFilter(r'dangling-symlink')
+
+# The spec file %{name} macro expands to 'charliecloud'. Thus the documentation
+# subpackage description is correct.
+addFilter(r'summary-not-capitalized')
+
 # charliecloud-test
 
-# Charliecloud is a container runtime. These shared objects are never used in 
-# the host environment; rather, they are compiled by the test suite (both 
+# Charliecloud is a container runtime. These shared objects are never used in
+# the host environment; rather, they are compiled by the test suite (both
 # running and examination of which serve as end-user documentation) and injected
-# into the container (guest) via utility script 'ch-fromhost'. The ldconfig 
-# links are generated inside the container runtime environment. For more 
+# into the container (guest) via utility script 'ch-fromhost'. The ldconfig
+# links are generated inside the container runtime environment. For more
 # information, see the test file: test/run/ch-fromhost.bats (line 108).
 addFilter(r'no-ldconfig-symlink')
 addFilter(r'library-without-ldconfig-postin')
 addFilter(r'library-without-ldconfig-postun')
 
-# The test suite has a few C files, e.g. userns.c, pivot_root.c, 
-# chroot-escape.c, sotest.c, setgroups.c, mknods.c, setuid.c, etc., that 
+# The test suite has a few C files, e.g. userns.c, pivot_root.c,
+# chroot-escape.c, sotest.c, setgroups.c, mknods.c, setuid.c, etc., that
 # document -- line-by-line in some cases -- various components of the open source
 # runtime. These C files serve to show end users how containers work; some of
 # them are used explicitly during test suite runtime.

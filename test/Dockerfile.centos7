@@ -10,9 +10,12 @@ RUN yum -y install \
            bats \
            gcc \
            make \
-           python36 \
+           python27 \
+           python-sphinx \
+           python-sphinx_rtd_theme \
            rpm-build \
            rpmlint \
+           rsync \
            wget
 
 # Like apt(8), Yum/RPM like to chown(2), etc., if they believe they are root.
