@@ -93,7 +93,7 @@ EOF
 
 # This kludge is necessary due to the change of installation path for the
 # documentation, test, and example dirs from PR #448. This kludge will be
-# removed when the v0.10 spec file changes (issue #504) is resolved.
+# removed when the v0.10 spec file changes (issue #504) are resolved.
 %{__mv} %{buildroot}/%{_libexecdir}/%{name}-%{version} %{buildroot}%{_libexecdir}/%{name}
 %{__mv} %{buildroot}/%{_docdir}/%{name}-%{version} %{buildroot}%{_docdir}/%{name}
 
