@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+#include "charliecloud.h"
+
 void error_int(int retval, char *type, char *spec);
 void error_dirp(DIR *ptr, char *type, char *spec);
 void error_strud(struct dirent *ptr, char *type, char *spec);
@@ -17,12 +19,12 @@ void binder(char *ranch, char *corral);
 void remount(char *ranch);
 void linker(char *ranch, char *corral);
 
-int main(int argc, char **argv)
+int symlinkranch(char *im1, char *im2)
 {
-   error_com(argc,"Argument Count");
-   binder(argv[1], argv[2]);
-   remount(argv[1]);
-   linker(argv[1], argv[2]);
+   //error_com(argc,"Argument Count");
+   binder(im1, im2);
+   remount(im1);
+   linker(im1, im2);
    return 0;
 }
 
