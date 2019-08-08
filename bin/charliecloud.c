@@ -130,7 +130,7 @@ void bind_mount(char *src, char *dst, char *newroot,
 }
 
 /* Bind-mount a null-terminated array of struct bind objects. */
-void bind_mounts(struct bind *binds, char * newroot,
+void bind_mounts(struct bind *binds, char *newroot,
                  enum bind_dep dep, unsigned long flags)
 {
    for (int i = 0; binds[i].src != NULL; i++)
@@ -162,7 +162,6 @@ void containerize(struct container *c)
       join_namespaces(join.shared->winner_pid);
    if (c->join)
       join_end();
-
 }
 
 /* Enter the UDSS. After this, we are inside the UDSS.
