@@ -19,7 +19,7 @@ void binder(char *ranch, char *corral);
 void remount(char *ranch);
 void linker(char *ranch, char *corral);
 
-int symlinkranch(char *im1, char *im2)
+int symlink_ranch(char *im1, char *im2)
 {
    //error_com(argc,"Argument Count");
    binder(im1, im2);

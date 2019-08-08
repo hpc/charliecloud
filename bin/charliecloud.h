@@ -93,4 +93,4 @@ void msg(int level, char *file, int line, int errno_, char *fmt, ...);
 void run_user_command(char *argv[], char *initial_dir);
 void split(char **a, char **b, char *str, char del);
 void version(void);
-int symlinkranch(char *im1, char *im2);
+int symlink_ranch(char *im1, char *im2);
