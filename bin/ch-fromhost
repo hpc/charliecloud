@@ -35,6 +35,8 @@
 #   3. Here string, e.g. 'while IFS= read -r FILE; do ... done <<< "$FILES"'.
 #      This is a bashism.
 
+#Ranch trick from symlink-ranch must be done before this bash script
+
 libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/base.sh"
 

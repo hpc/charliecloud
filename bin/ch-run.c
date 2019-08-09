@@ -160,6 +160,16 @@ int main(int argc, char *argv[])
 
    fix_environment(&args);
    containerize(&args.c);
+/*Symlink-ranch placement must be after the namespaces are created to get
+the correct permissions as root.
+After containerize we still have a read-only image and need the ranch
+trick to account for ch-fromhost only taking in a read-write image
+in order to inject files into the image.
+
+With the ranching trick in this spot we will be able to convert the read-only image to a read-write to have a collaboration of symlinks to inject files
+as well as some tricks we have found in ch-fromhost to accout for inVidia and 
+cray images.
+*/
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }
