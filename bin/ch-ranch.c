@@ -1,5 +1,22 @@
 /*This is a work in progress process for its implementation into\
  Charliecloud.
+
+ Possible places for the Symlink-Ranch are inside ch-run to use
+ the namespaces needed.
+ 
+ Another possibility is at the beginning of ch-fromhost.
+ The two problems with this is [1] We do not want to make 
+ namespaces outside of ch-run. [2] There is no namespaces so the bind mount 
+ will fail because there is no root permissions. This is problamatic for being 
+ completely unpriviledged.
+
+ With the symlink-ranch we may be able to break up the function [option 3?] 
+ in some form to do mounting operations in ch-run and then symlinks in 
+ ch-fromhost.Error may arise when breaking the process apart along with 
+ other parts in play in charliecloud but it might be a viable option to avoid 
+ more namespaces.
+ We shall see. Goodluck to the next person to continue this cool
+ trick in progress.
 */
 #define  _GNU_SOURCE
 #include <stdio.h>
