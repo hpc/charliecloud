@@ -36,6 +36,7 @@
 #      This is a bashism.
 
 #Ranch trick from symlink-ranch must be done before this bash script
+#Since ch-fromhost is ran before ch-run we need to have a namespace to do #the ranch trick however, those are made in ch-run?
 
 libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/base.sh"
