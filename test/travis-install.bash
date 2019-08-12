@@ -14,14 +14,12 @@ if [[ $CH_BUILDER = ch-grow ]]; then
     sudo pip3 install lark-parser
 fi
 
-# Project Atomic PPA provides buggy Buildah for Xenial, and we need Kevin's
-# patched version, so build from source.
+# Project Atomic PPA provides buggy Buildah for Xenial, and we need Buildah's
+# unprivileged version, so build from source.
 if [[ $CH_BUILDER = buildah* ]]; then
-    if [[ $CH_BUILDER = buildah ]]; then
-        buildah_repo=https://github.com/hpc/buildah
-        buildah_branch=chown-error-tolerant-patch
+    buildah_repo=https://github.com/containers/buildah
+        buildah_branch=v1.10.1
     else
-        buildah_repo=https://github.com/containers/buildah
         buildah_branch=v1.9.0
     fi
     sudo add-apt-repository -y ppa:alexlarsson/flatpak
