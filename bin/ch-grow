@@ -107,6 +107,9 @@ state = None
 
 def main():
 
+   # ch-run must be built
+   if not os.path.exists("ch-run"):
+      FATAL("ch-run has not been built. Please run make in the top level directory.")
    global cli
    ap = argparse.ArgumentParser(
       formatter_class=argparse.RawDescriptionHelpFormatter,
