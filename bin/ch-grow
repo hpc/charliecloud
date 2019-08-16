@@ -14,10 +14,46 @@ import subprocess
 import sys
 import types
 
+
+## Logging functions ##
+
+# These are here so we can use them when we try to import lark.
+
+def DEBUG(*args, **kwargs):
+   if (cli.verbose):
+      color("36m", sys.stderr)
+      print(flush=True, file=sys.stderr, *args, **kwargs)
+      color("0m", sys.stderr)
+
+def FATAL(*args, **kwargs):
+   color("31m", sys.stderr)
+   print(flush=True, file=sys.stderr, *args, **kwargs)
+   color("0m", sys.stderr)
+   sys.exit(1)
+
+def INFO(*args, **kwargs):
+   print(flush=True, *args, **kwargs)
+
+def color(color, fp):
+   if (fp.isatty()):
+      print("\033[" + color, end="", flush=True, file=fp)
+
+
+## Import Lark ##
+
+# This is messy because:
+#
+# 1. There are two packages on PyPI that give a "lark" module.
+# 2. We need --version and --help even if Lark is not installed.
+
 try:
    import lark
+   try:
+      lark.Visitor
+   except AttributeError:
+      FATAL('bad dependency: found "lark" but need "lark-parser"')
 except ImportError:
-   # Friendly error later; kludge here so we can still get --version etc.
+   # Mock up a lark module so the rest of the file parses.
    m = types.ModuleType("lark")
    class Visitor_Mock(object):
       pass
@@ -528,21 +564,6 @@ class Version(argparse.Action):
 
 ## Supporting functions ###
 
-def DEBUG(*args, **kwargs):
-   if (cli.verbose):
-      color("36m", sys.stderr)
-      print(flush=True, file=sys.stderr, *args, **kwargs)
-      color("0m", sys.stderr)
-
-def FATAL(*args, **kwargs):
-   color("31m", sys.stderr)
-   print(flush=True, file=sys.stderr, *args, **kwargs)
-   color("0m", sys.stderr)
-   sys.exit(1)
-
-def INFO(*args, **kwargs):
-   print(flush=True, *args, **kwargs)
-
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
@@ -551,10 +572,6 @@ def cmd(args, env=None):
    color("0m", sys.stdout)
    if (cp.returncode):
       FATAL("%s failed with return code %d" % (args[0], cp.returncode))
-
-def color(color, fp):
-   if (fp.isatty()):
-      print("\033[" + color, end="", flush=True, file=fp)
 
 def cp(src, dst):
    DEBUG("copying: %s -> %s" % (src, dst))
