@@ -191,6 +191,21 @@ EOF2
     ch-run --version
   EOF
 
+  # Install ch-grow dependencies
+  c.vm.provision "ch-grow", type: "shell", privileged: true,
+                 inline: <<-EOF
+    yum -y install golang \
+                   go-md2man \
+                   python3.6 \
+                   python36-pip \
+                   skopeo
+
+    go get github.com/openSUSE/umoci
+    cd "/root/go/src/github.com/openSUSE/umoci" || exit 1
+    make VERSION=0.4.4 install
+    pip3 install lark-parser
+  EOF
+
   # Twiddle vagrant user so Charliecloud tests will pass (add to a second
   # group, and permit sudo to UID 0 and GID != 0).
   c.vm.provision "vagrant-user", type: "shell", privileged: true,
