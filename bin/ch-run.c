@@ -105,6 +105,11 @@ int main(int argc, char *argv[])
    int c_argc;
    char ** c_argv;
 
+   if (argc == 1) {
+      printf("Usage: ch-run \n");
+      exit(EXIT_SUCCESS);
+   }
+
    privs_verify_invoking();
 
    T_ (args.c.binds = calloc(1, sizeof(struct bind)));
