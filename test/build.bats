@@ -64,7 +64,7 @@ load common
     for i in "$ch_bin"/ch-*; do
         echo "shellcheck: ${i}"
         [[ ! $(file "$i") = *'shell script'* ]] && continue
-        shellcheck -e SC1090,SC2002,SC2154 "$i"
+        shellcheck -e SC1007,SC1090,SC2002,SC2154 "$i"
     done
     # libraries for user executables
     for i in "$ch_libexec"/*.sh; do
