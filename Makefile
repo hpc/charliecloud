@@ -8,7 +8,9 @@ export CFLAGS += -std=c11 -Wall -g
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
 #       only descend into test/ if the right Python is available
-	[ -z $(PYTHON) ] || cd test && $(MAKE) all
+	if [ -n $(PYTHON) ]; then \
+		cd test && $(MAKE) all; \
+	fi
 
 .PHONY: clean
 clean:
@@ -149,7 +151,9 @@ install: all
 	    done; \
 	fi
 #	install test suite and examples if the right python is found
-	[ -z $(PYTHON) ] || $(MAKE) install $(PREFIX) -C test
+	if [ -n $(PYTHON) ]; then \
+		$(MAKE) install $(PREFIX) -C test; \
+	fi
 
 .PHONY: deb
 deb:
