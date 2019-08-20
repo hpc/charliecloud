@@ -60,6 +60,8 @@ clean:
 	rm -f *_auto.bats
 	rm -f sotest/sotest sotest/libsotest.so*
 	rm -f sotest/bin/sotest sotest/lib/libsotest.so*
+	[ -d "${CH_TEST_TARDIR}" ] && rm -rf "${CH_TEST_TARDIR}" || :
+	[ -d "${CH_TEST_IMGDIR}" ] && rm -rf "${CH_TEST_IMGDIR}" || :
 
 .PHONY: where-bats
 where-bats:
