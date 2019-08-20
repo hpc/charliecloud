@@ -7,7 +7,7 @@ export CFLAGS += -std=c11 -Wall -g
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
-#       only descend into test/ if the right Python is available
+#      only descend into test/ if the right Python is available
 	if [ -n $(PYTHON) ]; then \
 		cd test && $(MAKE) all; \
 	fi
