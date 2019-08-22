@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
    fix_environment(&args);
    containerize(&args.c);
    run_user_command(c_argv, args.initial_dir); // should never return
-   exit(EXIT_SUCCESS);
+   exit(EXIT_FAILURE);
 }
 
 
