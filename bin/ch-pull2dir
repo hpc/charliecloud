@@ -18,13 +18,8 @@ EOF
     exit "${1:-1}"
 }
 
-if [ "$1" = "--help" ]; then
-    usage 0
-fi
-if [ "$1" = "--version" ]; then
-    version
-    exit 0
-fi
+parse_basic_args "$@"
+
 if [ "$#" -ne 2 ]; then
     usage
 fi

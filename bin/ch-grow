@@ -140,6 +140,11 @@ environment variables:
                    help="print version and exit")
    ap.add_argument("context", metavar="CONTEXT",
                    help="context directory")
+
+   if len(sys.argv) < 2:
+       ap.print_help(file=sys.stderr)
+       sys.exit(0)
+
    cli = ap.parse_args()
    if (cli.print_storage):
       print(cli.storage)

@@ -106,11 +106,6 @@ int main(int argc, char *argv[])
    int c_argc;
    char ** c_argv;
 
-   if (argc == 1) {
-      fprintf(stderr, usage);
-      exit(EXIT_FAILURE);
-   }
-
    privs_verify_invoking();
 
    T_ (args.c.binds = calloc(1, sizeof(struct bind)));
@@ -167,7 +162,7 @@ int main(int argc, char *argv[])
    fix_environment(&args);
    containerize(&args.c);
    run_user_command(c_argv, args.initial_dir); // should never return
-   exit(EXIT_FAILURE);
+   exit(EXIT_SUCCESS);
 }
 
 
@@ -444,6 +439,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case 'w':
       args->c.writable = true;
       break;
+   case ARGP_KEY_NO_ARGS:
+      argp_state_help(state, stderr, ARGP_HELP_STD_HELP);
+
    default:
       return ARGP_ERR_UNKNOWN;
    };

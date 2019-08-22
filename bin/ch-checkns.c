@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 
    if (argc == 1) {
       fprintf(stderr, usage);
-      exit(EXIT_FAILURE);
+      exit(EXIT_SUCCESS);
    }
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);

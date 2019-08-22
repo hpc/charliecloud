@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, usage);
       return 0;
    }
-   if ((argc == 1) || (argc >= 2 && strcmp(argv[1], "--help") == 0)) {
+   if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
       return 0;
    }
