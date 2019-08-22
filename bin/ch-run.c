@@ -36,7 +36,8 @@ Example:\n\
   $ ch-run /data/foo -- echo hello\n\
   hello\n\
 \n\
-You cannot use this program to actually change your UID.";
+You cannot use this program to actually change your UID.\n\
+\n";
 
 const char args_doc[] = "NEWROOT CMD [ARG...]";
 
@@ -106,8 +107,8 @@ int main(int argc, char *argv[])
    char ** c_argv;
 
    if (argc == 1) {
-      printf("Usage: ch-run \n");
-      exit(EXIT_SUCCESS);
+      fprintf(stderr, usage);
+      exit(EXIT_FAILURE);
    }
 
    privs_verify_invoking();

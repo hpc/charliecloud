@@ -11,6 +11,7 @@
 
 
 const char usage[] = "\
+\n\
 Usage: CH_RUN_ARGS=\"NEWROOT [ARG...]\" ch-ssh [OPTION...] HOST CMD [ARG...]\n\
 \n\
 Run a remote command in a Charliecloud container.\n\
@@ -24,7 +25,8 @@ Example:\n\
 Arguments to ch-run, including the image to activate, are specified in the\n\
 CH_RUN_ARGS environment variable. Important caveat: Words in CH_RUN_ARGS are\n\
 delimited by spaces only; it is not shell syntax. In particular, quotes and\n\
-and backslashes are not interpreted.\n";
+and backslashes are not interpreted.\n\
+\n";
 
 #define ARGS_MAX 262143  // assume 2MB buffer and length of each argument >= 7
 
@@ -35,7 +37,11 @@ int main(int argc, char *argv[])
    char *ch_run_args;
    char *args[ARGS_MAX+1];
 
-   if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
+   if (argc == 1) {
+      fprintf(stderr, usage);
+      return 0;
+   }
+   if ((argc == 1) || (argc >= 2 && strcmp(argv[1], "--help") == 0)) {
       fprintf(stderr, usage);
       return 0;
    }
