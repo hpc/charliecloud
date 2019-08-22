@@ -398,7 +398,7 @@ void msg(int level, char *file, int line, int errno_, char *fmt, ...)
       fprintf(stderr, " (%s:%d)\n", file, line);
 
    if (level == 0)
-      exit(EXIT_SUCCESS);
+      exit(EXIT_FAILURE);
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. */
