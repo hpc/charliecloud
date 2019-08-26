@@ -171,7 +171,32 @@ EOF2
     (cd shadow-4.6 && ./configure && sudo make install)
 
     # Install Buildah.
-    sudo yum -y install buildah
+    sudo yum -y install \
+    make \
+    golang \
+    bats \
+    btrfs-progs-devel \
+    device-mapper-devel \
+    glib2-devel \
+    gpgme-devel \
+    libassuan-devel \
+    libseccomp-devel \
+    ostree-devel \
+    bzip2 \
+    go-md2man \
+    runc 
+ 
+	mkdir buildah		
+	cd buildah 
+    export GOPATH=$PWD
+		
+	git clone https://github.com/hpc/buildah src/github.com/containers/buildah
+	pushd src/github.com/containers/buildah
+	git checkout chown-error-tolerant-patch
+	make 
+	sudo make install
+    popd
+    cd ..
 
     sudo tee /etc/profile.d/charliecloud.sh << 'EOF2'
 export CH_TEST_TARDIR=/var/tmp/tarballs
