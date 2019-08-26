@@ -182,7 +182,7 @@ Build and provision
 To build the VM and install Docker, Charliecloud, etc.::
 
   $ cd packaging/vagrant
-  $ CH_VERSION=v0.9.1 vagrant up
+  vagrant up
 
 This takes less than 5 minutes.
 
@@ -242,7 +242,7 @@ take effect (which is done in the next step).
 
 ::
 
-   $ CH_VERSION=v0.9.1 vagrant up
+   vagrant up
    $ vagrant provision --provision-with=ova
 
 Snapshot for distribution
