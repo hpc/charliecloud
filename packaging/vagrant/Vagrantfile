@@ -182,9 +182,11 @@ EOF2
     git clone --recursive https://github.com/hpc/charliecloud.git
 
     cd charliecloud
-    if [[ $CH_VERSION ]]; then
-      git checkout $CH_VERSION
+    if [[ -z $CH_VERSION ]]; then
+      CH_VERSION=$(git tag --sort=-version:refname --format='%(refname:strip=2)' | head -n 1)
     fi
+    git checkout $CH_VERSION
+
     make
     sudo make install PREFIX=/usr/local
     which ch-run
