@@ -15,7 +15,7 @@ import types
 
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
-OCI_VERSION_MIN = "1.0.0"
+OCI_VERSION_MIN = "1.0.1-dev"
 OCI_VERSION_MAX = "1.0.1-dev"
 
 args = None   # CLI Namespace

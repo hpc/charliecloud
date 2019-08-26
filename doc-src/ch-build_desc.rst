@@ -21,8 +21,8 @@ build environment if the builder doesn't do this by default).
 Supported builders, unprivileged:
 
   * :code:`buildah`: Buildah in "rootless" mode with no setuid helpers, using
-    :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions.
-    See the install instructions.
+    :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions. This
+    requires Buildah v1.10.1+; see the install instructions.
 
   * :code:`ch-grow`: Our internal builder.
 

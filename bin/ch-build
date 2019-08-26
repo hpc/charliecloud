@@ -11,7 +11,7 @@ Usage:
 
   $ $(basename "$0") [-b BUILDER] [--builder-info] -t TAG [ARGS ...] CONTEXT
 
-BUILDER is one of: ch-grow docker buildah.
+BUILDER is one of: buildah ch-grow docker.
 ARGS are passed unchanged to the underlying builder.
 EOF
 )
