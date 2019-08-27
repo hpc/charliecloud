@@ -1,6 +1,6 @@
 @test 'builder to archive %(tag)s' {
     scope %(scope)s
-    %(exclude)s
+    %(build_exclude)s
     %(need_docker)s
     if ( squashfs_ready ); then
         archive="${ch_tardir}/%(tag)s.sqfs"

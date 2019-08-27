@@ -43,6 +43,11 @@ Other arguments:
     Context directory; this is the root of :code:`COPY` and :code:`ADD`
     instructions in the Dockerfile.
 
+  :code:`--build-arg KEY[=VALUE]`
+    Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
+    to :code:`VALUE`. If :code:`VALUE` not specified, use the value of
+    environment variable :code:`KEY`.
+
   :code:`-f`, :code:`--file DOCKERFILE`
     Use :code:`DOCKERFILE` instead of :code:`CONTEXT/Dockerfile`.
 
@@ -51,6 +56,9 @@ Other arguments:
 
   :code:`-n`, :code:`--dry-run`
     Do not actually excute any Dockerfile instructions.
+
+  :code:`--no-cache`
+    Ignored (:code:`ch-grow` does not yet support layer caching).
 
   :code:`--parse-only`
     Stop after parsing the Dockerfile.

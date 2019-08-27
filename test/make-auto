@@ -59,10 +59,10 @@ for path in sys.argv[2:]:
          sys.exit(1)
       scope = m.group(1)
       # Exclusions.
-      exclude = "\n".join(itertools.chain(
-         (         "arch_exclude %s" % i
+      build_exclude = "\n".join(itertools.chain(
+         (         "arch_exclude %s " % i
           for i in re.findall(r"ch-test-arch-exclude: ([-\w]+)", text)),
-         (         "builder_exclude %s" % i
+         (         "builder_exclude %s %s" % (i, tag)
           for i in re.findall(r"ch-test-builder-exclude: ([-\w]+)", text))))
 
    # Build an archive: different test for each type.

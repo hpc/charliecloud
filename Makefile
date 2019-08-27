@@ -1,4 +1,5 @@
 SHELL=/bin/sh
+PYTHON=$(shell command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')")
 
 # Add some good stuff to CFLAGS.
 export CFLAGS += -std=c11 -Wall -g
@@ -6,9 +7,9 @@ export CFLAGS += -std=c11 -Wall -g
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
-#       only descend into test/ if the right Python is available
-	if (command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')"); then \
-	    cd test && $(MAKE) all; \
+#      only descend into test/ if the right Python is available
+	if [ -n $(PYTHON) ]; then \
+		cd test && $(MAKE) all; \
 	fi
 
 .PHONY: clean
@@ -111,9 +112,9 @@ DOCDIR ?= $(INSTALL_PREFIX)/share/doc/charliecloud-$(VERSION)
 # contains any executable helpers that are not needed in PATH. Default is
 # libexec/charliecloud which will be preprended with the PREFIX.
 LIBEXEC_DIR ?= libexec/charliecloud-$(VERSION)
-LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
-LIBEXEC_RUN := $(PREFIX)/$(LIBEXEC_DIR)
-TEST := $(LIBEXEC_INST)/test
+export LIBEXEC_INST := $(INSTALL_PREFIX)/$(LIBEXEC_DIR)
+LIBEXEC_RUN  := $(PREFIX)/$(LIBEXEC_DIR)
+export TEST  := $(LIBEXEC_INST)/test
 .PHONY: install
 install: all
 	@test -n "$(PREFIX)" || \
@@ -140,61 +141,18 @@ install: all
 	install -pm 644 -t $(DOCDIR) LICENSE README.rst
 #	html files if they were built
 	if [ -f doc/index.html ]; then \
-		cp -r doc $(DOCDIR)/html; \
-		rm -f $(DOCDIR)/html/.nojekyll; \
-		for i in $$(find $(DOCDIR)/html -type d); do \
-			chmod 755 $$i; \
-		done; \
-		for i in $$(find $(DOCDIR)/html -type f); do \
-			chmod 644 $$i; \
-		done; \
+	    cp -r doc $(DOCDIR)/html; \
+	    rm -f $(DOCDIR)/html/.nojekyll; \
+	    for i in $$(find $(DOCDIR)/html -type d); do \
+	        chmod 755 $$i; \
+	    done; \
+	    for i in $$(find $(DOCDIR)/html -type f); do \
+	        chmod 644 $$i; \
+	    done; \
 	fi
-#       examples
-	for i in examples/serial/* examples/mpi/* examples/other/*; do \
-	    install -d $(LIBEXEC_INST)/$$i; \
-	    install -pm 644 -t $(LIBEXEC_INST)/$$i $$i/*; \
-	done
-	chmod 755 $(LIBEXEC_INST)/examples/serial/hello/hello.sh \
-	          $(LIBEXEC_INST)/examples/*/*/*.sh
-	find $(LIBEXEC_INST)/examples -name Build -exec chmod 755 {} \;
-#       tests
-	install -d $(TEST) $(TEST)/run
-	install -pm 644 -t $(TEST) test/*.bats test/common.bash test/Makefile
-	install -pm 644 -t $(TEST)/run test/run/*.bats
-	install -pm 755 -t $(TEST) test/Build.*
-	install -pm 644 -t $(TEST) test/Dockerfile.* test/Docker_Pull.*
-	install -pm 644 -t $(TEST) test/*.patch
-	install -pm 755 -t $(TEST) test/docs-sane \
-                                   test/make-auto \
-                                   test/make-perms-test
-	install -d $(TEST)/chtest
-	install -pm 644 -t $(TEST)/chtest test/chtest/*
-	chmod 755 $(TEST)/chtest/Build \
-	          $(TEST)/chtest/*.py \
-	          $(TEST)/chtest/printns
-	ln -sf ../../../bin $(TEST)/bin
-#       shared library tests
-	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
-	install -pm 755 -t $(TEST)/sotest test/sotest/libsotest.so.1.0 \
-	                                  test/sotest/sotest
-	install -pm 644 -t $(TEST)/sotest test/sotest/files_inferrable.txt \
-	                                  test/sotest/libsotest.c \
-	                                  test/sotest/sotest.c
-	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so
-	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
-	install -pm 755 -t $(TEST)/sotest/bin test/sotest/bin/sotest
-	install -pm 755 -t $(TEST)/sotest/lib test/sotest/lib/libsotest.so.1.0
-#       Bats (if embedded)
-	if [ -d test/bats/bin ]; then \
-	    install -d $(TEST)/bats && \
-	    install -pm 644 -t $(TEST)/bats test/bats/CONDUCT.md \
-	                                    test/bats/LICENSE \
-	                                    test/bats/README.md && \
-	    install -d $(TEST)/bats/libexec && \
-	    install -pm 755 -t $(TEST)/bats/libexec test/bats/libexec/* && \
-	    install -d $(TEST)/bats/bin && \
-	    ln -sf ../libexec/bats $(TEST)/bats/bin/bats && \
-	    ln -sf bats/bin/bats $(TEST)/bats; \
+#	install test suite and examples if the right python is found
+	if [ -n $(PYTHON) ]; then \
+		$(MAKE) install $(PREFIX) -C test; \
 	fi
 
 .PHONY: deb

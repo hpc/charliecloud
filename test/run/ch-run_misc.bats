@@ -359,11 +359,12 @@ EOF
 
 @test 'ch-run --set-env from Dockerfile' {
     scope standard
-    prerequisites_ok debian9
-    img=${ch_imgdir}/debian9
+    prerequisites_ok argenv
+    img=${ch_imgdir}/argenv
 
     output_expected=$(cat <<'EOF'
-chse_dockerfile=foo
+chse_env1_df=env1
+chse_env2_df=env2 env1
 EOF
 )
 
@@ -561,9 +562,9 @@ EOF
 
     # Create an image skeleton.
     dirs=$(echo {dev,proc,sys})
-    files=$(echo etc/{group,hosts,passwd,resolv.conf})
+    files=$(echo etc/{group,passwd})
     # shellcheck disable=SC2116
-    files_optional=  # formerly for ch-ssh (#378), but leave infrastructure
+    files_optional=$(echo etc/{hosts,resolv.conf})
     mkdir -p "$img"
     for d in $dirs; do mkdir -p "${img}/$d"; done
     mkdir -p "${img}/etc" "${img}/home" "${img}/usr/bin" "${img}/tmp"

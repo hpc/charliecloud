@@ -4,15 +4,24 @@ setup () {
     scope full
     prerequisites_ok "$ch_tag"
 
-    # - One iteration because we just care about correctness, not performance.
-    #   (If we let the benchmark choose, there is an overwhelming number of
-    #   errors when MPI calls start failing, e.g. if CMA isn't working, and
-    #   this makes the test take really long.)
+    # - One iteration on most of these tests because we just care about 
+    #   correctness, not performance. (If we let the benchmark choose, 
+    #   there is an overwhelming number of errors when MPI calls start 
+    #   failing, e.g. if CMA isn't working, and this makes the test take 
+    #   really long.)
     #
     # - Large -npmin because we only want to test all cores.
     #
     imb_mpi1=/usr/local/src/mpi-benchmarks/src/IMB-MPI1
     imb_args="-iter 1 -npmin 1000000000"
+
+    # - On the test we do care about performance we want to run multiple
+    #   iterations to reduce variablility. The benchmark will automatically
+    #   scale down the number of iterations based on the expected run time,
+    #   disabling that so we get more consistent results. Npmin is ommitted
+    #   as we are only running with two processes, one per node.
+    #
+    imb_perf_args="-iter 100 -iter_policy off"
 }
 
 check_errors () {
@@ -71,6 +80,28 @@ check_process_ct () {
 
 @test "${ch_tag}/crayify image" {
     crayify_mpi_or_skip "$ch_img"
+}
+
+# This test compares OpenMPI's point to point bandwidth with all high speed
+# plugins enabled against the performance just using tcp. If the performance of
+# the former is not at least double that of tcp the former's performance is
+# assumed to be lacking.
+@test "${ch_tag}/using the high-speed network (host launch)" {
+    multiprocess_ok
+    [[ $SLURM_NNODES = "1" ]] && skip "Multinode only"
+    [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
+    # shellcheck disable=SC2086
+    hsn_enabled_bw=$($ch_mpirun_2 ch-run "$ch_img" -- \
+                     "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \
+                     | sort -nrk6 | head -1 | awk '{print $6}')
+    disable_hsn_openmpi
+    # shellcheck disable=SC2086
+    hsn_disabled_bw=$($ch_mpirun_2 ch-run "$ch_img" -- \
+                      "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \
+                      | sort -nrk6 | head -1 | awk '{print $6}')
+    echo "Max bandwidth with high speed network: $hsn_enabled_bw MB/s"
+    echo "Max bandwidth without high speed network: $hsn_disabled_bw MB/s"
+    [[ ${hsn_disabled_bw%\.*} -lt $((${hsn_enabled_bw%\.*} / 2)) ]]
 }
 
 @test "${ch_tag}/pingpong (host launch)" {
