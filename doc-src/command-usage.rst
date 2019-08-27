@@ -48,12 +48,12 @@ Create a SquashFS file from an image directory.
 
 .. include:: ./ch-dir2squash_desc.rst
 
-ch-docker2squash
-++++++++++++++++
+ch-builder2squash
++++++++++++++++++
 
 Flatten a Docker image into a Charliecloud SquashFS file.
 
-.. include:: ./ch-docker2squash_desc.rst
+.. include:: ./ch-builder2squash_desc.rst
 
 ch-fromhost
 +++++++++++

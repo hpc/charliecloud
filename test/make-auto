@@ -83,7 +83,7 @@ for path in sys.argv[2:]:
             need_docker = "need_docker %s" % tag
          else:
             need_docker = ""
-         template += "\n\n" + get_template('docker_to_archive.bats.in')
+         template += "\n\n" + get_template('builder_to_archive.bats.in')
       else:
          assert False, "unknown build type"
       print("\n" + template % locals())

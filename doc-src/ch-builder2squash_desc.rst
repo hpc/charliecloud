@@ -3,7 +3,7 @@ Synopsis
 
 ::
 
-  $ ch-docker2squash IMAGE OUTDIR [ARGS ...]
+  $ ch-builder2squash [-b BUILDER] IMAGE OUTDIR [ARGS ...]
 
 Description
 ===========
@@ -11,7 +11,7 @@ Description
 Flattens the Docker image tagged :code:`IMAGE` into a SquashFS file in
 :code:`OUTDIR`.
 
-Wrapper for :code:`ch-docker2tar --nocompress` and :code:`ch-tar2sqfs`.
+Wrapper for :code:`ch-builder2tar --nocompress` and :code:`ch-tar2sqfs`.
 Intermediate files and directories are removed.
 
 Sudo privileges are required to run :code:`docker export`.
@@ -34,7 +34,7 @@ Example
   $ docker image list | fgrep debian
   REPOSITORY   TAG       IMAGE ID       CREATED      SIZE
   debian       stretch   2d337f242f07   3 weeks ago  101MB
-  $ ch-docker2squash debian /var/tmp
+  $ ch-builder2squash debian /var/tmp
   Parallel mksquashfs: Using 6 processors
   Creating 4.0 filesystem on /var/tmp/debian.sqfs, block size 131072.
   [...]
