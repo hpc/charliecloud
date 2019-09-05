@@ -171,29 +171,28 @@ EOF2
     (cd shadow-4.6 && ./configure && sudo make install)
 
     # Install Buildah.
-    sudo yum -y install \
-    make \
-    golang \
-    bats \
-    btrfs-progs-devel \
-    device-mapper-devel \
-    glib2-devel \
-    gpgme-devel \
-    libassuan-devel \
-    libseccomp-devel \
-    ostree-devel \
-    bzip2 \
-    go-md2man \
-    runc 
- 
-	mkdir buildah		
-	cd buildah 
+    sudo yum -y install bats \
+                        btrfs-progs-devel \
+                        bzip2 \
+                        device-mapper-devel \
+                        glib2-devel \
+                        golang \
+                        go-md2man \
+                        gpgme-devel \
+                        libassuan-devel \
+                        libseccomp-devel \
+                        make \
+                        ostree-devel \
+                        runc
+
+	mkdir buildah
+	cd buildah
     export GOPATH=$PWD
-		
+
 	git clone https://github.com/hpc/buildah src/github.com/containers/buildah
 	pushd src/github.com/containers/buildah
 	git checkout chown-error-tolerant-patch
-	make 
+	make
 	sudo make install
     popd
     cd ..
@@ -219,15 +218,14 @@ EOF2
   # Install ch-grow dependencies
   c.vm.provision "ch-grow", type: "shell", privileged: true,
                  inline: <<-EOF
-    yum -y install golang \
-                   go-md2man \
-                   python3.6 \
+    yum -y install python3.6 \
                    python36-pip \
                    skopeo
-
-    go get github.com/openSUSE/umoci
-    cd "/root/go/src/github.com/openSUSE/umoci" || exit 1
-    make VERSION=0.4.4 install
+    set -e
+    wget https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64
+    chmod 755 umoci.amd64
+    mv umoci.amd64 /usr/bin/umoci
+    umoci --version
     pip3 install lark-parser
   EOF
 
