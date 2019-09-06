@@ -166,7 +166,7 @@ EOF2
 
     sudo tee /etc/profile.d/charliecloud.sh << 'EOF2'
 export CH_TEST_TARDIR=/var/tmp/tarballs
-axport CH_TEST_IMGDIR=/var/tmp/images
+export CH_TEST_IMGDIR=/var/tmp/images
 export CH_TEST_PERMDIRS=skip
 EOF2
 
