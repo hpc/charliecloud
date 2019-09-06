@@ -5,7 +5,7 @@ Source: https://github.com/hpc/charliecloud
 Files-Excluded: debian
 
 Files: *
-Copyright: 2014–2018 Los Alamos National Security, LLC
+Copyright: 2014–2019 Triad National Security, LLC
 License: Apache-2.0
 
 Files: debian/*
