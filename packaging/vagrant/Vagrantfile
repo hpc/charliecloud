@@ -164,39 +164,6 @@ EOF2
     cd /usr/local/src
     sudo chmod 1777 .
 
-    # CentOS/EPEL/IUI don't have the version of shadow-utils (newuidmap and
-    # newgidmap) we need for runc (used by Buildah), so install from source.
-    wget -nv https://github.com/shadow-maint/shadow/releases/download/4.6/shadow-4.6.tar.xz
-    tar xf shadow-4.6.tar.xz
-    (cd shadow-4.6 && ./configure && sudo make install)
-
-    # Install Buildah.
-    sudo yum -y install bats \
-                        btrfs-progs-devel \
-                        bzip2 \
-                        device-mapper-devel \
-                        glib2-devel \
-                        golang \
-                        go-md2man \
-                        gpgme-devel \
-                        libassuan-devel \
-                        libseccomp-devel \
-                        make \
-                        ostree-devel \
-                        runc
-
-	mkdir buildah
-	cd buildah
-    export GOPATH=$PWD
-
-	git clone https://github.com/hpc/buildah src/github.com/containers/buildah
-	pushd src/github.com/containers/buildah
-	git checkout chown-error-tolerant-patch
-	make
-	sudo make install
-    popd
-    cd ..
-
     sudo tee /etc/profile.d/charliecloud.sh << 'EOF2'
 export CH_TEST_TARDIR=/var/tmp/tarballs
 export CH_TEST_IMGDIR=/var/tmp/images
@@ -215,18 +182,63 @@ EOF2
     ch-run --version
   EOF
 
-  # Install ch-grow dependencies
-  c.vm.provision "ch-grow", type: "shell", privileged: true,
+  # Install Buildah.
+  c.vm.provision "ch-grow", type: "shell", privileged: false,
                  inline: <<-EOF
-    yum -y install python3.6 \
+    cd /usr/local/src
+
+    # CentOS/EPEL/IUI don't have the version of shadow-utils (newuidmap and
+    # newgidmap) we need for runc (used by Buildah), so install from source.
+    wget -nv https://github.com/shadow-maint/shadow/releases/download/4.6/shadow-4.6.tar.xz
+    tar xf shadow-4.6.tar.xz
+    (cd shadow-4.6 && ./configure && sudo make install)
+
+    sudo yum -y install bats \
+                        btrfs-progs-devel \
+                        bzip2 \
+                        device-mapper-devel \
+                        glib2-devel \
+                        gpgme-devel \
+                        libassuan-devel \
+                        libseccomp-devel \
+                        make \
+                        ostree-devel \
+                        runc
+
+    # go and go-md2man are installed in /usr/bin (fedora/epel install path) to
+    # ensure that the epel skopeo package detects them; otherwise yum may
+    # redundantly install the older yum golang and go-md2man variants
+    wget https://dl.google.com/go/go1.13.linux-amd64.tar.gz
+    tar xf go1.13.linux-amd64.tar.gz
+    sudo mv go1.13.linux-amd64/bin/go /usr/bin/go
+    sudo mv ./go /usr/local/go
+
+    go get github.com/cpuguy83/go-md2man/archive/v1.0.10.tar.gz
+    sudo mv go-md2man/bin/go-md2man /usr/bin/go-md2man
+
+	mkdir buildah
+    export GOPATH=$(readlink -f buildah)
+
+	git clone https://github.com/hpc/buildah ${GOPATH}/src/github.com/containers/buildah
+	cd ./buildah/src/github.com/containers/buildah
+	git checkout chown-error-tolerant-patch
+	make
+	sudo make install
+  EOF
+
+  # Install ch-grow dependencies.
+  c.vm.provision "ch-grow", type: "shell", privileged: false,
+                 inline: <<-EOF
+    cd /usr/local/src
+    sudo yum -y install python3.6 \
                    python36-pip \
                    skopeo
     set -e
     wget https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64
-    chmod 755 umoci.amd64
-    mv umoci.amd64 /usr/bin/umoci
+    sudo chmod 755 umoci.amd64
+    sudo mv umoci.amd64 /usr/bin/umoci
     umoci --version
-    pip3 install lark-parser
+    sudo pip3 install lark-parser
   EOF
 
   # Twiddle vagrant user so Charliecloud tests will pass (add to a second
