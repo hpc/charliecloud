@@ -230,7 +230,7 @@ man_pages = [
     "Build a Charliecloud image from Dockerfile and unpack it into a directory",
     [], 1),
    ("ch-builder2squash", "ch-builder2squash",
-    "Flatten a Docker image into a Charliecloud SquashFS file",
+    "Flatten a builder image into a Charliecloud SquashFS file",
     [], 1),
    ("ch-builder2tar", "ch-builder2tar",
     "Flatten a builder image into a Charliecloud image tarball",

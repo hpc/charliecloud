@@ -9,7 +9,7 @@ Flatten a Docker image into a Charliecloud SquashFS file.
 
 Usage:
 
-  $ $(basename "$0") IMAGE OUTDIR [ARGS ...]
+  $ $(basename "$0") [-b BUILDER] IMAGE OUTDIR [ARGS ...]
 
 You must have sufficient privilege (via sudo) to run the Docker commands.
 EOF
