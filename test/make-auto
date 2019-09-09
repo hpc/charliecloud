@@ -69,10 +69,10 @@ for path in sys.argv[2:]:
    if (mode == "build"):
       if ("Build" in basename):
          template = get_template('build_custom.bats.in')
-      elif ("Dockerfile" in basename or "Docker_Pull" in basename):
+      elif ("Docker" in basename):
          if ("Dockerfile" in basename):
             unpack_needs_docker = False
-            template = get_template('build_docker.bats.in')
+            template = get_template('build.bats.in')
          else:
             assert ("Docker_Pull" in basename)
             unpack_needs_docker = True
@@ -83,7 +83,7 @@ for path in sys.argv[2:]:
             need_docker = "need_docker %s" % tag
          else:
             need_docker = ""
-         template += "\n\n" + get_template('builder_to_archive.bats.in')
+            template += "\n\n" + get_template('builder_to_archive.bats.in')
       else:
          assert False, "unknown build type"
       print("\n" + template % locals())
