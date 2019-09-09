@@ -8,7 +8,7 @@ Synopsis
 Description
 ===========
 
-Flattens the Docker image tagged :code:`IMAGE` into a SquashFS file in
+Flattens the builder image tagged :code:`IMAGE` into a SquashFS file in
 :code:`OUTDIR`.
 
 Wrapper for :code:`ch-builder2tar --nocompress` and :code:`ch-tar2sqfs`.

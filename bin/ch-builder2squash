@@ -5,7 +5,7 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Flatten a Docker image into a Charliecloud SquashFS file.
+Flatten a builder image into a Charliecloud SquashFS file.
 
 Usage:
 

@@ -51,7 +51,7 @@ Create a SquashFS file from an image directory.
 ch-builder2squash
 +++++++++++++++++
 
-Flatten a Docker image into a Charliecloud SquashFS file.
+Flatten a builder image into a Charliecloud SquashFS file.
 
 .. include:: ./ch-builder2squash_desc.rst
 
