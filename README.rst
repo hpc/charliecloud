@@ -84,18 +84,26 @@ We are friendly and welcoming of diversity on all dimensions.
 Copyright and license
 ---------------------
 
-Charliecloud is copyright © 2014–2018 Los Alamos National Security, LLC. This
-software has been approved for open source release, LA-CC 14-096.
+Charliecloud is copyright © 2014–2019 Triad National Security, LLC.
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not
-use this software except in compliance with the License. A copy of the license
-is included in file LICENSE.
+This software was produced under U.S. Government contract 89233218CNA000001
+for Los Alamos National Laboratory (LANL), which is operated by Triad National
+Security, LLC for the U.S. Department of Energy/National Nuclear Security
+Administration.
 
-This material was produced under U.S. Government contract DE-AC52-06NA25396
-for Los Alamos National Laboratory (LANL), which is operated by Los Alamos
-National Security, LLC for the U.S. Department of Energy. The U.S. Government
-has rights to use, reproduce, and distribute this software. NEITHER THE
-GOVERNMENT NOR LOS ALAMOS NATIONAL SECURITY, LLC MAKES ANY WARRANTY, EXPRESS
-OR IMPLIED, OR ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE. If software
-is modified to produce derivative works, such modified software should be
-clearly marked, so as not to confuse it with the version available from LANL.
+This is open source software (LA-CC 14-096); you can redistribute it and/or
+modify it under the terms of the Apache License, Version 2.0. A copy is
+included in file LICENSE. You may not use this software except in compliance
+with the license.
+
+The Government is granted for itself and others acting on its behalf a
+nonexclusive, paid-up, irrevocable worldwide license in this material to
+reproduce, prepare derivative works, distribute copies to the public, perform
+publicly and display publicly, and to permit others to do so.
+
+Neither the government nor Triad National Security, LLC makes any warranty,
+express or implied, or assumes any liability for use of this software.
+
+If software is modified to produce derivative works, such derivative works
+should be clearly marked, so as not to confuse it with the version available
+from LANL.
