@@ -1,9 +1,15 @@
 #!/bin/bash
 
-# grep(1) has options to support what we're doing with find(1), but I can't
-# get them to work with rooted directories, e.g., test/bats vs bats anywhere
-# in the tree. You may hear complaints about how find is too slow for this,
-# but the project is small enough we don't care.
+# The purpose of this script is to make it more convenient to search the
+# project source code. It's a wrapper for grep(1) to exclude directories that
+# yield a ton of false positives, in particular the documentation's JavaScript
+# index that is one line thousands of characters long. It's tedious to derive
+# the exclusions manually each time.
+#
+# grep(1) has an --exclude-dir option, but I can't get it to work with rooted
+# directories, e.g., test/bats vs bats anywhere in the tree, so we use find(1)
+# instead. You may hear complaints about how find is too slow for this, but
+# the project is small enough we don't care.
 
 cd "$(dirname "$0")"/..
 
@@ -16,5 +22,3 @@ find . \(    -path ./.git \
        \) -prune \
        -o -type f \
        -exec grep --color=auto -Hn "$@" {} \;
-
-#grep -r --exclude-dir=./test/bats "$@" .
