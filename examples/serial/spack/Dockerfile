@@ -20,6 +20,10 @@ RUN apt-get install -y \
     python-pkg-resources \
     unzip
 
+# Certain Spack packages (e.g., tar) puke if they detect themselves being
+# configured as UID 0. This is the override. See issue #540.
+ARG FORCE_UNSAFE_CONFIGURE=1
+
 # Install Spack. This follows the documented procedure to run it out of the
 # source directory. There apparently is no "make install" type operation to
 # place it at a standard path ("spack clone" simply clones another working
