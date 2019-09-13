@@ -40,6 +40,8 @@ Systems used for running images need:
   or higher.
 
 * C11 compiler and standard library
+  
+* GNU automake and autoconf
 
 * POSIX.1-2017 shell and utilities
 
@@ -293,9 +295,17 @@ The recommended download method is :code:`git clone --recursive`.
 Build
 -----
 
-To build, simply::
+To build, use::
 
+  $ ./configure
   $ make
+
+  ./confgure has several options that can be specified at build time
+  --enable-docs (Build the docs)
+  --enable-tests (Build the test suite)
+  --disable-docker (Disable docker support)
+  --disable-chgrow (Disable ch-grow support)
+  --disable-buildah (Disable buildah support) 
 
 To build the documentation, see :ref:`the contributor's guide <doc-build>`.
 
@@ -308,9 +318,13 @@ will work.
 
 To install (FHS-compliant)::
 
-  $ make install PREFIX=/foo/bar
+  $ make install --prefix=/foo/bar
 
-Note that :code:`PREFIX` is required. It does not default to
+If building a package for charliecloud, use :DISTDIR to specify the working directory
+
+  $ make install --prefix=/foo/bar --DISTDIR=/foo/package_location
+
+Note that :code:`prefix` is required. It does not default to
 :code:`/usr/local` like many packages.
 
 
