@@ -36,8 +36,7 @@ Example:\n\
   $ ch-run /data/foo -- echo hello\n\
   hello\n\
 \n\
-You cannot use this program to actually change your UID.\n\
-\n";
+You cannot use this program to actually change your UID.\n";
 
 const char args_doc[] = "NEWROOT CMD [ARG...]";
 
@@ -440,8 +439,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.writable = true;
       break;
    case ARGP_KEY_NO_ARGS:
-      argp_state_help(state, stderr, ARGP_HELP_STD_HELP);
-
+      argp_state_help(state, stderr, ARGP_HELP_PRE_DOC | ARGP_HELP_LONG | ARGP_HELP_POST_DOC);
+      exit(EXIT_FAILURE);
    default:
       return ARGP_ERR_UNKNOWN;
    };

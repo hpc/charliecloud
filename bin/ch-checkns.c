@@ -60,8 +60,7 @@ Check \"ch-run\" prerequisites, e.g., namespaces and \"pivot_root(2)\".\n\
 Example:\n\
 \n\
   $ ch-checkns\n\
-  ok\n\
-\n";
+  ok\n";
 
 #define TRY(x) if (x) fatal_errno(__LINE__)
 
@@ -77,11 +76,11 @@ int main(int argc, char *argv[])
 
    if (argc == 1) {
       fprintf(stderr, usage);
-      exit(EXIT_SUCCESS);
+      return 1;
    }
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
-      exit(EXIT_SUCCESS);
+      return 1;
    }
    if (argc >= 2 && strcmp(argv[1], "--version") == 0) {
       version();

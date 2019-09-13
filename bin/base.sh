@@ -28,7 +28,7 @@ builder_choose () {
 
 parse_basic_args () {
     if [ "$#" -eq 0 ]; then
-        usage 0
+        usage 1
     fi
     for i in "$@"; do
         if [ "$i" = --help ]; then

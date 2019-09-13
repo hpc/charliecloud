@@ -76,7 +76,7 @@ def args_parse():
 
    if len(sys.argv) < 2:
       ap.print_help(file=sys.stderr)
-      sys.exit(0)
+      sys.exit(1)
 
    # Ridiculous kludge to print version number.
    if (args_.version):

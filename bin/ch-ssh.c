@@ -25,8 +25,7 @@ Example:\n\
 Arguments to ch-run, including the image to activate, are specified in the\n\
 CH_RUN_ARGS environment variable. Important caveat: Words in CH_RUN_ARGS are\n\
 delimited by spaces only; it is not shell syntax. In particular, quotes and\n\
-and backslashes are not interpreted.\n\
-\n";
+and backslashes are not interpreted.\n";
 
 #define ARGS_MAX 262143  // assume 2MB buffer and length of each argument >= 7
 
@@ -39,15 +38,15 @@ int main(int argc, char *argv[])
 
    if (argc == 1) {
       fprintf(stderr, usage);
-      return 0;
+      exit(EXIT_FAILURE);
    }
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
-      return 0;
+      exit(EXIT_SUCCESS);
    }
    if (argc >= 2 && strcmp(argv[1], "--version") == 0) {
       version();
-      return 0;
+      exit(EXIT_SUCCESS);
    }
 
    memset(args, 0, sizeof(args));

@@ -46,7 +46,7 @@ load common
         # Executables print usage when run without arugments
         run "$i"
         echo "$output"
-        [[ $status -eq 0 ]]
+        [[ $status -eq 1 ]]
         [[ $output = *'sage:'* ]]
         # not setuid or setgid
         ls -l "$i"
