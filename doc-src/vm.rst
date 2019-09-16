@@ -182,11 +182,13 @@ Build and provision
 To build the VM and install Docker, Charliecloud, etc.::
 
   $ cd packaging/vagrant
-  vagrant up
+  $ vagrant up
 
 This takes less than 5 minutes.
+This pulls the newest tagged version of charliecloud. Prepend CH_VERSION to vagrant up for a particular version.::
 
-If you want the head of the master branch, omit :code:`CH_VERSION`.
+  $ CH_VERSION=0.10 vagrant up 
+  $ CH_VERSION=master vagrant up
 
 Then, optionally run the Charliecloud tests::
 
@@ -242,7 +244,7 @@ take effect (which is done in the next step).
 
 ::
 
-   vagrant up
+   $ vagrant up
    $ vagrant provision --provision-with=ova
 
 Snapshot for distribution
