@@ -184,6 +184,7 @@ EOF2
     cd charliecloud
     if [[ -z $CH_VERSION ]]; then
       CH_VERSION=$(git tag --sort=-version:refname --format='%(refname:strip=2)' | head -n 1)
+    fi
     echo "Checking out charliecloud-$CH_VERSION"
     git checkout $CH_VERSION
     make
