@@ -24,16 +24,18 @@ if [[ $CH_BUILDER = buildah* ]]; then
     sudo apt-get -y install libapparmor-dev libdevmapper-dev libglib2.0-dev \
                             libgpgme11-dev libostree-dev libseccomp-dev \
                             libselinux1-dev skopeo-containers go-md2man
+    sudo apt-get -y install golang-1.10
     sudo apt-get --purge autoremove
     command -v go && go version
     mkdir /usr/local/src/go
     pushd /usr/local/src/go
     export GOPATH=$PWD
+    export GOROOT=/usr/lib/go-1.10
     git clone $buildah_repo src/github.com/containers/buildah
     cd src/github.com/containers/buildah
     git checkout $buildah_branch
-    make runc all SECURITYTAGS="apparmor seccomp"
-    sudo make install install.runc
+    PATH=/usr/lib/go-1.10/bin:$PATH make runc all SECURITYTAGS="apparmor seccomp"
+    sudo -E PATH=/usr/lib/go-1.10/bin:"$PATH" make install install.runc
     command -v buildah && buildah --version
     command -v runc && runc --version
     cat <<'EOF' | sudo tee /etc/containers/registries.conf
