@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Charliecloud command reference &mdash; Charliecloud 0.10 documentation</title>
+  <title>4. Charliecloud command reference &mdash; Charliecloud 0.11 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                177a708
+                ce30e34
               </div>
             
           
@@ -844,11 +844,17 @@ directories.</p>
 <dt><code class="code docutils literal notranslate"><span class="pre">CONTEXT</span></code></dt><dd><p>Context directory; this is the root of <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> and <code class="code docutils literal notranslate"><span class="pre">ADD</span></code>
 instructions in the Dockerfile.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--build-arg</span> <span class="pre">KEY[=VALUE]</span></code></dt><dd><p>Set build-time variable <code class="code docutils literal notranslate"><span class="pre">KEY</span></code> defined by <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> instruction
+to <code class="code docutils literal notranslate"><span class="pre">VALUE</span></code>. If <code class="code docutils literal notranslate"><span class="pre">VALUE</span></code> not specified, use the value of
+environment variable <code class="code docutils literal notranslate"><span class="pre">KEY</span></code>.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-f</span></code>, <code class="code docutils literal notranslate"><span class="pre">--file</span> <span class="pre">DOCKERFILE</span></code></dt><dd><p>Use <code class="code docutils literal notranslate"><span class="pre">DOCKERFILE</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">CONTEXT/Dockerfile</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-h</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt><dd><p>Print help and exit.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-n</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt><dd><p>Do not actually excute any Dockerfile instructions.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code></dt><dd><p>Ignored (<code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> does not yet support layer caching).</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--parse-only</span></code></dt><dd><p>Stop after parsing the Dockerfile.</p>
 </dd>
@@ -1761,7 +1767,7 @@ Remove empty <code class="code docutils literal notranslate"><span class="pre">M
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014–2018, Los Alamos National Security, LLC
+        &copy; Copyright 2014–2019, Triad National Security, LLC
 
     </p>
   </div> 

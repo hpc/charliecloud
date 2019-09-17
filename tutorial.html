@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Tutorial &mdash; Charliecloud 0.10 documentation</title>
+  <title>3. Tutorial &mdash; Charliecloud 0.11 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                177a708
+                ce30e34
               </div>
             
           
@@ -793,9 +793,6 @@ this with two chained Dockerfiles. First, we build a basic Debian image
 (<code class="code docutils literal notranslate"><span class="pre">test/Dockerfile.debian9</span></code>):</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
 
-<span class="k">ENV</span> chse_dockerfile foo
-<span class="k">ENV</span> DEBIAN_FRONTEND noninteractive
-
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
     <span class="o">&amp;&amp;</span> apt-get install -y apt-utils
 </pre></div>
@@ -1446,7 +1443,7 @@ your site administrators for the latter.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014–2018, Los Alamos National Security, LLC
+        &copy; Copyright 2014–2019, Triad National Security, LLC
 
     </p>
   </div> 
