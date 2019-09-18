@@ -45,12 +45,15 @@ if [ ! -e "$outdir" ]; then
     echo "output directory: ${outdir} does not exist" 1>&2
     exit 1
 fi
+
 # mktemp is used for intermediate files to avoid heavy metadata loads on
 # certain filesystems
 temp=$(mktemp -d --tmpdir ch-builder2squash.XXXXXX)
 # Get image as a directory
 "${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" --nocompress "$image" "$temp"
+
 image=$(echo "$image" | sed 's/\//./g')
+
 "${ch_bin}/ch-tar2dir" "${temp}/${image}.tar" "$temp"
 # Create squashfs, and clean up intermediate files and folders.
 "${ch_bin}/ch-dir2squash" "${temp}/${image}" "$outdir" "$@"
