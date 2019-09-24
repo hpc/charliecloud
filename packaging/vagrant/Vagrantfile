@@ -168,6 +168,7 @@ EOF2
 export CH_TEST_TARDIR=/var/tmp/tarballs
 export CH_TEST_IMGDIR=/var/tmp/images
 export CH_TEST_PERMDIRS=skip
+export CH_TEST_SCOPE=standard
 EOF2
 
     git clone --recursive https://github.com/hpc/charliecloud.git
@@ -194,20 +195,13 @@ EOF2
     tar xf shadow-4.6.tar.xz
     (cd shadow-4.6 && ./configure && sudo make install)
 
-    # go 1.13 is installed in /usr/bin (fedora/epel install path) to
-    # ensure that the go dependent packages detects ot; otherwise yum may
-    # redundantly install the older 1.11 version.
-    wget https://dl.google.com/go/go1.13.linux-amd64.tar.gz
-    tar xf go1.13.linux-amd64.tar.gz
-    sudo mv go/bin/go /usr/bin/go
-    sudo mv go /usr/local/go
-
     sudo yum -y install bats \
                         btrfs-progs-devel \
                         bzip2 \
                         device-mapper-devel \
                         glib2-devel \
-                        go-lang \
+                        golang \
+                        go-md2man \
                         gpgme-devel \
                         libassuan-devel \
                         libseccomp-devel \
@@ -217,9 +211,9 @@ EOF2
 
     mkdir buildah
     export GOPATH=$(readlink -f buildah)
-    git clone https://github.com/hpc/buildah ${GOPATH}/src/github.com/containers/buildah
-    cd ./buildah/src/github.com/containers/buildah
-    git checkout chown-error-tolerant-patch
+    git clone https://github.com/containers/buildah ${GOPATH}/src/github.com/containers/buildah
+    cd ${GOPATH}/src/github.com/containers/buildah
+    git checkout v1.11.2
     make
     sudo make install
   EOF
@@ -311,7 +305,6 @@ EOF2
   # Note: This will grow the image quite a bit. Don't run it before taking the
   # snapshot to be distributed to end users.
   c.vm.provision "test", type: "shell", run: "never", privileged: false,
-                 env: { "CH_TEST_SCOPE" => "full" },
                  inline: <<-EOF
     set -e
     if ( id -u charlie 2>/dev/null ); then  # issue #309
