@@ -80,14 +80,14 @@ Additional dependencies for specific components:
 Buildah (privileged or unprivileged)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Charliecloud can use the "rootless" mode of stock Buildah, which requires the
-setuid (i.e., privileged) helpers :code:`newuidmap` and :code:`newgidmap`.
+Charliecloud uses Buildah's "rootless" mode and ignore-chown-errors storage 
+configuration to acheive a fully unprivileged workflow. If an image with 
+multpile user mappings is pulled using this method, all file permissions will
+be remapped to a single user (root). This requires Buildah v1.10.1 or newer. 
 
-For a fully unprivileged workflow, Charliecloud can also use a patched Buildah
-that does not require the setuid helpers. You need branch
-:code:`chown-error-tolerant-patch` from `our fork of Buildah
-<https://github.com/hpc/buildah>`_. (We are working with Buildah upstream to
-merge our patches.)
+For a privileged workflow, Charliecloud can also use Buildah with setuid
+helpers :code:`newuidmap` and :code:`newgidmap`. This will not remap the file 
+permissions to root.
 
 .. note::
 
