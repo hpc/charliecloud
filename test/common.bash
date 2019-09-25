@@ -6,6 +6,24 @@ arch_exclude () {
     fi
 }
 
+archive_grep () {
+    image="$1"
+    case $image in
+        *.sqfs)
+            unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
+            ;;
+        *)
+            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
+            ;;
+    esac
+}
+
+archive_ok () {
+    ls -ld "$1" || true
+    test -f "$1"
+    test -s "$1"
+}
+
 builder_exclude () {
     # $1: builder to exclude
     # $2: tag for prerequisites file
@@ -19,6 +37,14 @@ builder_exclude () {
         touch "$pq"
         skip "unsupported builder: $CH_BUILDER"
     fi
+}
+
+builder_ok () {
+    # FIXME: Currently we make fairly limited tagging for some builders.
+    # Uncomment below when they can be supported by all the builders.
+    #docker_tag_p "$1"
+    builder_tag_p "${1}:latest"
+    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 builder_tag_p () {
@@ -47,14 +73,6 @@ builder_tag_p () {
     esac
     echo 'not found'
     return 1
-}
-
-builder_ok () {
-    # FIXME: Currently we make fairly limited tagging for some builders.
-    # Uncomment below when they can be supported by all the builders.
-    #docker_tag_p "$1"
-    builder_tag_p "${1}:latest"
-    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 crayify_mpi_or_skip () {
@@ -118,6 +136,11 @@ need_docker () {
     fi
 }
 
+need_squashfs () {
+    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
+    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
@@ -131,15 +154,6 @@ run () {
     local ifs_old="$IFS"
     bats_run "$@"
     IFS="$ifs_old"
-}
-
-need_squashfs () {
-    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
-    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
-}
-
-squashfs_ready () {
-    ( command -v mksquashfs && command -v squashfuse )
 }
 
 scope () {
@@ -164,10 +178,8 @@ scope () {
     esac
 }
 
-archive_ok () {
-    ls -ld "$1" || true
-    test -f "$1"
-    test -s "$1"
+squashfs_ready () {
+    ( command -v mksquashfs && command -v squashfuse )
 }
 
 unpack_img_all_nodes () {
@@ -176,18 +188,6 @@ unpack_img_all_nodes () {
     else
         skip 'not needed'
     fi
-}
-
-archive_grep () {
-    image="$1"
-    case $image in
-        *.sqfs)
-            unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
-            ;;
-        *)
-            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
-            ;;
-    esac
 }
 
 # Predictable sorting and collation
