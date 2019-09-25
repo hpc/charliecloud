@@ -79,15 +79,10 @@ lammps_try () {
 @test "${ch_tag}/friction" { lammps_try friction; }
 @test "${ch_tag}/melt"     { lammps_try melt; }
 
-# This test busy-hangs after several:
-#
-#   FOO error: local variable 'foo' referenced before assignment
-#   Inside simple function
-#
-# Perhaps related to --join?
-#
-@test "${ch_tag}/python"   { skip 'incompatible with --join'
-                             lammps_try python; }
+@test "${ch_tag}/mpi4py simple" { 
+    $ch_mpirun_core ch-run --join --cd /lammps/python/examples "$ch_img" -- \
+                    ./simple.py in.simple
+}
 
 @test "${ch_tag}/revert image" {
     unpack_img_all_nodes "$ch_cray"
