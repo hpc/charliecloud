@@ -139,7 +139,9 @@ Test suite
 
 To run the test suite, you also need:
 
-* `Bats <https://github.com/sstephenson/bats>`_ 0.4.0
+* `Bats <https://github.com/sstephenson/bats>`_ 0.4.0 (`Bats-core
+  <https://github.com/bats-core/bats-core>`_, a newer fork of Bats, is
+  untested)
 * Bash 4.1+, for Bats and to make programming the tests tractable
 * Python 2.7 or 3.4+, for building some of the tests
 * Wget, to download stuff for some of the test images
@@ -152,21 +154,6 @@ Image building software tested, with varying levels of thoroughness:
 * `Buildah <https://github.com/containers/buildah>`_
 * `skopeo <https://github.com/containers/skopeo>`_ and
   `umoci <https://github.com/openSUSE/umoci>`_
-
-Bats can be installed at the system level or embedded in the Charliecloud
-source code. If it's in both places, the latter is used.
-
-To embed Bats, either:
-
-* Download Charliecloud using :code:`git clone --recursive`, which will check
-  out Bats as a submodule in :code:`test/bats`.
-
-* Unpack the Bats zip file or tarball in :code:`test/bats`.
-
-To check an embedded Bats::
-
-  $ test/bats/bin/bats --version
-  Bats 0.4.0
 
 
 Package manager install
