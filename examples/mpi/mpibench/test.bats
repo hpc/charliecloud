@@ -86,8 +86,11 @@ check_process_ct () {
     multiprocess_ok
     [[ $ch_multinode ]] || skip "multinode only"
     [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
-    # Verify we have proper HSN devices present. (Note that -d tests for
-    # directory, not device.)
+    # Verify we have known HSN devices present. (Note that -d tests for
+    # directory, not device.) The reason we fail instead of skip is to force
+    # an explicit choice about systems that do have an HSN but it's not
+    # something that uses /dev/infiniband. In particular, non-RoCE Ethernet
+    # systems would fail the performance test because both conditions use TCP.
     [[ -d /dev/infiniband ]]
     # shellcheck disable=SC2086
     hsn_enabled_bw=$($ch_mpirun_2 ch-run "$ch_img" -- \
