@@ -40,7 +40,7 @@ try:
    lark.Visitor  # AttributeError if wrong module
 except (ImportError, AttributeError) as x:
    if (isinstance(x, ImportError)):
-      depfails.append(("missing", 'Python module "lark"'))
+      depfails.append(("missing", 'Python module "lark-parser"'))
    elif (isinstance(x, AttributeError)):
       depfails.append(("bad", 'found Python module "lark"; need "lark-parser"'))
    else:
