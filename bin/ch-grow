@@ -598,7 +598,7 @@ def cp(src, dst):
 
 def dependencies_check():
    # Check some more dependencies. If any dependency problems found, here or
-   # above (e.g., lark module checked at import time), the complain and exit.
+   # above (e.g., lark module checked at import time), then complain and exit.
    if (not os.path.exists(CH_RUN)):
       depfails.append(("missing", CH_RUN))
    if (not shutil.which("skopeo")):
