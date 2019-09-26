@@ -69,7 +69,8 @@ Other arguments:
     Stop after parsing the Dockerfile.
 
   :code:`--print-storage`
-    Print the storage directory path and exit.
+    Print the storage directory path and exit. Must be after
+    :code:`--storage`, if any, for correct results.
 
   :code:`-t`, :code:`-tag TAG`
     Name of image to create. Append :code:`:latest` if no colon present.

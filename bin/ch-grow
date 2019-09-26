@@ -152,7 +152,7 @@ environment variables:
                    help="ignored (layer caching not yet supported)")
    ap.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
-   ap.add_argument("--print-storage", action="store_true",
+   ap.add_argument("--print-storage", action=CLI_Print_Storage,
                    help="print the state and images directory, then exit")
    ap.add_argument("-s", "--storage", metavar="DIR",
                    default=os.environ.get("CH_GROW_STORAGE",
@@ -167,9 +167,6 @@ environment variables:
    ap.add_argument("context", metavar="CONTEXT",
                    help="context directory")
    cli = ap.parse_args()
-   if (cli.print_storage):
-      print(cli.storage)
-      sys.exit(0)
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
    if (cli.tag is None):
@@ -513,10 +510,12 @@ class I_workdir(Instruction):
 
 ## Supporting classes ##
 
-class CLI_Dependencies(argparse.Action):
+class Action_Exit(argparse.Action):
 
    def __init__(self, *args, **kwargs):
       super().__init__(nargs=0, *args, **kwargs)
+
+class CLI_Dependencies(Action_Exit):
 
    def __call__(self, *args, **kwargs):
       # Errors already printed by dependencies_check(), so just exit.
@@ -525,15 +524,18 @@ class CLI_Dependencies(argparse.Action):
       else:
          sys.exit(1)
 
-class CLI_Version(argparse.Action):
+class CLI_Print_Storage(Action_Exit):
+
+   def __call__(self, _, namespace, *args, **kwargs):
+      print(namespace.storage)
+      sys.exit(0)
+
+class CLI_Version(Action_Exit):
 
    # This gross kludge lets us print the version number without managing a
    # version.py file.
 
-   def __init__(self, *args, **kwargs):
-      super().__init__(nargs=0, *args, **kwargs)
-
-   def __call__(self, parser, namespace, values, option_string=None):
+   def __call__(self, *args, **kwargs):
       cmd = CH_RUN
       os.execl(cmd, cmd, "--version")
 
