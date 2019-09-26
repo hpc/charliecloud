@@ -3,6 +3,11 @@ set -e
 # shellcheck disable=SC2034
 ch_bin="$(cd "$(dirname "$0")" && pwd)"
 
+convert_tag_to_path () {
+    # convert container registry path to filesystem compatible path
+    echo "$1" | sed 's/\//./g'
+}
+
 libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/version.sh"
 
