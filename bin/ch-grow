@@ -127,8 +127,6 @@ _WS: /[ \t]/+
 
 def main():
 
-   dependencies_check()
-
    if not os.path.exists(CH_BIN + "/ch-run"):
       FATAL("can't find ch-run; check your build and/or install")
    global cli
@@ -192,8 +190,7 @@ environment variables:
       cli.build_arg = list()
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
 
-   if (len(depfails) > 0):
-      FATAL("dependency problem(s); exiting")
+   dependencies_check()
 
    INFO("growing: %s" % dir_image(cli.tag))
    DEBUG(cli)
@@ -518,11 +515,8 @@ class Action_Exit(argparse.Action):
 class CLI_Dependencies(Action_Exit):
 
    def __call__(self, *args, **kwargs):
-      # Errors already printed by dependencies_check(), so just exit.
-      if (len(depfails) == 0):
-         sys.exit(0)
-      else:
-         sys.exit(1)
+      dependencies_check()
+      sys.exit(0)
 
 class CLI_Print_Storage(Action_Exit):
 
@@ -603,8 +597,8 @@ def cp(src, dst):
       shutil.copy2(src, dst)
 
 def dependencies_check():
-   # Check some more dependencies, then complain about all problems found. No
-   # output if no problems. Note: lark module checked at import time above.
+   # Check some more dependencies. If any dependency problems found, here or
+   # above (e.g., lark module checked at import time), the complain and exit.
    if (not os.path.exists(CH_RUN)):
       depfails.append(("missing", CH_RUN))
    if (not shutil.which("skopeo")):
@@ -613,6 +607,8 @@ def dependencies_check():
       depfails.append(("missing", "umoci"))
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
+   if (len(depfails) > 0):
+      sys.exit(1)
 
 def dir_image_tmp():
    return "%s/img/tmp" % cli.storage
