@@ -1,10 +1,5 @@
 load common
 
-@test 'create tarball directory if needed' {
-    scope quick
-    mkdir -p "$ch_tardir"
-}
-
 @test 'documentation seems sane' {
     scope standard
     command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
@@ -49,12 +44,6 @@ load common
         [[ ! -g $i ]]
     done < <( find "$ch_bin" -name 'ch-*' -a \( -executable -o -name '*.c' \) \
                    -print0 )
-
-}
-
-@test 'ch-build --builder-info' {
-    scope standard
-    ch-build --builder-info
 }
 
 @test 'lint shell scripts' {

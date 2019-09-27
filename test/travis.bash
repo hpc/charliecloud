@@ -47,26 +47,35 @@ if [[ $INSTALL ]]; then
     sudo make install PREFIX="$PREFIX"
     ch_test="${PREFIX}/bin/ch-test"
 else
-    ch_test=$(readlink -f ./bin/ch-test)
+    ch_test=$(readlink -f bin/ch-test)
 fi
+
+"$ch_test" mk-perm-dirs --sudo
+
+cd test
 
 if [[ $SUDO_RM_FIRST ]]; then
     sudo rm /etc/sudoers.d/travis
 fi
 sudo -v || true
 
-cd test
-
 "$ch_test" build
+
+ls -lha "$CH_TEST_TARDIR"
 
 if [[ $SUDO_RM_AFTER_BUILD ]]; then
     sudo rm /etc/sudoers.d/travis
 fi
 if [[ $SUDO_AVOID_AFTER_BUILD ]]; then
-    export CH_TEST_DONT_SUDO=yes
+    sudo_=''
+else
+    sudo_='--sudo'
 fi
 sudo -v || true
-echo "\$CH_TEST_DONT_SUDO=$CH_TEST_DONT_SUDO"
+echo "\$CH_TEST_SUDO=$CH_TEST_SUDO"
 
-"$ch_test" run
+"$ch_test" run "$sudo_" --perm-dir
+
+ls -lh "$CH_TEST_IMGDIR"
+
 "$ch_test" examples

@@ -52,7 +52,7 @@ setup () {
 @test 'filesystem permission enforcement' {
     [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
     for d in $CH_TEST_PERMDIRS; do
-        d="${d}/perms_test/pass"
+        d="${d}/pass"
         echo "verifying: ${d}"
           ch-run --no-home --private-tmp \
                  $uid_args $gid_args -b "$d" "$ch_timg" -- \

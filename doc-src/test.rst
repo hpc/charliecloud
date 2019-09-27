@@ -20,9 +20,9 @@ at the top level of the source code or installed at
 
   $ cd test
 
-If you have :code:`sudo`, the tests will make use of it by default. To skip
-the tests that use :code:`sudo` even if you have privileges, set
-:code:`CH_TEST_DONT_SUDO` to a non-empty string.
+If you have :code:`sudo`, the tests will not make use of it by default. To
+enable the tests that use :code:`sudo` if you have privileges, use
+:code:`ch-test --sudo` or set :code:`CH_TEST_SUDO` to a non-empty string.
 
 The tests use a framework called `Bats <https://github.com/sstephenson/bats>`_
 (Bash Automated Testing System). To check location and version of Bats used by

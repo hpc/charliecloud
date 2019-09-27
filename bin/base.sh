@@ -42,6 +42,30 @@ parse_basic_args () {
     done
 }
 
+# Set a charliecloud variable and print its value, human readable description,
+# and origin.
+# Parameter 1: string: name of the variable
+# Parameter 2: string: human readable description
+# Parameter 3: string: command line argument value
+# Parameter 4: string: environment variable value
+# Parameter 5: string: default value
+set_chvar () {
+    if   [ "$3" ]; then
+         export "$1"="$3"
+         value=$3
+         method='command line'
+    elif [ "$4" ]; then
+         export "$1"="$4"
+         value=$4
+         method='environment variable'
+    else
+        export "$1"="$5"
+        value=$5
+        method='default'
+    fi
+    printf "setting %s to %s (%s)\n" "$2"  "$value" "$method"
+}
+
 # Convert container registry path to filesystem compatible path.
 tag_to_path () {
     echo "$1" | sed 's/\//./g'

@@ -35,7 +35,6 @@ load common
     scope standard
     [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'
     for d in $CH_TEST_PERMDIRS; do
-        d=${d}/perms_test
         echo "$d"
         test -d "${d}"
         test -d "${d}/pass"

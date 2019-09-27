@@ -198,7 +198,9 @@ env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
 env_require CH_TEST_PERMDIRS
 env_require CH_BUILDER
-
+if [[ $CH_BUILDER == ch-grow ]]; then
+    env_require CH_GROW_STORAGE
+fi
 # Set path to the right Charliecloud. This uses a symlink in this directory
 # called "bin" which points to the corresponding bin directory, either simply
 # up and over (source code) or set during "make install".
@@ -322,7 +324,7 @@ else
 fi
 
 # Do we have and want sudo?
-if    [[ -z $CH_TEST_DONT_SUDO ]] \
+if    [[ $CH_TEST_SUDO == yes ]] \
    && ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
