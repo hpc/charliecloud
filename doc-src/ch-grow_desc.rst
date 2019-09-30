@@ -48,6 +48,11 @@ Other arguments:
     to :code:`VALUE`. If :code:`VALUE` not specified, use the value of
     environment variable :code:`KEY`.
 
+  :code:`--dependencies`
+    Report any dependency problems and exit. If all is well, there is no
+    output and the exit code is zero; in case of problems, the exit code is
+    non-zero.
+
   :code:`-f`, :code:`--file DOCKERFILE`
     Use :code:`DOCKERFILE` instead of :code:`CONTEXT/Dockerfile`.
 
@@ -64,7 +69,8 @@ Other arguments:
     Stop after parsing the Dockerfile.
 
   :code:`--print-storage`
-    Print the storage directory path and exit.
+    Print the storage directory path and exit. Must be after
+    :code:`--storage`, if any, for correct results.
 
   :code:`-t`, :code:`-tag TAG`
     Name of image to create. Append :code:`:latest` if no colon present.
