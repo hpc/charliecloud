@@ -130,16 +130,6 @@ need_squashfs () {
 }
 
 make_archive () {
-	# what to do
-	# Should use executables in $ch-bin
-	# But $ch-bin is declared at the bottom
-	# Can we move those declarations to the top
-	# Is there a better way
-	# Do we already default to the binary in ch-bin?
-	# Do we want to include an option for dir?
-	# This can possibly be offloaded when we're more friendly for image management
-	# That way you could use the environment variable to control archive choice
-	# ch-do mkarchive [ -o ARCHIVE_TYPE ] TAG OUTDIR
     if [[ -n $CH_TEST_FMT ]]; then
         case $CH_TEST_FMT in 
             squashfs)
