@@ -129,6 +129,40 @@ need_squashfs () {
     ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
 }
 
+make_archive () {
+	# what to do
+	# Should use executables in $ch-bin
+	# But $ch-bin is declared at the bottom
+	# Can we move those declarations to the top
+	# Is there a better way
+	# Do we already default to the binary in ch-bin?
+	# Do we want to include an option for dir?
+	# This can possibly be offloaded when we're more friendly for image management
+	# That way you could use the environment variable to control archive choice
+	# ch-do mkarchive [ -o ARCHIVE_TYPE ] TAG OUTDIR
+    if [[ -n $CH_TEST_FMT ]]; then
+        case $CH_TEST_FMT in 
+            squashfs)
+	        ch-builder2squash "$@" > /dev/null
+		echo "$2/$1.sqfs"
+	        ;;
+	    tar)
+	        ch-builder2tar "$@" > /dev/null
+		echo "$2/$1.tar.gz"
+		;;
+        esac
+    else
+        if ( command -v mksquashfs && command -v squashfuse ); then
+	    ch-builder2squash "$@" > /dev/null
+	    echo "$2/$1.sqfs"
+	else
+	    ch-builder2tar "$@" > /den/null
+	    echo "$2/$1.tar.gz"
+	fi  
+    fi
+
+}
+
 squashfs_ready () {
     ( command -v mksquashfs && command -v squashfuse )
 }

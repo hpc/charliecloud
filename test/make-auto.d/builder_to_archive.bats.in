@@ -2,13 +2,15 @@
     scope %(scope)s
     %(build_exclude)s
     %(need_docker)s
-    if ( squashfs_ready ); then
-        archive="${ch_tardir}/%(tag)s.sqfs"
-        ch-builder2squash %(tag)s "$ch_tardir"
-    else
-        archive="${ch_tardir}/%(tag)s.tar.gz"
-        ch-builder2tar %(tag)s "$ch_tardir"
-    fi
+    
+    archive=$(make_archive %(tag)s "$ch_tardir")
+
+#if ( squashfs_ready ); then
+ #       archive="${ch_tardir}/%(tag)s.sqfs"
+  #  else
+   #     archive="${ch_tardir}/%(tag)s.tar.gz"
+   # fi
+   # make_archive %(tag)s "$ch_tardir"
     archive_grep "$archive"
     archive_ok "$archive"
 }
