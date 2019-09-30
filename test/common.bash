@@ -124,6 +124,15 @@ prerequisites_ok () {
     fi
 }
 
+# Wrapper for Bats run() to work around Bats bug #89 by saving/restoring $IFS.
+# See issues #552 and #555 and https://stackoverflow.com/a/32425874.
+eval bats_"$(declare -f run)"
+run () {
+    local ifs_old="$IFS"
+    bats_run "$@"
+    IFS="$ifs_old"
+}
+
 need_squashfs () {
     ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
     ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
