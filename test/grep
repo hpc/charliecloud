@@ -7,9 +7,9 @@
 # the exclusions manually each time.
 #
 # grep(1) has an --exclude-dir option, but I can't get it to work with rooted
-# directories, e.g., test/bats vs bats anywhere in the tree, so we use find(1)
-# instead. You may hear complaints about how find is too slow for this, but
-# the project is small enough we don't care.
+# directories, e.g., doc-src/_build vs _build anywhere in the tree, so we use
+# find(1) instead. You may hear complaints about how find is too slow for
+# this, but the project is small enough we don't care.
 
 cd "$(dirname "$0")"/..
 
@@ -18,7 +18,6 @@ find . \(    -path ./.git \
           -o -path ./doc \
           -o -path ./doc-src/_build \
           -o -path ./man \
-          -o -path ./test/bats \
        \) -prune \
        -o -type f \
        -exec grep --color=auto -Hn "$@" {} \;

@@ -5,11 +5,11 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Flatten a Docker image into a Charliecloud SquashFS file.
+Flatten a builder image into a Charliecloud SquashFS file.
 
 Usage:
 
-  $ $(basename "$0") IMAGE OUTDIR [ARGS ...]
+  $ $(basename "$0") [-b BUILDER] IMAGE OUTDIR [ARGS ...]
 
 You must have sufficient privilege (via sudo) to run the Docker commands.
 EOF
@@ -17,9 +17,26 @@ EOF
 
 parse_basic_args "$@"
 
+# Kludgey argument parsing.
+while true; do
+    case $1 in
+        -b|--builder)
+            shift
+            CH_BUILDER=$1
+            shift
+            ;;
+        *)
+            break
+            ;;
+        esac
+done
+
 if [ "$#" -lt 2 ]; then
     usage
 fi
+
+builder_choose
+echo "builder: ${CH_BUILDER}"
 
 image=$1
 outdir=$2
@@ -27,9 +44,9 @@ shift 2
 
 # mktemp is used for intermediate files to avoid heavy metadata loads on
 # certain filesystems
-temp=$(mktemp -d --tmpdir ch-docker2squash.XXXXXX)
+temp=$(mktemp -d --tmpdir ch-builder2squash.XXXXXX)
 # Get image as a directory
-"${ch_bin}/ch-builder2tar" --nocompress "$image" "$temp"
+"${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" --nocompress "$image" "$temp"
 "${ch_bin}/ch-tar2dir" "${temp}/${image}.tar" "$temp"
 # Create squashfs, and clean up intermediate files and folders.
 "${ch_bin}/ch-dir2squash" "${temp}/${image}" "$outdir" "$@"

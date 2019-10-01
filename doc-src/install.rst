@@ -82,14 +82,14 @@ Additional dependencies for specific components:
 Buildah (privileged or unprivileged)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Charliecloud can use the "rootless" mode of stock Buildah, which requires the
-setuid (i.e., privileged) helpers :code:`newuidmap` and :code:`newgidmap`.
+Charliecloud uses Buildah's "rootless" mode and ignore-chown-errors storage 
+configuration to acheive a fully unprivileged workflow. If an image with 
+multpile user mappings is pulled using this method, all file permissions will
+be remapped to a single user (root). This requires Buildah v1.10.1 or newer. 
 
-For a fully unprivileged workflow, Charliecloud can also use a patched Buildah
-that does not require the setuid helpers. You need branch
-:code:`chown-error-tolerant-patch` from `our fork of Buildah
-<https://github.com/hpc/buildah>`_. (We are working with Buildah upstream to
-merge our patches.)
+For a privileged workflow, Charliecloud can also use Buildah with setuid
+helpers :code:`newuidmap` and :code:`newgidmap`. This will not remap the file 
+permissions to root.
 
 .. note::
 
@@ -141,7 +141,9 @@ Test suite
 
 To run the test suite, you also need:
 
-* `Bats <https://github.com/sstephenson/bats>`_ 0.4.0
+* `Bats <https://github.com/sstephenson/bats>`_ 0.4.0 (`Bats-core
+  <https://github.com/bats-core/bats-core>`_, a newer fork of Bats, is
+  untested)
 * Bash 4.1+, for Bats and to make programming the tests tractable
 * Python 2.7 or 3.4+, for building some of the tests
 * Wget, to download stuff for some of the test images
@@ -154,21 +156,6 @@ Image building software tested, with varying levels of thoroughness:
 * `Buildah <https://github.com/containers/buildah>`_
 * `skopeo <https://github.com/containers/skopeo>`_ and
   `umoci <https://github.com/openSUSE/umoci>`_
-
-Bats can be installed at the system level or embedded in the Charliecloud
-source code. If it's in both places, the latter is used.
-
-To embed Bats, either:
-
-* Download Charliecloud using :code:`git clone --recursive`, which will check
-  out Bats as a submodule in :code:`test/bats`.
-
-* Unpack the Bats zip file or tarball in :code:`test/bats`.
-
-To check an embedded Bats::
-
-  $ test/bats/bin/bats --version
-  Bats 0.4.0
 
 
 Package manager install
