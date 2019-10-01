@@ -11,6 +11,11 @@ This section describes what you need to install Charliecloud and how to do so.
 Dependencies
 ============
 
+Charliecloud's philosophy on dependencies is that they should be (1) minimal
+and (2) granular. For any given feature, we try to implement it with the
+minimum set of dependencies, and in any given environment, we try to make the
+maximum set of features available.
+
 Overview
 --------
 
