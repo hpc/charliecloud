@@ -19,6 +19,7 @@ Overview
    :hidden:
 
    install
+   install2
    test
    tutorial
    command-usage
