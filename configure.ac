@@ -51,5 +51,35 @@ AC_CONFIG_FILES([Makefile
 
 AC_CONFIG_AUX_DIR([build-aux])
 
+AC_ARG_ENABLE(docs,
+	AC_HELP_STRING([--enable_docs],
+ 		[Build the docs]),
+    [enable_docs=$enableval],
+    [enable_docs="no"])
+
+AC_ARG_ENABLE(tests,
+	AC_HELP_STRING([--disable_tests],
+ 		[Build the test suite]),
+    [disable_tests=$enableval],
+    [disable_tests="yes"])
+
+AC_ARG_ENABLE(docker,
+	AC_HELP_STRING([--disable_docker],
+        [Disable docker support]),
+    [disable_docker=$enableval],
+    [disable_docker="no"])
+
+AC_ARG_ENABLE(ch-grow,
+	AC_HELP_STRING([--disable_ch-grow],
+        [Disable chgrow support]),
+    [disable_ch-grow=$enableval],
+    [disable_ch-grow="no"])
+
+AC_ARG_ENABLE(buildah,
+	AC_HELP_STRING([--disable_buildah],
+        [Disable buildah support]),
+    [disable_buildah=$enableval],
+    [disable_buildah="no"])
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_OUTPUT
