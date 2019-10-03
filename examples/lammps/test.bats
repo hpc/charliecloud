@@ -79,11 +79,7 @@ lammps_try () {
 @test "${ch_tag}/friction" { lammps_try friction; }
 @test "${ch_tag}/melt"     { lammps_try melt; }
 
-<<<<<<< HEAD:examples/lammps/test.bats
 @test "${ch_tag}/mpi4py simple" {
-=======
-@test "${ch_tag}/mpi4py simple" { 
->>>>>>> Update lammps dockerfile and enable testing of lammps mpi4py test:examples/mpi/lammps/test.bats
     $ch_mpirun_core ch-run --join --cd /lammps/python/examples "$ch_img" -- \
                     ./simple.py in.simple
 }
