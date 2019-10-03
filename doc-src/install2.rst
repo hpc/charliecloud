@@ -11,6 +11,76 @@ that user namespaces have been enabled in the kernel.
    :local:
 
 
+Build and install from source
+=============================
+
+Typical case
+------------
+
+The tarballs we provide include the build system (:code:`configure`, etc.) and
+pre-built documentation. Thus, build and install is a standard::
+
+  $ ./configure
+  $ make
+  $ sudo make install
+
+If you don't have sudo, you can:
+
+  * Run Charliecloud directly from the build directory; add :code:`bin` to
+    your :code:`$PATH` and you are good to go without :code:`make install`.
+
+  * Install in a prefix you have write access to, e.g. in your home directory
+    with :code:`./configure --prefix=~`.
+
+:code:`configure` will provide a detailed report on what will be built and
+installed along with what dependencies are present and missing.
+
+:code:`configure` options
+-------------------------
+
+.. todo:: I wonder if we should remove this section in favor of
+          :code:`./configure --help`?
+
+By default, all features that can be built will be built and installed. Some
+features have selectors: :code:`--enable-foo` says to fail the build if
+feature :code:`foo`'s dependencies are missing (rather than skipping it),
+while :code:`--disable-foo` says not to build and/or install :code:`foo` even
+if its dependencies are met.
+
+  ===============  ==========================================
+  selector         feature
+  ===============  ==========================================
+  :code:`html`     HTML documentation
+  :code:`man`      Man pages
+  :code:`tests`    Test suite
+  :code:`ch-grow`  :code:`ch-grow` unprivileged image builder
+  ===============  ==========================================
+
+Dependencies (note that :code:`--without-foo` is not supported; use feature
+selectors above):
+
+:code:`--with-sphinx-build`
+  Path to :code:`sphinx-build` executable.
+
+:code:`--with-run-python`
+  Python executable to use in shebang line of scripts. Default:
+  :code:`/usr/bin/env python3`.
+
+:code:`--with-build-python`
+  Python executable for building Charliecloud. Default: :code:`python3`.
+
+Bootstrapping build system
+--------------------------
+
+A Git checkout (or tarball after :code:`make maintainer-clean`) will not have
+:code:`configure` or pre-built documentation. To bootstrap, you need GNU
+Autotools installed. Run the helper script :code:`configure-bootstrap.sh`.
+
+
+Install using package manager
+=============================
+
+
 Dependencies
 ============
 
