@@ -11,8 +11,9 @@ RUN apt-get install -qy --no-install-recommends \
     python-pip \
     python-setuptools 
 
-
-RUN pip install --no-binary=mpi4py mpi4py numpy
+# Building mpi4py from source to ensure it is built against our MPI build
+# Building numpy from source to work around issues seen on Aarch64 systems
+RUN pip install --no-binary=mpi4py,numpy mpi4py numpy 
 # Build LAMMPS.
 ENV LAMMPS_VERSION 19Sep19
 RUN wget -nv http://lammps.sandia.gov/tars/lammps-$LAMMPS_VERSION.tar.gz
