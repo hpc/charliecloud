@@ -14,9 +14,6 @@ that user namespaces have been enabled in the kernel.
 Build and install from source
 =============================
 
-Typical case
-------------
-
 The tarballs we provide include the build system (:code:`configure`, etc.) and
 pre-built documentation. Thus, build and install is a standard::
 
@@ -34,6 +31,13 @@ If you don't have sudo, you can:
 
 :code:`configure` will provide a detailed report on what will be built and
 installed along with what dependencies are present and missing.
+
+.. note::
+
+   A Git checkout (or tarball after :code:`make maintainer-clean`) will not
+   have :code:`configure` or pre-built documentation. To bootstrap, you need
+   GNU Autotools installed. Run the helper script
+   :code:`configure-bootstrap.sh`.
 
 :code:`configure` options
 -------------------------
@@ -68,13 +72,6 @@ selectors above):
 
 :code:`--with-build-python`
   Python executable for building Charliecloud. Default: :code:`python3`.
-
-Bootstrapping build system
---------------------------
-
-A Git checkout (or tarball after :code:`make maintainer-clean`) will not have
-:code:`configure` or pre-built documentation. To bootstrap, you need GNU
-Autotools installed. Run the helper script :code:`configure-bootstrap.sh`.
 
 
 Install using package manager
