@@ -9,9 +9,8 @@ Charliecloud commands. Its content is identical to the commands' man pages.
    :local:
 
 .. Note the unusual heading level. This is so the man page .rst files can
-   still use double underscores as their top-level headers, which in turn lets
-   us do things like include docker_tips.rst. You will also find this in the
-   man page .rst files.
+   still use double underscores as their top-level headers. You will also find
+   this in the man page .rst files.
 
 ch-build
 ++++++++
