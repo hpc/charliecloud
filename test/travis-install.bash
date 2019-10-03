@@ -5,6 +5,9 @@ set -ex
 # Make /usr/local/src writeable for everyone.
 sudo chmod 1777 /usr/local/src
 
+# Remove Travis Bats. We need buggy version provided by Ubuntu (issue #552).
+sudo rm /usr/local/bin/bats
+
 # Install conditional packages.
 if [[ -z "$MINIMAL_DEPS" ]]; then
     sudo apt-get install pigz pv skopeo squashfuse
