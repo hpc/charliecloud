@@ -23,8 +23,9 @@ pre-built documentation. Thus, build and install is a standard::
 
 If you don't have sudo, you can:
 
-  * Run Charliecloud directly from the build directory; add :code:`bin` to
-    your :code:`$PATH` and you are good to go without :code:`make install`.
+  * Run Charliecloud directly from the build directory; add
+    :code:`$BUILD_DIR/bin` to your :code:`$PATH` and you are good to go,
+    without :code:`make install`.
 
   * Install in a prefix you have write access to, e.g. in your home directory
     with :code:`./configure --prefix=~`.
@@ -74,9 +75,34 @@ selectors above):
   Python executable for building Charliecloud. Default: :code:`python3`.
 
 
-Install using package manager
-=============================
+Install with package manager
+============================
 
+Charliecloud is also available using a variety of distribution and third-party
+package managers.
+
+Maintained by us:
+
+  * Generic RPMs downloadable from our `releases page <https://github.com/hpc/charliecloud/releases>`_.
+  * `Spack
+    <https://spack.readthedocs.io/en/latest/package_list.html#charliecloud>`_
+    (install with :code:`+builder` to get :code:`ch-grow`).
+  * `Fedora/EPEL <https://bodhi.fedoraproject.org/updates/?search=charliecloud>`_.
+
+.. todo:: Jordan: Please check/fix Fedora/EPEL and Spack links.
+
+Maintained by others:
+
+  * `Debian <https://packages.debian.org/search?keywords=charliecloud>`_
+  * `Gentoo <https://packages.gentoo.org/packages/sys-cluster/charliecloud>`_
+  * `NixOS <https://github.com/NixOS/nixpkgs/tree/master/pkgs/applications/virtualization/charliecloud>`_
+  * `SUSE <https://packagehub.suse.com/packages/charliecloud/>`_ and `openSUSE <https://build.opensuse.org/package/show/network:cluster/charliecloud>`_
+
+Note that Charliecloud development moves quickly, so double-check that
+packages have the version and features you need.
+
+Pull requests and other collaboration to improve the packaging situation are
+particularly welcome!
 
 Dependencies
 ============
