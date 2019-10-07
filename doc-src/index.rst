@@ -22,6 +22,5 @@ Overview
    test
    tutorial
    command-usage
-   vm
    faq
    dev

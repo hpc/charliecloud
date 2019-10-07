@@ -104,6 +104,210 @@ packages have the version and features you need.
 Pull requests and other collaboration to improve the packaging situation are
 particularly welcome!
 
+
+Pre-installed virtual machine image
+===================================
+
+This section explains how to create and use a single-node virtual machine with
+Charliecloud and all three builders pre-installed. This lets you:
+
+  * use Charliecloud on Macs and Windows
+  * quickly try out Charliecloud without installing anything
+
+You can use this CentOS VM either with `Vagrant <https://www.vagrantup.com>`_
+or with `VirtualBox <https://www.virtualbox.org/>`_ alone. Various settings
+are specified, but in most cases we have not done any particular tuning, so
+use your judgement, and feedback is welcome.
+
+.. warning::
+
+   These instructions provide for an SSH server in the virtual machine guest
+   that is accessible to anyone logged into the host. It is your
+   responsibility to ensure this is safe and compliant with your
+   organization's policies, or modify the procedure accordingly.
+
+Import and use an :code:`ova` appliance file with plain VirtualBox
+------------------------------------------------------------------
+
+This procedure imports a :code:`.ova` file into VirtualBox and walks you
+through logging in and running a brief Hello World in Charliecloud. You will
+act as user :code:`charlie`, who has passwordless :code:`sudo`.
+
+The Charliecloud developers do not distribute a :code:`.ova` file. You will
+need to get it from your site, a third party, or build it yourself with
+Vagrant using the :ref:`instructions <build-ova>` in the Contributor's guide.
+
+Prerequisite: Installed and working VirtualBox. (You do not need Vagrant to
+use the :code:`.ova`, only to create it.)
+
+Configure VirtualBox
+~~~~~~~~~~~~~~~~~~~~
+
+1. Set *Preferences* → *Proxy* if needed at your site.
+
+Import the appliance
+~~~~~~~~~~~~~~~~~~~~
+
+1. Download :code:`charliecloud_centos7.ova`, or whatever your site
+   has called it.
+2. *File* → *Import appliance*. Choose :code:`charliecloud_centos7.ova` and
+   click *Continue*.
+3. Review the settings.
+
+   * CPU should match the number of cores in your system.
+   * RAM should be reasonable. Anywhere from 2GiB to half your system RAM will
+     probably work.
+   * Tick *Reinitialize the MAC address of all network cards*.
+
+4. Click *Import*.
+5. Verify that the appliance's port forwarding is acceptable to you and your
+   site: *Details* → *Network* → *Adapter 1* → *Advanced* → *Port
+   Forwarding*.
+
+Log in and try Charliecloud
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Start the VM by clicking the green arrow.
+
+2. Wait for it to boot.
+
+3. Click on the console window, where user :code:`charlie` is logged in. (If
+   the VM "captures" your mouse pointer, type the key combination listed in
+   the lower-right corner of the window to release it.)
+
+4. Change your password. (You must use :code:`sudo` because you have
+   passwordless :code:`sudo` but don't know your password.)
+
+   ::
+
+     $ sudo passwd charlie
+
+5. SSH (from terminal on the host) into the VM using the password you just
+   set. (Accessing the VM using SSH rather than the console is generally more
+   pleasant, because you have a nice terminal with native copy-and-paste,
+   etc.)
+
+   ::
+
+     $ ssh -p 2222 charlie@localhost
+
+6. Build and run a container:
+
+   ::
+
+     $ ch-build -t hello -f /usr/local/src/charliecloud/examples/serial/hello \
+                /usr/local/src/charliecloud
+     $ ch-builder2tar hello /var/tmp
+     57M /var/tmp/hello.tar.gz
+     $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
+     creating new image /var/tmp/hello
+     /var/tmp/hello unpacked ok
+     $ cat /etc/redhat-release
+     CentOS Linux release 7.3.1611 (Core)
+     $ ch-run /var/tmp/hello -- /bin/bash
+     > cat /etc/debian_version
+     8.9
+     > exit
+
+Congratulations! You've successfully used Charliecloud. Now all of your
+wildest dreams will come true.
+
+Shut down the VM at your leisure.
+
+Possible next steps:
+
+  * Follow the :doc:`tutorial <tutorial>`.
+  * Run the :ref:`test suite <install_test-charliecloud>` in
+    :code:`/usr/share/doc/charliecloud/test`. (Note that the environment
+    variables are already configured for you in this appliance.)
+  * Configure :code:`/var/tmp` to be a :code:`tmpfs`, if you have enough RAM,
+    for better performance.
+
+Build and use the VM with Vagrant
+---------------------------------
+
+This procedure builds and provisions an idiomatic Vagrant virtual machine. You
+should also read the Vagrantfile in :code:`packaging/vagrant` before
+proceeding. This contains the specific details on build and provisioning,
+which are not repeated here.
+
+Prerequisite: You already know how to use Vagrant.
+
+Caveats and gotchas
+~~~~~~~~~~~~~~~~~~~
+
+In no particular order:
+
+* While Vagrant supports a wide variety of host and virtual machine providers,
+  this procedure is tested only on VirtualBox on a Mac. Current Vagrant
+  versions should work, but we don't track specifically which ones. (Anyone
+  who wants to help us broaden this support, please get in touch.)
+
+* Switching between proxy and no-proxy environments is not currently
+  supported. If you have a mixed environment (e.g. laptops that travel between
+  a corporate network and the wild), you may want to provide two separate
+  images.
+
+* Provisioning is not idempotent. Running the provisioners again will have
+  undefined results.
+
+* The documentation is not built. Use the web documentation instead of man
+  pages.
+
+* Only the most recent release of Charliecloud is supported.
+
+Install Vagrant and plugins
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can install VirtualBox and Vagrant either manually using website downloads
+or with Homebrew::
+
+  $ brew cask install virtualbox virtualbox-extension-pack vagrant
+
+Sanity check::
+
+  $ vagrant version
+  Installed Version: 2.1.2
+  Latest Version: 2.1.2
+
+  You're running an up-to-date version of Vagrant!
+
+Then, install the needed plugins::
+
+  $ vagrant plugin install vagrant-disksize \
+                           vagrant-proxyconf \
+                           vagrant-reload \
+                           vagrant-vbguest
+
+Build and provision
+~~~~~~~~~~~~~~~~~~~
+
+To build the VM and install Docker, Charliecloud, etc.::
+
+  $ cd packaging/vagrant
+  $ vagrant up
+
+By default, this uses the newest release of Charliecloud. If you want
+something different, set the :code:`CH_VERSION` variable, e.g.::
+
+  $ CH_VERSION=v0.10 vagrant up
+  $ CH_VERSION=master vagrant up
+
+Then, optionally run the Charliecloud tests::
+
+  $ vagrant provision --provision-with=test
+
+This runs the Charliecloud test suite in standard scope.
+
+Note that the test output does not have a TTY, so you will not have the tidy
+checkmarks. The last test printed is the last one that completed, not the one
+currently running.
+
+If the tests don't pass, that's a bug. Please report it!
+
+Now you can :code:`vagrant ssh` and do all the usual Vagrant stuff.
+
+
 Dependencies
 ============
 
