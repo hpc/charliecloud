@@ -93,14 +93,14 @@ check_process_ct () {
     # systems would fail the performance test because both conditions use TCP.
     [[ -d /dev/infiniband ]]
     # shellcheck disable=SC2086
-    hsn_enabled_bw=$($ch_mpirun_2 ch-run "$ch_img" -- \
+    hsn_enabled_bw=$($ch_mpirun_2_2node ch-run "$ch_img" -- \
                      "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \
                      | sort -nrk6 | head -1 | awk '{print $6}')
     # Configure network transport plugins to TCP only.
     export OMPI_MCA_pml=ob1
     export OMPI_MCA_btl=tcp,self
     # shellcheck disable=SC2086
-    hsn_disabled_bw=$($ch_mpirun_2 ch-run "$ch_img" -- \
+    hsn_disabled_bw=$($ch_mpirun_2_2node ch-run "$ch_img" -- \
                       "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \
                       | sort -nrk6 | head -1 | awk '{print $6}')
     echo "Max bandwidth with high speed network: $hsn_enabled_bw MB/s"

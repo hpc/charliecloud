@@ -281,8 +281,9 @@ fi
 #
 #   ch_mpirun_node     command to run one rank per node
 #   ch_mpirun_core     command to run one rank per physical core
-#   ch_mpirun_2        command to run two ranks on two nodes (one rank/node)
+#   ch_mpirun_2        command to run two ranks per job launcher default
 #   ch_mpirun_2_1node  command to run two ranks on one node
+#   ch_mpirun_2_2node  command to run two ranks on two nodes (one rank/node)
 #
 if [[ $SLURM_JOB_ID ]]; then
     ch_nodes=$SLURM_JOB_NUM_NODES
@@ -299,8 +300,10 @@ ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
+    ch_multiprocess=yes
     ch_mpirun_node='srun --ntasks-per-node 1'
     ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"
+    ch_mpirun_2='srun -n2'
     ch_mpirun_2_1node='srun -N1 -n2'
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
     # are present. Work around this by fooling OpenMPI into believing it's not
@@ -311,22 +314,22 @@ if [[ $SLURM_JOB_ID ]]; then
     fi
     if [[ $ch_nodes -eq 1 ]]; then
         ch_multinode=
-        ch_multiprocess=
-        ch_mpirun_2=false
+        ch_mpirun_2_2node=false
     else
         ch_multinode=yes
-        ch_multiprocess=yes
-        ch_mpirun_2='srun -n2'
+        ch_mpirun_2_2node='srun -N2 -n2'
     fi
 else
     # shellcheck disable=SC2034
     ch_multinode=
+    # shellcheck disable=SC2034
+    ch_mpirun_2_2node=false
     if ( command -v mpirun >/dev/null 2>&1 ); then
         ch_multiprocess=yes
         ch_mpirun_node='mpirun --map-by ppr:1:node'
         ch_mpirun_core="mpirun ${ch_mpirun_np}"
         ch_mpirun_2='mpirun -np 2'
-        ch_mpirun_2_1node='mpirun -np 2'
+        ch_mpirun_2_1node='mpirun -np 2 --host localhost:2'
     else
         ch_multiprocess=
         ch_mpirun_node=''
