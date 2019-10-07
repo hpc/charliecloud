@@ -84,7 +84,7 @@ Vagrant.configure("2") do |c|
     yum -y install git2u
 
     # Optional dependencies.
-    yum -y install pigz pv python36
+    yum -y install bats pigz pv python36
 
     # Add /usr/local/{bin,sbin} to $PATH.
     echo 'export PATH=/usr/local/sbin:/usr/local/bin:$PATH' > /etc/profile.d/path.sh
@@ -182,9 +182,11 @@ EOF2
     git clone --recursive https://github.com/hpc/charliecloud.git
 
     cd charliecloud
-    if [[ $CH_VERSION ]]; then
-      git checkout $CH_VERSION
+    if [[ -z $CH_VERSION ]]; then
+      CH_VERSION=$(git tag --sort=-version:refname --format='%(refname:strip=2)' | head -n 1)
     fi
+    echo "checking out Charliecloud: $CH_VERSION"
+    git checkout $CH_VERSION
     make
     sudo make install PREFIX=/usr/local
     which ch-run
