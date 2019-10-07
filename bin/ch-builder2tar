@@ -56,7 +56,7 @@ fi
 
 image=$1
 outdir=$2
-tar=${outdir}/$(convert_tag_to_path "$image").tar
+tar=${outdir}/$(tag_to_path "$image").tar
 tar_gzipped=${tar}.gz
 
 builder_choose
