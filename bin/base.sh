@@ -42,6 +42,11 @@ parse_basic_args () {
     done
 }
 
+# Convert container registry path to filesystem compatible path.
+tag_to_path () {
+    echo "$1" | sed 's/\//./g'
+}
+
 usage () {
     echo "${usage:?}" 1>&2
     exit "${1:-1}"
