@@ -18,10 +18,9 @@ compiler: gcc
 # it up in parallel. It would be nice if "make test-build" could be done
 # serially before splitting into parallel jobs.
 #
-#   TARBALL=              # build in Git checkout & use embedded Bats
-#   TARBALL=archive       # build from "git archive" tarball & use system Bats
-#   TARBALL=export        # build from "make export" tarball & use system Bats
-#   TARBALL=export-bats   # build from "make export" tarball & use embedded Bats
+#   TARBALL=              # build in Git checkout
+#   TARBALL=archive       # build from "git archive" tarball
+#   TARBALL=export        # build from "make export" tarball
 #   INSTALL=              # run from build directory
 #   INSTALL=yes           # make install to /usr/local, run that one
 #
@@ -73,11 +72,11 @@ jobs:
     - <<: *stage_install
       env: CH_BUILDER=buildah-runc    TARBALL=export       INSTALL=yes
     - <<: *stage_install
+      env: CH_BUILDER=buildah-setuid  TARBALL=export       INSTALL=yes
+    - <<: *stage_install
       env: CH_BUILDER=ch-grow         TARBALL=export       INSTALL=yes
     - <<: *stage_install
       env: CH_BUILDER=docker          TARBALL=export       INSTALL=yes
-    - <<: *stage_install
-      env: CH_BUILDER=docker          TARBALL=export-bats  INSTALL=yes
 
     - <<: *stage_misc
       env: CH_BUILDER=buildah         MINIMAL_DEPS=yes
@@ -95,6 +94,7 @@ addons:
     sources:
       - sourceline: 'ppa:projectatomic/ppa'
     packages:
+      - bats
       - python3-pip
       - python3-setuptools
 
