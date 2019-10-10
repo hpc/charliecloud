@@ -1,5 +1,5 @@
 bin := ch-run ch-ssh ch-checkns
-src := ch-run.c ch-ssh.c
+src := ch-run.c ch-ssh.c ch-checkns.c
 obj := $(src:.c=.o)
 
 CFLAGS += -pthread
