@@ -29,10 +29,10 @@ fromhost_ls () {
     find "$1" -xdev -name '*sotest*' -ls
 }
 
-@test 'ch-fromhost (Debian)' {
+@test 'ch-fromhost (CentOS)' {
     scope standard
-    prerequisites_ok debian9
-    img=${ch_imgdir}/debian9
+    prerequisites_ok centos8
+    img=${ch_imgdir}/centos8
 
     libpath=$(ch-fromhost --lib-path "$img")
     echo "libpath: ${libpath}"
@@ -109,30 +109,33 @@ fromhost_ls () {
     fromhost_clean "$img"
 }
 
-@test 'ch-fromhost (CentOS)' {
+@test 'ch-fromhost (Debian)' {
     scope full
-    prerequisites_ok centos7
-    img=${ch_imgdir}/centos7
+    prerequisites_ok debian9
+    img=${ch_imgdir}/debian9
+
+    libpath=$(ch-fromhost --lib-path "$img")
+    echo "libpath: ${libpath}"
 
     fromhost_clean "$img"
     ch-fromhost -v --file sotest/files_inferrable.txt "$img"
     fromhost_ls "$img"
     test -f "${img}/usr/bin/sotest"
-    test -f "${img}/lib/libsotest.so.1.0"
-    test -L "${img}/lib/libsotest.so.1"
+    test -f "${img}${libpath}/libsotest.so.1.0"
+    test -L "${img}${libpath}/libsotest.so.1"
     ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest
     ch-run "$img" -- sotest
     rm "${img}/usr/bin/sotest"
-    rm "${img}/lib/libsotest.so.1.0"
-    rm "${img}/lib/libsotest.so.1"
+    rm "${img}${libpath}/libsotest.so.1.0"
+    rm "${img}${libpath}/libsotest.so.1"
     rm "${img}/etc/ld.so.cache"
     fromhost_clean_p "$img"
 }
 
 @test 'ch-fromhost errors' {
     scope standard
-    prerequisites_ok debian9
-    img=${ch_imgdir}/debian9
+    prerequisites_ok centos8
+    img=${ch_imgdir}/centos8
 
     # no image
     run ch-fromhost --path sotest/sotest.c

@@ -4,7 +4,7 @@ FROM mpich
 RUN dnf install -y which
 
 # Compile the Intel MPI benchmark
-WORKDIR /usr/local/src
+WORKDIR /usr/src
 ENV IMB_VERSION 2018.1
 RUN git clone --branch v$IMB_VERSION --depth 1 \
               https://github.com/intel/mpi-benchmarks

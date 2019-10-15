@@ -1,9 +1,9 @@
 # ch-test-scope: standard
-FROM debian:stretch
+FROM centos:centos8
 
-RUN    apt-get update \
-    && apt-get install -y openssh-client \
-    && rm -rf /var/lib/apt/lists/*
+RUN    dnf update -y \
+    && dnf install -y openssh-clients \
+    && dnf clean all
 
 COPY . hello
 
