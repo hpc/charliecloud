@@ -83,7 +83,7 @@ RUN dnf install -y --setopt=install_weak_deps=false \
     numactl-devel \
     wget
 
-WORKDIR /usr/local/src
+WORKDIR /usr/src
 
 # As of 10/7/19 CentOS 8 provides version 10.3.58 of PSM2, this is an older
 # version but it works on our test environments.
@@ -98,7 +98,7 @@ RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git
 RUN    cd ucx \
     && ./autogen.sh \
-    && ./contrib/configure-release-mt --prefix=/usr/local \
+    && ./contrib/configure-release-mt --prefix=/usr \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 
 # OpenPMIX. CentOS 8 doesn't have libpmi2 required to build OpenMPI's pmi2
@@ -111,7 +111,7 @@ ENV EX_PMIX_VERSION 2.2.3
 RUN wget -nv ${PMIX_URL}/v${EX_PMIX_VERSION}/pmix-${EX_PMIX_VERSION}.tar.gz
 RUN tar xf pmix-${EX_PMIX_VERSION}.tar.gz
 RUN    cd pmix-${EX_PMIX_VERSION} \
-    && ./configure --prefix=/usr/local \
+    && ./configure --prefix=/usr \
                    --with-libevent \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 
@@ -128,12 +128,12 @@ RUN cd openmpi-${MPI_VERSION} && git apply dont-init-ucx-on-intel-cray.patch
 RUN    cd openmpi-${MPI_VERSION} \
     && CFLAGS=-O3 \
        CXXFLAGS=-O3 \
-       ./configure --prefix=/usr/local \
+       ./configure --prefix=/usr \
                    --sysconfdir=/mnt/0 \
                    --with-libevent \
 		           --with-slurm \
-                   --with-pmi=/usr/local \
-                   --with-pmix=/usr/local \
+                   --with-pmi=/usr \
+                   --with-pmix=/usr \
                    --with-ucx \
                    --disable-pty-support \
                    --enable-mca-no-build=btl-openib,plm-slurm \

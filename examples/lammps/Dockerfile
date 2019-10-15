@@ -3,9 +3,8 @@ FROM openmpi
 WORKDIR /usr/src
 
 # Packages for building.
-RUN apt-get install -qy --no-install-recommends \
+RUN dnf install -y \
     cmake \
-    git \
     patch \
     python3-dev \
     python3-pip \
@@ -35,6 +34,7 @@ RUN    cd lammps-${LAMMPS_VERSION}.build \
              -DLAMMPS_MACHINE=mpi \
           ../lammps-${LAMMPS_VERSION}/cmake \
     && make -j $(getconf _NPROCESSORS_ONLN) install
+<<<<<<< HEAD:examples/lammps/Dockerfile
 RUN ldconfig
 RUN ln -s /usr/src/lammps-${LAMMPS_VERSION}/ /lammps
 RUN rm -f lammps-$LAMMPS_VERSION.tar.gz
@@ -42,6 +42,10 @@ RUN rm -f lammps-$LAMMPS_VERSION.tar.gz
 # Patch in.melt to increase problem dimensions.
 COPY melt.patch /lammps/examples/melt
 RUN patch -p1 -d / < /lammps/examples/melt/melt.patch
+=======
+RUN ln -s /usr/src/lammps-${LAMMPS_VERSION}/ /lammps
+# Patch in.melt instead of including in.large.melt because LAMMPS is GPL.
+>>>>>>> Build and guest launch now pass on x86_64:examples/mpi/lammps/Dockerfile
 # Patch simple.py to uncomment mpi4py calls and disable file output.
 # Patch in.simple to increase problem dimensions.
 COPY simple.patch /lammps/python/examples
