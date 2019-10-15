@@ -1,0 +1,4 @@
+# ch-test-scope: standard
+FROM centos:8
+
+RUN dnf -y upgrade
