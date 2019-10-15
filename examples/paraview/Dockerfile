@@ -1,42 +1,23 @@
 # ch-test-scope: full
 # ch-test-builder-exclude: ch-grow  # deferred
 FROM openmpi
-WORKDIR /usr/src
+WORKDIR /usr/local/src
 
-RUN apt-get install -y \
-    python-dev \
-    python-pip
-RUN pip install \
+RUN dnf install -y \
+    cmake \
+    expat-devel \
+    libpng-devel \
+    llvm \
+    llvm-devel \
+    python3 \
+    python3-devel \
+    python3-mako \
+    python3-pip
+
+RUN pip3 install --no-binary=mpi4py \
     cython \
     mpi4py
-RUN apt-get install -y \
-    cmake \
-    git \
-    python-mako \
-    libpng-dev \
-    libpthread-stubs0-dev \
-    libqt4-dev \
-    libxt-dev \
-    pkg-config \
-    qt4-qmake \
-    zlib1g-dev
 
-# LLVM. Using version 7 to resolve segfaults seen with version 3.
-ENV LLVM_VERSION 7.0.1
-RUN wget -nv http://releases.llvm.org/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz
-RUN tar xf llvm-${LLVM_VERSION}.src.tar.xz
-RUN mkdir llvm-${LLVM_VERSION}.build
-RUN    cd llvm-${LLVM_VERSION}.build \
-    && cmake -DCMAKE_BUILD_TYPE=Release \
-             -DCMAKE_INSTALL_PREFIX=/usr \
-             -DLLVM_BUILD_LLVM_DYLIB=ON \
-             -DLLVM_LINK_LLVM_DYLIB=ON \
-             -DLLVM_ENABLE_RTTI=ON \
-             -DLLVM_INSTALL_UTILS=ON \
-             -DLLVM_TARGETS_TO_BUILD="AArch64;X86" \
-             ../llvm-${LLVM_VERSION}.src \
-    && make -j $(getconf _NPROCESSORS_ONLN) install
-RUN rm -Rf llvm-${LLVM_VERSION}*
 
 # Mesa. We need a version newer than Debian provides. Not sure which bug fix
 # resolved it but versions prior to 19 appear to have issues rendering on ARM.
@@ -66,13 +47,12 @@ RUN    cd mesa-${MESA_VERSION} \
                    --with-platforms= \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN rm -Rf mesa-${MESA_VERSION}*
-
 # ParaView. Use system libpng to work around issues linking with NEON specific
 # symbols on ARM.
-ENV PARAVIEW_MAJORMINOR 5.5
-ENV PARAVIEW_VERSION 5.5.2
-RUN wget -nv -O ParaView-v${PARAVIEW_VERSION}.tar.gz "https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v${PARAVIEW_MAJORMINOR}&type=binary&os=Sources&downloadFile=ParaView-v${PARAVIEW_VERSION}.tar.gz"
-RUN tar xf ParaView-v${PARAVIEW_VERSION}.tar.gz
+ENV PARAVIEW_MAJORMINOR 5.6
+ENV PARAVIEW_VERSION 5.6.2
+RUN wget -nv -O ParaView-v${PARAVIEW_VERSION}.tar.xz "https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v${PARAVIEW_MAJORMINOR}&type=binary&os=Sources&downloadFile=ParaView-v${PARAVIEW_VERSION}.tar.xz"
+RUN tar xf ParaView-v${PARAVIEW_VERSION}.tar.xz
 RUN mkdir ParaView-v${PARAVIEW_VERSION}.build
 RUN    cd ParaView-v${PARAVIEW_VERSION}.build \
     && cmake -DCMAKE_INSTALL_PREFIX=/usr \
@@ -86,7 +66,8 @@ RUN    cd ParaView-v${PARAVIEW_VERSION}.build \
              -DVTK_OPENGL_HAS_OSMESA=ON \
              -DVTK_USE_OFFSCREEN=OFF \
              -DPARAVIEW_USE_MPI=ON \
-             -DVTK_USE_SYSTEM_PNG=ON \  
+             -DPYTHON_EXECUTABLE=/usr/bin/python3 \
+             -DVTK_USE_SYSTEM_PNG=ON \
         ../ParaView-v${PARAVIEW_VERSION} \
     && make -j $(getconf _NPROCESSORS_ONLN) install
 RUN rm -Rf ParaView-v${PARAVIEW_VERSION}*

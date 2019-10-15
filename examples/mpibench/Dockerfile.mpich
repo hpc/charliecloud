@@ -1,7 +1,7 @@
 # ch-test-scope: full
 FROM mpich
 
-RUN apt-get install -y git
+RUN dnf install -y which
 
 # Compile the Intel MPI benchmark
 WORKDIR /usr/local/src

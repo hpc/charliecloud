@@ -1,9 +1,9 @@
 # ch-test-scope: full
-FROM debian9
+FROM centos8
 
 # The MPICH example has a smaller scope than the OpenMPI example. We want to
 # provide an MPICH build that works on a single node and (via ch-fromhost
-# trickery) on Cray Aires systems. That's it for now.
+# trickery) on Cray Aries systems. That's it for now.
 
 # We build MPICH rather than install the Debian package because something
 # about Debian's build prevents applications from linking against
@@ -11,14 +11,13 @@ FROM debian9
 # figured out what. While we're at it, tweak some other options as well to
 # produce a bare bones build.
 
-RUN apt-get install -y --no-install-suggests \
-    autoconf \
+RUN dnf install -y --setopt=install_weak_deps=false \
+    automake \
     file \
-    g++ \
     gcc \
+    gcc-c++ \
+    gcc-gfortran \
     git \
-    libgfortran3 \
-    libpmi2-0-dev \
     make \
     wget
 
@@ -31,7 +30,7 @@ RUN    cd patchelf \
     && make install
 RUN rm -Rf patchelf
 
-ENV MPI_VERSION 3.2.1
+ENV MPI_VERSION 3.3.1
 ENV MPI_URL http://www.mpich.org/static/downloads/${MPI_VERSION}
 RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz
 RUN tar xf mpich-${MPI_VERSION}.tar.gz
