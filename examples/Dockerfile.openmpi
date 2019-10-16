@@ -100,20 +100,18 @@ RUN    cd ucx \
     && ./autogen.sh \
     && ./contrib/configure-release-mt --prefix=/usr \
     && make -j$(getconf _NPROCESSORS_ONLN) install
+RUN rm -Rf ucx*
 
-# OpenPMIX. CentOS 8 doesn't have libpmi2 required to build OpenMPI's pmi2
-# support, installing from the OpenPMIX project. OpenMPI 3.x only support PMIX
-# 2.x so not building newer than that.
-# PMIX_VERSION is used by the configure step, using EX_PMIX_VERSION to avoid
-# collision
-ENV PMIX_URL https://github.com/pmix/pmix/releases/download/
-ENV EX_PMIX_VERSION 2.2.3
-RUN wget -nv ${PMIX_URL}/v${EX_PMIX_VERSION}/pmix-${EX_PMIX_VERSION}.tar.gz
-RUN tar xf pmix-${EX_PMIX_VERSION}.tar.gz
-RUN    cd pmix-${EX_PMIX_VERSION} \
+# PMI2. Since CentOS doesn't have a package providing then necessary Slurm PMI2
+# libraries building them from Slurm's release.
+ENV SLURM_VERSION 19-05-3-2
+RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz
+RUN tar -xf slurm-${SLURM_VERSION}.tar.gz
+RUN cd slurm-slurm-${SLURM_VERSION} \
     && ./configure --prefix=/usr \
-                   --with-libevent \
+    && cd contribs/pmi2/ \
     && make -j$(getconf _NPROCESSORS_ONLN) install
+RUN rm -Rf slurm*
 
 # OpenMPI.
 #
@@ -132,8 +130,8 @@ RUN    cd openmpi-${MPI_VERSION} \
                    --sysconfdir=/mnt/0 \
                    --with-libevent \
 		           --with-slurm \
-                   --with-pmi=/usr \
-                   --with-pmix=/usr \
+                   --with-pmi \
+                   --with-pmix \
                    --with-ucx \
                    --disable-pty-support \
                    --enable-mca-no-build=btl-openib,plm-slurm \
