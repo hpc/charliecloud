@@ -85,11 +85,17 @@ RUN dnf install -y --setopt=install_weak_deps=false \
 
 WORKDIR /usr/src
 
-# As of 10/7/19 CentOS 8 provides version 10.3.58 of PSM2, this is an older
-# version but it works on our test environments.
+# PSM2. CentOS 8 does not provide a package providing the necessary headers,
+# building from source instead.
 # Note that libpsm2 is x86-64 only
+ENV PSM2_URL https://github.com/intel/opa-psm2/archive
+ENV PSM2_VERSION 11.2.68
 RUN if [ "$(uname -i)" = "x86_64" ] ; then \
-        dnf install -y libpsm2; \
+        wget -nv ${PSM2_URL}/PSM2_${PSM2_VERSION}.tar.gz \
+        && tar -xf PSM2_${PSM2_VERSION}.tar.gz \
+        && cd opa-psm2-PSM2_${PSM2_VERSION} \
+        && make install  \
+        && rm -Rf *PSM2* ; \
     fi
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
@@ -109,7 +115,7 @@ RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz
 RUN tar -xf slurm-${SLURM_VERSION}.tar.gz
 RUN cd slurm-slurm-${SLURM_VERSION} \
     && ./configure --prefix=/usr \
-    && cd contribs/pmi2/ \
+    && cd contribs/pmi2 \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN rm -Rf slurm*
 
