@@ -74,7 +74,7 @@ fi
 sudo -v || true
 echo "\$CH_TEST_SUDO=$CH_TEST_SUDO"
 
-"$ch_test" run "$sudo_" --perm-dir
+"$ch_test" run "$sudo_"
 
 ls -lh "$CH_TEST_IMGDIR"
 
