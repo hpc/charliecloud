@@ -574,9 +574,9 @@ package :code:`openssh-client`:
 
 .. literalinclude:: ../examples/hello/Dockerfile
    :language: docker
-   :lines: 2-6
+   :lines: 3-7
 
-You can use distribution package managers such as :code:`apt-get`, as
+You can use distribution package managers such as :code:`dnf`, as
 demonstrated above, or others, such as :code:`pip` for Python packages.
 
 Be aware that the software will be downloaded anew each time you build the
