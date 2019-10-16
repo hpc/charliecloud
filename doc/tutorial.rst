@@ -587,10 +587,10 @@ Third-party software compiled from source
 
 Under this method, one uses :code:`RUN` commands to fetch the desired software
 using :code:`curl` or :code:`wget`, compile it, and install. Our example does
-this with two chained Dockerfiles. First, we build a basic Debian image
-(:code:`test/Dockerfile.debian9`):
+this with two chained Dockerfiles. First, we build a basic CentOS image
+(:code:`test/Dockerfile.centos8`):
 
-.. literalinclude:: ../examples/Dockerfile.debian9
+.. literalinclude:: ../examples/Dockerfile.centos8
    :language: docker
    :lines: 2-
 
@@ -605,7 +605,7 @@ useful to show a real example.
 
 So what is going on here?
 
-1. Use the latest Debian, Stretch, as the base image.
+1. Use the latest CentOS, CentOS 8, as the base image.
 
 2. Install a basic build system using the OS package manager.
 
@@ -613,8 +613,8 @@ So what is going on here?
 
    1. Download and untar. Note the use of variables to make adjusting the URL
       and versions easier, as well as the explanation of why we're not using
-      :code:`apt-get`, given that several of these packages are included in
-      Debian.
+      :code:`dnf`, given that several of these packages are included in
+      CentOS.
 
    2. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
       appropriate parallel build.
