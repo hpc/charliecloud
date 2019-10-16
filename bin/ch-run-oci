@@ -79,27 +79,29 @@ def args_parse():
       cmd = CH_BIN + "/ch-run"
       os.execl(cmd, cmd, "--version")
 
-   bundle_ = bundle_from_cid(args_.cid)
+   bundle_ = bundle_from_cid(args_.cid, ["/tmp", "/var/tmp"])
    if ("bundle" in args_ and args_.bundle != bundle_):
-      fatal("bundle argument \"%s\" differs from inferred bundle \"%s\""
-            % (args_.bundle, bundle_))
+      fatal("bundle argument \"%s\" differs from available inferred bundle \
+             paths: \"%s\"" % (args_.bundle, bundle_))
    args_.bundle = bundle_
 
    pid_file_ = pid_file_from_bundle(args_.bundle)
    if ("pid_file" in args_ and args_.pid_file != pid_file_):
-      fatal("pid_file argument \"%s\"% differs from inferred \"%s\""
+      fatal("pid_file argument \"%s\" differs from inferred \"%s\"" \
             % (args_.pid_file, pid_file_))
    args_.pid_file = pid_file_
 
    return args_
 
-
-def bundle_from_cid(cid):
+def bundle_from_cid(cid, prefix):
    m = re.search(r"^buildah-buildah(.+)$", cid)
    if (m is None):
       fatal("cannot parse container ID: %s" % cid)
-   return "/tmp/buildah%s" % m.groups(1)
-
+   for p in prefix:
+      p = p + "/buildah%s" % m.group(1)
+      if os.path.exists(p):
+         return p
+   fatal("bundle doesn't match an inferred path (%s))" % list(prefix))
 
 def debug_lines(s):
    for line in s.splitlines():
