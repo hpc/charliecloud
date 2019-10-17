@@ -1,1 +1,2 @@
-SUBDIRS = bin
+SUBDIRS = bin test
+ACLOCAL_AMFLAGS  = -I m4

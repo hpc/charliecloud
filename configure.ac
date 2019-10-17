@@ -10,6 +10,10 @@ AC_PROG_CC_STDC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+# for the library 
+AM_PROG_CC_C_O
+AM_PROG_AR
+#LT_INIT
 
 #AX_PTHREAD(,AC_MSG_ERROR([Missing pthread support]))
 #AX_PTHREAD([have_pthread_std=yes],[have_pthread_std=no])
@@ -42,7 +46,10 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([clock_gettime fchdir ftruncate gethostname memset mkdir munmap realpath rmdir setenv strdup strerror strstr strtol])
 
 AC_CONFIG_FILES([Makefile
-                 bin/Makefile])
+                 bin/Makefile
+                 test/Makefile])
+# Remove some annoying libtoolize warnings
+AC_CONFIG_MACRO_DIR([m4])
 
 #                 doc-src/Makefile
 #                 examples/mpi/mpihello/Makefile
@@ -50,6 +57,9 @@ AC_CONFIG_FILES([Makefile
 #                 test/chtest/Makefile])
 
 AC_CONFIG_AUX_DIR([build-aux])
+
+AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
+LT_INIT
 
 AC_ARG_ENABLE(docs,
 	AC_HELP_STRING([--enable_docs],
@@ -81,5 +91,5 @@ AC_ARG_ENABLE(buildah,
     [disable_buildah=$enableval],
     [disable_buildah="no"])
 
-AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+#AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_OUTPUT
