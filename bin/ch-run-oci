@@ -98,8 +98,7 @@ def bundle_from_cid(cid, prefix):
    if (m is None):
       fatal("cannot parse container ID: %s" % cid)
    for p in prefix:
-      p = p + "/buildah%s" % m.group(1)
-      if os.path.exists(p):
+      if os.path.exists(p + "/buildah%s" % m.group(1)):
          return p
    fatal("bundle doesn't match an inferred path (%s))" % list(prefix))
 
