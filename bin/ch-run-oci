@@ -13,6 +13,7 @@ import sys
 import time
 import types
 
+BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
 OCI_VERSION_MIN = "1.0.1-dev"
@@ -79,15 +80,15 @@ def args_parse():
       cmd = CH_BIN + "/ch-run"
       os.execl(cmd, cmd, "--version")
 
-   bundle_ = bundle_from_cid(args_.cid, ["/tmp", "/var/tmp"])
+   bundle_ = bundle_from_cid(args_.cid, BUNDLE_PREFIX)
    if ("bundle" in args_ and args_.bundle != bundle_):
-      fatal("bundle argument \"%s\" differs from available inferred bundle \
-             paths: \"%s\"" % (args_.bundle, bundle_))
+      fatal("bundle argument \"%s\" differs from inferred bundle \"%s\""
+            % (args_.bundle, bundle_))
    args_.bundle = bundle_
 
    pid_file_ = pid_file_from_bundle(args_.bundle)
    if ("pid_file" in args_ and args_.pid_file != pid_file_):
-      fatal("pid_file argument \"%s\" differs from inferred \"%s\"" \
+      fatal("pid_file argument \"%s\" differs from inferred \"%s\""
             % (args_.pid_file, pid_file_))
    args_.pid_file = pid_file_
 
@@ -97,10 +98,12 @@ def bundle_from_cid(cid, prefix):
    m = re.search(r"^buildah-buildah(.+)$", cid)
    if (m is None):
       fatal("cannot parse container ID: %s" % cid)
+   paths = []
    for p in prefix:
-      if os.path.exists(p + "/buildah%s" % m.group(1)):
-         return p
-   fatal("bundle doesn't match an inferred path (%s))" % list(prefix))
+      paths.append(f"{p}/buildah{m.group(1)}")
+      if os.path.exists(paths[-1]):
+         return paths[-1]
+   fatal("can't infer bundle path; none of these exist: %s" % " ".join(paths))
 
 def debug_lines(s):
    for line in s.splitlines():
