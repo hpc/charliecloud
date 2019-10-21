@@ -31,6 +31,7 @@ AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
 LT_INIT
 
 AM_CONDITIONAL([TEST], [test $CH_TEST_SCOPE = quick])
+AM_CONDITIONAL([VERSION], [test $CH_TEST_SCOPE = quick])
 
 AC_ARG_ENABLE(docs,
 	AC_HELP_STRING([--enable_docs],
