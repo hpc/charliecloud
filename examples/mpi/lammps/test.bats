@@ -79,17 +79,7 @@ lammps_try () {
 @test "${ch_tag}/friction" { lammps_try friction; }
 @test "${ch_tag}/melt"     { lammps_try melt; }
 
-# Previously running the python example in /examples/python resulted in a busy
-# hang with the error:
-#
-#   FOO error: local variable 'foo' referenced before assignment
-#   Inside simple function
-#
-# Using mpi4py to launch the examples in /python/examples does not appear to
-# exhibit this behavior so using simple.py instead
-#
-#
-@test "${ch_tag}/mpi4py simple" { 
+@test "${ch_tag}/mpi4py simple" {
     $ch_mpirun_core ch-run --join --cd /lammps/python/examples "$ch_img" -- \
                     ./simple.py in.simple
 }

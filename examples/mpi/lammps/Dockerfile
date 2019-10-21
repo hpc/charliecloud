@@ -1,22 +1,23 @@
 # ch-test-scope: full
 FROM openmpi
-WORKDIR /usr/local/src
+WORKDIR /usr/src
 
 # Packages for building.
 RUN apt-get install -qy --no-install-recommends \
     cmake \
     git \
     patch \
-    python-dev \
-    python-pip \
-    python-setuptools 
+    python3-dev \
+    python3-pip \
+    python3-setuptools
 
 # Building mpi4py from source to ensure it is built against our MPI build
 # Building numpy from source to work around issues seen on Aarch64 systems
-RUN pip install --no-binary=mpi4py,numpy mpi4py numpy 
+RUN pip3 install --no-binary :all: mpi4py numpy
+#RUN ln -s /usr/bin/python3 /usr/bin/python
 # Build LAMMPS.
 ENV LAMMPS_VERSION 19Sep19
-RUN wget -nv http://lammps.sandia.gov/tars/lammps-$LAMMPS_VERSION.tar.gz
+RUN wget -nv https://lammps.sandia.gov/tars/lammps-$LAMMPS_VERSION.tar.gz
 RUN tar xf lammps-$LAMMPS_VERSION.tar.gz
 RUN mkdir lammps-${LAMMPS_VERSION}.build
 RUN    cd lammps-${LAMMPS_VERSION}.build \
@@ -34,8 +35,14 @@ RUN    cd lammps-${LAMMPS_VERSION}.build \
              -DLAMMPS_MACHINE=mpi \
           ../lammps-${LAMMPS_VERSION}/cmake \
     && make -j $(getconf _NPROCESSORS_ONLN) install
-RUN ln -s /usr/local/src/lammps-${LAMMPS_VERSION}/ /lammps
-# Patch in.melt instead of including in.large.melt because LAMMPS is GPL.
+RUN ldconfig
+RUN ln -s /usr/src/lammps-${LAMMPS_VERSION}/ /lammps
+RUN rm -f lammps-$LAMMPS_VERSION.tar.gz
+
+# Patch in.melt to increase problem dimensions.
+COPY melt.patch /lammps/examples/melt
+RUN patch -p1 -d / < /lammps/examples/melt/melt.patch
 # Patch simple.py to uncomment mpi4py calls and disable file output.
-COPY melt-and-simple.patch /lammps
-RUN patch -d / -p1 < /lammps/melt-and-simple.patch
+# Patch in.simple to increase problem dimensions.
+COPY simple.patch /lammps/python/examples
+RUN patch -p1 -d / < /lammps/python/examples/simple.patch
