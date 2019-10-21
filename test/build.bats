@@ -43,7 +43,7 @@ load common
         echo "$output"
         [[ $status -eq 0 ]]
         [[ $output = *'sage:'* ]]
-        # Executables print usage when run without arugments
+        # Executables print usage when run without arguments
         run "$i"
         echo "$output"
         [[ $status -eq 1 ]]

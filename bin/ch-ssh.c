@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
    }
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
-      exit(EXIT_SUCCESS);
+      return 0;
    }
    if (argc >= 2 && strcmp(argv[1], "--version") == 0) {
       version();
@@ -76,9 +76,6 @@ int main(int argc, char *argv[])
    // copy remaining arguments
    for ( ; i < argc && i + j < ARGS_MAX; i++)
       args[i+j] = argv[i];
-
-   //for (i = 0; args[i] != NULL; i++)
-   //   printf("%d: %s\n", i, args[i]);
 
    execvp("ssh", args);
    Tf (0, "can't execute ssh");
