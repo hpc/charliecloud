@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 
    if (argc == 1) {
       fprintf(stderr, usage);
-      return 0;
+      return 1;
    }
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
