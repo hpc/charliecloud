@@ -439,7 +439,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.writable = true;
       break;
    case ARGP_KEY_NO_ARGS:
-      argp_state_help(state, stderr, ARGP_HELP_PRE_DOC | ARGP_HELP_LONG | ARGP_HELP_POST_DOC);
+      argp_state_help(state, stderr, ARGP_HELP_SHORT_USAGE | ARGP_HELP_PRE_DOC | ARGP_HELP_LONG | ARGP_HELP_POST_DOC);
       exit(EXIT_FAILURE);
    default:
       return ARGP_ERR_UNKNOWN;
