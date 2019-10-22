@@ -5,8 +5,9 @@ libexec="$(cd "$(dirname "$0")" && pwd)"
 
 set -e
 
-usage () {
-    cat 1>&2 <<EOF
+# shellcheck disable=SC2034
+usage=$(cat << EOF
+
 Pull image from a Docker Hub and unpack into directory.
 
 Usage:
@@ -16,7 +17,7 @@ Usage:
 You must have sufficient privilege (via sudo) to run Docker commands.
 EOF
     exit "${1:-1}"
-}
+)
 
 parse_basic_args "$@"
 
