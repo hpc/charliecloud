@@ -26,20 +26,17 @@ case $TARBALL in
         tar xf charliecloud-*.tar.gz
         cd charliecloud-*
         ;;
-    export-bats)
-        (cd doc-src && make)
-        make export-bats
-        mv charliecloud-*.tar.gz "$PREFIX"
-        cd "$PREFIX"
-        tar xf charliecloud-*.tar.gz
-        cd charliecloud-*
-        ;;
     archive)
         # The Travis image already has Bats installed.
         git archive HEAD --prefix=charliecloud/ -o "$PREFIX/charliecloud.tar"
         cd "$PREFIX"
         tar xf charliecloud.tar
         cd charliecloud
+        ;;
+    '')
+        ;;
+    *)
+        false
         ;;
 esac
 

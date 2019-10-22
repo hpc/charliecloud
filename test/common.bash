@@ -6,6 +6,24 @@ arch_exclude () {
     fi
 }
 
+archive_grep () {
+    image="$1"
+    case $image in
+        *.sqfs)
+            unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
+            ;;
+        *)
+            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
+            ;;
+    esac
+}
+
+archive_ok () {
+    ls -ld "$1" || true
+    test -f "$1"
+    test -s "$1"
+}
+
 builder_exclude () {
     # $1: builder to exclude
     # $2: tag for prerequisites file
@@ -19,6 +37,14 @@ builder_exclude () {
         touch "$pq"
         skip "unsupported builder: $CH_BUILDER"
     fi
+}
+
+builder_ok () {
+    # FIXME: Currently we make fairly limited tagging for some builders.
+    # Uncomment below when they can be supported by all the builders.
+    #docker_tag_p "$1"
+    builder_tag_p "${1}:latest"
+    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 builder_tag_p () {
@@ -49,30 +75,12 @@ builder_tag_p () {
     return 1
 }
 
-builder_ok () {
-    # FIXME: Currently we make fairly limited tagging for some builders.
-    # Uncomment below when they can be supported by all the builders.
-    #docker_tag_p "$1"
-    builder_tag_p "${1}:latest"
-    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
-}
-
 crayify_mpi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
         $ch_mpirun_node ch-fromhost --cray-mpi "$1"
     else
         skip 'host is not a Cray'
-    fi
-}
-
-# Force OpenMPI to use TCP instead of the high speed network (HSN)
-disable_hsn_openmpi() {
-    if [[ -d /dev/infiniband ]] ; then
-        export OMPI_MCA_pml=ob1
-        export OMPI_MCA_btl=tcp,self
-    else
-        skip "No high speed network detected"
     fi
 }
 
@@ -118,19 +126,24 @@ need_docker () {
     fi
 }
 
+need_squashfs () {
+    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
+    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
     fi
 }
 
-need_squashfs () {
-    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
-    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
-}
-
-squashfs_ready () {
-    ( command -v mksquashfs && command -v squashfuse )
+# Wrapper for Bats run() to work around Bats bug #89 by saving/restoring $IFS.
+# See issues #552 and #555 and https://stackoverflow.com/a/32425874.
+eval bats_"$(declare -f run)"
+run () {
+    local ifs_old="$IFS"
+    bats_run "$@"
+    IFS="$ifs_old"
 }
 
 scope () {
@@ -155,10 +168,8 @@ scope () {
     esac
 }
 
-archive_ok () {
-    ls -ld "$1" || true
-    test -f "$1"
-    test -s "$1"
+squashfs_ready () {
+    ( command -v mksquashfs && command -v squashfuse )
 }
 
 unpack_img_all_nodes () {
@@ -167,18 +178,6 @@ unpack_img_all_nodes () {
     else
         skip 'not needed'
     fi
-}
-
-archive_grep () {
-    image="$1"
-    case $image in
-        *.sqfs)
-            unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
-            ;;
-        *)
-            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
-            ;;
-    esac
 }
 
 # Predictable sorting and collation
@@ -280,7 +279,21 @@ else
     ch_cray=
 fi
 
-# Slurm stuff.
+# Multi-node and multi-process stuff. Do not use Slurm variables in tests; use
+# these instead:
+#
+#   ch_multiprocess    can run multiple processes
+#   ch_multinode       can run on multiple nodes
+#   ch_nodes           number of nodes in job
+#   ch_cores_node      number of cores per node
+#   ch_cores_total     total cores in job ($ch_nodes × $ch_cores_node)
+#
+#   ch_mpirun_node     command to run one rank per node
+#   ch_mpirun_core     command to run one rank per physical core
+#   ch_mpirun_2        command to run two ranks per job launcher default
+#   ch_mpirun_2_1node  command to run two ranks on one node
+#   ch_mpirun_2_2node  command to run two ranks on two nodes (one rank/node)
+#
 if [[ $SLURM_JOB_ID ]]; then
     ch_nodes=$SLURM_JOB_NUM_NODES
 else
@@ -296,12 +309,11 @@ ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
-    ch_multinode=yes     # can run on multiple nodes
-    ch_multiprocess=yes  # can run multiple processes
-    ch_mpirun_node='srun --ntasks-per-node 1'               # 1 rank/node
-    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"  # 1 rank/core
-    ch_mpirun_2='srun -n2'                                  # 2 ranks, 2 nodes
-    ch_mpirun_2_1node='srun -N1 -n2'                        # 2 ranks, 1 node
+    ch_multiprocess=yes
+    ch_mpirun_node='srun --ntasks-per-node 1'
+    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"
+    ch_mpirun_2='srun -n2'
+    ch_mpirun_2_1node='srun -N1 -n2'
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
     # are present. Work around this by fooling OpenMPI into believing it's not
     # in a Slurm allocation.
@@ -309,15 +321,24 @@ if [[ $SLURM_JOB_ID ]]; then
         # shellcheck disable=SC2034
         ch_unslurm='--unset-env=SLURM*'
     fi
+    if [[ $ch_nodes -eq 1 ]]; then
+        ch_multinode=
+        ch_mpirun_2_2node=false
+    else
+        ch_multinode=yes
+        ch_mpirun_2_2node='srun -N2 -n2'
+    fi
 else
     # shellcheck disable=SC2034
     ch_multinode=
+    # shellcheck disable=SC2034
+    ch_mpirun_2_2node=false
     if ( command -v mpirun >/dev/null 2>&1 ); then
         ch_multiprocess=yes
         ch_mpirun_node='mpirun --map-by ppr:1:node'
         ch_mpirun_core="mpirun ${ch_mpirun_np}"
         ch_mpirun_2='mpirun -np 2'
-        ch_mpirun_2_1node='mpirun -np 2'
+        ch_mpirun_2_1node='mpirun -np 2 --host localhost:2'
     else
         ch_multiprocess=
         ch_mpirun_node=''

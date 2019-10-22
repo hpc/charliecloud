@@ -15,8 +15,8 @@ import types
 
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
-OCI_VERSION_MIN = "1.0.0"
-OCI_VERSION_MAX = "1.0.0"
+OCI_VERSION_MIN = "1.0.1-dev"
+OCI_VERSION_MAX = "1.0.1-dev"
 
 args = None   # CLI Namespace
 l = None      # logger object
@@ -345,9 +345,9 @@ def state_load():
    st.config = json.load(open(args.bundle + "/config.json"))
    #debug_lines(json.dumps(st.config, indent=2))
 
-   v_min = distutils.version.StrictVersion(OCI_VERSION_MIN)
-   v_actual = distutils.version.StrictVersion(st.config["ociVersion"])
-   v_max = distutils.version.StrictVersion(OCI_VERSION_MAX)
+   v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
+   v_actual = distutils.version.LooseVersion(st.config["ociVersion"])
+   v_max = distutils.version.LooseVersion(OCI_VERSION_MAX)
    if (not v_min <= v_actual <= v_max):
       fatal("unsupported OCI version: %s" % st.config["ociVersion"])
 

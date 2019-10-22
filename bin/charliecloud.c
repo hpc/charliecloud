@@ -1,4 +1,4 @@
-/* Copyright © Los Alamos National Security, LLC, and others. */
+/* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
 #include <errno.h>
@@ -51,13 +51,13 @@ const char *VERBOSE_LEVELS[] = { "error", "warning", "info", "debug" };
 /* Default bind-mounts. */
 struct bind BINDS_REQUIRED[] = {
    { "/dev",             "/dev" },
-   { "/etc/hosts",       "/etc/hosts" },
-   { "/etc/resolv.conf", "/etc/resolv.conf" },
    { "/proc",            "/proc" },
    { "/sys",             "/sys" },
    { NULL, NULL }
 };
 struct bind BINDS_OPTIONAL[] = {
+   { "/etc/hosts",               "/etc/hosts" },
+   { "/etc/resolv.conf",         "/etc/resolv.conf" },
    { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool" },
    { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs" },
    { NULL, NULL }

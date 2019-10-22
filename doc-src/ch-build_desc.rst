@@ -22,7 +22,7 @@ Supported builders, unprivileged:
 
   * :code:`buildah`: Buildah in "rootless" mode with no setuid helpers, using
     :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions. This
-    currently requires a patched Buildah; see the install instructions.
+    requires Buildah v1.10.1+; see the install instructions.
 
   * :code:`ch-grow`: Our internal builder.
 

@@ -11,7 +11,7 @@ Usage:
 
   $ $(basename "$0") [-b BUILDER] [--builder-info] -t TAG [ARGS ...] CONTEXT
 
-BUILDER is one of: ch-grow docker.
+BUILDER is one of: buildah ch-grow docker.
 ARGS are passed unchanged to the underlying builder.
 EOF
 )
@@ -68,19 +68,19 @@ case $CH_BUILDER in
         case $CH_BUILDER in
             buildah)
                 runtime=${ch_bin}/ch-run-oci
-                ignore_chown=--ignore-chown-errors
+                ignore_chown=true
                 ;;
             buildah-runc)
                 runtime=runc
-                # ignore_chown: leave unset
+                ignore_chown=false
                 ;;
             buildah-setuid)
                 runtime=${ch_bin}/ch-run-oci
-                # ignore_chown: leave unset
+                ignore_chown=false
                 ;;
         esac
         BUILDAH_LAYERS=true \
-        buildah $ignore_chown \
+        buildah --storage-opt .ignore_chown_errors="$ignore_chown" \
                 build-using-dockerfile \
                 --build-arg HTTP_PROXY="$HTTP_PROXY" \
                 --build-arg HTTPS_PROXY="$HTTPS_PROXY" \

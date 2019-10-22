@@ -65,6 +65,22 @@ load common
 @test 'lint shell scripts' {
     scope standard
     ( command -v shellcheck >/dev/null 2>&1 ) || skip "no shellcheck found"
+    # skip if minimum shellcheck not met unless Travis or LANL
+    version=$(shellcheck --version | grep -E '^version:' | cut -d' ' -f2)
+    major=${version%%.*}
+    rest=${version#*.}
+    minor=${rest%%.*}
+    echo "shellcheck: version '$version', major '$major', minor '$minor'"
+    if [[ $minor -lt 6 ]]; then
+        # no need to check major because minimum is 0
+        error="shellcheck $version older than 0.6.0"
+        if [[ $TRAVIS ]] || [[ $(hostname --fqdn) = *'.lanl.gov' ]]; then
+            echo "$error"
+            false
+        else
+            skip "$error"
+        fi
+    fi
     # user executables
     for i in "$ch_bin"/ch-*; do
         echo "shellcheck: ${i}"
