@@ -50,7 +50,6 @@
 
 #include "charliecloud.h"
 
-
 const char usage[] = "\
 Usage: ch-checkns\n\
 \n\
@@ -62,14 +61,14 @@ Example:\n\
   ok\n\
 \n";
 
-#define TRY(x) if (x) fatal_errno(__LINE__, #x)
+#define TRY(x) if (!(x)) fatal_(__FILE__, __LINE__, errno, #x)
 
 
-void fatal_errno(int line, char *str)
+void fatal_(char *file, int line, int errno_, char *str)
 {
-   printf("error at line %d, errno=%d\n", line, errno);
-   printf("%d: if(%s)\n", line, str);
-   printf("see: https://github.com/hpc/charliecloud/blob/master/bin/ch-checkns.c\n");
+   char *url= "see: https://github.com/hpc/charliecloud/blob/master/bin/ch-checkns.c";
+   printf("error: %s: %d: %s\n", file, line, str);
+   printf("errno: %d\nsee:%s\n", errno_, url);
    exit(1);
 }
 
@@ -93,11 +92,11 @@ int main(int argc, char *argv[])
    /* Enter the mount and user namespaces. Note that in some cases (e.g., RHEL
       6.8), this will succeed even though the userns is not created. In that
       case, the following mount(2) will fail with EPERM. */
-   TRY (unshare(CLONE_NEWNS|CLONE_NEWUSER));
+   TRY (0 == unshare(CLONE_NEWNS|CLONE_NEWUSER));
 
    /* Claim the image for our namespace by recursively bind-mounting it over
       itself. This standard trick avoids conditions 1 and 2. */
-   TRY (mount("/tmp/newroot", "/tmp/newroot", NULL,
+   TRY (0 == mount("/tmp/newroot", "/tmp/newroot", NULL,
               MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
    /* The next few calls deal with condition 3. The solution is to overmount
@@ -108,13 +107,13 @@ int main(int argc, char *argv[])
    /* Claim /tmp for our namespace. You would think that because /tmp contains
       /tmp/newroot and it's a recursive bind mount, we could claim both in the
       same call. But, this causes pivot_root(2) to fail later with EBUSY. */
-   TRY (mount("/tmp", "/tmp", NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
+   TRY (0 == mount("/tmp", "/tmp", NULL, MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
    /* chdir to /tmp. This moves the process' special "." pointer to
       the soon-to-be root filesystem. Otherwise, it will keep pointing to the
       overmounted root. See the e-mail at the end of:
       https://git.busybox.net/busybox/tree/util-linux/switch_root.c?h=1_24_2 */
-   TRY (chdir("/tmp"));
+   TRY (0 == chdir("/tmp"));
 
    /* Move /tmp to /. (One could use this to directly enter the image,
       avoiding pivot_root(2) altogether. However, there are ways to remove all
@@ -122,30 +121,28 @@ int main(int argc, char *argv[])
       unmounted, exposing the old root filesystem underneath. While
       Charliecloud does not claim a strong isolation boundary, we do want to
       make activating the UDSS irreversible.) */
-   TRY (mount("/tmp", "/", NULL, MS_MOVE, NULL));
+   TRY (0 == mount("/tmp", "/", NULL, MS_MOVE, NULL));
 
    /* Move the "/" special pointer to the new root filesystem, for the reasons
       above. (Similar reasoning applies for why we don't use chroot(2) to
       directly activate the UDSS.) */
-   TRY (chroot("."));
+   TRY (0 == chroot("."));
 
    /* Make a place for the old (intermediate) root filesystem to land. */
    if (mkdir("/newroot/oldroot", 0755) && errno != EEXIST)
       TRY (errno);
 
    /* Re-mount the image read-only. */
-   unsigned long flags = path_mount_flags("/newroot") | MS_REMOUNT
-                                                      | MS_BIND
-                                                      | MS_RDONLY;
-   TRY (mount(NULL, "/newroot", NULL, flags, NULL));
+   unsigned long flags = path_mount_flags("/newroot") | MS_REMOUNT | MS_BIND | MS_RDONLY;
+   TRY (0 == mount(NULL, "/newroot", NULL, flags, NULL));
 
    /* Finally, make our "real" newroot into the root filesystem. */
-   TRY (chdir("/newroot"));
-   TRY (syscall(SYS_pivot_root, "/newroot", "/newroot/oldroot"));
-   TRY (chroot("."));
+   TRY (0 == chdir("/newroot"));
+   TRY (0 == syscall(SYS_pivot_root, "/newroot", "/newroot/oldroot"));
+   TRY (0 == chroot("."));
 
    /* Unmount the old filesystem and it's gone for good. */
-   TRY (umount2("/oldroot", MNT_DETACH));
+   TRY (0 == umount2("/oldroot", MNT_DETACH));
 
    /* Report success. */
    printf("ok\n");
