@@ -6,7 +6,7 @@ libexec="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Run the Charliecloud test suite.
+Run some or all of the Charliecloud test suite.
 
 Usage:
 
@@ -15,7 +15,7 @@ EOF
 )
 
 check_builder () {
-    printf "\nchecking builder: "
+    printf 'checking builder...\n'
     case $CH_BUILDER in
     ch-grow)
         if ! ("${ch_bin}/ch-grow" --dependencies); then
@@ -41,13 +41,13 @@ check_builder () {
             fatal 'builder: docker: not installed'
         fi
         bl=$(command -v docker)
-        bv=$(docker --version | awk '{print $3}' | sed -e 's/,//')
+        bv=$(docker_ --version | awk '{print $3}' | sed -e 's/,$//')
         ;;
     *)
         fatal "builder: $CH_BUILDER: not supported"
         ;;
     esac
-    printf '%s %s: OK\n\n' "$bl" "$bv"
+    printf 'found: %s %s\n\n' "$bl" "$bv"
     check_min_ver 'builder' "$min" "$bv"
 }
 
@@ -87,7 +87,7 @@ check_tardir_file () {
             missing+=("${CH_TEST_TARDIR}/${f}")
         fi
     done
-    fatal "phase: $phase: missing build phase artifact(s): ${missing[*]}"
+    fatal "phase $phase: missing build phase artifact(s): ${missing[*]}"
 }
 
 fatal () {
@@ -109,12 +109,11 @@ if [[ ! -d $CH_TEST_IMGDIR ]]; then
 fi
 }
 
-# Remove CH_TEST_PERMDIRS directories. Ensure that the target directory has
-# only two sub directories, e.g., nopass and pass.
-rm_ () {
-    if [[ $(find "${d}" -maxdepth 1 -mindepth 1 | wc -l) == 2 ]] && \
-       (find "${d}" -maxdepth 1 -mindepth 1 -name pass -type d) && \
-       (find "${d}" -maxdepth 1 -mindepth 1 -name nopass -type d); then
+# Remove a filesystem permissions fixture directory. Ensure that the target
+# directory has exactly the two subdirectories expected first.
+rm_permdir () {
+    if [[    $(find "${d}" -maxdepth 1 -mindepth 1 | wc -l) == 2 \
+          && -d "${d}/pass" && -d "${d}/nopass" ]]; then
         echo "removing ${d}"
         sudo rm -rf --one-file-system "$d"
     fi
@@ -127,18 +126,21 @@ single_assignment () {
 }
 
 set_builder () {
+    width=$1
     if [[ -n $builder ]]; then
         export CH_BUILDER=$builder
         method='command line'
     elif [[ -n $CH_BUILDER ]]; then
-        method='environment variable'
+        method='environment'
     else
         builder_choose
         method='default'
     fi
-    printf 'setting builder to %s (%s)\n' "$CH_BUILDER" "$method"
-    if [[ $CH_BUILDER == 'ch-grow' ]]; then
-        set_chvar CH_GROW_STORAGE 'ch-grow storage' '' "$CH_GROW_STORAGE" /var/tmp/ch-grow_
+    # shellcheck disable=SC2059
+    printf "%-${width}s %s (%s)\n" 'builder:' "$CH_BUILDER" "$method"
+    if [[ $CH_BUILDER == ch-grow ]]; then
+        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" /var/tmp/ch-grow \
+                             "$width" 'ch-grow storage'
     fi
 }
 
@@ -217,7 +219,12 @@ while [[ $# -gt 0 ]]; do
         single_assignment "$imgdir"
         imgdir=$1; shift
         ;;
+    --pack-dir)
+        single_assignment "$tardir"
+        tardir=$1; shift
+        ;;
     --perm-dir)
+        use_sudo=yes
         permdirs+=("$1"); shift
         ;;
     -s|--scope)
@@ -228,10 +235,6 @@ while [[ $# -gt 0 ]]; do
     --sudo)
         use_sudo=yes
         ;;
-    --tar-dir)
-        single_assignment "$tardir"
-        tardir=$1; shift
-        ;;
     --version)
         version; exit 0
         ;;
@@ -241,27 +244,42 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+printf "ch-test version %s\n\n" "$ch_version"
+printf 'ch-run: %s %s\n' "$("${ch_bin}/ch-run" --version 2>&1)" \
+                         "${ch_bin}/ch-run"
+printf 'bats:   %s at %s\n' "$(echo "$bv" | awk '{print $2}')" "$bats"
+printf 'tests:  %s\n\n' "$testdir"
+
+printf "%-21s %s" 'phase:' "$phase"
 if [[ -z $phase ]]; then
     phase=all
-    printf "executing test phases: build, run, and examples\n"
+    printf 'build run examples'
+fi
+printf '\n'
+
+#    variable name    CLI              environment         default
+#                     desc. width  description
+vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
+                      21 'scope'
+set_builder 21
+vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     '' \
+                      21 'use generic sudo'
+vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
+                      21 'unpacked images dir'
+vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
+                      21 'packed images dir'
+vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
+                      21 'fs permissions dirs'
+printf '\n'
+
+if [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
+    fatal "phase $phase: CH_TEST_PERMDIRS: can't be 'skip'"
 fi
 
-printf 'using ch-run %s at %s\n' "$(version 2>&1)" "${ch_bin}/ch-run"
-printf 'using bats %s at %s\n' "$(echo "$bv" | awk '{print $2}')" "$bats"
-printf 'using test directory %s\n' "$testdir"
-
-#           variable name     description           command line        environment         default
-set_chvar   CH_TEST_SCOPE     'test scope'          "$scope"            "$CH_TEST_SCOPE"    standard
-set_chvar   CH_TEST_SUDO      'sudo capabilities'   "$use_sudo"         "$CH_TEST_SUDO"     no
-set_chvar   CH_TEST_IMGDIR    'image directory'     "$imgdir"           "$CH_TEST_IMGDIR"   /var/tmp/img
-set_chvar   CH_TEST_TARDIR    'tarball directory'   "$tardir"           "$CH_TEST_TARDIR"   /var/tmp/tar
-set_chvar   CH_TEST_PERMDIRS  'permission fixtures' "${permdirs[*]}"    "$CH_TEST_PERMDIRS" skip
-set_builder
-
-if   [[ $phase == 'mk-perm-dirs' ]] && [[ -z $use_sudo ]]; then
-    fatal "phase: $phase: requires --sudo"
-elif [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
-    fatal "phase: $phase: CH_TEST_PERMDIRS: can't be 'skip'"
+if [[ $CH_TEST_SUDO ]]; then
+    printf "checking sudo...\n"
+    sudo true
+    printf '\n'
 fi
 
 case $phase in
@@ -276,7 +294,7 @@ case $phase in
 esac
 
 if [[ -n $dry ]];then
-    printf "exiting; dry-run complete"
+    printf "exiting per --dry-run\n"
     exit 0
 fi
 
@@ -310,7 +328,7 @@ case $phase in
         ;;
     rm-perm-dirs)
         for d in $CH_TEST_PERMDIRS; do
-            rm_ "$d"
+            rm_permdir "$d"
         done
         ;;
     clean)
