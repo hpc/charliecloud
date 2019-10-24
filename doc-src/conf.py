@@ -268,7 +268,7 @@ man_pages = [
     "Unpack an image tarball into a directory",
     [], 1),
    ("ch-test", "ch-test",
-    "Run the Charliecloud test suite",
+    "Run some or all of the Charliecloud test suite",
     [], 1),
    ("ch-tar2squash", "ch-tar2squash",
     "Create a SquashFS file from a tarball image",
