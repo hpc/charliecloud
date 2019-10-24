@@ -16,7 +16,6 @@ Usage:
 
 You must have sufficient privilege (via sudo) to run Docker commands.
 EOF
-    exit "${1:-1}"
 )
 
 parse_basic_args "$@"
