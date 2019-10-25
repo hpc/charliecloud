@@ -80,7 +80,7 @@ def args_parse():
       cmd = CH_BIN + "/ch-run"
       os.execl(cmd, cmd, "--version")
 
-   bundle_ = bundle_from_cid(args_.cid, BUNDLE_PREFIX)
+   bundle_ = bundle_from_cid(args_.cid)
    if ("bundle" in args_ and args_.bundle != bundle_):
       fatal("bundle argument \"%s\" differs from inferred bundle \"%s\""
             % (args_.bundle, bundle_))
@@ -94,12 +94,12 @@ def args_parse():
 
    return args_
 
-def bundle_from_cid(cid, prefix):
+def bundle_from_cid(cid):
    m = re.search(r"^buildah-buildah(.+)$", cid)
    if (m is None):
       fatal("cannot parse container ID: %s" % cid)
    paths = []
-   for p in prefix:
+   for p in BUNDLE_PREFIX:
       paths.append("%s/buildah%s" % (p, m.group(1)))
       if os.path.exists(paths[-1]):
          return paths[-1]
