@@ -48,6 +48,5 @@ load common
 
 @test 'ch-checkns' {
     scope quick
-    run bin/ch-checkns
-    [[ $status -eq 1 ]]
+    bin/ch-checkns
 }
