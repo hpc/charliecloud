@@ -66,14 +66,15 @@ Example:\n\
 
 void fatal_(char *file, int line, int errno_, char *str)
 {
-   char *url= "see: https://github.com/hpc/charliecloud/blob/master/bin/ch-checkns.c";
+   char *url = "https://github.com/hpc/charliecloud/blob/master/bin/ch-checkns.c";
    printf("error: %s: %d: %s\n", file, line, str);
-   printf("errno: %d\nsee:%s\n", errno_, url);
+   printf("errno: %d\nsee: %s\n", errno_, url);
    exit(1);
 }
 
 int main(int argc, char *argv[])
 {
+   unsigned long flags;
 
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
@@ -97,7 +98,7 @@ int main(int argc, char *argv[])
    /* Claim the image for our namespace by recursively bind-mounting it over
       itself. This standard trick avoids conditions 1 and 2. */
    TRY (0 == mount("/tmp/newroot", "/tmp/newroot", NULL,
-              MS_REC | MS_BIND | MS_PRIVATE, NULL));
+               MS_REC | MS_BIND | MS_PRIVATE, NULL));
 
    /* The next few calls deal with condition 3. The solution is to overmount
       the root filesystem with literally anything else. We use the parent of
@@ -133,7 +134,7 @@ int main(int argc, char *argv[])
       TRY (errno);
 
    /* Re-mount the image read-only. */
-   unsigned long flags = path_mount_flags("/newroot") | MS_REMOUNT | MS_BIND | MS_RDONLY;
+   flags = path_mount_flags("/newroot") | MS_REMOUNT | MS_BIND | MS_RDONLY;
    TRY (0 == mount(NULL, "/newroot", NULL, flags, NULL));
 
    /* Finally, make our "real" newroot into the root filesystem. */
