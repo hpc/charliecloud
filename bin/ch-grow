@@ -167,6 +167,11 @@ environment variables:
                    help="print version and exit")
    ap.add_argument("context", metavar="CONTEXT",
                    help="context directory")
+
+   if (len(sys.argv) < 2):
+       ap.print_help(file=sys.stderr)
+       sys.exit(1)
+
    cli = ap.parse_args()
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"

@@ -52,6 +52,7 @@
 
 
 const char usage[] = "\
+\n\
 Usage: ch-checkns\n\
 \n\
 Check \"ch-run\" prerequisites, e.g., namespaces and \"pivot_root(2)\".\n\
@@ -59,8 +60,7 @@ Check \"ch-run\" prerequisites, e.g., namespaces and \"pivot_root(2)\".\n\
 Example:\n\
 \n\
   $ ch-checkns\n\
-  ok\n\
-\n";
+  ok\n";
 
 #define TRY(x) if (x) fatal_errno(__LINE__)
 
@@ -73,7 +73,6 @@ void fatal_errno(int line)
 
 int main(int argc, char *argv[])
 {
-
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
       return 0;
