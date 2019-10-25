@@ -40,7 +40,7 @@ endif
 bin/version.h: VERSION.full
 	echo "#define VERSION \"$$(cat $<)\"" > $@
 bin/version.sh: VERSION.full
-	echo "ch_version='$$(cat $<)'" > $@
+	printf "# shellcheck disable=SC2034\nch_version='$$(cat $<)'\n" > $@
 
 # This target provides tarballs of HEAD (not the Git working directory) that
 # are self-contained, including the source code as well as the man pages. To
