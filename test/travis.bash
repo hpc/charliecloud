@@ -47,7 +47,7 @@ if [[ $INSTALL ]]; then
     sudo make install PREFIX="$PREFIX"
     ch_test="${PREFIX}/bin/ch-test"
 else
-    ch_test='bin/ch-test'
+    ch_test=$(readlink -f bin/ch-test)
 fi
 
 "$ch_test" mk-perm-dirs --sudo
