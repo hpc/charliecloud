@@ -16,7 +16,7 @@ EOF
 
 assign_once () {
     if [[ -n $1 ]]; then
-        fatal "$1: assignment more than once (originally set to: $phase)"
+        fatal "$1: assignment more than once (originally set to: $1)"
     fi
 }
 
