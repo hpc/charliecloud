@@ -122,17 +122,17 @@ ver_check () {
     fi
 }
 
-unpackdir_check () {
+packdir_check () {
     printf 'checking tarball directory: %s: ' "$CH_TEST_TARDIR"
     # The run phase requires artifacts from a successful build phase. Thus,
     # we check sanity based on the minimal set of artifacts (quick scope).
-    unpackdir_check_file alpine39{.tar.gz,.sqfs,.pq_missing}
-    unpackdir_check_file alpine39_dp{.tar.gz,.sqfs,.pq_missing}
-    unpackdir_check_file chtest{.tar.gz,.sqfs,.pq_missing}
+    packdir_check_file alpine39{.tar.gz,.sqfs,.pq_missing}
+    packdir_check_file alpine39_dp{.tar.gz,.sqfs,.pq_missing}
+    packdir_check_file chtest{.tar.gz,.sqfs,.pq_missing}
     printf 'OK\n'
 }
 
-unpackdir_check_file () {
+packdir_check_file () {
     local missing
     for f in "$@"; do
         if [[ -f ${CH_TEST_TARDIR}/${f} ]]; then
@@ -181,7 +181,7 @@ fi
 
 # Check for test directory.
 if (! cd "$testdir"); then
-    fatal "test directory not found; expected in $top_dir"
+    fatal "test directory not found; expected in $test_dir"
 fi
 
 cd "$testdir" || fatal "cd $testdir failed"
@@ -290,7 +290,7 @@ case $phase in
         ;;
     run)
         printf '\n'
-        unpackdir_check
+        packdir_check
         ;;
 esac
 
