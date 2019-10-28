@@ -176,12 +176,12 @@ if [[ -d "${top_dir}/test" ]]; then
     testdir=${top_dir}/test
 else
     # prefix installation
-    testdir=${top_dir%/charliecloud}/libexec/charliecloud-$(version 2>&1)/test
+    testdir=${top_dir%/charliecloud*}/libexec/charliecloud-$(version 2>&1)/test
 fi
 
 # Check for test directory.
 if (! cd "$testdir"); then
-    fatal "test directory not found; expected in $test_dir"
+    fatal "test directory not found; expected in $testdir"
 fi
 
 cd "$testdir" || fatal "cd $testdir failed"
