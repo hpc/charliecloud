@@ -14,7 +14,13 @@ Usage:
 EOF
 )
 
-check_builder () {
+assign_once () {
+    if [[ -n $1 ]]; then
+        fatal "$1: assignment more than once (originally set to: $phase)"
+    fi
+}
+
+builder_check () {
     printf 'checking builder...\n'
     case $CH_BUILDER in
     ch-grow)
@@ -48,84 +54,10 @@ check_builder () {
         ;;
     esac
     printf 'found: %s %s\n\n' "$bl" "$bv"
-    check_min_ver 'builder' "$min" "$bv"
+    ver_check 'builder' "$min" "$bv"
 }
 
-check_min_ver () {
-    if [[ $(printf '%s\n%s\n' "$2" "$3" | sort -V | head -n1) != "$2" ]]; then
-        fatal "$1: mininum version $2"
-    fi
-}
-
-check_scope () {
-    case $1 in
-    quick|standard|full)
-        return 0
-        ;;
-    *)
-        fatal "scope: invalid: $1"
-        ;;
-    esac
-}
-
-check_tardir () {
-    printf '\nchecking tarball directory: %s: ' "$CH_TEST_TARDIR"
-    # The run phase requires artifacts from a successful build phase. Thus,
-    # we check sanity based on the minimal set of artifacts (quick scope).
-    check_tardir_file alpine39{.tar.gz,.sqfs,.pq_missing}
-    check_tardir_file alpine39_dp{.tar.gz,.sqfs,.pq_missing}
-    check_tardir_file chtest{.tar.gz,.sqfs,.pq_missing}
-    printf 'OK\n'
-}
-
-check_tardir_file () {
-    local missing
-    for f in "$@"; do
-        if [[ -f ${CH_TEST_TARDIR}/${f} ]]; then
-            return 0
-        else
-            missing+=("${CH_TEST_TARDIR}/${f}")
-        fi
-    done
-    fatal "phase $phase: missing build phase artifact(s): ${missing[*]}"
-}
-
-fatal () {
-    printf 'error: %s\n\n' "$1" 1>&2
-    exit 1
-}
-
-# Create test directories for TAR and IMG. This is to avoid cryptic bats error
-# (#347) that occurs when setting a CH_TEST_IMGDIR or CH_TEST_TARDIR variables
-# to a path where there are two or more subdirectories that do not exist.
-mk_dirs () {
-if [[ ! -d $CH_TEST_TARDIR ]]; then
-    echo "creating $CH_TEST_TARDIR"
-    mkdir -p "$CH_TEST_TARDIR"
-fi
-if [[ ! -d $CH_TEST_IMGDIR ]]; then
-    echo "creating $CH_TEST_IMGDIR"
-    mkdir -p "$CH_TEST_IMGDIR"
-fi
-}
-
-# Remove a filesystem permissions fixture directory. Ensure that the target
-# directory has exactly the two subdirectories expected first.
-rm_permdir () {
-    if [[    $(find "${d}" -maxdepth 1 -mindepth 1 | wc -l) == 2 \
-          && -d "${d}/pass" && -d "${d}/nopass" ]]; then
-        echo "removing ${d}"
-        sudo rm -rf --one-file-system "$d"
-    fi
-}
-
-single_assignment () {
-    if [[ -n $1 ]]; then
-        fatal "phase: assignment more than once (originally set to: $phase)"
-    fi
-}
-
-set_builder () {
+builder_set () {
     width=$1
     if [[ -n $builder ]]; then
         export CH_BUILDER=$builder
@@ -144,11 +76,79 @@ set_builder () {
     fi
 }
 
+# Create test directories for TAR and IMG. This is to avoid cryptic bats error
+# (#347) that occurs when setting a CH_TEST_IMGDIR or CH_TEST_TARDIR variables
+# to a path where there are two or more subdirectories that do not exist.
+dir_mk () {
+    if [[ ! -d $CH_TEST_TARDIR ]]; then
+        echo "creating $CH_TEST_TARDIR"
+        mkdir -p "$CH_TEST_TARDIR"
+    fi
+    if [[ ! -d $CH_TEST_IMGDIR ]]; then
+        echo "creating $CH_TEST_IMGDIR"
+        mkdir -p "$CH_TEST_IMGDIR"
+    fi
+}
+
+fatal () {
+    printf 'error: %s\n\n' "$1" 1>&2
+    exit 1
+}
+
+# Remove a filesystem permissions fixture directory. Ensure that the target
+# directory has exactly the two subdirectories expected first.
+permdir_rm () {
+    if [[    $(find "${d}" -maxdepth 1 -mindepth 1 | wc -l) == 2 \
+          && -d "${d}/pass" && -d "${d}/nopass" ]]; then
+        echo "removing ${d}"
+        sudo rm -rf --one-file-system "$d"
+    fi
+}
+
+scope_check () {
+    case $1 in
+    quick|standard|full)
+        return 0
+        ;;
+    *)
+        fatal "scope: invalid: $1"
+        ;;
+    esac
+}
+
+ver_check () {
+    if [[ $(printf '%s\n%s\n' "$2" "$3" | sort -V | head -n1) != "$2" ]]; then
+        fatal "$1: mininum version $2"
+    fi
+}
+
+unpackdir_check () {
+    printf 'checking tarball directory: %s: ' "$CH_TEST_TARDIR"
+    # The run phase requires artifacts from a successful build phase. Thus,
+    # we check sanity based on the minimal set of artifacts (quick scope).
+    unpackdir_check_file alpine39{.tar.gz,.sqfs,.pq_missing}
+    unpackdir_check_file alpine39_dp{.tar.gz,.sqfs,.pq_missing}
+    unpackdir_check_file chtest{.tar.gz,.sqfs,.pq_missing}
+    printf 'OK\n'
+}
+
+unpackdir_check_file () {
+    local missing
+    for f in "$@"; do
+        if [[ -f ${CH_TEST_TARDIR}/${f} ]]; then
+            return 0
+        else
+            missing+=("${CH_TEST_TARDIR}/${f}")
+        fi
+    done
+    fatal "phase $phase: missing build phase artifact(s): ${missing[*]}"
+}
+
 top_dir=$(readlink -f "${ch_bin%/*}")
 
 # Ensure ch-run has been compiled (issue #329).
 if (! "${ch_bin}/ch-run" --version &> /dev/null); then
-    fatal "ch-run not found; expected in $ch_bin."
+    fatal "ch-run not found; expected in $ch_bin"
 fi
 
 # Ensure namespaces are configured properly.
@@ -202,11 +202,11 @@ while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
     build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
-        single_assignment "$phase"
+        assign_once "$phase"
         phase=$opt
         ;;
     -b|--builder)
-        single_assignment "$builder"
+        assign_once "$builder"
         builder=$1; shift
         ;;
     --dry-run)
@@ -216,11 +216,11 @@ while [[ $# -gt 0 ]]; do
         usage 0
         ;;
     --img-dir)
-        single_assignment "$imgdir"
+        assign_once "$imgdir"
         imgdir=$1; shift
         ;;
     --pack-dir)
-        single_assignment "$tardir"
+        assign_once "$tardir"
         tardir=$1; shift
         ;;
     --perm-dir)
@@ -228,8 +228,8 @@ while [[ $# -gt 0 ]]; do
         permdirs+=("$1"); shift
         ;;
     -s|--scope)
-        single_assignment "$scope"
-        check_scope "$1"
+        assign_once "$scope"
+        scope_check "$1"
         scope=$1; shift
         ;;
     --sudo)
@@ -261,7 +261,7 @@ printf '\n'
 #                     desc. width  description
 vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
                       21 'scope'
-set_builder 21
+builder_set 21
 vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     '' \
                       21 'use generic sudo'
 vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
@@ -286,10 +286,11 @@ case $phase in
     all)
         ;&
     build)
-        check_builder
+        builder_check
         ;;
     run)
-        check_tardir
+        printf '\n'
+        unpackdir_check
         ;;
 esac
 
@@ -301,7 +302,7 @@ fi
 # Execute phase
 case $phase in
     build)
-        mk_dirs
+        dir_mk
         make test-build
         ;;
     run)
@@ -311,7 +312,7 @@ case $phase in
         make test-test
         ;;
     all)
-        mk_dirs
+        dir_mk
         make test
         ;;
     mk-perm-dirs)
@@ -328,7 +329,7 @@ case $phase in
         ;;
     rm-perm-dirs)
         for d in $CH_TEST_PERMDIRS; do
-            rm_permdir "$d"
+            permdir_rm "$d"
         done
         ;;
     clean)
