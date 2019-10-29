@@ -1,4 +1,4 @@
-ynopsis
+Synopsis
 ========
 
 ::
@@ -99,34 +99,36 @@ The implementation of :code:`--cray-mpi` is messy, foul smelling, and brittle.
 It replaces or overrides the MPICH or OpenMPI libraries installed in the
 container. Users should be aware of the following.
 
-NOTE: A given item relates to both MPICH and OpenMPI unless otherwise stated.
 
 1. Containers must have the following software installed:
 
-   a. Corresponding open source MPI implementation.
+   a. Corresponding open source MPI implementation. (`MPICH
+      <https://www.mpich.org/>`_ and `OpenMPI <https://www.open-mpi.org/>`_.)
 
-   b. (MPICH) `PatchELF with our patches <https://github.com/hpc/patchelf>`_.
-      Use the :code:`shrink-soname` branch.
+   b. `PatchELF with our patches <https://github.com/hpc/patchelf>`_.
+      Use the :code:`shrink-soname` branch. (MPICH only.)
 
-   c. (MPICH) :code:`libgfortran.so.3`, because Cray's :code:`libmpi.so.12`
-      links to it.
+   c. :code:`libgfortran.so.3`, because Cray's :code:`libmpi.so.12`
+      links to it. (MPICH only.)
 
 2. Applications must be dynamically linked to :code:`libmpi.so.12` (not e.g.
    :code:`libmpich.so.12`).
 
-   a. (MPICH) How to configure MPICH to accomplish this is not yet clear to us;
+   a. How to configure MPICH to accomplish this is not yet clear to us;
       :code:`test/Dockerfile.mpich` does it, while the Debian packages do not.
+      (MPICH only.)
 
 3. An ABI compatible module for the given MPI implementation must be loaded
    when :code:`ch-fromhost` is invoked.
 
-   a. (MPICH) Load the :code:`cray-mpich-abi` module.
+   a. Load the :code:`cray-mpich-abi` module. (MPICH only.)
 
-   b. (OpenMPI) We recommend loading the module of a version as close to what
+   b. We recommend loading the module of a version as close to what
       is installed in the image as possible. This OpenMPI install needs to be
       built such that libmpi contains all needed plugins (as opposed to them
       being standalone shared libraries). See `OpenMPI's documentation
       <https://www.open-mpi.org/faq/?category=building>`_ for how to do this.
+      (OpenMPI only.)
 
 4. Tested only for C programs compiled with GCC, and it probably won't work
    otherwise. If you'd like to use another compiler or another programming
