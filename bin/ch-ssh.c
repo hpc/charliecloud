@@ -11,6 +11,7 @@
 
 
 const char usage[] = "\
+\n\
 Usage: CH_RUN_ARGS=\"NEWROOT [ARG...]\" ch-ssh [OPTION...] HOST CMD [ARG...]\n\
 \n\
 Run a remote command in a Charliecloud container.\n\
@@ -35,13 +36,17 @@ int main(int argc, char *argv[])
    char *ch_run_args;
    char *args[ARGS_MAX+1];
 
+   if (argc == 1) {
+      fprintf(stderr, usage);
+      exit(EXIT_FAILURE);
+   }
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
       return 0;
    }
    if (argc >= 2 && strcmp(argv[1], "--version") == 0) {
       version();
-      return 0;
+      exit(EXIT_SUCCESS);
    }
 
    memset(args, 0, sizeof(args));
@@ -71,9 +76,6 @@ int main(int argc, char *argv[])
    // copy remaining arguments
    for ( ; i < argc && i + j < ARGS_MAX; i++)
       args[i+j] = argv[i];
-
-   //for (i = 0; args[i] != NULL; i++)
-   //   printf("%d: %s\n", i, args[i]);
 
    execvp("ssh", args);
    Tf (0, "can't execute ssh");

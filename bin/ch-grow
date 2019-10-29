@@ -2,6 +2,7 @@
 
 import argparse
 import ast
+import atexit
 import glob
 import inspect
 import itertools
@@ -127,6 +128,8 @@ _WS: /[ \t]/+
 
 def main():
 
+   atexit.register(color_reset, sys.stdout, sys.stderr)
+
    if not os.path.exists(CH_BIN + "/ch-run"):
       FATAL("can't find ch-run; check your build and/or install")
    global cli
@@ -164,6 +167,11 @@ environment variables:
                    help="print version and exit")
    ap.add_argument("context", metavar="CONTEXT",
                    help="context directory")
+
+   if (len(sys.argv) < 2):
+       ap.print_help(file=sys.stderr)
+       sys.exit(1)
+
    cli = ap.parse_args()
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
@@ -560,12 +568,12 @@ def DEBUG(*args, **kwargs):
    if (cli.verbose):
       color("36m", sys.stderr)
       print(flush=True, file=sys.stderr, *args, **kwargs)
-      color("0m", sys.stderr)
+      color_reset(sys.stderr)
 
 def ERROR(*args, **kwargs):
    color("31m", sys.stderr)
    print(flush=True, file=sys.stderr, *args, **kwargs)
-   color("0m", sys.stderr)
+   color_reset(sys.stderr)
 
 def FATAL(*args, **kwargs):
    ERROR(*args, **kwargs)
@@ -579,13 +587,17 @@ def cmd(args, env=None):
    DEBUG("executing: %s" % args)
    color("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
-   color("0m", sys.stdout)
+   color_reset(sys.stdout)
    if (cp.returncode):
       FATAL("%s failed with return code %d" % (args[0], cp.returncode))
 
 def color(color, fp):
    if (fp.isatty()):
       print("\033[" + color, end="", flush=True, file=fp)
+
+def color_reset(*fps):
+   for fp in fps:
+      color("0m", fp)
 
 def cp(src, dst):
    DEBUG("copying: %s -> %s" % (src, dst))

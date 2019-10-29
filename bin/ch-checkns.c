@@ -50,7 +50,9 @@
 
 #include "charliecloud.h"
 
+
 const char usage[] = "\
+\n\
 Usage: ch-checkns\n\
 \n\
 Check \"ch-run\" prerequisites, e.g., namespaces and \"pivot_root(2)\".\n\
@@ -58,8 +60,7 @@ Check \"ch-run\" prerequisites, e.g., namespaces and \"pivot_root(2)\".\n\
 Example:\n\
 \n\
   $ ch-checkns\n\
-  ok\n\
-\n";
+  ok\n";
 
 #define TRY(x) if (x) fatal_(__FILE__, __LINE__, errno, #x)
 

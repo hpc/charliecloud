@@ -29,27 +29,39 @@ load common
     # either (1) is executable or (2) ends in ".c". Demand satisfaction from
     # each. The latter is to catch cases when we haven't compiled everything;
     # if we have, the test makes duplicate demands, but that's low cost.
-    while IFS= read -r -d '' i; do
-        i=${i%.c}
+    while IFS= read -r -d '' path; do
+        path=${path%.c}
+        filename=$(basename "$path")
         echo
-        echo "$i"
+        echo "$path"
         # --version
-        run "$i" --version
+        run "$path" --version
         echo "$output"
         [[ $status -eq 0 ]]
         diff -u <(echo "${output}") <(echo "$ch_version")
         # --help: returns 0, says "Usage:" somewhere.
-        run "$i" --help
+        run "$path" --help
         echo "$output"
         [[ $status -eq 0 ]]
         [[ $output = *'sage:'* ]]
+        # Most, but not all, executables should print usage and exit
+        # unsuccessfully when run without arguments.
+        case $filename in
+            ch-checkns|ch-test)
+                ;;
+            *)
+                run "$path"
+                echo "$output"
+                [[ $status -eq 1 ]]
+                [[ $output = *'sage:'* ]]
+                ;;
+        esac
         # not setuid or setgid
-        ls -l "$i"
-        [[ ! -u $i ]]
-        [[ ! -g $i ]]
+        ls -l "$path"
+        [[ ! -u $path ]]
+        [[ ! -g $path ]]
     done < <( find "$ch_bin" -name 'ch-*' -a \( -executable -o -name '*.c' \) \
                    -print0 )
-
 }
 
 @test 'ch-build --builder-info' {
