@@ -19,7 +19,6 @@ AC_CHECK_LIB([rt], [clock_gettime])
 AC_CONFIG_FILES([Makefile
                  bin/Makefile
                  test/Makefile
-                 test/chtest/Makefile
                  docs/Makefile
                  ])
 
@@ -33,12 +32,12 @@ AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
 #AM_CONDITIONAL([TEST], [test $CH_TEST_SCOPE = quick])
 #AM_CONDITIONAL([VERSION], [test $CH_TEST_SCOPE = quick])
 
-NAMEPSACES=`grep -oP "user.max_user_namespaces=\K[0-9]*" /etc/sysctl.conf)`
-AC_DEFINE_UNQUOTED([NAMESPACES],
-                   ["$NAMESPACES"],
-                   [Check if namespaces are enabled])
+#NAMEPSACES=`grep -oP "user.max_user_namespaces=\K[0-9]*" /etc/sysctl.conf)`
+#AC_DEFINE_UNQUOTED([NAMESPACES],
+#                   ["$NAMESPACES"],
+#                   [Check if namespaces are enabled])
 
-AM_CONDITIONAL([NAMESPACES], [test "$NAMESPACES" = 0]
+##AM_CONDITIONAL([NAMESPACES], [test "$NAMESPACES" = 0]
 
 AC_ARG_ENABLE(docs,
 	AC_HELP_STRING([--enable_docs],
