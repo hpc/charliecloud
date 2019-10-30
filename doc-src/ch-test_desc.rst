@@ -12,7 +12,7 @@ Charliecloud comes with a comprehensive test suite that exercises the
 container workflow itself as well as a few example applications.
 :code:`ch-test` coordinates running the test suite.
 
-While its CLI has lots of options, the defaults are reasonable, and bare
+While the CLI has lots of options, the defaults are reasonable, and bare
 :code:`ch-test` will give useful results in a few minutes on single-node,
 internet-connected systems with a few GB available in :code:`/var/tmp`.
 
@@ -27,7 +27,7 @@ of storage for test fixtures:
 * *Unpacked images directory*. Images are unpacked into and then run from
   here.
 
-* *Filesystem permissions* director[y|ies]. These are used to test that the
+* *Filesystem permissions* directories. These are used to test that the
   kernel is enforcing permissions correctly. Note that this exercises the
   kernel, not Charliecloud, and can be omitted from routine Charliecloud
   testing.
@@ -39,7 +39,7 @@ used for running tests.
 
 Some of the tests exercise parallel functionality. If :code:`ch-test` is run
 on a single node, multiple cores will be used; if in a Slurm allocation,
-multiple nodes.
+multiple nodes too.
 
 The subset of tests to run mostly splits along two key dimensions. The *phase*
 is which parts of the workflow to run. Different parts of the workflow can be
@@ -47,7 +47,8 @@ tested on different systems by copying the necessary artifacts between them,
 e.g. by building images on one system and running them on another. The *scope*
 allows trading off thoroughness versus time.
 
-:code:`PHASE`, if specified, must be one of:
+:code:`PHASE` must be one of the following; the default is to run
+:code:`build`, :code:`run`, and :code:`examples` in that order.
 
   :code:`build`
     Image building and associated functionality, with the selected builder.
@@ -66,8 +67,7 @@ allows trading off thoroughness versus time.
     :code:`--perm-dirs`.
 
   :code:`clean`
-    Delete test artifacts on disk and all images in builder storage (whether
-    or not Charliecloud-related), except for the permissions test fixtures.
+    Delete packed and unpacked images directories.
 
   :code:`rm-perm-dirs`
     Remove the filesystem permissions directories. Requires
@@ -75,9 +75,6 @@ allows trading off thoroughness versus time.
 
   a specific :code:`.bats` file
     Run the tests in that file. **(Not yet implemented.)**
-
-If :code:`PHASE` is not specified, run :code:`build`, :code:`run`, and
-:code:`examples` phases in that order.
 
 Scope is specified with:
 
@@ -108,11 +105,11 @@ Additional arguments:
   :code:`--img-dir DIR`
     Set unpacked images directory to :code:`DIR`. In a multi-node allocation,
     this directory may not be shared between nodes. Default:
-    :code:`$CH_TEST_IMGDIR` if set, or :code:`/var/tmp/img`.
+    :code:`$CH_TEST_IMGDIR` if set; otherwise :code:`/var/tmp/img`.
 
   :code:`--pack-dir DIR`
     Set packed images directory to :code:`DIR`. Default:
-    :code:`$CH_TEST_TARDIR` if set, or :code:`/var/tmp/pack`.
+    :code:`$CH_TEST_TARDIR` if set; otherwise :code:`/var/tmp/pack`.
 
   :code:`--perm-dir DIR`
     Add :code:`DIR` to filesystem permission fixture directories; can be
@@ -121,8 +118,8 @@ Additional arguments:
     don't need to test your :code:`tmpfs`\ es, but out-of-tree filesystems very
     likely need this.
 
-    Implies :code:`--sudo`. Default: :code:`CH_TEST_PERMDIRS` if set, or
-    skip the filesystem permissions tests.
+    Implies :code:`--sudo`. Default: :code:`CH_TEST_PERMDIRS` if set;
+    otherwise skip the filesystem permissions tests.
 
   :code:`--sudo`
     Enable things that require sudo, such as certain privilege escalation
@@ -148,28 +145,54 @@ Examples
 ========
 
 Many systems can simply use the defaults. To run the :code:`build`,
-:code:`run`,and :code:`examples` phases on a single system, without the
+:code:`run`, and :code:`examples` phases on a single system, without the
 filesystem permissions tests::
 
   $ ch-test
-  FIXME – cut and paste first few and last few lines of output
+  ch-test version 0.12
+
+  ch-run: 0.12 /usr/local/bin/ch-run
+  bats:   0.4.0 /usr/bin/bats
+  tests:  /usr/local/libexec/charliecloud/test
+
+  phase:                build run examples
+  scope:                standard (default)
+  builder:              docker (default)
+  use generic sudo:     no (default)
+  unpacked images dir:  /var/tmp/img (default)
+  packed images dir:    /var/tmp/tar (default)
+  fs permissions dirs:  skip (default)
+
+  checking namespaces ...
+  ok
+
+  checking builder ...
+  found: /usr/bin/docker 19.03.2
+
+  bats build.bats build_auto.bats build_post.bats
+   ✓ documentation seems sane
+   ✓ version number seems sane
+  [...]
+  All tests passed.
 
 The next example is for a more complex setup like you might find in HPC
-centers.
+centers:
 
   * Non-default fixture directories.
   * Non-default scope.
   * Different build and run systems.
   * Run the filesystem permissions tests.
 
-Output has been omitted::
+Output has been omitted.
 
-   (mybox)$ ch-test build --scope full
-   (mybox)$ scp -r /var/tmp/pack hpc:/scratch/$USER/pack
+::
+
    (mybox)$ ssh hpc-admin
    (hpc-admin)$ ch-test mk-perm-dirs --perm-dir /scratch/$USER/perms \
                                      --perm-dir /home/$USER/perms
    (hpc-admin)$ exit
+   (mybox)$ ch-test build --scope full
+   (mybox)$ scp -r /var/tmp/pack hpc:/scratch/$USER/pack
    (mybox)$ ssh hpc
    (hpc)$ salloc -N2
    (cn001)$ export CH_TEST_TARDIR=/scratch/$USER/pack

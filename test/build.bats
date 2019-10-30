@@ -59,6 +59,11 @@ load common
                    -print0 )
 }
 
+@test 'ch-build --builder-info' {
+    scope standard
+    ch-build --builder-info
+}
+
 @test 'lint shell scripts' {
     scope standard
     ( command -v shellcheck >/dev/null 2>&1 ) || skip "no shellcheck found"
