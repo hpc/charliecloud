@@ -62,17 +62,21 @@ Example:\n\
   $ ch-checkns\n\
   ok\n";
 
-#define TRY(x) if (x) fatal_errno(__LINE__)
+#define TRY(x) if (x) fatal_(__FILE__, __LINE__, errno, #x)
 
 
-void fatal_errno(int line)
+void fatal_(char *file, int line, int errno_, char *str)
 {
-   printf("error at line %d, errno=%d\n", line, errno);
+   char *url = "https://github.com/hpc/charliecloud/blob/master/bin/ch-checkns.c";
+   printf("error: %s: %d: %s\n", file, line, str);
+   printf("errno: %d\nsee: %s\n", errno_, url);
    exit(1);
 }
 
 int main(int argc, char *argv[])
 {
+   unsigned long flags;
+
    if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
       fprintf(stderr, usage);
       return 0;
@@ -131,7 +135,8 @@ int main(int argc, char *argv[])
       TRY (errno);
 
    /* Re-mount the image read-only. */
-   TRY (mount(NULL, "/newroot", NULL, MS_REMOUNT | MS_BIND | MS_RDONLY, NULL));
+   flags = path_mount_flags("/newroot") | MS_REMOUNT | MS_BIND | MS_RDONLY;
+   TRY (mount(NULL, "/newroot", NULL, flags, NULL));
 
    /* Finally, make our "real" newroot into the root filesystem. */
    TRY (chdir("/newroot"));
