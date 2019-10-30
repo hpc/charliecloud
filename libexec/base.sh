@@ -3,7 +3,7 @@ set -e
 # shellcheck disable=SC2034
 ch_bin="$(cd "$(dirname "$0")" && pwd)"
 
-libexec="$(cd "$(dirname "$0")" && pwd)"
+libexec="${ch_bin}/../libexec/charliecloud"
 . "${libexec}/version.sh"
 
 

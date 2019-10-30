@@ -5,7 +5,7 @@ PYTHON=$(shell command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')")
 export CFLAGS += -std=c11 -Wall -g
 
 .PHONY: all
-all: VERSION.full bin/version.h bin/version.sh
+all: VERSION.full bin/version.h libexec/version.sh
 	cd bin && $(MAKE) all
 #      only descend into test/ if the right Python is available
 	if [ -n $(PYTHON) ]; then \
@@ -39,7 +39,7 @@ VERSION.full: VERSION
 endif
 bin/version.h: VERSION.full
 	echo "#define VERSION \"$$(cat $<)\"" > $@
-bin/version.sh: VERSION.full
+libexec/version.sh: VERSION.full
 	echo "version () { echo 1>&2 '$$(cat $<)'; }" > $@
 
 # This target provides tarballs of HEAD (not the Git working directory) that
