@@ -99,7 +99,6 @@ void join_namespaces(pid_t pid);
 void join_end();
 void log_ids(const char *func, int line);
 bool path_exists(char *path);
-unsigned long path_mount_flags(char *path);
 void path_split(char *path, char **dir, char **base);
 void sem_timedwait_relative(sem_t *sem, int timeout);
 void setup_namespaces(struct container *c);
