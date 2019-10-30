@@ -7,4 +7,4 @@ all: $(ALL)
 
 .PHONY: clean
 clean:
-	rm -f $(ALL)
+		rm -f $(ALL)

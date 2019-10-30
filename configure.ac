@@ -9,9 +9,6 @@ AC_PROG_CC
 # Needed for C11 to work
 AC_PROG_CC_STDC
 AC_PROG_MAKE_SET
-# for sotest
-#AM_PROG_CC_C_O
-#AM_PROG_AR
 
 # Checks for libraries.
 AC_CHECK_LIB([rt], [clock_gettime])
@@ -19,19 +16,18 @@ AC_CHECK_LIB([rt], [clock_gettime])
 AC_CONFIG_FILES([Makefile
                  bin/Makefile
                  test/Makefile
-                 docs/Makefile
+                 doc-src/Makefile
                  ])
-
-#AC_CONFIG_MACRO_DIR([m4])
 
 AC_CONFIG_AUX_DIR([build-aux])
 
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
-#LT_INIT
 
+# Condtional for the tests WIP
 #AM_CONDITIONAL([TEST], [test $CH_TEST_SCOPE = quick])
 #AM_CONDITIONAL([VERSION], [test $CH_TEST_SCOPE = quick])
 
+# Conditional to check if usernamespaces are enabled
 #NAMEPSACES=`grep -oP "user.max_user_namespaces=\K[0-9]*" /etc/sysctl.conf)`
 #AC_DEFINE_UNQUOTED([NAMESPACES],
 #                   ["$NAMESPACES"],
@@ -69,5 +65,5 @@ AC_ARG_ENABLE(buildah,
     [disable_buildah=$enableval],
     [disable_buildah="no"])
 
-
+# Write the configure script
 AC_OUTPUT

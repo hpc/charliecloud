@@ -40,10 +40,10 @@ help:
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
-#clean:
-#	rm -rf $(BUILDDIR)/*
-#	rm -rf ../doc/* ../doc/.buildinfo ../doc/.nojekyll
-#	rm -rf ../man/*.1
+clean-local:
+	rm -rf $(BUILDDIR)/*
+	rm -rf ../doc/* ../doc/.buildinfo ../doc/.nojekyll
+	rm -rf ../man/*.1
 
 # This target works around a race condition in Sphinx that's triggered when
 # two instances (e.g., for html and man targets) try to mkdir(2)

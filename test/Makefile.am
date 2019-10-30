@@ -80,7 +80,6 @@ test-run: run_auto.bats $(sotests)
 
 
 .PHONY: test-test
-
 test-test: $(images_eg)
 	set -e; \
 	for image in $(images_eg); do \
