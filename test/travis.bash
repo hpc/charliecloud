@@ -47,7 +47,7 @@ if [[ $INSTALL ]]; then
     sudo make install PREFIX="$PREFIX"
     ch_test="${PREFIX}/bin/ch-test"
 else
-    ch_test=$(readlink -f bin/ch-test)
+    ch_test=$(readlink -f bin/ch-test)  # need absolute path
 fi
 
 "$ch_test" mk-perm-dirs --sudo
@@ -57,25 +57,24 @@ cd test
 if [[ $SUDO_RM_FIRST ]]; then
     sudo rm /etc/sudoers.d/travis
 fi
-sudo -v || true
+if ( sudo -v ); then
+    sudo_=--sudo
+else
+    sudo_=
+fi
 
-"$ch_test" build
-
+"$ch_test" build $sudo_
 ls -lha "$CH_TEST_TARDIR"
 
 if [[ $SUDO_RM_AFTER_BUILD ]]; then
     sudo rm /etc/sudoers.d/travis
 fi
-if [[ $SUDO_AVOID_AFTER_BUILD ]]; then
-    sudo_=''
+if ( sudo -v ); then
+    sudo_=--sudo
 else
-    sudo_='--sudo'
+    sudo_=
 fi
-sudo -v || true
-echo "\$CH_TEST_SUDO=$CH_TEST_SUDO"
 
-"$ch_test" run "$sudo_"
-
-ls -lh "$CH_TEST_IMGDIR"
-
-"$ch_test" examples
+"$ch_test" run $sudo_
+ls -lha "$CH_TEST_IMGDIR"
+"$ch_test" examples $sudo_
