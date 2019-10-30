@@ -1,7 +1,7 @@
 AC_PREREQ([2.69])
 m4_include([custom_help.m4])
 AC_INIT([charliecloud], [0.11], [https://github.com/hpc/charliecloud])
-AC_CONFIG_SRCDIR([bin/version.h])
+AC_CONFIG_SRCDIR([bin/charliecloud.h])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
