@@ -21,8 +21,12 @@ rm -rf Makefile \
        Makefile.in \
        aclocal.m4 \
        autom4te.cache \
+       bin/config.h \
        bin/config.h.in \
+       bin/stamp-h1 \
        build-aux \
+       config.log \
+       config.status \
        configure
 
 # Create configure and friends.
