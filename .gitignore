@@ -1,64 +1,6 @@
-# Gitignore policy: Each repository has a more or less comprehensive
-# .gitignore; developers shouldn't need any global gitignore.
-#
-# This file uses relevant shippets from <https://github.com/github/gitignore>.
-# Leave these unmodified. Custom stuff and overrides go at the end.
-
-
-### Global/Emacs.gitignore (0aeefb48c0) ###
-
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-.elc
-auto-save-list
-tramp
-.\#*
-
-# Org-mode
-.org-id-locations
-*_archive
-
-
-### Global/OSX.gitignore (0aeefb48c0) ###
-
-.DS_Store
-.AppleDouble
-.LSOverride
-Icon
-
-# Thumbnails
-._*
-
-# Files that might appear on external disk
-.Spotlight-V100
-.Trashes
-
-
-### Global/vim.gitignore (0aeefb48c0) ###
-
-.*.s[a-w][a-z]
-*.un~
-Session.vim
-.netrwhist
-*~
-
-
-### Custom ###
-
-*.help
+# Derived files (no Autotools stuff).
 *.o
-*.py[cod]
-.fuse_hidden*
-
-# ignore (unpacked) tarballs at root of working directory
-/charliecloud-*.tar*
-/charliecloud-*/
-
-VERSION.full
 a.out
-
 bin/ch-checkns
 bin/ch-run
 bin/ch-ssh
@@ -77,6 +19,11 @@ test/sotest/sotest
 test/sotest/bin/sotest
 test/sotest/lib/*.so*
 packaging/vagrant/.vagrant
+VERSION.full
+
+# perhaps-unpacked tarballs at root of working directory
+/charliecloud-*.tar*
+/charliecloud-*/
 
 # for Debian package
 *.debhelper.log
@@ -87,3 +34,17 @@ packaging/debian/charliecloud/
 packaging/debian/charliecloud-doc/
 packaging/debian/files
 packaging/debian/tmp
+
+# OS X crap
+._*
+.DS_Store
+.fuse_*
+
+# Autotools crap. Coordinate with autogen.sh.
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+bin/config.h.in
+build-aux/
+configure
