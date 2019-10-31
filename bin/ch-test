@@ -1,0 +1,368 @@
+#!/bin/bash
+
+set -e
+
+libexec="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Run some or all of the Charliecloud test suite.
+
+Usage:
+
+  $ $(basename "$0") [PHASE] [OPTIONS]
+EOF
+)
+
+builder_check () {
+    printf 'checking builder ...\n'
+    case $CH_BUILDER in
+    ch-grow)
+        if ! ("${ch_bin}/ch-grow" --dependencies); then
+            fatal 'builder: ch-grow: missing dependencies'
+        fi
+        bl=$(readlink -f "$ch_bin"/ch-grow)
+        bv=$("$bl" --version)
+        ;;
+    buildah)
+        ;&
+    buildah-runc)
+        ;&
+    buildah-setuid)
+        if (! command -v buildah &> /dev/null); then
+            fatal 'builder: buildah: not installed.'
+        fi
+        bl=$(command -v buildah)
+        bv=$(buildah --version | awk '{print $3}')
+        min='1.11.2'
+        ;;
+    docker)
+        if (! command -v docker &> /dev/null); then
+            fatal 'builder: docker: not installed'
+        fi
+        bl=$(command -v docker)
+        bv=$(docker_ --version | awk '{print $3}' | sed -e 's/,$//')
+        ;;
+    *)
+        fatal "builder: $CH_BUILDER: not supported"
+        ;;
+    esac
+    printf 'found: %s %s\n\n' "$bl" "$bv"
+    version_check 'builder' "$min" "$bv"
+}
+
+builder_set () {
+    width=$1
+    if [[ -n $builder ]]; then
+        export CH_BUILDER=$builder
+        method='command line'
+    elif [[ -n $CH_BUILDER ]]; then
+        method='environment'
+    else
+        builder_choose
+        method='default'
+    fi
+    # shellcheck disable=SC2059
+    printf "%-${width}s %s (%s)\n" 'builder:' "$CH_BUILDER" "$method"
+    if [[ $CH_BUILDER == ch-grow ]]; then
+        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" /var/tmp/ch-grow \
+                             "$width" 'ch-grow storage'
+    fi
+}
+
+# Create CH_TEST_TARDIR, avoiding #347.
+dir_img_mk () {
+    if [[ ! -d $CH_TEST_IMGDIR ]]; then
+        echo "creating $CH_TEST_IMGDIR"
+        mkdir "$CH_TEST_IMGDIR"
+    fi
+}
+
+# Remove a filesystem permissions fixture directory. Ensure that the target
+# directory has exactly the two subdirectories expected first.
+dir_perm_rm () {
+    if [[    $(find "${1}" -maxdepth 1 -mindepth 1 | wc -l) == 2 \
+          && -d "${1}/pass" && -d "${1}/nopass" ]]; then
+        echo "removing ${1}"
+        sudo rm -rf --one-file-system "$1"
+    fi
+}
+
+# The run phase requires artifacts from a successful build phase. Thus, we
+# check sanity based on the minimal set of artifacts (quick scope).
+dir_tar_check () {
+    printf 'checking %s: ' "$CH_TEST_TARDIR"
+    dir_tar_check_file alpine39{.tar.gz,.sqfs,.pq_missing}
+    dir_tar_check_file alpine39_dp{.tar.gz,.sqfs,.pq_missing}
+    dir_tar_check_file chtest{.tar.gz,.sqfs,.pq_missing}
+    printf 'OK\n\n'
+}
+
+dir_tar_check_file () {
+    local missing
+    for f in "$@"; do
+        if [[ -f ${CH_TEST_TARDIR}/${f} ]]; then
+            return 0
+        else
+            missing+=("${CH_TEST_TARDIR}/${f}")
+        fi
+    done
+    fatal "phase $phase: missing packed images: ${missing[*]}"
+}
+
+# Create CH_TEST_TARDIR, avoiding #347.
+dir_tar_mk () {
+    if [[ ! -d $CH_TEST_TARDIR ]]; then
+        echo "creating $CH_TEST_TARDIR"
+        mkdir "$CH_TEST_TARDIR"
+    fi
+}
+
+dirs_unpriv_rm () {
+    echo "removing $CH_TEST_TARDIR"
+    rm -rf --one-file-system "$CH_TEST_TARDIR"
+    echo "removing $CH_TEST_IMGDIR"
+    rm -rf --one-file-system "$CH_TEST_IMGDIR"
+}
+
+fatal () {
+    printf 'error: %s\n' "$1" 1>&2
+    exit 1
+}
+
+require_unset () {
+    name=$1
+    value=${!1}
+    if [[ -n $value ]]; then
+        fatal "$name: no multiple assignment (already \"$value\")"
+    fi
+}
+
+scope_check () {
+    case $1 in
+    quick|standard|full)
+        return 0
+        ;;
+    *)
+        fatal "invalid scope: $1"
+        ;;
+    esac
+}
+
+# Exit with failure if given version number is below a minimum.
+#
+# $1: human-readable descriptor
+# $2: minimum version
+# $3: actual version
+version_check () {
+    desc=$1
+    min=$2
+    actual=$3
+    if [[ $(  printf '%s\n%s\n' "$min" "$actual" \
+            | sort -V | head -n1) != "$min" ]]; then
+        fatal "$desc: mininum version $min, found $actual"
+    fi
+}
+
+win () {
+    printf "\nAll tests passed.\n"
+}
+
+
+top_dir=$(readlink -f "${ch_bin%/*}")
+
+# Ensure ch-run has been compiled (issue #329).
+if (! "${ch_bin}/ch-run" --version &> /dev/null); then
+    fatal "ch-run not found; expected in $ch_bin"
+fi
+
+# Ensure we have Bash 4.1 or higher
+if (bash -c 'set -e; [[ 1 = 0 ]]; exit 0'); then
+    # Bash bug: [[ ... ]] expression doesn't exit with set -e
+    # https://github.com/sstephenson/bats/issues/49
+    fatal 'Bash minimum version is 4.1'
+fi
+
+# Ensure BATS_TMPDIR is set to /tmp (issue #278).
+if [[ -n $BATS_TMPDIR ]]; then
+    if [[ ! $BATS_TMPDIR == '/tmp/'* ]]; then
+        fatal "BATS_TMPDIR: must be /tmp but found $BATS_TMPDIR (issue #278)"
+    fi
+fi
+
+# Determine source vs prefix installation.
+if [[ -d ${top_dir}/test ]]; then
+    # source install
+    testdir=${top_dir}/test
+else
+    # prefix installation
+    testdir="${top_dir%/charliecloud*}/libexec/charliecloud-${ch_version}/test"
+fi
+
+# Check for test directory.
+if [[ ! -d $testdir ]]; then
+    fatal "test directory not found: $testdir"
+fi
+
+# Ensure Bats is installed.
+if (command -v bats &> /dev/null); then
+    bats=$(command -v bats)
+    bats_version="$(bats --version | awk '{print $2}')"
+else
+    fatal 'Bats not found'
+fi
+
+# Parse arguments.
+while [[ $# -gt 0 ]]; do
+    opt=$1; shift
+    case $opt in
+    build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
+        require_unset phase
+        phase=$opt
+        ;;
+    -b|--builder)
+        require_unset builder
+        builder=$1; shift
+        ;;
+    --dry-run)
+        dry=true
+        ;;
+    -h|--help)
+        usage 0
+        ;;
+    --img-dir)
+        require_unset imgdir
+        imgdir=$1; shift
+        ;;
+    --pack-dir)
+        require_unset tardir
+        tardir=$1; shift
+        ;;
+    --perm-dir)
+        use_sudo=yes
+        permdirs+=("$1"); shift
+        ;;
+    -s|--scope)
+        require_unset scope
+        scope_check "$1"
+        scope=$1; shift
+        ;;
+    --sudo)
+        use_sudo=yes
+        ;;
+    --version)
+        version; exit 0
+        ;;
+    *)
+        fatal "unrecognized argument: $opt"
+        ;;
+    esac
+done
+
+printf "ch-test version %s\n\n" "$ch_version"
+printf 'ch-run: %s %s\n' "$("${ch_bin}/ch-run" --version 2>&1)" \
+                         "${ch_bin}/ch-run"
+printf 'bats:   %s %s\n' "$bats_version" "$bats"
+printf 'tests:  %s\n\n' "$testdir"
+
+printf "%-21s %s" 'phase:' "$phase"
+if [[ -z $phase ]]; then
+    phase=all
+    printf 'build run examples'
+fi
+printf '\n'
+
+#    variable name    CLI              environment         default
+#                     desc. width  description
+vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
+                      21 'scope'
+builder_set 21
+vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     '' \
+                      21 'use generic sudo'
+vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
+                      21 'unpacked images dir'
+vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
+                      21 'packed images dir'
+vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
+                      21 'fs permissions dirs'
+printf '\n'
+
+if [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
+    fatal "phase $phase: CH_TEST_PERMDIRS: can't be 'skip'"
+fi
+
+# Ensure namespaces are configured properly.
+printf 'checking namespaces ...\n'
+if (! "${ch_bin}/ch-checkns"); then
+    fatal 'namespace sanity check (ch-checkns) failed'
+fi
+printf '\n'
+
+if [[ $CH_TEST_SUDO ]]; then
+    printf 'checking sudo ...\n'
+    sudo echo ok
+    printf '\n'
+fi
+
+case $phase in
+    all)
+        ;&
+    build)
+        builder_check
+        ;;
+    examples|run)
+        dir_tar_check
+        ;;
+esac
+
+if [[ -n $dry ]];then
+    printf 'exiting per --dry-run\n'
+    exit 0
+fi
+
+# Execute phase
+cd "$testdir"
+case $phase in
+    build)
+        dir_tar_mk
+        make test-build
+        win
+        ;;
+    run)
+        dir_tar_mk
+        dir_img_mk
+        make test-run
+        win
+        ;;
+    examples)
+        make test-test
+        win
+        ;;
+    all)
+        dir_tar_mk
+        dir_img_mk
+        make test
+        win
+        ;;
+    mk-perm-dirs)
+        printf 'creating filesystem permissions fixtures ...\n'
+        for d in $CH_TEST_PERMDIRS; do
+            if [[ -d ${d} ]]; then
+                printf '%s already exists\n' "$d"
+                continue
+            else
+                sudo "${testdir}/make-perms-test" "$d" "$USER" nobody
+            fi
+        done
+        echo
+        ;;
+    rm-perm-dirs)
+        for d in $CH_TEST_PERMDIRS; do
+            dir_perm_rm "$d"
+        done
+        ;;
+    clean)
+        dirs_unpriv_rm
+        ;;
+esac

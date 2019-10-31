@@ -21,7 +21,7 @@ fi
 # unprivileged version, so build from source.
 if [[ $CH_BUILDER = buildah* ]]; then
     buildah_repo=https://github.com/containers/buildah
-    buildah_branch=v1.10.1
+    buildah_branch=v1.11.2
     sudo add-apt-repository -y ppa:alexlarsson/flatpak
     sudo apt-get update
     sudo apt-get -y install libapparmor-dev libdevmapper-dev libglib2.0-dev \

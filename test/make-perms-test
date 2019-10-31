@@ -4,7 +4,7 @@
 # enforcement in UDSS such as virtual machines and containers. It must be run
 # as root. For example:
 #
-#   $ sudo ./make-perms-test /data $USER nobody
+#   $ sudo ./make-perms-test /data/perms_test $USER nobody
 #   $ ./fs_perms.py /data/perms_test/pass 2>&1 | egrep -v 'ok$'
 #   d /data/perms_test/pass/ld.out-a~--- --- rwt mismatch
 #   d /data/perms_test/pass/ld.out-r~--- --- rwt mismatch
@@ -46,7 +46,7 @@ DIR_PERMS =  set([0, 1, 2, 3, 4, 5, 6, 7])
 ALL_PERMS = FILE_PERMS | DIR_PERMS
 FILE_CONTENT = 'gary' * 19 + '\n'
 
-testdir = os.path.abspath(sys.argv[1] + '/perms_test')
+testdir = os.path.abspath(sys.argv[1])
 my_user = sys.argv[2]
 yr_user = sys.argv[3]
 
