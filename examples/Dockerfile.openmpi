@@ -85,17 +85,9 @@ RUN dnf install -y --setopt=install_weak_deps=false \
 
 WORKDIR /usr/src
 
-# PSM2. CentOS 8 does not provide a package providing the necessary headers,
-# building from source instead.
 # Note that libpsm2 is x86-64 only
-ENV PSM2_URL https://github.com/intel/opa-psm2/archive
-ENV PSM2_VERSION 11.2.68
 RUN if [ "$(uname -i)" = "x86_64" ] ; then \
-        wget -nv ${PSM2_URL}/PSM2_${PSM2_VERSION}.tar.gz \
-        && tar -xf PSM2_${PSM2_VERSION}.tar.gz \
-        && cd opa-psm2-PSM2_${PSM2_VERSION} \
-        && make install  \
-        && rm -Rf *PSM2* ; \
+        dnf install -y --enablerepo=PowerTools libpsm2 libpsm2-devel ; \
     fi
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
