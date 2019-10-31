@@ -1,4 +1,5 @@
-AC_INIT([Charliecloud], [FIXME], [https://github.com/hpc/charliecloud])
+AC_INIT([Charliecloud], [m4_esyscmd_s([misc/version])],
+        [https://github.com/hpc/charliecloud])
 AC_PREREQ([2.69])
 AC_CONFIG_SRCDIR([bin/charliecloud.h])
 AC_CONFIG_AUX_DIR([build-aux])
