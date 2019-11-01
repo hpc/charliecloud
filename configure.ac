@@ -15,9 +15,10 @@ AC_DEFUN([CH_CFLAGS], [-std=c11 -Wall -Werror])
 AX_CHECK_COMPILE_FLAG([CH_CFLAGS], [
   CFLAGS+=" CH_CFLAGS"
 ], [
-  AC_MSG_ERROR([no suitable C compiler found])
+  AC_MSG_ERROR([no C11 compiler found])
 ])
-
+AS_IF([test "$CC" = icc],
+      [AC_MSG_ERROR([icc not supported (see PR 481)])])
 
 ## Libraries
 
