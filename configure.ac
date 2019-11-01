@@ -37,6 +37,28 @@ AC_SUBST([LIBRT])
 
 ## Feature tests
 
+# Sphinx. FIXME: For now, we are not validating the underlying Python and
+# docutils versions.
+# - exists and executable
+# - minimum version
+vmin_sphinx=1.4.9
+with_sphinx=$SPHINX
+AX_WITH_PROG([SPHINX], [sphinx-build])
+AS_IF([test "x$SPHINX" != x], [
+  AC_MSG_CHECKING([if sphinx-build is executable])
+  AS_IF([test -e "$SPHINX"],
+        [AC_MSG_RESULT([ok])],
+        [AC_MSG_RESULT([no])
+         AC_MSG_ERROR([not executable: $SPHINX])])
+  AC_MSG_CHECKING([sphinx-build version at least $vmin_sphinx])
+  vact_sphinx=$("$SPHINX" --version | sed -E 's/sphinx-build //')
+  AX_COMPARE_VERSION([$vmin_sphinx], [le], [$vact_sphinx],
+    [AC_MSG_RESULT([ok ($vact_sphinx)])],
+    [AC_MSG_RESULT([too old ($vact_sphinx)])
+     AS_UNSET(SPHINX)
+     AS_UNSET(vact_sphinx)])
+])
+
 # User namespaces
 AC_MSG_CHECKING([if user+mount namespaces work])
 AC_RUN_IFELSE([AC_LANG_SOURCE([[
@@ -54,8 +76,26 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
   [have_userns=yes
    AC_DEFINE(HAVE_USERNS, 1, [user+mount namespaces work])],
   [have_userns=no],
-  [false])
+  [AC_MSG_ERROR([cross-compilation not supported])])
 AC_MSG_RESULT($have_userns)
+
+
+## Print report
+
+AC_MSG_NOTICE([
+
+  configure options:
+
+  build-time dependencies:
+
+    C11 compiler           ${CC} ${CC_VERSION}
+    sphinx-build $vmin_sphinx+    ${SPHINX:-not found} ${vact_sphinx}
+
+  run-time dependencies (informational only):
+
+    user+mount namespaces  ${have_userns}
+
+])
 
 
 ## Done
