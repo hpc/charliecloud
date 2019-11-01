@@ -1,7 +1,7 @@
 AC_INIT([Charliecloud], [m4_esyscmd_s([misc/version])],
         [https://github.com/hpc/charliecloud])
 AC_PREREQ([2.69])
-AC_CONFIG_SRCDIR([bin/charliecloud.h])
+AC_CONFIG_SRCDIR([bin/ch-run.c])
 AC_CONFIG_AUX_DIR([build-aux])
 
 AM_INIT_AUTOMAKE([1.15 -Wall -Werror foreign subdir-objects])
@@ -19,7 +19,7 @@ AX_CHECK_COMPILE_FLAG([CH_CFLAGS], [
 ])
 
 
-## Libraries.
+## Libraries
 
 # Need pthreads for ch-run --join.
 AX_PTHREAD
@@ -30,5 +30,34 @@ AC_CHECK_LIB([rt], [shm_open], [LIBRT=-lrt], [
   AC_MSG_ERROR([shm_open(3) not found])
 ])
 AC_SUBST([LIBRT])
+
+
+## Options
+
+
+## Feature tests
+
+# User namespaces
+AC_MSG_CHECKING([if user+mount namespaces work])
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #define _GNU_SOURCE
+    #include <sched.h>
+
+    int main(void)
+    {
+       if (unshare(CLONE_NEWNS|CLONE_NEWUSER))
+          return 1;  // syscall failed
+       else
+          return 0;  // syscall succeeded
+    }
+  ]])],
+  [have_userns=yes
+   AC_DEFINE(HAVE_USERNS, 1, [user+mount namespaces work])],
+  [have_userns=no],
+  [false])
+AC_MSG_RESULT($have_userns)
+
+
+## Done
 
 AC_OUTPUT
