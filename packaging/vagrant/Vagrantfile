@@ -168,7 +168,6 @@ EOF2
 export CH_TEST_TARDIR=/var/tmp/tarballs
 export CH_TEST_IMGDIR=/var/tmp/images
 export CH_TEST_PERMDIRS=skip
-export CH_TEST_SCOPE=standard
 EOF2
 
     git clone --recursive https://github.com/hpc/charliecloud.git
@@ -197,8 +196,7 @@ EOF2
     tar xf shadow-4.6.tar.xz
     (cd shadow-4.6 && ./configure && sudo make install)
 
-    sudo yum -y install bats \
-                        btrfs-progs-devel \
+    sudo yum -y install btrfs-progs-devel \
                         bzip2 \
                         device-mapper-devel \
                         glib2-devel \
@@ -213,9 +211,10 @@ EOF2
 
     mkdir buildah
     export GOPATH=$(readlink -f buildah)
+    export BUILDAH_VERSION=v1.11.2
     git clone https://github.com/containers/buildah ${GOPATH}/src/github.com/containers/buildah
     cd ${GOPATH}/src/github.com/containers/buildah
-    git checkout v1.11.2
+    git checkout "$BUILDAH_VERSION"
     make
     sudo make install
   EOF
@@ -226,8 +225,8 @@ EOF2
     set -e
     cd /usr/local/src
     sudo yum -y install python36 \
-                   python36-pip \
-                   skopeo
+                        python36-pip \
+                        skopeo
 
     wget https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64
     sudo chmod 755 umoci.amd64
@@ -314,14 +313,23 @@ EOF2
     else
         user=vagrant
     fi
-    echo "scope:      $CH_TEST_SCOPE"
+    if [[ -d $CH_TEST_TARDIR ]]; then
+        sudo rm -rf $CH_TEST_TARDIR
+    fi
+    if [[ -d $CH_TEST_IMGDIR ]]; then
+        sudo rm -rf $CH_TEST_IMGDIR
+    fi
     echo "testing as: $user"
-    version=$(cat /usr/local/src/charliecloud/VERSION.full)
-    test_path=/usr/local/libexec/charliecloud-${version}/test
-    echo "testing in: $test_path"
-    sudo -iu $user -- sh -c "cd $test_path && make test"
+    sudo -iu $user -- sh -c "ch-test -b docker"
+    echo
+    echo "builder: buildah"
+    sudo -iu $user -- sh -c "rm -rf $CH_TEST_TARDIR $CH_TEST_IMGDIR"
+    sudo -iu $user -- sh -c "ch-test -b buildah"
+    echo
+    echo "builder: ch-grow"
+    sudo -iu $user -- sh -c "rm -rf $CH_TEST_TARDIR $CH_TEST_IMGDIR"
+    sudo -iu $user -- sh -c "ch-test -b ch-grow"
   EOF
-
 end
 
 
