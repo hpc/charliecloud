@@ -1,7 +1,18 @@
-/* Copyright © Triad National Security, LLC, and others. */
+/* Copyright © Triad National Security, LLC, and others.
+
+   This interface contains miscellaneous utility features. It is separate so
+   that peripheral Charliecloud C programs don't have to link in the extra
+   libraries that ch_core requires. */
 
 #define _GNU_SOURCE
+#include <errno.h>
 #include <stdbool.h>
+
+
+/** Macros **/
+
+/* Log the current UIDs. */
+#define LOG_IDS log_ids(__func__, __LINE__)
 
 /* Test some value, and if it's not what we expect, exit with an error. These
    are macros so we have access to the file and line number.
@@ -51,46 +62,17 @@
 #define DEBUG(...)   msg(3, __FILE__, __LINE__, 0, __VA_ARGS__);
 
 
-/** Types **/
-
-struct bind {
-   char *src;
-   char *dst;
-};
-
-enum bind_dep {
-   BD_REQUIRED,  // both source and destination must exist
-   BD_OPTIONAL   // if either source or destination missing, do nothing
-};
-
-struct container {
-   struct bind *binds;
-   bool ch_ssh;         // bind /usr/bin/ch-ssh?
-   gid_t container_gid;
-   uid_t container_uid;
-   char *newroot;
-   bool join;           // is this a synchronized join?
-   int join_ct;         // number of peers in a synchronized join
-   pid_t join_pid;      // process in existing namespace to join
-   char *join_tag;      // identifier for synchronized join
-   bool private_home;   // don't bind user home directory
-   bool private_passwd; // don't bind custom /etc/{passwd,group}
-   bool private_tmp;    // don't bind host's /tmp
-   char *old_home;      // host path to user's home directory (i.e. $HOME)
-   bool writable;
-};
-
-
-/** External variables from charliecloud.c **/
+/** External variables **/
 
 extern int verbose;
 
+/** Function prototypes **/
 
-/** Function prototypes from charliecloud.c **/
-
-void containerize(struct container *c);
+char *cat(char *a, char *b);
+void log_ids(const char *func, int line);
 void msg(int level, char *file, int line, int errno_, char *fmt, ...);
+bool path_exists(char *path);
 unsigned long path_mount_flags(char *path);
-void run_user_command(char *argv[], char *initial_dir);
+void path_split(char *path, char **dir, char **base);
 void split(char **a, char **b, char *str, char del);
 void version(void);

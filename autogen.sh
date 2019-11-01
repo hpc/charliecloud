@@ -17,10 +17,12 @@ EOF
 fi
 
 # Remove existing Autotools stuff, if present. Coordinate with .gitignore.
+# We don't run "make clean" because that runs configure again.
 rm -rf Makefile \
        Makefile.in \
        aclocal.m4 \
        autom4te.cache \
+       bin/.deps \
        bin/config.h \
        bin/config.h.in \
        bin/stamp-h1 \
