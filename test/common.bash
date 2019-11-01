@@ -6,6 +6,24 @@ arch_exclude () {
     fi
 }
 
+archive_grep () {
+    image="$1"
+    case $image in
+        *.sqfs)
+            unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
+            ;;
+        *)
+            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
+            ;;
+    esac
+}
+
+archive_ok () {
+    ls -ld "$1" || true
+    test -f "$1"
+    test -s "$1"
+}
+
 builder_exclude () {
     # $1: builder to exclude
     # $2: tag for prerequisites file
@@ -19,6 +37,14 @@ builder_exclude () {
         touch "$pq"
         skip "unsupported builder: $CH_BUILDER"
     fi
+}
+
+builder_ok () {
+    # FIXME: Currently we make fairly limited tagging for some builders.
+    # Uncomment below when they can be supported by all the builders.
+    #docker_tag_p "$1"
+    builder_tag_p "${1}:latest"
+    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 builder_tag_p () {
@@ -49,30 +75,12 @@ builder_tag_p () {
     return 1
 }
 
-builder_ok () {
-    # FIXME: Currently we make fairly limited tagging for some builders.
-    # Uncomment below when they can be supported by all the builders.
-    #docker_tag_p "$1"
-    builder_tag_p "${1}:latest"
-    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
-}
-
 crayify_mpi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
         $ch_mpirun_node ch-fromhost --cray-mpi "$1"
     else
         skip 'host is not a Cray'
-    fi
-}
-
-# Force OpenMPI to use TCP instead of the high speed network (HSN)
-disable_hsn_openmpi() {
-    if [[ -d /dev/infiniband ]] ; then
-        export OMPI_MCA_pml=ob1
-        export OMPI_MCA_btl=tcp,self
-    else
-        skip "No high speed network detected"
     fi
 }
 
@@ -118,19 +126,24 @@ need_docker () {
     fi
 }
 
+need_squashfs () {
+    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
+    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
     fi
 }
 
-need_squashfs () {
-    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
-    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
-}
-
-squashfs_ready () {
-    ( command -v mksquashfs && command -v squashfuse )
+# Wrapper for Bats run() to work around Bats bug #89 by saving/restoring $IFS.
+# See issues #552 and #555 and https://stackoverflow.com/a/32425874.
+eval bats_"$(declare -f run)"
+run () {
+    local ifs_old="$IFS"
+    bats_run "$@"
+    IFS="$ifs_old"
 }
 
 scope () {
@@ -155,10 +168,8 @@ scope () {
     esac
 }
 
-archive_ok () {
-    ls -ld "$1" || true
-    test -f "$1"
-    test -s "$1"
+squashfs_ready () {
+    ( command -v mksquashfs && command -v squashfuse )
 }
 
 unpack_img_all_nodes () {
@@ -169,18 +180,6 @@ unpack_img_all_nodes () {
     fi
 }
 
-archive_grep () {
-    image="$1"
-    case $image in
-        *.sqfs)
-            unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
-            ;;
-        *)
-            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
-            ;;
-    esac
-}
-
 # Predictable sorting and collation
 export LC_ALL=C
 
@@ -188,13 +187,10 @@ export LC_ALL=C
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
 env_require CH_TEST_PERMDIRS
-if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
-    # Bash bug: [[ ... ]] expression doesn't exit with set -e
-    # https://github.com/sstephenson/bats/issues/49
-    printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
-    exit 1
+env_require CH_BUILDER
+if [[ $CH_BUILDER == ch-grow ]]; then
+    env_require CH_GROW_STORAGE
 fi
-
 # Set path to the right Charliecloud. This uses a symlink in this directory
 # called "bin" which points to the corresponding bin directory, either simply
 # up and over (source code) or set during "make install".
@@ -208,16 +204,6 @@ export PATH=$ch_bin:$PATH
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
 ch_libexec=$(ch-build --libexec-path)
-if [[ ! -x ${ch_bin}/ch-run ]]; then
-    printf 'Must build with "make" before running tests.\n\n' >&2
-    exit 1
-fi
-
-# Tests require explicitly set builder.
-if [[ -z $CH_BUILDER ]]; then
-    CH_BUILDER=$(ch-build --print-builder)
-    export CH_BUILDER
-fi
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
@@ -235,9 +221,6 @@ ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
 # shellcheck disable=SC2034
 ch_mounts="${ch_imgdir}/mounts"
-if [[ $CH_BUILDER = ch-grow ]]; then
-    export CH_GROW_STORAGE=$ch_tardir/_ch-grow
-fi
 
 # Image information.
 # shellcheck disable=SC2034
@@ -280,7 +263,21 @@ else
     ch_cray=
 fi
 
-# Slurm stuff.
+# Multi-node and multi-process stuff. Do not use Slurm variables in tests; use
+# these instead:
+#
+#   ch_multiprocess    can run multiple processes
+#   ch_multinode       can run on multiple nodes
+#   ch_nodes           number of nodes in job
+#   ch_cores_node      number of cores per node
+#   ch_cores_total     total cores in job ($ch_nodes × $ch_cores_node)
+#
+#   ch_mpirun_node     command to run one rank per node
+#   ch_mpirun_core     command to run one rank per physical core
+#   ch_mpirun_2        command to run two ranks per job launcher default
+#   ch_mpirun_2_1node  command to run two ranks on one node
+#   ch_mpirun_2_2node  command to run two ranks on two nodes (one rank/node)
+#
 if [[ $SLURM_JOB_ID ]]; then
     ch_nodes=$SLURM_JOB_NUM_NODES
 else
@@ -296,12 +293,11 @@ ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
-    ch_multinode=yes     # can run on multiple nodes
-    ch_multiprocess=yes  # can run multiple processes
-    ch_mpirun_node='srun --ntasks-per-node 1'               # 1 rank/node
-    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"  # 1 rank/core
-    ch_mpirun_2='srun -n2'                                  # 2 ranks, 2 nodes
-    ch_mpirun_2_1node='srun -N1 -n2'                        # 2 ranks, 1 node
+    ch_multiprocess=yes
+    ch_mpirun_node='srun --ntasks-per-node 1'
+    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"
+    ch_mpirun_2='srun -n2'
+    ch_mpirun_2_1node='srun -N1 -n2'
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
     # are present. Work around this by fooling OpenMPI into believing it's not
     # in a Slurm allocation.
@@ -309,15 +305,24 @@ if [[ $SLURM_JOB_ID ]]; then
         # shellcheck disable=SC2034
         ch_unslurm='--unset-env=SLURM*'
     fi
+    if [[ $ch_nodes -eq 1 ]]; then
+        ch_multinode=
+        ch_mpirun_2_2node=false
+    else
+        ch_multinode=yes
+        ch_mpirun_2_2node='srun -N2 -n2'
+    fi
 else
     # shellcheck disable=SC2034
     ch_multinode=
+    # shellcheck disable=SC2034
+    ch_mpirun_2_2node=false
     if ( command -v mpirun >/dev/null 2>&1 ); then
         ch_multiprocess=yes
         ch_mpirun_node='mpirun --map-by ppr:1:node'
         ch_mpirun_core="mpirun ${ch_mpirun_np}"
         ch_mpirun_2='mpirun -np 2'
-        ch_mpirun_2_1node='mpirun -np 2'
+        ch_mpirun_2_1node='mpirun -np 2 --host localhost:2'
     else
         ch_multiprocess=
         ch_mpirun_node=''
@@ -330,19 +335,8 @@ else
     fi
 fi
 
-# Validate CH_TEST_SCOPE and set if empty.
-if [[ -z $CH_TEST_SCOPE ]]; then
-    CH_TEST_SCOPE=standard
-elif [[    $CH_TEST_SCOPE != quick \
-        && $CH_TEST_SCOPE != standard \
-        && $CH_TEST_SCOPE != full ]]; then
-    # shellcheck disable=SC2016
-    printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' "$CH_TEST_SCOPE" >&2
-    exit 1
-fi
-
 # Do we have and want sudo?
-if    [[ -z $CH_TEST_DONT_SUDO ]] \
+if    [[ $CH_TEST_SUDO ]] \
    && ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.

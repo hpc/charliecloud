@@ -40,12 +40,12 @@ endif
 bin/version.h: VERSION.full
 	echo "#define VERSION \"$$(cat $<)\"" > $@
 bin/version.sh: VERSION.full
-	echo "version () { echo 1>&2 '$$(cat $<)'; }" > $@
+	printf "# shellcheck disable=SC2034\nch_version='$$(cat $<)'\n" > $@
 
-# These targets provide tarballs of HEAD (not the Git working directory) that
-# are self-contained, including the source code as well as the man pages
-# (both) and Bats (export-bats). To use them in an unclean working directory,
-# set $CH_UNCLEAN_EXPORT_OK to non-empty.
+# This target provides tarballs of HEAD (not the Git working directory) that
+# are self-contained, including the source code as well as the man pages. To
+# use them in an unclean working directory, set $CH_UNCLEAN_EXPORT_OK to
+# non-empty.
 #
 # You must "cd doc-src && make" before they will work. The targets depend on
 # the man pages but don't know how to build them.
@@ -64,19 +64,6 @@ main.tar: VERSION.full man/charliecloud.1 doc/index.html
 export: main.tar
 	gzip -9 main.tar
 	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
-	ls -lh charliecloud-$$(cat VERSION.full).tar.gz
-
-.PHONY: export-bats
-export-bats: main.tar
-	test -d .git -a -f test/bats/.git  # need recursive Git checkout
-	cd test/bats && \
-          git archive HEAD \
-            --prefix=charliecloud-$$(cat ../../VERSION.full)/test/bats/ \
-            -o ../../bats.tar
-	tar Af main.tar bats.tar
-	gzip -9 main.tar
-	mv main.tar.gz charliecloud-$$(cat VERSION.full).tar.gz
-	rm bats.tar
 	ls -lh charliecloud-$$(cat VERSION.full).tar.gz
 
 # PREFIX is the prefix expected at runtime (usually /usr or /usr/local for

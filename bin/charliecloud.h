@@ -1,4 +1,4 @@
-/* Copyright © Los Alamos National Security, LLC, and others. */
+/* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
 #include <stdbool.h>
@@ -90,6 +90,7 @@ extern int verbose;
 
 void containerize(struct container *c);
 void msg(int level, char *file, int line, int errno_, char *fmt, ...);
+unsigned long path_mount_flags(char *path);
 void run_user_command(char *argv[], char *initial_dir);
 void split(char **a, char **b, char *str, char del);
 void version(void);

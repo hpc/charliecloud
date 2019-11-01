@@ -12,9 +12,6 @@ images_eg := $(sort $(wildcard ../examples/*/*/Build)) \
 images := $(images_ch) $(images_eg)
 sotests := check-no-icc sotest/bin/sotest sotest/lib/libsotest.so.1.0
 
-# Favor embedded Bats, if installed, over system Bats.
-export PATH := $(CURDIR)/bats/bin:$(PATH)
-
 # Used by "make all" at top level to build these files for "make install".
 .PHONY: all
 all: build_auto.bats run_auto.bats $(sotests)
@@ -60,11 +57,6 @@ clean:
 	rm -f *_auto.bats
 	rm -f sotest/sotest sotest/libsotest.so*
 	rm -f sotest/bin/sotest sotest/lib/libsotest.so*
-
-.PHONY: where-bats
-where-bats:
-	which bats
-	bats --version
 
 build_auto.bats: $(images) make-auto
 	./make-auto build $^ > $@
@@ -130,15 +122,3 @@ install: all
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
 	install -pm 755 -t $(TEST)/sotest/bin sotest/bin/sotest
 	install -pm 755 -t $(TEST)/sotest/lib sotest/lib/libsotest.so.1.0
-#	Bats (if embedded)
-	if [ -d test/bats/bin ]; then \
-	    install -d $(TEST)/bats && \
-	    install -pm 644 -t $(TEST)/bats bats/CONDUCT.md \
-	                                    bats/LICENSE \
-	                                    bats/README.md && \
-	    install -d $(TEST)/bats/libexec && \
-	    install -pm 755 -t $(TEST)/bats/libexec bats/libexec/* && \
-	    install -d $(TEST)/bats/bin && \
-	    ln -sf ../libexec/bats $(TEST)/bats/bin/bats && \
-	    ln -sf bats/bin/bats $(TEST)/bats; \
-	fi

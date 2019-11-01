@@ -13,10 +13,11 @@ import sys
 import time
 import types
 
+BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
-OCI_VERSION_MIN = "1.0.0"
-OCI_VERSION_MAX = "1.0.0"
+OCI_VERSION_MIN = "1.0.1-dev"
+OCI_VERSION_MAX = "1.0.1-dev"
 
 args = None   # CLI Namespace
 l = None      # logger object
@@ -74,6 +75,10 @@ def args_parse():
 
    args_ = ap.parse_args()
 
+   if len(sys.argv) < 2:
+      ap.print_help(file=sys.stderr)
+      sys.exit(1)
+
    # Ridiculous kludge to print version number.
    if (args_.version):
       cmd = CH_BIN + "/ch-run"
@@ -87,19 +92,22 @@ def args_parse():
 
    pid_file_ = pid_file_from_bundle(args_.bundle)
    if ("pid_file" in args_ and args_.pid_file != pid_file_):
-      fatal("pid_file argument \"%s\"% differs from inferred \"%s\""
+      fatal("pid_file argument \"%s\" differs from inferred \"%s\""
             % (args_.pid_file, pid_file_))
    args_.pid_file = pid_file_
 
    return args_
 
-
 def bundle_from_cid(cid):
    m = re.search(r"^buildah-buildah(.+)$", cid)
    if (m is None):
       fatal("cannot parse container ID: %s" % cid)
-   return "/tmp/buildah%s" % m.groups(1)
-
+   paths = []
+   for p in BUNDLE_PREFIX:
+      paths.append("%s/buildah%s" % (p, m.group(1)))
+      if os.path.exists(paths[-1]):
+         return paths[-1]
+   fatal("can't infer bundle path; none of these exist: %s" % " ".join(paths))
 
 def debug_lines(s):
    for line in s.splitlines():
@@ -341,9 +349,9 @@ def state_load():
    st.config = json.load(open(args.bundle + "/config.json"))
    #debug_lines(json.dumps(st.config, indent=2))
 
-   v_min = distutils.version.StrictVersion(OCI_VERSION_MIN)
-   v_actual = distutils.version.StrictVersion(st.config["ociVersion"])
-   v_max = distutils.version.StrictVersion(OCI_VERSION_MAX)
+   v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
+   v_actual = distutils.version.LooseVersion(st.config["ociVersion"])
+   v_max = distutils.version.LooseVersion(OCI_VERSION_MAX)
    if (not v_min <= v_actual <= v_max):
       fatal("unsupported OCI version: %s" % st.config["ociVersion"])
 

@@ -48,12 +48,12 @@ Create a SquashFS file from an image directory.
 
 .. include:: ./ch-dir2squash_desc.rst
 
-ch-docker2squash
-++++++++++++++++
+ch-builder2squash
++++++++++++++++++
 
-Flatten a Docker image into a Charliecloud SquashFS file.
+Flatten a builder image into a Charliecloud SquashFS file.
 
-.. include:: ./ch-docker2squash_desc.rst
+.. include:: ./ch-builder2squash_desc.rst
 
 ch-fromhost
 +++++++++++
@@ -126,6 +126,15 @@ ch-tar2squash
 Create a SquashFS file from a tarball image.
 
 .. include:: ./ch-tar2squash_desc.rst
+
+.. _ch-test:
+
+ch-test
++++++++
+
+Run some or all of the Charliecloud test suite.
+
+.. include:: ./ch-test_desc.rst
 
 ch-umount
 +++++++++

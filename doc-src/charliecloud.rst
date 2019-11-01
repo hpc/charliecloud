@@ -12,10 +12,10 @@ See also
 
 ch-build(1),
 ch-build2dir(1),
+ch-builder2squash(1),
 ch-builder2tar(1),
 ch-checkns(1),
 ch-dir2squash(1),
-ch-docker2squash(1),
 ch-fromhost(1),
 ch-grow(1),
 ch-mount(1),
@@ -27,6 +27,7 @@ ch-ssh(1),
 ch-tar2dir(1)
 ch-tar2dir(1),
 ch-tar2squash(1),
+ch-test(1),
 ch-umount(1)
 
 Full documentation at: <https://hpc.github.io/charliecloud>

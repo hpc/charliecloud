@@ -55,7 +55,7 @@ Which files to inject (one or more required; can be repeated):
   -c, --cmd CMD    listed in the stdout of CMD
   -f, --file FILE  listed in file FILE
   -p, --path PATH  inject the file at PATH
-  --cray-mpi       Cray-enable an MPICH installed within the image
+  --cray-mpi       Cray-enable MPICH/OpenMPI installed within the image
   --nvidia         recommended by nVidia (via "nvidia-container-cli list")
 
 Destination within image:

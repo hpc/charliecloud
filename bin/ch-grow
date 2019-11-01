@@ -2,10 +2,12 @@
 
 import argparse
 import ast
+import atexit
 import glob
 import inspect
 import itertools
 import os
+import os.path
 import pathlib
 import re
 import shutil
@@ -15,28 +17,16 @@ import sys
 import types
 
 
-## Logging functions ##
+## Globals ##
 
-# These are here so we can use them when we try to import lark.
+# Command line arguments.
+cli = None
 
-def DEBUG(*args, **kwargs):
-   if (cli.verbose):
-      color("36m", sys.stderr)
-      print(flush=True, file=sys.stderr, *args, **kwargs)
-      color("0m", sys.stderr)
+# Image state object.
+state = None
 
-def FATAL(*args, **kwargs):
-   color("31m", sys.stderr)
-   print(flush=True, file=sys.stderr, *args, **kwargs)
-   color("0m", sys.stderr)
-   sys.exit(1)
-
-def INFO(*args, **kwargs):
-   print(flush=True, *args, **kwargs)
-
-def color(color, fp):
-   if (fp.isatty()):
-      print("\033[" + color, end="", flush=True, file=fp)
+# Dependency problems.
+depfails = []
 
 
 ## Import Lark ##
@@ -47,12 +37,15 @@ def color(color, fp):
 # 2. We need --version and --help even if Lark is not installed.
 
 try:
-   import lark
-   try:
-      lark.Visitor
-   except AttributeError:
-      FATAL('bad dependency: found "lark" but need "lark-parser"')
-except ImportError:
+   import lark   # ImportError if no such module
+   lark.Visitor  # AttributeError if wrong module
+except (ImportError, AttributeError) as x:
+   if (isinstance(x, ImportError)):
+      depfails.append(("missing", 'Python module "lark-parser"'))
+   elif (isinstance(x, AttributeError)):
+      depfails.append(("bad", 'found Python module "lark"; need "lark-parser"'))
+   else:
+      assert False
    # Mock up a lark module so the rest of the file parses.
    m = types.ModuleType("lark")
    class Visitor_Mock(object):
@@ -65,6 +58,7 @@ except ImportError:
 
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
+CH_RUN = CH_BIN + "/ch-run"
 
 ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
@@ -130,18 +124,11 @@ _WS: /[ \t]/+
 """
 
 
-## Globals ##
-
-# Command line arguments.
-cli = None
-
-# Image state object.
-state = None
-
-
 ## Main ##
 
 def main():
+
+   atexit.register(color_reset, sys.stdout, sys.stderr)
 
    if not os.path.exists(CH_BIN + "/ch-run"):
       FATAL("can't find ch-run; check your build and/or install")
@@ -156,6 +143,8 @@ environment variables:
    ap.add_argument("--build-arg", action="append", default=None,
                    metavar="KEY=VALUE",
                    help="set build-time variables")
+   ap.add_argument("--dependencies", action=CLI_Dependencies,
+                   help="print any missing dependencies and exit")
    ap.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
    ap.add_argument("-n", "--dry-run", action="store_true",
@@ -164,7 +153,7 @@ environment variables:
                    help="ignored (layer caching not yet supported)")
    ap.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
-   ap.add_argument("--print-storage", action="store_true",
+   ap.add_argument("--print-storage", action=CLI_Print_Storage,
                    help="print the state and images directory, then exit")
    ap.add_argument("-s", "--storage", metavar="DIR",
                    default=os.environ.get("CH_GROW_STORAGE",
@@ -174,14 +163,16 @@ environment variables:
                    help="name of image to create (default: inferred)")
    ap.add_argument("--verbose", action="store_true",
                    help="print extra debugging chatter")
-   ap.add_argument("--version", action=Version,
+   ap.add_argument("--version", action=CLI_Version,
                    help="print version and exit")
    ap.add_argument("context", metavar="CONTEXT",
                    help="context directory")
+
+   if (len(sys.argv) < 2):
+       ap.print_help(file=sys.stderr)
+       sys.exit(1)
+
    cli = ap.parse_args()
-   if (cli.print_storage):
-      print(cli.storage)
-      sys.exit(0)
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
    if (cli.tag is None):
@@ -207,14 +198,7 @@ environment variables:
       cli.build_arg = list()
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
 
-   try:
-      import lark
-   except ImportError:
-      FATAL('missing dependency: Python module "lark"')
-   if (not shutil.which("skopeo")):
-      FATAL("missing dependency: skopeo")
-   if (not shutil.which("umoci")):
-      FATAL("missing dependency: umoci")
+   dependencies_check()
 
    INFO("growing: %s" % dir_image(cli.tag))
    DEBUG(cli)
@@ -531,6 +515,32 @@ class I_workdir(Instruction):
 
 ## Supporting classes ##
 
+class Action_Exit(argparse.Action):
+
+   def __init__(self, *args, **kwargs):
+      super().__init__(nargs=0, *args, **kwargs)
+
+class CLI_Dependencies(Action_Exit):
+
+   def __call__(self, *args, **kwargs):
+      dependencies_check()
+      sys.exit(0)
+
+class CLI_Print_Storage(Action_Exit):
+
+   def __call__(self, _, namespace, *args, **kwargs):
+      print(namespace.storage)
+      sys.exit(0)
+
+class CLI_Version(Action_Exit):
+
+   # This gross kludge lets us print the version number without managing a
+   # version.py file.
+
+   def __call__(self, *args, **kwargs):
+      cmd = CH_RUN
+      os.execl(cmd, cmd, "--version")
+
 class State(object):
 
    def __init__(self):
@@ -551,29 +561,43 @@ class State(object):
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
       self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
 
-class Version(argparse.Action):
-
-   # This gross kludge lets us print the version number without managing a
-   # version.py file.
-
-   def __init__(self, *args, **kwargs):
-      super().__init__(nargs=0, *args, **kwargs)
-
-   def __call__(self, parser, namespace, values, option_string=None):
-      cmd = CH_BIN + "/ch-run"
-      os.execl(cmd, cmd, "--version")
-
 
 ## Supporting functions ###
+
+def DEBUG(*args, **kwargs):
+   if (cli.verbose):
+      color("36m", sys.stderr)
+      print(flush=True, file=sys.stderr, *args, **kwargs)
+      color_reset(sys.stderr)
+
+def ERROR(*args, **kwargs):
+   color("31m", sys.stderr)
+   print(flush=True, file=sys.stderr, *args, **kwargs)
+   color_reset(sys.stderr)
+
+def FATAL(*args, **kwargs):
+   ERROR(*args, **kwargs)
+   sys.exit(1)
+
+def INFO(*args, **kwargs):
+   print(flush=True, *args, **kwargs)
 
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
    color("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
-   color("0m", sys.stdout)
+   color_reset(sys.stdout)
    if (cp.returncode):
       FATAL("%s failed with return code %d" % (args[0], cp.returncode))
+
+def color(color, fp):
+   if (fp.isatty()):
+      print("\033[" + color, end="", flush=True, file=fp)
+
+def color_reset(*fps):
+   for fp in fps:
+      color("0m", fp)
 
 def cp(src, dst):
    DEBUG("copying: %s -> %s" % (src, dst))
@@ -583,6 +607,20 @@ def cp(src, dst):
       shutil.copytree(src, dst, symlinks=False)
    else:
       shutil.copy2(src, dst)
+
+def dependencies_check():
+   # Check some more dependencies. If any dependency problems found, here or
+   # above (e.g., lark module checked at import time), then complain and exit.
+   if (not os.path.exists(CH_RUN)):
+      depfails.append(("missing", CH_RUN))
+   if (not shutil.which("skopeo")):
+      depfails.append(("missing", "skopeo"))
+   if (not shutil.which("umoci")):
+      depfails.append(("missing", "umoci"))
+   for (p, v) in depfails:
+      ERROR("%s dependency: %s" % (p, v))
+   if (len(depfails) > 0):
+      sys.exit(1)
 
 def dir_image_tmp():
    return "%s/img/tmp" % cli.storage

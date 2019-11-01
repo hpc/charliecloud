@@ -1,10 +1,5 @@
 load common
 
-@test 'create tarball directory if needed' {
-    scope quick
-    mkdir -p "$ch_tardir"
-}
-
 @test 'documentation seems sane' {
     scope standard
     command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
@@ -29,27 +24,39 @@ load common
     # either (1) is executable or (2) ends in ".c". Demand satisfaction from
     # each. The latter is to catch cases when we haven't compiled everything;
     # if we have, the test makes duplicate demands, but that's low cost.
-    while IFS= read -r -d '' i; do
-        i=${i%.c}
+    while IFS= read -r -d '' path; do
+        path=${path%.c}
+        filename=$(basename "$path")
         echo
-        echo "$i"
+        echo "$path"
         # --version
-        run "$i" --version
+        run "$path" --version
         echo "$output"
         [[ $status -eq 0 ]]
         diff -u <(echo "${output}") <(echo "$ch_version")
         # --help: returns 0, says "Usage:" somewhere.
-        run "$i" --help
+        run "$path" --help
         echo "$output"
         [[ $status -eq 0 ]]
         [[ $output = *'sage:'* ]]
+        # Most, but not all, executables should print usage and exit
+        # unsuccessfully when run without arguments.
+        case $filename in
+            ch-checkns|ch-test)
+                ;;
+            *)
+                run "$path"
+                echo "$output"
+                [[ $status -eq 1 ]]
+                [[ $output = *'sage:'* ]]
+                ;;
+        esac
         # not setuid or setgid
-        ls -l "$i"
-        [[ ! -u $i ]]
-        [[ ! -g $i ]]
+        ls -l "$path"
+        [[ ! -u $path ]]
+        [[ ! -g $path ]]
     done < <( find "$ch_bin" -name 'ch-*' -a \( -executable -o -name '*.c' \) \
                    -print0 )
-
 }
 
 @test 'ch-build --builder-info' {
@@ -60,6 +67,22 @@ load common
 @test 'lint shell scripts' {
     scope standard
     ( command -v shellcheck >/dev/null 2>&1 ) || skip "no shellcheck found"
+    # skip if minimum shellcheck not met unless Travis or LANL
+    version=$(shellcheck --version | grep -E '^version:' | cut -d' ' -f2)
+    major=${version%%.*}
+    rest=${version#*.}
+    minor=${rest%%.*}
+    echo "shellcheck: version '$version', major '$major', minor '$minor'"
+    if [[ $minor -lt 6 ]]; then
+        # no need to check major because minimum is 0
+        error="shellcheck $version older than 0.6.0"
+        if [[ $TRAVIS ]] || [[ $(hostname --fqdn) = *'.lanl.gov' ]]; then
+            echo "$error"
+            false
+        else
+            skip "$error"
+        fi
+    fi
     # user executables
     for i in "$ch_bin"/ch-*; do
         echo "shellcheck: ${i}"

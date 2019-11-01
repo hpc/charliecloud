@@ -18,10 +18,9 @@ compiler: gcc
 # it up in parallel. It would be nice if "make test-build" could be done
 # serially before splitting into parallel jobs.
 #
-#   TARBALL=              # build in Git checkout & use embedded Bats
-#   TARBALL=archive       # build from "git archive" tarball & use system Bats
-#   TARBALL=export        # build from "make export" tarball & use system Bats
-#   TARBALL=export-bats   # build from "make export" tarball & use embedded Bats
+#   TARBALL=              # build in Git checkout
+#   TARBALL=archive       # build from "git archive" tarball
+#   TARBALL=export        # build from "make export" tarball
 #   INSTALL=              # run from build directory
 #   INSTALL=yes           # make install to /usr/local, run that one
 #
@@ -31,7 +30,6 @@ compiler: gcc
 #   MINIMAL_DEPS            # test with minimal dependencies (no fancy tools)
 #   SUDO_RM_FIRST           # remove sudo before build (implied if non-Docker)
 #   SUDO_RM_AFTER_BUILD     # remove sudo after build
-#   SUDO_AVOID_AFTER_BUILD  # set CH_TEST_DONT_SUDO after build
 #
 
 stages:
@@ -73,11 +71,11 @@ jobs:
     - <<: *stage_install
       env: CH_BUILDER=buildah-runc    TARBALL=export       INSTALL=yes
     - <<: *stage_install
+      env: CH_BUILDER=buildah-setuid  TARBALL=export       INSTALL=yes
+    - <<: *stage_install
       env: CH_BUILDER=ch-grow         TARBALL=export       INSTALL=yes
     - <<: *stage_install
       env: CH_BUILDER=docker          TARBALL=export       INSTALL=yes
-    - <<: *stage_install
-      env: CH_BUILDER=docker          TARBALL=export-bats  INSTALL=yes
 
     - <<: *stage_misc
       env: CH_BUILDER=buildah         MINIMAL_DEPS=yes
@@ -87,14 +85,13 @@ jobs:
       env: CH_BUILDER=docker          MINIMAL_DEPS=yes
     - <<: *stage_misc
       env: CH_BUILDER=docker          SUDO_RM_AFTER_BUILD=yes
-    - <<: *stage_misc
-      env: CH_BUILDER=docker          SUDO_AVOID_AFTER_BUILD=yes
 
 addons:
   apt:
     sources:
       - sourceline: 'ppa:projectatomic/ppa'
     packages:
+      - bats
       - python3-pip
       - python3-setuptools
 

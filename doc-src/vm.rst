@@ -116,9 +116,8 @@ Shut down the VM at your leisure.
 Possible next steps:
 
   * Follow the :doc:`tutorial <tutorial>`.
-  * Run the :ref:`test suite <install_test-charliecloud>` in
-    :code:`/usr/share/doc/charliecloud/test`. (Note that the environment
-    variables are already configured for you in this appliance.)
+  * Run :ref:`ch-test <ch-test>` (Note that the environment variables are
+    already configured for you in this appliance.)
   * Configure :code:`/var/tmp` to be a :code:`tmpfs`, if you have enough RAM,
     for better performance.
 
@@ -153,6 +152,8 @@ In no particular order:
 * The documentation is not built. Use the web documentation instead of man
   pages.
 
+* Only the most recent release of Charliecloud is supported.
+
 Install Vagrant and plugins
 ---------------------------
 
@@ -182,18 +183,19 @@ Build and provision
 To build the VM and install Docker, Charliecloud, etc.::
 
   $ cd packaging/vagrant
-  $ CH_VERSION=v0.9.1 vagrant up
+  $ vagrant up
 
-This takes less than 5 minutes.
+By default, this uses the newest release of Charliecloud. If you want
+something different, set the :code:`CH_VERSION` variable, e.g.::
 
-If you want the head of the master branch, omit :code:`CH_VERSION`.
+  $ CH_VERSION=v0.10 vagrant up
+  $ CH_VERSION=master vagrant up
 
 Then, optionally run the Charliecloud tests::
 
   $ vagrant provision --provision-with=test
 
-This runs the full Charliecloud test suite, which takes quite a while (maybe
-1–2 hours). Go have lunch, and then second lunch, and then third lunch.
+This runs the Charliecloud test suite in standard scope.
 
 Note that the test output does not have a TTY, so you will not have the tidy
 checkmarks. The last test printed is the last one that completed, not the one
@@ -220,16 +222,10 @@ Remove old virtual machine
    you're not removing it here, unless you are sure it's disposable.
 
 Each time we create a new image to distribute, we start from scratch rather
-than updating the old image. Therefore, we must remove the old image.
+than updating the old image. Therefore, we must remove the old image::
 
-1. Destroy the old virtual machine::
-
-     $ cd packaging/vagrant
-     $ vagrant destroy
-
-2. Remove deleted disk images from the VirtualBox media manager: *File* →
-   *Virtual Media Manager*. Right click on and remove any :code:`.vmdk` with a
-   red exclamation icon next to them.
+   $ cd packaging/vagrant
+   $ vagrant destroy
 
 Build and provision
 -------------------
@@ -242,7 +238,7 @@ take effect (which is done in the next step).
 
 ::
 
-   $ CH_VERSION=v0.9.1 vagrant up
+   $ vagrant up
    $ vagrant provision --provision-with=ova
 
 Snapshot for distribution
