@@ -19,7 +19,6 @@ Overview
    :hidden:
 
    install
-   test
    tutorial
    command-usage
    faq

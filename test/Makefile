@@ -58,11 +58,6 @@ clean:
 	rm -f sotest/sotest sotest/libsotest.so*
 	rm -f sotest/bin/sotest sotest/lib/libsotest.so*
 
-.PHONY: where-bats
-where-bats:
-	which bats
-	bats --version
-
 build_auto.bats: $(images) make-auto
 	./make-auto build $^ > $@
 

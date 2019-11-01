@@ -217,9 +217,8 @@ Shut down the VM at your leisure.
 Possible next steps:
 
   * Follow the :doc:`tutorial <tutorial>`.
-  * Run the :ref:`test suite <install_test-charliecloud>` in
-    :code:`/usr/share/doc/charliecloud/test`. (Note that the environment
-    variables are already configured for you in this appliance.)
+  * Run :ref:`ch-test <ch-test>` (Note that the environment variables are
+    already configured for you in this appliance.)
   * Configure :code:`/var/tmp` to be a :code:`tmpfs`, if you have enough RAM,
     for better performance.
 

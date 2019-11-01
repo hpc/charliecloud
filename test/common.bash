@@ -187,13 +187,10 @@ export LC_ALL=C
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
 env_require CH_TEST_PERMDIRS
-if ( bash -c 'set -e; [[ 1 = 0 ]]; exit 0' ); then
-    # Bash bug: [[ ... ]] expression doesn't exit with set -e
-    # https://github.com/sstephenson/bats/issues/49
-    printf 'Need at least Bash 4.1 for these tests.\n\n' >&2
-    exit 1
+env_require CH_BUILDER
+if [[ $CH_BUILDER == ch-grow ]]; then
+    env_require CH_GROW_STORAGE
 fi
-
 # Set path to the right Charliecloud. This uses a symlink in this directory
 # called "bin" which points to the corresponding bin directory, either simply
 # up and over (source code) or set during "make install".
@@ -207,16 +204,6 @@ export PATH=$ch_bin:$PATH
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
 ch_libexec=$(ch-build --libexec-path)
-if [[ ! -x ${ch_bin}/ch-run ]]; then
-    printf 'Must build with "make" before running tests.\n\n' >&2
-    exit 1
-fi
-
-# Tests require explicitly set builder.
-if [[ -z $CH_BUILDER ]]; then
-    CH_BUILDER=$(ch-build --print-builder)
-    export CH_BUILDER
-fi
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
@@ -234,9 +221,6 @@ ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
 # shellcheck disable=SC2034
 ch_mounts="${ch_imgdir}/mounts"
-if [[ $CH_BUILDER = ch-grow ]]; then
-    export CH_GROW_STORAGE=$ch_tardir/_ch-grow
-fi
 
 # Image information.
 # shellcheck disable=SC2034
@@ -351,19 +335,8 @@ else
     fi
 fi
 
-# Validate CH_TEST_SCOPE and set if empty.
-if [[ -z $CH_TEST_SCOPE ]]; then
-    CH_TEST_SCOPE=standard
-elif [[    $CH_TEST_SCOPE != quick \
-        && $CH_TEST_SCOPE != standard \
-        && $CH_TEST_SCOPE != full ]]; then
-    # shellcheck disable=SC2016
-    printf '$CH_TEST_SCOPE value "%s" is invalid\n\n' "$CH_TEST_SCOPE" >&2
-    exit 1
-fi
-
 # Do we have and want sudo?
-if    [[ -z $CH_TEST_DONT_SUDO ]] \
+if    [[ $CH_TEST_SUDO ]] \
    && ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
