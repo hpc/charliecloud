@@ -313,22 +313,9 @@ EOF2
     else
         user=vagrant
     fi
-    if [[ -d $CH_TEST_TARDIR ]]; then
-        sudo rm -rf $CH_TEST_TARDIR
-    fi
-    if [[ -d $CH_TEST_IMGDIR ]]; then
-        sudo rm -rf $CH_TEST_IMGDIR
-    fi
-    echo "testing as: $user"
-    sudo -iu $user -- sh -c "ch-test -b docker"
-    echo
-    echo "builder: buildah"
-    sudo -iu $user -- sh -c "rm -rf $CH_TEST_TARDIR $CH_TEST_IMGDIR"
-    sudo -iu $user -- sh -c "ch-test -b buildah"
-    echo
-    echo "builder: ch-grow"
-    sudo -iu $user -- sh -c "rm -rf $CH_TEST_TARDIR $CH_TEST_IMGDIR"
-    sudo -iu $user -- sh -c "ch-test -b ch-grow"
+    sudo -iu $user -- sh -c "ch-test clean && ch-test -b docker"
+    sudo -iu $user -- sh -c "ch-test clean && ch-test -b buildah"
+    sudo -iu $user -- sh -c "ch-test clean && ch-test -b ch-grow"
   EOF
 end
 
