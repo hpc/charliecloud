@@ -164,15 +164,6 @@ EOF2
     cd /usr/local/src
     sudo chmod 1777 .
 
-    # CentOS/EPEL/IUI don't have the version of shadow-utils (newuidmap and
-    # newgidmap) we need for runc (used by Buildah), so install from source.
-    wget -nv https://github.com/shadow-maint/shadow/releases/download/4.6/shadow-4.6.tar.xz
-    tar xf shadow-4.6.tar.xz
-    (cd shadow-4.6 && ./configure && sudo make install)
-
-    # Install Buildah.
-    sudo yum -y install buildah
-
     sudo tee /etc/profile.d/charliecloud.sh << 'EOF2'
 export CH_TEST_TARDIR=/var/tmp/tarballs
 export CH_TEST_IMGDIR=/var/tmp/images
@@ -191,6 +182,57 @@ EOF2
     sudo make install PREFIX=/usr/local
     which ch-run
     ch-run --version
+  EOF
+
+  # Install Buildah.
+  c.vm.provision "buildah", type: "shell", privileged: false,
+                 inline: <<-EOF
+    set -e
+    cd /usr/local/src
+
+    # CentOS/EPEL/IUI don't have the version of shadow-utils (newuidmap and
+    # newgidmap) we need for runc (used by Buildah), so install from source.
+    wget -nv https://github.com/shadow-maint/shadow/releases/download/4.6/shadow-4.6.tar.xz
+    tar xf shadow-4.6.tar.xz
+    (cd shadow-4.6 && ./configure && sudo make install)
+
+    sudo yum -y install btrfs-progs-devel \
+                        bzip2 \
+                        device-mapper-devel \
+                        glib2-devel \
+                        golang \
+                        go-md2man \
+                        gpgme-devel \
+                        libassuan-devel \
+                        libseccomp-devel \
+                        make \
+                        ostree-devel \
+                        runc
+
+    mkdir buildah
+    export GOPATH=$(readlink -f buildah)
+    export BUILDAH_VERSION=v1.11.2
+    git clone https://github.com/containers/buildah ${GOPATH}/src/github.com/containers/buildah
+    cd ${GOPATH}/src/github.com/containers/buildah
+    git checkout "$BUILDAH_VERSION"
+    make
+    sudo make install
+  EOF
+
+  # Install ch-grow dependencies.
+  c.vm.provision "ch-grow", type: "shell", privileged: false,
+                 inline: <<-EOF
+    set -e
+    cd /usr/local/src
+    sudo yum -y install python36 \
+                        python36-pip \
+                        skopeo
+
+    wget https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64
+    sudo chmod 755 umoci.amd64
+    sudo mv umoci.amd64 /usr/bin/umoci
+    umoci --version
+    sudo pip3 install lark-parser
   EOF
 
   # Twiddle vagrant user so Charliecloud tests will pass (add to a second
@@ -264,7 +306,6 @@ EOF2
   # Note: This will grow the image quite a bit. Don't run it before taking the
   # snapshot to be distributed to end users.
   c.vm.provision "test", type: "shell", run: "never", privileged: false,
-                 env: { "CH_TEST_SCOPE" => "full" },
                  inline: <<-EOF
     set -e
     if ( id -u charlie 2>/dev/null ); then  # issue #309
@@ -272,14 +313,10 @@ EOF2
     else
         user=vagrant
     fi
-    echo "scope:      $CH_TEST_SCOPE"
-    echo "testing as: $user"
-    version=$(cat /usr/local/src/charliecloud/VERSION.full)
-    test_path=/usr/local/libexec/charliecloud-${version}/test
-    echo "testing in: $test_path"
-    sudo -iu $user -- sh -c "cd $test_path && make test"
+    sudo -iu $user -- sh -c "ch-test clean && ch-test -b docker"
+    sudo -iu $user -- sh -c "ch-test clean && ch-test -b buildah"
+    sudo -iu $user -- sh -c "ch-test clean && ch-test -b ch-grow"
   EOF
-
 end
 
 
