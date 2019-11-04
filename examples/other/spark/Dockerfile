@@ -18,10 +18,10 @@ RUN touch /usr/bin/ch-ssh
 # configure hive-site.xml [2], but I'm not willing to put up with that crap
 # for demo purposes. Maybe it will be fixed in a 2.1 point release.
 #
-# [1]: http://spark.apache.org/docs/latest/sql-programming-guide.html#upgrading-from-spark-sql-20-to-21
+# [1]: http://sparhttp://d3kbcqa49mib13.cloudfront.netk.apache.org/docs/latest/sql-programming-guide.html#upgrading-from-spark-sql-20-to-21
 # [2]: https://community.cloudera.com/t5/Advanced-Analytics-Apache-Spark/Spark-displays-SQLException-when-Hive-not-installed/td-p/37954
-ENV URLPATH http://d3kbcqa49mib13.cloudfront.net
-ENV DIR spark-2.0.2-bin-hadoop2.7
+ENV URLPATH https://www.apache.org/dist/spark/spark-2.4.4/
+ENV DIR spark-2.4.4-bin-hadoop2.7
 ENV TAR $DIR.tgz
 RUN wget -nv $URLPATH/$TAR
 RUN tar xf $TAR && mv $DIR spark && rm $TAR
