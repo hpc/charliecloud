@@ -1,3 +1,9 @@
+# Gotchas:
+#
+# 1. Quadrigraphs. M4 consumes a number of important special characters, so
+#    Autoconf uses 4-character sequences, e.g. "@%:@" is the octothorpe (#).
+#    See: https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Quadrigraphs.html
+
 AC_INIT([Charliecloud], [m4_esyscmd_s([misc/version])],
         [https://github.com/hpc/charliecloud])
 AC_PREREQ([2.69])
@@ -18,7 +24,7 @@ AX_CHECK_COMPILE_FLAG([CH_CFLAGS], [
   AC_MSG_ERROR([no C11 compiler found])
 ])
 AS_IF([test "$CC" = icc],
-      [AC_MSG_ERROR([icc not supported (see PR 481)])])
+      [AC_MSG_ERROR([icc not supported (see PR @%:@481)])])
 
 ## Libraries
 
@@ -36,29 +42,56 @@ AC_SUBST([LIBRT])
 ## Options
 
 
-## Feature tests
+## Feature test macros
 
-# Sphinx. FIXME: For now, we are not validating the underlying Python and
-# docutils versions.
-# - exists and executable
-# - minimum version
-vmin_sphinx=1.4.9
-with_sphinx=$SPHINX
-AX_WITH_PROG([SPHINX], [sphinx-build])
-AS_IF([test "x$SPHINX" != x], [
-  AC_MSG_CHECKING([if sphinx-build is executable])
-  AS_IF([test -e "$SPHINX"],
-        [AC_MSG_RESULT([ok])],
-        [AC_MSG_RESULT([no])
-         AC_MSG_ERROR([not executable: $SPHINX])])
-  AC_MSG_CHECKING([sphinx-build version at least $vmin_sphinx])
-  vact_sphinx=$("$SPHINX" --version | sed -E 's/sphinx-build //')
-  AX_COMPARE_VERSION([$vmin_sphinx], [le], [$vact_sphinx],
-    [AC_MSG_RESULT([ok ($vact_sphinx)])],
-    [AC_MSG_RESULT([too old ($vact_sphinx)])
-     AS_UNSET(SPHINX)
-     AS_UNSET(vact_sphinx)])
+# Macro to validate executable versions. Arguments:
+#
+#   $1  name of variable containing executable name or absolute path
+#   $2  minimum version
+#   $3  append to $1 to make shell pipeline to get actual version only
+#       (e.g., without program name)
+#
+# If ${!1} is empty, do nothing.
+#
+# If minimum version is less than actual version, unset $1. Otherwise, also
+# set $1_VERSION to the actual version.
+#
+# If given absolute path, and that file isn't executable, error out.
+AC_DEFUN([CH_CHECK_VERSION], [
+  AS_VAR_PUSHDEF([prog], [$1])
+  AS_IF([test -n "$prog"], [
+    AS_CASE([$prog], [/*], [
+      AC_MSG_CHECKING([if $prog is executable])
+      AS_IF([test -e "$prog"],
+            [AC_MSG_RESULT([ok])],
+            [AC_MSG_RESULT([no])
+             AC_MSG_ERROR([must be executable])])])
+    AC_MSG_CHECKING([if $(basename $prog) version >= $2])
+    vact=$("$prog" $3)
+    AX_COMPARE_VERSION([$2], [le], [$vact],
+      [AC_MSG_RESULT([ok ($vact)])
+       AC_SUBST([$1_VERSION], [$vact])],
+      [AC_MSG_RESULT([too old ($vact)])
+       AS_UNSET([$1])])
+  ])
+  AS_VAR_POPDEF([prog])
 ])
+
+
+## Feature tests - build time
+
+vmin_sphinx=1.4.9
+AX_WITH_PROG([SPHINX], [sphinx-build])
+CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
+                 [--version | sed -E 's/sphinx-build //'])
+
+
+## Feature tests - run time
+
+vmin_bash=4.1
+AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
+CH_CHECK_VERSION([_BASH], [$vmin_bash],
+  [--version | head -1 | sed -E 's/^.*version (@<:@0-9a-z.()-@:>@+).*$/\1/'])
 
 # User namespaces
 AC_MSG_CHECKING([if user+mount namespaces work])
@@ -90,10 +123,11 @@ AC_MSG_NOTICE([
   build-time dependencies:
 
     C11 compiler           ${CC} ${CC_VERSION}
-    sphinx-build $vmin_sphinx+    ${SPHINX:-not found} ${vact_sphinx}
+    sphinx-build $vmin_sphinx+    ${SPHINX:-not found} ${SPHINX_VERSION}
 
   run-time dependencies (informational only):
 
+    Bash $vmin_bash+              ${_BASH_VERSION:-not found}
     user+mount namespaces  ${have_userns}
 
 ])
