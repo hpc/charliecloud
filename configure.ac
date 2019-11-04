@@ -41,6 +41,21 @@ AC_SUBST([LIBRT])
 
 ## Options
 
+# Note: --with-sphinx-build provided by AX_WITH_PROG() below.
+
+AC_ARG_WITH([python-shebang],
+  AS_HELP_STRING(
+    [--with-python-shebang=@<:@SHEBANG@:>@],
+    [Python shebang to use for scripts (default: "/usr/bin/env python3")]),
+  [PYTHON_SHEBANG="$withval"],
+  [PYTHON_SHEBANG='/usr/bin/env python3'])
+AC_MSG_CHECKING([if "$PYTHON_SHEBANG" starts with slash])
+AS_CASE([$PYTHON_SHEBANG],
+  [/*], [AC_MSG_RESULT([ok])],
+  [*],  [AC_MSG_RESULT([no])
+         AC_MSG_ERROR([--with-python-shebang: must start with slash])])
+AC_SUBST([PYTHON_SHEBANG])
+
 
 ## Feature test macros
 
@@ -60,14 +75,14 @@ AC_SUBST([LIBRT])
 AC_DEFUN([CH_CHECK_VERSION], [
   AS_VAR_PUSHDEF([prog], [$1])
   AS_IF([test -n "$prog"], [
-    AS_CASE([$prog], [/*], [
-      AC_MSG_CHECKING([if $prog is executable])
-      AS_IF([test -e "$prog"],
-            [AC_MSG_RESULT([ok])],
-            [AC_MSG_RESULT([no])
-             AC_MSG_ERROR([must be executable])])])
-    AC_MSG_CHECKING([if $(basename $prog) version >= $2])
-    vact=$("$prog" $3)
+    AS_CASE([$prog],
+      [/*], [AC_MSG_CHECKING([if $prog is executable])
+             AS_IF([test -e "$prog"],
+              [AC_MSG_RESULT([ok])],
+              [AC_MSG_RESULT([no])
+               AC_MSG_ERROR([must be executable])])])
+    AC_MSG_CHECKING([if $prog version >= $2])
+    vact=$($prog $3)
     AX_COMPARE_VERSION([$2], [le], [$vact],
       [AC_MSG_RESULT([ok ($vact)])
        AC_SUBST([$1_VERSION], [$vact])],
@@ -90,8 +105,19 @@ CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
 
 vmin_bash=4.1
 AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
-CH_CHECK_VERSION([_BASH], [$vmin_bash],
-  [--version | head -1 | sed -E 's/^.*version (@<:@0-9a-z.()-@:>@+).*$/\1/'])
+CH_CHECK_VERSION([_BASH], [$vmin_bash], [--version | head -1 | cut -d' ' -f4])
+
+# docker
+# mktemp
+# buildah
+
+vmin_python=3.4
+python="${PYTHON_SHEBANG#/usr/bin/env }"                # use shell to find it
+AS_CASE([$python],
+  [/*], [PYTHON="$python"],                              # absolute
+  [*],  [AC_CHECK_PROG([PYTHON], [$python], [$python])]  # verify it's in $PATH
+)
+CH_CHECK_VERSION([PYTHON], [$vmin_python], [--version | cut -d' ' -f2])
 
 # User namespaces
 AC_MSG_CHECKING([if user+mount namespaces work])
@@ -127,8 +153,10 @@ AC_MSG_NOTICE([
 
   run-time dependencies (informational only):
 
-    Bash $vmin_bash+              ${_BASH_VERSION:-not found}
-    user+mount namespaces  ${have_userns}
+    Bash $vmin_bash+               ${_BASH_VERSION:-not found}
+    Python shebang line     ${PYTHON_SHEBANG}
+    Python in shebang $vmin_python+  ${PYTHON_VERSION:-no or not found}
+    user+mount namespaces   ${have_userns}
 
 ])
 
