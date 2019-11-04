@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installation &mdash; Charliecloud 0.11 documentation</title>
+  <title>1. Installation &mdash; Charliecloud 0.12 documentation</title>
   
 
   
@@ -36,7 +36,7 @@
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="2. Testing" href="test.html" />
+    <link rel="next" title="2. Tutorial" href="tutorial.html" />
     <link rel="prev" title="Overview" href="index.html" /> 
 </head>
 
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                ce30e34
+                4cc7df1
               </div>
             
           
@@ -130,12 +130,11 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="test.html">2. Testing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">3. Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="command-usage.html">4. Charliecloud command reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vm.html">5. Pre-installed virtual machine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">6. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">7. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command-usage.html">3. Charliecloud command reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vm.html">4. Pre-installed virtual machine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">5. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">6. Contributor’s guide</a></li>
 </ul>
 
             
@@ -291,12 +290,13 @@ configuration for a local image repository (e.g., a private Docker Hub).</p>
 </ul>
 <div class="section" id="buildah-privileged-or-unprivileged">
 <h4>1.1.3.1. Buildah (privileged or unprivileged)<a class="headerlink" href="#buildah-privileged-or-unprivileged" title="Permalink to this headline">¶</a></h4>
-<p>Charliecloud can use the “rootless” mode of stock Buildah, which requires the
-setuid (i.e., privileged) helpers <code class="code docutils literal notranslate"><span class="pre">newuidmap</span></code> and <code class="code docutils literal notranslate"><span class="pre">newgidmap</span></code>.</p>
-<p>For a fully unprivileged workflow, Charliecloud can also use a patched Buildah
-that does not require the setuid helpers. You need branch
-<code class="code docutils literal notranslate"><span class="pre">chown-error-tolerant-patch</span></code> from <a class="reference external" href="https://github.com/hpc/buildah">our fork of Buildah</a>. (We are working with Buildah upstream to
-merge our patches.)</p>
+<p>Charliecloud uses Buildah’s “rootless” mode and ignore-chown-errors storage
+configuration to acheive a fully unprivileged workflow. If an image with
+multpile user mappings is pulled using this method, all file permissions will
+be remapped to a single user (root). This requires Buildah v1.10.1 or newer.</p>
+<p>For a privileged workflow, Charliecloud can also use Buildah with setuid
+helpers <code class="code docutils literal notranslate"><span class="pre">newuidmap</span></code> and <code class="code docutils literal notranslate"><span class="pre">newgidmap</span></code>. This will not remap the file
+permissions to root.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>To configure Buildah in rootless mode, which is what Charliecloud uses,
@@ -326,7 +326,8 @@ Docker may work but are untested. We know that 1.7.1 does not work.</p>
 <h3><a class="toc-backref" href="#id7">1.1.4. Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h3>
 <p>To run the test suite, you also need:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/sstephenson/bats">Bats</a> 0.4.0</p></li>
+<li><p><a class="reference external" href="https://github.com/sstephenson/bats">Bats</a> 0.4.0 (<a class="reference external" href="https://github.com/bats-core/bats-core">Bats-core</a>, a newer fork of Bats, is
+untested)</p></li>
 <li><p>Bash 4.1+, for Bats and to make programming the tests tractable</p></li>
 <li><p>Python 2.7 or 3.4+, for building some of the tests</p></li>
 <li><p>Wget, to download stuff for some of the test images</p></li>
@@ -340,19 +341,6 @@ Docker may work but are untested. We know that 1.7.1 does not work.</p>
 <li><p><a class="reference external" href="https://github.com/containers/skopeo">skopeo</a> and
 <a class="reference external" href="https://github.com/openSUSE/umoci">umoci</a></p></li>
 </ul>
-<p>Bats can be installed at the system level or embedded in the Charliecloud
-source code. If it’s in both places, the latter is used.</p>
-<p>To embed Bats, either:</p>
-<ul class="simple">
-<li><p>Download Charliecloud using <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>, which will check
-out Bats as a submodule in <code class="code docutils literal notranslate"><span class="pre">test/bats</span></code>.</p></li>
-<li><p>Unpack the Bats zip file or tarball in <code class="code docutils literal notranslate"><span class="pre">test/bats</span></code>.</p></li>
-</ul>
-<p>To check an embedded Bats:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> test/bats/bin/bats --version
-<span class="go">Bats 0.4.0</span>
-</pre></div>
-</div>
 </div>
 </div>
 <div class="section" id="package-manager-install">
@@ -615,7 +603,7 @@ above variables are set.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="test.html" class="btn btn-neutral float-right" title="2. Testing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="tutorial.html" class="btn btn-neutral float-right" title="2. Tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="index.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
