@@ -3,6 +3,10 @@
 # 1. Quadrigraphs. M4 consumes a number of important special characters, so
 #    Autoconf uses 4-character sequences, e.g. "@%:@" is the octothorpe (#).
 #    See: https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Quadrigraphs.html
+#
+# 2. Booleans. The convention for Autoconf variables, which we follow, is
+#    "yes" for true and "no" for false. This differs from the Charliecloud
+#    convention of non-empty for true and empty for false.
 
 AC_INIT([Charliecloud], [m4_esyscmd_s([misc/version])],
         [https://github.com/hpc/charliecloud])
@@ -55,6 +59,23 @@ AS_CASE([$PYTHON_SHEBANG],
   [*],  [AC_MSG_RESULT([no])
          AC_MSG_ERROR([--with-python-shebang: must start with slash])])
 AC_SUBST([PYTHON_SHEBANG])
+
+AC_ARG_ENABLE([html],
+  AS_HELP_STRING([--disable-html], [don't build and install HTML docs]),
+  [], [enable_html=yes])
+
+AC_ARG_ENABLE([man],
+  AS_HELP_STRING([--disable-man], [don't build and install man pages]),
+  [], [enable_man=yes])
+
+AC_ARG_ENABLE([test],
+  AS_HELP_STRING([--disable-test], [don't build and install test suite]),
+  [], [enable_test=yes])
+
+AC_ARG_ENABLE([ch-grow],
+  AS_HELP_STRING([--disable-ch-grow],
+                 [don't build and install ch-grow unprivileged builder]),
+  [], [enable_ch_grow=yes])
 
 
 ## Feature test macros
@@ -140,27 +161,43 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
 AC_MSG_RESULT($have_userns)
 
 
-## Print report
+## Adjust build options given what we have available
 
-AC_MSG_NOTICE([
+AS_IF([test "$enable_html" = yes && test -z "$SPHINX"],
+      [AC_MSG_WARN([forcing --disable-html: no suitable sphinx-build])
+       enable_html=no])
 
-  configure options:
-
-  build-time dependencies:
-
-    C11 compiler           ${CC} ${CC_VERSION}
-    sphinx-build $vmin_sphinx+    ${SPHINX:-not found} ${SPHINX_VERSION}
-
-  run-time dependencies (informational only):
-
-    Bash $vmin_bash+               ${_BASH_VERSION:-not found}
-    Python shebang line     ${PYTHON_SHEBANG}
-    Python in shebang $vmin_python+  ${PYTHON_VERSION:-no or not found}
-    user+mount namespaces   ${have_userns}
-
-])
+AS_IF([test "$enable_man" = yes && test -z "$SPHINX"],
+      [AC_MSG_WARN([forcing --disable-man: no suitable sphinx-build])
+       enable_man=no])
 
 
 ## Done
 
 AC_OUTPUT
+
+
+## Print report
+
+AC_MSG_NOTICE([
+
+  build-time:
+
+    C11 compiler           ${CC} ${CC_VERSION}
+    sphinx-build $vmin_sphinx+    ${SPHINX:-not found} ${SPHINX_VERSION}
+
+    build and install:
+      HTML documentation   ${enable_html}
+      man pages            ${enable_man}
+      test suite           ${enable_test}
+      ch-grow builder      ${enable_ch_grow}
+
+  run-time (informational only):
+
+    Bash $vmin_bash+               ${_BASH_VERSION:-not found}
+    Python shebang line     ${PYTHON_SHEBANG}
+    Python in shebang $vmin_python+  ${PYTHON_VERSION:-no or not found}
+    user+mount namespaces   ${have_userns}
+])
+
+
