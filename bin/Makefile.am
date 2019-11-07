@@ -1,7 +1,3 @@
-dist_bin_SCRIPTS =
-CLEANFILES =
-EXTRA_DIST =
-
 ## C programs
 
 bin_PROGRAMS = ch-checkns ch-run ch-ssh
@@ -17,21 +13,35 @@ ch_ssh_SOURCES = ch-ssh.c ch_misc.h ch_misc.c
 
 ## Shell scripts - distributed as-is
 
-# FIXME: $(EXEEXT) not included for scripts.
-
+dist_bin_SCRIPTS = ch-build \
+	           ch-build2dir \
+	           ch-builder2squash \
+                   ch-builder2tar \
+                   ch-dir2squash \
+                   ch-fromhost \
+                   ch-mount \
+                   ch-pull2dir \
+                   ch-pull2tar \
+                   ch-tar2dir \
+                   ch-test \
+                   ch-umount
 
 
 ## Python scripts - need text processing
 
-python_scripts = ch-grow ch-run-oci
-EXTRA_DIST += ch-grow.py.in ch-run-oci.py.in
-
-CLEANFILES += $(python_scripts)
-dist_bin_SCRIPTS += $(python_scripts)
+bin_SCRIPTS = ch-grow ch-run-oci
+EXTRA_DIST = ch-grow.py.in ch-run-oci.py.in
+CLEANFILES = $(bin_SCRIPTS)
 
 ch-grow: ch-grow.py.in
 ch-run-oci: ch-run-oci.py.in
 
-$(dist_bin_SCRIPTS): %: %.py.in
+$(bin_SCRIPTS): %: %.py.in
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
 	chmod +rwx $@  # respects umask
+
+
+# Bugs
+#
+# 1. $(EXEEXT) not included for scripts.
+
