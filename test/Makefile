@@ -1,78 +1,23 @@
 export LC_ALL := C
-images_ch := chtest/Build \
-             $(sort $(wildcard ./Build.*)) \
-             $(sort $(wildcard ./Dockerfile.*)) \
-             $(sort $(wildcard ./Docker_Pull.*))
-images_eg := $(sort $(wildcard ../examples/*/*/Build)) \
-             $(sort $(wildcard ../examples/*/*/Build.*)) \
-             $(sort $(wildcard ../examples/*/*/Dockerfile)) \
-             $(sort $(wildcard ../examples/*/*/Dockerfile.*)) \
-             $(sort $(wildcard ../examples/*/*/Docker_Pull)) \
-             $(sort $(wildcard ../examples/*/*/Docker_Pull.*))
-images := $(images_ch) $(images_eg)
 sotests := check-no-icc sotest/bin/sotest sotest/lib/libsotest.so.1.0
 
-# Used by "make all" at top level to build these files for "make install".
+# Used by "make all" at top level to build shared objects for testing.
 .PHONY: all
-all: build_auto.bats run_auto.bats $(sotests)
-
-.PHONY: test
-test: test-build test-run
-ifneq ($(CH_TEST_SCOPE),quick)
-test: test-test
-endif
-
-.PHONY: test-build
-test-build: build_auto.bats $(sotests)
-	bats build.bats build_auto.bats build_post.bats
-
-# Note: This will will not find ch-run correctly if $CWD is not the test
-# directory, which I believe is assumed elsewhere in the test suite as well.
-.PHONY: test-run
-test-run: run_auto.bats $(sotests)
-	bats run_first.bats run_auto.bats run/*.bats
-	set -e; \
-	if [ "$$CH_TEST_SCOPE" != "quick" ]; then \
-	    for GUEST_USER in $$(id -un) root nobody; do \
-	        for GUEST_GROUP in $$(id -gn) root $$(id -gn nobody); do \
-	            export GUEST_USER; \
-	            export GUEST_GROUP; \
-	            echo testing as: $$GUEST_USER $$GUEST_GROUP; \
-	            bats run/ch-run_uidgid.bats; \
-	        done; \
-	    done; \
-	fi
-
-# FIXME: This could be sped up by skipping bats if the image is out of scope.
-.PHONY: test-test
-test-test: $(images_eg)
-	set -e; \
-	for image in $(images_eg); do \
-	    export CH_TEST_TAG=$$(./make-auto tag $$image); \
-	    bats $$(dirname $$image)/test.bats; \
-	done
-
-.PHONY: clean
-clean:
-	rm -f *_auto.bats
-	rm -f sotest/sotest sotest/libsotest.so*
-	rm -f sotest/bin/sotest sotest/lib/libsotest.so*
-
-build_auto.bats: $(images) make-auto
-	./make-auto build $^ > $@
-
-run_auto.bats: $(images) make-auto
-	./make-auto run $^ > $@
+all: $(sotests)
 
 sotest/bin/sotest: sotest/sotest
 	cp -a $^ $@
 sotest/lib/libsotest.so.1.0: sotest/libsotest.so.1.0
 	cp -a $^ $@
 
+.PHONY: clean
+clean:
+	rm -f sotest/sotest sotest/libsotest.so*
+	rm -f sotest/bin/sotest sotest/lib/libsotest.so*
+	rm bin
 # We exclude icc here because it links the
 # resulting binaries with extra shared libraries that are then not copied into
 # the container. (Issue #227.)
-
 check-no-icc:
 ifeq ($(patsubst %icc,,$(lastword $(CC))),)
 	$(error ICC not supported since it overlinks extra shared libraries)
@@ -102,15 +47,16 @@ install: all
 	install -pm 755 -t $(TEST) Build.*
 	install -pm 644 -t $(TEST) Dockerfile.* Docker_Pull.*
 	install -pm 644 -t $(TEST) *.patch
-	install -pm 755 -t $(TEST) docs-sane \
-                               make-auto \
+	install -pm 755 -t $(TEST) chtest-make-auto \
+							   docs-sane \
                                make-perms-test
 	install -d $(TEST)/chtest
+	install -d $(TEST)/make-auto.d
+	install -pm 644 -t $(TEST)/make-auto.d make-auto.d/*
 	install -pm 644 -t $(TEST)/chtest chtest/*
 	chmod 755 $(TEST)/chtest/Build \
 	          $(TEST)/chtest/*.py \
 	          $(TEST)/chtest/printns
-	ln -sf ../../../bin $(TEST)/bin
 #	shared library tests
 	install -d $(TEST)/sotest $(TEST)/sotest/bin $(TEST)/sotest/lib
 	install -pm 755 -t $(TEST)/sotest sotest/libsotest.so.1.0 \

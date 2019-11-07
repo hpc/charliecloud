@@ -1,6 +1,5 @@
 @test 'custom build %(tag)s' {
     scope %(scope)s
-    %(build_exclude)s
     tarball="${ch_tardir}/%(tag)s"
     pq="${ch_tardir}/%(tag)s.pq_missing"
     workdir="${ch_tardir}/%(tag)s.tmp"

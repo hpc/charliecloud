@@ -1,4 +1,4 @@
-@test 'ch-run %(tag)s /bin/true' {
+@test 'ch-run %(tag)s -- /bin/true' {
     scope %(scope)s
     prerequisites_ok %(tag)s
     if [[ -e "${ch_tardir}/%(tag)s.sqfs" ]]; then
