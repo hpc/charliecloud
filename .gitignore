@@ -2,7 +2,9 @@
 *.o
 a.out
 bin/ch-checkns
+bin/ch-grow
 bin/ch-run
+bin/ch-run-oci
 bin/ch-ssh
 bin/version.h
 doc/
