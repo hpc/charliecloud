@@ -68,7 +68,8 @@ EOF
     # remove old master logs so new one has predictable name
     rm -Rf --one-file-system "$spark_log"
     # start the master
-    ch-run -b "$spark_config" "$ch_img" -- /spark/sbin/start-master.sh
+    ls -lh /opt/spark/sbin/start-master.sh
+    ch-run -b "$spark_config" "$ch_img" -- /opt/spark/sbin/start-master.sh
     sleep 7
     # shellcheck disable=SC2086
     cat $master_log
@@ -77,7 +78,7 @@ EOF
     # start the workers
     # shellcheck disable=SC2086
     $pernode ch-run -b "$spark_config" "$ch_img" -- \
-                    /spark/sbin/start-slave.sh "$master_url"
+                    /opt/spark/sbin/start-slave.sh "$master_url"
     sleep 7
 }
 
@@ -97,8 +98,8 @@ EOF
 
 @test "${ch_tag}/pi" {
     run ch-run -b "$spark_config" "$ch_img" -- \
-               /spark/bin/spark-submit --master "$master_url" \
-               /spark/examples/src/main/python/pi.py 64
+               /opt/spark/bin/spark-submit --master "$master_url" \
+               /opt/spark/examples/src/main/python/pi.py 64
     echo "$output"
     [[ $status -eq 0 ]]
     # This computation converges quite slowly, so we only ask for two correct
@@ -107,8 +108,8 @@ EOF
 }
 
 @test "${ch_tag}/stop" {
-    $pernode ch-run -b "$spark_config" "$ch_img" -- /spark/sbin/stop-slave.sh
-    ch-run -b "$spark_config" "$ch_img" -- /spark/sbin/stop-master.sh
+    $pernode ch-run -b "$spark_config" "$ch_img" -- /opt/spark/sbin/stop-slave.sh
+    ch-run -b "$spark_config" "$ch_img" -- /opt/spark/sbin/stop-master.sh
     sleep 2
     # Any Spark processes left?
     # (Use egrep instead of fgrep so we don't match the grep process.)
