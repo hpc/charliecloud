@@ -68,7 +68,6 @@ EOF
     # remove old master logs so new one has predictable name
     rm -Rf --one-file-system "$spark_log"
     # start the master
-    ls -lh /opt/spark/sbin/start-master.sh
     ch-run -b "$spark_config" "$ch_img" -- /opt/spark/sbin/start-master.sh
     sleep 7
     # shellcheck disable=SC2086
