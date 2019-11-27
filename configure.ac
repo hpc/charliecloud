@@ -2,19 +2,17 @@
 #
 #   - clean up and finalize documentation
 #   - finish ./configure runtime status report
-#   - script libexec lines: remove quotes
-#   - ch-test: fix libexec lines
 #   - ch-test: pass
 #   - build docs, with correct sphinx-build
 #   - document Autotools Archive dependency
 #   - make sure executable sanity check doesn't depend solely on wildcards
 #   - use shell variable for CH_CFLAGS?
-#   - sotest shared library
 #   - figure out "make web"
 #   - make the --disable options work
 #   - --disable-ch-grow: make sure tests work
 #   - ch-run: need ch_core.h in sources
 #   - merge test/Makefile elimination (PR #584)
+#   - sotest shared library
 
 # Gotchas:
 #

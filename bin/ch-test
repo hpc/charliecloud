@@ -2,7 +2,7 @@
 
 set -e
 
-libexec="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+libexec=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "${libexec}/base.sh"
 
 # shellcheck disable=SC2034
