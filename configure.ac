@@ -1,3 +1,21 @@
+# TODO
+#
+#   - clean up and finalize documentation
+#   - finish ./configure runtime status report
+#   - script libexec lines: remove quotes
+#   - ch-test: fix libexec lines
+#   - ch-test: pass
+#   - conver Python scripts to version.py
+#   - build docs, with correct sphinx-build
+#   - document Autotools Archive dependency
+#   - make sure executable sanity check doesn't depend solely on wildcards
+#   - use shell variable for CH_CFLAGS?
+#   - sotest shared library
+#   - figure out "make web"
+#   - make the --disable options work
+#   - --disable-ch-grow: make sure tests work
+#   - ch-run: need ch_core.h in sources
+
 # Gotchas:
 #
 # 1. Quadrigraphs. M4 consumes a number of important special characters, so
@@ -17,7 +35,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.15 -Wall -Werror foreign subdir-objects])
 
 AC_CONFIG_HEADERS([bin/config.h])
-AC_CONFIG_FILES([Makefile bin/Makefile])
+AC_CONFIG_FILES([Makefile bin/Makefile libexec/Makefile misc/Makefile])
 
 # Need a C11 compiler. (See https://stackoverflow.com/a/28558338.)
 AC_PROG_CC
@@ -199,5 +217,3 @@ AC_MSG_NOTICE([
     Python in shebang $vmin_python+  ${PYTHON_VERSION:-no or not found}
     user+mount namespaces   ${have_userns}
 ])
-
-

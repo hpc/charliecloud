@@ -6,10 +6,11 @@ bin/ch-grow
 bin/ch-run
 bin/ch-run-oci
 bin/ch-ssh
-bin/version.h
 doc/
 doc-src/_build
 examples/mpi/mpihello/hello
+libexec/version.full
+libexec/version.py
 libexec/version.sh
 man/*.1
 test/build_auto.bats
@@ -21,7 +22,6 @@ test/sotest/sotest
 test/sotest/bin/sotest
 test/sotest/lib/*.so*
 packaging/vagrant/.vagrant
-VERSION.full
 
 # perhaps-unpacked tarballs at root of working directory
 /charliecloud-*.tar*
