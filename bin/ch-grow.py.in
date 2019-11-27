@@ -16,6 +16,10 @@ import subprocess
 import sys
 import types
 
+sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
+                    + "/../libexec/charliecloud"))
+import version
+
 
 ## Globals ##
 
@@ -534,12 +538,9 @@ class CLI_Print_Storage(Action_Exit):
 
 class CLI_Version(Action_Exit):
 
-   # This gross kludge lets us print the version number without managing a
-   # version.py file.
-
    def __call__(self, *args, **kwargs):
-      cmd = CH_RUN
-      os.execl(cmd, cmd, "--version")
+      print(version.VERSION)
+      sys.exit(0)
 
 class State(object):
 

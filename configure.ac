@@ -5,7 +5,6 @@
 #   - script libexec lines: remove quotes
 #   - ch-test: fix libexec lines
 #   - ch-test: pass
-#   - conver Python scripts to version.py
 #   - build docs, with correct sphinx-build
 #   - document Autotools Archive dependency
 #   - make sure executable sanity check doesn't depend solely on wildcards
@@ -15,6 +14,7 @@
 #   - make the --disable options work
 #   - --disable-ch-grow: make sure tests work
 #   - ch-run: need ch_core.h in sources
+#   - merge test/Makefile elimination (PR #584)
 
 # Gotchas:
 #

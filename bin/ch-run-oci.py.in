@@ -13,6 +13,11 @@ import sys
 import time
 import types
 
+sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
+                    + "/../libexec/charliecloud"))
+import version
+
+
 BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
@@ -45,7 +50,8 @@ def main():
 def args_parse():
 
    ap = argparse.ArgumentParser(description='OCI wrapper for "ch-run".')
-   ap.add_argument("--version", action="store_true")
+   ap.add_argument("--version", action="store_true",
+                   help="print version and exit")
    sps = ap.add_subparsers()
 
    sp = sps.add_parser("create")
@@ -79,10 +85,9 @@ def args_parse():
       ap.print_help(file=sys.stderr)
       sys.exit(1)
 
-   # Ridiculous kludge to print version number.
    if (args_.version):
-      cmd = CH_BIN + "/ch-run"
-      os.execl(cmd, cmd, "--version")
+      print(version.VERSION)
+      sys.exit(0)
 
    bundle_ = bundle_from_cid(args_.cid)
    if ("bundle" in args_ and args_.bundle != bundle_):

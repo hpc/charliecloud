@@ -42,6 +42,9 @@ packaging/debian/tmp
 .DS_Store
 .fuse_*
 
+# Python crap
+__pycache__
+
 # Autotools crap. Coordinate with autogen.sh.
 Makefile
 Makefile.in
