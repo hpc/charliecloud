@@ -10,7 +10,6 @@
 #   - figure out "make web"
 #   - make the --disable options work
 #   - --disable-ch-grow: make sure tests work
-#   - ch-run: need ch_core.h in sources
 #   - merge test/Makefile elimination (PR #584)
 #   - sotest shared library
 
