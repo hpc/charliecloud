@@ -143,9 +143,15 @@ vmin_bash=4.1
 AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
 CH_CHECK_VERSION([_BASH], [$vmin_bash], [--version | head -1 | cut -d' ' -f4])
 
-# docker
-# mktemp
-# buildah
+vmin_docker=17.03
+AC_CHECK_PROG([DOCKER], [docker], [docker])
+CH_CHECK_VERSION([DOCKER], [$vmin_docker], [-v | tr -d , | cut -d' ' -f3])
+
+AC_CHECK_PROG([MKTEMP], [mktemp], [mktemp])
+
+vmin_buildah=1.10.1
+AC_CHECK_PROG([BUILDAH], [buildah], [buildah])
+CH_CHECK_VERSION([BUILDAH], [$vmin_buildah], [--version | cut -d' ' -f3])
 
 vmin_python=3.4
 python="${PYTHON_SHEBANG#/usr/bin/env }"                # use shell to find it
@@ -154,6 +160,22 @@ AS_CASE([$python],
   [*],  [AC_CHECK_PROG([PYTHON], [$python], [$python])]  # verify it's in $PATH
 )
 CH_CHECK_VERSION([PYTHON], [$vmin_python], [--version | cut -d' ' -f2])
+
+AS_IF([test -n "$PYTHON"], [
+  AC_MSG_CHECKING([for lark-parser module])
+  cat <<EOF | $PYTHON_SHEBANG
+import sys
+try:
+   import lark
+   lark.Visitor
+except Exception:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [have_lark=yes],
+    [have_lark=no])
+  AC_MSG_RESULT($have_lark)
+])
 
 # User namespaces
 AC_MSG_CHECKING([if user+mount namespaces work])
@@ -194,6 +216,8 @@ AC_OUTPUT
 
 ## Print report
 
+# FIXME: Alignment takes into account the width of $vmin_foo.
+
 AC_MSG_NOTICE([
 
   build-time:
@@ -210,7 +234,11 @@ AC_MSG_NOTICE([
   run-time (informational only):
 
     Bash $vmin_bash+               ${_BASH_VERSION:-not found}
+    Docker $vmin_docker+           ${DOCKER_VERSION:-not found}
+    mktemp(1)               ${MKTEMP:-not found}
+    Buildah $vmin_buildah+         ${BUILDAH_VERSION:-not found}
     Python shebang line     ${PYTHON_SHEBANG}
     Python in shebang $vmin_python+  ${PYTHON_VERSION:-no or not found}
+    lark-parser module      ${have_lark}
     user+mount namespaces   ${have_userns}
 ])
