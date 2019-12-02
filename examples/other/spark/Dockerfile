@@ -10,13 +10,13 @@ RUN    apt-get update \
 RUN touch /usr/bin/ch-ssh
 
 # Download and install Spark.
-#
-# Updated to spark-2.4.4
+# We aren't using SPARK_NO_DAEMONIZE to make sure can deakwith daemonized spark. 
+# Spark is installed to /opt/spark which is spark's new default location
+# We disapprove of spark's master/slave terminology, but it's what the scripts are called
 
 ENV URLPATH https://www.apache.org/dist/spark/spark-2.4.4/
 ENV DIR spark-2.4.4-bin-hadoop2.7
 ENV TAR $DIR.tgz
-# [2]: https://community.cloudera.com/t5/Advanced-Analytics-Apache-Spark/Spark-displays-SQLException-when-Hive-not-installed/td-p/37954
 RUN wget -nv $URLPATH/$TAR
 RUN tar xf $TAR && mv $DIR /opt/spark && rm $TAR
 
