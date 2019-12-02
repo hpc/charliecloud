@@ -19,7 +19,7 @@ builder_check () {
     printf 'checking builder ...\n'
     case $CH_BUILDER in
     ch-grow)
-        if ! ("${bin}/ch-grow" --dependencies); then
+        if ! ("${ch_bin}/ch-grow" --dependencies); then
             fatal 'builder: ch-grow: missing dependencies'
         fi
         bl=$(readlink -f "$bin"/ch-grow)
@@ -149,19 +149,22 @@ scope_check () {
     esac
 }
 
+# Assign scope a comparable opaque value. This value is used to help filter
+# images and tests that are out of scope.
 scope_to_digit () {
     case $1 in
         quick)
-            echo 0
-            ;;
-        standard)
             echo 1
             ;;
-        full)
+        standard)
             echo 2
             ;;
-        skip*) # skip has the highest value to ensure comparison always fails
+        full)
             echo 3
+            ;;
+        skip*)
+            # skip has the highest value to ensure it is always filtered
+            echo 4
             ;;
         *)
             fatal "scope '$scope' invalid"
@@ -233,8 +236,7 @@ test_make_auto () {
                  find ../examples -name  Docker_Pull;   \
                  find ../examples -name 'Docker_Pull.*' )
 
-    # shellcheck disable=SC2068
-    for i in ${images_all[@]}; do
+    for i in $images_all; do
         if [[ $(test_make_check_image "$i") == ok ]]; then
             echo "found: $i"
             images+=( "$i" )
@@ -320,11 +322,10 @@ win () {
     printf "\nAll tests passed.\n"
 }
 
-bin=$(readlink -f "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")
-topdir=$(readlink -f "${bin%/*}")
+topdir=$(readlink -f "${ch_bin%/*}")
 
 # Ensure ch-run has been compiled (issue #329).
-if (! "${bin}/ch-run" --version &> /dev/null); then
+if (! "${ch_bin}/ch-run" --version &> /dev/null); then
     fatal "ch-run not found; expected in $bin"
 fi
 
@@ -430,8 +431,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 printf "ch-test version %s\n\n" "$ch_version"
-printf 'ch-run: %s %s\n' "$("${bin}/ch-run" --version 2>&1)" \
-                         "${bin}/ch-run"
+printf 'ch-run: %s %s\n' "$("${ch_bin}/ch-run" --version 2>&1)" \
+                         "${ch_bin}/ch-run"
 printf 'bats:   %s %s\n' "$bats_version" "$bats"
 printf 'tests:  %s\n\n' "$testdir"
 
@@ -467,7 +468,7 @@ fi
 
 # Ensure namespaces are configured properly.
 printf 'checking namespaces ...\n'
-if (! "${bin}/ch-checkns"); then
+if (! "${ch_bin}/ch-checkns"); then
     fatal 'namespace sanity check (ch-checkns) failed'
 fi
 printf '\n'
