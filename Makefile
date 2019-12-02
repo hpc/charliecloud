@@ -7,7 +7,6 @@ export CFLAGS += -std=c11 -Wall -g
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
 	cd test && $(MAKE) all
-	ln -sf $$(readlink -f ./bin) test/bin
 
 .PHONY: clean
 clean:
@@ -135,7 +134,6 @@ install: all
 	    done; \
 	fi
 	$(MAKE) install $(PREFIX) -C test
-	ln -sf $(PREFIX)/bin $(TEST)
 
 .PHONY: deb
 deb:

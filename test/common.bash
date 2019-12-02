@@ -155,14 +155,12 @@ env_require CH_BUILDER
 if [[ $CH_BUILDER == ch-grow ]]; then
     env_require CH_GROW_STORAGE
 fi
-# Set path to the right Charliecloud. This uses a symlink in this directory
-# called "bin" which points to the corresponding bin directory, either simply
-# up and over (source code) or set during "make install".
+# Set path to the right Charliecloud. This line is altered by the top level
+# makefile upon installation.
 #
 # Note that sudo resets $PATH, so if you want to run any Charliecloud stuff
 # under sudo, you must use an absolute path.
-ch_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")/bin" && pwd)"
-ch_bin="$(readlink -f "${ch_bin}")"
+ch_bin=$(readlink -f ../bin)
 export PATH=$ch_bin:$PATH
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)

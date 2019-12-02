@@ -68,7 +68,6 @@ doc/
 doc-src/_build
 examples/mpi/mpihello/hello
 man/*.1
-test/bin
 test/build_auto.bats
 test/build_auto-quick.bats
 test/run_auto.bats

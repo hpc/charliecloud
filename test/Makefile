@@ -41,6 +41,7 @@ install: all
 	          $(LIBEXEC_INST)/examples/*/*/*.sh
 	find $(LIBEXEC_INST)/examples -name Build -exec chmod 755 {} \;
 #	tests
+	sed -i "s@^ch_bin=*@ch_bin=$(PREFIX)/bin@" common.bash
 	install -d $(TEST) $(TEST)/run
 	install -pm 644 -t $(TEST) *.bats common.bash Makefile
 	install -pm 644 -t $(TEST)/run run/*.bats
