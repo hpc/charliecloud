@@ -17,7 +17,7 @@ tag_from_path () {
     fi
 
     case $basicname in
-    Build|Dockerfile|Docker_Pull)
+    Build|Dockerfile)
         if [[ $parent_dir == '' ]]    || \
            [[ $parent_dir == '.' ]]   || \
            [[ $parent_dir == test ]]; then
@@ -40,8 +40,7 @@ tag_from_path () {
 template_print () {
     template="./make-auto.d/$1"
 
-    cat "$template" | sed "s@%(addr)s@$addr@g" \
-                    | sed "s@%(basename)s@$basename_@g" \
+    cat "$template" | sed "s@%(basename)s@$basename_@g" \
                     | sed "s@%(dirname)s@$dirname_@g" \
                     | sed "s@%(path)s@$path_@g" \
                     | sed "s@%(scope)s@$scope@g" \
@@ -83,12 +82,7 @@ while [[ "$#" -gt 0 ]]; do
         if (echo "$basename_" | grep Build &> /dev/null); then
             template_print 'build_custom.bats.in'
         elif (echo "$basename_" | grep Docker &> /dev/null); then
-            if (echo "$basename_" | grep Dockerfile &> /dev/null); then
-                template_print 'build.bats.in'
-            elif (echo "$basename_" | grep Docker_Pull &> /dev/null); then
-                addr=$(cat "$path_" | head -n1)
-                template_print 'pull_docker.bats.in'
-            fi
+            template_print 'build.bats.in'
             template_print 'builder_to_archive.bats.in'
         else
             fatal "chtest-make-auto: unknown build type"

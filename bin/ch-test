@@ -186,12 +186,10 @@ test_examples () {
         return
     fi
     echo 'executing example phase tests ...'
-    images_examples=$(find ../examples -name  Build;         \
-                      find ../examples -name 'Build.*';      \
-                      find ../examples -name  Dockerfile;    \
-                      find ../examples -name 'Dockerfile.*'; \
-                      find ../examples -name  Docker_Pull;   \
-                      find ../examples -name 'Docker_Pull.*' )
+    images_examples=$(find ../examples -name  Build;        \
+                      find ../examples -name 'Build.*';     \
+                      find ../examples -name  Dockerfile;   \
+                      find ../examples -name 'Dockerfile.*' )
     # shellcheck disable=SC2068
     for i in ${images_examples[@]}; do
         if [[ $(test_make_check_image "$i") == ok ]]; then
@@ -225,16 +223,13 @@ test_run () {
 test_make_auto () {
     local img
     printf "checking images ...\n"
-    images_all=$(find . -name  Build;                   \
-                 find . -name 'Build.*';                \
-                 find . -name 'Dockerfile.*';           \
-                 find . -name 'Docker_Pull.*';          \
-                 find ../examples -name  Build;         \
-                 find ../examples -name 'Build.*';      \
-                 find ../examples -name  Dockerfile;    \
-                 find ../examples -name 'Dockerfile.*'; \
-                 find ../examples -name  Docker_Pull;   \
-                 find ../examples -name 'Docker_Pull.*' )
+    images_all=$(find . -name  Build;                  \
+                 find . -name 'Build.*';               \
+                 find . -name 'Dockerfile.*';          \
+                 find ../examples -name  Build;        \
+                 find ../examples -name 'Build.*';     \
+                 find ../examples -name  Dockerfile;   \
+                 find ../examples -name 'Dockerfile.*' )
 
     for i in $images_all; do
         if [[ $(test_make_check_image "$i") == ok ]]; then
