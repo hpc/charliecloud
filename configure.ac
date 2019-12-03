@@ -1,24 +1,3 @@
-# TODO
-#
-#   - clean up and finalize documentation
-#   - ch-test: pass
-#   - build docs with correct sphinx-build
-#   - document Autotools Archive dependency
-#   - make sure executable sanity check doesn't depend solely on wildcards
-#   - use shell variable for CH_CFLAGS?
-#   - figure out "make web"
-#   - merge test/Makefile elimination (PR #584)
-#   - sotest shared library
-#   - asprintf(3)
-#   - C99
-#   - go over feedback in PR #549
-#
-# Later:
-#
-#   - make installcheck
-#   - make distcheck
-
-
 # Gotchas:
 #
 # 1. Quadrigraphs. M4 consumes a number of important special characters, so
