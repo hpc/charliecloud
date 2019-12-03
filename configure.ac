@@ -1,17 +1,23 @@
 # TODO
 #
 #   - clean up and finalize documentation
-#   - finish ./configure runtime status report
 #   - ch-test: pass
-#   - build docs, with correct sphinx-build
+#   - build docs with correct sphinx-build
 #   - document Autotools Archive dependency
 #   - make sure executable sanity check doesn't depend solely on wildcards
 #   - use shell variable for CH_CFLAGS?
 #   - figure out "make web"
-#   - make the --disable options work
-#   - --disable-ch-grow: make sure tests work
 #   - merge test/Makefile elimination (PR #584)
 #   - sotest shared library
+#   - asprintf(3)
+#   - C99
+#   - go over feedback in PR #549
+#
+# Later:
+#
+#   - make installcheck
+#   - make distcheck
+
 
 # Gotchas:
 #
@@ -44,6 +50,7 @@ AX_CHECK_COMPILE_FLAG([CH_CFLAGS], [
 ])
 AS_IF([test "$CC" = icc],
       [AC_MSG_ERROR([icc not supported (see PR @%:@481)])])
+
 
 ## Libraries
 
@@ -139,20 +146,49 @@ CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
 
 ## Feature tests - run time
 
+# Bash
 vmin_bash=4.1
 AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
 CH_CHECK_VERSION([_BASH], [$vmin_bash], [--version | head -1 | cut -d' ' -f4])
 
-vmin_docker=17.03
-AC_CHECK_PROG([DOCKER], [docker], [docker])
-CH_CHECK_VERSION([DOCKER], [$vmin_docker], [-v | tr -d , | cut -d' ' -f3])
+# Bats
+vmin_bats=0.4.0
+AC_CHECK_PROG([BATS], [bats], [bats])
+CH_CHECK_VERSION([BATS], [$vmin_bats], [--version | cut -d' ' -f2])
 
-AC_CHECK_PROG([MKTEMP], [mktemp], [mktemp])
-
+# Buildah
 vmin_buildah=1.10.1
 AC_CHECK_PROG([BUILDAH], [buildah], [buildah])
 CH_CHECK_VERSION([BUILDAH], [$vmin_buildah], [--version | cut -d' ' -f3])
 
+# Docker
+vmin_docker=17.03
+AC_CHECK_PROG([DOCKER], [docker], [docker])
+CH_CHECK_VERSION([DOCKER], [$vmin_docker], [-v | tr -d , | cut -d' ' -f3])
+
+# mksquashfs
+vmin_mksquashfs=4.2  # CentOS 7
+AC_CHECK_PROG([MKSQUASHFS], [mksquashfs], [mksquashfs])
+CH_CHECK_VERSION([MKSQUASHFS], [$vmin_mksquashfs],
+                 [-version | head -1 | cut -d' ' -f3])
+
+# mktemp - no version
+AC_CHECK_PROG([MKTEMP], [mktemp], [mktemp])
+
+# libnvidia-container-cli
+vmin_nvidia_cli=1.0.0
+AC_CHECK_PROG([NVIDIA_CLI], [nvidia-container-cli], [nvidia-container-cli])
+CH_CHECK_VERSION([NVIDIA_CLI], [$vmin_nvidia_CLI],
+                 [-V | head -1 | cut -d' ' -f2])
+AC_MSG_CHECKING([for nVidia libraries & executables])
+AS_IF([test -n "$NVIDIA_CLI_VERSION"],
+  [AS_IF([nvidia-container-cli list | grep -Fq libnvidia-glcore.so],
+        [have_nvidia_libs=yes],
+        [have_nvidia_libs=no])],
+  [have_nvidia_libs=no])
+AC_MSG_RESULT($have_nvidia_libs)
+
+# Python
 vmin_python=3.4
 python="${PYTHON_SHEBANG#/usr/bin/env }"                # use shell to find it
 AS_CASE([$python],
@@ -161,6 +197,7 @@ AS_CASE([$python],
 )
 CH_CHECK_VERSION([PYTHON], [$vmin_python], [--version | cut -d' ' -f2])
 
+# Python module "lark-parser"
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for lark-parser module])
   cat <<EOF | $PYTHON_SHEBANG
@@ -176,6 +213,35 @@ EOF
     [have_lark=no])
   AC_MSG_RESULT($have_lark)
 ])
+
+# skopeo
+vmin_skopeo=0.1.30
+AC_CHECK_PROG([SKOPEO], [skopeo], [skopeo])
+CH_CHECK_VERSION([SKOPEO], [$vmin_skopeo], [--version | cut -d' ' -f3])
+
+# SquashFUSE
+vmin_squashfuse=0.1.102  # CentOS 7
+AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
+CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
+                 [--help |& head -1 | cut -d' ' -f2])
+
+# sudo, generic
+# Avoids prompting for password; see https://superuser.com/a/1183480.
+AC_MSG_CHECKING([for generic sudo])
+sudo_out=$(sudo -nv 2>&1)
+AS_IF([   test -z "$sudo_out" \
+       || echo "$sudo_out" | grep -Fq asswor],
+      [have_sudo=yes],
+      [have_sudo=no])
+AC_MSG_RESULT($have_sudo)
+
+# tar (yes, we can confidently assume tar, but this makes the report clearer)
+AC_CHECK_PROG([TAR], [tar], [tar])
+
+# umoci
+vmin_umoci=0.4.3
+AC_CHECK_PROG([UMOCI], [umoci], [umoci])
+CH_CHECK_VERSION([UMOCI], [$vmin_umoci], [--version | cut -d' ' -f3])
 
 # User namespaces
 AC_MSG_CHECKING([if user+mount namespaces work])
@@ -197,8 +263,13 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
   [AC_MSG_ERROR([cross-compilation not supported])])
 AC_MSG_RESULT($have_userns)
 
+# Wget
+vmin_wget=1.11  # 2008
+AC_CHECK_PROG([WGET], [wget], [wget])
+CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 
-## Adjust build options given what we have available
+
+## Adjust build options given what we have available.
 
 AS_IF([test "$enable_html" = yes && test -z "$SPHINX"],
       [AC_MSG_WARN([forcing --disable-html: no suitable sphinx-build])
@@ -209,6 +280,100 @@ AS_IF([test "$enable_man" = yes && test -z "$SPHINX"],
        enable_man=no])
 
 
+## Prepare run-time report.
+
+# FIXME: Should replace all these with macros?
+
+# ch-run (needed below)
+
+AS_IF([   test $have_userns = yes],
+      [have_ch_run=yes],
+      [have_ch_run=no])
+
+# image builders
+
+AS_IF([   test -n "$BUILDAH_VERSION"],
+      [have_buildah=yes],
+      [have_buildah=no])
+
+AS_IF([   test -n "$PYTHON_VERSION" \
+       && test -n "$PYTHON_SHEBANG" \
+       && test $have_lark = yes \
+       && test -n "$SKOPEO_VERSION" \
+       && test -n "$UMOCI_VERSION" \
+       && test $have_ch_run = yes],
+      [have_ch_grow=yes],
+      [have_ch_grow=no])
+
+AS_IF([   test -n "$DOCKER_VERSION" \
+       && test -n "$MKTEMP"],
+      [have_docker=yes],
+      [have_docker=no])
+
+# managing container images
+
+AS_IF([   test $have_buildah = yes \
+       || test $have_ch_grow = yes \
+       || test $have_docker = yes],
+      [have_any_builder=yes],
+      [have_any_builder=no])
+
+AS_IF([test $have_any_builder = yes],
+      [have_ch_build=yes],
+      [have_ch_build=no])
+
+AS_IF([test -n "$TAR"],
+      [have_pack_tar=yes],
+      [have_pack_tar=no])
+
+AS_IF([   test $have_any_builder = yes \
+       && test -n "$MKSQUASHFS_VERSION"],
+      [have_pack_squash=yes],
+      [have_pack_squash=no])
+
+# running containers
+
+AS_IF([test -n "$TAR"],
+      [have_unpack_tar=yes],
+      [have_unpack_tar=no])
+
+AS_IF([test -n "$SQUASHFUSE_VERSION"],
+      [have_ch_mount=yes],
+      [have_ch_mount=no])
+
+AS_IF([   test -n "$NVIDIA_CLI_VERSION" \
+       && test $have_nvidia_libs = yes],
+      [have_nvidia=yes],
+      [have_nvidia=no])
+
+# test suite
+
+AS_IF([   test $have_ch_run = yes \
+       && test -n "$_BASH_VERSION" \
+       && test -n "$BATS_VERSION" \
+       && test -n "$WGET_VERSION"],
+      [have_tests_basic=yes],
+      [have_tests_basic=no])
+
+AS_IF([   test $have_tests_basic = yes \
+       && test $have_any_builder = yes \
+       && test $have_pack_tar = yes \
+       && test $have_unpack_tar = yes],
+      [have_tests_tar=yes],
+      [have_tests_tar=no])
+
+AS_IF([   test $have_tests_tar = yes \
+       && test $have_pack_squash = yes \
+       && test $have_ch_mount = yes],
+      [have_tests_squash=yes],
+      [have_tests_squash=no])
+
+AS_IF([   test $have_tests_squash = yes \
+       && test -n "$SPHINX_VERSION" \
+       && test $have_sudo],
+      [have_tests_all=yes],
+      [have_tests_all=no])
+
 ## Done
 
 AC_OUTPUT
@@ -216,29 +381,102 @@ AC_OUTPUT
 
 ## Print report
 
-# FIXME: Alignment takes into account the width of $vmin_foo.
-
 AC_MSG_NOTICE([
 
-  build-time:
+Dependencies report
+===================
 
-    C11 compiler           ${CC} ${CC_VERSION}
-    sphinx-build $vmin_sphinx+    ${SPHINX:-not found} ${SPHINX_VERSION}
+Build time:
 
-    build and install:
-      HTML documentation   ${enable_html}
-      man pages            ${enable_man}
-      test suite           ${enable_test}
-      ch-grow builder      ${enable_ch_grow}
+  C11 compiler            ${CC} ${CC_VERSION}
+  sphinx-build $vmin_sphinx+     ${SPHINX:-not found} ${SPHINX_VERSION}
 
-  run-time (informational only):
+  will build and install:
+    HTML documentation    ${enable_html}
+    man pages             ${enable_man}
+    test suite            ${enable_test}
+    ch-grow builder       ${enable_ch_grow}
 
-    Bash $vmin_bash+               ${_BASH_VERSION:-not found}
-    Docker $vmin_docker+           ${DOCKER_VERSION:-not found}
-    mktemp(1)               ${MKTEMP:-not found}
-    Buildah $vmin_buildah+         ${BUILDAH_VERSION:-not found}
-    Python shebang line     ${PYTHON_SHEBANG}
-    Python in shebang $vmin_python+  ${PYTHON_VERSION:-no or not found}
-    lark-parser module      ${have_lark}
-    user+mount namespaces   ${have_userns}
+Run-time:
+
+    Charliecloud's run-time dependencies are lazy; features just try to use
+    their dependencies and error if there's a problem. The below is for
+    informational purposes and is what should work on *this system* now.
+
+    Note that dependency versions are a bit fuzzy. Try it even if configure
+    thinks a version is too old (and please report back to us).
+
+  Image builders via ch-build
+
+    Buildah: ${have_buildah}
+      Buildah $vmin_buildah+ ... ${BUILDAH_VERSION:-not found}
+
+    ch-grow: ${have_ch_grow}
+      Python shebang line ... ${PYTHON_SHEBANG:-none}
+      Python in shebang 3.4+ ... ${PYTHON_VERSION:-not found}
+      lark-parser module ... ${have_lark}
+      skopeo $vmin_skopeo+ ... ${SKOPEO_VERSION:-not found}
+      umoci $vmin_umoci+ ... ${UMOCI_VERSION:-not found}
+      ch-run ... ${have_ch_run}
+
+    Docker: ${have_docker}
+      Docker $vmin_docker+ ... ${DOCKER_VERSION:-not found}
+      mktemp(1) ... ${MKTEMP:-not found}
+
+  Managing container images
+
+     build from Dockerfile with ch-build: ${have_ch_build}
+       at least one builder ... ${have_any_builder}
+       access to an image repository ... assumed yes
+
+     pack images from builder storage to tarball: ${have_pack_tar}
+       at least one builder ... ${have_any_builder}
+       tar ... ${TAR:-not found}
+
+     pack images from builder storage to SquashFS: ${have_pack_squash}
+       at least one builder ... ${have_any_builder}
+       mksquashfs $vmin_mksquashfs+ ... ${MKSQUASHFS_VERSION}
+
+     Note: Pulling images from a repository (e.g. "docker pull"), and pushing
+     to ("docker push"), are currently done using the builder directly.
+
+  Running containers
+
+    ch-run: ${have_ch_run}
+      user+mount namespaces ... ${have_userns}
+
+    unpack image tarballs: ${have_unpack_tar}
+      tar ... ${TAR:-not found}
+
+    ch-mount and ch-umount SquashFS images: ${have_ch_mount}
+      SquashFUSE $vmin_squashfuse+ ... ${SQUASHFUSE_VERSION:-not found}
+
+    inject nVidia GPU libraries: ${have_nvidia}
+      nvidia-container-cli $vmin_nvidia_cli+ ... ${NVIDIA_CLI_VERSION:-not found}
+      nVidia libraries & executables present ... ${have_nvidia_libs}
+
+  Test suite
+
+    basic tests: ${have_tests_basic}
+      ch-run ... ${have_ch_run}
+      Bats $vmin_bats+ ... ${BATS_VERSION:-not found}
+      Bash $vmin_bash+ ... ${_BASH_VERSION:-not found}
+      wget $wget_version+ ... ${WGET_VERSION:-not found}
+
+    recommended tests with tarballs: ${have_tests_tar}
+      basic tests ... ${have_tests_basic}
+      any builder above ... ${have_any_builder}
+      access to Docker Hub or mirror ... assumed yes
+      pack images with tar ... ${have_pack_tar}
+      unpack images with tar ... ${have_unpack_tar}
+
+    recommended tests with SquashFS: ${have_tests_squash}
+      recommended tests with tar ... ${have_tests_tar}
+      pack images with SquashFS ... ${have_pack_squash}
+      ch-mount and ch_umount ... ${have_ch_mount}
+
+    complete test suite: ${have_tests_all}
+      recommended tests with SquashFS ... ${have_tests_squash}
+      sphinx-build $vmin_sphinx+ ... ${SPHINX_VERSION:-not found}
+      generic sudo ... ${have_sudo}
 ])
