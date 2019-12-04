@@ -14,7 +14,7 @@ sotest/lib/libsotest.so.1.0: sotest/libsotest.so.1.0
 clean:
 	rm -f sotest/sotest sotest/libsotest.so*
 	rm -f sotest/bin/sotest sotest/lib/libsotest.so*
-	rm bin
+
 # We exclude icc here because it links the
 # resulting binaries with extra shared libraries that are then not copied into
 # the container. (Issue #227.)
@@ -41,12 +41,11 @@ install: all
 	          $(LIBEXEC_INST)/examples/*/*/*.sh
 	find $(LIBEXEC_INST)/examples -name Build -exec chmod 755 {} \;
 #	tests
-	sed -i "s@^ch_bin=*@ch_bin=$(PREFIX)/bin@" common.bash
 	install -d $(TEST) $(TEST)/run
 	install -pm 644 -t $(TEST) *.bats common.bash Makefile
 	install -pm 644 -t $(TEST)/run run/*.bats
 	install -pm 755 -t $(TEST) Build.*
-	install -pm 644 -t $(TEST) Dockerfile.* Docker_Pull.*
+	install -pm 644 -t $(TEST) Dockerfile.*
 	install -pm 644 -t $(TEST) *.patch
 	install -pm 755 -t $(TEST) chtest-make-auto \
 							   docs-sane \
@@ -69,3 +68,4 @@ install: all
 	ln -sf ./libsotest.so.1.0 $(TEST)/sotest/libsotest.so.1
 	install -pm 755 -t $(TEST)/sotest/bin sotest/bin/sotest
 	install -pm 755 -t $(TEST)/sotest/lib sotest/lib/libsotest.so.1.0
+

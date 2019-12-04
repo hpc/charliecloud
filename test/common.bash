@@ -155,13 +155,6 @@ env_require CH_BUILDER
 if [[ $CH_BUILDER == ch-grow ]]; then
     env_require CH_GROW_STORAGE
 fi
-# Set path to the right Charliecloud. This line is altered by the top level
-# makefile upon installation.
-#
-# Note that sudo resets $PATH, so if you want to run any Charliecloud stuff
-# under sudo, you must use an absolute path.
-ch_bin=$(readlink -f ../bin)
-export PATH=$ch_bin:$PATH
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034

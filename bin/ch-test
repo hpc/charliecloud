@@ -15,6 +15,10 @@ Usage:
 EOF
 )
 
+export ch_bin=$ch_bin
+
+topdir=$(readlink -f "${ch_bin%/*}")
+
 builder_check () {
     printf 'checking builder ...\n'
     case $CH_BUILDER in
@@ -74,7 +78,7 @@ builder_set () {
 # Create CH_TEST_TARDIR, avoiding #347.
 dir_img_mk () {
     if [[ ! -d $CH_TEST_IMGDIR ]]; then
-        echo "creating $CH_TEST_IMGDIR"
+        printf "creating %s\n\n" "$CH_TEST_IMGDIR"
         mkdir "$CH_TEST_IMGDIR"
     fi
 }
@@ -113,7 +117,7 @@ dir_tar_check_file () {
 # Create CH_TEST_TARDIR, avoiding #347.
 dir_tar_mk () {
     if [[ ! -d $CH_TEST_TARDIR ]]; then
-        echo "creating $CH_TEST_TARDIR"
+        printf "creating %s\n\n" "$CH_TEST_TARDIR"
         mkdir "$CH_TEST_TARDIR"
     fi
 }
@@ -172,8 +176,8 @@ scope_to_digit () {
 }
 
 test_build () {
-    echo 'executing build phase tests ...'
-    # TODO: check for sotests
+    echo 'execute build phase tests ...'
+    # TODO: check for sotests?
     if [[ ! -f ${tmpdir}/build_auto.bats ]]; then
         fatal "${tmpdir}/build_auto.bats not found"
     fi
@@ -185,15 +189,10 @@ test_examples () {
     if [[ $CH_TEST_SCOPE == quick ]]; then
         return
     fi
-    echo 'executing example phase tests ...'
-    images_examples=$(find ../examples -name  Build;        \
-                      find ../examples -name 'Build.*';     \
-                      find ../examples -name  Dockerfile;   \
-                      find ../examples -name 'Dockerfile.*' )
-    # shellcheck disable=SC2068
-    for i in ${images_examples[@]}; do
+    echo 'execute example phase tests ...'
+    for i in $examples; do
         if [[ $(test_make_check_image "$i") == ok ]]; then
-            tag=$("${testdir}/chtest-make-auto" tag "$i")
+            tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
             export CH_TEST_TAG=$tag
             bats "$(dirname "$i")/test.bats"
         fi
@@ -201,9 +200,9 @@ test_examples () {
 }
 
 test_run () {
-    echo 'executing run phase tests ...'
+    echo 'execute run phase tests ...'
     if [[ ! -f ${tmpdir}/run_auto.bats ]]; then
-        fatal "${tmpdir}run_auto.bats not found"
+        fatal "${tmpdir}/run_auto.bats not found"
     fi
     bats run_first.bats "${tmpdir}/run_auto.bats" ./run/*.bats
     set -e
@@ -222,42 +221,36 @@ test_run () {
 
 test_make_auto () {
     local img
-    printf "checking images ...\n"
-    images_all=$(find . -name  Build;                  \
-                 find . -name 'Build.*';               \
-                 find . -name 'Dockerfile.*';          \
-                 find ../examples -name  Build;        \
-                 find ../examples -name 'Build.*';     \
-                 find ../examples -name  Dockerfile;   \
-                 find ../examples -name 'Dockerfile.*' )
-
-    for i in $images_all; do
+    printf "find images (%s scope, %s, and %s architecture) ...\n" \
+           "$CH_TEST_SCOPE" "$CH_BUILDER" "$(uname -m)"
+    for i in $images $examples; do
         if [[ $(test_make_check_image "$i") == ok ]]; then
             echo "found: $i"
-            images+=( "$i" )
+            targets+=( "$i" )
         fi
     done
 
-    make_auto="${testdir}/chtest-make-auto"
+    make_auto="${CHTEST_DIR}/chtest-make-auto"
     printf '\n'
     case $phase in
     build)
-        printf 'generating build_auto.bats ...\n'
-        "$make_auto" build "${images[@]}" > "${tmpdir}/build_auto.bats"
+        printf 'generate build_auto.bats ...\n'
+        "$make_auto" build "${targets[@]}" > "${tmpdir}/build_auto.bats"
         printf 'ok\n\n'
         ;;
     run)
-        printf 'generating run_auto.bats ...\n'
-        "$make_auto" run "${images[@]}" > "${tmpdir}/run_auto.bats"
+        printf 'generate run_auto.bats ...\n'
+        "$make_auto" run "${targets[@]}" > "${tmpdir}/run_auto.bats"
         printf 'ok\n\n'
         ;;
     all)
-        printf 'generating build_auto.bats run_auto.bats ...\n'
-        "$make_auto" build "${images[@]}" > "${tmpdir}/build_auto.bats"
-        "$make_auto" run "${images[@]}" > "${tmpdir}/run_auto.bats"
+        printf 'generate build_auto.bats run_auto.bats ...\n'
+        "$make_auto" build "${targets[@]}" > "${tmpdir}/build_auto.bats"
+        "$make_auto" run "${targets[@]}" > "${tmpdir}/run_auto.bats"
         printf 'ok\n\n'
         ;;
     *)
+        # Do nothing
         return 0
         ;;
     esac
@@ -265,32 +258,30 @@ test_make_auto () {
 
 test_make_check_image () {
     img=$1
-    img_exclude_arch=$(cat "$img" | grep 'ch-test-arch-exclude: ' \
-                                  | sed 's/.*: //' | awk '{print $1}')
+    exclude_arch=$(cat "$img" | grep -F 'ch-test-arch-exclude: ' \
+                              | sed 's/.*: //' | awk '{print $1}')
 
-    img_exclude_builder=$(cat "$img" | grep 'ch-test-builder-exclude: ' \
-                                     | sed 's/.*: //' | awk '{print $1}')
+    exclude_builder=$(cat "$img" | grep -F 'ch-test-builder-exclude: ' \
+                                 | sed 's/.*: //' | awk '{print $1}')
 
-    img_scope_value=$(scope_to_digit "$(cat "$img" | grep 'ch-test-scope' \
-                                             | sed 's/.*: //' \
-                                             | awk '{print $1}')")
-    need_docker=$(echo "$img" | grep Docker_Pull)
+    img_scope_int=$(scope_to_digit "$(cat "$img" | grep -F 'ch-test-scope' \
+                                                   | sed 's/.*: //' \
+                                                   | awk '{print $1}')")
 
-    # Filter images (auto-make targets) based on scope, arch, and builder.
-    if [[ -n $need_docker ]] && [[ $CH_BUILDER != docker ]]; then
+    # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
+    if [[ $scope_int -lt "$img_scope_int" ]]; then
         return
     fi
-    if [[ $scope_value -lt "$img_scope_value" ]]; then
-        return
-    fi
-    # shellcheck disable=SC2068
-    for a in ${img_exclude_arch[@]}; do
+
+    # Exclude images that do not work with the host architecture.
+    for a in $exclude_arch; do
         if [[ $a == "$(uname -m)" ]]; then
             return
         fi
     done
-    # shellcheck disable=SC2068
-    for b in ${img_exclude_builder[@]}; do
+
+    # Exclude images that are not compatible with CH_BUILDER.
+    for b in $exclude_builder; do
         if [[ $b == "$CH_BUILDER" ]]; then
             return
         fi
@@ -317,8 +308,6 @@ win () {
     printf "\nAll tests passed.\n"
 }
 
-topdir=$(readlink -f "${ch_bin%/*}")
-
 # Ensure ch-run has been compiled (issue #329).
 if (! "${ch_bin}/ch-run" --version &> /dev/null); then
     fatal "ch-run not found; expected in $bin"
@@ -333,40 +322,33 @@ fi
 
 # Ensure BATS_TMPDIR is set to /tmp (issue #278).
 if [[ -n $BATS_TMPDIR ]]; then
-    if [[ "$BATS_TMPDIR" != '/tmp'* ]]; then
-        fatal "BATS_TMPDIR: must be /tmp but found $BATS_TMPDIR (issue #278)"
+    if     [[ $BATS_TMPDIR != '/tmp' ]] \
+        && [[ $BATS_TMPDIR != "/tmp/bats.tmp.${USER}" ]]; then
+        # The build.bats file has a test, executables sane, which  runs
+        # ch-test --help|--version where bats sets BATS_TMPDIR.
+        fatal "BATS_TMPDIR: must be /tmp or /tmp/bats.tmp.${USER} but found $BATS_TMPDIR (issue #278)"
     fi
 fi
 
-# Create a directory in user space to hold auto-generated test artifacts
+# Create a home directory to hold auto-generated test artifacts.
 tmpdir=${HOME}/.charliecloud/ch-test.tmp.$USER
 if [[ ! -d $tmpdir ]]; then
     mkdir -p "$tmpdir"
-    chmod 700 "$tmpdir"
-    chmod 700 "$(dirname "$tmpdir")"
+    chmod -m 700 "$tmpdir"
 fi
 
-if [[ $(stat -c %a "$tmpdir") != '700' ]]; then
-    fatal "BATS_TMPDIR: $tmpdir doesn't have octal perms 700"
-fi
-
-if [[ $(stat -c %a "$(dirname "$tmpdir")") != '700' ]]; then
-    fatal "BATS_TMPDIR: $(dirname "$tmpdir") doesn't have  octal perms 700"
-fi
-
-
-# Determine source vs prefix installation.
+# Determine source build vs prefix installation.
 if [[ -d ${topdir}/test ]]; then
-    # source install
-    testdir=${topdir}/test
+    # source build
+    export CHTEST_DIR=${topdir}/test
 else
     # prefix installation
-    testdir="${topdir}/libexec/charliecloud-${ch_version}/test"
+    export CHTEST_DIR="${topdir}/libexec/charliecloud-${ch_version}/test"
 fi
 
 # Check for test directory.
-if [[ ! -d $testdir ]]; then
-    fatal "test directory not found: $testdir"
+if [[ ! -d $CHTEST_DIR ]]; then
+    fatal "test directory not found: $CHTEST_DIR"
 fi
 
 # Ensure Bats is installed.
@@ -411,7 +393,6 @@ while [[ $# -gt 0 ]]; do
         require_unset scope
         scope_check "$1"
         scope=$1; shift
-        scope_value=$(scope_to_digit "$scope")
         ;;
     --sudo)
         use_sudo=yes
@@ -429,7 +410,7 @@ printf "ch-test version %s\n\n" "$ch_version"
 printf 'ch-run: %s %s\n' "$("${ch_bin}/ch-run" --version 2>&1)" \
                          "${ch_bin}/ch-run"
 printf 'bats:   %s %s\n' "$bats_version" "$bats"
-printf 'tests:  %s\n\n' "$testdir"
+printf 'tests:  %s\n\n' "$CHTEST_DIR"
 
 printf "%-21s %s" 'phase:' "$phase"
 if [[ -z $phase ]]; then
@@ -455,10 +436,6 @@ printf '\n'
 
 if [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
     fatal "phase $phase: CH_TEST_PERMDIRS: can't be 'skip'"
-fi
-
-if [[ -z $scope_value ]]; then
-    scope_value=$(scope_to_digit "$CH_TEST_SCOPE")
 fi
 
 # Ensure namespaces are configured properly.
@@ -490,8 +467,23 @@ if [[ -n $dry ]];then
     exit 0
 fi
 
+
+cd "$CHTEST_DIR"
+
+export PATH=$ch_bin:$PATH
+
+images=$(find . -name  Build;
+         find . -name 'Build.*';
+         find . -name 'Dockerfile.*' )
+
+examples=$(find ../examples -name  Build;        \
+           find ../examples -name 'Build.*';     \
+           find ../examples -name  Dockerfile;   \
+           find ../examples -name 'Dockerfile.*' )
+
+scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
+
 # Execute phase
-cd "$testdir"
 case $phase in
     build)
         dir_tar_mk
@@ -526,7 +518,7 @@ case $phase in
                 printf '%s already exists\n' "$d"
                 continue
             else
-                sudo "${testdir}/make-perms-test" "$d" "$USER" nobody
+                sudo "${CHTEST_DIR}/make-perms-test" "$d" "$USER" nobody
             fi
         done
         echo
@@ -538,7 +530,7 @@ case $phase in
         ;;
     clean)
         dirs_unpriv_rm
-        if [[ -d $tmpdir ]]; then
+        if [[ -d $tmpdir ]] && [[ -e $tmpdir/build_auto.bats ]]; then
             echo "removing $tmpdir"
             rm -rf --one-file-system "$tmpdir"
         fi
