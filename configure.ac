@@ -19,13 +19,13 @@ AM_INIT_AUTOMAKE([1.15 -Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([bin/config.h])
 AC_CONFIG_FILES([Makefile bin/Makefile libexec/Makefile misc/Makefile])
 
-# Need a C11 compiler. (See https://stackoverflow.com/a/28558338.)
+# Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
 AC_PROG_CC
-AC_DEFUN([CH_CFLAGS], [-std=c11 -Wall -Werror])
+AC_DEFUN([CH_CFLAGS], [-std=c99 -Wpedantic -Wall -Werror])
 AX_CHECK_COMPILE_FLAG([CH_CFLAGS], [
   CFLAGS+=" CH_CFLAGS"
 ], [
-  AC_MSG_ERROR([no C11 compiler found])
+  AC_MSG_ERROR([no suitable C99 compiler found])
 ])
 AS_IF([test "$CC" = icc],
       [AC_MSG_ERROR([icc not supported (see PR @%:@481)])])
@@ -370,7 +370,7 @@ Dependencies report
 
 Build time:
 
-  C11 compiler            ${CC} ${CC_VERSION}
+  C99 compiler            ${CC} ${CC_VERSION}
   sphinx-build $vmin_sphinx+     ${SPHINX:-not found} ${SPHINX_VERSION}
 
   will build and install:
