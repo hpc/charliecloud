@@ -178,10 +178,10 @@ scope_to_digit () {
 test_build () {
     echo 'execute build phase tests ...'
     # TODO: check for sotests?
-    if [[ ! -f ${tmpdir}/build_auto.bats ]]; then
-        fatal "${tmpdir}/build_auto.bats not found"
+    if [[ ! -f ${tmp_}/build_auto.bats ]]; then
+        fatal "${tmp_}/build_auto.bats not found"
     fi
-    bats build.bats "${tmpdir}/build_auto.bats" build_post.bats
+    bats build.bats "${tmp_}/build_auto.bats" build_post.bats
 }
 
 test_examples () {
@@ -201,10 +201,10 @@ test_examples () {
 
 test_run () {
     echo 'execute run phase tests ...'
-    if [[ ! -f ${tmpdir}/run_auto.bats ]]; then
-        fatal "${tmpdir}/run_auto.bats not found"
+    if [[ ! -f ${tmp_}/run_auto.bats ]]; then
+        fatal "${tmp_}/run_auto.bats not found"
     fi
-    bats run_first.bats "${tmpdir}/run_auto.bats" ./run/*.bats
+    bats run_first.bats "${tmp_}/run_auto.bats" ./run/*.bats
     set -e
     if [[ $CH_TEST_SCOPE != quick ]]; then
         for guest_user in $(id -un) root nobody; do
@@ -235,18 +235,18 @@ test_make_auto () {
     case $phase in
     build)
         printf 'generate build_auto.bats ...\n'
-        "$make_auto" build "${targets[@]}" > "${tmpdir}/build_auto.bats"
+        "$make_auto" build "${targets[@]}" > "${tmp_}/build_auto.bats"
         printf 'ok\n\n'
         ;;
     run)
         printf 'generate run_auto.bats ...\n'
-        "$make_auto" run "${targets[@]}" > "${tmpdir}/run_auto.bats"
+        "$make_auto" run "${targets[@]}" > "${tmp_}/run_auto.bats"
         printf 'ok\n\n'
         ;;
     all)
         printf 'generate build_auto.bats run_auto.bats ...\n'
-        "$make_auto" build "${targets[@]}" > "${tmpdir}/build_auto.bats"
-        "$make_auto" run "${targets[@]}" > "${tmpdir}/run_auto.bats"
+        "$make_auto" build "${targets[@]}" > "${tmp_}/build_auto.bats"
+        "$make_auto" run "${targets[@]}" > "${tmp_}/run_auto.bats"
         printf 'ok\n\n'
         ;;
     *)
@@ -330,11 +330,11 @@ if [[ -n $BATS_TMPDIR ]]; then
     fi
 fi
 
-# Create a home directory to hold auto-generated test artifacts.
-tmpdir=${HOME}/.charliecloud/ch-test.tmp.$USER
-if [[ ! -d $tmpdir ]]; then
-    mkdir -p "$tmpdir"
-    chmod 700 "$tmpdir"
+# Create a directory to hold auto-generated test artifacts.
+tmp_=/tmp/ch-test.tmp.$USER
+if [[ ! -d $tmp_ ]]; then
+    mkdir "$tmp_"
+    chmod 700 "$tmp_"
 fi
 
 # Determine source build vs prefix installation.
@@ -530,9 +530,9 @@ case $phase in
         ;;
     clean)
         dirs_unpriv_rm
-        if [[ -d $tmpdir ]] && [[ -e $tmpdir/build_auto.bats ]]; then
-            echo "removing $tmpdir"
-            rm -rf --one-file-system "$tmpdir"
+        if [[ -d $tmp_ ]] && [[ -e $tmp_/build_auto.bats ]]; then
+            echo "removing $tmp_"
+            rm -rf --one-file-system "$tmp_"
         fi
         ;;
 esac
