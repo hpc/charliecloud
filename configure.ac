@@ -14,7 +14,7 @@ AC_PREREQ([2.69])
 AC_CONFIG_SRCDIR([bin/ch-run.c])
 AC_CONFIG_AUX_DIR([build-aux])
 
-AM_INIT_AUTOMAKE([1.15 -Wall -Werror foreign subdir-objects])
+AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
 
 AC_CONFIG_HEADERS([bin/config.h])
 AC_CONFIG_FILES([Makefile bin/Makefile libexec/Makefile misc/Makefile])
