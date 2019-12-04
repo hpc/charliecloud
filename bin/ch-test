@@ -334,7 +334,7 @@ fi
 tmpdir=${HOME}/.charliecloud/ch-test.tmp.$USER
 if [[ ! -d $tmpdir ]]; then
     mkdir -p "$tmpdir"
-    chmod -m 700 "$tmpdir"
+    chmod 700 "$tmpdir"
 fi
 
 # Determine source build vs prefix installation.

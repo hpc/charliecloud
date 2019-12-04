@@ -67,7 +67,7 @@ allows trading off thoroughness versus time.
     :code:`--perm-dirs`.
 
   :code:`clean`
-    Delete automatically-generated test files, and packed and unpacked images
+    Delete automatically-generated test files, and packed and unpacked image
     directories.
 
   :code:`rm-perm-dirs`
