@@ -117,6 +117,9 @@ AC_DEFUN([CH_CHECK_VERSION], [
 
 ## Feature tests - build time
 
+AC_CHECK_FUNCS(asprintf, [], [
+  AC_MSG_ERROR([asprintf() not found. Please report this bug.])])
+
 vmin_sphinx=1.4.9
 AX_WITH_PROG([SPHINX], [sphinx-build])
 CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
