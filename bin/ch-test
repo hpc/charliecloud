@@ -221,8 +221,8 @@ test_run () {
 
 test_make_auto () {
     local img
-    printf "find images (%s scope, %s, and %s architecture) ...\n" \
-           "$CH_TEST_SCOPE" "$CH_BUILDER" "$(uname -m)"
+    printf "find images (scope=%s builder=%s arch=%s sudo=%s) ...\n" \
+           "$CH_TEST_SCOPE" "$CH_BUILDER" "$(uname -m)" "$CH_TEST_SUDO"
     for i in $images $examples; do
         if [[ $(test_make_check_image "$i") == ok ]]; then
             echo "found: $i"
@@ -268,6 +268,8 @@ test_make_check_image () {
                                                    | sed 's/.*: //' \
                                                    | awk '{print $1}')")
 
+    sudo_required=$(cat "$img" | grep -F 'ch-test-need-sudo')
+
     # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
     if [[ $scope_int -lt "$img_scope_int" ]]; then
         return
@@ -286,6 +288,11 @@ test_make_check_image () {
             return
         fi
     done
+
+    # Exclude images that require sudo if CH_TEST_SUDO is empty
+    if [[ -n $sudo_required ]] && [[ -z $CH_TEST_SUDO ]]; then
+        return
+    fi
     echo ok
 }
 

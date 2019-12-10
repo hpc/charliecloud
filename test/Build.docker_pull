@@ -1,10 +1,10 @@
 #!/bin/bash
 # ch-test-scope: quick
-# ch-test-builder-excludes: buildah
-# ch-test-builder-excludes: buildah-runc
-# ch-test-builder-excludes: buildah-setuid
-# ch-test-builder-excludes: ch-grow
-
+# ch-test-builder-exclude: buildah
+# ch-test-builder-exclude: buildah-runc
+# ch-test-builder-exclude: buildah-setuid
+# ch-test-builder-exclude: ch-grow
+# ch-test-need-sudo
 # Pull a docker image directly from Dockerhub and pack it into an image tarball.
 
 set -e
