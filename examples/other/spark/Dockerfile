@@ -9,10 +9,15 @@ RUN    apt-get update \
 # We want ch-ssh
 RUN touch /usr/bin/ch-ssh
 
-# Download and install Spark.
-# We aren't using SPARK_NO_DAEMONIZE to make sure can deakwith daemonized spark. 
-# Spark is installed to /opt/spark which is spark's new default location
-# We disapprove of spark's master/slave terminology, but it's what the scripts are called
+# Download and install Spark. Notes:
+#
+# 1. We aren't using SPARK_NO_DAEMONIZE to make sure can deal with daemonized
+#    applications.
+#
+# 2. Spark is installed to /opt/spark, which is Spark's new default location.
+#
+# 3. We disapprove of Spark's master/slave terminology, but it's what the
+#    scripts are called, so we don't see a way to avoid it currently.
 
 ENV URLPATH https://www.apache.org/dist/spark/spark-2.4.4/
 ENV DIR spark-2.4.4-bin-hadoop2.7
