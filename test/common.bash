@@ -189,14 +189,6 @@ ch_ttar=${ch_tardir}/chtest.tar.gz
 # shellcheck disable=SC2034
 ch_timg=${ch_imgdir}/chtest
 
-# User-private temporary directory in case multiple users are running the
-# tests simultaneously.
-btnew=$BATS_TMPDIR/bats.tmp.$USER
-mkdir -p "$btnew"
-chmod 700 "$btnew"
-export BATS_TMPDIR=$btnew
-[[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
-
 # MPICH requires different handling from OpenMPI. Set a variable to enable
 # some kludges.
 if [[ $ch_tag = *'-mpich' ]]; then
