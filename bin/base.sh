@@ -2,6 +2,7 @@ set -e
 
 # shellcheck disable=SC2034
 ch_bin="$(cd "$(dirname "$0")" && pwd)"
+ch_base=${ch_bin%/*}
 
 libexec="$(cd "$(dirname "$0")" && pwd)"
 . "${libexec}/version.sh"

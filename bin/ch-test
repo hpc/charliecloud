@@ -17,8 +17,6 @@ EOF
 
 export ch_bin=$ch_bin
 
-topdir=$(readlink -f "${ch_bin%/*}")
-
 builder_check () {
     printf 'checking builder ...\n'
     case $CH_BUILDER in
@@ -345,12 +343,12 @@ if [[ ! -d $tmp_ ]]; then
 fi
 
 # Determine source build vs prefix installation.
-if [[ -d ${topdir}/test ]]; then
+if [[ -d ${ch_base}/test ]]; then
     # source build
-    export CHTEST_DIR=${topdir}/test
+    export CHTEST_DIR=${ch_base}/test
 else
     # prefix installation
-    export CHTEST_DIR="${topdir}/libexec/charliecloud-${ch_version}/test"
+    export CHTEST_DIR="${ch_base}/libexec/charliecloud-${ch_version}/test"
 fi
 
 # Check for test directory.
