@@ -34,9 +34,7 @@ tag_from_path () {
 
     case $basicname in
     Build|Dockerfile)
-        if    [[ $dir == '' ]]  \
-           || [[ $dir == '.' ]] \
-           || [[ $dir == test ]]; then
+        if [[ ($dir == '') || ($dir == '.') || ($dir == test) ]]; then
             if [[ -n $extension ]]; then
                 echo "$extension"
             fi

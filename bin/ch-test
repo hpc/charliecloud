@@ -151,8 +151,8 @@ scope_check () {
     esac
 }
 
-# Assign scope a comparable opaque value. This value is used to help filter
-# images and tests that are out of scope.
+# Assign scope a sortable opaque integer value. This value is used to help
+# filter images and tests that are out of scope.
 scope_to_digit () {
     case $1 in
         quick)
@@ -165,7 +165,7 @@ scope_to_digit () {
             echo 3
             ;;
         skip*)
-            # skip has the highest value to ensure it is always filtered
+            # skip has the highest value to ensure it is always filtered out
             echo 4
             ;;
         *)
@@ -174,7 +174,7 @@ scope_to_digit () {
 }
 
 test_build () {
-    echo 'execute build phase tests ...'
+    echo 'executing build phase tests ...'
     # TODO: check for sotests?
     if [[ ! -f ${tmp_}/build_auto.bats ]]; then
         fatal "${tmp_}/build_auto.bats not found"
@@ -187,7 +187,7 @@ test_examples () {
     if [[ $CH_TEST_SCOPE == quick ]]; then
         return
     fi
-    echo 'execute example phase tests ...'
+    echo 'executing example phase tests ...'
     for i in $examples; do
         if [[ $(test_make_check_image "$i") == ok ]]; then
             tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
@@ -198,7 +198,7 @@ test_examples () {
 }
 
 test_run () {
-    echo 'execute run phase tests ...'
+    echo 'executing run phase tests ...'
     if [[ ! -f ${tmp_}/run_auto.bats ]]; then
         fatal "${tmp_}/run_auto.bats not found"
     fi
@@ -219,8 +219,7 @@ test_run () {
 
 test_make_auto () {
     local img
-    printf "find images (scope=%s builder=%s arch=%s sudo=%s) ...\n" \
-           "$CH_TEST_SCOPE" "$CH_BUILDER" "$(uname -m)" "$CH_TEST_SUDO"
+    printf "finding images compatible with test settings ...\n" \
     for i in $images $examples; do
         if [[ $(test_make_check_image "$i") == ok ]]; then
             echo "found: $i"
@@ -323,16 +322,6 @@ if (bash -c 'set -e; [[ 1 = 0 ]]; exit 0'); then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
     # https://github.com/sstephenson/bats/issues/49
     fatal 'Bash minimum version is 4.1'
-fi
-
-# Ensure BATS_TMPDIR is set to /tmp (issue #278).
-if [[ -n $BATS_TMPDIR ]]; then
-    if     [[ $BATS_TMPDIR != '/tmp' ]] \
-        && [[ $BATS_TMPDIR != "/tmp/bats.tmp.${USER}" ]]; then
-        # The build.bats file has a test, executables sane, which  runs
-        # ch-test --help|--version where bats sets BATS_TMPDIR.
-        fatal "BATS_TMPDIR: must be /tmp or /tmp/bats.tmp.${USER} but found $BATS_TMPDIR (issue #278)"
-    fi
 fi
 
 # Create a directory to hold auto-generated test artifacts.
@@ -441,6 +430,13 @@ printf '\n'
 
 if [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
     fatal "phase $phase: CH_TEST_PERMDIRS: can't be 'skip'"
+fi
+
+# Ensure BATS_TMPDIR is set to /tmp (issue #278).
+if [[ -n $BATS_TMPDIR ]]; then
+    if     [[ $BATS_TMPDIR != '/tmp' ]]; then
+        fatal "BATS_TMPDIR: must be /tmp or /tmp/bats.tmp.${USER} but found $BATS_TMPDIR (issue #278)"
+    fi
 fi
 
 # Ensure namespaces are configured properly.
