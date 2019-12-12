@@ -1,5 +1,4 @@
 SHELL=/bin/sh
-PYTHON=$(shell command -v "$$(head -1 test/make-auto | sed -E 's/^.+ //')")
 
 # Add some good stuff to CFLAGS.
 export CFLAGS += -std=c11 -Wall -g
@@ -7,10 +6,7 @@ export CFLAGS += -std=c11 -Wall -g
 .PHONY: all
 all: VERSION.full bin/version.h bin/version.sh
 	cd bin && $(MAKE) all
-#      only descend into test/ if the right Python is available
-	if [ -n $(PYTHON) ]; then \
-		cd test && $(MAKE) all; \
-	fi
+	cd test && $(MAKE) all
 
 .PHONY: clean
 clean:
@@ -137,10 +133,7 @@ install: all
 	        chmod 644 $$i; \
 	    done; \
 	fi
-#	install test suite and examples if the right python is found
-	if [ -n $(PYTHON) ]; then \
-		$(MAKE) install $(PREFIX) -C test; \
-	fi
+	$(MAKE) install $(PREFIX) -C test
 
 .PHONY: deb
 deb:

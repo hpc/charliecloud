@@ -67,7 +67,8 @@ allows trading off thoroughness versus time.
     :code:`--perm-dirs`.
 
   :code:`clean`
-    Delete packed and unpacked images directories.
+    Delete automatically-generated test files, and packed and unpacked image
+    directories.
 
   :code:`rm-perm-dirs`
     Remove the filesystem permissions directories. Requires

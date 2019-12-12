@@ -15,6 +15,8 @@ Usage:
 EOF
 )
 
+export ch_bin=$ch_bin
+
 builder_check () {
     printf 'checking builder ...\n'
     case $CH_BUILDER in
@@ -22,7 +24,7 @@ builder_check () {
         if ! ("${ch_bin}/ch-grow" --dependencies); then
             fatal 'builder: ch-grow: missing dependencies'
         fi
-        bl=$(readlink -f "$ch_bin"/ch-grow)
+        bl=$(readlink -f "${ch_bin}/ch-grow")
         bv=$("$bl" --version)
         ;;
     buildah)
@@ -74,7 +76,7 @@ builder_set () {
 # Create CH_TEST_TARDIR, avoiding #347.
 dir_img_mk () {
     if [[ ! -d $CH_TEST_IMGDIR ]]; then
-        echo "creating $CH_TEST_IMGDIR"
+        printf "creating %s\n\n" "$CH_TEST_IMGDIR"
         mkdir "$CH_TEST_IMGDIR"
     fi
 }
@@ -94,9 +96,8 @@ dir_perm_rm () {
 dir_tar_check () {
     printf 'checking %s: ' "$CH_TEST_TARDIR"
     dir_tar_check_file alpine39{.tar.gz,.sqfs,.pq_missing}
-    dir_tar_check_file alpine39_dp{.tar.gz,.sqfs,.pq_missing}
     dir_tar_check_file chtest{.tar.gz,.sqfs,.pq_missing}
-    printf 'OK\n\n'
+    printf 'ok\n\n'
 }
 
 dir_tar_check_file () {
@@ -114,7 +115,7 @@ dir_tar_check_file () {
 # Create CH_TEST_TARDIR, avoiding #347.
 dir_tar_mk () {
     if [[ ! -d $CH_TEST_TARDIR ]]; then
-        echo "creating $CH_TEST_TARDIR"
+        printf "creating %s\n\n" "$CH_TEST_TARDIR"
         mkdir "$CH_TEST_TARDIR"
     fi
 }
@@ -150,6 +151,148 @@ scope_check () {
     esac
 }
 
+# Assign scope a sortable opaque integer value. This value is used to help
+# filter images and tests that are out of scope.
+scope_to_digit () {
+    case $1 in
+        quick)
+            echo 1
+            ;;
+        standard)
+            echo 2
+            ;;
+        full)
+            echo 3
+            ;;
+        skip*)
+            # skip has the highest value to ensure it is always filtered out
+            echo 4
+            ;;
+        *)
+            fatal "scope '$scope' invalid"
+    esac
+}
+
+test_build () {
+    echo 'executing build phase tests ...'
+    # TODO: check for sotests?
+    if [[ ! -f ${tmp_}/build_auto.bats ]]; then
+        fatal "${tmp_}/build_auto.bats not found"
+    fi
+    bats build.bats "${tmp_}/build_auto.bats" build_post.bats
+}
+
+test_examples () {
+    local tag
+    if [[ $CH_TEST_SCOPE == quick ]]; then
+        return
+    fi
+    echo 'executing example phase tests ...'
+    for i in $examples; do
+        if [[ $(test_make_check_image "$i") == ok ]]; then
+            tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
+            export CH_TEST_TAG=$tag
+            bats "$(dirname "$i")/test.bats"
+        fi
+    done
+}
+
+test_run () {
+    echo 'executing run phase tests ...'
+    if [[ ! -f ${tmp_}/run_auto.bats ]]; then
+        fatal "${tmp_}/run_auto.bats not found"
+    fi
+    bats run_first.bats "${tmp_}/run_auto.bats" ./run/*.bats
+    set -e
+    if [[ $CH_TEST_SCOPE != quick ]]; then
+        for guest_user in $(id -un) root nobody; do
+            for guest_group in $(id -gn) root $(id -gn nobody); do
+                export GUEST_USER=$guest_user
+                export GUEST_GROUP=$guest_group
+                echo "testing as $GUEST_USER $GUEST_GROUP"
+                bats run/ch-run_uidgid.bats
+            done
+        done
+    fi
+    set +e
+}
+
+test_make_auto () {
+    local img
+    printf "finding images compatible with test settings ...\n"
+    for i in $images $examples; do
+        if [[ $(test_make_check_image "$i") == ok ]]; then
+            echo "found: $i"
+            targets+=( "$i" )
+        fi
+    done
+
+    make_auto="${CHTEST_DIR}/chtest-make-auto"
+    printf '\n'
+    case $phase in
+    build)
+        printf 'generate build_auto.bats ...\n'
+        "$make_auto" build "${targets[@]}" > "${tmp_}/build_auto.bats"
+        printf 'ok\n\n'
+        ;;
+    run)
+        printf 'generate run_auto.bats ...\n'
+        "$make_auto" run "${targets[@]}" > "${tmp_}/run_auto.bats"
+        printf 'ok\n\n'
+        ;;
+    all)
+        printf 'generate build_auto.bats run_auto.bats ...\n'
+        "$make_auto" build "${targets[@]}" > "${tmp_}/build_auto.bats"
+        "$make_auto" run "${targets[@]}" > "${tmp_}/run_auto.bats"
+        printf 'ok\n\n'
+        ;;
+    *)
+        # Do nothing
+        return 0
+        ;;
+    esac
+}
+
+test_make_check_image () {
+    img=$1
+    exclude_arch=$(cat "$img" | grep -F 'ch-test-arch-exclude: ' \
+                              | sed 's/.*: //' | awk '{print $1}')
+
+    exclude_builder=$(cat "$img" | grep -F 'ch-test-builder-exclude: ' \
+                                 | sed 's/.*: //' | awk '{print $1}')
+
+    img_scope_int=$(scope_to_digit "$(cat "$img" | grep -F 'ch-test-scope' \
+                                                   | sed 's/.*: //' \
+                                                   | awk '{print $1}')")
+
+    sudo_required=$(cat "$img" | grep -F 'ch-test-need-sudo')
+
+    # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
+    if [[ $scope_int -lt "$img_scope_int" ]]; then
+        return
+    fi
+
+    # Exclude images that do not work with the host architecture.
+    for a in $exclude_arch; do
+        if [[ $a == "$(uname -m)" ]]; then
+            return
+        fi
+    done
+
+    # Exclude images that are not compatible with CH_BUILDER.
+    for b in $exclude_builder; do
+        if [[ $b == "$CH_BUILDER" ]]; then
+            return
+        fi
+    done
+
+    # Exclude images that require sudo if CH_TEST_SUDO is empty
+    if [[ -n $sudo_required ]] && [[ -z $CH_TEST_SUDO ]]; then
+        return
+    fi
+    echo ok
+}
+
 # Exit with failure if given version number is below a minimum.
 #
 # $1: human-readable descriptor
@@ -169,12 +312,9 @@ win () {
     printf "\nAll tests passed.\n"
 }
 
-
-top_dir=$(readlink -f "${ch_bin%/*}")
-
 # Ensure ch-run has been compiled (issue #329).
 if (! "${ch_bin}/ch-run" --version &> /dev/null); then
-    fatal "ch-run not found; expected in $ch_bin"
+    fatal "no working ch-run found in $ch_bin"
 fi
 
 # Ensure we have Bash 4.1 or higher
@@ -184,25 +324,25 @@ if (bash -c 'set -e; [[ 1 = 0 ]]; exit 0'); then
     fatal 'Bash minimum version is 4.1'
 fi
 
-# Ensure BATS_TMPDIR is set to /tmp (issue #278).
-if [[ -n $BATS_TMPDIR ]]; then
-    if [[ ! $BATS_TMPDIR == '/tmp/'* ]]; then
-        fatal "BATS_TMPDIR: must be /tmp but found $BATS_TMPDIR (issue #278)"
-    fi
+# Create a directory to hold auto-generated test artifacts.
+tmp_=/tmp/ch-test.tmp.$USER
+if [[ ! -d $tmp_ ]]; then
+    mkdir "$tmp_"
+    chmod 700 "$tmp_"
 fi
 
-# Determine source vs prefix installation.
-if [[ -d ${top_dir}/test ]]; then
-    # source install
-    testdir=${top_dir}/test
+# Determine source build vs prefix installation.
+if [[ -d ${ch_base}/test ]]; then
+    # source build
+    export CHTEST_DIR=${ch_base}/test
 else
     # prefix installation
-    testdir="${top_dir%/charliecloud*}/libexec/charliecloud-${ch_version}/test"
+    export CHTEST_DIR="${ch_base}/libexec/charliecloud-${ch_version}/test"
 fi
 
 # Check for test directory.
-if [[ ! -d $testdir ]]; then
-    fatal "test directory not found: $testdir"
+if [[ ! -d $CHTEST_DIR ]]; then
+    fatal "test directory not found: $CHTEST_DIR"
 fi
 
 # Ensure Bats is installed.
@@ -264,7 +404,7 @@ printf "ch-test version %s\n\n" "$ch_version"
 printf 'ch-run: %s %s\n' "$("${ch_bin}/ch-run" --version 2>&1)" \
                          "${ch_bin}/ch-run"
 printf 'bats:   %s %s\n' "$bats_version" "$bats"
-printf 'tests:  %s\n\n' "$testdir"
+printf 'tests:  %s\n\n' "$CHTEST_DIR"
 
 printf "%-21s %s" 'phase:' "$phase"
 if [[ -z $phase ]]; then
@@ -291,6 +431,21 @@ printf '\n'
 if [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
     fatal "phase $phase: CH_TEST_PERMDIRS: can't be 'skip'"
 fi
+
+# Ensure BATS_TMPDIR is set to /tmp (issue #278).
+if [[ -n $BATS_TMPDIR ]]; then
+    if     [[ $BATS_TMPDIR != '/tmp' ]]; then
+        fatal "BATS_TMPDIR: must be /tmp or /tmp/bats.tmp.${USER} but found $BATS_TMPDIR (issue #278)"
+    fi
+fi
+
+# User-private temporary directory in case multiple users are running the
+# tests simultaneously.
+btnew=$tmp_/bats.tmp
+mkdir -p "$btnew"
+chmod 700 "$btnew"
+export BATS_TMPDIR=$btnew
+[[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
 
 # Ensure namespaces are configured properly.
 printf 'checking namespaces ...\n'
@@ -321,28 +476,48 @@ if [[ -n $dry ]];then
     exit 0
 fi
 
+
+cd "$CHTEST_DIR"
+
+export PATH=$ch_bin:$PATH
+
+images=$(find . -name  Build;
+         find . -name 'Build.*';
+         find . -name 'Dockerfile.*' )
+
+examples=$(find ../examples -name  Build;        \
+           find ../examples -name 'Build.*';     \
+           find ../examples -name  Dockerfile;   \
+           find ../examples -name 'Dockerfile.*' )
+
+scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
+
 # Execute phase
-cd "$testdir"
 case $phase in
     build)
         dir_tar_mk
-        make test-build
+        test_make_auto
+        test_build
         win
         ;;
     run)
         dir_tar_mk
         dir_img_mk
-        make test-run
+        test_make_auto
+        test_run
         win
         ;;
     examples)
-        make test-test
+        test_examples
         win
         ;;
     all)
         dir_tar_mk
         dir_img_mk
-        make test
+        test_make_auto
+        test_build
+        test_run
+        test_examples
         win
         ;;
     mk-perm-dirs)
@@ -352,7 +527,7 @@ case $phase in
                 printf '%s already exists\n' "$d"
                 continue
             else
-                sudo "${testdir}/make-perms-test" "$d" "$USER" nobody
+                sudo "${CHTEST_DIR}/make-perms-test" "$d" "$USER" nobody
             fi
         done
         echo
@@ -364,5 +539,9 @@ case $phase in
         ;;
     clean)
         dirs_unpriv_rm
+        if [[ -d $tmp_ ]] && [[ -e $tmp_/build_auto.bats ]]; then
+            echo "removing $tmp_"
+            rm -rf --one-file-system "$tmp_"
+        fi
         ;;
 esac
