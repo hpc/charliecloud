@@ -314,7 +314,7 @@ win () {
 
 # Ensure ch-run has been compiled (issue #329).
 if (! "${ch_bin}/ch-run" --version &> /dev/null); then
-    fatal "ch-run not found; expected in "
+    fatal "no working ch-run found in $ch_bin"
 fi
 
 # Ensure we have Bash 4.1 or higher
