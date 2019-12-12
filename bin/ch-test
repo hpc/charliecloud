@@ -219,7 +219,7 @@ test_run () {
 
 test_make_auto () {
     local img
-    printf "finding images compatible with test settings ...\n" \
+    printf "finding images compatible with test settings ...\n"
     for i in $images $examples; do
         if [[ $(test_make_check_image "$i") == ok ]]; then
             echo "found: $i"
