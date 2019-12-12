@@ -1,0 +1,34 @@
+#!/bin/bash
+# ch-test-scope: quick
+# ch-test-builder-exclude: buildah
+# ch-test-builder-exclude: buildah-runc
+# ch-test-builder-exclude: buildah-setuid
+# ch-test-builder-exclude: ch-grow
+# ch-test-need-sudo
+# Pull a docker image directly from Dockerhub and pack it into an image tarball.
+
+set -e
+
+srcdir=$1
+tarball_gz=${2}.tar.gz
+workdir=$3
+
+tag=docker_pull
+addr=alpine:3.9
+img=$tag:latest
+
+cd "$workdir"
+sudo docker pull "$addr"
+sudo docker tag "$addr" "$tag"
+
+# FIXME: do we need a ch_version_docker equivalent?
+sudo docker tag "$tag" "$img"
+
+
+hash_=$(sudo docker images -q "$img" | sort -u)
+if [[ -z $hash_ ]]; then
+    echo "no such image '$img'"
+    exit 1
+fi
+
+ch-builder2tar -b docker "$tag" "$(dirname "$tarball_gz")"

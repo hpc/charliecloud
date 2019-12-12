@@ -47,5 +47,5 @@ load common
 
 @test 'ch-checkns' {
     scope quick
-    bin/ch-checkns
+    "${ch_bin}/ch-checkns"
 }

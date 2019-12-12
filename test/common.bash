@@ -1,11 +1,5 @@
 # shellcheck shell=bash
 
-arch_exclude () {
-    if [[ $1 = "$(uname -m)" ]]; then
-        skip "unsupported architecture: $(uname -m)"
-    fi
-}
-
 archive_grep () {
     image="$1"
     case $image in
@@ -22,21 +16,6 @@ archive_ok () {
     ls -ld "$1" || true
     test -f "$1"
     test -s "$1"
-}
-
-builder_exclude () {
-    # $1: builder to exclude
-    # $2: tag for prerequisites file
-    if [[ $# -ne 2 ]]; then
-        echo "builder_exclude needs 2 arguments" 1>&2
-        false
-    fi
-    pq=${ch_tardir}/${2}.pq_missing
-    rm -f "$pq"
-    if [[ $1 = "$CH_BUILDER" ]]; then
-        touch "$pq"
-        skip "unsupported builder: $CH_BUILDER"
-    fi
 }
 
 builder_ok () {
@@ -111,21 +90,6 @@ multiprocess_ok () {
     true
 }
 
-need_docker () {
-    # Skip test if $CH_BUILDER is not Docker. If argument provided, use that
-    # tag as missing prerequisite sentinel file.
-    pq=${ch_tardir}/${1}.pq_missing
-    if [[ $1 ]]; then
-        rm -f "$pq"
-    fi
-    if [[ $CH_BUILDER != docker ]]; then
-        if [[ $1 ]]; then
-            touch "$pq"
-        fi
-        skip 'requires Docker'
-    fi
-}
-
 need_squashfs () {
     ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
     ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
@@ -191,15 +155,6 @@ env_require CH_BUILDER
 if [[ $CH_BUILDER == ch-grow ]]; then
     env_require CH_GROW_STORAGE
 fi
-# Set path to the right Charliecloud. This uses a symlink in this directory
-# called "bin" which points to the corresponding bin directory, either simply
-# up and over (source code) or set during "make install".
-#
-# Note that sudo resets $PATH, so if you want to run any Charliecloud stuff
-# under sudo, you must use an absolute path.
-ch_bin="$(cd "$(dirname "${BASH_SOURCE[0]}")/bin" && pwd)"
-ch_bin="$(readlink -f "${ch_bin}")"
-export PATH=$ch_bin:$PATH
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
@@ -233,14 +188,6 @@ ch_tar=${ch_tardir}/${ch_tag}.tar.gz
 ch_ttar=${ch_tardir}/chtest.tar.gz
 # shellcheck disable=SC2034
 ch_timg=${ch_imgdir}/chtest
-
-# User-private temporary directory in case multiple users are running the
-# tests simultaneously.
-btnew=$BATS_TMPDIR/bats.tmp.$USER
-mkdir -p "$btnew"
-chmod 700 "$btnew"
-export BATS_TMPDIR=$btnew
-[[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
 
 # MPICH requires different handling from OpenMPI. Set a variable to enable
 # some kludges.
