@@ -369,97 +369,106 @@ AC_MSG_NOTICE([
 Dependencies report
 ===================
 
-Build time:
+Below is a summary of configure's findings.
 
-  C99 compiler            ${CC} ${CC_VERSION}
-  sphinx-build $vmin_sphinx+     ${SPHINX:-not found} ${SPHINX_VERSION}
+Caveats
+~~~~~~~
+
+Charliecloud's run-time dependencies are lazy; features just try to use their
+dependencies and error if there's a problem. This report summarizes what
+configure found on *this system*, because that's often useful, but none of the
+run-time findings change what is built and installed.
+
+Listed versions are minimums. These are a bit fuzzy. Try it even if configure
+thinks a version is too old, and please report back to us.
+
+Building Charliecloud
+~~~~~~~~~~~~~~~~~~~~~
+
+  C99 compiler ... ${CC} ${CC_VERSION}
+  sphinx-build(1) $vmin_sphinx ... ${SPHINX:-not found} ${SPHINX_VERSION}
 
   will build and install:
-    HTML documentation    ${enable_html}
-    man pages             ${enable_man}
-    test suite            ${enable_test}
-    ch-grow builder       ${enable_ch_grow}
+    HTML documentation ... ${enable_html}
+    man pages ... ${enable_man}
+    test suite ... ${enable_test}
+    ch-grow builder ... ${enable_ch_grow}
 
-Run-time:
+Image builders via ch-build(1)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Charliecloud's run-time dependencies are lazy; features just try to use
-    their dependencies and error if there's a problem. The below is for
-    informational purposes and is what should work on *this system* now.
+  Buildah: ${have_buildah}
+    Buildah $vmin_buildah ... ${BUILDAH_VERSION:-not found}
 
-    Note that dependency versions are a bit fuzzy. Try it even if configure
-    thinks a version is too old (and please report back to us).
+  ch-grow: ${have_ch_grow}
+    Python shebang line ... ${PYTHON_SHEBANG:-none}
+    Python in shebang 3.4 ... ${PYTHON_VERSION:-not found}
+    "lark-parser" module ... ${have_lark}
+    skopeo $vmin_skopeo ... ${SKOPEO_VERSION:-not found}
+    umoci $vmin_umoci ... ${UMOCI_VERSION:-not found}
+    ch-run(1) ... ${have_ch_run}
 
-  Image builders via ch-build
+  Docker: ${have_docker}
+    Docker $vmin_docker ... ${DOCKER_VERSION:-not found}
+    mktemp(1) ... ${MKTEMP:-not found}
 
-    Buildah: ${have_buildah}
-      Buildah $vmin_buildah+ ... ${BUILDAH_VERSION:-not found}
+Managing container images
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    ch-grow: ${have_ch_grow}
-      Python shebang line ... ${PYTHON_SHEBANG:-none}
-      Python in shebang 3.4+ ... ${PYTHON_VERSION:-not found}
-      lark-parser module ... ${have_lark}
-      skopeo $vmin_skopeo+ ... ${SKOPEO_VERSION:-not found}
-      umoci $vmin_umoci+ ... ${UMOCI_VERSION:-not found}
-      ch-run ... ${have_ch_run}
+  build from Dockerfile with ch-build(1): ${have_ch_build}
+    at least one builder ... ${have_any_builder}
+    access to an image repository ... assumed yes
 
-    Docker: ${have_docker}
-      Docker $vmin_docker+ ... ${DOCKER_VERSION:-not found}
-      mktemp(1) ... ${MKTEMP:-not found}
+  pack images from builder storage to tarball: ${have_pack_tar}
+    at least one builder ... ${have_any_builder}
+    tar(1) ... ${TAR:-not found}
 
-  Managing container images
+  pack images from builder storage to SquashFS: ${have_pack_squash}
+    at least one builder ... ${have_any_builder}
+    mksquashfs(1) $vmin_mksquashfs ... ${MKSQUASHFS_VERSION}
 
-     build from Dockerfile with ch-build: ${have_ch_build}
-       at least one builder ... ${have_any_builder}
-       access to an image repository ... assumed yes
+  Note: Pulling/pushing images from/to a repository is currently done using
+  the builder directly.
 
-     pack images from builder storage to tarball: ${have_pack_tar}
-       at least one builder ... ${have_any_builder}
-       tar ... ${TAR:-not found}
+Running containers
+~~~~~~~~~~~~~~~~~~
 
-     pack images from builder storage to SquashFS: ${have_pack_squash}
-       at least one builder ... ${have_any_builder}
-       mksquashfs $vmin_mksquashfs+ ... ${MKSQUASHFS_VERSION}
+  ch-run(1): ${have_ch_run}
+    user+mount namespaces ... ${have_userns}
 
-     Note: Pulling images from a repository (e.g. "docker pull"), and pushing
-     to ("docker push"), are currently done using the builder directly.
+  unpack image tarballs: ${have_unpack_tar}
+    tar(1) ... ${TAR:-not found}
 
-  Running containers
+  ch-mount(1) and ch-umount(1) SquashFS images: ${have_ch_mount}
+    SquashFUSE $vmin_squashfuse ... ${SQUASHFUSE_VERSION:-not found}
 
-    ch-run: ${have_ch_run}
-      user+mount namespaces ... ${have_userns}
+  inject nVidia GPU libraries: ${have_nvidia}
+    nvidia-container-cli(1) $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION:-not found}
+    nVidia libraries & executables present ... ${have_nvidia_libs}
 
-    unpack image tarballs: ${have_unpack_tar}
-      tar ... ${TAR:-not found}
+Test suite
+~~~~~~~~~~
 
-    ch-mount and ch-umount SquashFS images: ${have_ch_mount}
-      SquashFUSE $vmin_squashfuse+ ... ${SQUASHFUSE_VERSION:-not found}
+  basic tests: ${have_tests_basic}
+    ch-run(1) ... ${have_ch_run}
+    Bats $vmin_bats ... ${BATS_VERSION:-not found}
+    Bash $vmin_bash ... ${_BASH_VERSION:-not found}
+    wget(1) $vmin_wget ... ${WGET_VERSION:-not found}
 
-    inject nVidia GPU libraries: ${have_nvidia}
-      nvidia-container-cli $vmin_nvidia_cli+ ... ${NVIDIA_CLI_VERSION:-not found}
-      nVidia libraries & executables present ... ${have_nvidia_libs}
+  recommended tests with tarballs: ${have_tests_tar}
+    basic tests ... ${have_tests_basic}
+    any builder above ... ${have_any_builder}
+    access to Docker Hub or mirror ... assumed yes
+    pack images with tar ... ${have_pack_tar}
+    unpack images with tar ... ${have_unpack_tar}
 
-  Test suite
+  recommended tests with SquashFS: ${have_tests_squash}
+    recommended tests with tar ... ${have_tests_tar}
+    pack images with SquashFS ... ${have_pack_squash}
+    mount/unmount SquashFS images ... ${have_ch_mount}
 
-    basic tests: ${have_tests_basic}
-      ch-run ... ${have_ch_run}
-      Bats $vmin_bats+ ... ${BATS_VERSION:-not found}
-      Bash $vmin_bash+ ... ${_BASH_VERSION:-not found}
-      wget $wget_version+ ... ${WGET_VERSION:-not found}
-
-    recommended tests with tarballs: ${have_tests_tar}
-      basic tests ... ${have_tests_basic}
-      any builder above ... ${have_any_builder}
-      access to Docker Hub or mirror ... assumed yes
-      pack images with tar ... ${have_pack_tar}
-      unpack images with tar ... ${have_unpack_tar}
-
-    recommended tests with SquashFS: ${have_tests_squash}
-      recommended tests with tar ... ${have_tests_tar}
-      pack images with SquashFS ... ${have_pack_squash}
-      ch-mount and ch_umount ... ${have_ch_mount}
-
-    complete test suite: ${have_tests_all}
-      recommended tests with SquashFS ... ${have_tests_squash}
-      sphinx-build $vmin_sphinx+ ... ${SPHINX_VERSION:-not found}
-      generic sudo ... ${have_sudo}
+  complete test suite: ${have_tests_all}
+    recommended tests with SquashFS ... ${have_tests_squash}
+    sphinx-build(1) $vmin_sphinx ... ${SPHINX_VERSION:-not found}
+    generic sudo ... assumed yes
 ])

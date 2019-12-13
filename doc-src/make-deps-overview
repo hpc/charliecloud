@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# This script is a pipe that translates configure output to ReST markup
+# suitable for inclusion in the documentation.
+#
+# I have very mixed feelings about this script. On one hand, we've defined a
+# new markup language. On the other hand, I feel that writing down the
+# dependencies really does need to be DRY, checking the run-time dependencies
+# too has a lot of value, translating from prose docs to a configure script
+# would be nearly impossible, and ReST is way too ugly to use as-is in
+# terminal output.
+#
+# Steps:
+#
+#   1. Remove everything before "Caveats".
+#   2. Remove "will build and install" paragraph.
+#   3. Convert indentation to bullet lists.
+#   4. Remove results of tests: " ..." to EOL, ": yes", ": no".
+#   5. Convert "foo(1)" to ":code:`foo`".
+
+  awk '/Caveats/,0' \
+| awk -v RS='' '{gsub(/^  will build.*/, ""); print; print ""}' \
+| sed -r -e 's/(^(  )+)/\1* /' \
+         -e 's/ \.\.\..*$//' -e 's/: (yes|no)//' \
+         -e 's/([a-zA-Z0-9-]+)\(1\)/:code:`\1`/g'

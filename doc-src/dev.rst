@@ -312,6 +312,16 @@ Documentation
 This documentation is built using Sphinx with the sphinx-rtd-theme. It lives
 in :code:`doc-src`.
 
+Style
+-----
+
+Heading underline characters:
+
+  1. Asterisk, :code:`*`, e.g. "5. Contributor's guide"
+  2. Equals, :code:`=`, e.g. "5.7 OCI technical notes"
+  3. Hyphen, :code:`-`, e.g. "5.7.1 Gotchas"
+  4. Tilde, :code:`~`, e.g. "5.7.1.1 Namespaces" (try to avoid)
+
 Dependencies
 ------------
 
