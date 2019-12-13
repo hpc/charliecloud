@@ -14,10 +14,15 @@ AC_PREREQ([2.69])
 AC_CONFIG_SRCDIR([bin/ch-run.c])
 AC_CONFIG_AUX_DIR([build-aux])
 
-AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
+AM_INIT_AUTOMAKE([1.13 -Wall foreign subdir-objects])
+#AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
 
 AC_CONFIG_HEADERS([bin/config.h])
-AC_CONFIG_FILES([Makefile bin/Makefile libexec/Makefile misc/Makefile])
+AC_CONFIG_FILES([Makefile
+                 bin/Makefile
+                 doc/Makefile
+                 libexec/Makefile
+                 misc/Makefile])
 
 # Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
 AC_PROG_CC
@@ -122,6 +127,7 @@ AC_CHECK_FUNCS(asprintf, [], [
 
 vmin_sphinx=1.4.9
 AX_WITH_PROG([SPHINX], [sphinx-build])
+AC_SUBST([SPHINX])
 CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
                  [--version | sed -E 's/sphinx-build //'])
 
@@ -261,6 +267,13 @@ AS_IF([test "$enable_html" = yes && test -z "$SPHINX"],
 AS_IF([test "$enable_man" = yes && test -z "$SPHINX"],
       [AC_MSG_WARN([forcing --disable-man: no suitable sphinx-build])
        enable_man=no])
+
+## Set up Makefile conditionals.
+
+AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
+AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
+AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
+AM_CONDITIONAL([ENABLE_CH_GROW], [test $enable_ch_grow = yes])
 
 
 ## Prepare run-time report.

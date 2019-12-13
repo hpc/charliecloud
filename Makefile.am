@@ -1,1 +1,1 @@
-SUBDIRS = misc libexec bin
+SUBDIRS = misc libexec bin doc

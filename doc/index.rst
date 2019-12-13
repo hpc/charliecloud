@@ -11,8 +11,8 @@ Overview
 
 .. note::
 
-   This documentation is for Charliecloud version |release| (Git commit
-   |version|) and was built |today|.
+   This documentation is for Charliecloud version |version| and was built
+   |today|.
 
 .. toctree::
    :numbered:

@@ -6,13 +6,13 @@ bin/ch-grow
 bin/ch-run
 bin/ch-run-oci
 bin/ch-ssh
-doc/
-doc-src/_build
+doc/doctrees
+doc/html
+doc/man/*.1
 examples/mpi/mpihello/hello
 libexec/version.full
 libexec/version.py
 libexec/version.sh
-man/*.1
 test/build_auto.bats
 test/build_auto-quick.bats
 test/run_auto.bats
