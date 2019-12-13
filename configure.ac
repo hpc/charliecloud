@@ -209,13 +209,14 @@ CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
 
 # sudo, generic
 # Avoids prompting for password; see https://superuser.com/a/1183480.
-AC_MSG_CHECKING([for generic sudo])
-sudo_out=$(sudo -nv 2>&1)
-AS_IF([   test -z "$sudo_out" \
-       || echo "$sudo_out" | grep -Fq asswor],
-      [have_sudo=yes],
-      [have_sudo=no])
-AC_MSG_RESULT($have_sudo)
+# But logrotate sends an e-mail with every call, so disabled.
+#AC_MSG_CHECKING([for generic sudo])
+#sudo_out=$(sudo -nv 2>&1)
+#AS_IF([   test -z "$sudo_out" \
+#       || echo "$sudo_out" | grep -Fq asswor],
+#      [have_sudo=yes],
+#      [have_sudo=no])
+#AC_MSG_RESULT($have_sudo)
 
 # tar (yes, we can confidently assume tar, but this makes the report clearer)
 AC_CHECK_PROG([TAR], [tar], [tar])
@@ -350,9 +351,9 @@ AS_IF([   test $have_tests_tar = yes \
       [have_tests_squash=yes],
       [have_tests_squash=no])
 
+# assumes we do have generic sudo
 AS_IF([   test $have_tests_squash = yes \
-       && test -n "$SPHINX_VERSION" \
-       && test $have_sudo],
+       && test -n "$SPHINX_VERSION"]
       [have_tests_all=yes],
       [have_tests_all=no])
 
