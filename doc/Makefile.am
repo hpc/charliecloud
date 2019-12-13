@@ -54,6 +54,7 @@ EXTRA_DIST = bugs.rst \
 	     see_also.rst \
 	     tutorial.rst
 
+if ENABLE_MAN
 man1_MANS = man/charliecloud.1 \
 	    man/ch-build.1 \
 	    man/ch-build2dir.1 \
@@ -73,7 +74,9 @@ man1_MANS = man/charliecloud.1 \
 	    man/ch-tar2squash.1 \
 	    man/ch-test.1 \
 	    man/ch-umount.1
+endif
 
+if ENABLE_HTML
 html_DATA = html/searchindex.js \
 	    html/_images/rd100-winner.png \
 	    html/command-usage.html \
@@ -83,14 +86,17 @@ html_DATA = html/searchindex.js \
 	    html/install.html \
 	    html/tutorial.html \
 	    html/vm.html
+endif
 
 # NOTE: ./html might be a Git checkout to support "make web", so make sure not
 # to delete it.
-CLEANFILES = $(man1_MANS) $(html_DATA) html/.buildinfo html/.nojekyll
+CLEANFILES = $(man1_MANS) $(html_DATA)
+if ENABLE_HTML
+CLEANFILES += html/.buildinfo html/.nojekyll
 # Automake can't remove directories.
 clean-local:
 	rm -Rf doctrees html/_static
-
+endif
 
 # You can set these variables from the command line.
 SPHINXOPTS    = -W
@@ -101,12 +107,12 @@ BUILDDIR      = .
 # Internal variables.
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 
-if ENABLE_HTML
-all: html-local
-endif
-if ENABLE_MAN
-all: man
-endif
+#if ENABLE_HTML
+#all: html-local
+#endif
+#if ENABLE_MAN
+#all: man
+#endif
 
 # This target works around a race condition in Sphinx that's triggered when
 # two instances (e.g., for html and man targets) try to "mkdir doctrees"
