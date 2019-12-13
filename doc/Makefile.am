@@ -102,7 +102,7 @@ BUILDDIR      = .
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 
 if ENABLE_HTML
-all: html
+all: html-local
 endif
 if ENABLE_MAN
 all: man
@@ -115,8 +115,10 @@ endif
 .PHONY: mkdir_issue115
 	mkdir -p $(BUILDDIR)/doctrees
 
-$(html_DATA): html
-html: mkdir_issue115 ../libexec/version.full
+# This called "html-local" because Automake has a Texinfo target called "html"
+# and gripes if we override it.
+$(html_DATA): html-local
+html-local: mkdir_issue115 ../libexec/version.full
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 # remove unused files that Sphinx made
 	rm -R $(BUILDDIR)/html/_sources

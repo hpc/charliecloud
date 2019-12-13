@@ -39,7 +39,7 @@ rm -rf Makefile \
 if [[ $1 != --clean ]]; then
     aclocal
     autoheader
-    autoreconf --install -Wall #-Werror
+    autoreconf --install -Wall -Werror
 
     set +x
     echo
