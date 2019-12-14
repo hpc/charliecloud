@@ -406,8 +406,8 @@ Building Charliecloud
     test suite ... ${enable_test}
     ch-grow builder ... ${enable_ch_grow}
 
-Image builders via ch-build(1)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Image builders via our wrappers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Buildah: ${have_buildah}
     Buildah $vmin_buildah ... ${BUILDAH_VERSION:-not found}

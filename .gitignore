@@ -6,6 +6,7 @@ bin/ch-grow
 bin/ch-run
 bin/ch-run-oci
 bin/ch-ssh
+doc/_deps.rst
 doc/doctrees
 doc/html
 doc/man/*.1

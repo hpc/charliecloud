@@ -90,7 +90,7 @@ endif
 
 # NOTE: ./html might be a Git checkout to support "make web", so make sure not
 # to delete it.
-CLEANFILES = $(man1_MANS) $(html_DATA)
+CLEANFILES = $(man1_MANS) $(html_DATA) _deps.rst
 if ENABLE_HTML
 CLEANFILES += html/.buildinfo html/.nojekyll
 # Automake can't remove directories.
@@ -121,10 +121,13 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 .PHONY: mkdir_issue115
 	mkdir -p $(BUILDDIR)/doctrees
 
+_deps.rst: make-deps-overview
+	(cd .. && ./configure) | ./make-deps-overview > $@
+
 # This called "html-local" because Automake has a Texinfo target called "html"
 # and gripes if we override it.
 $(html_DATA): html-local
-html-local: mkdir_issue115 ../libexec/version.full
+html-local: mkdir_issue115 ../libexec/version.full _deps.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 # remove unused files that Sphinx made
 	rm -R $(BUILDDIR)/html/_sources
@@ -136,5 +139,5 @@ html-local: mkdir_issue115 ../libexec/version.full
 	rm $(BUILDDIR)/html/see_also.html
 
 $(man1_MANS): man
-man: mkdir_issue115 ../libexec/version.full
+man: mkdir_issue115 ../libexec/version.full _deps.rst
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man

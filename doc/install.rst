@@ -338,6 +338,11 @@ supported platforms <https://docs.docker.com/install/#supported-platforms>`_.
 Overview
 --------
 
+.. include:: _deps.rst
+
+Overview
+--------
+
 This section is a comprehensive summary of dependencies needed for each
 feature. Versions are stated in the next section.
 
