@@ -20,12 +20,46 @@ EOF
 
 parse_basic_args "$@"
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -lt 2 ]; then
     usage
 fi
 
 image=$1
 dest=$2
+tar="$image".tar.gz
 
-docker_ pull "$image"
-"${ch_bin}/ch-builder2tar" "$image" "$dest"
+while [ $# -gt 0 ]; do
+    opt=$1; shift
+    case $opt in 
+        -p|--pull-from) 
+            if [ "$1" = "docker" ]; then
+                docker=yes
+            elif [ "$1" = "skopeo" ]; then 
+                skopeo=yes
+            else 
+                echo "$1 is an invalid option" 1>&2
+                exit 1
+            fi
+            ;;
+    esac
+done
+
+if [ -n "$docker" ] || ( command -v docker >/dev/null 2>&1 ); then
+    echo "Docker"
+    docker_ pull "$image"
+    # shellcheck disable=SC2154
+    "${ch_bin}/ch-builder2tar" -b docker "$image" "$dest"
+elif [ -n "$skopeo" ] || ( command -v skopeo >/dev/null 2>&1 ); then 
+    echo "Skopeo"
+    temp=$(mktemp -d --tmpdir ch-pull2tar.XXXXXX)
+    skopeo copy docker://"$image" oci:"$temp"/oci:"$image"
+    umoci unpack --rootless --image "$temp"/oci:"$image" "$temp"/img
+    ( cd "$temp"/img/rootfs/
+    # shellcheck disable=SC2035
+    tar czf ../"$tar" * )
+    cp "$temp"/img/"$tar" .
+    rm -rf "$temp"
+else
+    echo "docker or skopeo needed to pull image. Neither was found." 1>&2
+    exit 65
+fi

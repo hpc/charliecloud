@@ -1,0 +1,23 @@
+#!/bin/bash
+# ch-test-scope: standard
+
+# Generate a flattened image tarball using ch-pull2tar and stage it for
+# testing.
+
+set -e
+
+srcdir=$1
+tarball_gz=${2}.tar.gz
+workdir=$3
+
+imgtag=alpine:3.9
+tag=ch-pull2tar
+
+if ( ! command -v skopeo &> /dev/null); then
+    echo 'skopeo not found' 1>&2
+    exit 65
+fi
+
+cd "$workdir"
+ch-pull2tar $imgtag . --pull-from skopeo
+mv ${imgtag}.tar.gz "$tarball_gz"
