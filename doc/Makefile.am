@@ -76,6 +76,7 @@ man1_MANS = man/charliecloud.1 \
 	    man/ch-umount.1
 endif
 
+# FIXME: change to pkghtml
 if ENABLE_HTML
 html_DATA = html/searchindex.js \
 	    html/_images/rd100-winner.png \

@@ -1,3 +1,5 @@
+# FIXME: change to pkglibexec
+
 dist_libexec_SCRIPTS = base.sh
 EXTRA_DIST = charliecloud
 
