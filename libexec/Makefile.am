@@ -1,11 +1,9 @@
-# FIXME: change to pkglibexec
+# Note: "charliecloud" is a symlink, but Automake won't let us call it DATA.
+dist_pkglibexec_SCRIPTS = charliecloud base.sh
 
-dist_libexec_SCRIPTS = base.sh
-EXTRA_DIST = charliecloud
+pkglibexec_SCRIPTS = version.py version.sh
 
-libexec_SCRIPTS = version.py version.sh
-
-CLEANFILES = $(libexec_SCRIPTS) version.full
+CLEANFILES = $(pkglibexec_SCRIPTS) version.full
 
 
 version.full: ../VERSION ../misc/version

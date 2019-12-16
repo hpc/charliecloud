@@ -83,7 +83,7 @@ supported.
 
 We will use the following very simple Dockerfile:
 
-.. literalinclude:: ../examples/serial/hello/Dockerfile
+.. literalinclude:: examples/hello/Dockerfile
    :language: docker
 
 This creates a minimal Debian Stretch image with :code:`ssh` installed. We
@@ -572,7 +572,7 @@ This approach is the simplest and fastest way to install stuff in your image.
 The :code:`examples/hello` Dockerfile also seen above does this to install the
 package :code:`openssh-client`:
 
-.. literalinclude:: ../examples/serial/hello/Dockerfile
+.. literalinclude:: examples/hello/Dockerfile
    :language: docker
    :lines: 2-6
 
@@ -590,7 +590,7 @@ using :code:`curl` or :code:`wget`, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic Debian image
 (:code:`test/Dockerfile.debian9`):
 
-.. literalinclude:: ../test/Dockerfile.debian9
+.. literalinclude:: examples/Dockerfile.debian9
    :language: docker
    :lines: 2-
 
@@ -599,7 +599,7 @@ Dockerfile that compiles several dependencies in addition to OpenMPI. For the
 purposes of this tutorial, you can skip most of it, but we felt it would be
 useful to show a real example.
 
-.. literalinclude:: ../test/Dockerfile.openmpi
+.. literalinclude:: examples/Dockerfile.openmpi
    :language: docker
    :lines: 2-
 
@@ -640,7 +640,7 @@ source, but you use the :code:`COPY` instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
 :code:`examples/mpi/mpihello/Dockerfile.openmpi` uses this approach:
 
-.. literalinclude:: ../examples/mpi/mpihello/Dockerfile.openmpi
+.. literalinclude:: examples/mpihello/Dockerfile.openmpi
    :language: docker
 
 These Dockerfile instructions:
@@ -876,7 +876,7 @@ script that runs when resources are available, placing output into a file.
 The MPI hello world example includes such a script,
 :code:`examples/mpi/mpihello/slurm.sh`:
 
-.. literalinclude:: ../examples/mpi/mpihello/slurm.sh
+.. literalinclude:: examples/mpihello/slurm.sh
    :language: bash
 
 Note that this script both unpacks the image and runs it.

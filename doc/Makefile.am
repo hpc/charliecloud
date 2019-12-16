@@ -3,90 +3,93 @@
 # Automake-ification, I stripped out most of the boilderplate and left only
 # the targets that we use.
 
-EXTRA_DIST = bugs.rst \
-	     charliecloud.rst \
-	     ch-build2dir_desc.rst \
-	     ch-build2dir.rst \
-	     ch-build_desc.rst \
-	     ch-builder2squash_desc.rst \
-	     ch-builder2squash.rst \
-	     ch-builder2tar_desc.rst \
-	     ch-builder2tar.rst \
-	     ch-build.rst \
-	     ch-checkns_desc.rst \
-	     ch-checkns.rst \
-	     ch-dir2squash_desc.rst \
-	     ch-dir2squash.rst \
-	     ch-fromhost_desc.rst \
-	     ch-fromhost.rst \
-	     ch-grow_desc.rst \
-	     ch-grow.rst \
-	     ch-mount_desc.rst \
-	     ch-mount.rst \
-	     ch-pull2dir_desc.rst \
-	     ch-pull2dir.rst \
-	     ch-pull2tar_desc.rst \
-	     ch-pull2tar.rst \
-	     ch-run_desc.rst \
-	     ch-run-oci_desc.rst \
-	     ch-run-oci.rst \
-	     ch-run.rst \
-	     ch-ssh_desc.rst \
-	     ch-ssh.rst \
-	     ch-tar2dir_desc.rst \
-	     ch-tar2dir.rst \
-	     ch-tar2squash_desc.rst \
-	     ch-tar2squash.rst \
-	     ch-test_desc.rst \
-	     ch-test.rst \
-	     ch-umount_desc.rst \
-	     ch-umount.rst \
-	     command-usage.rst \
-	     conf.py \
-	     dev.rst \
-	     faq.rst \
-	     favicon.ico \
-	     index.rst \
-	     install.rst \
-	     logo-sidebar.png \
-	     make-deps-overview \
-	     rd100-winner.png \
-	     see_also.rst \
-	     tutorial.rst
+EXTRA_DIST = \
+bugs.rst \
+charliecloud.rst \
+ch-build2dir_desc.rst \
+ch-build2dir.rst \
+ch-build_desc.rst \
+ch-builder2squash_desc.rst \
+ch-builder2squash.rst \
+ch-builder2tar_desc.rst \
+ch-builder2tar.rst \
+ch-build.rst \
+ch-checkns_desc.rst \
+ch-checkns.rst \
+ch-dir2squash_desc.rst \
+ch-dir2squash.rst \
+ch-fromhost_desc.rst \
+ch-fromhost.rst \
+ch-grow_desc.rst \
+ch-grow.rst \
+ch-mount_desc.rst \
+ch-mount.rst \
+ch-pull2dir_desc.rst \
+ch-pull2dir.rst \
+ch-pull2tar_desc.rst \
+ch-pull2tar.rst \
+ch-run_desc.rst \
+ch-run-oci_desc.rst \
+ch-run-oci.rst \
+ch-run.rst \
+ch-ssh_desc.rst \
+ch-ssh.rst \
+ch-tar2dir_desc.rst \
+ch-tar2dir.rst \
+ch-tar2squash_desc.rst \
+ch-tar2squash.rst \
+ch-test_desc.rst \
+ch-test.rst \
+ch-umount_desc.rst \
+ch-umount.rst \
+command-usage.rst \
+conf.py \
+dev.rst \
+faq.rst \
+favicon.ico \
+index.rst \
+install.rst \
+logo-sidebar.png \
+make-deps-overview \
+rd100-winner.png \
+see_also.rst \
+tutorial.rst
 
 if ENABLE_MAN
-man1_MANS = man/charliecloud.1 \
-	    man/ch-build.1 \
-	    man/ch-build2dir.1 \
-	    man/ch-builder2squash.1 \
-	    man/ch-builder2tar.1 \
-	    man/ch-checkns.1 \
-	    man/ch-dir2squash.1 \
-	    man/ch-fromhost.1 \
-	    man/ch-grow.1 \
-	    man/ch-mount.1 \
-	    man/ch-pull2dir.1 \
-	    man/ch-pull2tar.1 \
-	    man/ch-run.1 \
-	    man/ch-run-oci.1 \
-	    man/ch-ssh.1 \
-	    man/ch-tar2dir.1 \
-	    man/ch-tar2squash.1 \
-	    man/ch-test.1 \
-	    man/ch-umount.1
+man1_MANS = \
+man/charliecloud.1 \
+man/ch-build.1 \
+man/ch-build2dir.1 \
+man/ch-builder2squash.1 \
+man/ch-builder2tar.1 \
+man/ch-checkns.1 \
+man/ch-dir2squash.1 \
+man/ch-fromhost.1 \
+man/ch-grow.1 \
+man/ch-mount.1 \
+man/ch-pull2dir.1 \
+man/ch-pull2tar.1 \
+man/ch-run.1 \
+man/ch-run-oci.1 \
+man/ch-ssh.1 \
+man/ch-tar2dir.1 \
+man/ch-tar2squash.1 \
+man/ch-test.1 \
+man/ch-umount.1
 endif
 
 # FIXME: change to pkghtml
 if ENABLE_HTML
-html_DATA = html/searchindex.js \
-	    html/_images/rd100-winner.png \
-	    html/command-usage.html \
-	    html/dev.html \
-	    html/faq.html \
-	    html/index.html \
-	    html/install.html \
-	    html/tutorial.html \
-	    html/vm.html
+html_DATA = \
+html/searchindex.js \
+html/_images/rd100-winner.png \
+html/command-usage.html \
+html/dev.html \
+html/faq.html \
+html/index.html \
+html/install.html \
+html/tutorial.html \
+html/vm.html
 endif
 
 # NOTE: ./html might be a Git checkout to support "make web", so make sure not

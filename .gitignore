@@ -15,8 +15,8 @@ libexec/version.py
 libexec/version.sh
 libexec/test/sotest/*.so*
 libexec/test/sotest/sotest
-libexec/test/sotest/bin/sotest
-libexec/test/sotest/lib/*.so*
+libexec/test/sotest/bin
+libexec/test/sotest/lib
 packaging/vagrant/.vagrant
 
 # perhaps-unpacked tarballs at root of working directory

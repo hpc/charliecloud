@@ -21,6 +21,7 @@ AC_CONFIG_FILES([Makefile
                  bin/Makefile
                  doc/Makefile
                  libexec/Makefile
+                 libexec/test/Makefile
                  misc/Makefile])
 
 # Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
