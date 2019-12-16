@@ -12,14 +12,14 @@
 #
 # Steps:
 #
-#   1. Remove everything before "Caveats".
+#   1. Remove everything before "Building Charliecloud".
 #   2. Remove "will build and install" paragraph.
-#   3. Convert indentation to bullet lists.
-#   4. Remove results of tests: " ..." to EOL, ": yes", ": no".
+#   3. Remove results of tests: " ..." to EOL, ": yes", ": no".
+#   4. Convert indentation to bullet lists.
 #   5. Convert "foo(1)" to ":code:`foo`".
 
-  awk '/Caveats/,0' \
+  awk '/^Building Charliecloud/,0' \
 | awk -v RS='' '{gsub(/^  will build.*/, ""); print; print ""}' \
-| sed -r -e 's/(^(  )+)/\1* /' \
-         -e 's/ \.\.\..*$//' -e 's/: (yes|no)//' \
+| sed -r -e 's/ \.\.\..*$//' -e 's/ (yes|no)$//' \
+         -e 's/^  //' -e 's/(^(  )+)/\1* /' -e 's/:$/:\n/' \
          -e 's/([a-zA-Z0-9-]+)\(1\)/:code:`\1`/g'

@@ -107,13 +107,6 @@ BUILDDIR      = .
 # Internal variables.
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 
-#if ENABLE_HTML
-#all: html-local
-#endif
-#if ENABLE_MAN
-#all: man
-#endif
-
 # This target works around a race condition in Sphinx that's triggered when
 # two instances (e.g., for html and man targets) try to "mkdir doctrees"
 # simultaneously. It is temporary and can be removed when Sphinx >= 1.6.6 is
@@ -131,6 +124,7 @@ html-local: mkdir_issue115 ../libexec/version.full _deps.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 # remove unused files that Sphinx made
 	rm -R $(BUILDDIR)/html/_sources
+	rm $(BUILDDIR)/html/_deps.html
 	rm $(BUILDDIR)/html/charliecloud.html
 	rm $(BUILDDIR)/html/ch-*.html
 	rm $(BUILDDIR)/html/bugs.html
@@ -138,6 +132,12 @@ html-local: mkdir_issue115 ../libexec/version.full _deps.rst
 	rm $(BUILDDIR)/html/search.html
 	rm $(BUILDDIR)/html/see_also.html
 
+# FIXME: If Sphinx builds the man pages first, the HTML docs don't get curly
+# quotes. ¯\_(ツ)_/¯ Force HTML to go first.
+if ENABLE_HTML
+HTML_FIRST = html
+endif
+
 $(man1_MANS): man
-man: mkdir_issue115 ../libexec/version.full _deps.rst
+man: mkdir_issue115 ../libexec/version.full _deps.rst $(HTML_FIRST)
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man

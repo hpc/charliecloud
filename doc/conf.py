@@ -136,7 +136,9 @@ html_favicon = "favicon.ico"
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
-#html_use_smartypants = True
+html_use_smartypants = True  # deprecated in 1.6.6
+smartquotes = True
+smartquotes_action = "qBD"   # quotes, en and em dashes, but not ellipses
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}

@@ -397,8 +397,8 @@ thinks a version is too old, and please report back to us.
 Building Charliecloud
 ~~~~~~~~~~~~~~~~~~~~~
 
-  C99 compiler ... ${CC} ${CC_VERSION}
-  sphinx-build(1) $vmin_sphinx ... ${SPHINX:-not found} ${SPHINX_VERSION}
+    C99 compiler ... ${CC} ${CC_VERSION}
+    sphinx-build(1) $vmin_sphinx ... ${SPHINX:-not found} ${SPHINX_VERSION}
 
   will build and install:
     HTML documentation ... ${enable_html}
