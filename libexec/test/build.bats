@@ -3,8 +3,8 @@ load common
 @test 'documentation seems sane' {
     scope standard
     command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
-    test -d ../doc-src || skip 'documentation source code absent'
-    (cd ../doc-src && make -j "$(getconf _NPROCESSORS_ONLN)")
+    test -d ../../doc || skip 'documentation source code absent'
+    (cd ../../doc && make -j "$(getconf _NPROCESSORS_ONLN)")
     ./docs-sane
 }
 
@@ -103,7 +103,7 @@ load common
         echo "shellcheck: ${i}"
           sed -r $'s/(@test .+) \{/\\1\\\n{/g' "$i" \
         | shellcheck -s bash -e SC1090,SC2002,SC2154,SC2164 -
-    done < <( find . ../examples -name bats -prune -o -name '*.bats' -print0 )
+    done < <( find . ../../doc/examples -name '*.bats' -print0 )
     # libraries for BATS scripts
     shellcheck -s bash -e SC2002,SC2034 ./common.bash
     # misc shell scripts
@@ -112,7 +112,7 @@ load common
     else
         misc=". ../examples"
     fi
-    shellcheck -e SC2002,SC2034 chtest/Build
+    shellcheck -e SC2002,SC2034 ../../doc/examples/chtest/Build
     # shellcheck disable=SC2086
     while IFS= read -r -d '' i; do
         echo "shellcheck: ${i}"

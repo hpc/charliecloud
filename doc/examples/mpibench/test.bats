@@ -1,4 +1,4 @@
-load ../../../test/common
+load ../../../libexec/test/common
 
 setup () {
     scope full

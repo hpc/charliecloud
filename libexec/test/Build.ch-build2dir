@@ -17,7 +17,7 @@ if ( ! command -v docker &> /dev/null); then
 fi
 
 cd "$srcdir"
-ch-build2dir -t $tag --file=Dockerfile.alpine39 . "$workdir"
+ch-build2dir -t $tag --file=Dockerfile.build2dir . "$workdir"
 cd "$workdir"
 tar czf ${tag}.tar.gz $tag
 mv ${tag}.tar.gz "$tarball_gz"

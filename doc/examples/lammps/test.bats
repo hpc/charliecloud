@@ -1,4 +1,4 @@
-load ../../../test/common
+load ../../../libexec/test/common
 
 # LAMMPS does have a test suite, but we do not use it, because it seems too
 # fiddly to get it running properly.

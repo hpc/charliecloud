@@ -1,4 +1,4 @@
-load ../../../test/common
+load ../../../libexec/test/common
 
 # Note: If you get output like the following (piping through cat turns off
 # BATS terminal magic):
