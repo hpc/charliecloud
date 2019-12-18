@@ -1,12 +1,7 @@
-if ENABLE_TEST
-
 testdir = $(pkglibexecdir)/test
 
-# Note: All these are under "SCRIPTS" because I couldn't come up with a better
-# primary, and Automake complained about DATA.
-
 # These test files require no special handling.
-nobase_test_SCRIPTS = \
+testfiles = \
 build.bats \
 build_post.bats \
 chtest-make-auto \
@@ -39,7 +34,7 @@ travis.yml
 # built according to the rules below. In principle, we could use libtool for
 # that, but I'm disinclined to add that in since it's one test program and
 # does not require any libtool portability.
-nobase_nodist_test_SCRIPTS = \
+sobuilts = \
 sotest/bin/sotest \
 sotest/lib/libsotest.so.1.0 \
 sotest/libsotest.so \
@@ -47,9 +42,14 @@ sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
-CLEANFILES = $(nobase_nodist_test_SCRIPTS)
-
-#all-local: $(nobase_nodist_test_SCRIPTS)
+# Note: All these are under "SCRIPTS" because I couldn't come up with a better
+# primary, and Automake complained about DATA.
+if ENABLE_TEST
+nobase_test_SCRIPTS = testfiles
+nobase_nodist_test_SCRIPTS = sobuilts
+CLEANFILES = $(sobuilts)
+endif
+EXTRA_SCRIPTS = $(testfiles) $(sobuilts)
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0 sotest/libsotest.so sotest/libsotest.so.1
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^
@@ -67,5 +67,3 @@ sotest/bin/sotest: sotest/sotest
 sotest/lib/libsotest.so.1.0: sotest/libsotest.so.1.0
 	mkdir -p sotest/lib
 	cp -a $^ $@
-
-endif

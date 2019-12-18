@@ -292,7 +292,8 @@ AS_IF([   test -n "$BUILDAH_VERSION"],
       [have_buildah=yes],
       [have_buildah=no])
 
-AS_IF([   test -n "$PYTHON_VERSION" \
+AS_IF([   test $enable_ch_grow = yes \
+       && test -n "$PYTHON_VERSION" \
        && test -n "$PYTHON_SHEBANG" \
        && test $have_lark = yes \
        && test -n "$SKOPEO_VERSION" \
@@ -344,7 +345,8 @@ AS_IF([   test -n "$NVIDIA_CLI_VERSION" \
 
 # test suite
 
-AS_IF([   test $have_ch_run = yes \
+AS_IF([   test $enable_test = yes \
+       && test $have_ch_run = yes \
        && test -n "$_BASH_VERSION" \
        && test -n "$BATS_VERSION" \
        && test -n "$WGET_VERSION"],
@@ -366,7 +368,7 @@ AS_IF([   test $have_tests_tar = yes \
 
 # assumes we do have generic sudo
 AS_IF([   test $have_tests_squash = yes \
-       && test -n "$SPHINX_VERSION"]
+       && test -n "$SPHINX_VERSION"],
       [have_tests_all=yes],
       [have_tests_all=no])
 
@@ -413,7 +415,8 @@ Image builders via our wrappers
   Buildah: ${have_buildah}
     Buildah $vmin_buildah ... ${BUILDAH_VERSION:-not found}
 
-  ch-grow: ${have_ch_grow}
+  ch-grow(1): ${have_ch_grow}
+    ch-grow(1) enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang 3.4 ... ${PYTHON_VERSION:-not found}
     "lark-parser" module ... ${have_lark}
@@ -463,6 +466,7 @@ Test suite
 ~~~~~~~~~~
 
   basic tests: ${have_tests_basic}
+    test suite enabled ... ${enable_test}
     ch-run(1) ... ${have_ch_run}
     Bats $vmin_bats ... ${BATS_VERSION:-not found}
     Bash $vmin_bash ... ${_BASH_VERSION:-not found}

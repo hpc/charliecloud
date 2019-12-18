@@ -29,7 +29,11 @@ dist_bin_SCRIPTS = ch-build \
 
 ## Python scripts - need text processing
 
-bin_SCRIPTS = ch-grow ch-run-oci
+bin_SCRIPTS = ch-run-oci
+EXTRA_SCRIPTS = ch-grow
+if ENABLE_CH_GROW
+bin_SCRIPTS += ch-grow
+endif
 EXTRA_DIST = ch-grow.py.in ch-run-oci.py.in
 CLEANFILES = $(bin_SCRIPTS)
 
