@@ -23,6 +23,7 @@ AC_CONFIG_FILES([Makefile
                  examples/Makefile
                  libexec/Makefile
                  misc/Makefile
+                 packaging/Makefile
                  test/Makefile])
 
 # Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)

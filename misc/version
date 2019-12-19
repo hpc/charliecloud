@@ -1,6 +1,11 @@
 #!/bin/sh
 
 # Compute and print out the full version number. See FAQ for details.
+#
+# This script should usually be run once, by Autotools, and the result
+# propagated using Autotools. This propagates the Git information into
+# tarballs, and otherwise, you can get a mismatch between different parts of
+# the software.
 
 set -e
 

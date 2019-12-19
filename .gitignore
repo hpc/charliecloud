@@ -10,9 +10,10 @@ doc/_deps.rst
 doc/doctrees
 doc/html
 doc/man/*.1
-libexec/version.full
+libexec/charliecloud
 libexec/version.py
 libexec/version.sh
+libexec/version.txt
 libexec/test/sotest/*.so*
 libexec/test/sotest/sotest
 libexec/test/sotest/bin

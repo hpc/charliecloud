@@ -1,6 +1,6 @@
 examplesdir = $(docdir)/examples
 
-nobase_examples_SCRIPTS = \
+execs = \
 chtest/Build \
 chtest/bind_priv.py \
 chtest/dev_proc_sys.py \
@@ -9,7 +9,7 @@ chtest/printns \
 chtest/signal_out.py \
 hello/hello.sh
 
-nobase_examples_DATA = \
+noexecs = \
 Dockerfile.alpine39 \
 Dockerfile.alpineedge \
 Dockerfile.centos6 \
@@ -51,8 +51,7 @@ spack/Dockerfile \
 spark/Dockerfile \
 spark/slurm.sh
 
-if ENABLE_TEST
-nobase_examples_DATA += \
+batsfiles = \
 hello/test.bats \
 lammps/test.bats \
 mpibench/test.bats \
@@ -61,5 +60,12 @@ obspy/test.bats \
 paraview/test.bats \
 spack/test.bats \
 spark/test.bats
+
+nobase_examples_SCRIPTS = $(execs)
+
+nobase_examples_DATA = $(noexecs)
+if ENABLE_TEST
+nobase_examples_DATA += $(batsfiles)
 endif
 
+EXTRA_DIST = $(execs) $(noexecs) $(batsfiles)

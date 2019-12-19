@@ -49,7 +49,7 @@ copyright = u'2014–2019, Triad National Security, LLC'
 # built documents.
 #
 # The short X.Y version.
-version = open("../libexec/version.full", "r").read()
+version = open("../libexec/version.txt", "r").read().rstrip()
 # The full version, including alpha/beta/rc tags.
 release = version
 

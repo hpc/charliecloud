@@ -63,7 +63,8 @@ nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
 CLEANFILES = $(sobuilts)
 endif
-EXTRA_SCRIPTS = $(testfiles) $(sobuilts)
+EXTRA_DIST += $(testfiles) $(testfiles_exec)
+EXTRA_SCRIPTS = $(sobuilts)
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0 sotest/libsotest.so sotest/libsotest.so.1
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^

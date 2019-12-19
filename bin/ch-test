@@ -3,7 +3,15 @@
 set -e
 export LC_ALL=C  # predictable sorting
 
+fatal () {
+    printf 'error: %s\n' "$1" 1>&2
+    exit 1
+}
+
 libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
+if [[ ! -f ${libexec}/base.sh ]]; then
+    fatal "install or build problem: not found: ${libexec}/base.sh"
+fi
 . "${libexec}/base.sh"
 
 export ch_bin
@@ -142,11 +150,6 @@ dirs_unpriv_rm () {
     rm -rf --one-file-system "$CH_TEST_TARDIR"
     echo "removing $CH_TEST_IMGDIR"
     rm -rf --one-file-system "$CH_TEST_IMGDIR"
-}
-
-fatal () {
-    printf 'error: %s\n' "$1" 1>&2
-    exit 1
 }
 
 require_unset () {
@@ -363,6 +366,7 @@ else
     CHTEST_DIR=${ch_base}/test
     CHTEST_EXAMPLES_DIR=${ch_base}/examples
 fi
+export ch_base
 export CHTEST_DIR
 export CHTEST_EXAMPLES_DIR
 

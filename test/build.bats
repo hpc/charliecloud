@@ -3,8 +3,8 @@ load common
 @test 'documentation seems sane' {
     scope standard
     command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
-    test -d ../../doc || skip 'documentation source code absent'
-    (cd ../../doc && make -j "$(getconf _NPROCESSORS_ONLN)")
+    test -d ../doc || skip 'documentation source code absent'
+    (cd ../doc && make -j "$(getconf _NPROCESSORS_ONLN)")
     ./docs-sane
 }
 
@@ -12,10 +12,7 @@ load common
     echo "version: ${ch_version}"
     [[ $(echo "$ch_version" | wc -l) -eq 1 ]]   # one line
     [[ $ch_version =~ ^0\.[0-9]+(\.[0-9]+)? ]]  # starts with right numbers
-    # matches VERSION.full if available
-    if [[ -e $ch_bin/../VERSION.full ]]; then
-        diff -u <(echo "$ch_version") "${ch_bin}/../VERSION.full"
-    fi
+    diff -u <(echo "$ch_version") "${ch_base}/libexec/charliecloud/version.txt"
 }
 
 @test 'executables seem sane' {
