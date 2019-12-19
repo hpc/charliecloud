@@ -1,7 +1,6 @@
 EXTRA_DIST = \
 debian/README \
 debian/changelog \
-debian/charliecloud-doc/foo \
 debian/charliecloud.examples \
 debian/charliecloud.install \
 debian/compat \

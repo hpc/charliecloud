@@ -3,7 +3,12 @@ load common
 @test 'documentation seems sane' {
     scope standard
     command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
-    test -d ../doc || skip 'documentation source code absent'
+    if [[ ! -d ../doc ]]; then
+        skip 'documentation source code absent'
+    fi
+    if [[ ! -f ../doc/html/index.html || ! -f ../doc/man/ch-run.1 ]]; then
+        skip 'documentation not all built'
+    fi
     (cd ../doc && make -j "$(getconf _NPROCESSORS_ONLN)")
     ./docs-sane
 }

@@ -9,10 +9,10 @@
 #
 #      b. Every executable FOO in bin has:
 #
-#           - doc-src/FOO.rst
-#           - doc-src/FOO_desc.rst
-#           - man/FOO.1
-#           - a section in doc-src/command-usage.rst
+#           - doc/FOO.rst
+#           - doc/FOO_desc.rst
+#           - doc/man/FOO.1
+#           - a section in doc/command-usage.rst
 #           - an entry under "See also" in charliecloud.1
 #
 #      c. There aren't the things in (b) except for the executables (modulo a
@@ -29,7 +29,10 @@ import subprocess
 import sys
 
 
-CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
+CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/..")
+if (not os.path.isfile("%s/bin/ch-run" % CH_BASE)):
+   print("not found: %s/bin/ch-run" % CH_BASE, file=sys.stderr)
+   sys.exit(1)
 
 win = True
 

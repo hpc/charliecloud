@@ -95,7 +95,7 @@ endif
 # to delete it.
 CLEANFILES = $(man1_MANS) $(html_DATA) _deps.rst
 if ENABLE_HTML
-CLEANFILES += html/.buildinfo html/.nojekyll
+CLEANFILES += $(nobase_html_DATA) html/.buildinfo html/.nojekyll
 # Automake can't remove directories.
 clean-local:
 	rm -Rf doctrees html/_static

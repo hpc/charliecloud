@@ -14,10 +14,10 @@ libexec/charliecloud
 libexec/version.py
 libexec/version.sh
 libexec/version.txt
-libexec/test/sotest/*.so*
-libexec/test/sotest/sotest
-libexec/test/sotest/bin
-libexec/test/sotest/lib
+test/sotest/*.so*
+test/sotest/sotest
+test/sotest/bin
+test/sotest/lib
 packaging/vagrant/.vagrant
 
 # perhaps-unpacked tarballs at root of working directory
@@ -42,8 +42,9 @@ packaging/debian/tmp
 # Python crap
 __pycache__
 
-# Autotools crap. Coordinate with autogen.sh.
+# Autotools crap. Coordinate with autogen.sh. Note negations.
 Makefile
+!examples/*/Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache/
