@@ -3,6 +3,10 @@
 # This script is a pipe that translates configure output to ReST markup
 # suitable for inclusion in the documentation.
 #
+# Note: Don't pipe configure into it, because that can alter the build in the
+# middle of it. E.g., I've had part of "make install" in --prefix and part in
+# the default /usr/local. Use config.log instead.
+#
 # I have very mixed feelings about this script. On one hand, we've defined a
 # new markup language. On the other hand, I feel that writing down the
 # dependencies really does need to be DRY, checking the run-time dependencies
@@ -12,13 +16,14 @@
 #
 # Steps:
 #
-#   1. Remove everything before "Building Charliecloud".
+#   1. Remove everything before "Building Charliecloud" (inclusive) to the
+#      next log section (exclusive).
 #   2. Remove "will build and install" paragraph.
 #   3. Remove results of tests: " ..." to EOL, ": yes", ": no".
 #   4. Convert indentation to bullet lists.
 #   5. Convert "foo(1)" to ":code:`foo`".
 
-  awk '/^Building Charliecloud/,0' \
+  awk '/^Building Charliecloud/,/^##/' | head -n-2 \
 | awk -v RS='' '{gsub(/^  will build.*/, ""); print; print ""}' \
 | sed -r -e 's/ \.\.\..*$//' -e 's/ (yes|no)$//' \
          -e 's/^  //' -e 's/(^(  )+)/\1* /' -e 's/:$/:\n/' \

@@ -1,4 +1,4 @@
-load ../../../libexec/test/common
+load "${CHTEST_DIR}/common.bash"
 
 # LAMMPS does have a test suite, but we do not use it, because it seems too
 # fiddly to get it running properly.

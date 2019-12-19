@@ -1,4 +1,10 @@
-# Note: "charliecloud" is a symlink, but Automake won't let us call it DATA.
+# FIXME:
+#
+# 1. Charliecloud isn't a script, but Automake won't let us call it DATA.
+#
+# 2. SCRIPTS makes all this stuff executable when it shouldn't be, but
+#    Automake complains that DATA can't go in libexecdir.
+
 dist_pkglibexec_SCRIPTS = charliecloud base.sh
 
 pkglibexec_SCRIPTS = version.py version.sh

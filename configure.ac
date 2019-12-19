@@ -20,9 +20,10 @@ AC_CONFIG_HEADERS([bin/config.h])
 AC_CONFIG_FILES([Makefile
                  bin/Makefile
                  doc/Makefile
+                 examples/Makefile
                  libexec/Makefile
-                 libexec/test/Makefile
-                 misc/Makefile])
+                 misc/Makefile
+                 test/Makefile])
 
 # Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
 AC_PROG_CC

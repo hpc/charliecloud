@@ -78,9 +78,8 @@ man/ch-test.1 \
 man/ch-umount.1
 endif
 
-# FIXME: change to pkghtml
 if ENABLE_HTML
-html_DATA = \
+nobase_html_DATA = \
 html/searchindex.js \
 html/_images/rd100-winner.png \
 html/command-usage.html \
@@ -88,9 +87,9 @@ html/dev.html \
 html/faq.html \
 html/index.html \
 html/install.html \
-html/tutorial.html \
-html/vm.html
+html/tutorial.html
 endif
+
 
 # NOTE: ./html might be a Git checkout to support "make web", so make sure not
 # to delete it.
@@ -101,6 +100,18 @@ CLEANFILES += html/.buildinfo html/.nojekyll
 clean-local:
 	rm -Rf doctrees html/_static
 endif
+
+# Automake can't install and uninstall directories. _static contains around
+# one hundred files in several directories, and I'm pretty sure the contents
+# change depending on Sphinx version and other details, so we can't just list
+# the files. These targets deal with it as an opaque directory.
+install-data-hook:
+	cp -r html/_static $(DESTDIR)$(htmldir)/html
+	find $(DESTDIR)$(htmldir)/html/_static -xtype d -exec chmod 755 {} \;
+	find $(DESTDIR)$(htmldir)/html/_static -xtype f -exec chmod 644 {} \;
+uninstall-hook:
+	   test -d $(DESTDIR)$(htmldir)/html/_static \
+        && rm -Rf $(DESTDIR)$(htmldir)/html/_static
 
 # You can set these variables from the command line.
 SPHINXOPTS    = -W
@@ -118,8 +129,8 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 .PHONY: mkdir_issue115
 	mkdir -p $(BUILDDIR)/doctrees
 
-_deps.rst: make-deps-overview
-	(cd .. && ./configure) | ./make-deps-overview > $@
+_deps.rst: ../config.log make-deps-overview
+	cat $< | ./make-deps-overview > $@
 
 # This called "html-local" because Automake has a Texinfo target called "html"
 # and gripes if we override it.

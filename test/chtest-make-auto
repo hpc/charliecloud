@@ -36,7 +36,7 @@ tag_from_path () {
     case $basicname in
         Build|Dockerfile)
             case $dir in
-                .|examples)  # dot is directory "test"
+                .|test|examples)  # dot is directory "test"
                     if [[ -z $extension ]]; then
                         fatal "can't compute tag: $1"
                     else

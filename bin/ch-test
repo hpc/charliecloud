@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+export LC_ALL=C  # predictable sorting
 
 libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
 . "${libexec}/base.sh"
@@ -350,12 +351,27 @@ if [[ ! -d $tmp_ ]]; then
     chmod 700 "$tmp_"
 fi
 
-# Find test directory.
-export CHTEST_DIR=${ch_base}/libexec/charliecloud/test
+# Find test directories. (At one point we tried to unify the paths between the
+# two conditions using a deeper directory hierarchy and symlinks to . in the
+# source code to keep it from being even deeper, but this became too unruly.)
+if [[ -d ${ch_base}/share ]]; then
+    # installed
+    CHTEST_DIR=${ch_base}/libexec/charliecloud/test
+    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
+else
+    # build dir
+    CHTEST_DIR=${ch_base}/test
+    CHTEST_EXAMPLES_DIR=${ch_base}/examples
+fi
+export CHTEST_DIR
+export CHTEST_EXAMPLES_DIR
 
 # Check for test directory.
 if [[ ! -d $CHTEST_DIR ]]; then
     fatal "test directory not found: $CHTEST_DIR"
+fi
+if [[ ! -d $CHTEST_EXAMPLES_DIR ]]; then
+    fatal "examples not found: $CHTEST_EXAMPLES_DIR"
 fi
 
 # Ensure Bats is installed.
@@ -494,13 +510,13 @@ export PATH=$ch_bin:$PATH
 
 # The distinction here is that "images" are purely for testing and have no
 # value as examples for the user, while "examples" are dual-purpose.
-images=$(find . -name  Build;
-         find . -name 'Build.*';
-         find . -name 'Dockerfile.*' )
-examples=$(find ../../doc/examples -name  Build;        \
-           find ../../doc/examples -name 'Build.*';     \
-           find ../../doc/examples -name  Dockerfile;   \
-           find ../../doc/examples -name 'Dockerfile.*' )
+images=$(find   "$CHTEST_DIR"             -name 'Build' \
+                                       -o -name 'Build.*' \
+                                       -o -name 'Dockerfile.*' | sort)
+examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
+                                       -o -name 'Build.*' \
+                                       -o -name 'Dockerfile' \
+                                       -o -name 'Dockerfile.*' | sort)
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 

@@ -1,4 +1,4 @@
-load ../../../libexec/test/common
+load "${CHTEST_DIR}/common.bash"
 
 setup () {
     scope standard

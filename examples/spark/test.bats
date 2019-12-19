@@ -1,4 +1,4 @@
-load ../../../libexec/test/common
+load "${CHTEST_DIR}/common.bash"
 
 # Note: If you get output like the following (piping through cat turns off
 # BATS terminal magic):

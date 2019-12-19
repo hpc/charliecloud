@@ -2,17 +2,16 @@ testdir = $(pkglibexecdir)/test
 
 # These test files require no special handling.
 testfiles = \
+Dockerfile.argenv \
+Dockerfile.build2dir \
 build.bats \
 build_post.bats \
-chtest-make-auto \
 common.bash \
-docs-sane \
 make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
 make-auto.d/builder_to_archive.bats.in \
 make-auto.d/run_image.bats.in \
 make-auto.d/unpack.bats.in \
-make-perms-test \
 run/build-rpms.bats \
 run/ch-fromhost.bats \
 run/ch-run_escalated.bats \
@@ -24,7 +23,23 @@ run/ch-tar2dir.bats \
 run_first.bats \
 sotest/files_inferrable.txt \
 sotest/libsotest.c \
-sotest/sotest.c \
+sotest/sotest.c
+
+# Test files that should be executable.
+testfiles_exec = \
+Build.centos7xz \
+Build.ch-build2dir \
+Build.ch-pull2dir \
+Build.ch-pull2tar \
+Build.docker_pull \
+Build.missing \
+Build.skopeo-umoci \
+chtest-make-auto \
+docs-sane \
+make-perms-test
+
+# Travis stuff doesn't need to be installed.
+EXTRA_DIST = \
 travis.bash \
 travis-before.bash \
 travis-install.bash \
@@ -42,11 +57,10 @@ sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
-# Note: All these are under "SCRIPTS" because I couldn't come up with a better
-# primary, and Automake complained about DATA.
 if ENABLE_TEST
-nobase_test_SCRIPTS = testfiles
-nobase_nodist_test_SCRIPTS = sobuilts
+nobase_test_DATA = $(testfiles)
+nobase_test_SCRIPTS = $(testfiles_exec)
+nobase_nodist_test_SCRIPTS = $(sobuilts)
 CLEANFILES = $(sobuilts)
 endif
 EXTRA_SCRIPTS = $(testfiles) $(sobuilts)
