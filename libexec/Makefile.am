@@ -4,8 +4,8 @@
 #    Automake complains that DATA can't go in libexecdir.
 
 dist_pkglibexec_SCRIPTS = base.sh
-noinst_DATA = charliecloud version.txt
-pkglibexec_SCRIPTS = version.py version.sh
+noinst_DATA = charliecloud
+pkglibexec_SCRIPTS = version.py version.sh version.txt
 
 CLEANFILES = $(pkglibexec_SCRIPTS) $(noinst_DATA)
 

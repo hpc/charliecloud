@@ -208,6 +208,7 @@ test_examples () {
     if [[ $CH_TEST_SCOPE == quick ]]; then
         return
     fi
+    echo
     echo 'executing example phase tests ...'
     for i in $examples; do
         if (test_make_check_image "$i"); then
@@ -219,6 +220,7 @@ test_examples () {
 }
 
 test_run () {
+    echo
     echo 'executing run phase tests ...'
     if [[ ! -f ${tmp_}/run_auto.bats ]]; then
         fatal "${tmp_}/run_auto.bats not found"
