@@ -105,6 +105,7 @@ endif
 # one hundred files in several directories, and I'm pretty sure the contents
 # change depending on Sphinx version and other details, so we can't just list
 # the files. These targets deal with it as an opaque directory.
+if ENABLE_HTML
 install-data-hook:
 	cp -r html/_static $(DESTDIR)$(htmldir)/html
 	find $(DESTDIR)$(htmldir)/html/_static -xtype d -exec chmod 755 {} \;
@@ -112,6 +113,7 @@ install-data-hook:
 uninstall-hook:
 	   test -d $(DESTDIR)$(htmldir)/html/_static \
 	&& rm -Rf $(DESTDIR)$(htmldir)/html/_static
+endif
 
 # You can set these variables from the command line.
 SPHINXOPTS    = -W
