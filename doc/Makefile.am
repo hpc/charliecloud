@@ -111,7 +111,7 @@ install-data-hook:
 	find $(DESTDIR)$(htmldir)/html/_static -xtype f -exec chmod 644 {} \;
 uninstall-hook:
 	   test -d $(DESTDIR)$(htmldir)/html/_static \
-        && rm -Rf $(DESTDIR)$(htmldir)/html/_static
+	&& rm -Rf $(DESTDIR)$(htmldir)/html/_static
 
 # You can set these variables from the command line.
 SPHINXOPTS    = -W

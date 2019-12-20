@@ -1,24 +1,24 @@
 # Derived files (no Autotools stuff).
 *.o
 a.out
-bin/ch-checkns
-bin/ch-grow
-bin/ch-run
-bin/ch-run-oci
-bin/ch-ssh
-doc/_deps.rst
-doc/doctrees
-doc/html
-doc/man/*.1
-libexec/charliecloud
-libexec/version.py
-libexec/version.sh
-libexec/version.txt
-test/sotest/*.so*
-test/sotest/sotest
-test/sotest/bin
-test/sotest/lib
-packaging/vagrant/.vagrant
+/bin/ch-checkns
+/bin/ch-grow
+/bin/ch-run
+/bin/ch-run-oci
+/bin/ch-ssh
+/doc/_deps.rst
+/doc/doctrees/
+/doc/html/
+/doc/man/*.1
+/libexec/charliecloud
+/libexec/version.py
+/libexec/version.sh
+/libexec/version.txt
+/test/sotest/*.so*
+/test/sotest/sotest
+/test/sotest/bin/
+/test/sotest/lib/
+/packaging/vagrant/.vagrant
 
 # perhaps-unpacked tarballs at root of working directory
 /charliecloud-*.tar*
@@ -27,12 +27,12 @@ packaging/vagrant/.vagrant
 # for Debian package
 *.debhelper.log
 *.substvars
-packaging/debian/.debhelper/
-packaging/debian/debhelper-build-stamp
-packaging/debian/charliecloud/
-packaging/debian/charliecloud-doc/
-packaging/debian/files
-packaging/debian/tmp
+/packaging/debian/.debhelper/
+/packaging/debian/debhelper-build-stamp
+/packaging/debian/charliecloud/
+/packaging/debian/charliecloud-doc/
+/packaging/debian/files
+/packaging/debian/tmp
 
 # OS X crap
 ._*
@@ -44,15 +44,15 @@ __pycache__
 
 # Autotools crap. Coordinate with autogen.sh. Note negations.
 Makefile
-!examples/*/Makefile
+!/examples/*/Makefile
 Makefile.in
-aclocal.m4
-autom4te.cache/
-bin/.deps
-bin/config.h
-bin/config.h.in
-bin/stamp-h1
-build-aux/
-config.log
-config.status
-configure
+/aclocal.m4
+/autom4te.cache/
+/bin/.deps/
+/bin/config.h
+/bin/config.h.in
+/bin/stamp-h1
+/build-aux/
+/config.log
+/config.status
+/configure
