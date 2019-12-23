@@ -87,7 +87,7 @@ check_process_ct () {
     [[ $ch_multinode ]] || skip "multinode only"
     [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
     # Verify we have known HSN devices present. (Note that -d tests for
-    # directory, not device.) 
+    # directory, not device.)
     [[ ! -d /dev/infiniband ]] && skip "No high speed network detected"
     # shellcheck disable=SC2086
     hsn_enabled_bw=$($ch_mpirun_2_2node ch-run "$ch_img" -- \

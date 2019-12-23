@@ -147,7 +147,7 @@ AC_CHECK_PROG([BATS], [bats], [bats])
 CH_CHECK_VERSION([BATS], [$vmin_bats], [--version | cut -d' ' -f2])
 
 # Buildah
-vmin_buildah=1.10.1
+vmin_buildah=1.11.2
 AC_CHECK_PROG([BUILDAH], [buildah], [buildah])
 CH_CHECK_VERSION([BUILDAH], [$vmin_buildah], [--version | cut -d' ' -f3])
 
