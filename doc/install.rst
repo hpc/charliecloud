@@ -98,6 +98,7 @@ Maintained by us:
     <https://spack.readthedocs.io/en/latest/package_list.html#charliecloud>`_
     (install with :code:`+builder` to get :code:`ch-grow`).
   * `Fedora/EPEL <https://bodhi.fedoraproject.org/updates/?search=charliecloud>`_.
+    (check for available versions with: code:`yum|dnf list charliecloud`)
 
 Maintained by others:
 
