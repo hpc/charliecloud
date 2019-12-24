@@ -43,6 +43,6 @@ if [[ $1 != --clean ]]; then
 
     set +x
     echo
-    echo 'Done. Next you should probably "./configure && make clean".'
+    echo 'Done. Now you can "./configure".'
 fi
 
