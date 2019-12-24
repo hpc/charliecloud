@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Compute and print out the full version number. See FAQ for details.
+#
+# This script should usually be run once, by Autotools, and the result
+# propagated using Autotools. This propagates the Git information into
+# tarballs, and otherwise, you can get a mismatch between different parts of
+# the software.
+
+set -e
+
+ch_base=$(cd "$(dirname "$0")" && pwd)/..
+version_file=${ch_base}/VERSION
+version_simple=$(cat "$version_file")
+case $version_simple in
+    *~*)
+        prerelease=yes
+        ;;
+    *)
+        prerelease=
+        ;;
+esac
+
+if [ ! -d "${ch_base}/.git" ] || [ -z "$prerelease" ]; then
+    # no Git or release version; use simple version
+    printf "%s\n" "$version_simple"
+else
+    # add Git stuff
+    git_branch=$(  git rev-parse --abbrev-ref HEAD \
+	         | sed 's/[^A-Za-z0-9]//g' \
+	         | sed 's/$/./g' \
+	         | sed 's/master.//g')
+    git_hash=$(git rev-parse --short HEAD)
+    dirty=$(git diff-index --quiet HEAD || echo .dirty)
+    printf '%s+%s%s%s\n' "$version_simple" \
+                         "$git_branch" \
+                         "$git_hash" \
+                         "$dirty"
+fi

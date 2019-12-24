@@ -22,9 +22,10 @@ fatal () {
 }
 
 tag_from_path () {
-    dir=$(dirname "$1")
-    basicname=${2%%.*}
-    extension=${2##*.}
+    dir=$(basename "$(dirname "$1")")  # last directory only
+    base=$(basename "$1")
+    basicname=${base%%.*}
+    extension=${base##*.}
 
     if [[ $extension == "$basicname" ]]; then
         extension=''
@@ -33,22 +34,27 @@ tag_from_path () {
     fi
 
     case $basicname in
-    Build|Dockerfile)
-        if [[ ($dir == '') || ($dir == '.') || ($dir == test) ]]; then
-            if [[ -n $extension ]]; then
-                echo "$extension"
-            fi
-        else
-            if [[ -z $extension ]]; then
-                echo $(basename "$dir")
-            else
-                echo $(basename "${dir}-${extension}")
-            fi
-        fi
-        ;;
-    *)
-        fatal "chtest-make-auto: invalid basic name '$basicname'"
+        Build|Dockerfile)
+            case $dir in
+                .|test|examples)  # dot is directory "test"
+                    if [[ -z $extension ]]; then
+                        fatal "can't compute tag: $1"
+                    else
+                        tag=$extension
+                    fi
+                    ;;
+                *)
+                    if [[ -z $extension ]]; then
+                        tag=$(basename "$dir")
+                    else
+                        tag=$(basename "${dir}-${extension}")
+                    fi
+            esac
+            ;;
+        *)
+            fatal "chtest-make-auto: invalid basic name '$basicname'"
     esac
+    echo "$tag"
 }
 
 template_print () {
@@ -85,7 +91,7 @@ while [[ "$#" -gt 0 ]]; do
     path_=$1;shift
     basename_=$(basename "$path_")
     dirname_=$(dirname "$path_")
-    tag=$(tag_from_path "$path_" "$basename_")
+    tag=$(tag_from_path "$path_")
 
     if [[ $dir == "" ]];then
         dir='.'

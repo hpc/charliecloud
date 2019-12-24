@@ -3,8 +3,13 @@ load common
 @test 'documentation seems sane' {
     scope standard
     command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
-    test -d ../doc-src || skip 'documentation source code absent'
-    (cd ../doc-src && make -j "$(getconf _NPROCESSORS_ONLN)")
+    if [[ ! -d ../doc ]]; then
+        skip 'documentation source code absent'
+    fi
+    if [[ ! -f ../doc/html/index.html || ! -f ../doc/man/ch-run.1 ]]; then
+        skip 'documentation not all built'
+    fi
+    (cd ../doc && make -j "$(getconf _NPROCESSORS_ONLN)")
     ./docs-sane
 }
 
@@ -12,10 +17,7 @@ load common
     echo "version: ${ch_version}"
     [[ $(echo "$ch_version" | wc -l) -eq 1 ]]   # one line
     [[ $ch_version =~ ^0\.[0-9]+(\.[0-9]+)? ]]  # starts with right numbers
-    # matches VERSION.full if available
-    if [[ -e $ch_bin/../VERSION.full ]]; then
-        diff -u <(echo "$ch_version") "${ch_bin}/../VERSION.full"
-    fi
+    diff -u <(echo "$ch_version") "${ch_base}/libexec/charliecloud/version.txt"
 }
 
 @test 'executables seem sane' {
@@ -103,7 +105,7 @@ load common
         echo "shellcheck: ${i}"
           sed -r $'s/(@test .+) \{/\\1\\\n{/g' "$i" \
         | shellcheck -s bash -e SC1090,SC2002,SC2154,SC2164 -
-    done < <( find . ../examples -name bats -prune -o -name '*.bats' -print0 )
+    done < <( find . "$CHTEST_EXAMPLES_DIR" -name '*.bats' -print0 )
     # libraries for BATS scripts
     shellcheck -s bash -e SC2002,SC2034 ./common.bash
     # misc shell scripts
@@ -112,7 +114,7 @@ load common
     else
         misc=". ../examples"
     fi
-    shellcheck -e SC2002,SC2034 chtest/Build
+    shellcheck -e SC2002,SC2034 "${CHTEST_EXAMPLES_DIR}/chtest/Build"
     # shellcheck disable=SC2086
     while IFS= read -r -d '' i; do
         echo "shellcheck: ${i}"

@@ -35,7 +35,7 @@
 #   3. Here string, e.g. 'while IFS= read -r FILE; do ... done <<< "$FILES"'.
 #      This is a bashism.
 
-libexec="$(cd "$(dirname "$0")" && pwd)"
+libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
 . "${libexec}/base.sh"
 
 set -e

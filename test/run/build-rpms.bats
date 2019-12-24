@@ -1,6 +1,7 @@
 load ../common
 
 @test 'build/install/uninstall RPMs' {
+    skip 'issue #594'
     scope standard
     prerequisites_ok centos7
     [[ -d ../.git ]] || skip "not in Git working directory"

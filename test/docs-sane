@@ -9,10 +9,10 @@
 #
 #      b. Every executable FOO in bin has:
 #
-#           - doc-src/FOO.rst
-#           - doc-src/FOO_desc.rst
-#           - man/FOO.1
-#           - a section in doc-src/command-usage.rst
+#           - doc/FOO.rst
+#           - doc/FOO_desc.rst
+#           - doc/man/FOO.1
+#           - a section in doc/command-usage.rst
 #           - an entry under "See also" in charliecloud.1
 #
 #      c. There aren't the things in (b) except for the executables (modulo a
@@ -30,6 +30,9 @@ import sys
 
 
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/..")
+if (not os.path.isfile("%s/bin/ch-run" % CH_BASE)):
+   print("not found: %s/bin/ch-run" % CH_BASE, file=sys.stderr)
+   sys.exit(1)
 
 win = True
 
@@ -50,7 +53,7 @@ def check_man():
              if (os.path.isfile(f) and os.stat(f).st_mode & 0o111) }
    helps = { x: help_get(x) for x in execs }
 
-   os.chdir(CH_BASE + "/doc-src")
+   os.chdir(CH_BASE + "/doc")
 
    man_rsts = set(glob.glob("ch-*.rst"))
    man_rsts_expected = (  { i + ".rst" for i in execs }
@@ -93,7 +96,7 @@ def check_man():
          elif (desc + "." != helps[name]):
             lose("conf.py: bad summary: %s: %s" % (name, desc))
 
-   os.chdir(CH_BASE + "/man")
+   os.chdir(CH_BASE + "/doc/man")
 
    mans = set(glob.glob("*.1")) - { "charliecloud.1" }
    mans_expected = { i + ".1" for i in execs }

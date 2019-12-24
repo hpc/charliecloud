@@ -1,9 +1,20 @@
 #!/bin/bash
 
 set -e
+export LC_ALL=C  # predictable sorting
 
-libexec="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fatal () {
+    printf 'error: %s\n' "$1" 1>&2
+    exit 1
+}
+
+libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
+if [[ ! -f ${libexec}/base.sh ]]; then
+    fatal "install or build problem: not found: ${libexec}/base.sh"
+fi
 . "${libexec}/base.sh"
+
+export ch_bin
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
@@ -11,11 +22,25 @@ Run some or all of the Charliecloud test suite.
 
 Usage:
 
-  $ $(basename "$0") [PHASE] [OPTIONS]
+  $ $(basename "$0") [PHASE] [--scope SCOPE] [OPTIONS]
+
+Valid phases: build, run, examples, mk-perm-dirs, clean, rm-perm-dirs
+Valid scopes: quick, standard, full
+
+Additional options:
+
+  -b, --builder BUILDER  image builder to use
+  --dry-run              print summary of what would be tested and exit
+  -h, --help             print this help and exit
+  --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
+  --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
+  --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
+  --sudo                 enable tests that need sudo
+  --version              print version and exit
+
+See the man page for important details.
 EOF
 )
-
-export ch_bin=$ch_bin
 
 builder_check () {
     printf 'checking builder ...\n'
@@ -127,11 +152,6 @@ dirs_unpriv_rm () {
     rm -rf --one-file-system "$CH_TEST_IMGDIR"
 }
 
-fatal () {
-    printf 'error: %s\n' "$1" 1>&2
-    exit 1
-}
-
 require_unset () {
     name=$1
     value=${!1}
@@ -184,12 +204,14 @@ test_build () {
 
 test_examples () {
     local tag
+    local phase=examples
     if [[ $CH_TEST_SCOPE == quick ]]; then
         return
     fi
+    echo
     echo 'executing example phase tests ...'
     for i in $examples; do
-        if [[ $(test_make_check_image "$i") == ok ]]; then
+        if (test_make_check_image "$i"); then
             tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
             export CH_TEST_TAG=$tag
             bats "$(dirname "$i")/test.bats"
@@ -198,6 +220,7 @@ test_examples () {
 }
 
 test_run () {
+    echo
     echo 'executing run phase tests ...'
     if [[ ! -f ${tmp_}/run_auto.bats ]]; then
         fatal "${tmp_}/run_auto.bats not found"
@@ -221,7 +244,7 @@ test_make_auto () {
     local img
     printf "finding images compatible with test settings ...\n"
     for i in $images $examples; do
-        if [[ $(test_make_check_image "$i") == ok ]]; then
+        if (test_make_check_image "$i"); then
             echo "found: $i"
             targets+=( "$i" )
         fi
@@ -247,14 +270,13 @@ test_make_auto () {
         printf 'ok\n\n'
         ;;
     *)
-        # Do nothing
-        return 0
         ;;
     esac
 }
 
 test_make_check_image () {
     img=$1
+    dir=$(basename "$(dirname "$img")")
     exclude_arch=$(cat "$img" | grep -F 'ch-test-arch-exclude: ' \
                               | sed 's/.*: //' | awk '{print $1}')
 
@@ -269,28 +291,31 @@ test_make_check_image () {
 
     # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
     if [[ $scope_int -lt "$img_scope_int" ]]; then
-        return
+        return 1
     fi
-
     # Exclude images that do not work with the host architecture.
     for a in $exclude_arch; do
         if [[ $a == "$(uname -m)" ]]; then
-            return
+            return 1
         fi
     done
-
     # Exclude images that are not compatible with CH_BUILDER.
     for b in $exclude_builder; do
         if [[ $b == "$CH_BUILDER" ]]; then
-            return
+            return 1
         fi
     done
-
     # Exclude images that require sudo if CH_TEST_SUDO is empty
-    if [[ -n $sudo_required ]] && [[ -z $CH_TEST_SUDO ]]; then
-        return
+    if [[ -n $sudo_required && -z $CH_TEST_SUDO ]]; then
+        return 1
     fi
-    echo ok
+    # In examples phase, exclude chtest (special case) and any images not in a
+    # subdirectory of examples.
+    if [[ $phase == examples && ( $dir == chtest || $dir == examples ) ]]; then
+        return 1
+    fi
+
+    return 0
 }
 
 # Exit with failure if given version number is below a minimum.
@@ -331,18 +356,28 @@ if [[ ! -d $tmp_ ]]; then
     chmod 700 "$tmp_"
 fi
 
-# Determine source build vs prefix installation.
-if [[ -d ${ch_base}/test ]]; then
-    # source build
-    export CHTEST_DIR=${ch_base}/test
+# Find test directories. (At one point we tried to unify the paths between the
+# two conditions using a deeper directory hierarchy and symlinks to . in the
+# source code to keep it from being even deeper, but this became too unruly.)
+if [[ -d ${ch_base}/share ]]; then
+    # installed
+    CHTEST_DIR=${ch_base}/libexec/charliecloud/test
+    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
 else
-    # prefix installation
-    export CHTEST_DIR="${ch_base}/libexec/charliecloud-${ch_version}/test"
+    # build dir
+    CHTEST_DIR=${ch_base}/test
+    CHTEST_EXAMPLES_DIR=${ch_base}/examples
 fi
+export ch_base
+export CHTEST_DIR
+export CHTEST_EXAMPLES_DIR
 
 # Check for test directory.
 if [[ ! -d $CHTEST_DIR ]]; then
     fatal "test directory not found: $CHTEST_DIR"
+fi
+if [[ ! -d $CHTEST_EXAMPLES_DIR ]]; then
+    fatal "examples not found: $CHTEST_EXAMPLES_DIR"
 fi
 
 # Ensure Bats is installed.
@@ -433,10 +468,8 @@ if [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
 fi
 
 # Ensure BATS_TMPDIR is set to /tmp (issue #278).
-if [[ -n $BATS_TMPDIR ]]; then
-    if     [[ $BATS_TMPDIR != '/tmp' ]]; then
-        fatal "BATS_TMPDIR: must be /tmp or /tmp/bats.tmp.${USER} but found $BATS_TMPDIR (issue #278)"
-    fi
+if [[ -n $BATS_TMPDIR && $BATS_TMPDIR != '/tmp' ]]; then
+    fatal "BATS_TMPDIR: must be /tmp; found '$BATS_TMPDIR' (issue #278)"
 fi
 
 # User-private temporary directory in case multiple users are running the
@@ -481,14 +514,15 @@ cd "$CHTEST_DIR"
 
 export PATH=$ch_bin:$PATH
 
-images=$(find . -name  Build;
-         find . -name 'Build.*';
-         find . -name 'Dockerfile.*' )
-
-examples=$(find ../examples -name  Build;        \
-           find ../examples -name 'Build.*';     \
-           find ../examples -name  Dockerfile;   \
-           find ../examples -name 'Dockerfile.*' )
+# The distinction here is that "images" are purely for testing and have no
+# value as examples for the user, while "examples" are dual-purpose.
+images=$(find   "$CHTEST_DIR"             -name 'Build' \
+                                       -o -name 'Build.*' \
+                                       -o -name 'Dockerfile.*' | sort)
+examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
+                                       -o -name 'Build.*' \
+                                       -o -name 'Dockerfile' \
+                                       -o -name 'Dockerfile.*' | sort)
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 

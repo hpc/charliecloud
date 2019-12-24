@@ -21,12 +21,22 @@ compiler: gcc
 #   TARBALL=              # build in Git checkout
 #   TARBALL=archive       # build from "git archive" tarball
 #   TARBALL=export        # build from "make export" tarball
-#   INSTALL=              # run from build directory
-#   INSTALL=yes           # make install to /usr/local, run that one
+#   MAKE_INSTALL=         # run from build directory
+#   MAKE_INSTALL=yes      # "make install"; run that one
+#
+# Note: $INSTALL is used by Autotools, and setting it to "yes" causes very
+# weird errors, e.g.:
+#
+#   make[2]: Entering directory [...]
+#    /bin/mkdir -p '/var/tmp/libexec/charliecloud'
+#    ../yes base.sh '/var/tmp/libexec/charliecloud'
+#   /bin/bash: line 23: ../yes: No such file or directory
+#  Makefile:323: recipe for target 'install-dist_pkglibexecSCRIPTS' failed
 #
 # Additional options:
 #
 #   CH_BUILDER              # which builder to use
+#   MINIMAL_CONFIG          # exclude all optional features with --disable-foo
 #   MINIMAL_DEPS            # test with minimal dependencies (no fancy tools)
 #   SUDO_RM_FIRST           # remove sudo before build (implied if non-Docker)
 #   SUDO_RM_AFTER_BUILD     # remove sudo after build
@@ -67,15 +77,15 @@ jobs:
       env: CH_BUILDER=docker
 
     - <<: *stage_install
-      env: CH_BUILDER=buildah         TARBALL=export       INSTALL=yes
+      env: CH_BUILDER=buildah         TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
-      env: CH_BUILDER=buildah-runc    TARBALL=export       INSTALL=yes
+      env: CH_BUILDER=buildah-runc    TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
-      env: CH_BUILDER=buildah-setuid  TARBALL=export       INSTALL=yes
+      env: CH_BUILDER=buildah-setuid  TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
-      env: CH_BUILDER=ch-grow         TARBALL=export       INSTALL=yes
+      env: CH_BUILDER=ch-grow         TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
-      env: CH_BUILDER=docker          TARBALL=export       INSTALL=yes
+      env: CH_BUILDER=docker          TARBALL=export       MAKE_INSTALL=yes
 
     - <<: *stage_misc
       env: CH_BUILDER=buildah         MINIMAL_DEPS=yes
@@ -84,6 +94,8 @@ jobs:
     - <<: *stage_misc
       env: CH_BUILDER=docker          MINIMAL_DEPS=yes
     - <<: *stage_misc
+      env: CH_BUILDER=docker          MINIMAL_CONFIG=yes
+    - <<: *stage_misc
       env: CH_BUILDER=docker          SUDO_RM_AFTER_BUILD=yes
 
 addons:
@@ -91,6 +103,9 @@ addons:
     sources:
       - sourceline: 'ppa:projectatomic/ppa'
     packages:
+      - autoconf
+      - autoconf-archive
+      - automake
       - bats
       - python3-pip
       - python3-setuptools

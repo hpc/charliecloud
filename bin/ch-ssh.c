@@ -7,7 +7,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "charliecloud.h"
+#include "config.h"
+#include "ch_misc.h"
 
 
 const char usage[] = "\
