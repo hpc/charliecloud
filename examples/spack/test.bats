@@ -4,6 +4,7 @@ setup() {
     scope full
     [[ -z $ch_cray ]] || skip 'issue #193 and Spack issue #8618'
     prerequisites_ok spack
+    ch_img=${CH_TEST_IMGDIR}/${ch_tag}
     export PATH=/spack/bin:$PATH
 }
 

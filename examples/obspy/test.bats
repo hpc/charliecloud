@@ -3,6 +3,7 @@ load ../../../test/common
 setup () {
     scope skip  # issue #64
     prerequisites_ok obspy
+    ch_img=${CH_TEST_IMGDIR}/${ch_tag}
 }
 
 @test "${ch_tag}/runtests" {

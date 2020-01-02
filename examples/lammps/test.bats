@@ -38,6 +38,7 @@ setup () {
     scope full
     prerequisites_ok "$ch_tag"
     multiprocess_ok
+    ch_img=${CH_TEST_IMGDIR}/${ch_tag}
 }
 
 lammps_try () {

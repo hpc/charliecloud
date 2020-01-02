@@ -177,13 +177,7 @@ ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
 # shellcheck disable=SC2034
 ch_mounts="${ch_imgdir}/mounts"
 
-# Image information.
-# shellcheck disable=SC2034
-ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
-# shellcheck disable=SC2034
-ch_img=${ch_imgdir}/${ch_tag}
-# shellcheck disable=SC2034
-ch_tar=${ch_tardir}/${ch_tag}.tar.gz
+# Test image information.
 # shellcheck disable=SC2034
 ch_ttar=${ch_tardir}/chtest.tar.gz
 # shellcheck disable=SC2034

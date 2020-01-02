@@ -204,6 +204,7 @@ test_build () {
 
 test_examples () {
     local tag
+    local bat_file
     local phase=examples
     if [[ $CH_TEST_SCOPE == quick ]]; then
         return
@@ -212,11 +213,13 @@ test_examples () {
     echo 'executing example phase tests ...'
     for i in $examples; do
         if (test_make_check_image "$i"); then
+            bat_file=$(dirname "$i")/test.bats
             tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
-            export CH_TEST_TAG=$tag
-            bats "$(dirname "$i")/test.bats"
+            cp "$bat_file" "${tmp_}/${tag}_example.bats"
+            sed -i "s@\${ch_tag}@$tag@g" "${tmp_}/${tag}_example.bats"
         fi
     done
+    bats "${tmp_}"/*_example.bats
 }
 
 test_run () {

@@ -3,6 +3,7 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
+    ch_img=${CH_TEST_IMGDIR}/${ch_tag}
 
     # One iteration on most of these tests because we just care about
     # correctness, not performance. (If we let the benchmark choose, there is
