@@ -84,7 +84,7 @@ check_process_ct () {
 # plugins enabled against the performance just using TCP. Pass if HSN
 # performance is at least double TCP.
 @test "${ch_tag}/using the high-speed network (host launch)" {
-    multiprocess_ok
+    multiprocess_ok "$ch_tag"
     [[ $ch_multinode ]] || skip "multinode only"
     [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
     # Verify we have known HSN devices present. (Note that -d tests for
@@ -107,7 +107,7 @@ check_process_ct () {
 }
 
 @test "${ch_tag}/pingpong (host launch)" {
-    multiprocess_ok
+    multiprocess_ok "$ch_tag"
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args PingPong
@@ -119,7 +119,7 @@ check_process_ct () {
 }
 
 @test "${ch_tag}/sendrecv (host launch)" {
-    multiprocess_ok
+    multiprocess_ok "$ch_tag"
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args Sendrecv
@@ -131,7 +131,7 @@ check_process_ct () {
 }
 
 @test "${ch_tag}/allreduce (host launch)" {
-    multiprocess_ok
+    multiprocess_ok "$ch_tag"
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args Allreduce
@@ -143,5 +143,5 @@ check_process_ct () {
 }
 
 @test "${ch_tag}/revert image" {
-    unpack_img_all_nodes "$ch_cray"
+    unpack_img_all_nodes "$ch_cray" "$ch_tag"
 }

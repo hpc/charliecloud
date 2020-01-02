@@ -217,6 +217,7 @@ test_examples () {
             tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
             cp "$bat_file" "${tmp_}/${tag}_example.bats"
             sed -i "s@\${ch_tag}@$tag@g" "${tmp_}/${tag}_example.bats"
+            sed -i "s@\$ch_tag@$tag@g" "${tmp_}/${tag}_example.bats"
         fi
     done
     bats "${tmp_}"/*_example.bats

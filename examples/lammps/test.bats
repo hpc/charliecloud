@@ -37,7 +37,7 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
-    multiprocess_ok
+    multiprocess_ok "$ch_tag"
     ch_img=${CH_TEST_IMGDIR}/${ch_tag}
 }
 
@@ -86,5 +86,5 @@ lammps_try () {
 }
 
 @test "${ch_tag}/revert image" {
-    unpack_img_all_nodes "$ch_cray"
+    unpack_img_all_nodes "$ch_cray" "$ch_tag"
 }

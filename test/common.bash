@@ -81,11 +81,33 @@ image_ok () {
 
 multiprocess_ok () {
     [[ $ch_multiprocess ]] || skip 'no multiprocess launch tool found'
-    # If the MPI in the container is MPICH, we only try host launch on Crays.
-    # For the other settings (workstation, other Linux clusters), it may or
-    # may not work; we simply haven't tried.
-    [[ $ch_mpi = mpich && -z $ch_cray ]] \
-        && skip 'MPICH untested'
+
+    # MPICH requires different handling from OpenMPI. Set a variable to enable
+    # some kludges.
+    if [[ $1 = *'-mpich' ]]; then
+        # If the MPI in the container is MPICH, we only try host launch on Crays.
+        # For the other settings (workstation, other Linux clusters), it may or
+        # may not work; we simply haven't tried.
+        [[ -z $ch_cray ]] && skip 'MPICH untested'
+        ch_mpi=mpich
+        # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
+        # Slurm environment variables, it tries to launch even local ranks with
+        # "srun". This of course fails within the container. You can't turn it off
+        # by building with --without-slurm like OpenMPI, so we fall back to this
+        # environment variable at run time.
+        export HYDRA_LAUNCHER=fork
+    else
+        ch_mpi=openmpi
+    fi
+
+    # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
+    # are present. Work around this by fooling OpenMPI into believing it's not
+    # in a Slurm allocation.
+    if [[ $ch_mpi = openmpi ]]; then
+        # shellcheck disable=SC2034
+        ch_unslurm='--unset-env=SLURM*'
+    fi
+
     # Exit function successfully.
     true
 }
@@ -138,7 +160,7 @@ squashfs_ready () {
 
 unpack_img_all_nodes () {
     if [[ $1 ]]; then
-        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
+        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${2}.tar.gz" "$ch_imgdir"
     else
         skip 'not needed'
     fi
@@ -183,20 +205,6 @@ ch_ttar=${ch_tardir}/chtest.tar.gz
 # shellcheck disable=SC2034
 ch_timg=${ch_imgdir}/chtest
 
-# MPICH requires different handling from OpenMPI. Set a variable to enable
-# some kludges.
-if [[ $ch_tag = *'-mpich' ]]; then
-    ch_mpi=mpich
-    # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
-    # Slurm environment variables, it tries to launch even local ranks with
-    # "srun". This of course fails within the container. You can't turn it off
-    # by building with --without-slurm like OpenMPI, so we fall back to this
-    # environment variable at run time.
-    export HYDRA_LAUNCHER=fork
-else
-    ch_mpi=openmpi
-fi
-
 # Crays are special.
 if [[ -f /etc/opt/cray/release/cle-release ]]; then
     ch_cray=yes
@@ -232,6 +240,7 @@ ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 2 | wc -l)
 # shellcheck disable=SC2034
 ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_np="-np ${ch_cores_node}"
+# shellcheck disable=SC2034
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
     ch_multiprocess=yes
@@ -239,13 +248,6 @@ if [[ $SLURM_JOB_ID ]]; then
     ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"
     ch_mpirun_2='srun -n2'
     ch_mpirun_2_1node='srun -N1 -n2'
-    # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
-    # are present. Work around this by fooling OpenMPI into believing it's not
-    # in a Slurm allocation.
-    if [[ $ch_mpi = openmpi ]]; then
-        # shellcheck disable=SC2034
-        ch_unslurm='--unset-env=SLURM*'
-    fi
     if [[ $ch_nodes -eq 1 ]]; then
         ch_multinode=
         ch_mpirun_2_2node=false
