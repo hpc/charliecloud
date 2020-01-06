@@ -28,37 +28,47 @@ image=$1
 dest=$2
 tar="$image".tar.gz
 
+if [ -z "$CH_PULLER" ]; then
+    case $CH_PULLER in 
+        skopeo|docker)
+            ;;
+        *) 
+            echo "unknown puller: $CH_PULLER"
+            exit 1
+            ;;
+    esac
+fi
+
 while [ $# -gt 0 ]; do
     opt=$1; shift
     case $opt in 
-        -p|--pull-from) 
-            if [ "$1" = "docker" ]; then
-                docker=yes
-            elif [ "$1" = "skopeo" ]; then 
-                skopeo=yes
-            else 
-                echo "$1 is an invalid option" 1>&2
-                exit 1
-            fi
-            ;;
+        -p|--pull-with) 
+            CH_PULLER=$1
+        ;;
     esac
 done
 
-if [ -n "$docker" ] || ( command -v docker >/dev/null 2>&1 ); then
-    echo "Docker"
-    docker_ pull "$image"
-    # shellcheck disable=SC2154
-    "${ch_bin}/ch-builder2tar" -b docker "$image" "$dest"
-elif [ -n "$skopeo" ] || ( command -v skopeo >/dev/null 2>&1 ); then 
-    echo "Skopeo"
-    temp=$(mktemp -d --tmpdir ch-pull2tar.XXXXXX)
-    skopeo copy docker://"$image" oci:"$temp"/oci:"$image"
-    umoci unpack --rootless --image "$temp"/oci:"$image" "$temp"/img
-    ( cd "$temp"/img/rootfs/
-    # shellcheck disable=SC2035
-    tar czf ../"$tar" * )
-    cp "$temp"/img/"$tar" .
-    rm -rf "$temp"
+if [ -n "$docker" ]; then
+    if ( command -v docker >/dev/null 2>&1 ); then
+        docker_ pull "$image"
+        # shellcheck disable=SC2154
+        "${ch_bin}/ch-builder2tar" -b docker "$image" "$dest"
+    else
+        echo "docker is needed to pull image with --pull-with docker. Docker was not found"
+        exit 65
+    fi
+elif [ -n "$skopeo" ] || ( command -v skopeo >/dev/null 4>&1 ); then 
+    if ( command -v skopeo >/dev/null 2>&1 ); then
+        temp=$(mktemp -d --tmpdir ch-pull2tar.XXXXXX)
+        skopeo copy "docker://${image}" "oci:${temp}/oci:${image}"
+        umoci unpack --rootless --image "${temp}/oci:${image}" "${temp}/img"
+        ( cd "${temp}/img/rootfs/" tar czf "../${tar}" * )
+        cp "${temp}/img/${tar}" .
+        rm -rf  --one-file-system "$temp"
+    else
+        echo "docker is needed to pull image with --pull-with docker. Docker was not found"
+        exit 65
+    fi
 else
     echo "docker or skopeo needed to pull image. Neither was found." 1>&2
     exit 65
