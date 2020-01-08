@@ -187,6 +187,22 @@ AS_CASE([$python],
 )
 CH_CHECK_VERSION([PYTHON], [$vmin_python], [--version | cut -d' ' -f2])
 
+# Python module "hashlib"
+AS_IF([test -n "$PYTHON"], [
+  AC_MSG_CHECKING([for hashlib module])
+  cat <<EOF | $PYTHON_SHEBANG
+import sys
+try:
+   import hashlib
+except Exception:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [have_hashlib=yes],
+    [have_hashlib=no])
+  AC_MSG_RESULT($have_hashlib)
+])
+
 # Python module "lark-parser"
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for lark-parser module])
@@ -204,10 +220,37 @@ EOF
   AC_MSG_RESULT($have_lark)
 ])
 
-# skopeo
-vmin_skopeo=0.1.30
-AC_CHECK_PROG([SKOPEO], [skopeo], [skopeo])
-CH_CHECK_VERSION([SKOPEO], [$vmin_skopeo], [--version | cut -d' ' -f3])
+# Python module "requests"
+AS_IF([test -n "$PYTHON"], [
+  AC_MSG_CHECKING([for requests module])
+  cat <<EOF | $PYTHON_SHEBANG
+import sys
+try:
+   import requests
+except Exception:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [have_requests=yes],
+    [have_requests=no])
+  AC_MSG_RESULT($have_requests)
+])
+
+# Python module "tarfile"
+AS_IF([test -n "$PYTHON"], [
+  AC_MSG_CHECKING([for tarfile module])
+  cat <<EOF | $PYTHON_SHEBANG
+import sys
+try:
+   import tarfile
+except Exception:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [have_tarfile=yes],
+    [have_tarfile=no])
+  AC_MSG_RESULT($have_tarfile)
+])
 
 # SquashFUSE
 vmin_squashfuse=0.1.102  # CentOS 7
@@ -228,11 +271,6 @@ CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
 
 # tar (yes, we can confidently assume tar, but this makes the report clearer)
 AC_CHECK_PROG([TAR], [tar], [tar])
-
-# umoci
-vmin_umoci=0.4.3
-AC_CHECK_PROG([UMOCI], [umoci], [umoci])
-CH_CHECK_VERSION([UMOCI], [$vmin_umoci], [--version | cut -d' ' -f3])
 
 # User namespaces
 AC_MSG_CHECKING([if user+mount namespaces work])
@@ -298,8 +336,8 @@ AS_IF([   test $enable_ch_grow = yes \
        && test -n "$PYTHON_VERSION" \
        && test -n "$PYTHON_SHEBANG" \
        && test $have_lark = yes \
-       && test -n "$SKOPEO_VERSION" \
-       && test -n "$UMOCI_VERSION" \
+       && test $have_requests = yes \
+       && test $have_hashlib = yes \
        && test $have_ch_run = yes],
       [have_ch_grow=yes],
       [have_ch_grow=no])
@@ -421,9 +459,10 @@ Image builders via our wrappers
     ch-grow(1) enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang 3.4 ... ${PYTHON_VERSION:-not found}
+    "hashlib" module ... ${have_hashlib}
     "lark-parser" module ... ${have_lark}
-    skopeo $vmin_skopeo ... ${SKOPEO_VERSION:-not found}
-    umoci $vmin_umoci ... ${UMOCI_VERSION:-not found}
+    "requests" module ... ${have_requests}
+    "tarfile" module ... ${have_tarfile}
     ch-run(1) ... ${have_ch_run}
 
   Docker: ${have_docker}

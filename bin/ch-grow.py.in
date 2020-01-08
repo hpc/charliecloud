@@ -33,8 +33,15 @@ state = None
 depfails = []
 
 
-## Import Lark ##
+## Imports ##
 
+# hashlib
+try:
+   import hashlib
+except ImportError:
+   depfails.append(('missing', 'Python module "hashlib"'))
+
+# lark
 # This is messy because:
 #
 # 1. There are two packages on PyPI that give a "lark" module.
@@ -57,12 +64,25 @@ except (ImportError, AttributeError) as x:
    m.Visitor = Visitor_Mock
    lark = m
 
+# requests
+try:
+   import requests
+except ImportError:
+  depfails.append(("missing", 'Python module "requests"'))
+
+# tarfile
+try:
+   import tarfile
+except ImportError:
+  depfails.append(("missing", 'Python module "tarfile"'))
+
 
 ## Constants ##
 
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
 CH_RUN = CH_BIN + "/ch-run"
+CH_API = CH_BIN + "/ch-v2-api.py"
 
 ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
@@ -432,10 +452,7 @@ class I_from_(Instruction):
       mkdirs(dir_ocis())
       rmtree(dir_image_tmp())
       # This works with newuidmap and newgidmap not installed.
-      cmd(["skopeo", "copy", "docker://" + self.fullname,
-           "oci:%s/%s" % (dir_ocis(), self.fullname)])
-      cmd(["umoci", "unpack", "--rootless",
-           "--image", "%s/%s" % (dir_ocis(), self.fullname), dir_image_tmp()])
+      cmd([CH_API, self.fullname, "--storage", dir_image_tmp()])
       rmtree(dir_image(self.fullname))
       os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
       image_fixup(dir_image(self.fullname))
@@ -614,10 +631,6 @@ def dependencies_check():
    # above (e.g., lark module checked at import time), then complain and exit.
    if (not os.path.exists(CH_RUN)):
       depfails.append(("missing", CH_RUN))
-   if (not shutil.which("skopeo")):
-      depfails.append(("missing", "skopeo"))
-   if (not shutil.which("umoci")):
-      depfails.append(("missing", "umoci"))
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
    if (len(depfails) > 0):
