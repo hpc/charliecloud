@@ -5,7 +5,7 @@
 
 set -e
 
-srcdir=$1
+#srcdir=$1  # unused
 tarball_gz=${2}.tar.gz
 workdir=$3
 

@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 set -e
 
 # shellcheck disable=SC2034
