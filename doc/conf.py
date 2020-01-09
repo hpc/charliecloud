@@ -279,6 +279,9 @@ man_pages = [
    ("ch-umount", "ch-umount",
     "Unmount a FUSE mounted squash filesystem and remove the mount point",
     [], 1),
+   ("ch-v2-api", "ch-v2-api",
+    'Pull images from Docker repository and unpack them for "ch-grow" ingestion.',
+    [], 1),
 ]
 
 # If true, show URL addresses after external links.
