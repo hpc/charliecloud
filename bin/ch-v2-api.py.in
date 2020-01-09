@@ -118,8 +118,13 @@ class Image:
         sys.exit(0)
 
     def layer_fetch(self, storage):
-        base = os.path.join(storage[0], "{}:{}".format(self.name.split('/')[-1],
-                                                        self.tag))
+        # Kludge to make ch-grow dir_image_tmp search happy.
+        if self.rootfs:
+            base = os.path.join(storage[0], 'rootfs')
+        else:
+            base = os.path.join(storage[0],
+                                "{}:{}".format(self.name.split('/')[-1],
+                                               self.tag))
         if os.path.isdir(base):
             print("{} exists, replacing.".format(base))
             shutil.rmtree(base)
@@ -139,6 +144,9 @@ class Image:
             tf = tarfile.open(filename)
             tf.extractall()
             os.remove(filename)
+
+    def rootfs_set(self):
+        self.rootfs = True
 
 class MySession:
     def __init__(self, image):
@@ -189,6 +197,9 @@ def main():
     ap.add_argument("-i", "--inspect",
                     action='store_true',
                     help="print base IMAGE metadata (manifest and tag list)")
+    ap.add_argument("--rootfs",
+                    action='store_true',
+                    help="store image in directory with 'rootfs' name")
     ap.add_argument("-s", "--storage",
                     type=str,
                     metavar="DIR",
@@ -233,6 +244,9 @@ def main():
 
     if args.inspect:
         image.inspect_dump()
+
+    if args.rootfs:
+        image.rootfs_set()
 
     image.layer_fetch(args.storage)
 

@@ -449,10 +449,11 @@ class I_from_(Instruction):
                       symlinks=True)
 
    def base_pull(self):
-      mkdirs(dir_ocis())
       rmtree(dir_image_tmp())
       # This works with newuidmap and newgidmap not installed.
-      cmd([CH_API, self.fullname, "--storage", dir_image_tmp()])
+      cmd([CH_API, self.fullname,
+                   "--storage", dir_image_tmp(),
+                   "--rootfs"])
       rmtree(dir_image(self.fullname))
       os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
       image_fixup(dir_image(self.fullname))
