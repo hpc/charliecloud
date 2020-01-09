@@ -194,6 +194,11 @@ def main():
     ap.add_argument("-v", "--version",
                     action=CLI_Version,
                     help="print version and exit")
+
+    if (len(sys.argv) < 2):
+        ap.print_help(file=sys.stderr)
+        sys.exit(1)
+
     args = ap.parse_args()
 
     if '/' in (args.image[0]):
