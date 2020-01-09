@@ -175,7 +175,12 @@ def split_image_tag(image):
 ## Main ##
 
 def main():
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+         formatter_class=argparse.RawDescriptionHelpFormatter,
+         description='Pull images from Docker repository and unpack them for "ch-grow" ingestion.',
+         epilog="""\
+  CH_GROW_STORAGE       default for --storage
+""")
     ap.add_argument("image",
                     type=str,
                     metavar="IMAGE[:TAG][@DIGEST]",
