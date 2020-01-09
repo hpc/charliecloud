@@ -82,7 +82,7 @@ except ImportError:
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
 CH_RUN = CH_BIN + "/ch-run"
-CH_API = CH_BIN + "/ch-v2-api.py"
+CH_API = CH_BIN + "/ch-v2-api"
 
 ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
