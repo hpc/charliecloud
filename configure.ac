@@ -102,24 +102,34 @@ AC_ARG_ENABLE([ch-grow],
 #
 # If given absolute path, and that file isn't executable, error out.
 AC_DEFUN([CH_CHECK_VERSION], [
-  AS_VAR_PUSHDEF([prog], [$1])
-  AS_IF([test -n "$prog"], [
+  # $1 buildah  
+  # $2 vmin_buildah
+  # $3 buildah_version
+
+  AS_VAR_PUSHDEF([prog], [$1])                              # prog is buildah 
+  AS_IF([test -n "$prog"], [                                # check if buildah exists
     AS_CASE([$prog],
-      [/*], [AC_MSG_CHECKING([if $prog is executable])
-             AS_IF([test -e "$prog"],
+      [/*], [AC_MSG_CHECKING([if $prog is executable])       
+             AS_IF([test -e "$prog"],                       # Check if buildah is an executable 
               [AC_MSG_RESULT([ok])],
               [AC_MSG_RESULT([no])
                AC_MSG_ERROR([must be executable])])])
-    AC_MSG_CHECKING([if $prog version >= $2])
-    vact=$($prog $3)
-    AX_COMPARE_VERSION([$2], [le], [$vact],
+    AC_MSG_CHECKING([if $prog version >= $2])               
+    vact=$($prog $3)                                        # vact is buildah buildah_version
+    AX_COMPARE_VERSION([$2], [le], [$vact],                   
       [AC_MSG_RESULT([ok ($vact)])
-       AC_SUBST([$1_VERSION], [$vact])],
+       AC_SUBST([$1_VERSION], [$vact])
+       [$1_GOOD=yes]],
       [AC_MSG_RESULT([too old ($vact)])
-       AS_UNSET([$1])])
+       AC_SUBST([$1_VERSION], [$vact])
+       [$1_GOOD=no]])
   ])
   AS_VAR_POPDEF([prog])
 ])
+
+AS_IF([   test -n "$BUILDAH_VERSION"],
+      [have_buildah=yes],
+      [have_buildah=no])
 
 
 ## Feature tests - build time
