@@ -134,8 +134,8 @@ class Image:
             tf.extractall()
             os.remove(filename)
 
-    def rootfs_set(self):
-        self.rootfs = True
+    def rootfs_set(self, boolean):
+        self.rootfs = boolean
 
 class MySession:
     def __init__(self, image):
@@ -229,7 +229,9 @@ def main():
     image = Image(name, reference, tag)
 
     if args.rootfs:
-        image.rootfs_set()
+        image.rootfs_set(True)
+    else:
+        image.rootfs_set(False)
 
     image.layer_fetch(args.storage)
 
