@@ -189,6 +189,20 @@ ch_ttar=${ch_tardir}/chtest.tar.gz
 # shellcheck disable=SC2034
 ch_timg=${ch_imgdir}/chtest
 
+# MPICH requires different handling from OpenMPI. Set a variable to enable
+# some kludges.
+if [[ $ch_tag = *'-mpich' ]]; then
+    ch_mpi=mpich
+    # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
+    # Slurm environment variables, it tries to launch even local ranks with
+    # "srun". This of course fails within the container. You can't turn it off
+    # by building with --without-slurm like OpenMPI, so we fall back to this
+    # environment variable at run time.
+    export HYDRA_LAUNCHER=fork
+else
+    ch_mpi=openmpi
+fi
+
 # Crays are special.
 if [[ -f /etc/opt/cray/release/cle-release ]]; then
     ch_cray=yes
