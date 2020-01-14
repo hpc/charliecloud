@@ -1,0 +1,72 @@
+#!/bin/bash
+
+# This script builds the documentation and then publishes it to the web. See
+# the internal documentation for usage and how to set it up.
+
+set -e
+doc_base=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
+
+fatal () {
+    echo "¯\_(ツ)_/¯ $1" 1>&2
+    exit 1
+}
+
+# Parse command line.
+if [[ $1 == --force ]]; then
+    clean_only=
+else
+    clean_only=yes
+fi
+
+# Are there any uncommitted changes?
+echo 'checking for uncommitted changes'
+dirty=
+if ! git diff-index --quiet --cached HEAD; then
+    dirty='+dirty'
+fi
+if ! git diff-files --quiet; then
+    dirty='+dirty'
+fi
+if [[ $clean_only && $dirty ]]; then
+    fatal 'uncommitted changes present'
+fi
+
+cd "$doc_base"
+
+# Clean up and prep.
+echo 'preparing to build'
+make clean > /dev/null
+# Did "make clean" work? The only files left should be .git and an empty
+# directory _images.
+leftovers=$(find html -mindepth 1    -name .git -prune \
+                                  -o -not \(    -name _images \
+                                             -o -name '.git*' \) -print)
+if [[ -n "$leftovers" ]]; then
+    echo "$leftovers" 1>&2
+    fatal 'mysterious files in doc/html after "make clean"'
+fi
+
+# Build.
+echo 'building docs'
+make
+
+cd html
+
+# Can we talk to GitHub?
+echo 'testing GitHub access'
+if ! git ls-remote > /dev/null; then
+    fatal "can't talk to GitHub"
+fi
+
+# Publish it (note Unicode siren characters that don't appear in all editors).
+echo '🚨🚨🚨 publishing new docs 🚨🚨🚨'
+commit=$(cd .. && git rev-parse --short HEAD)${dirty}
+set -x
+git add --all
+git commit -a -m "docs for commit $commit"
+git push origin gh-pages
+set +x
+
+# Done.
+echo 'Done.'
+echo 'Typos found: 1'
