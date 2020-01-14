@@ -237,6 +237,7 @@ fi
 ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 2 | wc -l)
 # shellcheck disable=SC2034
 ch_cores_total=$((ch_nodes * ch_cores_node))
+ch_mpirun_node=
 ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then

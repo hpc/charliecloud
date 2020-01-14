@@ -4,6 +4,10 @@
     if [[ -e "${ch_tardir}/%(tag)s.sqfs" ]]; then
         unsquashfs -d "${ch_imgdir}/%(tag)s" "${ch_tardir}/%(tag)s.sqfs"
     else
-        "$ch_mpirun_node" ch-tar2dir "${ch_tardir}/%(tag)s" "$ch_imgdir"
+        if [[ -n $ch_mpirun_node]]; then
+            "$ch_mpirun_node" ch-tar2dir "${ch_tardir}/%(tag)s" "$ch_imgdir"
+        else
+            ch-tar2dir "${ch_tardir}/%(tag)s" "$ch_imgdir"
+        fi
     fi
 }
