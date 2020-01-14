@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installation &mdash; Charliecloud 0.12 documentation</title>
+  <title>1. Installing &mdash; Charliecloud 0.13 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                4cc7df1
+                0.13
               </div>
             
           
@@ -89,52 +89,65 @@
             
             
               <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#dependencies">1.1. Dependencies</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#supported-architectures">1.1.1. Supported architectures</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#run-time">1.1.2. Run time</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#build-time">1.1.3. Build time</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#buildah-privileged-or-unprivileged">1.1.3.1. Buildah (privileged or unprivileged)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#ch-grow-unprivileged">1.1.3.2. <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> (unprivileged)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#docker-privileged">1.1.3.3. Docker (privileged)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Installing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#build-and-install-from-source">1.1. Build and install from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-release-tarball">1.1.1. Using release tarball</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#from-git-checkout">1.1.2. From Git checkout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configure-options">1.1.3. <code class="code docutils literal notranslate"><span class="pre">configure</span></code> options</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#test-suite">1.1.4. Test suite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-with-package-manager">1.2. Install with package manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies">1.3. Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#user-namespaces">1.3.1. User namespaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#supported-architectures">1.3.2. Supported architectures</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#details-by-feature">1.3.3. Details by feature</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#building-charliecloud">1.3.3.1. Building Charliecloud</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#image-builders-via-our-wrappers">1.3.3.2. Image builders via our wrappers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#managing-container-images">1.3.3.3. Managing container images</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#running-containers">1.3.3.4. Running containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#test-suite">1.3.3.5. Test suite</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#package-manager-install">1.2. Package manager install</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#debian">1.2.1. Debian</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#gentoo">1.2.2. Gentoo</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#opensuse-and-suse">1.2.3. openSUSE and SUSE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#rpm-based-distributions">1.2.4. RPM-based distributions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#nixos">1.2.5. NixOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#notes-on-specific-dependencies">1.3.4. Notes on specific dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bash">1.3.4.1. Bash</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bats">1.3.4.2. Bats</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildah">1.3.4.3. Buildah</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#c-compiler">1.3.4.4. C compiler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#docker">1.3.4.5. Docker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#image-repository-access">1.3.4.6. image repository access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lark-parser-python-package">1.3.4.7. “lark-parser” Python package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#python">1.3.4.8. Python</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#skopeo">1.3.4.9. Skopeo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sphinx">1.3.4.10. Sphinx</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squashfs">1.3.4.11. SquashFS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudo-generic">1.3.4.12. sudo, generic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#umoci">1.3.4.13. umoci</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wget">1.3.4.14. Wget</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#manual-build-and-install">1.3. Manual build and install</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#download">1.3.1. Download</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#build">1.3.2. Build</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#install-optional">1.3.3. Install (optional)</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#docker-tips">1.4. Docker tips</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#understand-the-security-implications-of-docker">1.4.1. Understand the security implications of Docker</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#docker-equals-root">1.4.1.1. <code class="code docutils literal notranslate"><span class="pre">docker</span></code> equals root</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#images-can-contain-bad-stuff">1.4.1.2. Images can contain bad stuff</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#containers-run-as-root">1.4.1.3. Containers run as root</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#docker-alters-your-network-configuration">1.4.1.4. Docker alters your network configuration</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#docker-installs-services">1.4.1.5. Docker installs services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pre-installed-virtual-machine-image">1.4. Pre-installed virtual machine image</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#import-and-use-an-ova-appliance-file-with-plain-virtualbox">1.4.1. Import and use an <code class="code docutils literal notranslate"><span class="pre">ova</span></code> appliance file with plain VirtualBox</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#configure-virtualbox">1.4.1.1. Configure VirtualBox</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#import-the-appliance">1.4.1.2. Import the appliance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#log-in-and-try-charliecloud">1.4.1.3. Log in and try Charliecloud</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#configuring-for-a-proxy">1.4.2. Configuring for a proxy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-and-use-the-vm-with-vagrant">1.4.2. Build and use the VM with Vagrant</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#caveats-and-gotchas">1.4.2.1. Caveats and gotchas</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#install-vagrant-and-plugins">1.4.2.2. Install Vagrant and plugins</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#build-and-provision">1.4.2.3. Build and provision</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command-usage.html">3. Charliecloud command reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vm.html">4. Pre-installed virtual machine</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">5. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">6. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">4. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">5. Contributor’s guide</a></li>
 </ul>
 
             
@@ -180,7 +193,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>1. Installation</li>
+      <li>1. Installing</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -197,353 +210,415 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="installation">
-<h1>1. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>This section describes how to build and install Charliecloud. For some
-distributions, this can be done using your package manager; otherwise, both
-normal users and admins can build and install it manually.</p>
+  <div class="section" id="installing">
+<h1>1. Installing<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h1>
+<p>This section describes what you need to install Charliecloud and how to do so.</p>
+<p>Note that installing and using Charliecloud can be done as a normal user with
+no elevated privileges, provided that user namespaces have been enabled.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#dependencies" id="id3">Dependencies</a></p>
-<ul>
-<li><p><a class="reference internal" href="#supported-architectures" id="id4">Supported architectures</a></p></li>
-<li><p><a class="reference internal" href="#run-time" id="id5">Run time</a></p></li>
-<li><p><a class="reference internal" href="#build-time" id="id6">Build time</a></p></li>
-<li><p><a class="reference internal" href="#test-suite" id="id7">Test suite</a></p></li>
+<li><a class="reference internal" href="#build-and-install-from-source" id="id6">Build and install from source</a><ul>
+<li><a class="reference internal" href="#using-release-tarball" id="id7">Using release tarball</a></li>
+<li><a class="reference internal" href="#from-git-checkout" id="id8">From Git checkout</a></li>
+<li><a class="reference internal" href="#configure-options" id="id9"><code class="code docutils literal notranslate"><span class="pre">configure</span></code> options</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#package-manager-install" id="id8">Package manager install</a></p>
-<ul>
-<li><p><a class="reference internal" href="#debian" id="id9">Debian</a></p></li>
-<li><p><a class="reference internal" href="#gentoo" id="id10">Gentoo</a></p></li>
-<li><p><a class="reference internal" href="#opensuse-and-suse" id="id11">openSUSE and SUSE</a></p></li>
-<li><p><a class="reference internal" href="#rpm-based-distributions" id="id12">RPM-based distributions</a></p></li>
-<li><p><a class="reference internal" href="#nixos" id="id13">NixOS</a></p></li>
+<li><a class="reference internal" href="#install-with-package-manager" id="id10">Install with package manager</a></li>
+<li><a class="reference internal" href="#dependencies" id="id11">Dependencies</a><ul>
+<li><a class="reference internal" href="#user-namespaces" id="id12">User namespaces</a></li>
+<li><a class="reference internal" href="#supported-architectures" id="id13">Supported architectures</a></li>
+<li><a class="reference internal" href="#details-by-feature" id="id14">Details by feature</a></li>
+<li><a class="reference internal" href="#notes-on-specific-dependencies" id="id15">Notes on specific dependencies</a></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#manual-build-and-install" id="id14">Manual build and install</a></p>
-<ul>
-<li><p><a class="reference internal" href="#download" id="id15">Download</a></p></li>
-<li><p><a class="reference internal" href="#build" id="id16">Build</a></p></li>
-<li><p><a class="reference internal" href="#install-optional" id="id17">Install (optional)</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference internal" href="#docker-tips" id="id18">Docker tips</a></p>
-<ul>
-<li><p><a class="reference internal" href="#understand-the-security-implications-of-docker" id="id19">Understand the security implications of Docker</a></p></li>
-<li><p><a class="reference internal" href="#configuring-for-a-proxy" id="id20">Configuring for a proxy</a></p></li>
+<li><a class="reference internal" href="#pre-installed-virtual-machine-image" id="id16">Pre-installed virtual machine image</a><ul>
+<li><a class="reference internal" href="#import-and-use-an-ova-appliance-file-with-plain-virtualbox" id="id17">Import and use an <code class="code docutils literal notranslate"><span class="pre">ova</span></code> appliance file with plain VirtualBox</a></li>
+<li><a class="reference internal" href="#build-and-use-the-vm-with-vagrant" id="id18">Build and use the VM with Vagrant</a></li>
 </ul>
 </li>
 </ul>
 </div>
+<div class="section" id="build-and-install-from-source">
+<h2><a class="toc-backref" href="#id6">1.1. Build and install from source</a><a class="headerlink" href="#build-and-install-from-source" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="using-release-tarball">
+<h3><a class="toc-backref" href="#id7">1.1.1. Using release tarball</a><a class="headerlink" href="#using-release-tarball" title="Permalink to this headline">¶</a></h3>
+<p>We provide <a class="reference external" href="https://github.com/hpc/charliecloud/releases">tarballs</a> with a
+fairly standard <code class="code docutils literal notranslate"><span class="pre">configure</span></code> script. Thus, build and install can be as
+simple as:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ./configure
+<span class="gp">$</span> make
+<span class="gp">$</span> sudo make install
+</pre></div>
+</div>
+<p>If you don’t have sudo, you can:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Run Charliecloud directly from the build directory; add
+<code class="code docutils literal notranslate"><span class="pre">$BUILD_DIR/bin</span></code> to your <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code> and you are good to go,
+without <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code>.</li>
+<li>Install in a prefix you have write access to, e.g. in your home directory
+with <code class="code docutils literal notranslate"><span class="pre">./configure</span> <span class="pre">--prefix=~</span></code>.</li>
+</ul>
+</div></blockquote>
+<p><code class="code docutils literal notranslate"><span class="pre">configure</span></code> will provide a detailed report on what will be built and
+installed, along with what dependencies are present and missing.</p>
+</div>
+<div class="section" id="from-git-checkout">
+<h3><a class="toc-backref" href="#id8">1.1.2. From Git checkout</a><a class="headerlink" href="#from-git-checkout" title="Permalink to this headline">¶</a></h3>
+<p>If you obtain the source code with Git, you must build <code class="code docutils literal notranslate"><span class="pre">configure</span></code> and
+friends yourself. To do so, you will need the following. The versions in most
+common distributions should be sufficient.</p>
+<blockquote>
+<div><ul class="simple">
+<li>Automake</li>
+<li>Autoconf</li>
+<li>Autoconf Archive</li>
+</ul>
+</div></blockquote>
+<p>Create <code class="code docutils literal notranslate"><span class="pre">configure</span></code> with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ./autogen.sh
+</pre></div>
+</div>
+</div>
+<div class="section" id="configure-options">
+<h3><a class="toc-backref" href="#id9">1.1.3. <code class="code docutils literal notranslate"><span class="pre">configure</span></code> options</a><a class="headerlink" href="#configure-options" title="Permalink to this headline">¶</a></h3>
+<p>Charliecloud’s <code class="code docutils literal notranslate"><span class="pre">configure</span></code> has the following options in addition to the
+standard ones.</p>
+<p>By default, all features that can be built will be built and installed. You
+can exclude some features with:</p>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="41%" />
+<col width="59%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">option</th>
+<th class="head">don’t build or install</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">--disable-html</span></code></td>
+<td>HTML documentation</td>
+</tr>
+<tr class="row-odd"><td><code class="code docutils literal notranslate"><span class="pre">--disable-man</span></code></td>
+<td>man pages</td>
+</tr>
+<tr class="row-even"><td><code class="code docutils literal notranslate"><span class="pre">--disable-tests</span></code></td>
+<td>test suite</td>
+</tr>
+<tr class="row-odd"><td><code class="code docutils literal notranslate"><span class="pre">--disable-ch-grow</span></code></td>
+<td><code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> unprivileged builder</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>You can also say <code class="code docutils literal notranslate"><span class="pre">--enable-FOO</span></code> to fail the build if <code class="code docutils literal notranslate"><span class="pre">FOO</span></code> can’t
+be built.</p>
+<p>Some dependencies can be specified as follows. Note that <code class="code docutils literal notranslate"><span class="pre">--without-FOO</span></code>
+is not supported; use the feature selectors above.</p>
+<dl class="docutils">
+<dt><code class="code docutils literal notranslate"><span class="pre">--with-python-shebang</span></code></dt>
+<dd>Shebang line to use for Python scripts. Default:
+<code class="code docutils literal notranslate"><span class="pre">/usr/bin/env</span> <span class="pre">python3</span></code>.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--with-sphinx-build</span></code></dt>
+<dd>Path to <code class="code docutils literal notranslate"><span class="pre">sphinx-build</span></code> executable. Default: the <code class="code docutils literal notranslate"><span class="pre">sphinx-build</span></code>
+found first in <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="install-with-package-manager">
+<h2><a class="toc-backref" href="#id10">1.2. Install with package manager</a><a class="headerlink" href="#install-with-package-manager" title="Permalink to this headline">¶</a></h2>
+<p>Charliecloud is also available using a variety of distribution and third-party
+package managers.</p>
+<p>Maintained by us:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Generic RPMs downloadable from our <a class="reference external" href="https://github.com/hpc/charliecloud/releases">releases page</a>.</li>
+<li><a class="reference external" href="https://spack.readthedocs.io/en/latest/package_list.html#charliecloud">Spack</a>;
+install with <code class="code docutils literal notranslate"><span class="pre">+builder</span></code> to get <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code>.</li>
+<li><a class="reference external" href="https://bodhi.fedoraproject.org/updates/?search=charliecloud">Fedora/EPEL</a>;
+check for availabile versions with <code class="code docutils literal notranslate"><span class="pre">{yum,dnf}</span> <span class="pre">list</span> <span class="pre">charliecloud</span></code>.</li>
+</ul>
+</div></blockquote>
+<p>Maintained by others:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="https://packages.debian.org/search?keywords=charliecloud">Debian</a></li>
+<li><a class="reference external" href="https://packages.gentoo.org/packages/sys-cluster/charliecloud">Gentoo</a></li>
+<li><a class="reference external" href="https://github.com/NixOS/nixpkgs/tree/master/pkgs/applications/virtualization/charliecloud">NixOS</a></li>
+<li><a class="reference external" href="https://packagehub.suse.com/packages/charliecloud/">SUSE</a> and <a class="reference external" href="https://build.opensuse.org/package/show/network:cluster/charliecloud">openSUSE</a></li>
+</ul>
+</div></blockquote>
+<p>Note that Charliecloud development moves quickly, so double-check that
+packages have the version and features you need.</p>
+<p>Pull requests and other collaboration to improve the packaging situation are
+particularly welcome!</p>
+</div>
 <div class="section" id="dependencies">
-<h2><a class="toc-backref" href="#id3">1.1. Dependencies</a><a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
-<p>Charliecloud is a simple system with limited dependencies. If your system
-meets these prerequisites but Charliecloud doesn’t work, please report that as
-a bug.</p>
+<h2><a class="toc-backref" href="#id11">1.3. Dependencies</a><a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<p>Charliecloud’s philosophy on dependencies is that they should be (1) minimal
+and (2) granular. For any given feature, we try to implement it with the
+minimum set of dependencies, and in any given environment, we try to make the
+maximum set of features available.</p>
+<p>This section documents Charliecloud’s dependencies in detail. Do you need to
+read it? If you are installing Charliecloud on the same system where it will
+be used, probably not. <code class="code docutils literal notranslate"><span class="pre">configure</span></code> will issue a report saying what will
+and won’t work. Otherwise, it may be useful to gain an understanding of what
+to expect when deploying Charliecloud.</p>
 <p>Note that we do not rigorously track dependency versions. We update the
-versions stated below as we encounter problems, but they are not tight bounds
-and may be out of date.</p>
+minimum versions stated below as we encounter problems, but they are not tight
+bounds and may be out of date. It is worth trying even if your version is
+documented to be too old. Please let us know any success or failure reports.</p>
+<p>Finally, the run-time dependencies are lazy; specific features just try to use
+their dependencies and fail if there’s a problem, hopefully with a useful
+error message. In other words, there’s no version checking or whatnot that
+will keep you from using a feature unless it truly doesn’t work in your
+environment.</p>
+<div class="section" id="user-namespaces">
+<h3><a class="toc-backref" href="#id12">1.3.1. User namespaces</a><a class="headerlink" href="#user-namespaces" title="Permalink to this headline">¶</a></h3>
+<p>Charliecloud’s fundamental principle of a workflow that is fully unprivileged
+end-to-end requires unprivileged <a class="reference external" href="https://lwn.net/Articles/531114/">user namespaces</a>. In order to enable them, you need a
+vaguely recent Linux kernel with the feature compiled in and active.</p>
+<p>Some distributions need configuration changes. For example:</p>
+<ul>
+<li><p class="first">Debian Stretch <a class="reference external" href="https://superuser.com/a/1122977">needs sysctl</a>
+<code class="code docutils literal notranslate"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>.</p>
+</li>
+<li><p class="first">RHEL/CentOS 7.4 and 7.5 need both a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>.
+RHEL/CentOS 7.6 and up need only the sysctl.</p>
+<p><em>Note:</em> Docker does not work with user namespaces, so skip step 4 of the Red
+Hat instructions, i.e., don’t add <code class="code docutils literal notranslate"><span class="pre">--userns-remap</span></code> to the Docker
+configuration (see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/97">issue #97</a>).</p>
+</li>
+</ul>
+</div>
 <div class="section" id="supported-architectures">
-<h3><a class="toc-backref" href="#id4">1.1.1. Supported architectures</a><a class="headerlink" href="#supported-architectures" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13">1.3.2. Supported architectures</a><a class="headerlink" href="#supported-architectures" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud should work on any architecture supported by the Linux kernel,
 and we have run Charliecloud containers on x86-64, ARM, and Power. However, it
 is currently tested only on x86_64 and ARM.</p>
-<p>Most container build software is also fairly portable; e.g., see <a class="reference external" href="https://docs.docker.com/install/#supported-platforms">Docker’s
-supported platforms</a>.</p>
+<p>Most builders are also fairly portable; e.g., see <a class="reference external" href="https://docs.docker.com/install/#supported-platforms">Docker’s supported
+platforms</a>.</p>
 </div>
-<div class="section" id="run-time">
-<h3><a class="toc-backref" href="#id5">1.1.2. Run time</a><a class="headerlink" href="#run-time" title="Permalink to this headline">¶</a></h3>
-<p>Systems used for running images need:</p>
-<ul class="simple">
-<li><p>Recent Linux kernel with user namespaces enabled. We recommend version 4.4
-or higher.</p></li>
-<li><p>C11 compiler and standard library</p></li>
-<li><p>POSIX.1-2017 shell and utilities</p></li>
+<div class="section" id="details-by-feature">
+<h3><a class="toc-backref" href="#id14">1.3.3. Details by feature</a><a class="headerlink" href="#details-by-feature" title="Permalink to this headline">¶</a></h3>
+<p>This section is a comprehensive listing of the specific dependencies and
+versions by feature group. It is autogenerated from the definitive source,
+<code class="code docutils literal notranslate"><span class="pre">configure.ac</span></code>.</p>
+<p>Listed versions are minimums, with the caveats above. Everything needs a POSIX
+shell and utilities.</p>
+<p>The next section contains notes about some of the dependencies.</p>
+<div class="section" id="building-charliecloud">
+<h4>1.3.3.1. Building Charliecloud<a class="headerlink" href="#building-charliecloud" title="Permalink to this headline">¶</a></h4>
+<blockquote>
+<div><ul class="simple">
+<li>C99 compiler</li>
+<li><code class="code docutils literal notranslate"><span class="pre">sphinx-build</span></code> 1.4.9</li>
 </ul>
-<p>The SquashFS workflow requires FUSE and <a class="reference external" href="https://github.com/vasi/squashfus">Squashfuse</a>. Note that distribution packages of
-Squashfuse often provide only the “high level” executables; the “low level”
-executables have better performance. These can be installed from source on any
-distribution.</p>
-<p>Some distributions need configuration changes to enable user namespaces. For
-example:</p>
-<ul class="simple">
-<li><p>Debian Stretch <a class="reference external" href="https://superuser.com/a/1122977">needs sysctl</a>
-<code class="code docutils literal notranslate"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>.</p></li>
-<li><p>RHEL/CentOS 7.4 and 7.5 need both a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>.
-<em>Important note:</em> Docker does not work with user namespaces, so skip step 4
-of the Red Hat instructions, i.e., don’t add <code class="code docutils literal notranslate"><span class="pre">--userns-remap</span></code> to the
-Docker configuration (see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/97">issue #97</a>).</p></li>
+</div></blockquote>
+</div>
+<div class="section" id="image-builders-via-our-wrappers">
+<h4>1.3.3.2. Image builders via our wrappers<a class="headerlink" href="#image-builders-via-our-wrappers" title="Permalink to this headline">¶</a></h4>
+<p>Buildah:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Buildah 1.11.2</li>
 </ul>
-</div>
-<div class="section" id="build-time">
-<h3><a class="toc-backref" href="#id6">1.1.3. Build time</a><a class="headerlink" href="#build-time" title="Permalink to this headline">¶</a></h3>
-<p>Systems used for building images need the run-time dependencies, plus
-something to actually build the images. Sub-sections list Charliecloud
-dependencies for each builder; see also the builders’ documentation.</p>
-<p>All builders require internet access (e.g., for public Docker Hub) or
-configuration for a local image repository (e.g., a private Docker Hub).</p>
-<p>Additional dependencies for specific components:</p>
-<ul class="simple">
-<li><p>To create SquashFS image files: <code class="code docutils literal notranslate"><span class="pre">squashfs-tools</span></code></p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">ch-build2dir</span></code>: Bash 4.1+</p></li>
+</div></blockquote>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> enabled</li>
+<li>Python shebang line</li>
+<li>Python in shebang 3.4</li>
+<li>“lark-parser” module</li>
+<li>skopeo 0.1.30</li>
+<li>umoci 0.4.3</li>
+<li><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></li>
 </ul>
-<div class="section" id="buildah-privileged-or-unprivileged">
-<h4>1.1.3.1. Buildah (privileged or unprivileged)<a class="headerlink" href="#buildah-privileged-or-unprivileged" title="Permalink to this headline">¶</a></h4>
-<p>Charliecloud uses Buildah’s “rootless” mode and ignore-chown-errors storage
-configuration to acheive a fully unprivileged workflow. If an image with
-multpile user mappings is pulled using this method, all file permissions will
-be remapped to a single user (root). This requires Buildah v1.10.1 or newer.</p>
-<p>For a privileged workflow, Charliecloud can also use Buildah with setuid
-helpers <code class="code docutils literal notranslate"><span class="pre">newuidmap</span></code> and <code class="code docutils literal notranslate"><span class="pre">newgidmap</span></code>. This will not remap the file
-permissions to root.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>To configure Buildah in rootless mode, which is what Charliecloud uses,
-make sure your config files are in <code class="code docutils literal notranslate"><span class="pre">~/.config/containers</span></code> and they
-are correct. Particularly if your system also has configuration in
-<code class="code docutils literal notranslate"><span class="pre">/etc/containers</span></code>, problems can be very hard to diagnose.</p>
-</div>
-</div>
-<div class="section" id="ch-grow-unprivileged">
-<h4>1.1.3.2. <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> (unprivileged)<a class="headerlink" href="#ch-grow-unprivileged" title="Permalink to this headline">¶</a></h4>
-<p>This is our internal unprivileged image builder and requires:</p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://github.com/containers/skopeo">skopeo</a></p></li>
-<li><p><a class="reference external" href="https://github.com/openSUSE/umoci">umoci</a></p></li>
-<li><p>Python module <code class="code docutils literal notranslate"><span class="pre">lark</span></code>
-(<a class="reference external" href="https://pypi.org/project/lark-parser/">lark-parser</a> on PyPI)</p></li>
+</div></blockquote>
+<p>Docker:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Docker 17.03</li>
+<li><code class="code docutils literal notranslate"><span class="pre">mktemp</span></code></li>
 </ul>
+</div></blockquote>
 </div>
-<div class="section" id="docker-privileged">
-<h4>1.1.3.3. Docker (privileged)<a class="headerlink" href="#docker-privileged" title="Permalink to this headline">¶</a></h4>
-<p>Our wrapper scripts for Docker expect to run the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> command under
-<code class="code docutils literal notranslate"><span class="pre">sudo</span></code> and need Docker 17.03+ and <code class="code docutils literal notranslate"><span class="pre">mktemp(1)</span></code>. Older versions of
-Docker may work but are untested. We know that 1.7.1 does not work.</p>
+<div class="section" id="managing-container-images">
+<h4>1.3.3.3. Managing container images<a class="headerlink" href="#managing-container-images" title="Permalink to this headline">¶</a></h4>
+<p>build from Dockerfile with <code class="code docutils literal notranslate"><span class="pre">ch-build</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li>at least one builder</li>
+<li>access to an image repository</li>
+</ul>
+</div></blockquote>
+<p>pack images from builder storage to tarball:</p>
+<blockquote>
+<div><ul class="simple">
+<li>at least one builder</li>
+<li><code class="code docutils literal notranslate"><span class="pre">tar</span></code></li>
+</ul>
+</div></blockquote>
+<p>pack images from builder storage to SquashFS:</p>
+<blockquote>
+<div><ul class="simple">
+<li>at least one builder</li>
+<li><code class="code docutils literal notranslate"><span class="pre">mksquashfs</span></code> 4.2</li>
+</ul>
+</div></blockquote>
+<p>Note: Pulling/pushing images from/to a repository is currently done using
+the builder directly.</p>
 </div>
+<div class="section" id="running-containers">
+<h4>1.3.3.4. Running containers<a class="headerlink" href="#running-containers" title="Permalink to this headline">¶</a></h4>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li>user+mount namespaces</li>
+</ul>
+</div></blockquote>
+<p>unpack image tarballs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="code docutils literal notranslate"><span class="pre">tar</span></code></li>
+</ul>
+</div></blockquote>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-mount</span></code> and <code class="code docutils literal notranslate"><span class="pre">ch-umount</span></code> SquashFS images:</p>
+<blockquote>
+<div><ul class="simple">
+<li>SquashFUSE 0.1.102</li>
+</ul>
+</div></blockquote>
+<p>inject nVidia GPU libraries:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="code docutils literal notranslate"><span class="pre">nvidia-container-cli</span></code> 1.0.0</li>
+<li>nVidia libraries &amp; executables present</li>
+</ul>
+</div></blockquote>
 </div>
 <div class="section" id="test-suite">
-<h3><a class="toc-backref" href="#id7">1.1.4. Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h3>
-<p>To run the test suite, you also need:</p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://github.com/sstephenson/bats">Bats</a> 0.4.0 (<a class="reference external" href="https://github.com/bats-core/bats-core">Bats-core</a>, a newer fork of Bats, is
-untested)</p></li>
-<li><p>Bash 4.1+, for Bats and to make programming the tests tractable</p></li>
-<li><p>Python 2.7 or 3.4+, for building some of the tests</p></li>
-<li><p>Wget, to download stuff for some of the test images</p></li>
-<li><p>root access via <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> (optional), to test filesystem permissions enforcement</p></li>
+<h4>1.3.3.5. Test suite<a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h4>
+<p>basic tests:</p>
+<blockquote>
+<div><ul class="simple">
+<li>test suite enabled</li>
+<li><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></li>
+<li>Bats 0.4.0</li>
+<li>Bash 4.1</li>
+<li><code class="code docutils literal notranslate"><span class="pre">wget</span></code> 1.11</li>
 </ul>
-<p>Image building software tested, with varying levels of thoroughness:</p>
-<ul class="simple">
-<li><p>Shell scripts with various manual bootstrap and <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></p></li>
-<li><p>Docker</p></li>
-<li><p><a class="reference external" href="https://github.com/containers/buildah">Buildah</a></p></li>
-<li><p><a class="reference external" href="https://github.com/containers/skopeo">skopeo</a> and
-<a class="reference external" href="https://github.com/openSUSE/umoci">umoci</a></p></li>
+</div></blockquote>
+<p>recommended tests with tarballs:</p>
+<blockquote>
+<div><ul class="simple">
+<li>basic tests</li>
+<li>any builder above</li>
+<li>access to Docker Hub or mirror</li>
+<li>pack images with tar</li>
+<li>unpack images with tar</li>
 </ul>
+</div></blockquote>
+<p>recommended tests with SquashFS:</p>
+<blockquote>
+<div><ul class="simple">
+<li>recommended tests with tar</li>
+<li>pack images with SquashFS</li>
+<li>mount/unmount SquashFS images</li>
+</ul>
+</div></blockquote>
+<p>complete test suite:</p>
+<blockquote>
+<div><ul class="simple">
+<li>recommended tests with SquashFS</li>
+<li><code class="code docutils literal notranslate"><span class="pre">sphinx-build</span></code> 1.4.9</li>
+<li>generic sudo</li>
+</ul>
+</div></blockquote>
 </div>
 </div>
-<div class="section" id="package-manager-install">
-<h2><a class="toc-backref" href="#id8">1.2. Package manager install</a><a class="headerlink" href="#package-manager-install" title="Permalink to this headline">¶</a></h2>
-<p>Charliecloud is available in some distribution package repositories, and
-packages can be built for additional distributions. (Note, however, that
-system-wide installation is not required — Charliecloud works fine when built
-by any user and run from one’s home directory or similar.)</p>
-<p>This section describes how to obtain packages for the distributions we know
-about, and where to go for support on them.</p>
-<p>If you’d like to build one of the packages, or if you’re a package maintainer,
-see <code class="code docutils literal notranslate"><span class="pre">packaging/README</span></code> and <code class="code docutils literal notranslate"><span class="pre">packaging/*/README</span></code> for additional
-documentation.</p>
-<p>Pull requests and other collaboration to improve the packaging situation are
-particularly welcome!</p>
-<div class="section" id="debian">
-<h3><a class="toc-backref" href="#id9">1.2.1. Debian</a><a class="headerlink" href="#debian" title="Permalink to this headline">¶</a></h3>
-<p>Charliecloud has been proposed for inclusion in Debian; see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/95">issue 95</a>.</p>
-<table class="colwidths-auto docutils align-center">
-<tbody>
-<tr class="row-odd"><td><p>Distribution versions</p></td>
-<td><p>proposed for <em>Buster</em> and <em>Stretch backports</em></p></td>
-</tr>
-<tr class="row-even"><td><p>Maintainers</p></td>
-<td><p>Lucas Nussbaum (<code class="code docutils literal notranslate"><span class="pre">lucas&#64;debian.org</span></code>)
-and Peter Wienemann (<code class="code docutils literal notranslate"><span class="pre">wienemann&#64;physik.uni-bonn.de</span></code>)</p></td>
-</tr>
-<tr class="row-odd"><td><p>Bug reports to</p></td>
-<td><p>Charliecloud’s GitHub issue tracker</p></td>
-</tr>
-<tr class="row-even"><td><p>Packaging source code</p></td>
-<td><p>in Charliecloud: <code class="code docutils literal notranslate"><span class="pre">packaging/debian</span></code></p></td>
-</tr>
-</tbody>
-</table>
+<div class="section" id="notes-on-specific-dependencies">
+<h3><a class="toc-backref" href="#id15">1.3.4. Notes on specific dependencies</a><a class="headerlink" href="#notes-on-specific-dependencies" title="Permalink to this headline">¶</a></h3>
+<p>This section describes additional details we have learned about some of the
+dependencies. Note that most of these are optional. It is in alphabetical
+order by dependency.</p>
+<div class="section" id="bash">
+<h4>1.3.4.1. Bash<a class="headerlink" href="#bash" title="Permalink to this headline">¶</a></h4>
+<p>When Bash is needed, it’s because:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Shell scripting is a lot easier in Bash than POSIX shell, so we use it for
+scripts applicable in contexts where it’s very likely Bash is already
+available.</li>
+<li>It is required by our testing framework, Bats.</li>
+</ul>
+</div></blockquote>
 </div>
-<div class="section" id="gentoo">
-<h3><a class="toc-backref" href="#id10">1.2.2. Gentoo</a><a class="headerlink" href="#gentoo" title="Permalink to this headline">¶</a></h3>
-<p>A native package for Gentoo is available.</p>
-<table class="colwidths-auto docutils align-center">
-<tbody>
-<tr class="row-odd"><td><p>Package name</p></td>
-<td><p><a class="reference external" href="https://packages.gentoo.org/packages/sys-cluster/charliecloud">sys-cluster/charliecloud</a></p></td>
-</tr>
-<tr class="row-even"><td><p>Maintainer</p></td>
-<td><p>Oliver Freyermuth (<code class="code docutils literal notranslate"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</p></td>
-</tr>
-<tr class="row-odd"><td><p>Bug reports to</p></td>
-<td><p><a class="reference external" href="https://bugs.gentoo.org/buglist.cgi?quicksearch=sys-cluster%2Fcharliecloud">Gentoo Bugzilla</a></p></td>
-</tr>
-<tr class="row-even"><td><p>Packaging source code</p></td>
-<td><p><a class="reference external" href="https://gitweb.gentoo.org/repo/gentoo.git/tree/sys-cluster/charliecloud">Gentoo ebuild repository</a></p></td>
-</tr>
-</tbody>
-</table>
-<p>To install:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> emerge sys-cluster/charliecloud
-</pre></div>
+<div class="section" id="bats">
+<h4>1.3.4.2. Bats<a class="headerlink" href="#bats" title="Permalink to this headline">¶</a></h4>
+<p>Bats (“Bash Automated Testing System”) is a test framework for tests written
+as Bash shell scripts.</p>
+<p><a class="reference external" href="https://github.com/sstephenson/bats">Upstream Bats</a> is unmaintained, but
+widely available. Both version 0.4.0, which tends to be in distributions, and
+upstream master branch (commit 0360811) should work. There is a maintained
+fork called <a class="reference external" href="https://github.com/bats-core/bats-core">Bats-core</a>, but the
+test suite currently does not pass with it; see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/582">issue #582</a>. Patches welcome!</p>
 </div>
-<p>If may necessary to accept keywords first, e.g.:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">echo</span> <span class="s2">&quot;=sys-cluster/charliecloud-0.2.3_pre20171121 ~amd64&quot;</span> &gt;&gt; /etc/portage/package.accept_keywords
-</pre></div>
+<div class="section" id="buildah">
+<h4>1.3.4.3. Buildah<a class="headerlink" href="#buildah" title="Permalink to this headline">¶</a></h4>
+<p>Charliecloud uses Buildah’s “rootless” mode and <code class="code docutils literal notranslate"><span class="pre">ignore-chown-errors</span></code>
+storage configuration for a fully unprivileged workflow with no sudo and no
+setuid binaries. Note that in this mode, images in Buildah internal storage
+will have all user and group ownership flattened to UID/GID 0.</p>
+<p>If you prefer a privileged workflow, Charliecloud can also use Buildah with
+setuid helpers <code class="code docutils literal notranslate"><span class="pre">newuidmap</span></code> and <code class="code docutils literal notranslate"><span class="pre">newgidmap</span></code>. This will not remap
+ownership.</p>
+<p>To configure Buildah in rootless mode, make sure your config files are in
+<code class="code docutils literal notranslate"><span class="pre">~/.config/containers</span></code> and they are correct. Particularly if your system
+also has configuration in <code class="code docutils literal notranslate"><span class="pre">/etc/containers</span></code>, problems can be very hard
+to diagnose.</p>
 </div>
-<p>A live ebuild is also available and can be keyworded via:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">echo</span> <span class="s2">&quot;~sys-cluster/charliecloud-9999 \*\*&quot;</span> &gt;&gt; /etc/portage/package.accept_keywords
-</pre></div>
+<div class="section" id="c-compiler">
+<h4>1.3.4.4. C compiler<a class="headerlink" href="#c-compiler" title="Permalink to this headline">¶</a></h4>
+<p>We test with GCC. Core team members use whatever version comes with their
+distribution.</p>
+<p>In principle, any C99 compiler should work. Please let us know any success or
+failure reports.</p>
+<p>Intel <code class="code docutils literal notranslate"><span class="pre">icc</span></code> is not supported because it links extra shared libraries
+that our test suite can’t deal with. See <a class="reference external" href="https://github.com/hpc/charliecloud/pull/481">PR #481</a>.</p>
 </div>
-</div>
-<div class="section" id="opensuse-and-suse">
-<h3><a class="toc-backref" href="#id11">1.2.3. openSUSE and SUSE</a><a class="headerlink" href="#opensuse-and-suse" title="Permalink to this headline">¶</a></h3>
-<p>Charliecloud is included in openSUSE Tumbleweed.
-For SUSE Linux Enterprise users, it’s available via
-<a class="reference external" href="https://packagehub.suse.com/packages/charliecloud/">SUSE Package Hub</a>.</p>
-<table class="colwidths-auto docutils align-center">
-<tbody>
-<tr class="row-odd"><td><p>Package name</p></td>
-<td><p><code class="code docutils literal notranslate"><span class="pre">charliecloud</span></code>, <code class="code docutils literal notranslate"><span class="pre">charliecloud-doc</span></code> and <code class="code docutils literal notranslate"><span class="pre">charliecloud-examples</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p>Maintainers</p></td>
-<td><p>Ana Guerrero Lopez (<code class="code docutils literal notranslate"><span class="pre">aguerrero&#64;suse.com</span></code>)
-and Christian Goll (<code class="code docutils literal notranslate"><span class="pre">cgoll&#64;suse.com</span></code>)</p></td>
-</tr>
-<tr class="row-odd"><td><p>Bug reports to</p></td>
-<td><p><a class="reference external" href="https://en.opensuse.org/openSUSE:Submitting_bug_reports">openSUSE Bugzilla</a></p></td>
-</tr>
-<tr class="row-even"><td><p>Packaging source code</p></td>
-<td><p><a class="reference external" href="https://build.opensuse.org/package/show/network:cluster/charliecloud">openSUSE Build Service</a></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="rpm-based-distributions">
-<h3><a class="toc-backref" href="#id12">1.2.4. RPM-based distributions</a><a class="headerlink" href="#rpm-based-distributions" title="Permalink to this headline">¶</a></h3>
-<p>An RPM <code class="code docutils literal notranslate"><span class="pre">.spec</span></code> file is provided in the Charliecloud source code. We are
-actively seeking distribution packagers to adapt this into official packages!</p>
-<table class="colwidths-auto docutils align-center">
-<tbody>
-<tr class="row-odd"><td><p>Repositories</p></td>
-<td><p>none yet</p></td>
-</tr>
-<tr class="row-even"><td><p>Maintainer</p></td>
-<td><p>Oliver Freyermuth (<code class="code docutils literal notranslate"><span class="pre">o.freyermuth&#64;googlemail.com</span></code>)</p></td>
-</tr>
-<tr class="row-odd"><td><p>Bug reports to</p></td>
-<td><p>Charliecloud’s GitHub issue tracker</p></td>
-</tr>
-<tr class="row-even"><td><p>Packaging source code</p></td>
-<td><p>in Charliecloud: <code class="code docutils literal notranslate"><span class="pre">packaging/redhat</span></code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="nixos">
-<h3><a class="toc-backref" href="#id13">1.2.5. NixOS</a><a class="headerlink" href="#nixos" title="Permalink to this headline">¶</a></h3>
-<p>Charliecloud is available as a Nix package; see <a class="reference external" href="https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/virtualization/charliecloud">See Nixpkgs repository</a>.</p>
-<table class="colwidths-auto docutils align-center">
-<tbody>
-<tr class="row-odd"><td><p>Distribution versions</p></td>
-<td><p><em>Unstable</em> channel</p></td>
-</tr>
-<tr class="row-even"><td><p>Maintainers</p></td>
-<td><p>Bruno Bzeznik (<code class="code docutils literal notranslate"><span class="pre">Bruno&#64;bzizou.net</span></code>)</p></td>
-</tr>
-<tr class="row-odd"><td><p>Bug reports to</p></td>
-<td><p>Nixos’s GitHub issue tracker</p></td>
-</tr>
-<tr class="row-even"><td><p>Packaging source code</p></td>
-<td><p>Nixpkgs repository &lt;<a class="reference external" href="https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/virtualization/charliecloud/default.nix">https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/virtualization/charliecloud/default.nix</a>&gt;`_.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="section" id="manual-build-and-install">
-<h2><a class="toc-backref" href="#id14">1.3. Manual build and install</a><a class="headerlink" href="#manual-build-and-install" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="download">
-<h3><a class="toc-backref" href="#id15">1.3.1. Download</a><a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h3>
-<p>See our GitHub project: <a class="reference external" href="https://github.com/hpc/charliecloud">https://github.com/hpc/charliecloud</a></p>
-<p>The recommended download method is <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">--recursive</span></code>.</p>
-</div>
-<div class="section" id="build">
-<h3><a class="toc-backref" href="#id16">1.3.2. Build</a><a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h3>
-<p>To build, simply:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make
-</pre></div>
-</div>
-<p>To build the documentation, see <a class="reference internal" href="dev.html#doc-build"><span class="std std-ref">the contributor’s guide</span></a>.</p>
-</div>
-<div class="section" id="install-optional">
-<h3><a class="toc-backref" href="#id17">1.3.3. Install (optional)</a><a class="headerlink" href="#install-optional" title="Permalink to this headline">¶</a></h3>
-<p>You can run Charliecloud from the source directory, and it’s recommended you
-at least run the test suite before installation to establish that your system
-will work.</p>
-<p>To install (FHS-compliant):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> make install <span class="nv">PREFIX</span><span class="o">=</span>/foo/bar
-</pre></div>
-</div>
-<p>Note that <code class="code docutils literal notranslate"><span class="pre">PREFIX</span></code> is required. It does not default to
-<code class="code docutils literal notranslate"><span class="pre">/usr/local</span></code> like many packages.</p>
-</div>
-</div>
-<div class="section" id="docker-tips">
-<h2><a class="toc-backref" href="#id18">1.4. Docker tips</a><a class="headerlink" href="#docker-tips" title="Permalink to this headline">¶</a></h2>
-<p>Docker is a convenient way to build Charliecloud images. While installing
-Docker is beyond the scope of this documentation, here are a few tips.</p>
-<div class="section" id="understand-the-security-implications-of-docker">
-<h3><a class="toc-backref" href="#id19">1.4.1. Understand the security implications of Docker</a><a class="headerlink" href="#understand-the-security-implications-of-docker" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="docker">
+<h4>1.3.4.5. Docker<a class="headerlink" href="#docker" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="security-implications-of-docker">
+<h5>1.3.4.5.1. Security implications of Docker<a class="headerlink" href="#security-implications-of-docker" title="Permalink to this headline">¶</a></h5>
 <p>Because Docker (a) makes installing random crap from the internet really easy
 and (b) is easy to deploy insecurely, you should take care. Some of the
 implications are below. This list should not be considered comprehensive nor a
 substitute for appropriate expertise; adhere to your moral and institutional
 responsibilities.</p>
-<div class="section" id="docker-equals-root">
-<h4>1.4.1.1. <code class="code docutils literal notranslate"><span class="pre">docker</span></code> equals root<a class="headerlink" href="#docker-equals-root" title="Permalink to this headline">¶</a></h4>
-<p>Anyone who can run the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> command or interact with the Docker
-daemon can <a class="reference external" href="http://web.archive.org/web/20170614013206/http://www.reventlov.com/advisories/using-the-docker-command-to-root-the-host">trivially escalate to root</a>.
+<ul>
+<li><p class="first"><strong>Docker equals root.</strong> Anyone who can run the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> command or
+interact with the Docker daemon can <a class="reference external" href="http://web.archive.org/web/20170614013206/http://www.reventlov.com/advisories/using-the-docker-command-to-root-the-host">trivially escalate to root</a>.
 This is considered a feature.</p>
 <p>For this reason, don’t create the <code class="code docutils literal notranslate"><span class="pre">docker</span></code> group, as this will allow
-passwordless, unlogged escalation for anyone in the group.</p>
-</div>
-<div class="section" id="images-can-contain-bad-stuff">
-<h4>1.4.1.2. Images can contain bad stuff<a class="headerlink" href="#images-can-contain-bad-stuff" title="Permalink to this headline">¶</a></h4>
-<p>Standard hygiene for “installing stuff from the internet” applies. Only work
-with images you trust. The official Docker Hub repositories can help.</p>
-</div>
-<div class="section" id="containers-run-as-root">
-<h4>1.4.1.3. Containers run as root<a class="headerlink" href="#containers-run-as-root" title="Permalink to this headline">¶</a></h4>
-<p>By default, Docker runs container processes as root. In addition to being poor
-hygiene, this can be an escalation path, e.g. if you bind-mount host
-directories.</p>
-</div>
-<div class="section" id="docker-alters-your-network-configuration">
-<h4>1.4.1.4. Docker alters your network configuration<a class="headerlink" href="#docker-alters-your-network-configuration" title="Permalink to this headline">¶</a></h4>
-<p>To see what it did:</p>
+passwordless, unlogged escalation for anyone in the group. Our scripts
+expect to run Docker as <code class="code docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">docker</span></code>.</p>
+<p>Also, Docker runs container processes as root by default. In addition to
+being poor hygiene, this can be an escalation path, e.g. if you bind-mount
+host directories.</p>
+</li>
+<li><p class="first"><strong>Docker alters your network configuration.</strong> To see what it did:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ifconfig    <span class="c1"># note docker0 interface</span>
 <span class="gp">$</span> brctl show  <span class="c1"># note docker0 bridge</span>
 <span class="gp">$</span> route -n
 </pre></div>
 </div>
-</div>
-<div class="section" id="docker-installs-services">
-<h4>1.4.1.5. Docker installs services<a class="headerlink" href="#docker-installs-services" title="Permalink to this headline">¶</a></h4>
-<p>If you don’t want the service starting automatically at boot, e.g.:</p>
+</li>
+<li><p class="first"><strong>Docker installs services.</strong> If you don’t want the Docker service starting
+automatically at boot, e.g.:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> systemctl is-enabled docker
 <span class="go">enabled</span>
 <span class="gp">$</span> systemctl disable docker
@@ -551,10 +626,11 @@ directories.</p>
 <span class="go">disabled</span>
 </pre></div>
 </div>
-</div>
+</li>
+</ul>
 </div>
 <div class="section" id="configuring-for-a-proxy">
-<h3><a class="toc-backref" href="#id20">1.4.2. Configuring for a proxy</a><a class="headerlink" href="#configuring-for-a-proxy" title="Permalink to this headline">¶</a></h3>
+<h5>1.3.4.5.2. Configuring for a proxy<a class="headerlink" href="#configuring-for-a-proxy" title="Permalink to this headline">¶</a></h5>
 <p>By default, Docker does not work if you have a proxy, and it fails in two
 different ways.</p>
 <p>The first problem is that Docker itself must be told to use a proxy. This
@@ -568,10 +644,10 @@ manifests as:</p>
 <p>If you have a systemd system, the <a class="reference external" href="https://docs.docker.com/engine/admin/systemd/#http-proxy">Docker documentation</a> explains how to
 configure this. If you don’t have a systemd system, then
 <code class="code docutils literal notranslate"><span class="pre">/etc/default/docker</span></code> might be the place to go?</p>
-<p>The second problem is that Docker containers need to know about the proxy as
-well. This manifests as images failing to build because they can’t download
-stuff from the internet.</p>
-<p>The fix is to set the proxy variables in your environment, e.g.:</p>
+<p>The second problem is that programs executed during build (<code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
+instructions) need to know about the proxy as well. This manifests as images
+failing to build because they can’t download stuff from the internet.</p>
+<p>The fix is usually to set the proxy variables in your environment, e.g.:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export HTTP_PROXY=http://proxy.example.com:8088</span>
 <span class="go">export http_proxy=$HTTP_PROXY</span>
 <span class="go">export HTTPS_PROXY=$HTTP_PROXY</span>
@@ -589,8 +665,271 @@ stuff from the internet.</p>
 </div>
 <p>Because different programs use different subsets of these variables, and to
 avoid a situation where some things work and others don’t, the Charliecloud
-test suite (see below) includes a test that fails if some but not all of the
-above variables are set.</p>
+test suite will fail if some but not all of the above variables are set.</p>
+</div>
+</div>
+<div class="section" id="image-repository-access">
+<h4>1.3.4.6. image repository access<a class="headerlink" href="#image-repository-access" title="Permalink to this headline">¶</a></h4>
+<p><code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instructions in Dockerfiles and image pushing/pulling require
+access to an image repository and configuring the builder for that repository.
+Options include:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="https://hub.docker.com">Docker Hub</a>, or other public repository such as
+<a class="reference external" href="https://gitlab.com">gitlab.com</a> or NVIDIA’s <a class="reference external" href="https://ngc.nvidia.com">NCG container registry</a>.</li>
+<li>A private Docker-compatible registry, such as a private Docker Hub or
+GitLab instance.</li>
+<li>Filesystem directory, for builders that support this (e.g.,
+<code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code>).</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="lark-parser-python-package">
+<h4>1.3.4.7. “lark-parser” Python package<a class="headerlink" href="#lark-parser-python-package" title="Permalink to this headline">¶</a></h4>
+<p>PyPI has two incompatible packages that provide the module <code class="code docutils literal notranslate"><span class="pre">lark</span></code>,
+“<a class="reference external" href="https://pypi.org/project/lark-parser/">lark-parser</a>” and “lark”. You want
+“lark-parser”.</p>
+</div>
+<div class="section" id="python">
+<h4>1.3.4.8. Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h4>
+<p>We use Python for scripts that would be really hard to do in Bash, when we
+think Python is likely to be available.</p>
+</div>
+<div class="section" id="skopeo">
+<h4>1.3.4.9. Skopeo<a class="headerlink" href="#skopeo" title="Permalink to this headline">¶</a></h4>
+<p>Our unprivileged builder <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> uses <a class="reference external" href="https://github.com/containers/skopeo/">Skopeo</a> to interact with remote and local
+image repositories.</p>
+</div>
+<div class="section" id="sphinx">
+<h4>1.3.4.10. Sphinx<a class="headerlink" href="#sphinx" title="Permalink to this headline">¶</a></h4>
+<p>We use Sphinx to build the documentation; the theme is
+<a class="reference external" href="https://sphinx-rtd-theme.readthedocs.io/en/stable/">sphinx-rtd-theme</a>.</p>
+<p>Minimum versions are listed above. We currently use Sphinx 1.8 for building
+what’s on the web because there are bugs problematic for us in 2.x, e.g. <a class="reference external" href="https://github.com/readthedocs/sphinx_rtd_theme/issues/799">bad
+spacing in lists</a>.</p>
+<p>If you’re on Debian Stretch or some version of Ubuntu, installing with
+<code class="code docutils literal notranslate"><span class="pre">pip3</span></code> will silently install into <code class="code docutils literal notranslate"><span class="pre">~/.local</span></code>, leaving the
+<code class="code docutils literal notranslate"><span class="pre">sphinx-build</span></code> binary in <code class="code docutils literal notranslate"><span class="pre">~/.local/bin</span></code>, which is often not on
+your path. One workaround (untested) is to run <code class="code docutils literal notranslate"><span class="pre">pip3</span></code> as root, which
+violates principle of least privilege. A better workaround, assuming you can
+write to <code class="code docutils literal notranslate"><span class="pre">/usr/local</span></code>, is to add the undocumented and non-standard
+<code class="code docutils literal notranslate"><span class="pre">--system</span></code> argument to install in <code class="code docutils literal notranslate"><span class="pre">/usr/local</span></code> instead. (This
+matches previous <code class="code docutils literal notranslate"><span class="pre">pip</span></code> behavior.) See Debian bugs <a class="reference external" href="https://bugs.debian.org/725848">725848</a> and <a class="reference external" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856">820856</a>.</p>
+</div>
+<div class="section" id="squashfs">
+<h4>1.3.4.11. SquashFS<a class="headerlink" href="#squashfs" title="Permalink to this headline">¶</a></h4>
+<p>The SquashFS workflow requires <a class="reference external" href="https://github.com/plougher/squashfs-tools">SquashFS Tools</a> and/or <a class="reference external" href="https://github.com/vasi/squashfuse">SquashFUSE</a>. Note that distribution packages of
+SquashFUSE often provide only the “high level” executables; the “low level”
+executables have better performance. These can be installed from source on any
+distribution.</p>
+</div>
+<div class="section" id="sudo-generic">
+<h4>1.3.4.12. sudo, generic<a class="headerlink" href="#sudo-generic" title="Permalink to this headline">¶</a></h4>
+<p>Privilege escalation via sudo is used in the test suite to:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Prepare fixture directories for testing filesystem permissions enforcement.</li>
+<li>Test <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s behavior under different ownership scenarios.</li>
+</ul>
+</div></blockquote>
+<p>(Note that Charliecloud also uses <code class="code docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">docker</span></code>; see above.)</p>
+</div>
+<div class="section" id="umoci">
+<h4>1.3.4.13. umoci<a class="headerlink" href="#umoci" title="Permalink to this headline">¶</a></h4>
+<p>Our unprivileged builder <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> uses <a class="reference external" href="https://umo.ci/">umoci</a> to
+manipulate images during the image build process.</p>
+</div>
+<div class="section" id="wget">
+<h4>1.3.4.14. Wget<a class="headerlink" href="#wget" title="Permalink to this headline">¶</a></h4>
+<p>Wget is used to demonstrate building an image without a builder (the main test
+image used to exercise Charliecloud itself).</p>
+</div>
+</div>
+</div>
+<div class="section" id="pre-installed-virtual-machine-image">
+<h2><a class="toc-backref" href="#id16">1.4. Pre-installed virtual machine image</a><a class="headerlink" href="#pre-installed-virtual-machine-image" title="Permalink to this headline">¶</a></h2>
+<p>This section explains how to create and use a single-node virtual machine with
+Charliecloud and all three builders pre-installed. This lets you use
+Charliecloud on Macs and Windows, and/or obtain a pre-configured Charliecloud
+environment without installing anything.</p>
+<p>You can use this CentOS VM either with <a class="reference external" href="https://www.vagrantup.com">Vagrant</a>
+or with <a class="reference external" href="https://www.virtualbox.org/">VirtualBox</a> alone. Various settings
+are specified, but in most cases we have not done any particular tuning, so
+use your judgement, and feedback is welcome.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">These instructions provide for an SSH server in the virtual machine guest
+that is accessible to anyone logged into the host. It is your
+responsibility to ensure this is safe and compliant with your
+organization’s policies, or modify the procedure accordingly.</p>
+</div>
+<div class="section" id="import-and-use-an-ova-appliance-file-with-plain-virtualbox">
+<h3><a class="toc-backref" href="#id17">1.4.1. Import and use an <code class="code docutils literal notranslate"><span class="pre">ova</span></code> appliance file with plain VirtualBox</a><a class="headerlink" href="#import-and-use-an-ova-appliance-file-with-plain-virtualbox" title="Permalink to this headline">¶</a></h3>
+<p>This procedure imports a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file into VirtualBox and walks you
+through logging in and running a brief Hello World in Charliecloud. You will
+act as user <code class="code docutils literal notranslate"><span class="pre">charlie</span></code>, who has passwordless <code class="code docutils literal notranslate"><span class="pre">sudo</span></code>.</p>
+<p>The Charliecloud developers do not distribute a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file. You will
+need to get it from your site, a third party, or build it yourself with
+Vagrant using the <a class="reference internal" href="dev.html#build-ova"><span class="std std-ref">instructions</span></a> in the Contributor’s guide.</p>
+<p>Prerequisite: Installed and working VirtualBox. (You do not need Vagrant to
+use the <code class="code docutils literal notranslate"><span class="pre">.ova</span></code>, only to create it.)</p>
+<div class="section" id="configure-virtualbox">
+<h4>1.4.1.1. Configure VirtualBox<a class="headerlink" href="#configure-virtualbox" title="Permalink to this headline">¶</a></h4>
+<ol class="arabic simple">
+<li>Set <em>Preferences</em> → <em>Proxy</em> if needed at your site.</li>
+</ol>
+</div>
+<div class="section" id="import-the-appliance">
+<h4>1.4.1.2. Import the appliance<a class="headerlink" href="#import-the-appliance" title="Permalink to this headline">¶</a></h4>
+<ol class="arabic simple">
+<li>Download <code class="code docutils literal notranslate"><span class="pre">charliecloud_centos7.ova</span></code>, or whatever your site
+has called it.</li>
+<li><em>File</em> → <em>Import appliance</em>. Choose <code class="code docutils literal notranslate"><span class="pre">charliecloud_centos7.ova</span></code> and
+click <em>Continue</em>.</li>
+<li>Review the settings.<ul>
+<li>CPU should match the number of cores in your system.</li>
+<li>RAM should be reasonable. Anywhere from 2GiB to half your system RAM will
+probably work.</li>
+<li>Tick <em>Reinitialize the MAC address of all network cards</em>.</li>
+</ul>
+</li>
+<li>Click <em>Import</em>.</li>
+<li>Verify that the appliance’s port forwarding is acceptable to you and your
+site: <em>Details</em> → <em>Network</em> → <em>Adapter 1</em> → <em>Advanced</em> → <em>Port
+Forwarding</em>.</li>
+</ol>
+</div>
+<div class="section" id="log-in-and-try-charliecloud">
+<h4>1.4.1.3. Log in and try Charliecloud<a class="headerlink" href="#log-in-and-try-charliecloud" title="Permalink to this headline">¶</a></h4>
+<ol class="arabic">
+<li><p class="first">Start the VM by clicking the green arrow.</p>
+</li>
+<li><p class="first">Wait for it to boot.</p>
+</li>
+<li><p class="first">Click on the console window, where user <code class="code docutils literal notranslate"><span class="pre">charlie</span></code> is logged in. If
+the VM “captures” your mouse pointer, type the key combination listed in
+the lower-right corner of the window to release it. You can avoid capture
+by clicking the title bar instead of window content.</p>
+</li>
+<li><p class="first">Change your password. You must use <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> because you have
+passwordless <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> but don’t know your password.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo passwd charlie
+</pre></div>
+</div>
+</li>
+<li><p class="first">SSH (from terminal on the host) into the VM using the password you just
+set. Accessing the VM using SSH rather than the console is generally more
+pleasant, because you have a nice terminal with native copy-and-paste, etc.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh -p <span class="m">2222</span> charlie@localhost
+</pre></div>
+</div>
+</li>
+<li><p class="first">Build and run a container:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello -f /usr/local/src/charliecloud/examples/serial/hello <span class="se">\</span>
+           /usr/local/src/charliecloud
+<span class="gp">$</span> ch-builder2tar hello /var/tmp
+<span class="go">57M /var/tmp/hello.tar.gz</span>
+<span class="gp">$</span> ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
+<span class="go">creating new image /var/tmp/hello</span>
+<span class="go">/var/tmp/hello unpacked ok</span>
+<span class="gp">$</span> cat /etc/redhat-release
+<span class="go">CentOS Linux release 7.3.1611 (Core)</span>
+<span class="gp">$</span> ch-run /var/tmp/hello -- /bin/bash
+<span class="gp">&gt;</span> cat /etc/debian_version
+<span class="go">8.9</span>
+<span class="gp">&gt;</span> <span class="nb">exit</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Congratulations! You’ve successfully used Charliecloud. Now all of your
+wildest dreams will come true.</p>
+<p>Shut down the VM at your leisure.</p>
+<p>Possible next steps:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Follow the <a class="reference internal" href="tutorial.html"><span class="doc">tutorial</span></a>.</li>
+<li>Run <a class="reference internal" href="command-usage.html#ch-test"><span class="std std-ref">ch-test</span></a> (Note that the environment variables are
+already configured for you in this appliance.)</li>
+<li>Configure <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code> to be a <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code>, if you have enough RAM,
+for better performance.</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="build-and-use-the-vm-with-vagrant">
+<h3><a class="toc-backref" href="#id18">1.4.2. Build and use the VM with Vagrant</a><a class="headerlink" href="#build-and-use-the-vm-with-vagrant" title="Permalink to this headline">¶</a></h3>
+<p>This procedure builds and provisions an idiomatic Vagrant virtual machine. You
+should also read the Vagrantfile in <code class="code docutils literal notranslate"><span class="pre">packaging/vagrant</span></code> before
+proceeding. This contains the specific details on build and provisioning,
+which are not repeated here.</p>
+<p>Prerequisite: You already know how to use Vagrant.</p>
+<div class="section" id="caveats-and-gotchas">
+<h4>1.4.2.1. Caveats and gotchas<a class="headerlink" href="#caveats-and-gotchas" title="Permalink to this headline">¶</a></h4>
+<p>In no particular order:</p>
+<ul class="simple">
+<li>While Vagrant supports a wide variety of host and virtual machine providers,
+this procedure is tested only on VirtualBox on a Mac. Current Vagrant
+versions should work, but we don’t track specifically which ones. (Anyone
+who wants to help us broaden this support, please get in touch.)</li>
+<li>Switching between proxy and no-proxy environments is not currently
+supported. If you have a mixed environment (e.g. laptops that travel between
+a corporate network and the wild), you may want to provide two separate
+images.</li>
+<li>Provisioning is not idempotent. Running the provisioners again will have
+undefined results.</li>
+<li>The documentation is not built. Use the web documentation instead of man
+pages.</li>
+<li>Only the most recent release of Charliecloud is supported.</li>
+</ul>
+</div>
+<div class="section" id="install-vagrant-and-plugins">
+<h4>1.4.2.2. Install Vagrant and plugins<a class="headerlink" href="#install-vagrant-and-plugins" title="Permalink to this headline">¶</a></h4>
+<p>You can install VirtualBox and Vagrant either manually using website downloads
+or with Homebrew:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> brew cask install virtualbox virtualbox-extension-pack vagrant
+</pre></div>
+</div>
+<p>Sanity check:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant version
+<span class="go">Installed Version: 2.1.2</span>
+<span class="go">Latest Version: 2.1.2</span>
+
+<span class="go">You&#39;re running an up-to-date version of Vagrant!</span>
+</pre></div>
+</div>
+<p>Then, install the needed plugins:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant plugin install vagrant-disksize <span class="se">\</span>
+                         vagrant-proxyconf <span class="se">\</span>
+                         vagrant-reload <span class="se">\</span>
+                         vagrant-vbguest
+</pre></div>
+</div>
+</div>
+<div class="section" id="build-and-provision">
+<h4>1.4.2.3. Build and provision<a class="headerlink" href="#build-and-provision" title="Permalink to this headline">¶</a></h4>
+<p>To build the VM and install Docker, Charliecloud, etc.:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> packaging/vagrant
+<span class="gp">$</span> vagrant up
+</pre></div>
+</div>
+<p>By default, this uses the newest release of Charliecloud. If you want
+something different, set the <code class="code docutils literal notranslate"><span class="pre">CH_VERSION</span></code> variable, e.g.:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nv">CH_VERSION</span><span class="o">=</span>v0.10 vagrant up
+<span class="gp">$</span> <span class="nv">CH_VERSION</span><span class="o">=</span>master vagrant up
+</pre></div>
+</div>
+<p>Then, optionally run the Charliecloud tests:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant provision --provision-with<span class="o">=</span><span class="nb">test</span>
+</pre></div>
+</div>
+<p>This runs the Charliecloud test suite in standard scope.</p>
+<p>Note that the test output does not have a TTY, so you will not have the tidy
+checkmarks. The last test printed is the last one that completed, not the one
+currently running.</p>
+<p>If the tests don’t pass, that’s a bug. Please report it!</p>
+<p>Now you can <code class="code docutils literal notranslate"><span class="pre">vagrant</span> <span class="pre">ssh</span></code> and do all the usual Vagrant stuff.</p>
+</div>
 </div>
 </div>
 </div>
