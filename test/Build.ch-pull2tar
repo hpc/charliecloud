@@ -1,5 +1,9 @@
 #!/bin/bash
 # ch-test-scope: standard
+# ch-test-builder-exclude: buildah
+# ch-test-builder-exclude: buildah-runc
+# ch-test-builder-exclude: buildah-setuid
+# ch-test-builder-exclude: ch-grow
 
 # Generate a flattened image tarball using ch-pull2tar and stage it for
 # testing.

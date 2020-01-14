@@ -1,5 +1,9 @@
 #!/bin/bash
 # ch-test-scope: standard
+# ch-test-builder-exclude: buildah
+# ch-test-builder-exclude: buildah-runc
+# ch-test-builder-exclude: buildah-setuid
+# ch-test-builder-exclude: ch-grow
 
 # Generate image directory using ch-pull2dir and stage it for testing.
 
