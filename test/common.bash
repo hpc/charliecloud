@@ -81,33 +81,11 @@ image_ok () {
 
 multiprocess_ok () {
     [[ $ch_multiprocess ]] || skip 'no multiprocess launch tool found'
-
-    # MPICH requires different handling from OpenMPI. Set a variable to enable
-    # some kludges.
-    if [[ $1 = *'-mpich' ]]; then
-        # If the MPI in the container is MPICH, we only try host launch on Crays.
-        # For the other settings (workstation, other Linux clusters), it may or
-        # may not work; we simply haven't tried.
-        [[ -z $ch_cray ]] && skip 'MPICH untested'
-        ch_mpi=mpich
-        # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
-        # Slurm environment variables, it tries to launch even local ranks with
-        # "srun". This of course fails within the container. You can't turn it off
-        # by building with --without-slurm like OpenMPI, so we fall back to this
-        # environment variable at run time.
-        export HYDRA_LAUNCHER=fork
-    else
-        ch_mpi=openmpi
-    fi
-
-    # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
-    # are present. Work around this by fooling OpenMPI into believing it's not
-    # in a Slurm allocation.
-    if [[ $ch_mpi = openmpi ]]; then
-        # shellcheck disable=SC2034
-        ch_unslurm='--unset-env=SLURM*'
-    fi
-
+    # If the MPI in the container is MPICH, we only try host launch on Crays.
+    # For the other settings (workstation, other Linux clusters), it may or
+    # may not work; we simply haven't tried.
+    [[ $ch_mpi = mpich && -z $ch_cray ]] \
+        && skip 'MPICH untested'
     # Exit function successfully.
     true
 }
@@ -199,7 +177,13 @@ ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
 # shellcheck disable=SC2034
 ch_mounts="${ch_imgdir}/mounts"
 
-# Test image information.
+# Image information.
+# shellcheck disable=SC2034
+ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
+# shellcheck disable=SC2034
+ch_img=${ch_imgdir}/${ch_tag}
+# shellcheck disable=SC2034
+ch_tar=${ch_tardir}/${ch_tag}.tar.gz
 # shellcheck disable=SC2034
 ch_ttar=${ch_tardir}/chtest.tar.gz
 # shellcheck disable=SC2034
@@ -248,6 +232,13 @@ if [[ $SLURM_JOB_ID ]]; then
     ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"
     ch_mpirun_2='srun -n2'
     ch_mpirun_2_1node='srun -N1 -n2'
+    # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
+    # are present. Work around this by fooling OpenMPI into believing it's not
+    # in a Slurm allocation.
+    if [[ $ch_mpi = openmpi ]]; then
+        # shellcheck disable=SC2034
+        ch_unslurm='--unset-env=SLURM*'
+    fi
     if [[ $ch_nodes -eq 1 ]]; then
         ch_multinode=
         ch_mpirun_2_2node=false

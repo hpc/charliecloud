@@ -1,9 +1,10 @@
+# ch-test-set: ch_tag
+
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
-    ch_img=${CH_TEST_IMGDIR}/${ch_tag}
 }
 
 count_ranks () {

@@ -1,9 +1,10 @@
+# ch-test-set: ch_tag
+
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
     scope standard
     prerequisites_ok hello
-    ch_img=${CH_TEST_IMGDIR}/${ch_tag}
 }
 
 @test "${ch_tag}/hello" {

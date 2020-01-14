@@ -1,9 +1,10 @@
+# ch-test-set: ch_tag
+
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
     scope full
     prerequisites_ok paraview
-    ch_img=${CH_TEST_IMGDIR}/${ch_tag}
     indir=$BATS_TEST_DIRNAME
     outdir=$BATS_TMPDIR
     if [[ $ch_multinode ]]; then

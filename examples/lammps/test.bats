@@ -1,3 +1,5 @@
+# ch-test-set: ch_tag
+
 load "${CHTEST_DIR}/common.bash"
 
 # LAMMPS does have a test suite, but we do not use it, because it seems too
@@ -38,7 +40,6 @@ setup () {
     scope full
     prerequisites_ok "$ch_tag"
     multiprocess_ok "$ch_tag"
-    ch_img=${CH_TEST_IMGDIR}/${ch_tag}
 }
 
 lammps_try () {

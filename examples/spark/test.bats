@@ -1,3 +1,5 @@
+# ch-test-set: ch_tag
+
 load "${CHTEST_DIR}/common.bash"
 
 # Note: If you get output like the following (piping through cat turns off
@@ -19,7 +21,6 @@ setup () {
     scope standard
     prerequisites_ok spark
     umask 0077
-    ch_img=${CH_TEST_IMGDIR}/${ch_tag}
     spark_dir=~/ch-spark-test.tmp  # runs before each test, so no mktemp
     spark_config=$spark_dir
     spark_log=/tmp/sparklog
