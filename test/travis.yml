@@ -66,6 +66,8 @@ jobs:
       env: CH_BUILDER=docker CH_TEST_SCOPE=quick
 
     - <<: *stage_builders
+      env: CH_BUILDER=none
+    - <<: *stage_builders
       env: CH_BUILDER=buildah
     - <<: *stage_builders
       env: CH_BUILDER=buildah-runc
@@ -76,6 +78,8 @@ jobs:
     - <<: *stage_builders
       env: CH_BUILDER=docker
 
+    - <<: *stage_install
+      env: CH_BUILDER=none            TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
       env: CH_BUILDER=buildah         TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
