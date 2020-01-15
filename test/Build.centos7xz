@@ -16,6 +16,7 @@
 #   $ tar xf centos-7-${arch}-docker.tar.xz --to-stdout ./etc/centos-release
 #
 # ch-test-scope: standard
+# ch-test-builder-required: any
 
 set -ex
 

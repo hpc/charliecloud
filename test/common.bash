@@ -26,6 +26,12 @@ builder_ok () {
     #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
+builder_required () {
+    if [[ $CH_BUILDER == none ]]; then
+        skip 'builder required'
+    fi
+}
+
 builder_tag_p () {
     printf 'image tag %s ... ' "$1"
     case $CH_BUILDER in

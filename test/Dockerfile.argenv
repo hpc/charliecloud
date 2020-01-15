@@ -1,6 +1,7 @@
 # Test ARG and ENV handling.
 
 # ch-test-scope: standard
+# ch-test-builder-required: any
 FROM alpine:3.9
 
 ARG chse_arg1_df

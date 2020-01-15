@@ -1,4 +1,5 @@
 # ch-test-scope: full
+# ch-test-builder-required: any
 FROM openmpi
 WORKDIR /usr/src
 

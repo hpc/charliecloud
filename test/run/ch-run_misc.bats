@@ -359,6 +359,7 @@ EOF
 
 @test 'ch-run --set-env from Dockerfile' {
     scope standard
+    builder_required
     prerequisites_ok argenv
     img=${ch_imgdir}/argenv
 

@@ -1,9 +1,6 @@
 #!/bin/bash
 # ch-test-scope: standard
-# ch-test-builder-exclude: buildah
-# ch-test-builder-exclude: buildah-runc
-# ch-test-builder-exclude: buildah-setuid
-# ch-test-builder-exclude: ch-grow
+# ch-test-builder-required: docker
 
 # Generate a flattened image tarball using ch-pull2tar and stage it for
 # testing.
@@ -15,11 +12,6 @@ tarball_gz=${2}.tar.gz
 workdir=$3
 
 imgtag=alpine:3.9
-
-if ( ! command -v docker &> /dev/null); then
-    echo 'docker not found' 1>&2
-    exit 65
-fi
 
 cd "$workdir"
 ch-pull2tar $imgtag .

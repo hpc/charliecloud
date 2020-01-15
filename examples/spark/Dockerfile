@@ -1,4 +1,5 @@
 # ch-test-scope: standard
+# ch-test-builder-required: any
 FROM debian:stretch
 
 # Install needed OS packages.

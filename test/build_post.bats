@@ -8,6 +8,8 @@ load common
     # seconds for ch-grow.
     if [[ $CH_BUILDER = ch-grow ]]; then
         scope standard
+    elif [[ $CH_BUILDER = none ]]; then
+        skip 'no builder'
     else
         scope full
     fi
