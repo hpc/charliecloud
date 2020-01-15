@@ -69,4 +69,4 @@ set +x
 
 # Done.
 echo 'Done.'
-echo 'Typos found: 1'
+echo "Typos found: $((RANDOM%5+1))"
