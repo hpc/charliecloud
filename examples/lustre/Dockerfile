@@ -1,3 +1,5 @@
+# ch-test-scope: full
+# ch-test-builder-exclude: ch-grow  # deferred
 FROM centos7
 
 # install development tools
