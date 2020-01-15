@@ -44,7 +44,7 @@ setup () {
 }
 
 @test "${ch_tag}/cone ranks=2" {
-    multiprocess_ok "$ch_tag"
+    multiprocess_ok
     # shellcheck disable=SC2086
     $ch_mpirun_2 ch-run --join -b "$indir" -b "$outdir" "$ch_img" -- \
               pvbatch /mnt/0/cone.py /mnt/1
@@ -54,7 +54,7 @@ setup () {
 }
 
 @test "${ch_tag}/cone ranks=N" {
-    multiprocess_ok "$ch_tag"
+    multiprocess_ok
     # shellcheck disable=SC2086
     $ch_mpirun_core ch-run --join -b "$indir" -b "$outdir" "$ch_img" -- \
                  pvbatch /mnt/0/cone.py /mnt/1
@@ -64,5 +64,5 @@ setup () {
 }
 
 @test "${ch_tag}/revert image" {
-    unpack_img_all_nodes "$ch_cray" "$ch_tag"
+    unpack_img_all_nodes "$ch_cray"
 }

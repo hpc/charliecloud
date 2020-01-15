@@ -48,7 +48,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/empty stderr" {
-   multiprocess_ok "$ch_tag"
+   multiprocess_ok
    output=$($ch_mpirun_core ch-run --join "$ch_img" -- \
                             /hello/hello 2>&1 1>/dev/null)
    echo "$output"
@@ -68,7 +68,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/host starts ranks" {
-    multiprocess_ok "$ch_tag"
+    multiprocess_ok
     echo "starting ranks with: ${mpirun_core}"
 
     guest_mpi=$(ch-run "$ch_img" -- mpirun --version | head -1)
@@ -93,5 +93,5 @@ count_ranks () {
 }
 
 @test "${ch_tag}/revert image" {
-    unpack_img_all_nodes "$ch_cray" "$ch_tag"
+    unpack_img_all_nodes "$ch_cray"
 }
