@@ -138,7 +138,7 @@ squashfs_ready () {
 
 unpack_img_all_nodes () {
     if [[ $1 ]]; then
-        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${2}.tar.gz" "$ch_imgdir"
+        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
     else
         skip 'not needed'
     fi
