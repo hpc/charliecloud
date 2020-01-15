@@ -127,11 +127,50 @@ AC_DEFUN([CH_CHECK_VERSION], [
 AC_CHECK_FUNCS(asprintf, [], [
   AC_MSG_ERROR([asprintf() not found. Please report this bug.])])
 
-vmin_sphinx=1.4.9
+# Sphinx
+vmin_sphinx=1.2.3
 AX_WITH_PROG([SPHINX], [sphinx-build])
 AC_SUBST([SPHINX])
 CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
                  [--version | sed -E 's/sphinx-build //'])
+
+# Get the Sphinx Python
+AS_IF([test -n "$SPHINX"], [
+  AC_MSG_CHECKING([for sphinx-build Python])
+  sphinx_python=$(head -1 "$SPHINX" | sed -E 's/^..//')
+  AC_MSG_RESULT([$sphinx_python])
+])
+
+# "docutils" module
+vmin_docutils=0.14
+docutils=$sphinx_python  # FIXME: output is confusing
+AS_IF([test -n "$SPHINX"], [
+  # Sphinx requires docutils, so don't verify it's there.
+  CH_CHECK_VERSION([docutils], [$vmin_docutils],
+                   [-c 'import docutils; print(docutils.__version__)'])
+])
+
+# "sphinx-rtd-theme" module
+vmin_rtd=0.2.4
+rtd=$sphinx_python  # FIXME: output is confusing
+AS_IF([test -n "$SPHINX"], [
+  AC_MSG_CHECKING([for sphinx_rtd_theme module])
+  cat <<EOF | $sphinx_python
+import sys
+try:
+   import sphinx_rtd_theme
+except ImportError:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [have_rtd=yes],
+    [have_rtd=no])
+  AC_MSG_RESULT([$have_rtd])
+  AS_IF([test $have_rtd = yes], [
+    CH_CHECK_VERSION([rtd], [$vmin_rtd],
+      [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
+  ])
+])
 
 
 ## Feature tests - run time
@@ -262,11 +301,17 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 
 ## Adjust build options given what we have available.
 
-AS_IF([test "$enable_html" = yes && test -z "$SPHINX"],
+AS_IF([   test -n "$SPHINX" \
+       && test -n "$docutils" \
+       && test -n "$rtd"],
+       [have_docs=yes],
+       [have_docs=no])
+
+AS_IF([test $enable_html = yes && test $have_docs = no],
       [AC_MSG_WARN([forcing --disable-html: no suitable sphinx-build])
        enable_html=no])
 
-AS_IF([test "$enable_man" = yes && test -z "$SPHINX"],
+AS_IF([test $enable_man = yes && test $have_docs = no],
       [AC_MSG_WARN([forcing --disable-man: no suitable sphinx-build])
        enable_man=no])
 
@@ -278,7 +323,7 @@ AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 AM_CONDITIONAL([ENABLE_CH_GROW], [test $enable_ch_grow = yes])
 
 
-## Prepare run-time report.
+## Prepare report.
 
 # FIXME: Should replace all these with macros?
 
@@ -402,8 +447,14 @@ thinks a version is too old, and please report back to us.
 Building Charliecloud
 ~~~~~~~~~~~~~~~~~~~~~
 
+  required:
     C99 compiler ... ${CC} ${CC_VERSION}
+
+  documentation: ${have_docs}
     sphinx-build(1) $vmin_sphinx ... ${SPHINX:-not found} ${SPHINX_VERSION}
+    sphinx-build(1) Python ... ${sphinx_python:-n/a}
+    "docutils" module $vmin_docutils ... ${docutils_VERSION:-not found}
+    "sphinx-rtd-theme" module $vmin_rtd ... ${rtd_VERSION:-not found}
 
   will build and install:
     HTML documentation ... ${enable_html}
@@ -488,6 +539,6 @@ Test suite
 
   complete test suite: ${have_tests_all}
     recommended tests with SquashFS ... ${have_tests_squash}
-    sphinx-build(1) $vmin_sphinx ... ${SPHINX_VERSION:-not found}
+    documentation ... ${have_docs}
     generic sudo ... assumed yes
 ])
