@@ -5,11 +5,12 @@
 # ch-test-builder-exclude: buildah-setuid
 # ch-test-builder-exclude: ch-grow
 # ch-test-need-sudo
+#
 # Pull a docker image directly from Dockerhub and pack it into an image tarball.
 
 set -e
 
-srcdir=$1
+#srcdir=$1  # unused
 tarball_gz=${2}.tar.gz
 workdir=$3
 

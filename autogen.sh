@@ -22,8 +22,8 @@ set -x
 # We don't run "make clean" because that runs configure again.
 rm -rf Makefile \
        Makefile.in \
-       */Makefile \
-       */Makefile.in \
+       ./*/Makefile \
+       ./*/Makefile.in \
        aclocal.m4 \
        autom4te.cache \
        bin/.deps \
