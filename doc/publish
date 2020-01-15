@@ -4,7 +4,7 @@
 # the internal documentation for usage and how to set it up.
 
 set -e
-doc_base=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
+doc_base=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 fatal () {
     echo "¯\_(ツ)_/¯ $1" 1>&2
