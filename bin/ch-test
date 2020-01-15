@@ -426,6 +426,10 @@ while [[ $# -gt 0 ]]; do
     --sudo)
         use_sudo=yes
         ;;
+    --lustre)
+        export ch_lustre="$1"
+	shift
+        ;;
     --version)
         version; exit 0
         ;;
