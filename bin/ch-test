@@ -361,14 +361,17 @@ fi
 # source code to keep it from being even deeper, but this became too unruly.)
 if [[ -d ${ch_base}/share ]]; then
     # installed
+    CHTEST_INSTALLED=yes
     CHTEST_DIR=${ch_base}/libexec/charliecloud/test
     CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
 else
     # build dir
+    CHTEST_INSTALLED=
     CHTEST_DIR=${ch_base}/test
     CHTEST_EXAMPLES_DIR=${ch_base}/examples
 fi
 export ch_base
+export CHTEST_INSTALLED
 export CHTEST_DIR
 export CHTEST_EXAMPLES_DIR
 

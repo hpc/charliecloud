@@ -21,5 +21,5 @@ version.py: ../configure
 	printf "VERSION='@PACKAGE_VERSION@'\n" > $@
 
 version.sh: ../configure
-	printf "# shellcheck disable=SC2034\n" > $@
+	printf "# shellcheck shell=sh disable=SC2034\n" > $@
 	printf "ch_version='@PACKAGE_VERSION@'\n" >> $@
