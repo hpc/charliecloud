@@ -297,6 +297,11 @@ test_make_check_image () {
 
     sudo_required=$(cat "$img" | grep -F 'ch-test-need-sudo')
 
+    # Exclude Dockerfiles if we have no builder.
+    if [[ $CH_BUILDER == none && $img == *Dockerfile* ]]; then
+        return 1
+    fi
+
     # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
     if [[ $scope_int -lt "$img_scope_int" ]]; then
         return 1
@@ -309,19 +314,9 @@ test_make_check_image () {
     done
 
     # Exlude images that don't match a required builder.
-    case $builder_required in
-    any|yes) # 'yes' and 'any' behave the same. The later is preferred for
-             # clarity in Dockerfiles that require a builder but exclude
-             # specific builder (which is handled below).
-        if [[ $CH_BUILDER == none ]]; then
-            return 1
-        fi
-        ;;
-    *)
-        if [[ $builder_required != "$CH_BUILDER" ]]; then
-            return 1
-        fi
-    esac
+    if [[ $builder_required != "$CH_BUILDER" ]]; then
+        return 1
+    fi
 
     # Exclude images that are not compatible with CH_BUILDER.
     for b in $exclude_builder; do
