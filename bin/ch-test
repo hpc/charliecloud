@@ -314,7 +314,7 @@ test_make_check_image () {
     done
 
     # Exlude images that don't match a required builder.
-    if [[ $builder_required != "$CH_BUILDER" ]]; then
+    if [[ -n $builder_required && ($builder_required != "$CH_BUILDER") ]]; then
         return 1
     fi
 
