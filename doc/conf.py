@@ -21,7 +21,7 @@ import sys, os
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.4.9'
+#needs_sphinx = '1.4.9'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -65,7 +65,15 @@ today_fmt = '%Y-%m-%d %H:%M %Z'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["charliecloud", "doctrees", "examples", "html", "man"]
+exclude_patterns = ["doctrees", "html", "man"]
+
+# FIXME: Workaround for older Sphinx that barf with:
+#
+#   WARNING: document isn't included in any toctree
+#
+# on files included via ".. include::'. I believe this was fixed in 1.4.3 and
+# the relevant issue is: https://github.com/sphinx-doc/sphinx/issues/2603
+exclude_patterns += ["*_desc.rst", "_deps.rst", "bugs.rst", "see_also.rst"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -93,6 +101,15 @@ exclude_patterns = ["charliecloud", "doctrees", "examples", "html", "man"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'sphinx_rtd_theme'
+
+# FIXME: Workaround for older versions of Sphinx. This is not needed in 1.8.5,
+# but it is needed in 1.2.3. I don't know where the boundary is. We embed it
+# in try/except so that "docs-sane" can import the file too.
+try:
+   import sphinx_rtd_theme
+   html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+except ImportError:
+   pass  # error caught elsewhere
 
 highlight_language = 'console'
 

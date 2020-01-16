@@ -953,7 +953,6 @@ throwing an error. The :code:`ch-run-oci` man page documents comprehensively
 what OCI features are and are not supported.
 
 .. code-block:: javascript
-   :dedent: 0
 
    {
      "ociVersion": "1.0.0",
@@ -961,7 +960,6 @@ what OCI features are and are not supported.
 We validate that this is "1.0.0".
 
 .. code-block:: javascript
-   :dedent: 0
 
      "root": {
        "path": "/tmp/buildah115496812/mnt/rootfs"
@@ -971,7 +969,6 @@ Path to root filesystem; maps to :code:`NEWROOT`. If key :code:`readonly` is
 :code:`false` or absent, add :code:`--write`.
 
 .. code-block:: javascript
-   :dedent: 0
 
      "mounts": [
        {
@@ -1078,7 +1075,6 @@ Therefore, for now we just ignore mounts.
 We do add :code:`--no-home` in OCI mode.
 
 .. code-block:: javascript
-   :dedent: 0
 
      "process": {
        "terminal": true,
@@ -1091,14 +1087,12 @@ its standard input from :code:`/dev/null`, which is the current workaround.
 Things work fine.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "cwd": "/",
 
 Maps to :code:`--cd`.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "args": [
          "/bin/sh",
@@ -1110,7 +1104,6 @@ Maps to :code:`CMD [ARG ...]`. Note that we do not run :code:`ch-run` via the
 shell, so there aren't worries about shell parsing.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "env": [
          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
@@ -1130,7 +1123,6 @@ We treat it as a complete environment, i.e., place the variables in a file and
 then :code:`--unset-env='*' --set-env=FILE`.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "rlimits": [
          {
@@ -1143,7 +1135,6 @@ then :code:`--unset-env='*' --set-env=FILE`.
 Process limits Buildah wants us to set with :code:`setrlimit(2)`. Ignored.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "capabilities": {
          ...
@@ -1153,7 +1144,6 @@ Long list of capabilities that Buildah wants. Ignored. (Charliecloud provides
 security by remaining an unprivileged process.)
 
 .. code-block:: javascript
-   :dedent: 0
 
        "user": {
          "uid": 0,
@@ -1164,7 +1154,6 @@ security by remaining an unprivileged process.)
 Maps to :code:`--uid=0 --gid=0`.
 
 .. code-block:: javascript
-   :dedent: 0
 
      "linux": {
        "namespaces": [
@@ -1185,7 +1174,6 @@ Maps to :code:`--uid=0 --gid=0`.
 Namespaces that Buildah wants. Ignored; Charliecloud just does user and mount.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "uidMappings": [
          {
@@ -1217,7 +1205,6 @@ much larger than Charliecloud's single entry and asks for container root to be
 host root, which we can't do. Ignored.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "maskedPaths": [
          "/proc/acpi",
@@ -1235,7 +1222,6 @@ Spec says to "mask over the provided paths ... so they cannot be read" and
 protects us.)
 
 .. code-block:: javascript
-   :dedent: 0
 
      }
    }
