@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5. Contributor’s guide &mdash; Charliecloud 0.14~pre+webdocs.1fb5d18.dirty documentation</title>
+  <title>5. Contributor’s guide &mdash; Charliecloud 0.14~pre+559532c documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.14~pre+webdocs.1fb5d18.dirty
+                0.14~pre+559532c
               </div>
             
           
@@ -1041,105 +1041,105 @@ what OCI features are and are not supported.</p>
 </pre></div>
 </div>
 <p>We validate that this is “1.0.0”.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;root&quot;</span><span class="o">:</span> <span class="p">{</span>
-    <span class="s2">&quot;path&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/mnt/rootfs&quot;</span>
-  <span class="p">},</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;root&quot;</span><span class="o">:</span> <span class="p">{</span>
+  <span class="s2">&quot;path&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/mnt/rootfs&quot;</span>
+<span class="p">},</span>
 </pre></div>
 </div>
 <p>Path to root filesystem; maps to <code class="code docutils literal notranslate"><span class="pre">NEWROOT</span></code>. If key <code class="code docutils literal notranslate"><span class="pre">readonly</span></code> is
 <code class="code docutils literal notranslate"><span class="pre">false</span></code> or absent, add <code class="code docutils literal notranslate"><span class="pre">--write</span></code>.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;mounts&quot;</span><span class="o">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;strictatime&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;mode=755&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;size=65536k&quot;</span>
-      <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/mqueue&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nosuid&quot;</span>
-      <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/pts&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;devpts&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;pts&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;newinstance&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ptmxmode=0666&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;mode=0620&quot;</span>
-      <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/shm&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;shm&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;mode=1777&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;size=65536k&quot;</span>
-      <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;proc&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nosuid&quot;</span>
-      <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-        <span class="s2">&quot;rbind&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ro&quot;</span>
-      <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/etc/hosts&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/hosts&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-        <span class="s2">&quot;rbind&quot;</span>
-      <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/etc/resolv.conf&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/resolv.conf&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-        <span class="s2">&quot;rbind&quot;</span>
-      <span class="p">]</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;mounts&quot;</span><span class="o">:</span> <span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;strictatime&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;mode=755&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;size=65536k&quot;</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/mqueue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nosuid&quot;</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/pts&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;devpts&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;pts&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;newinstance&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;ptmxmode=0666&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;mode=0620&quot;</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/shm&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;shm&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;mode=1777&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;size=65536k&quot;</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;proc&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nosuid&quot;</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;rbind&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;ro&quot;</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/etc/hosts&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/hosts&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;rbind&quot;</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/etc/resolv.conf&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/resolv.conf&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
+      <span class="s2">&quot;rbind&quot;</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">],</span>
 </pre></div>
 </div>
 <p>This says what filesystems to mount in the container. It is a mix; it has
@@ -1150,8 +1150,8 @@ filesystems backed by a block device).</p>
 <p>The things that matter seem to be the same as Charliecloud defaults.
 Therefore, for now we just ignore mounts.</p>
 <p>We do add <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code> in OCI mode.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;process&quot;</span><span class="o">:</span> <span class="p">{</span>
-    <span class="s2">&quot;terminal&quot;</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;process&quot;</span><span class="o">:</span> <span class="p">{</span>
+  <span class="s2">&quot;terminal&quot;</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
 </pre></div>
 </div>
 <p>This says that Buildah wants a pseudoterminal allocated. Charliecloud does not
@@ -1159,28 +1159,28 @@ currently support that, so we error in this case.</p>
 <p>However, Buildah can be persuaded to set this <code class="code docutils literal notranslate"><span class="pre">false</span></code> if you redirect
 its standard input from <code class="code docutils literal notranslate"><span class="pre">/dev/null</span></code>, which is the current workaround.
 Things work fine.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;cwd&quot;</span><span class="o">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;cwd&quot;</span><span class="o">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
 </pre></div>
 </div>
 <p>Maps to <code class="code docutils literal notranslate"><span class="pre">--cd</span></code>.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;args&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;/bin/sh&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;apk add --no-cache bc&quot;</span>
-    <span class="p">],</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;args&quot;</span><span class="o">:</span> <span class="p">[</span>
+  <span class="s2">&quot;/bin/sh&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;apk add --no-cache bc&quot;</span>
+<span class="p">],</span>
 </pre></div>
 </div>
 <p>Maps to <code class="code docutils literal notranslate"><span class="pre">CMD</span> <span class="pre">[ARG</span> <span class="pre">...]</span></code>. Note that we do not run <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> via the
 shell, so there aren’t worries about shell parsing.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;env&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;https_proxy=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;no_proxy=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;HTTP_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;HTTPS_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;NO_PROXY=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;http_proxy=http://proxyout.lanl.gov:8080&quot;</span>
-    <span class="p">],</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;env&quot;</span><span class="o">:</span> <span class="p">[</span>
+  <span class="s2">&quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;https_proxy=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;no_proxy=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;HTTP_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;HTTPS_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;NO_PROXY=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;http_proxy=http://proxyout.lanl.gov:8080&quot;</span>
+<span class="p">],</span>
 </pre></div>
 </div>
 <p>Environment for the container. The spec does not say whether this is the
@@ -1188,88 +1188,88 @@ complete environment or whether it should be added to some default
 environment.</p>
 <p>We treat it as a complete environment, i.e., place the variables in a file and
 then <code class="code docutils literal notranslate"><span class="pre">--unset-env='*'</span> <span class="pre">--set-env=FILE</span></code>.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;rlimits&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;RLIMIT_NOFILE&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;hard&quot;</span><span class="o">:</span> <span class="mi">1048576</span><span class="p">,</span>
-        <span class="s2">&quot;soft&quot;</span><span class="o">:</span> <span class="mi">1048576</span>
-      <span class="p">}</span>
-    <span class="p">]</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;rlimits&quot;</span><span class="o">:</span> <span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;RLIMIT_NOFILE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hard&quot;</span><span class="o">:</span> <span class="mi">1048576</span><span class="p">,</span>
+    <span class="s2">&quot;soft&quot;</span><span class="o">:</span> <span class="mi">1048576</span>
+  <span class="p">}</span>
+<span class="p">]</span>
 </pre></div>
 </div>
 <p>Process limits Buildah wants us to set with <code class="code docutils literal notranslate"><span class="pre">setrlimit(2)</span></code>. Ignored.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;capabilities&quot;</span><span class="o">:</span> <span class="p">{</span>
-      <span class="p">...</span>
-    <span class="p">},</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;capabilities&quot;</span><span class="o">:</span> <span class="p">{</span>
+  <span class="p">...</span>
+<span class="p">},</span>
 </pre></div>
 </div>
 <p>Long list of capabilities that Buildah wants. Ignored. (Charliecloud provides
 security by remaining an unprivileged process.)</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;user&quot;</span><span class="o">:</span> <span class="p">{</span>
-      <span class="s2">&quot;uid&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
-      <span class="s2">&quot;gid&quot;</span><span class="o">:</span> <span class="mi">0</span>
-    <span class="p">},</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;user&quot;</span><span class="o">:</span> <span class="p">{</span>
+    <span class="s2">&quot;uid&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;gid&quot;</span><span class="o">:</span> <span class="mi">0</span>
   <span class="p">},</span>
+<span class="p">},</span>
 </pre></div>
 </div>
 <p>Maps to <code class="code docutils literal notranslate"><span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code>.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;linux&quot;</span><span class="o">:</span> <span class="p">{</span>
-    <span class="s2">&quot;namespaces&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;pid&quot;</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;ipc&quot;</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;mount&quot;</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;user&quot;</span>
-      <span class="p">}</span>
-    <span class="p">],</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;linux&quot;</span><span class="o">:</span> <span class="p">{</span>
+  <span class="s2">&quot;namespaces&quot;</span><span class="o">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;pid&quot;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;ipc&quot;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;mount&quot;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;user&quot;</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
 </pre></div>
 </div>
 <p>Namespaces that Buildah wants. Ignored; Charliecloud just does user and mount.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;uidMappings&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">1</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">65536</span>
-      <span class="p">}</span>
-    <span class="p">],</span>
-    <span class="s2">&quot;gidMappings&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">1</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">65536</span>
-      <span class="p">}</span>
-    <span class="p">],</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;uidMappings&quot;</span><span class="o">:</span> <span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">1</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">65536</span>
+  <span class="p">}</span>
+<span class="p">],</span>
+<span class="s2">&quot;gidMappings&quot;</span><span class="o">:</span> <span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">1</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mi">65536</span>
+  <span class="p">}</span>
+<span class="p">],</span>
 </pre></div>
 </div>
 <p>Describes the identity map between the namespace and host. Buildah wants it
 much larger than Charliecloud’s single entry and asks for container root to be
 host root, which we can’t do. Ignored.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>    <span class="s2">&quot;maskedPaths&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;/proc/acpi&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;/proc/kcore&quot;</span><span class="p">,</span>
-      <span class="p">...</span>
-    <span class="p">],</span>
-    <span class="s2">&quot;readonlyPaths&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;/proc/asound&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;/proc/bus&quot;</span><span class="p">,</span>
-      <span class="p">...</span>
-    <span class="p">]</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;maskedPaths&quot;</span><span class="o">:</span> <span class="p">[</span>
+  <span class="s2">&quot;/proc/acpi&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;/proc/kcore&quot;</span><span class="p">,</span>
+  <span class="p">...</span>
+<span class="p">],</span>
+<span class="s2">&quot;readonlyPaths&quot;</span><span class="o">:</span> <span class="p">[</span>
+  <span class="s2">&quot;/proc/asound&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;/proc/bus&quot;</span><span class="p">,</span>
+  <span class="p">...</span>
+<span class="p">]</span>
 </pre></div>
 </div>
 <p>Spec says to “mask over the provided paths ... so they cannot be read” and
