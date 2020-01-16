@@ -1,5 +1,4 @@
 # ch-test-scope: full
-# ch-test-builder-required: any
 FROM debian9
 
 # The MPICH example has a smaller scope than the OpenMPI example. We want to

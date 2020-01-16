@@ -1,3 +1,2 @@
 # ch-test-scope: full
-# ch-test-builder-required: any
 FROM python:3-alpine

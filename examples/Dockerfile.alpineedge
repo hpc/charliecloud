@@ -1,5 +1,4 @@
 # ch-test-scope: full
-# ch-test-builder-required: any
 FROM alpine:edge
 
 RUN apk add --no-cache bc

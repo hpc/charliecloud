@@ -1,5 +1,4 @@
 # ch-test-scope: standard
-# ch-test-builder-required: any
 FROM debian:stretch
 
 RUN    apt-get update \

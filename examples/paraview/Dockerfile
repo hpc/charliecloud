@@ -1,6 +1,5 @@
 # ch-test-scope: full
 # ch-test-builder-exclude: ch-grow  # deferred
-# ch-test-builder-required: yes
 FROM openmpi
 WORKDIR /usr/src
 

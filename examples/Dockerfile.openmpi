@@ -1,5 +1,4 @@
 # ch-test-scope: full
-# ch-test-builder-required: any
 FROM debian9
 
 # A key goal of this Dockerfile is to demonstrate best practices for building
