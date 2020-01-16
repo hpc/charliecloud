@@ -139,6 +139,8 @@ _deps.rst: ../config.log make-deps-overview
 $(html_DATA): html-local
 html-local: mkdir_issue115 ../libexec/version.txt _deps.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+# avoid GitHub messing things up with Jekyll
+	touch html/.nojekyll
 # remove unused files that Sphinx made
 	rm -R $(BUILDDIR)/html/_sources
 	rm -f $(BUILDDIR)/html/_deps.html \
