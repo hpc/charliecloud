@@ -10,7 +10,6 @@
 # it's a standard tool on Debian but only in EPEL for CentOS.
 #
 # ch-test-scope: quick
-# ch-test-builder-required: none
 
 set -ex
 

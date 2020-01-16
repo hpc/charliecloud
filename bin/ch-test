@@ -72,17 +72,14 @@ builder_check () {
         bv=$(docker_ --version | awk '{print $3}' | sed -e 's/,$//')
         ;;
     none)
+        bl='none'
         ;;
     *)
         fatal "builder: $CH_BUILDER: not supported"
         ;;
     esac
-    if [[ $CH_BUILDER == none ]]; then
-        printf 'found: none\n\n'
-    else
-        printf 'found: %s %s\n\n' "$bl" "$bv"
-        version_check 'builder' "$min" "$bv"
-    fi
+    printf 'found: %s %s\n\n' "$bl" "$bv"
+    version_check 'builder' "$min" "$bv"
 }
 
 builder_set () {
@@ -211,7 +208,7 @@ test_build () {
 test_examples () {
     local tag
     local phase=examples
-    if [[ $CH_TEST_SCOPE == quick || $CH_BUILDER == none ]]; then
+    if [[ $CH_TEST_SCOPE == quick ]]; then
         return
     fi
     echo
@@ -313,7 +310,7 @@ test_make_check_image () {
         fi
     done
 
-    # Exlude images that don't match a required builder.
+    # Exlude images that do not match required builder.
     if [[ -n $builder_required && ($builder_required != "$CH_BUILDER") ]]; then
         return 1
     fi
