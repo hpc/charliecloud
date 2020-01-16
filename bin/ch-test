@@ -120,10 +120,9 @@ dir_perm_rm () {
 }
 
 # The run phase requires artifacts from a successful build phase. Thus, we
-# check sanity based on the minimal set of artifacts (quick scope).
+# check sanity based on the minimal set of artifacts (no builder).
 dir_tar_check () {
     printf 'checking %s: ' "$CH_TEST_TARDIR"
-    dir_tar_check_file alpine39{.tar.gz,.sqfs,.pq_missing}
     dir_tar_check_file chtest{.tar.gz,.sqfs,.pq_missing}
     printf 'ok\n\n'
 }
