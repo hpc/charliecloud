@@ -37,9 +37,7 @@ rm -rf Makefile \
 
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
-    aclocal
-    autoheader
-    autoreconf --install -Wall -Werror
+    autoreconf --force --install -Wall -Werror
 
     set +x
     echo
