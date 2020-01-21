@@ -124,7 +124,7 @@ dir_perm_rm () {
 # check sanity based on the minimal set of artifacts (no builder).
 dir_tar_check () {
     printf 'checking %s: ' "$CH_TEST_TARDIR"
-    dir_tar_check_file chtest{.tar.gz,.sqfs,.pq_missing}
+    dir_tar_check_file chtest{.tar.gz,.sqfs}
     printf 'ok\n\n'
 }
 
@@ -281,12 +281,9 @@ test_make_check_image () {
     local include
     img=$1
     dir=$(basename "$(dirname "$img")")
-    builder_include=$(cat "$img" | grep -F 'ch-test-builder-required: ' \
+    builder_include=$(cat "$img" | grep -F 'ch-test-builder-include: ' \
                                   | sed 's/.*: //' | awk '{print $1}')
-    exclude_arch=$(cat "$img" | grep -F 'ch-test-arch-exclude: ' \
-                              | sed 's/.*: //' | awk '{print $1}')
-
-    exclude_builder=$(cat "$img" | grep -F 'ch-test-builder-exclude: ' \
+    builder_exclude=$(cat "$img" | grep -F 'ch-test-builder-exclude: ' \
                                  | sed 's/.*: //' | awk '{print $1}')
 
     img_scope_int=$(scope_to_digit "$(cat "$img" | grep -F 'ch-test-scope' \
@@ -311,24 +308,25 @@ test_make_check_image () {
         fi
     done
 
-    # Exclude image if builder isn't a member of the specified subset
+    # Exclude image if CH_BUILDER isn't a member of the specified subset
     if [[ -n $builder_include ]]; then
         for b in $builder_include; do
             if [[ $b == "$CH_BUILDER" ]]; then
                 include+=("$b")
             fi
         done
-        if [[ -z $include ]]; then
+        if [[ -z ${include[*]} ]]; then
             return 1
         fi
     fi
 
     # Exclude images that are not compatible with CH_BUILDER.
-    for b in $exclude_builder; do
+    for b in $builder_exclude; do
         if [[ $b == "$CH_BUILDER" ]]; then
             return 1
         fi
     done
+
     # Exclude images that require sudo if CH_TEST_SUDO is empty
     if [[ -n $sudo_required && -z $CH_TEST_SUDO ]]; then
         return 1

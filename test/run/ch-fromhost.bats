@@ -31,7 +31,6 @@ fromhost_ls () {
 
 @test 'ch-fromhost (Debian)' {
     scope standard
-    builder_required
     prerequisites_ok debian9
     img=${ch_imgdir}/debian9
 
@@ -112,7 +111,6 @@ fromhost_ls () {
 
 @test 'ch-fromhost (CentOS)' {
     scope full
-    builder_required
     prerequisites_ok centos7
     img=${ch_imgdir}/centos7
 
@@ -133,7 +131,6 @@ fromhost_ls () {
 
 @test 'ch-fromhost errors' {
     scope standard
-    builder_required
     prerequisites_ok debian9
     img=${ch_imgdir}/debian9
 
@@ -292,7 +289,6 @@ fromhost_ls () {
 
 @test 'ch-fromhost --cray-mpi not on a Cray' {
     scope full
-    builder_required
     [[ $ch_cray ]] && skip 'host is a Cray'
     run ch-fromhost --cray-mpi "$ch_timg"
     echo "$output"
@@ -311,7 +307,6 @@ fromhost_ls () {
 
 @test 'ch-fromhost --nvidia with GPU' {
     scope full
-    builder_required
     prerequisites_ok nvidia
     command -v nvidia-container-cli >/dev/null 2>&1 \
         || skip 'nvidia-container-cli not in PATH'
@@ -375,7 +370,6 @@ fromhost_ls () {
 
 @test 'ch-fromhost --nvidia without GPU' {
     scope full
-    builder_required
     prerequisites_ok nvidia
     img=${ch_imgdir}/nvidia
 

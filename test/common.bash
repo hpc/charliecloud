@@ -26,12 +26,6 @@ builder_ok () {
     #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
-builder_required () {
-    if [[ $CH_BUILDER == none ]]; then
-        skip 'builder required'
-    fi
-}
-
 builder_tag_p () {
     printf 'image tag %s ... ' "$1"
     case $CH_BUILDER in
@@ -102,7 +96,7 @@ need_squashfs () {
 }
 
 prerequisites_ok () {
-    if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
+    if [[ ! -f $CH_TEST_TARDIR/${1}.tar.gz ]]; then
         skip 'build prerequisites not met'
     fi
 }
