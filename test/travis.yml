@@ -72,8 +72,6 @@ jobs:
     - <<: *stage_builders
       env: CH_BUILDER=buildah-runc
     - <<: *stage_builders
-      env: CH_BUILDER=buildah-setuid
-    - <<: *stage_builders
       env: CH_BUILDER=ch-grow
     - <<: *stage_builders
       env: CH_BUILDER=docker
@@ -84,8 +82,6 @@ jobs:
       env: CH_BUILDER=buildah         TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
       env: CH_BUILDER=buildah-runc    TARBALL=export       MAKE_INSTALL=yes
-    - <<: *stage_install
-      env: CH_BUILDER=buildah-setuid  TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
       env: CH_BUILDER=ch-grow         TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install

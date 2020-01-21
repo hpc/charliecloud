@@ -55,7 +55,7 @@ if [ -n "$builder_info" ]; then
             docker --version  # no wrapper: sudo not needed for --version
             ;;
         none)
-            echo "no builder found"
+            echo "no builder"
             ;;
         *)
             echo "unknown builder" 1>&2

@@ -72,7 +72,8 @@ builder_check () {
         bv=$(docker_ --version | awk '{print $3}' | sed -e 's/,$//')
         ;;
     none)
-        bl='none'
+        bl=
+        bv= 
         ;;
     *)
         fatal "builder: $CH_BUILDER: not supported"
