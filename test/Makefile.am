@@ -32,7 +32,6 @@ Build.ch-build2dir \
 Build.ch-pull2dir \
 Build.ch-pull2tar \
 Build.docker_pull \
-Build.missing \
 Build.skopeo-umoci \
 chtest-make-auto \
 docs-sane \
