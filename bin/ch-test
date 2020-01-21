@@ -195,9 +195,9 @@ scope_to_digit () {
 
 test_build () {
     echo 'executing build phase tests ...'
-    # TODO: check for sotests?
+    # FIXME: check for sotests?
     if [[ ! -f ${tmp_}/build_auto.bats ]]; then
-        fatal "${tmp_}/build_auto.bats not found\n"
+        fatal "${tmp_}/build_auto.bats not found"
     fi
     bats build.bats "${tmp_}/build_auto.bats" build_post.bats
 }
@@ -216,7 +216,7 @@ test_examples () {
             bat_file=$(dirname "$i")/test.bats
             tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
             cp "$bat_file" "${tmp_}/${tag}_example.bats"
-            sed -i "s/%ch_test_tag%/$tag/g" "${tmp_}/${tag}_example.bats"
+            sed -i "s/%ch_test_tag%/${tag}/g" "${tmp_}/${tag}_example.bats"
         fi
     done
     bats "${tmp_}"/*_example.bats

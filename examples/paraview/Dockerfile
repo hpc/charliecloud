@@ -86,7 +86,7 @@ RUN    cd ParaView-v${PARAVIEW_VERSION}.build \
              -DVTK_OPENGL_HAS_OSMESA=ON \
              -DVTK_USE_OFFSCREEN=OFF \
              -DPARAVIEW_USE_MPI=ON \
-             -DVTK_USE_SYSTEM_PNG=ON \  
+             -DVTK_USE_SYSTEM_PNG=ON \
         ../ParaView-v${PARAVIEW_VERSION} \
     && make -j $(getconf _NPROCESSORS_ONLN) install
 RUN rm -Rf ParaView-v${PARAVIEW_VERSION}*
