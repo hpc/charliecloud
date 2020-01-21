@@ -212,10 +212,6 @@ test_examples () {
     echo
     echo 'executing example phase tests ...'
     for i in $examples; do
-        if [[ ! -d $CH_TEST_IMGDIR/${i} ]]; then
-            printf 'image %s/%s not found' "$CH_TEST_IMGDIR" "$i"
-            continue
-        fi
         if (test_make_check_image "$i"); then
             bat_file=$(dirname "$i")/test.bats
             tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
