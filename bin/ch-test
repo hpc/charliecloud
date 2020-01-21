@@ -197,7 +197,7 @@ test_build () {
     echo 'executing build phase tests ...'
     # TODO: check for sotests?
     if [[ ! -f ${tmp_}/build_auto.bats ]]; then
-        fatal "${tmp_}/build_auto.bats not found"
+        fatal "${tmp_}/build_auto.bats not found\n"
     fi
     bats build.bats "${tmp_}/build_auto.bats" build_post.bats
 }
@@ -212,11 +212,15 @@ test_examples () {
     echo
     echo 'executing example phase tests ...'
     for i in $examples; do
+        if [[ ! -d $CH_TEST_IMGDIR/${i} ]]; then
+            printf 'image %s/%s not found' "$CH_TEST_IMGDIR" "$i"
+            continue
+        fi
         if (test_make_check_image "$i"); then
             bat_file=$(dirname "$i")/test.bats
             tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
             cp "$bat_file" "${tmp_}/${tag}_example.bats"
-            sed -i "s@# ch-test-set: ch_tag@export CH_TEST_TAG=$tag@g" "${tmp_}/${tag}_example.bats"
+            sed -i "s/%ch_test_tag%/$tag/g" "${tmp_}/${tag}_example.bats"
         fi
     done
     bats "${tmp_}"/*_example.bats

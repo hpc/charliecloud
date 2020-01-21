@@ -1,4 +1,5 @@
-# ch-test-set: ch_tag
+# shellcheck disable=SC2034
+CH_TEST_TAG=%ch_test_tag%
 
 load ../../../test/common
 
