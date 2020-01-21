@@ -278,9 +278,10 @@ test_make_auto () {
 }
 
 test_make_check_image () {
+    local include
     img=$1
     dir=$(basename "$(dirname "$img")")
-    builder_required=$(cat "$img" | grep -F 'ch-test-builder-required: ' \
+    builder_include=$(cat "$img" | grep -F 'ch-test-builder-required: ' \
                                   | sed 's/.*: //' | awk '{print $1}')
     exclude_arch=$(cat "$img" | grep -F 'ch-test-arch-exclude: ' \
                               | sed 's/.*: //' | awk '{print $1}')
@@ -310,9 +311,16 @@ test_make_check_image () {
         fi
     done
 
-    # Exlude images that do not match required builder.
-    if [[ -n $builder_required && ($builder_required != "$CH_BUILDER") ]]; then
-        return 1
+    # Exclude image if builder isn't a member of the specified subset
+    if [[ -n $builder_include ]]; then
+        for b in $builder_include; do
+            if [[ $b == "$CH_BUILDER" ]]; then
+                include+=("$b")
+            fi
+        done
+        if [[ -z $include ]]; then
+            return 1
+        fi
     fi
 
     # Exclude images that are not compatible with CH_BUILDER.

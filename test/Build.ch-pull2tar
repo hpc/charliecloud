@@ -1,6 +1,6 @@
 #!/bin/bash
 # ch-test-scope: standard
-# ch-test-builder-required: docker
+# ch-test-builder-include: docker
 
 # Generate a flattened image tarball using ch-pull2tar and stage it for
 # testing.

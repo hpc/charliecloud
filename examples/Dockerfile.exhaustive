@@ -4,7 +4,7 @@
 # See: https://docs.docker.com/engine/reference/builder
 #
 # ch-test-scope: standard
-# ch-test-builder-required: ch-grow
+# ch-test-builder-include: ch-grow
 
 #FROM alpine
 #FROM alpine@cdf98d1859c1  # skopeo pukes on this
@@ -12,7 +12,7 @@ FROM alpine:3.9
 #FROM alpine:3.9 AS stage1
 
 # FIXME: These should maybe be moved into Dockerfile.argenv?
-ENV chse_1 value1 with spaces and trailing space 
+ENV chse_1 value1 with spaces and trailing space
 ENV chse_2 "value2"
 ENV chse_2a chse2: ${chse_2}
 ENV chse_2b="chse2: ${chse_2}"

@@ -13,7 +13,6 @@
 # issue #332 are still tested.
 #
 # ch-test-scope: standard
-# ch-test-builder-required: none
 
 set -ex
 
