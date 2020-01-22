@@ -72,8 +72,8 @@ builder_check () {
         bv=$(docker_ --version | awk '{print $3}' | sed -e 's/,$//')
         ;;
     none)
-        bl=
-        bv= 
+        bl='none'
+        bv=
         ;;
     *)
         fatal "builder: $CH_BUILDER: not supported"
@@ -245,6 +245,8 @@ test_run () {
 
 test_make_auto () {
     local img
+    make_auto="${CHTEST_DIR}/chtest-make-auto"
+
     printf "finding images compatible with test settings ...\n"
     for i in $images $examples; do
         if (test_make_check_image "$i"); then
@@ -253,7 +255,6 @@ test_make_auto () {
         fi
     done
 
-    make_auto="${CHTEST_DIR}/chtest-make-auto"
     printf '\n'
     case $phase in
     build)
@@ -280,30 +281,38 @@ test_make_auto () {
 test_make_check_image () {
     local include
     img=$1
+    imgdir=$CH_TEST_IMGDIR
     dir=$(basename "$(dirname "$img")")
     builder_include=$(cat "$img" | grep -F 'ch-test-builder-include: ' \
-                                  | sed 's/.*: //' | awk '{print $1}')
+                                 | sed 's/.*: //' | awk '{print $1}')
+
     builder_exclude=$(cat "$img" | grep -F 'ch-test-builder-exclude: ' \
                                  | sed 's/.*: //' | awk '{print $1}')
 
     img_scope_int=$(scope_to_digit "$(cat "$img" | grep -F 'ch-test-scope' \
-                                                   | sed 's/.*: //' \
-                                                   | awk '{print $1}')")
+                                                 | sed 's/.*: //' \
+                                                 | awk '{print $1}')")
 
     sudo_required=$(cat "$img" | grep -F 'ch-test-need-sudo')
 
     # Exclude Dockerfiles if we have no builder.
     if [[ $CH_BUILDER == none && $img == *Dockerfile* ]]; then
+        test_make_print_pq_missing "$img" \
+                'builder required to build from Dockerfile'
         return 1
     fi
 
     # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
     if [[ $scope_int -lt "$img_scope_int" ]]; then
+        test_make_print_pq_missing "$img" \
+                "image outside specified scope ($CH_TEST_SCOPE)"
         return 1
     fi
     # Exclude images that do not work with the host architecture.
     for a in $exclude_arch; do
         if [[ $a == "$(uname -m)" ]]; then
+            test_make_print_pq_missing "$img" \
+                    "image incompatible with arch '$a')"
             return 1
         fi
     done
@@ -316,6 +325,8 @@ test_make_check_image () {
             fi
         done
         if [[ -z ${include[*]} ]]; then
+            test_make_print_pq_missing "$img" \
+                    "image requires builder $CH_BUILDER)"
             return 1
         fi
     fi
@@ -323,14 +334,19 @@ test_make_check_image () {
     # Exclude images that are not compatible with CH_BUILDER.
     for b in $builder_exclude; do
         if [[ $b == "$CH_BUILDER" ]]; then
+            test_make_print_pq_missing "$img" \
+                    "image incompatible with builder $CH_BUILDER)"
             return 1
         fi
     done
 
     # Exclude images that require sudo if CH_TEST_SUDO is empty
     if [[ -n $sudo_required && -z $CH_TEST_SUDO ]]; then
+            test_make_print_pq_missing "$img" \
+                    "image requires generic sudo capability"
         return 1
     fi
+
     # In examples phase, exclude chtest (special case) and any images not in a
     # subdirectory of examples.
     if [[ $phase == examples && ( $dir == chtest || $dir == examples ) ]]; then
@@ -338,6 +354,16 @@ test_make_check_image () {
     fi
 
     return 0
+}
+
+test_make_print_pq_missing () {
+    local img
+    local out
+    local tag
+    img=$1
+    out=$2
+    tag=$("$make_auto" tag "$img")
+    printf '%s' "$out" > "${CH_TEST_TARDIR}/${tag}.pq_missing"
 }
 
 # Exit with failure if given version number is below a minimum.
