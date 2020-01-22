@@ -96,10 +96,8 @@ need_squashfs () {
 }
 
 prerequisites_ok () {
-    local file
-    file=$CH_TEST_TARDIR/${1}.pq_missing
-    if [[ -f $file ]]; then
-        skip "prerequisites not met; see $file"
+    if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
+        skip 'build prerequisites not met'
     fi
 }
 
