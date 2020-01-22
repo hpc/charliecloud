@@ -171,7 +171,6 @@ export CH_TEST_IMGDIR=/var/tmp/images
 export CH_TEST_PERMDIRS=skip
 EOF2
 
-
     # Install dependencies for autotools
     sudo yum -y install autoconf automake autoconf-archive
 
