@@ -86,6 +86,7 @@ Vagrant.configure("2") do |c|
     # Optional dependencies.
     yum -y install bats pigz pv python36
 
+
     # Add /usr/local/{bin,sbin} to $PATH.
     echo 'export PATH=/usr/local/sbin:/usr/local/bin:$PATH' > /etc/profile.d/path.sh
   EOF
@@ -170,6 +171,10 @@ export CH_TEST_IMGDIR=/var/tmp/images
 export CH_TEST_PERMDIRS=skip
 EOF2
 
+
+    # Install dependencies for autotools
+    sudo yum -y install autoconf automake autoconf-archive
+
     git clone --recursive https://github.com/hpc/charliecloud.git
 
     cd charliecloud
@@ -178,6 +183,8 @@ EOF2
     fi
     echo "checking out Charliecloud: $CH_VERSION"
     git checkout $CH_VERSION
+    ./autogen.sh
+    ./configure
     make
     sudo make install PREFIX=/usr/local
     which ch-run
