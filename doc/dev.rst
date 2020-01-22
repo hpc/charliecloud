@@ -317,6 +317,20 @@ prepends each line with the elapsed time since the previous line::
 
 Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
 
+:code:`ch-test` complains about inconsistent versions
+-----------------------------------------------------
+
+There are multiple ways to ask Charliecloud for its version number. These
+should all give the same result. If they don't, :code:`ch-test` will fail.
+Typically, something needs to be rebuilt. Recall that :code:`configure`
+contains the version number as a constant, so a common way to get into this
+situation is to change Git branches without rebuilding it.
+
+Charliecloud is small enough to just rebuild everything with::
+
+  $ ./autogen.sh && ./configure && make clean && make
+
+
 Writing a test image using the standard workflow
 ------------------------------------------------
 

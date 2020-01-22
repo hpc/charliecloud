@@ -439,9 +439,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 printf "ch-test version %s\n\n" "$ch_version"
-printf 'ch-run: %s %s\n' "$("${ch_bin}/ch-run" --version 2>&1)" \
-                         "${ch_bin}/ch-run"
-printf 'bats:   %s %s\n' "$bats_version" "$bats"
+printf 'ch-run: %s\n' "${ch_bin}/ch-run"
+printf 'bats:   %s (%s)\n' "$bats" "$bats_version"
 printf 'tests:  %s\n\n' "$CHTEST_DIR"
 
 printf "%-21s %s" 'phase:' "$phase"
@@ -469,6 +468,24 @@ printf '\n'
 if [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
     fatal "phase $phase: CH_TEST_PERMDIRS: can't be 'skip'"
 fi
+
+# Check that different sources of version number are consistent.
+printf 'checking version numbers ...\n'
+ch_run_version=$("${ch_bin}/ch-run" --version 2>&1)
+if [[ $ch_version != "$ch_run_version" ]]; then
+    fatal "inconsistent ch-run version: ${ch_run_version}"
+fi
+if [[ -z $CHTEST_INSTALLED ]]; then
+    cf_version=$("${ch_base}/configure" --version | head -1 | cut -d' ' -f3)
+    if [[ $ch_version != "$cf_version" ]]; then
+        fatal "inconsistent configure version: ${cf_version}"
+    fi
+    src_version=$("${ch_base}/misc/version")
+    if [[ $ch_version != "$src_version" ]]; then
+        fatal "inconsistent source version: ${src_version}"
+    fi
+fi
+printf 'ok\n\n'
 
 # Ensure BATS_TMPDIR is set to /tmp (issue #278).
 if [[ -n $BATS_TMPDIR && $BATS_TMPDIR != '/tmp' ]]; then
