@@ -593,7 +593,6 @@ case $phase in
         win
         ;;
     run)
-        dir_tar_mk
         dir_img_mk
         test_make_auto
         test_run
