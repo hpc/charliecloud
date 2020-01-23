@@ -159,7 +159,7 @@ fi
 # User-private temporary directory in case multiple users are running the
 # tests simultaneously.
 # shellcheck disable=SC2154
-btnew=$TMP__/bats.tmp
+btnew=$TMP_/bats.tmp
 mkdir -p "$btnew"
 chmod 700 "$btnew"
 export BATS_TMPDIR=$btnew
