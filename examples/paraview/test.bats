@@ -7,7 +7,7 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok paraview
-    indir=$BATS_TEST_DIRNAME
+    indir=${CHTEST_EXAMPLES_DIR}/paraview
     outdir=$BATS_TMPDIR
     if [[ $ch_multinode ]]; then
         # Bats only creates $BATS_TMPDIR on the first node.

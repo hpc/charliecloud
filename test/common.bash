@@ -155,6 +155,16 @@ env_require CH_BUILDER
 if [[ $CH_BUILDER == ch-grow ]]; then
     env_require CH_GROW_STORAGE
 fi
+
+# User-private temporary directory in case multiple users are running the
+# tests simultaneously.
+# shellcheck disable=SC2154
+btnew=$TMP__/bats.tmp
+mkdir -p "$btnew"
+chmod 700 "$btnew"
+export BATS_TMPDIR=$btnew
+[[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
+
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
