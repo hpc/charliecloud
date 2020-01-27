@@ -5,7 +5,9 @@ load ../common
     scope standard
     prerequisites_ok centos7
     [[ -d ../.git ]] || skip "not in Git working directory"
-    command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
+    if ( ! command -v sphinx-build > /dev/null 2>&1 ); then
+        pedantic_fail 'Sphinx is not installed'
+    fi
     img=${ch_imgdir}/centos7
 
     # Build and install RPMs into CentOS 7 image.
