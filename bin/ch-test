@@ -160,7 +160,7 @@ pedantry_set () {
     if [[ -n $ch_contributor || -n $TRAVIS ]]; then
         default=yes
     fi
-    vset ch_pedantic "$pedantic" '' $default $width 'pedantic mode'
+    vset ch_pedantic "$pedantic" '' $default "$width" 'pedantic mode'
     if [[ $ch_pedantic == no ]]; then
         ch_pedantic=  # proper boolean
     fi
@@ -415,8 +415,8 @@ fi
 # but it works at Los Alamos, where the team is based.)
 email="$USER@$(hostname --domain)"
 ch_contributor=
-for i in ${ch_contributors[@]}; do
-    if [[ $i == $email ]]; then
+for i in "${ch_contributors[@]}"; do
+    if [[ $i == "$email" ]]; then
         ch_contributor=yes
     fi
 done
@@ -504,7 +504,7 @@ vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
                       21 'scope'
 builder_set 21
 pedantry_set 21
-vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     $use_sudo_default \
+vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     "$use_sudo_default" \
                       21 'use generic sudo'
 vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
                       21 'unpacked images dir'

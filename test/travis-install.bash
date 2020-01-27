@@ -9,6 +9,7 @@ sudo chmod 1777 /usr/local/src
 sudo rm /usr/local/bin/bats
 
 # Allow sudo to user root, group non-root.
+sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/travis
 sudo cat /etc/sudoers.d/travis
 
 # Install conditional packages.

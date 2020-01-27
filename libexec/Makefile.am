@@ -16,6 +16,7 @@ charliecloud:
 
 contributors.bash: ../README.rst
 	rm -f $@
+	printf '# shellcheck shell=bash\n' >> $@
 	printf 'declare -a ch_contributors\n' >> $@
 	sed -En 's/^\*.+<(.+@.+)>.*$$/ch_contributors+=('"'"'\1'"'"')/p' < $< >> $@
 
