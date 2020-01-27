@@ -21,10 +21,6 @@ import tarfile
 
 from hashlib import sha256
 
-sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
-                    + "/../libexec/charliecloud"))
-import version
-
 ## Globals ##
 session = requests.Session()
 
@@ -57,40 +53,31 @@ PROXIES = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
 
 ## Classes ##
 
-# TODO: these are copied from ch-grow; update so they share.
-class Action_Exit(argparse.Action):
-    def __init__(self, *args, **kwargs):
-        super().__init__(nargs=0, *args, **kwargs)
-
-
-class CLI_Version(Action_Exit):
-    def __call__(self, *args, **kwargs):
-        print(version.VERSION)
-        sys.exit(0)
-
-
-# ATTRIBUTE           DESCRIPTION
-# 1. name             The image name.
-# 2. reference        Reference used to identify the image in the repository,
-#                     e.g., image tag or image digest.
-# 3. session          Session with token authorization information.
-# 4. manifest         The image manifest (request object).
-# 5. manifestDigest   The computed sha256 hash of the manifest json dump (string)
-# 6. configDigest     The image container config manfigest digest (json)
-# 7. configManifest   The image container sconfig manifest contents (request
-#                     object)
 class Image:
-    def __init__(self, name, reference, tag):
-        self.name      = name
-        self.reference = reference
-        self.tag       = tag
-        self.session   = MySession(self)
-        self.manifest  = self.data_fetch('manifests',
-                                         'manifest_schema2',
-                                         self.reference)
-        self.manifestDigest = self.digest_compute()
-        self.configDigest   = self.manifest.json().get('config').get('digest')
-        self.configManifest = self.data_fetch('blobs', 'layer', self.configDigest)
+    def __init__(self, name, reference, tag, storage):
+        # ATTRIBUTE       TYPE         DESCRIPTION
+        # 1. name         string       Image name.
+        # 2. reference    string       Repository image reference (tag|digest)
+        # 3. tag          string       Image tag.
+        # 4. storage      string       Path for image data.
+        # 5. session      Session      Session with token authorization.
+        # 6. manifest     Request obj  Image manifest.
+        # 7. image_id     string       Computed sha256 hash of manifest dump.
+        # 8. layers       list         Image layer digests.
+        # 8. cf_digest    JSON         Container config digest.
+        # 9. cf_manifest  Request obj  Container config manifest contents.
+        self.name        = name
+        self.reference   = reference
+        self.tag         = tag
+        self.storage     = storage
+        self.session     = MySession(self)
+        self.manifest    = self.data_fetch('manifests',
+                                           'manifest_schema2',
+                                           self.reference)
+        self.image_id    = self.hash_compute()
+        self.layers      = self.layer_get()
+        self.cf_digest   = self.manifest.json().get('config').get('digest')
+        self.cf_manifest = self.data_fetch('blobs', 'layer', self.cf_digest)
 
     def data_fetch(self, branch, media, reference):
         self.session.headers.update({ 'Accept': mediaTypes[media] })
@@ -98,44 +85,44 @@ class Image:
                                       self.name,
                                       branch,
                                       reference)
-        print("DEBUG: GET {}".format(URL))
+        print("GET {}".format(URL))
         return session.get(URL,
                            headers=self.session.headers,
                            proxies=PROXIES)
-    def digest_compute(self):
+
+    def hash_compute(self):
         return sha256(json.dumps(self.manifest.json(),
                                  indent=3).encode()).hexdigest()
 
-    def layer_fetch(self, storage):
-        # Kludge to make ch-grow dir_image_tmp search happy.
-        if self.rootfs:
-            base = os.path.join(storage[0], 'rootfs')
-        else:
-            base = os.path.join(storage[0],
-                                "{}:{}".format(self.name.split('/')[-1],
-                                               self.tag))
-        if os.path.isdir(base):
-            print("{} exists, replacing.".format(base))
-            shutil.rmtree(base)
-        os.makedirs(base)
-        os.chdir(base)
+    def layer_dir_set(self, dir_):
+        self.layer_dir = dir_
 
-        # Get layer digests
-        layerDigests = list()
-        for layer in self.manifest.json().get('layers'):
-            layerDigests.append(layer.get('digest'))
+    def layer_fetch(self, dst):
+        if os.path.isdir(dst):
+            shutil.rmtree(dst)
+        os.makedirs(dst)
+        os.chdir(dst)
 
-        # Fetch layer archives
-        for digest in layerDigests:
-            filename = digest.split('sha256:')[-1] + '.tar.gzip'
-            r = self.data_fetch('blobs', 'layer', digest)
+        for layer in self.layers:
+            filename = layer.split('sha256:')[-1]
+            r = self.data_fetch('blobs', 'layer', layer)
             open(filename, 'wb').write(r.content)
-            tf = tarfile.open(filename)
-            tf.extractall()
-            os.remove(filename)
 
-    def rootfs_set(self, boolean):
-        self.rootfs = boolean
+    def layer_list_get(self):
+        layers = list()
+        for layer in self.manifest.json().get('layers'):
+            layers.append(layer.get('digest'))
+        return layers
+
+    def layer_unpack(self, tar, dst):
+        # FIXME: unpack based on storage or manifest
+        if not tarfile.is_tarfile(tar):
+            print('layer is not a valid tarfile')
+            sys.exit(1)
+        tf = tarfile.open(filename, 'r')
+        files = tf.getmembers()
+        for f in files:
+        # TODO
 
 class MySession:
     def __init__(self, image):
@@ -152,22 +139,6 @@ class MySession:
         return session.get(authURL, proxies=PROXIES).json()['token']
 
 
-## Functions ##
-
-# The v2 API needs a way to reference a target image. This function returns the
-# the image name and appropiate reference where reference is either the image
-# hash (priority) or tag.
-def split_image_tag(image):
-    image = image.split(':')
-    if len(image) == 1:
-        name = image[0]
-        reference  = 'latest' # use default tag as reference
-    else:
-        name = image[0]
-        reference  = image[1]   # use specified tag as reference
-    name = "library/{}".format(name)
-    return name, reference
-
 
 ## Main ##
 
@@ -183,9 +154,6 @@ def main():
                     metavar="IMAGE[:TAG][@DIGEST]",
                     nargs=1,
                     help="image name")
-    ap.add_argument("--rootfs",
-                    action='store_true',
-                    help="store image in directory with 'rootfs' name")
     ap.add_argument("-s", "--storage",
                     type=str,
                     metavar="DIR",
@@ -202,10 +170,6 @@ def main():
         sys.exit(1)
 
     args = ap.parse_args()
-
-    if '/' in (args.image[0]):
-        print("error: '{}': image[:tag][@digest] cannot have '/'".format(args.image[0]))
-        sys.exit(1)
 
     # Docker defines a valid image target as IMAGE[:TAG][@DIGEST] where IMAGE
     # is the image name, TAG is the image tag, e.g., 'latest', '3.9', etc., and
@@ -226,14 +190,8 @@ def main():
         print("error: image: invalid image syntax '{}'".format(args.image[0]))
         sys.exit(1)
 
-    image = Image(name, reference, tag)
-
-    if args.rootfs:
-        image.rootfs_set(True)
-    else:
-        image.rootfs_set(False)
-
-    image.layer_fetch(args.storage)
+    # TODO: implement self executable logic
+    # image = Image(name, reference, tag, args.storage)
 
     return 0
 

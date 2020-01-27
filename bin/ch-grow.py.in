@@ -19,7 +19,7 @@ import types
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../libexec/charliecloud"))
 import version
-
+import chpull
 
 ## Globals ##
 
@@ -82,7 +82,6 @@ except ImportError:
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
 CH_RUN = CH_BIN + "/ch-run"
-CH_API = CH_BIN + "/ch-v2-api"
 
 ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
@@ -450,10 +449,22 @@ class I_from_(Instruction):
 
    def base_pull(self):
       rmtree(dir_image_tmp())
-      # This works with newuidmap and newgidmap not installed.
-      cmd([CH_API, self.fullname,
-                   "--storage", dir_image_tmp(),
-                   "--rootfs"])
+      if self.digest is None:
+         reference = self.tag
+      else:
+         reference = self.digest # FIXME: needs algorithm, e.g., `sha256@HASH`
+
+      # FIXME: need to handle more than library/name pulls, e.g.,
+      # `charliecloud/whiteout`
+      base = chpull.Image('library/%s' % self.name,
+                           reference,
+                           self.tag,
+                           dir_images())
+      base.unpack(dir_image(self.fullname))
+
+## DEBUG
+      sys.exit(0)
+
       rmtree(dir_image(self.fullname))
       os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
       image_fixup(dir_image(self.fullname))
@@ -646,8 +657,8 @@ def dir_images():
 def dir_image(image):
    return "%s/%s" % (dir_images(), image)
 
-def dir_ocis():
-   return "%s/oci" % cli.storage
+def dir_layers():
+   return "%s/layers" % cli.storage
 
 def file_ensure_exists(path):
    with open(path, "a") as fp:

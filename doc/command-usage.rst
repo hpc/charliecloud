@@ -141,10 +141,3 @@ ch-umount
 Unmount a FUSE mounted squash filesystem and remove the mount point.
 
 .. include:: ./ch-umount_desc.rst
-
-ch-v2-api
-+++++++++
-
-Pull images from Docker repository and unpack them for :code:`ch-grow` ingestion.
-
-.. include:: ./ch-v2-api_desc.rst

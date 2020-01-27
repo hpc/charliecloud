@@ -36,14 +36,13 @@ dist_bin_SCRIPTS = ch-build \
 bin_SCRIPTS = ch-run-oci
 EXTRA_SCRIPTS = ch-grow
 if ENABLE_CH_GROW
-bin_SCRIPTS += ch-grow ch-v2-api
+bin_SCRIPTS += ch-grow
 endif
-EXTRA_DIST = ch-grow.py.in ch-run-oci.py.in ch-v2-api.py.in
+EXTRA_DIST = ch-grow.py.in ch-run-oci.py.in
 CLEANFILES = $(bin_SCRIPTS)
 
 ch-grow: ch-grow.py.in
 ch-run-oci: ch-run-oci.py.in
-ch-v2-api: ch-v2-api.py.in
 
 $(bin_SCRIPTS): %: %.py.in
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
