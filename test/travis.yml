@@ -40,7 +40,11 @@ compiler: gcc
 #   MINIMAL_DEPS            # test with minimal dependencies (no fancy tools)
 #   SUDO_RM_FIRST           # remove sudo before build (implied if non-Docker)
 #   SUDO_RM_AFTER_BUILD     # remove sudo after build
-#
+
+# Only run the tests on master or in a pull request. In principle, people
+# might start a branch and want Travis on it before it becomes a PR. However,
+# in practice, this doesn't happen, and the merge is what really matters.
+if: branch = master OR type = pull_request
 
 stages:
   - quick
@@ -54,10 +58,8 @@ stage_builders: &stage_builders
   stage: builders
 stage_install: &stage_install
   stage: install
-  if: branch = master OR type = pull_request
 stage_misc: &stage_misc
   stage: misc
-  if: branch = master OR type = pull_request
 
 jobs:
   include:
