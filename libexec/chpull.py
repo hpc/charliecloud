@@ -54,12 +54,11 @@ PROXIES = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
 ## Classes ##
 
 class Image:
-    def __init__(self, name, reference, tag, storage):
+    def __init__(self, name, reference, tag):
         # ATTRIBUTE       TYPE         DESCRIPTION
         # 1. name         string       Image name.
         # 2. reference    string       Repository image reference (tag|digest)
         # 3. tag          string       Image tag.
-        # 4. storage      string       Path for image data.
         # 5. session      Session      Session with token authorization.
         # 6. manifest     Request obj  Image manifest.
         # 7. image_id     string       Computed sha256 hash of manifest dump.
@@ -69,13 +68,12 @@ class Image:
         self.name        = name
         self.reference   = reference
         self.tag         = tag
-        self.storage     = storage
         self.session     = MySession(self)
         self.manifest    = self.data_fetch('manifests',
                                            'manifest_schema2',
                                            self.reference)
         self.image_id    = self.hash_compute()
-        self.layers      = self.layer_get()
+        self.layers      = self.layer_list_get()
         self.cf_digest   = self.manifest.json().get('config').get('digest')
         self.cf_manifest = self.data_fetch('blobs', 'layer', self.cf_digest)
 
@@ -94,35 +92,73 @@ class Image:
         return sha256(json.dumps(self.manifest.json(),
                                  indent=3).encode()).hexdigest()
 
-    def layer_dir_set(self, dir_):
-        self.layer_dir = dir_
-
-    def layer_fetch(self, dst):
-        if os.path.isdir(dst):
-            shutil.rmtree(dst)
-        os.makedirs(dst)
-        os.chdir(dst)
-
-        for layer in self.layers:
-            filename = layer.split('sha256:')[-1]
-            r = self.data_fetch('blobs', 'layer', layer)
-            open(filename, 'wb').write(r.content)
-
     def layer_list_get(self):
         layers = list()
         for layer in self.manifest.json().get('layers'):
             layers.append(layer.get('digest'))
         return layers
 
-    def layer_unpack(self, tar, dst):
-        # FIXME: unpack based on storage or manifest
-        if not tarfile.is_tarfile(tar):
-            print('layer is not a valid tarfile')
-            sys.exit(1)
-        tf = tarfile.open(filename, 'r')
-        files = tf.getmembers()
-        for f in files:
-        # TODO
+    def unpack(self, dst):
+        if os.path.isdir(dst):
+            shutil.rmtree(dst)
+        os.makedirs(dst)
+        os.chdir(dst)
+
+        # FIXME: naive algo; fix
+        # for each layer digest:
+        #   1) pull the layer tar archive
+        #   2) parse the tar layer archive for block device members and fail if detected
+        #   3) parse the tar layer archive for whitelist members, append to list
+        #   for each whiteout file in list:
+        #       a) check for the presence of whiteout filepath in CWD (image dir)
+        #       b) if file exists, remove it; otherwise error (naive)
+        #   4) unpack tar
+        #   5) remove whiteout file
+        # Note: OCI recommends not unpacking the layer, instead unpack the
+        # layer in separate directory, apply layers changesets and rsync/cp.
+        for layer in self.layers:
+            whiteouts = list()
+            members   = list()
+            file_ = layer.split('sha256:')[-1]
+            r = self.data_fetch('blobs', 'layer', layer)
+            open(file_, 'wb').write(r.content)
+
+            if not tarfile.is_tarfile(file_):
+                print('fetched layer {} is not a valid tarfile'.format(file_))
+                sys.exit(1)
+
+            tf = tarfile.open(file_, 'r')
+            tf_info = tf.getmembers()
+
+            for f in tf_info:
+                if re.search('\.wh\.*', f.name):
+                    whiteouts.append(f.name)
+                elif f.isdev():
+                    print('unsupported: tarfile containers device files')
+                    sys.exit(1)
+                else:
+                    members.append(f)
+
+            # look in image for whiteout files
+            for wh in whiteouts:
+                # TODO: handle opaque whiteouts
+                wf = os.path.basename(wh)
+                path_to_wf = os.path.dirname(wh)
+                file_to_delete = os.path.join(path_to_wf, wf.split('.wh.')[-1])
+                if os.path.exists(file_to_delete):
+                    if os.path.isdir(file_to_delete):
+                        shutil.rmtree(file_to_delete)
+                    else:
+                        os.remove(file_to_delete)
+                else:
+                    print("error: whiteoutfile specified but not found:")
+                    print("wh = {}".format(wh))
+                    print("wf = {}".format(wf))
+                    print("file_to_delete = {}".format(file_to_delete))
+                    sys.exit(1)
+            tf.extractall(members=members) # don't unpack whiteout files
+            tf.close()
+            os.remove(file_)
 
 class MySession:
     def __init__(self, image):
@@ -160,7 +196,7 @@ def main():
                     nargs=1,
                     help="image storage directory (default: /var/tmp/ch-grow",
                     default=os.environ.get("CH_GROW_STORAGE",
-                                           "/var/tmp/ch-v2-api"))
+                                           "/var/tmp/ch-grow"))
     ap.add_argument("-v", "--version",
                     action=CLI_Version,
                     help="print version and exit")
@@ -170,6 +206,9 @@ def main():
         sys.exit(1)
 
     args = ap.parse_args()
+
+    # FIXME: chpull should work on it's own (otherwise it should be in lib, not
+    #        libexec).
 
     # Docker defines a valid image target as IMAGE[:TAG][@DIGEST] where IMAGE
     # is the image name, TAG is the image tag, e.g., 'latest', '3.9', etc., and
@@ -190,7 +229,7 @@ def main():
         print("error: image: invalid image syntax '{}'".format(args.image[0]))
         sys.exit(1)
 
-    # TODO: implement self executable logic
+    # TODO: implement something
     # image = Image(name, reference, tag, args.storage)
 
     return 0

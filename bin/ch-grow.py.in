@@ -448,27 +448,19 @@ class I_from_(Instruction):
                       symlinks=True)
 
    def base_pull(self):
-      rmtree(dir_image_tmp())
       if self.digest is None:
          reference = self.tag
       else:
-         reference = self.digest # FIXME: needs algorithm, e.g., `sha256@HASH`
+         # FIXME: registry digest references need algorithm, e.g., `sha256@HASH`
+         reference = self.digest
 
       # FIXME: need to handle more than library/name pulls, e.g.,
-      # `charliecloud/whiteout`
-      base = chpull.Image('library/%s' % self.name,
-                           reference,
-                           self.tag,
-                           dir_images())
+      #        `charliecloud/whiteout`
+      base = chpull.Image('library/%s' % self.name, reference, self.tag)
+      # DEBUG: test whiteouts charliecloud whiteout
+      #base = chpull.Image('charliecloud/%s' % 'whiteout', '2020-01-10', '2020-01-10')
       base.unpack(dir_image(self.fullname))
-
-## DEBUG
-      sys.exit(0)
-
-      rmtree(dir_image(self.fullname))
-      os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
       image_fixup(dir_image(self.fullname))
-      rmtree(dir_image_tmp())
       # CentOS likes to leave directories unwriteable by anyone, and files
       # unreadable by anyone, so fix that.
       def reraise(x):
