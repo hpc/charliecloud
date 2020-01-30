@@ -18,6 +18,7 @@ setup () {
 }
 
 @test "${ch_tag}/write" {
+    ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- touch /lustre/test_w.txt
     ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- echo "hello" /lustre/test_w.txt
 }
 
@@ -25,27 +26,9 @@ setup () {
     ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- cat /lustre/test_w.txt > /dev/null
 }
 
-@test "${ch_tag}/modify_stripes" {
+@test "${ch_tag}/set_stripe_get_stripe {
     ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- mkdir /lustre/default_stripes
-    run ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- lfs getstripe /lustre/default_stripes
-    default=$(echo "${output}" | grep stripe_count | gawk '{print $2}')
+    ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- lfs getstripe /lustre/default_stripes
     ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- mkdir /lustre/four_stripes
     ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- lfs setstripe -c 4 /lustre/four_stripes
-    run ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- lfs getstripe /lustre/four_stripes
-    stripes=$(echo "${output}" | grep stripe_count | gawk '{print $2}')
-
-    [[ ! "${stripes}" = "${default}" ]] 
-    
-    # Ensure striping applies to file
-    ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- dd if=/dev/zero of=/lustre/four_stripes/test.t bs=1M count=10
-    run ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- lfs getstripe /lustre/four_stripes/test.t | grep stripe_count | gawk '{ print $2}'
-    [[ $output == 4 ]]
-    ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- cp /lustre/four_stripes/test.t /lustre/default_stripes
-    run ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- lfs getstripe /lustre/default_stripes/test.t | grep stripe_count | gawk '{ print $2}'
-    [[ "${output}" == "${default_stripes}" ]]
-
-    ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- rm /lustre/default_stripes/test.t
-    ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- rm /lustre/four_stripes/test.t 
-    ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- rmdir /lustre/four_stripes
-    ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- rmdir /lustre/default_stripes
 }
