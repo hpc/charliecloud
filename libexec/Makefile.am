@@ -3,7 +3,7 @@
 # 1. SCRIPTS makes all this stuff executable when it shouldn't be, but
 #    Automake complains that DATA can't go in libexecdir.
 
-dist_pkglibexec_SCRIPTS = base.sh
+dist_pkglibexec_SCRIPTS = base.sh chpull.py
 noinst_DATA = charliecloud
 pkglibexec_SCRIPTS = version.py version.sh version.txt
 
