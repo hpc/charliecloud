@@ -72,6 +72,10 @@ builder_check () {
         bl=$(command -v docker)
         bv=$(docker_ --version | awk '{print $3}' | sed -e 's/,$//')
         ;;
+    none)
+        bl='none'
+        bv=
+        ;;
     *)
         fatal "builder: $CH_BUILDER: not supported"
         ;;
@@ -99,12 +103,16 @@ builder_set () {
     fi
 }
 
-# Create CH_TEST_TARDIR, avoiding #347.
+# Create CH_TEST_IMGDIR, avoiding #347.
 dir_img_mk () {
-    if [[ ! -d $CH_TEST_IMGDIR ]]; then
-        printf "creating %s\n\n" "$CH_TEST_IMGDIR"
-        mkdir "$CH_TEST_IMGDIR"
-    fi
+    dir_img_rm
+    printf "creating %s\n\n" "$CH_TEST_IMGDIR"
+    mkdir "$CH_TEST_IMGDIR"
+}
+
+dir_img_rm () {
+    echo "removing $CH_TEST_IMGDIR"
+    rm -rf --one-file-system "$CH_TEST_IMGDIR"
 }
 
 # Remove a filesystem permissions fixture directory. Ensure that the target
@@ -118,11 +126,10 @@ dir_perm_rm () {
 }
 
 # The run phase requires artifacts from a successful build phase. Thus, we
-# check sanity based on the minimal set of artifacts (quick scope).
+# check sanity based on the minimal set of artifacts (no builder).
 dir_tar_check () {
     printf 'checking %s: ' "$CH_TEST_TARDIR"
-    dir_tar_check_file alpine39{.tar.gz,.sqfs,.pq_missing}
-    dir_tar_check_file chtest{.tar.gz,.sqfs,.pq_missing}
+    dir_tar_check_file chtest{.tar.gz,.sqfs}
     printf 'ok\n\n'
 }
 
@@ -138,19 +145,30 @@ dir_tar_check_file () {
     fatal "phase $phase: missing packed images: ${missing[*]}"
 }
 
-# Create CH_TEST_TARDIR, avoiding #347.
 dir_tar_mk () {
-    if [[ ! -d $CH_TEST_TARDIR ]]; then
-        printf "creating %s\n\n" "$CH_TEST_TARDIR"
-        mkdir "$CH_TEST_TARDIR"
-    fi
+    dir_tar_rm
+    printf "creating %s\n\n" "$CH_TEST_TARDIR"
+    mkdir "$CH_TEST_TARDIR"
+}
+
+dir_tar_rm () {
+    echo "removing $CH_TEST_TARDIR"
+    rm -rf --one-file-system "$CH_TEST_TARDIR"
 }
 
 dirs_unpriv_rm () {
-    echo "removing $CH_TEST_TARDIR"
-    rm -rf --one-file-system "$CH_TEST_TARDIR"
-    echo "removing $CH_TEST_IMGDIR"
-    rm -rf --one-file-system "$CH_TEST_IMGDIR"
+    dir_tar_rm
+    dir_img_rm
+}
+
+pq_missing () {
+    if [[ $phase == all || $phase == build ]]; then
+        local img=$1
+        local out=$2
+        local tag
+        tag=$("$make_auto" tag "$img")
+        printf '%s\n' "$out" >> "${CH_TEST_TARDIR}/${tag}.pq_missing"
+    fi
 }
 
 pedantry_set () {
@@ -223,7 +241,7 @@ scope_to_digit () {
 
 test_build () {
     echo 'executing build phase tests ...'
-    # TODO: check for sotests?
+    # FIXME: check for sotests?
     if [[ ! -f ${tmp_}/build_auto.bats ]]; then
         fatal "${tmp_}/build_auto.bats not found"
     fi
@@ -240,7 +258,7 @@ test_examples () {
     echo 'executing example phase tests ...'
     for i in $examples; do
         if (test_make_check_image "$i"); then
-            tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
+            tag=$("$make_auto" tag "$i")
             export CH_TEST_TAG=$tag
             bats "$(dirname "$i")/test.bats"
         fi
@@ -270,6 +288,7 @@ test_run () {
 
 test_make_auto () {
     local img
+
     printf "finding images compatible with test settings ...\n"
     for i in $images $examples; do
         if (test_make_check_image "$i"); then
@@ -278,7 +297,6 @@ test_make_auto () {
         fi
     done
 
-    make_auto="${CHTEST_DIR}/chtest-make-auto"
     printf '\n'
     case $phase in
     build)
@@ -303,47 +321,83 @@ test_make_auto () {
 }
 
 test_make_check_image () {
+    img_ok=yes
     img=$1
     dir=$(basename "$(dirname "$img")")
-    exclude_arch=$(cat "$img" | grep -F 'ch-test-arch-exclude: ' \
+
+    arch_exclude=$(cat "$img" | grep -F 'ch-test-arch-exclude: ' \
                               | sed 's/.*: //' | awk '{print $1}')
 
-    exclude_builder=$(cat "$img" | grep -F 'ch-test-builder-exclude: ' \
+    builder_include=$(cat "$img" | grep -F 'ch-test-builder-include: ' \
+                                 | sed 's/.*: //' | awk '{print $1}')
+
+    builder_exclude=$(cat "$img" | grep -F 'ch-test-builder-exclude: ' \
                                  | sed 's/.*: //' | awk '{print $1}')
 
     img_scope_int=$(scope_to_digit "$(cat "$img" | grep -F 'ch-test-scope' \
-                                                   | sed 's/.*: //' \
-                                                   | awk '{print $1}')")
+                                                 | sed 's/.*: //' \
+                                                 | awk '{print $1}')")
 
     sudo_required=$(cat "$img" | grep -F 'ch-test-need-sudo')
 
+    # Exclude Dockerfiles if we have no builder.
+    if [[ $CH_BUILDER == none && $img == *Dockerfile* ]]; then
+        pq_missing "$img" 'builder required'
+        img_ok=
+    fi
+
     # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
     if [[ $scope_int -lt "$img_scope_int" ]]; then
-        return 1
+        pq_missing "$img" "not in scope: ${CH_TEST_SCOPE}"
+        img_ok=
     fi
     # Exclude images that do not work with the host architecture.
-    for a in $exclude_arch; do
+    for a in $arch_exclude; do
         if [[ $a == "$(uname -m)" ]]; then
-            return 1
+            pq_missing "$img" "incompatible architecture: ${a}"
+            img_ok=
         fi
     done
+
+    # Exclude image if included builders are given and $CH_BUILDER isn't one.
+    if [[ -n $builder_include ]]; then
+        builder_ok=
+        for b in $builder_include; do
+            if [[ $b == "$CH_BUILDER" ]]; then
+                builder_ok=yes
+            fi
+        done
+        if [[ -z $builder_ok ]]; then
+            pq_missing "$img" "builder not included: ${CH_BUILDER}"
+            img_ok=
+        fi
+    fi
+
     # Exclude images that are not compatible with CH_BUILDER.
-    for b in $exclude_builder; do
+    for b in $builder_exclude; do
         if [[ $b == "$CH_BUILDER" ]]; then
-            return 1
+            pq_missing "$img" "builder excluded: ${CH_BUILDER}"
+            img_ok=
         fi
     done
+
     # Exclude images that require sudo if CH_TEST_SUDO is empty
     if [[ -n $sudo_required && -z $CH_TEST_SUDO ]]; then
-        return 1
+        pq_missing "$img" 'generic sudo required'
+        img_ok=
     fi
+
     # In examples phase, exclude chtest (special case) and any images not in a
     # subdirectory of examples.
     if [[ $phase == examples && ( $dir == chtest || $dir == examples ) ]]; then
-        return 1
+        img_ok=
     fi
 
-    return 0
+    if [[ -n $img_ok ]]; then
+        return 0  # include image
+    else
+        return 1  # exclude image
+    fi
 }
 
 # Exit with failure if given version number is below a minimum.
@@ -409,6 +463,7 @@ export CHTEST_INSTALLED
 export CHTEST_GITWD
 export CHTEST_DIR
 export CHTEST_EXAMPLES_DIR
+make_auto="${CHTEST_DIR}/chtest-make-auto"
 
 # Check for test directory.
 if [[ ! -d $CHTEST_DIR ]]; then
@@ -620,7 +675,6 @@ case $phase in
         win
         ;;
     run)
-        dir_tar_mk
         dir_img_mk
         test_make_auto
         test_run
