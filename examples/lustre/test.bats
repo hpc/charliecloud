@@ -26,7 +26,7 @@ setup () {
     ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- cat /lustre/test_w.txt > /dev/null
 }
 
-@test "${ch_tag}/set_stripe_get_stripe {
+@test "${ch_tag}/set_stripe_get_stripe" {
     ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- mkdir /lustre/default_stripes
     ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- lfs getstripe /lustre/default_stripes
     ch-run -b "${ch_lustre}:/lustre" "$ch_img" -- mkdir /lustre/four_stripes
