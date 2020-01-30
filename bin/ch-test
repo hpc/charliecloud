@@ -390,16 +390,23 @@ fi
 if [[ -d ${ch_base}/share ]]; then
     # installed
     CHTEST_INSTALLED=yes
+    CHTEST_GITWD=
     CHTEST_DIR=${ch_base}/libexec/charliecloud/test
     CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
 else
     # build dir
     CHTEST_INSTALLED=
+    if [[ -d ${ch_base}/.git ]]; then
+        CHTEST_GITWD=yes
+    else
+        CHTEST_GITWD=
+    fi
     CHTEST_DIR=${ch_base}/test
     CHTEST_EXAMPLES_DIR=${ch_base}/examples
 fi
 export ch_base
 export CHTEST_INSTALLED
+export CHTEST_GITWD
 export CHTEST_DIR
 export CHTEST_EXAMPLES_DIR
 
@@ -411,9 +418,16 @@ if [[ ! -d $CHTEST_EXAMPLES_DIR ]]; then
     fatal "examples not found: $CHTEST_EXAMPLES_DIR"
 fi
 
-# Is the user a contributor? (Obtaining an e-mail address this way is flaky,
-# but it works at Los Alamos, where the team is based.)
-email="$USER@$(hostname --domain)"
+# Is the user a contributor?
+email=
+# First, ask Git for the configured e-mail address.
+if ( command -v git > /dev/null 2>&1 ); then
+    email="$(git config --get user.email)"
+fi
+# If that doesn't work, construct it from the environment.
+if [[ -z $email ]]; then
+    email="$USER@$(hostname --domain)"
+fi
 ch_contributor=
 for i in "${ch_contributors[@]}"; do
     if [[ $i == "$email" ]]; then
@@ -484,6 +498,8 @@ printf '\n'
 printf 'ch-run:       %s\n' "${ch_bin}/ch-run"
 printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
 printf 'tests:        %s\n' "$CHTEST_DIR"
+printf 'installed:    %s\n' "${CHTEST_INSTALLED:-no}"
+printf 'git workdir:  %s\n' "${CHTEST_GITWD:-no}"
 if [[ -n $ch_contributor ]]; then
     ch_contributor_note="yes; $email in README.rst"
 else
