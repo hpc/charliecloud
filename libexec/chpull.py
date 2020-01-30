@@ -1,7 +1,6 @@
 #!%PYTHON_SHEBANG%
 
-# Pull and unpack an image from the open docker registry. The image is intended
-# to be ingested by ch-grow.
+# Pull and unpack an image from the open docker registry.
 #
 # This script is experimental; a proof of concept. This script does not store
 # mage data in OCI format; the image layers are downloaded and unpacked.
@@ -59,10 +58,10 @@ class Image:
         # 1. name         string       Image name.
         # 2. reference    string       Repository image reference (tag|digest)
         # 3. tag          string       Image tag.
-        # 5. session      Session      Session with token authorization.
-        # 6. manifest     Request obj  Image manifest.
-        # 7. image_id     string       Computed sha256 hash of manifest dump.
-        # 8. layers       list         Image layer digests.
+        # 4. session      Session      Session with token authorization.
+        # 5. manifest     Request obj  Image manifest.
+        # 6. image_id     string       Computed sha256 hash of manifest dump.
+        # 7. layers       list         Image layer digests.
         # 8. cf_digest    JSON         Container config digest.
         # 9. cf_manifest  Request obj  Container config manifest contents.
         self.name        = name
@@ -104,7 +103,7 @@ class Image:
         os.makedirs(dst)
         os.chdir(dst)
 
-        # FIXME: naive algo; fix
+        # FIXME: improve algo
         # for each layer digest:
         #   1) pull the layer tar archive
         #   2) parse the tar layer archive for block device members and fail if detected
@@ -151,6 +150,7 @@ class Image:
                     else:
                         os.remove(file_to_delete)
                 else:
+                    # FIXME: sane output
                     print("error: whiteoutfile specified but not found:")
                     print("wh = {}".format(wh))
                     print("wf = {}".format(wf))
