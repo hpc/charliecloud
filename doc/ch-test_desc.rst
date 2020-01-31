@@ -122,6 +122,9 @@ Additional arguments:
     Implies :code:`--sudo`. Default: :code:`CH_TEST_PERMDIRS` if set;
     otherwise skip the filesystem permissions tests.
 
+  :code:`--fmt FMT`
+    Force a certain archive format to be used during testing (squashfs, tar)
+
   :code:`--sudo`
     Enable things that require sudo, such as certain privilege escalation
     tests and creating/removing the filesystem permissions fixtures. Requires
