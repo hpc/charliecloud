@@ -35,6 +35,7 @@ Additional options:
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
+  --fmt FMT              flattened image format (squashfs, tar)
   --sudo                 enable tests that need sudo
   --version              print version and exit
 
@@ -481,6 +482,10 @@ while [[ $# -gt 0 ]]; do
         scope_check "$1"
         scope=$1; shift
         ;;
+    --fmt)
+	require_unset archive_fmt 
+        archive_fmt=$1; shift
+        ;;
     --sudo)
         use_sudo=yes
         ;;
@@ -516,6 +521,8 @@ vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
                       21 'unpacked images dir'
 vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
+vset CH_ARCHIVE_FMT   "$archive_fmt"   "$CH_ARCHIVE_FMT"   squashfs \
+                      21 'flattened format'
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 printf '\n'
