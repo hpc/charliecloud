@@ -451,7 +451,7 @@ class I_from_(Instruction):
       if self.digest is None:
          reference = self.tag
       else:
-         # FIXME: registry digest references need algorithm, e.g., `sha256@HASH`
+         # FIXME: registry digest references need algorithm, e.g., `sha256:HASH`
          reference = self.digest
 
       # FIXME: need to handle more than library/name pulls, e.g.,

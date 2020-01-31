@@ -3,7 +3,7 @@
 # Pull and unpack an image from the open docker registry.
 #
 # This script is experimental; a proof of concept. This script does not store
-# mage data in OCI format; the image layers are downloaded and unpacked.
+# image data in OCI format; the image layers are downloaded and unpacked.
 #
 # Future work may include maniging image changesets, e.g., update and/or
 # removals carried out by ch-grow.
@@ -25,71 +25,77 @@ session = requests.Session()
 
 ## Constants ##
 
+# FIXME: assign with argument; else default
 registryBase = 'https://registry-1.docker.io'
 authBase     = 'https://auth.docker.io'
 authService  = 'registry.docker.io'
 
 # Accepted Docker V2 media types.
 # See https://docs.docker.com/registry/spec/manifest-v2-2/
-mediaTypes = {
-  'manifest_schema1': 'application/vnd.docker.distribution.manifest.v1+json',     # existing format
-  'manifest_schema2': 'application/vnd.docker.distribution.manifest.v2+json',     # new format
-  'manifest_list':    'application/vnd.docker.distribution.manifest.list.v2+json',
-  'container_config': 'application/vnd.docker.container.image.v1+json',
-  'layer':            'application/vnd.docker.image.rootfs.diff.tar.gzip',        # layer as a gzipped tar
-  'plugins':          'application/vnd.docker.plugin.v1+json'                     # plugin config JSON
-}
+MF_SCHEMA1 = 'application/vnd.docker.distribution.manifest.v1+json'
+MF_SCHEMA2 = 'application/vnd.docker.distribution.manifest.v2+json'
+MF_LIST    = 'application/vnd.docker.distribution.manifest.list.v2+json'
+C_CONFIG   = 'application/vnd.docker.container.image.v1+json'
+LAYER      = 'application/vnd.docker.image.rootfs.diff.tar.gzip'
+PLUGINS    = 'application/vnd.docker.plugin.v1+json'
 
-PROXIES = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
+PROXIES = { "HTTP_PROXY":  os.environ.get("HTTP_PROXY"),
             "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
-            "FTP_PROXY": os.environ.get("FTP_PROXY"),
-            "NO_PROXY": os.environ.get("NO_PROXY"),
-            "http_proxy": os.environ.get("http_proxy"),
+            "FTP_PROXY":   os.environ.get("FTP_PROXY"),
+            "NO_PROXY":    os.environ.get("NO_PROXY"),
+            "http_proxy":  os.environ.get("http_proxy"),
             "https_proxy": os.environ.get("https_proxy"),
-            "ftp_proxy": os.environ.get("ftp_proxy"),
-            "no_proxy": os.environ.get("no_proxy"),
+            "ftp_proxy":   os.environ.get("ftp_proxy"),
+            "no_proxy":    os.environ.get("no_proxy"),
 }
 
 ## Classes ##
 
 class Image:
     def __init__(self, name, reference, tag):
-        # ATTRIBUTE       TYPE         DESCRIPTION
-        # 1. name         string       Image name.
-        # 2. reference    string       Repository image reference (tag|digest)
-        # 3. tag          string       Image tag.
-        # 4. session      Session      Session with token authorization.
-        # 5. manifest     Request obj  Image manifest.
-        # 6. image_id     string       Computed sha256 hash of manifest dump.
-        # 7. layers       list         Image layer digests.
-        # 8. cf_digest    JSON         Container config digest.
-        # 9. cf_manifest  Request obj  Container config manifest contents.
+        # ATTRIBUTE      TYPE          DESCRIPTION
+        # 1. name        string        Image name.
+        # 2. reference   string        Repository image reference (tag|digest)
+        # 3. tag         string        Image tag.
+        # 4. session     Session       Session with token authorization.
+        # 5. manifest    http reponse  Image manifest.
+        # 6. image_id    string        Computed sha256 hash of manifest dump.
+        # 7. layers      list          Image layer digests.
         self.name        = name
         self.reference   = reference
         self.tag         = tag
         self.session     = MySession(self)
         self.manifest    = self.data_fetch('manifests',
-                                           'manifest_schema2',
+                                           MF_SCHEMA2,
                                            self.reference)
-        self.image_id    = self.hash_compute()
+        self.image_id    = self.compute_json_hash()
         self.layers      = self.layer_list_get()
-        self.cf_digest   = self.manifest.json().get('config').get('digest')
-        self.cf_manifest = self.data_fetch('blobs', 'layer', self.cf_digest)
+
+    def compute_json_hash(self):
+        return sha256(json.dumps(self.manifest.json(),
+                                 indent=3).encode()).hexdigest()
 
     def data_fetch(self, branch, media, reference):
-        self.session.headers.update({ 'Accept': mediaTypes[media] })
+        self.session.headers.update({ 'Accept': media })
         URL = "{}/v2/{}/{}/{}".format(registryBase,
                                       self.name,
                                       branch,
                                       reference)
+        # FIXME: change to DEBUG
         print("GET {}".format(URL))
-        return session.get(URL,
-                           headers=self.session.headers,
-                           proxies=PROXIES)
-
-    def hash_compute(self):
-        return sha256(json.dumps(self.manifest.json(),
-                                 indent=3).encode()).hexdigest()
+        try:
+            response = session.get(URL,
+                                   headers=self.session.headers,
+                                   proxies=PROXIES)
+            response.raise_for_status()
+        except HTTPError as http_err:
+            print('HTTP error: {}'.format(http_err))
+        except Exception as err:
+            print('non HTTP error occured: {}'.format(err))
+        else:
+            # FIXME: convert to DEBUG
+            print('Success')
+        return response
 
     def layer_list_get(self):
         layers = list()
@@ -106,15 +112,14 @@ class Image:
         # FIXME: improve algo
         # for each layer digest:
         #   1) pull the layer tar archive
-        #   2) parse the tar layer archive for block device members and fail if detected
-        #   3) parse the tar layer archive for whitelist members, append to list
-        #   for each whiteout file in list:
+        #   2) parse the tar layer archive
+        #         if device file then faile
+        #         elif whiteout then add to wh list
+        #         else add file to list of members to extract
+        #   4) for each whiteout file in list:
         #       a) check for the presence of whiteout filepath in CWD (image dir)
-        #       b) if file exists, remove it; otherwise error (naive)
-        #   4) unpack tar
-        #   5) remove whiteout file
-        # Note: OCI recommends not unpacking the layer, instead unpack the
-        # layer in separate directory, apply layers changesets and rsync/cp.
+        #       b) if file exists, remove it; otherwise error
+        #   4) unpack tar with specified members
         for layer in self.layers:
             whiteouts = list()
             members   = list()
@@ -160,6 +165,7 @@ class Image:
             tf.close()
             os.remove(file_)
 
+
 class MySession:
     def __init__(self, image):
         self.token   = self.get_token(image)
@@ -175,6 +181,10 @@ class MySession:
         return session.get(authURL, proxies=PROXIES).json()['token']
 
 
+## Supporting functins ##
+
+# FIXME: implement Debug function. Should this stuff just be done in ch-grow?
+#        unsure of duplicating code
 
 ## Main ##
 
