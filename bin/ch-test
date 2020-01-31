@@ -36,6 +36,7 @@ Additional options:
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
   --sudo                 enable tests that need sudo
+  --lustre DIR           run lustre tests in DIR
   --version              print version and exit
 
 See the man page for important details.

@@ -128,6 +128,9 @@ Additional arguments:
     generic :code:`sudo` capabilities. Note that the Docker builder uses
     :code:`sudo docker` even without this option.
 
+  :code:`--lustre DIR`
+    Enable lustre LFS tests under :code:`DIR`
+
 Exit status
 ===========
 
