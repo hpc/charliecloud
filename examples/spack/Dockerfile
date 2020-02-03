@@ -7,8 +7,9 @@ FROM centos:7
 # care about is here in the Dockerfile, and test.bats just has a few
 # trivialities.
 #
-# Relevant Spack documentation: prerequisites[1], creating a container with
-# spack[2].
+# Spack does document use in Docker [2]. We do things somewhat differently,
+# but worth reviewing those docs.
+#
 # [1]: https://spack.readthedocs.io/en/latest/getting_started.html
 # [2]: https://spack.readthedocs.io/en/latest/workflows.html#using-spack-to-create-docker-images
 
@@ -61,9 +62,12 @@ RUN spack compiler find --scope system
 # Test: Some basic commands.
 RUN which spack
 RUN spack --version
-RUN cat /etc/spack/compilers.yaml
 RUN spack compiler find
 RUN spack compiler list
+RUN spack compiler list --scope=system
+RUN spack compiler list --scope=user
+RUN spack compilers
+RUN spack spec charliecloud
 
 # Add system gpg to packages.yaml to avoid the gpg filename too long error. See
 # https://github.com/spack/spack/issues/14605
@@ -74,7 +78,6 @@ RUN ( echo "  gnupg:" \
        >>/spack/etc/spack/defaults/packages.yaml
 
 # Test: Install Charliecloud.
-#RUN spack install zlib lbzip2
 RUN spack spec charliecloud+builder ^python+libxml2
 RUN spack install charliecloud+builder ^python+libxml2
 
