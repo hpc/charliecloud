@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
     opt=$1; shift
     case $opt in 
         -p|--pull-with) 
-            CH_PULLER=$1
+            CH_PULLER=$opt
         ;;
     esac
 done
@@ -66,7 +66,7 @@ elif [ -n "$skopeo" ] || ( command -v skopeo >/dev/null 4>&1 ); then
         cp "${temp}/img/${tar}" .
         rm -rf  --one-file-system "$temp"
     else
-        echo "docker is needed to pull image with --pull-with docker. Docker was not found"
+        echo "skopeo is needed to pull image with --pull-with skopeo. Skopeo was not found"
         exit 65
     fi
 else
