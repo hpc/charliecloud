@@ -3,6 +3,7 @@
 # Library for common ch-grow and ch-pull functions.
 
 import collections
+import logging
 import json
 import os
 import re
@@ -12,6 +13,7 @@ import sys
 import tarfile
 
 from hashlib import sha256
+from http.client import HTTPConnection
 
 ## Globals ##
 session = requests.Session()
@@ -41,6 +43,8 @@ PROXIES = { "HTTP_PROXY":  os.environ.get("HTTP_PROXY"),
             "ftp_proxy":   os.environ.get("ftp_proxy"),
             "no_proxy":    os.environ.get("no_proxy"),
 }
+
+
 
 ## Classes ##
 
@@ -105,8 +109,8 @@ class Image:
                                       self.name,
                                       branch,
                                       reference)
-        DEBUG("GET {}".format(URL))
-        DEBUG('{}'.format(self.session.headers))
+        #DEBUG("GET {}".format(URL))
+        #DEBUG('{}'.format(self.session.headers))
         try:
             response = session.get(URL,
                                    headers=self.session.headers,
@@ -116,8 +120,6 @@ class Image:
             FATAL('HTTP error: {}'.format(http_err))
         except Exception as err:
             FATAL('non HTTP error occured: {}'.format(err))
-        else:
-            DEBUG('Success')
         return response
 
     def unpack(self, dst):
@@ -214,10 +216,9 @@ class MySession:
 ## Supporting functins ##
 
 def DEBUG(*args, **kwargs):
-    if os.environ.get('CH_PULL_DEBUG'):
-        color("36m", sys.stderr)
-        print(flush=True, file=sys.stderr, *args, **kwargs)
-        color_reset(sys.stderr)
+    color("36m", sys.stderr)
+    print(flush=True, file=sys.stderr, *args, **kwargs)
+    color_reset(sys.stderr)
 
 def ERROR(*args, **kwargs):
     color("31m", sys.stderr)
@@ -229,7 +230,6 @@ def FATAL(*args, **kwargs):
     sys.exit(1)
 
 def INFO(*args, **kwargs):
-    if os.environ.get('CH_PULL_VERBOSE'):
         print(flush=True, *args, **kwargs)
 
 def color(color, fp):
@@ -239,3 +239,9 @@ def color(color, fp):
 def color_reset(*fps):
     for fp in fps:
         color("0m", fp)
+
+def log():
+    logging.basicConfig(format='%(levelname)s:%(message)s')
+    HTTPConnection.debuglevel = 1
+    logging.getLogger().setLevel(logging.DEBUG)
+    rlog = logging.getLogger("requests.packages.urllib3").setLevel(logging.DEBUG)

@@ -3,6 +3,7 @@
 # Pull and unpack an image from the open docker registry.
 
 import argparse
+import logging
 import os
 import sys
 
@@ -31,20 +32,13 @@ def main():
     ap.add_argument("-d", "--debug",
                     action="store_true",
                     help="view debug ouput")
-    ap.add_argument("-v", "--verbose",
-                    action="store_true",
-                    help="view verbose output")
     if (len(sys.argv) < 2):
         ap.print_help(file=sys.stderr)
         sys.exit(1)
 
     args = ap.parse_args()
     if args.debug:
-        os.environ['CH_PULL_DEBUG'] = 'true'
-        os.environ['CH_PULL_VERBOSE'] = 'true'
-    if args.verbose:
-        os.environ['CH_PULL_VERBOSE'] = 'true'
-
+        ch.log()
     image = ch.Image(args.image)
     image.unpack(args.storage)
     return 0
