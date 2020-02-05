@@ -95,6 +95,16 @@ need_squashfs () {
     ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
 }
 
+pedantic_fail () {
+    msg=$1
+    if [[ -n $ch_pedantic ]]; then
+        echo "$msg" 1>&2
+        return 1
+    else
+        skip "$msg"
+    fi
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'

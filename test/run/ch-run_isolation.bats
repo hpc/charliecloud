@@ -29,7 +29,7 @@ load ../common
     guest_expected='Alpine Linux v3.9'
     echo "guest expected: ${guest_expected}"
     if [[ $host_distro = "$guest_expected" ]]; then
-        skip 'host matches expected guest distro'
+        pedantic_fail 'host matches expected guest distro'
     fi
     guest_distro=$(ch-run "$ch_timg" -- \
                           cat /etc/os-release \

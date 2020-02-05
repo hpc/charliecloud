@@ -13,6 +13,7 @@ if [[ ! -f ${libexec}/base.sh ]]; then
     fatal "install or build problem: not found: ${libexec}/base.sh"
 fi
 . "${libexec}/base.sh"
+. "${libexec}/contributors.bash"
 
 export ch_bin
 
@@ -167,6 +168,33 @@ pq_missing () {
         local tag
         tag=$("$make_auto" tag "$img")
         printf '%s\n' "$out" >> "${CH_TEST_TARDIR}/${tag}.pq_missing"
+    fi
+}
+
+pedantry_set () {
+    width=$1
+    default=no
+    # Default to pedantic on CI or if user is a contributor.
+    if [[ -n $ch_contributor || -n $TRAVIS ]]; then
+        default=yes
+    fi
+    vset ch_pedantic "$pedantic" '' $default "$width" 'pedantic mode'
+    if [[ $ch_pedantic == no ]]; then
+        ch_pedantic=  # proper boolean
+    fi
+    # The motivation here is that in pedantic mode, we want to run all the
+    # tests we reasonably can. So, if the user *has* sudo, then default --sudo
+    # to yes. What is a little awkward is that "sudo -v" can generate a
+    # password prompt in the middle of the status output. An alternative is
+    # "sudo -nv", which doesn't; drawbacks are that you have to analyze the
+    # output (not exit code) and it generates a failed password log message if
+    # there is not already a sudo session going.
+    if    [[ -n $ch_pedantic ]] \
+       && (command -v sudo > /dev/null) \
+       && (sudo -v > /dev/null 2>&1); then
+        use_sudo_default=yes
+    else
+        use_sudo_default=
     fi
 }
 
@@ -416,16 +444,23 @@ fi
 if [[ -d ${ch_base}/share ]]; then
     # installed
     CHTEST_INSTALLED=yes
+    CHTEST_GITWD=
     CHTEST_DIR=${ch_base}/libexec/charliecloud/test
     CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
 else
     # build dir
     CHTEST_INSTALLED=
+    if [[ -d ${ch_base}/.git ]]; then
+        CHTEST_GITWD=yes
+    else
+        CHTEST_GITWD=
+    fi
     CHTEST_DIR=${ch_base}/test
     CHTEST_EXAMPLES_DIR=${ch_base}/examples
 fi
 export ch_base
 export CHTEST_INSTALLED
+export CHTEST_GITWD
 export CHTEST_DIR
 export CHTEST_EXAMPLES_DIR
 make_auto="${CHTEST_DIR}/chtest-make-auto"
@@ -437,6 +472,23 @@ fi
 if [[ ! -d $CHTEST_EXAMPLES_DIR ]]; then
     fatal "examples not found: $CHTEST_EXAMPLES_DIR"
 fi
+
+# Is the user a contributor?
+email=
+# First, ask Git for the configured e-mail address.
+if ( command -v git > /dev/null 2>&1 ); then
+    email="$(git config --get user.email)"
+fi
+# If that doesn't work, construct it from the environment.
+if [[ -z $email ]]; then
+    email="$USER@$(hostname --domain)"
+fi
+ch_contributor=
+for i in "${ch_contributors[@]}"; do
+    if [[ $i == "$email" ]]; then
+        ch_contributor=yes
+    fi
+done
 
 # Ensure Bats is installed.
 if (command -v bats &> /dev/null); then
@@ -472,6 +524,9 @@ while [[ $# -gt 0 ]]; do
         require_unset tardir
         tardir=$1; shift
         ;;
+    --pedantic)
+        pedantic=$1; shift
+        ;;
     --perm-dir)
         use_sudo=yes
         permdirs+=("$1"); shift
@@ -493,10 +548,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-printf "ch-test version %s\n\n" "$ch_version"
-printf 'ch-run: %s\n' "${ch_bin}/ch-run"
-printf 'bats:   %s (%s)\n' "$bats" "$bats_version"
-printf 'tests:  %s\n\n' "$CHTEST_DIR"
+printf "ch-test version %s\n" "$ch_version"
+printf '\n'
+printf 'ch-run:       %s\n' "${ch_bin}/ch-run"
+printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
+printf 'tests:        %s\n' "$CHTEST_DIR"
+printf 'installed:    %s\n' "${CHTEST_INSTALLED:-no}"
+printf 'git workdir:  %s\n' "${CHTEST_GITWD:-no}"
+if [[ -n $ch_contributor ]]; then
+    ch_contributor_note="yes; $email in README.rst"
+else
+    ch_contributor_note="no; $email not in README.rst"
+fi
+printf 'contributor:  %s\n\n' "$ch_contributor_note"
 
 printf "%-21s %s" 'phase:' "$phase"
 if [[ -z $phase ]]; then
@@ -510,7 +574,8 @@ printf '\n'
 vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
                       21 'scope'
 builder_set 21
-vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     '' \
+pedantry_set 21
+vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     "$use_sudo_default" \
                       21 'use generic sudo'
 vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
                       21 'unpacked images dir'
@@ -520,7 +585,7 @@ vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 printf '\n'
 
-if [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
+if [[ $phase == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then
     fatal "phase $phase: CH_TEST_PERMDIRS: can't be 'skip'"
 fi
 
