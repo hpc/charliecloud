@@ -20,13 +20,15 @@ session = requests.Session()
 
 ## Constants ##
 
-# FIXME: move these to defaults
+# FIXME: move these to defaults; add argument handling
 registryBase = 'https://registry-1.docker.io'
 authBase     = 'https://auth.docker.io'
 authService  = 'registry.docker.io'
 
 # Accepted Docker V2 media types. See
 # https://docs.docker.com/registry/spec/manifest-v2-2/
+# FIXME: We only use MF_SCHEMA2 and LAYERS in this script, do we care about
+# declaring the others for future work?
 MF_SCHEMA1 = 'application/vnd.docker.distribution.manifest.v1+json'
 MF_SCHEMA2 = 'application/vnd.docker.distribution.manifest.v2+json'
 MF_LIST    = 'application/vnd.docker.distribution.manifest.list.v2+json'
@@ -51,20 +53,26 @@ PROXIES = { "HTTP_PROXY":  os.environ.get("HTTP_PROXY"),
 class Image:
     def __init__(self, string):
         # FIXME: Take some string and split into proper components.
-        # Docker defines a string, e.g., 'IMAGE[:TAG][@DIGEST]' where IMAGE
-        # is the image name or URL path(?), TAG is the image tag, DIGEST is an
-        # algorithm and hash deliminated by a colon. For example:
-        #   'hello-world:latest@sha256:(some hash here)'.
-        count = collections.Counter(string)
-        if count[';'] > 1:
-            FATAL('ports not supported')
+        #
+        # IMAGE[:TAG][@DIGEST], where IMAGE is the image name, TAG is the image
+        # tag, and DIGEST is an algorithm and hash deliminated by a colon. Key
+        # examples:
+        #   1. hello-world
+        #   2. hellow-world:latest
+        #   3. hello-world@sha256:(some hash)
+        #   4. hello-world:latest@sha256:(some hash)
+        #   5. library/hello-world
+        #   6. library/hello-world:latest
+        #   7. library/hello-world@sha256:(some hash)
+        #   8. library/hello-world:latest@sha256:(some hash)
+        #
+        # In key examples 1-4 we would need to append `library/` to the image
+        # name to resolve the GET request.
+        #
+        # FIXME: what about ports?
         self.name = string.split(':')[0]
         self.tag  = string.split(':')[-1]
         self.reference = self.tag
-
-    def compute_json_hash(self, manifest):
-        return sha256(json.dumps(manifest.json(),
-                                 indent=3).encode()).hexdigest()
 
     def download(self, dst):
         self.session  = MySession(self)
@@ -157,9 +165,11 @@ class Image:
         os.makedirs(imgdir)
         os.chdir(imgdir)
 
-        # Iterate through layers. Exclude device file and files with dangerous
-        # absolute paths. Remove any whiteout file targets from current image
-        # layer.
+        # Iterate through layers; process and unpack to STORAGE/img/IMAGE:TAG.
+        # Primary operations: 1) exclude device files; 2) fail if one or more
+        # file(s) with a dangerous absolute path is encountered; and 3) remove
+        # file target specified by whiteout file in current layer from most recent
+        # unpacked layer in STORAGE/img/IMAGE:TAG.
         dev_ct = 0
         wh_ct  = 0
         for k, v in layers_d.items():
@@ -169,6 +179,7 @@ class Image:
                 if m.isdev():
                     dev_ct += 1
                     DEBUG('ignoring device file {}'.format(m.name))
+                # FIXME: handle opaque whiteout files
                 elif re.search('\.wh\..*', m.name):
                     wh_ct += 1
                     DEBUG('whiteout found: {}'.format(m.name))
@@ -196,7 +207,6 @@ class Image:
             INFO("{} device files ignored.".format(dev_ct))
         if wh_ct > 0:
             INFO("{} whiteout files handled.".format(wh_ct))
-
 
 class MySession:
     def __init__(self, image):
