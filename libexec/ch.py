@@ -84,7 +84,7 @@ class Image:
 
         # Store manifest file as
         # CH_GROW_STORAGE/manifests/IMAGE:TAG/manifest.json. Note: IMAGE itself
-        # can be a parent directory, for example the image
+        # can be a parent directory. For example, the image
         # 'charliecloud/whiteout:2020-01-10` manifest would be written as:
         # /var/tmp/ch-grow/manifests/charliecloud/whiteout:2020-01-10/HASH
         mdir = os.path.join(dst, 'manifests/{}:{}'.format(self.name,
@@ -152,7 +152,7 @@ class Image:
             layer = layer.get('digest')
             tar = layer.split('sha256:')[-1] # exclude algorithm
             if not os.path.exists(tar):
-                FATAL("{} doesn't exist".format(tar))
+                FATAL("{} doesn't exist in storage.".format(tar))
             if not tarfile.is_tarfile(tar):
                 FATAL("{} is not a valid tar archive".format(tar))
             tf = tarfile.open(tar, 'r')
