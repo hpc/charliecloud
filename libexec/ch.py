@@ -12,7 +12,6 @@ import shutil
 import sys
 import tarfile
 
-from hashlib import sha256
 from http.client import HTTPConnection
 
 ## Globals ##
