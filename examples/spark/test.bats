@@ -36,7 +36,7 @@ setup () {
                     | sed -r 's/^.+inet ([0-9.]+).+/\1/')
         # Start Spark workers using pdsh. We would really prefer to do this
         # using srun, but that doesn't work; see issue #230.
-        command -v pdsh >/dev/null 2>&1 || skip "pdsh not in path"
+        command -v pdsh >/dev/null 2>&1 || pedantic_fail "pdsh not in path"
         pernode="pdsh -R ssh -w ${SLURM_NODELIST} -- PATH='${PATH}'"
     else
         master_ip=127.0.0.1

@@ -22,8 +22,8 @@ set -x
 # We don't run "make clean" because that runs configure again.
 rm -rf Makefile \
        Makefile.in \
-       */Makefile \
-       */Makefile.in \
+       ./*/Makefile \
+       ./*/Makefile.in \
        aclocal.m4 \
        autom4te.cache \
        bin/.deps \
@@ -37,9 +37,7 @@ rm -rf Makefile \
 
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
-    aclocal
-    autoheader
-    autoreconf --install -Wall -Werror
+    autoreconf --force --install -Wall -Werror
 
     set +x
     echo

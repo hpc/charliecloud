@@ -5,7 +5,7 @@
 
 dist_pkglibexec_SCRIPTS = base.sh
 noinst_DATA = charliecloud
-pkglibexec_SCRIPTS = version.py version.sh version.txt
+pkglibexec_SCRIPTS = contributors.bash version.py version.sh version.txt
 
 CLEANFILES = $(pkglibexec_SCRIPTS) $(noinst_DATA)
 
@@ -14,6 +14,12 @@ CLEANFILES = $(pkglibexec_SCRIPTS) $(noinst_DATA)
 charliecloud:
 	ln -s . charliecloud
 
+contributors.bash: ../README.rst
+	rm -f $@
+	printf '# shellcheck shell=bash\n' >> $@
+	printf 'declare -a ch_contributors\n' >> $@
+	sed -En 's/^\*.+<(.+@.+)>.*$$/ch_contributors+=('"'"'\1'"'"')/p' < $< >> $@
+
 version.txt: ../configure
 	printf '@PACKAGE_VERSION@\n' > $@
 
@@ -21,5 +27,5 @@ version.py: ../configure
 	printf "VERSION='@PACKAGE_VERSION@'\n" > $@
 
 version.sh: ../configure
-	printf "# shellcheck disable=SC2034\n" > $@
+	printf "# shellcheck shell=sh disable=SC2034\n" > $@
 	printf "ch_version='@PACKAGE_VERSION@'\n" >> $@
