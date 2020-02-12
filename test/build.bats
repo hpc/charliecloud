@@ -2,12 +2,14 @@ load common
 
 @test 'documentation seems sane' {
     scope standard
-    command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
+    if ( ! command -v sphinx-build > /dev/null 2>&1 ); then
+        skip 'Sphinx is not installed'
+    fi
     if [[ ! -d ../doc ]]; then
         skip 'documentation source code absent'
     fi
     if [[ ! -f ../doc/html/index.html || ! -f ../doc/man/ch-run.1 ]]; then
-        skip 'documentation not all built'
+        skip 'documentation not built'
     fi
     (cd ../doc && make -j "$(getconf _NPROCESSORS_ONLN)")
     ./docs-sane
@@ -85,21 +87,9 @@ load common
     if [[ $CHTEST_INSTALLED ]]; then
         skip 'only in build directory'
     fi
-    # Are we on Travis or at LANL?
-    if [[ $TRAVIS || $(hostname --fqdn) = *'.lanl.gov' ]]; then
-        pedantic=yes
-    else
-        pedantic=
-    fi
     # ShellCheck present?
     if ( ! command -v shellcheck >/dev/null 2>&1 ); then
-        error='no shellcheck found'
-        if [[ $pedantic ]]; then
-             echo "$error"
-             false
-        else
-             skip "$error"
-        fi
+        pedantic_fail 'no ShellCheck found'
     fi
     # ShellCheck minimum version?
     version=$(shellcheck --version | grep -E '^version:' | cut -d' ' -f2)
@@ -109,14 +99,8 @@ load common
     echo "shellcheck: version '${version}', major '${major}', minor '${minor}'"
     minor_needed=6
     if [[ $minor -lt $minor_needed ]]; then
-        # no need to check major because minimum is 0
-        error="shellcheck ${version} older than 0.${minor_needed}.0"
-        if [[ $pedantic ]]; then
-            echo "$error"
-            false
-        else
-            skip "$error"
-        fi
+        # No need to check major because minimum is 0.
+        pedantic_fail "shellcheck ${version} older than 0.${minor_needed}.0"
     fi
     # Shell scripts and libraries: appropriate extension or shebang.
     # For awk program, see: https://unix.stackexchange.com/a/66099

@@ -19,8 +19,8 @@ RUN touch /usr/bin/ch-ssh
 # 3. We disapprove of Spark's master/slave terminology, but it's what the
 #    scripts are called, so we don't see a way to avoid it currently.
 
-ENV URLPATH https://www.apache.org/dist/spark/spark-2.4.4/
-ENV DIR spark-2.4.4-bin-hadoop2.7
+ENV URLPATH https://www.apache.org/dist/spark/spark-2.4.5/
+ENV DIR spark-2.4.5-bin-hadoop2.7
 ENV TAR $DIR.tgz
 RUN wget -nv $URLPATH/$TAR
 RUN tar xf $TAR && mv $DIR /opt/spark && rm $TAR
