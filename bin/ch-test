@@ -535,6 +535,7 @@ while [[ $# -gt 0 ]]; do
     --pack-dir=*)
         require_unset tardir
         tardir=${opt#*=}
+        ;;
     --pedantic)
         pedantic=$1; shift
         ;;
