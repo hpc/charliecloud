@@ -510,6 +510,10 @@ while [[ $# -gt 0 ]]; do
         require_unset builder
         builder=$1; shift
         ;;
+    --builder=*)
+        require_unset builder
+        builder=${opt#*=}
+        ;;
     --dry-run)
         dry=true
         ;;
@@ -520,21 +524,42 @@ while [[ $# -gt 0 ]]; do
         require_unset imgdir
         imgdir=$1; shift
         ;;
+    --img-dir=*)
+        require_unset imgdir
+        imgdir=${opt#*=}
+        ;;
     --pack-dir)
         require_unset tardir
         tardir=$1; shift
         ;;
+    --pack-dir=*)
+        require_unset tardir
+        tardir=${opt#*=}
+        ;;
     --pedantic)
         pedantic=$1; shift
+        ;;
+    --pedantic=*)
+        pedantic=${opt#*=}
         ;;
     --perm-dir)
         use_sudo=yes
         permdirs+=("$1"); shift
         ;;
+    --perm-dir=*)
+        use_sudo=yes
+        permdirs+=("${opt#*=}")
+        ;;
     -s|--scope)
         require_unset scope
         scope_check "$1"
         scope=$1; shift
+        ;;
+    --scope=*)
+        require_unset scope
+        arg=${opt#*=}
+        scope_check "$arg"
+        scope=$arg
         ;;
     --sudo)
         use_sudo=yes
