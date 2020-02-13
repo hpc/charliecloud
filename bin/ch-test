@@ -473,6 +473,8 @@ if [[ ! -d $CHTEST_EXAMPLES_DIR ]]; then
     fatal "examples not found: $CHTEST_EXAMPLES_DIR"
 fi
 
+set +e
+
 # Is the user a contributor?
 email=
 # First, ask Git for the configured e-mail address.
@@ -489,6 +491,8 @@ for i in "${ch_contributors[@]}"; do
         ch_contributor=yes
     fi
 done
+
+set -e
 
 # Ensure Bats is installed.
 if (command -v bats &> /dev/null); then
