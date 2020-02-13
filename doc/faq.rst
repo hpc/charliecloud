@@ -557,3 +557,88 @@ should pop an xterm.
 
 If your X11 application doesn’t work, please file an issue so we can
 figure out why.
+
+How do I specify an image ID?
+-----------------------------
+
+You must specify an image for many use cases, including :code:`FROM`
+instructions, the source of an image pull (e.g. :code:`ch-pull` or
+:code:`docker pull`), the destination of an image push, and adding image tags.
+Charliecloud calls this an *image ID*, but there appears to be no established
+name for this concept.
+
+The syntax of an image ID is not well documented. This FAQ represents our
+understanding, which is cobbled together from the `Dockerfile reference
+<https://docs.docker.com/engine/reference/builder/#from>`_, the :code:`docker
+tag` `documentation
+<https://docs.docker.com/engine/reference/commandline/tag/>`_, and various
+forum posts. It is not a precise match for how Docker implements it, but it
+should be close enough.
+
+We'll start with two complete examples with all the bells and whistles:
+
+1. :code:`example.com:8080/foo/bar/hello-world:version1.0`
+2. :code:`example.com:8080/foo/bar/hello-world@sha256:f6c68e2ad82a`
+
+These IDs parse into the following components, in this order:
+
+1. A `valid hostname <https://en.wikipedia.org/wiki/Hostname>`_; we assume
+   this matches the regular expression :code:`[A-Za-z0-9.-]+`, which is very
+   approximate. Optional; here :code:`example.com`.
+
+2. A colon followed by a decimal port number. If hostname is given, optional;
+   otherwise disallowed; here :code:`8080`.
+
+3. If hostname given, a slash.
+
+4. A path, with one or more components separated by slash. Components match
+   the regex :code:`[a-z0-9_.-]+`. Optional; here :code:`foo/bar`. Pedantic
+   details:
+
+   * Under the hood, the default path is :code:`library`, but this is
+     generally not exposed to users.
+
+   * Three or more underscores in a row is disallowed by Docker, but we don't
+     check this.
+
+5. If path given, a slash.
+
+6. The image name, which matches :code:`[a-z0-9_.-]+`. Required; here
+   :code:`hello-world`.
+
+7. Zero or one of:
+
+   * A tag matching the regular expression :code:`[A-Za-z0-9_.-]+` and
+     preceded by a colon. Here :code:`version1.0` (example 1).
+
+   * A hexadecimal hash preceded by the string :code:`@sha256:`. Here
+     :code:`f6c68e2ad82a` (example 2).
+
+     * Note: Digest algorithms other than SHA-256 are in principle allowed,
+       but we have not yet seen any.
+
+Ludicrously detail-oriented readers may have noticed the following gotchas:
+
+* A hostname without port number is ambiguous with the leading component of a
+  path. For example, in the image ID :code:`foo/bar/baz`, it is ambiguous
+  whether :code:`foo` is a hostname or the first (and only) component of the
+  path :code:`foo/bar`. The `resolution rule
+  <https://stackoverflow.com/a/37867949>`_ is: if the ambiguous substring
+  contains a dot, assume it's a hostname; otherwise, assume it's a path
+  component.
+
+* The only character than cannot go in a POSIX filename is slash. Thus,
+  Charliecloud uses image IDs in filenames, replacing slash with percent
+  (:code:`%`). Because this character cannot appear in image IDs, the
+  transformation is reversible.
+
+Usually, most of the components are omitted. For example, you'll more commonly
+see image IDs like:
+
+  * :code:`debian`, which refers to the tag :code:`latest` of image
+    :code:`debian` from Docker Hub.
+  * :code:`debian:stretch`, which is the same except for tag :code:`stretch`.
+  * :code:`fedora/httpd`, which is tag :code:`latest` of :code:`fedora/httpd`
+    from Docker Hub.
+
+See :code:`charliecloud.py` for a specific grammar that implements this.

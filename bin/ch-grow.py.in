@@ -266,16 +266,8 @@ class Instruction(object):
               % (self.lineno, self.__class__.__name__.split("_")[1].upper(),
                  self.str_()))
 
-   # Return the value of first immediate subtree childname's first immediate
-   # child terminal of type type_, or None if either the child or terminal
-   # does not exist.
    def child(self, childname, type_):
-      children = self.tree.find_data(childname)
-      try:
-         child = next(children)
-      except StopIteration:
-         return None  # no child subtree named childname
-      return terminal(child, type_)
+      return ch.tree_child(self.tree, childname, type_)
 
    def execute(self):
       if (not cli.dry_run):
@@ -287,15 +279,11 @@ class Instruction(object):
    def str_(self):
       return "(unimplemented)"
 
-   # Return value of first immediate child terminal of type type_, or None if
-   # not found.
    def terminal(self, type_, index=0):
-      return terminal(self.tree, type_, index)
+      return ch.tree_terminal(self.tree, type_, index)
 
-   # Yield values of all immediate child terminals of type type_, or empty
-   # list if none found.
    def terminals(self, type_):
-      return terminals(self.tree, type_)
+      return ch.tree_terminals(self.tree, type_)
 
 
 class I_cmd(Instruction):
@@ -586,24 +574,6 @@ class State(object):
 
 ## Supporting functions ###
 
-def DEBUG(*args, **kwargs):
-   if (cli.verbose):
-      color("36m", sys.stderr)
-      print(flush=True, file=sys.stderr, *args, **kwargs)
-      color_reset(sys.stderr)
-
-def ERROR(*args, **kwargs):
-   color("31m", sys.stderr)
-   print(flush=True, file=sys.stderr, *args, **kwargs)
-   color_reset(sys.stderr)
-
-def FATAL(*args, **kwargs):
-   ERROR(*args, **kwargs)
-   sys.exit(1)
-
-def INFO(*args, **kwargs):
-   print(flush=True, *args, **kwargs)
-
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
@@ -612,14 +582,6 @@ def cmd(args, env=None):
    color_reset(sys.stdout)
    if (cp.returncode):
       FATAL("%s failed with return code %d" % (args[0], cp.returncode))
-
-def color(color, fp):
-   if (fp.isatty()):
-      print("\033[" + color, end="", flush=True, file=fp)
-
-def color_reset(*fps):
-   for fp in fps:
-      color("0m", fp)
 
 def cp(src, dst):
    DEBUG("copying: %s -> %s" % (src, dst))
@@ -706,17 +668,6 @@ def symlink(target, source):
       if (os.readlink(source) != target):
          FATAL("can't symlink: %s exists; want target %s but existing is %s"
                % (source, target, os.readlink(source)))
-
-def terminal(tree, type_, index=0):
-   for (i, t) in enumerate(terminals(tree, type_)):
-      if (i == index):
-         return t
-   return None
-
-def terminals(tree, type_):
-   for i in tree.children:
-      if (isinstance(i, lark.lexer.Token) and i.type == type_):
-         yield i.value
 
 def variables_sub(s, variables):
    # FIXME: This should go in the grammar rather than being a regex kludge.

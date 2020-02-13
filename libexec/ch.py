@@ -224,31 +224,6 @@ class MySession:
 
 ## Supporting functins ##
 
-def DEBUG(*args, **kwargs):
-    color("36m", sys.stderr)
-    print(flush=True, file=sys.stderr, *args, **kwargs)
-    color_reset(sys.stderr)
-
-def ERROR(*args, **kwargs):
-    color("31m", sys.stderr)
-    print(flush=True, file=sys.stderr, *args, **kwargs)
-    color_reset(sys.stderr)
-
-def FATAL(*args, **kwargs):
-    ERROR(*args, **kwargs)
-    sys.exit(1)
-
-def INFO(*args, **kwargs):
-        print(flush=True, *args, **kwargs)
-
-def color(color, fp):
-    if (fp.isatty()):
-        print("\033[" + color, end="", flush=True, file=fp)
-
-def color_reset(*fps):
-    for fp in fps:
-        color("0m", fp)
-
 def log():
     logging.basicConfig(format='%(levelname)s:%(message)s')
     HTTPConnection.debuglevel = 1

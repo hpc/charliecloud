@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import sys
+
+sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
+                    + "/../libexec/charliecloud"))
+import charliecloud as ch
+
+
+ap = argparse.ArgumentParser(
+       formatter_class=argparse.RawDescriptionHelpFormatter,
+       description="Pull and/or unpack image from Docker repository.",
+         epilog="""\
+  CH_GROW_STORAGE       default for --storage
+""")
+ap.add_argument("image",
+                metavar="IMAGE_REF",
+                help="image reference")
+ap.add_argument("--parse-ref-only",
+                action="store_true",
+                help="parse image reference, print report, and exit")
+ap.add_argument("--verbose", action="store_true",
+                help="print extra debugging chatter")
+if (len(sys.argv) < 2):
+   ap.print_help(file=sys.stderr)
+   sys.exit(1)
+
+args = ap.parse_args()
+if (args.verbose):
+   ch.verbose = True
+
+image = ch.Image_Ref(args.image)
+
+if (args.parse_ref_only):
+   print(image.as_verbose_str)
+   sys.exit(0)
