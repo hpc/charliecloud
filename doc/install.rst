@@ -389,10 +389,24 @@ image repositories.
 Sphinx
 ~~~~~~
 
-We use Sphinx to build the documentation. The minimum version is listed above.
-We currently use 1.8 for building what's on the web because there are bugs
-problematic for us in 2.x, e.g. `bad spacing in lists
+We use Sphinx to build the documentation; the theme is
+`sphinx-rtd-theme <https://sphinx-rtd-theme.readthedocs.io/en/stable/>`_.
+
+Minimum versions are listed above. We currently use Sphinx 1.8 for building
+what's on the web because there are bugs problematic for us in 2.x, e.g. `bad
+spacing in lists
 <https://github.com/readthedocs/sphinx_rtd_theme/issues/799>`_.
+
+If you're on Debian Stretch or some version of Ubuntu, installing with
+:code:`pip3` will silently install into :code:`~/.local`, leaving the
+:code:`sphinx-build` binary in :code:`~/.local/bin`, which is often not on
+your path. One workaround (untested) is to run :code:`pip3` as root, which
+violates principle of least privilege. A better workaround, assuming you can
+write to :code:`/usr/local`, is to add the undocumented and non-standard
+:code:`--system` argument to install in :code:`/usr/local` instead. (This
+matches previous :code:`pip` behavior.) See Debian bugs `725848
+<https://bugs.debian.org/725848>`_ and `820856
+<https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856>`_.
 
 SquashFS
 ~~~~~~~~

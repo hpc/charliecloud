@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 set -e
 
 # shellcheck disable=SC2034
@@ -14,12 +15,14 @@ builder_choose () {
     if [ -z "$CH_BUILDER" ]; then
         if ( command -v docker >/dev/null 2>&1 ); then
             export CH_BUILDER=docker
-        else
+        elif ( "${ch_bin}/ch-grow" --dependencies > /dev/null 2>&1); then
             export CH_BUILDER=ch-grow
+        else
+            export CH_BUILDER=none
         fi
     fi
     case $CH_BUILDER in
-        buildah|buildah-runc|buildah-setuid|ch-grow|docker)
+        buildah|buildah-runc|buildah-setuid|ch-grow|docker|none)
             ;;
         *)
             echo "unknown builder: $CH_BUILDER" 1>&2

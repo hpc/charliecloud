@@ -11,6 +11,7 @@ a.out
 /doc/html/
 /doc/man/*.1
 /libexec/charliecloud
+/libexec/contributors.bash
 /libexec/version.py
 /libexec/version.sh
 /libexec/version.txt

@@ -63,17 +63,11 @@ load ../common
 @test 'ch-run as root: root with non-zero gid refused' {
     scope standard
     [[ -n $ch_have_sudo ]] || skip 'sudo not available'
-    [[ -z $TRAVIS ]] || skip 'not permitted on Travis'
-    # Allowing sudo to user root but group non-root is an unusual
-    # configuration. You need e.g. "%foo ALL=(ALL:ALL)" instead of the more
-    # common "%foo ALL=(ALL)". Because this is a rather esoteric test, we want
-    # to skip in the common configuration but still be reliably tested.
-    # Because Travis doesn't do this, he best I could come up with is to
-    # insist the test run at LANL (and fail if sudo is not configured
-    # correctly). See issue #485.
-    if    ! (sudo -u root -g "$(id -gn)" true) \
-       && [[ $(hostname --fqdn) != *'.lanl.gov' ]]; then
-        skip "sudo not configured for user root and group non-root"
+    if ! (sudo -u root -g "$(id -gn)" true); then
+        # Allowing sudo to user root but group non-root is an unusual
+        # configuration. You need e.g. "%foo ALL=(ALL:ALL)" instead of the
+        # more common "%foo ALL=(ALL)". See issue #485.
+        pedantic_fail 'sudo not configured for user root and group non-root'
     fi
     run sudo -u root -g "$(id -gn)" "$ch_runfile" -v --version
     echo "$output"

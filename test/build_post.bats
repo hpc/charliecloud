@@ -2,12 +2,14 @@ load common
 
 @test 'ARG and ENV' {
 
-    # We use full scope for everything except ch-grow because (1) with
+    # We use full scope for builders other than ch-grow because (1) with
     # ch-grow, we are responsible for --build-arg being implemented correctly
     # and (2) Docker and Buildah take a full minute for this test, vs. three
     # seconds for ch-grow.
     if [[ $CH_BUILDER = ch-grow ]]; then
         scope standard
+    elif [[ $CH_BUILDER = none ]]; then
+        skip 'no builder'
     else
         scope full
     fi

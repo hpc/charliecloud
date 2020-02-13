@@ -11,6 +11,8 @@
 # find(1) instead. You may hear complaints about how find is too slow for
 # this, but the project is small enough we don't care.
 
+set -e
+
 cd "$(dirname "$0")"/..
 
 pwd
