@@ -138,7 +138,7 @@ Additional arguments:
     :code:`sudo docker` even without this option.
 
   :code:`--lustre DIR`
-    Enable lustre LFS tests under :code:`DIR`
+    Use :code:`DIR` for run-phase Lustre tests
 
 Exit status
 ===========
