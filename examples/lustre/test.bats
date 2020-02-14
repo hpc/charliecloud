@@ -26,7 +26,7 @@ setup () {
     fi
 
     binds=${ch_lustre}:/mnt/0
-    work_dir = $(mktemp -d --tmpdir=${ch_lustre} ch-test.XXXXXX)
+    work_dir=$(mktemp -d --tmpdir="${ch_lustre}" ch-test.XXXXXX)
 }
 
 @test "${ch_tag}/create dir" {
@@ -52,10 +52,10 @@ setup () {
 
 @test "${ch_tag}/striping {
     ch-run -b "$binds" "$ch_img" -- mkdir "${work_dir}/set_stripes"
-    ch-run -b "$binds" "$ch_img" -- lfs setstripe -c 1 "${work_dir}/set_stripes
+    ch-run -b "$binds" "$ch_img" -- lfs setstripe -c 1 "${work_dir}/set_stripes"
     one_stripe=$(ch-run -b "$binds" "$ch_img" -- lfs getstripe "${work_dir}/set_stripes/" | grep stripe_count | gawk '{ print $2}')
     [[ $one_stripe -eq 1 ]] || echo "Could not set stripe pattern to 1" && exit 1
-    ch-run -b "$binds" "$ch_img" -- lfs setstripe -c 4 "${work_dir}/set_stripes
+    ch-run -b "$binds" "$ch_img" -- lfs setstripe -c 4 "${work_dir}/set_stripes"
     four_stripes=$(ch-run -b "$binds" "$ch_img" -- lfs getstripe "${work_dir}/set_stripes" | grep stripe_count | gawk '{ print $2}')
     [[ $four_stripes -eq 4 ]] || echo "Could not set stripe pattern to 4" && exit 1
 }
