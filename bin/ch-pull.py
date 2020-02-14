@@ -21,8 +21,8 @@ def main():
 """)
     ap.add_argument("image",
                     type=str,
-                    metavar="IMAGE[:TAG][@DIGEST]",
-                    help="image name")
+                    metavar="IMAGE REFERENCE",
+                    help="valid image reference")
     ap.add_argument("-s", "--storage",
                     type=str,
                     metavar="DIR",
@@ -38,8 +38,8 @@ def main():
 
     args = ap.parse_args()
     if args.debug:
-        ch.log()
-    image = ch.Image(args.image)
+        ch.log_http()
+    image = charliecloud.Image(args.image)
     image.unpack(args.storage)
     return 0
 

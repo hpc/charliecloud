@@ -18,8 +18,8 @@ import types
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../libexec/charliecloud"))
+import charliecloud
 import version
-import chpull
 
 ## Globals ##
 
