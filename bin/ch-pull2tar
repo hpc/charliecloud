@@ -26,7 +26,8 @@ fi
 
 image=$1
 dest=$2
-tar="$image".tar.gz
+tar=$(readlink -f "$dest")/$(tag_to_path "$image").tar
+tar_gzipped=${tar}.gz
 
 puller_choose () {
     if [ -z "$CH_PULLER" ]; then
@@ -68,7 +69,8 @@ elif [ "$CH_PULLER" = "skopeo" ]; then
     temp=$(mktemp -d --tmpdir ch-pull2tar.XXXXXX)
     skopeo copy "docker://${image}" "oci:${temp}/oci:${image}"
     umoci unpack --rootless --image "${temp}/oci:${image}" "${temp}/img"
-    ( cd "${temp}/img"; tar czf "../${image}.tar.gz" rootfs/; mv "$tar" "$dest" )
+    ( cd "${temp}/img/rootfs"; tar cf "${tar}" -- *; pv_ < "$tar" | gzip_ -6 > "$tar_gzipped" )
+    echo "compressing skopeo"
+    rm "$tar"
     rm -rf  --one-file-system "$temp"
-    echo
 fi
