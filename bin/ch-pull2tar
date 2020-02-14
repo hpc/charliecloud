@@ -60,15 +60,15 @@ done
 
 puller_choose
 
-if [ "$CH_PULLER" == "docker" ]; then
+if [ "$CH_PULLER" = "docker" ]; then
     docker_ pull "$image"
     # shellcheck disable=SC2154
     "${ch_bin}/ch-builder2tar" -b docker "$image" "$dest"
-elif [ "$CH_PULLER" == "skopeo" ]; then 
+elif [ "$CH_PULLER" = "skopeo" ]; then 
     temp=$(mktemp -d --tmpdir ch-pull2tar.XXXXXX)
     skopeo copy "docker://${image}" "oci:${temp}/oci:${image}"
     umoci unpack --rootless --image "${temp}/oci:${image}" "${temp}/img"
-    ( cd $temp/img; tar czf "../${image}.tar.gz" rootfs/; mv "${image}.tar.gz" $dest )
+    ( cd "${temp}/img"; tar czf "../${image}.tar.gz" rootfs/; mv "$tar" "$dest" )
     rm -rf  --one-file-system "$temp"
     echo
 fi
