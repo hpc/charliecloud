@@ -24,6 +24,13 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 HEX_STRING: /[0-9A-Fa-f]+/
 """
 
+## Globals ##
+
+verbose = False
+
+
+## Classes ##
+
 class Image_Ref:
    """Reference to an image in a repository. The constructor takes one
       argument, which is interpreted differently depending on type:
@@ -64,13 +71,36 @@ class Image_Ref:
          assert False, "unsupported initialization type"
 
    def __str__(self):
-      return "FIXME"
+      out = ""
+      if (self.hostname is not None):
+         out += self.hostname
+      if (self.port is not None):
+         out += ":" + str(self.port)
+      if (self.hostname is not None):
+         out += "/"
+      if (len(self.path) > 0):
+         out += "/".join(self.path) + "/"
+      out += self.name
+      if (self.tag is not None):
+         out += ":" + self.tag
+      if (self.digest is not None):
+         out += "@sha256:" + self.digest
+      return out
 
    @staticmethod
    def parse(s):
+      if ("%" in s):
+         s = s.replace("%", "/")
       parser = lark.Lark("?start: image_ref\n" + GRAMMAR, parser="earley",
                          propagate_positions=True)
-      tree = parser.parse(s)
+      try:
+         tree = parser.parse(s)
+      except lark.exceptions.UnexpectedInput as x:
+         FATAL("image ref syntax error, char %d: %s" % (x.column, s))
+      except lark.exceptions.UnexpectedEOF as x:
+         # We get UnexpectedEOF because of Lark issue #237. This exception
+         # doesn't have a column location.
+         FATAL("image ref syntax error, at end: %s" % s)
       DEBUG(tree.pretty())
       return tree
 
@@ -115,7 +145,7 @@ fields:
       self.name = tree_child(t, "ir_name", "IR_PATH_COMPONENT")
       self.tag = tree_child(t, "ir_tag", "IR_TAG")
       self.digest = tree_child(t, "ir_digest", "HEX_STRING")
-      # Resolve grammar ambiguity.
+      # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.hostname is not None
           and "." not in self.hostname
           and self.port is None):
