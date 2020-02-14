@@ -255,6 +255,8 @@ test_examples () {
     if [[ $CH_TEST_SCOPE == quick ]]; then
         return
     fi
+    echo
+    echo 'executing example phase tests ...'
     for i in $examples; do
         if (test_make_check_image "$i"); then
             bat_file=$(dirname "$i")/test.bats
@@ -263,10 +265,10 @@ test_examples () {
             sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
         fi
     done
-    if [[ -e *'_example.bats' ]]; then
-        echo
-        echo 'executing example phase tests ...'
+    if (find "$TMP_" -name '*_example.bats' | grep -q .); then
         bats "${TMP_}"/*_example.bats
+    else
+        echo 'found: none'
     fi
 }
 
