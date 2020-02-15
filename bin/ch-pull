@@ -21,15 +21,15 @@ ap.add_argument("image",
 ap.add_argument("--parse-ref-only",
                 action="store_true",
                 help="parse image reference, print report, and exit")
-ap.add_argument("--verbose", action="store_true",
-                help="print extra debugging chatter")
+ap.add_argument("--verbose", action="count",
+                help="print extra debugging chatter (can be repeated)")
 if (len(sys.argv) < 2):
    ap.print_help(file=sys.stderr)
    sys.exit(1)
 
 args = ap.parse_args()
 if (args.verbose):
-   ch.verbose = True
+   ch.verbose = args.verbose
 
 image = ch.Image_Ref(args.image)
 

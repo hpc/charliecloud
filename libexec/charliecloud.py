@@ -1,6 +1,9 @@
+import http.client
+import logging
 import sys
 
 import lark
+import requests
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -26,14 +29,106 @@ HEX_STRING: /[0-9A-Fa-f]+/
 
 ## Globals ##
 
-verbose = False
+verbose = 0
 
 
 ## Classes ##
 
+class Repo_Downloader:
+   """Downloads layers and manifests from an image repository via HTTPS.
+      Currently, only Docker Hub is supported."""
+
+   __slots__ = ("host",
+                "port",
+                "image_ref",  # FIXME - copy & defaultize if no hostname
+                "_session")
+
+   def __init__(self, host, port):
+      assert (host == "registry-1.docker.io")
+      assert (port == 443)
+      self.host = host
+      self.port = port
+      self._session = None
+      if (verbose >= 2):
+         http.client.HTTPConnection.debuglevel = 1
+
+   @property
+   def session(self):
+      "Return the Requests session, or set one up if one doesn't exist."
+      if (self._session is None):
+         DEBUG("initializing session")
+         s = requests.Session()
+         # First, we need an authorization token. This has to be fetched from
+         # a separate host. Currently, this only works for public Docker Hub.
+         DEBUG("fetching auth token")
+         r = s.get("https://auth.docker.io/token",
+                   params={ "service": "registry.docker.io",
+                            "scope": (  "repository:%s:pull"
+                                      % "library/hello-world") })
+         token = r.json()["token"]
+         DEBUG("got token: %s..." % (token[:32]))
+         s.headers.update({ "Authorization": "Bearer %s" % token })
+         self._session = s
+      return self._session
+
+
+class Image:
+   """Container image object.
+
+      Constructor arguments:
+
+        id_.............. Image_Ref object to identify the image.
+
+        download_cache .. Directory containing the download cache; this is
+                          where layers and manifests go. If None,
+                          download-related operations will not be available.
+
+        unpack_parent ... Parent directory of the unpack directory.
+
+        unpack_dir ...... Unpack directory basename. If None, infer from id;
+                          if the empty string, unpack_parent will be used
+                          directly."""
+
+   __slots__ = ("id",
+                "download_cache",
+                "unpack_parent",
+                "unpack_dir")
+
+   def __init__(self, id_, download_cache, unpack_parent, unpack_dir):
+      self.id = id_
+      self.download_cache = download_cache
+      self.unpack_parent = unpack_parent
+      self.unpack_dir = unpack_dir
+
+   @property
+   def manifest_path(self):
+      return "%s/%s.manifest.json" % (self.download_cache, self.id.for_path)
+
+   def commit(self):
+      """Commit the current unpack directory into the layer cache."""
+      assert False, "unimplemented"
+
+   def copy_unpacked(self, other):
+      """Copy the unpack directory of Image other to my unpack directory."""
+      ...
+
+   def download(self, redownload=False):
+      """Download image manifest and layers according to origin and put them
+         in the download cache. By default, any components already in the
+         cache are skipped; if use_cache is False, download them anyway,
+         overwriting what's in the cache."""
+      ...
+
+   def unpack_download(self):
+      """Unpack the layers in the download cache into the unpack directory."""
+      ...
+
+
 class Image_Ref:
-   """Reference to an image in a repository. The constructor takes one
-      argument, which is interpreted differently depending on type:
+   """Reference to an image in a remote repository.
+
+      The constructor takes one argument, which is interpreted differently
+      depending on type:
 
         None or omitted... Build an empty Image_Ref (all fields None).
 
