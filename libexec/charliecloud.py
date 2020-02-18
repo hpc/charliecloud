@@ -1,5 +1,7 @@
+import copy
 import http.client
 import logging
+import os
 import sys
 
 import lark
@@ -38,16 +40,15 @@ class Repo_Downloader:
    """Downloads layers and manifests from an image repository via HTTPS.
       Currently, only Docker Hub is supported."""
 
-   __slots__ = ("host",
-                "port",
-                "image_ref",  # FIXME - copy & defaultize if no hostname
+   __slots__ = ("ref",
                 "_session")
 
-   def __init__(self, host, port):
-      assert (host == "registry-1.docker.io")
-      assert (port == 443)
-      self.host = host
-      self.port = port
+   def __init__(self, ref):
+      # Need an image ref with all the defaults filled in.
+      self.ref = ref.copy()
+      self.ref.defaults_add()
+      assert (self.ref.host == "registry-1.docker.io")
+      assert (self.ref.port == 443)
       self._session = None
       if (verbose >= 2):
          http.client.HTTPConnection.debuglevel = 1
@@ -71,6 +72,10 @@ class Repo_Downloader:
          self._session = s
       return self._session
 
+   def close(self):
+      if (self._session is not None):
+         self._session.close()
+
 
 class Image:
    """Container image object.
@@ -83,22 +88,29 @@ class Image:
                           where layers and manifests go. If None,
                           download-related operations will not be available.
 
-        unpack_parent ... Parent directory of the unpack directory.
+        unpack_dir ...... Directory containing unpacked images.
 
-        unpack_dir ...... Unpack directory basename. If None, infer from id;
-                          if the empty string, unpack_parent will be used
-                          directly."""
+        image_subdir .... Subdirectory of unpack_dir to put unpacked image in.
+                          If None, infer from id; if the empty string,
+                          unpack_dir will be used directly."""
 
    __slots__ = ("id",
                 "download_cache",
-                "unpack_parent",
-                "unpack_dir")
+                "unpack_dir",
+                "image_subdir")
 
-   def __init__(self, id_, download_cache, unpack_parent, unpack_dir):
+   def __init__(self, id_, download_cache, unpack_dir, image_subdir):
       self.id = id_
       self.download_cache = download_cache
-      self.unpack_parent = unpack_parent
       self.unpack_dir = unpack_dir
+      if (image_subdir is None):
+         self.image_subdir = self.id.for_path
+      else:
+         self.image_subdir = image_subdir
+
+   @property
+   def unpack_path(self):
+      return "%s/%s" % (self.unpack_dir, self.image_subdir)
 
    @property
    def manifest_path(self):
@@ -110,14 +122,33 @@ class Image:
 
    def copy_unpacked(self, other):
       """Copy the unpack directory of Image other to my unpack directory."""
-      ...
+      assert False, "unimplemente"
 
-   def download(self, redownload=False):
+   def download(self, use_cache=True):
       """Download image manifest and layers according to origin and put them
          in the download cache. By default, any components already in the
          cache are skipped; if use_cache is False, download them anyway,
          overwriting what's in the cache."""
-      ...
+      # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
+      dl = Repo_Downloader(self.id)
+      DEBUG("downloading image: %s" % dl.ref)
+      mkdirs(self.download_cache)
+      url_base = "https://%s:%d/v2" % (dl.ref.host, dl.ref.port)
+      # download manifest
+      if (os.path.exists(self.manifest_path) and use_cache):
+         INFO("manifest: using existing")
+      else:
+         INFO("manifest: downloading")
+         url = (  "%s/%s/manifests/%s"
+                % (url_base, dl.ref.path_full, dl.ref.version))
+         DEBUG(url)
+         mf_accept = "application/vnd.docker.distribution.manifest.v2+json"
+         res = dl.session.get(url, headers={ "Accept": mf_accept })
+         if (res.status_code != 200):
+            FATAL("download failed with HTTP %d" % res.status_code)
+         with open(self.manifest_path, "wb") as fp:
+            fp.write(res.content)
+      dl.close()
 
    def unpack_download(self):
       """Unpack the layers in the download cache into the unpack directory."""
@@ -144,7 +175,7 @@ class Image_Ref:
      cannot be round-tripped through a string, because the hostname will be
      assumed to be a path component."""
 
-   __slots__ = ("hostname",
+   __slots__ = ("host",
                 "port",
                 "path",
                 "name",
@@ -152,7 +183,7 @@ class Image_Ref:
                 "digest")
 
    def __init__(self, src=None):
-      self.hostname = None
+      self.host = None
       self.port = None
       self.path = []
       self.name = None
@@ -167,15 +198,13 @@ class Image_Ref:
 
    def __str__(self):
       out = ""
-      if (self.hostname is not None):
-         out += self.hostname
+      if (self.host is not None):
+         out += self.host
       if (self.port is not None):
          out += ":" + str(self.port)
-      if (self.hostname is not None):
+      if (self.host is not None):
          out += "/"
-      if (len(self.path) > 0):
-         out += "/".join(self.path) + "/"
-      out += self.name
+      out += self.path_full
       if (self.tag is not None):
          out += ":" + self.tag
       if (self.digest is not None):
@@ -196,7 +225,7 @@ class Image_Ref:
          # We get UnexpectedEOF because of Lark issue #237. This exception
          # doesn't have a column location.
          FATAL("image ref syntax error, at end: %s" % s)
-      DEBUG(tree.pretty())
+      DEBUG(tree.pretty(), v=2)
       return tree
 
    @property
@@ -209,30 +238,56 @@ class Image_Ref:
       return """\
 as string:    %s
 for filename: %s
+url:          %s
 fields:
-  hostname  %s
-  port      %s
-  path      %s
-  name      %s
-  tag       %s
-  digest    %s\
-""" % tuple(  [str(self), self.for_path]
-            + [fmt(i) for i in (self.hostname, self.port, self.path,
+  host    %s
+  port    %s
+  path    %s
+  name    %s
+  tag     %s
+  digest  %s\
+""" % tuple(  [str(self), self.for_path, self.url]
+            + [fmt(i) for i in (self.host, self.port, self.path,
                                 self.name, self.tag, self.digest)])
 
    @property
    def for_path(self):
       return str(self).replace("/", "%")
 
+   @property
+   def path_full(self):
+      out = ""
+      if (len(self.path) > 0):
+         out += "/".join(self.path) + "/"
+      out += self.name
+      return out
+
+   @property
+   def version(self):
+      if (self.tag is not None):
+         return self.tag
+      if (self.digest is not None):
+         return "sha256:" + self.digest
+      assert False, "version invalid with no tag or digest"
+
+   @property
+   def url(self):
+      out = ""
+      return out
+
+   def copy(self):
+      "Return an independent copy of myself."
+      return copy.deepcopy(self)
+
    def defaults_add(self):
       "Set defaults for all empty fields."
-      if (self.hostname is None): self.hostname = "registry-1.docker.io"
+      if (self.host is None): self.host = "registry-1.docker.io"
       if (self.port is None): self.port = 443
-      if (self.path is None): self.path = "library"
+      if (len(self.path) == 0): self.path = ["library"]
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
-      self.hostname = tree_child(t, "ir_hostport", "IR_HOST")
+      self.host = tree_child(t, "ir_hostport", "IR_HOST")
       self.port = tree_child(t, "ir_hostport", "IR_PORT")
       if (self.port is not None):
          self.port = int(self.port)
@@ -241,17 +296,17 @@ fields:
       self.tag = tree_child(t, "ir_tag", "IR_TAG")
       self.digest = tree_child(t, "ir_digest", "HEX_STRING")
       # Resolve grammar ambiguity for hostnames w/o dot or port.
-      if (    self.hostname is not None
-          and "." not in self.hostname
+      if (    self.host is not None
+          and "." not in self.host
           and self.port is None):
-         self.path.insert(0, self.hostname)
-         self.hostname = None
+         self.path.insert(0, self.host)
+         self.host = None
 
 
 ## Supporting functions ##
 
-def DEBUG(*args, **kwargs):
-   if (verbose):
+def DEBUG(*args, v=1, **kwargs):
+   if (verbose >= v):
       color("36m", sys.stderr)
       print(flush=True, file=sys.stderr, *args, **kwargs)
       color_reset(sys.stderr)
@@ -275,6 +330,10 @@ def color(color, fp):
 def color_reset(*fps):
    for fp in fps:
       color("0m", fp)
+
+def mkdirs(path):
+   DEBUG("ensuring directory: " + path)
+   os.makedirs(path, exist_ok=True)
 
 def tree_child(tree, cname, tname, i=0):
    """Locate a descendant subtree named cname using breadth-first search and
