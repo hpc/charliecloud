@@ -1,4 +1,3 @@
 # ch-test-scope: standard
 FROM centos:8
-
-RUN dnf -y upgrade
+RUN touch /var/lib/rpm/* && dnf -y upgrade

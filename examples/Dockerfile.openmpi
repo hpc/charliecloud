@@ -60,7 +60,8 @@ FROM centos8
 # OS packages needed to build this stuff.
 # As of 10/7/19 CentOS 8 provides verions 22.2 of libibverbs, this is quite new
 # but works for our test systems.
-RUN dnf install -y --setopt=install_weak_deps=false \
+RUN touch /var/lib/rpm/* \
+ && dnf install -y --setopt=install_weak_deps=false \
     automake \
     file \
     flex \
@@ -87,7 +88,8 @@ WORKDIR /usr/src
 
 # Note that libpsm2 is x86-64 only
 RUN if [ "$(uname -i)" = "x86_64" ] ; then \
-        dnf install -y --enablerepo=PowerTools libpsm2 libpsm2-devel ; \
+        touch /var/lib/rpm/* \
+     && dnf install -y --enablerepo=PowerTools libpsm2 libpsm2-devel ; \
     fi
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
