@@ -77,7 +77,9 @@ RUN ( echo "  gnupg:" \
  &&   echo "    buildable: false" ) \
        >>/spack/etc/spack/defaults/packages.yaml
 
-# Test: Install Charliecloud.
+# Test: Install Charliecloud. Note the '^python+libxml2' kludge is needed to
+# resolve a circular dependency.
+# See https://github.com/hpc/charliecloud/pull/636
 RUN spack spec charliecloud+builder ^python+libxml2
 RUN spack install charliecloud+builder ^python+libxml2
 
