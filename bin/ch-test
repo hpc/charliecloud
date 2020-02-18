@@ -107,12 +107,20 @@ builder_set () {
 dir_img_mk () {
     dir_img_rm
     printf "creating %s\n\n" "$CH_TEST_IMGDIR"
-    mkdir "$CH_TEST_IMGDIR"
+    if [[ -n $SLURM_JOBID ]]; then
+        srun --ntasks-per-node=1 mkdir "$CH_TEST_IMGDIR"
+    else
+        mkdir "$CH_TEST_IMGDIR"
+    fi
 }
 
 dir_img_rm () {
     echo "removing $CH_TEST_IMGDIR"
-    rm -rf --one-file-system "$CH_TEST_IMGDIR"
+    if [[ -n $SLURM_JOBID ]]; then
+        srun --ntasks-per-node=1 rm -rf --one-file-system "$CH_TEST_IMGDIR"
+    else
+        rm -rf --one-file-system "$CH_TEST_IMGDIR"
+    fi
 }
 
 # Remove a filesystem permissions fixture directory. Ensure that the target
@@ -148,12 +156,20 @@ dir_tar_check_file () {
 dir_tar_mk () {
     dir_tar_rm
     printf "creating %s\n\n" "$CH_TEST_TARDIR"
-    mkdir "$CH_TEST_TARDIR"
+    if [[ -n $SLURM_JOBID ]]; then
+        srun --ntasks-per-node=1 mkdir "$CH_TEST_TARDIR"
+    else
+        mkdir "$CH_TEST_TARDIR"
+    fi
 }
 
 dir_tar_rm () {
     echo "removing $CH_TEST_TARDIR"
-    rm -rf --one-file-system "$CH_TEST_TARDIR"
+    if [[ -n $SLURM_JOBID ]]; then
+        srun --ntasks-per-node=1 rm -rf --one-file-system "$CH_TEST_TARDIR"
+    else
+        rm -rf --one-file-system "$CH_TEST_TARDIR"
+    fi
 }
 
 dirs_unpriv_rm () {
