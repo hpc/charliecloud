@@ -542,13 +542,13 @@ while [[ $# -gt 0 ]]; do
         ;;
     --lustre)
         require_unset ch_lustre
+        # shellcheck disable=SC2034
         ch_lustre=$1; shift
-        echo "$ch_lustre" > /dev/null
         ;;
     --lustre=*)
         require_unset ch_lustre
+        # shellcheck disable=SC2034
         ch_lustre=${opt#*=}
-        echo "$ch_lustre" > /dev/null
         ;;
     --version)
         version; exit 0
