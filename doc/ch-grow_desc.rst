@@ -60,7 +60,7 @@ Other arguments:
     Print help and exit.
 
   :code:`-n`, :code:`--dry-run`
-    Do not actually excute any Dockerfile instructions.
+    Do not actually execute any Dockerfile instructions.
 
   :code:`--no-cache`
     Ignored (:code:`ch-grow` does not yet support layer caching).
