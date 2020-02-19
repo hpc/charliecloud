@@ -19,7 +19,7 @@ import types
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../libexec/charliecloud"))
 import version
-import chpull
+
 
 ## Globals ##
 
@@ -33,15 +33,8 @@ state = None
 depfails = []
 
 
-## Imports ##
+## Import Lark ##
 
-# hashlib
-try:
-   import hashlib
-except ImportError:
-   depfails.append(('missing', 'Python module "hashlib"'))
-
-# lark
 # This is messy because:
 #
 # 1. There are two packages on PyPI that give a "lark" module.
@@ -63,18 +56,6 @@ except (ImportError, AttributeError) as x:
       pass
    m.Visitor = Visitor_Mock
    lark = m
-
-# requests
-try:
-   import requests
-except ImportError:
-  depfails.append(("missing", 'Python module "requests"'))
-
-# tarfile
-try:
-   import tarfile
-except ImportError:
-  depfails.append(("missing", 'Python module "tarfile"'))
 
 
 ## Constants ##
@@ -266,8 +247,16 @@ class Instruction(object):
               % (self.lineno, self.__class__.__name__.split("_")[1].upper(),
                  self.str_()))
 
+   # Return the value of first immediate subtree childname's first immediate
+   # child terminal of type type_, or None if either the child or terminal
+   # does not exist.
    def child(self, childname, type_):
-      return ch.tree_child(self.tree, childname, type_)
+      children = self.tree.find_data(childname)
+      try:
+         child = next(children)
+      except StopIteration:
+         return None  # no child subtree named childname
+      return terminal(child, type_)
 
    def execute(self):
       if (not cli.dry_run):
@@ -279,11 +268,15 @@ class Instruction(object):
    def str_(self):
       return "(unimplemented)"
 
+   # Return value of first immediate child terminal of type type_, or None if
+   # not found.
    def terminal(self, type_, index=0):
-      return ch.tree_terminal(self.tree, type_, index)
+      return terminal(self.tree, type_, index)
 
+   # Yield values of all immediate child terminals of type type_, or empty
+   # list if none found.
    def terminals(self, type_):
-      return ch.tree_terminals(self.tree, type_)
+      return terminals(self.tree, type_)
 
 
 class I_cmd(Instruction):
@@ -436,19 +429,17 @@ class I_from_(Instruction):
                       symlinks=True)
 
    def base_pull(self):
-      if self.digest is None:
-         reference = self.tag
-      else:
-         # FIXME: registry digest references need algorithm, e.g., `sha256:HASH`
-         reference = self.digest
-
-      # FIXME: need to handle more than library/name pulls, e.g.,
-      #        `charliecloud/whiteout`
-      base = chpull.Image('library/%s' % self.name, reference, self.tag)
-      # DEBUG: test whiteouts charliecloud whiteout
-      #base = chpull.Image('charliecloud/%s' % 'whiteout', '2020-01-10', '2020-01-10')
-      base.unpack(dir_image(self.fullname))
+      mkdirs(dir_ocis())
+      rmtree(dir_image_tmp())
+      # This works with newuidmap and newgidmap not installed.
+      cmd(["skopeo", "copy", "docker://" + self.fullname,
+           "oci:%s/%s" % (dir_ocis(), self.fullname)])
+      cmd(["umoci", "unpack", "--rootless",
+           "--image", "%s/%s" % (dir_ocis(), self.fullname), dir_image_tmp()])
+      rmtree(dir_image(self.fullname))
+      os.rename("%s/rootfs" % dir_image_tmp(), dir_image(self.fullname))
       image_fixup(dir_image(self.fullname))
+      rmtree(dir_image_tmp())
       # CentOS likes to leave directories unwriteable by anyone, and files
       # unreadable by anyone, so fix that.
       def reraise(x):
@@ -574,6 +565,24 @@ class State(object):
 
 ## Supporting functions ###
 
+def DEBUG(*args, **kwargs):
+   if (cli.verbose):
+      color("36m", sys.stderr)
+      print(flush=True, file=sys.stderr, *args, **kwargs)
+      color_reset(sys.stderr)
+
+def ERROR(*args, **kwargs):
+   color("31m", sys.stderr)
+   print(flush=True, file=sys.stderr, *args, **kwargs)
+   color_reset(sys.stderr)
+
+def FATAL(*args, **kwargs):
+   ERROR(*args, **kwargs)
+   sys.exit(1)
+
+def INFO(*args, **kwargs):
+   print(flush=True, *args, **kwargs)
+
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
@@ -582,6 +591,14 @@ def cmd(args, env=None):
    color_reset(sys.stdout)
    if (cp.returncode):
       FATAL("%s failed with return code %d" % (args[0], cp.returncode))
+
+def color(color, fp):
+   if (fp.isatty()):
+      print("\033[" + color, end="", flush=True, file=fp)
+
+def color_reset(*fps):
+   for fp in fps:
+      color("0m", fp)
 
 def cp(src, dst):
    DEBUG("copying: %s -> %s" % (src, dst))
@@ -597,6 +614,10 @@ def dependencies_check():
    # above (e.g., lark module checked at import time), then complain and exit.
    if (not os.path.exists(CH_RUN)):
       depfails.append(("missing", CH_RUN))
+   if (not shutil.which("skopeo")):
+      depfails.append(("missing", "skopeo"))
+   if (not shutil.which("umoci")):
+      depfails.append(("missing", "umoci"))
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
    if (len(depfails) > 0):
@@ -611,8 +632,8 @@ def dir_images():
 def dir_image(image):
    return "%s/%s" % (dir_images(), image)
 
-def dir_layers():
-   return "%s/layers" % cli.storage
+def dir_ocis():
+   return "%s/oci" % cli.storage
 
 def file_ensure_exists(path):
    with open(path, "a") as fp:
@@ -649,6 +670,10 @@ nogroup:x:65534:
    symlink("/bin/true", "%s/ch/bin/chgrp" % path)
    symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
 
+def mkdirs(path):
+   DEBUG("ensuring directory: " + path)
+   os.makedirs(path, exist_ok=True)
+
 def rmtree(path):
    if (os.path.isdir(path)):
       DEBUG("deleting directory: " + path)
@@ -664,6 +689,17 @@ def symlink(target, source):
       if (os.readlink(source) != target):
          FATAL("can't symlink: %s exists; want target %s but existing is %s"
                % (source, target, os.readlink(source)))
+
+def terminal(tree, type_, index=0):
+   for (i, t) in enumerate(terminals(tree, type_)):
+      if (i == index):
+         return t
+   return None
+
+def terminals(tree, type_):
+   for i in tree.children:
+      if (isinstance(i, lark.lexer.Token) and i.type == type_):
+         yield i.value
 
 def variables_sub(s, variables):
    # FIXME: This should go in the grammar rather than being a regex kludge.
