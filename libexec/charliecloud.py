@@ -4,6 +4,7 @@ import http.client
 import json
 import logging
 import os
+import shutil
 import sys
 import tarfile
 
@@ -181,7 +182,11 @@ class Image:
       layers = self.layers_read()
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
-      # FIXME
+      INFO("flattening image")
+      self.unpack_create()
+      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
+         fp.extractall(path=self.unpack_path, members=members)
 
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
@@ -251,6 +256,9 @@ class Image:
                # let symlinks point wherever they want, because they aren't
                # interpreted until run time in a container.)
                self.validate_tar_link(self.layer_path(lh), m.name, m.linkname)
+            if (m.isdir()):
+               # Fix bad directory permissions (hello, Red Hat).
+               m.mode |= 0o700
          if (dev_ct > 0):
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
@@ -319,6 +327,24 @@ class Image:
             DEBUG("layer %d/%d: %s: processed %d whiteouts; %d members ignored"
                   % (i, len(layers), lh[:7], wo_ct, ig_ct))
 
+   def unpack_create(self):
+      "Ensure the unpack directory exists, replacing or creating if needed."
+      if (not os.path.exists(self.unpack_path)):
+         INFO("creating new image: %s" % self.unpack_path)
+      else:
+         if (not os.path.isdir(self.unpack_path)):
+            FATAL("can't flatten: %s exists but is not a directory"
+                  % self.unpack_path)
+         if (   not os.path.isdir(self.unpack_path + "/bin")
+             or not os.path.isdir(self.unpack_path + "/lib")
+             or not os.path.isdir(self.unpack_path + "/usr")):
+            FATAL("can't flatten: %s exists but does not appear to be an image"
+                  % self.unpack_path)
+         INFO("replacing existing image: %s" % self.unpack_path)
+         def fail(function, path, excinfo):
+            FATAL("can't flatten: %s: %s" % (path, excinfo[1]))
+         shutil.rmtree(self.unpack_path, onerror=fail)
+      mkdirs(self.unpack_path)
 
 class Image_Ref:
    """Reference to an image in a remote repository.
@@ -478,6 +504,7 @@ def DEBUG(*args, v=1, **kwargs):
 
 def ERROR(*args, **kwargs):
    color("31m", sys.stderr)
+   print("error: ", file=sys.stderr, end="")
    print(flush=True, file=sys.stderr, *args, **kwargs)
    color_reset(sys.stderr)
 
@@ -487,6 +514,12 @@ def FATAL(*args, **kwargs):
 
 def INFO(*args, **kwargs):
    print(flush=True, *args, **kwargs)
+
+def WARNING(*args, **kwargs):
+   color("31m", sys.stderr)
+   print("warning: ", file=sys.stderr, end="")
+   print(flush=True, file=sys.stderr, *args, **kwargs)
+   color_reset(sys.stderr)
 
 def color(color, fp):
    if (fp.isatty()):
