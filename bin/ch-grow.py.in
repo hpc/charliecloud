@@ -649,10 +649,6 @@ nogroup:x:65534:
    symlink("/bin/true", "%s/ch/bin/chgrp" % path)
    symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
 
-def mkdirs(path):
-   DEBUG("ensuring directory: " + path)
-   os.makedirs(path, exist_ok=True)
-
 def rmtree(path):
    if (os.path.isdir(path)):
       DEBUG("deleting directory: " + path)
