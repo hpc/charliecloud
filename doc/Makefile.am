@@ -139,15 +139,17 @@ _deps.rst: ../config.log make-deps-overview
 $(html_DATA): html-local
 html-local: mkdir_issue115 ../libexec/version.txt _deps.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+# avoid GitHub messing things up with Jekyll
+	touch html/.nojekyll
 # remove unused files that Sphinx made
 	rm -R $(BUILDDIR)/html/_sources
-	rm $(BUILDDIR)/html/_deps.html
-	rm $(BUILDDIR)/html/charliecloud.html
-	rm $(BUILDDIR)/html/ch-*.html
-	rm $(BUILDDIR)/html/bugs.html
-	rm $(BUILDDIR)/html/objects.inv
-	rm $(BUILDDIR)/html/search.html
-	rm $(BUILDDIR)/html/see_also.html
+	rm -f $(BUILDDIR)/html/_deps.html \
+	      $(BUILDDIR)/html/charliecloud.html \
+	      $(BUILDDIR)/html/ch-*.html \
+	      $(BUILDDIR)/html/bugs.html \
+	      $(BUILDDIR)/html/objects.inv \
+	      $(BUILDDIR)/html/search.html \
+	      $(BUILDDIR)/html/see_also.html
 
 # FIXME: If Sphinx builds the man pages first, the HTML docs don't get curly
 # quotes. ¯\_(ツ)_/¯ Force HTML to go first.

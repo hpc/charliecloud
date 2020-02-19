@@ -170,6 +170,9 @@ export CH_TEST_IMGDIR=/var/tmp/images
 export CH_TEST_PERMDIRS=skip
 EOF2
 
+    # Install dependencies for autotools
+    sudo yum -y install autoconf automake autoconf-archive
+
     git clone --recursive https://github.com/hpc/charliecloud.git
 
     cd charliecloud
@@ -178,6 +181,8 @@ EOF2
     fi
     echo "checking out Charliecloud: $CH_VERSION"
     git checkout $CH_VERSION
+    ./autogen.sh
+    ./configure
     make
     sudo make install PREFIX=/usr/local
     which ch-run

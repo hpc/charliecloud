@@ -13,7 +13,7 @@ RUN apt-get install -qy --no-install-recommends \
 
 # Building mpi4py from source to ensure it is built against our MPI build
 # Building numpy from source to work around issues seen on Aarch64 systems
-RUN pip3 install --no-binary :all: mpi4py numpy
+RUN pip3 install --no-binary :all: cython==0.29.14 mpi4py==3.0.3 numpy==1.18.1
 #RUN ln -s /usr/bin/python3 /usr/bin/python
 # Build LAMMPS.
 ENV LAMMPS_VERSION 19Sep19
