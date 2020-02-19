@@ -1,5 +1,6 @@
 import copy
 import http.client
+import json
 import logging
 import os
 import sys
@@ -96,8 +97,9 @@ class Image:
 
    __slots__ = ("id",
                 "download_cache",
-                "unpack_dir",
-                "image_subdir")
+                "image_subdir",
+                "layer_hashes",
+                "unpack_dir")
 
    def __init__(self, id_, download_cache, unpack_dir, image_subdir):
       self.id = id_
@@ -129,29 +131,65 @@ class Image:
          in the download cache. By default, any components already in the
          cache are skipped; if use_cache is False, download them anyway,
          overwriting what's in the cache."""
+      def _url(type_, address):
+         url_base = "https://%s:%d/v2" % (dl.ref.host, dl.ref.port)
+         return "/".join((url_base, dl.ref.path_full, type_, address))
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       dl = Repo_Downloader(self.id)
       DEBUG("downloading image: %s" % dl.ref)
       mkdirs(self.download_cache)
-      url_base = "https://%s:%d/v2" % (dl.ref.host, dl.ref.port)
-      # download manifest
+      # manifest
       if (os.path.exists(self.manifest_path) and use_cache):
          INFO("manifest: using existing")
       else:
          INFO("manifest: downloading")
-         url = (  "%s/%s/manifests/%s"
-                % (url_base, dl.ref.path_full, dl.ref.version))
+         url = _url("manifests", dl.ref.version)
          DEBUG(url)
-         mf_accept = "application/vnd.docker.distribution.manifest.v2+json"
-         res = dl.session.get(url, headers={ "Accept": mf_accept })
-         if (res.status_code != 200):
-            FATAL("download failed with HTTP %d" % res.status_code)
+         accept = "application/vnd.docker.distribution.manifest.v2+json"
+         res = http_get(dl.session, url, { "Accept": accept })
          with open(self.manifest_path, "wb") as fp:
-            fp.write(res.content)
+            fp.write(res.content)  # FIXME: catch exceptions
+      # layers
+      self.layer_hashes_load()
+      for (i, lh) in enumerate(self.layer_hashes, start=1):
+         path = self.layer_path(lh)
+         DEBUG("layer path: %s" % path)
+         INFO("layer %d/%d: %s: " % (i, len(self.layer_hashes), lh[:7]), end="")
+         if (os.path.exists(path) and use_cache):
+            INFO("using existing")
+         else:
+            INFO("downloading")
+            # /v1/library/hello-world/blobs/<layer-hash>
+            url = _url("blobs", "sha256:" + lh)
+            DEBUG(url)
+            accept = "application/vnd.docker.image.rootfs.diff.tar.gzip"
+            res = http_get(dl.session, url, { "Accept": accept })
+            with open(path, "wb") as fp:
+               fp.write(res.content)  # FIXME: catch exceptions
       dl.close()
 
+   def layer_hashes_load(self):
+      try:
+         fp = open(self.manifest_path, "rb")
+      except OSError as x:
+         FATAL("can't open manifest file: %s: %s"
+               % (self.manifest_path, x.strerror))
+      try:
+         doc = json.load(fp)
+      except json.JSONDecodeError as x:
+         FATAL("can't parse manifest file: %s:%d: %s"
+               % (self.manifest_path, x.lineno, x.msg))
+      try:
+         self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
+      except (AttributeError, KeyError, IndexError):
+         FATAL("can't parse manifest file: %s" % self.manifest_path)
+
+   def layer_path(self, layer_hash):
+      "Return the path to layer layer_hash."
+      return "%s/%s.tar.gz" % (self.download_cache, layer_hash)
+
    def unpack_download(self):
-      """Unpack the layers in the download cache into the unpack directory."""
+      "Unpack the layers in the download cache into the unpack directory."
       ...
 
 
@@ -330,6 +368,14 @@ def color(color, fp):
 def color_reset(*fps):
    for fp in fps:
       color("0m", fp)
+
+def http_get(session, url, headers):
+   try:
+      res = session.get(url, headers=headers)
+      res.raise_for_status()
+   except requests.RequestException as x:
+      FATAL("download failed: %s" % x)
+   return res
 
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)
