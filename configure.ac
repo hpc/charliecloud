@@ -116,37 +116,12 @@ AC_DEFUN([CH_CHECK_VERSION], [
       [AC_MSG_RESULT([ok ($vact)])
        AC_SUBST([$1_VERSION], [$vact])],
       [AC_MSG_RESULT([too old ($vact)])
-	   AC_SUBST([$1_VERSION], [$vact])
+	   AC_SUBST([$1_VERSION_OLD], ["too old $vact"]),
        AS_UNSET([$1])])
   ])
   AS_VAR_POPDEF([prog])
 ])
 
-
-#jAC_DEFUN([CH_CHECK_VERSION], [
-#j
-#j  AS_VAR_PUSHDEF([prog], [$1])                              
-#j  AS_IF([test -n "$prog"], [                               
-#j    AS_CASE([$prog],
-#j      [/*], [AC_MSG_CHECKING([if $prog is executable])       
-#j             AS_IF([test -e "$prog"],                     
-#j              [AC_MSG_RESULT([ok])],
-#j              [AC_MSG_RESULT([no])
-#j               AC_MSG_ERROR([must be executable])])])
-#j    AC_MSG_CHECKING([if $prog version >= $2])               
-#j    vact=$($prog $3)                                     
-#j    AX_COMPARE_VERSION([$2], [le], [$vact],                   
-#j      [AC_MSG_RESULT([ok ($vact)])
-#j       AC_SUBST([$1_VERSION], [ $vact]),
-#j      [AC_MSG_RESULT([too old ($vact)])
-#j       AC_UNSET([$1])])
-#j  ])
-#j  AS_VAR_POPDEF([prog])
-#j])
-
-
-#AC_SUBST([$1_VERSION], [$vact]),
-#AC_UNSET([$1])])
 ## Feature tests - build time
 
 AC_CHECK_FUNCS(asprintf, [], [
@@ -428,7 +403,7 @@ Building Charliecloud
 ~~~~~~~~~~~~~~~~~~~~~
 
     C99 compiler ... ${CC} ${CC_VERSION}
-    sphinx-build(1) $vmin_sphinx ... ${SPHINX:-not found} ${SPHINX_VERSION}
+    sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION:-not found $SPHINX_VERSION_OLD} ${SPHINX} 
 
   will build and install:
     HTML documentation ... ${enable_html}
@@ -439,18 +414,18 @@ Building Charliecloud
 Image builders via our wrappers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Buildah: ${BUILDAH_VERSION:-not found} need >= $vmin_buildah
+  Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION:-not found $BUILDAH_VERSION_OLD} $BUILDAH_VERISON_OLD
 
   ch-grow(1): ${have_ch_grow}
     ch-grow(1) enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
-    Python in shebang 3.4 ... ${PYTHON_VERSION:-not found}
+    Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION:-not found $PYTHON_VERSION_OLD}
     "lark-parser" module ... ${have_lark}
-    skopeo ... ${SKOPEO_VERSION:-not found} need  >= $vmin_skopeo
-    umoci ... ${UMOCI_VERSION:-not found} need >= $vmin_umoci
+    skopeo ≥ $vmin_skopeo ... ${SKOPEO_VERSION:-not found $SKOPEO_VERSION_OLD}
+    umoci ≥ $vmin_umoci ... ${UMOCI_VERSION:-not found $UMOCI_VERSION_OLD}
     ch-run(1) ... ${have_ch_run}
 
-  Docker: ${DOCKER_VERSION:-not found} need >= $vmin_docker
+  Docker ≥ $vmin_docker ... ${DOCKER_VERSION:-not found $DOCKER_VERSION_OLD}
     mktemp(1) ... ${MKTEMP:-not found}
 
 Managing container images
@@ -466,7 +441,7 @@ Managing container images
 
   pack images from builder storage to SquashFS: ${have_pack_squash}
     at least one builder ... ${have_any_builder}
-    mksquashfs(1) ... ${MKSQUASHFS_VERSION:-not found} need >= $vmin_mksquashfs
+    mksquashfs(1) ≥ $vmin_mksquashfs ... ${MKSQUASHFS_VERSION:-not found $MKSQUASHFS_VERSION_OLD} 
 
   Note: Pulling/pushing images from/to a repository is currently done using
   the builder directly.
@@ -481,10 +456,10 @@ Running containers
     tar(1) ... ${TAR:-not found}
 
   ch-mount(1) and ch-umount(1) SquashFS images: ${have_ch_mount}
-    SquashFUSE ... ${SQUASHFUSE_VERSION:-not found} need >= $vmin_squashfuse
+    SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION:-not found $SQUASHFUSE_VERSION_OLD}
 
   inject nVidia GPU libraries: ${have_nvidia}
-    nvidia-container-cli(1) ... ${NVIDIA_CLI_VERSION:-not found} need >= $vmin_nvidia_cli
+    nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION:-not found $NVIDIA_CLI_VERSION_OLD}
     nVidia libraries & executables present ... ${have_nvidia_libs}
 
 Test suite
@@ -493,9 +468,9 @@ Test suite
   basic tests: ${have_tests_basic}
     test suite enabled ... ${enable_test}
     ch-run(1) ... ${have_ch_run}
-    Bats ... ${BATS_VERSION:-not found} need >= $vmin_bats
-    Bash ... ${_BASH_VERSION:-not found} need >= $vmin_bash
-    wget(1) ... ${WGET_VERSION:-not found} need >= $vmin_wget
+    Bats ≥ $vmin_bats ... ${BATS_VERSION:-not found $BATS_VERSION_OLD}
+    Bash ≥ $vmin_bash ... ${_BASH_VERSION:-not found $_BASH_VERSION_OLD}
+    wget(1) ≥ $vmin_wget ... ${WGET_VERSION:-not found $WGET_VERSION_OLD}
 
   recommended tests with tarballs: ${have_tests_tar}
     basic tests ... ${have_tests_basic}
@@ -511,6 +486,6 @@ Test suite
 
   complete test suite: ${have_tests_all}
     recommended tests with SquashFS ... ${have_tests_squash}
-    sphinx-build(1) ... ${SPHINX_VERSION:-not found} need >= $vmin_sphinx
+    sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION:-not found $SPHINX_VERSION_OLD}
     generic sudo ... assumed yes
 ])
