@@ -1,9 +1,11 @@
+import collections
 import copy
 import http.client
 import json
 import logging
 import os
 import sys
+import tarfile
 
 import lark
 import requests
@@ -11,7 +13,6 @@ import requests
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
 GRAMMAR = r"""
-
 // Note: Hostnames with no dot and no port get parsed as a hostname, which
 // is wrong; it should be the first path component. We patch this error later.
 // FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
@@ -55,8 +56,13 @@ class Repo_Downloader:
          http.client.HTTPConnection.debuglevel = 1
 
    @property
+   # I'm a bit uncomfortable because this feels like too much magic for a
+   # property. However, if we do it this way, it enables the caller to simply
+   # refer to the session when needed, without a conditional to initialize it.
+   # An alternative would be to make it a normal function, suggesting more is
+   # going on; maybe that's a FIXME.
    def session(self):
-      "Return the Requests session, or set one up if one doesn't exist."
+      "The Requests session, magically setting one up if needed."
       if (self._session is None):
          DEBUG("initializing session")
          s = requests.Session()
@@ -64,9 +70,8 @@ class Repo_Downloader:
          # a separate host. Currently, this only works for public Docker Hub.
          DEBUG("fetching auth token")
          r = s.get("https://auth.docker.io/token",
-                   params={ "service": "registry.docker.io",
-                            "scope": (  "repository:%s:pull"
-                                      % "library/hello-world") })
+                   params={"service": "registry.docker.io",
+                           "scope": "repository:%s:pull" % self.ref.path_full})
          token = r.json()["token"]
          DEBUG("got token: %s..." % (token[:32]))
          s.headers.update({ "Authorization": "Bearer %s" % token })
@@ -109,22 +114,25 @@ class Image:
          self.image_subdir = self.id.for_path
       else:
          self.image_subdir = image_subdir
+      self.layer_hashes = None
 
    @property
    def unpack_path(self):
+      "Path to the directory containing the image."
       return "%s/%s" % (self.unpack_dir, self.image_subdir)
 
    @property
    def manifest_path(self):
+      "Path to the manifest file."
       return "%s/%s.manifest.json" % (self.download_cache, self.id.for_path)
 
    def commit(self):
-      """Commit the current unpack directory into the layer cache."""
+      "Commit the current unpack directory into the layer cache."
       assert False, "unimplemented"
 
    def copy_unpacked(self, other):
-      """Copy the unpack directory of Image other to my unpack directory."""
-      assert False, "unimplemente"
+      "Copy the unpack directory of Image other to my unpack directory."
+      assert False, "unimplemented"
 
    def download(self, use_cache=True):
       """Download image manifest and layers according to origin and put them
@@ -140,7 +148,7 @@ class Image:
       mkdirs(self.download_cache)
       # manifest
       if (os.path.exists(self.manifest_path) and use_cache):
-         INFO("manifest: using existing")
+         INFO("manifest: using existing file")
       else:
          INFO("manifest: downloading")
          url = _url("manifests", dl.ref.version)
@@ -156,7 +164,7 @@ class Image:
          DEBUG("layer path: %s" % path)
          INFO("layer %d/%d: %s: " % (i, len(self.layer_hashes), lh[:7]), end="")
          if (os.path.exists(path) and use_cache):
-            INFO("using existing")
+            INFO("using existing file")
          else:
             INFO("downloading")
             # /v1/library/hello-world/blobs/<layer-hash>
@@ -168,7 +176,15 @@ class Image:
                fp.write(res.content)  # FIXME: catch exceptions
       dl.close()
 
+   def flatten(self):
+      "Flatten the layers in the download cache into the unpack directory."
+      layers = self.layers_read()
+      self.validate_members(layers)
+      self.whiteouts_resolve(layers)
+      # FIXME
+
    def layer_hashes_load(self):
+      "Load the layer hashes from the manifest file."
       try:
          fp = open(self.manifest_path, "rb")
       except OSError as x:
@@ -185,12 +201,123 @@ class Image:
          FATAL("can't parse manifest file: %s" % self.manifest_path)
 
    def layer_path(self, layer_hash):
-      "Return the path to layer layer_hash."
+      "Return the path to tarball for layer layer_hash."
       return "%s/%s.tar.gz" % (self.download_cache, layer_hash)
 
-   def unpack_download(self):
-      "Unpack the layers in the download cache into the unpack directory."
-      ...
+   def layers_read(self):
+      """Open the layer tarballs and read some metadata. Return an OrderedDict
+         with the lowest layer first; key is hash string, value is namedtuple
+         with fields fp, the open TarFile object, and members, an OrderedDict
+         of members obtained from fp.getmembers() (key TarInfo object, value
+         None).
+
+         We use an OrderedDict for members because tarballs are a stream
+         format with very poor random access performance. Under the hood,
+         TarFile.extractall() extracts the members in the order they are
+         specified. Thus, we need to preserve the order given by getmembers()
+         while also making it fast to remove members we don't want to
+         extract, which rules out retaining them as a list.
+
+         FIXME: Once we get to Python 3.7, we should just use plain dict."""
+      TT = collections.namedtuple("TT", ["fp", "members"])
+      if (self.layer_hashes is None):
+         self.layer_hashes_load()
+      layers = collections.OrderedDict()
+      for (i, lh) in enumerate(self.layer_hashes, start=1):
+         INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
+         path = self.layer_path(lh)
+         try:
+            fp = tarfile.open(path)
+            members_list = fp.getmembers()  # reads whole file :(
+         except tarfile.TarError as x:
+            FATAL("cannot open: %s: %s" % (path, x))
+         members = collections.OrderedDict([(m, None) for m in members_list])
+         layers[lh] = TT(fp, members)
+      return layers
+
+   def validate_members(self, layers):
+      INFO("validating tarball members")
+      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         dev_ct = 0
+         members2 = list(members.keys())  # copy b/c we'll alter members
+         for m in members2:
+            self.validate_tar_path(self.layer_path(lh), m.name)
+            if (m.isdev()):
+               # Device or FIFO: Ignore.
+               dev_ct += 1
+               del members[m]
+            if (m.islnk()):
+               # Hard link: Fail if pointing outside top level. (Note that we
+               # let symlinks point wherever they want, because they aren't
+               # interpreted until run time in a container.)
+               self.validate_tar_link(self.layer_path(lh), m.name, m.linkname)
+         if (dev_ct > 0):
+            INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
+                 % (i, len(layers), lh[:7], dev_ct))
+
+   def validate_tar_path(self, filename, path):
+      "Reject paths outside the tar top level by aborting the program."
+      if (len(path) > 0 and path[0] == "/"):
+         FATAL("rejecting absolute path: %s: %s" % (filename, path))
+      if (".." in path):
+         FATAL("rejecting path with up-level: %s: %s" % (filename, path))
+
+   def validate_tar_link(self, filename, path, target):
+      """Reject hard link targets outside the tar top level by aborting the
+         program."""
+      self.validate_tar_path(filename, path)
+      if (len(target) > 0 and target[0] == "/"):
+         FATAL("rejecting absolute hard link target: %s: %s -> %s"
+               % (filename, path, target))
+      if (".." in os.path.normpath(path + "/" + target)):
+         FATAL("rejecting too many up-levels: %s: %s -> %s"
+               % (filename, path, target))
+
+   def whiteout_rm_prefix(self, layers, max_i, prefix):
+      """Ignore members of all layers from 1 to max_i inclusive that have path
+         prefix of prefix. For example, if prefix is foo/bar, then ignore
+         foo/bar and foo/bar/baz but not foo/barbaz. Return count of members
+         ignored."""
+      DEBUG("finding members with prefix: %s" % prefix, v=2)
+      prefix = os.path.normpath(prefix)  # "./foo" == "foo"
+      ignore_ct = 0
+      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         if (i > max_i): break
+         members2 = list(members.keys())  # copy b/c we'll alter members
+         for m in members2:
+            if (os.path.commonpath([prefix, m.name]) == prefix):
+               ignore_ct += 1
+               del members[m]
+               DEBUG("layer %d/%d: %s: ignoring %s"
+                     % (i, len(layers), lh[:7], m.name), v=2)
+      return ignore_ct
+
+   def whiteouts_resolve(self, layers):
+      """Resolve whiteouts. See:
+         https://github.com/opencontainers/image-spec/blob/master/layer.md"""
+      INFO("resolving whiteouts")
+      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         wo_ct = 0
+         ig_ct = 0
+         members2 = list(members.keys())  # copy b/c we'll alter members
+         for m in members2:
+            dir_ = os.path.dirname(m.name)
+            filename = os.path.basename(m.name)
+            if (filename.startswith(".wh.")):
+               wo_ct += 1
+               del members[m]
+               if (filename == ".wh..wh..opq"):
+                  # "Opaque whiteout": remove contents of dir_.
+                  DEBUG("found opaque whiteout: %s" % m.name, v=2)
+                  ig_ct += self.whiteout_rm_prefix(layers, i - 1, dir_)
+               else:
+                  # "Explicit whiteout": remove same-name file without ".wh.".
+                  DEBUG("found explicit whiteout: %s" % m.name, v=2)
+                  ig_ct += self.whiteout_rm_prefix(layers, i - 1,
+                                                   dir_ + "/" + filename[4:])
+         if (wo_ct > 0):
+            DEBUG("layer %d/%d: %s: processed %d whiteouts; %d members ignored"
+                  % (i, len(layers), lh[:7], wo_ct, ig_ct))
 
 
 class Image_Ref:

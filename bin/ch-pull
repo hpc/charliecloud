@@ -57,3 +57,5 @@ manifest:        %s\
 
 ch.DEBUG("")
 image.download(not args.force)
+image.flatten()
+ch.INFO("done")
