@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!%PYTHON_SHEBANG%
 
 import argparse
 import os
