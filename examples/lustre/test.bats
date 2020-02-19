@@ -44,11 +44,11 @@ setup () {
 }
 
 @test "${ch_tag}/write" {
-    ch-run -b "$binds" "$ch_img" -- sh -c "sleep 5 && echo hello > ${work_dir}/test_write.txt"
+    ch-run -b "$binds" "$ch_img" -- sh -c "sleep 5 && echo hello | dd of=${work_dir}/test_write.txt"
 }
 
 @test "${ch_tag}/read" {
-    out=$(ch-run -b "$binds" "$ch_img" -- cat "${work_dir}/test_write.txt")
+    out=$(ch-run -b "$binds" "$ch_img" -- dd if="${work_dir}/test_write.txt" iflag=nocache 2> /dev/null)
     if [ "$out" != hello ]; then
         echo "Content of ${work_dir}/test_write.txt invalid" && exit 1
     fi
