@@ -272,13 +272,7 @@ test_examples () {
     fi
     echo
     echo 'executing example phase tests ...'
-    for i in $examples; do
-        if (test_make_check_image "$i"); then
-            tag=$("test_make_auto" tag "$i")
-            export CH_TEST_TAG=$tag
-            bats "$(dirname "$i")/test.bats"
-        fi
-    done
+    echo 'TODO'
 }
 
 test_run () {
@@ -303,32 +297,30 @@ test_run () {
 }
 
 test_make () {
-    local img
-
-    printf "finding images compatible with test settings ...\n"
+    printf "finding artifacts compatible with %s test settings ...\n" "$phase"
     for i in $images $examples; do
-        if (test_make_check_image "$i"); then
-            echo "found: $i"
-            targets+=( "$i" )
-        fi
+       if (test_make_check_image "$i" "$phase"); then
+           echo "found: $i"
+           targets+=( "$i" )
+       fi
     done
-
-    printf '\n'
     case $phase in
     build)
+        printf '\n'
         printf 'generate build_auto.bats ...\n'
-        test_make_auto build "${targets[@]}" > "${tmp_}/build_auto.bats"
+        test_make_auto "$phase" "${targets[@]}" > "${tmp_}/build_auto.bats"
         printf 'ok\n\n'
         ;;
     run)
+        printf '\n'
         printf 'generate run_auto.bats ...\n'
-        test_make_auto run "${targets[@]}" > "${tmp_}/run_auto.bats"
+        test_make_auto "$phase" "${targets[@]}" > "${tmp_}/run_auto.bats"
         printf 'ok\n\n'
         ;;
-    all)
-        printf 'generate build_auto.bats run_auto.bats ...\n'
-        test_make_auto build "${targets[@]}" > "${tmp_}/build_auto.bats"
-        test_make_auto run "${targets[@]}" > "${tmp_}/run_auto.bats"
+    examples)
+        printf 'generate example bat files ...\n'
+        printf 'TODO'
+        print '\n'
         printf 'ok\n\n'
         ;;
     *)
@@ -396,43 +388,59 @@ test_make_check_image () {
 
     sudo_required=$(cat "$img" | grep -F 'ch-test-need-sudo')
 
-    # Exclude Dockerfiles if we have no builder.
-    if [[ $CH_BUILDER == none && $img == *Dockerfile* ]]; then
-        pq_missing "$img" 'builder required'
-        img_ok=
+    if [[ $phase == 'build' ]]; then
+        # Exclude Dockerfiles if we have no builder.
+        if [[ $CH_BUILDER == none && $img == *Dockerfile* ]]; then
+            pq_missing "$img" 'builder required'
+            img_ok=
+        fi
+
+        # Exclude image if included builders are given and $CH_BUILDER isn't
+        # one.
+        if [[ -n $builder_include ]]; then
+            builder_ok=
+            for b in $builder_include; do
+                if [[ $b == "$CH_BUILDER" ]]; then
+                    builder_ok=yes
+                fi
+            done
+            if [[ -z $builder_ok ]]; then
+                pq_missing "$img" "builder not included: ${CH_BUILDER}"
+                img_ok=
+            fi
+        fi
+
+        # Exclude images that are not compatible with CH_BUILDER.
+        for b in $builder_exclude; do
+            if [[ $b == "$CH_BUILDER" ]]; then
+                pq_missing "$img" "builder excluded: ${CH_BUILDER}"
+                img_ok=
+            fi
+        done
     fi
+
+    if [[ $phase == 'run' ]]; then
+        img_ok=
+        for a in "${CH_TEST_TARDIR}"/*.tar.gz; do
+            artifact=${a##*/}
+            artifact=${artifact%*.tar.gz}
+            if [[ $(test_make_tag_from_path "$img") == $artifact ]]; then
+                img_ok=yes
+            fi
+        done
+    fi
+
 
     # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
     if [[ $scope_int -lt "$img_scope_int" ]]; then
         pq_missing "$img" "not in scope: ${CH_TEST_SCOPE}"
         img_ok=
     fi
+
     # Exclude images that do not work with the host architecture.
     for a in $arch_exclude; do
         if [[ $a == "$(uname -m)" ]]; then
             pq_missing "$img" "incompatible architecture: ${a}"
-            img_ok=
-        fi
-    done
-
-    # Exclude image if included builders are given and $CH_BUILDER isn't one.
-    if [[ -n $builder_include ]]; then
-        builder_ok=
-        for b in $builder_include; do
-            if [[ $b == "$CH_BUILDER" ]]; then
-                builder_ok=yes
-            fi
-        done
-        if [[ -z $builder_ok ]]; then
-            pq_missing "$img" "builder not included: ${CH_BUILDER}"
-            img_ok=
-        fi
-    fi
-
-    # Exclude images that are not compatible with CH_BUILDER.
-    for b in $builder_exclude; do
-        if [[ $b == "$CH_BUILDER" ]]; then
-            pq_missing "$img" "builder excluded: ${CH_BUILDER}"
             img_ok=
         fi
     done
@@ -443,8 +451,8 @@ test_make_check_image () {
         img_ok=
     fi
 
-    # In examples phase, exclude chtest (special case) and any images not in a
-    # subdirectory of examples.
+    # In examples phase, exclude chtest and any images not in a subdirectory of
+    # examples.
     if [[ $phase == examples && ( $dir == chtest || $dir == examples ) ]]; then
         img_ok=
     fi
@@ -788,15 +796,15 @@ cd "$CHTEST_DIR"
 
 export PATH=$ch_bin:$PATH
 
-# The distinction here is that "images" are purely for testing and have no
-# value as examples for the user, while "examples" are dual-purpose.
-images=$(find   "$CHTEST_DIR"             -name 'Build' \
-                                       -o -name 'Build.*' \
-                                       -o -name 'Dockerfile.*' | sort)
-examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
-                                       -o -name 'Build.*' \
-                                       -o -name 'Dockerfile' \
-                                       -o -name 'Dockerfile.*' | sort)
+    # The distinction here is that "images" are purely for testing and have
+    # no value as examples for the user, while "examples" are dual-purpose.
+    images=$(find   "$CHTEST_DIR"             -name 'Build' \
+                                           -o -name 'Build.*' \
+                                           -o -name 'Dockerfile.*' | sort)
+    examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
+                                           -o -name 'Build.*' \
+                                           -o -name 'Dockerfile' \
+                                           -o -name 'Dockerfile.*' | sort)
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 
@@ -804,7 +812,7 @@ scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 case $phase in
     build)
         dir_tar_mk
-        test_make
+        test_make build
         test_build
         win
         ;;
@@ -815,16 +823,30 @@ case $phase in
         win
         ;;
     examples)
+        test_make
         test_examples
         win
         ;;
     all)
+        # Pepare pack and un-pack directories
         dir_tar_mk
         dir_img_mk
+
+        phase=build
         test_make
         test_build
+        printf '\n'
+
+        phase=run
+        test_make
         test_run
+        printf '\n'
+
+        phase=examples
+        test_make
         test_examples
+
+        # Kobe.
         win
         ;;
     mk-perm-dirs)
