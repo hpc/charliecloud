@@ -588,13 +588,13 @@ Third-party software compiled from source
 Under this method, one uses :code:`RUN` commands to fetch the desired software
 using :code:`curl` or :code:`wget`, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic CentOS image
-(:code:`test/Dockerfile.centos8`):
+(:code:`examples/Dockerfile.centos8`):
 
 .. literalinclude:: ../examples/Dockerfile.centos8
    :language: docker
    :lines: 2-
 
-Then, we add OpenMPI with :code:`test/Dockerfile.openmpi`. This is a complex
+Then, we add OpenMPI with :code:`examples/Dockerfile.openmpi`. This is a complex
 Dockerfile that compiles several dependencies in addition to OpenMPI. For the
 purposes of this tutorial, you can skip most of it, but we felt it would be
 useful to show a real example.
