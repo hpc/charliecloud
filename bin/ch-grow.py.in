@@ -19,7 +19,6 @@ import types
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../libexec/charliecloud"))
 import charliecloud as ch
-import version
 
 
 ## Globals ##
@@ -30,38 +29,11 @@ cli = None
 # Image state object.
 state = None
 
-# Dependency problems.
-depfails = []
 
+## Imports not in standard library ##
 
-## Imports ##
-
-# These are messy because we need --version and --help even if a dependency is
-# missing.
-
-try:
-   # Lark is addtionally messy because there are two packages on PyPI that
-   # provide a "lark" module.
-   import lark   # ImportError if no such module
-   lark.Visitor  # AttributeError if wrong module
-except (ImportError, AttributeError) as x:
-   if (isinstance(x, ImportError)):
-      depfails.append(("missing", 'Python module "lark-parser"'))
-   elif (isinstance(x, AttributeError)):
-      depfails.append(("bad", 'found Python module "lark"; need "lark-parser"'))
-   else:
-      assert False
-   # Mock up a lark module so the rest of the file parses.
-   m = types.ModuleType("lark")
-   class Visitor_Mock(object):
-      pass
-   m.Visitor = Visitor_Mock
-   lark = m
-
-try:
-   import requests
-except ImportError:
-   depfails.append(("missing", 'Python module "requests"'))
+# See charliecloud.py for the messy import of this.
+lark = ch.lark
 
 
 ## Constants ##
@@ -140,8 +112,9 @@ def main():
 
    atexit.register(color_reset, sys.stdout, sys.stderr)
 
-   if not os.path.exists(CH_BIN + "/ch-run"):
-      FATAL("can't find ch-run; check your build and/or install")
+   if (not os.path.exists(CH_RUN)):
+      ch.depfails.append(("missing", CH_RUN))
+
    global cli
    ap = argparse.ArgumentParser(
       formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -153,7 +126,7 @@ environment variables:
    ap.add_argument("--build-arg", action="append", default=None,
                    metavar="KEY=VALUE",
                    help="set build-time variables")
-   ap.add_argument("--dependencies", action=CLI_Dependencies,
+   ap.add_argument("--dependencies", action=ch.CLI_Dependencies,
                    help="print any missing dependencies and exit")
    ap.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
@@ -173,7 +146,7 @@ environment variables:
                    help="name of image to create (default: inferred)")
    ap.add_argument("-v", "--verbose", action="count", default=0,
                    help="print extra chatter (can be repeated)")
-   ap.add_argument("--version", action=CLI_Version,
+   ap.add_argument("--version", action=ch.CLI_Version,
                    help="print version and exit")
    ap.add_argument("context", metavar="CONTEXT",
                    help="context directory")
@@ -209,7 +182,7 @@ environment variables:
       cli.build_arg = list()
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
 
-   dependencies_check()
+   ch.dependencies_check()
 
    INFO("growing: %s" % dir_image(cli.tag))
    DEBUG(cli)
@@ -505,27 +478,10 @@ class I_workdir(Instruction):
 
 ## Supporting classes ##
 
-class Action_Exit(argparse.Action):
-
-   def __init__(self, *args, **kwargs):
-      super().__init__(nargs=0, *args, **kwargs)
-
-class CLI_Dependencies(Action_Exit):
-
-   def __call__(self, *args, **kwargs):
-      dependencies_check()
-      sys.exit(0)
-
-class CLI_Print_Storage(Action_Exit):
+class CLI_Print_Storage(ch.CLI_Action_Exit):
 
    def __call__(self, _, namespace, *args, **kwargs):
       print(namespace.storage)
-      sys.exit(0)
-
-class CLI_Version(Action_Exit):
-
-   def __call__(self, *args, **kwargs):
-      print(version.VERSION)
       sys.exit(0)
 
 class State(object):
@@ -594,20 +550,6 @@ def cp(src, dst):
       shutil.copytree(src, dst, symlinks=False)
    else:
       shutil.copy2(src, dst)
-
-def dependencies_check():
-   # Check some more dependencies. If any dependency problems found, here or
-   # above (e.g., lark module checked at import time), then complain and exit.
-   if (not os.path.exists(CH_RUN)):
-      depfails.append(("missing", CH_RUN))
-   if (not shutil.which("skopeo")):
-      depfails.append(("missing", "skopeo"))
-   if (not shutil.which("umoci")):
-      depfails.append(("missing", "umoci"))
-   for (p, v) in depfails:
-      ERROR("%s dependency: %s" % (p, v))
-   if (len(depfails) > 0):
-      sys.exit(1)
 
 def dir_downloads():
    return "%s/dlcache" % cli.storage

@@ -69,20 +69,20 @@ AS_CASE([$PYTHON_SHEBANG],
 AC_SUBST([PYTHON_SHEBANG])
 
 AC_ARG_ENABLE([html],
-  AS_HELP_STRING([--disable-html], [don't build and install HTML docs]),
+  AS_HELP_STRING([--disable-html], [HTML documentation]),
   [], [enable_html=yes])
 
 AC_ARG_ENABLE([man],
-  AS_HELP_STRING([--disable-man], [don't build and install man pages]),
+  AS_HELP_STRING([--disable-man], [man pages]),
   [], [enable_man=yes])
 
 AC_ARG_ENABLE([test],
-  AS_HELP_STRING([--disable-test], [don't build and install test suite]),
+  AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
 
 AC_ARG_ENABLE([ch-grow],
   AS_HELP_STRING([--disable-ch-grow],
-                 [don't build and install ch-grow unprivileged builder]),
+                 [ch-grow unprivileged builder and ch-tug]),
   [], [enable_ch_grow=yes])
 
 
@@ -226,22 +226,6 @@ AS_CASE([$python],
 )
 CH_CHECK_VERSION([PYTHON], [$vmin_python], [--version | cut -d' ' -f2])
 
-# Python module "hashlib"
-AS_IF([test -n "$PYTHON"], [
-  AC_MSG_CHECKING([for hashlib module])
-  cat <<EOF | $PYTHON_SHEBANG
-import sys
-try:
-   import hashlib
-except Exception:
-   sys.exit(1)
-EOF
-  AS_IF([test $? -eq 0],
-    [have_hashlib=yes],
-    [have_hashlib=no])
-  AC_MSG_RESULT($have_hashlib)
-])
-
 # Python module "lark-parser"
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for lark-parser module])
@@ -273,22 +257,6 @@ EOF
     [have_requests=yes],
     [have_requests=no])
   AC_MSG_RESULT($have_requests)
-])
-
-# Python module "tarfile"
-AS_IF([test -n "$PYTHON"], [
-  AC_MSG_CHECKING([for tarfile module])
-  cat <<EOF | $PYTHON_SHEBANG
-import sys
-try:
-   import tarfile
-except Exception:
-   sys.exit(1)
-EOF
-  AS_IF([test $? -eq 0],
-    [have_tarfile=yes],
-    [have_tarfile=no])
-  AC_MSG_RESULT($have_tarfile)
 ])
 
 # SquashFUSE
@@ -382,7 +350,6 @@ AS_IF([   test $enable_ch_grow = yes \
        && test -n "$PYTHON_SHEBANG" \
        && test $have_lark = yes \
        && test $have_requests = yes \
-       && test $have_hashlib = yes \
        && test $have_ch_run = yes],
       [have_ch_grow=yes],
       [have_ch_grow=no])
@@ -506,14 +473,12 @@ Image builders via our wrappers
   Buildah: ${have_buildah}
     Buildah $vmin_buildah ... ${BUILDAH_VERSION:-not found}
 
-  ch-grow(1): ${have_ch_grow}
-    ch-grow(1) enabled ... ${enable_ch_grow}
+  ch-grow(1) and ch-tug(1): ${have_ch_grow}
+    enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang 3.4 ... ${PYTHON_VERSION:-not found}
-    "hashlib" module ... ${have_hashlib}
     "lark-parser" module ... ${have_lark}
     "requests" module ... ${have_requests}
-    "tarfile" module ... ${have_tarfile}
     ch-run(1) ... ${have_ch_run}
 
   Docker: ${have_docker}

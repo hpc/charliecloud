@@ -1,3 +1,4 @@
+import argparse
 import collections
 import copy
 import http.client
@@ -10,6 +11,47 @@ import tarfile
 
 import lark
 import requests
+
+import version
+
+
+## Imports not in standard library ##
+
+# These are messy because we need --version and --help even if a dependency is
+# missing.
+
+# List of dependency problems.
+depfails = []
+
+try:
+   # Lark is additionally messy because there are two packages on PyPI that
+   # provide a "lark" module.
+   import lark   # ImportError if no such module
+   lark.Visitor  # AttributeError if wrong module
+except (ImportError, AttributeError) as x:
+   if (isinstance(x, ImportError)):
+      depfails.append(("missing", 'Python module "lark-parser"'))
+   elif (isinstance(x, AttributeError)):
+      depfails.append(("bad", 'found Python module "lark"; need "lark-parser"'))
+   else:
+      assert False
+   # Mock up a lark module so the rest of the file parses.
+   m = types.ModuleType("lark")
+   class Visitor_Mock(object):
+      pass
+   m.Visitor = Visitor_Mock
+   lark = m
+
+try:
+   import requests
+except ImportError:
+   depfails.append(("missing", 'Python module "requests"'))
+
+
+## Globals ##
+
+# Verbosity level. Can be 0, 1, or 2.
+verbose = 0
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -32,57 +74,25 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 HEX_STRING: /[0-9A-Fa-f]+/
 """
 
-## Globals ##
-
-verbose = 0
-
 
 ## Classes ##
 
-class Repo_Downloader:
-   """Downloads layers and manifests from an image repository via HTTPS.
-      Currently, only Docker Hub is supported."""
+class CLI_Action_Exit(argparse.Action):
 
-   __slots__ = ("ref",
-                "_session")
+   def __init__(self, *args, **kwargs):
+      super().__init__(nargs=0, *args, **kwargs)
 
-   def __init__(self, ref):
-      # Need an image ref with all the defaults filled in.
-      self.ref = ref.copy()
-      self.ref.defaults_add()
-      assert (self.ref.host == "registry-1.docker.io")
-      assert (self.ref.port == 443)
-      self._session = None
-      if (verbose >= 2):
-         http.client.HTTPConnection.debuglevel = 1
+class CLI_Dependencies(CLI_Action_Exit):
 
-   @property
-   # I'm a bit uncomfortable because this feels like too much magic for a
-   # property. However, if we do it this way, it enables the caller to simply
-   # refer to the session when needed, without a conditional to initialize it.
-   # An alternative would be to make it a normal function, suggesting more is
-   # going on; maybe that's a FIXME.
-   def session(self):
-      "The Requests session, magically setting one up if needed."
-      if (self._session is None):
-         DEBUG("initializing session")
-         s = requests.Session()
-         # First, we need an authorization token. This has to be fetched from
-         # a separate host. Currently, this only works for public Docker Hub.
-         DEBUG("fetching auth token")
-         r = s.get("https://auth.docker.io/token",
-                   params={"service": "registry.docker.io",
-                           "scope": "repository:%s:pull" % self.ref.path_full})
-         token = r.json()["token"]
-         DEBUG("got token: %s..." % (token[:32]))
-         s.headers.update({ "Authorization": "Bearer %s" % token })
-         self._session = s
-      return self._session
+   def __call__(self, *args, **kwargs):
+      dependencies_check()
+      sys.exit(0)
 
-   def close(self):
-      if (self._session is not None):
-         self._session.close()
+class CLI_Version(CLI_Action_Exit):
 
+   def __call__(self, *args, **kwargs):
+      print(version.VERSION)
+      sys.exit(0)
 
 class Image:
    """Container image object.
@@ -496,6 +506,50 @@ fields:
          self.path.insert(0, self.host)
          self.host = None
 
+class Repo_Downloader:
+   """Downloads layers and manifests from an image repository via HTTPS.
+      Currently, only Docker Hub is supported."""
+
+   __slots__ = ("ref",
+                "_session")
+
+   def __init__(self, ref):
+      # Need an image ref with all the defaults filled in.
+      self.ref = ref.copy()
+      self.ref.defaults_add()
+      assert (self.ref.host == "registry-1.docker.io")
+      assert (self.ref.port == 443)
+      self._session = None
+      if (verbose >= 2):
+         http.client.HTTPConnection.debuglevel = 1
+
+   @property
+   # I'm a bit uncomfortable because this feels like too much magic for a
+   # property. However, if we do it this way, it enables the caller to simply
+   # refer to the session when needed, without a conditional to initialize it.
+   # An alternative would be to make it a normal function, suggesting more is
+   # going on; maybe that's a FIXME.
+   def session(self):
+      "The Requests session, magically setting one up if needed."
+      if (self._session is None):
+         DEBUG("initializing session")
+         s = requests.Session()
+         # First, we need an authorization token. This has to be fetched from
+         # a separate host. Currently, this only works for public Docker Hub.
+         DEBUG("fetching auth token")
+         r = s.get("https://auth.docker.io/token",
+                   params={"service": "registry.docker.io",
+                           "scope": "repository:%s:pull" % self.ref.path_full})
+         token = r.json()["token"]
+         DEBUG("got token: %s..." % (token[:32]))
+         s.headers.update({ "Authorization": "Bearer %s" % token })
+         self._session = s
+      return self._session
+
+   def close(self):
+      if (self._session is not None):
+         self._session.close()
+
 
 ## Supporting functions ##
 
@@ -531,6 +585,14 @@ def color(color, fp):
 def color_reset(*fps):
    for fp in fps:
       color("0m", fp)
+
+def dependencies_check():
+   """Check more dependencies. If any dependency problems found, here or above
+      (e.g., lark module checked at import time), then complain and exit."""
+   for (p, v) in depfails:
+      ERROR("%s dependency: %s" % (p, v))
+   if (len(depfails) > 0):
+      sys.exit(1)
 
 def http_get(session, url, headers):
    try:

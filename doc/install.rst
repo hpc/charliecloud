@@ -61,14 +61,14 @@ standard ones.
 By default, all features that can be built will be built and installed. You
 can exclude some features with:
 
-  =========================  ====================================
+  =========================  =======================================================
   option                     don't build or install
-  =========================  ====================================
+  =========================  =======================================================
   :code:`--disable-html`     HTML documentation
   :code:`--disable-man`      man pages
   :code:`--disable-tests`    test suite
-  :code:`--disable-ch-grow`  :code:`ch-grow` unprivileged builder
-  =========================  ====================================
+  :code:`--disable-ch-grow`  :code:`ch-grow` unprivileged builder and :code:`ch-tug`
+  =========================  =======================================================
 
 You can also say :code:`--enable-FOO` to fail the build if :code:`FOO` can't
 be built.
