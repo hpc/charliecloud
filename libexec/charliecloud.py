@@ -259,6 +259,9 @@ class Image:
             if (m.isdir()):
                # Fix bad directory permissions (hello, Red Hat).
                m.mode |= 0o700
+            if (m.isfile()):
+               # Fix bad file permissions (HELLO RED HAT!!).
+               m.mode |= 0o600
          if (dev_ct > 0):
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))

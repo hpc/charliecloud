@@ -35,15 +35,14 @@ def main():
                    default=(  os.environ.get("CH_GROW_STORAGE",
                                              "/var/tmp/ch-grow")
                               + "/img"))
-   ap.add_argument("-v", "--verbose", action="count",
-                   help="print extra debugging chatter (can be repeated)")
+   ap.add_argument("-v", "--verbose", action="count", default=0,
+                   help="print extra chatter (can be repeated)")
    if (len(sys.argv) < 2):
       ap.print_help(file=sys.stderr)
       sys.exit(1)
 
    args = ap.parse_args()
-   if (args.verbose):
-      ch.verbose = args.verbose
+   ch.verbose = args.verbose
 
    ref = ch.Image_Ref(args.image)
    if (args.parse_ref_only):
