@@ -1,7 +1,7 @@
 # ch-test-scope: full
 # ch-test-builder-exclude: ch-grow  # deferred
 FROM openmpi
-WORKDIR /usr/local/src
+WORKDIR /usr/src
 
 RUN dnf install -y \
     cmake \
