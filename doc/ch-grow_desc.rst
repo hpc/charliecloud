@@ -75,8 +75,8 @@ Other arguments:
   :code:`-t`, :code:`-tag TAG`
     Name of image to create. Append :code:`:latest` if no colon present.
 
-  :code:`--verbose`
-    Print lots of debugging chatter.
+  :code:`-v`, :code:`--verbose`
+    Print extra chatter; can be repeated.
 
   :code:`--version`
     Print version number and exit.

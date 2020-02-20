@@ -12,7 +12,7 @@ import charliecloud as ch
 def main():
    ap = argparse.ArgumentParser(
            formatter_class=argparse.RawDescriptionHelpFormatter,
-           description="Pull and/or unpack image from Docker repository.",
+           description="Pull and flatten image from repository to local filesystem.",
            epilog="""\
   CH_GROW_STORAGE       default for --storage
 """)
