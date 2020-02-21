@@ -76,13 +76,17 @@ be built.
 Some dependencies can be specified as follows. Note that :code:`--without-FOO`
 is not supported; use the feature selectors above.
 
-:code:`--with-python-shebang`
+:code:`--with-python`
   Shebang line to use for Python scripts. Default:
   :code:`/usr/bin/env python3`.
 
 :code:`--with-sphinx-build`
   Path to :code:`sphinx-build` executable. Default: the :code:`sphinx-build`
   found first in :code:`$PATH`.
+
+:code:`--with-sphinx-python`
+  Path to Python used by :code:`sphinx-build`. Default: shebang of
+  :code:`sphinx-build`.
 
 
 Install with package manager
