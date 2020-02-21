@@ -142,12 +142,12 @@ AS_IF([test -n "$SPHINX"], [
     AC_MSG_CHECKING([for sphinx-build Python])
     sphinx_python=$(head -1 "$SPHINX" | sed -E 's/^..//')
     AC_MSG_RESULT([$sphinx_python])
+  AC_MSG_CHECKING([if "$sphinx_python" starts with slash])
+  AS_CASE([$sphinx_python],
+    [/*], [AC_MSG_RESULT([ok])],
+    [*],  [AC_MSG_RESULT([no])
+           AC_MSG_ERROR([--with-sphinx-python: must start with slash])])
 ])])
-AC_MSG_CHECKING([if "$sphinx_python" starts with slash])
-AS_CASE([$sphinx_python],
-  [/*], [AC_MSG_RESULT([ok])],
-  [*],  [AC_MSG_RESULT([no])
-         AC_MSG_ERROR([--with-sphinx-python: must start with slash])])
 
 # "docutils" module
 vmin_docutils=0.14
