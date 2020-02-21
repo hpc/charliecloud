@@ -419,6 +419,8 @@ test_make_check_image () {
         done
     fi
 
+    # In run phase, exclude images that did not get a build artifact generated
+    # in --pack-dir at build phase.
     if [[ $phase == 'run' ]]; then
         img_ok=
         for a in "${CH_TEST_TARDIR}"/*.tar.gz; do
@@ -796,15 +798,15 @@ cd "$CHTEST_DIR"
 
 export PATH=$ch_bin:$PATH
 
-    # The distinction here is that "images" are purely for testing and have
-    # no value as examples for the user, while "examples" are dual-purpose.
-    images=$(find   "$CHTEST_DIR"             -name 'Build' \
-                                           -o -name 'Build.*' \
-                                           -o -name 'Dockerfile.*' | sort)
-    examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
-                                           -o -name 'Build.*' \
-                                           -o -name 'Dockerfile' \
-                                           -o -name 'Dockerfile.*' | sort)
+# The distinction here is that "images" are purely for testing and have no value
+# as examples for the user, while "examples" are dual-purpose.
+images=$(find   "$CHTEST_DIR"             -name 'Build' \
+                                       -o -name 'Build.*' \
+                                       -o -name 'Dockerfile.*' | sort)
+examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
+                                       -o -name 'Build.*' \
+                                       -o -name 'Dockerfile' \
+                                       -o -name 'Dockerfile.*' | sort)
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 
