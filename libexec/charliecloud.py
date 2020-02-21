@@ -424,11 +424,11 @@ class Image_Ref:
       try:
          tree = parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
-         FATAL("image ref syntax error, char %d: %s" % (x.column, s))
+         FATAL("image ref syntax, char %d: %s" % (x.column, s))
       except lark.exceptions.UnexpectedEOF as x:
          # We get UnexpectedEOF because of Lark issue #237. This exception
          # doesn't have a column location.
-         FATAL("image ref syntax error, at end: %s" % s)
+         FATAL("image ref syntax, at end: %s" % s)
       DEBUG(tree.pretty(), v=2)
       return tree
 
@@ -442,7 +442,6 @@ class Image_Ref:
       return """\
 as string:    %s
 for filename: %s
-url:          %s
 fields:
   host    %s
   port    %s
@@ -450,7 +449,7 @@ fields:
   name    %s
   tag     %s
   digest  %s\
-""" % tuple(  [str(self), self.for_path, self.url]
+""" % tuple(  [str(self), self.for_path]
             + [fmt(i) for i in (self.host, self.port, self.path,
                                 self.name, self.tag, self.digest)])
 

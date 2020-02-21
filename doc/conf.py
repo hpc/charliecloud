@@ -294,7 +294,7 @@ man_pages = [
     "Create a SquashFS file from a tarball image",
     [], 1),
    ("ch-tug", "ch-tug",
-    "Pull and unpack image from repository to local filesystem.",
+    "Pull and flatten image from repository to local filesystem",
     [], 1),
    ("ch-umount", "ch-umount",
     "Unmount a FUSE mounted squash filesystem and remove the mount point",
