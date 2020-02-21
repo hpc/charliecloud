@@ -8,9 +8,7 @@ import os
 import shutil
 import sys
 import tarfile
-
-import lark
-import requests
+import types
 
 import version
 
@@ -201,7 +199,7 @@ class Image:
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
       try:
-         fp = open(self.manifest_path, "rb")
+         fp = open(self.manifest_path, "rt", encoding="UTF-8")
       except OSError as x:
          FATAL("can't open manifest file: %s: %s"
                % (self.manifest_path, x.strerror))
