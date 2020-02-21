@@ -14,7 +14,8 @@ def main():
            formatter_class=argparse.RawDescriptionHelpFormatter,
            description="Pull and flatten image from repository to local filesystem.",
            epilog="""\
-  CH_GROW_STORAGE       default for --storage
+environment variables:
+  CH_GROW_STORAGE     used to compute defaults for --dl-cache and --unpack-dir
 """)
    ap.add_argument("image", metavar="IMAGE_REF",
                    help="image reference")

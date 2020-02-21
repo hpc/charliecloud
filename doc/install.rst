@@ -379,13 +379,6 @@ Python
 We use Python for scripts that would be really hard to do in Bash, when we
 think Python is likely to be available.
 
-Skopeo
-~~~~~~
-
-Our unprivileged builder :code:`ch-grow` uses `Skopeo
-<https://github.com/containers/skopeo/>`_ to interact with remote and local
-image repositories.
-
 Sphinx
 ~~~~~~
 
@@ -427,12 +420,6 @@ Privilege escalation via sudo is used in the test suite to:
   * Test :code:`ch-run`'s behavior under different ownership scenarios.
 
 (Note that Charliecloud also uses :code:`sudo docker`; see above.)
-
-umoci
-~~~~~
-
-Our unprivileged builder :code:`ch-grow` uses `umoci <https://umo.ci/>`_ to
-manipulate images during the image build process.
 
 Wget
 ~~~~
