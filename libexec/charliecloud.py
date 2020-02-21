@@ -371,7 +371,7 @@ class Image_Ref:
 
         Lark parse tree .. Must be same result as parsing a string. This
                            allows the parse step to be embedded in a larger
-                           parge (e.g., a Dockerfile).
+                           parse (e.g., a Dockerfile).
 
      Warning: References containing a hostname without a dot and no port
      cannot be round-tripped through a string, because the hostname will be
