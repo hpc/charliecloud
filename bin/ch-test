@@ -246,14 +246,15 @@ scope_to_digit () {
 test_build () {
     echo 'executing build phase tests ...'
     # FIXME: check for sotests?
-    if [[ ! -f ${tmp_}/build_auto.bats ]]; then
-        fatal "${tmp_}/build_auto.bats not found"
+    if [[ ! -f ${TMP_}/build_auto.bats ]]; then
+        fatal "${TMP_}/build_auto.bats not found"
     fi
-    bats build.bats "${tmp_}/build_auto.bats" build_post.bats
+    bats build.bats "${TMP_}/build_auto.bats" build_post.bats
 }
 
 test_examples () {
     local tag
+    local bat_file
     local phase=examples
     if [[ $CH_TEST_SCOPE == quick ]]; then
         return
@@ -262,20 +263,26 @@ test_examples () {
     echo 'executing example phase tests ...'
     for i in $examples; do
         if (test_make_check_image "$i"); then
-            tag=$("$make_auto" tag "$i")
-            export CH_TEST_TAG=$tag
-            bats "$(dirname "$i")/test.bats"
+            bat_file=$(dirname "$i")/test.bats
+            tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
+            cp "$bat_file" "${TMP_}/${tag}_example.bats"
+            sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
         fi
     done
+    if (find "$TMP_" -name '*_example.bats' | grep -q .); then
+        bats "${TMP_}"/*_example.bats
+    else
+        echo 'found: none'
+    fi
 }
 
 test_run () {
     echo
     echo 'executing run phase tests ...'
-    if [[ ! -f ${tmp_}/run_auto.bats ]]; then
-        fatal "${tmp_}/run_auto.bats not found"
+    if [[ ! -f ${TMP_}/run_auto.bats ]]; then
+        fatal "${TMP_}/run_auto.bats not found"
     fi
-    bats run_first.bats "${tmp_}/run_auto.bats" ./run/*.bats
+    bats run_first.bats "${TMP_}/run_auto.bats" ./run/*.bats
     set -e
     if [[ $CH_TEST_SCOPE != quick ]]; then
         for guest_user in $(id -un) root nobody; do
@@ -305,18 +312,18 @@ test_make_auto () {
     case $phase in
     build)
         printf 'generate build_auto.bats ...\n'
-        "$make_auto" build "${targets[@]}" > "${tmp_}/build_auto.bats"
+        "$make_auto" build "${targets[@]}" > "${TMP_}/build_auto.bats"
         printf 'ok\n\n'
         ;;
     run)
         printf 'generate run_auto.bats ...\n'
-        "$make_auto" run "${targets[@]}" > "${tmp_}/run_auto.bats"
+        "$make_auto" run "${targets[@]}" > "${TMP_}/run_auto.bats"
         printf 'ok\n\n'
         ;;
     all)
         printf 'generate build_auto.bats run_auto.bats ...\n'
-        "$make_auto" build "${targets[@]}" > "${tmp_}/build_auto.bats"
-        "$make_auto" run "${targets[@]}" > "${tmp_}/run_auto.bats"
+        "$make_auto" build "${targets[@]}" > "${TMP_}/build_auto.bats"
+        "$make_auto" run "${targets[@]}" > "${TMP_}/run_auto.bats"
         printf 'ok\n\n'
         ;;
     *)
@@ -436,10 +443,10 @@ if (bash -c 'set -e; [[ 1 = 0 ]]; exit 0'); then
 fi
 
 # Create a directory to hold auto-generated test artifacts.
-tmp_=/tmp/ch-test.tmp.$USER
-if [[ ! -d $tmp_ ]]; then
-    mkdir "$tmp_"
-    chmod 700 "$tmp_"
+TMP_=/tmp/ch-test.tmp.$USER
+if [[ ! -d $TMP_ ]]; then
+    mkdir "$TMP_"
+    chmod 700 "$TMP_"
 fi
 
 # Find test directories. (At one point we tried to unify the paths between the
@@ -467,6 +474,8 @@ export CHTEST_INSTALLED
 export CHTEST_GITWD
 export CHTEST_DIR
 export CHTEST_EXAMPLES_DIR
+export TMP_
+
 make_auto="${CHTEST_DIR}/chtest-make-auto"
 
 # Check for test directory.
@@ -639,14 +648,6 @@ if [[ -n $BATS_TMPDIR && $BATS_TMPDIR != '/tmp' ]]; then
     fatal "BATS_TMPDIR: must be /tmp; found '$BATS_TMPDIR' (issue #278)"
 fi
 
-# User-private temporary directory in case multiple users are running the
-# tests simultaneously.
-btnew=$tmp_/bats.tmp
-mkdir -p "$btnew"
-chmod 700 "$btnew"
-export BATS_TMPDIR=$btnew
-[[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
-
 # Ensure namespaces are configured properly.
 printf 'checking namespaces ...\n'
 if (! "${ch_bin}/ch-checkns"); then
@@ -739,9 +740,9 @@ case $phase in
         ;;
     clean)
         dirs_unpriv_rm
-        if [[ -d $tmp_ ]] && [[ -e $tmp_/build_auto.bats ]]; then
-            echo "removing $tmp_"
-            rm -rf --one-file-system "$tmp_"
+        if [[ -d $TMP_ ]] && [[ -e $TMP_/build_auto.bats ]]; then
+            echo "removing $TMP_"
+            rm -rf --one-file-system "$TMP_"
         fi
         ;;
 esac
