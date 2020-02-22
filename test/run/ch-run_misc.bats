@@ -414,7 +414,7 @@ EOF
     run ch-run --unset-env=doesnotmatch "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
-    ex='^(_|HOME|PATH)='  # variables expected to change
+    ex='^(_|HOME|PATH|SHLVL)='  # variables expected to change
     diff -u <(env | grep -Ev "$ex") <(echo "$output" | grep -Ev "$ex")
 
     printf '\n# Everything\n\n'

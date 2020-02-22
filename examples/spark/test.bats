@@ -1,3 +1,7 @@
+true
+# shellcheck disable=SC2034
+CH_TEST_TAG=%ch_test_tag%
+
 load "${CHTEST_DIR}/common.bash"
 
 # Note: If you get output like the following (piping through cat turns off
