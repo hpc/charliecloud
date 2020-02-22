@@ -333,10 +333,8 @@ test_make () {
         printf 'generate example bat files ...\n'
         for i in $examples; do
             if (test_make_check_image "$i"); then
-                echo "$bat_file"
                 bat_file=$(dirname "$i")/test.bats
                 tag=$(test_make_tag_from_path "$i")
-                echo "$tag"
                 cp "$bat_file" "${TMP_}/${tag}_example.bats"
                 sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
             fi
