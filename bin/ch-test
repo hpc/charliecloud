@@ -439,7 +439,7 @@ test_make_check_image () {
         for a in "${CH_TEST_TARDIR}"/*.tar.gz; do
             artifact=${a##*/}
             artifact=${artifact%*.tar.gz}
-            if [[ $(test_make_tag_from_path "$img") == $artifact ]]; then
+            if [[ $(test_make_tag_from_path "$img") == "$artifact" ]]; then
                 img_ok=yes
             fi
         done
@@ -596,12 +596,7 @@ export CHTEST_INSTALLED
 export CHTEST_GITWD
 export CHTEST_DIR
 export CHTEST_EXAMPLES_DIR
-<<<<<<< HEAD
-=======
 export TMP_
-
-make_auto="${CHTEST_DIR}/chtest-make-auto"
->>>>>>> master
 
 # Check for test directory.
 if [[ ! -d $CHTEST_DIR ]]; then
@@ -786,17 +781,6 @@ if [[ $CH_TEST_SUDO ]]; then
     printf '\n'
 fi
 
-case $phase in
-    all)
-        ;&
-    build)
-        builder_check
-        ;;
-    examples|run)
-        dir_tar_check
-        ;;
-esac
-
 if [[ -n $dry ]];then
     printf 'exiting per --dry-run\n'
     exit 0
@@ -822,6 +806,7 @@ scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 # Execute phase
 case $phase in
     build)
+        builder_check
         dir_tar_mk
         test_make build
         test_build
@@ -839,21 +824,23 @@ case $phase in
         win
         ;;
     all)
-        # Pepare pack and un-pack directories
         dir_tar_mk
         dir_img_mk
 
         phase=build
+        builder_check
         test_make
         test_build
         printf '\n'
 
         phase=run
+        dir_tar_check
         test_make
         test_run
         printf '\n'
 
         phase=examples
+        dir_tar_check
         test_make
         test_examples
 
