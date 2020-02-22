@@ -176,9 +176,15 @@ dir_tar_rm () {
     fi
 }
 
+dir_tmp_rm () {
+    echo "removing $TMP_"
+    rm -rf --one-file-system "$TMP_"
+}
+
 dirs_unpriv_rm () {
     dir_tar_rm
     dir_img_rm
+    dir_tmp_rm
 }
 
 pq_missing () {
@@ -280,7 +286,6 @@ test_examples () {
 }
 
 test_run () {
-    echo
     echo 'executing run phase tests ...'
     if [[ ! -f ${TMP_}/run_auto.bats ]]; then
         fatal "${TMP_}/run_auto.bats not found"
@@ -324,16 +329,19 @@ test_make () {
         printf 'ok\n\n'
         ;;
     examples)
+        printf '\n'
         printf 'generate example bat files ...\n'
         for i in $examples; do
             if (test_make_check_image "$i"); then
+                echo "$bat_file"
                 bat_file=$(dirname "$i")/test.bats
-                tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
+                tag=$(test_make_tag_from_path "$i")
+                echo "$tag"
                 cp "$bat_file" "${TMP_}/${tag}_example.bats"
                 sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
             fi
         done
-        print '\n'
+        printf '\n'
         printf 'ok\n\n'
         ;;
     *)
