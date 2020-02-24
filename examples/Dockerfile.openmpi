@@ -126,8 +126,7 @@ RUN    cd openmpi-${MPI_VERSION} \
        CXXFLAGS=-O3 \
        ./configure --prefix=/usr \
                    --sysconfdir=/mnt/0 \
-                   --with-libevent \
-		           --with-slurm \
+                   --with-slurm \
                    --with-pmi \
                    --with-pmix \
                    --with-ucx \
