@@ -442,11 +442,13 @@ test_make_check_image () {
     # in --pack-dir.
     if [[ $phase == 'run' || $phase == 'examples' ]]; then
         img_ok=
-        for a in "${CH_TEST_TARDIR}"/*.tar.gz; do
-            artifact=${a##*/}
-            artifact=${artifact%*.tar.gz}
-            if [[ $(test_make_tag_from_path "$img") == "$artifact" ]]; then
-                img_ok=yes
+        for a in "${CH_TEST_TARDIR}"/*{.tar.gz,.sqfs}; do
+            if [[ -e $a ]]; then
+                artifact=${a##*/}
+                artifact=${artifact%%.*}
+                if [[ $(test_make_tag_from_path "$img") == $artifact ]]; then
+                    img_ok=yes
+                fi
             fi
         done
     fi
