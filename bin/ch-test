@@ -309,37 +309,51 @@ test_make () {
     local bat_file
     local tag
     printf "finding artifacts compatible with %s test settings ...\n" "$phase"
-    for i in $images $examples; do
-       if (test_make_check_image "$i"); then
-           echo "found: $i"
-           targets+=( "$i" )
-       fi
-    done
     case $phase in
     build)
+        for i in $images $examples; do
+           if (test_make_check_image "$i"); then
+               echo "found: $i"
+               build_targets+=( "$i" )
+           fi
+        done
         printf '\n'
         printf 'generate build_auto.bats ...\n'
-        test_make_auto "$phase" "${targets[@]}" > "${TMP_}/build_auto.bats"
+        test_make_auto "$phase" "${build_targets[@]}" > "${TMP_}/build_auto.bats"
         printf 'ok\n\n'
         ;;
     run)
+        for i in "${CH_TEST_TARDIR}"/*{.tar.gz,.sqfs}; do
+            if [[ -e $i ]]; then
+                artifact=${i##*/}
+                artifact=${artifact%%.*}
+                for j in $images $examples; do
+                    if [[ $(test_make_tag_from_path "$j") == "$artifact" ]]; then
+                        if (test_make_check_image "$j"); then
+                            echo "found: $i"
+                            run_targets+=( "$j" )
+                        fi
+                    fi
+                done
+            fi
+        done
         printf '\n'
         printf 'generate run_auto.bats ...\n'
-        test_make_auto "$phase" "${targets[@]}" > "${TMP_}/run_auto.bats"
+        test_make_auto "$phase" "${run_targets[@]}" > "${TMP_}/run_auto.bats"
         printf 'ok\n\n'
         ;;
     examples)
-        printf '\n'
-        printf 'generate example bat files ...\n'
         for i in $examples; do
             if (test_make_check_image "$i"); then
                 bat_file=$(dirname "$i")/test.bats
                 tag=$(test_make_tag_from_path "$i")
                 cp "$bat_file" "${TMP_}/${tag}_example.bats"
                 sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
+                echo "found: $(dirname "$i")"
             fi
         done
         printf '\n'
+        printf 'generate example bat files ...\n'
         printf 'ok\n\n'
         ;;
     *)
@@ -437,22 +451,6 @@ test_make_check_image () {
             fi
         done
     fi
-
-    # In run phase and example phases, exclude images without a build artifact
-    # in --pack-dir.
-    if [[ $phase == 'run' || $phase == 'examples' ]]; then
-        img_ok=
-        for a in "${CH_TEST_TARDIR}"/*{.tar.gz,.sqfs}; do
-            if [[ -e $a ]]; then
-                artifact=${a##*/}
-                artifact=${artifact%%.*}
-                if [[ $(test_make_tag_from_path "$img") == $artifact ]]; then
-                    img_ok=yes
-                fi
-            fi
-        done
-    fi
-
 
     # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
     if [[ $scope_int -lt "$img_scope_int" ]]; then
