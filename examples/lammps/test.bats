@@ -1,3 +1,7 @@
+true
+# shellcheck disable=SC2034
+CH_TEST_TAG=%ch_test_tag%
+
 load "${CHTEST_DIR}/common.bash"
 
 # LAMMPS does have a test suite, but we do not use it, because it seems too

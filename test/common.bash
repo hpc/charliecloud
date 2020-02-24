@@ -165,6 +165,16 @@ env_require CH_BUILDER
 if [[ $CH_BUILDER == ch-grow ]]; then
     env_require CH_GROW_STORAGE
 fi
+
+# User-private temporary directory in case multiple users are running the
+# tests simultaneously.
+# shellcheck disable=SC2154
+btnew=$TMP_/bats.tmp
+mkdir -p "$btnew"
+chmod 700 "$btnew"
+export BATS_TMPDIR=$btnew
+[[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
+
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
@@ -249,6 +259,7 @@ ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 2 | wc -l)
 ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_node=
 ch_mpirun_np="-np ${ch_cores_node}"
+# shellcheck disable=SC2034
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
     ch_multiprocess=yes
