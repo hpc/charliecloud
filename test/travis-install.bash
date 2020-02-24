@@ -8,6 +8,10 @@ sudo chmod 1777 /usr/local/src
 # Remove Travis Bats. We need buggy version provided by Ubuntu (issue #552).
 sudo rm /usr/local/bin/bats
 
+# Allow sudo to user root, group non-root.
+sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/travis
+sudo cat /etc/sudoers.d/travis
+
 # Install conditional packages.
 if [[ -z "$MINIMAL_DEPS" ]]; then
     sudo apt-get install pigz pv skopeo squashfuse

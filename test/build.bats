@@ -2,12 +2,14 @@ load common
 
 @test 'documentation seems sane' {
     scope standard
-    command -v sphinx-build > /dev/null 2>&1 || skip 'Sphinx is not installed'
+    if ( ! command -v sphinx-build > /dev/null 2>&1 ); then
+        skip 'Sphinx is not installed'
+    fi
     if [[ ! -d ../doc ]]; then
         skip 'documentation source code absent'
     fi
     if [[ ! -f ../doc/html/index.html || ! -f ../doc/man/ch-run.1 ]]; then
-        skip 'documentation not all built'
+        skip 'documentation not built'
     fi
     (cd ../doc && make -j "$(getconf _NPROCESSORS_ONLN)")
     ./docs-sane
@@ -67,60 +69,64 @@ load common
 }
 
 @test 'lint shell scripts' {
+    # ShellCheck excludes used below:
+    #
+    #  SC2002  useless use of cat
+    #  SC2164  cd exit code unchecked (Bats checks for failure)
+    #
+    # Additional excludes work around issue #210, and I think are required for
+    # the Bats tests forever:
+    #
+    #  SC1090  can't find sourced file
+    #  SC2154  variable referenced but not assigned
+    #
     scope standard
-    ( command -v shellcheck >/dev/null 2>&1 ) || skip "no shellcheck found"
-    # skip if minimum shellcheck not met unless Travis or LANL
+    # Only do this test in build directory; the reasoning is that we don't
+    # alter the shell scripts during install enough to re-test, and it means
+    # we only have to find everything in one path.
+    if [[ $CHTEST_INSTALLED ]]; then
+        skip 'only in build directory'
+    fi
+    # ShellCheck present?
+    if ( ! command -v shellcheck >/dev/null 2>&1 ); then
+        pedantic_fail 'no ShellCheck found'
+    fi
+    # ShellCheck minimum version?
     version=$(shellcheck --version | grep -E '^version:' | cut -d' ' -f2)
     major=${version%%.*}
     rest=${version#*.}
     minor=${rest%%.*}
-    echo "shellcheck: version '$version', major '$major', minor '$minor'"
-    if [[ $minor -lt 6 ]]; then
-        # no need to check major because minimum is 0
-        error="shellcheck $version older than 0.6.0"
-        if [[ $TRAVIS ]] || [[ $(hostname --fqdn) = *'.lanl.gov' ]]; then
-            echo "$error"
-            false
-        else
-            skip "$error"
-        fi
+    echo "shellcheck: version '${version}', major '${major}', minor '${minor}'"
+    minor_needed=6
+    if [[ $minor -lt $minor_needed ]]; then
+        # No need to check major because minimum is 0.
+        pedantic_fail "shellcheck ${version} older than 0.${minor_needed}.0"
     fi
-    # user executables
-    for i in "$ch_bin"/ch-*; do
+    # Shell scripts and libraries: appropriate extension or shebang.
+    # For awk program, see: https://unix.stackexchange.com/a/66099
+    while IFS= read -r i; do
         echo "shellcheck: ${i}"
-        [[ ! $(file "$i") = *'shell script'* ]] && continue
         shellcheck -e SC1090,SC2002,SC2154 "$i"
-    done
-    # libraries for user executables
-    for i in "$ch_libexec"/*.sh; do
-        echo "shellcheck: ${i}"
-        shellcheck -s sh -e SC1090,SC2002 "$i"
-    done
-    # BATS scripts
+    done < <( find "$ch_base" \
+                   \(    -name .git \
+                      -o -name build-aux \) -prune \
+                -o \( -name '*.sh' -print \) \
+                -o \( -name '*.bash' -print \) \
+                -o \( -type f -exec awk '/^#!\/bin\/(ba)?sh/ {print FILENAME}
+                                         {nextfile}' {} + \) )
+    # Bats scripts. Use sed to do two things:
     #
-    # The sed horror encapsulated here is because BATS requires that the curly
-    # open brace after @test be on the same line, while ShellCheck requires
-    # that it not be (otherwise parse error). Thus, line numbers are wrong.
-    while IFS= read -r -d '' i; do
+    # 1. Make parseable by ShellCheck by removing "@test '...'". This does
+    #    remove the test names, but line numbers are still valid.
+    #
+    # 2. Remove preprocessor substitutions "%(foo)", which also confuse Bats.
+    #
+    while IFS= read -r i; do
         echo "shellcheck: ${i}"
-          sed -r $'s/(@test .+) \{/\\1\\\n{/g' "$i" \
+          sed -r -e 's/@test (.+) \{/test_ () {/g' "$i" \
+                 -e 's/%\(([a-zA-Z0-9_]+)\)/SUBST_\1/g' \
         | shellcheck -s bash -e SC1090,SC2002,SC2154,SC2164 -
-    done < <( find . "$CHTEST_EXAMPLES_DIR" -name '*.bats' -print0 )
-    # libraries for BATS scripts
-    shellcheck -s bash -e SC2002,SC2034 ./common.bash
-    # misc shell scripts
-    if [[ -e ../packaging ]]; then
-        misc=". ../examples ../packaging"
-    else
-        misc=". ../examples"
-    fi
-    shellcheck -e SC2002,SC2034 "${CHTEST_EXAMPLES_DIR}/chtest/Build"
-    # shellcheck disable=SC2086
-    while IFS= read -r -d '' i; do
-        echo "shellcheck: ${i}"
-        shellcheck -e SC2002 "$i"
-    done < <( find $misc -name bats -prune \
-                         -o \( -name '*.sh' -o -name '*.bash' \) -print0 )
+    done < <( find "$ch_base" -name '*.bats' -o -name '*.bats.in' )
 }
 
 @test 'proxy variables' {

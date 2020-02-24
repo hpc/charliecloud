@@ -16,12 +16,13 @@
 #   $ tar xf centos-7-${arch}-docker.tar.xz --to-stdout ./etc/centos-release
 #
 # ch-test-scope: standard
+# ch-test-builder-exclude: none
 
 set -ex
 
-srcdir=$1
+#srcdir=$1  # unused
 tarball=${2}.tar.xz
-workdir=$3
+#workdir=$3  # unused
 
 # 7.6.1810
 arch=$(uname -m)

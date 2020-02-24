@@ -304,87 +304,6 @@ For all of these, leave other tags in place, e.g. :code:`bug`.
   days for clarification before closing.
 
 
-.. _doc-build:
-
-Documentation
-=============
-
-This documentation is built using Sphinx with the sphinx-rtd-theme. It lives
-in :code:`doc-src`.
-
-Style
------
-
-Heading underline characters:
-
-  1. Asterisk, :code:`*`, e.g. "5. Contributor's guide"
-  2. Equals, :code:`=`, e.g. "5.7 OCI technical notes"
-  3. Hyphen, :code:`-`, e.g. "5.7.1 Gotchas"
-  4. Tilde, :code:`~`, e.g. "5.7.1.1 Namespaces" (try to avoid)
-
-Dependencies
-------------
-
-  * Python 3.4+
-  * Sphinx 1.4.9+
-  * docutils 0.13.1+
-  * sphinx-rtd-theme 0.2.4+
-
-Older versions may work but are untested.
-
-To build the HTML
------------------
-
-Install the dependencies::
-
-  $ pip3 install sphinx sphinx-rtd-theme
-
-Then::
-
-  $ cd doc-src
-  $ make
-
-The HTML files are copied to :code:`doc` with :code:`rsync`. Anything to not
-copy is listed in :code:`RSYNC_EXCLUDE`.
-
-There is also a :code:`make clean` target that removes all the derived files
-as well as everything in :code:`doc`.
-
-.. note::
-
-   If you're on Debian Stretch or some version of Ubuntu, this will silently
-   install into :code:`~/.local`, leaving the :code:`sphinx-build` binary in
-   :code:`~/.local/bin`, which is often not on your path. One workaround
-   (untested) is to run :code:`pip3` as root, which violates principle of
-   least privilege. A better workaround, assuming you can write to
-   :code:`/usr/local`, is to add the undocumented and non-standard
-   :code:`--system` argument to install in :code:`/usr/local` instead. (This
-   matches previous :code:`pip` behavior.) See Debian bugs `725848
-   <https://bugs.debian.org/725848>`_ and `820856
-   <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856>`_.
-
-Publishing to the web
----------------------
-
-If you have write access to the repository, you can update the web
-documentation (i.e., http://hpc.github.io/charliecloud).
-
-Normally, :code:`doc` is a normal directory ignored by Git. To publish to the
-web, that diretory needs to contain a Git checkout of the :code:`gh-pages`
-branch (not a submodule). To set that up::
-
-  $ rm -Rf doc
-  $ git clone git@github.com:hpc/charliecloud.git doc
-  $ cd doc
-  $ git checkout gh-pages
-
-To publish::
-
-  $ make web
-
-It sometimes takes a few minutes for the web pages to update.
-
-
 Test suite
 ==========
 
@@ -397,6 +316,20 @@ prepends each line with the elapsed time since the previous line::
   $ CH_TEST_SCOPE=quick make test | ts -i '%M:%.S'
 
 Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
+
+:code:`ch-test` complains about inconsistent versions
+-----------------------------------------------------
+
+There are multiple ways to ask Charliecloud for its version number. These
+should all give the same result. If they don't, :code:`ch-test` will fail.
+Typically, something needs to be rebuilt. Recall that :code:`configure`
+contains the version number as a constant, so a common way to get into this
+situation is to change Git branches without rebuilding it.
+
+Charliecloud is small enough to just rebuild everything with::
+
+  $ ./autogen.sh && ./configure && make clean && make
+
 
 Writing a test image using the standard workflow
 ------------------------------------------------
@@ -711,8 +644,8 @@ out a way to produce a :code:`.ova` in Vagrant, only Vagrant "boxes".
 
 
 
-Coding style
-============
+Style hints
+===========
 
 We haven't written down a comprehensive style guide. Generally, follow the
 style of the surrounding code, think in rectangles rather than lines of code
@@ -744,6 +677,16 @@ Writing English
 
 * Use spell check. Keep your personal dictionary updated so your editor is not
   filled with false positives.
+
+Documentation
+-------------
+
+Heading underline characters:
+
+  1. Asterisk, :code:`*`, e.g. "5. Contributor's guide"
+  2. Equals, :code:`=`, e.g. "5.7 OCI technical notes"
+  3. Hyphen, :code:`-`, e.g. "5.7.1 Gotchas"
+  4. Tilde, :code:`~`, e.g. "5.7.1.1 Namespaces" (try to avoid)
 
 .. _dependency-policy:
 
@@ -953,7 +896,6 @@ throwing an error. The :code:`ch-run-oci` man page documents comprehensively
 what OCI features are and are not supported.
 
 .. code-block:: javascript
-   :dedent: 0
 
    {
      "ociVersion": "1.0.0",
@@ -961,7 +903,6 @@ what OCI features are and are not supported.
 We validate that this is "1.0.0".
 
 .. code-block:: javascript
-   :dedent: 0
 
      "root": {
        "path": "/tmp/buildah115496812/mnt/rootfs"
@@ -971,7 +912,6 @@ Path to root filesystem; maps to :code:`NEWROOT`. If key :code:`readonly` is
 :code:`false` or absent, add :code:`--write`.
 
 .. code-block:: javascript
-   :dedent: 0
 
      "mounts": [
        {
@@ -1078,7 +1018,6 @@ Therefore, for now we just ignore mounts.
 We do add :code:`--no-home` in OCI mode.
 
 .. code-block:: javascript
-   :dedent: 0
 
      "process": {
        "terminal": true,
@@ -1091,14 +1030,12 @@ its standard input from :code:`/dev/null`, which is the current workaround.
 Things work fine.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "cwd": "/",
 
 Maps to :code:`--cd`.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "args": [
          "/bin/sh",
@@ -1110,7 +1047,6 @@ Maps to :code:`CMD [ARG ...]`. Note that we do not run :code:`ch-run` via the
 shell, so there aren't worries about shell parsing.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "env": [
          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
@@ -1130,7 +1066,6 @@ We treat it as a complete environment, i.e., place the variables in a file and
 then :code:`--unset-env='*' --set-env=FILE`.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "rlimits": [
          {
@@ -1143,7 +1078,6 @@ then :code:`--unset-env='*' --set-env=FILE`.
 Process limits Buildah wants us to set with :code:`setrlimit(2)`. Ignored.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "capabilities": {
          ...
@@ -1153,7 +1087,6 @@ Long list of capabilities that Buildah wants. Ignored. (Charliecloud provides
 security by remaining an unprivileged process.)
 
 .. code-block:: javascript
-   :dedent: 0
 
        "user": {
          "uid": 0,
@@ -1164,7 +1097,6 @@ security by remaining an unprivileged process.)
 Maps to :code:`--uid=0 --gid=0`.
 
 .. code-block:: javascript
-   :dedent: 0
 
      "linux": {
        "namespaces": [
@@ -1185,7 +1117,6 @@ Maps to :code:`--uid=0 --gid=0`.
 Namespaces that Buildah wants. Ignored; Charliecloud just does user and mount.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "uidMappings": [
          {
@@ -1217,7 +1148,6 @@ much larger than Charliecloud's single entry and asks for container root to be
 host root, which we can't do. Ignored.
 
 .. code-block:: javascript
-   :dedent: 0
 
        "maskedPaths": [
          "/proc/acpi",
@@ -1235,7 +1165,6 @@ Spec says to "mask over the provided paths ... so they cannot be read" and
 protects us.)
 
 .. code-block:: javascript
-   :dedent: 0
 
      }
    }

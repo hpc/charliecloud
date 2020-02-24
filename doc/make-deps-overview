@@ -23,6 +23,7 @@
 #   4. Convert indentation to bullet lists.
 #   5. Convert "foo(1)" to ":code:`foo`".
 
+# shellcheck disable=SC2016
   awk '/^Building Charliecloud/,/^##/' | head -n-2 \
 | awk -v RS='' '{gsub(/^  will build.*/, ""); print; print ""}' \
 | sed -r -e 's/ \.\.\..*$//' -e 's/ (yes|no)$//' \
