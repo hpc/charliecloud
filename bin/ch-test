@@ -490,7 +490,7 @@ fi
 email=
 # First, ask Git for the configured e-mail address.
 if ( command -v git > /dev/null 2>&1 ); then
-    email="$(git config --get user.email)"
+    email="$(git config --get user.email || true)"
 fi
 # If that doesn't work, construct it from the environment.
 if [[ -z $email ]]; then
