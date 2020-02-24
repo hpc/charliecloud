@@ -101,6 +101,7 @@ AC_ARG_ENABLE([ch-grow],
 # set $1_VERSION to the actual version.
 #
 # If given absolute path, and that file isn't executable, error out.
+
 AC_DEFUN([CH_CHECK_VERSION], [
   AS_VAR_PUSHDEF([prog], [$1])
   AS_IF([test -n "$prog"], [
@@ -114,13 +115,38 @@ AC_DEFUN([CH_CHECK_VERSION], [
     vact=$($prog $3)
     AX_COMPARE_VERSION([$2], [le], [$vact],
       [AC_MSG_RESULT([ok ($vact)])
-       AC_SUBST([$1_VERSION], [$vact])],
+       AC_SUBST([$1_VERSION], [$vact]),
+       AC_SUBST([$1_VERSION_NOTE], ["ok $vact"])],
       [AC_MSG_RESULT([too old ($vact)])
-	   AC_SUBST([$1_VERSION_OLD], ["too old $vact"]),
+	   AC_SUBST([$1_VERSION_NOTE], ["too old $vact"]),
        AS_UNSET([$1])])
-  ])
+  ],
+  AC_SUBST([$1_VERSION_NOTE], ["Not found"]))
   AS_VAR_POPDEF([prog])
 ])
+
+
+#AC_DEFUN([CH_CHECK_VERSION], [
+#  AS_VAR_PUSHDEF([prog], [$1])
+#  AS_IF([test -n "$prog"], [
+#    AS_CASE([$prog],
+#      [/*], [AC_MSG_CHECKING([if $prog is executable])
+#             AS_IF([test -e "$prog"],
+#              [AC_MSG_RESULT([ok])],
+#              [AC_MSG_RESULT([no])
+#               AC_MSG_ERROR([must be executable])])])
+#    AC_MSG_CHECKING([if $prog version >= $2])
+#    vact=$($prog $3)
+#    AX_COMPARE_VERSION([$2], [le], [$vact],
+#      [AC_MSG_RESULT([ok ($vact)])
+#       AC_SUBST([$1_VERSION_NOTE], ["ok $vact"])],
+#      [AC_MSG_RESULT([too old ($vact)])
+#	   AC_SUBST([$1_VERSION_NOTE], ["too old $vact"]),
+#       AS_UNSET([$1])])
+#  ]) 
+#  #[AC_SUBST([$1_VERSION_NOTE])
+#  AS_VAR_POPDEF([prog])
+#])
 
 ## Feature tests - build time
 
@@ -403,7 +429,7 @@ Building Charliecloud
 ~~~~~~~~~~~~~~~~~~~~~
 
     C99 compiler ... ${CC} ${CC_VERSION}
-    sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION:-not found $SPHINX_VERSION_OLD} ${SPHINX} 
+    sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
 
   will build and install:
     HTML documentation ... ${enable_html}
@@ -414,18 +440,20 @@ Building Charliecloud
 Image builders via our wrappers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION:-not found $BUILDAH_VERSION_OLD} $BUILDAH_VERISON_OLD
+  ch-build(1) with Buildah: ${have_buildah}
+    Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
-  ch-grow(1): ${have_ch_grow}
+  ch-build(1) with ch-grow(1): ${have_ch_grow}
     ch-grow(1) enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
-    Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION:-not found $PYTHON_VERSION_OLD}
+    Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
     "lark-parser" module ... ${have_lark}
-    skopeo ≥ $vmin_skopeo ... ${SKOPEO_VERSION:-not found $SKOPEO_VERSION_OLD}
-    umoci ≥ $vmin_umoci ... ${UMOCI_VERSION:-not found $UMOCI_VERSION_OLD}
+    skopeo ≥ $vmin_skopeo ... ${SKOPEO_VERSION_NOTE}
+    umoci ≥ $vmin_umoci ... ${UMOCI_VERSION_NOTE}
     ch-run(1) ... ${have_ch_run}
 
-  Docker ≥ $vmin_docker ... ${DOCKER_VERSION:-not found $DOCKER_VERSION_OLD}
+  ch-build(1) with Docker: ${have_docker}
+    Docker ≥ $vmin_docker ... ${DOCKER_VERSION_NOTE}
     mktemp(1) ... ${MKTEMP:-not found}
 
 Managing container images
@@ -441,7 +469,7 @@ Managing container images
 
   pack images from builder storage to SquashFS: ${have_pack_squash}
     at least one builder ... ${have_any_builder}
-    mksquashfs(1) ≥ $vmin_mksquashfs ... ${MKSQUASHFS_VERSION:-not found $MKSQUASHFS_VERSION_OLD} 
+    mksquashfs(1) ≥ $vmin_mksquashfs ... ${MKSQUASHFS_VERSION_NOTE} 
 
   Note: Pulling/pushing images from/to a repository is currently done using
   the builder directly.
@@ -456,10 +484,10 @@ Running containers
     tar(1) ... ${TAR:-not found}
 
   ch-mount(1) and ch-umount(1) SquashFS images: ${have_ch_mount}
-    SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION:-not found $SQUASHFUSE_VERSION_OLD}
+    SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION_NOTE}
 
   inject nVidia GPU libraries: ${have_nvidia}
-    nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION:-not found $NVIDIA_CLI_VERSION_OLD}
+    nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION_NOTE}
     nVidia libraries & executables present ... ${have_nvidia_libs}
 
 Test suite
@@ -468,9 +496,9 @@ Test suite
   basic tests: ${have_tests_basic}
     test suite enabled ... ${enable_test}
     ch-run(1) ... ${have_ch_run}
-    Bats ≥ $vmin_bats ... ${BATS_VERSION:-not found $BATS_VERSION_OLD}
-    Bash ≥ $vmin_bash ... ${_BASH_VERSION:-not found $_BASH_VERSION_OLD}
-    wget(1) ≥ $vmin_wget ... ${WGET_VERSION:-not found $WGET_VERSION_OLD}
+    Bats ≥ $vmin_bats ... ${BATS_VERSION_NOTE}
+    Bash ≥ $vmin_bash ... ${_BASH_VERSION_NOTE}
+    wget(1) ≥ $vmin_wget ... ${WGET_VERSION_NOTE}
 
   recommended tests with tarballs: ${have_tests_tar}
     basic tests ... ${have_tests_basic}
@@ -486,6 +514,6 @@ Test suite
 
   complete test suite: ${have_tests_all}
     recommended tests with SquashFS ... ${have_tests_squash}
-    sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION:-not found $SPHINX_VERSION_OLD}
+    sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
     generic sudo ... assumed yes
 ])
