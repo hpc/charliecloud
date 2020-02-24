@@ -97,7 +97,7 @@ will encounter more complex Dockerfiles later in this tutorial.
      $ sudo docker pull debian:stretch
 
    There are various resources and scripts online to help automate this
-   process, as well as :code:`test/docker-clean.sh`.
+   process, as well as :code:`misc/docker-clean.sh`.
 
 Build Docker image
 ------------------
