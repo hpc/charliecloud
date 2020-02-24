@@ -55,18 +55,20 @@ AC_SUBST([LIBRT])
 
 # Note: --with-sphinx-build provided by AX_WITH_PROG() below.
 
-AC_ARG_WITH([python-shebang],
+AC_ARG_WITH([python],
   AS_HELP_STRING(
-    [--with-python-shebang=@<:@SHEBANG@:>@],
+    [--with-python=SHEBANG],
     [Python shebang to use for scripts (default: "/usr/bin/env python3")]),
   [PYTHON_SHEBANG="$withval"],
   [PYTHON_SHEBANG='/usr/bin/env python3'])
-AC_MSG_CHECKING([if "$PYTHON_SHEBANG" starts with slash])
-AS_CASE([$PYTHON_SHEBANG],
-  [/*], [AC_MSG_RESULT([ok])],
-  [*],  [AC_MSG_RESULT([no])
-         AC_MSG_ERROR([--with-python-shebang: must start with slash])])
-AC_SUBST([PYTHON_SHEBANG])
+
+# Can't deduce shebang from Gentoo "sphinx-python"; allow override. See #629.
+AC_ARG_WITH([sphinx-python],
+  AS_HELP_STRING(
+    [--with-sphinx-python=SHEBANG],
+    [Python shebang used by Sphinx (default: deduced from sphinx-build executable]]),
+    [sphinx_python="$withval"],
+    [sphinx_python=''])
 
 AC_ARG_ENABLE([html],
   AS_HELP_STRING([--disable-html], [don't build and install HTML docs]),
@@ -134,12 +136,18 @@ AC_SUBST([SPHINX])
 CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
                  [--version | sed -E 's/sphinx-build //'])
 
-# Get the Sphinx Python
+# Get the Sphinx Python. We don't care about version.
 AS_IF([test -n "$SPHINX"], [
-  AC_MSG_CHECKING([for sphinx-build Python])
-  sphinx_python=$(head -1 "$SPHINX" | sed -E 's/^..//')
-  AC_MSG_RESULT([$sphinx_python])
-])
+  AS_IF([test -z "$sphinx_python"], [
+    AC_MSG_CHECKING([for sphinx-build Python])
+    sphinx_python=$(head -1 "$SPHINX" | sed -E 's/^..//')
+    AC_MSG_RESULT([$sphinx_python])
+  AC_MSG_CHECKING([if "$sphinx_python" starts with slash])
+  AS_CASE([$sphinx_python],
+    [/*], [AC_MSG_RESULT([ok])],
+    [*],  [AC_MSG_RESULT([no])
+           AC_MSG_ERROR([--with-sphinx-python: must start with slash])])
+])])
 
 # "docutils" module
 vmin_docutils=0.14
@@ -219,6 +227,12 @@ AC_MSG_RESULT($have_nvidia_libs)
 
 # Python
 vmin_python=3.4
+AC_MSG_CHECKING([if "$PYTHON_SHEBANG" starts with slash])
+AS_CASE([$PYTHON_SHEBANG],
+  [/*], [AC_MSG_RESULT([ok])],
+  [*],  [AC_MSG_RESULT([no])
+         AC_MSG_ERROR([--with-python: must start with slash])])
+AC_SUBST([PYTHON_SHEBANG])
 python="${PYTHON_SHEBANG#/usr/bin/env }"                # use shell to find it
 AS_CASE([$python],
   [/*], [PYTHON="$python"],                              # absolute
@@ -471,7 +485,7 @@ Image builders via our wrappers
   ch-grow(1): ${have_ch_grow}
     ch-grow(1) enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
-    Python in shebang 3.4 ... ${PYTHON_VERSION:-not found}
+    Python in shebang $vmin_python ... ${PYTHON_VERSION:-not found}
     "lark-parser" module ... ${have_lark}
     skopeo $vmin_skopeo ... ${SKOPEO_VERSION:-not found}
     umoci $vmin_umoci ... ${UMOCI_VERSION:-not found}
