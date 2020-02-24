@@ -1,3 +1,6 @@
 # ch-test-scope: standard
 FROM centos:8
-RUN touch /var/lib/rpm/* && dnf -y upgrade
+# Install the dnf ovl plugin to workaround rpmdb corruptions issues when using
+# overlayfs as the storage driver.
+RUN dnf -y install https://download.fedoraproject.org/pub/epel/playground/8/Everything/x86_64/os/Packages/d/dnf-plugin-ovl-0.0.3-1.epel8.playground.noarch.rpm
+RUN dnf -y update

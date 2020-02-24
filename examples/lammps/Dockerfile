@@ -6,7 +6,7 @@ WORKDIR /usr/src
 RUN dnf install -y --setopt=install_weak_deps=false \
     cmake \
     patch \
-    python3-dev \
+    python3-devel \
     python3-pip \
     python3-setuptools
 
