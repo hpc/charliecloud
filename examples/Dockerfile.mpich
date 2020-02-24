@@ -10,8 +10,7 @@ FROM centos8
 # figured out what. While we're at it, tweak some other options as well to
 # produce a bare bones build.
 
-RUN touch /var/lib/rpm/* \
- && dnf install -y --setopt=install_weak_deps=false \
+RUN dnf install -y --setopt=install_weak_deps=false \
     automake \
     file \
     gcc \
