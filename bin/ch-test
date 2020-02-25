@@ -278,7 +278,7 @@ test_build () {
 test_examples () {
     printf '\n'
     if [[ $CH_TEST_SCOPE == quick ]]; then
-        fatal "no examples $CH_TEST_SCOPE scope"
+        echo "no examples $CH_TEST_SCOPE scope"
         return
     fi
     echo 'executing example phase tests ...'
