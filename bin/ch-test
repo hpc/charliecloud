@@ -177,8 +177,10 @@ dir_tar_rm () {
 }
 
 dir_tmp_rm () {
-    echo "removing $TMP_"
-    rm -rf --one-file-system "$TMP_"
+    if [[ $TMP_ == "/tmp/ch-test.tmp.${USER}" ]]; then
+        echo "removing $TMP_"
+        rm -rf --one-file-system "$TMP_"
+    fi
 }
 
 dirs_unpriv_rm () {
@@ -267,7 +269,6 @@ scope_to_digit () {
 
 test_build () {
     echo 'executing build phase tests ...'
-    # FIXME: check for sotests?
     if [[ ! -f ${TMP_}/build_auto.bats ]]; then
         fatal "${TMP_}/build_auto.bats not found"
     fi
@@ -307,6 +308,8 @@ test_run () {
 
 test_make () {
     local bat_file
+    local img_pack
+    local pack_dir
     local tag
     printf "finding artifacts compatible with %s test settings ...\n" "$phase"
     case $phase in
@@ -323,19 +326,22 @@ test_make () {
         printf 'ok\n\n'
         ;;
     run)
-        for i in "${CH_TEST_TARDIR}"/*{.tar.gz,.sqfs}; do
-            if [[ -e $i ]]; then
-                artifact=${i##*/}
-                artifact=${artifact%%.*}
-                for j in $images $examples; do
-                    if [[ $(test_make_tag_from_path "$j") == "$artifact" ]]; then
-                        if (test_make_check_image "$j"); then
-                            echo "found: $i"
-                            run_targets+=( "$j" )
-                        fi
+        # For each artifact in --pack-dir look for a corresponding example or
+        # image that produces a matching tag. If found, check the image for
+        # exclusion conidtions.
+        pack_dir=$(find "$CH_TEST_TARDIR"     -name '*.tar.gz' \
+                                          -o  -name '*.sqfs'| sort)
+        for i $pack_dir; do
+            img_pack=${i##*/}
+            img_pack=${img_pack%%.*}
+            for j in $images $examples; do
+                if [[ $(test_make_tag_from_path "$j") == "$img_pack" ]]; then
+                    if (test_make_check_image "$j"); then
+                        echo "found: $i"
+                        run_targets+=( "$j" )
                     fi
-                done
-            fi
+                fi
+            done
         done
         printf '\n'
         printf 'generate run_auto.bats ...\n'
@@ -814,7 +820,7 @@ case $phase in
     build)
         builder_check
         dir_tar_mk
-        test_make build
+        test_make
         test_build
         win
         ;;
