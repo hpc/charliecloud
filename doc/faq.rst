@@ -558,17 +558,17 @@ should pop an xterm.
 If your X11 application doesn’t work, please file an issue so we can
 figure out why.
 
-How do I specify an image ID?
------------------------------
+How do I specify an image reference?
+------------------------------------
 
 You must specify an image for many use cases, including :code:`FROM`
-instructions, the source of an image pull (e.g. :code:`ch-pull` or
+instructions, the source of an image pull (e.g. :code:`ch-tug` or
 :code:`docker pull`), the destination of an image push, and adding image tags.
-Charliecloud calls this an *image ID*, but there appears to be no established
-name for this concept.
+Charliecloud calls this an *image reference*, but there appears to be no
+established name for this concept.
 
-The syntax of an image ID is not well documented. This FAQ represents our
-understanding, which is cobbled together from the `Dockerfile reference
+The syntax of an image reference is not well documented. This FAQ represents
+our understanding, which is cobbled together from the `Dockerfile reference
 <https://docs.docker.com/engine/reference/builder/#from>`_, the :code:`docker
 tag` `documentation
 <https://docs.docker.com/engine/reference/commandline/tag/>`_, and various
@@ -580,7 +580,7 @@ We'll start with two complete examples with all the bells and whistles:
 1. :code:`example.com:8080/foo/bar/hello-world:version1.0`
 2. :code:`example.com:8080/foo/bar/hello-world@sha256:f6c68e2ad82a`
 
-These IDs parse into the following components, in this order:
+These references parse into the following components, in this order:
 
 1. A `valid hostname <https://en.wikipedia.org/wiki/Hostname>`_; we assume
    this matches the regular expression :code:`[A-Za-z0-9.-]+`, which is very
@@ -617,10 +617,10 @@ These IDs parse into the following components, in this order:
      * Note: Digest algorithms other than SHA-256 are in principle allowed,
        but we have not yet seen any.
 
-Ludicrously detail-oriented readers may have noticed the following gotchas:
+Detail-oriented readers may have noticed the following gotchas:
 
 * A hostname without port number is ambiguous with the leading component of a
-  path. For example, in the image ID :code:`foo/bar/baz`, it is ambiguous
+  path. For example, in the reference :code:`foo/bar/baz`, it is ambiguous
   whether :code:`foo` is a hostname or the first (and only) component of the
   path :code:`foo/bar`. The `resolution rule
   <https://stackoverflow.com/a/37867949>`_ is: if the ambiguous substring
@@ -628,12 +628,12 @@ Ludicrously detail-oriented readers may have noticed the following gotchas:
   component.
 
 * The only character than cannot go in a POSIX filename is slash. Thus,
-  Charliecloud uses image IDs in filenames, replacing slash with percent
-  (:code:`%`). Because this character cannot appear in image IDs, the
-  transformation is reversible.
+  Charliecloud uses image references in filenames, replacing slash with
+  percent (:code:`%`). Because this character cannot appear in image
+  references, the transformation is reversible.
 
 Usually, most of the components are omitted. For example, you'll more commonly
-see image IDs like:
+see image references like:
 
   * :code:`debian`, which refers to the tag :code:`latest` of image
     :code:`debian` from Docker Hub.

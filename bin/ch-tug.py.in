@@ -61,10 +61,8 @@ environment variables:
    ch.DEBUG("""\
 download cache:  %s
 unpack path:     %s
-manifest:        %s\
+manifest:        %s
 """ % (image.download_cache, image.unpack_path, image.manifest_path))
-
-   ch.DEBUG("")
    image.download(not args.no_cache)
    image.flatten()
    ch.INFO("done")
