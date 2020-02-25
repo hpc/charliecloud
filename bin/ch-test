@@ -276,10 +276,11 @@ test_build () {
 }
 
 test_examples () {
+    printf '\n'
     if [[ $CH_TEST_SCOPE == quick ]]; then
+        fatal "no examples $CH_TEST_SCOPE scope"
         return
     fi
-    echo
     echo 'executing example phase tests ...'
     if (find "$TMP_" -name '*_example.bats' | grep -q .); then
         bats "${TMP_}"/*_example.bats
@@ -330,8 +331,8 @@ test_make () {
         # image that produces a matching tag. If found, check the image for
         # exclusion conidtions.
         pack_dir=$(find "$CH_TEST_TARDIR"     -name '*.tar.gz' \
-                                          -o  -name '*.sqfs'| sort)
-        for i $pack_dir; do
+                                          -o  -name '*.sqfs' | sort)
+        for i in $pack_dir; do
             img_pack=${i##*/}
             img_pack=${img_pack%%.*}
             for j in $images $examples; do
@@ -349,6 +350,10 @@ test_make () {
         printf 'ok\n\n'
         ;;
     examples)
+        if [[ $CH_TEST_SCOPE == quick ]]; then
+            echo 'found: none'
+            return
+        fi
         for i in $examples; do
             if (test_make_check_image "$i"); then
                 bat_file=$(dirname "$i")/test.bats
@@ -843,13 +848,11 @@ case $phase in
         builder_check
         test_make
         test_build
-        printf '\n'
 
         phase=run
         dir_tar_check
         test_make
         test_run
-        printf '\n'
 
         phase=examples
         dir_tar_check
