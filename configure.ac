@@ -97,11 +97,15 @@ AC_ARG_ENABLE([ch-grow],
 #
 # If ${!1} is empty, do nothing.
 #
-# If minimum version is less than actual version, unset $1. Otherwise, also
-# set $1_VERSION to the actual version.
+# If minimum version is less than actual version, set $1_VERSION_NOTE 
+# to "too old $version" and unset $1.
+#
+# If actual version is equal to or greater than minimum, set $1_VERSION_NOTE 
+# to "ok $version"
+# 
+# If dependency doesn't exist set $1_VERSION_NOTE to "not found" 
 #
 # If given absolute path, and that file isn't executable, error out.
-
 AC_DEFUN([CH_CHECK_VERSION], [
   AS_VAR_PUSHDEF([prog], [$1])
   AS_IF([test -n "$prog"], [
@@ -114,14 +118,13 @@ AC_DEFUN([CH_CHECK_VERSION], [
     AC_MSG_CHECKING([if $prog version >= $2])
     vact=$($prog $3)
     AX_COMPARE_VERSION([$2], [le], [$vact],
-      [AC_MSG_RESULT([ok ($vact)])
-       AC_SUBST([$1_VERSION], [$vact]),
-       AC_SUBST([$1_VERSION_NOTE], ["ok $vact"])],
-      [AC_MSG_RESULT([too old ($vact)])
-	   AC_SUBST([$1_VERSION_NOTE], ["too old $vact"]),
+      [AC_SUBST([$1_VERSION_NOTE], ["ok ($vact)"])],
+       AC_MSG_RESULT([$1_VERSION_NOTE])
+      [AC_SUBST([$1_VERSION_NOTE], ["too old ($vact)"]),
+       AC_MSG_RESULT([too old ($vact)])
        AS_UNSET([$1])])
   ],
-  AC_SUBST([$1_VERSION_NOTE], ["Not found"]))
+  AC_SUBST([$1_VERSION_NOTE], ["not found"]))
   AS_VAR_POPDEF([prog])
 ])
 
@@ -149,7 +152,7 @@ AS_IF([test -n "$SPHINX"], [
 vmin_docutils=0.14
 docutils=$sphinx_python  # FIXME: output is confusing
 AS_IF([test -n "$SPHINX"], [
-  # Sphinx requires docutils, so don't verify it's there.
+  # Sphinx requires docutils, so we don't need to verify it's there.
   CH_CHECK_VERSION([docutils], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
 ])
@@ -311,11 +314,11 @@ AS_IF([   test -n "$SPHINX" \
        [have_docs=yes],
        [have_docs=no])
 
-AS_IF([test $enable_html = yes && test $have_docs = no],
+AS_IF([   test $enable_html = yes && test $have_docs = no],
       [AC_MSG_WARN([forcing --disable-html: no suitable sphinx-build])
        enable_html=no])
 
-AS_IF([test $enable_man = yes && test $have_docs = no],
+AS_IF([   test $enable_man = yes && test $have_docs = no],
       [AC_MSG_WARN([forcing --disable-man: no suitable sphinx-build])
        enable_man=no])
 
@@ -339,22 +342,22 @@ AS_IF([   test $have_userns = yes],
 
 # image builders
 
-AS_IF([   test -n "$BUILDAH_VERSION"],
+AS_IF([   test "$BUILDAH_VERSION_NOTE" != "not found" ],
       [have_buildah=yes],
       [have_buildah=no])
 
 AS_IF([   test $enable_ch_grow = yes \
-       && test -n "$PYTHON_VERSION" \
-       && test -n "$PYTHON_SHEBANG" \
+       && test "$PYTHON_VERSION_NOTE" != "not found" \
+       && test "$PYTHON_SHEBANG" \
        && test $have_lark = yes \
-       && test -n "$SKOPEO_VERSION" \
-       && test -n "$UMOCI_VERSION" \
+       && test "$SKOPEO_VERSION_NOTE" != "not found" \
+       && test "$UMOCI_VERSION_NOTE" != "not found" \
        && test $have_ch_run = yes],
       [have_ch_grow=yes],
       [have_ch_grow=no])
 
-AS_IF([   test -n "$DOCKER_VERSION" \
-       && test -n "$MKTEMP"],
+AS_IF([   test "$DOCKER_VERSION_NOTE" != "not found" \
+       && test "$MKTEMP"],
       [have_docker=yes],
       [have_docker=no])
 
@@ -366,30 +369,30 @@ AS_IF([   test $have_buildah = yes \
       [have_any_builder=yes],
       [have_any_builder=no])
 
-AS_IF([test $have_any_builder = yes],
+AS_IF([   test $have_any_builder = yes],
       [have_ch_build=yes],
       [have_ch_build=no])
 
-AS_IF([test -n "$TAR"],
+AS_IF([   test "$TAR"],
       [have_pack_tar=yes],
       [have_pack_tar=no])
 
 AS_IF([   test $have_any_builder = yes \
-       && test -n "$MKSQUASHFS_VERSION"],
+       && test "$MKSQUASHFS_VERSION_NOTE" != "not found"],
       [have_pack_squash=yes],
       [have_pack_squash=no])
 
 # running containers
 
-AS_IF([test -n "$TAR"],
+AS_IF([   test -n "$TAR"],
       [have_unpack_tar=yes],
       [have_unpack_tar=no])
 
-AS_IF([test -n "$SQUASHFUSE_VERSION"],
+AS_IF([   test "$SQUASHFUSE_VERSION_NOTE" != "not found"],
       [have_ch_mount=yes],
       [have_ch_mount=no])
 
-AS_IF([   test -n "$NVIDIA_CLI_VERSION" \
+AS_IF([   test "$NVIDIA_CLI_VERSION_NOTE" != "not found" \
        && test $have_nvidia_libs = yes],
       [have_nvidia=yes],
       [have_nvidia=no])
@@ -398,9 +401,9 @@ AS_IF([   test -n "$NVIDIA_CLI_VERSION" \
 
 AS_IF([   test $enable_test = yes \
        && test $have_ch_run = yes \
-       && test -n "$_BASH_VERSION" \
-       && test -n "$BATS_VERSION" \
-       && test -n "$WGET_VERSION"],
+       && test "$_BASH_VERSION_NOTE" != "not found" \
+       && test "$BATS_VERSION_NOTE" != "not found" \
+       && test "$WGET_VERSION_NOTE" != "not found"],
       [have_tests_basic=yes],
       [have_tests_basic=no])
 
@@ -419,7 +422,7 @@ AS_IF([   test $have_tests_tar = yes \
 
 # assumes we do have generic sudo
 AS_IF([   test $have_tests_squash = yes \
-       && test -n "$SPHINX_VERSION"],
+       && test -n "$SPHINX_VERSION_NOTE"],
       [have_tests_all=yes],
       [have_tests_all=no])
 
@@ -457,8 +460,8 @@ Building Charliecloud
   documentation: ${have_docs}
     sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
     sphinx-build(1) Python ... ${sphinx_python:-n/a}
-    "docutils" module $vmin_docutils ≥ ... ${docutils_VERSION_NOTE}
-    "sphinx-rtd-theme" module $vmin_rtd ≥ ... ${rtd_VERSION_NOTE}
+    "docutils" module ≥ $vmin_docutils ... ${docutils_VERSION_NOTE}
+    "sphinx-rtd-theme" module ≥ $vmin_rtd ... ${rtd_VERSION_NOTE}
 
   will build and install:
     HTML documentation ... ${enable_html}
