@@ -145,7 +145,9 @@ AS_IF([test -n "$SPHINX"], [
 vmin_docutils=0.14
 docutils=$sphinx_python  # FIXME: output is confusing
 AS_IF([test -n "$SPHINX"], [
-  # Sphinx requires docutils, so don't verify it's there.
+  # Sphinx depends on docutils, so we don't need to check if the module exists
+  # before checking its version. (CH_CHECK_VERSION isn't smart enough to deal
+  # with Python being present but a module not.)
   CH_CHECK_VERSION([docutils], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
 ])
@@ -232,8 +234,8 @@ AS_IF([test -n "$PYTHON"], [
   cat <<EOF | $PYTHON_SHEBANG
 import sys
 try:
-   import lark
-   lark.Visitor
+   import lark   # module present?
+   lark.Visitor  # correct module? (there are two)
 except Exception:
    sys.exit(1)
 EOF
@@ -313,11 +315,11 @@ AS_IF([   test -n "$SPHINX" \
        [have_docs=yes],
        [have_docs=no])
 
-AS_IF([test $enable_html = yes && test $have_docs = no],
+AS_IF([   test $enable_html = yes && test $have_docs = no],
       [AC_MSG_WARN([forcing --disable-html: no suitable sphinx-build])
        enable_html=no])
 
-AS_IF([test $enable_man = yes && test $have_docs = no],
+AS_IF([   test $enable_man = yes && test $have_docs = no],
       [AC_MSG_WARN([forcing --disable-man: no suitable sphinx-build])
        enable_man=no])
 
@@ -367,11 +369,11 @@ AS_IF([   test $have_buildah = yes \
       [have_any_builder=yes],
       [have_any_builder=no])
 
-AS_IF([test $have_any_builder = yes],
+AS_IF([   test $have_any_builder = yes],
       [have_ch_build=yes],
       [have_ch_build=no])
 
-AS_IF([test -n "$TAR"],
+AS_IF([   test -n "$TAR"],
       [have_pack_tar=yes],
       [have_pack_tar=no])
 
@@ -382,11 +384,11 @@ AS_IF([   test $have_any_builder = yes \
 
 # running containers
 
-AS_IF([test -n "$TAR"],
+AS_IF([   test -n "$TAR"],
       [have_unpack_tar=yes],
       [have_unpack_tar=no])
 
-AS_IF([test -n "$SQUASHFUSE_VERSION"],
+AS_IF([   test -n "$SQUASHFUSE_VERSION"],
       [have_ch_mount=yes],
       [have_ch_mount=no])
 

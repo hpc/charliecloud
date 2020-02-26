@@ -632,6 +632,13 @@ Detail-oriented readers may have noticed the following gotchas:
   percent (:code:`%`). Because this character cannot appear in image
   references, the transformation is reversible.
 
+  An alternate approach would be to replicate the reference path in the
+  filesystem, i.e., path components in the reference would correspond directly
+  to a filesystem path. This would yield a clearer filesystem structure.
+  However, we elected not to do it because it complicates the code to save and
+  clean up image reference-related data, and it does not address a few related
+  questions, e.g. should the host and port also be a directory level.
+
 Usually, most of the components are omitted. For example, you'll more commonly
 see image references like:
 
