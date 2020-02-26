@@ -30,7 +30,8 @@ testfiles_exec = \
 Build.centos7xz \
 Build.ch-build2dir \
 Build.ch-pull2dir \
-Build.ch-pull2tar \
+Build.ch-pull2tar_docker \
+Build.ch-pull2tar_skopeo \
 Build.docker_pull \
 Build.missing \
 Build.skopeo-umoci \
