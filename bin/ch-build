@@ -1,6 +1,6 @@
 #!/bin/sh
 
-libexec="$(cd "$(dirname "$0")" && pwd)"
+libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
 . "${libexec}/base.sh"
 
 # shellcheck disable=SC2034
@@ -54,8 +54,11 @@ if [ -n "$builder_info" ]; then
         docker)
             docker --version  # no wrapper: sudo not needed for --version
             ;;
+        none)
+            echo 'no builder'
+            ;;
         *)
-            echo "unknown builder" 1>&2
+            echo 'unknown builder' 1>&2
             exit 1
             ;;
     esac

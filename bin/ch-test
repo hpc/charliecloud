@@ -1,9 +1,25 @@
 #!/bin/bash
 
 set -e
+export LC_ALL=C  # predictable sorting
 
-libexec="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fatal () {
+    printf 'error: %s\n' "$1" 1>&2
+    exit 1
+}
+
+warning () {
+    printf 'warning: %s\n' "$1" 1>&2
+}
+
+libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
+if [[ ! -f ${libexec}/base.sh ]]; then
+    fatal "install or build problem: not found: ${libexec}/base.sh"
+fi
 . "${libexec}/base.sh"
+. "${libexec}/contributors.bash"
+
+export ch_bin
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
@@ -11,7 +27,23 @@ Run some or all of the Charliecloud test suite.
 
 Usage:
 
-  $ $(basename "$0") [PHASE] [OPTIONS]
+  $ $(basename "$0") [PHASE] [--scope SCOPE] [OPTIONS]
+
+Valid phases: build, run, examples, mk-perm-dirs, clean, rm-perm-dirs
+Valid scopes: quick, standard, full
+
+Additional options:
+
+  -b, --builder BUILDER  image builder to use
+  --dry-run              print summary of what would be tested and exit
+  -h, --help             print this help and exit
+  --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
+  --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
+  --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
+  --sudo                 enable tests that need sudo
+  --version              print version and exit
+
+See the man page for important details.
 EOF
 )
 
@@ -22,7 +54,7 @@ builder_check () {
         if ! ("${ch_bin}/ch-grow" --dependencies); then
             fatal 'builder: ch-grow: missing dependencies'
         fi
-        bl=$(readlink -f "$ch_bin"/ch-grow)
+        bl=$(readlink -f "${ch_bin}/ch-grow")
         bv=$("$bl" --version)
         ;;
     buildah)
@@ -43,6 +75,10 @@ builder_check () {
         fi
         bl=$(command -v docker)
         bv=$(docker_ --version | awk '{print $3}' | sed -e 's/,$//')
+        ;;
+    none)
+        bl='none'
+        bv=
         ;;
     *)
         fatal "builder: $CH_BUILDER: not supported"
@@ -71,12 +107,16 @@ builder_set () {
     fi
 }
 
-# Create CH_TEST_TARDIR, avoiding #347.
+# Create CH_TEST_IMGDIR, avoiding #347.
 dir_img_mk () {
-    if [[ ! -d $CH_TEST_IMGDIR ]]; then
-        echo "creating $CH_TEST_IMGDIR"
-        mkdir "$CH_TEST_IMGDIR"
-    fi
+    dir_img_rm
+    printf "creating %s\n\n" "$CH_TEST_IMGDIR"
+    mkdir "$CH_TEST_IMGDIR"
+}
+
+dir_img_rm () {
+    echo "removing $CH_TEST_IMGDIR"
+    rm -rf --one-file-system "$CH_TEST_IMGDIR"
 }
 
 # Remove a filesystem permissions fixture directory. Ensure that the target
@@ -90,13 +130,11 @@ dir_perm_rm () {
 }
 
 # The run phase requires artifacts from a successful build phase. Thus, we
-# check sanity based on the minimal set of artifacts (quick scope).
+# check sanity based on the minimal set of artifacts (no builder).
 dir_tar_check () {
     printf 'checking %s: ' "$CH_TEST_TARDIR"
-    dir_tar_check_file alpine39{.tar.gz,.sqfs,.pq_missing}
-    dir_tar_check_file alpine39_dp{.tar.gz,.sqfs,.pq_missing}
-    dir_tar_check_file chtest{.tar.gz,.sqfs,.pq_missing}
-    printf 'OK\n\n'
+    dir_tar_check_file chtest{.tar.gz,.sqfs}
+    printf 'ok\n\n'
 }
 
 dir_tar_check_file () {
@@ -111,24 +149,57 @@ dir_tar_check_file () {
     fatal "phase $phase: missing packed images: ${missing[*]}"
 }
 
-# Create CH_TEST_TARDIR, avoiding #347.
 dir_tar_mk () {
-    if [[ ! -d $CH_TEST_TARDIR ]]; then
-        echo "creating $CH_TEST_TARDIR"
-        mkdir "$CH_TEST_TARDIR"
-    fi
+    dir_tar_rm
+    printf "creating %s\n\n" "$CH_TEST_TARDIR"
+    mkdir "$CH_TEST_TARDIR"
+}
+
+dir_tar_rm () {
+    echo "removing $CH_TEST_TARDIR"
+    rm -rf --one-file-system "$CH_TEST_TARDIR"
 }
 
 dirs_unpriv_rm () {
-    echo "removing $CH_TEST_TARDIR"
-    rm -rf --one-file-system "$CH_TEST_TARDIR"
-    echo "removing $CH_TEST_IMGDIR"
-    rm -rf --one-file-system "$CH_TEST_IMGDIR"
+    dir_tar_rm
+    dir_img_rm
 }
 
-fatal () {
-    printf 'error: %s\n' "$1" 1>&2
-    exit 1
+pq_missing () {
+    if [[ $phase == all || $phase == build ]]; then
+        local img=$1
+        local out=$2
+        local tag
+        tag=$("$make_auto" tag "$img")
+        printf '%s\n' "$out" >> "${CH_TEST_TARDIR}/${tag}.pq_missing"
+    fi
+}
+
+pedantry_set () {
+    width=$1
+    default=no
+    # Default to pedantic on CI or if user is a contributor.
+    if [[ -n $ch_contributor || -n $TRAVIS ]]; then
+        default=yes
+    fi
+    vset ch_pedantic "$pedantic" '' $default "$width" 'pedantic mode'
+    if [[ $ch_pedantic == no ]]; then
+        ch_pedantic=  # proper boolean
+    fi
+    # The motivation here is that in pedantic mode, we want to run all the
+    # tests we reasonably can. So, if the user *has* sudo, then default --sudo
+    # to yes. What is a little awkward is that "sudo -v" can generate a
+    # password prompt in the middle of the status output. An alternative is
+    # "sudo -nv", which doesn't; drawbacks are that you have to analyze the
+    # output (not exit code) and it generates a failed password log message if
+    # there is not already a sudo session going.
+    if    [[ -n $ch_pedantic ]] \
+       && (command -v sudo > /dev/null) \
+       && (sudo -v > /dev/null 2>&1); then
+        use_sudo_default=yes
+    else
+        use_sudo_default=
+    fi
 }
 
 require_unset () {
@@ -150,6 +221,196 @@ scope_check () {
     esac
 }
 
+# Assign scope a sortable opaque integer value. This value is used to help
+# filter images and tests that are out of scope.
+scope_to_digit () {
+    case $1 in
+        quick)
+            echo 1
+            ;;
+        standard)
+            echo 2
+            ;;
+        full)
+            echo 3
+            ;;
+        skip*)
+            # skip has the highest value to ensure it is always filtered out
+            echo 4
+            ;;
+        *)
+            fatal "scope '$scope' invalid"
+    esac
+}
+
+test_build () {
+    echo 'executing build phase tests ...'
+    # FIXME: check for sotests?
+    if [[ ! -f ${TMP_}/build_auto.bats ]]; then
+        fatal "${TMP_}/build_auto.bats not found"
+    fi
+    bats build.bats "${TMP_}/build_auto.bats" build_post.bats
+}
+
+test_examples () {
+    local tag
+    local bat_file
+    local phase=examples
+    if [[ $CH_TEST_SCOPE == quick ]]; then
+        return
+    fi
+    echo
+    echo 'executing example phase tests ...'
+    for i in $examples; do
+        if (test_make_check_image "$i"); then
+            bat_file=$(dirname "$i")/test.bats
+            tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
+            cp "$bat_file" "${TMP_}/${tag}_example.bats"
+            sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
+        fi
+    done
+    if (find "$TMP_" -name '*_example.bats' | grep -q .); then
+        bats "${TMP_}"/*_example.bats
+    else
+        echo 'found: none'
+    fi
+}
+
+test_run () {
+    echo
+    echo 'executing run phase tests ...'
+    if [[ ! -f ${TMP_}/run_auto.bats ]]; then
+        fatal "${TMP_}/run_auto.bats not found"
+    fi
+    bats run_first.bats "${TMP_}/run_auto.bats" ./run/*.bats
+    set -e
+    if [[ $CH_TEST_SCOPE != quick ]]; then
+        for guest_user in $(id -un) root nobody; do
+            for guest_group in $(id -gn) root $(id -gn nobody); do
+                export GUEST_USER=$guest_user
+                export GUEST_GROUP=$guest_group
+                echo "testing as $GUEST_USER $GUEST_GROUP"
+                bats run/ch-run_uidgid.bats
+            done
+        done
+    fi
+    set +e
+}
+
+test_make_auto () {
+    local img
+
+    printf "finding images compatible with test settings ...\n"
+    for i in $images $examples; do
+        if (test_make_check_image "$i"); then
+            echo "found: $i"
+            targets+=( "$i" )
+        fi
+    done
+
+    printf '\n'
+    case $phase in
+    build)
+        printf 'generate build_auto.bats ...\n'
+        "$make_auto" build "${targets[@]}" > "${TMP_}/build_auto.bats"
+        printf 'ok\n\n'
+        ;;
+    run)
+        printf 'generate run_auto.bats ...\n'
+        "$make_auto" run "${targets[@]}" > "${TMP_}/run_auto.bats"
+        printf 'ok\n\n'
+        ;;
+    all)
+        printf 'generate build_auto.bats run_auto.bats ...\n'
+        "$make_auto" build "${targets[@]}" > "${TMP_}/build_auto.bats"
+        "$make_auto" run "${targets[@]}" > "${TMP_}/run_auto.bats"
+        printf 'ok\n\n'
+        ;;
+    *)
+        ;;
+    esac
+}
+
+test_make_check_image () {
+    img_ok=yes
+    img=$1
+    dir=$(basename "$(dirname "$img")")
+
+    arch_exclude=$(cat "$img" | grep -F 'ch-test-arch-exclude: ' \
+                              | sed 's/.*: //' | awk '{print $1}')
+
+    builder_include=$(cat "$img" | grep -F 'ch-test-builder-include: ' \
+                                 | sed 's/.*: //' | awk '{print $1}')
+
+    builder_exclude=$(cat "$img" | grep -F 'ch-test-builder-exclude: ' \
+                                 | sed 's/.*: //' | awk '{print $1}')
+
+    img_scope_int=$(scope_to_digit "$(cat "$img" | grep -F 'ch-test-scope' \
+                                                 | sed 's/.*: //' \
+                                                 | awk '{print $1}')")
+
+    sudo_required=$(cat "$img" | grep -F 'ch-test-need-sudo')
+
+    # Exclude Dockerfiles if we have no builder.
+    if [[ $CH_BUILDER == none && $img == *Dockerfile* ]]; then
+        pq_missing "$img" 'builder required'
+        img_ok=
+    fi
+
+    # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
+    if [[ $scope_int -lt "$img_scope_int" ]]; then
+        pq_missing "$img" "not in scope: ${CH_TEST_SCOPE}"
+        img_ok=
+    fi
+    # Exclude images that do not work with the host architecture.
+    for a in $arch_exclude; do
+        if [[ $a == "$(uname -m)" ]]; then
+            pq_missing "$img" "incompatible architecture: ${a}"
+            img_ok=
+        fi
+    done
+
+    # Exclude image if included builders are given and $CH_BUILDER isn't one.
+    if [[ -n $builder_include ]]; then
+        builder_ok=
+        for b in $builder_include; do
+            if [[ $b == "$CH_BUILDER" ]]; then
+                builder_ok=yes
+            fi
+        done
+        if [[ -z $builder_ok ]]; then
+            pq_missing "$img" "builder not included: ${CH_BUILDER}"
+            img_ok=
+        fi
+    fi
+
+    # Exclude images that are not compatible with CH_BUILDER.
+    for b in $builder_exclude; do
+        if [[ $b == "$CH_BUILDER" ]]; then
+            pq_missing "$img" "builder excluded: ${CH_BUILDER}"
+            img_ok=
+        fi
+    done
+
+    # Exclude images that require sudo if CH_TEST_SUDO is empty
+    if [[ -n $sudo_required && -z $CH_TEST_SUDO ]]; then
+        pq_missing "$img" 'generic sudo required'
+        img_ok=
+    fi
+
+    # In examples phase, exclude chtest (special case) and any images not in a
+    # subdirectory of examples.
+    if [[ $phase == examples && ( $dir == chtest || $dir == examples ) ]]; then
+        img_ok=
+    fi
+
+    if [[ -n $img_ok ]]; then
+        return 0  # include image
+    else
+        return 1  # exclude image
+    fi
+}
+
 # Exit with failure if given version number is below a minimum.
 #
 # $1: human-readable descriptor
@@ -169,12 +430,9 @@ win () {
     printf "\nAll tests passed.\n"
 }
 
-
-top_dir=$(readlink -f "${ch_bin%/*}")
-
 # Ensure ch-run has been compiled (issue #329).
 if (! "${ch_bin}/ch-run" --version &> /dev/null); then
-    fatal "ch-run not found; expected in $ch_bin"
+    fatal "no working ch-run found in $ch_bin"
 fi
 
 # Ensure we have Bash 4.1 or higher
@@ -184,26 +442,66 @@ if (bash -c 'set -e; [[ 1 = 0 ]]; exit 0'); then
     fatal 'Bash minimum version is 4.1'
 fi
 
-# Ensure BATS_TMPDIR is set to /tmp (issue #278).
-if [[ -n $BATS_TMPDIR ]]; then
-    if [[ ! $BATS_TMPDIR == '/tmp/'* ]]; then
-        fatal "BATS_TMPDIR: must be /tmp but found $BATS_TMPDIR (issue #278)"
-    fi
+# Create a directory to hold auto-generated test artifacts.
+TMP_=/tmp/ch-test.tmp.$USER
+if [[ ! -d $TMP_ ]]; then
+    mkdir "$TMP_"
+    chmod 700 "$TMP_"
 fi
 
-# Determine source vs prefix installation.
-if [[ -d ${top_dir}/test ]]; then
-    # source install
-    testdir=${top_dir}/test
+# Find test directories. (At one point we tried to unify the paths between the
+# two conditions using a deeper directory hierarchy and symlinks to . in the
+# source code to keep it from being even deeper, but this became too unruly.)
+if [[ -d ${ch_base}/share ]]; then
+    # installed
+    CHTEST_INSTALLED=yes
+    CHTEST_GITWD=
+    CHTEST_DIR=${ch_base}/libexec/charliecloud/test
+    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
 else
-    # prefix installation
-    testdir="${top_dir%/charliecloud*}/libexec/charliecloud-${ch_version}/test"
+    # build dir
+    CHTEST_INSTALLED=
+    if [[ -d ${ch_base}/.git ]]; then
+        CHTEST_GITWD=yes
+    else
+        CHTEST_GITWD=
+    fi
+    CHTEST_DIR=${ch_base}/test
+    CHTEST_EXAMPLES_DIR=${ch_base}/examples
 fi
+export ch_base
+export CHTEST_INSTALLED
+export CHTEST_GITWD
+export CHTEST_DIR
+export CHTEST_EXAMPLES_DIR
+export TMP_
+
+make_auto="${CHTEST_DIR}/chtest-make-auto"
 
 # Check for test directory.
-if [[ ! -d $testdir ]]; then
-    fatal "test directory not found: $testdir"
+if [[ ! -d $CHTEST_DIR ]]; then
+    fatal "test directory not found: $CHTEST_DIR"
 fi
+if [[ ! -d $CHTEST_EXAMPLES_DIR ]]; then
+    fatal "examples not found: $CHTEST_EXAMPLES_DIR"
+fi
+
+# Is the user a contributor?
+email=
+# First, ask Git for the configured e-mail address.
+if ( command -v git > /dev/null 2>&1 ); then
+    email="$(git config --get user.email || true)"
+fi
+# If that doesn't work, construct it from the environment.
+if [[ -z $email ]]; then
+    email="$USER@$(hostname --domain)"
+fi
+ch_contributor=
+for i in "${ch_contributors[@]}"; do
+    if [[ $i == "$email" ]]; then
+        ch_contributor=yes
+    fi
+done
 
 # Ensure Bats is installed.
 if (command -v bats &> /dev/null); then
@@ -225,6 +523,10 @@ while [[ $# -gt 0 ]]; do
         require_unset builder
         builder=$1; shift
         ;;
+    --builder=*)
+        require_unset builder
+        builder=${opt#*=}
+        ;;
     --dry-run)
         dry=true
         ;;
@@ -235,18 +537,42 @@ while [[ $# -gt 0 ]]; do
         require_unset imgdir
         imgdir=$1; shift
         ;;
+    --img-dir=*)
+        require_unset imgdir
+        imgdir=${opt#*=}
+        ;;
     --pack-dir)
         require_unset tardir
         tardir=$1; shift
+        ;;
+    --pack-dir=*)
+        require_unset tardir
+        tardir=${opt#*=}
+        ;;
+    --pedantic)
+        pedantic=$1; shift
+        ;;
+    --pedantic=*)
+        pedantic=${opt#*=}
         ;;
     --perm-dir)
         use_sudo=yes
         permdirs+=("$1"); shift
         ;;
+    --perm-dir=*)
+        use_sudo=yes
+        permdirs+=("${opt#*=}")
+        ;;
     -s|--scope)
         require_unset scope
         scope_check "$1"
         scope=$1; shift
+        ;;
+    --scope=*)
+        require_unset scope
+        arg=${opt#*=}
+        scope_check "$arg"
+        scope=$arg
         ;;
     --sudo)
         use_sudo=yes
@@ -260,11 +586,17 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-printf "ch-test version %s\n\n" "$ch_version"
-printf 'ch-run: %s %s\n' "$("${ch_bin}/ch-run" --version 2>&1)" \
-                         "${ch_bin}/ch-run"
-printf 'bats:   %s %s\n' "$bats_version" "$bats"
-printf 'tests:  %s\n\n' "$testdir"
+printf 'ch-run:       %s\n' "${ch_bin}/ch-run"
+printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
+printf 'tests:        %s\n' "$CHTEST_DIR"
+printf 'installed:    %s\n' "${CHTEST_INSTALLED:-no}"
+printf 'git workdir:  %s\n' "${CHTEST_GITWD:-no}"
+if [[ -n $ch_contributor ]]; then
+    ch_contributor_note="yes; $email in README.rst"
+else
+    ch_contributor_note="no; $email not in README.rst"
+fi
+printf 'contributor:  %s\n\n' "$ch_contributor_note"
 
 printf "%-21s %s" 'phase:' "$phase"
 if [[ -z $phase ]]; then
@@ -278,7 +610,8 @@ printf '\n'
 vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
                       21 'scope'
 builder_set 21
-vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     '' \
+pedantry_set 21
+vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     "$use_sudo_default" \
                       21 'use generic sudo'
 vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
                       21 'unpacked images dir'
@@ -288,8 +621,31 @@ vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 printf '\n'
 
-if [[ $phase == *'perm'* ]] && [[ ${CH_TEST_PERMDIRS[*]} == skip ]]; then
+if [[ $phase == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then
     fatal "phase $phase: CH_TEST_PERMDIRS: can't be 'skip'"
+fi
+
+# Check that different sources of version number are consistent.
+printf 'ch-test version: %s\n' "$ch_version"
+ch_run_version=$("${ch_bin}/ch-run" --version 2>&1)
+if [[ $ch_version != "$ch_run_version" ]]; then
+    warning "inconsistent ch-run version: ${ch_run_version}"
+fi
+if [[ -z $CHTEST_INSTALLED ]]; then
+    cf_version=$("${ch_base}/configure" --version | head -1 | cut -d' ' -f3)
+    if [[ $ch_version != "$cf_version" ]]; then
+        warning "inconsistent configure version: ${cf_version}"
+    fi
+    src_version=$("${ch_base}/misc/version")
+    if [[ $ch_version != "$src_version" ]]; then
+        warning "inconsistent source version: ${src_version}"
+    fi
+fi
+printf '\n'
+
+# Ensure BATS_TMPDIR is set to /tmp (issue #278).
+if [[ -n $BATS_TMPDIR && $BATS_TMPDIR != '/tmp' ]]; then
+    fatal "BATS_TMPDIR: must be /tmp; found '$BATS_TMPDIR' (issue #278)"
 fi
 
 # Ensure namespaces are configured properly.
@@ -321,28 +677,48 @@ if [[ -n $dry ]];then
     exit 0
 fi
 
+
+cd "$CHTEST_DIR"
+
+export PATH=$ch_bin:$PATH
+
+# The distinction here is that "images" are purely for testing and have no
+# value as examples for the user, while "examples" are dual-purpose.
+images=$(find   "$CHTEST_DIR"             -name 'Build' \
+                                       -o -name 'Build.*' \
+                                       -o -name 'Dockerfile.*' | sort)
+examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
+                                       -o -name 'Build.*' \
+                                       -o -name 'Dockerfile' \
+                                       -o -name 'Dockerfile.*' | sort)
+
+scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
+
 # Execute phase
-cd "$testdir"
 case $phase in
     build)
         dir_tar_mk
-        make test-build
+        test_make_auto
+        test_build
         win
         ;;
     run)
-        dir_tar_mk
         dir_img_mk
-        make test-run
+        test_make_auto
+        test_run
         win
         ;;
     examples)
-        make test-test
+        test_examples
         win
         ;;
     all)
         dir_tar_mk
         dir_img_mk
-        make test
+        test_make_auto
+        test_build
+        test_run
+        test_examples
         win
         ;;
     mk-perm-dirs)
@@ -352,7 +728,7 @@ case $phase in
                 printf '%s already exists\n' "$d"
                 continue
             else
-                sudo "${testdir}/make-perms-test" "$d" "$USER" nobody
+                sudo "${CHTEST_DIR}/make-perms-test" "$d" "$USER" nobody
             fi
         done
         echo
@@ -364,5 +740,9 @@ case $phase in
         ;;
     clean)
         dirs_unpriv_rm
+        if [[ -d $TMP_ ]] && [[ -e $TMP_/build_auto.bats ]]; then
+            echo "removing $TMP_"
+            rm -rf --one-file-system "$TMP_"
+        fi
         ;;
 esac

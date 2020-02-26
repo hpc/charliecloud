@@ -5,14 +5,15 @@
 
 #define _GNU_SOURCE
 #include <argp.h>
-#include <assert.h>
 #include <fnmatch.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "charliecloud.h"
+#include "config.h"
+#include "ch_misc.h"
+#include "ch_core.h"
+
 
 /** Constants and macros **/
 
@@ -403,7 +404,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       T_ (args->c.binds = realloc(args->c.binds, (i+2) * sizeof(struct bind)));
       args->c.binds[i+1].src = NULL;                 // terminating zero
       args->c.binds[i].src = strsep(&arg, ":");
-      assert(args->c.binds[i].src != NULL);
+      T_ (args->c.binds[i].src != NULL);
       if (arg)
          args->c.binds[i].dst = arg;
       else // arg is NULL => no destination specified

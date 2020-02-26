@@ -54,7 +54,6 @@ container image builders such as Docker, Skopeo, and Buildah.
 %setup -q
 
 %{versionize_script python3 test/docs-sane}
-%{versionize_script python3 test/make-auto}
 %{versionize_script python3 test/make-perms-test}
 
 %build

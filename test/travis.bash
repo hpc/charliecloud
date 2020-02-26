@@ -17,17 +17,28 @@ echo "$PATH"
 
 set -x
 
+./autogen.sh
+
+# Remove Autotools to make sure everything works without them.
+sudo apt-get remove autoconf autoconf-archive automake
+
+if [[ $MINIMAL_CONFIG ]]; then
+    # Everything except --disable-test, which would defeat the point.
+    disable='--disable-html --disable-man --disable-ch-grow'
+fi
+
 case $TARBALL in
     export)
-        (cd doc-src && make)
-        make export
+        # shellcheck disable=SC2086
+        ./configure --prefix="$PREFIX" $disable
+        make dist
         mv charliecloud-*.tar.gz "$PREFIX"
         cd "$PREFIX"
         tar xf charliecloud-*.tar.gz
+        rm charliecloud-*.tar.gz
         cd charliecloud-*
         ;;
     archive)
-        # The Travis image already has Bats installed.
         git archive HEAD --prefix=charliecloud/ -o "$PREFIX/charliecloud.tar"
         cd "$PREFIX"
         tar xf charliecloud.tar
@@ -40,19 +51,19 @@ case $TARBALL in
         ;;
 esac
 
+# shellcheck disable=SC2086
+./configure --prefix="$PREFIX" $disable
 make
 bin/ch-run --version
 
-if [[ $INSTALL ]]; then
-    sudo make install PREFIX="$PREFIX"
+if [[ $MAKE_INSTALL ]]; then
+    sudo make install
     ch_test="${PREFIX}/bin/ch-test"
 else
     ch_test=$(readlink -f bin/ch-test)  # need absolute path
 fi
 
 "$ch_test" mk-perm-dirs --sudo
-
-cd test
 
 if [[ $SUDO_RM_FIRST ]]; then
     sudo rm /etc/sudoers.d/travis
