@@ -34,7 +34,6 @@ Build.ch-pull2tar_docker \
 Build.ch-pull2tar_skopeo \
 Build.docker_pull \
 Build.missing \
-Build.skopeo-umoci \
 chtest-make-auto \
 docs-sane \
 make-perms-test
