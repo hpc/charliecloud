@@ -6,12 +6,11 @@
 
 set -e
 
-srcdir=$1
+#srcdir=$1  # unused
 tarball_gz=${2}.tar.gz
 workdir=$3
 
 imgtag=alpine:3.9
-tag=ch-pull2tar
 
 if ( ! command -v skopeo &> /dev/null); then
     echo 'skopeo not found' 1>&2
