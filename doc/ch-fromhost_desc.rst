@@ -212,7 +212,7 @@ then run :code:`ldconfig`::
 
   $ ch-fromhost --nvidia /var/tmp/baz
 
-Inject the Cray-enabled MPI libaries into the image, and then run
+Inject the Cray-enabled MPI libraries into the image, and then run
 :code:`ldconfig`::
 
   $ ch-fromhost --cray-mpi /var/tmp/baz
