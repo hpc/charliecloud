@@ -26,7 +26,6 @@ ch-run-oci(1),
 ch-ssh(1),
 ch-tar2dir(1)
 ch-tar2dir(1),
-ch-tar2squash(1),
 ch-test(1),
 ch-umount(1)
 
