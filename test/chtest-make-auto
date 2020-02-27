@@ -115,7 +115,6 @@ while [[ "$#" -gt 0 ]]; do
         fi
     elif [[ $mode == run ]];then
         template_print 'unpack.bats.in'
-        template_print 'run_image.bats.in'
     else
          fatal "chtest-make-auto: invalid mode '$mode'"
     fi
