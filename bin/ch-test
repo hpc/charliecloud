@@ -111,20 +111,14 @@ builder_set () {
 dir_img_mk () {
     dir_img_rm
     printf "creating %s\n\n" "$CH_TEST_IMGDIR"
-    if [[ -n $SLURM_JOBID ]]; then
-        srun --ntasks-per-node=1 mkdir "$CH_TEST_IMGDIR"
-    else
-        mkdir "$CH_TEST_IMGDIR"
-    fi
+    $ch_mpirun_node mkdir "$CH_TEST_IMGDIR"
+    $ch_mpirun_node touch "$CH_TEST_IMGDIR/.setinel"
 }
 
 dir_img_rm () {
+    [[ -e $CH_TEST_TARDIR/.setinel ]] || return
     echo "removing $CH_TEST_IMGDIR"
-    if [[ -n $SLURM_JOBID ]]; then
-        srun --ntasks-per-node=1 rm -rf --one-file-system "$CH_TEST_IMGDIR"
-    else
-        rm -rf --one-file-system "$CH_TEST_IMGDIR"
-    fi
+    $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_IMGDIR"
 }
 
 # Remove a filesystem permissions fixture directory. Ensure that the target
@@ -160,20 +154,14 @@ dir_tar_check_file () {
 dir_tar_mk () {
     dir_tar_rm
     printf "creating %s\n\n" "$CH_TEST_TARDIR"
-    if [[ -n $SLURM_JOBID ]]; then
-        srun --ntasks-per-node=1 mkdir "$CH_TEST_TARDIR"
-    else
-        mkdir "$CH_TEST_TARDIR"
-    fi
+    $ch_mpirun_node mkdir "$CH_TEST_TARDIR"
+    $ch_mpirun_node touch "${CH_TEST_TARDIR}/.setinel"
 }
 
 dir_tar_rm () {
+    [[ -e $CH_TEST_TARDIR/.setinel ]] || return
     echo "removing $CH_TEST_TARDIR"
-    if [[ -n $SLURM_JOBID ]]; then
-        srun --ntasks-per-node=1 rm -rf --one-file-system "$CH_TEST_TARDIR"
-    else
-        rm -rf --one-file-system "$CH_TEST_TARDIR"
-    fi
+    $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_TARDIR"
 }
 
 dir_tmp_rm () {
@@ -819,6 +807,8 @@ examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
                                        -o -name 'Dockerfile.*' | sort)
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
+
+. ${CHTEST_DIR}/common.bash
 
 # Execute phase
 case $phase in
