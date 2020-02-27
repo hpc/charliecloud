@@ -9,18 +9,18 @@ setup () {
     prerequisites_ok lustre
 
     if [[ $SLURM_JOB_ID ]]; then
-        if [[ -z $ch_lustre ]]; then
+        if [[ -z $CH_LUSTRE ]]; then
             pedantic_fail 'no lustre to bind mount'
         fi
     else
-        if [[ -z $ch_lustre ]]; then
+        if [[ -z $CH_LUSTRE ]]; then
             skip 'no lustre to bind mount'
         fi
     fi
 
     # Check lustre directory is a directory
-    if [[ ! -d $ch_lustre ]]; then
-        echo "${ch_lustre} is not a directory"
+    if [[ ! -d $CH_LUSTRE ]]; then
+        echo "${CH_LUSTRE} is not a directory"
         exit 1
     fi
 }
@@ -36,12 +36,12 @@ tidy_run () {
     ch-run -b "$binds" "$ch_img" -- "$@"
 }
 
-binds=${ch_lustre}:/mnt/0
+binds=${CH_LUSTRE}:/mnt/0
 work_dir=/mnt/0/charliecloud_test
 
 @test "${ch_tag}/start clean" {
-    clean_dir "${ch_lustre}/charliecloud_test" || true
-    mkdir -p "${ch_lustre}/charliecloud_test"
+    clean_dir "${CH_LUSTRE}/charliecloud_test" || true
+    mkdir -p "${CH_LUSTRE}/charliecloud_test"
 }
 
 @test "${ch_tag}/create directory" {
@@ -87,5 +87,5 @@ EOF
 }
 
 @test "${ch_tag}/clean up" {
-    clean_dir "${ch_lustre}/charliecloud_test"
+    clean_dir "${CH_LUSTRE}/charliecloud_test"
 }

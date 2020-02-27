@@ -692,6 +692,9 @@ fi
 cd "$CHTEST_DIR"
 
 export PATH=$ch_bin:$PATH
+if [[ -n $ch_lustre ]]; then
+    export CH_LUSTRE=$ch_lustre
+fi
 
 # The distinction here is that "images" are purely for testing and have no
 # value as examples for the user, while "examples" are dual-purpose.
