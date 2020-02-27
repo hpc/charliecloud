@@ -116,7 +116,11 @@ dir_img_mk () {
 }
 
 dir_img_rm () {
-    [[ -e $CH_TEST_TARDIR/.setinel ]] || return
+    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r; then
+        if [[ ! -e $CH_TEST_TARDIR/.setinel ]]; then
+            fatal "$CH_TEST_IMGDIR missing sentinel file; manually delete."
+        fi
+    fi
     echo "removing $CH_TEST_IMGDIR"
     $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_IMGDIR"
 }
@@ -159,7 +163,11 @@ dir_tar_mk () {
 }
 
 dir_tar_rm () {
-    [[ -e $CH_TEST_TARDIR/.setinel ]] || return
+    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r; then
+        if [[ ! -e $CH_TEST_TARDIR/.setinel ]]; then
+            fatal "$CH_TEST_TARDIR missing sentinel file; manually delete."
+        fi
+    fi
     echo "removing $CH_TEST_TARDIR"
     $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_TARDIR"
 }
@@ -808,7 +816,7 @@ examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 
-. ${CHTEST_DIR}/common.bash
+. "${CHTEST_DIR}/common.bash"
 
 # Execute phase
 case $phase in
