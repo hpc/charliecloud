@@ -28,31 +28,34 @@ clean_dir () {
     rmdir "$1"
 }
 
+tidy_run () {
+    ch-run -b "$binds" "$ch_img" -- "$@"
+}
+
 binds=${ch_lustre}:/mnt/0
 work_dir=/mnt/0/charliecloud_test
 mkdir -p "${ch_lustre}/charliecloud_test"
-tidy_run="ch-run -b $binds $ch_img"
 
 @test "${ch_tag}/start clean" {
     clean_dir "${ch_lustre}/charliecloud_test" || true
 }
 
 @test "${ch_tag}/create directory" {
-    tidy_run -- mkdir "${work_dir}/test_create_dir"
+    tidy_run mkdir "${work_dir}/test_create_dir"
 }
 
 @test "${ch_tag}/create file" {
-    tidy_run -- touch "${work_dir}/test_create_file"
+    tidy_run touch "${work_dir}/test_create_file"
 }
 
 @test "${ch_tag}/delete file" {
-    tidy_run -- rm "${work_dir}/test_create_file"
+    tidy_run rm "${work_dir}/test_create_file"
 }
 
 @test "${ch_tag}/write file" {
     # sh wrapper to get echo output to the right place
     # without it, the output from echo goes outside the container
-    tidy_run -- sh -c "echo hello > ${work_dir}/test_write.txt"
+    tidy_run sh -c "echo hello > ${work_dir}/test_write.txt"
 }
 
 @test "${ch_tag}/read file" {
@@ -63,19 +66,19 @@ hello
 EOF
 )
     # using dd allows us to skip the read cache and hit the disk
-    run tidy_run -- dd if="${work_dir}/test_write.txt" iflag=nocache status=noxfer
+    run tidy_run dd if="${work_dir}/test_write.txt" iflag=nocache status=noxfer
     diff <(echo "$output_expected") <(echo "$output")
 }
 
 @test "${ch_tag}/striping" {
-    tidy_run -- mkdir "${work_dir}/set_stripes"
-    tidy_run -- lfs setstripe -c 1 "${work_dir}/set_stripes"
-    stripe_ct_old=$(tidy_run -- lfs getstripe --stripe-count "${work_dir}/set_stripes/")
+    tidy_run mkdir "${work_dir}/set_stripes"
+    tidy_run lfs setstripe -c 1 "${work_dir}/set_stripes"
+    stripe_ct_old=$(tidy_run lfs getstripe --stripe-count "${work_dir}/set_stripes/")
     echo "old stripe count: $stripe_ct_old"
-    expected_new=$(($stripe_ct_old * 2))
+    expected_new=$((stripe_ct_old * 2))
     echo "expected new stripe count: $expected_new"
-    tidy_run -- lfs setstripe -c "$expected_new" "${work_dir}/set_stripes"
-    stripe_ct_new=$(tidy_run -- lfs getstripe --stripe-count "${work_dir}/set_stripes")
+    tidy_run lfs setstripe -c "$expected_new" "${work_dir}/set_stripes"
+    stripe_ct_new=$(tidy_run lfs getstripe --stripe-count "${work_dir}/set_stripes")
     
     [[ $expected_new -eq $stripe_ct_new ]]
 }
