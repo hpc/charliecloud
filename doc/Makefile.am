@@ -40,6 +40,8 @@ ch-tar2squash_desc.rst \
 ch-tar2squash.rst \
 ch-test_desc.rst \
 ch-test.rst \
+ch-tug_desc.rst \
+ch-tug.rst \
 ch-umount_desc.rst \
 ch-umount.rst \
 command-usage.rst \
