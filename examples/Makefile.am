@@ -14,6 +14,7 @@ Dockerfile.alpine39 \
 Dockerfile.alpineedge \
 Dockerfile.centos6 \
 Dockerfile.centos7 \
+Dockerfile.centos8 \
 Dockerfile.debian9 \
 Dockerfile.exhaustive \
 Dockerfile.mpich \
