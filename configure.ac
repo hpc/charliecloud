@@ -288,6 +288,12 @@ AC_CHECK_PROG([UMOCI], [umoci], [umoci])
 CH_CHECK_VERSION([UMOCI], [$vmin_umoci], [--version | cut -d' ' -f3])
 
 # User namespaces
+AC_MSG_CHECKING([if in chroot])  # https://unix.stackexchange.com/a/14346
+AS_IF([test    "$(awk '$5=="/" {print $1}' </proc/1/mountinfo)" \
+            != "$(awk '$5=="/" {print $1}' </proc/$$/mountinfo)" ],
+      [chrooted=yes],
+      [chrooted=no])
+AC_MSG_RESULT($chrooted)
 AC_MSG_CHECKING([if user+mount namespaces work])
 AC_RUN_IFELSE([AC_LANG_SOURCE([[
     #define _GNU_SOURCE
@@ -440,6 +446,18 @@ AC_OUTPUT
 
 ## Print report
 
+AS_IF([   test $have_userns = no \
+       && test $chrooted = yes], [
+  chroot_warning=$(cat <<'EOF'
+
+
+    Warning: configure is running in a chroot, but user namespaces cannot be
+    created in a chroot; see the man page unshare(2). Therefore, the above may
+    be a false negative.
+EOF
+)
+])
+
 AC_MSG_NOTICE([
 
 Dependencies report
@@ -517,7 +535,7 @@ Running containers
 ~~~~~~~~~~~~~~~~~~
 
   ch-run(1): ${have_ch_run}
-    user+mount namespaces ... ${have_userns}
+    user+mount namespaces ... ${have_userns}$chroot_warning
 
   unpack image tarballs: ${have_unpack_tar}
     tar(1) ... ${TAR:-not found}
