@@ -34,10 +34,10 @@ tidy_run () {
 
 binds=${ch_lustre}:/mnt/0
 work_dir=/mnt/0/charliecloud_test
-mkdir -p "${ch_lustre}/charliecloud_test"
 
 @test "${ch_tag}/start clean" {
     clean_dir "${ch_lustre}/charliecloud_test" || true
+    mkdir -p "${ch_lustre}/charliecloud_test"
 }
 
 @test "${ch_tag}/create directory" {
@@ -53,8 +53,8 @@ mkdir -p "${ch_lustre}/charliecloud_test"
 }
 
 @test "${ch_tag}/write file" {
-    # sh wrapper to get echo output to the right place
-    # without it, the output from echo goes outside the container
+    # sh wrapper to get echo output to the right place. Without it, the output
+    # from echo goes outside the container.
     tidy_run sh -c "echo hello > ${work_dir}/test_write.txt"
 }
 
@@ -65,21 +65,20 @@ hello
 0+1 records out
 EOF
 )
-    # using dd allows us to skip the read cache and hit the disk
+    # Using dd allows us to skip the write cache and hit the disk.
     run tidy_run dd if="${work_dir}/test_write.txt" iflag=nocache status=noxfer
-    diff <(echo "$output_expected") <(echo "$output")
+    diff -u <(echo "$output_expected") <(echo "$output")
 }
 
 @test "${ch_tag}/striping" {
     tidy_run mkdir "${work_dir}/set_stripes"
-    tidy_run lfs setstripe -c 1 "${work_dir}/set_stripes"
     stripe_ct_old=$(tidy_run lfs getstripe --stripe-count "${work_dir}/set_stripes/")
     echo "old stripe count: $stripe_ct_old"
     expected_new=$((stripe_ct_old * 2))
     echo "expected new stripe count: $expected_new"
     tidy_run lfs setstripe -c "$expected_new" "${work_dir}/set_stripes"
     stripe_ct_new=$(tidy_run lfs getstripe --stripe-count "${work_dir}/set_stripes")
-    
+    echo "actual new stripe count: $stripe_ct_new"
     [[ $expected_new -eq $stripe_ct_new ]]
 }
 
