@@ -137,6 +137,9 @@ Additional arguments:
     generic :code:`sudo` capabilities. Note that the Docker builder uses
     :code:`sudo docker` even without this option.
 
+  :code:`--lustre DIR`
+    Use :code:`DIR` for run-phase Lustre tests
+
 Exit status
 ===========
 

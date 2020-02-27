@@ -41,6 +41,7 @@ Additional options:
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
   --sudo                 enable tests that need sudo
+  --lustre DIR           use DIR for run-phase Lustre tests
   --version              print version and exit
 
 See the man page for important details.
@@ -576,6 +577,16 @@ while [[ $# -gt 0 ]]; do
         ;;
     --sudo)
         use_sudo=yes
+        ;;
+    --lustre)
+        require_unset ch_lustre
+        # shellcheck disable=SC2034
+        ch_lustre=$1; shift
+        ;;
+    --lustre=*)
+        require_unset ch_lustre
+        # shellcheck disable=SC2034
+        ch_lustre=${opt#*=}
         ;;
     --version)
         version; exit 0
