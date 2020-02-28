@@ -327,9 +327,9 @@ test settings ...\n" "$phase"
     run)
         printf "finding tarballs and squashfs files compatible with %s \
 test settings ...\n" "$phase"
-        # For each artifact in --pack-dir look for a corresponding example or
-        # image that produces a matching tag. If found, check the image for
-        # exclusion conidtions.
+        # For each tarball or squashfs file in --pack-dir look for a
+        # corresponding example or image that produces a matching tag. If
+        # found, check the image for exclusion conidtions.
         pack_files=$(find "$CH_TEST_TARDIR"     -name '*.tar.gz' \
                                             -o  -name '*.sqfs' | sort)
         for i in $pack_files; do
