@@ -188,8 +188,8 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 
 # Separate directories for tarballs and images.
 #
-# Canonicalize varibles so the have consistent paths and we can reliably use
-# them in tests (see issue #143). We use readlink(1) rather than realpath(2),
+# Canonicalize both so the have consistent paths and we can reliably use them
+# in tests (see issue #143). We use readlink(1) rather than realpath(2),
 # despite the admonition in the man page, because it's more portable [1].
 #
 # [1]: https://unix.stackexchange.com/a/136527
