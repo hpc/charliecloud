@@ -116,10 +116,11 @@ dir_img_mk () {
 }
 
 dir_img_rm () {
-    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r; then
-        if [[ ! -e $CH_TEST_TARDIR/THIS_IS_SPINAL_TAP ]]; then
-            fatal "$CH_TEST_IMGDIR missingTHIS_IS_SPINAL_TAP file; manually delete."
-        fi
+    # Remove CH_TEST_IMGDIR if 1) the directory is empty; or 2) the directory
+    # is non-empty but contains a sentinel file.
+    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r \
+       &&  [[ ! -e $CH_TEST_TARDIR/THIS_IS_SPINAL_TAP ]]; then
+        fatal "$CH_TEST_IMGDIR missing sentinel file; manually delete."
     fi
     echo "removing $CH_TEST_IMGDIR"
     $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_IMGDIR"
@@ -163,10 +164,11 @@ dir_tar_mk () {
 }
 
 dir_tar_rm () {
-    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r; then
-        if [[ ! -e $CH_TEST_TARDIR/THIS_IS_SPINAL_TAP ]]; then
-            fatal "$CH_TEST_TARDIR missingTHIS_IS_SPINAL_TAP file; manually delete."
-        fi
+    # Remove CH_TEST_TARDIR if 1) the directory is empty; or 2) the directory
+    # is non-empty but contains a sentinel file.
+    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r \
+       && [[ ! -e $CH_TEST_TARDIR/THIS_IS_SPINAL_TAP ]]; then
+        fatal "$CH_TEST_TARDIR missing sentinel file; manually delete."
     fi
     echo "removing $CH_TEST_TARDIR"
     $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_TARDIR"
@@ -307,9 +309,10 @@ test_make () {
     local img_pack
     local pack_files
     local tag
-    printf "finding artifacts compatible with %s test settings ...\n" "$phase"
     case $phase in
     build)
+        printf "finding images and examples compatible with %s \
+test settings ...\n" "$phase"
         for i in $images $examples; do
            if (test_make_check_image "$i"); then
                echo "found: $i"
@@ -322,6 +325,8 @@ test_make () {
         printf 'ok\n\n'
         ;;
     run)
+        printf "finding tarballs and squashfs files compatible with %s \
+test settings ...\n" "$phase"
         # For each artifact in --pack-dir look for a corresponding example or
         # image that produces a matching tag. If found, check the image for
         # exclusion conidtions.
@@ -345,6 +350,8 @@ test_make () {
         printf 'ok\n\n'
         ;;
     examples)
+        printf "finding test.bats files compatible with %s \
+test settings ...\n" "$phase"
         if [[ $CH_TEST_SCOPE == quick ]]; then
             echo 'found: none'
             return
@@ -489,6 +496,18 @@ test_make_check_image () {
 }
 
 test_make_tag_from_path () {
+    # Generate a tag from given path.
+    #
+    # Consider the following path: $CHTEST/examples/Dockerfile.openmpi
+    # First break the path into four components:
+    #   1) dir:        the parent directory of the file (examples)
+    #   2) base:       the full file name (Dockerfile.openmpi)
+    #   3) basicname:  the file name (Dockerfile)
+    #   4) extension:  the file's extension (openmpi)
+    #
+    # $basicname must be 'Build' or 'Dockerfile'; otherwise error.
+    # if $dir is '.', 'test', or 'examples' then tag=$extension; otherwise
+    # tag is $extension if set or $dir-$exenstion.
     local base
     local basicname
     local dir
@@ -524,7 +543,7 @@ test_make_tag_from_path () {
             esac
             ;;
         *)
-            fatal "chtest-make-auto: invalid basic name '$basicname'"
+            fatal "test_make_auto: invalid basic name '$basicname'"
             ;;
     esac
     echo "$tag"
