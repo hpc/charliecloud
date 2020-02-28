@@ -41,7 +41,7 @@ Additional options:
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
   --sudo                 enable tests that need sudo
-  --lustre DIR           use DIR for run-phase Lustre tests
+  --lustre DIR           run-phase Lustre test directory; \$CH_TEST_LUSTREDIR
   --version              print version and exit
 
 See the man page for important details.
@@ -579,14 +579,12 @@ while [[ $# -gt 0 ]]; do
         use_sudo=yes
         ;;
     --lustre)
-        require_unset ch_lustre
-        # shellcheck disable=SC2034
-        ch_lustre=$1; shift
+        require_unset lustredir
+        lustredir=$1; shift
         ;;
     --lustre=*)
-        require_unset ch_lustre
-        # shellcheck disable=SC2034
-        ch_lustre=${opt#*=}
+        require_unset lustredir
+        lustredir=${opt#*=}
         ;;
     --version)
         version; exit 0
@@ -630,6 +628,8 @@ vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
+vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
+                      21 'Lustre test dir'
 printf '\n'
 
 if [[ $phase == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then
@@ -692,9 +692,6 @@ fi
 cd "$CHTEST_DIR"
 
 export PATH=$ch_bin:$PATH
-if [[ -n $ch_lustre ]]; then
-    export CH_LUSTRE=$ch_lustre
-fi
 
 # The distinction here is that "images" are purely for testing and have no
 # value as examples for the user, while "examples" are dual-purpose.

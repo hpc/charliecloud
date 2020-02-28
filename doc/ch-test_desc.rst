@@ -138,7 +138,11 @@ Additional arguments:
     :code:`sudo docker` even without this option.
 
   :code:`--lustre DIR`
-    Use :code:`DIR` for run-phase Lustre tests
+    Use :code:`DIR` for run-phase Lustre tests. Default:
+    :code:`CH_TEST_LUSTREDIR` if set; otherwise skip them.
+
+    The tests will create, populate, and delete a new subdirectory under
+    :code:`DIR`, leaving everything else in :code:`DIR` untouched.
 
 Exit status
 ===========

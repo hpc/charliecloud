@@ -8,19 +8,17 @@ setup () {
     scope full
     prerequisites_ok lustre
 
-    if [[ $SLURM_JOB_ID ]]; then
-        if [[ -z $CH_LUSTRE ]]; then
-            pedantic_fail 'no lustre to bind mount'
+    if [[ $CH_TEST_LUSTREDIR = skip ]]; then
+        # Assume that in a Slurm allocation, even if one node, Lustre should
+        # be available for testing.
+        msg='no Lustre test directory to bind mount'
+        if [[ $SLURM_JOB_ID ]]; then
+            pedantic_fail "$msg"
+        else
+            skip "$msg"
         fi
-    else
-        if [[ -z $CH_LUSTRE ]]; then
-            skip 'no lustre to bind mount'
-        fi
-    fi
-
-    # Check lustre directory is a directory
-    if [[ ! -d $CH_LUSTRE ]]; then
-        echo "${CH_LUSTRE} is not a directory"
+    elif [[ ! -d $CH_TEST_LUSTREDIR ]]; then
+        echo "'${CH_TEST_LUSTREDIR}' is not a directory"
         exit 1
     fi
 }
@@ -36,12 +34,12 @@ tidy_run () {
     ch-run -b "$binds" "$ch_img" -- "$@"
 }
 
-binds=${CH_LUSTRE}:/mnt/0
+binds=${CH_TEST_LUSTREDIR}:/mnt/0
 work_dir=/mnt/0/charliecloud_test
 
 @test "${ch_tag}/start clean" {
-    clean_dir "${CH_LUSTRE}/charliecloud_test" || true
-    mkdir -p "${CH_LUSTRE}/charliecloud_test"
+    clean_dir "${CH_TEST_LUSTREDIR}/charliecloud_test" || true
+    mkdir "${CH_TEST_LUSTREDIR}/charliecloud_test"  # fail if not cleaned up
 }
 
 @test "${ch_tag}/create directory" {
@@ -87,5 +85,5 @@ EOF
 }
 
 @test "${ch_tag}/clean up" {
-    clean_dir "${CH_LUSTRE}/charliecloud_test"
+    clean_dir "${CH_TEST_LUSTREDIR}/charliecloud_test"
 }
