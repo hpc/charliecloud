@@ -190,7 +190,7 @@ pq_missing () {
         local img=$1
         local out=$2
         local tag
-        tag=$("test_make_auto" tag "$img")
+        tag=$(test_make_auto tag "$img")
         printf '%s\n' "$out" >> "${CH_TEST_TARDIR}/${tag}.pq_missing"
     fi
 }
@@ -274,8 +274,7 @@ test_build () {
 test_examples () {
     printf '\n'
     if [[ $CH_TEST_SCOPE == quick ]]; then
-        echo "no examples $CH_TEST_SCOPE scope"
-        return
+        fatal "no examples for $CH_TEST_SCOPE scope"
     fi
     echo 'executing example phase tests ...'
     if (find "$TMP_" -name '*_example.bats' | grep -q .); then
@@ -434,7 +433,6 @@ test_make_check_image () {
             pq_missing "$img" 'builder required'
             img_ok=
         fi
-
         # Exclude image if included builders are given and $CH_BUILDER isn't
         # one.
         if [[ -n $builder_include ]]; then
@@ -449,7 +447,6 @@ test_make_check_image () {
                 img_ok=
             fi
         fi
-
         # Exclude images that are not compatible with CH_BUILDER.
         for b in $builder_exclude; do
             if [[ $b == "$CH_BUILDER" ]]; then
