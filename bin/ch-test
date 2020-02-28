@@ -112,13 +112,13 @@ dir_img_mk () {
     dir_img_rm
     printf "creating %s\n\n" "$CH_TEST_IMGDIR"
     $ch_mpirun_node mkdir "$CH_TEST_IMGDIR"
-    $ch_mpirun_node touch "$CH_TEST_IMGDIR/.sentinel"
+    $ch_mpirun_node touch "$CH_TEST_IMGDIR/THIS_IS_SPINAL_TAP"
 }
 
 dir_img_rm () {
     if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r; then
-        if [[ ! -e $CH_TEST_TARDIR/.sentinel ]]; then
-            fatal "$CH_TEST_IMGDIR missing sentinel file; manually delete."
+        if [[ ! -e $CH_TEST_TARDIR/THIS_IS_SPINAL_TAP ]]; then
+            fatal "$CH_TEST_IMGDIR missingTHIS_IS_SPINAL_TAP file; manually delete."
         fi
     fi
     echo "removing $CH_TEST_IMGDIR"
@@ -159,13 +159,13 @@ dir_tar_mk () {
     dir_tar_rm
     printf "creating %s\n\n" "$CH_TEST_TARDIR"
     $ch_mpirun_node mkdir "$CH_TEST_TARDIR"
-    $ch_mpirun_node touch "${CH_TEST_TARDIR}/.sentinel"
+    $ch_mpirun_node touch "${CH_TEST_TARDIR}/THIS_IS_SPINAL_TAP"
 }
 
 dir_tar_rm () {
     if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r; then
-        if [[ ! -e $CH_TEST_TARDIR/.sentinel ]]; then
-            fatal "$CH_TEST_TARDIR missing sentinel file; manually delete."
+        if [[ ! -e $CH_TEST_TARDIR/THIS_IS_SPINAL_TAP ]]; then
+            fatal "$CH_TEST_TARDIR missingTHIS_IS_SPINAL_TAP file; manually delete."
         fi
     fi
     echo "removing $CH_TEST_TARDIR"
@@ -305,7 +305,7 @@ test_run () {
 test_make () {
     local bat_file
     local img_pack
-    local pack_dir
+    local pack_files
     local tag
     printf "finding artifacts compatible with %s test settings ...\n" "$phase"
     case $phase in
@@ -325,9 +325,9 @@ test_make () {
         # For each artifact in --pack-dir look for a corresponding example or
         # image that produces a matching tag. If found, check the image for
         # exclusion conidtions.
-        pack_dir=$(find "$CH_TEST_TARDIR"     -name '*.tar.gz' \
-                                          -o  -name '*.sqfs' | sort)
-        for i in $pack_dir; do
+        pack_files=$(find "$CH_TEST_TARDIR"     -name '*.tar.gz' \
+                                            -o  -name '*.sqfs' | sort)
+        for i in $pack_files; do
             img_pack=${i##*/}
             img_pack=${img_pack%%.*}
             for j in $images $examples; do
@@ -433,8 +433,7 @@ test_make_check_image () {
             pq_missing "$img" 'builder required'
             img_ok=
         fi
-        # Exclude image if included builders are given and $CH_BUILDER isn't
-        # one.
+        # Exclude if included builders are given and $CH_BUILDER isn't one.
         if [[ -n $builder_include ]]; then
             builder_ok=
             for b in $builder_include; do
@@ -526,6 +525,7 @@ test_make_tag_from_path () {
             ;;
         *)
             fatal "chtest-make-auto: invalid basic name '$basicname'"
+            ;;
     esac
     echo "$tag"
 }
@@ -796,6 +796,9 @@ if [[ -n $dry ]];then
     exit 0
 fi
 
+# Now that CH_TEST_* variables have been set and BATS_TMPDIR has bee checked,
+# we source CHTEST_DIR/common.bash.
+. "${CHTEST_DIR}/common.bash"
 
 cd "$CHTEST_DIR"
 
@@ -812,8 +815,6 @@ examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
                                        -o -name 'Dockerfile.*' | sort)
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
-
-. "${CHTEST_DIR}/common.bash"
 
 # Execute phase
 case $phase in
