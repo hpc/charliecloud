@@ -202,7 +202,7 @@ EOF
     scope quick
     run find "$ch_tardir" -mindepth 1 -maxdepth 1 \
         -not \(    -name '_ch-grow'               \
-                -o -name 'THIS_IS_SPINAL_TAP'     \
+                -o -name 'WEIRD_AL_YANKOVIC'      \
                 -o -name '*.sqfs'                 \
                 -o -name '*.tar.gz'               \
                 -o -name '*.tar.xz'               \
