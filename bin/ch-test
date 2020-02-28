@@ -815,9 +815,12 @@ if [[ -n $dry ]];then
     exit 0
 fi
 
+printf ' TRAVIS WHY?'
 # Now that CH_TEST_* variables have been set and BATS_TMPDIR has bee checked,
 # we source CHTEST_DIR/common.bash.
 . "${CHTEST_DIR}/common.bash"
+
+printf 'PLEA'
 
 cd "$CHTEST_DIR"
 
