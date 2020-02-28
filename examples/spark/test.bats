@@ -23,7 +23,7 @@ setup () {
     scope standard
     prerequisites_ok spark
     umask 0077
-    spark_dir=~/ch-spark-test.tmp  # runs before each test, so no mktemp
+    spark_dir=${ch_tmp}/spark  # runs before each test, so no mktemp
     spark_config=$spark_dir
     spark_log=/tmp/sparklog
     if [[ $ch_multinode ]]; then

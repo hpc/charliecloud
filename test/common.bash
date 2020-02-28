@@ -169,7 +169,8 @@ fi
 # User-private temporary directory in case multiple users are running the
 # tests simultaneously.
 # shellcheck disable=SC2154
-btnew=$TMP_/bats.tmp
+ch_tmp=$TMP_
+btnew=$ch_tmp/bats.tmp
 mkdir -p "$btnew"
 chmod 700 "$btnew"
 export BATS_TMPDIR=$btnew
@@ -187,8 +188,8 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 
 # Separate directories for tarballs and images.
 #
-# Canonicalize both so the have consistent paths and we can reliably use them
-# in tests (see issue #143). We use readlink(1) rather than realpath(2),
+# Canonicalize varibles so the have consistent paths and we can reliably use
+# them in tests (see issue #143). We use readlink(1) rather than realpath(2),
 # despite the admonition in the man page, because it's more portable [1].
 #
 # [1]: https://unix.stackexchange.com/a/136527
