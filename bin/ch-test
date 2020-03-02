@@ -312,8 +312,7 @@ test_make () {
     local tag
     case $phase in
     build)
-        printf "finding images and examples compatible with %s \
-test settings ...\n" "$phase"
+        printf "finding tests compatible with %s phase settings ...\n" "$phase"
         for i in $images $examples; do
            if (test_make_check_image "$i"); then
                echo "found: $i"
@@ -326,8 +325,7 @@ test settings ...\n" "$phase"
         printf 'ok\n\n'
         ;;
     run)
-        printf "finding tarballs and squashfs files compatible with %s \
-test settings ...\n" "$phase"
+        printf "finding tests compatible with %s phase settings ...\n" "$phase"
         # For each tarball or squashfs file in --pack-dir look for a
         # corresponding example or image that produces a matching tag. If
         # found, check the image for exclusion conidtions.
@@ -351,8 +349,7 @@ test settings ...\n" "$phase"
         printf 'ok\n\n'
         ;;
     examples)
-        printf "finding test.bats files compatible with %s \
-test settings ...\n" "$phase"
+        printf "finding tests compatible with %s phase settings ...\n" "$phase"
         if [[ $CH_TEST_SCOPE == quick ]]; then
             echo 'found: none'
             return
