@@ -56,6 +56,8 @@ esac
 make
 bin/ch-run --version
 
+set -x
+
 if [[ $MAKE_INSTALL ]]; then
     sudo make install
     ch_test="${PREFIX}/bin/ch-test"
