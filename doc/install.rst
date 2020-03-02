@@ -167,7 +167,8 @@ Note: User namespaces `always fail in a chroot
 <http://man7.org/linux/man-pages/man2/unshare.2.html>`_ with :code:`EPERM`. If
 :code:`configure` detects that it's in a chroot, it will print a warning in
 its report. One common scenario where this comes up is packaging, where builds
-often happen in a chroot.
+often happen in a chroot. However, like all the run-time :code:`configure`
+tests, this is informational only and does not affect the build.
 
 Supported architectures
 -----------------------

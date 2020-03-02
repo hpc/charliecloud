@@ -453,7 +453,8 @@ AS_IF([   test $have_userns = no \
 
     Warning: configure is running in a chroot, but user namespaces cannot be
     created in a chroot; see the man page unshare(2). Therefore, the above may
-    be a false negative.
+    be a false negative. However, note that like all the run-time configure
+    tests, this is informational only and does not affect the build.
 EOF
 )
 ])
