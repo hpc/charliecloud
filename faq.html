@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Frequently asked questions (FAQ) &mdash; Charliecloud 0.14~pre+559532c documentation</title>
+  <title>4. Frequently asked questions (FAQ) &mdash; Charliecloud 0.14 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.14~pre+559532c
+                0.14
               </div>
             
           
@@ -124,6 +124,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#how-do-i-run-x11-apps">4.4.4. How do I run X11 apps?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-i-specify-an-image-reference">4.4.5. How do I specify an image reference?</a></li>
 </ul>
 </li>
 </ul>
@@ -226,6 +227,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id23">How do I run X11 apps?</a></li>
+<li><a class="reference internal" href="#how-do-i-specify-an-image-reference" id="id24">How do I specify an image reference?</a></li>
 </ul>
 </li>
 </ul>
@@ -699,6 +701,89 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 <p>should pop an xterm.</p>
 <p>If your X11 application doesn’t work, please file an issue so we can
 figure out why.</p>
+</div>
+<div class="section" id="how-do-i-specify-an-image-reference">
+<h3><a class="toc-backref" href="#id24">4.4.5. How do I specify an image reference?</a><a class="headerlink" href="#how-do-i-specify-an-image-reference" title="Permalink to this headline">¶</a></h3>
+<p>You must specify an image for many use cases, including <code class="code docutils literal notranslate"><span class="pre">FROM</span></code>
+instructions, the source of an image pull (e.g. <code class="code docutils literal notranslate"><span class="pre">ch-tug</span></code> or
+<code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code>), the destination of an image push, and adding image tags.
+Charliecloud calls this an <em>image reference</em>, but there appears to be no
+established name for this concept.</p>
+<p>The syntax of an image reference is not well documented. This FAQ represents
+our understanding, which is cobbled together from the <a class="reference external" href="https://docs.docker.com/engine/reference/builder/#from">Dockerfile reference</a>, the <code class="code docutils literal notranslate"><span class="pre">docker</span>
+<span class="pre">tag</span></code> <a class="reference external" href="https://docs.docker.com/engine/reference/commandline/tag/">documentation</a>, and various
+forum posts. It is not a precise match for how Docker implements it, but it
+should be close enough.</p>
+<p>We’ll start with two complete examples with all the bells and whistles:</p>
+<ol class="arabic simple">
+<li><code class="code docutils literal notranslate"><span class="pre">example.com:8080/foo/bar/hello-world:version1.0</span></code></li>
+<li><code class="code docutils literal notranslate"><span class="pre">example.com:8080/foo/bar/hello-world&#64;sha256:f6c68e2ad82a</span></code></li>
+</ol>
+<p>These references parse into the following components, in this order:</p>
+<ol class="arabic simple">
+<li>A <a class="reference external" href="https://en.wikipedia.org/wiki/Hostname">valid hostname</a>; we assume
+this matches the regular expression <code class="code docutils literal notranslate"><span class="pre">[A-Za-z0-9.-]+</span></code>, which is very
+approximate. Optional; here <code class="code docutils literal notranslate"><span class="pre">example.com</span></code>.</li>
+<li>A colon followed by a decimal port number. If hostname is given, optional;
+otherwise disallowed; here <code class="code docutils literal notranslate"><span class="pre">8080</span></code>.</li>
+<li>If hostname given, a slash.</li>
+<li>A path, with one or more components separated by slash. Components match
+the regex <code class="code docutils literal notranslate"><span class="pre">[a-z0-9_.-]+</span></code>. Optional; here <code class="code docutils literal notranslate"><span class="pre">foo/bar</span></code>. Pedantic
+details:<ul>
+<li>Under the hood, the default path is <code class="code docutils literal notranslate"><span class="pre">library</span></code>, but this is
+generally not exposed to users.</li>
+<li>Three or more underscores in a row is disallowed by Docker, but we don’t
+check this.</li>
+</ul>
+</li>
+<li>If path given, a slash.</li>
+<li>The image name, which matches <code class="code docutils literal notranslate"><span class="pre">[a-z0-9_.-]+</span></code>. Required; here
+<code class="code docutils literal notranslate"><span class="pre">hello-world</span></code>.</li>
+<li>Zero or one of:<ul>
+<li>A tag matching the regular expression <code class="code docutils literal notranslate"><span class="pre">[A-Za-z0-9_.-]+</span></code> and
+preceded by a colon. Here <code class="code docutils literal notranslate"><span class="pre">version1.0</span></code> (example 1).</li>
+<li>A hexadecimal hash preceded by the string <code class="code docutils literal notranslate"><span class="pre">&#64;sha256:</span></code>. Here
+<code class="code docutils literal notranslate"><span class="pre">f6c68e2ad82a</span></code> (example 2).<ul>
+<li>Note: Digest algorithms other than SHA-256 are in principle allowed,
+but we have not yet seen any.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p>Detail-oriented readers may have noticed the following gotchas:</p>
+<ul>
+<li><p class="first">A hostname without port number is ambiguous with the leading component of a
+path. For example, in the reference <code class="code docutils literal notranslate"><span class="pre">foo/bar/baz</span></code>, it is ambiguous
+whether <code class="code docutils literal notranslate"><span class="pre">foo</span></code> is a hostname or the first (and only) component of the
+path <code class="code docutils literal notranslate"><span class="pre">foo/bar</span></code>. The <a class="reference external" href="https://stackoverflow.com/a/37867949">resolution rule</a> is: if the ambiguous substring
+contains a dot, assume it’s a hostname; otherwise, assume it’s a path
+component.</p>
+</li>
+<li><p class="first">The only character than cannot go in a POSIX filename is slash. Thus,
+Charliecloud uses image references in filenames, replacing slash with
+percent (<code class="code docutils literal notranslate"><span class="pre">%</span></code>). Because this character cannot appear in image
+references, the transformation is reversible.</p>
+<p>An alternate approach would be to replicate the reference path in the
+filesystem, i.e., path components in the reference would correspond directly
+to a filesystem path. This would yield a clearer filesystem structure.
+However, we elected not to do it because it complicates the code to save and
+clean up image reference-related data, and it does not address a few related
+questions, e.g. should the host and port also be a directory level.</p>
+</li>
+</ul>
+<p>Usually, most of the components are omitted. For example, you’ll more commonly
+see image references like:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="code docutils literal notranslate"><span class="pre">debian</span></code>, which refers to the tag <code class="code docutils literal notranslate"><span class="pre">latest</span></code> of image
+<code class="code docutils literal notranslate"><span class="pre">debian</span></code> from Docker Hub.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">debian:stretch</span></code>, which is the same except for tag <code class="code docutils literal notranslate"><span class="pre">stretch</span></code>.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">fedora/httpd</span></code>, which is tag <code class="code docutils literal notranslate"><span class="pre">latest</span></code> of <code class="code docutils literal notranslate"><span class="pre">fedora/httpd</span></code>
+from Docker Hub.</li>
+</ul>
+</div></blockquote>
+<p>See <code class="code docutils literal notranslate"><span class="pre">charliecloud.py</span></code> for a specific grammar that implements this.</p>
 </div>
 </div>
 </div>

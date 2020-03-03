@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Charliecloud command reference &mdash; Charliecloud 0.14~pre+559532c documentation</title>
+  <title>3. Charliecloud command reference &mdash; Charliecloud 0.14 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.14~pre+559532c
+                0.14
               </div>
             
           
@@ -224,10 +224,16 @@
 <li class="toctree-l3"><a class="reference internal" href="#id50">3.17.5. Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#ch-umount">3.18. ch-umount</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ch-tug">3.18. ch-tug</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id51">3.18.1. Synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id52">3.18.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id53">3.18.3. Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id53">3.18.3. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-umount">3.19. ch-umount</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id54">3.19.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id55">3.19.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id56">3.19.3. Example</a></li>
 </ul>
 </li>
 </ul>
@@ -302,28 +308,29 @@
 Charliecloud commands. Its content is identical to the commands’ man pages.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#ch-build" id="id54">ch-build</a></li>
-<li><a class="reference internal" href="#ch-build2dir" id="id55">ch-build2dir</a></li>
-<li><a class="reference internal" href="#ch-builder2tar" id="id56">ch-builder2tar</a></li>
-<li><a class="reference internal" href="#ch-checkns" id="id57">ch-checkns</a></li>
-<li><a class="reference internal" href="#ch-dir2squash" id="id58">ch-dir2squash</a></li>
-<li><a class="reference internal" href="#ch-builder2squash" id="id59">ch-builder2squash</a></li>
-<li><a class="reference internal" href="#ch-fromhost" id="id60">ch-fromhost</a></li>
-<li><a class="reference internal" href="#ch-grow" id="id61">ch-grow</a></li>
-<li><a class="reference internal" href="#ch-mount" id="id62">ch-mount</a></li>
-<li><a class="reference internal" href="#ch-pull2dir" id="id63">ch-pull2dir</a></li>
-<li><a class="reference internal" href="#ch-pull2tar" id="id64">ch-pull2tar</a></li>
-<li><a class="reference internal" href="#ch-run" id="id65">ch-run</a></li>
-<li><a class="reference internal" href="#ch-run-oci" id="id66">ch-run-oci</a></li>
-<li><a class="reference internal" href="#ch-ssh" id="id67">ch-ssh</a></li>
-<li><a class="reference internal" href="#ch-tar2dir" id="id68">ch-tar2dir</a></li>
-<li><a class="reference internal" href="#ch-tar2squash" id="id69">ch-tar2squash</a></li>
-<li><a class="reference internal" href="#ch-test" id="id70">ch-test</a></li>
-<li><a class="reference internal" href="#ch-umount" id="id71">ch-umount</a></li>
+<li><a class="reference internal" href="#ch-build" id="id57">ch-build</a></li>
+<li><a class="reference internal" href="#ch-build2dir" id="id58">ch-build2dir</a></li>
+<li><a class="reference internal" href="#ch-builder2tar" id="id59">ch-builder2tar</a></li>
+<li><a class="reference internal" href="#ch-checkns" id="id60">ch-checkns</a></li>
+<li><a class="reference internal" href="#ch-dir2squash" id="id61">ch-dir2squash</a></li>
+<li><a class="reference internal" href="#ch-builder2squash" id="id62">ch-builder2squash</a></li>
+<li><a class="reference internal" href="#ch-fromhost" id="id63">ch-fromhost</a></li>
+<li><a class="reference internal" href="#ch-grow" id="id64">ch-grow</a></li>
+<li><a class="reference internal" href="#ch-mount" id="id65">ch-mount</a></li>
+<li><a class="reference internal" href="#ch-pull2dir" id="id66">ch-pull2dir</a></li>
+<li><a class="reference internal" href="#ch-pull2tar" id="id67">ch-pull2tar</a></li>
+<li><a class="reference internal" href="#ch-run" id="id68">ch-run</a></li>
+<li><a class="reference internal" href="#ch-run-oci" id="id69">ch-run-oci</a></li>
+<li><a class="reference internal" href="#ch-ssh" id="id70">ch-ssh</a></li>
+<li><a class="reference internal" href="#ch-tar2dir" id="id71">ch-tar2dir</a></li>
+<li><a class="reference internal" href="#ch-tar2squash" id="id72">ch-tar2squash</a></li>
+<li><a class="reference internal" href="#ch-test" id="id73">ch-test</a></li>
+<li><a class="reference internal" href="#ch-tug" id="id74">ch-tug</a></li>
+<li><a class="reference internal" href="#ch-umount" id="id75">ch-umount</a></li>
 </ul>
 </div>
 <div class="section" id="ch-build">
-<h2><a class="toc-backref" href="#id54">3.1. ch-build</a><a class="headerlink" href="#ch-build" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id57">3.1. ch-build</a><a class="headerlink" href="#ch-build" title="Permalink to this headline">¶</a></h2>
 <p>Build an image and place it in the builder’s back-end storage.</p>
 <div class="section" id="synopsis">
 <h3>3.1.1. Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h3>
@@ -426,7 +433,7 @@ installed:</p>
 </div>
 </div>
 <div class="section" id="ch-build2dir">
-<h2><a class="toc-backref" href="#id55">3.2. ch-build2dir</a><a class="headerlink" href="#ch-build2dir" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id58">3.2. ch-build2dir</a><a class="headerlink" href="#ch-build2dir" title="Permalink to this headline">¶</a></h2>
 <p>Build a Charliecloud image from Dockerfile and unpack it into a directory.</p>
 <div class="section" id="id1">
 <h3>3.2.1. Synopsis<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
@@ -473,7 +480,7 @@ temporary tarball</dd>
 </div>
 </div>
 <div class="section" id="ch-builder2tar">
-<h2><a class="toc-backref" href="#id56">3.3. ch-builder2tar</a><a class="headerlink" href="#ch-builder2tar" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id59">3.3. ch-builder2tar</a><a class="headerlink" href="#ch-builder2tar" title="Permalink to this headline">¶</a></h2>
 <p>Flatten a builder image into a Charliecloud image tarball.</p>
 <div class="section" id="id4">
 <h3>3.3.1. Synopsis<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
@@ -514,7 +521,7 @@ a file in the tarball at <code class="code docutils literal notranslate"><span c
 </div>
 </div>
 <div class="section" id="ch-checkns">
-<h2><a class="toc-backref" href="#id57">3.4. ch-checkns</a><a class="headerlink" href="#ch-checkns" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id60">3.4. ch-checkns</a><a class="headerlink" href="#ch-checkns" title="Permalink to this headline">¶</a></h2>
 <p>Check <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> prerequisites, e.g., namespaces and <code class="code docutils literal notranslate"><span class="pre">pivot_root(2)</span></code>.</p>
 <div class="section" id="id6">
 <h3>3.4.1. Synopsis<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
@@ -535,7 +542,7 @@ a file in the tarball at <code class="code docutils literal notranslate"><span c
 </div>
 </div>
 <div class="section" id="ch-dir2squash">
-<h2><a class="toc-backref" href="#id58">3.5. ch-dir2squash</a><a class="headerlink" href="#ch-dir2squash" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id61">3.5. ch-dir2squash</a><a class="headerlink" href="#ch-dir2squash" title="Permalink to this headline">¶</a></h2>
 <p>Create a SquashFS file from an image directory.</p>
 <div class="section" id="id9">
 <h3>3.5.1. Synopsis<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
@@ -571,7 +578,7 @@ suffix <code class="code docutils literal notranslate"><span class="pre">.sqfs</
 </div>
 </div>
 <div class="section" id="ch-builder2squash">
-<h2><a class="toc-backref" href="#id59">3.6. ch-builder2squash</a><a class="headerlink" href="#ch-builder2squash" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id62">3.6. ch-builder2squash</a><a class="headerlink" href="#ch-builder2squash" title="Permalink to this headline">¶</a></h2>
 <p>Flatten a builder image into a Charliecloud SquashFS file.</p>
 <div class="section" id="id12">
 <h3>3.6.1. Synopsis<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
@@ -614,7 +621,7 @@ Intermediate files and directories are removed.</p>
 </div>
 </div>
 <div class="section" id="ch-fromhost">
-<h2><a class="toc-backref" href="#id60">3.7. ch-fromhost</a><a class="headerlink" href="#ch-fromhost" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id63">3.7. ch-fromhost</a><a class="headerlink" href="#ch-fromhost" title="Permalink to this headline">¶</a></h2>
 <p>Inject files from the host into an image directory.</p>
 <div class="section" id="id15">
 <h3>3.7.1. Synopsis<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
@@ -805,7 +812,7 @@ then run <code class="code docutils literal notranslate"><span class="pre">ldcon
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --nvidia /var/tmp/baz
 </pre></div>
 </div>
-<p>Inject the Cray-enabled MPI libaries into the image, and then run
+<p>Inject the Cray-enabled MPI libraries into the image, and then run
 <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --cray-mpi /var/tmp/baz
 </pre></div>
@@ -822,7 +829,7 @@ implementation of <code class="code docutils literal notranslate"><span class="p
 </div>
 </div>
 <div class="section" id="ch-grow">
-<h2><a class="toc-backref" href="#id61">3.8. ch-grow</a><a class="headerlink" href="#ch-grow" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id64">3.8. ch-grow</a><a class="headerlink" href="#ch-grow" title="Permalink to this headline">¶</a></h2>
 <p>Build an image from a Dockerfile; completely unprivileged.</p>
 <div class="section" id="id19">
 <h3>3.8.1. Synopsis<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
@@ -879,7 +886,7 @@ non-zero.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-h</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt>
 <dd>Print help and exit.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-n</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt>
-<dd>Do not actually excute any Dockerfile instructions.</dd>
+<dd>Do not actually execute any Dockerfile instructions.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code></dt>
 <dd>Ignored (<code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> does not yet support layer caching).</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--parse-only</span></code></dt>
@@ -889,8 +896,8 @@ non-zero.</dd>
 <code class="code docutils literal notranslate"><span class="pre">--storage</span></code>, if any, for correct results.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-t</span></code>, <code class="code docutils literal notranslate"><span class="pre">-tag</span> <span class="pre">TAG</span></code></dt>
 <dd>Name of image to create. Append <code class="code docutils literal notranslate"><span class="pre">:latest</span></code> if no colon present.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt>
-<dd>Print lots of debugging chatter.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt>
+<dd>Print extra chatter; can be repeated.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt>
 <dd>Print version number and exit.</dd>
 </dl>
@@ -912,7 +919,7 @@ image.</p>
 </div>
 </div>
 <div class="section" id="ch-mount">
-<h2><a class="toc-backref" href="#id62">3.9. ch-mount</a><a class="headerlink" href="#ch-mount" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id65">3.9. ch-mount</a><a class="headerlink" href="#ch-mount" title="Permalink to this headline">¶</a></h2>
 <p>Mount a SquashFS image file using FUSE.</p>
 <div class="section" id="id22">
 <h3>3.9.1. Synopsis<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
@@ -946,7 +953,7 @@ new directory must not already exist.</p>
 </div>
 </div>
 <div class="section" id="ch-pull2dir">
-<h2><a class="toc-backref" href="#id63">3.10. ch-pull2dir</a><a class="headerlink" href="#ch-pull2dir" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id66">3.10. ch-pull2dir</a><a class="headerlink" href="#ch-pull2dir" title="Permalink to this headline">¶</a></h2>
 <p>Pull image from a Docker Hub and unpack into directory.</p>
 <div class="section" id="id25">
 <h3>3.10.1. Synopsis<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
@@ -999,7 +1006,7 @@ into a subdirectory of <code class="code docutils literal notranslate"><span cla
 </div>
 </div>
 <div class="section" id="ch-pull2tar">
-<h2><a class="toc-backref" href="#id64">3.11. ch-pull2tar</a><a class="headerlink" href="#ch-pull2tar" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id67">3.11. ch-pull2tar</a><a class="headerlink" href="#ch-pull2tar" title="Permalink to this headline">¶</a></h2>
 <p>Pull image from a Docker Hub and flatten into tarball.</p>
 <div class="section" id="id28">
 <h3>3.11.1. Synopsis<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
@@ -1046,7 +1053,7 @@ commands.</p>
 </div>
 </div>
 <div class="section" id="ch-run">
-<span id="man-ch-run"></span><h2><a class="toc-backref" href="#id65">3.12. ch-run</a><a class="headerlink" href="#ch-run" title="Permalink to this headline">¶</a></h2>
+<span id="man-ch-run"></span><h2><a class="toc-backref" href="#id68">3.12. ch-run</a><a class="headerlink" href="#ch-run" title="Permalink to this headline">¶</a></h2>
 <p>Run a command in a Charliecloud container.</p>
 <div class="section" id="id31">
 <h3>3.12.1. Synopsis<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
@@ -1429,7 +1436,7 @@ unpacked image at <code class="code docutils literal notranslate"><span class="p
 </div>
 </div>
 <div class="section" id="ch-run-oci">
-<h2><a class="toc-backref" href="#id66">3.13. ch-run-oci</a><a class="headerlink" href="#ch-run-oci" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id69">3.13. ch-run-oci</a><a class="headerlink" href="#ch-run-oci" title="Permalink to this headline">¶</a></h2>
 <p>OCI wrapper for <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
 <div class="section" id="id34">
 <h3>3.13.1. Synopsis<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
@@ -1607,7 +1614,7 @@ be examined and debugged.</div></blockquote>
 </div>
 </div>
 <div class="section" id="ch-ssh">
-<h2><a class="toc-backref" href="#id67">3.14. ch-ssh</a><a class="headerlink" href="#ch-ssh" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id70">3.14. ch-ssh</a><a class="headerlink" href="#ch-ssh" title="Permalink to this headline">¶</a></h2>
 <p>Run a remote command in a Charliecloud container.</p>
 <div class="section" id="id37">
 <h3>3.14.1. Synopsis<a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h3>
@@ -1642,7 +1649,7 @@ starting directory <code class="code docutils literal notranslate"><span class="
 </div>
 </div>
 <div class="section" id="ch-tar2dir">
-<h2><a class="toc-backref" href="#id68">3.15. ch-tar2dir</a><a class="headerlink" href="#ch-tar2dir" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id71">3.15. ch-tar2dir</a><a class="headerlink" href="#ch-tar2dir" title="Permalink to this headline">¶</a></h2>
 <p>Unpack an image tarball into a directory.</p>
 <div class="section" id="id40">
 <h3>3.15.1. Synopsis<a class="headerlink" href="#id40" title="Permalink to this headline">¶</a></h3>
@@ -1696,7 +1703,7 @@ your site admin for a suitable location.</p>
 </div>
 </div>
 <div class="section" id="ch-tar2squash">
-<h2><a class="toc-backref" href="#id69">3.16. ch-tar2squash</a><a class="headerlink" href="#ch-tar2squash" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id72">3.16. ch-tar2squash</a><a class="headerlink" href="#ch-tar2squash" title="Permalink to this headline">¶</a></h2>
 <p>Create a SquashFS file from a tarball image.</p>
 <div class="section" id="id43">
 <h3>3.16.1. Synopsis<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h3>
@@ -1735,7 +1742,7 @@ your site admin for a suitable location.</p>
 </div>
 </div>
 <div class="section" id="ch-test">
-<span id="id46"></span><h2><a class="toc-backref" href="#id70">3.17. ch-test</a><a class="headerlink" href="#ch-test" title="Permalink to this headline">¶</a></h2>
+<span id="id46"></span><h2><a class="toc-backref" href="#id73">3.17. ch-test</a><a class="headerlink" href="#ch-test" title="Permalink to this headline">¶</a></h2>
 <p>Run some or all of the Charliecloud test suite.</p>
 <div class="section" id="id47">
 <h3>3.17.1. Synopsis<a class="headerlink" href="#id47" title="Permalink to this headline">¶</a></h3>
@@ -1835,6 +1842,14 @@ this directory may not be shared between nodes. Default:
 <dt><code class="code docutils literal notranslate"><span class="pre">--pack-dir</span> <span class="pre">DIR</span></code></dt>
 <dd>Set packed images directory to <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>. Default:
 <code class="code docutils literal notranslate"><span class="pre">$CH_TEST_TARDIR</span></code> if set; otherwise <code class="code docutils literal notranslate"><span class="pre">/var/tmp/pack</span></code>.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--pedantic</span> <span class="pre">(yes|no)</span></code></dt>
+<dd><p class="first">Some tests require configurations that are very specific (e.g., being a
+member of at least two groups) or unusual (e.g., sudo to a non-root
+group). If <code class="code docutils literal notranslate"><span class="pre">yes</span></code>, then fail if the requirement is not met; if
+<code class="code docutils literal notranslate"><span class="pre">no</span></code>, then skip. The default is <code class="code docutils literal notranslate"><span class="pre">yes</span></code> for CI environments or
+people listed in <code class="code docutils literal notranslate"><span class="pre">README.md</span></code>, <code class="code docutils literal notranslate"><span class="pre">no</span></code> otherwise.</p>
+<p class="last">If <code class="code docutils literal notranslate"><span class="pre">yes</span></code> and sudo seems to be available, implies <code class="code docutils literal notranslate"><span class="pre">--sudo</span></code>.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--perm-dir</span> <span class="pre">DIR</span></code></dt>
 <dd><p class="first">Add <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> to filesystem permission fixture directories; can be
 specified multiple times. We recommend one such directory per mounted
@@ -1849,6 +1864,12 @@ otherwise skip the filesystem permissions tests.</p>
 tests and creating/removing the filesystem permissions fixtures. Requires
 generic <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> capabilities. Note that the Docker builder uses
 <code class="code docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">docker</span></code> even without this option.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--lustre</span> <span class="pre">DIR</span></code></dt>
+<dd><p class="first">Use <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> for run-phase Lustre tests. Default:
+<code class="code docutils literal notranslate"><span class="pre">CH_TEST_LUSTREDIR</span></code> if set; otherwise skip them.</p>
+<p class="last">The tests will create, populate, and delete a new subdirectory under
+<code class="code docutils literal notranslate"><span class="pre">DIR</span></code>, leaving everything else in <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> untouched.</p>
+</dd>
 </dl>
 </div></blockquote>
 </div>
@@ -1926,17 +1947,130 @@ centers:</p>
 </div>
 </div>
 </div>
-<div class="section" id="ch-umount">
-<h2><a class="toc-backref" href="#id71">3.18. ch-umount</a><a class="headerlink" href="#ch-umount" title="Permalink to this headline">¶</a></h2>
-<p>Unmount a FUSE mounted squash filesystem and remove the mount point.</p>
+<div class="section" id="ch-tug">
+<h2><a class="toc-backref" href="#id74">3.18. ch-tug</a><a class="headerlink" href="#ch-tug" title="Permalink to this headline">¶</a></h2>
+<p>Pull and flatten image from repository to local filesystem.</p>
 <div class="section" id="id51">
 <h3>3.18.1. Synopsis<a class="headerlink" href="#id51" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-umount MOUNTDIR
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tug <span class="o">[</span>OPTIONS<span class="o">]</span> IMAGE_REF
 </pre></div>
 </div>
 </div>
 <div class="section" id="id52">
 <h3>3.18.2. Description<a class="headerlink" href="#id52" title="Permalink to this headline">¶</a></h3>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This script is experimental. Please report the bugs you find so we can fix
+them!</p>
+</div>
+<p>Pull the image described by <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> from a repository by HTTPS and
+flatten it to a local filesystem. The resulting image directory can be used by
+<code class="code docutils literal notranslate"><span class="pre">ch-run(1)</span></code> or feed into other processing.</p>
+<p>This script does a fair amount of validation and fixing of the layer tarballs
+before flattening in order to support unprivileged use despite image problems
+we frequently see in the wild. For example, device files are ignored, and file
+and directory permissions are increased to a minimum of <code class="code docutils literal notranslate"><span class="pre">rwx------</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">rw-------</span></code> respectively. Note, however, that symlinks pointing outside
+the image are permitted, because they are not resolved until runtime within a
+container.</p>
+<p>Typically this script is not used directly. Most tasks instead use the
+underlying code during image build with <code class="code docutils literal notranslate"><span class="pre">ch-grow(1)</span></code>.</p>
+<p>Other arguments:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="code docutils literal notranslate"><span class="pre">-h</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt>
+<dd>Print help and exit.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--dependencies</span></code></dt>
+<dd>Report any dependency problems and exit. If all is well, there is no
+output and the exit code is zero; in case of problems, the exit code is
+non-zero.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--dl-cache</span> <span class="pre">DIR</span></code></dt>
+<dd>Use <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> to store downloaded layers and metadata. If not specified
+but environment variable <code class="code docutils literal notranslate"><span class="pre">CH_GROW_STORAGE</span></code> is, then use
+<code class="code docutils literal notranslate"><span class="pre">$CH_GROW_STORAGE/dlcache</span></code>; the default is
+<code class="code docutils literal notranslate"><span class="pre">/var/tmp/ch-grow/dlcache</span></code>.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code></dt>
+<dd>Always download files, even if they already exist in <code class="code docutils literal notranslate"><span class="pre">--dl-cache</span></code>.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--image-subdir</span> <span class="pre">DIR</span></code></dt>
+<dd>Subdirectory of <code class="code docutils literal notranslate"><span class="pre">--unpack-dir</span></code> to hold the flattened image. Can be
+the empty string, in which case <code class="code docutils literal notranslate"><span class="pre">--unpack-dir</span></code> is used directly. The
+default is <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> with slashes replaced by percent signs.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--parse-ref-only</span></code></dt>
+<dd>Parse <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>, print a parse report, and exit successfully.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--unpack-dir</span> <span class="pre">DIR</span></code></dt>
+<dd>Directory containing flattened images. If not specified but environment
+variable <code class="code docutils literal notranslate"><span class="pre">CH_GROW_STORAGE</span></code> is, then use
+<code class="code docutils literal notranslate"><span class="pre">$CH_GROW_STORAGE/img</span></code>; the default is <code class="code docutils literal notranslate"><span class="pre">/var/tmp/ch-grow/img</span></code>.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt>
+<dd>Print extra chatter; can be repeated.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt>
+<dd>Print version number and exit.</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="id53">
+<h3>3.18.3. Examples<a class="headerlink" href="#id53" title="Permalink to this headline">¶</a></h3>
+<p>Download the classic Docker “hello-world” image and flatten it into
+<code class="code docutils literal notranslate"><span class="pre">/var/tmp/ch-grow/img/hello-world</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tug hello-world
+<span class="go">pulling image: hello-world</span>
+<span class="go">manifest: downloading</span>
+<span class="go">layer 1/1: 1b930d0: downloading</span>
+<span class="go">layer 1/1: 1b930d0: listing</span>
+<span class="go">validating tarball members</span>
+<span class="go">resolving whiteouts</span>
+<span class="go">flattening image</span>
+<span class="go">creating new image: /var/tmp/ch-grow/img/hello-world</span>
+<span class="go">layer 1/1: 1b930d0: extracting</span>
+<span class="go">done</span>
+<span class="gp">$</span> ls /var/tmp/ch-grow/img/hello-world
+<span class="go">hello</span>
+<span class="gp">$</span> ls /var/tmp/ch-grow/dlcache
+<span class="go">1b930d010525941c1d56ec53b97bd057a67ae1865eebf042686d2a2d18271ced.tar.gz</span>
+<span class="go">hello-world.manifest.json</span>
+</pre></div>
+</div>
+<p>Download the image “charliecloud/whiteout:2020-01-10” and flatten it:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tug charliecloud/whiteout:2020-01-10
+<span class="go">pulling image: charliecloud/whiteout:2020-01-10</span>
+<span class="go">manifest: downloading</span>
+<span class="go">layer 1/86: e7c96db: downloading</span>
+<span class="go">layer 2/86: 4816f76: downloading</span>
+<span class="go">[...]</span>
+<span class="go">layer 85/86: 59b7abe: extracting</span>
+<span class="go">layer 86/86: e756ca6: extracting</span>
+<span class="go">done</span>
+<span class="gp">$</span> ls /var/tmp/ch-grow/img
+<span class="go">charliecloud%whiteout:2020-01-10</span>
+</pre></div>
+</div>
+<p>Download the “hello-world” image and flatten it into <code class="code docutils literal notranslate"><span class="pre">/tmp/foo</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tug --unpack-dir<span class="o">=</span>/tmp --image-subdir<span class="o">=</span>foo hello-world
+<span class="go">[...]</span>
+<span class="gp">$</span> ls /tmp/foo
+<span class="go">hello</span>
+</pre></div>
+</div>
+<p>Same as above:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tug --unpack-dir<span class="o">=</span>/tmp/foo --image-subdir<span class="o">=</span><span class="s1">&#39;&#39;</span> hello-world
+<span class="go">[...]</span>
+<span class="gp">$</span> ls /tmp/foo
+<span class="go">hello</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="ch-umount">
+<h2><a class="toc-backref" href="#id75">3.19. ch-umount</a><a class="headerlink" href="#ch-umount" title="Permalink to this headline">¶</a></h2>
+<p>Unmount a FUSE mounted squash filesystem and remove the mount point.</p>
+<div class="section" id="id54">
+<h3>3.19.1. Synopsis<a class="headerlink" href="#id54" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-umount MOUNTDIR
+</pre></div>
+</div>
+</div>
+<div class="section" id="id55">
+<h3>3.19.2. Description<a class="headerlink" href="#id55" title="Permalink to this headline">¶</a></h3>
 <p>Unmount Charliecloud SquashFS file at target directory <code class="code docutils literal notranslate"><span class="pre">MOUNTDIR</span></code>.
 Remove empty <code class="code docutils literal notranslate"><span class="pre">MOUNTDIR</span></code> after successful unmounting.</p>
 <p>Additional arguments:</p>
@@ -1949,8 +2083,8 @@ Remove empty <code class="code docutils literal notranslate"><span class="pre">M
 </dl>
 </div></blockquote>
 </div>
-<div class="section" id="id53">
-<h3>3.18.3. Example<a class="headerlink" href="#id53" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id56">
+<h3>3.19.3. Example<a class="headerlink" href="#id56" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls /var/tmp/debian
 <span class="go">bin   dev  home  lib64  mnt  proc  run   srv  tmp  var</span>
 <span class="go">boot  etc  lib   media  opt  root  sbin  sys  usr  WEIRD_AL_YANKOVIC</span>
