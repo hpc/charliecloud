@@ -406,7 +406,6 @@ test_make_auto () {
             fi
         elif [[ $mode == run ]];then
             test_make_template_print 'unpack.bats.in'
-            test_make_template_print 'run_image.bats.in'
         else
              fatal "test_make_auto: invalid mode '$mode'"
         fi
