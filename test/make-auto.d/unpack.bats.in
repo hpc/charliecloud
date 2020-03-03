@@ -2,12 +2,12 @@
     scope %(scope)s
     prerequisites_ok %(tag)s
     if [[ -e "${ch_tardir}/%(tag)s.sqfs" ]]; then
+        ch-mount "${ch_tardir}/%(tag)s".sqfs "$ch_mounts"
+        img="${ch_mounts}/%(tag)s"
+        ch-umount "$img"
+        # FIXME: .sqfs should be mounted and tested
         unsquashfs -d "${ch_imgdir}/%(tag)s" "${ch_tardir}/%(tag)s.sqfs"
     else
-        if [[ -n $ch_multinode ]]; then
-            $ch_mpirun_node ch-tar2dir "${ch_tardir}/%(tag)s" "$ch_imgdir"
-        else
-            ch-tar2dir "${ch_tardir}/%(tag)s" "$ch_imgdir"
-        fi
+        $ch_mpirun_node ch-tar2dir "${ch_tardir}/%(tag)s" "$ch_imgdir"
     fi
 }
