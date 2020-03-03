@@ -28,6 +28,7 @@ ch-tar2dir(1)
 ch-tar2dir(1),
 ch-tar2squash(1),
 ch-test(1),
+ch-tug(1),
 ch-umount(1)
 
 Full documentation at: <https://hpc.github.io/charliecloud>

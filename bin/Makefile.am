@@ -27,6 +27,7 @@ dist_bin_SCRIPTS = ch-build \
                    ch-pull2dir \
                    ch-pull2tar \
                    ch-tar2dir \
+                   ch-tar2squash \
                    ch-test \
                    ch-umount
 
@@ -34,15 +35,16 @@ dist_bin_SCRIPTS = ch-build \
 ## Python scripts - need text processing
 
 bin_SCRIPTS = ch-run-oci
-EXTRA_SCRIPTS = ch-grow
+EXTRA_SCRIPTS = ch-grow ch-tug
 if ENABLE_CH_GROW
-bin_SCRIPTS += ch-grow
+bin_SCRIPTS += ch-grow ch-tug
 endif
-EXTRA_DIST = ch-grow.py.in ch-run-oci.py.in
+EXTRA_DIST = ch-grow.py.in ch-run-oci.py.in ch-tug.py.in
 CLEANFILES = $(bin_SCRIPTS)
 
 ch-grow: ch-grow.py.in
 ch-run-oci: ch-run-oci.py.in
+ch-tug: ch-tug.py.in
 
 $(bin_SCRIPTS): %: %.py.in
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@

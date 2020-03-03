@@ -40,6 +40,8 @@ ch-tar2squash_desc.rst \
 ch-tar2squash.rst \
 ch-test_desc.rst \
 ch-test.rst \
+ch-tug_desc.rst \
+ch-tug.rst \
 ch-umount_desc.rst \
 ch-umount.rst \
 command-usage.rst \
@@ -51,6 +53,7 @@ index.rst \
 install.rst \
 logo-sidebar.png \
 make-deps-overview \
+man/README \
 rd100-winner.png \
 see_also.rst \
 tutorial.rst
@@ -93,9 +96,9 @@ endif
 
 # NOTE: ./html might be a Git checkout to support "make web", so make sure not
 # to delete it.
-CLEANFILES = $(man1_MANS) $(html_DATA) _deps.rst
+CLEANFILES = $(man1_MANS) $(nobase_html_DATA) \
+             _deps.rst html/.buildinfo html/.nojekyll
 if ENABLE_HTML
-CLEANFILES += $(nobase_html_DATA) html/.buildinfo html/.nojekyll
 # Automake can't remove directories.
 clean-local:
 	rm -Rf doctrees html/_static
@@ -136,7 +139,7 @@ _deps.rst: ../config.log make-deps-overview
 
 # This called "html-local" because Automake has a Texinfo target called "html"
 # and gripes if we override it.
-$(html_DATA): html-local
+$(nobase_html_DATA): html-local
 html-local: mkdir_issue115 ../libexec/version.txt _deps.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 # avoid GitHub messing things up with Jekyll

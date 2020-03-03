@@ -4,4 +4,4 @@ SUBDIRS = libexec bin doc examples misc packaging test
 # have complete source code.
 EXTRA_DIST = .travis.yml
 
-EXTRA_DIST += LICENSE README.rst VERSION
+EXTRA_DIST += LICENSE README.rst VERSION autogen.sh

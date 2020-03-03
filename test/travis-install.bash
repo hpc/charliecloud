@@ -17,8 +17,7 @@ if [[ -z "$MINIMAL_DEPS" ]]; then
     sudo apt-get install pigz pv skopeo squashfuse
 fi
 if [[ $CH_BUILDER = ch-grow ]]; then
-    sudo apt-get install skopeo
-    sudo pip3 install lark-parser
+    sudo pip3 install lark-parser requests
 fi
 
 # Project Atomic PPA provides buggy Buildah for Xenial, and we need Buildah's
@@ -53,17 +52,14 @@ EOF
 fi
 
 # umoci provides a binary build; no appropriate Ubuntu package for Xenial.
-if [[ -z $MINIMAL_DEPS || $CH_BUILDER = ch-grow ]]; then
+if [[ -z $MINIMAL_DEPS ]]; then
     wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64
     sudo chmod 755 umoci.amd64
     sudo mv umoci.amd64 /usr/local/bin/umoci
     umoci --version
 fi
 
-# We need Python 3 because Sphinx 1.8.0 doesn't work right under Python 2 (see
-# issue #241). Travis provides images pre-installed with Python 3, but it's in
-# a virtualenv and unavailable by default under sudo, in package builds, and
-# maybe elsewhere. It's simpler and fast enough to install it with apt-get.
+# Documentation.
 if [[ -z $MINIMAL_DEPS ]]; then
     sudo pip3 install sphinx sphinx-rtd-theme
 fi

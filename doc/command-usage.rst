@@ -135,6 +135,13 @@ Run some or all of the Charliecloud test suite.
 
 .. include:: ./ch-test_desc.rst
 
+ch-tug
+++++++
+
+Pull and flatten image from repository to local filesystem.
+
+.. include:: ./ch-tug_desc.rst
+
 ch-umount
 +++++++++
 
