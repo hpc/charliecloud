@@ -382,13 +382,20 @@ void setup_namespaces(struct container *c)
    LOG_IDS;
 }
 
-/* Build /etc/passwd and /etc/group files and bind-mount them into newroot. We
-   do it this way so that we capture the relevant host username and group name
-   mappings regardless of where they come from. (We used to simply bind-mount
+/* Build /etc/passwd and /etc/group files and bind-mount them into newroot.
+
+   /etc/passwd contains root, nobody, and an entry for the container UID,
+   i.e., three entries, or two if the container UID is 0 or 65534. We copy the
+   host's user data for the container UID, if that exists, and use dummy data
+   otherwise (see issue #649). /etc/group works similarly: root, nogroup, and
+   an entry for the container GID.
+
+   We build new files to capture the relevant host username and group name
+   mappings regardless of where they come from. We used to simply bind-mount
    the host's /etc/passwd and /etc/group, but this fails for LDAP at least;
-   see issue #212.) After bind-mounting, we remove them on the host side;
-   they'll persist inside the container and then disappear completely when the
-   latter exits. */
+   see issue #212. After bind-mounting, we remove the files from the host;
+   they persist inside the container and then disappear completely when the
+   container exits. */
 void setup_passwd(struct container *c)
 {
    int fd;
