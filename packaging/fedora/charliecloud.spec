@@ -30,7 +30,7 @@ a standard Linux filesystem tree.
 For more information: https://hpc.github.io/charliecloud/
 
 %package        doc
-Summary:        %{name} html documentation
+Summary:        Charliecloud html documentation
 License:        BSD and MIT and ASL 2.0
 BuildArch:      noarch
 Obsoletes:      %{name}-doc < %{version}-%{release}
@@ -46,7 +46,7 @@ BuildRequires:  python3-sphinx_rtd_theme
 Html and man page documentation for %{name}.
 
 %package        test
-Summary:        %{name} test suite
+Summary:        Charliecloud test suite
 License:        ASL 2.0
 Obsoletes:      %{name}-test < %{version}-%{release}
 Requires:       %{name} bash bats /usr/bin/python3
