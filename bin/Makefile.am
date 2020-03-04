@@ -27,7 +27,6 @@ dist_bin_SCRIPTS = ch-build \
                    ch-pull2dir \
                    ch-pull2tar \
                    ch-tar2dir \
-                   ch-tar2squash \
                    ch-test \
                    ch-umount
 
