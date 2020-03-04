@@ -113,7 +113,9 @@ prerequisites_ok () {
 
 # Wrapper for Bats run() to work around Bats bug #89 by saving/restoring $IFS.
 # See issues #552 and #555 and https://stackoverflow.com/a/32425874.
-eval bats_"$(declare -f run)"
+if type run &> /dev/null; then
+    eval bats_"$(declare -f run)"
+fi
 run () {
     local ifs_old="$IFS"
     bats_run "$@"

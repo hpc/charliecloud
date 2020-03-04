@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+
+# This Python script produces (on stdout) a Dockerfile that produces a large
+# number of whiteouts. At the end, the Dockerfile prints some output that can
+# be compared with the flattened image. The purpose is to test whiteout
+# interpretation during flattening.
+#
+# See: https://github.com/opencontainers/image-spec/blob/master/layer.md
+#
+# There are a few factors to consider:
+#
+#   * files vs. directories
+#   * white-out explicit files vs. everything in a directory
+#   * restore the files vs. not (in the same layer as deletion)
+#
+# Currently, we don't do recursion, operating only on the specified directory.
+# We do this at two different levels in the directory tree.
+#
+# It's easy to bump into the 127-layer limit with this script.
+#
+# To build and push:
+#
+#   $ version=2020-01-09  # use today's date
+#   $ sudo docker login   # if needed
+#   $ ./whiteout | sudo docker build -t whiteout -f - .
+#   $ sudo docker tag whiteout:latest charliecloud/whiteout:$version
+#   $ sudo docker images | fgrep whiteout
+#   $ sudo docker push charliecloud/whiteout:$version
+#
+# Then your new image will be at:
+#
+#   https://hub.docker.com/repository/docker/charliecloud/whiteout
+
+
+import sys
+
+INF = 99
+
+
+def discotheque(prefix, et):
+   if (et == "file"):
+      mk_cmd = "echo orig > %s"
+      rm_cmd = "rm %s"
+      rt_cmd = "echo rest > %s"
+   elif (et == "dir"):
+      mk_cmd = "mkdir -p %s/orig"
+      rm_cmd = "rm -Rf %s"
+      rt_cmd = "mkdir -p %s/rest"
+   for mk_ct in [0, 1, 2]:
+      for rm_ct in [0, 1, INF]:
+         if (   (rm_ct == INF and mk_ct == 0)
+             or (rm_ct != INF and rm_ct > mk_ct)):
+            continue
+         for rt_ct in [0, 1, 2]:
+            if (rt_ct > rm_ct or rt_ct > mk_ct):
+               continue
+            base = "%s/%s_mk-%d_rm-%d_rt-%d" % (prefix, et, mk_ct, rm_ct, rt_ct)
+            mks = ["mkdir %s" % base]
+            rms = []
+            print("")
+            for mk in range(mk_ct):
+               mks.append(mk_cmd % ("%s/%d" % (base, mk)))
+            if (rm_ct == INF):
+               rms.append(rm_cmd % ("%s/*" % base))
+            else:
+               for rm in range(rm_ct):
+                  rms.append(rm_cmd % ("%s/%d" % (base, rm)))
+            for rt in range(rt_ct):
+               rms.append(rt_cmd % ("%s/%d" % (base, rt)))
+            if (len(mks) > 0):
+               print("RUN " + " && ".join(mks))
+            if (len(rms) > 0):
+               print("RUN " + " && ".join(rms))
+
+
+print("FROM alpine:3.9")
+
+print("RUN mkdir /w /w/v")
+
+discotheque("/w", "file")
+discotheque("/w", "dir")
+discotheque("/w/v", "file")
+discotheque("/w/v", "dir")
+
+print("")
+print("RUN ls -aR /w")
+print("RUN find /w -type f -exec sh -c 'printf \"{} \" && cat {}' \; | sort")
