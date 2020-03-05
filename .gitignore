@@ -11,11 +11,11 @@ a.out
 /doc/doctrees/
 /doc/html/
 /doc/man/*.1
-/libexec/charliecloud
-/libexec/contributors.bash
-/libexec/version.py
-/libexec/version.sh
-/libexec/version.txt
+/lib/charliecloud
+/lib/contributors.bash
+/lib/version.py
+/lib/version.sh
+/lib/version.txt
 /test/sotest/*.so*
 /test/sotest/sotest
 /test/sotest/bin/

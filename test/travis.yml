@@ -28,10 +28,10 @@ compiler: gcc
 # weird errors, e.g.:
 #
 #   make[2]: Entering directory [...]
-#    /bin/mkdir -p '/var/tmp/libexec/charliecloud'
-#    ../yes base.sh '/var/tmp/libexec/charliecloud'
+#    /bin/mkdir -p '/var/tmp/lib/charliecloud'
+#    ../yes base.sh '/var/tmp/lib/charliecloud'
 #   /bin/bash: line 23: ../yes: No such file or directory
-#  Makefile:323: recipe for target 'install-dist_pkglibexecSCRIPTS' failed
+#  Makefile:323: recipe for target 'install-dist_pkglibSCRIPTS' failed
 #
 # Additional options:
 #

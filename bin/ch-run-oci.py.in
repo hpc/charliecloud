@@ -14,7 +14,7 @@ import time
 import types
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
-                    + "/../libexec/charliecloud"))
+                    + "/../lib/charliecloud"))
 import version
 
 

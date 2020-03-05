@@ -21,7 +21,7 @@ AC_CONFIG_FILES([Makefile
                  bin/Makefile
                  doc/Makefile
                  examples/Makefile
-                 libexec/Makefile
+                 lib/Makefile
                  misc/Makefile
                  packaging/Makefile
                  test/Makefile])

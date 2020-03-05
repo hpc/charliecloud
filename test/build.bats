@@ -40,7 +40,7 @@ image_ref_parse () {
     echo "version: ${ch_version}"
     [[ $(echo "$ch_version" | wc -l) -eq 1 ]]   # one line
     [[ $ch_version =~ ^0\.[0-9]+(\.[0-9]+)? ]]  # starts with right numbers
-    diff -u <(echo "$ch_version") "${ch_base}/libexec/charliecloud/version.txt"
+    diff -u <(echo "$ch_version") "${ch_base}/lib/charliecloud/version.txt"
 }
 
 @test 'executables seem sane' {
