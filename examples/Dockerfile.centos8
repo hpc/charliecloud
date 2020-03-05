@@ -4,8 +4,9 @@ FROM centos:8
 # overlayfs as the storage driver.
 # Enable the PowerTools repository as some packages in EPEL depend on it.
 RUN dnf -y install epel-release && dnf -y update \
- && dnf -y install --enablerepo=epel-playground dnf-plugin-ovl
- && dnf config-manager --set-enabled PowerTools
+ && dnf -y install --enablerepo=epel-playground dnf-plugin-ovl \
+ && sed -i -e 's/enabled=0/enabled=1/g' /etc/yum.repos.d/CentOS-PowerTools.repo
 
 # CentOS's linker doesn't search this path by default, add it.
-RUN echo "/usr/local/lib" >> /etc/ld.so.conf.d/usrlocal.conf
+RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf
+

@@ -127,7 +127,7 @@ RUN    cd openmpi-${MPI_VERSION} \
        ./configure --prefix=/usr/local \
                    --sysconfdir=/mnt/0 \
                    --with-slurm \
-                   --with-pmi \
+                   --with-pmi=/usr/local \
                    --with-pmix \
                    --with-ucx \
                    --disable-pty-support \

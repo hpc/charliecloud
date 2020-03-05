@@ -14,7 +14,7 @@ setup () {
     # CMA isn't working, and this makes the test take really long.)
     #
     # Large -npmin because we only want to test all cores.
-    imb_mpi1=/usr/src/mpi-benchmarks/src/IMB-MPI1
+    imb_mpi1=/usr/local/src/mpi-benchmarks/src/IMB-MPI1
     imb_args="-iter 1 -npmin 1000000000"
 
     # On the HSN performance test, we do want to run multiple iterations to

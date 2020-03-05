@@ -7,7 +7,7 @@ RUN    apt-get update \
        wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Miniconda into /usr. Some of the instructions [1] warn against
+# Install Miniconda into /usr/local. Some of the instructions [1] warn against
 # putting conda in $PATH; others don't. We are going to play fast and loose.
 #
 # [1]: http://conda.pydata.org/docs/help/silent.html
