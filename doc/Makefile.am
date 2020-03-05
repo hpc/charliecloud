@@ -36,8 +36,6 @@ ch-ssh_desc.rst \
 ch-ssh.rst \
 ch-tar2dir_desc.rst \
 ch-tar2dir.rst \
-ch-tar2squash_desc.rst \
-ch-tar2squash.rst \
 ch-test_desc.rst \
 ch-test.rst \
 ch-tug_desc.rst \
@@ -76,7 +74,6 @@ man/ch-run.1 \
 man/ch-run-oci.1 \
 man/ch-ssh.1 \
 man/ch-tar2dir.1 \
-man/ch-tar2squash.1 \
 man/ch-test.1 \
 man/ch-umount.1
 endif
