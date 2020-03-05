@@ -564,11 +564,11 @@ test_make_template_print () {
 packed_fmt_set () {
     width=$1
     if [[ -n $ch_pack_fmt ]]; then
-        packed_fmt_valid $ch_pack_fmt
+        packed_fmt_valid "$ch_pack_fmt"
         export CH_PACK_FMT=$ch_pack_fmt
         method='command line'
     elif [[ -n $CH_PACK_FMT ]]; then
-        packed_fmt_valid $CH_PACK_FMT
+        packed_fmt_valid "$CH_PACK_FMT"
         method='environment'
     else
         packed_fmt_choose
@@ -741,14 +741,13 @@ while [[ $# -gt 0 ]]; do
         scope=$arg
         ;;
     --fmt)
-	    require_unset pack_fmt 
+	require_unset pack_fmt 
         ch_pack_fmt=$1; shift
         ;;
     --fmt=*)
-	    require_unset pack_fmt
+	require_unset pack_fmt
         arg=${opt#*=}
-        packed_fmt_check $arg
-        ch_pack_fmt=$arg; shift
+        ch_pack_fmt=$arg
         ;;
     --sudo)
         use_sudo=yes

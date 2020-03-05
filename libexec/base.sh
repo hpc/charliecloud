@@ -33,8 +33,21 @@ builder_choose () {
 
 packed_fmt_valid () {
     case $1 in
-        squashfs|tar)
-            ;;
+        squashfs)
+            if (   command -v mksquashfs >/dev/null 2>&1 \
+	        && command -v squashfuse >/dev/null 2>&1 ); then
+	        return 0
+	    else
+		echo "squashfs not supported" && exit 1
+	    fi
+	    ;;
+	tar)
+	    if ( command -v tar >/dev/null 2>&1 ); then
+	        return 0
+	    else
+		echo "tar not supported" && exit 1
+	    fi
+	    ;;
         *)
             echo "unknown packed image format: $1" 1>&2
             exit 1
@@ -44,9 +57,10 @@ packed_fmt_valid () {
 
 packed_fmt_choose () {
     if [ -z "$CH_PACK_FMT" ]; then
-        if ( command -v mksquashfs && command -v squashfuse ); then
+        if (   command -v mksquashfs >/dev/null 2>&1 \
+	    && command -v squashfuse >/dev/null 2>&1 ); then
             export CH_PACK_FMT=squashfs
-        elif ( command -v tar ); then
+        elif ( command -v tar >/dev/null 2>&1 ); then
             export CH_PACK_FMT=tar
         else
             export CH_PACK_FMT=none
