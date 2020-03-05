@@ -1,7 +1,7 @@
 # ch-test-scope: full
 # ch-test-builder-exclude: ch-grow  # deferred
 FROM openmpi
-WORKDIR /usr/src
+WORKDIR /usr/local/src
 
 RUN dnf install -y \
     cmake \
@@ -25,7 +25,7 @@ ENV MESA_VERSION 19.0.5
 RUN wget -nv https://mesa.freedesktop.org/archive/mesa-${MESA_VERSION}.tar.xz
 RUN tar xf mesa-${MESA_VERSION}.tar.xz
 RUN    cd mesa-${MESA_VERSION} \
-    && ./configure --prefix=/usr \
+    && ./configure --prefix=/usr/local \
                    --enable-autotools \
                    --enable-opengl \
                    --disable-gles1 \
@@ -55,7 +55,7 @@ RUN wget -nv -O ParaView-v${PARAVIEW_VERSION}.tar.xz "https://www.paraview.org/p
 RUN tar xf ParaView-v${PARAVIEW_VERSION}.tar.xz
 RUN mkdir ParaView-v${PARAVIEW_VERSION}.build
 RUN    cd ParaView-v${PARAVIEW_VERSION}.build \
-    && cmake -DCMAKE_INSTALL_PREFIX=/usr \
+    && cmake -DCMAKE_INSTALL_PREFIX=/usr/local \
              -DBUILD_TESTING=OFF \
              -DBUILD_SHARED_LIBS=ON \
              -DPARAVIEW_ENABLE_PYTHON=ON \

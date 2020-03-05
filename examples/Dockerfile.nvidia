@@ -21,7 +21,7 @@ RUN apt-get install -y \
 
 # Install CUDA from nVidia.
 # See: https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1704&target_type=debnetwork
-WORKDIR /usr/src
+WORKDIR /usr/local/src
 RUN wget -nv http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1704/x86_64/cuda-repo-ubuntu1704_9.1.85-1_amd64.deb
 RUN dpkg --install cuda-repo-ubuntu1704_9.1.85-1_amd64.deb
 RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1704/x86_64/7fa2af80.pub

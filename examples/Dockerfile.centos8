@@ -2,5 +2,10 @@
 FROM centos:8
 # Install the dnf ovl plugin to workaround rpmdb corruptions issues when using
 # overlayfs as the storage driver.
-RUN dnf -y install https://download.fedoraproject.org/pub/epel/playground/8/Everything/x86_64/os/Packages/d/dnf-plugin-ovl-0.0.3-1.epel8.playground.noarch.rpm
-RUN dnf -y update
+# Enable the PowerTools repository as some packages in EPEL depend on it.
+RUN dnf -y install epel-release && dnf -y update \
+ && dnf -y install --enablerepo=epel-playground dnf-plugin-ovl
+ && dnf config-manager --set-enabled PowerTools
+
+# CentOS's linker doesn't search this path by default, add it.
+RUN echo "/usr/local/lib" >> /etc/ld.so.conf.d/usrlocal.conf

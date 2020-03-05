@@ -11,7 +11,7 @@ RUN    apt-get update \
 # putting conda in $PATH; others don't. We are going to play fast and loose.
 #
 # [1]: http://conda.pydata.org/docs/help/silent.html
-WORKDIR /usr/src
+WORKDIR /usr/local/src
 ENV MC_VERSION 4.2.12
 ENV MC_FILE Miniconda3-$MC_VERSION-Linux-x86_64.sh
 RUN wget -nv https://repo.continuum.io/miniconda/$MC_FILE

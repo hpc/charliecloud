@@ -83,11 +83,11 @@ RUN dnf install -y --setopt=install_weak_deps=false \
     numactl-devel \
     wget
 
-WORKDIR /usr/src
+WORKDIR /usr/local/src
 
 # Note that libpsm2 is x86-64 only
 RUN if [ "$(uname -i)" = "x86_64" ] ; then \
-      dnf install -y --enablerepo=PowerTools libpsm2 libpsm2-devel ; \
+      dnf install -y libpsm2 libpsm2-devel ; \
     fi
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
@@ -96,17 +96,17 @@ RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git
 RUN    cd ucx \
     && ./autogen.sh \
-    && ./contrib/configure-release-mt --prefix=/usr \
+    && ./contrib/configure-release-mt --prefix=/usr/local \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN rm -Rf ucx*
 
-# PMI2. Since CentOS doesn't have a package providing then necessary Slurm PMI2
+# PMI2. Since CentOS doesn't have a package providing the necessary Slurm PMI2
 # libraries building them from Slurm's release.
 ENV SLURM_VERSION 19-05-3-2
 RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz
 RUN tar -xf slurm-${SLURM_VERSION}.tar.gz
 RUN cd slurm-slurm-${SLURM_VERSION} \
-    && ./configure --prefix=/usr \
+    && ./configure --prefix=/usr/local \
     && cd contribs/pmi2 \
     && make -j$(getconf _NPROCESSORS_ONLN) install
 RUN rm -Rf slurm*
@@ -124,7 +124,7 @@ RUN cd openmpi-${MPI_VERSION} && git apply dont-init-ucx-on-intel-cray.patch
 RUN    cd openmpi-${MPI_VERSION} \
     && CFLAGS=-O3 \
        CXXFLAGS=-O3 \
-       ./configure --prefix=/usr \
+       ./configure --prefix=/usr/local \
                    --sysconfdir=/mnt/0 \
                    --with-slurm \
                    --with-pmi \
