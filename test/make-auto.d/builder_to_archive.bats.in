@@ -7,9 +7,6 @@
         tar)
             archive="${ch_tardir}/%(tag)s.tar.gz"
             ;;
-        *)
-            break
-            ;;
     esac
     ch-pack-image %(tag)s "$ch_tardir"
     archive_grep "$archive"

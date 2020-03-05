@@ -26,7 +26,7 @@ while true; do
             shift
             ;;
         -b=*|--builder=*)
-            arg${1#*=}
+            arg=${1#*=}
             CH_BUILDER="$arg"
             shift
             ;;
@@ -36,7 +36,7 @@ while true; do
             shift
             ;;
         --fmt=*)
-            arg${1#*=}
+            arg=${1#*=}
             CH_PACK_FMT="$arg"
             shift
             ;;
@@ -75,9 +75,6 @@ case $CH_PACK_FMT in
         ;;
     tar)
         "${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" "$image" "$outdir"
-        ;;
-    *)
-        break
         ;;
 esac
 
