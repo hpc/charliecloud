@@ -61,13 +61,13 @@ man1_MANS = \
 man/charliecloud.1 \
 man/ch-build.1 \
 man/ch-build2dir.1 \
-man/ch-builder2squash.1 \
 man/ch-builder2tar.1 \
 man/ch-checkns.1 \
 man/ch-dir2squash.1 \
 man/ch-fromhost.1 \
 man/ch-grow.1 \
 man/ch-mount.1 \
+man/ch-pack-image.1 \
 man/ch-pull2dir.1 \
 man/ch-pull2tar.1 \
 man/ch-run.1 \
