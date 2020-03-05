@@ -60,7 +60,7 @@ Other arguments:
     Print help and exit.
 
   :code:`-n`, :code:`--dry-run`
-    Do not actually excute any Dockerfile instructions.
+    Do not actually execute any Dockerfile instructions.
 
   :code:`--no-cache`
     Ignored (:code:`ch-grow` does not yet support layer caching).
@@ -75,8 +75,8 @@ Other arguments:
   :code:`-t`, :code:`-tag TAG`
     Name of image to create. Append :code:`:latest` if no colon present.
 
-  :code:`--verbose`
-    Print lots of debugging chatter.
+  :code:`-v`, :code:`--verbose`
+    Print extra chatter; can be repeated.
 
   :code:`--version`
     Print version number and exit.

@@ -95,6 +95,16 @@ need_squashfs () {
     ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
 }
 
+pedantic_fail () {
+    msg=$1
+    if [[ -n $ch_pedantic ]]; then
+        echo "$msg" 1>&2
+        return 1
+    else
+        skip "$msg"
+    fi
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
@@ -103,7 +113,9 @@ prerequisites_ok () {
 
 # Wrapper for Bats run() to work around Bats bug #89 by saving/restoring $IFS.
 # See issues #552 and #555 and https://stackoverflow.com/a/32425874.
-eval bats_"$(declare -f run)"
+if type run &> /dev/null; then
+    eval bats_"$(declare -f run)"
+fi
 run () {
     local ifs_old="$IFS"
     bats_run "$@"
@@ -158,6 +170,16 @@ env_require CH_BUILDER
 if [[ $CH_BUILDER == ch-grow ]]; then
     env_require CH_GROW_STORAGE
 fi
+
+# User-private temporary directory in case multiple users are running the
+# tests simultaneously.
+# shellcheck disable=SC2154
+btnew=$TMP_/bats.tmp
+mkdir -p "$btnew"
+chmod 700 "$btnew"
+export BATS_TMPDIR=$btnew
+[[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
+
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
@@ -242,6 +264,7 @@ ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 2 | wc -l)
 ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_node=
 ch_mpirun_np="-np ${ch_cores_node}"
+# shellcheck disable=SC2034
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
     ch_multiprocess=yes

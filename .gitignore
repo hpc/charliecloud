@@ -6,11 +6,13 @@ a.out
 /bin/ch-run
 /bin/ch-run-oci
 /bin/ch-ssh
+/bin/ch-tug
 /doc/_deps.rst
 /doc/doctrees/
 /doc/html/
 /doc/man/*.1
 /libexec/charliecloud
+/libexec/contributors.bash
 /libexec/version.py
 /libexec/version.sh
 /libexec/version.txt

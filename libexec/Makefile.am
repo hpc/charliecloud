@@ -3,9 +3,9 @@
 # 1. SCRIPTS makes all this stuff executable when it shouldn't be, but
 #    Automake complains that DATA can't go in libexecdir.
 
-dist_pkglibexec_SCRIPTS = base.sh
+dist_pkglibexec_SCRIPTS = charliecloud.py base.sh
 noinst_DATA = charliecloud
-pkglibexec_SCRIPTS = version.py version.sh version.txt
+pkglibexec_SCRIPTS = contributors.bash version.py version.sh version.txt
 
 CLEANFILES = $(pkglibexec_SCRIPTS) $(noinst_DATA)
 
@@ -13,6 +13,12 @@ CLEANFILES = $(pkglibexec_SCRIPTS) $(noinst_DATA)
 # installed or not.
 charliecloud:
 	ln -s . charliecloud
+
+contributors.bash: ../README.rst
+	rm -f $@
+	printf '# shellcheck shell=bash\n' >> $@
+	printf 'declare -a ch_contributors\n' >> $@
+	sed -En 's/^\*.+<(.+@.+)>.*$$/ch_contributors+=('"'"'\1'"'"')/p' < $< >> $@
 
 version.txt: ../configure
 	printf '@PACKAGE_VERSION@\n' > $@

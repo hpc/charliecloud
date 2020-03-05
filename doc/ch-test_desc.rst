@@ -112,6 +112,15 @@ Additional arguments:
     Set packed images directory to :code:`DIR`. Default:
     :code:`$CH_TEST_TARDIR` if set; otherwise :code:`/var/tmp/pack`.
 
+  :code:`--pedantic (yes|no)`
+    Some tests require configurations that are very specific (e.g., being a
+    member of at least two groups) or unusual (e.g., sudo to a non-root
+    group). If :code:`yes`, then fail if the requirement is not met; if
+    :code:`no`, then skip. The default is :code:`yes` for CI environments or
+    people listed in :code:`README.md`, :code:`no` otherwise.
+
+    If :code:`yes` and sudo seems to be available, implies :code:`--sudo`.
+
   :code:`--perm-dir DIR`
     Add :code:`DIR` to filesystem permission fixture directories; can be
     specified multiple times. We recommend one such directory per mounted
@@ -130,6 +139,13 @@ Additional arguments:
     tests and creating/removing the filesystem permissions fixtures. Requires
     generic :code:`sudo` capabilities. Note that the Docker builder uses
     :code:`sudo docker` even without this option.
+
+  :code:`--lustre DIR`
+    Use :code:`DIR` for run-phase Lustre tests. Default:
+    :code:`CH_TEST_LUSTREDIR` if set; otherwise skip them.
+
+    The tests will create, populate, and delete a new subdirectory under
+    :code:`DIR`, leaving everything else in :code:`DIR` untouched.
 
 Exit status
 ===========

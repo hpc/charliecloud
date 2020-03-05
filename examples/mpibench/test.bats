@@ -1,3 +1,7 @@
+true
+# shellcheck disable=SC2034
+CH_TEST_TAG=%ch_test_tag%
+
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
@@ -88,7 +92,7 @@ check_process_ct () {
     [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
     # Verify we have known HSN devices present. (Note that -d tests for
     # directory, not device.)
-    [[ ! -d /dev/infiniband ]] && skip "No high speed network detected"
+    [[ ! -d /dev/infiniband ]] && pedantic_fail "no high speed network detected"
     # shellcheck disable=SC2086
     hsn_enabled_bw=$($ch_mpirun_2_2node ch-run "$ch_img" -- \
                      "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \
