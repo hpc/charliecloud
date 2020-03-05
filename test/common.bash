@@ -145,7 +145,7 @@ scope () {
 }
 
 squashfs_ready () {
-    if [ "${CH_ARCHIVE_FMT}" != squashfs ]; then
+    if [[ $CH_PACK_FMT != squashfs ]]; then
         exit 1
     fi
     ( command -v mksquashfs && command -v squashfuse )

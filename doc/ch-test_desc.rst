@@ -132,7 +132,7 @@ Additional arguments:
     otherwise skip the filesystem permissions tests.
 
   :code:`--fmt FMT`
-    Force a certain archive format to be used during testing (squashfs, tar)
+    Use packed image format :code:`FMT` (:code:`squashfs` or :code:`tar`).
 
   :code:`--sudo`
     Enable things that require sudo, such as certain privilege escalation

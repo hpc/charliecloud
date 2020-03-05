@@ -41,7 +41,7 @@ Additional options:
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
-  --fmt FMT              flattened image format (squashfs, tar)
+  --fmt FMT              packed image format (squashfs, tar)
   --sudo                 enable tests that need sudo
   --lustre DIR           run-phase Lustre test directory; \$CH_TEST_LUSTREDIR
   --version              print version and exit
@@ -561,6 +561,24 @@ test_make_template_print () {
     return
 }
 
+packed_fmt_set () {
+    width=$1
+    if [[ -n $ch_pack_fmt ]]; then
+        packed_fmt_valid $ch_pack_fmt
+        export CH_PACK_FMT=$ch_pack_fmt
+        method='command line'
+    elif [[ -n $CH_PACK_FMT ]]; then
+        packed_fmt_valid $CH_PACK_FMT
+        method='environment'
+    else
+        packed_fmt_choose
+        method='default'
+    fi
+    # shellcheck disable=SC2059
+    printf "%-${width}s %s (%s)\n" 'packed file format:' "$CH_PACK_FMT" "$method"
+    
+}
+
 # Exit with failure if given version number is below a minimum.
 #
 # $1: human-readable descriptor
@@ -723,8 +741,14 @@ while [[ $# -gt 0 ]]; do
         scope=$arg
         ;;
     --fmt)
-	require_unset archive_fmt 
-        archive_fmt=$1; shift
+	    require_unset pack_fmt 
+        ch_pack_fmt=$1; shift
+        ;;
+    --fmt=*)
+	    require_unset pack_fmt
+        arg=${opt#*=}
+        packed_fmt_check $arg
+        ch_pack_fmt=$arg; shift
         ;;
     --sudo)
         use_sudo=yes
@@ -771,14 +795,13 @@ vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
                       21 'scope'
 builder_set 21
 pedantry_set 21
+packed_fmt_set 21
 vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     "$use_sudo_default" \
                       21 'use generic sudo'
 vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
                       21 'unpacked images dir'
 vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
-vset CH_ARCHIVE_FMT   "$archive_fmt"   "$CH_ARCHIVE_FMT"   squashfs \
-                      21 'flattened format'
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \

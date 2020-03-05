@@ -31,6 +31,30 @@ builder_choose () {
     esac
 }
 
+packed_fmt_valid () {
+    case $1 in
+        squashfs|tar)
+            ;;
+        *)
+            echo "unknown packed image format: $1" 1>&2
+            exit 1
+            ;;
+    esac
+}
+
+packed_fmt_choose () {
+    if [ -z "$CH_PACK_FMT" ]; then
+        if ( command -v mksquashfs && command -v squashfuse ); then
+            export CH_PACK_FMT=squashfs
+        elif ( command -v tar ); then
+            export CH_PACK_FMT=tar
+        else
+            export CH_PACK_FMT=none
+        fi
+    fi
+    packed_fmt_valid "$CH_PACK_FMT"
+}
+
 parse_basic_args () {
     if [ "$#" -eq 0 ]; then
         usage 1
