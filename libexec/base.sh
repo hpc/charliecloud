@@ -34,18 +34,22 @@ builder_choose () {
 packed_fmt_valid () {
     case $1 in
         squashfs)
-            if (   command -v mksquashfs >/dev/null 2>&1 \
-	        && command -v squashfuse >/dev/null 2>&1 ); then
-	        return 0
-	    else
-		echo "squashfs not supported" && exit 1
+	    missing=
+	    if ( ! command -v mksquashfs >/dev/null 2>&1); then
+	        echo "error: missing squashfs-tools"
+	        missing=yes
+	    fi
+            if ( ! command -v squashfuse >/dev/null 2>&1 ); then
+     		echo "error: missing squashfuse"
+		missing=yes		
+	    fi
+	    if [ -n "$missing" ]; then
+	        exit 1
 	    fi
 	    ;;
 	tar)
-	    if ( command -v tar >/dev/null 2>&1 ); then
-	        return 0
-	    else
-		echo "tar not supported" && exit 1
+	    if ( ! command -v tar >/dev/null 2>&1 ); then
+	        echo "error: missing tar" && exit 1
 	    fi
 	    ;;
         *)
