@@ -19,11 +19,11 @@ ch_ssh_SOURCES = ch-ssh.c ch_misc.h ch_misc.c
 
 dist_bin_SCRIPTS = ch-build \
                    ch-build2dir \
-                   ch-builder2squash \
                    ch-builder2tar \
                    ch-dir2squash \
                    ch-fromhost \
                    ch-mount \
+                   ch-pack-image \
                    ch-pull2dir \
                    ch-pull2tar \
                    ch-tar2dir \

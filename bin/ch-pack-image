@@ -1,0 +1,84 @@
+#!/bin/sh
+
+libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
+. "${libexec}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Flatten a builder image into a Charliecloud packed file.
+
+Usage:
+
+  $ $(basename "$0") [-b BUILDER] [--fmt CH_PACK_FMT] IMAGE OUTDIR [ARGS ...]
+
+You must have sufficient privilege (via sudo) to run the Docker commands.
+EOF
+)
+
+parse_basic_args "$@"
+
+# Kludgey argument parsing.
+while true; do
+    case $1 in
+        -b|--builder)
+            shift
+            CH_BUILDER=$1
+            shift
+            ;;
+        -b=*|--builder=*)
+            arg${1#*=}
+            CH_BUILDER="$arg"
+            shift
+            ;;
+        --fmt)
+            shift
+            CH_PACK_FMT=$1
+            shift
+            ;;
+        --fmt=*)
+            arg${1#*=}
+            CH_PACK_FMT="$arg"
+            shift
+            ;;
+        *)
+            break
+            ;;
+        esac
+done
+
+if [ "$#" -lt 2 ]; then
+    usage
+fi
+
+builder_choose
+packed_fmt_choose
+
+image=$1
+outdir=$2
+shift 2
+
+if [ ! -d "$outdir" ]; then
+    echo "${outdir} is not a directory" 1>&2
+    exit 1
+fi
+
+# mktemp is used for intermediate files to avoid heavy metadata loads on
+# certain filesystems
+temp=$(mktemp -d --tmpdir ch-pack-image.XXXXXX)
+case $CH_PACK_FMT in
+    squashfs)
+        "${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" --nocompress "$image" "$temp"
+        image=$(tag_to_path "$image")
+        tar=${temp}/${image}.tar
+        "${ch_bin}/ch-tar2dir" "${tar}" "$temp"
+        "${ch_bin}/ch-dir2squash" "${temp}/${image}" "$outdir" "$@"
+        ;;
+    tar)
+        "${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" "$image" "$outdir"
+        ;;
+    *)
+        break
+        ;;
+esac
+
+rm -rf --one-file-system "$temp"

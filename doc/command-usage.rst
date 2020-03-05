@@ -47,12 +47,12 @@ Create a SquashFS file from an image directory.
 
 .. include:: ./ch-dir2squash_desc.rst
 
-ch-builder2squash
-+++++++++++++++++
+ch-pack-image
++++++++++++++
 
-Flatten a builder image into a Charliecloud SquashFS file.
+Flatten a builder image into a Charliecloud packed file.
 
-.. include:: ./ch-builder2squash_desc.rst
+.. include:: ./ch-pack-image_desc.rst
 
 ch-fromhost
 +++++++++++

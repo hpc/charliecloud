@@ -9,8 +9,6 @@ charliecloud.rst \
 ch-build2dir_desc.rst \
 ch-build2dir.rst \
 ch-build_desc.rst \
-ch-builder2squash_desc.rst \
-ch-builder2squash.rst \
 ch-builder2tar_desc.rst \
 ch-builder2tar.rst \
 ch-build.rst \
@@ -24,6 +22,8 @@ ch-grow_desc.rst \
 ch-grow.rst \
 ch-mount_desc.rst \
 ch-mount.rst \
+ch-pack-image_desc.rst \
+ch-pack-image.rst \
 ch-pull2dir_desc.rst \
 ch-pull2dir.rst \
 ch-pull2tar_desc.rst \
