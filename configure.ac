@@ -126,7 +126,8 @@ AC_DEFUN([CH_CHECK_VERSION], [
        AC_MSG_RESULT([too old ($vact)])
        AS_UNSET([$1])])
   ],
-  AC_SUBST([$1_VERSION_NOTE], ["not found"]))
+  [AC_SUBST([$1_VERSION_NOTE], ["not found"]),
+   AS_UNSET([$1])])
   AS_VAR_POPDEF([prog])
 ])
 
@@ -356,21 +357,21 @@ AS_IF([   test $have_userns = yes],
 
 # image builders
 
-AS_IF([   test "$BUILDAH_VERSION_NOTE" != "not found" ],
+AS_IF([   test -n "$BUILDAH"],
       [have_buildah=yes],
       [have_buildah=no])
 
 AS_IF([   test $enable_ch_grow = yes \
-       && test "$PYTHON_VERSION_NOTE" != "not found" \
+       && test -n "$PYTHON" \
        && test "$PYTHON_SHEBANG" \
        && test $have_lark = yes \
-       && test "$SKOPEO_VERSION_NOTE" != "not found" \
-       && test "$UMOCI_VERSION_NOTE" != "not found" \
+       && test -n "$SKOPEO" \
+       && test -n "$UMOCI" \
        && test $have_ch_run = yes],
       [have_ch_grow=yes],
       [have_ch_grow=no])
 
-AS_IF([   test "$DOCKER_VERSION_NOTE" != "not found" \
+AS_IF([   test -n "$DOCKER" \
        && test "$MKTEMP"],
       [have_docker=yes],
       [have_docker=no])
@@ -387,12 +388,12 @@ AS_IF([   test $have_any_builder = yes],
       [have_ch_build=yes],
       [have_ch_build=no])
 
-AS_IF([   test "$TAR"],
+AS_IF([   test -n "$TAR"],
       [have_pack_tar=yes],
       [have_pack_tar=no])
 
 AS_IF([   test $have_any_builder = yes \
-       && test "$MKSQUASHFS_VERSION_NOTE" != "not found"],
+       && test -n"$MKSQUASHFS"],
       [have_pack_squash=yes],
       [have_pack_squash=no])
 
@@ -402,11 +403,11 @@ AS_IF([   test -n "$TAR"],
       [have_unpack_tar=yes],
       [have_unpack_tar=no])
 
-AS_IF([   test "$SQUASHFUSE_VERSION_NOTE" != "not found"],
+AS_IF([   test -n "$SQUASHFUSE"],
       [have_ch_mount=yes],
       [have_ch_mount=no])
 
-AS_IF([   test "$NVIDIA_CLI_VERSION_NOTE" != "not found" \
+AS_IF([   test -n "$NVIDIA_CLI" \
        && test $have_nvidia_libs = yes],
       [have_nvidia=yes],
       [have_nvidia=no])
@@ -415,9 +416,9 @@ AS_IF([   test "$NVIDIA_CLI_VERSION_NOTE" != "not found" \
 
 AS_IF([   test $enable_test = yes \
        && test $have_ch_run = yes \
-       && test "$_BASH_VERSION_NOTE" != "not found" \
-       && test "$BATS_VERSION_NOTE" != "not found" \
-       && test "$WGET_VERSION_NOTE" != "not found"],
+       && test -n "$_BASH" \
+       && test -n "$BATS" \
+       && test -n "$WGET"],
       [have_tests_basic=yes],
       [have_tests_basic=no])
 
@@ -436,7 +437,7 @@ AS_IF([   test $have_tests_tar = yes \
 
 # assumes we do have generic sudo
 AS_IF([   test $have_tests_squash = yes \
-       && test -n "$SPHINX_VERSION_NOTE"],
+       && test -n "$SPHINX"],
       [have_tests_all=yes],
       [have_tests_all=no])
 
