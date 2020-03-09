@@ -721,11 +721,11 @@ while [[ $# -gt 0 ]]; do
         tardir=${opt#*=}
         ;;
     --pack-fmt)
-	require_unset pack_fmt
+        require_unset pack_fmt
         pack_fmt=$1; shift
         ;;
     --pack-fmt=*)
-	require_unset pack_fmt
+        require_unset pack_fmt
         pack_fmt=${opt#*=}
         ;;
     --pedantic)
