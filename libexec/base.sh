@@ -31,46 +31,36 @@ builder_choose () {
     esac
 }
 
-packed_fmt_valid () {
+pack_fmt_valid () {
     case $1 in
-        squashfs)
-	    missing=
-	    if ( ! command -v mksquashfs >/dev/null 2>&1); then
-	        echo "error: missing squashfs-tools"
-	        missing=yes
-	    fi
-            if ( ! command -v squashfuse >/dev/null 2>&1 ); then
-     		echo "error: missing squashfuse"
-		missing=yes		
-	    fi
-	    if [ -n "$missing" ]; then
-	        exit 1
-	    fi
-	    ;;
-	tar)
-	    if ( ! command -v tar >/dev/null 2>&1 ); then
-	        echo "error: missing tar" && exit 1
-	    fi
-	    ;;
-        *)
-            echo "unknown packed image format: $1" 1>&2
+    squash)
+        if ( ! command -v mksquashfs >/dev/null 2>&1 ); then
+            echo "can't use squash for packed images: no mksquashfs found" 1>&2
             exit 1
-            ;;
+        fi
+        ;;
+    tar)
+        if ( ! command -v tar >/dev/null 2>&1 ); then
+            echo "can't use tar for packed images: no tar found" 1>&2
+            exit 1
+        fi
+        ;;
+    *)
+        echo "unknown packed image format: $1" 1>&2
+        exit 1
+        ;;
     esac
 }
 
-packed_fmt_choose () {
+pack_fmt_choose () {
     if [ -z "$CH_PACK_FMT" ]; then
-        if (   command -v mksquashfs >/dev/null 2>&1 \
-	    && command -v squashfuse >/dev/null 2>&1 ); then
-            export CH_PACK_FMT=squashfs
-        elif ( command -v tar >/dev/null 2>&1 ); then
-            export CH_PACK_FMT=tar
+        if ( command -v mksquashfs >/dev/null 2>&1 ); then
+            export CH_PACK_FMT=squash
         else
-            export CH_PACK_FMT=none
+            export CH_PACK_FMT=tar
         fi
     fi
-    packed_fmt_valid "$CH_PACK_FMT"
+    pack_fmt_valid "$CH_PACK_FMT"
 }
 
 parse_basic_args () {
@@ -149,8 +139,7 @@ vset () {
     fi
     if [ -z "$quiet" ]; then
         var_desc="$var_desc:"
-        # shellcheck disable=SC2059
-        printf "%-${desc_width}s %s (%s)\n" "$var_desc" "$value" "$method"
+        printf "%-*s %s (%s)\n" "$desc_width" "$var_desc" "$value" "$method"
     fi
 }
 

@@ -1,14 +1,13 @@
 @test 'builder to archive %(tag)s' {
     scope %(scope)s
-    case $CH_PACK_FMT in
-        squashfs)
-            archive="${ch_tardir}/%(tag)s.sqfs"
-            ;;
-        tar)
-            archive="${ch_tardir}/%(tag)s.tar.gz"
-            ;;
-    esac
-    ch-pack-image %(tag)s "$ch_tardir"
+    if [[ $CH_PACK_FMT = squash ]]; then
+        archive="${ch_tardir}/%(tag)s.sqfs"
+        ch-builder2squash %(tag)s "$ch_tardir"
+    else
+        [[ $CH_PACK_FMT = tar ]]
+        archive="${ch_tardir}/%(tag)s.tar.gz"
+        ch-builder2tar %(tag)s "$ch_tardir"
+    fi
     archive_grep "$archive"
     archive_ok "$archive"
 }
