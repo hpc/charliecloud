@@ -131,6 +131,9 @@ Additional arguments:
     Implies :code:`--sudo`. Default: :code:`CH_TEST_PERMDIRS` if set;
     otherwise skip the filesystem permissions tests.
 
+  :code:`--pack-fmt FMT`
+    Use packed image format :code:`FMT` (:code:`squash` or :code:`tar`).
+
   :code:`--sudo`
     Enable things that require sudo, such as certain privilege escalation
     tests and creating/removing the filesystem permissions fixtures. Requires
