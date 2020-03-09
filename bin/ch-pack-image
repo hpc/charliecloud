@@ -26,18 +26,16 @@ while true; do
             shift
             ;;
         -b=*|--builder=*)
-            arg=${1#*=}
-            CH_BUILDER="$arg"
+            CH_BUILDER=${1#*=}
             shift
             ;;
-        --fmt)
+        --pack-fmt)
             shift
             CH_PACK_FMT=$1
             shift
             ;;
-        --fmt=*)
-            arg=${1#*=}
-            CH_PACK_FMT="$arg"
+        --pack-fmt=*)
+            CH_PACK_FMT=${1#*=}
             shift
             ;;
         *)

@@ -753,15 +753,6 @@ while [[ $# -gt 0 ]]; do
         scope=${opt#*=}
         scope_check "$scope"
         ;;
-    --fmt)
-	require_unset pack_fmt 
-        ch_pack_fmt=$1; shift
-        ;;
-    --fmt=*)
-	require_unset pack_fmt
-        arg=${opt#*=}
-        ch_pack_fmt=$arg
-        ;;
     --sudo)
         use_sudo=yes
         ;;
@@ -807,7 +798,6 @@ vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
                       21 'scope'
 builder_set 21
 pedantry_set 21
-packed_fmt_set 21
 vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     "$use_sudo_default" \
                       21 'use generic sudo'
 vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
