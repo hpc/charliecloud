@@ -179,6 +179,8 @@ EOF
   AS_IF([test $have_rtd = yes], [
     CH_CHECK_VERSION([rtd], [$vmin_rtd],
       [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
+  ], [
+    rtd=
   ])
 ])
 
