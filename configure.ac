@@ -97,21 +97,31 @@ AC_ARG_ENABLE([ch-grow],
 #   $3  append to $1 to make shell pipeline to get actual version only
 #       (e.g., without program name)
 #
-# If ${!1} is empty, do nothing.
+# This macro is not able to determine if a program exists, only whether its
+# version is sufficient. ${!1} (i.e, the value of the variable whose name is
+# stored in $1) must be either empty, an absolute path to an executable, or
+# the name of a program in $PATH. A prior macro such as AX_WITH_PROG can be
+# used to ensure this condition.
 #
-# If minimum version is less than actual version, set $1_VERSION_NOTE 
-# to "too old $version" and unset $1.
+# If ${!1} is an absolute path, and that file isn't executable, error out. If
+# it's something other than an absolute path, assume it's the name of a
+# program in $PATH; if not, the behavior is undefined but not good (FIXME).
 #
-# If actual version is equal to or greater than minimum, set $1_VERSION_NOTE 
-# to "ok $version"
-# 
-# If dependency doesn't exist set $1_VERSION_NOTE to "not found" 
+# Post-conditions:
 #
-# If given absolute path, and that file isn't executable, error out.
+#   1. If ${!1} is non-empty and the version reported by the program is
+#      greater than or equal to the minimum, ${!1} is unchanged. If ${!1} is
+#      empty or reported version is insufficient, ${!1} is the empty string.
+#      This lets you test version sufficiency by whether ${!1} is empty.
+#
+#   2. $1_VERSION_NOTE contains a brief explanatory note.
+#
 AC_DEFUN([CH_CHECK_VERSION], [
   AS_VAR_PUSHDEF([prog], [$1])
   AS_IF([test -n "$prog"], [
+    # ${!1} is non-empty
     AS_CASE([$prog],
+      # absolute path; check if executable
       [/*], [AC_MSG_CHECKING([if $prog is executable])
              AS_IF([test -e "$prog"],
               [AC_MSG_RESULT([ok])],
@@ -119,15 +129,19 @@ AC_DEFUN([CH_CHECK_VERSION], [
                AC_MSG_ERROR([must be executable])])])
     AC_MSG_CHECKING([if $prog version >= $2])
     vact=$($prog $3)
-    AX_COMPARE_VERSION([$2], [le], [$vact],
-      [AC_SUBST([$1_VERSION_NOTE], ["ok ($vact)"])],
-       AC_MSG_RESULT([$1_VERSION_NOTE])
-      [AC_SUBST([$1_VERSION_NOTE], ["too old ($vact)"]),
-       AC_MSG_RESULT([too old ($vact)])
-       AS_UNSET([$1])])
-  ],
-  [AC_SUBST([$1_VERSION_NOTE], ["not found"]),
-   AS_UNSET([$1])])
+    AX_COMPARE_VERSION([$2], [le], [$vact], [
+      AC_SUBST([$1_VERSION_NOTE], ["ok ($vact)"])
+      AC_MSG_RESULT([ok ($vact)])
+    ], [
+      AC_SUBST([$1_VERSION_NOTE], ["too old ($vact)"])
+      AC_MSG_RESULT([too old ($vact)])
+      AS_UNSET([$1])
+    ])
+  ], [
+    # ${!} is empty
+    AC_SUBST([$1_VERSION_NOTE], ["not found"])
+    AS_UNSET([$1])
+  ])
   AS_VAR_POPDEF([prog])
 ])
 
@@ -363,7 +377,7 @@ AS_IF([   test -n "$BUILDAH"],
 
 AS_IF([   test $enable_ch_grow = yes \
        && test -n "$PYTHON" \
-       && test "$PYTHON_SHEBANG" \
+       && test -n "$PYTHON_SHEBANG" \
        && test $have_lark = yes \
        && test -n "$SKOPEO" \
        && test -n "$UMOCI" \
@@ -372,7 +386,7 @@ AS_IF([   test $enable_ch_grow = yes \
       [have_ch_grow=no])
 
 AS_IF([   test -n "$DOCKER" \
-       && test "$MKTEMP"],
+       && test -n "$MKTEMP"],
       [have_docker=yes],
       [have_docker=no])
 
@@ -393,7 +407,7 @@ AS_IF([   test -n "$TAR"],
       [have_pack_tar=no])
 
 AS_IF([   test $have_any_builder = yes \
-       && test -n"$MKSQUASHFS"],
+       && test -n "$MKSQUASHFS"],
       [have_pack_squash=yes],
       [have_pack_squash=no])
 
