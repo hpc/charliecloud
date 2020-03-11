@@ -109,7 +109,6 @@ addons:
       - sourceline: 'ppa:projectatomic/ppa'
     packages:
       - autoconf
-      - autoconf-archive
       - automake
       - bats
       - python3-pip
