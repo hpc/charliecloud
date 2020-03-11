@@ -19,13 +19,15 @@
 #   1. Remove everything before "Building Charliecloud" (inclusive) to the
 #      next log section (exclusive).
 #   2. Remove "will build and install" paragraph.
-#   3. Remove results of tests: " ..." to EOL, ": yes", ": no".
-#   4. Convert indentation to bullet lists.
-#   5. Convert "foo(1)" to ":code:`foo`".
+#   3. Remove any "Warning:" paragraphs.
+#   4. Remove results of tests: " ..." to EOL, ": yes", ": no".
+#   5. Convert indentation to bullet lists.
+#   6. Convert "foo(1)" to ":code:`foo`".
 
 # shellcheck disable=SC2016
   awk '/^Building Charliecloud/,/^##/' | head -n-2 \
 | awk -v RS='' '{gsub(/^  will build.*/, ""); print; print ""}' \
+| awk -v RS='' '{gsub(/^ +Warning:.*/, ""); print; print ""}' \
 | sed -r -e 's/ \.\.\..*$//' -e 's/ (yes|no)$//' \
          -e 's/^  //' -e 's/(^(  )+)/\1* /' -e 's/:$/:\n/' \
          -e 's/([a-zA-Z0-9-]+)\(1\)/:code:`\1`/g'

@@ -6,6 +6,7 @@ a.out
 /bin/ch-run
 /bin/ch-run-oci
 /bin/ch-ssh
+/bin/ch-tug
 /doc/_deps.rst
 /doc/doctrees/
 /doc/html/
