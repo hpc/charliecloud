@@ -36,10 +36,10 @@ ch-ssh_desc.rst \
 ch-ssh.rst \
 ch-tar2dir_desc.rst \
 ch-tar2dir.rst \
-ch-tar2squash_desc.rst \
-ch-tar2squash.rst \
 ch-test_desc.rst \
 ch-test.rst \
+ch-tug_desc.rst \
+ch-tug.rst \
 ch-umount_desc.rst \
 ch-umount.rst \
 command-usage.rst \
@@ -51,6 +51,7 @@ index.rst \
 install.rst \
 logo-sidebar.png \
 make-deps-overview \
+man/README \
 rd100-winner.png \
 see_also.rst \
 tutorial.rst
@@ -73,8 +74,8 @@ man/ch-run.1 \
 man/ch-run-oci.1 \
 man/ch-ssh.1 \
 man/ch-tar2dir.1 \
-man/ch-tar2squash.1 \
 man/ch-test.1 \
+man/ch-tug.1 \
 man/ch-umount.1
 endif
 

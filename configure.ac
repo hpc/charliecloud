@@ -71,20 +71,20 @@ AC_ARG_WITH([sphinx-python],
     [sphinx_python=''])
 
 AC_ARG_ENABLE([html],
-  AS_HELP_STRING([--disable-html], [don't build and install HTML docs]),
+  AS_HELP_STRING([--disable-html], [HTML documentation]),
   [], [enable_html=yes])
 
 AC_ARG_ENABLE([man],
-  AS_HELP_STRING([--disable-man], [don't build and install man pages]),
+  AS_HELP_STRING([--disable-man], [man pages]),
   [], [enable_man=yes])
 
 AC_ARG_ENABLE([test],
-  AS_HELP_STRING([--disable-test], [don't build and install test suite]),
+  AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
 
 AC_ARG_ENABLE([ch-grow],
   AS_HELP_STRING([--disable-ch-grow],
-                 [don't build and install ch-grow unprivileged builder]),
+                 [ch-grow unprivileged builder and ch-tug]),
   [], [enable_ch_grow=yes])
 
 
@@ -175,7 +175,9 @@ AS_IF([test -n "$SPHINX"], [
 vmin_docutils=0.14
 docutils=$sphinx_python  # FIXME: output is confusing
 AS_IF([test -n "$SPHINX"], [
-  # Sphinx requires docutils, so we don't need to verify it's there.
+  # Sphinx depends on docutils, so we don't need to check if the module exists
+  # before checking its version. (CH_CHECK_VERSION isn't smart enough to deal
+  # with Python being present but a module not.)
   CH_CHECK_VERSION([docutils], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
 ])
@@ -199,6 +201,8 @@ EOF
   AS_IF([test $have_rtd = yes], [
     CH_CHECK_VERSION([rtd], [$vmin_rtd],
       [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
+  ], [
+    rtd=
   ])
 ])
 
@@ -268,8 +272,8 @@ AS_IF([test -n "$PYTHON"], [
   cat <<EOF | $PYTHON_SHEBANG
 import sys
 try:
-   import lark
-   lark.Visitor
+   import lark   # module present?
+   lark.Visitor  # correct module? (there are two)
 except Exception:
    sys.exit(1)
 EOF
@@ -279,13 +283,24 @@ EOF
   AC_MSG_RESULT($have_lark)
 ])
 
-# skopeo
-vmin_skopeo=0.1.30
-AC_CHECK_PROG([SKOPEO], [skopeo], [skopeo])
-CH_CHECK_VERSION([SKOPEO], [$vmin_skopeo], [--version | cut -d' ' -f3])
+# Python module "requests"
+AS_IF([test -n "$PYTHON"], [
+  AC_MSG_CHECKING([for requests module])
+  cat <<EOF | $PYTHON_SHEBANG
+import sys
+try:
+   import requests
+except Exception:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [have_requests=yes],
+    [have_requests=no])
+  AC_MSG_RESULT($have_requests)
+])
 
 # SquashFUSE
-vmin_squashfuse=0.1.102  # CentOS 7
+vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
 AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
 CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
                  [--help |& head -1 | cut -d' ' -f2])
@@ -304,12 +319,13 @@ CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
 # tar (yes, we can confidently assume tar, but this makes the report clearer)
 AC_CHECK_PROG([TAR], [tar], [tar])
 
-# umoci
-vmin_umoci=0.4.3
-AC_CHECK_PROG([UMOCI], [umoci], [umoci])
-CH_CHECK_VERSION([UMOCI], [$vmin_umoci], [--version | cut -d' ' -f3])
-
 # User namespaces
+AC_MSG_CHECKING([if in chroot])  # https://unix.stackexchange.com/a/14346
+AS_IF([test    "$(awk '$5=="/" {print $1}' </proc/1/mountinfo)" \
+            != "$(awk '$5=="/" {print $1}' </proc/$$/mountinfo)" ],
+      [chrooted=yes],
+      [chrooted=no])
+AC_MSG_RESULT($chrooted)
 AC_MSG_CHECKING([if user+mount namespaces work])
 AC_RUN_IFELSE([AC_LANG_SOURCE([[
     #define _GNU_SOURCE
@@ -379,8 +395,7 @@ AS_IF([   test $enable_ch_grow = yes \
        && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
        && test $have_lark = yes \
-       && test -n "$SKOPEO" \
-       && test -n "$UMOCI" \
+       && test $have_requests = yes \
        && test $have_ch_run = yes],
       [have_ch_grow=yes],
       [have_ch_grow=no])
@@ -462,6 +477,19 @@ AC_OUTPUT
 
 ## Print report
 
+AS_IF([   test $have_userns = no \
+       && test $chrooted = yes], [
+  chroot_warning=$(cat <<'EOF'
+
+
+    Warning: configure is running in a chroot, but user namespaces cannot be
+    created in a chroot; see the man page unshare(2). Therefore, the above may
+    be a false negative. However, note that like all the run-time configure
+    tests, this is informational only and does not affect the build.
+EOF
+)
+])
+
 AC_MSG_NOTICE([
 
 Dependencies report
@@ -496,24 +524,23 @@ Building Charliecloud
     HTML documentation ... ${enable_html}
     man pages ... ${enable_man}
     test suite ... ${enable_test}
-    ch-grow builder ... ${enable_ch_grow}
+    ch-grow(1) and ch-tug(1) ... ${enable_ch_grow}
 
-Image builders via our wrappers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Building images via our wrappers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  ch-build(1) with Buildah: ${have_buildah}
+  with Buildah: ${have_buildah}
     Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
-  ch-build(1) with ch-grow(1): ${have_ch_grow}
-    ch-grow(1) enabled ... ${enable_ch_grow}
+  with ch-grow(1): ${have_ch_grow}
+    enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
     "lark-parser" module ... ${have_lark}
-    skopeo ≥ $vmin_skopeo ... ${SKOPEO_VERSION_NOTE}
-    umoci ≥ $vmin_umoci ... ${UMOCI_VERSION_NOTE}
+    "requests" module ... ${have_requests}
     ch-run(1) ... ${have_ch_run}
 
-  ch-build(1) with Docker: ${have_docker}
+  with Docker: ${have_docker}
     Docker ≥ $vmin_docker ... ${DOCKER_VERSION_NOTE}
     mktemp(1) ... ${MKTEMP:-not found}
 
@@ -530,7 +557,7 @@ Managing container images
 
   pack images from builder storage to SquashFS: ${have_pack_squash}
     at least one builder ... ${have_any_builder}
-    mksquashfs(1) ≥ $vmin_mksquashfs ... ${MKSQUASHFS_VERSION_NOTE} 
+    mksquashfs(1) ≥ $vmin_mksquashfs ... ${MKSQUASHFS_VERSION_NOTE}
 
   Note: Pulling/pushing images from/to a repository is currently done using
   the builder directly.
@@ -539,7 +566,7 @@ Running containers
 ~~~~~~~~~~~~~~~~~~
 
   ch-run(1): ${have_ch_run}
-    user+mount namespaces ... ${have_userns}
+    user+mount namespaces ... ${have_userns}$chroot_warning
 
   unpack image tarballs: ${have_unpack_tar}
     tar(1) ... ${TAR:-not found}
