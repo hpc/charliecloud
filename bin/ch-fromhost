@@ -322,9 +322,6 @@ if [ $cray_openmpi ]; then
     queue_files "$(  ldd "$host_libmpi" \
                    | grep -E "/usr|/opt" \
                    | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')"
-    # This appears to be the only dependency in /lib64 that we can't get from
-    # glibc in the image.
-    queue_files /lib64/liblustreapi.so
 
     # Remove libmpi.so* from image. This works around ParaView
     # dlopen(3)-related errors that we don't understand.

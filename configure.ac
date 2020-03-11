@@ -179,6 +179,8 @@ EOF
   AS_IF([test $have_rtd = yes], [
     CH_CHECK_VERSION([rtd], [$vmin_rtd],
       [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
+  ], [
+    rtd=
   ])
 ])
 
@@ -276,7 +278,7 @@ EOF
 ])
 
 # SquashFUSE
-vmin_squashfuse=0.1.102  # CentOS 7
+vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
 AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
 CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
                  [--help |& head -1 | cut -d' ' -f2])

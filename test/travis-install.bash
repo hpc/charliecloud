@@ -13,12 +13,32 @@ sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/travis
 sudo cat /etc/sudoers.d/travis
 
 # Install conditional packages.
-if [[ -z "$MINIMAL_DEPS" ]]; then
-    sudo apt-get install pigz pv skopeo squashfuse
+if [[ "$MINIMAL_DEPS" ]]; then
+    PACK_FMT=tar
+else
+    sudo apt-get install pigz pv skopeo
 fi
 if [[ $CH_BUILDER = ch-grow ]]; then
     sudo pip3 install lark-parser requests
 fi
+case $PACK_FMT in
+    '')  # default
+        export CH_PACK_FMT=squash
+        sudo apt-get install squashfs-tools squashfuse
+        ;;
+    squash-unpack)
+        export CH_PACK_FMT=squash
+        sudo apt-get install squashfs-tools
+        ;;
+    tar)
+        export CH_PACK_FMT=tar
+        # tar already installed
+        ;;
+    *)
+        echo "unknown \$PACK_FMT: $PACK_FMT" 1>&2
+        exit 1
+        ;;
+esac
 
 # Project Atomic PPA provides buggy Buildah for Xenial, and we need Buildah's
 # unprivileged version, so build from source.

@@ -40,6 +40,7 @@ Additional options:
   -h, --help             print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
+  --pack-fmt FMT         packed image format ("squash" or "tar")
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
   --sudo                 enable tests that need sudo
   --lustre DIR           run-phase Lustre test directory; \$CH_TEST_LUSTREDIR
@@ -101,8 +102,7 @@ builder_set () {
         builder_choose
         method='default'
     fi
-    # shellcheck disable=SC2059
-    printf "%-${width}s %s (%s)\n" 'builder:' "$CH_BUILDER" "$method"
+    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
     if [[ $CH_BUILDER == ch-grow ]]; then
         vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" /var/tmp/ch-grow \
                              "$width" 'ch-grow storage'
@@ -560,6 +560,30 @@ test_make_template_print () {
     return
 }
 
+pack_fmt_set () {
+    width=$1
+    if [[ -n $pack_fmt ]]; then
+        case $pack_fmt in
+        '🐘')  # elephant emoji
+            pack_fmt=squash
+            ;;
+        '📠')  # fax machine emoji
+            pack_fmt=tar
+            ;;
+        esac
+        export CH_PACK_FMT=$pack_fmt
+        method='command line'
+    elif [[ -n $CH_PACK_FMT ]]; then
+        method='environment'
+    else
+        pack_fmt_choose
+        method='default'
+    fi
+    printf "%-*s %s (%s)\n" \
+           "$width" 'packed image format:' "$CH_PACK_FMT" "$method"
+    pack_fmt_valid "$CH_PACK_FMT"
+}
+
 # Exit with failure if given version number is below a minimum.
 #
 # $1: human-readable descriptor
@@ -696,6 +720,14 @@ while [[ $# -gt 0 ]]; do
         require_unset tardir
         tardir=${opt#*=}
         ;;
+    --pack-fmt)
+        require_unset pack_fmt
+        pack_fmt=$1; shift
+        ;;
+    --pack-fmt=*)
+        require_unset pack_fmt
+        pack_fmt=${opt#*=}
+        ;;
     --pedantic)
         pedantic=$1; shift
         ;;
@@ -717,9 +749,8 @@ while [[ $# -gt 0 ]]; do
         ;;
     --scope=*)
         require_unset scope
-        arg=${opt#*=}
-        scope_check "$arg"
-        scope=$arg
+        scope=${opt#*=}
+        scope_check "$scope"
         ;;
     --sudo)
         use_sudo=yes
@@ -772,6 +803,7 @@ vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
                       21 'unpacked images dir'
 vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
+pack_fmt_set 21
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \

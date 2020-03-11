@@ -75,6 +75,7 @@ man/ch-run-oci.1 \
 man/ch-ssh.1 \
 man/ch-tar2dir.1 \
 man/ch-test.1 \
+man/ch-tug.1 \
 man/ch-umount.1
 endif
 
