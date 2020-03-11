@@ -183,7 +183,7 @@ export BATS_TMPDIR=$btnew
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
-ch_libexec=$(ch-build --libexec-path)
+ch_lib=$(ch-build --_lib-path)
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)

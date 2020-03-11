@@ -138,7 +138,7 @@ _deps.rst: ../config.log make-deps-overview
 # This called "html-local" because Automake has a Texinfo target called "html"
 # and gripes if we override it.
 $(nobase_html_DATA): html-local
-html-local: mkdir_issue115 ../libexec/version.txt _deps.rst
+html-local: mkdir_issue115 ../lib/version.txt _deps.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 # avoid GitHub messing things up with Jekyll
 	touch html/.nojekyll
@@ -159,5 +159,5 @@ HTML_FIRST = html
 endif
 
 $(man1_MANS): man
-man: mkdir_issue115 ../libexec/version.txt _deps.rst $(HTML_FIRST)
+man: mkdir_issue115 ../lib/version.txt _deps.rst $(HTML_FIRST)
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man

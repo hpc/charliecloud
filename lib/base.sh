@@ -6,8 +6,8 @@ ch_bin="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC2034
 ch_base=${ch_bin%/*}
 
-libexec="${ch_bin}/../libexec/charliecloud"
-. "${libexec}/version.sh"
+lib="${ch_bin}/../lib/charliecloud"
+. "${lib}/version.sh"
 
 
 # Don't call in a subshell or the selection will be lost.
@@ -68,12 +68,12 @@ parse_basic_args () {
         usage 1
     fi
     for i in "$@"; do
+        if [ "$i" = --_lib-path ]; then  # undocumented
+            echo "$lib"
+            exit 0
+        fi
         if [ "$i" = --help ]; then
             usage 0
-        fi
-        if [ "$i" = --libexec-path ]; then
-            echo "$libexec"
-            exit 0
         fi
         if [ "$1" = --version ]; then
             version

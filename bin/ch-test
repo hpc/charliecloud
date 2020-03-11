@@ -13,12 +13,12 @@ warning () {
     printf 'warning: %s\n' "$1" 1>&2
 }
 
-libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
-if [[ ! -f ${libexec}/base.sh ]]; then
-    fatal "install or build problem: not found: ${libexec}/base.sh"
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+if [[ ! -f ${lib}/base.sh ]]; then
+    fatal "install or build problem: not found: ${lib}/base.sh"
 fi
-. "${libexec}/base.sh"
-. "${libexec}/contributors.bash"
+. "${lib}/base.sh"
+. "${lib}/contributors.bash"
 
 export ch_bin
 
