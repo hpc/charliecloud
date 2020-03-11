@@ -1,13 +1,20 @@
 # ch-test-scope: standard
 FROM centos:8
-# Install the dnf ovl plugin to workaround rpmdb corruptions issues when using
-# overlayfs as the storage driver.
-# Enable the PowerTools repository as some packages in EPEL depend on it.
-RUN dnf -y install epel-release && dnf -y update \
- && dnf -y install --enablerepo=epel-playground dnf-plugin-ovl \
- && sed -i -e 's/enabled=0/enabled=1/g' /etc/yum.repos.d/CentOS-PowerTools.repo
 
-# CentOS's linker doesn't search this paths by default, add it.
-RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
- && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf
+# 1. Install the dnf ovl plugin to work around RPMDB corruption when building
+#    images with Docker and the OverlayFS storage driver.
+#
+# 2. Enable PowerTools repository, as some packages in EPEL depend on it. Use
+#    sed(1) because we don't want to install `dnf-plugins-core` just for this.
+#
+RUN    dnf -y install epel-release \
+    && dnf -y update \
+    && dnf -y install --enablerepo=epel-playground dnf-plugin-ovl \
+    && sed -ie 's/enabled=0/enabled=1/' /etc/yum.repos.d/CentOS-PowerTools.repo
+
+# CentOS's linker doesn't search these paths by default; add them because we
+# will install stuff later into /usr/local.
+RUN    echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
+    && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf \
+    && ldconfig
 

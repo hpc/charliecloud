@@ -605,7 +605,7 @@ useful to show a real example.
 
 So what is going on here?
 
-1. Use the latest CentOS, CentOS 8, as the base image.
+1. Use the latest CentOS 8 as the base image.
 
 2. Install a basic build system using the OS package manager.
 
