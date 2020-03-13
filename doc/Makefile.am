@@ -16,6 +16,7 @@ ch-builder2tar.rst \
 ch-build.rst \
 ch-checkns_desc.rst \
 ch-checkns.rst \
+ch-convert_desc.rst \
 ch-dir2squash_desc.rst \
 ch-dir2squash.rst \
 ch-fromhost_desc.rst \

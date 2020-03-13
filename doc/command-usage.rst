@@ -40,6 +40,13 @@ Check :code:`ch-run` prerequisites, e.g., namespaces and :code:`pivot_root(2)`.
 
 .. include:: ./ch-checkns_desc.rst
 
+ch-convert
+++++++++++
+
+Convert an image from one format to another.
+
+.. include:: ./ch-convert_dest.rst
+
 ch-dir2squash
 +++++++++++++
 
