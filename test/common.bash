@@ -113,7 +113,9 @@ prerequisites_ok () {
 
 # Wrapper for Bats run() to work around Bats bug #89 by saving/restoring $IFS.
 # See issues #552 and #555 and https://stackoverflow.com/a/32425874.
-eval bats_"$(declare -f run)"
+if type run &> /dev/null; then
+    eval bats_"$(declare -f run)"
+fi
 run () {
     local ifs_old="$IFS"
     bats_run "$@"
@@ -143,6 +145,9 @@ scope () {
 }
 
 squashfs_ready () {
+    if [[ $CH_PACK_FMT != squashfs ]]; then
+        exit 1
+    fi
     ( command -v mksquashfs && command -v squashfuse )
 }
 
@@ -178,7 +183,7 @@ export BATS_TMPDIR=$btnew
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
-ch_libexec=$(ch-build --libexec-path)
+ch_lib=$(ch-build --_lib-path)
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)

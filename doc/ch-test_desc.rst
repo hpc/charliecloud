@@ -131,11 +131,21 @@ Additional arguments:
     Implies :code:`--sudo`. Default: :code:`CH_TEST_PERMDIRS` if set;
     otherwise skip the filesystem permissions tests.
 
+  :code:`--pack-fmt FMT`
+    Use packed image format :code:`FMT` (:code:`squash` or :code:`tar`).
+
   :code:`--sudo`
     Enable things that require sudo, such as certain privilege escalation
     tests and creating/removing the filesystem permissions fixtures. Requires
     generic :code:`sudo` capabilities. Note that the Docker builder uses
     :code:`sudo docker` even without this option.
+
+  :code:`--lustre DIR`
+    Use :code:`DIR` for run-phase Lustre tests. Default:
+    :code:`CH_TEST_LUSTREDIR` if set; otherwise skip them.
+
+    The tests will create, populate, and delete a new subdirectory under
+    :code:`DIR`, leaving everything else in :code:`DIR` untouched.
 
 Exit status
 ===========

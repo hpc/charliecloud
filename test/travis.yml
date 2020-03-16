@@ -28,16 +28,19 @@ compiler: gcc
 # weird errors, e.g.:
 #
 #   make[2]: Entering directory [...]
-#    /bin/mkdir -p '/var/tmp/libexec/charliecloud'
-#    ../yes base.sh '/var/tmp/libexec/charliecloud'
+#    /bin/mkdir -p '/var/tmp/lib/charliecloud'
+#    ../yes base.sh '/var/tmp/lib/charliecloud'
 #   /bin/bash: line 23: ../yes: No such file or directory
-#  Makefile:323: recipe for target 'install-dist_pkglibexecSCRIPTS' failed
+#  Makefile:323: recipe for target 'install-dist_pkglibSCRIPTS' failed
 #
 # Additional options:
 #
 #   CH_BUILDER              # which builder to use
 #   MINIMAL_CONFIG          # exclude all optional features with --disable-foo
-#   MINIMAL_DEPS            # test with minimal dependencies (no fancy tools)
+#   MINIMAL_DEPS            # minimal dependencies; implies PACK_FMT=tar
+#   PACK_FMT=               # squash pack format, ch-mount/ch-unmount
+#   PACK_FMT=squash-unpack  # squash pack format, but unpack instead of mount
+#   PACK_FMT=tar            # tarball pack format
 #   SUDO_RM_FIRST           # remove sudo before build (implied if non-Docker)
 #   SUDO_RM_AFTER_BUILD     # remove sudo after build
 
@@ -70,13 +73,13 @@ jobs:
     - <<: *stage_builders
       env: CH_BUILDER=none
     - <<: *stage_builders
-      env: CH_BUILDER=buildah
-    - <<: *stage_builders
-      env: CH_BUILDER=buildah-runc
-    - <<: *stage_builders
       env: CH_BUILDER=ch-grow
     - <<: *stage_builders
       env: CH_BUILDER=docker
+#    - <<: *stage_builders
+#      env: CH_BUILDER=docker          PACK_FMT=squash-unpack
+    - <<: *stage_builders
+      env: CH_BUILDER=docker          PACK_FMT=tar
 
     - <<: *stage_install
       env: CH_BUILDER=none            TARBALL=export       MAKE_INSTALL=yes

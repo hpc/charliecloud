@@ -32,6 +32,7 @@ hello/README \
 lammps/Dockerfile \
 lammps/melt.patch \
 lammps/simple.patch \
+lustre/Dockerfile \
 mpibench/Dockerfile.mpich \
 mpibench/Dockerfile.openmpi \
 mpihello/Dockerfile.mpich \
@@ -54,6 +55,7 @@ spark/slurm.sh
 batsfiles = \
 hello/test.bats \
 lammps/test.bats \
+lustre/test.bats \
 mpibench/test.bats \
 mpihello/test.bats \
 obspy/test.bats \

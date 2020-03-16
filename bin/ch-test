@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+
 export LC_ALL=C  # predictable sorting
 
 fatal () {
@@ -12,12 +13,12 @@ warning () {
     printf 'warning: %s\n' "$1" 1>&2
 }
 
-libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
-if [[ ! -f ${libexec}/base.sh ]]; then
-    fatal "install or build problem: not found: ${libexec}/base.sh"
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+if [[ ! -f ${lib}/base.sh ]]; then
+    fatal "install or build problem: not found: ${lib}/base.sh"
 fi
-. "${libexec}/base.sh"
-. "${libexec}/contributors.bash"
+. "${lib}/base.sh"
+. "${lib}/contributors.bash"
 
 export ch_bin
 
@@ -39,8 +40,10 @@ Additional options:
   -h, --help             print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
+  --pack-fmt FMT         packed image format ("squash" or "tar")
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
   --sudo                 enable tests that need sudo
+  --lustre DIR           run-phase Lustre test directory; \$CH_TEST_LUSTREDIR
   --version              print version and exit
 
 See the man page for important details.
@@ -99,8 +102,7 @@ builder_set () {
         builder_choose
         method='default'
     fi
-    # shellcheck disable=SC2059
-    printf "%-${width}s %s (%s)\n" 'builder:' "$CH_BUILDER" "$method"
+    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
     if [[ $CH_BUILDER == ch-grow ]]; then
         vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" /var/tmp/ch-grow \
                              "$width" 'ch-grow storage'
@@ -111,12 +113,19 @@ builder_set () {
 dir_img_mk () {
     dir_img_rm
     printf "creating %s\n\n" "$CH_TEST_IMGDIR"
-    mkdir "$CH_TEST_IMGDIR"
+    $ch_mpirun_node mkdir "$CH_TEST_IMGDIR"
+    $ch_mpirun_node touch "$CH_TEST_IMGDIR/WEIRD_AL_YANKOVIC"
 }
 
 dir_img_rm () {
+    # Remove CH_TEST_IMGDIR if 1) the directory is empty; or 2) the directory
+    # is non-empty but contains a sentinel file.
+    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r \
+       &&  [[ ! -e $CH_TEST_TARDIR/WEIRD_AL_YANKOVIC ]]; then
+        fatal "$CH_TEST_IMGDIR missing sentinel file; manually delete."
+    fi
     echo "removing $CH_TEST_IMGDIR"
-    rm -rf --one-file-system "$CH_TEST_IMGDIR"
+    $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_IMGDIR"
 }
 
 # Remove a filesystem permissions fixture directory. Ensure that the target
@@ -152,17 +161,32 @@ dir_tar_check_file () {
 dir_tar_mk () {
     dir_tar_rm
     printf "creating %s\n\n" "$CH_TEST_TARDIR"
-    mkdir "$CH_TEST_TARDIR"
+    $ch_mpirun_node mkdir "$CH_TEST_TARDIR"
+    $ch_mpirun_node touch "${CH_TEST_TARDIR}/WEIRD_AL_YANKOVIC"
 }
 
 dir_tar_rm () {
+    # Remove CH_TEST_TARDIR if 1) the directory is empty; or 2) the directory
+    # is non-empty but contains a sentinel file.
+    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r \
+       && [[ ! -e $CH_TEST_TARDIR/WEIRD_AL_YANKOVIC ]]; then
+        fatal "$CH_TEST_TARDIR missing sentinel file; manually delete."
+    fi
     echo "removing $CH_TEST_TARDIR"
-    rm -rf --one-file-system "$CH_TEST_TARDIR"
+    $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_TARDIR"
+}
+
+dir_tmp_rm () {
+    if [[ $TMP_ == "/tmp/ch-test.tmp.${USER}" ]]; then
+        echo "removing $TMP_"
+        rm -rf --one-file-system "$TMP_"
+    fi
 }
 
 dirs_unpriv_rm () {
     dir_tar_rm
     dir_img_rm
+    dir_tmp_rm
 }
 
 pq_missing () {
@@ -170,7 +194,7 @@ pq_missing () {
         local img=$1
         local out=$2
         local tag
-        tag=$("$make_auto" tag "$img")
+        tag=$(test_make_auto tag "$img")
         printf '%s\n' "$out" >> "${CH_TEST_TARDIR}/${tag}.pq_missing"
     fi
 }
@@ -245,7 +269,6 @@ scope_to_digit () {
 
 test_build () {
     echo 'executing build phase tests ...'
-    # FIXME: check for sotests?
     if [[ ! -f ${TMP_}/build_auto.bats ]]; then
         fatal "${TMP_}/build_auto.bats not found"
     fi
@@ -253,31 +276,17 @@ test_build () {
 }
 
 test_examples () {
-    local tag
-    local bat_file
-    local phase=examples
+    printf '\n'
     if [[ $CH_TEST_SCOPE == quick ]]; then
-        return
+        echo "no examples for $CH_TEST_SCOPE scope"
     fi
-    echo
     echo 'executing example phase tests ...'
-    for i in $examples; do
-        if (test_make_check_image "$i"); then
-            bat_file=$(dirname "$i")/test.bats
-            tag=$("${CHTEST_DIR}/chtest-make-auto" tag "$i")
-            cp "$bat_file" "${TMP_}/${tag}_example.bats"
-            sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
-        fi
-    done
     if (find "$TMP_" -name '*_example.bats' | grep -q .); then
         bats "${TMP_}"/*_example.bats
-    else
-        echo 'found: none'
     fi
 }
 
 test_run () {
-    echo
     echo 'executing run phase tests ...'
     if [[ ! -f ${TMP_}/run_auto.bats ]]; then
         fatal "${TMP_}/run_auto.bats not found"
@@ -297,38 +306,110 @@ test_run () {
     set +e
 }
 
-test_make_auto () {
-    local img
-
-    printf "finding images compatible with test settings ...\n"
-    for i in $images $examples; do
-        if (test_make_check_image "$i"); then
-            echo "found: $i"
-            targets+=( "$i" )
-        fi
-    done
-
-    printf '\n'
+test_make () {
+    local bat_file
+    local img_pack
+    local pack_files
+    local tag
     case $phase in
     build)
+        printf "finding tests compatible with %s phase settings ...\n" "$phase"
+        for i in $images $examples; do
+           if (test_make_check_image "$i"); then
+               echo "found: $i"
+               build_targets+=( "$i" )
+           fi
+        done
+        printf '\n'
         printf 'generate build_auto.bats ...\n'
-        "$make_auto" build "${targets[@]}" > "${TMP_}/build_auto.bats"
+        test_make_auto "$phase" "${build_targets[@]}" > "${TMP_}/build_auto.bats"
         printf 'ok\n\n'
         ;;
     run)
+        printf "finding tests compatible with %s phase settings ...\n" "$phase"
+        # For each tarball or squashfs file in --pack-dir look for a
+        # corresponding example or image that produces a matching tag. If
+        # found, check the image for exclusion conidtions.
+        pack_files=$(find "$CH_TEST_TARDIR"     -name '*.tar.gz' \
+                                            -o  -name '*.sqfs' | sort)
+        for i in $pack_files; do
+            img_pack=${i##*/}
+            img_pack=${img_pack%%.*}
+            for j in $images $examples; do
+                if [[ $(test_make_tag_from_path "$j") == "$img_pack" ]]; then
+                    if (test_make_check_image "$j"); then
+                        echo "found: $i"
+                        run_targets+=( "$j" )
+                    fi
+                fi
+            done
+        done
+        printf '\n'
         printf 'generate run_auto.bats ...\n'
-        "$make_auto" run "${targets[@]}" > "${TMP_}/run_auto.bats"
+        test_make_auto "$phase" "${run_targets[@]}" > "${TMP_}/run_auto.bats"
         printf 'ok\n\n'
         ;;
-    all)
-        printf 'generate build_auto.bats run_auto.bats ...\n'
-        "$make_auto" build "${targets[@]}" > "${TMP_}/build_auto.bats"
-        "$make_auto" run "${targets[@]}" > "${TMP_}/run_auto.bats"
+    examples)
+        printf "finding tests compatible with %s phase settings ...\n" "$phase"
+        if [[ $CH_TEST_SCOPE == quick ]]; then
+            echo 'found: none'
+            return
+        fi
+        for i in $examples; do
+            if (test_make_check_image "$i"); then
+                bat_file=$(dirname "$i")/test.bats
+                tag=$(test_make_tag_from_path "$i")
+                cp "$bat_file" "${TMP_}/${tag}_example.bats"
+                sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
+                echo "found: $(dirname "$i")"
+            fi
+        done
+        printf '\n'
+        printf 'generate example bat files ...\n'
         printf 'ok\n\n'
         ;;
     *)
         ;;
     esac
+}
+
+test_make_auto () {
+    local mode
+    mode=$1;shift
+    if [[ $mode != tag ]]; then
+        printf "# Do not edit this file; it's autogenerated\n\n"
+        printf "load %s/common.bash\n\n" "$CHTEST_DIR"
+    fi
+    while [[ "$#" -gt 0 ]]; do
+        path_=$1;shift
+        basename_=$(basename "$path_")
+        dirname_=$(dirname "$path_")
+        tag=$(test_make_tag_from_path "$path_")
+
+        if [[ $dir == "" ]];then
+            dir='.'
+        fi
+
+        if [[ $mode == tag ]]; then
+            echo "$tag"
+            exit 0
+        fi
+
+        if [[ $mode == build ]]; then
+            if (echo "$basename_" | grep Build &> /dev/null); then
+                test_make_template_print 'build_custom.bats.in'
+            elif (echo "$basename_" | grep Docker &> /dev/null); then
+                test_make_template_print 'build.bats.in'
+                test_make_template_print 'builder_to_archive.bats.in'
+            else
+                fatal "test_make_auto: unknown build type"
+            fi
+        elif [[ $mode == run ]];then
+            test_make_template_print 'unpack.bats.in'
+        else
+             fatal "test_make_auto: invalid mode '$mode'"
+        fi
+    done
 }
 
 test_make_check_image () {
@@ -351,10 +432,32 @@ test_make_check_image () {
 
     sudo_required=$(cat "$img" | grep -F 'ch-test-need-sudo')
 
-    # Exclude Dockerfiles if we have no builder.
-    if [[ $CH_BUILDER == none && $img == *Dockerfile* ]]; then
-        pq_missing "$img" 'builder required'
-        img_ok=
+    if [[ $phase == 'build' ]]; then
+        # Exclude Dockerfiles if we have no builder.
+        if [[ $CH_BUILDER == none && $img == *Dockerfile* ]]; then
+            pq_missing "$img" 'builder required'
+            img_ok=
+        fi
+        # Exclude if included builders are given and $CH_BUILDER isn't one.
+        if [[ -n $builder_include ]]; then
+            builder_ok=
+            for b in $builder_include; do
+                if [[ $b == "$CH_BUILDER" ]]; then
+                    builder_ok=yes
+                fi
+            done
+            if [[ -z $builder_ok ]]; then
+                pq_missing "$img" "builder not included: ${CH_BUILDER}"
+                img_ok=
+            fi
+        fi
+        # Exclude images that are not compatible with CH_BUILDER.
+        for b in $builder_exclude; do
+            if [[ $b == "$CH_BUILDER" ]]; then
+                pq_missing "$img" "builder excluded: ${CH_BUILDER}"
+                img_ok=
+            fi
+        done
     fi
 
     # Exclude images with a scope that is not a subset of CH_TEST_SCOPE.
@@ -362,32 +465,11 @@ test_make_check_image () {
         pq_missing "$img" "not in scope: ${CH_TEST_SCOPE}"
         img_ok=
     fi
+
     # Exclude images that do not work with the host architecture.
     for a in $arch_exclude; do
         if [[ $a == "$(uname -m)" ]]; then
             pq_missing "$img" "incompatible architecture: ${a}"
-            img_ok=
-        fi
-    done
-
-    # Exclude image if included builders are given and $CH_BUILDER isn't one.
-    if [[ -n $builder_include ]]; then
-        builder_ok=
-        for b in $builder_include; do
-            if [[ $b == "$CH_BUILDER" ]]; then
-                builder_ok=yes
-            fi
-        done
-        if [[ -z $builder_ok ]]; then
-            pq_missing "$img" "builder not included: ${CH_BUILDER}"
-            img_ok=
-        fi
-    fi
-
-    # Exclude images that are not compatible with CH_BUILDER.
-    for b in $builder_exclude; do
-        if [[ $b == "$CH_BUILDER" ]]; then
-            pq_missing "$img" "builder excluded: ${CH_BUILDER}"
             img_ok=
         fi
     done
@@ -398,8 +480,8 @@ test_make_check_image () {
         img_ok=
     fi
 
-    # In examples phase, exclude chtest (special case) and any images not in a
-    # subdirectory of examples.
+    # In examples phase, exclude chtest and any images not in a subdirectory of
+    # examples.
     if [[ $phase == examples && ( $dir == chtest || $dir == examples ) ]]; then
         img_ok=
     fi
@@ -409,6 +491,97 @@ test_make_check_image () {
     else
         return 1  # exclude image
     fi
+}
+
+test_make_tag_from_path () {
+    # Generate a tag from given path.
+    #
+    # Consider the following path: $CHTEST/examples/Dockerfile.openmpi
+    # First break the path into four components:
+    #   1) dir:        the parent directory of the file (examples)
+    #   2) base:       the full file name (Dockerfile.openmpi)
+    #   3) basicname:  the file name (Dockerfile)
+    #   4) extension:  the file's extension (openmpi)
+    #
+    # $basicname must be 'Build' or 'Dockerfile'; otherwise error.
+    # if $dir is '.', 'test', or 'examples' then tag=$extension; otherwise
+    # tag is $extension if set or $dir-$exenstion.
+    local base
+    local basicname
+    local dir
+    local extension
+    local tag
+    dir=$(basename "$(dirname "$1")")  # last directory only
+    base=$(basename "$1")
+    basicname=${base%%.*}
+    extension=${base##*.}
+
+    if [[ $extension == "$basicname" ]]; then
+        extension=''
+    else
+        extension=${extension/\./} # remove dot
+    fi
+
+    case $basicname in
+        Build|Dockerfile)
+            case $dir in
+                .|test|examples)  # dot is directory "test"
+                    if [[ -z $extension ]]; then
+                        fatal "can't compute tag: $1"
+                    else
+                        tag=$extension
+                    fi
+                    ;;
+                *)
+                    if [[ -z $extension ]]; then
+                        tag=$(basename "$dir")
+                    else
+                        tag=$(basename "${dir}-${extension}")
+                    fi
+            esac
+            ;;
+        *)
+            fatal "test_make_auto: invalid basic name '$basicname'"
+            ;;
+    esac
+    echo "$tag"
+}
+
+test_make_template_print () {
+    local template
+    template="./make-auto.d/$1"
+
+    cat "$template" | sed "s@%(basename)s@$basename_@g" \
+                    | sed "s@%(dirname)s@$dirname_@g" \
+                    | sed "s@%(path)s@$path_@g" \
+                    | sed "s@%(scope)s@$CH_TEST_SCOPE@g" \
+                    | sed "s@%(tag)s@$tag@g"
+    printf '\n'
+    return
+}
+
+pack_fmt_set () {
+    width=$1
+    if [[ -n $pack_fmt ]]; then
+        case $pack_fmt in
+        '🐘')  # elephant emoji
+            pack_fmt=squash
+            ;;
+        '📠')  # fax machine emoji
+            pack_fmt=tar
+            ;;
+        esac
+        export CH_PACK_FMT=$pack_fmt
+        method='command line'
+    elif [[ -n $CH_PACK_FMT ]]; then
+        method='environment'
+    else
+        pack_fmt_choose
+        method='default'
+    fi
+    printf "%-*s %s (%s)\n" \
+           "$width" 'packed image format:' "$CH_PACK_FMT" "$method"
+    pack_fmt_valid "$CH_PACK_FMT"
 }
 
 # Exit with failure if given version number is below a minimum.
@@ -475,8 +648,6 @@ export CHTEST_GITWD
 export CHTEST_DIR
 export CHTEST_EXAMPLES_DIR
 export TMP_
-
-make_auto="${CHTEST_DIR}/chtest-make-auto"
 
 # Check for test directory.
 if [[ ! -d $CHTEST_DIR ]]; then
@@ -549,6 +720,14 @@ while [[ $# -gt 0 ]]; do
         require_unset tardir
         tardir=${opt#*=}
         ;;
+    --pack-fmt)
+        require_unset pack_fmt
+        pack_fmt=$1; shift
+        ;;
+    --pack-fmt=*)
+        require_unset pack_fmt
+        pack_fmt=${opt#*=}
+        ;;
     --pedantic)
         pedantic=$1; shift
         ;;
@@ -570,12 +749,19 @@ while [[ $# -gt 0 ]]; do
         ;;
     --scope=*)
         require_unset scope
-        arg=${opt#*=}
-        scope_check "$arg"
-        scope=$arg
+        scope=${opt#*=}
+        scope_check "$scope"
         ;;
     --sudo)
         use_sudo=yes
+        ;;
+    --lustre)
+        require_unset lustredir
+        lustredir=$1; shift
+        ;;
+    --lustre=*)
+        require_unset lustredir
+        lustredir=${opt#*=}
         ;;
     --version)
         version; exit 0
@@ -617,8 +803,11 @@ vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
                       21 'unpacked images dir'
 vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
+pack_fmt_set 21
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
+vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
+                      21 'Lustre test dir'
 printf '\n'
 
 if [[ $phase == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then
@@ -661,29 +850,21 @@ if [[ $CH_TEST_SUDO ]]; then
     printf '\n'
 fi
 
-case $phase in
-    all)
-        ;&
-    build)
-        builder_check
-        ;;
-    examples|run)
-        dir_tar_check
-        ;;
-esac
-
 if [[ -n $dry ]];then
     printf 'exiting per --dry-run\n'
     exit 0
 fi
 
-
 cd "$CHTEST_DIR"
 
 export PATH=$ch_bin:$PATH
 
-# The distinction here is that "images" are purely for testing and have no
-# value as examples for the user, while "examples" are dual-purpose.
+# Now that CH_TEST_* variables, PATH, and BATS_TMPDIR has been set and checked,
+# we source CHTEST_DIR/common.bash.
+. "${CHTEST_DIR}/common.bash"
+
+# The distinction here is that "images" are purely for testing and have no value
+# as examples for the user, while "examples" are dual-purpose.
 images=$(find   "$CHTEST_DIR"             -name 'Build' \
                                        -o -name 'Build.*' \
                                        -o -name 'Dockerfile.*' | sort)
@@ -697,28 +878,42 @@ scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 # Execute phase
 case $phase in
     build)
+        builder_check
         dir_tar_mk
-        test_make_auto
+        test_make
         test_build
         win
         ;;
     run)
         dir_img_mk
-        test_make_auto
+        test_make
         test_run
         win
         ;;
     examples)
+        test_make
         test_examples
         win
         ;;
     all)
+        phase=build
         dir_tar_mk
-        dir_img_mk
-        test_make_auto
+        builder_check
+        test_make
         test_build
+
+        phase=run
+        dir_img_mk
+        dir_tar_check
+        test_make
         test_run
+
+        phase=examples
+        dir_tar_check
+        test_make
         test_examples
+
+        # Kobe.
         win
         ;;
     mk-perm-dirs)
