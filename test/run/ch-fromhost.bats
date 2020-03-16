@@ -34,18 +34,21 @@ fromhost_ls () {
     prerequisites_ok centos8
     img=${ch_imgdir}/centos8
 
+    libpath=$(ch-fromhost --lib-path "$img")
+    echo "libpath: ${libpath}"
+
     # --file
     fromhost_clean "$img"
     ch-fromhost -v --file sotest/files_inferrable.txt "$img"
     fromhost_ls "$img"
     test -f "${img}/usr/bin/sotest"
-    test -f "${img}/lib64/bind9-export/libsotest.so.1.0"
-    test -L "${img}/lib64/bind9-export/libsotest.so.1"
+    test -f "${img}${libpath}/libsotest.so.1.0"
+    test -L "${img}${libpath}/libsotest.so.1"
     ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest
     ch-run "$img" -- sotest
     rm "${img}/usr/bin/sotest"
-    rm "${img}/lib64/bind9-export/libsotest.so.1.0"
-    rm "${img}/lib64/bind9-export/libsotest.so.1"
+    rm "${img}${libpath}/libsotest.so.1.0"
+    rm "${img}${libpath}/libsotest.so.1"
     ch-run -w "$img" -- /sbin/ldconfig
     fromhost_clean_p "$img"
 
@@ -84,8 +87,8 @@ fromhost_ls () {
     # --no-ldconfig
     ch-fromhost -v --no-ldconfig --file sotest/files_inferrable.txt "$img"
       test -f "${img}/usr/bin/sotest"
-      test -f "${img}/lib64/bind9-export/libsotest.so.1.0"
-    ! test -L "${img}/lib64/bind9-export/libsotest.so.1"
+      test -f "${img}${libpath}/libsotest.so.1.0"
+    ! test -L "${img}${libpath}/libsotest.so.1"
     ! ( ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest )
     run ch-run "$img" -- sotest
     echo "$output"
@@ -111,17 +114,20 @@ fromhost_ls () {
     prerequisites_ok debian9
     img=${ch_imgdir}/debian9
 
+    libpath=$(ch-fromhost --lib-path "$img")
+    echo "libpath: ${libpath}"
+
     fromhost_clean "$img"
     ch-fromhost -v --file sotest/files_inferrable.txt "$img"
     fromhost_ls "$img"
     test -f "${img}/usr/bin/sotest"
-    test -f "${img}/usr/local/lib/libsotest.so.1.0"
-    test -L "${img}/usr/local/lib/libsotest.so.1"
+    test -f "${img}/${libpath}/libsotest.so.1.0"
+    test -L "${img}/${libpath}/libsotest.so.1"
     ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest
     ch-run "$img" -- sotest
     rm "${img}/usr/bin/sotest"
-    rm "${img}/usr/local/lib/libsotest.so.1.0"
-    rm "${img}/usr/local/lib/libsotest.so.1"
+    rm "${img}/${libpath}/libsotest.so.1.0"
+    rm "${img}/${libpath}/libsotest.so.1"
     rm "${img}/etc/ld.so.cache"
     fromhost_clean_p "$img"
 }
