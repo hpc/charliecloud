@@ -7,12 +7,16 @@ FROM centos:7
 # Install packages we actually need.
 RUN yum -y install epel-release
 RUN yum -y install \
+           autoconf \
            bats \
            gcc \
            make \
            python36 \
+           python36-sphinx \
+           python36-sphinx_rtd_theme \
            rpm-build \
            rpmlint \
+           rsync \
            wget
 
 # Like apt(8), Yum/RPM like to chown(2), etc., if they believe they are root.
