@@ -97,7 +97,7 @@ will encounter more complex Dockerfiles later in this tutorial.
      $ sudo docker pull debian:stretch
 
    There are various resources and scripts online to help automate this
-   process, as well as :code:`test/docker-clean.sh`.
+   process, as well as :code:`misc/docker-clean.sh`.
 
 Build Docker image
 ------------------
@@ -574,9 +574,9 @@ package :code:`openssh-client`:
 
 .. literalinclude:: ../examples/hello/Dockerfile
    :language: docker
-   :lines: 2-6
+   :lines: 3-7
 
-You can use distribution package managers such as :code:`apt-get`, as
+You can use distribution package managers such as :code:`dnf`, as
 demonstrated above, or others, such as :code:`pip` for Python packages.
 
 Be aware that the software will be downloaded anew each time you build the
@@ -587,14 +587,14 @@ Third-party software compiled from source
 
 Under this method, one uses :code:`RUN` commands to fetch the desired software
 using :code:`curl` or :code:`wget`, compile it, and install. Our example does
-this with two chained Dockerfiles. First, we build a basic Debian image
-(:code:`test/Dockerfile.debian9`):
+this with two chained Dockerfiles. First, we build a basic CentOS image
+(:code:`examples/Dockerfile.centos8`):
 
-.. literalinclude:: ../examples/Dockerfile.debian9
+.. literalinclude:: ../examples/Dockerfile.centos8
    :language: docker
    :lines: 2-
 
-Then, we add OpenMPI with :code:`test/Dockerfile.openmpi`. This is a complex
+Then, we add OpenMPI with :code:`examples/Dockerfile.openmpi`. This is a complex
 Dockerfile that compiles several dependencies in addition to OpenMPI. For the
 purposes of this tutorial, you can skip most of it, but we felt it would be
 useful to show a real example.
@@ -605,7 +605,7 @@ useful to show a real example.
 
 So what is going on here?
 
-1. Use the latest Debian, Stretch, as the base image.
+1. Use the latest CentOS 8 as the base image.
 
 2. Install a basic build system using the OS package manager.
 
@@ -613,8 +613,8 @@ So what is going on here?
 
    1. Download and untar. Note the use of variables to make adjusting the URL
       and versions easier, as well as the explanation of why we're not using
-      :code:`apt-get`, given that several of these packages are included in
-      Debian.
+      :code:`dnf`, given that several of these packages are included in
+      CentOS.
 
    2. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
       appropriate parallel build.

@@ -1,4 +1,5 @@
 # ch-test-scope: standard
+# Unable to convert to a CentOS base until issues #472 and #498 are resolved
 FROM debian:stretch
 
 RUN    apt-get update \

@@ -231,7 +231,7 @@ commit (Travis tests only the most recent commit in a pushed group).
 branch that you force-push or squash-merge. Don't submit a PR with half a
 dozen "fix Travis" commits.
 
-**Purging Docker cache.** :code:`test/docker-clean.sh` can be used to purge
+**Purging Docker cache.** :code:`misc/docker-clean.sh` can be used to purge
 your Docker cache, either by removing all tags or deleting all containers and
 images. The former is generally preferred, as it lets you update only those
 base images that have actually changed (the ones that haven't will be
