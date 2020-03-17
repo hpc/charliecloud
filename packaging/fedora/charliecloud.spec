@@ -60,6 +60,7 @@ Test fixtures for %{name}.
 %build
 
 %configure --prefix=%{_prefix} \
+           --libdir=%{_libdir} \
 %if %{?el7}
             --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
