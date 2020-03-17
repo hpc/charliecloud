@@ -12,7 +12,9 @@ Copy image :code:`IN` to :code:`OUT` and convert its format along the way if
 needed. Replace :code:`OUT` if it already exists, unless :code:`--no-clobber`
 is specified.
 
-The Charliecloud workflow involves four basic steps:
+:code:`ch-run(1)` requires an image in directory form. Therefore, the goal of
+the Charliecloud workflow is to end up with a directory, but there is more
+than one way to get there. One possible workflow is:
 
   1. Build an image using a Dockerfile or pull it from a repository, placing
      the resulting image in *builder storage*.
@@ -51,11 +53,13 @@ Thus, Charliecloud deals with images stored in four different formats:
 by mounting a SquashFS archive using :code:`ch-mount(1)` — but that is not an
 image *storage* format.)
 
-The purpose of :code:`ch-convert` is to convert images among these four
-formats. However, it can also be used to copy images within the same format.
+The purpose of :code:`ch-convert` is to copy images, either within the same
+format or between different formats.
 
-Some copies require temporary storage equal to the uncompressed size of the
-image.
+Many of the copy algorithms have shortcuts available, which :code:`ch-convert`
+knows about, so you should typically invoke it only once per workflow, asking
+for the final format you actually need. Some copies require temporary storage
+equal to the uncompressed size of the image.
 
 
 Arguments
@@ -100,8 +104,9 @@ Arguments
     :code:`ch-grow(1)`. (Currently only implemented for :code:`ch-grow(1)`.)
 
   :code:`--tmp DIR`
-    Path to temporary directory. Default: :code:`$TMP` if specified; otherwise
-    :code:`/tmp`.
+    Path to temporary directory. Storage needed varies between zero and the
+    uncompressed size of the image, depending on the input and output formats.
+    Default: :code:`$TMP` if specified; otherwise :code:`/tmp`.
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter.
@@ -113,31 +118,47 @@ Format and filename inference
 :code:`ch-convert` tries to save typing by guessing formats and filenames when
 they are reasonably clear.
 
-Format inference is done according for both :code:`IN` and :code:`OUT`. The
-algorithm tries to match the value agains the following globs in this order.
-Paths need not exist in the filesystem.
+Format inference is done for both :code:`IN` and :code:`OUT`. The algorithm
+tries to match the value against the following globs in this order. Paths need
+not exist in the filesystem.
 
   1. :code:`*.sqfs`, :code:`*.squash`, :code:`*.squashfs`: SquashFS.
-  2. :code:`*.tar`, :code:`*.t?z`, :code:`*.tar.??`, :code:`*.tar.??`: tarball.
-  3. :code:`*:*` (i.e., containing a colon): builder storage.
-  4. Otherwise: directory.
+
+  2. :code:`*.tar`, :code:`*.t?z`, :code:`*.tar.??`, :code:`*.tar.??`: Tarball.
+
+  3. :code:`/*`, :code:`./*` (i.e., absolute path or relative path with
+     explicit dot): Directory.
+
+  4. :code:`*:*` (i.e., containing a colon): Builder storage.
+
+  5. Otherwise: No format inference.
 
 A notable consequence of these rules is than a simple image reference such as
-:code:`debian` is inferred to be a directory. The workaround is to add the
-default tag, e.g. :code:`debian:latest`.
+:code:`debian` cannot be inferred. The workaround is to add the default tag,
+e.g. :code:`debian:latest`.
 
-:code:`ch-convert` also infers filenames for :code:`OUT` (but not :code:`IN`)
-to save typing. If :code:`OUT` is path to a directory that exists, and the
-output format is:
+:code:`ch-convert` also infers filenames for :code:`OUT` (but not :code:`IN`).
+If :code:`OUT` is path to a directory that exists, and the output format is:
 
   * directory,
+
     * and :code:`OUT` ends in slash: append inferred filename.
     * otherwise: use :code:`OUT` without modification.
+
   * tarball or squash: append inferred filename.
   * builder storage: use :code:`OUT` without modification.
 
-Inferred filename rules: FIXME
+Filenames are inferred by deriving a base from :code:`IN` and then adding an
+extension appropriate for :code:`--out-fmt`. Base if :code:`IN` is:
 
+  * builder storage: image reference (i.e., :code:`IN`) with slashes changed
+    to percents.
+
+  * tarball: filename with tarball extension (e.g., :code:`.tar.gz`) removed.
+
+  * SquashFS: filename with SquashFS extension (e.g., :code:`.sqfs`) removed.
+
+  * directory: final component of the path.
 
 Supported conversions
 =====================
@@ -171,9 +192,68 @@ is a flattened image without layers.
 Examples
 ========
 
-* FIXME
-* format inference
-* filename inference
-  * directory slash/no slash
-  * squashfs
-* OUT_ARG for squashfs
+Copy an image :code:`foo/bar:latest` from builder storage to a SquashFS file::
+
+  $ ch-convert -o squash foo/bar:latest /var/tmp
+  input:   builder storage  foo/bar:latest
+  output:  squashfs         /var/tmp/foo%bar:latest.sqfs
+  copying ...
+  done
+
+Same, but inferring output format instead of filename::
+
+  $ ch-convert foo/bar:latest /var/tmp/foo%bar:latest.sqfs
+  input:   builder storage  foo/bar:latest
+  output:  squashfs         /var/tmp/foo%bar:latest.sqfs
+  copying ...
+  done
+
+Same, but no inference at all::
+
+  $ ch-convert -i builder -o squash foo/bar:latest /var/tmp/foo%bar:latest.sqfs
+  input:   builder storage  foo/bar:latest
+  output:  squashfs         /var/tmp/foo%bar:latest.sqfs
+  copying ...
+  done
+
+Error inferring input format (:code:`:latest` omitted)::
+
+  $ ch-convert -o squash foo/bar /var/tmp
+  ch-convert[1234]: cannot infer format: foo/bar
+
+Copy an image :code:`foo/bar:latest` from builder storage to a new
+subdirectory of :code:`/var/tmp`::
+
+  $ ch-convert foo/bar:latest /var/tmp/
+  input:   builder storage  foo/bar:latest
+  output:  directory        /var/tmp/foo%bar:latest
+  copying ...
+  done
+
+Same, but no filename inference::
+
+  $ ch-convert foo/bar:latest /var/tmp/foo%bar:latest
+  input:   builder storage  foo/bar:latest
+  output:  directory        /var/tmp/foo%bar:latest
+  copying ...
+  done
+
+Similar, but :code:`/var/tmp` has no trailing slash. :code:`ch-convert` then
+tries to use :code:`/var/tmp` as the output image path, but stops with an
+error because :code:`/var/tmp` already exists but doesn't look like an image.
+
+::
+
+  $ ch-convert foo/bar:latest /var/tmp
+  input:   builder storage  foo/bar:latest
+  output:  directory        /var/tmp
+  ch-convert[1234]: directory exists but doesn't appear to be an image: /var/tmp
+
+Copy an image to a SquashFS file, and provide options :code:`-b 1048576` to
+:code:`mksquashfs` to set the block size to 1 MiB::
+
+  $ ch-convert -o squash foo/bar:latest /var/tmp -b 1048576
+  input:   builder storage  foo/bar:latest
+  output:  squashfs         /var/tmp/foo%bar:latest.sqfs
+  copying ...
+  done
