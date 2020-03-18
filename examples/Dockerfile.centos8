@@ -1,6 +1,9 @@
 # ch-test-scope: standard
 FROM centos:8
 
+# This image has two purposes: (1) demonstrate we can build a CentOS 8 image
+# and (2) provide an epel8 (el8) build environment for Charliecloud RPMs.
+
 # 1. Install the dnf ovl plugin to work around RPMDB corruption when building
 #    images with Docker and the OverlayFS storage driver.
 #
@@ -18,3 +21,16 @@ RUN    echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
     && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf \
     && ldconfig
 
+# Install packages needed to build el8 rpms.
+RUN yum -y install \
+           autoconf \
+           automake \
+           python3 \
+           python3-sphinx \
+           python3-sphinx_rtd_theme \
+           rpm-build \
+           rpmlint \
+           rsync
+
+RUN yum -y install fakeroot
+RUN fakeroot yum -y install git
