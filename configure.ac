@@ -13,6 +13,7 @@ AC_INIT([Charliecloud], [m4_esyscmd_s([misc/version])],
 AC_PREREQ([2.69])
 AC_CONFIG_SRCDIR([bin/ch-run.c])
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIRS([misc/m4])
 
 AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
 

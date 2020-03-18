@@ -46,7 +46,6 @@ common distributions should be sufficient.
 
   * Automake
   * Autoconf
-  * Autoconf Archive
 
 Create :code:`configure` with::
 
