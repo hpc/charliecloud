@@ -7,7 +7,11 @@ load ../common
     if ( ! command -v sphinx-build > /dev/null 2>&1 ); then
         pedantic_fail 'Sphinx is not installed'
     fi
+    if [[ -d ${BATS_TMPDIR}/rpmbuild/SOURCES/charliecloud ]]; then
+        rm -rf "${BATS_TMPDIR}/rpmbuild/SOURCES/charliecloud"
+    fi
     img=${ch_imgdir}/centos7
+    mkdir -p "${img}/charliecloud"
 
     # Build and install RPMs into CentOS 7 image.
     (cd .. && packaging/fedora/build --install --image="$img" \
@@ -54,6 +58,7 @@ load ../common
     [[ $output = *'charliecloud-test-'* ]]
 
     # All gone?
+    rm -rf "${img}/charliecloud"
     run ch-run "$img" -- rpm -qa "charliecloud*"
     echo "$output"
     [[ $status -eq 0 ]]

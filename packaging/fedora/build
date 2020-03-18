@@ -81,7 +81,8 @@ def main():
 
    # Build tarball.
    print("# building source tarball")
-   cmd("./autogen.sh", cwd=git_tmp)
+   cmd("./bin/ch-run", "-b", "%s:/charliecloud" % git_tmp,
+       "-c", "/charliecloud", args.image, "--", "./autogen.sh")
    cmd("./configure", cwd=git_tmp)
    cmd("make", cwd=git_tmp)
    cmd("make", "dist", cwd=git_tmp)
