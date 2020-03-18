@@ -97,16 +97,31 @@ AC_ARG_ENABLE([ch-grow],
 #   $3  append to $1 to make shell pipeline to get actual version only
 #       (e.g., without program name)
 #
-# If ${!1} is empty, do nothing.
+# This macro is not able to determine if a program exists, only whether its
+# version is sufficient. ${!1} (i.e, the value of the variable whose name is
+# stored in $1) must be either empty, an absolute path to an executable, or
+# the name of a program in $PATH. A prior macro such as AX_WITH_PROG can be
+# used to ensure this condition.
 #
-# If minimum version is less than actual version, unset $1. Otherwise, also
-# set $1_VERSION to the actual version.
+# If ${!1} is an absolute path, and that file isn't executable, error out. If
+# it's something other than an absolute path, assume it's the name of a
+# program in $PATH; if not, the behavior is undefined but not good (FIXME).
 #
-# If given absolute path, and that file isn't executable, error out.
+# Post-conditions:
+#
+#   1. If ${!1} is non-empty and the version reported by the program is
+#      greater than or equal to the minimum, ${!1} is unchanged. If ${!1} is
+#      empty or reported version is insufficient, ${!1} is the empty string.
+#      This lets you test version sufficiency by whether ${!1} is empty.
+#
+#   2. $1_VERSION_NOTE contains a brief explanatory note.
+#
 AC_DEFUN([CH_CHECK_VERSION], [
   AS_VAR_PUSHDEF([prog], [$1])
   AS_IF([test -n "$prog"], [
+    # ${!1} is non-empty
     AS_CASE([$prog],
+      # absolute path; check if executable
       [/*], [AC_MSG_CHECKING([if $prog is executable])
              AS_IF([test -e "$prog"],
               [AC_MSG_RESULT([ok])],
@@ -114,11 +129,18 @@ AC_DEFUN([CH_CHECK_VERSION], [
                AC_MSG_ERROR([must be executable])])])
     AC_MSG_CHECKING([if $prog version >= $2])
     vact=$($prog $3)
-    AX_COMPARE_VERSION([$2], [le], [$vact],
-      [AC_MSG_RESULT([ok ($vact)])
-       AC_SUBST([$1_VERSION], [$vact])],
-      [AC_MSG_RESULT([too old ($vact)])
-       AS_UNSET([$1])])
+    AX_COMPARE_VERSION([$2], [le], [$vact], [
+      AC_SUBST([$1_VERSION_NOTE], ["ok ($vact)"])
+      AC_MSG_RESULT([ok ($vact)])
+    ], [
+      AC_SUBST([$1_VERSION_NOTE], ["too old ($vact)"])
+      AC_MSG_RESULT([too old ($vact)])
+      AS_UNSET([$1])
+    ])
+  ], [
+    # ${!} is empty
+    AC_SUBST([$1_VERSION_NOTE], ["not found"])
+    AS_UNSET([$1])
   ])
   AS_VAR_POPDEF([prog])
 ])
@@ -365,12 +387,12 @@ AS_IF([   test $have_userns = yes],
 
 # image builders
 
-AS_IF([   test -n "$BUILDAH_VERSION"],
+AS_IF([   test -n "$BUILDAH"],
       [have_buildah=yes],
       [have_buildah=no])
 
 AS_IF([   test $enable_ch_grow = yes \
-       && test -n "$PYTHON_VERSION" \
+       && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
        && test $have_lark = yes \
        && test $have_requests = yes \
@@ -378,7 +400,7 @@ AS_IF([   test $enable_ch_grow = yes \
       [have_ch_grow=yes],
       [have_ch_grow=no])
 
-AS_IF([   test -n "$DOCKER_VERSION" \
+AS_IF([   test -n "$DOCKER" \
        && test -n "$MKTEMP"],
       [have_docker=yes],
       [have_docker=no])
@@ -400,7 +422,7 @@ AS_IF([   test -n "$TAR"],
       [have_pack_tar=no])
 
 AS_IF([   test $have_any_builder = yes \
-       && test -n "$MKSQUASHFS_VERSION"],
+       && test -n "$MKSQUASHFS"],
       [have_pack_squash=yes],
       [have_pack_squash=no])
 
@@ -410,11 +432,11 @@ AS_IF([   test -n "$TAR"],
       [have_unpack_tar=yes],
       [have_unpack_tar=no])
 
-AS_IF([   test -n "$SQUASHFUSE_VERSION"],
+AS_IF([   test -n "$SQUASHFUSE"],
       [have_ch_mount=yes],
       [have_ch_mount=no])
 
-AS_IF([   test -n "$NVIDIA_CLI_VERSION" \
+AS_IF([   test -n "$NVIDIA_CLI" \
        && test $have_nvidia_libs = yes],
       [have_nvidia=yes],
       [have_nvidia=no])
@@ -423,9 +445,9 @@ AS_IF([   test -n "$NVIDIA_CLI_VERSION" \
 
 AS_IF([   test $enable_test = yes \
        && test $have_ch_run = yes \
-       && test -n "$_BASH_VERSION" \
-       && test -n "$BATS_VERSION" \
-       && test -n "$WGET_VERSION"],
+       && test -n "$_BASH" \
+       && test -n "$BATS" \
+       && test -n "$WGET"],
       [have_tests_basic=yes],
       [have_tests_basic=no])
 
@@ -444,7 +466,7 @@ AS_IF([   test $have_tests_tar = yes \
 
 # assumes we do have generic sudo
 AS_IF([   test $have_tests_squash = yes \
-       && test -n "$SPHINX_VERSION"],
+       && test -n "$SPHINX"],
       [have_tests_all=yes],
       [have_tests_all=no])
 
@@ -493,33 +515,33 @@ Building Charliecloud
     C99 compiler ... ${CC} ${CC_VERSION}
 
   documentation: ${have_docs}
-    sphinx-build(1) $vmin_sphinx ... ${SPHINX:-not found} ${SPHINX_VERSION}
+    sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
     sphinx-build(1) Python ... ${sphinx_python:-n/a}
-    "docutils" module $vmin_docutils ... ${docutils_VERSION:-not found}
-    "sphinx-rtd-theme" module $vmin_rtd ... ${rtd_VERSION:-not found}
+    "docutils" module ≥ $vmin_docutils ... ${docutils_VERSION_NOTE}
+    "sphinx-rtd-theme" module ≥ $vmin_rtd ... ${rtd_VERSION_NOTE}
 
   will build and install:
     HTML documentation ... ${enable_html}
     man pages ... ${enable_man}
     test suite ... ${enable_test}
-    ch-grow builder ... ${enable_ch_grow}
+    ch-grow(1) and ch-tug(1) ... ${enable_ch_grow}
 
-Image builders via our wrappers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Building images via our wrappers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Buildah: ${have_buildah}
-    Buildah $vmin_buildah ... ${BUILDAH_VERSION:-not found}
+  with Buildah: ${have_buildah}
+    Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
-  ch-grow(1) and ch-tug(1): ${have_ch_grow}
+  with ch-grow(1): ${have_ch_grow}
     enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
-    Python in shebang $vmin_python ... ${PYTHON_VERSION:-not found}
+    Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
     "lark-parser" module ... ${have_lark}
     "requests" module ... ${have_requests}
     ch-run(1) ... ${have_ch_run}
 
-  Docker: ${have_docker}
-    Docker $vmin_docker ... ${DOCKER_VERSION:-not found}
+  with Docker: ${have_docker}
+    Docker ≥ $vmin_docker ... ${DOCKER_VERSION_NOTE}
     mktemp(1) ... ${MKTEMP:-not found}
 
 Managing container images
@@ -535,7 +557,7 @@ Managing container images
 
   pack images from builder storage to SquashFS: ${have_pack_squash}
     at least one builder ... ${have_any_builder}
-    mksquashfs(1) $vmin_mksquashfs ... ${MKSQUASHFS_VERSION}
+    mksquashfs(1) ≥ $vmin_mksquashfs ... ${MKSQUASHFS_VERSION_NOTE}
 
   Note: Pulling/pushing images from/to a repository is currently done using
   the builder directly.
@@ -550,10 +572,10 @@ Running containers
     tar(1) ... ${TAR:-not found}
 
   ch-mount(1) and ch-umount(1) SquashFS images: ${have_ch_mount}
-    SquashFUSE $vmin_squashfuse ... ${SQUASHFUSE_VERSION:-not found}
+    SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION_NOTE}
 
   inject nVidia GPU libraries: ${have_nvidia}
-    nvidia-container-cli(1) $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION:-not found}
+    nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION_NOTE}
     nVidia libraries & executables present ... ${have_nvidia_libs}
 
 Test suite
@@ -562,9 +584,9 @@ Test suite
   basic tests: ${have_tests_basic}
     test suite enabled ... ${enable_test}
     ch-run(1) ... ${have_ch_run}
-    Bats $vmin_bats ... ${BATS_VERSION:-not found}
-    Bash $vmin_bash ... ${_BASH_VERSION:-not found}
-    wget(1) $vmin_wget ... ${WGET_VERSION:-not found}
+    Bats ≥ $vmin_bats ... ${BATS_VERSION_NOTE}
+    Bash ≥ $vmin_bash ... ${_BASH_VERSION_NOTE}
+    wget(1) ≥ $vmin_wget ... ${WGET_VERSION_NOTE}
 
   recommended tests with tarballs: ${have_tests_tar}
     basic tests ... ${have_tests_basic}
