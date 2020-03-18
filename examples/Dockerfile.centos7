@@ -12,7 +12,6 @@ RUN yum -y install \
            automake \
            bats \
            gcc \
-           git \
            make \
            python36 \
            python36-sphinx \
@@ -40,6 +39,7 @@ RUN yum -y install \
 # See issue #472.
 RUN          yum -y install fakeroot
 RUN fakeroot yum -y upgrade dbus
+RUN fakeroot yum -y install git
 
 # Clean up.
 RUN yum clean all
