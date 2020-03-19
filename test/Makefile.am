@@ -58,7 +58,7 @@ nobase_test_DATA = $(testfiles)
 nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
 test_SCRIPTS = docs-sane make-perms-test
-CLEANFILES = $(sobuilts)
+CLEANFILES = $(sobuilts) docs-sane make-perms-test
 endif
 EXTRA_DIST += $(testfiles) $(testfiles_exec)
 EXTRA_SCRIPTS = $(sobuilts)
