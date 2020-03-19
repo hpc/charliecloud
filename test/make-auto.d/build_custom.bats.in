@@ -29,7 +29,7 @@
         fi
         rm -Rf --one-file-system "$out"
     else
-        false  # no tarball or directory
+        [[ $status -ne 0 ]]  # no tarball or directory; script should fail
     fi
     # Clean up.
     rm -Rf --one-file-system "$workdir"
