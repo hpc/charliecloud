@@ -184,7 +184,7 @@ EOF2
     ./autogen.sh
     ./configure
     make
-    sudo make install PREFIX=/usr/local
+    sudo make install
     which ch-run
     ch-run --version
   EOF
