@@ -34,7 +34,7 @@ Summary:        Charliecloud html documentation
 License:        BSD and MIT and ASL 2.0
 BuildArch:      noarch
 Obsoletes:      %{name}-doc < %{version}-%{release}
-%if %{?el7}
+%if 0%{?el7}
 BuildRequires:  python36-sphinx
 BuildRequires:  python36-sphinx_rtd_theme
 %else
@@ -61,7 +61,8 @@ Test fixtures for %{name}.
 
 %configure --prefix=%{_prefix} \
            --libdir=%{_libdir} \
-%if %{?el7}
+           --with-python=/usr/bin/python3 \
+%if 0%{?el7}
             --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
             --with-sphinx-build=%{_bindir}/sphinx-build
@@ -98,7 +99,7 @@ ln -s "${sphinxdir}/css"   %{buildroot}%{_docdir}/%{name}/html/_static/css
 ln -s "${sphinxdir}/fonts" %{buildroot}%{_docdir}/%{name}/html/_static/fonts
 ln -s "${sphinxdir}/js"    %{buildroot}%{_docdir}/%{name}/html/_static/js
 
-%if %{?el7}
+%if 0%{?el7}
 %{__mv} %{buildroot}/%{_docdir}/%{name} %{buildroot}%{_docdir}/%{name}-%{version}
 %endif
 
@@ -121,7 +122,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_docdir}/%{name}/html/_static/js
 %exclude %{_bindir}/ch-test
 
 # Exclude bundled license and readme
-%if %{?el7}
+%if 0%{?el7}
 %exclude %{_docdir}/%{name}-%{version}/LICENSE
 %exclude %{_docdir}/%{name}-%{version}/README.rst
 %else

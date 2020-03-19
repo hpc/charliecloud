@@ -32,9 +32,7 @@ Build.ch-pull2dir \
 Build.ch-pull2tar \
 Build.docker_pull \
 Build.missing \
-Build.skopeo-umoci \
-docs-sane \
-make-perms-test
+Build.skopeo-umoci
 
 # Travis stuff doesn't need to be installed.
 EXTRA_DIST = \
@@ -59,10 +57,18 @@ if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
 nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
+test_SCRIPTS = docs-sane make-perms-test
 CLEANFILES = $(sobuilts)
 endif
 EXTRA_DIST += $(testfiles) $(testfiles_exec)
 EXTRA_SCRIPTS = $(sobuilts)
+
+## Python scripts - need text processing
+docs-sane: docs-sane.py.in
+make-perms-test: make-perms-test.py.in
+$(test_SCRIPTS): %: %.py.in
+	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
+	chmod +rwx $@  # respects umask
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0 sotest/libsotest.so sotest/libsotest.so.1
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^

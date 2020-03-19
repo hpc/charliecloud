@@ -2,12 +2,13 @@ load ../common
 
 setup () {
     [[ $CHTEST_GITWD ]] || skip "not in Git working directory"
-    if ( ! command -v sphinx-build > /dev/null 2>&1 ); then
+    if     ! command -v sphinx-build > /dev/null 2>&1 \
+        && ! command -v sphinx-build-3.6 > /dev/null 2>&1; then
         pedantic_fail 'Sphinx is not installed'
     fi
 }
 
-@test 'build/install el7 RPMs' {
+@test 'build/install epepel7 RPMs' {
     scope standard
     prerequisites_ok centos7
     if [[ -d ${BATS_TMPDIR}/rpmbuild/SOURCES/charliecloud ]]; then
@@ -21,7 +22,7 @@ setup () {
                                      --rpmbuild="$BATS_TMPDIR/rpmbuild" HEAD)
 }
 
-@test 'check el7 RPM files' {
+@test 'check epel7 RPM files' {
     img=${ch_imgdir}/centos7
     # Do installed RPMs look sane?
     run ch-run "$img" -- rpm -qa "charliecloud*"
@@ -53,7 +54,7 @@ setup () {
     [[ $output = *'/usr/share/doc/charliecloud-'*'/html'* ]]
 }
 
-@test 'remove el7 RPMs' {
+@test 'remove epel7 RPMs' {
     img=${ch_imgdir}/centos7
     # Uninstall to avoid interfering with the rest of the test suite.
     run ch-run -w "$img" -- rpm -v --erase charliecloud-test \
@@ -74,7 +75,7 @@ setup () {
     [[ $output = '' ]]
 }
 
-@test 'build/install el8 RPMS' {
+@test 'build/install epel8 RPMS' {
     scope standard
     prerequisites_ok centos8
     if [[ -d ${BATS_TMPDIR}/rpmbuild/SOURCES/charliecloud ]]; then
@@ -88,7 +89,7 @@ setup () {
                                      --rpmbuild="$BATS_TMPDIR/rpmbuild" HEAD)
 }
 
-@test 'check el8 RPM files' {
+@test 'check epel8 RPM files' {
     img=${ch_imgdir}/centos8
     # Do installed RPMs look sane?
     run ch-run "$img" -- rpm -qa "charliecloud*"
@@ -120,7 +121,7 @@ setup () {
     [[ $output = *'/usr/share/doc/charliecloud-'*'/html'* ]]
 }
 
-@test 'remove el8 RPMs' {
+@test 'remove epel8 RPMs' {
     img=${ch_imgdir}/centos8
     # Uninstall to avoid interfering with the rest of the test suite.
     run ch-run -w "$img" -- rpm -v --erase charliecloud-test \
