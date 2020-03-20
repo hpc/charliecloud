@@ -1,6 +1,6 @@
 load ../common
 
-@test 'ARG and ENV' {
+@test 'Dockerfile: ARG and ENV' {
 
     # We use full scope for builders other than ch-grow because (1) with
     # ch-grow, we are responsible for --build-arg being implemented correctly
@@ -196,4 +196,76 @@ EOF
     else
         [[ $status -eq 0 ]]
     fi
+}
+
+@test 'Dockerfile: COPY errors' {
+    scope standard
+    [[ $CH_BUILDER = none ]] && skip 'no builder'
+    [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
+
+    # Dockerfile on stdin, so no context directory.
+    if [[ $CH_BUILDER != ch-grow ]]; then  # ch-grow doesn't support this yet
+        run ch-build -t foo - <<EOF
+FROM 00_tiny
+COPY doesnotexist .
+EOF
+        echo "$output"
+        [[ $status -ne 0 ]]
+        if [[ $CH_BUILDER = docker ]]; then
+            # This error message seems wrong. I was expecting something about
+            # no context, so COPY not allowed.
+            [[ $output = *'no such file or directory'* ]]
+        else
+            false  # unimplemented
+        fi
+    fi
+
+    # SRC must be inside context directory.
+    #
+    # Simple case: leading "..".
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY ../foo .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'outside'*'context'* ]]
+    # More complex case: ".." inside path.
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY foo/../../baz .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'outside'*'context'* ]]
+
+    # If multiple SRC, DST must have a trailing slash.
+    #
+    # Note: Docker fails after checking whether SRC exist, so we use files
+    # that exist in test/ to get the right error.
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY Makefile Makefile.in .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'must be a directory'*'end with'*'/'* ]]
+
+    # DST has trailing slash but is not a directory.
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY Makefile Makefile.in /etc/fstab/
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'not a directory'* ]]
+
+    # File not found.
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY doesnotexist .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'doesnotexist:'*'o such file or directory'* ]]
 }
