@@ -686,7 +686,7 @@ fi
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
+    all|build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
         require_unset phase
         phase=$opt
         ;;
@@ -786,8 +786,7 @@ printf 'contributor:  %s\n\n' "$ch_contributor_note"
 
 printf "%-21s %s" 'phase:' "$phase"
 if [[ -z $phase ]]; then
-    phase=all
-    printf 'build run examples'
+    fatal 'phase: no phase specified'
 fi
 printf '\n'
 
