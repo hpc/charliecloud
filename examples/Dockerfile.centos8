@@ -25,6 +25,7 @@ RUN    echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
 RUN yum -y install \
            autoconf \
            automake \
+           bats \
            gcc \
            make \
            python3 \

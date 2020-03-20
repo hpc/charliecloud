@@ -8,7 +8,7 @@ setup () {
     fi
 }
 
-@test 'build/install epepel7 RPMs' {
+@test 'build/install epel7 RPMs' {
     scope standard
     prerequisites_ok centos7
     if [[ -d ${BATS_TMPDIR}/rpmbuild/SOURCES/charliecloud ]]; then
