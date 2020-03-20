@@ -319,6 +319,11 @@ test_examples () {
     fi
 }
 
+test_file () {
+    printf 'executing file tests ...\n'
+    bats "$only_file"
+}
+
 test_make () {
     local bat_file
     local img_pack
@@ -713,6 +718,16 @@ while [[ $# -gt 0 ]]; do
     --dry-run)
         dry=true
         ;;
+    -f|--file)
+        require_unset phase
+        phase=file
+        only_file=$1; shift
+        ;;
+    --file=*)
+        require_unset phase
+        phase=file
+        only_file=${opt#*=}
+        ;;
     -h|--help)
         usage 0
         ;;
@@ -796,7 +811,17 @@ else
 fi
 printf 'contributor:  %s\n\n' "$ch_contributor_note"
 
+if [[ $phase = file ]]; then
+    if [[ ! -f $only_file ]]; then
+        fatal "not a file: $only_file"
+    fi
+    only_file=$(readlink -f "$only_file")  # make absolute b/c we cd later
+fi
+
 printf "%-21s %s" 'phase:' "$phase"
+if [[ $phase = file ]]; then
+    printf ': %s' "$only_file"
+fi
 if [[ -z $phase ]]; then
     phase=all
     printf 'build run examples'
@@ -889,24 +914,6 @@ scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 
 # Execute phase
 case $phase in
-    build)
-        builder_check
-        dir_tar_mk
-        test_make
-        test_build
-        win
-        ;;
-    run)
-        dir_img_mk
-        test_make
-        test_run
-        win
-        ;;
-    examples)
-        test_make
-        test_examples
-        win
-        ;;
     all)
         phase=build
         dir_tar_mk
@@ -928,6 +935,29 @@ case $phase in
         # Kobe.
         win
         ;;
+    build)
+        builder_check
+        dir_tar_mk
+        test_make
+        test_build
+        win
+        ;;
+    clean)
+        dirs_unpriv_rm
+        if [[ -d $TMP_ ]] && [[ -e $TMP_/build_auto.bats ]]; then
+            echo "removing $TMP_"
+            rm -rf --one-file-system "$TMP_"
+        fi
+        ;;
+    file)
+        test_file
+        win
+        ;;
+    examples)
+        test_make
+        test_examples
+        win
+        ;;
     mk-perm-dirs)
         printf 'creating filesystem permissions fixtures ...\n'
         for d in $CH_TEST_PERMDIRS; do
@@ -945,11 +975,10 @@ case $phase in
             dir_perm_rm "$d"
         done
         ;;
-    clean)
-        dirs_unpriv_rm
-        if [[ -d $TMP_ ]] && [[ -e $TMP_/build_auto.bats ]]; then
-            echo "removing $TMP_"
-            rm -rf --one-file-system "$TMP_"
-        fi
+    run)
+        dir_img_mk
+        test_make
+        test_run
+        win
         ;;
 esac
