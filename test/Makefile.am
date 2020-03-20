@@ -61,7 +61,7 @@ nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
 CLEANFILES = $(sobuilts) docs-sane make-perms-test
 endif
-EXTRA_DIST += $(testfiles) $(testfiles_exec)
+EXTRA_DIST += $(testfiles) $(testfiles_exec) docs-sane.py.in make-perms-test.py.in
 EXTRA_SCRIPTS = $(sobuilts)
 
 ## Python scripts - need text processing

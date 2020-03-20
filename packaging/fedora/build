@@ -83,9 +83,12 @@ def main():
    print("# building source tarball")
    cmd("./bin/ch-run", "-b", "%s:/charliecloud" % git_tmp,
        "-c", "/charliecloud", args.image, "--", "./autogen.sh")
-   cmd("./configure", cwd=git_tmp)
-   cmd("make", cwd=git_tmp)
-   cmd("make", "dist", cwd=git_tmp)
+   cmd("./bin/ch-run", "-b", "%s:/charliecloud" % git_tmp,
+       "-c", "/charliecloud", args.image, "--", "./configure")
+   cmd("./bin/ch-run", "-b", "%s:/charliecloud" % git_tmp,
+       "-c", "/charliecloud", args.image, "--", "make")
+   cmd("./bin/ch-run", "-b", "%s:/charliecloud" % git_tmp,
+       "-c", "/charliecloud", args.image, "--", "make", "dist")
    ch_version = open(git_tmp + "/lib/version.txt").read()[:-1]
    ch_tarball = "charliecloud-%s.tar.gz" % ch_version
    print("# Charliecloud version: %s" % ch_version)
