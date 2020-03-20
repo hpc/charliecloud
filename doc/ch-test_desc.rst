@@ -37,7 +37,7 @@ filesystem permissions fixtures must be created manually, in order to
 accommodate configurations where sudo is not available via the same login path
 used for running tests.
 
-The packed and unpacked image directories specified for testing are volitile.
+The packed and unpacked image directories specified for testing are volatile.
 The contents of these directories are removed before each respective build and
 run phases.
 
