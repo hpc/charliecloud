@@ -23,6 +23,7 @@ setup () {
 }
 
 @test 'check epel7 RPM files' {
+    prerequisites_ok centos7
     img=${ch_imgdir}/centos7
     # Do installed RPMs look sane?
     run ch-run "$img" -- rpm -qa "charliecloud*"
@@ -55,6 +56,7 @@ setup () {
 }
 
 @test 'remove epel7 RPMs' {
+    prerequisites_ok centos7
     img=${ch_imgdir}/centos7
     # Uninstall to avoid interfering with the rest of the test suite.
     run ch-run -w "$img" -- rpm -v --erase charliecloud-test \
@@ -89,6 +91,7 @@ setup () {
 }
 
 @test 'check epel8 RPM files' {
+    prerequisites_ok centos8
     img=${ch_imgdir}/centos8
     # Do installed RPMs look sane?
     run ch-run "$img" -- rpm -qa "charliecloud*"
@@ -113,6 +116,7 @@ setup () {
 }
 
 @test 'remove epel8 RPMs' {
+    prerequisites_ok centos8
     img=${ch_imgdir}/centos8
     # Uninstall to avoid interfering with the rest of the test suite.
     run ch-run -w "$img" -- rpm -v --erase charliecloud-debuginfo \
