@@ -1,8 +1,12 @@
 #!/bin/bash
 
-set -e
+### Setup we need right away
 
+set -e
 export LC_ALL=C  # predictable sorting
+
+
+### Functions we need right away
 
 fatal () {
     printf 'error: %s\n' "$1" 1>&2
@@ -13,13 +17,15 @@ warning () {
     printf 'warning: %s\n' "$1" 1>&2
 }
 
+
+### Setup
+
 lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
 if [[ ! -f ${lib}/base.sh ]]; then
     fatal "install or build problem: not found: ${lib}/base.sh"
 fi
 . "${lib}/base.sh"
 . "${lib}/contributors.bash"
-
 export ch_bin
 
 # shellcheck disable=SC2034
@@ -49,6 +55,9 @@ Additional options:
 See the man page for important details.
 EOF
 )
+
+
+### Functions
 
 builder_check () {
     printf 'checking builder ...\n'
@@ -189,14 +198,28 @@ dirs_unpriv_rm () {
     dir_tmp_rm
 }
 
-pq_missing () {
-    if [[ $phase == all || $phase == build ]]; then
-        local img=$1
-        local out=$2
-        local tag
-        tag=$(test_make_auto tag "$img")
-        printf '%s\n' "$out" >> "${CH_TEST_TARDIR}/${tag}.pq_missing"
+pack_fmt_set () {
+    width=$1
+    if [[ -n $pack_fmt ]]; then
+        case $pack_fmt in
+        '🐘')  # elephant emoji
+            pack_fmt=squash
+            ;;
+        '📠')  # fax machine emoji
+            pack_fmt=tar
+            ;;
+        esac
+        export CH_PACK_FMT=$pack_fmt
+        method='command line'
+    elif [[ -n $CH_PACK_FMT ]]; then
+        method='environment'
+    else
+        pack_fmt_choose
+        method='default'
     fi
+    printf "%-*s %s (%s)\n" \
+           "$width" 'packed image format:' "$CH_PACK_FMT" "$method"
+    pack_fmt_valid "$CH_PACK_FMT"
 }
 
 pedantry_set () {
@@ -223,6 +246,16 @@ pedantry_set () {
         use_sudo_default=yes
     else
         use_sudo_default=
+    fi
+}
+
+pq_missing () {
+    if [[ $phase == all || $phase == build ]]; then
+        local img=$1
+        local out=$2
+        local tag
+        tag=$(test_make_auto tag "$img")
+        printf '%s\n' "$out" >> "${CH_TEST_TARDIR}/${tag}.pq_missing"
     fi
 }
 
@@ -272,7 +305,7 @@ test_build () {
     if [[ ! -f ${TMP_}/build_auto.bats ]]; then
         fatal "${TMP_}/build_auto.bats not found"
     fi
-    bats build.bats "${TMP_}/build_auto.bats" build_post.bats
+    bats "${TMP_}/build_auto.bats" build/*.bats
 }
 
 test_examples () {
@@ -284,26 +317,6 @@ test_examples () {
     if (find "$TMP_" -name '*_example.bats' | grep -q .); then
         bats "${TMP_}"/*_example.bats
     fi
-}
-
-test_run () {
-    echo 'executing run phase tests ...'
-    if [[ ! -f ${TMP_}/run_auto.bats ]]; then
-        fatal "${TMP_}/run_auto.bats not found"
-    fi
-    bats run_first.bats "${TMP_}/run_auto.bats" ./run/*.bats
-    set -e
-    if [[ $CH_TEST_SCOPE != quick ]]; then
-        for guest_user in $(id -un) root nobody; do
-            for guest_group in $(id -gn) root $(id -gn nobody); do
-                export GUEST_USER=$guest_user
-                export GUEST_GROUP=$guest_group
-                echo "testing as $GUEST_USER $GUEST_GROUP"
-                bats run/ch-run_uidgid.bats
-            done
-        done
-    fi
-    set +e
 }
 
 test_make () {
@@ -560,28 +573,24 @@ test_make_template_print () {
     return
 }
 
-pack_fmt_set () {
-    width=$1
-    if [[ -n $pack_fmt ]]; then
-        case $pack_fmt in
-        '🐘')  # elephant emoji
-            pack_fmt=squash
-            ;;
-        '📠')  # fax machine emoji
-            pack_fmt=tar
-            ;;
-        esac
-        export CH_PACK_FMT=$pack_fmt
-        method='command line'
-    elif [[ -n $CH_PACK_FMT ]]; then
-        method='environment'
-    else
-        pack_fmt_choose
-        method='default'
+test_run () {
+    echo 'executing run phase tests ...'
+    if [[ ! -f ${TMP_}/run_auto.bats ]]; then
+        fatal "${TMP_}/run_auto.bats not found"
     fi
-    printf "%-*s %s (%s)\n" \
-           "$width" 'packed image format:' "$CH_PACK_FMT" "$method"
-    pack_fmt_valid "$CH_PACK_FMT"
+    bats run_first.bats "${TMP_}/run_auto.bats" ./run/*.bats
+    set -e
+    if [[ $CH_TEST_SCOPE != quick ]]; then
+        for guest_user in $(id -un) root nobody; do
+            for guest_group in $(id -gn) root $(id -gn nobody); do
+                export GUEST_USER=$guest_user
+                export GUEST_GROUP=$guest_group
+                echo "testing as $GUEST_USER $GUEST_GROUP"
+                bats run/ch-run_uidgid.bats
+            done
+        done
+    fi
+    set +e
 }
 
 # Exit with failure if given version number is below a minimum.
@@ -602,6 +611,9 @@ version_check () {
 win () {
     printf "\nAll tests passed.\n"
 }
+
+
+### Body of script
 
 # Ensure ch-run has been compiled (issue #329).
 if (! "${ch_bin}/ch-run" --version &> /dev/null); then

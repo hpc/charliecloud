@@ -4,8 +4,11 @@ testdir = $(pkglibexecdir)/test
 testfiles = \
 Dockerfile.argenv \
 Dockerfile.build2dir \
-build.bats \
-build_post.bats \
+build/10_sanity.bats \
+build/50_ch-tug.bats \
+build/50_dockerfile.bats \
+build/50_misc.bats \
+build/99_cleanup.bats \
 common.bash \
 make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
