@@ -79,7 +79,7 @@ allows trading off thoroughness versus time.
     typically used for development or debugging. For example, it does not
     check whether the pre-requisites of whatever is in the file are satisfied.
     Often running :code:`build` and :code:`run` first is sufficient, but this
-    varies.
+    varies. See also :code:`--file-tag` below.
 
 Scope is specified with:
 
@@ -103,6 +103,12 @@ Additional arguments:
 
   :code:`--dry-run`
     Print summary of what would be tested and then exit.
+
+  :code:`--file-tag TAG`
+    If running an individual Bats file with :code:`--file`, and that file is a
+    :code:`test.bats` to accompany a directory in :code:`examples`,
+    :code:`ch-test` is not smart enough to infer the image tag. Thus, you must
+    specify it with this option.
 
   :code:`-h`, :code:`--help`
     Print usage and then exit.

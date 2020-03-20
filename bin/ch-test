@@ -319,11 +319,6 @@ test_examples () {
     fi
 }
 
-test_file () {
-    printf 'executing file tests ...\n'
-    bats "$only_file"
-}
-
 test_make () {
     local bat_file
     local img_pack
@@ -378,7 +373,11 @@ test_make () {
                 bat_file=$(dirname "$i")/test.bats
                 tag=$(test_make_tag_from_path "$i")
                 cp "$bat_file" "${TMP_}/${tag}_example.bats"
-                sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
+                # Substitute $ch_test_tag here with sed because we run all the
+                # examples together later, but the value needs to vary between
+                # the files. Watch the escaping here.
+                sed -i "s/\\\$ch_test_tag/${tag}/g" \
+                       "${TMP_}/${tag}_example.bats"
                 echo "found: $(dirname "$i")"
             fi
         done
@@ -521,7 +520,7 @@ test_make_tag_from_path () {
     #   3) basicname:  the file name (Dockerfile)
     #   4) extension:  the file's extension (openmpi)
     #
-    # $basicname must be 'Build' or 'Dockerfile'; otherwise error.
+    # $basicname must be 'Build', 'Dockerfile'; otherwise error.
     # if $dir is '.', 'test', or 'examples' then tag=$extension; otherwise
     # tag is $extension if set or $dir-$exenstion.
     local base
@@ -576,6 +575,14 @@ test_make_template_print () {
                     | sed "s@%(tag)s@$tag@g"
     printf '\n'
     return
+}
+
+test_one_file () {
+    printf 'executing file tests ...\n'
+    if [[ -n $one_file_tag ]]; then
+        export ch_test_tag=$one_file_tag
+    fi
+    bats "$one_file"
 }
 
 test_run () {
@@ -720,13 +727,21 @@ while [[ $# -gt 0 ]]; do
         ;;
     -f|--file)
         require_unset phase
-        phase=file
-        only_file=$1; shift
+        phase=one-file
+        one_file=$1; shift
         ;;
     --file=*)
         require_unset phase
-        phase=file
-        only_file=${opt#*=}
+        phase=one-file
+        one_file=${opt#*=}
+        ;;
+    --file-tag)
+        require_unset one_file_tag
+        one_file_tag=$1; shift
+        ;;
+    --file-tag=*)
+        require_unset one_file_tag
+        one_file_tag=${opt#*=}
         ;;
     -h|--help)
         usage 0
@@ -811,16 +826,19 @@ else
 fi
 printf 'contributor:  %s\n\n' "$ch_contributor_note"
 
-if [[ $phase = file ]]; then
-    if [[ ! -f $only_file ]]; then
-        fatal "not a file: $only_file"
+if [[ $phase = one-file ]]; then
+    if [[ ! -f $one_file ]]; then
+        fatal "not a file: $one_file"
     fi
-    only_file=$(readlink -f "$only_file")  # make absolute b/c we cd later
+    one_file=$(readlink -f "$one_file")  # make absolute b/c we cd later
+    if [[ $one_file = */test.bats && -z $one_file_tag ]]; then
+        fatal 'must specify --file-tag for --file=*/test.bats'
+    fi
 fi
 
 printf "%-21s %s" 'phase:' "$phase"
-if [[ $phase = file ]]; then
-    printf ': %s' "$only_file"
+if [[ $phase = one-file ]]; then
+    printf ': %s' "$one_file"
 fi
 if [[ -z $phase ]]; then
     phase=all
@@ -949,10 +967,6 @@ case $phase in
             rm -rf --one-file-system "$TMP_"
         fi
         ;;
-    file)
-        test_file
-        win
-        ;;
     examples)
         test_make
         test_examples
@@ -969,6 +983,10 @@ case $phase in
             fi
         done
         echo
+        ;;
+    one-file)
+        test_one_file
+        win
         ;;
     rm-perm-dirs)
         for d in $CH_TEST_PERMDIRS; do
