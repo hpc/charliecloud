@@ -49,7 +49,7 @@ Html and man page documentation for %{name}.
 Summary:        Charliecloud test suite
 License:        ASL 2.0
 Obsoletes:      %{name}-test < %{version}-%{release}
-Requires:       %{name} bash bats /usr/bin/python3
+Requires:       %{name} bash /usr/bin/bats /usr/bin/python3
 
 %description test
 Test fixtures for %{name}.

@@ -72,6 +72,18 @@ def main():
       except OSError as x:
          if (x.errno != errno.EEXIST): raise
 
+   # Determine distro.
+   if args.image is None:
+      rpm_dist = cmd_out(["rpmbuild", "--eval", "%{?dist}"])[:-1]
+   else:
+      rpm_dist = cmd_out(CH_RUN, args.image,
+                         '--', 'rpmbuild', '--eval', '%{?dist}')
+   rpm_dist = rpm_dist.split('.')[-1]
+
+   # FIXME: epel8 doesn't have bats; skip for now.
+   if rpm_dist == 'el8':
+        PACKAGES.remove('charliecloud-test')
+
    # Get a clean Git checkout of the desired version. We do this by making a
    # temporary clone so as not to mess up the WD.
    git_tmp = rpm_sources + '/charliecloud'
@@ -81,14 +93,14 @@ def main():
 
    # Build tarball.
    print("# building source tarball")
-   cmd("./bin/ch-run", "-b", "%s:/charliecloud" % git_tmp,
-       "-c", "/charliecloud", args.image, "--", "./autogen.sh")
-   cmd("./bin/ch-run", "-b", "%s:/charliecloud" % git_tmp,
-       "-c", "/charliecloud", args.image, "--", "./configure")
-   cmd("./bin/ch-run", "-b", "%s:/charliecloud" % git_tmp,
-       "-c", "/charliecloud", args.image, "--", "make")
-   cmd("./bin/ch-run", "-b", "%s:/charliecloud" % git_tmp,
-       "-c", "/charliecloud", args.image, "--", "make", "dist")
+   cmd(CH_RUN, "-b", "%s" % git_tmp, "-c", "/mnt/0", args.image,
+       "--", "./autogen.sh")
+   cmd(CH_RUN, "-b", "%s" % git_tmp, "-c", "/mnt/0", args.image,
+       "--", "./configure")
+   cmd(CH_RUN, "-b", "%s" % git_tmp, "-c", "/mnt/0", args.image,
+       "--", "make")
+   cmd(CH_RUN, "-b", "%s" % git_tmp, "-c", "/mnt/0", args.image,
+       "--", "make", "dist")
    ch_version = open(git_tmp + "/lib/version.txt").read()[:-1]
    ch_tarball = "charliecloud-%s.tar.gz" % ch_version
    print("# Charliecloud version: %s" % ch_version)
@@ -174,9 +186,9 @@ def main():
       print("# installing")
       for p in PACKAGES:
          if p == 'charliecloud-doc':
-            file_ = "%s/%s-%s.el7.noarch.rpm" % (rpms_noarch, p, rpm_vr)
+            file_ = "%s/%s-%s.%s.noarch.rpm" % (rpms_noarch, p, rpm_vr, rpm_dist)
          else:
-            file_ = "%s/%s-%s.el7.%s.rpm" % (rpms, p, rpm_vr, ARCH)
+            file_ = "%s/%s-%s.%s.%s.rpm" % (rpms, p, rpm_vr, rpm_dist, ARCH)
          cmd(container, "rpm", "--install", file_)
       cmd(container, "rpm", "-qa", "charliecloud*")
 
@@ -186,9 +198,9 @@ def main():
    cmd(container, "rpmlint", rpmlint_args, "%s/%s" % (rpm_specs, spec))
    for p in PACKAGES:
       if p == 'charliecloud-doc':
-         file_ = "%s/%s-%s.el7.noarch.rpm" % (rpms_noarch, p, rpm_vr)
+         file_ = "%s/%s-%s.%s.noarch.rpm" % (rpms_noarch, p, rpm_vr, rpm_dist)
       else:
-         file_ = "%s/%s-%s.el7.%s.rpm" % (rpms, p, rpm_vr, ARCH)
+         file_ = "%s/%s-%s.%s.%s.rpm" % (rpms, p, rpm_vr, rpm_dist, ARCH)
       cmd(container, "test", "-e", file_)
       cmd(container, "rpmlint", rpmlint_args, file_)
 
