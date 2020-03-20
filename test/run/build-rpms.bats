@@ -1,6 +1,7 @@
 load ../common
 
 setup () {
+    scope standard
     [[ $CHTEST_GITWD ]] || skip "not in Git working directory"
     if     ! command -v sphinx-build > /dev/null 2>&1 \
         && ! command -v sphinx-build-3.6 > /dev/null 2>&1; then
@@ -9,7 +10,6 @@ setup () {
 }
 
 @test 'build/install epel7 RPMs' {
-    scope standard
     prerequisites_ok centos7
     img=${ch_imgdir}/centos7
     image_ok "$img"
@@ -76,7 +76,6 @@ setup () {
 }
 
 @test 'build/install epel8 RPMS' {
-    scope standard
     prerequisites_ok centos8
     img=${ch_imgdir}/centos8
     image_ok "$img"
