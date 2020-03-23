@@ -5,7 +5,7 @@ setup () {
     [[ $CHTEST_GITWD ]] || skip "not in Git working directory"
     if     ! command -v sphinx-build > /dev/null 2>&1 \
         && ! command -v sphinx-build-3.6 > /dev/null 2>&1; then
-        pedantic_fail 'Sphinx is not installed'
+        skip 'Sphinx is not installed'
     fi
 }
 
