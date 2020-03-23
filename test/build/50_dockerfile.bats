@@ -220,7 +220,7 @@ EOF
         fi
     fi
 
-    # SRC must be inside context directory.
+    # SRC not inside context directory.
     #
     # Simple case: leading "..".
     run ch-build -t foo -f - . <<EOF
@@ -239,7 +239,7 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
 
-    # If multiple SRC, DST must have a trailing slash.
+    # Multiple SRC and DST has no trailing slash.
     #
     # Note: Docker fails after checking whether SRC exist, so we use files
     # that exist in test/ to get the right error.
@@ -255,6 +255,13 @@ EOF
     run ch-build -t foo -f - . <<EOF
 FROM 00_tiny
 COPY Makefile Makefile.in /etc/fstab/
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'not a directory'* ]]
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY run /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]

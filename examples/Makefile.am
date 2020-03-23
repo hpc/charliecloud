@@ -27,6 +27,13 @@ chtest/chroot-escape.c \
 chtest/mknods.c \
 chtest/setgroups.c \
 chtest/setuid.c \
+copy/Dockerfile \
+copy/dirA/fileAa \
+copy/dirB/fileBa \
+copy/dirB/fileBb \
+copy/fileA \
+copy/fileB \
+copy/test.bats \
 dont-init-ucx-on-intel-cray.patch \
 hello/Dockerfile \
 hello/README \
