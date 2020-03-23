@@ -520,7 +520,7 @@ test_make_tag_from_path () {
     #   3) basicname:  the file name (Dockerfile)
     #   4) extension:  the file's extension (openmpi)
     #
-    # $basicname must be 'Build', 'Dockerfile'; otherwise error.
+    # $basicname must be 'Build' or 'Dockerfile'; otherwise error.
     # if $dir is '.', 'test', or 'examples' then tag=$extension; otherwise
     # tag is $extension if set or $dir-$exenstion.
     local base
