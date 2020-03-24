@@ -38,8 +38,8 @@ accommodate configurations where sudo is not available via the same login path
 used for running tests.
 
 The packed and unpacked image directories specified for testing are volatile.
-The contents of these directories are removed before each respective build and
-run phases.
+The contents of these directories are deleted before the build and run phases,
+respectively.
 
 Some of the tests exercise parallel functionality. If :code:`ch-test` is run
 on a single node, multiple cores will be used; if in a Slurm allocation,
