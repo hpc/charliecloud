@@ -8,25 +8,25 @@
 
 FROM alpine:3.9
 
-## Setup
-
 # Test directory
 RUN mkdir /test
 WORKDIR /test
-
-# Need GNU find, not BusyBox find
-RUN apk add --no-cache findutils
 
 
 ## Source: Regular file(s)
 
 # Source:  one file
-# Dest:    file
+# Dest:    new file
 COPY fileA file1
 
 # Source:  one file, absolute path (root is context directory)
-# Dest:    file
+# Dest:    new file
 COPY /fileB file2
+
+# Source:  one file
+# Dest:    existing file
+RUN echo 'this should be overwritten' > file3
+COPY fileA file3
 
 # Source:  one file
 # Dest:    existing directory, no trailing slash
@@ -146,6 +146,9 @@ COPY fileB symlink-to-fileB-* dir18/
 
 
 ## Wrap up; this output helps to build the expectations in test.bats.
+
+# Need GNU find, not BusyBox find
+RUN apk add --no-cache findutils
 
 # File tree with type annotation characters.
 RUN ls -1FR .

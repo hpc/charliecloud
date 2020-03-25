@@ -34,6 +34,7 @@ dir17/
 dir18/
 file1
 file2
+file3
 symlink-to-fileA
 
 ./dir01a:
@@ -174,6 +175,7 @@ f: ./dir18/symlink-to-fileB-A: fileB
 f: ./dir18/symlink-to-fileB-B: fileB
 f: ./file1: fileA
 f: ./file2: fileB
+f: ./file3: fileA
 f: ./symlink-to-fileA: fileA
 EOF
 }

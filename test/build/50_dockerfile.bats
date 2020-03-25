@@ -206,7 +206,7 @@ EOF
     # Dockerfile on stdin, so no context directory.
     if [[ $CH_BUILDER != ch-grow ]]; then  # ch-grow doesn't support this yet
         run ch-build -t foo - <<EOF
-FROM 00_tiny
+FROM alpine:3.9
 COPY doesnotexist .
 EOF
         echo "$output"
@@ -222,46 +222,60 @@ EOF
 
     # SRC not inside context directory.
     #
-    # Simple case: leading "..".
+    # Case 1: leading "..".
     run ch-build -t foo -f - . <<EOF
-FROM 00_tiny
+FROM alpine:3.9
 COPY ../foo .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
-    # More complex case: ".." inside path.
+    # Case 2: ".." inside path.
     run ch-build -t foo -f - . <<EOF
-FROM 00_tiny
+FROM alpine:3.9
 COPY foo/../../baz .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
-
-    # Multiple SRC and DST has no trailing slash.
-    #
-    # Note: Docker fails after checking whether SRC exist, so we use files
-    # that exist in test/ to get the right error.
+    # Case 3: symlink leading outside context directory.
     run ch-build -t foo -f - . <<EOF
-FROM 00_tiny
-COPY Makefile Makefile.in .
+FROM alpine:3.9
+COPY fixtures/symlink-to-tmp .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'must be a directory'*'end with'*'/'* ]]
+    if [[ $CH_BUILDER = docker ]]; then
+        [[ $output = *'no such file or directory'* ]]
+    else
+        [[ $output = *'outside'*'context'* ]]
+    fi
 
-    # DST has trailing slash but is not a directory.
-    run ch-build -t foo -f - . <<EOF
-FROM 00_tiny
+    # Multiple sources and non-directory destination.
+    run ch-build -v -t foo -f - . <<EOF
+FROM alpine:3.9
 COPY Makefile Makefile.in /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
+    run ch-build -v -t foo -f - . <<EOF
+FROM alpine:3.9
+COPY Makefile Makefile.in /etc/fstab
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'not a directory'* ]]
     run ch-build -t foo -f - . <<EOF
-FROM 00_tiny
+FROM alpine:3.9
 COPY run /etc/fstab/
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'not a directory'* ]]
+    run ch-build -t foo -f - . <<EOF
+FROM alpine:3.9
+COPY run /etc/fstab
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
@@ -269,10 +283,15 @@ EOF
 
     # File not found.
     run ch-build -t foo -f - . <<EOF
-FROM 00_tiny
+FROM alpine:3.9
 COPY doesnotexist .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'doesnotexist:'*'o such file or directory'* ]]
+    if [[ $CH_BUILDER = ch-grow ]]; then
+        # This diagnostic is not fantastic, but it's what we got for now.
+        [[ $output = *'no sources exist'* ]]
+    else
+        [[ $output = *'doesnotexist:'*'o such file or directory'* ]]
+    fi
 }
