@@ -54,7 +54,7 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = 'u=rwx,g=,o=' ]]
     # create config
-    mkdir -p "$spark_config"
+    $ch_mpirun_node mkdir -p "$spark_config"
     tee <<EOF > "${spark_config}/spark-env.sh"
 SPARK_LOCAL_DIRS=/tmp/spark
 SPARK_LOG_DIR=$spark_log
@@ -62,13 +62,15 @@ SPARK_WORKER_DIR=/tmp/spark
 SPARK_LOCAL_IP=127.0.0.1
 SPARK_MASTER_HOST=${master_ip}
 EOF
-    sbcast -f "${spark_config}/spark-env.sh" "${spark_config}/spark-env.sh"
     my_secret=$(cat /dev/urandom | tr -dc '0-9a-f' | head -c 48)
     tee <<EOF > "${spark_config}/spark-defaults.conf"
 spark.authenticate.true
 spark.authenticate.secret ${my_secret}
 EOF
-    sbcast -f "${spark_config}/spark-defaults.conf" "${spark_config}/spark-defaults.conf"
+    if [[ $ch_multinode ]]; then
+        sbcast -f "${spark_config}/spark-env.sh" "${spark_config}/spark-env.sh"
+        sbcast -f "${spark_config}/spark-defaults.conf" "${spark_config}/spark-defaults.conf"
+    fi
 }
 
 @test "${ch_tag}/start" {
