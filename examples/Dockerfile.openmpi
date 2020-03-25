@@ -1,5 +1,5 @@
 # ch-test-scope: full
-FROM debian9
+FROM centos8
 
 # A key goal of this Dockerfile is to demonstrate best practices for building
 # OpenMPI for use inside a container.
@@ -34,7 +34,7 @@ FROM debian9
 #
 #   a : No RDMA, so performance will suffer.
 #   b : Uses libibverbs.
-#   c : Will be removed in OpenMPI 4.
+#   c : Will be removed in OpenMPI 5.
 #   d : Uses Mellanox libraries if available in preference to libibverbs.
 #
 # You can check what's available with:
@@ -58,62 +58,38 @@ FROM debian9
 # [1]: https://github.com/open-mpi/ompi/blob/master/README
 
 # OS packages needed to build this stuff.
-RUN apt-get install -y --no-install-suggests \
-    autoconf \
+#
+# As of 2019-10-07, CentOS 8 provides version 22.2 of libibverbs. This is
+# quite new but works for our test systems.
+RUN dnf install -y --setopt=install_weak_deps=false \
+    automake \
     file \
     flex \
-    g++ \
     gcc \
-    gfortran \
+    gcc-c++ \
+    gcc-gfortran \
     git \
-    hwloc-nox \
-    less \
-    libdb5.3-dev \
-    libhwloc-dev \
-    libnl-3-200 \
-    libnl-route-3-200 \
-    libnl-route-3-dev \
-    libnuma1 \
-    libpmi2-0-dev \
+    ibacm \
+    libevent-devel \
+    libtool \
+    libibumad \
+    libibumad-devel \
+    libibverbs \
+    libibverbs-devel \
+    libibverbs-utils \
+    librdmacm \
+    librdmacm-devel \
+    rdma-core \
     make \
-    wget \
-    udev
+    numactl-devel \
+    wget
 
 WORKDIR /usr/local/src
 
-# Use the Buster versions of libpsm2 (not present in Stretch) and libibverbs
-# (too old in Stretch). Download manually because I'm too lazy to set up
-# package pinning.
-#
-# Note that libpsm2 is x86-64 only:
-#   https://packages.debian.org/buster/libpsm2-2
-#   https://lists.debian.org/debian-hpc/2017/12/msg00015.html
-ENV DEB_URL http://snapshot.debian.org/archive/debian/20181126T030749Z/pool/main
-ENV PSM2_VERSION 11.2.68-3
-RUN if [ "$(dpkg --print-architecture)" = "amd64" ] ; then \
-      wget -nv ${DEB_URL}/libp/libpsm2/libpsm2-2_${PSM2_VERSION}_amd64.deb \
-               ${DEB_URL}/libp/libpsm2/libpsm2-dev_${PSM2_VERSION}_amd64.deb ; \
+# Note that libpsm2 is x86-64 only
+RUN if [ "$(uname -i)" = "x86_64" ] ; then \
+      dnf install -y libpsm2 libpsm2-devel ; \
     fi
-# As of 5/2/2019, this is not the newest libibverbs. However, it is the
-# newest that doesn't crash on our test systems.
-ENV IBVERBS_VERSION 20.0-1
-RUN for i in ibacm \
-             ibverbs-providers \
-             ibverbs-utils \
-             libibumad-dev \
-             libibumad3 \
-             libibverbs-dev \
-             libibverbs1 \
-             librdmacm-dev \
-             librdmacm1 \
-             rdma-core \
-             rdmacm-utils ; \
-    do \
-        wget -nv ${DEB_URL}/r/rdma-core/${i}_${IBVERBS_VERSION}_$(dpkg --print-architecture).deb ; \
-    done
-
-# Install the .debs we collected. UCX needs these.
-RUN dpkg --install *.deb
 
 # UCX. There is stuff to build Debian packages, but it seems not too polished.
 ENV UCX_VERSION 1.6.1
@@ -123,13 +99,27 @@ RUN    cd ucx \
     && ./autogen.sh \
     && ./contrib/configure-release-mt --prefix=/usr/local \
     && make -j$(getconf _NPROCESSORS_ONLN) install
+RUN rm -Rf ucx*
+
+# PMI2.
+#
+# CentOS doesn't have a package with the Slurm PMI2 libraries we need, so
+# build them from Slurm's release.
+ENV SLURM_VERSION 19-05-3-2
+RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz
+RUN tar -xf slurm-${SLURM_VERSION}.tar.gz
+RUN cd slurm-slurm-${SLURM_VERSION} \
+    && ./configure --prefix=/usr/local \
+    && cd contribs/pmi2 \
+    && make -j$(getconf _NPROCESSORS_ONLN) install
+RUN rm -Rf slurm*
 
 # OpenMPI.
 #
 # Patch OpenMPI to disable UCX plugin on systems with Intel or Cray HSNs. UCX
 # has inferior performance than PSM2/uGNI but higher priority.
 ENV MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
-ENV MPI_VERSION 3.1.4
+ENV MPI_VERSION 3.1.5
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
 RUN tar xf openmpi-${MPI_VERSION}.tar.gz
 COPY dont-init-ucx-on-intel-cray.patch ./openmpi-${MPI_VERSION}
@@ -139,8 +129,8 @@ RUN    cd openmpi-${MPI_VERSION} \
        CXXFLAGS=-O3 \
        ./configure --prefix=/usr/local \
                    --sysconfdir=/mnt/0 \
-		   --with-slurm \
-                   --with-pmi \
+                   --with-slurm \
+                   --with-pmi=/usr/local \
                    --with-pmix \
                    --with-ucx \
                    --disable-pty-support \

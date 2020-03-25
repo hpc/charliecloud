@@ -1,4 +1,4 @@
-SUBDIRS = libexec bin doc examples misc packaging test
+SUBDIRS = lib bin doc examples misc packaging test
 
 # The Travis stuff isn't really relevant for the tarballs, but they should
 # have complete source code.

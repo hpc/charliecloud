@@ -46,7 +46,6 @@ common distributions should be sufficient.
 
   * Automake
   * Autoconf
-  * Autoconf Archive
 
 Create :code:`configure` with::
 
@@ -158,12 +157,17 @@ Some distributions need configuration changes. For example:
 
 * RHEL/CentOS 7.4 and 7.5 need both a `kernel command line option and a sysctl
   <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_.
-  RHEL/CentOS 7.6 and up need only the sysctl.
-
-  *Note:* Docker does not work with user namespaces, so skip step 4 of the Red
-  Hat instructions, i.e., don't add :code:`--userns-remap` to the Docker
-  configuration (see `issue #97
+  RHEL/CentOS 7.6 and up need only the sysctl. Note that Docker does not work
+  with user namespaces, so skip step 4 of the Red Hat instructions, i.e.,
+  don't add :code:`--userns-remap` to the Docker configuration (see `issue #97
   <https://github.com/hpc/charliecloud/issues/97>`_).
+
+Note: User namespaces `always fail in a chroot
+<http://man7.org/linux/man-pages/man2/unshare.2.html>`_ with :code:`EPERM`. If
+:code:`configure` detects that it's in a chroot, it will print a warning in
+its report. One common scenario where this comes up is packaging, where builds
+often happen in a chroot. However, like all the run-time :code:`configure`
+tests, this is informational only and does not affect the build.
 
 Supported architectures
 -----------------------

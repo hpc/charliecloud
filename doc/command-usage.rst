@@ -119,13 +119,6 @@ Unpack an image tarball into a directory.
 
 .. include:: ./ch-tar2dir_desc.rst
 
-ch-tar2squash
-+++++++++++++
-
-Create a SquashFS file from a tarball image.
-
-.. include:: ./ch-tar2squash_desc.rst
-
 .. _ch-test:
 
 ch-test

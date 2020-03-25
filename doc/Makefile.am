@@ -36,8 +36,6 @@ ch-ssh_desc.rst \
 ch-ssh.rst \
 ch-tar2dir_desc.rst \
 ch-tar2dir.rst \
-ch-tar2squash_desc.rst \
-ch-tar2squash.rst \
 ch-test_desc.rst \
 ch-test.rst \
 ch-tug_desc.rst \
@@ -76,8 +74,8 @@ man/ch-run.1 \
 man/ch-run-oci.1 \
 man/ch-ssh.1 \
 man/ch-tar2dir.1 \
-man/ch-tar2squash.1 \
 man/ch-test.1 \
+man/ch-tug.1 \
 man/ch-umount.1
 endif
 
@@ -140,7 +138,7 @@ _deps.rst: ../config.log make-deps-overview
 # This called "html-local" because Automake has a Texinfo target called "html"
 # and gripes if we override it.
 $(nobase_html_DATA): html-local
-html-local: mkdir_issue115 ../libexec/version.txt _deps.rst
+html-local: mkdir_issue115 ../lib/version.txt _deps.rst
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 # avoid GitHub messing things up with Jekyll
 	touch html/.nojekyll
@@ -161,5 +159,5 @@ HTML_FIRST = html
 endif
 
 $(man1_MANS): man
-man: mkdir_issue115 ../libexec/version.txt _deps.rst $(HTML_FIRST)
+man: mkdir_issue115 ../lib/version.txt _deps.rst $(HTML_FIRST)
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man

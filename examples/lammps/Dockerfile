@@ -1,13 +1,12 @@
 # ch-test-scope: full
 FROM openmpi
-WORKDIR /usr/src
+WORKDIR /usr/local/src
 
 # Packages for building.
-RUN apt-get install -qy --no-install-recommends \
+RUN dnf install -y --setopt=install_weak_deps=false \
     cmake \
-    git \
     patch \
-    python3-dev \
+    python3-devel \
     python3-pip \
     python3-setuptools
 
@@ -21,7 +20,7 @@ RUN wget -nv https://lammps.sandia.gov/tars/lammps-$LAMMPS_VERSION.tar.gz
 RUN tar xf lammps-$LAMMPS_VERSION.tar.gz
 RUN mkdir lammps-${LAMMPS_VERSION}.build
 RUN    cd lammps-${LAMMPS_VERSION}.build \
-    && cmake -DCMAKE_INSTALL_PREFIX=/usr \
+    && cmake -DCMAKE_INSTALL_PREFIX=/usr/local \
              -DCMAKE_BUILD_TYPE=Release \
              -DBUILD_MPI=yes \
              -DBUILD_LIB=on \
@@ -36,7 +35,7 @@ RUN    cd lammps-${LAMMPS_VERSION}.build \
           ../lammps-${LAMMPS_VERSION}/cmake \
     && make -j $(getconf _NPROCESSORS_ONLN) install
 RUN ldconfig
-RUN ln -s /usr/src/lammps-${LAMMPS_VERSION}/ /lammps
+RUN ln -s /usr/local/src/lammps-${LAMMPS_VERSION}/ /lammps
 RUN rm -f lammps-$LAMMPS_VERSION.tar.gz
 
 # Patch in.melt to increase problem dimensions.

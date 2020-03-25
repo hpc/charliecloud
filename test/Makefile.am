@@ -10,7 +10,6 @@ common.bash \
 make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
 make-auto.d/builder_to_archive.bats.in \
-make-auto.d/run_image.bats.in \
 make-auto.d/unpack.bats.in \
 run/build-rpms.bats \
 run/ch-fromhost.bats \
@@ -34,7 +33,6 @@ Build.ch-pull2tar \
 Build.docker_pull \
 Build.missing \
 Build.skopeo-umoci \
-chtest-make-auto \
 docs-sane \
 make-perms-test
 

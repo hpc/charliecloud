@@ -49,7 +49,7 @@ copyright = u'2014–2019, Triad National Security, LLC'
 # built documents.
 #
 # The short X.Y version.
-version = open("../libexec/version.txt", "r").read().rstrip()
+version = open("../lib/version.txt", "r").read().rstrip()
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -289,9 +289,6 @@ man_pages = [
     [], 1),
    ("ch-test", "ch-test",
     "Run some or all of the Charliecloud test suite",
-    [], 1),
-   ("ch-tar2squash", "ch-tar2squash",
-    "Create a SquashFS file from a tarball image",
     [], 1),
    ("ch-tug", "ch-tug",
     "Pull and flatten image from repository to local filesystem",

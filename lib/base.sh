@@ -6,8 +6,8 @@ ch_bin="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC2034
 ch_base=${ch_bin%/*}
 
-libexec="${ch_bin}/../libexec/charliecloud"
-. "${libexec}/version.sh"
+lib="${ch_bin}/../lib/charliecloud"
+. "${lib}/version.sh"
 
 
 # Don't call in a subshell or the selection will be lost.
@@ -31,17 +31,49 @@ builder_choose () {
     esac
 }
 
+pack_fmt_valid () {
+    case $1 in
+    squash)
+        if ( ! command -v mksquashfs >/dev/null 2>&1 ); then
+            echo "can't use squash for packed images: no mksquashfs found" 1>&2
+            exit 1
+        fi
+        ;;
+    tar)
+        if ( ! command -v tar >/dev/null 2>&1 ); then
+            echo "can't use tar for packed images: no tar found" 1>&2
+            exit 1
+        fi
+        ;;
+    *)
+        echo "unknown packed image format: $1" 1>&2
+        exit 1
+        ;;
+    esac
+}
+
+pack_fmt_choose () {
+    if [ -z "$CH_PACK_FMT" ]; then
+        if ( command -v mksquashfs >/dev/null 2>&1 ); then
+            export CH_PACK_FMT=squash
+        else
+            export CH_PACK_FMT=tar
+        fi
+    fi
+    pack_fmt_valid "$CH_PACK_FMT"
+}
+
 parse_basic_args () {
     if [ "$#" -eq 0 ]; then
         usage 1
     fi
     for i in "$@"; do
+        if [ "$i" = --_lib-path ]; then  # undocumented
+            echo "$lib"
+            exit 0
+        fi
         if [ "$i" = --help ]; then
             usage 0
-        fi
-        if [ "$i" = --libexec-path ]; then
-            echo "$libexec"
-            exit 0
         fi
         if [ "$1" = --version ]; then
             version
@@ -107,8 +139,7 @@ vset () {
     fi
     if [ -z "$quiet" ]; then
         var_desc="$var_desc:"
-        # shellcheck disable=SC2059
-        printf "%-${desc_width}s %s (%s)\n" "$var_desc" "$value" "$method"
+        printf "%-*s %s (%s)\n" "$desc_width" "$var_desc" "$value" "$method"
     fi
 }
 

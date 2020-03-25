@@ -20,7 +20,7 @@ set -x
 ./autogen.sh
 
 # Remove Autotools to make sure everything works without them.
-sudo apt-get remove autoconf autoconf-archive automake
+sudo apt-get remove autoconf automake
 
 if [[ $MINIMAL_CONFIG ]]; then
     # Everything except --disable-test, which would defeat the point.

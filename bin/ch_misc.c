@@ -81,8 +81,8 @@ void log_ids(const char *func, int line)
 
      0 : "error"   : always print; exit unsuccessfully afterwards
      1 : "warning" : always print
-     1 : "info"    : print if verbose >= 2
-     2 : "debug"   : print if verbose >= 3 */
+     2 : "info"    : print if verbose >= 2
+     3 : "debug"   : print if verbose >= 3 */
 void msg(int level, char *file, int line, int errno_, char *fmt, ...)
 {
    va_list ap;
