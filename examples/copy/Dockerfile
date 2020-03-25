@@ -1,8 +1,5 @@
 # Exercise the COPY instruction, which has rather strange semantics compared
-# to what we are used to in cp(1). The main, but not only, weirdness is that
-# directories are expanded rather than copied as a directory.
-#
-# See: https://docs.docker.com/engine/reference/builder/#copy
+# to what we are used to in cp(1). See FAQ.
 #
 # ch-test-scope: standard
 
