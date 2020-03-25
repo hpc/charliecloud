@@ -38,6 +38,7 @@ setup () {
         # using srun, but that doesn't work; see issue #230.
         command -v pdsh >/dev/null 2>&1 || pedantic_fail "pdsh not in path"
         pernode="pdsh -R ssh -w ${SLURM_NODELIST} -- PATH='${PATH}'"
+        $ch_mpirun_node mkdir -p "$spark_config"
     else
         master_ip=127.0.0.1
         pernode=
@@ -61,11 +62,13 @@ SPARK_WORKER_DIR=/tmp/spark
 SPARK_LOCAL_IP=127.0.0.1
 SPARK_MASTER_HOST=${master_ip}
 EOF
+    sbcast -f "${spark_config}/spark-env.sh" "${spark_config}/spark-env.sh"
     my_secret=$(cat /dev/urandom | tr -dc '0-9a-f' | head -c 48)
     tee <<EOF > "${spark_config}/spark-defaults.conf"
 spark.authenticate.true
 spark.authenticate.secret ${my_secret}
 EOF
+    sbcast -f "${spark_config}/spark-defaults.conf" "${spark_config}/spark-defaults.conf"
 }
 
 @test "${ch_tag}/start" {
