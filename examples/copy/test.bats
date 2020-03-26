@@ -4,7 +4,7 @@ CH_TEST_TAG=$ch_test_tag
 
 load "${CHTEST_DIR}/common.bash"
 
-@test 'ls' {
+@test "${ch_tag}/ls" {
     scope standard
     prerequisites_ok copy
 
@@ -128,7 +128,7 @@ symlink-to-fileB-B
 EOF
 }
 
-@test 'content of regular files' {
+@test "${ch_tag}/content of regular files" {
     scope standard
     prerequisites_ok copy
 
@@ -180,7 +180,7 @@ f: ./symlink-to-fileA: fileA
 EOF
 }
 
-@test 'symlink targets' {
+@test "${ch_tag}/symlink targets" {
     scope standard
     prerequisites_ok copy
 

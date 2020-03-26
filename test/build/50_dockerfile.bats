@@ -252,14 +252,14 @@ EOF
     fi
 
     # Multiple sources and non-directory destination.
-    run ch-build -v -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<EOF
 FROM alpine:3.9
 COPY Makefile Makefile.in /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
-    run ch-build -v -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<EOF
 FROM alpine:3.9
 COPY Makefile Makefile.in /etc/fstab
 EOF

@@ -380,7 +380,7 @@ understanding beyond that documentation is described here, and this is what
 
    3. If there is a single source and it is a directory. (Not documented.)
 
-4. Symbolic links are particularly messy:
+4. Symbolic links are particularly messy (this is not documented):
 
    1. If named in sources either explicitly or by wildcard, symlinks are
       dereferenced, i.e., the result is a copy of the symlink target, not the
