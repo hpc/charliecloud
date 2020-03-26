@@ -2,6 +2,7 @@ testdir = $(pkglibexecdir)/test
 
 # These test files require no special handling.
 testfiles = \
+Dockerfile.00_tiny \
 Dockerfile.argenv \
 Dockerfile.build2dir \
 build/10_sanity.bats \

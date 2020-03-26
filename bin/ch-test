@@ -918,15 +918,16 @@ export PATH=$ch_bin:$PATH
 # we source CHTEST_DIR/common.bash.
 . "${CHTEST_DIR}/common.bash"
 
-# The distinction here is that "images" are purely for testing and have no value
-# as examples for the user, while "examples" are dual-purpose.
-images=$(find   "$CHTEST_DIR"             -name 'Build' \
-                                       -o -name 'Build.*' \
-                                       -o -name 'Dockerfile.*' | sort)
-examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
-                                       -o -name 'Build.*' \
-                                       -o -name 'Dockerfile' \
-                                       -o -name 'Dockerfile.*' | sort)
+# The distinction here is that "images" are purely for testing and have no
+# value as examples for the user, while "examples" are dual-purpose. We call
+# "find" twice for each to preserve desired sort order.
+images=$(     find "$CHTEST_DIR"             -name 'Dockerfile.*' | sort \
+           && find "$CHTEST_DIR"             -name 'Build' \
+                                          -o -name 'Build.*' | sort)
+examples=$(   find "$CHTEST_EXAMPLES_DIR"    -name 'Dockerfile' \
+                                          -o -name 'Dockerfile.*' | sort \
+           && find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
+                                          -o -name 'Build.*' | sort)
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 
