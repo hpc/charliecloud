@@ -75,11 +75,13 @@ allows trading off thoroughness versus time.
     :code:`--perm-dirs`.
 
   :code:`-f`, :code:`--file FILE`
-    Run the tests in the given file only. This is somewhat brittle and
-    typically used for development or debugging. For example, it does not
-    check whether the pre-requisites of whatever is in the file are satisfied.
-    Often running :code:`build` and :code:`run` first is sufficient, but this
-    varies. See also :code:`--file-tag` below.
+    Run the tests in the given file only, which can be an arbitrary
+    :code:`.bats` file, except for :code:`test.bats` under :code:`examples`,
+    where you must specify the corresponding Dockerfile or :code:`Build` file
+    instead. This is somewhat brittle and typically used for development or
+    debugging. For example, it does not check whether the pre-requisites of
+    whatever is in the file are satisfied. Often running :code:`build` and
+    :code:`run` first is sufficient, but this varies.
 
 Scope is specified with:
 
@@ -103,12 +105,6 @@ Additional arguments:
 
   :code:`--dry-run`
     Print summary of what would be tested and then exit.
-
-  :code:`--file-tag TAG`
-    If running an individual Bats file with :code:`--file`, and that file is a
-    :code:`test.bats` to accompany a directory in :code:`examples`,
-    :code:`ch-test` is not smart enough to infer the image tag. Thus, you must
-    specify it with this option.
 
   :code:`-h`, :code:`--help`
     Print usage and then exit.
