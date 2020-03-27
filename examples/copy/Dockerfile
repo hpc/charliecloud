@@ -2,6 +2,9 @@
 # to what we are used to in cp(1). See FAQ.
 #
 # ch-test-scope: standard
+# ch-test-builder-exclude: buildah
+# ch-test-builder-exclude: buildah-runc
+# ch-test-builder-exclude: buildah-setuid
 
 FROM alpine:3.9
 
