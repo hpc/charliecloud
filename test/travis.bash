@@ -7,6 +7,7 @@
 
 set -e
 PREFIX=/var/tmp
+MAKEJ=-j$(getconf _NPROCESSORS_ONLN)
 
 # Remove sbin directories from $PATH (see issue #43). Assume none are first.
 echo "$PATH"
@@ -31,7 +32,7 @@ case $TARBALL in
     export)
         # shellcheck disable=SC2086
         ./configure --prefix="$PREFIX" $disable
-        make -j $(getconf _NPROCESSORS_ONLN) dist
+        make "$MAKEJ" dist
         mv charliecloud-*.tar.gz "$PREFIX"
         cd "$PREFIX"
         tar xf charliecloud-*.tar.gz
@@ -53,11 +54,11 @@ esac
 
 # shellcheck disable=SC2086
 ./configure --prefix="$PREFIX" $disable
-make -j $(getconf _NPROCESSORS_ONLN)
+make "$MAKEJ"
 bin/ch-run --version
 
 if [[ $MAKE_INSTALL ]]; then
-    sudo make -j $(getconf _NPROCESSORS_ONLN) install
+    sudo make "$MAKEJ" install
     ch_test="${PREFIX}/bin/ch-test"
 else
     ch_test=$(readlink -f bin/ch-test)  # need absolute path
