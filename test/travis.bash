@@ -31,7 +31,7 @@ case $TARBALL in
     export)
         # shellcheck disable=SC2086
         ./configure --prefix="$PREFIX" $disable
-        make dist
+        make -j $(getconf _NPROCESSORS_ONLN) dist
         mv charliecloud-*.tar.gz "$PREFIX"
         cd "$PREFIX"
         tar xf charliecloud-*.tar.gz
@@ -53,11 +53,11 @@ esac
 
 # shellcheck disable=SC2086
 ./configure --prefix="$PREFIX" $disable
-make
+make -j $(getconf _NPROCESSORS_ONLN)
 bin/ch-run --version
 
 if [[ $MAKE_INSTALL ]]; then
-    sudo make install
+    sudo make -j $(getconf _NPROCESSORS_ONLN) install
     ch_test="${PREFIX}/bin/ch-test"
 else
     ch_test=$(readlink -f bin/ch-test)  # need absolute path

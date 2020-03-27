@@ -60,7 +60,7 @@ if [[ $CH_BUILDER = buildah* ]]; then
     git clone $buildah_repo src/github.com/containers/buildah
     cd src/github.com/containers/buildah
     git checkout $buildah_branch
-    PATH=/usr/lib/go-1.10/bin:$PATH make runc all SECURITYTAGS="apparmor seccomp"
+    PATH=/usr/lib/go-1.10/bin:$PATH make -j $(getconf _NPROCESSORS_ONLN) runc all SECURITYTAGS="apparmor seccomp"
     sudo -E PATH=/usr/lib/go-1.10/bin:"$PATH" make install install.runc
     command -v buildah && buildah --version
     command -v runc && runc --version
