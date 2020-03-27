@@ -38,7 +38,6 @@ setup () {
         # using srun, but that doesn't work; see issue #230.
         command -v pdsh >/dev/null 2>&1 || pedantic_fail "pdsh not in path"
         pernode="pdsh -R ssh -w ${SLURM_NODELIST} -- PATH='${PATH}'"
-        $ch_mpirun_node mkdir -p "$spark_config"
     else
         master_ip=127.0.0.1
         pernode=
