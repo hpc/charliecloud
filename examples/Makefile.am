@@ -33,17 +33,11 @@ copy/dirB/fileBa \
 copy/dirB/fileBb \
 copy/dirCa/dirCb/fileCba \
 copy/dirCa/dirCb/fileCbb \
-copy/dirCa/symlink-to-dirCb \
 copy/dirD/fileDa \
-copy/dirD/symlink-to-fileDa \
 copy/dirEa/dirEb/fileEba \
 copy/dirEa/dirEb/fileEbb \
-copy/dirEa/symlink-to-dirEb \
 copy/fileA \
 copy/fileB \
-copy/symlink-to-fileA \
-copy/symlink-to-fileB-A \
-copy/symlink-to-fileB-B \
 copy/test.bats \
 dont-init-ucx-on-intel-cray.patch \
 hello/Dockerfile \
@@ -90,3 +84,40 @@ nobase_examples_DATA += $(batsfiles)
 endif
 
 EXTRA_DIST = $(execs) $(noexecs) $(batsfiles)
+
+# Automake is completely unable to deal with symlinks; we cannot include them
+# in the source code or "make dist" won't work, and we can't include them in
+# the files to install or "make install" won't work. These targets take care
+# of everything manually.
+
+all-local:
+	ln -fs dirCb copy/dirCa/symlink-to-dirCb
+	ln -fs fileDa copy/dirD/symlink-to-fileDa
+	ln -fs dirEb copy/dirEa/symlink-to-dirEb
+	ln -fs fileA copy/symlink-to-fileA
+	ln -fs fileB copy/symlink-to-fileB-A
+	ln -fs fileB copy/symlink-to-fileB-B
+
+clean-local:
+	rm -f copy/dirCa/symlink-to-dirCb
+	rm -f copy/dirD/symlink-to-fileDa
+	rm -f copy/dirEa/symlink-to-dirEb
+	rm -f copy/symlink-to-fileA
+	rm -f copy/symlink-to-fileB-A
+	rm -f copy/symlink-to-fileB-B
+
+install-data-hook:
+	ln -fs dirCb $(examplesdir)/copy/dirCa/symlink-to-dirCb
+	ln -fs fileDa $(examplesdir)/copy/dirD/symlink-to-fileDa
+	ln -fs dirEb $(examplesdir)/copy/dirEa/symlink-to-dirEb
+	ln -fs fileA $(examplesdir)/copy/symlink-to-fileA
+	ln -fs fileB $(examplesdir)/copy/symlink-to-fileB-A
+	ln -fs fileB $(examplesdir)/copy/symlink-to-fileB-B
+
+uninstall-local:
+	rm -f $(examplesdir)/copy/dirCa/symlink-to-dirCb
+	rm -f $(examplesdir)/copy/dirD/symlink-to-fileDa
+	rm -f $(examplesdir)/copy/dirEa/symlink-to-dirEb
+	rm -f $(examplesdir)/copy/symlink-to-fileA
+	rm -f $(examplesdir)/copy/symlink-to-fileB-A
+	rm -f $(examplesdir)/copy/symlink-to-fileB-B

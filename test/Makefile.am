@@ -10,7 +10,6 @@ build/50_dockerfile.bats \
 build/50_misc.bats \
 build/99_cleanup.bats \
 common.bash \
-fixtures/symlink-to-tmp \
 make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
 make-auto.d/builder_to_archive.bats.in \
@@ -40,8 +39,9 @@ Build.skopeo-umoci \
 docs-sane \
 make-perms-test
 
-# Travis stuff doesn't need to be installed.
+# Stuff that doesn't need to be installed.
 EXTRA_DIST = \
+fixtures/README \
 travis.bash \
 travis-before.bash \
 travis-install.bash \
@@ -64,6 +64,17 @@ nobase_test_DATA = $(testfiles)
 nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
 CLEANFILES = $(sobuilts)
+# See comment about symlinks in examples/Makefile.am.
+all-local:
+	ln -fs /tmp fixtures/symlink-to-tmp
+clean-local:
+	rm -f fixtures/symlink-to-tmp
+install-data-hook:
+	mkdir $(testdir)/fixtures
+	ln -fs /tmp $(testdir)/fixtures/symlink-to-tmp
+uninstall-hook:
+	rm -f $(testdir)/fixtures/symlink-to-tmp
+	rmdir $(testdir)/fixtures || true
 endif
 EXTRA_DIST += $(testfiles) $(testfiles_exec)
 EXTRA_SCRIPTS = $(sobuilts)

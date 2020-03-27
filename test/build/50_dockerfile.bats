@@ -254,18 +254,22 @@ EOF
     # Multiple sources and non-directory destination.
     run ch-build -t foo -f - . <<EOF
 FROM alpine:3.9
-COPY Makefile Makefile.in /etc/fstab/
+COPY Build.missing common.bash /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
     run ch-build -t foo -f - . <<EOF
 FROM alpine:3.9
-COPY Makefile Makefile.in /etc/fstab
+COPY Build.missing common.bash /etc/fstab
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'not a directory'* ]]
+    if [[ $CH_BUILDER = docker ]]; then
+        [[ $output = *'must be a directory'* ]]
+    else
+        [[ $output = *'not a directory'* ]]
+    fi
     run ch-build -t foo -f - . <<EOF
 FROM alpine:3.9
 COPY run /etc/fstab/
