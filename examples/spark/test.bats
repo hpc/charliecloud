@@ -23,7 +23,7 @@ setup () {
     scope standard
     prerequisites_ok spark
     umask 0077
-    spark_dir=~/ch-spark-test.tmp  # runs before each test, so no mktemp
+    spark_dir=${TMP_}/spark  # runs before each test, so no mktemp
     spark_config=$spark_dir
     spark_log=/tmp/sparklog
     if [[ $ch_multinode ]]; then
@@ -53,7 +53,7 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = 'u=rwx,g=,o=' ]]
     # create config
-    mkdir -p "$spark_config"
+    $ch_mpirun_node mkdir -p "$spark_config"
     tee <<EOF > "${spark_config}/spark-env.sh"
 SPARK_LOCAL_DIRS=/tmp/spark
 SPARK_LOG_DIR=$spark_log
@@ -66,6 +66,10 @@ EOF
 spark.authenticate.true
 spark.authenticate.secret ${my_secret}
 EOF
+    if [[ $ch_multinode ]]; then
+        sbcast -f "${spark_config}/spark-env.sh" "${spark_config}/spark-env.sh"
+        sbcast -f "${spark_config}/spark-defaults.conf" "${spark_config}/spark-defaults.conf"
+    fi
 }
 
 @test "${ch_tag}/start" {
