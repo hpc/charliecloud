@@ -682,6 +682,10 @@ else
     fatal 'Bats not found'
 fi
 
+if [[ $# == 0 ]]; then
+    usage 1
+fi
+
 # Parse arguments.
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
