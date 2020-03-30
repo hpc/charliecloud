@@ -827,8 +827,8 @@ if [[ $phase = one-file ]]; then
         fatal "not a file: $one_file"
     fi
     one_file=$(readlink -f "$one_file")  # make absolute b/c we cd later
-    if [[ $one_file = */test.bats && -z $one_file_tag ]]; then
-        fatal 'must specify --file-tag for --file=*/test.bats'
+    if [[ $one_file = */test.bats ]]; then
+        fatal '--file: must specify build recipe file, not test.bats'
     fi
 fi
 
