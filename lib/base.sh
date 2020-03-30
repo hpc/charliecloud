@@ -13,9 +13,9 @@ lib="${ch_bin}/../lib/charliecloud"
 # Don't call in a subshell or the selection will be lost.
 builder_choose () {
     if [ -z "$CH_BUILDER" ]; then
-        if ( command -v docker >/dev/null 2>&1 ); then
+        if command -v docker >/dev/null 2>&1; then
             export CH_BUILDER=docker
-        elif ( "${ch_bin}/ch-grow" --dependencies > /dev/null 2>&1); then
+        elif "${ch_bin}/ch-grow" --dependencies > /dev/null 2>&1; then
             export CH_BUILDER=ch-grow
         else
             export CH_BUILDER=none
@@ -34,13 +34,13 @@ builder_choose () {
 pack_fmt_valid () {
     case $1 in
     squash)
-        if ( ! command -v mksquashfs >/dev/null 2>&1 ); then
+        if ! command -v mksquashfs >/dev/null 2>&1; then
             echo "can't use squash for packed images: no mksquashfs found" 1>&2
             exit 1
         fi
         ;;
     tar)
-        if ( ! command -v tar >/dev/null 2>&1 ); then
+        if ! command -v tar >/dev/null 2>&1; then
             echo "can't use tar for packed images: no tar found" 1>&2
             exit 1
         fi
@@ -54,7 +54,7 @@ pack_fmt_valid () {
 
 pack_fmt_choose () {
     if [ -z "$CH_PACK_FMT" ]; then
-        if ( command -v mksquashfs >/dev/null 2>&1 ); then
+        if command -v mksquashfs >/dev/null 2>&1; then
             export CH_PACK_FMT=squash
         else
             export CH_PACK_FMT=tar
@@ -145,7 +145,7 @@ vset () {
 
 
 # Do we need sudo to run docker?
-if ( docker info > /dev/null 2>&1 ); then
+if docker info > /dev/null 2>&1; then
     docker_ () {
         docker "$@"
     }
@@ -156,7 +156,7 @@ else
 fi
 
 # Use parallel gzip if it's available.
-if ( command -v pigz >/dev/null 2>&1 ); then
+if command -v pigz > /dev/null 2>&1; then
     gzip_ () {
         pigz "$@"
     }
@@ -167,7 +167,7 @@ else
 fi
 
 # Use fuse low-level API if it's available.
-if ( command -v squashfuse_ll >/dev/null 2>&1 ); then
+if command -v squashfuse_ll > /dev/null 2>&1; then
     squashfuse_ () {
         squashfuse_ll "$@"
     }
@@ -181,7 +181,7 @@ fi
 
 # Use pv to show a progress bar, if it's available. (We also don't want a
 # progress bar if stdin is not a terminal, but pv takes care of that.)
-if ( command -v pv >/dev/null 2>&1 ); then
+if command -v pv > /dev/null 2>&1; then
     pv_ () {
         pv -pteb "$@"
     }

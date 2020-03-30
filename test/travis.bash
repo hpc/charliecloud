@@ -69,7 +69,7 @@ fi
 if [[ $SUDO_RM_FIRST ]]; then
     sudo rm /etc/sudoers.d/travis
 fi
-if ( sudo -v ); then
+if sudo -v; then
     sudo_=--sudo
 else
     sudo_=
@@ -81,7 +81,7 @@ ls -lha "$CH_TEST_TARDIR"
 if [[ $SUDO_RM_AFTER_BUILD ]]; then
     sudo rm /etc/sudoers.d/travis
 fi
-if ( sudo -v ); then
+if sudo -v; then
     sudo_=--sudo
 else
     sudo_=
