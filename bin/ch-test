@@ -350,7 +350,7 @@ test_make () {
             img_pack=${img_pack%%.*}
             for j in $images $examples; do
                 if [[ $(test_make_tag_from_path "$j") == "$img_pack" ]]; then
-                    if (test_make_check_image "$j"); then
+                    if test_make_check_image "$j"; then
                         echo "found: $i"
                         run_targets+=( "$j" )
                     fi
