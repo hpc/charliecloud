@@ -578,10 +578,14 @@ test_make_template_print () {
 }
 
 test_one_file () {
-    printf 'executing file tests ...\n'
-    if [[ -n $one_file_tag ]]; then
-        export ch_test_tag=$one_file_tag
+    if [[ $one_file != *.bats ]]; then
+        # Assume it's a Dockerfile or Build file; derive tag and test.bats.
+        ch_test_tag=$(test_make_tag_from_path "$one_file")
+        export ch_test_tag
+        one_file=$(dirname "$one_file")/test.bats
+        printf 'tag:   %s\n' "$ch_test_tag"
     fi
+    printf 'file:  %s\n' "$one_file"
     bats "$one_file"
 }
 
@@ -735,14 +739,6 @@ while [[ $# -gt 0 ]]; do
         phase=one-file
         one_file=${opt#*=}
         ;;
-    --file-tag)
-        require_unset one_file_tag
-        one_file_tag=$1; shift
-        ;;
-    --file-tag=*)
-        require_unset one_file_tag
-        one_file_tag=${opt#*=}
-        ;;
     -h|--help)
         usage 0
         ;;
@@ -831,8 +827,8 @@ if [[ $phase = one-file ]]; then
         fatal "not a file: $one_file"
     fi
     one_file=$(readlink -f "$one_file")  # make absolute b/c we cd later
-    if [[ $one_file = */test.bats && -z $one_file_tag ]]; then
-        fatal 'must specify --file-tag for --file=*/test.bats'
+    if [[ $one_file = */test.bats ]]; then
+        fatal '--file: must specify build recipe file, not test.bats'
     fi
 fi
 
@@ -918,15 +914,16 @@ export PATH=$ch_bin:$PATH
 # we source CHTEST_DIR/common.bash.
 . "${CHTEST_DIR}/common.bash"
 
-# The distinction here is that "images" are purely for testing and have no value
-# as examples for the user, while "examples" are dual-purpose.
-images=$(find   "$CHTEST_DIR"             -name 'Build' \
-                                       -o -name 'Build.*' \
-                                       -o -name 'Dockerfile.*' | sort)
-examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
-                                       -o -name 'Build.*' \
-                                       -o -name 'Dockerfile' \
-                                       -o -name 'Dockerfile.*' | sort)
+# The distinction here is that "images" are purely for testing and have no
+# value as examples for the user, while "examples" are dual-purpose. We call
+# "find" twice for each to preserve desired sort order.
+images=$(     find "$CHTEST_DIR"             -name 'Dockerfile.*' | sort \
+           && find "$CHTEST_DIR"             -name 'Build' \
+                                          -o -name 'Build.*' | sort)
+examples=$(   find "$CHTEST_EXAMPLES_DIR"    -name 'Dockerfile' \
+                                          -o -name 'Dockerfile.*' | sort \
+           && find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
+                                          -o -name 'Build.*' | sort)
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 
