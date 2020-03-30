@@ -206,7 +206,7 @@ EOF
     # Dockerfile on stdin, so no context directory.
     if [[ $CH_BUILDER != ch-grow ]]; then  # ch-grow doesn't support this yet
         run ch-build -t foo - <<EOF
-FROM alpine:3.9
+FROM 00_tiny
 COPY doesnotexist .
 EOF
         echo "$output"
@@ -224,7 +224,7 @@ EOF
     #
     # Case 1: leading "..".
     run ch-build -t foo -f - . <<EOF
-FROM alpine:3.9
+FROM 00_tiny
 COPY ../foo .
 EOF
     echo "$output"
@@ -232,7 +232,7 @@ EOF
     [[ $output = *'outside'*'context'* ]]
     # Case 2: ".." inside path.
     run ch-build -t foo -f - . <<EOF
-FROM alpine:3.9
+FROM 00_tiny
 COPY foo/../../baz .
 EOF
     echo "$output"
@@ -240,7 +240,7 @@ EOF
     [[ $output = *'outside'*'context'* ]]
     # Case 3: symlink leading outside context directory.
     run ch-build -t foo -f - . <<EOF
-FROM alpine:3.9
+FROM 00_tiny
 COPY fixtures/symlink-to-tmp .
 EOF
     echo "$output"
@@ -253,14 +253,14 @@ EOF
 
     # Multiple sources and non-directory destination.
     run ch-build -t foo -f - . <<EOF
-FROM alpine:3.9
+FROM 00_tiny
 COPY Build.missing common.bash /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
     run ch-build -t foo -f - . <<EOF
-FROM alpine:3.9
+FROM 00_tiny
 COPY Build.missing common.bash /etc/fstab
 EOF
     echo "$output"
@@ -271,14 +271,14 @@ EOF
         [[ $output = *'not a directory'* ]]
     fi
     run ch-build -t foo -f - . <<EOF
-FROM alpine:3.9
+FROM 00_tiny
 COPY run /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
     run ch-build -t foo -f - . <<EOF
-FROM alpine:3.9
+FROM 00_tiny
 COPY run /etc/fstab
 EOF
     echo "$output"
@@ -287,7 +287,7 @@ EOF
 
     # File not found.
     run ch-build -t foo -f - . <<EOF
-FROM alpine:3.9
+FROM 00_tiny
 COPY doesnotexist .
 EOF
     echo "$output"
