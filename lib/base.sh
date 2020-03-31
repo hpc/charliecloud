@@ -13,7 +13,7 @@ lib="${ch_bin}/../lib/charliecloud"
 # Don't call in a subshell or the selection will be lost.
 builder_choose () {
     if [ -z "$CH_BUILDER" ]; then
-        if command -v docker >/dev/null 2>&1; then
+        if command -v docker > /dev/null 2>&1; then
             export CH_BUILDER=docker
         elif "${ch_bin}/ch-grow" --dependencies > /dev/null 2>&1; then
             export CH_BUILDER=ch-grow
@@ -34,13 +34,13 @@ builder_choose () {
 pack_fmt_valid () {
     case $1 in
     squash)
-        if ! command -v mksquashfs >/dev/null 2>&1; then
+        if ! command -v mksquashfs > /dev/null 2>&1; then
             echo "can't use squash for packed images: no mksquashfs found" 1>&2
             exit 1
         fi
         ;;
     tar)
-        if ! command -v tar >/dev/null 2>&1; then
+        if ! command -v tar > /dev/null 2>&1; then
             echo "can't use tar for packed images: no tar found" 1>&2
             exit 1
         fi
@@ -54,7 +54,7 @@ pack_fmt_valid () {
 
 pack_fmt_choose () {
     if [ -z "$CH_PACK_FMT" ]; then
-        if command -v mksquashfs >/dev/null 2>&1; then
+        if command -v mksquashfs > /dev/null 2>&1; then
             export CH_PACK_FMT=squash
         else
             export CH_PACK_FMT=tar
