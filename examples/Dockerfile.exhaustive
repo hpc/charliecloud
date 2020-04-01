@@ -8,8 +8,8 @@
 
 #FROM alpine
 #FROM alpine@cdf98d1859c1  # skopeo pukes on this
-FROM alpine:3.9
-#FROM alpine:3.9 AS stage1
+FROM 00_tiny
+#FROM 00_tiny AS stage1
 
 # FIXME: These should maybe be moved into Dockerfile.argenv?
 ENV chse_1 value1 with spaces and trailing space 

@@ -10,10 +10,10 @@ chtest/signal_out.py \
 hello/hello.sh
 
 noexecs = \
-Dockerfile.alpine39 \
 Dockerfile.alpineedge \
 Dockerfile.centos6 \
 Dockerfile.centos7 \
+Dockerfile.centos8 \
 Dockerfile.debian9 \
 Dockerfile.exhaustive \
 Dockerfile.mpich \
@@ -32,6 +32,7 @@ hello/README \
 lammps/Dockerfile \
 lammps/melt.patch \
 lammps/simple.patch \
+lustre/Dockerfile \
 mpibench/Dockerfile.mpich \
 mpibench/Dockerfile.openmpi \
 mpihello/Dockerfile.mpich \
@@ -54,6 +55,7 @@ spark/slurm.sh
 batsfiles = \
 hello/test.bats \
 lammps/test.bats \
+lustre/test.bats \
 mpibench/test.bats \
 mpihello/test.bats \
 obspy/test.bats \

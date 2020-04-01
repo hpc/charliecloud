@@ -1,4 +1,5 @@
-load common
+load ../common
+
 
 @test 'documentation seems sane' {
     scope standard
@@ -19,7 +20,7 @@ load common
     echo "version: ${ch_version}"
     [[ $(echo "$ch_version" | wc -l) -eq 1 ]]   # one line
     [[ $ch_version =~ ^0\.[0-9]+(\.[0-9]+)? ]]  # starts with right numbers
-    diff -u <(echo "$ch_version") "${ch_base}/libexec/charliecloud/version.txt"
+    diff -u <(echo "$ch_version") "${ch_base}/lib/charliecloud/version.txt"
 }
 
 @test 'executables seem sane' {
@@ -61,11 +62,6 @@ load common
         [[ ! -g $path ]]
     done < <( find "$ch_bin" -name 'ch-*' -a \( -executable -o -name '*.c' \) \
                    -print0 )
-}
-
-@test 'ch-build --builder-info' {
-    scope standard
-    ch-build --builder-info
 }
 
 @test 'lint shell scripts' {
@@ -157,11 +153,4 @@ load common
         fi
     done
     [[ $empty_ct -eq 0 ]]
-}
-
-@test 'sotest executable works' {
-    scope quick
-    export LD_LIBRARY_PATH=./sotest
-    ldd sotest/sotest
-    sotest/sotest
 }

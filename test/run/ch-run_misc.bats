@@ -414,7 +414,7 @@ EOF
     run ch-run --unset-env=doesnotmatch "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
-    ex='^(_|HOME|PATH)='  # variables expected to change
+    ex='^(_|HOME|PATH|SHLVL)='  # variables expected to change
     diff -u <(env | grep -Ev "$ex") <(echo "$output" | grep -Ev "$ex")
 
     printf '\n# Everything\n\n'
@@ -692,4 +692,29 @@ EOF
     rm -v /tmp/ch-run_{passwd,group}*
     [[ $(find /tmp -maxdepth 1 -name 'ch-run_passwd*' | wc -l) -eq 0 ]]
     [[ $(find /tmp -maxdepth 1 -name 'ch-run_group*' | wc -l) -eq 0 ]]
+}
+
+@test 'UID and/or GID invalid on host' {
+    scope standard
+    uid_bad=8675309
+    gid_bad=8675310
+
+    # UID
+    run ch-run -v --uid=$uid_bad "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
+
+    # GID
+    run ch-run -v --gid=$gid_bad "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
+
+    # both
+    run ch-run -v --uid=$uid_bad --gid=$gid_bad "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
+    [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 }

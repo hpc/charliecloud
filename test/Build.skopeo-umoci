@@ -17,7 +17,7 @@
 set -ex
 
 #srcdir=$1  # unused
-tarball_gz=${2}.tar.gz
+outdir=$2
 workdir=$3
 
 cd "$workdir"
@@ -31,7 +31,6 @@ if ( ! command -v umoci >/dev/null 2>&1 ); then
     exit 65
 fi
 
-skopeo copy docker://alpine:3.9 oci:./oci:alpine
-umoci unpack --rootless --image ./oci:alpine ./img
-
-( cd img && tar czf "$tarball_gz" -- rootfs )
+skopeo copy docker://alpine:3.9 oci:./oci:img
+umoci unpack --rootless --image ./oci:img ./img
+mv img/rootfs "$outdir"

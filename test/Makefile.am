@@ -2,15 +2,18 @@ testdir = $(pkglibexecdir)/test
 
 # These test files require no special handling.
 testfiles = \
+Dockerfile.00_tiny \
 Dockerfile.argenv \
 Dockerfile.build2dir \
-build.bats \
-build_post.bats \
+build/10_sanity.bats \
+build/50_ch-tug.bats \
+build/50_dockerfile.bats \
+build/50_misc.bats \
+build/99_cleanup.bats \
 common.bash \
 make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
 make-auto.d/builder_to_archive.bats.in \
-make-auto.d/run_image.bats.in \
 make-auto.d/unpack.bats.in \
 run/build-rpms.bats \
 run/ch-fromhost.bats \
@@ -34,7 +37,6 @@ Build.ch-pull2tar \
 Build.docker_pull \
 Build.missing \
 Build.skopeo-umoci \
-chtest-make-auto \
 docs-sane \
 make-perms-test
 

@@ -10,7 +10,7 @@ load common
         # run on the same or different machines). Otherwise, error.
         for i in "$ch_imgdir"/*; do
             case $(basename "$i") in
-                mounts|bind?)
+                mounts|bind?|WEIRD_AL_YANKOVIC)
                     continue
                     ;;
             esac

@@ -74,8 +74,14 @@ allows trading off thoroughness versus time.
     Remove the filesystem permissions directories. Requires
     :code:`--perm-dirs`.
 
-  a specific :code:`.bats` file
-    Run the tests in that file. **(Not yet implemented.)**
+  :code:`-f`, :code:`--file FILE`
+    Run the tests in the given file only, which can be an arbitrary
+    :code:`.bats` file, except for :code:`test.bats` under :code:`examples`,
+    where you must specify the corresponding Dockerfile or :code:`Build` file
+    instead. This is somewhat brittle and typically used for development or
+    debugging. For example, it does not check whether the pre-requisites of
+    whatever is in the file are satisfied. Often running :code:`build` and
+    :code:`run` first is sufficient, but this varies.
 
 Scope is specified with:
 
@@ -131,11 +137,21 @@ Additional arguments:
     Implies :code:`--sudo`. Default: :code:`CH_TEST_PERMDIRS` if set;
     otherwise skip the filesystem permissions tests.
 
+  :code:`--pack-fmt FMT`
+    Use packed image format :code:`FMT` (:code:`squash` or :code:`tar`).
+
   :code:`--sudo`
     Enable things that require sudo, such as certain privilege escalation
     tests and creating/removing the filesystem permissions fixtures. Requires
     generic :code:`sudo` capabilities. Note that the Docker builder uses
     :code:`sudo docker` even without this option.
+
+  :code:`--lustre DIR`
+    Use :code:`DIR` for run-phase Lustre tests. Default:
+    :code:`CH_TEST_LUSTREDIR` if set; otherwise skip them.
+
+    The tests will create, populate, and delete a new subdirectory under
+    :code:`DIR`, leaving everything else in :code:`DIR` untouched.
 
 Exit status
 ===========

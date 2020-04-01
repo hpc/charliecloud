@@ -382,13 +382,20 @@ void setup_namespaces(struct container *c)
    LOG_IDS;
 }
 
-/* Build /etc/passwd and /etc/group files and bind-mount them into newroot. We
-   do it this way so that we capture the relevant host username and group name
-   mappings regardless of where they come from. (We used to simply bind-mount
+/* Build /etc/passwd and /etc/group files and bind-mount them into newroot.
+
+   /etc/passwd contains root, nobody, and an entry for the container UID,
+   i.e., three entries, or two if the container UID is 0 or 65534. We copy the
+   host's user data for the container UID, if that exists, and use dummy data
+   otherwise (see issue #649). /etc/group works similarly: root, nogroup, and
+   an entry for the container GID.
+
+   We build new files to capture the relevant host username and group name
+   mappings regardless of where they come from. We used to simply bind-mount
    the host's /etc/passwd and /etc/group, but this fails for LDAP at least;
-   see issue #212.) After bind-mounting, we remove them on the host side;
-   they'll persist inside the container and then disappear completely when the
-   latter exits. */
+   see issue #212. After bind-mounting, we remove the files from the host;
+   they persist inside the container and then disappear completely when the
+   container exits. */
 void setup_passwd(struct container *c)
 {
    int fd;
@@ -403,10 +410,22 @@ void setup_passwd(struct container *c)
       T_ (1 <= dprintf(fd, "root:x:0:0:root:/root:/bin/sh\n"));
    if (c->container_uid != 65534)
       T_ (1 <= dprintf(fd, "nobody:x:65534:65534:nobody:/:/bin/false\n"));
-   T_ (p = getpwuid(c->container_uid));
-   T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
-                    p->pw_name, c->container_uid, c->container_gid,
-                    p->pw_gecos, getenv("USER")));
+   errno = 0;
+   p = getpwuid(c->container_uid);
+   if (p) {
+      T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
+                       p->pw_name, c->container_uid, c->container_gid,
+                       p->pw_gecos, getenv("USER")));
+   } else {
+      if (errno) {
+         Tf (0, "getpwuid(3) failed");
+      } else {
+         INFO("UID %d not found; using dummy info", c->container_uid);
+         T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
+                          "charlie", c->container_uid, c->container_gid,
+                          "Charliecloud User", "charlie"));
+      }
+   }
    Z_ (close(fd));
    bind_mount(path, "/etc/passwd", c->newroot, BD_REQUIRED, 0);
    Z_ (unlink(path));
@@ -418,8 +437,18 @@ void setup_passwd(struct container *c)
       T_ (1 <= dprintf(fd, "root:x:0:\n"));
    if (c->container_gid != 65534)
       T_ (1 <= dprintf(fd, "nogroup:x:65534:\n"));
-   T_ (g = getgrgid(c->container_gid));
-   T_ (1 <= dprintf(fd, "%s:x:%u:\n", g->gr_name, c->container_gid));
+   errno = 0;
+   g = getgrgid(c->container_gid);
+   if (g) {
+      T_ (1 <= dprintf(fd, "%s:x:%u:\n", g->gr_name, c->container_gid));
+   } else {
+      if (errno) {
+         Tf (0, "getgrgid(3) failed");
+      } else {
+         INFO("GID %d not found; using dummy info", c->container_gid);
+         T_ (1 <= dprintf(fd, "%s:x:%u:\n", "charliegroup", c->container_gid));
+      }
+   }
    Z_ (close(fd));
    bind_mount(path, "/etc/group", c->newroot, BD_REQUIRED, 0);
    Z_ (unlink(path));

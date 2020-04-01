@@ -46,7 +46,6 @@ common distributions should be sufficient.
 
   * Automake
   * Autoconf
-  * Autoconf Archive
 
 Create :code:`configure` with::
 
@@ -61,14 +60,14 @@ standard ones.
 By default, all features that can be built will be built and installed. You
 can exclude some features with:
 
-  =========================  ====================================
+  =========================  =======================================================
   option                     don't build or install
-  =========================  ====================================
+  =========================  =======================================================
   :code:`--disable-html`     HTML documentation
   :code:`--disable-man`      man pages
   :code:`--disable-tests`    test suite
-  :code:`--disable-ch-grow`  :code:`ch-grow` unprivileged builder
-  =========================  ====================================
+  :code:`--disable-ch-grow`  :code:`ch-grow` unprivileged builder and :code:`ch-tug`
+  =========================  =======================================================
 
 You can also say :code:`--enable-FOO` to fail the build if :code:`FOO` can't
 be built.
@@ -76,13 +75,17 @@ be built.
 Some dependencies can be specified as follows. Note that :code:`--without-FOO`
 is not supported; use the feature selectors above.
 
-:code:`--with-python-shebang`
+:code:`--with-python`
   Shebang line to use for Python scripts. Default:
   :code:`/usr/bin/env python3`.
 
 :code:`--with-sphinx-build`
   Path to :code:`sphinx-build` executable. Default: the :code:`sphinx-build`
   found first in :code:`$PATH`.
+
+:code:`--with-sphinx-python`
+  Path to Python used by :code:`sphinx-build`. Default: shebang of
+  :code:`sphinx-build`.
 
 
 Install with package manager
@@ -154,12 +157,17 @@ Some distributions need configuration changes. For example:
 
 * RHEL/CentOS 7.4 and 7.5 need both a `kernel command line option and a sysctl
   <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_.
-  RHEL/CentOS 7.6 and up need only the sysctl.
-
-  *Note:* Docker does not work with user namespaces, so skip step 4 of the Red
-  Hat instructions, i.e., don't add :code:`--userns-remap` to the Docker
-  configuration (see `issue #97
+  RHEL/CentOS 7.6 and up need only the sysctl. Note that Docker does not work
+  with user namespaces, so skip step 4 of the Red Hat instructions, i.e.,
+  don't add :code:`--userns-remap` to the Docker configuration (see `issue #97
   <https://github.com/hpc/charliecloud/issues/97>`_).
+
+Note: User namespaces `always fail in a chroot
+<http://man7.org/linux/man-pages/man2/unshare.2.html>`_ with :code:`EPERM`. If
+:code:`configure` detects that it's in a chroot, it will print a warning in
+its report. One common scenario where this comes up is packaging, where builds
+often happen in a chroot. However, like all the run-time :code:`configure`
+tests, this is informational only and does not affect the build.
 
 Supported architectures
 -----------------------
@@ -379,13 +387,6 @@ Python
 We use Python for scripts that would be really hard to do in Bash, when we
 think Python is likely to be available.
 
-Skopeo
-~~~~~~
-
-Our unprivileged builder :code:`ch-grow` uses `Skopeo
-<https://github.com/containers/skopeo/>`_ to interact with remote and local
-image repositories.
-
 Sphinx
 ~~~~~~
 
@@ -427,12 +428,6 @@ Privilege escalation via sudo is used in the test suite to:
   * Test :code:`ch-run`'s behavior under different ownership scenarios.
 
 (Note that Charliecloud also uses :code:`sudo docker`; see above.)
-
-umoci
-~~~~~
-
-Our unprivileged builder :code:`ch-grow` uses `umoci <https://umo.ci/>`_ to
-manipulate images during the image build process.
 
 Wget
 ~~~~

@@ -7,6 +7,7 @@
 
 set -e
 PREFIX=/var/tmp
+MAKEJ=-j$(getconf _NPROCESSORS_ONLN)
 
 # Remove sbin directories from $PATH (see issue #43). Assume none are first.
 echo "$PATH"
@@ -20,7 +21,7 @@ set -x
 ./autogen.sh
 
 # Remove Autotools to make sure everything works without them.
-sudo apt-get remove autoconf autoconf-archive automake
+sudo apt-get remove autoconf automake
 
 if [[ $MINIMAL_CONFIG ]]; then
     # Everything except --disable-test, which would defeat the point.
@@ -31,7 +32,7 @@ case $TARBALL in
     export)
         # shellcheck disable=SC2086
         ./configure --prefix="$PREFIX" $disable
-        make dist
+        make "$MAKEJ" dist
         mv charliecloud-*.tar.gz "$PREFIX"
         cd "$PREFIX"
         tar xf charliecloud-*.tar.gz
@@ -53,11 +54,11 @@ esac
 
 # shellcheck disable=SC2086
 ./configure --prefix="$PREFIX" $disable
-make
+make "$MAKEJ"
 bin/ch-run --version
 
 if [[ $MAKE_INSTALL ]]; then
-    sudo make install
+    sudo make "$MAKEJ" install
     ch_test="${PREFIX}/bin/ch-test"
 else
     ch_test=$(readlink -f bin/ch-test)  # need absolute path

@@ -1,15 +1,17 @@
-# FIXME:
+# Define an alias for pkglibdir to override Automake helpfulness:
 #
-# 1. SCRIPTS makes all this stuff executable when it shouldn't be, but
-#    Automake complains that DATA can't go in libexecdir.
+#   error: 'pkglibdir' is not a legitimate directory for 'DATA'
+#
+# See: https://www.gnu.org/software/automake/manual/html_node/Uniform.html
+mylibdir = $(pkglibdir)
 
-dist_pkglibexec_SCRIPTS = base.sh
+dist_mylib_DATA = charliecloud.py base.sh
 noinst_DATA = charliecloud
-pkglibexec_SCRIPTS = contributors.bash version.py version.sh version.txt
+mylib_DATA = contributors.bash version.py version.sh version.txt
 
-CLEANFILES = $(pkglibexec_SCRIPTS) $(noinst_DATA)
+CLEANFILES = $(mylib_DATA) $(noinst_DATA)
 
-# This symlink is so scripts can use "libexec/charliecloud" whether they are
+# This symlink is so scripts can use "lib/charliecloud" whether they are
 # installed or not.
 charliecloud:
 	ln -s . charliecloud
