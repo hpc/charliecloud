@@ -69,19 +69,9 @@ RUN spack compiler list --scope=user
 RUN spack compilers
 RUN spack spec charliecloud
 
-# Add system gpg to packages.yaml to avoid the gpg filename too long error. See
-# https://github.com/spack/spack/issues/14605
-RUN ( echo "  gnupg:" \
- &&   echo "    paths:" \
- &&   echo "      gnupg@2.0.22: /usr" \
- &&   echo "    buildable: false" ) \
-       >>/spack/etc/spack/defaults/packages.yaml
-
-# Test: Install Charliecloud. Note the '^python+libxml2' kludge is needed to
-# resolve a circular dependency.
-# See https://github.com/hpc/charliecloud/pull/636
-RUN spack spec charliecloud+builder ^python+libxml2
-RUN spack install charliecloud+builder ^python+libxml2
+# Test: Install Charliecloud.
+RUN spack spec charliecloud+docs
+RUN spack install charliecloud+docs
 
 # Test: Run Spack test suite. Distro package dependencies discovered by trial
 # and error.
