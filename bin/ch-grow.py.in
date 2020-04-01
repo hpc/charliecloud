@@ -88,7 +88,7 @@ run_shell: LINE
 
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 
-ID: /[A-Za-z0-9_.-]+/
+ID: /[A-Za-z0-9_.\/-]+/
 HEXID: /[a-fA-F0-9]+/
 LINE: ( LINE_CONTINUE | /[^\n]/ )+
 WORD: /[^ \t\n=]/+
@@ -558,7 +558,7 @@ def dir_images():
    return "%s/img" % cli.storage
 
 def dir_image(image):
-   return "%s/%s" % (dir_images(), image)
+   return "%s/%s" % (dir_images(), image.replace("/", "%"))
 
 def file_ensure_exists(path):
    with open(path, "a") as fp:
