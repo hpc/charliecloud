@@ -73,12 +73,5 @@ RUN spack spec charliecloud
 RUN spack spec charliecloud+docs
 RUN spack install charliecloud+docs
 
-# Test: Run Spack test suite. Distro package dependencies discovered by trial
-# and error.
-#
-# FIXME: Commented out because the suite fails. Last time I tried, 6 tests
-# failed and 1 "xfailed".
-#RUN spack test
-
 # Clean up.
 RUN spack clean --all
