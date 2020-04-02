@@ -10,7 +10,6 @@ chtest/signal_out.py \
 hello/hello.sh
 
 noexecs = \
-Dockerfile.alpine39 \
 Dockerfile.alpineedge \
 Dockerfile.centos6 \
 Dockerfile.centos7 \
