@@ -9,6 +9,11 @@
 # common and we'd prefer not to introduce another dependency. For example,
 # it's a standard tool on Debian but only in EPEL for CentOS.
 #
+# FIXME: Despite the guidance in the Build script API docs, this produces a
+# tarball even though the process does not naturally produce one. This is
+# because we are also creating some rather bizarre tar edge cases. These
+# should be moved to a separate script.
+#
 # ch-test-scope: quick
 
 set -ex
