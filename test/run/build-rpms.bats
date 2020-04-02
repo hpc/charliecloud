@@ -74,7 +74,7 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = '' ]]
-    rm -rf "${BATS_TMPDIR}/rpmbuild"
+    rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 }
 
 @test 'build/install epel8 RPMS' {
@@ -132,5 +132,5 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = '' ]]
-    rm -rf "${BATS_TMPDIR}/rpmbuild"
+    rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 }

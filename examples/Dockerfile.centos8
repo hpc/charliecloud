@@ -34,10 +34,6 @@ RUN yum -y install \
            rpmlint \
            rsync \
            wget
-# CentOS8 doesn't have a bats package, thus we install from source
-RUN wget https://github.com/sstephenson/bats/archive/v0.4.0.tar.gz \
-    && tar xf v0.4.0.tar.gz \
-    && bats-0.4.0/install.sh /usr
 
 RUN yum -y install fakeroot
 RUN fakeroot yum -y install git

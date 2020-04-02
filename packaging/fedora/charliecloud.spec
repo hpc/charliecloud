@@ -50,6 +50,9 @@ Summary:        Charliecloud test suite
 License:        ASL 2.0
 Obsoletes:      %{name}-test < %{version}-%{release}
 Requires:       %{name} bash /usr/bin/bats /usr/bin/python3
+%if 0%{?el7}
+Patch0: el7.patch
+%endif
 
 %description test
 Test fixtures for %{name}.
@@ -57,8 +60,11 @@ Test fixtures for %{name}.
 %prep
 %setup -q
 
-%build
+%if 0%{?el7}
+%patch0 -p0
+%endif
 
+%build
 %configure --prefix=%{_prefix} \
            --libdir=%{_libdir} \
            --with-python=/usr/bin/python3 \
