@@ -714,11 +714,15 @@ else
     fatal 'Bats not found'
 fi
 
+if [[ $# == 0 ]]; then
+    usage 1
+fi
+
 # Parse arguments.
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
+    all|build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
         require_unset phase
         phase=$opt
         ;;
@@ -841,8 +845,7 @@ if [[ $phase = one-file ]]; then
     printf ': %s' "$one_file"
 fi
 if [[ -z $phase ]]; then
-    phase=all
-    printf 'build run examples'
+    fatal 'phase: no phase specified'
 fi
 printf '\n'
 
