@@ -9,7 +9,7 @@ setup () {
     fi
 }
 
-@test 'build/install epel7 RPMs' {
+@test 'build/install el7 RPMs' {
     prerequisites_ok centos7
     img=${ch_imgdir}/centos7
     image_ok "$img"
@@ -22,7 +22,7 @@ setup () {
                                      --rpmbuild="$BATS_TMPDIR/rpmbuild" HEAD)
 }
 
-@test 'check epel7 RPM files' {
+@test 'check el7 RPM files' {
     prerequisites_ok centos7
     img=${ch_imgdir}/centos7
     # Do installed RPMs look sane?
@@ -55,7 +55,7 @@ setup () {
     [[ $output = *'/usr/share/doc/charliecloud-'*'/html'* ]]
 }
 
-@test 'remove epel7 RPMs' {
+@test 'remove el7 RPMs' {
     prerequisites_ok centos7
     img=${ch_imgdir}/centos7
     # Uninstall to avoid interfering with the rest of the test suite.
@@ -77,7 +77,7 @@ setup () {
     rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 }
 
-@test 'build/install epel8 RPMS' {
+@test 'build/install el8 RPMS' {
     prerequisites_ok centos8
     img=${ch_imgdir}/centos8
     image_ok "$img"
@@ -90,7 +90,7 @@ setup () {
                                      --rpmbuild="$BATS_TMPDIR/rpmbuild" HEAD)
 }
 
-@test 'check epel8 RPM files' {
+@test 'check el8 RPM files' {
     prerequisites_ok centos8
     img=${ch_imgdir}/centos8
     # Do installed RPMs look sane?
@@ -115,7 +115,7 @@ setup () {
     [[ $output = *'/usr/share/doc/charliecloud/html'* ]]
 }
 
-@test 'remove epel8 RPMs' {
+@test 'remove el8 RPMs' {
     prerequisites_ok centos8
     img=${ch_imgdir}/centos8
     # Uninstall to avoid interfering with the rest of the test suite.

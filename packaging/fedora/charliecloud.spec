@@ -31,7 +31,7 @@ For more information: https://hpc.github.io/charliecloud/
 
 %package        doc
 Summary:        Charliecloud html documentation
-License:        BSD and MIT and ASL 2.0
+License:        BSD and ASL 2.0
 BuildArch:      noarch
 Obsoletes:      %{name}-doc < %{version}-%{release}
 %if 0%{?el7}
@@ -82,12 +82,12 @@ For RHEL7 you must increase the number of available user namespaces to a non-
 zero number (note the number below is taken from the default for RHEL8):
 
   echo user.max_user_namespaces=3171 >/etc/sysctl.d/51-userns.conf
-  reboot
+  sysctl -p /etc/sysctl.d/51-userns.conf
 
 Note for versions below RHEL7.6, you will also need to enable user namespaces:
 
   grubby --args=namespace.unpriv_enable=1 --update-kernel=ALL
-  reboot
+  sysctl -p #FIXME: determine file
 
 Please visit https://hpc.github.io/charliecloud/ for more information.
 EOF

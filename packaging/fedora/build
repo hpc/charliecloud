@@ -29,20 +29,19 @@ def main():
 
    # Parse arguments.
    ap = argparse.ArgumentParser()
-   ap.add_argument("version")
-   ap.add_argument("--image", metavar="DIR")
+   ap.add_argument("image", metavar="IMAGE")
+   ap.add_argument("charliecloud version"),
    ap.add_argument("--install", action="store_true")
    ap.add_argument("--rpmbuild", metavar="DIR",
                    default="%s/rpmbuild" % os.getenv("HOME"))
    args = ap.parse_args()
    print("# Charliecloud root:  %s" % CH_BASE)
    print("""\
-# version:            %(version)s
-# image:              %(image)s
-# install:            %(install)s
-# rpmbuild root:      %(rpmbuild)s""" % args.__dict__)
-   print("""\
-# architecture:       %s""" % ARCH)
+# version:            %(args.version)s
+# image:              %(args.image)s
+# install:            %(args.install)s
+# rpmbuild root:      %(args.rpmbuild)s
+# architecture:       %s(ARCH)""" % locals())
 
    # What's the real Git version?
    if (args.version == "HEAD"):
@@ -73,14 +72,11 @@ def main():
          if (x.errno != errno.EEXIST): raise
 
    # Determine distro.
-   if args.image is None:
-      rpm_dist = cmd_out(["rpmbuild", "--eval", "%{?dist}"])[:-1]
-   else:
-      rpm_dist = cmd_out(CH_RUN, args.image,
-                         '--', 'rpmbuild', '--eval', '%{?dist}')
+   rpm_dist = cmd_out(CH_RUN, args.image,
+                      '--', 'rpmbuild', '--eval', '%{?dist}')
    rpm_dist = rpm_dist.split('.')[-1]
 
-   # FIXME: epel8 doesn't have bats; skip for now.
+   # FIXME: el8 doesn't have bats; skip for now.
    if rpm_dist == 'el8':
         PACKAGES.remove('charliecloud-test')
 
@@ -108,10 +104,12 @@ def main():
    os.rename("%s/%s" % (git_tmp, ch_tarball),
              "%s/%s" % (rpm_sources, ch_tarball))
 
-   # Copy lint configuration.
+   # Copy lint configuration and el7 patch.
    # FIXME: Put version into destination sometime?
    shutil.copy("%s/packaging/fedora/charliecloud.rpmlintrc" % CH_BASE,
                "%s/charliecloud.rpmlintrc" % rpm_specs)
+   shutil.copy("%s/packaging/fedora/el7.patch" % CH_BASE,
+               "%s/el7.patch" % rpm_sources)
 
    # Remove temporary Git directory.
    print("# rm -rf %s" % git_tmp)
@@ -154,25 +152,20 @@ def main():
    container = []
    rpmbuild_args = []
    rpmlint_args = []
-   if (not args.image):
-      rpms          = "%s/RPMS/%s" % (args.rpmbuild, ARCH)
-      rpmbuild_args += ["--define", "_topdir " + args.rpmbuild]
-      rpmlint_args  += ["--file", "%s/charliecloud.rpmlintrc" % rpm_specs]
-   else:
-      # Use /usr/local/src because rpmbuild fails with "%{_topdir}/BUILD"
-      # shorter than "/usr/src/debug" (yes, really!) [1,2].
-      #
-      # [1]: https://access.redhat.com/solutions/1426113
-      # [2]: https://gbenson.net/?p=367
-      rpms           = "/usr/local/src/RPMS/%s" % ARCH
-      rpms_noarch    = "/usr/local/src/RPMS/noarch"
-      rpm_specs      = "/usr/local/src/SPECS"
-      rpm_sources    = "/usr/local/src/SOURCES"
-      rpmbuild_args += ["--define", "_topdir /usr/local/src"]
-      rpmlint_args  += ["--file", "%s/charliecloud.rpmlintrc" % rpm_specs]
-      container     += [CH_BASE + "/bin/ch-run", "-w",
-                        "-b", "%s:/usr/local/src" % args.rpmbuild,
-                        args.image, "--"]
+   # Use /usr/local/src because rpmbuild fails with "%{_topdir}/BUILD"
+   # shorter than "/usr/src/debug" (yes, really!) [1,2].
+   #
+   # [1]: https://access.redhat.com/solutions/1426113
+   # [2]: https://gbenson.net/?p=367
+   rpms           = "/usr/local/src/RPMS/%s" % ARCH
+   rpms_noarch    = "/usr/local/src/RPMS/noarch"
+   rpm_specs      = "/usr/local/src/SPECS"
+   rpm_sources    = "/usr/local/src/SOURCES"
+   rpmbuild_args += ["--define", "_topdir /usr/local/src"]
+   rpmlint_args  += ["--file", "%s/charliecloud.rpmlintrc" % rpm_specs]
+   container     += [CH_BASE + "/bin/ch-run", "-w",
+                     "-b", "%s:/usr/local/src" % args.rpmbuild,
+                     args.image, "--"]
 
    # Build RPMs.
    cmd(container, "rpmbuild", rpmbuild_args, "--version")
