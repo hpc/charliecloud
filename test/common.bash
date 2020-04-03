@@ -91,8 +91,8 @@ multiprocess_ok () {
 }
 
 need_squashfs () {
-    ( command -v mksquashfs >/dev/null 2>&1 ) || skip "no squashfs-tools found"
-    ( command -v squashfuse >/dev/null 2>&1 ) || skip "no squashfuse found"
+    command -v mksquashfs > /dev/null 2>&1 || skip "no squashfs-tools found"
+    command -v squashfuse > /dev/null 2>&1 || skip "no squashfuse found"
 }
 
 pedantic_fail () {
@@ -148,7 +148,7 @@ squashfs_ready () {
     if [[ $CH_PACK_FMT != squashfs ]]; then
         exit 1
     fi
-    ( command -v mksquashfs && command -v squashfuse )
+    command -v mksquashfs && command -v squashfuse
 }
 
 unpack_img_all_nodes () {
@@ -291,7 +291,7 @@ else
     ch_multinode=
     # shellcheck disable=SC2034
     ch_mpirun_2_2node=false
-    if ( command -v mpirun >/dev/null 2>&1 ); then
+    if command -v mpirun > /dev/null 2>&1; then
         ch_multiprocess=yes
         ch_mpirun_node='mpirun --map-by ppr:1:node'
         ch_mpirun_core="mpirun ${ch_mpirun_np}"
@@ -311,7 +311,8 @@ fi
 
 # Do we have and want sudo?
 if    [[ $CH_TEST_SUDO ]] \
-   && ( command -v sudo >/dev/null 2>&1 && sudo -v >/dev/null 2>&1 ); then
+   && command -v sudo >/dev/null 2>&1 \
+   && sudo -v > /dev/null 2>&1; then
     # This isn't super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     # shellcheck disable=SC2034

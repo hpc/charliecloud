@@ -21,8 +21,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 mountdir=$1
-if ( mountpoint -q "$mountdir" ); then
-    if ( fusermount -u "$mountdir" ); then
+if mountpoint -q "$mountdir"; then
+    if fusermount -u "$mountdir"; then
         rmdir "$mountdir"
         echo "unmounted and removed ${mountdir}"
     fi

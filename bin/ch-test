@@ -63,7 +63,7 @@ builder_check () {
     printf 'checking builder ...\n'
     case $CH_BUILDER in
     ch-grow)
-        if ! ("${ch_bin}/ch-grow" --dependencies); then
+        if ! "${ch_bin}/ch-grow" --dependencies; then
             fatal 'builder: ch-grow: missing dependencies'
         fi
         bl=$(readlink -f "${ch_bin}/ch-grow")
@@ -74,7 +74,7 @@ builder_check () {
     buildah-runc)
         ;&
     buildah-setuid)
-        if (! command -v buildah &> /dev/null); then
+        if ! command -v buildah > /dev/null 2>&1; then
             fatal 'builder: buildah: not installed.'
         fi
         bl=$(command -v buildah)
@@ -82,7 +82,7 @@ builder_check () {
         min='1.11.2'
         ;;
     docker)
-        if (! command -v docker &> /dev/null); then
+        if ! command -v docker > /dev/null 2>&1; then
             fatal 'builder: docker: not installed'
         fi
         bl=$(command -v docker)
@@ -241,8 +241,8 @@ pedantry_set () {
     # output (not exit code) and it generates a failed password log message if
     # there is not already a sudo session going.
     if    [[ -n $ch_pedantic ]] \
-       && (command -v sudo > /dev/null) \
-       && (sudo -v > /dev/null 2>&1); then
+       && command -v sudo > /dev/null \
+       && sudo -v > /dev/null 2>&1; then
         use_sudo_default=yes
     else
         use_sudo_default=
@@ -314,7 +314,7 @@ test_examples () {
         echo "no examples for $CH_TEST_SCOPE scope"
     fi
     echo 'executing example phase tests ...'
-    if (find "$TMP_" -name '*_example.bats' | grep -q .); then
+    if find "$TMP_" -name '*_example.bats' | grep -q .; then
         bats "${TMP_}"/*_example.bats
     fi
 }
@@ -328,7 +328,7 @@ test_make () {
     build)
         printf "finding tests compatible with %s phase settings ...\n" "$phase"
         for i in $images $examples; do
-           if (test_make_check_image "$i"); then
+           if test_make_check_image "$i"; then
                echo "found: $i"
                build_targets+=( "$i" )
            fi
@@ -350,7 +350,7 @@ test_make () {
             img_pack=${img_pack%%.*}
             for j in $images $examples; do
                 if [[ $(test_make_tag_from_path "$j") == "$img_pack" ]]; then
-                    if (test_make_check_image "$j"); then
+                    if test_make_check_image "$j"; then
                         echo "found: $i"
                         run_targets+=( "$j" )
                     fi
@@ -369,7 +369,7 @@ test_make () {
             return
         fi
         for i in $examples; do
-            if (test_make_check_image "$i"); then
+            if test_make_check_image "$i"; then
                 bat_file=$(dirname "$i")/test.bats
                 tag=$(test_make_tag_from_path "$i")
                 cp "$bat_file" "${TMP_}/${tag}_example.bats"
@@ -413,14 +413,18 @@ test_make_auto () {
         fi
 
         if [[ $mode == build ]]; then
-            if (echo "$basename_" | grep Build &> /dev/null); then
-                test_make_template_print 'build_custom.bats.in'
-            elif (echo "$basename_" | grep Docker &> /dev/null); then
-                test_make_template_print 'build.bats.in'
-                test_make_template_print 'builder_to_archive.bats.in'
-            else
-                fatal "test_make_auto: unknown build type"
-            fi
+            case $basename_ in
+                Build|Build.*)
+                    test_make_template_print 'build_custom.bats.in'
+                    ;;
+                Dockerfile|Dockerfile.*)
+                    test_make_template_print 'build.bats.in'
+                    test_make_template_print 'builder_to_archive.bats.in'
+                    ;;
+                *)
+                    fatal "test_make_auto: unknown build type"
+                    ;;
+            esac
         elif [[ $mode == run ]];then
             test_make_template_print 'unpack.bats.in'
         else
@@ -632,12 +636,12 @@ win () {
 ### Body of script
 
 # Ensure ch-run has been compiled (issue #329).
-if (! "${ch_bin}/ch-run" --version &> /dev/null); then
+if ! "${ch_bin}/ch-run" --version > /dev/null 2>&1; then
     fatal "no working ch-run found in $ch_bin"
 fi
 
 # Ensure we have Bash 4.1 or higher
-if (bash -c 'set -e; [[ 1 = 0 ]]; exit 0'); then
+if /bin/bash -c 'set -e; [[ 1 = 0 ]]; exit 0'; then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
     # https://github.com/sstephenson/bats/issues/49
     fatal 'Bash minimum version is 4.1'
@@ -688,7 +692,7 @@ fi
 # Is the user a contributor?
 email=
 # First, ask Git for the configured e-mail address.
-if ( command -v git > /dev/null 2>&1 ); then
+if command -v git > /dev/null 2>&1; then
     email="$(git config --get user.email || true)"
 fi
 # If that doesn't work, construct it from the environment.
@@ -703,7 +707,7 @@ for i in "${ch_contributors[@]}"; do
 done
 
 # Ensure Bats is installed.
-if (command -v bats &> /dev/null); then
+if command -v bats > /dev/null 2>&1; then
     bats=$(command -v bats)
     bats_version="$(bats --version | awk '{print $2}')"
 else
@@ -890,7 +894,7 @@ fi
 
 # Ensure namespaces are configured properly.
 printf 'checking namespaces ...\n'
-if (! "${ch_bin}/ch-checkns"); then
+if ! "${ch_bin}/ch-checkns"; then
     fatal 'namespace sanity check (ch-checkns) failed'
 fi
 printf '\n'
