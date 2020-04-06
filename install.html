@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installing &mdash; Charliecloud 0.14 documentation</title>
+  <title>1. Installing &mdash; Charliecloud 0.15 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.14
+                0.15
               </div>
             
           
@@ -102,7 +102,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#supported-architectures">1.3.2. Supported architectures</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#details-by-feature">1.3.3. Details by feature</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#building-charliecloud">1.3.3.1. Building Charliecloud</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#image-builders-via-our-wrappers">1.3.3.2. Image builders via our wrappers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#building-images-via-our-wrappers">1.3.3.2. Building images via our wrappers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#managing-container-images">1.3.3.3. Managing container images</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#running-containers">1.3.3.4. Running containers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test-suite">1.3.3.5. Test suite</a></li>
@@ -270,7 +270,6 @@ common distributions should be sufficient.</p>
 <div><ul class="simple">
 <li>Automake</li>
 <li>Autoconf</li>
-<li>Autoconf Archive</li>
 </ul>
 </div></blockquote>
 <p>Create <code class="code docutils literal notranslate"><span class="pre">configure</span></code> with:</p>
@@ -382,17 +381,19 @@ environment.</p>
 end-to-end requires unprivileged <a class="reference external" href="https://lwn.net/Articles/531114/">user namespaces</a>. In order to enable them, you need a
 vaguely recent Linux kernel with the feature compiled in and active.</p>
 <p>Some distributions need configuration changes. For example:</p>
-<ul>
-<li><p class="first">Debian Stretch <a class="reference external" href="https://superuser.com/a/1122977">needs sysctl</a>
-<code class="code docutils literal notranslate"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>.</p>
-</li>
-<li><p class="first">RHEL/CentOS 7.4 and 7.5 need both a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>.
-RHEL/CentOS 7.6 and up need only the sysctl.</p>
-<p><em>Note:</em> Docker does not work with user namespaces, so skip step 4 of the Red
-Hat instructions, i.e., don’t add <code class="code docutils literal notranslate"><span class="pre">--userns-remap</span></code> to the Docker
-configuration (see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/97">issue #97</a>).</p>
-</li>
+<ul class="simple">
+<li>Debian Stretch <a class="reference external" href="https://superuser.com/a/1122977">needs sysctl</a>
+<code class="code docutils literal notranslate"><span class="pre">kernel.unprivileged_userns_clone=1</span></code>.</li>
+<li>RHEL/CentOS 7.4 and 7.5 need both a <a class="reference external" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options">kernel command line option and a sysctl</a>.
+RHEL/CentOS 7.6 and up need only the sysctl. Note that Docker does not work
+with user namespaces, so skip step 4 of the Red Hat instructions, i.e.,
+don’t add <code class="code docutils literal notranslate"><span class="pre">--userns-remap</span></code> to the Docker configuration (see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/97">issue #97</a>).</li>
 </ul>
+<p>Note: User namespaces <a class="reference external" href="http://man7.org/linux/man-pages/man2/unshare.2.html">always fail in a chroot</a> with <code class="code docutils literal notranslate"><span class="pre">EPERM</span></code>. If
+<code class="code docutils literal notranslate"><span class="pre">configure</span></code> detects that it’s in a chroot, it will print a warning in
+its report. One common scenario where this comes up is packaging, where builds
+often happen in a chroot. However, like all the run-time <code class="code docutils literal notranslate"><span class="pre">configure</span></code>
+tests, this is informational only and does not affect the build.</p>
 </div>
 <div class="section" id="supported-architectures">
 <h3><a class="toc-backref" href="#id11">1.3.2. Supported architectures</a><a class="headerlink" href="#supported-architectures" title="Permalink to this headline">¶</a></h3>
@@ -421,36 +422,36 @@ shell and utilities.</p>
 <p>documentation:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="code docutils literal notranslate"><span class="pre">sphinx-build</span></code> 1.2.3</li>
+<li><code class="code docutils literal notranslate"><span class="pre">sphinx-build</span></code> ≥ 1.2.3</li>
 <li><code class="code docutils literal notranslate"><span class="pre">sphinx-build</span></code> Python</li>
-<li>“docutils” module 0.14</li>
-<li>“sphinx-rtd-theme” module 0.2.4</li>
+<li>“docutils” module ≥ 0.14</li>
+<li>“sphinx-rtd-theme” module ≥ 0.2.4</li>
 </ul>
 </div></blockquote>
 </div>
-<div class="section" id="image-builders-via-our-wrappers">
-<h4>1.3.3.2. Image builders via our wrappers<a class="headerlink" href="#image-builders-via-our-wrappers" title="Permalink to this headline">¶</a></h4>
-<p>Buildah:</p>
+<div class="section" id="building-images-via-our-wrappers">
+<h4>1.3.3.2. Building images via our wrappers<a class="headerlink" href="#building-images-via-our-wrappers" title="Permalink to this headline">¶</a></h4>
+<p>with Buildah:</p>
 <blockquote>
 <div><ul class="simple">
-<li>Buildah 1.11.2</li>
+<li>Buildah ≥ 1.11.2</li>
 </ul>
 </div></blockquote>
-<p><code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> and <code class="code docutils literal notranslate"><span class="pre">ch-tug</span></code>:</p>
+<p>with <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code>:</p>
 <blockquote>
 <div><ul class="simple">
 <li>enabled</li>
 <li>Python shebang line</li>
-<li>Python in shebang 3.4</li>
+<li>Python in shebang ≥ 3.4</li>
 <li>“lark-parser” module</li>
 <li>“requests” module</li>
 <li><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></li>
 </ul>
 </div></blockquote>
-<p>Docker:</p>
+<p>with Docker:</p>
 <blockquote>
 <div><ul class="simple">
-<li>Docker 17.03</li>
+<li>Docker ≥ 17.03</li>
 <li><code class="code docutils literal notranslate"><span class="pre">mktemp</span></code></li>
 </ul>
 </div></blockquote>
@@ -475,7 +476,7 @@ shell and utilities.</p>
 <blockquote>
 <div><ul class="simple">
 <li>at least one builder</li>
-<li><code class="code docutils literal notranslate"><span class="pre">mksquashfs</span></code> 4.2</li>
+<li><code class="code docutils literal notranslate"><span class="pre">mksquashfs</span></code> ≥ 4.2</li>
 </ul>
 </div></blockquote>
 <p>Note: Pulling/pushing images from/to a repository is currently done using
@@ -498,13 +499,13 @@ the builder directly.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-mount</span></code> and <code class="code docutils literal notranslate"><span class="pre">ch-umount</span></code> SquashFS images:</p>
 <blockquote>
 <div><ul class="simple">
-<li>SquashFUSE 0.1.102</li>
+<li>SquashFUSE ≥ 0.1.100</li>
 </ul>
 </div></blockquote>
 <p>inject nVidia GPU libraries:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="code docutils literal notranslate"><span class="pre">nvidia-container-cli</span></code> 1.0.0</li>
+<li><code class="code docutils literal notranslate"><span class="pre">nvidia-container-cli</span></code> ≥ 1.0.0</li>
 <li>nVidia libraries &amp; executables present</li>
 </ul>
 </div></blockquote>
@@ -516,9 +517,9 @@ the builder directly.</p>
 <div><ul class="simple">
 <li>test suite enabled</li>
 <li><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></li>
-<li>Bats 0.4.0</li>
-<li>Bash 4.1</li>
-<li><code class="code docutils literal notranslate"><span class="pre">wget</span></code> 1.11</li>
+<li>Bats ≥ 0.4.0</li>
+<li>Bash ≥ 4.1</li>
+<li><code class="code docutils literal notranslate"><span class="pre">wget</span></code> ≥ 1.11</li>
 </ul>
 </div></blockquote>
 <p>recommended tests with tarballs:</p>

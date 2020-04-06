@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5. Contributor’s guide &mdash; Charliecloud 0.14 documentation</title>
+  <title>5. Contributor’s guide &mdash; Charliecloud 0.15 documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.14
+                0.15
               </div>
             
           
@@ -109,7 +109,13 @@
 <li class="toctree-l2"><a class="reference internal" href="#test-suite">5.2. Test suite</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#timing-the-tests">5.2.1. Timing the tests</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ch-test-complains-about-inconsistent-versions">5.2.2. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#writing-a-test-image-using-the-standard-workflow">5.2.3. Writing a test image using the standard workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#writing-a-test-image-using-the-standard-workflow">5.2.3. Writing a test image using the standard workflow</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#summary">5.2.3.1. Summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-specify-when-to-include-and-exclude-a-test-image">5.2.3.2. How to specify when to include and exclude a test image</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-write-a-dockerfile-recipe">5.2.3.3. How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-write-a-build-recipe">5.2.3.4. How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#building-rpms">5.3. Building RPMs</a><ul>
@@ -450,7 +456,7 @@ commit (Travis tests only the most recent commit in a pushed group).</p>
 <p><strong>Iterating with Travis.</strong> When trying to make Travis happy, use a throwaway
 branch that you force-push or squash-merge. Don’t submit a PR with half a
 dozen “fix Travis” commits.</p>
-<p><strong>Purging Docker cache.</strong> <code class="code docutils literal notranslate"><span class="pre">test/docker-clean.sh</span></code> can be used to purge
+<p><strong>Purging Docker cache.</strong> <code class="code docutils literal notranslate"><span class="pre">misc/docker-clean.sh</span></code> can be used to purge
 your Docker cache, either by removing all tags or deleting all containers and
 images. The former is generally preferred, as it lets you update only those
 base images that have actually changed (the ones that haven’t will be
@@ -539,84 +545,107 @@ situation is to change Git branches without rebuilding it.</p>
 </div>
 <div class="section" id="writing-a-test-image-using-the-standard-workflow">
 <h3><a class="toc-backref" href="#id12">5.2.3. Writing a test image using the standard workflow</a><a class="headerlink" href="#writing-a-test-image-using-the-standard-workflow" title="Permalink to this headline">¶</a></h3>
-<p>The Charliecloud test suite has a workflow that can build images by three
+<div class="section" id="summary">
+<h4>5.2.3.1. Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h4>
+<p>The Charliecloud test suite has a workflow that can build images by two
 methods:</p>
 <ol class="arabic simple">
 <li>From a Dockerfile, using <code class="code docutils literal notranslate"><span class="pre">ch-build</span></code>.</li>
-<li>By pulling a Docker image, with <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code>.</li>
 <li>By running a custom script.</li>
 </ol>
-<p>To create an image that will be built, unpacked, and basic tests run within,
-create a file in <code class="code docutils literal notranslate"><span class="pre">test/</span></code> called
-<code class="code docutils literal notranslate"><span class="pre">{Dockerfile,Docker_Pull,Build}.foo</span></code>. This will create an image tagged
-<code class="code docutils literal notranslate"><span class="pre">foo</span></code>.</p>
+<p>To create an image that will be built and unpacked and/or mounted, create a
+file in <code class="code docutils literal notranslate"><span class="pre">examples</span></code> (if the image recipe is useful as an example) or
+<code class="code docutils literal notranslate"><span class="pre">test</span></code> (if not) called <code class="code docutils literal notranslate"><span class="pre">{Dockerfile,Build}.foo</span></code>. This will create
+an image tagged <code class="code docutils literal notranslate"><span class="pre">foo</span></code>. Additional tests can be added to the test suite
+Bats files.</p>
 <p>To create an image with its own tests, documentation, etc., create a directory
-in <code class="code docutils literal notranslate"><span class="pre">examples/*</span></code>. In this directory, place
-<code class="code docutils literal notranslate"><span class="pre">{Dockerfile,Docker_Pull,Build}[.foo]</span></code> to build the image and
-<code class="code docutils literal notranslate"><span class="pre">test.bats</span></code> with your tests. For example, the file
-<code class="code docutils literal notranslate"><span class="pre">examples/mpi/foo/Dockerfile</span></code> will create an image tagged <code class="code docutils literal notranslate"><span class="pre">foo</span></code>,
-and <code class="code docutils literal notranslate"><span class="pre">examples/mpi/foo/Dockerfile.bar</span></code> tagged <code class="code docutils literal notranslate"><span class="pre">foo-bar</span></code>. These
-images also get the basic tests.</p>
+in <code class="code docutils literal notranslate"><span class="pre">examples</span></code>. In this directory, place
+<code class="code docutils literal notranslate"><span class="pre">{Dockerfile,Build}[.foo]</span></code> to build the image and <code class="code docutils literal notranslate"><span class="pre">test.bats</span></code> with
+your tests. For example, the file <code class="code docutils literal notranslate"><span class="pre">examples/foo/Dockerfile</span></code> will create
+an image tagged <code class="code docutils literal notranslate"><span class="pre">foo</span></code>, and <code class="code docutils literal notranslate"><span class="pre">examples/foo/Dockerfile.bar</span></code> tagged
+<code class="code docutils literal notranslate"><span class="pre">foo-bar</span></code>. These images also get the build and unpack/mount tests.</p>
+<p>Additional directories can be symlinked into <code class="code docutils literal notranslate"><span class="pre">examples</span></code> and will be
+integrated into the test suite. This allows you to create a site-specific test
+suite. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> finds tests at any directory depth; e.g.
+<code class="code docutils literal notranslate"><span class="pre">examples/foo/bar/Dockerfile.baz</span></code> will create a test image tagged
+<code class="code docutils literal notranslate"><span class="pre">bar-baz</span></code>.</p>
 <p>Image tags in the test suite must be unique.</p>
+<p>Order of processing; within each item, alphabetical order:</p>
+<ol class="arabic simple">
+<li>Dockerfiles in <code class="code docutils literal notranslate"><span class="pre">test</span></code>.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">Build</span></code> files in <code class="code docutils literal notranslate"><span class="pre">test</span></code>.</li>
+<li>Dockerfiles in <code class="code docutils literal notranslate"><span class="pre">examples</span></code>.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">Build</span></code> files in <code class="code docutils literal notranslate"><span class="pre">examples</span></code>.</li>
+</ol>
+<p>The purpose of doing <code class="code docutils literal notranslate"><span class="pre">Build</span></code> second is so they can leverage what has
+already been built by a Dockerfile, which is often more straightforward.</p>
+</div>
+<div class="section" id="how-to-specify-when-to-include-and-exclude-a-test-image">
+<h4>5.2.3.2. How to specify when to include and exclude a test image<a class="headerlink" href="#how-to-specify-when-to-include-and-exclude-a-test-image" title="Permalink to this headline">¶</a></h4>
 <p>Each of these image build files must specify its scope for building and
 running, which must be greater than or equal than the scope of all tests in
-the corresponding <code class="code docutils literal notranslate"><span class="pre">test.bats</span></code>. Exactly one of the following strings must
-be in each file:</p>
+any corresponding <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files. Exactly one of the following strings
+must appear:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>ch-test-scope: quick
 ch-test-scope: standard
 ch-test-scope: full
 </pre></div>
 </div>
 <p>Other stuff on the line (e.g., comment syntax) is ignored.</p>
-<p>Similarly, you can exclude an architecture with e.g.:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>ch-test-arch-exclude: aarch64  # ARM not supported upstream
-</pre></div>
+<p>Optional test modification directives are:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-arch-exclude:</span> <span class="pre">ARCH</span></code></dt>
+<dd>If the output of <code class="code docutils literal notranslate"><span class="pre">uname</span> <span class="pre">-m</span></code> matches <code class="code docutils literal notranslate"><span class="pre">ARCH</span></code>, skip the file.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-builder-exclude:</span> <span class="pre">BUILDER</span></code></dt>
+<dd>If using <code class="code docutils literal notranslate"><span class="pre">BUILDER</span></code>, skip the file.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-builder-include:</span> <span class="pre">BUILDER</span></code></dt>
+<dd>If specified, run only if using <code class="code docutils literal notranslate"><span class="pre">BUILDER</span></code>. Can be repeated to
+include multiple builders. If specified zero times, all builders are
+included.</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-need-sudo</span></code></dt>
+<dd>Run only if user has sudo.</dd>
+</dl>
+</div></blockquote>
 </div>
-<p>Additional subdirectories can be symlinked into <code class="code docutils literal notranslate"><span class="pre">examples/</span></code> and will be
-integrated into the test suite. This allows you to create a site-specific test
-suite.</p>
-<p><code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
+<div class="section" id="how-to-write-a-dockerfile-recipe">
+<h4>5.2.3.3. How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe<a class="headerlink" href="#how-to-write-a-dockerfile-recipe" title="Permalink to this headline">¶</a></h4>
+<p>It’s a standard Dockerfile.</p>
+</div>
+<div class="section" id="how-to-write-a-build-recipe">
+<h4>5.2.3.4. How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe<a class="headerlink" href="#how-to-write-a-build-recipe" title="Permalink to this headline">¶</a></h4>
+<p>This is an arbitrary script or program that builds the image. It gets three
+command line arguments:</p>
 <blockquote>
 <div><ul class="simple">
-<li>It’s a Dockerfile.</li>
-</ul>
-</div></blockquote>
-<p><code class="code docutils literal notranslate"><span class="pre">Docker_Pull</span></code>:</p>
-<blockquote>
-<div><ul>
-<li><p class="first">First line states the address to pull from Docker Hub.</p>
-</li>
-<li><p class="first">Second line is a scope expression as described above.</p>
-</li>
-<li><p class="first">Examples (these refer to the same image as of this writing):</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>alpine:3.6
-alpine@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d
-</pre></div>
-</div>
-</li>
-</ul>
-</div></blockquote>
-<p><code class="code docutils literal notranslate"><span class="pre">Build</span></code>:</p>
-<blockquote>
-<div><ul class="simple">
-<li>Script or program that builds the image.</li>
-<li>Arguments:<ul>
 <li><code class="code docutils literal notranslate"><span class="pre">$1</span></code>: Absolute path to directory containing <code class="code docutils literal notranslate"><span class="pre">Build</span></code>.</li>
-<li><code class="code docutils literal notranslate"><span class="pre">$2</span></code>: Absolute path and name of output archive, without extension.
-The script should use an archive format compatible with
-<code class="code docutils literal notranslate"><span class="pre">ch-tar2dir</span></code> and append the appropriate extension (e.g.,
-<code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code>).</li>
-<li><code class="code docutils literal notranslate"><span class="pre">$3</span></code>: Absolute path to appropriate temporary directory.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">$2</span></code>: Absolute path and name of output image, without extension.
+This can be either:<ul>
+<li>Tarball compressed with gzip or xz; append <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code> or
+<code class="code docutils literal notranslate"><span class="pre">.tar.xz</span></code> to <code class="code docutils literal notranslate"><span class="pre">$2</span></code>. If <code class="code docutils literal notranslate"><span class="pre">ch-test</span> <span class="pre">--pack-fmt=squash</span></code>,
+then this tarball will be unpacked and repacked as a SquashFS.
+Therefore, only use tarball output if the image build process naturally
+produces it and you would have to unpack it to get a directory (e.g.,
+<code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">export</span></code>).</li>
+<li>Directory; use <code class="code docutils literal notranslate"><span class="pre">$2</span></code> unchanged. The contents of this directory will
+be packed without any enclosing directory, so if you want an enclosing
+directory, include one. Hidden (dot) files in <code class="code docutils literal notranslate"><span class="pre">$2</span></code> will be ignored.</li>
 </ul>
 </li>
-<li>The script must not write anything in the current directory.</li>
-<li>Temporary directory can be used for whatever and need not be cleaned up.
-It will be deleted by the test harness.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">$3</span></code>: Absolute path to temporary directory for use by the script.
+This can be used for whatever and need no be cleaned up; the test harness
+will delete it.</li>
+</ul>
+</div></blockquote>
+<p>Other requirements:</p>
+<blockquote>
+<div><ul class="simple">
+<li>The script may write only in two directories: (a) the parent directory of
+<code class="code docutils literal notranslate"><span class="pre">$2</span></code> and (b) <code class="code docutils literal notranslate"><span class="pre">$3</span></code>. Specifically, it may not write to the
+current working directory. Everything written to the parent directory of
+<code class="code docutils literal notranslate"><span class="pre">$2</span></code> must have a name starting with <code class="code docutils literal notranslate"><span class="pre">$(basename</span> <span class="pre">$2)</span></code>.</li>
 <li>The first entry in <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code> will be the Charliecloud under test,
 i.e., bare <code class="code docutils literal notranslate"><span class="pre">ch-*</span></code> commands will be the right ones.</li>
-<li>The tarball must not contain leading directory components; top-level
-filesystem directories such as bin and usr must be at the root of the
-tarball with no leading path (<code class="code docutils literal notranslate"><span class="pre">./</span></code> is acceptable).</li>
 <li>Any programming language is permitted. To be included in the Charliecloud
 source code, a language already in the test suite dependencies is
 required.</li>
@@ -625,7 +654,7 @@ message and exit code if something is missing. To be included in the
 Charliecloud source code, all dependencies must be something we are
 willing to install and test.</li>
 <li>Exit codes:<ul>
-<li>0: Image tarball successfully created.</li>
+<li>0: Image successfully created.</li>
 <li>65: One or more dependencies were not met.</li>
 <li>126 or 127: No interpreter available for script language (the shell
 takes care of this).</li>
@@ -634,6 +663,7 @@ takes care of this).</li>
 </li>
 </ul>
 </div></blockquote>
+</div>
 </div>
 </div>
 <div class="section" id="building-rpms">
