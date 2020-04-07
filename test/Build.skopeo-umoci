@@ -22,11 +22,11 @@ workdir=$3
 
 cd "$workdir"
 
-if ( ! command -v skopeo >/dev/null 2>&1 ); then
+if ! command -v skopeo > /dev/null 2>&1; then
     echo 'skopeo not found' 1>&2
     exit 65
 fi
-if ( ! command -v umoci >/dev/null 2>&1 ); then
+if ! command -v umoci > /dev/null 2>&1; then
     echo 'umoci not found' 1>&2
     exit 65
 fi
