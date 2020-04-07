@@ -13,12 +13,10 @@ setup () {
     prerequisites_ok centos7
     img=${ch_imgdir}/centos7
     image_ok "$img"
-    if [[ -d ${BATS_TMPDIR}/rpmbuild/SOURCES/charliecloud ]]; then
-        rm -rf "${BATS_TMPDIR}/rpmbuild/SOURCES/charliecloud"
-    fi
+    rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 
     # Build and install RPMs into CentOS 7 image.
-    (cd .. && packaging/fedora/build --install --image="$img" \
+    (cd .. && packaging/fedora/build --install "$img" \
                                      --rpmbuild="$BATS_TMPDIR/rpmbuild" HEAD)
 }
 
@@ -74,19 +72,16 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = '' ]]
-    rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 }
 
 @test 'build/install el8 RPMS' {
     prerequisites_ok centos8
     img=${ch_imgdir}/centos8
     image_ok "$img"
-    if [[ -d ${BATS_TMPDIR}/rpmbuild/SOURCES/charliecloud ]]; then
-        rm -rf "${BATS_TMPDIR}/rpmbuild/SOURCES/charliecloud"
-    fi
+    rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 
     # Build and install RPMs into CentOS 8 image.
-    (cd .. && packaging/fedora/build --install --image="$img" \
+    (cd .. && packaging/fedora/build --install "$img" \
                                      --rpmbuild="$BATS_TMPDIR/rpmbuild" HEAD)
 }
 
@@ -132,5 +127,4 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = '' ]]
-    rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 }
