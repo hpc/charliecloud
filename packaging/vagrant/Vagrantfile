@@ -318,9 +318,9 @@ EOF2
     else
         user=vagrant
     fi
-    sudo -iu $user -- sh -c "ch-test clean && ch-test -b docker"
-    sudo -iu $user -- sh -c "ch-test clean && ch-test -b buildah"
-    sudo -iu $user -- sh -c "ch-test clean && ch-test -b ch-grow"
+    sudo -iu $user -- sh -c "ch-test clean && ch-test -b docker all"
+    sudo -iu $user -- sh -c "ch-test clean && ch-test -b buildah all"
+    sudo -iu $user -- sh -c "ch-test clean && ch-test -b ch-grow all"
   EOF
 end
 
