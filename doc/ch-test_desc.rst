@@ -106,12 +106,6 @@ Additional arguments:
   :code:`--dry-run`
     Print summary of what would be tested and then exit.
 
-  :code:`--file-tag TAG`
-    If running an individual Bats file with :code:`--file`, and that file is a
-    :code:`test.bats` to accompany a directory in :code:`examples`,
-    :code:`ch-test` is not smart enough to infer the image tag. Thus, you must
-    specify it with this option.
-
   :code:`-h`, :code:`--help`
     Print usage and then exit.
 
