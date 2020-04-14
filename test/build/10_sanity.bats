@@ -47,7 +47,7 @@ load ../common
         # Most, but not all, executables should print usage and exit
         # unsuccessfully when run without arguments.
         case $filename in
-            ch-checkns|ch-test)
+            ch-checkns)
                 ;;
             *)
                 run "$path"
