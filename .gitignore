@@ -7,6 +7,12 @@ a.out
 /bin/ch-run-oci
 /bin/ch-ssh
 /bin/ch-tug
+/examples/copy/dirCa/symlink-to-dirCb
+/examples/copy/dirD/symlink-to-fileDa
+/examples/copy/dirEa/symlink-to-dirEb
+/examples/copy/symlink-to-fileA
+/examples/copy/symlink-to-fileB-A
+/examples/copy/symlink-to-fileB-B
 /doc/_deps.rst
 /doc/doctrees/
 /doc/html/
@@ -16,6 +22,7 @@ a.out
 /lib/version.py
 /lib/version.sh
 /lib/version.txt
+/test/fixtures/symlink-to-tmp
 /test/sotest/*.so*
 /test/sotest/sotest
 /test/sotest/bin/
