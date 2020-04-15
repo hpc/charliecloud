@@ -313,7 +313,7 @@ Timing the tests
 The :code:`ts` utility from :code:`moreutils` is quite handy. The following
 prepends each line with the elapsed time since the previous line::
 
-  $ CH_TEST_SCOPE=quick make test | ts -i '%M:%.S'
+  $ ch-test -s quick | ts -i '%M:%.S'
 
 Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
 
@@ -484,12 +484,24 @@ abstracted away.
 Dependencies
 ------------
 
-  * Python 2.7 or 3.4+
+  * charliecloud
+  * Python 3.4+
   * Either:
 
-    * RPM-based system of roughly RHEL/CentOS 7 vintage or newer, with RPM
-      build tools installed
-    * System that can run Charliecloud containers
+    * the provided example :code:`centos7` or :code:`centos8` image
+    * a RHEL/CentOS 7 or newer container image with (note there are different
+      python version names for the listed packages in RHEL/CentOS 8):
+      * autoconf
+      * automake
+      * gcc
+      * make
+      * python36
+      * python36-sphinx
+      * python36-sphinx_rtd_theme
+      * rpm-build
+      * rpmlint
+      * rsync
+
 
 :code:`rpmbuild` wrapper script
 -------------------------------
@@ -504,11 +516,9 @@ The script must be run from the root of a Charliecloud Git working directory.
 
 Usage::
 
-  $ packaging/fedora/build [OPTIONS] VERSION
+  $ packaging/fedora/build [OPTIONS] IMAGE VERSION
 
 Options:
-
-  * :code:`--image=DIR` : Build in Charliecloud image directory :code:`DIR`.
 
   * :code:`--install` : Install the RPMs after building into the build
     environment.
@@ -516,19 +526,17 @@ Options:
   * :code:`--rpmbuild=DIR` : Use RPM build directory root :code:`DIR`
     (default: :code:`~/rpmbuild`).
 
-For example, to build a version 0.9.7 RPM, on an RPM system, and leave the
-results in :code:`~/rpmbuild/RPMS`::
+For example, to build a version 0.9.7 RPM from the CentOS 7 image provided with
+the test suite, on any system, and leave the results in :code:`~/rpmbuild/RPMS`
+(note that the test suite would also build the necessary image diretory::
 
-  $ packaging/fedora/build 0.9.7-1
+  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
+  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 0.9.7-1
 
-To build a pre-release RPM of Git HEAD using the CentOS 7 image provided with
-the test suite (note that the test suite would also build the necessary image
-directory)::
+To build a pre-release RPM of Git HEAD using the CentOS 7 image::
 
-  $ bin/ch-build -t centos7 -f test/Dockerfile.centos7 test
-  $ bin/ch-builder2tar centos7 $CH_TEST_TARDIR
-  $ bin/ch-tar2dir $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
-  $ packaging/fedora/build --image $CH_TEST_IMGDIR/centos7 HEAD
+  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
+  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 HEAD
 
 Gotchas and quirks
 ------------------

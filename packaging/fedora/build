@@ -29,19 +29,20 @@ def main():
 
    # Parse arguments.
    ap = argparse.ArgumentParser()
-   ap.add_argument("image", metavar="IMAGE")
+   ap.add_argument("image", metavar="DIR")
    ap.add_argument("version"),
    ap.add_argument("--install", action="store_true")
    ap.add_argument("--rpmbuild", metavar="DIR",
                    default="%s/rpmbuild" % os.getenv("HOME"))
    args = ap.parse_args()
    print("# Charliecloud root:  %s" % CH_BASE)
-  # print("""\
-# version:            %(args.version)s
-# image:              %(args.image)s
-# install:            %(args.install)s
-# rpmbuild root:      %(args.rpmbuild)s
-# architecture:       %s(ARCH)""" % locals())
+   print("architecture:       %s" % ARCH)
+   print("""\
+version:            %(version)s
+image:              %(image)s
+install:            %(install)s
+rpmbuild root:      %(rpmbuild)s
+""" % args.__dict__)
 
    # What's the real Git version?
    if (args.version == "HEAD"):
