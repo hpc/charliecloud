@@ -1,17 +1,45 @@
-diff -ru charliecloud/packaging/fedora/el7.patch charliecloud-el7/packaging/fedora/el7.patch
---- charliecloud/packaging/fedora/el7.patch	2020-04-02 15:41:10.415073022 -0600
-+++ charliecloud-el7/packaging/fedora/el7.patch	2020-04-02 15:40:51.741889929 -0600
-@@ -0,0 +1,13 @@
-+diff -ru charliecloud/bin/ch-test charliecloud-patch/bin/ch-test
-+--- charliecloud/bin/ch-test	2020-04-02 15:30:59.264078508 -0600
-++++ charliecloud-patch/bin/ch-test	2020-04-02 15:38:10.524309164 -0600
-+@@ -658,7 +658,7 @@
-+     CHTEST_INSTALLED=yes
-+     CHTEST_GITWD=
-+     CHTEST_DIR=${ch_base}/libexec/charliecloud/test
-+-    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
-++    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud-${ch_version}/examples
-+ else
-+     # build dir
-+     CHTEST_INSTALLED=
-+Only in charliecloud/packaging/fedora: el7.patch
+diff -ru charliecloud/bin/ch-test charliecloud-lib/bin/ch-test
+--- charliecloud/bin/ch-test	2020-04-07 12:19:37.054609706 -0600
++++ charliecloud-lib/bin/ch-test	2020-04-15 16:36:55.128831767 -0600
+@@ -662,7 +662,7 @@
+     CHTEST_INSTALLED=yes
+     CHTEST_GITWD=
+     CHTEST_DIR=${ch_base}/libexec/charliecloud/test
+-    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
++    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud-${ch_version}/examples
+ else
+     # build dir
+     CHTEST_INSTALLED=
+diff -ru charliecloud/packaging/fedora/ch-test.el7.patch charliecloud-lib/packaging/fedora/ch-test.el7.patch
+--- charliecloud/packaging/fedora/ch-test.el7.patch	2020-04-15 16:37:49.157369397 -0600
++++ charliecloud-lib/packaging/fedora/ch-test.el7.patch	2020-04-15 16:11:33.177698782 -0600
+@@ -1,12 +1,17 @@
+-diff -ru charliecloud/bin/ch-test charliecloud-lib/bin/ch-test
+---- charliecloud/bin/ch-test	2020-04-07 12:19:37.054609706 -0600
+-+++ charliecloud-lib/bin/ch-test	2020-04-15 16:36:55.128831767 -0600
+-@@ -662,7 +662,7 @@
+-     CHTEST_INSTALLED=yes
+-     CHTEST_GITWD=
+-     CHTEST_DIR=${ch_base}/libexec/charliecloud/test
+--    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
+-+    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud-${ch_version}/examples
+- else
+-     # build dir
+-     CHTEST_INSTALLED=
++diff -ru charliecloud/packaging/fedora/el7.patch charliecloud-el7/packaging/fedora/el7.patch
++--- charliecloud/packaging/fedora/el7.patch	2020-04-02 15:41:10.415073022 -0600
+++++ charliecloud-el7/packaging/fedora/el7.patch	2020-04-02 15:40:51.741889929 -0600
++@@ -0,0 +1,13 @@
+++diff -ru charliecloud/bin/ch-test charliecloud-patch/bin/ch-test
+++--- charliecloud/bin/ch-test	2020-04-02 15:30:59.264078508 -0600
++++++ charliecloud-patch/bin/ch-test	2020-04-02 15:38:10.524309164 -0600
+++@@ -658,7 +658,7 @@
+++     CHTEST_INSTALLED=yes
+++     CHTEST_GITWD=
+++     CHTEST_DIR=${ch_base}/libexec/charliecloud/test
+++-    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
++++    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud-${ch_version}/examples
+++ else
+++     # build dir
+++     CHTEST_INSTALLED=
+++Only in charliecloud/packaging/fedora: el7.patch
