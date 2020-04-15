@@ -29,6 +29,7 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
+    [[ $output = *'charliecloud-doc'* ]]
     [[ $output = *'charliecloud-test-'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud"
     echo "$output"
@@ -65,6 +66,7 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
+    [[ $output = *'charliecloud-doc'* ]]
     [[ $output = *'charliecloud-test-'* ]]
 
     # All gone?
@@ -94,6 +96,7 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
+    [[ $output = *'charliecloud-doc'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -121,6 +124,7 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
+    [[ $output = *'charliecloud-doc'* ]]
 
     # All gone?
     run ch-run "$img" -- rpm -qa "charliecloud*"
