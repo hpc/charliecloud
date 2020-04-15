@@ -15,17 +15,12 @@ AC_CONFIG_SRCDIR([bin/ch-run.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([misc/m4])
 
-
 AC_CANONICAL_HOST
-# Only Linux is supported at the moment
-# see: https://github.com/hpc/charliecloud/issues/42
-case "${host_os}" in
-        linux*)
-        ;;
-        *)
-        AC_MSG_ERROR(["Linux is currently the only supported platform"])
-        ;;
-esac
+AS_CASE([$host_os],
+  [linux*], [],
+  [*],      [AC_MSG_ERROR([Linux is the only supported OS; see issue @%:@42.])]
+)
+
 AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
 
 AC_CONFIG_HEADERS([bin/config.h])
