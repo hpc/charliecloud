@@ -29,29 +29,30 @@ a standard Linux filesystem tree.
 
 For more information: https://hpc.github.io/charliecloud/
 
-%package        doc
-Summary:        Charliecloud html documentation
-License:        BSD and ASL 2.0
-BuildArch:      noarch
-Obsoletes:      %{name}-doc < %{version}-%{release}
+%package       doc
+Summary:       Charliecloud html documentation
+License:       BSD and ASL 2.0
+BuildArch:     noarch
+Obsoletes:     %{name}-doc < %{version}-%{release}
 %if 0%{?el7}
-BuildRequires:  python36-sphinx
-BuildRequires:  python36-sphinx_rtd_theme
+BuildRequires: python36-sphinx
+BuildRequires: python36-sphinx_rtd_theme
 %else
-BuildRequires:  python3-sphinx
-BuildRequires:  python3-sphinx_rtd_theme
+BuildRequires: python3-sphinx
+BuildRequires: python3-sphinx_rtd_theme
 %endif
 
 %description doc
 Html and man page documentation for %{name}.
 
-%package        test
-Summary:        Charliecloud test suite
-License:        ASL 2.0
-Obsoletes:      %{name}-test < %{version}-%{release}
-Requires:       %{name} bash /usr/bin/bats /usr/bin/python3
+%package   test
+Summary:   Charliecloud test suite
+License:   ASL 2.0
+Obsoletes: %{name}-test < %{version}-%{release}
+Requires:  %{name} bash /usr/bin/bats /usr/bin/python3
+Patch0:    ch-test.lib.patch
 %if 0%{?el7}
-Patch0: el7.patch
+Patch1:    ch-test.el7.patch
 %endif
 
 %description test
@@ -60,8 +61,9 @@ Test fixtures for %{name}.
 %prep
 %setup -q
 
+%patch0 -p1
 %if 0%{?el7}
-%patch0 -p0
+%patch1 -p0
 %endif
 
 %build

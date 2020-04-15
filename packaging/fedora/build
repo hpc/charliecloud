@@ -105,12 +105,14 @@ rpmbuild root:      %(rpmbuild)s
    os.rename("%s/%s" % (git_tmp, ch_tarball),
              "%s/%s" % (rpm_sources, ch_tarball))
 
-   # Copy lint configuration and el7 patch.
+   # Copy lint configuration and patchs.
    # FIXME: Put version into destination sometime?
    shutil.copy("%s/packaging/fedora/charliecloud.rpmlintrc" % CH_BASE,
                "%s/charliecloud.rpmlintrc" % rpm_specs)
-   shutil.copy("%s/packaging/fedora/el7.patch" % CH_BASE,
-               "%s/el7.patch" % rpm_sources)
+   shutil.copy("%s/packaging/fedora/ch-test.el7.patch" % CH_BASE,
+               "%s/ch-test.el7.patch" % rpm_sources)
+   shutil.copy("%s/packaging/fedora/ch-test.lib.patch" % CH_BASE,
+               "%s/ch-test.lib.patch" % rpm_sources)
 
    # Remove temporary Git directory.
    print("# rm -rf %s" % git_tmp)
