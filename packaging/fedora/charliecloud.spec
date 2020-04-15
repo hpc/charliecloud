@@ -9,14 +9,18 @@
 # Don't try to compile python3 files with /usr/bin/python.
 %{?el7:%global __python %__python3}
 
-Name:           charliecloud
-Version:        @VERSION@
-Release:        @RELEASE@%{?dist}
-Summary:        Lightweight user-defined software stacks for high-performance computing
-License:        ASL 2.0
-URL:            https://hpc.github.io/%{name}/
-Source0:        https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires:  gcc rsync autoconf /usr/bin/python3
+Name:          charliecloud
+Version:       @VERSION@
+Release:       @RELEASE@%{?dist}
+Summary:       Lightweight user-defined software stacks for high-performance computing
+License:       ASL 2.0
+URL:           https://hpc.github.io/%{name}/
+Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
+BuildRequires: gcc rsync autoconf /usr/bin/python3
+Patch0:        ch-test.lib.patch
+%if 0%{?el7}
+Patch1:        ch-test.el7.patch
+%endif
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -50,10 +54,6 @@ Summary:   Charliecloud test suite
 License:   ASL 2.0
 Obsoletes: %{name}-test < %{version}-%{release}
 Requires:  %{name} bash /usr/bin/bats /usr/bin/python3
-Patch0:    ch-test.lib.patch
-%if 0%{?el7}
-Patch1:    ch-test.el7.patch
-%endif
 
 %description test
 Test fixtures for %{name}.
