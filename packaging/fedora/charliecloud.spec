@@ -63,7 +63,7 @@ Test fixtures for %{name}.
 
 %patch0 -p1
 %if 0%{?el7}
-%patch1 -p0
+%patch1 -p1
 %endif
 
 %build
