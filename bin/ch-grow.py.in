@@ -5,7 +5,6 @@ import ast
 import atexit
 import glob
 import inspect
-import itertools
 import os
 import os.path
 import pathlib
@@ -88,7 +87,7 @@ run_shell: LINE
 
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 
-ID: /[A-Za-z0-9_.-]+/
+ID: /[A-Za-z0-9_.\/-]+/
 HEXID: /[a-fA-F0-9]+/
 LINE: ( LINE_CONTINUE | /[^\n]/ )+
 WORD: /[^ \t\n=]/+
@@ -191,7 +190,10 @@ environment variables:
    state = State()
 
    parser = lark.Lark(GRAMMAR, parser="earley", propagate_positions=True)
-   text = open(cli.file, "rt").read()
+   if (cli.file == "-"):
+      text = sys.stdin.read()
+   else:
+      text = open(cli.file, "rt").read()
    tree = parser.parse(text)
 
    DEBUG(tree.pretty())
@@ -269,32 +271,68 @@ class Copy(Instruction):
       return "%s -> %s" % (self.srcs, repr(self.dst))
 
    def execute_(self):
-      # The Dockerfile spec for COPY is complex and messy. This implementation
-      # is not conforming but hopefully comes close. Known nonconformance:
+      # The Dockerfile specification for COPY is complex, messy, inexplicably
+      # different from cp(1), and incomplete. We try to be bug-compatible with
+      # Docker but probably are not 100%. See the FAQ.
       #
-      # 1. We use the Python glob semantics instead of the Go ones.
-      #
-      # 2. With "docker build" COPY seems to follow cp(1) semantics if the
-      #    destination is an existing directory: sources are copied to within
-      #    that directory regardless of whether it has trailing slash. This
-      #    contrasts with the spec's implication that this only happens if a
-      #    trailing slash is present; otherwise, the destination is replaced.
-      #
-      # 3. Spec does not say what to do with symlinks. If the source is a
-      #    symlink to a file, we copy the link target to a regular file;
-      #    otherwise, we copy symlinks themselves.
-      srcs = itertools.chain.from_iterable(glob.glob(cli.context + "/" + i)
-                                           for i in self.srcs)
+      # None of this abstracted into a general copy function because the
+      # semantics are really weird, so I don't want people calling it except
+      # from here.
+      srcs = list()
+      for src in self.srcs:
+         if (os.path.normpath(src).startswith("..")):
+            FATAL("can't COPY: %s climbs outside context" % src)
+         for i in glob.glob(cli.context + "/" + src):
+            srcs.append(i)
+      if (len(srcs) == 0):
+         FATAL("can't COPY: no sources exist")
       dst = dir_image(cli.tag) + "/"
       if (not self.dst.startswith("/")):
          dst += state.workdir + "/"
       dst += self.dst
-      if (dst.endswith("/")):
-         dst = dst[:-1]
-         mkdirs(dir_image(cli.tag) + dst)
+      if (dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
+         # Create destination directory.
+         if (dst.endswith("/")):
+            dst = dst[:-1]
+         if (os.path.exists(dst) and not os.path.isdir(dst)):
+            FATAL("can't COPY: %s exists but is not a directory" % dst)
+         ch.mkdirs(dst)
       for src in srcs:
-         cp(src, dst)
-
+         # Check for symlinks to outside context.
+         src_real = os.path.realpath(src)
+         context_real = os.path.realpath(cli.context)
+         if (not os.path.commonpath([src_real, context_real]) \
+                 .startswith(context_real)):
+            FATAL("can't COPY: %s uses symlinks to get outside context" % src)
+         # Do the copy.
+         if (os.path.isfile(src)):   # or symlink to file
+            DEBUG("COPY via copy2 file %s to %s" % (src, dst))
+            shutil.copy2(src, dst, follow_symlinks=True)
+         elif (os.path.isdir(src)):  # or symlink to directory
+            # Copy *contents* of src, not src itself. Note: shutil.copytree()
+            # has a parameter dirs_exist_ok that I think will make this easier
+            # in Python 3.8.
+            DEBUG("COPY dir %s to %s" % (src, dst))
+            if (not os.path.isdir(dst)):
+               FATAL("can't COPY %s to %s: destination not a directory" % dst)
+            for src2_basename in os.listdir(src):
+               src2 = src + "/" + src2_basename
+               if (os.path.islink(src2)):
+                  # Symlinks within directories do not get dereferenced.
+                  DEBUG("symlink via copy2: %s to %s" % (src2, dst))
+                  shutil.copy2(src2, dst, follow_symlinks=False)
+               elif (os.path.isfile(src2)):  # not symlink to file
+                  DEBUG("file via copy2: %s to %s" % (src2, dst))
+                  shutil.copy2(src2, dst)
+               elif (os.path.isdir(src2)):   # not symlink to directory
+                  dst2 = dst + "/" + src2_basename
+                  DEBUG("directory via copytree: %s to %s" % (src2, dst2))
+                  shutil.copytree(src2, dst2, symlinks=True,
+                                  ignore_dangling_symlinks=True)
+               else:
+                  FATAL("can't COPY unknown file type: %s" % src2)
+         else:
+            FATAL("can't COPY unknown file type: %s" % src)
 
 class I_copy_shell(Copy):
 
@@ -418,7 +456,7 @@ class I_from_(Instruction):
    def execute_(self):
       if (cli.tag == self.fullname):
          FATAL("output image name same as FROM: %s" % self.fullname)
-      mkdirs(dir_images())
+      ch.mkdirs(dir_images())
       if (not os.path.isdir(dir_image(self.fullname))):
          DEBUG("image not found, pulling: %s" % self.fullname)
          self.base_pull()
@@ -472,7 +510,7 @@ class I_workdir(Instruction):
       return self.path
 
    def execute_(self):
-      mkdirs(dir_image(cli.tag) + self.path)
+      ch.mkdirs(dir_image(cli.tag) + self.path)
       state.chdir(self.path)
 
 
@@ -542,15 +580,6 @@ def color_reset(*fps):
    for fp in fps:
       color("0m", fp)
 
-def cp(src, dst):
-   DEBUG("copying: %s -> %s" % (src, dst))
-   if (os.path.isdir(src)):
-      if (os.path.isdir(dst)):  # FIXME: excessive stat(2) with many sources?
-         dst += "/" + os.path.basename(src)
-      shutil.copytree(src, dst, symlinks=False)
-   else:
-      shutil.copy2(src, dst)
-
 def dir_downloads():
    return "%s/dlcache" % cli.storage
 
@@ -558,7 +587,7 @@ def dir_images():
    return "%s/img" % cli.storage
 
 def dir_image(image):
-   return "%s/%s" % (dir_images(), image)
+   return "%s/%s" % (dir_images(), image.replace("/", "%"))
 
 def file_ensure_exists(path):
    with open(path, "a") as fp:
@@ -573,7 +602,7 @@ def file_write(path, content, mode=None):
 def image_fixup(path):
    DEBUG("fixing up image: %s" % path)
    # Metadata directory.
-   mkdirs("%s/ch/bin" % path)
+   ch.mkdirs("%s/ch/bin" % path)
    file_ensure_exists("%s/ch/environment" % path)
    # Mount points.
    file_ensure_exists("%s/etc/hosts" % path)
@@ -594,10 +623,6 @@ nogroup:x:65534:
    symlink("/bin/true", "%s/ch/bin/chown" % path)
    symlink("/bin/true", "%s/ch/bin/chgrp" % path)
    symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
-
-def mkdirs(path):
-   DEBUG("ensuring directory: " + path)
-   os.makedirs(path, exist_ok=True)
 
 def rmtree(path):
    if (os.path.isdir(path)):

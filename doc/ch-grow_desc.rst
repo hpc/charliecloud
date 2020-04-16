@@ -54,7 +54,10 @@ Other arguments:
     non-zero.
 
   :code:`-f`, :code:`--file DOCKERFILE`
-    Use :code:`DOCKERFILE` instead of :code:`CONTEXT/Dockerfile`.
+    Use :code:`DOCKERFILE` instead of :code:`CONTEXT/Dockerfile`. Specify a
+    single hyphen (:code:`-`) to use standard input; note that in this case,
+    the context directory is still provided, which matches :code:`docker build
+    -f -` behavior.
 
   :code:`-h`, :code:`--help`
     Print help and exit.

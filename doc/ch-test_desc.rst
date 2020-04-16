@@ -37,6 +37,10 @@ filesystem permissions fixtures must be created manually, in order to
 accommodate configurations where sudo is not available via the same login path
 used for running tests.
 
+The packed and unpacked image directories specified for testing are volatile.
+The contents of these directories are deleted before the build and run phases,
+respectively.
+
 Some of the tests exercise parallel functionality. If :code:`ch-test` is run
 on a single node, multiple cores will be used; if in a Slurm allocation,
 multiple nodes too.
@@ -47,8 +51,7 @@ tested on different systems by copying the necessary artifacts between them,
 e.g. by building images on one system and running them on another. The *scope*
 allows trading off thoroughness versus time.
 
-:code:`PHASE` must be one of the following; the default is to run
-:code:`build`, :code:`run`, and :code:`examples` in that order.
+:code:`PHASE` must be one of the following:
 
   :code:`build`
     Image building and associated functionality, with the selected builder.
@@ -61,6 +64,10 @@ allows trading off thoroughness versus time.
   :code:`examples`
     Example applications. Requires an unpacked images directory produced by a
     successful :code:`run` phase.
+
+  :code:`all`
+    Execute phases :code:`build`, :code:`run`, and :code:`examples`, in that
+    order.
 
   :code:`mk-perm-dirs`
     Create the filesystem permissions directories. Requires

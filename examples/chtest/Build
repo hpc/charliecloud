@@ -116,7 +116,7 @@ touch img/.hiddenfile1 img/..hiddenfile2 img/...hiddenfile3
 # Using pigz saves about 8 seconds. Normally we wouldn't care about that, but
 # this script is part of the quick scope, which we'd like developers to use
 # frequently, so every second matters.
-if ( command -v pigz >/dev/null 2>&1 ); then
+if command -v pigz > /dev/null 2>&1; then
     gzip_cmd=pigz
 else
     gzip_cmd=gzip

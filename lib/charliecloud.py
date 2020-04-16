@@ -278,7 +278,7 @@ class Image:
       "Reject paths outside the tar top level by aborting the program."
       if (len(path) > 0 and path[0] == "/"):
          FATAL("rejecting absolute path: %s: %s" % (filename, path))
-      if (".." in path):
+      if (".." in path.split("/")):
          FATAL("rejecting path with up-level: %s: %s" % (filename, path))
 
    def validate_tar_link(self, filename, path, target):
@@ -288,7 +288,7 @@ class Image:
       if (len(target) > 0 and target[0] == "/"):
          FATAL("rejecting absolute hard link target: %s: %s -> %s"
                % (filename, path, target))
-      if (".." in os.path.normpath(path + "/" + target)):
+      if (".." in os.path.normpath(path + "/" + target).split("/")):
          FATAL("rejecting too many up-levels: %s: %s -> %s"
                % (filename, path, target))
 
