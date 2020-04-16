@@ -13,6 +13,8 @@ FROM centos:7
 # [1]: https://spack.readthedocs.io/en/latest/getting_started.html
 # [2]: https://spack.readthedocs.io/en/latest/workflows.html#using-spack-to-create-docker-images
 
+# Packages needed to install Spack [1].
+#
 # Note: Spack claims that Python 3 works, but using python3 here fails later
 # with "/usr/bin/env: 'python': No such file or directory".
 RUN yum update -y && \
