@@ -488,14 +488,14 @@ fields:
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
-      self.host = tree_child(t, "ir_hostport", "IR_HOST")
-      self.port = tree_child(t, "ir_hostport", "IR_PORT")
+      self.host = tree_child_terminal(t, "ir_hostport", "IR_HOST")
+      self.port = tree_child_terminal(t, "ir_hostport", "IR_PORT")
       if (self.port is not None):
          self.port = int(self.port)
       self.path = list(tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"))
-      self.name = tree_child(t, "ir_name", "IR_PATH_COMPONENT")
-      self.tag = tree_child(t, "ir_tag", "IR_TAG")
-      self.digest = tree_child(t, "ir_digest", "HEX_STRING")
+      self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
+      self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
+      self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
       # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.host is not None
           and "." not in self.host
@@ -603,14 +603,23 @@ def mkdirs(path):
    DEBUG("ensuring directory: " + path)
    os.makedirs(path, exist_ok=True)
 
-def tree_child(tree, cname, tname, i=0):
+def tree_child(tree, cname):
+   """Locate a descendant subtree named cname using breadth-first search and
+      return it. If no such subtree exists, return None."""
+   for st in tree.iter_subtrees_topdown():
+      if (st.data == cname):
+         return st
+   return None
+
+def tree_child_terminal(tree, cname, tname, i=0):
    """Locate a descendant subtree named cname using breadth-first search and
       return its first child terminal named tname. If no such subtree exists,
       or it doesn't have such a terminal, return None."""
-   for d in tree.iter_subtrees_topdown():
-      if (d.data == cname):
-         return tree_terminal(d, tname, i)
-   return None
+   st = tree_child(tree, cname)
+   if (st is not None):
+      return tree_terminal(st, tname, i)
+   else:
+      return None
 
 def tree_child_terminals(tree, cname, tname):
    """Locate a descendant substree named cname using breadth-first search and

@@ -229,17 +229,6 @@ class Instruction(object):
               % (self.lineno, self.__class__.__name__.split("_")[1].upper(),
                  self.str_()))
 
-   # Return the value of first immediate subtree childname's first immediate
-   # child terminal of type type_, or None if either the child or terminal
-   # does not exist.
-   def child(self, childname, type_):
-      children = self.tree.find_data(childname)
-      try:
-         child = next(children)
-      except StopIteration:
-         return None  # no child subtree named childname
-      return terminal(child, type_)
-
    def execute(self):
       if (not cli.dry_run):
          self.execute_()
@@ -249,16 +238,6 @@ class Instruction(object):
 
    def str_(self):
       return "(unimplemented)"
-
-   # Return value of first immediate child terminal of type type_, or None if
-   # not found.
-   def terminal(self, type_, index=0):
-      return terminal(self.tree, type_, index)
-
-   # Yield values of all immediate child terminals of type type_, or empty
-   # list if none found.
-   def terminals(self, type_):
-      return terminals(self.tree, type_)
 
 
 class I_cmd(Instruction):
@@ -339,7 +318,7 @@ class I_copy_shell(Copy):
    def __init__(self, *args):
       super().__init__(*args)
       paths = [variables_sub(i, state.env_build)
-               for i in self.terminals("WORD")]
+               for i in ch.tree_terminals(self.tree, "WORD")]
       self.srcs = paths[:-1]
       self.dst = paths[-1]
 
@@ -347,7 +326,7 @@ class Arg(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = self.terminal("WORD", 0)
+      self.key = ch.tree_terminal(self.tree, "WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
          del cli.build_arg[self.key]
@@ -380,9 +359,9 @@ class I_arg_equals(Arg):
       super().__init__(*args)
 
    def value_default(self):
-      v = self.terminal("WORD", 1)
+      v = ch.tree_terminal(self.tree, "WORD", 1)
       if (v is None):
-         v = unescape(self.terminal("STRING_QUOTED"))
+         v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
       return v
 
 class Env(Instruction):
@@ -401,10 +380,10 @@ class I_env_equals(Env):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = self.terminal("WORD", 0)
-      self.value = self.terminal("WORD", 1)
+      self.key = ch.tree_terminal(self.tree, "WORD", 0)
+      self.value = ch.tree_terminal(self.tree, "WORD", 1)
       if (self.value is None):
-         self.value = unescape(self.terminal("STRING_QUOTED"))
+         self.value = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
       self.value = variables_sub(self.value, state.env_build)
 
 
@@ -412,8 +391,8 @@ class I_env_space(Env):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = self.terminal("WORD")
-      value = self.terminal("LINE")
+      self.key = ch.tree_terminal(self.tree, "WORD")
+      value = ch.tree_terminal(self.tree, "LINE")
       if (not value.startswith('"')):
          value = '"' + value + '"'
       self.value = unescape(value)
@@ -424,10 +403,10 @@ class I_from_(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.name = self.terminal("ID")
-      self.alias = self.child("from_alias", "ID")
-      self.tag = self.child("from_tag", "ID")
-      self.digest = self.child("from_digest", "HEXID")
+      self.name = ch.tree_terminal(self.tree, "ID")
+      self.alias = ch.tree_child_terminal(self.tree, "from_alias", "ID")
+      self.tag = ch.tree_child_terminal(self.tree, "from_tag", "ID")
+      self.digest = ch.tree_child_terminal(self.tree, "from_digest", "HEXID")
       if (self.tag is None and self.digest is None):
          self.tag = "latest"
 
@@ -488,7 +467,7 @@ class I_run_exec(Run):
    def __init__(self, *args):
       super().__init__(*args)
       self.cmd = [    variables_sub(unescape(i), state.env_build)
-                  for i in self.terminals("STRING_QUOTED")]
+                  for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
 
 
 class I_run_shell(Run):
@@ -496,7 +475,7 @@ class I_run_shell(Run):
    def __init__(self, *args):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
-      cmd = self.terminal("LINE").replace("\\\n", "")
+      cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
       self.cmd = ["/bin/sh", "-c", cmd]
 
 
@@ -504,7 +483,8 @@ class I_workdir(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.path = variables_sub(self.terminal("LINE"), state.env_build)
+      self.path = variables_sub(ch.tree_terminal(self.tree, "LINE"),
+                                state.env_build)
 
    def str_(self):
       return self.path
@@ -639,17 +619,6 @@ def symlink(target, source):
       if (os.readlink(source) != target):
          FATAL("can't symlink: %s exists; want target %s but existing is %s"
                % (source, target, os.readlink(source)))
-
-def terminal(tree, type_, index=0):
-   for (i, t) in enumerate(terminals(tree, type_)):
-      if (i == index):
-         return t
-   return None
-
-def terminals(tree, type_):
-   for i in tree.children:
-      if (isinstance(i, lark.lexer.Token) and i.type == type_):
-         yield i.value
 
 def variables_sub(s, variables):
    # FIXME: This should go in the grammar rather than being a regex kludge.
