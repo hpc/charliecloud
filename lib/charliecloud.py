@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import shutil
+import subprocess
 import sys
 import tarfile
 import types
@@ -623,6 +624,15 @@ def WARNING(*args, **kwargs):
    print(flush=True, file=sys.stderr, *args, **kwargs)
    color_reset(sys.stderr)
 
+def cmd(args, env=None):
+   DEBUG("environment: %s" % env)
+   DEBUG("executing: %s" % args)
+   color("33m", sys.stdout)
+   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   color_reset(sys.stdout)
+   if (cp.returncode):
+      FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
+
 def color(color, fp):
    if (fp.isatty()):
       print("\033[" + color, end="", flush=True, file=fp)
@@ -639,6 +649,16 @@ def dependencies_check():
    if (len(depfails) > 0):
       sys.exit(1)
 
+def file_ensure_exists(path):
+   with open(path, "a") as fp:
+      pass
+
+def file_write(path, content, mode=None):
+   with open(path, "wt") as fp:
+      fp.write(content)
+      if (mode is not None):
+         os.chmod(fp.fileno(), mode)
+
 def http_get(session, url, headers):
    try:
       res = session.get(url, headers=headers)
@@ -650,6 +670,22 @@ def http_get(session, url, headers):
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)
    os.makedirs(path, exist_ok=True)
+
+def rmtree(path):
+   if (os.path.isdir(path)):
+      DEBUG("deleting directory: " + path)
+      shutil.rmtree(path)
+
+def symlink(target, source):
+   try:
+      os.symlink(target, source)
+   except FileExistsError:
+      if (not os.path.islink(source)):
+         FATAL("can't symlink: source exists and isn't a symlink: %s"
+               % source)
+      if (os.readlink(source) != target):
+         FATAL("can't symlink: %s exists; want target %s but existing is %s"
+               % (source, target, os.readlink(source)))
 
 def tree_child(tree, cname):
    """Locate a descendant subtree named cname using breadth-first search and

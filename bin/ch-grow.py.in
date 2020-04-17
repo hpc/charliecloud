@@ -10,10 +10,7 @@ import os.path
 import pathlib
 import re
 import shutil
-import stat
-import subprocess
 import sys
-import types
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../lib/charliecloud"))
@@ -61,7 +58,7 @@ ENV_DEFAULTS = { }
 
 def main():
 
-   atexit.register(color_reset, sys.stdout, sys.stderr)
+   atexit.register(ch.color_reset, sys.stdout, sys.stderr)
 
    if (not os.path.exists(CH_RUN)):
       ch.depfails.append(("missing", CH_RUN))
@@ -127,7 +124,7 @@ environment variables:
       else:
          v = os.getenv(kv[0])
          if (v is None):
-            FATAL("--build-arg: %s: no value and not in environment" % kv[0])
+            ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
          return (kv[0], v)
    if (cli.build_arg is None):
       cli.build_arg = list()
@@ -135,8 +132,8 @@ environment variables:
 
    ch.dependencies_check()
 
-   INFO("growing: %s" % dir_image(cli.tag))
-   DEBUG(cli)
+   ch.INFO("growing: %s" % dir_image(cli.tag))
+   ch.DEBUG(cli)
 
    global state
    state = State()
@@ -149,14 +146,14 @@ environment variables:
       text = open(cli.file, "rt").read()
    tree = parser.parse(text)
 
-   DEBUG(tree.pretty())
+   ch.DEBUG(tree.pretty())
    if (cli.parse_only):
       sys.exit(0)
 
    Main_Loop().visit(tree)
 
    if (len(cli.build_arg) != 0):
-      FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
+      ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
 
 
 class Main_Loop(lark.Visitor):
@@ -165,7 +162,7 @@ class Main_Loop(lark.Visitor):
       class_ = "I_" + tree.data
       if (class_ in globals()):
          inst = globals()[class_](tree)
-         INFO(inst)
+         ch.INFO(inst)
          inst.execute()
 
 
@@ -213,11 +210,11 @@ class Copy(Instruction):
       srcs = list()
       for src in self.srcs:
          if (os.path.normpath(src).startswith("..")):
-            FATAL("can't COPY: %s climbs outside context" % src)
+            ch.FATAL("can't COPY: %s climbs outside context" % src)
          for i in glob.glob(cli.context + "/" + src):
             srcs.append(i)
       if (len(srcs) == 0):
-         FATAL("can't COPY: no sources exist")
+         ch.FATAL("can't COPY: no sources exist")
       dst = dir_image(cli.tag) + "/"
       if (not self.dst.startswith("/")):
          dst += state.workdir + "/"
@@ -227,7 +224,7 @@ class Copy(Instruction):
          if (dst.endswith("/")):
             dst = dst[:-1]
          if (os.path.exists(dst) and not os.path.isdir(dst)):
-            FATAL("can't COPY: %s exists but is not a directory" % dst)
+            ch.FATAL("can't COPY: %s exists but is not a directory" % dst)
          ch.mkdirs(dst)
       for src in srcs:
          # Check for symlinks to outside context.
@@ -235,36 +232,37 @@ class Copy(Instruction):
          context_real = os.path.realpath(cli.context)
          if (not os.path.commonpath([src_real, context_real]) \
                  .startswith(context_real)):
-            FATAL("can't COPY: %s uses symlinks to get outside context" % src)
+            ch.FATAL("can't COPY: %s climbs outside context via symlink" % src)
          # Do the copy.
          if (os.path.isfile(src)):   # or symlink to file
-            DEBUG("COPY via copy2 file %s to %s" % (src, dst))
+            ch.DEBUG("COPY via copy2 file %s to %s" % (src, dst))
             shutil.copy2(src, dst, follow_symlinks=True)
          elif (os.path.isdir(src)):  # or symlink to directory
             # Copy *contents* of src, not src itself. Note: shutil.copytree()
             # has a parameter dirs_exist_ok that I think will make this easier
             # in Python 3.8.
-            DEBUG("COPY dir %s to %s" % (src, dst))
+            ch.DEBUG("COPY dir %s to %s" % (src, dst))
             if (not os.path.isdir(dst)):
-               FATAL("can't COPY %s to %s: destination not a directory" % dst)
+               ch.FATAL("can't COPY: destination not a directory: %s to %s"
+                        % (src, dst))
             for src2_basename in os.listdir(src):
                src2 = src + "/" + src2_basename
                if (os.path.islink(src2)):
                   # Symlinks within directories do not get dereferenced.
-                  DEBUG("symlink via copy2: %s to %s" % (src2, dst))
+                  ch.DEBUG("symlink via copy2: %s to %s" % (src2, dst))
                   shutil.copy2(src2, dst, follow_symlinks=False)
                elif (os.path.isfile(src2)):  # not symlink to file
-                  DEBUG("file via copy2: %s to %s" % (src2, dst))
+                  ch.DEBUG("file via copy2: %s to %s" % (src2, dst))
                   shutil.copy2(src2, dst)
                elif (os.path.isdir(src2)):   # not symlink to directory
                   dst2 = dst + "/" + src2_basename
-                  DEBUG("directory via copytree: %s to %s" % (src2, dst2))
+                  ch.DEBUG("directory via copytree: %s to %s" % (src2, dst2))
                   shutil.copytree(src2, dst2, symlinks=True,
                                   ignore_dangling_symlinks=True)
                else:
-                  FATAL("can't COPY unknown file type: %s" % src2)
+                  ch.FATAL("can't COPY unknown file type: %s" % src2)
          else:
-            FATAL("can't COPY unknown file type: %s" % src)
+            ch.FATAL("can't COPY unknown file type: %s" % src)
 
 class I_copy_shell(Copy):
 
@@ -362,8 +360,8 @@ class I_from_(Instruction):
                                           "IR_PATH_COMPONENT")
 
    def base_copy(self):
-      DEBUG("copying: %s -> %s" % (self.base_ref, cli.tag))
-      rmtree(dir_image(cli.tag))
+      ch.DEBUG("copying: %s -> %s" % (self.base_ref, cli.tag))
+      ch.rmtree(dir_image(cli.tag))
       shutil.copytree(self.base_image.unpack_path, dir_image(cli.tag),
                       symlinks=True)
 
@@ -374,10 +372,10 @@ class I_from_(Instruction):
 
    def execute_(self):
       if (cli.tag == str(self.base_ref)):
-         FATAL("output image name same as FROM: %s" % self.base_ref)
+         ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       ch.mkdirs(dir_images())
       if (not os.path.isdir(self.base_image.unpack_path)):
-         DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
+         ch.DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
          self.base_pull()
       self.base_copy()
       state.reset()
@@ -396,7 +394,7 @@ class Run(Instruction):
       args = [CH_BIN + "/ch-run", "-w", "--no-home", "--no-passwd",
               "--cd", state.workdir, "--uid=0", "--gid=0",
               rootfs, "--"] + self.cmd
-      cmd(args, env=state.env_build)
+      ch.cmd(args, env=state.env_build)
 
    def str_(self):
       return str(self.cmd)
@@ -465,41 +463,6 @@ class State(object):
 
 ## Supporting functions ###
 
-def DEBUG(*args, **kwargs):
-   if (cli.verbose):
-      color("36m", sys.stderr)
-      print(flush=True, file=sys.stderr, *args, **kwargs)
-      color_reset(sys.stderr)
-
-def ERROR(*args, **kwargs):
-   color("31m", sys.stderr)
-   print(flush=True, file=sys.stderr, *args, **kwargs)
-   color_reset(sys.stderr)
-
-def FATAL(*args, **kwargs):
-   ERROR(*args, **kwargs)
-   sys.exit(1)
-
-def INFO(*args, **kwargs):
-   print(flush=True, *args, **kwargs)
-
-def cmd(args, env=None):
-   DEBUG("environment: %s" % env)
-   DEBUG("executing: %s" % args)
-   color("33m", sys.stdout)
-   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
-   color_reset(sys.stdout)
-   if (cp.returncode):
-      FATAL("%s failed with return code %d" % (args[0], cp.returncode))
-
-def color(color, fp):
-   if (fp.isatty()):
-      print("\033[" + color, end="", flush=True, file=fp)
-
-def color_reset(*fps):
-   for fp in fps:
-      color("0m", fp)
-
 def dir_downloads():
    return "%s/dlcache" % cli.storage
 
@@ -509,30 +472,20 @@ def dir_images():
 def dir_image(image):
    return "%s/%s" % (dir_images(), image.replace("/", "%"))
 
-def file_ensure_exists(path):
-   with open(path, "a") as fp:
-      pass
-
-def file_write(path, content, mode=None):
-   with open(path, "wt") as fp:
-      fp.write(content)
-      if (mode is not None):
-         os.chmod(fp.fileno(), mode)
-
 def image_fixup(path):
-   DEBUG("fixing up image: %s" % path)
+   ch.DEBUG("fixing up image: %s" % path)
    # Metadata directory.
    ch.mkdirs("%s/ch/bin" % path)
-   file_ensure_exists("%s/ch/environment" % path)
+   ch.file_ensure_exists("%s/ch/environment" % path)
    # Mount points.
-   file_ensure_exists("%s/etc/hosts" % path)
-   file_ensure_exists("%s/etc/resolv.conf" % path)
+   ch.file_ensure_exists("%s/etc/hosts" % path)
+   ch.file_ensure_exists("%s/etc/resolv.conf" % path)
    # /etc/{passwd,group}
-   file_write("%s/etc/passwd" % path, """\
+   ch.file_write("%s/etc/passwd" % path, """\
 root:x:0:0:root:/root:/bin/sh
 nobody:x:65534:65534:nobody:/:/bin/false
 """)
-   file_write("%s/etc/group" % path, """\
+   ch.file_write("%s/etc/group" % path, """\
 root:x:0:
 nogroup:x:65534:
 """)
@@ -544,22 +497,6 @@ nogroup:x:65534:
    symlink("/bin/true", "%s/ch/bin/chgrp" % path)
    symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
 
-def rmtree(path):
-   if (os.path.isdir(path)):
-      DEBUG("deleting directory: " + path)
-      shutil.rmtree(path)
-
-def symlink(target, source):
-   try:
-      os.symlink(target, source)
-   except FileExistsError:
-      if (not os.path.islink(source)):
-         FATAL("can't symlink: source exists and isn't a symlink: %s"
-               % source)
-      if (os.readlink(source) != target):
-         FATAL("can't symlink: %s exists; want target %s but existing is %s"
-               % (source, target, os.readlink(source)))
-
 def variables_sub(s, variables):
    # FIXME: This should go in the grammar rather than being a regex kludge.
    #
@@ -567,7 +504,7 @@ def variables_sub(s, variables):
    # not set. We ignore those subsitutions. This is probably wrong (the shell
    # substitutes the empty string).
    for (k, v) in variables.items():
-      #DEBUG("s: %s, k: %s, v: %s" % (s, k, v))
+      #ch.DEBUG("s: %s, k: %s, v: %s" % (s, k, v))
       s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
    return s
 
@@ -579,7 +516,7 @@ def unescape(sl):
    # This is wrong but close enough for now (see also gripe in previous
    # paragraph).
    if (not (sl.startswith('"') and sl.endswith('"'))):
-      FATAL("string literal not quoted")
+      ch.FATA("string literal not quoted")
    return ast.literal_eval(sl)
 
 
