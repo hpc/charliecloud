@@ -54,6 +54,9 @@ verbose = 0
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
 GRAMMAR = r"""
+
+/// Image references ///
+
 // Note: Hostnames with no dot and no port get parsed as a hostname, which
 // is wrong; it should be the first path component. We patch this error later.
 // FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
@@ -64,12 +67,57 @@ ir_path: ( IR_PATH_COMPONENT "/" )+
 ir_name: IR_PATH_COMPONENT
 ir_tag: ":" IR_TAG
 ir_digest: "@sha256:" HEX_STRING
-
 IR_HOST: /[A-Za-z0-9_.-]+/
 IR_PORT: /[0-9]+/
 IR_PATH_COMPONENT: /[a-z0-9_.-]+/
 IR_TAG: /[A-Za-z0-9_.-]+/
+
+
+/// Dockerfile ///
+
+?instruction: _WS? ( cmd | copy | arg | env | from_ | run | workdir )
+
+cmd: "CMD"i _WS LINE _NEWLINES
+
+copy: "COPY"i ( _WS copy_chown )? ( copy_shell ) _NEWLINES
+copy_chown: "--chown" "=" /[^ \t\n]+/
+copy_shell: _WS WORD ( _WS WORD )+
+
+arg: "ARG"i _WS ( arg_bare | arg_equals ) _NEWLINES
+arg_bare: WORD
+arg_equals: WORD "=" ( WORD | STRING_QUOTED )
+
+env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
+env_space: WORD _WS LINE
+env_equalses: env_equals ( _WS env_equals )*
+env_equals: WORD "=" ( WORD | STRING_QUOTED )
+
+from_: "FROM"i _WS image_ref [ _WS from_alias ] _NEWLINES
+from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
+
+run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
+run_exec.2: _string_list
+run_shell: LINE
+
+workdir: "WORKDIR"i _WS LINE _NEWLINES
+
+
+/// Common ///
+
 HEX_STRING: /[0-9A-Fa-f]+/
+LINE: ( LINE_CONTINUE | /[^\n]/ )+
+WORD: /[^ \t\n=]/+
+
+_string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
+
+LINE_CONTINUE: "\\\n"
+%ignore LINE_CONTINUE
+
+_COMMENT: _WS? /#[^\n]*/ _NEWLINES
+_NEWLINES: _WS? "\n"+
+_WS: /[ \t]/+
+
+%import common.ESCAPED_STRING -> STRING_QUOTED
 """
 
 
@@ -97,7 +145,7 @@ class Image:
 
       Constructor arguments:
 
-        id_.............. Image_Ref object to identify the image.
+        ref.............. Image_Ref object to identify the image.
 
         download_cache .. Directory containing the download cache; this is
                           where layers and manifests go. If None,
@@ -109,18 +157,18 @@ class Image:
                           If None, infer from id; if the empty string,
                           unpack_dir will be used directly."""
 
-   __slots__ = ("id",
+   __slots__ = ("ref",
                 "download_cache",
                 "image_subdir",
                 "layer_hashes",
                 "unpack_dir")
 
-   def __init__(self, id_, download_cache, unpack_dir, image_subdir):
-      self.id = id_
+   def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
+      self.ref = ref
       self.download_cache = download_cache
       self.unpack_dir = unpack_dir
       if (image_subdir is None):
-         self.image_subdir = self.id.for_path
+         self.image_subdir = self.ref.for_path
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
@@ -133,7 +181,7 @@ class Image:
    @property
    def manifest_path(self):
       "Path to the manifest file."
-      return "%s/%s.manifest.json" % (self.download_cache, self.id.for_path)
+      return "%s/%s.manifest.json" % (self.download_cache, self.ref.for_path)
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -152,7 +200,7 @@ class Image:
          url_base = "https://%s:%d/v2" % (dl.ref.host, dl.ref.port)
          return "/".join((url_base, dl.ref.path_full, type_, address))
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
-      dl = Repo_Downloader(self.id)
+      dl = Repo_Downloader(self.ref)
       DEBUG("downloading image: %s" % dl.ref)
       mkdirs(self.download_cache)
       # manifest

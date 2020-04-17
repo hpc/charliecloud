@@ -56,54 +56,6 @@ ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
 
 ENV_DEFAULTS = { }
 
-GRAMMAR = r"""
-?start: ( instruction | _COMMENT )+
-
-?instruction: _WS? ( cmd | copy | arg | env | from_ | run | workdir )
-
-cmd: "CMD"i _WS LINE _NEWLINES
-
-copy: "COPY"i ( _WS copy_chown )? ( copy_shell ) _NEWLINES
-copy_chown: "--chown" "=" /[^ \t\n]+/
-copy_shell: _WS WORD ( _WS WORD )+
-
-arg: "ARG"i _WS ( arg_bare | arg_equals ) _NEWLINES
-arg_bare: WORD
-arg_equals: WORD "=" ( WORD | STRING_QUOTED )
-
-env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
-env_space: WORD _WS LINE
-env_equalses: env_equals ( _WS env_equals )*
-env_equals: WORD "=" ( WORD | STRING_QUOTED )
-
-from_: "FROM"i _WS ID [ from_tag | from_digest ] [ from_alias ] _NEWLINES
-from_tag: ":" ID
-from_digest: "@" HEXID
-from_alias: "AS"i ID
-
-run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
-run_exec.2: _string_list
-run_shell: LINE
-
-workdir: "WORKDIR"i _WS LINE _NEWLINES
-
-ID: /[A-Za-z0-9_.\/-]+/
-HEXID: /[a-fA-F0-9]+/
-LINE: ( LINE_CONTINUE | /[^\n]/ )+
-WORD: /[^ \t\n=]/+
-
-_string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
-
-LINE_CONTINUE: "\\\n"
-%ignore LINE_CONTINUE
-
-_COMMENT: _WS? /#[^\n]*/ _NEWLINES
-_NEWLINES: _WS? "\n"+
-_WS: /[ \t]/+
-
-%import common.ESCAPED_STRING -> STRING_QUOTED
-"""
-
 
 ## Main ##
 
@@ -166,8 +118,8 @@ environment variables:
             cli.tag = m.group(4)
          elif m.group(2):  # containing directory
             cli.tag = m.group(2)
-   if (":" not in cli.tag):
-      cli.tag += ":latest"
+   #if (":" not in cli.tag):
+   #  cli.tag += ":latest"
    def build_arg_get(arg):
       kv = arg.split("=")
       if (len(kv) == 2):
@@ -189,7 +141,8 @@ environment variables:
    global state
    state = State()
 
-   parser = lark.Lark(GRAMMAR, parser="earley", propagate_positions=True)
+   parser = lark.Lark("?start: ( instruction | _COMMENT )+\n" + ch.GRAMMAR,
+                      parser="earley", propagate_positions=True)
    if (cli.file == "-"):
       text = sys.stdin.read()
    else:
@@ -403,48 +356,35 @@ class I_from_(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.name = ch.tree_terminal(self.tree, "ID")
-      self.alias = ch.tree_child_terminal(self.tree, "from_alias", "ID")
-      self.tag = ch.tree_child_terminal(self.tree, "from_tag", "ID")
-      self.digest = ch.tree_child_terminal(self.tree, "from_digest", "HEXID")
-      if (self.tag is None and self.digest is None):
-         self.tag = "latest"
-
-   @property
-   def fullname(self):
-      if (self.tag is not None):
-         return "%s:%s" % (self.name, self.tag)
-      elif (self.digest is not None):
-         return "%s@%s" % (self.name, self.digest)
-      else:
-         return self.name
+      self.base_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"))
+      self.base_image = ch.Image(self.base_ref, dir_downloads(), dir_images())
+      self.alias = ch.tree_child_terminal(self.tree, "from_alias",
+                                          "IR_PATH_COMPONENT")
 
    def base_copy(self):
-      DEBUG("copying: %s -> %s" % (self.fullname, cli.tag))
+      DEBUG("copying: %s -> %s" % (self.base_ref, cli.tag))
       rmtree(dir_image(cli.tag))
-      shutil.copytree(dir_image(self.fullname), dir_image(cli.tag),
+      shutil.copytree(self.base_image.unpack_path, dir_image(cli.tag),
                       symlinks=True)
 
    def base_pull(self):
-      img = ch.Image(ch.Image_Ref(self.fullname),
-                     dir_downloads(), dir_image(self.fullname), "")
-      img.download()
-      img.flatten()
-      image_fixup(dir_image(self.fullname))
+      self.base_image.download()
+      self.base_image.flatten()
+      image_fixup(self.base_image.unpack_path)
 
    def execute_(self):
-      if (cli.tag == self.fullname):
-         FATAL("output image name same as FROM: %s" % self.fullname)
+      if (cli.tag == str(self.base_ref)):
+         FATAL("output image name same as FROM: %s" % self.base_ref)
       ch.mkdirs(dir_images())
-      if (not os.path.isdir(dir_image(self.fullname))):
-         DEBUG("image not found, pulling: %s" % self.fullname)
+      if (not os.path.isdir(self.base_image.unpack_path)):
+         DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
          self.base_pull()
       self.base_copy()
       state.reset()
 
    def str_(self):
       alias = "AS %s" % self.alias if self.alias else ""
-      return "%s %s" % (self.fullname, alias)
+      return "%s %s" % (self.base_ref, alias)
 
 
 class Run(Instruction):

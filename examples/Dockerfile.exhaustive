@@ -7,8 +7,7 @@
 # ch-test-builder-include: ch-grow
 
 # Use a moderately complex image reference.
-#FROM registry-1.docker.io:443/library/alpine:3.9
-FROM alpine:3.9
+FROM registry-1.docker.io:443/library/alpine:3.9 AS stage1
 
 # FIXME: These should maybe be moved into Dockerfile.argenv?
 ENV chse_1 value1 with spaces and trailing space 
