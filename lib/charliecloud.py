@@ -73,7 +73,6 @@ IR_PORT: /[0-9]+/
 IR_PATH_COMPONENT: /[a-z0-9_.-]+/
 IR_TAG: /[A-Za-z0-9_.-]+/
 
-
 /// Dockerfile ///
 
 ?instruction: _WS? ( cmd | copy | arg | env | from_ | run | workdir )
@@ -101,7 +100,6 @@ run_exec.2: _string_list
 run_shell: LINE
 
 workdir: "WORKDIR"i _WS LINE _NEWLINES
-
 
 /// Common ///
 
@@ -720,6 +718,8 @@ def rmtree(path):
    if (os.path.isdir(path)):
       DEBUG("deleting directory: " + path)
       shutil.rmtree(path)
+   else:
+      assert False, "unimplemented"
 
 def symlink(target, source):
    try:

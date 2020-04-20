@@ -366,7 +366,7 @@ class I_from_(Instruction):
                                           "IR_PATH_COMPONENT")
 
    def execute_(self):
-      if (cli.tag == str(self.base_ref)):
+      if (str(image.ref) == str(self.base_ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       if (not os.path.isdir(self.base_image.unpack_path)):
          ch.DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
@@ -477,7 +477,7 @@ def unescape(sl):
    # This is wrong but close enough for now (see also gripe in previous
    # paragraph).
    if (not (sl.startswith('"') and sl.endswith('"'))):
-      ch.FATA("string literal not quoted")
+      ch.FATAL("string literal not quoted")
    return ast.literal_eval(sl)
 
 
