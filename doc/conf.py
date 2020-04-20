@@ -42,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Charliecloud'
-copyright = u'2014–2019, Triad National Security, LLC'
+copyright = u'2014–2020, Triad National Security, LLC'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
