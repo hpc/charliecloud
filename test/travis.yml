@@ -1,5 +1,5 @@
+os: linux
 dist: xenial
-sudo: required
 language: c
 compiler: gcc
 
@@ -55,13 +55,13 @@ stages:
   - install
   - misc
 
-stage_quick: &stage_quick
+_stage_quick: &stage_quick
   stage: quick
-stage_builders: &stage_builders
+_stage_builders: &stage_builders
   stage: builders
-stage_install: &stage_install
+_stage_install: &stage_install
   stage: install
-stage_misc: &stage_misc
+_stage_misc: &stage_misc
   stage: misc
 
 jobs:
