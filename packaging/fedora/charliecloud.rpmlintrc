@@ -18,6 +18,9 @@ addFilter(r'invalid-url')
 # Charliecloud's security posture.
 addFilter(r'missing-call-to-chdir-with-chroot')
 
+# The charliecloud example, chtest, has python scripts.
+addFilter(r'doc-file-dependency')
+
 # charliecloud-debuginfo
 
 # The only files under /usr/lib are those placed there by rpmbuild.

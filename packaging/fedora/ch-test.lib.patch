@@ -1,6 +1,6 @@
-diff -ru charliecloud/bin/ch-build charliecloud-lib/bin/ch-build
+diff -ur charliecloud/bin/ch-build charliecloud-lib/bin/ch-build
 --- charliecloud/bin/ch-build	2020-04-01 14:59:49.394882226 -0600
-+++ charliecloud-lib/bin/ch-build	2020-04-15 16:17:04.696993976 -0600
++++ charliecloud-lib/bin/ch-build	2020-04-20 11:52:49.329019291 -0600
 @@ -1,6 +1,6 @@
  #!/bin/sh
  
@@ -9,9 +9,9 @@ diff -ru charliecloud/bin/ch-build charliecloud-lib/bin/ch-build
  . "${lib}/base.sh"
  
  # shellcheck disable=SC2034
-diff -ru charliecloud/bin/ch-build2dir charliecloud-lib/bin/ch-build2dir
+diff -ur charliecloud/bin/ch-build2dir charliecloud-lib/bin/ch-build2dir
 --- charliecloud/bin/ch-build2dir	2020-04-01 14:59:49.394882226 -0600
-+++ charliecloud-lib/bin/ch-build2dir	2020-04-15 16:17:13.218078671 -0600
++++ charliecloud-lib/bin/ch-build2dir	2020-04-20 11:52:57.989105285 -0600
 @@ -1,6 +1,6 @@
  #!/bin/bash
  
@@ -20,9 +20,9 @@ diff -ru charliecloud/bin/ch-build2dir charliecloud-lib/bin/ch-build2dir
  . "${lib}/base.sh"
  
  # shellcheck disable=SC2034
-diff -ru charliecloud/bin/ch-builder2squash charliecloud-lib/bin/ch-builder2squash
+diff -ur charliecloud/bin/ch-builder2squash charliecloud-lib/bin/ch-builder2squash
 --- charliecloud/bin/ch-builder2squash	2020-04-01 14:59:49.394882226 -0600
-+++ charliecloud-lib/bin/ch-builder2squash	2020-04-15 16:17:29.884244326 -0600
++++ charliecloud-lib/bin/ch-builder2squash	2020-04-20 11:53:10.650231011 -0600
 @@ -1,6 +1,6 @@
  #!/bin/sh
  
@@ -31,9 +31,9 @@ diff -ru charliecloud/bin/ch-builder2squash charliecloud-lib/bin/ch-builder2squa
  . "${lib}/base.sh"
  
  # shellcheck disable=SC2034
-diff -ru charliecloud/bin/ch-builder2tar charliecloud-lib/bin/ch-builder2tar
+diff -ur charliecloud/bin/ch-builder2tar charliecloud-lib/bin/ch-builder2tar
 --- charliecloud/bin/ch-builder2tar	2020-04-01 14:59:49.394882226 -0600
-+++ charliecloud-lib/bin/ch-builder2tar	2020-04-15 16:17:47.451418938 -0600
++++ charliecloud-lib/bin/ch-builder2tar	2020-04-20 11:53:19.847322339 -0600
 @@ -1,6 +1,6 @@
  #!/bin/sh
  
@@ -42,9 +42,9 @@ diff -ru charliecloud/bin/ch-builder2tar charliecloud-lib/bin/ch-builder2tar
  . "${lib}/base.sh"
  
  # shellcheck disable=SC2034
-diff -ru charliecloud/bin/ch-dir2squash charliecloud-lib/bin/ch-dir2squash
+diff -ur charliecloud/bin/ch-dir2squash charliecloud-lib/bin/ch-dir2squash
 --- charliecloud/bin/ch-dir2squash	2020-04-01 14:59:49.394882226 -0600
-+++ charliecloud-lib/bin/ch-dir2squash	2020-04-15 16:22:03.547964455 -0600
++++ charliecloud-lib/bin/ch-dir2squash	2020-04-20 11:53:30.367426805 -0600
 @@ -2,7 +2,7 @@
  
  set -e
@@ -54,9 +54,9 @@ diff -ru charliecloud/bin/ch-dir2squash charliecloud-lib/bin/ch-dir2squash
  . "${lib}/base.sh"
  
  # shellcheck disable=SC2034
-diff -ru charliecloud/bin/ch-fromhost charliecloud-lib/bin/ch-fromhost
+diff -ur charliecloud/bin/ch-fromhost charliecloud-lib/bin/ch-fromhost
 --- charliecloud/bin/ch-fromhost	2020-04-01 14:59:49.395882236 -0600
-+++ charliecloud-lib/bin/ch-fromhost	2020-04-15 16:22:14.929077574 -0600
++++ charliecloud-lib/bin/ch-fromhost	2020-04-20 11:53:45.588577954 -0600
 @@ -35,7 +35,7 @@
  #   3. Here string, e.g. 'while IFS= read -r FILE; do ... done <<< "$FILES"'.
  #      This is a bashism.
@@ -66,9 +66,9 @@ diff -ru charliecloud/bin/ch-fromhost charliecloud-lib/bin/ch-fromhost
  . "${lib}/base.sh"
  
  set -e
-diff -ru charliecloud/bin/ch-grow.py.in charliecloud-lib/bin/ch-grow.py.in
---- charliecloud/bin/ch-grow.py.in	2020-04-07 12:19:37.053609696 -0600
-+++ charliecloud-lib/bin/ch-grow.py.in	2020-04-15 16:22:27.873206236 -0600
+diff -ur charliecloud/bin/ch-grow.py.in charliecloud-lib/bin/ch-grow.py.in
+--- charliecloud/bin/ch-grow.py.in	2020-04-20 10:34:22.163969775 -0600
++++ charliecloud-lib/bin/ch-grow.py.in	2020-04-20 11:53:58.006701265 -0600
 @@ -17,7 +17,7 @@
  import types
  
@@ -78,9 +78,9 @@ diff -ru charliecloud/bin/ch-grow.py.in charliecloud-lib/bin/ch-grow.py.in
  import charliecloud as ch
  
  
-diff -ru charliecloud/bin/ch-mount charliecloud-lib/bin/ch-mount
+diff -ur charliecloud/bin/ch-mount charliecloud-lib/bin/ch-mount
 --- charliecloud/bin/ch-mount	2020-04-01 14:59:49.395882236 -0600
-+++ charliecloud-lib/bin/ch-mount	2020-04-15 16:22:43.548362046 -0600
++++ charliecloud-lib/bin/ch-mount	2020-04-20 11:54:10.166822016 -0600
 @@ -1,6 +1,6 @@
  #!/bin/sh
  
@@ -89,9 +89,9 @@ diff -ru charliecloud/bin/ch-mount charliecloud-lib/bin/ch-mount
  . "${lib}/base.sh"
  
  # shellcheck disable=SC2034
-diff -ru charliecloud/bin/ch-pull2dir charliecloud-lib/bin/ch-pull2dir
+diff -ur charliecloud/bin/ch-pull2dir charliecloud-lib/bin/ch-pull2dir
 --- charliecloud/bin/ch-pull2dir	2020-04-01 14:59:49.395882236 -0600
-+++ charliecloud-lib/bin/ch-pull2dir	2020-04-15 16:22:59.215517769 -0600
++++ charliecloud-lib/bin/ch-pull2dir	2020-04-20 11:54:21.831937854 -0600
 @@ -1,6 +1,6 @@
  #!/bin/sh
  
@@ -100,9 +100,9 @@ diff -ru charliecloud/bin/ch-pull2dir charliecloud-lib/bin/ch-pull2dir
  . "${lib}/base.sh"
  
  set -e
-diff -ru charliecloud/bin/ch-pull2tar charliecloud-lib/bin/ch-pull2tar
+diff -ur charliecloud/bin/ch-pull2tar charliecloud-lib/bin/ch-pull2tar
 --- charliecloud/bin/ch-pull2tar	2020-04-01 14:59:49.395882236 -0600
-+++ charliecloud-lib/bin/ch-pull2tar	2020-04-15 16:23:11.267637562 -0600
++++ charliecloud-lib/bin/ch-pull2tar	2020-04-20 11:54:30.674025655 -0600
 @@ -1,6 +1,6 @@
  #!/bin/sh
  
@@ -111,9 +111,9 @@ diff -ru charliecloud/bin/ch-pull2tar charliecloud-lib/bin/ch-pull2tar
  . "${lib}/base.sh"
  
  set -e
-diff -ru charliecloud/bin/ch-run-oci.py.in charliecloud-lib/bin/ch-run-oci.py.in
+diff -ur charliecloud/bin/ch-run-oci.py.in charliecloud-lib/bin/ch-run-oci.py.in
 --- charliecloud/bin/ch-run-oci.py.in	2020-04-01 14:59:49.395882236 -0600
-+++ charliecloud-lib/bin/ch-run-oci.py.in	2020-04-15 16:24:17.424292450 -0600
++++ charliecloud-lib/bin/ch-run-oci.py.in	2020-04-20 11:54:39.985118116 -0600
 @@ -14,7 +14,7 @@
  import types
  
@@ -123,9 +123,9 @@ diff -ru charliecloud/bin/ch-run-oci.py.in charliecloud-lib/bin/ch-run-oci.py.in
  import version
  
  
-diff -ru charliecloud/bin/ch-tar2dir charliecloud-lib/bin/ch-tar2dir
+diff -ur charliecloud/bin/ch-tar2dir charliecloud-lib/bin/ch-tar2dir
 --- charliecloud/bin/ch-tar2dir	2020-04-01 14:59:49.396882245 -0600
-+++ charliecloud-lib/bin/ch-tar2dir	2020-04-15 16:24:05.031170032 -0600
++++ charliecloud-lib/bin/ch-tar2dir	2020-04-20 11:54:53.371251040 -0600
 @@ -2,7 +2,7 @@
  
  set -e
@@ -135,9 +135,9 @@ diff -ru charliecloud/bin/ch-tar2dir charliecloud-lib/bin/ch-tar2dir
  . "${lib}/base.sh"
  
  # shellcheck disable=SC2034
-diff -ru charliecloud/bin/ch-test charliecloud-lib/bin/ch-test
---- charliecloud/bin/ch-test	2020-04-07 12:19:37.054609706 -0600
-+++ charliecloud-lib/bin/ch-test	2020-04-15 16:24:40.401520603 -0600
+diff -ur charliecloud/bin/ch-test charliecloud-lib/bin/ch-test
+--- charliecloud/bin/ch-test	2020-04-16 13:25:13.336230810 -0600
++++ charliecloud-lib/bin/ch-test	2020-04-20 11:55:03.207348715 -0600
 @@ -20,7 +20,7 @@
  
  ### Setup
@@ -147,9 +147,9 @@ diff -ru charliecloud/bin/ch-test charliecloud-lib/bin/ch-test
  if [[ ! -f ${lib}/base.sh ]]; then
      fatal "install or build problem: not found: ${lib}/base.sh"
  fi
-diff -ru charliecloud/bin/ch-tug.py.in charliecloud-lib/bin/ch-tug.py.in
+diff -ur charliecloud/bin/ch-tug.py.in charliecloud-lib/bin/ch-tug.py.in
 --- charliecloud/bin/ch-tug.py.in	2020-04-01 14:59:49.396882245 -0600
-+++ charliecloud-lib/bin/ch-tug.py.in	2020-04-15 16:25:03.905754493 -0600
++++ charliecloud-lib/bin/ch-tug.py.in	2020-04-20 11:55:12.857444542 -0600
 @@ -5,7 +5,7 @@
  import sys
  
@@ -159,9 +159,9 @@ diff -ru charliecloud/bin/ch-tug.py.in charliecloud-lib/bin/ch-tug.py.in
  import charliecloud as ch
  
  
-diff -ru charliecloud/bin/ch-umount charliecloud-lib/bin/ch-umount
---- charliecloud/bin/ch-umount	2020-04-07 12:19:37.054609706 -0600
-+++ charliecloud-lib/bin/ch-umount	2020-04-15 16:25:15.956874411 -0600
+diff -ur charliecloud/bin/ch-umount charliecloud-lib/bin/ch-umount
+--- charliecloud/bin/ch-umount	2020-04-16 13:25:13.336230810 -0600
++++ charliecloud-lib/bin/ch-umount	2020-04-20 11:55:23.215547398 -0600
 @@ -1,6 +1,6 @@
  #!/bin/sh
  
@@ -170,10 +170,9 @@ diff -ru charliecloud/bin/ch-umount charliecloud-lib/bin/ch-umount
  . "${lib}/base.sh"
  
  # shellcheck disable=SC2034
-Binary files charliecloud/.git/index and charliecloud-lib/.git/index differ
-diff -ru charliecloud/lib/base.sh charliecloud-lib/lib/base.sh
---- charliecloud/lib/base.sh	2020-04-15 16:27:16.684075750 -0600
-+++ charliecloud-lib/lib/base.sh	2020-04-15 16:27:34.224250290 -0600
+diff -ur charliecloud/lib/base.sh charliecloud-lib/lib/base.sh
+--- charliecloud/lib/base.sh	2020-04-16 13:25:13.340230849 -0600
++++ charliecloud-lib/lib/base.sh	2020-04-20 11:55:40.050714572 -0600
 @@ -6,7 +6,7 @@
  # shellcheck disable=SC2034
  ch_base=${ch_bin%/*}
@@ -184,3 +183,15 @@ diff -ru charliecloud/lib/base.sh charliecloud-lib/lib/base.sh
  
  
 Only in charliecloud/packaging/fedora: ch-test.lib.patch
+diff -ur charliecloud/test/build/10_sanity.bats charliecloud-lib/test/build/10_sanity.bats
+--- charliecloud/test/build/10_sanity.bats	2020-04-16 13:25:13.341230859 -0600
++++ charliecloud-lib/test/build/10_sanity.bats	2020-04-20 11:55:56.472877646 -0600
+@@ -20,7 +20,7 @@
+     echo "version: ${ch_version}"
+     [[ $(echo "$ch_version" | wc -l) -eq 1 ]]   # one line
+     [[ $ch_version =~ ^0\.[0-9]+(\.[0-9]+)? ]]  # starts with right numbers
+-    diff -u <(echo "$ch_version") "${ch_base}/lib/charliecloud/version.txt"
++    diff -u <(echo "$ch_version") "${ch_base}/lib64/charliecloud/version.txt"
+ }
+ 
+ @test 'executables seem sane' {

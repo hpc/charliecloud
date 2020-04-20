@@ -67,7 +67,8 @@ Test fixtures for %{name}.
 %endif
 
 %build
-%configure --prefix=%{_prefix} \
+%configure CFLAGS="-g -std=c11 -pthread" \
+           --prefix=%{_prefix} \
            --libdir=%{_libdir} \
            --with-python=/usr/bin/python3 \
 %if 0%{?el7}
