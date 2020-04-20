@@ -165,6 +165,7 @@ class Image:
                 "unpack_dir")
 
    def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
+      assert isinstance(ref, Image_Ref)
       self.ref = ref
       self.download_cache = download_cache
       self.unpack_dir = unpack_dir
@@ -173,6 +174,9 @@ class Image:
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
+
+   def __str__(self):
+      return str(self.ref)
 
    @property
    def unpack_path(self):
@@ -190,7 +194,9 @@ class Image:
 
    def copy_unpacked(self, other):
       "Copy the unpack directory of Image other to my unpack directory."
-      assert False, "unimplemented"
+      DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
+      self.unpack_create_ok()
+      shutil.copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
    def download(self, use_cache=True):
       """Download image manifest and layers according to origin and put them
@@ -233,6 +239,32 @@ class Image:
             with open(path, "wb") as fp:
                fp.write(res.content)  # FIXME: catch exceptions
       dl.close()
+
+   def fixup(self):
+      "Add the Charliecloud workarounds to the unpacked image."
+      DEBUG("fixing up image: %s" % self.unpack_path)
+      # Metadata directory.
+      mkdirs("%s/ch/bin" % self.unpack_path)
+      file_ensure_exists("%s/ch/environment" % self.unpack_path)
+      # Mount points.
+      file_ensure_exists("%s/etc/hosts" % self.unpack_path)
+      file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
+      # /etc/{passwd,group}
+      file_write("%s/etc/passwd" % self.unpack_path, """\
+root:x:0:0:root:/root:/bin/sh
+nobody:x:65534:65534:nobody:/:/bin/false
+""")
+      file_write("%s/etc/group" % self.unpack_path, """\
+root:x:0:
+nogroup:x:65534:
+""")
+      # Kludges to work around expectations of real root, not UID 0 in a
+      # unprivileged user namespace. See also the default environment.
+      #
+      # Debian "apt" and friends want to chown(1), chgrp(1), etc.
+      symlink("/bin/true", "%s/ch/bin/chown" % self.unpack_path)
+      symlink("/bin/true", "%s/ch/bin/chgrp" % self.unpack_path)
+      symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % self.unpack_path)
 
    def flatten(self):
       "Flatten the layers in the download cache into the unpack directory."
@@ -296,6 +328,14 @@ class Image:
          members = collections.OrderedDict([(m, None) for m in members_list])
          layers[lh] = TT(fp, members)
       return layers
+
+   def pull_to_unpacked(self, fixup=False):
+      """Pull and flatten image. If fixup, then also add the Charliecloud
+         workarounds to the image directory."""
+      self.download()
+      self.flatten()
+      if (fixup):
+         self.fixup()
 
    def validate_members(self, layers):
       INFO("validating tarball members")
@@ -387,10 +427,11 @@ class Image:
             DEBUG("layer %d/%d: %s: processed %d whiteouts; %d members ignored"
                   % (i, len(layers), lh[:7], wo_ct, ig_ct))
 
-   def unpack_create(self):
-      "Ensure the unpack directory exists, replacing or creating if needed."
+   def unpack_create_ok(self):
+      """Ensure the unpack directory can be created. If the unpack directory
+         is already an image, remove it."""
       if (not os.path.exists(self.unpack_path)):
-         INFO("creating new image: %s" % self.unpack_path)
+         DEBUG("creating new image: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
@@ -400,10 +441,14 @@ class Image:
              or not os.path.isdir(self.unpack_path + "/usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
-         INFO("replacing existing image: %s" % self.unpack_path)
+         DEBUG("replacing existing image: %s" % self.unpack_path)
          def fail(function, path, excinfo):
             FATAL("can't flatten: %s: %s" % (path, excinfo[1]))
          shutil.rmtree(self.unpack_path, onerror=fail)
+
+   def unpack_create(self):
+      "Ensure the unpack directory exists, replacing or creating if needed."
+      self.unpack_create_ok()
       mkdirs(self.unpack_path)
 
 class Image_Ref:

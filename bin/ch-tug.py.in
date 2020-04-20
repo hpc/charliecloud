@@ -57,14 +57,15 @@ environment variables:
       sys.exit(0)
 
    image = ch.Image(ref, args.dl_cache, args.unpack_dir, args.image_subdir)
-   ch.INFO("pulling image: " + str(image.id))
+   ch.INFO("""\
+pulling image:   %s
+destination:     %s
+""" % (image.ref, image.unpack_path))
    ch.DEBUG("""\
 download cache:  %s
-unpack path:     %s
 manifest:        %s
-""" % (image.download_cache, image.unpack_path, image.manifest_path))
-   image.download(not args.no_cache)
-   image.flatten()
+""" % (image.download_cache, image.manifest_path))
+   image.pull_to_unpacked()
    ch.INFO("done")
 
 
