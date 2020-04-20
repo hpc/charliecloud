@@ -40,28 +40,30 @@ case $PACK_FMT in
         ;;
 esac
 
-# Project Atomic PPA provides buggy Buildah for Xenial, and we need Buildah's
-# unprivileged version, so build from source.
+# Project Atomic PPA provides Buildah for Bionic, but it's stale (1.10.1 as of
+# 2020-04-20), so build from source.
 if [[ $CH_BUILDER = buildah* ]]; then
     buildah_repo=https://github.com/containers/buildah
-    buildah_branch=v1.11.2
+    buildah_branch=v1.14.8
     sudo add-apt-repository -y ppa:alexlarsson/flatpak
     sudo apt-get update
     sudo apt-get -y install libapparmor-dev libdevmapper-dev libglib2.0-dev \
                             libgpgme11-dev libostree-dev libseccomp-dev \
                             libselinux1-dev skopeo-containers go-md2man
-    sudo apt-get -y install golang-1.10
+    sudo apt-get -y install golang-1.12
     sudo apt-get --purge autoremove
     command -v go && go version
     mkdir /usr/local/src/go
     pushd /usr/local/src/go
     export GOPATH=$PWD
-    export GOROOT=/usr/lib/go-1.10
+    export GOROOT=/usr/lib/go-1.12
+    echo "GOPATH=$GOPATH"
+    echo "GOROOT=$GOROOT"
     git clone $buildah_repo src/github.com/containers/buildah
     cd src/github.com/containers/buildah
     git checkout $buildah_branch
-    PATH=/usr/lib/go-1.10/bin:$PATH make runc all SECURITYTAGS="apparmor seccomp"
-    sudo -E PATH=/usr/lib/go-1.10/bin:"$PATH" make install install.runc
+    PATH=/usr/lib/go-1.12/bin:$PATH make runc all SECURITYTAGS="apparmor seccomp"
+    sudo -E PATH=/usr/lib/go-1.12/bin:"$PATH" make install install.runc
     command -v buildah && buildah --version
     command -v runc && runc --version
     cat <<'EOF' | sudo tee /etc/containers/registries.conf
