@@ -1,11 +1,12 @@
 # ch-test-scope: full
 FROM openmpi
 
-RUN dnf install -y which
+RUN    dnf install -y which \
+    && dnf clean all
 
 # Compile the Intel MPI benchmark
 WORKDIR /usr/local/src
-ENV IMB_VERSION 2018.1
+ARG IMB_VERSION=2018.1
 RUN git clone --branch v$IMB_VERSION --depth 1 \
               https://github.com/intel/mpi-benchmarks
 RUN    cd mpi-benchmarks/src \

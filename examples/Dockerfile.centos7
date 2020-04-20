@@ -5,16 +5,15 @@ FROM centos:7
 # and (2) provide a build environment for Charliecloud RPMs.
 
 # Install packages we actually need.
-RUN yum -y install epel-release
-RUN yum -y install \
+RUN    yum -y install epel-release \
+    && yum -y install \
            bats \
            gcc \
            make \
            python36 \
            rpm-build \
            rpmlint \
-           wget
-
+           wget \
 # Like apt(8), Yum/RPM like to chown(2), etc., if they believe they are root.
 # This fails in an unprivileged user namespace because UID 0 is fake. Unlike
 # apt, RPM makes these system calls directly, so there's no opportunity for
@@ -31,8 +30,6 @@ RUN yum -y install \
 # impact. In the interest of time, we demonstrate this by upgrading a single
 # package, though "yum upgrade" seems to pretty reliably tickle the problem.
 # See issue #472.
-RUN          yum -y install fakeroot
-RUN fakeroot yum -y upgrade dbus
-
-# Clean up.
-RUN yum clean all
+    &&          yum -y install fakeroot \
+    && fakeroot yum -y upgrade dbus \
+    &&          yum clean all

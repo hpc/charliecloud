@@ -10,6 +10,7 @@ FROM centos:8
 RUN    dnf -y install epel-release \
     && dnf -y update \
     && dnf -y install --enablerepo=epel-playground dnf-plugin-ovl \
+    && dnf clean all \
     && sed -ie 's/enabled=0/enabled=1/' /etc/yum.repos.d/CentOS-PowerTools.repo
 
 # CentOS's linker doesn't search these paths by default; add them because we
