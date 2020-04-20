@@ -350,6 +350,51 @@ password fields give no feedback, not even whether a character has been typed.
 Try using the number row instead, toggling Num Lock key, or SSHing into the
 virtual machine.
 
+What is going on with Dockerfile :code:`COPY`?
+----------------------------------------------
+
+Especially for people used to UNIX :code:`cp(1)`, the semantics of the
+Dockerfile :code:`COPY` instruction are confusing, and the `Dockerfile
+reference documentation
+<https://docs.docker.com/engine/reference/builder/#copy>`_ is incomplete. Our
+understanding beyond that documentation is described here, and this is what
+:code:`ch-grow` implements, in an attempt to be bug-compatible with Docker.
+
+1. When a directory is specified as a source, the *contents* of that
+   directory, not the directory itself, are copied. This is documented, but
+   it's a real gotcha because that's not what :code:`cp(1)` does, and it means
+   that many things you can do in one :code:`cp(1)` command require multiple
+   :code:`COPY` instructions.
+
+2. You can use absolute paths in the source; the root is the context
+   directory.
+
+3. Destination directories are created if they don't exist in the following
+   situations:
+
+   1. If the destination path ends in slash. (Documented.)
+
+   2. If the number of sources is greater than 1, either by wildcard or
+      explicitly, regardless of whether the destination ends in slash. (Not
+      documented.)
+
+   3. If there is a single source and it is a directory. (Not documented.)
+
+4. Symbolic links are particularly messy (this is not documented):
+
+   1. If named in sources either explicitly or by wildcard, symlinks are
+      dereferenced, i.e., the result is a copy of the symlink target, not the
+      symlink itself. Keep in mind that directory contents are copied, not
+      directories.
+
+   2. If within a directory named in sources, symlinks are copied as symlinks.
+
+Also, :code:`ch-grow` has two known non-conformances; we believe that in
+practice, these should not be a problem:
+
+1. Wildcards use Python glob semantics, not the Go semantics.
+2. :code:`COPY --chown` is ignored.
+
 
 How do I ...
 ============

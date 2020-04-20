@@ -1,6 +1,6 @@
 load ../common
 
-@test 'ARG and ENV' {
+@test 'Dockerfile: ARG and ENV' {
 
     # We use full scope for builders other than ch-grow because (1) with
     # ch-grow, we are responsible for --build-arg being implemented correctly
@@ -195,5 +195,107 @@ EOF
         [[ $output = *'--build-arg: chse_arg1_df: no value and not in environment'* ]]
     else
         [[ $status -eq 0 ]]
+    fi
+}
+
+@test 'Dockerfile: COPY errors' {
+    scope standard
+    [[ $CH_BUILDER = none ]] && skip 'no builder'
+    [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
+
+    # Dockerfile on stdin, so no context directory.
+    if [[ $CH_BUILDER != ch-grow ]]; then  # ch-grow doesn't support this yet
+        run ch-build -t foo - <<EOF
+FROM 00_tiny
+COPY doesnotexist .
+EOF
+        echo "$output"
+        [[ $status -ne 0 ]]
+        if [[ $CH_BUILDER = docker ]]; then
+            # This error message seems wrong. I was expecting something about
+            # no context, so COPY not allowed.
+            [[ $output = *'no such file or directory'* ]]
+        else
+            false  # unimplemented
+        fi
+    fi
+
+    # SRC not inside context directory.
+    #
+    # Case 1: leading "..".
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY ../foo .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'outside'*'context'* ]]
+    # Case 2: ".." inside path.
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY foo/../../baz .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'outside'*'context'* ]]
+    # Case 3: symlink leading outside context directory.
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY fixtures/symlink-to-tmp .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    if [[ $CH_BUILDER = docker ]]; then
+        [[ $output = *'no such file or directory'* ]]
+    else
+        [[ $output = *'outside'*'context'* ]]
+    fi
+
+    # Multiple sources and non-directory destination.
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY Build.missing common.bash /etc/fstab/
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'not a directory'* ]]
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY Build.missing common.bash /etc/fstab
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    if [[ $CH_BUILDER = docker ]]; then
+        [[ $output = *'must be a directory'* ]]
+    else
+        [[ $output = *'not a directory'* ]]
+    fi
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY run /etc/fstab/
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'not a directory'* ]]
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY run /etc/fstab
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'not a directory'* ]]
+
+    # File not found.
+    run ch-build -t foo -f - . <<EOF
+FROM 00_tiny
+COPY doesnotexist .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    if [[ $CH_BUILDER = ch-grow ]]; then
+        # This diagnostic is not fantastic, but it's what we got for now.
+        [[ $output = *'no sources exist'* ]]
+    else
+        [[ $output = *'doesnotexist:'*'o such file or directory'* ]]
     fi
 }

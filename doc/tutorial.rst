@@ -750,7 +750,7 @@ For example, using Slurm :code:`srun` and the :code:`mpihello` example above::
   4026531837
   $ ch-run /var/tmp/mpihello -- mpirun --version
   mpirun (Open MPI) 2.1.5
-  $ srun -n4 ch-run /var/tmp/images/mpihello -- /hello/hello
+  $ srun -n4 ch-run /var/tmp/mpihello -- /hello/hello
   0: init ok cn001, 4 ranks, userns 4026554650
   1: init ok cn001, 4 ranks, userns 4026554652
   3: init ok cn002, 4 ranks, userns 4026554652
