@@ -52,6 +52,7 @@ if [[ $CH_BUILDER = buildah* ]]; then
     sudo apt-get update
     sudo apt-get -y install buildah
     command -v buildah && buildah --version
+    sudo ln -s /usr/sbin/runc /usr/bin/runc
     command -v runc && runc --version
     # As of 2020-04-21, stock registries.conf is pretty simple; it includes
     # Docker Hub (docker.io) and then quay.io. Still, use ours for stability.
