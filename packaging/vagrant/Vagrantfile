@@ -229,14 +229,7 @@ EOF2
                  inline: <<-EOF
     set -e
     cd /usr/local/src
-    sudo yum -y install python36 \
-                        python36-pip \
-                        skopeo
-
-    wget https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64
-    sudo chmod 755 umoci.amd64
-    sudo mv umoci.amd64 /usr/bin/umoci
-    umoci --version
+    sudo yum -y install python36 python36-pip
     sudo pip3 install lark-parser
   EOF
 
