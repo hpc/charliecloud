@@ -40,37 +40,26 @@ case $PACK_FMT in
         ;;
 esac
 
-# Project Atomic PPA provides Buildah for Bionic, but it's stale (1.10.1 as of
-# 2020-04-20), so build from source.
+# Install Buildah; adapted from upstream instructions [1]. I believe this
+# tracks upstream current version fairly well. (I tried to use
+# add-app-repository but couldn't get it to work.)
+#
+# [1]: https://github.com/containers/buildah/blob/master/install.md
 if [[ $CH_BUILDER = buildah* ]]; then
-    buildah_repo=https://github.com/containers/buildah
-    buildah_branch=v1.14.8
-    sudo add-apt-repository -y ppa:alexlarsson/flatpak
+    echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/ /' | sudo tee /etc/apt/sources.list.d/buildah.list
+    wget -nv -O /tmp/Release.key https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_18.04/Release.key
+    sudo apt-key add /tmp/Release.key
     sudo apt-get update
-    sudo apt-get -y install libapparmor-dev libdevmapper-dev libglib2.0-dev \
-                            libgpgme11-dev libostree-dev libseccomp-dev \
-                            libselinux1-dev skopeo-containers go-md2man
-    sudo apt-get -y install golang-1.12
-    sudo apt-get --purge autoremove
-    command -v go && go version
-    mkdir /usr/local/src/go
-    pushd /usr/local/src/go
-    export GOPATH=$PWD
-    export GOROOT=/usr/lib/go-1.12
-    echo "GOPATH=$GOPATH"
-    echo "GOROOT=$GOROOT"
-    git clone $buildah_repo src/github.com/containers/buildah
-    cd src/github.com/containers/buildah
-    git checkout $buildah_branch
-    PATH=/usr/lib/go-1.12/bin:$PATH make runc all SECURITYTAGS="apparmor seccomp"
-    sudo -E PATH=/usr/lib/go-1.12/bin:"$PATH" make install install.runc
+    sudo apt-get -y install buildah
     command -v buildah && buildah --version
     command -v runc && runc --version
+    # As of 2020-04-21, stock registries.conf is pretty simple; it includes
+    # Docker Hub (docker.io) and then quay.io. Still, use ours for stability.
+    cat /etc/containers/registries.conf
     cat <<'EOF' | sudo tee /etc/containers/registries.conf
 [registries.search]
   registries = ['docker.io']
 EOF
-    popd
 fi
 
 # umoci provides a binary build; no appropriate Ubuntu package for Xenial.
