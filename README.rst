@@ -84,7 +84,7 @@ We are friendly and welcoming of diversity on all dimensions.
 Copyright and license
 ---------------------
 
-Charliecloud is copyright © 2014–2019 Triad National Security, LLC.
+Charliecloud is copyright © 2014–2020 Triad National Security, LLC.
 
 This software was produced under U.S. Government contract 89233218CNA000001
 for Los Alamos National Laboratory (LANL), which is operated by Triad National
