@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import shutil
+import subprocess
 import sys
 import tarfile
 import types
@@ -54,6 +55,9 @@ verbose = 0
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
 GRAMMAR = r"""
+
+/// Image references ///
+
 // Note: Hostnames with no dot and no port get parsed as a hostname, which
 // is wrong; it should be the first path component. We patch this error later.
 // FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
@@ -64,12 +68,55 @@ ir_path: ( IR_PATH_COMPONENT "/" )+
 ir_name: IR_PATH_COMPONENT
 ir_tag: ":" IR_TAG
 ir_digest: "@sha256:" HEX_STRING
-
 IR_HOST: /[A-Za-z0-9_.-]+/
 IR_PORT: /[0-9]+/
 IR_PATH_COMPONENT: /[a-z0-9_.-]+/
 IR_TAG: /[A-Za-z0-9_.-]+/
+
+/// Dockerfile ///
+
+?instruction: _WS? ( cmd | copy | arg | env | from_ | run | workdir )
+
+cmd: "CMD"i _WS LINE _NEWLINES
+
+copy: "COPY"i ( _WS copy_chown )? ( copy_shell ) _NEWLINES
+copy_chown: "--chown" "=" /[^ \t\n]+/
+copy_shell: _WS WORD ( _WS WORD )+
+
+arg: "ARG"i _WS ( arg_bare | arg_equals ) _NEWLINES
+arg_bare: WORD
+arg_equals: WORD "=" ( WORD | STRING_QUOTED )
+
+env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
+env_space: WORD _WS LINE
+env_equalses: env_equals ( _WS env_equals )*
+env_equals: WORD "=" ( WORD | STRING_QUOTED )
+
+from_: "FROM"i _WS image_ref [ _WS from_alias ] _NEWLINES
+from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
+
+run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
+run_exec.2: _string_list
+run_shell: LINE
+
+workdir: "WORKDIR"i _WS LINE _NEWLINES
+
+/// Common ///
+
 HEX_STRING: /[0-9A-Fa-f]+/
+LINE: ( LINE_CONTINUE | /[^\n]/ )+
+WORD: /[^ \t\n=]/+
+
+_string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
+
+LINE_CONTINUE: "\\\n"
+%ignore LINE_CONTINUE
+
+_COMMENT: _WS? /#[^\n]*/ _NEWLINES
+_NEWLINES: _WS? "\n"+
+_WS: /[ \t]/+
+
+%import common.ESCAPED_STRING -> STRING_QUOTED
 """
 
 
@@ -97,7 +144,7 @@ class Image:
 
       Constructor arguments:
 
-        id_.............. Image_Ref object to identify the image.
+        ref.............. Image_Ref object to identify the image.
 
         download_cache .. Directory containing the download cache; this is
                           where layers and manifests go. If None,
@@ -109,21 +156,25 @@ class Image:
                           If None, infer from id; if the empty string,
                           unpack_dir will be used directly."""
 
-   __slots__ = ("id",
+   __slots__ = ("ref",
                 "download_cache",
                 "image_subdir",
                 "layer_hashes",
                 "unpack_dir")
 
-   def __init__(self, id_, download_cache, unpack_dir, image_subdir):
-      self.id = id_
+   def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
+      assert isinstance(ref, Image_Ref)
+      self.ref = ref
       self.download_cache = download_cache
       self.unpack_dir = unpack_dir
       if (image_subdir is None):
-         self.image_subdir = self.id.for_path
+         self.image_subdir = self.ref.for_path
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
+
+   def __str__(self):
+      return str(self.ref)
 
    @property
    def unpack_path(self):
@@ -133,7 +184,7 @@ class Image:
    @property
    def manifest_path(self):
       "Path to the manifest file."
-      return "%s/%s.manifest.json" % (self.download_cache, self.id.for_path)
+      return "%s/%s.manifest.json" % (self.download_cache, self.ref.for_path)
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -141,7 +192,9 @@ class Image:
 
    def copy_unpacked(self, other):
       "Copy the unpack directory of Image other to my unpack directory."
-      assert False, "unimplemented"
+      DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
+      self.unpack_create_ok()
+      shutil.copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
    def download(self, use_cache=True):
       """Download image manifest and layers according to origin and put them
@@ -152,7 +205,7 @@ class Image:
          url_base = "https://%s:%d/v2" % (dl.ref.host, dl.ref.port)
          return "/".join((url_base, dl.ref.path_full, type_, address))
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
-      dl = Repo_Downloader(self.id)
+      dl = Repo_Downloader(self.ref)
       DEBUG("downloading image: %s" % dl.ref)
       mkdirs(self.download_cache)
       # manifest
@@ -184,6 +237,32 @@ class Image:
             with open(path, "wb") as fp:
                fp.write(res.content)  # FIXME: catch exceptions
       dl.close()
+
+   def fixup(self):
+      "Add the Charliecloud workarounds to the unpacked image."
+      DEBUG("fixing up image: %s" % self.unpack_path)
+      # Metadata directory.
+      mkdirs("%s/ch/bin" % self.unpack_path)
+      file_ensure_exists("%s/ch/environment" % self.unpack_path)
+      # Mount points.
+      file_ensure_exists("%s/etc/hosts" % self.unpack_path)
+      file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
+      # /etc/{passwd,group}
+      file_write("%s/etc/passwd" % self.unpack_path, """\
+root:x:0:0:root:/root:/bin/sh
+nobody:x:65534:65534:nobody:/:/bin/false
+""")
+      file_write("%s/etc/group" % self.unpack_path, """\
+root:x:0:
+nogroup:x:65534:
+""")
+      # Kludges to work around expectations of real root, not UID 0 in a
+      # unprivileged user namespace. See also the default environment.
+      #
+      # Debian "apt" and friends want to chown(1), chgrp(1), etc.
+      symlink("/bin/true", "%s/ch/bin/chown" % self.unpack_path)
+      symlink("/bin/true", "%s/ch/bin/chgrp" % self.unpack_path)
+      symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % self.unpack_path)
 
    def flatten(self):
       "Flatten the layers in the download cache into the unpack directory."
@@ -247,6 +326,14 @@ class Image:
          members = collections.OrderedDict([(m, None) for m in members_list])
          layers[lh] = TT(fp, members)
       return layers
+
+   def pull_to_unpacked(self, fixup=False):
+      """Pull and flatten image. If fixup, then also add the Charliecloud
+         workarounds to the image directory."""
+      self.download()
+      self.flatten()
+      if (fixup):
+         self.fixup()
 
    def validate_members(self, layers):
       INFO("validating tarball members")
@@ -338,10 +425,11 @@ class Image:
             DEBUG("layer %d/%d: %s: processed %d whiteouts; %d members ignored"
                   % (i, len(layers), lh[:7], wo_ct, ig_ct))
 
-   def unpack_create(self):
-      "Ensure the unpack directory exists, replacing or creating if needed."
+   def unpack_create_ok(self):
+      """Ensure the unpack directory can be created. If the unpack directory
+         is already an image, remove it."""
       if (not os.path.exists(self.unpack_path)):
-         INFO("creating new image: %s" % self.unpack_path)
+         DEBUG("creating new image: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
@@ -351,10 +439,14 @@ class Image:
              or not os.path.isdir(self.unpack_path + "/usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
-         INFO("replacing existing image: %s" % self.unpack_path)
+         DEBUG("replacing existing image: %s" % self.unpack_path)
          def fail(function, path, excinfo):
             FATAL("can't flatten: %s: %s" % (path, excinfo[1]))
          shutil.rmtree(self.unpack_path, onerror=fail)
+
+   def unpack_create(self):
+      "Ensure the unpack directory exists, replacing or creating if needed."
+      self.unpack_create_ok()
       mkdirs(self.unpack_path)
 
 class Image_Ref:
@@ -488,14 +580,14 @@ fields:
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
-      self.host = tree_child(t, "ir_hostport", "IR_HOST")
-      self.port = tree_child(t, "ir_hostport", "IR_PORT")
+      self.host = tree_child_terminal(t, "ir_hostport", "IR_HOST")
+      self.port = tree_child_terminal(t, "ir_hostport", "IR_PORT")
       if (self.port is not None):
          self.port = int(self.port)
       self.path = list(tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"))
-      self.name = tree_child(t, "ir_name", "IR_PATH_COMPONENT")
-      self.tag = tree_child(t, "ir_tag", "IR_TAG")
-      self.digest = tree_child(t, "ir_digest", "HEX_STRING")
+      self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
+      self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
+      self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
       # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.host is not None
           and "." not in self.host
@@ -575,6 +667,15 @@ def WARNING(*args, **kwargs):
    print(flush=True, file=sys.stderr, *args, **kwargs)
    color_reset(sys.stderr)
 
+def cmd(args, env=None):
+   DEBUG("environment: %s" % env)
+   DEBUG("executing: %s" % args)
+   color("33m", sys.stdout)
+   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   color_reset(sys.stdout)
+   if (cp.returncode):
+      FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
+
 def color(color, fp):
    if (fp.isatty()):
       print("\033[" + color, end="", flush=True, file=fp)
@@ -591,6 +692,16 @@ def dependencies_check():
    if (len(depfails) > 0):
       sys.exit(1)
 
+def file_ensure_exists(path):
+   with open(path, "a") as fp:
+      pass
+
+def file_write(path, content, mode=None):
+   with open(path, "wt") as fp:
+      fp.write(content)
+      if (mode is not None):
+         os.chmod(fp.fileno(), mode)
+
 def http_get(session, url, headers):
    try:
       res = session.get(url, headers=headers)
@@ -603,14 +714,41 @@ def mkdirs(path):
    DEBUG("ensuring directory: " + path)
    os.makedirs(path, exist_ok=True)
 
-def tree_child(tree, cname, tname, i=0):
+def rmtree(path):
+   if (os.path.isdir(path)):
+      DEBUG("deleting directory: " + path)
+      shutil.rmtree(path)
+   else:
+      assert False, "unimplemented"
+
+def symlink(target, source):
+   try:
+      os.symlink(target, source)
+   except FileExistsError:
+      if (not os.path.islink(source)):
+         FATAL("can't symlink: source exists and isn't a symlink: %s"
+               % source)
+      if (os.readlink(source) != target):
+         FATAL("can't symlink: %s exists; want target %s but existing is %s"
+               % (source, target, os.readlink(source)))
+
+def tree_child(tree, cname):
+   """Locate a descendant subtree named cname using breadth-first search and
+      return it. If no such subtree exists, return None."""
+   for st in tree.iter_subtrees_topdown():
+      if (st.data == cname):
+         return st
+   return None
+
+def tree_child_terminal(tree, cname, tname, i=0):
    """Locate a descendant subtree named cname using breadth-first search and
       return its first child terminal named tname. If no such subtree exists,
       or it doesn't have such a terminal, return None."""
-   for d in tree.iter_subtrees_topdown():
-      if (d.data == cname):
-         return tree_terminal(d, tname, i)
-   return None
+   st = tree_child(tree, cname)
+   if (st is not None):
+      return tree_terminal(st, tname, i)
+   else:
+      return None
 
 def tree_child_terminals(tree, cname, tname):
    """Locate a descendant substree named cname using breadth-first search and
