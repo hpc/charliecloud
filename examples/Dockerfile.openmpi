@@ -61,7 +61,6 @@ FROM centos8
 #
 # As of 2019-10-07, CentOS 8 provides version 22.2 of libibverbs. This is
 # quite new but works for our test systems.
-# Note that libpsm2 is x86-64 only so we skip if missing
 RUN  dnf install -y --setopt=install_weak_deps=false \
      automake \
      file \
@@ -84,6 +83,7 @@ RUN  dnf install -y --setopt=install_weak_deps=false \
      make \
      numactl-devel \
      wget \
+# Note that libpsm2 is x86-64 only so we skip if missing
   && dnf install --setopt=install_weak_deps=false --skip-broken -y libpsm2 libpsm2-devel \
   && dnf clean all
 
