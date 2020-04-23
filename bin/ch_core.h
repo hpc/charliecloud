@@ -38,5 +38,5 @@ struct container {
 
 /** Function prototypes **/
 
-void containerize(struct container *c);
-void run_user_command(char *argv[], char *initial_dir);
+void containerize(struct container * const c);
+void run_user_command(char *argv[], char const * const initial_dir);

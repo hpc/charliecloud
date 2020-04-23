@@ -68,26 +68,29 @@ struct {
 
 /** Function prototypes (private) **/
 
-void bind_mount(char *src, char *dst, char *newroot,
-                enum bind_dep dep, unsigned long flags);
-void bind_mounts(struct bind *binds, char *newroot,
+void bind_mount(char const * const src, char const * const dst,
+                char const * const newroot, enum bind_dep dep,
+                unsigned long flags);
+void bind_mounts(struct bind const * const binds, char const * const newroot,
                  enum bind_dep dep, unsigned long flags);
-void enter_udss(struct container *c);
-void join_begin(int join_ct, char *join_tag);
-void join_namespace(pid_t pid, char *ns);
+void enter_udss(struct container * const c);
+void join_begin(int join_ct, char const * const join_tag);
+void join_namespace(pid_t pid, char const * const ns);
 void join_namespaces(pid_t pid);
 void join_end();
-void sem_timedwait_relative(sem_t *sem, int timeout);
-void setup_namespaces(struct container *c);
-void setup_passwd(struct container *c);
-void tmpfs_mount(char *dst, char *newroot, char *data);
+void sem_timedwait_relative(sem_t * const sem, int const timeout);
+void setup_namespaces(struct container const * const c);
+void setup_passwd(struct container const * const c);
+void tmpfs_mount(char const * const dst, char const * const newroot,
+                 char const * const data);
 
 
 /** Functions **/
 
 /* Bind-mount the given path into the container image. */
-void bind_mount(char *src, char *dst, char *newroot,
-                enum bind_dep dep, unsigned long flags)
+void bind_mount(char const * const src, char const * const dst,
+                char const * const newroot, enum bind_dep dep,
+                unsigned long flags)
 {
    char *dst_full = cat(newroot, dst);
 
@@ -106,7 +109,7 @@ void bind_mount(char *src, char *dst, char *newroot,
 }
 
 /* Bind-mount a null-terminated array of struct bind objects. */
-void bind_mounts(struct bind *binds, char * newroot,
+void bind_mounts(struct bind const * const binds, char const * const newroot,
                  enum bind_dep dep, unsigned long flags)
 {
    for (int i = 0; binds[i].src != NULL; i++)
@@ -114,7 +117,7 @@ void bind_mounts(struct bind *binds, char * newroot,
 }
 
 /* Set up new namespaces or join existing namespaces. */
-void containerize(struct container *c)
+void containerize(struct container * const c)
 {
    if (c->join_pid) {
       join_namespaces(c->join_pid);
@@ -137,7 +140,7 @@ void containerize(struct container *c)
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
    in bin/ch-checkns.c. */
-void enter_udss(struct container *c)
+void enter_udss(struct container * const c)
 {
    char *newroot_parent, *newroot_base;
 
@@ -213,7 +216,7 @@ void enter_udss(struct container *c)
 }
 
 /* Begin coordinated section of namespace joining. */
-void join_begin(int join_ct, char *join_tag)
+void join_begin(int join_ct, char const * const join_tag)
 {
    int fd;
 
@@ -283,7 +286,7 @@ void join_end()
 }
 
 /* Join a specific namespace. */
-void join_namespace(pid_t pid, char *ns)
+void join_namespace(pid_t pid, char const * const ns)
 {
    char *path;
    int fd;
@@ -309,7 +312,7 @@ void join_namespaces(pid_t pid)
 }
 
 /* Replace the current process with user command and arguments. */
-void run_user_command(char *argv[], char *initial_dir)
+void run_user_command(char *argv[], char const * const initial_dir)
 {
    LOG_IDS;
 
@@ -330,7 +333,7 @@ void run_user_command(char *argv[], char *initial_dir)
 
 /* Wait for semaphore sem for up to timeout seconds. If timeout or an error,
    exit unsuccessfully. */
-void sem_timedwait_relative(sem_t *sem, int timeout)
+void sem_timedwait_relative(sem_t * const sem, int const timeout)
 {
    struct timespec deadline;
 
@@ -345,7 +348,7 @@ void sem_timedwait_relative(sem_t *sem, int timeout)
 }
 
 /* Activate the desired isolation namespaces. */
-void setup_namespaces(struct container *c)
+void setup_namespaces(struct container const * const c)
 {
    int fd;
    uid_t euid = -1;
@@ -396,16 +399,16 @@ void setup_namespaces(struct container *c)
    see issue #212. After bind-mounting, we remove the files from the host;
    they persist inside the container and then disappear completely when the
    container exits. */
-void setup_passwd(struct container *c)
+void setup_passwd(struct container const * const c)
 {
    int fd;
-   char *path;
-   struct group *g;
-   struct passwd *p;
+   char * path;
+   struct group const *g;
+   struct passwd const *p;
 
    // /etc/passwd
    T_ (path = strdup("/tmp/ch-run_passwd.XXXXXX"));
-   T_ (-1 != (fd = mkstemp(path)));
+   T_ (-1 != (fd = mkstemp(path)));  // mkstemp(3) writes path
    if (c->container_uid != 0)
       T_ (1 <= dprintf(fd, "root:x:0:0:root:/root:/bin/sh\n"));
    if (c->container_uid != 65534)
@@ -455,7 +458,8 @@ void setup_passwd(struct container *c)
 }
 
 /* Mount a tmpfs at the given path. */
-void tmpfs_mount(char *dst, char *newroot, char *data)
+void tmpfs_mount(char const * const dst, char const * const newroot,
+                 char const * const data)
 {
    char *dst_full = cat(newroot, dst);
 
