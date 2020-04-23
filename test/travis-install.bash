@@ -16,7 +16,7 @@ sudo cat /etc/sudoers.d/travis
 if [[ "$MINIMAL_DEPS" ]]; then
     PACK_FMT=tar
 else
-    sudo apt-get install pigz pv skopeo
+    sudo apt-get install pigz pv
 fi
 if [[ $CH_BUILDER = ch-grow ]]; then
     sudo pip3 install lark-parser requests
@@ -69,14 +69,6 @@ if [[ $CH_BUILDER = buildah* ]]; then
   registries = ['docker.io']
 EOF
     popd
-fi
-
-# umoci provides a binary build; no appropriate Ubuntu package for Xenial.
-if [[ -z $MINIMAL_DEPS ]]; then
-    wget -nv https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64
-    sudo chmod 755 umoci.amd64
-    sudo mv umoci.amd64 /usr/local/bin/umoci
-    umoci --version
 fi
 
 # Documentation.

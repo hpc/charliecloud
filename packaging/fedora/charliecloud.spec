@@ -47,8 +47,7 @@ a standard Linux filesystem tree.
 For more information: https://hpc.github.io/charliecloud/
 
 %description test
-Charliecloud test suite and examples. The test suite takes advantage of
-container image builders such as Docker, Skopeo, and Buildah.
+Charliecloud test suite and examples.
 
 %prep
 %setup -q
