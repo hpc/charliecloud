@@ -36,7 +36,7 @@ Usage:
 
   $ $(basename "$0") [PHASE] [--scope SCOPE] [OPTIONS]
 
-Valid phases: build, run, examples, mk-perm-dirs, clean, rm-perm-dirs
+Valid phases: build, run, examples, all, mk-perm-dirs, clean, rm-perm-dirs
 Valid scopes: quick, standard, full
 
 Additional options:

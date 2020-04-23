@@ -88,14 +88,18 @@ EXTRA_DIST = $(execs) $(noexecs) $(batsfiles)
 # in the source code or "make dist" won't work, and we can't include them in
 # the files to install or "make install" won't work. These targets take care
 # of everything manually.
+#
+# Note: -T prevents ln(1) from dereferencing and descending into symlinks to
+# directories. Without this, new symlinks are created within symlink-to-dir*,
+# instead of replacing the existing symlink as we wanted. See PR #722.
 
 all-local:
-	ln -fs dirCb copy/dirCa/symlink-to-dirCb
-	ln -fs fileDa copy/dirD/symlink-to-fileDa
-	ln -fs dirEb copy/dirEa/symlink-to-dirEb
-	ln -fs fileA copy/symlink-to-fileA
-	ln -fs fileB copy/symlink-to-fileB-A
-	ln -fs fileB copy/symlink-to-fileB-B
+	ln -fTs dirCb copy/dirCa/symlink-to-dirCb
+	ln -fTs fileDa copy/dirD/symlink-to-fileDa
+	ln -fTs dirEb copy/dirEa/symlink-to-dirEb
+	ln -fTs fileA copy/symlink-to-fileA
+	ln -fTs fileB copy/symlink-to-fileB-A
+	ln -fTs fileB copy/symlink-to-fileB-B
 
 clean-local:
 	rm -f copy/dirCa/symlink-to-dirCb
@@ -106,12 +110,12 @@ clean-local:
 	rm -f copy/symlink-to-fileB-B
 
 install-data-hook:
-	ln -fs dirCb $(examplesdir)/copy/dirCa/symlink-to-dirCb
-	ln -fs fileDa $(examplesdir)/copy/dirD/symlink-to-fileDa
-	ln -fs dirEb $(examplesdir)/copy/dirEa/symlink-to-dirEb
-	ln -fs fileA $(examplesdir)/copy/symlink-to-fileA
-	ln -fs fileB $(examplesdir)/copy/symlink-to-fileB-A
-	ln -fs fileB $(examplesdir)/copy/symlink-to-fileB-B
+	ln -fTs dirCb $(examplesdir)/copy/dirCa/symlink-to-dirCb
+	ln -fTs fileDa $(examplesdir)/copy/dirD/symlink-to-fileDa
+	ln -fTs dirEb $(examplesdir)/copy/dirEa/symlink-to-dirEb
+	ln -fTs fileA $(examplesdir)/copy/symlink-to-fileA
+	ln -fTs fileB $(examplesdir)/copy/symlink-to-fileB-A
+	ln -fTs fileB $(examplesdir)/copy/symlink-to-fileB-B
 
 uninstall-local:
 	rm -f $(examplesdir)/copy/dirCa/symlink-to-dirCb
