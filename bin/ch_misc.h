@@ -69,7 +69,7 @@ extern int verbose;
 /** Function prototypes **/
 
 char *cat(char *a, char *b);
-void log_ids(const char *func, int line);
+void log_ids(char const *func, int line);
 void msg(int level, char *file, int line, int errno_, char *fmt, ...);
 bool path_exists(char *path);
 unsigned long path_mount_flags(char *path);

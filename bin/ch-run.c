@@ -63,9 +63,9 @@ const struct argp_option options[] = {
    { 0 }
 };
 
-/* One possible future here is that fix_environment() ends up in charliecloud.c
-   and we add other actions such as SET, APPEND_PATH, etc. */
-enum env_action { END, SET_FILE, UNSET_GLOB };  // END must be zero
+/* One possible future here is that fix_environment() ends up in ch_base.c and
+   we add other actions such as SET, APPEND_PATH, etc. */
+enum env_action { END = 0, SET_FILE, UNSET_GLOB };
 
 struct env_delta {
    enum env_action action;
@@ -108,22 +108,24 @@ int main(int argc, char *argv[])
 
    privs_verify_invoking();
 
-   T_ (args.c.binds = calloc(1, sizeof(struct bind)));
-   args.c.ch_ssh = false;
-   args.c.container_gid = getegid();
-   args.c.container_uid = geteuid();
-   args.c.join = false;
-   args.c.join_ct = 0;
-   args.c.join_pid = 0;
-   args.c.join_tag = NULL;
-   args.c.private_home = false;
-   args.c.private_passwd = false;
-   args.c.private_tmp = false;
-   args.c.old_home = getenv("HOME");
-   args.c.writable = false;
-   T_ (args.env_deltas = calloc(1, sizeof(struct env_delta)));
-   args.initial_dir = NULL;
    verbose = 1;  // in charliecloud.h
+   args = (struct args){ .c = (struct container){ .ch_ssh = false,
+                                                  .container_gid = getegid(),
+                                                  .container_uid = geteuid(),
+                                                  .newroot = NULL,
+                                                  .join = false,
+                                                  .join_ct = 0,
+                                                  .join_pid = 0,
+                                                  .join_tag = NULL,
+                                                  .private_home = false,
+                                                  .private_passwd = false,
+                                                  .private_tmp = false,
+                                                  .old_home = getenv("HOME"),
+                                                  .writable = false },
+                         .initial_dir = NULL };
+   // These need to be on the heap because we realloc(3) them later.
+   T_ (args.c.binds = calloc(1, sizeof(struct bind)));
+   T_ (args.env_deltas = calloc(1, sizeof(struct env_delta)));
 
    /* I couldn't find a way to set argp help defaults other than this
       environment variable. Kludge sets/unsets only if not already set. */
@@ -133,7 +135,7 @@ int main(int argc, char *argv[])
       argp_help_fmt_set = false;
       Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
    }
-   Z_ (argp_parse(&argp, argc, argv, 0, &(arg_next), &args));
+   Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
@@ -156,7 +158,8 @@ int main(int argc, char *argv[])
    INFO("newroot: %s", args.c.newroot);
    INFO("container uid: %u", args.c.container_uid);
    INFO("container gid: %u", args.c.container_gid);
-   INFO("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag, args.c.join_pid);
+   INFO("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag,
+        args.c.join_pid);
    INFO("private /tmp: %d", args.c.private_tmp);
 
    fix_environment(&args);
@@ -441,7 +444,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.writable = true;
       break;
    case ARGP_KEY_NO_ARGS:
-      argp_state_help(state, stderr, ARGP_HELP_SHORT_USAGE | ARGP_HELP_PRE_DOC | ARGP_HELP_LONG | ARGP_HELP_POST_DOC);
+      argp_state_help(state, stderr, (  ARGP_HELP_SHORT_USAGE
+                                      | ARGP_HELP_PRE_DOC
+                                      | ARGP_HELP_LONG
+                                      | ARGP_HELP_POST_DOC));
       exit(EXIT_FAILURE);
    default:
       return ARGP_ERR_UNKNOWN;
