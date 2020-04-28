@@ -164,7 +164,6 @@ int main(int argc, char *argv[])
 
    fix_environment(&args);
    containerize(&args.c);
-   (void)malloc(random() % 65536);             // leak some memory
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }
