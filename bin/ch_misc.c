@@ -51,7 +51,7 @@ char *cat(char const * const a, char const * const b)
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
-void log_ids(char const * const func, int const line)
+void log_ids(char const *func, int line)
 {
    uid_t ruid, euid, suid;
    gid_t rgid, egid, sgid;
