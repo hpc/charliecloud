@@ -399,9 +399,9 @@ void setup_namespaces(const struct container *c)
 void setup_passwd(const struct container *c)
 {
    int fd;
-   char * path;
-   struct group const *g;
-   struct passwd const *p;
+   char *path;
+   struct group *g;
+   struct passwd *p;
 
    // /etc/passwd
    T_ (path = strdup("/tmp/ch-run_passwd.XXXXXX"));

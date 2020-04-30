@@ -172,15 +172,11 @@ void path_split(const char *path, char **dir, char **base)
    point into a new buffer allocated with malloc(3). This has two
    implications: (1) the caller must free(3) *a but not *b, and (2) the parts
    can be rejoined by setting *(*b-1) to del. The point here is to provide an
-   easier wrapper for strsep(3).
-
-   FIXME (reidpr 2020-04-23): I feel like I should be able to add another
-   const to a and b, but it won't build. I don't understand what the
-   difference from path_split() is.*/
+   easier wrapper for strsep(3). */
 void split(char **a, char **b, const char *str, char del)
 {
    char *tmp;
-   char const delstr[2] = { del, 0 };
+   char delstr[2] = { del, 0 };
    T_ (str != NULL);
    tmp = strdup(str);
    *b = tmp;
