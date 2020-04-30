@@ -20,15 +20,16 @@ FROM centos:7
 # impact. In the interest of time, we demonstrate this by upgrading a single
 # package, though "yum upgrade" seems to pretty reliably tickle the problem.
 # See issue #472.
- RUN    yum -y install epel-release \
-     && yum -y install \
-        bats \
-        gcc \
-        make \
-        python36 \
-        rpm-build \
-        rpmlint \
-        wget \
-        fakeroot \
-     && fakeroot yum -y upgrade dbus \
-     && yum clean all
+RUN yum install -y epel-release \
+ && yum update  -y \
+ && yum install -y \
+                bats \
+                gcc \
+                make \
+                python36 \
+                rpm-build \
+                rpmlint \
+                wget \
+                fakeroot \
+ && fakeroot yum upgrade -y dbus \
+ && yum clean all

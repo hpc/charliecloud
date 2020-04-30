@@ -7,15 +7,16 @@ FROM centos:8
 # 2. Enable PowerTools repository, as some packages in EPEL depend on it. Use
 #    sed(1) because we don't want to install `dnf-plugins-core` just for this.
 #
-RUN    dnf -y install epel-release \
-    && dnf -y update \
-    && dnf -y install --enablerepo=epel-playground dnf-plugin-ovl \
-    && dnf clean all \
-    && sed -ie 's/enabled=0/enabled=1/' /etc/yum.repos.d/CentOS-PowerTools.repo
+RUN dnf install -y --setopt=install_weak_deps=false epel-release \
+ && dnf update  -y \
+ && dnf install -y --setopt=install_weak_deps=false --enablerepo=epel-playground \
+                dnf-plugin-ovl \
+ && dnf clean all \
+ && sed -ie 's/enabled=0/enabled=1/' /etc/yum.repos.d/CentOS-PowerTools.repo
 
 # CentOS's linker doesn't search these paths by default; add them because we
 # will install stuff later into /usr/local.
-RUN    echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
-    && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf \
-    && ldconfig
+RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
+ && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf \
+ && ldconfig
 

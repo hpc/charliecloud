@@ -17,23 +17,24 @@ FROM centos:7
 #
 # Note: Spack claims that Python 3 works, but using python3 here fails later
 # with "/usr/bin/env: 'python': No such file or directory".
-RUN    yum update -y \
-    && yum install -y \
-       curl \
-       gcc \
-       gcc-c++ \
-       git \
-       gnupg2-smime \
-       python \
-       make \
-# Packages needed to install Charliecloud with Spack. These are in Spack's
-# Docker example [2] but are not documented as prerequisites [1].
-       bzip2 \
-       file \
-       patch \
-       unzip \
-       which \
-    && yum clean all
+# bzip, file, patch, unzip, and which are packages needed to install 
+# Charliecloud with Spack. These are in Spack's Docker example [2] but are not
+# documented as prerequisites [1].
+RUN yum update  -y \
+ && yum install -y \
+                curl \
+                gcc \
+                gcc-c++ \
+                git \
+                gnupg2-smime \
+                python \
+                make \
+                bzip2 \
+                file \
+                patch \
+                unzip \
+                which \
+ && yum clean all
 
 # Certain Spack packages (e.g., tar) puke if they detect themselves being
 # configured as UID 0. This is the override. See issue #540 and [2].

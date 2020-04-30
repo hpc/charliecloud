@@ -14,21 +14,21 @@ FROM ubuntu:16.04
 
 # OS packages needed
 ARG DEBIAN_FRONTEND=noninteractive
-RUN    apt-get update \
-    && apt-get install -y \
-       gnupg-curl \
-       wget \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+                    gnupg-curl \
+                    wget \
+ && rm -rf /var/lib/apt/lists/*
 
 # Install CUDA from nVidia.
 # See: https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1704&target_type=debnetwork
 WORKDIR /usr/local/src
-RUN    wget -nv http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1704/x86_64/cuda-repo-ubuntu1704_9.1.85-1_amd64.deb \
-    && dpkg --install cuda-repo-ubuntu1704_9.1.85-1_amd64.deb \
-    && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1704/x86_64/7fa2af80.pub \
-    && apt-get update \
-    && apt-get install -y cuda-toolkit-9-1 \
-    && rm -rf /var/lib/apt/lists/*
+RUN wget -nv http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1704/x86_64/cuda-repo-ubuntu1704_9.1.85-1_amd64.deb \
+ && dpkg --install cuda-repo-ubuntu1704_9.1.85-1_amd64.deb \
+ && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1704/x86_64/7fa2af80.pub \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends cuda-toolkit-9-1 \
+ && rm -rf /var/lib/apt/lists/*
 
 # Build the sample app we'll use to test.
 WORKDIR /usr/local/cuda-9.1/samples/0_Simple/matrixMulCUBLAS
