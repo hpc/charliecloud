@@ -42,7 +42,7 @@ int verbose;
 /** Functions **/
 
 /* Concatenate strings a and b, then return the result. */
-char *cat(char const * const a, char const * const b)
+char *cat(const char *a, const char *b)
 {
    char *ret;
 
@@ -51,7 +51,7 @@ char *cat(char const * const a, char const * const b)
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
-void log_ids(char const *func, int line)
+void log_ids(const char *func, int line)
 {
    uid_t ruid, euid, suid;
    gid_t rgid, egid, sgid;
@@ -83,8 +83,8 @@ void log_ids(char const *func, int line)
      1 : "warning" : always print
      2 : "info"    : print if verbose >= 2
      3 : "debug"   : print if verbose >= 3 */
-void msg(int const level, char const * const file, int const line,
-         int const errno_, char const * const fmt, ...)
+void msg(int level, const char *file, int line, int errno_,
+         const char *fmt, ...)
 {
    va_list ap;
 
@@ -112,7 +112,7 @@ void msg(int const level, char const * const file, int const line,
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. */
-bool path_exists(char const * const path)
+bool path_exists(const char *path)
 {
    struct stat sb;
 
@@ -133,7 +133,7 @@ bool path_exists(char const * const path)
    Also, the kernel contains a test "unprivileged-remount-test.c" that
    manually translates the flags. Thus, I wasn't comfortable simply passing
    the output of statvfs(3) to mount(2). */
-unsigned long path_mount_flags(char const * const path)
+unsigned long path_mount_flags(const char *path)
 {
    struct statvfs sv;
    unsigned long known_flags =   ST_MANDLOCK   | ST_NOATIME  | ST_NODEV
@@ -156,8 +156,7 @@ unsigned long path_mount_flags(char const * const path)
 }
 
 /* Split path into dirname and basename. */
-void path_split(char const * const path,
-                char ** const dir, char ** const base)
+void path_split(const char *path, char **dir, char **base)
 {
    char *path2;
 
@@ -178,8 +177,7 @@ void path_split(char const * const path,
    FIXME (reidpr 2020-04-23): I feel like I should be able to add another
    const to a and b, but it won't build. I don't understand what the
    difference from path_split() is.*/
-void split(char ** const a, char ** const b,
-           char const * const str, char del)
+void split(char **a, char **b, const char *str, char del)
 {
    char *tmp;
    char const delstr[2] = { del, 0 };

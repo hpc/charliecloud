@@ -66,7 +66,7 @@ Example:\n\
 #define TRY(x) if (x) fatal_(__FILE__, __LINE__, errno, #x)
 
 
-void fatal_(char *file, int line, int errno_, char *str)
+void fatal_(const char *file, int line, int errno_, const char *str)
 {
    char *url = "https://github.com/hpc/charliecloud/blob/master/bin/ch-checkns.c";
    printf("error: %s: %d: %s\n", file, line, str);
