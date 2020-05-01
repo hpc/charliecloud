@@ -132,14 +132,6 @@ EOF
 
 ch-grow)
 
-    case $image in
-        *:*)
-            ;;
-        *)
-            image="${image}:latest"
-            ;;
-    esac
-
     echo "exporting"
     storage=$("${ch_bin}/ch-grow" --print-storage /doesnotexist)
     ( cd "${storage}/img/${image}" && tar cf - . ) | pv_ > "$tar"

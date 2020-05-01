@@ -1,6 +1,5 @@
-# FIXME: was full; doesn't work after autotools update
-# ch-test-scope: skip
-FROM debian9
+# ch-test-scope: full
+FROM centos:7
 
 # Note: Spack is a bit of an odd duck testing wise. Because it's a package
 # manager, the key tests we want are to install stuff (this includes the Spack
@@ -18,18 +17,24 @@ FROM debian9
 #
 # Note: Spack claims that Python 3 works, but using python3 here fails later
 # with "/usr/bin/env: 'python': No such file or directory".
-RUN apt-get install -y \
-    python \
+RUN yum update -y && \
+    yum install install -y \
+    curl \
     gcc \
-    make \
+    gcc-c++ \
     git \
-    curl
+    gnupg2-smime \
+    python \
+    make
 
 # Packages needed to install Charliecloud with Spack. These are in Spack's
 # Docker example [2] but are not documented as prerequisites [1].
-RUN apt-get install -y \
-    g++ \
-    unzip
+RUN yum install -y \
+    bzip2 \
+    file \
+    patch \
+    unzip \
+    which
 
 # Certain Spack packages (e.g., tar) puke if they detect themselves being
 # configured as UID 0. This is the override. See issue #540 and [2].
@@ -59,24 +64,16 @@ RUN spack compiler find --scope system
 # Test: Some basic commands.
 RUN which spack
 RUN spack --version
+RUN spack compiler find
 RUN spack compiler list
 RUN spack compiler list --scope=system
 RUN spack compiler list --scope=user
 RUN spack compilers
-RUN spack spec netcdf
+RUN spack spec charliecloud
 
 # Test: Install Charliecloud.
-RUN spack spec charliecloud+builder
-RUN spack install charliecloud+builder
-
-# Test: Run Spack test suite. Distro package dependencies discovered by trial
-# and error.
-#
-# FIXME: Commented out because the suite fails. Last time I tried, 6 tests
-# failed and 1 "xfailed".
-#RUN apt-get install -y \
-#    python-pkg-resources
-#RUN spack test
+RUN spack spec charliecloud+docs
+RUN spack install charliecloud+docs
 
 # Clean up.
 RUN spack clean --all

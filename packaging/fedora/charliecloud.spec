@@ -56,7 +56,7 @@ Obsoletes: %{name}-test < %{version}-%{release}
 Requires:  %{name} bash /usr/bin/bats /usr/bin/python3
 
 %description test
-Test fixtures for %{name}.
+Charliecloud test suite.
 
 %prep
 %setup -q
