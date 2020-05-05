@@ -810,6 +810,36 @@ Variable conventions in shell scripts and :code:`.bats` files
     foo=${bar}/baz    # yes
     foo="${bar}/baz"  # no
 
+C code
+------
+
+:code:`const`
+~~~~~~~~~~~~~
+
+The :code:`const` keyword is used to indicate that variables are read-only. It
+has a variety of uses; in Charliecloud, we use it for `function pointer
+arguments <https://softwareengineering.stackexchange.com/a/204720>`_ to state
+whether or not the object pointed to will be altered by the function. For
+example:
+
+.. code-block:: c
+
+  void foo(const char *in, char *out)
+
+is a function that will not alter the string pointed to by :code:`in` but may
+alter the string pointed to by :code:`out`. (Note that :code:`char const` is
+equivalent to :code:`const char`, but we use the latter order because that's
+what appears in GCC error messages.)
+
+We do not use :code:`const` on local variables or function arguments passed by
+value. One could do this to be more clear about what is and isn't mutable, but
+it adds quite a lot of noise to the source code, and in our evaluations didn't
+catch any bugs. We also do not use it on double pointers (e.g., :code:`char
+**out` used when a function allocates a string and sets the caller's pointer
+to point to it), because so far those are all out-arguments and C has
+`confusing rules <http://c-faq.com/ansi/constmismatch.html>`_ about double
+pointers and :code:`const`.
+
 
 OCI technical notes
 ===================

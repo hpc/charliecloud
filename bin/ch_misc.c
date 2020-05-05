@@ -42,7 +42,7 @@ int verbose;
 /** Functions **/
 
 /* Concatenate strings a and b, then return the result. */
-char *cat(char *a, char *b)
+char *cat(const char *a, const char *b)
 {
    char *ret;
 
@@ -51,7 +51,7 @@ char *cat(char *a, char *b)
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
-void log_ids(char const *func, int line)
+void log_ids(const char *func, int line)
 {
    uid_t ruid, euid, suid;
    gid_t rgid, egid, sgid;
@@ -83,7 +83,8 @@ void log_ids(char const *func, int line)
      1 : "warning" : always print
      2 : "info"    : print if verbose >= 2
      3 : "debug"   : print if verbose >= 3 */
-void msg(int level, char *file, int line, int errno_, char *fmt, ...)
+void msg(int level, const char *file, int line, int errno_,
+         const char *fmt, ...)
 {
    va_list ap;
 
@@ -111,7 +112,7 @@ void msg(int level, char *file, int line, int errno_, char *fmt, ...)
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. */
-bool path_exists(char *path)
+bool path_exists(const char *path)
 {
    struct stat sb;
 
@@ -132,7 +133,7 @@ bool path_exists(char *path)
    Also, the kernel contains a test "unprivileged-remount-test.c" that
    manually translates the flags. Thus, I wasn't comfortable simply passing
    the output of statvfs(3) to mount(2). */
-unsigned long path_mount_flags(char *path)
+unsigned long path_mount_flags(const char *path)
 {
    struct statvfs sv;
    unsigned long known_flags =   ST_MANDLOCK   | ST_NOATIME  | ST_NODEV
@@ -155,7 +156,7 @@ unsigned long path_mount_flags(char *path)
 }
 
 /* Split path into dirname and basename. */
-void path_split(char *path, char **dir, char **base)
+void path_split(const char *path, char **dir, char **base)
 {
    char *path2;
 
@@ -172,12 +173,13 @@ void path_split(char *path, char **dir, char **base)
    implications: (1) the caller must free(3) *a but not *b, and (2) the parts
    can be rejoined by setting *(*b-1) to del. The point here is to provide an
    easier wrapper for strsep(3). */
-void split(char **a, char **b, char *str, char del)
+void split(char **a, char **b, const char *str, char del)
 {
+   char *tmp;
    char delstr[2] = { del, 0 };
    T_ (str != NULL);
-   str = strdup(str);
-   *b = str;
+   tmp = strdup(str);
+   *b = tmp;
    *a = strsep(b, delstr);
    if (*b == NULL)
       *a = NULL;
