@@ -109,10 +109,10 @@ rpmbuild root:      %(rpmbuild)s
    # FIXME: Put version into destination sometime?
    shutil.copy("%s/packaging/fedora/charliecloud.rpmlintrc" % CH_BASE,
                "%s/charliecloud.rpmlintrc" % rpm_specs)
-   shutil.copy("%s/packaging/fedora/ch-test.el7.patch" % CH_BASE,
-               "%s/ch-test.el7.patch" % rpm_sources)
-   shutil.copy("%s/packaging/fedora/ch-test.lib.patch" % CH_BASE,
-               "%s/ch-test.lib.patch" % rpm_sources)
+   shutil.copy("%s/packaging/fedora/el7-pkgdir.patch" % CH_BASE,
+               "%s/el7-pkgdir.patch" % rpm_sources)
+   shutil.copy("%s/packaging/fedora/lib64.patch" % CH_BASE,
+               "%s/lib64.patch" % rpm_sources)
 
    # Remove temporary Git directory.
    print("# rm -rf %s" % git_tmp)

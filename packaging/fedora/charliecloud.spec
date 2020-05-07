@@ -17,9 +17,9 @@ License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
 BuildRequires: gcc rsync autoconf /usr/bin/python3
-Patch0:        ch-test.lib.patch
+Patch0:        lib64.patch
 %if 0%{?el7}
-Patch1:        ch-test.el7.patch
+Patch1:        el7-pkgdir.patch
 %endif
 
 %description
@@ -56,7 +56,7 @@ Obsoletes: %{name}-test < %{version}-%{release}
 Requires:  %{name} bash /usr/bin/bats /usr/bin/python3
 
 %description test
-Charliecloud test suite.
+Test fixtures for %{name}.
 
 %prep
 %setup -q
@@ -67,9 +67,9 @@ Charliecloud test suite.
 %endif
 
 %build
-%configure CFLAGS="-g -std=c11 -pthread" \
-           --prefix=%{_prefix} \
+%configure --prefix=%{_prefix} \
            --libdir=%{_libdir} \
+           --docdir=%{_pkgdocdir} \
            --with-python=/usr/bin/python3 \
 %if 0%{?el7}
             --with-sphinx-build=%{_bindir}/sphinx-build-3.6
@@ -90,32 +90,29 @@ zero number (note the number below is taken from the default for RHEL8):
 Note for versions below RHEL7.6, you will also need to enable user namespaces:
 
   grubby --args=namespace.unpriv_enable=1 --update-kernel=ALL
-  sysctl -p #FIXME: determine file
+  reboot
 
 Please visit https://hpc.github.io/charliecloud/ for more information.
 EOF
 
-#
+# Remove bundled sphinx bits.
+%{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/css
+%{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/fonts
+%{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/js
 
-# Use Fedora packaged sphinx_rtd_theme fonts; remove corresponding
-# bundled bits.
-%{__rm} -rf %{buildroot}%{_docdir}/%{name}/html/_static/css
-%{__rm} -rf %{buildroot}%{_docdir}/%{name}/html/_static/fonts
-%{__rm} -rf %{buildroot}%{_docdir}/%{name}/html/_static/js
-
+# Use Fedora package sphinx bits.
 sphinxdir=%{python3_sitelib}/sphinx_rtd_theme/static
-ln -s "${sphinxdir}/css"   %{buildroot}%{_docdir}/%{name}/html/_static/css
-ln -s "${sphinxdir}/fonts" %{buildroot}%{_docdir}/%{name}/html/_static/fonts
-ln -s "${sphinxdir}/js"    %{buildroot}%{_docdir}/%{name}/html/_static/js
+ln -s "${sphinxdir}/css"   %{buildroot}%{_pkgdocdir}/html/_static/css
+ln -s "${sphinxdir}/fonts" %{buildroot}%{_pkgdocdir}/html/_static/fonts
+ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
-%if 0%{?el7}
-%{__mv} %{buildroot}/%{_docdir}/%{name} %{buildroot}%{_docdir}/%{name}-%{version}
-%endif
+# Remove prefix installed license and readme (prefer %license and %doc).
+%{__rm} -f %{buildroot}%{_pkgdocdir}/LICENSE
+%{__rm} -f %{buildroot}%{_pkgdocdir}/README.rst
 
 %files
 %license LICENSE
 %doc README.rst %{?el7:README.EL7}
-%{_pkgdocdir}/examples
 %{_mandir}/man1/ch*
 
 # Library files.
@@ -130,17 +127,8 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_docdir}/%{name}/html/_static/js
 %{_bindir}/ch-*
 %exclude %{_bindir}/ch-test
 
-# Exclude bundled license and readme
-%if 0%{?el7}
-%exclude %{_docdir}/%{name}-%{version}/LICENSE
-%exclude %{_docdir}/%{name}-%{version}/README.rst
-%else
-%exclude %{_docdir}/%{name}/LICENSE
-%exclude %{_docdir}/%{name}/README.rst
-%endif
-
 # Exclude test artifacts
-%exclude %{_libdir}/%{name}/test
+%exclude %{_libexecdir}/%{name}/test
 
 %files doc
 %license LICENSE
@@ -153,5 +141,5 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_docdir}/%{name}/html/_static/js
 %{_mandir}/man1/ch-test.1*
 
 %changelog
-* Tue Feb 25 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@
-- Add charliecloud @VERSION@ package
+* Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@
+- Add new charliecloud package.
