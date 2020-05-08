@@ -196,14 +196,11 @@ class Image:
       self.unpack_create_ok()
       shutil.copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
-   def download(self, use_cache=True):
+   def download(self, use_cache):
       """Download image manifest and layers according to origin and put them
          in the download cache. By default, any components already in the
          cache are skipped; if use_cache is False, download them anyway,
          overwriting what's in the cache."""
-      def _url(type_, address):
-         url_base = "https://%s:%d/v2" % (dl.ref.host, dl.ref.port)
-         return "/".join((url_base, dl.ref.path_full, type_, address))
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       dl = Repo_Downloader(self.ref)
       DEBUG("downloading image: %s" % dl.ref)
@@ -213,12 +210,7 @@ class Image:
          INFO("manifest: using existing file")
       else:
          INFO("manifest: downloading")
-         url = _url("manifests", dl.ref.version)
-         DEBUG(url)
-         accept = "application/vnd.docker.distribution.manifest.v2+json"
-         res = http_get(dl.session, url, { "Accept": accept })
-         with open(self.manifest_path, "wb") as fp:
-            fp.write(res.content)  # FIXME: catch exceptions
+         dl.get_manifest(self.manifest_path)
       # layers
       self.layer_hashes_load()
       for (i, lh) in enumerate(self.layer_hashes, start=1):
@@ -229,13 +221,7 @@ class Image:
             INFO("using existing file")
          else:
             INFO("downloading")
-            # /v1/library/hello-world/blobs/<layer-hash>
-            url = _url("blobs", "sha256:" + lh)
-            DEBUG(url)
-            accept = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-            res = http_get(dl.session, url, { "Accept": accept })
-            with open(path, "wb") as fp:
-               fp.write(res.content)  # FIXME: catch exceptions
+            dl.get_layer(lh, path)
       dl.close()
 
    def fixup(self):
@@ -327,10 +313,10 @@ nogroup:x:65534:
          layers[lh] = TT(fp, members)
       return layers
 
-   def pull_to_unpacked(self, fixup=False):
+   def pull_to_unpacked(self, use_cache=True, fixup=False):
       """Pull and flatten image. If fixup, then also add the Charliecloud
          workarounds to the image directory."""
-      self.download()
+      self.download(use_cache)
       self.flatten()
       if (fixup):
          self.fixup()
@@ -597,10 +583,34 @@ fields:
 
 class Repo_Downloader:
    """Downloads layers and manifests from an image repository via HTTPS.
-      Currently, only Docker Hub is supported."""
 
-   __slots__ = ("ref",
-                "_session")
+      Note that authentication is required even for anonymous downloads of
+      public images (which is all that is currently supported). In this case,
+      we just fetch an authentication token anonymously."""
+
+   # The repository protocol follows "ask forgiveness" rather than the
+   # standard "ask permission". That is, you request the URL you want, and if
+   # it comes back 404 (which is returned if either the URL doesn't exist or
+   # you're not authenticated), then you authenticate and re-request. This
+   # seems awkward to me, because it requires that all requesting code paths
+   # have a contingency for authentication. Therefore, we emulate the standard
+   # approach instead.
+
+   __slots__ = ("auth",
+                "ref",
+                "session")
+
+   # https://stackoverflow.com/a/58055668
+   class Bearer_Auth(requests.auth.AuthBase):
+
+      __slots__ = ("token",)
+
+      def __init__(self, token):
+         self.token = token
+
+      def __call__(self, req):
+         req.headers["Authorization"] = "Bearer %s" % self.token
+         return req
 
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
@@ -608,36 +618,73 @@ class Repo_Downloader:
       self.ref.defaults_add()
       assert (self.ref.host == "registry-1.docker.io")
       assert (self.ref.port == 443)
-      self._session = None
+      self.auth = None
+      self.session = None
       if (verbose >= 2):
          http.client.HTTPConnection.debuglevel = 1
 
-   @property
-   # I'm a bit uncomfortable because this feels like too much magic for a
-   # property. However, if we do it this way, it enables the caller to simply
-   # refer to the session when needed, without a conditional to initialize it.
-   # An alternative would be to make it a normal function, suggesting more is
-   # going on; maybe that's a FIXME.
-   def session(self):
-      "The Requests session, magically setting one up if needed."
-      if (self._session is None):
-         DEBUG("initializing session")
-         s = requests.Session()
-         # First, we need an authorization token. This has to be fetched from
-         # a separate host. Currently, this only works for public Docker Hub.
+   def _url_of(self, type_, address):
+      "Return an appropriate repository URL."
+      url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
+      return "/".join((url_base, self.ref.path_full, type_, address))
+
+   def authenticate_maybe(self, url):
+      """If we need to authenticate, do so using the 401 from url; otherwise
+         do nothing."""
+      if (self.auth is None):
          DEBUG("fetching auth token")
-         r = s.get("https://auth.docker.io/token",
-                   params={"service": "registry.docker.io",
-                           "scope": "repository:%s:pull" % self.ref.path_full})
-         token = r.json()["token"]
+         res = self.session.get("https://auth.docker.io/token",
+                                params={"service": "registry.docker.io",
+                                        "scope": "repository:%s:pull" % self.ref.path_full})
+         token = res.json()["token"]
          DEBUG("got token: %s..." % (token[:32]))
-         s.headers.update({ "Authorization": "Bearer %s" % token })
-         self._session = s
-      return self._session
+         self.auth = self.Bearer_Auth(token)
 
    def close(self):
-      if (self._session is not None):
-         self._session.close()
+      if (self.session is not None):
+         self.session.close()
+
+   def get(self, url, path, headers=dict()):
+      """GET url, passing headers, including authentication and session magic,
+         and write the body of the response to path."""
+      DEBUG("GETting: %s" % url)
+      self.session_init_maybe()
+      self.authenticate_maybe(url)
+      res = self.get_raw(url, headers)
+      try:
+         fp = open(path, "wb")
+         fp.write(res.content)
+         fp.close()
+      except OSError as x:
+         FATAL("can't write: %s: %s" % (path, x))
+
+   def get_layer(self, hash_, path):
+      "GET the layer with hash hash_ and save it at path."
+      # /v1/library/hello-world/blobs/<layer-hash>
+      url = self._url_of("blobs", "sha256:" + hash_)
+      accept = "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      self.get(url, path, { "Accept": accept })
+
+   def get_manifest(self, path):
+      "GET the manifest for the image and save it at path."
+      url = self._url_of("manifests", self.ref.version)
+      accept = "application/vnd.docker.distribution.manifest.v2+json"
+      self.get(url, path, { "Accept": accept })
+
+   def get_raw(self, url, headers, expected_status=200):
+      """GET url, passing headers, with no magic. If expected_status does not
+         match the actual status, barf with a fatal error."""
+      res = self.session.get(url, headers=headers, auth=self.auth)
+      if (res.status_code != expected_status):
+         FATAL("HTTP GET failed; expected status %d but got %d: %s"
+               % (expected_status, res.status_code, res.reason))
+      return res
+
+   def session_init_maybe(self):
+      "Initialize session if it's not initialized; otherwise do nothing."
+      if (self.session is None):
+         DEBUG("initializing session")
+         self.session = requests.Session()
 
 
 ## Supporting functions ##
@@ -701,14 +748,6 @@ def file_write(path, content, mode=None):
       fp.write(content)
       if (mode is not None):
          os.chmod(fp.fileno(), mode)
-
-def http_get(session, url, headers):
-   try:
-      res = session.get(url, headers=headers)
-      res.raise_for_status()
-   except requests.RequestException as x:
-      FATAL("download failed: %s" % x)
-   return res
 
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)
