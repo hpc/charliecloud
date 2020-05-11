@@ -5,6 +5,7 @@ import http.client
 import json
 import logging
 import os
+import getpass
 import re
 import shutil
 import subprocess
@@ -44,6 +45,7 @@ except (ImportError, AttributeError) as x:
 
 try:
    import requests
+   import requests.auth
 except ImportError:
    depfails.append(("missing", 'Python module "requests"'))
 
@@ -641,7 +643,7 @@ class Repo_Downloader:
          # [2]: https://stackoverflow.com/a/1547940
          # [3]: https://pypi.org/project/www-authenticate
          DEBUG("requesting auth parameters")
-         res = self.get_raw(url, expected_status=401)
+         res = self.get_raw(url, expected_statuses=(401,))
          if ("WWW-Authenticate" not in res.headers):
             FATAL("WWW-Authenticate header not found")
          auth = res.headers["WWW-Authenticate"]
@@ -653,9 +655,18 @@ class Repo_Downloader:
             if (k not in authd):
                FATAL("WWW-Authenticate missing key: %s" % k)
          # Request auth token.
-         DEBUG("requesting auth token")
-         res = self.get_raw(authd["realm"], params={"service": authd["service"],
-                                                    "scope": authd["scope"]})
+         DEBUG("requesting anonymous auth token")
+         res = self.get_raw(authd["realm"], expected_statuses=(200,403),
+                            params={"service": authd["service"],
+                                    "scope": authd["scope"]})
+         if (res.status_code == 403):
+            INFO("anonymous access rejected")
+            username = input("Username: ")
+            password = getpass.getpass("Password: ")
+            auth = requests.auth.HTTPBasicAuth(username, password)
+            res = self.get_raw(authd["realm"], auth=auth,
+                               params={"service": authd["service"],
+                                       "scope": authd["scope"]})
          token = res.json()["token"]
          DEBUG("got token: %s..." % (token[:32]))
          self.auth = self.Bearer_Auth(token)
@@ -691,14 +702,19 @@ class Repo_Downloader:
       accept = "application/vnd.docker.distribution.manifest.v2+json"
       self.get(url, path, { "Accept": accept })
 
-   def get_raw(self, url, headers=dict(), expected_status=200, **kwargs):
-      """GET url, passing headers, with no magic. Pass kwargs unchanged to
-         requests.session.get(). If expected_status does not match the actual
-         status, barf with a fatal error."""
-      res = self.session.get(url, headers=headers, auth=self.auth, **kwargs)
-      if (res.status_code != expected_status):
-         FATAL("HTTP GET failed; expected status %d but got %d: %s"
-               % (expected_status, res.status_code, res.reason))
+   def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
+               **kwargs):
+      """GET url, passing headers, with no magic. If auth is None, use
+         self.auth (which might also be None). If status is not in
+         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
+         requests.session.get()."""
+      if (auth is None):
+         auth = self.auth
+      res = self.session.get(url, headers=headers, auth=auth, **kwargs)
+      if (res.status_code not in expected_statuses):
+         FATAL("HTTP GET failed; expected status %s but got %d: %s"
+               % (" or ".join(str(i) for i in expected_statuses),
+                  res.status_code, res.reason))
       return res
 
    def session_init_maybe(self):
