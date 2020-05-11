@@ -16,7 +16,7 @@ Summary:       Lightweight user-defined software stacks for high-performance com
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires: gcc rsync autoconf /usr/bin/python3
+BuildRequires: gcc rsync /usr/bin/python3
 Patch0:        lib64.patch
 %if 0%{?el7}
 Patch1:        el7-pkgdir.patch
@@ -67,9 +67,10 @@ Test fixtures for %{name}.
 %endif
 
 %build
-%configure --prefix=%{_prefix} \
-           --libdir=%{_libdir} \
-           --docdir=%{_pkgdocdir} \
+# Use old inlining behavior, see:
+# https://github.com/hpc/charliecloud/issues/735
+CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
+%configure --docdir=%{_pkgdocdir} \
            --with-python=/usr/bin/python3 \
 %if 0%{?el7}
             --with-sphinx-build=%{_bindir}/sphinx-build-3.6
@@ -114,6 +115,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %license LICENSE
 %doc README.rst %{?el7:README.EL7}
 %{_mandir}/man1/ch*
+%{_pkgdocdir}/examples
 
 # Library files.
 %{_libdir}/%{name}/base.sh
