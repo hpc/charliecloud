@@ -5,6 +5,7 @@ import http.client
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -590,7 +591,7 @@ class Repo_Downloader:
 
    # The repository protocol follows "ask forgiveness" rather than the
    # standard "ask permission". That is, you request the URL you want, and if
-   # it comes back 404 (which is returned if either the URL doesn't exist or
+   # it comes back 401 (which is returned if either the image doesn't exist or
    # you're not authenticated), then you authenticate and re-request. This
    # seems awkward to me, because it requires that all requesting code paths
    # have a contingency for authentication. Therefore, we emulate the standard
@@ -632,10 +633,30 @@ class Repo_Downloader:
       """If we need to authenticate, do so using the 401 from url; otherwise
          do nothing."""
       if (self.auth is None):
-         DEBUG("fetching auth token")
-         res = self.session.get("https://auth.docker.io/token",
-                                params={"service": "registry.docker.io",
-                                        "scope": "repository:%s:pull" % self.ref.path_full})
+         # Apparently parsing the WWW-Authenticate header is pretty hard. This
+         # implementation is a non-compliant regex kludge [1,2]. Alternatives
+         # include putting the grammar into Lark (this can be gotten by
+         # reading the RFCs enough) or using the www-authenticate library [3].
+         #
+         # [1]: https://stackoverflow.com/a/1349528
+         # [2]: https://stackoverflow.com/a/1547940
+         # [3]: https://pypi.org/project/www-authenticate
+         DEBUG("requesting auth parameters")
+         res = self.get_raw(url, expected_status=401)
+         if ("WWW-Authenticate" not in res.headers):
+            FATAL("WWW-Authenticate header not found")
+         auth = res.headers["WWW-Authenticate"]
+         if (not auth.startswith("Bearer ")):
+            FATAL("authentication scheme is not Bearer")
+         authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
+         DEBUG("WWW-Authenticate parse: %s" % authd)
+         for k in ("realm", "service", "scope"):
+            if (k not in authd):
+               FATAL("WWW-Authenticate missing key: %s" % k)
+         # Request auth token.
+         DEBUG("requesting auth token")
+         res = self.get_raw(authd["realm"], params={"service": authd["service"],
+                                                    "scope": authd["scope"]})
          token = res.json()["token"]
          DEBUG("got token: %s..." % (token[:32]))
          self.auth = self.Bearer_Auth(token)
@@ -671,10 +692,11 @@ class Repo_Downloader:
       accept = "application/vnd.docker.distribution.manifest.v2+json"
       self.get(url, path, { "Accept": accept })
 
-   def get_raw(self, url, headers, expected_status=200):
-      """GET url, passing headers, with no magic. If expected_status does not
-         match the actual status, barf with a fatal error."""
-      res = self.session.get(url, headers=headers, auth=self.auth)
+   def get_raw(self, url, headers=dict(), expected_status=200, **kwargs):
+      """GET url, passing headers, with no magic. Pass kwargs unchanged to
+         requests.session.get(). If expected_status does not match the actual
+         status, barf with a fatal error."""
+      res = self.session.get(url, headers=headers, auth=self.auth, **kwargs)
       if (res.status_code != expected_status):
          FATAL("HTTP GET failed; expected status %d but got %d: %s"
                % (expected_status, res.status_code, res.reason))
