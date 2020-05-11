@@ -617,8 +617,6 @@ class Repo_Downloader:
       # Need an image ref with all the defaults filled in.
       self.ref = ref.copy()
       self.ref.defaults_add()
-      assert (self.ref.host == "registry-1.docker.io")
-      assert (self.ref.port == 443)
       self.auth = None
       self.session = None
       if (verbose >= 2):
@@ -649,7 +647,7 @@ class Repo_Downloader:
          if (not auth.startswith("Bearer ")):
             FATAL("authentication scheme is not Bearer")
          authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
-         DEBUG("WWW-Authenticate parse: %s" % authd)
+         DEBUG("WWW-Authenticate parse: %s" % authd, v=2)
          for k in ("realm", "service", "scope"):
             if (k not in authd):
                FATAL("WWW-Authenticate missing key: %s" % k)
