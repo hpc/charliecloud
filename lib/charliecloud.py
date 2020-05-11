@@ -591,11 +591,12 @@ class Repo_Downloader:
 
    # The repository protocol follows "ask forgiveness" rather than the
    # standard "ask permission". That is, you request the URL you want, and if
-   # it comes back 401 (which is returned if either the image doesn't exist or
-   # you're not authenticated), then you authenticate and re-request. This
-   # seems awkward to me, because it requires that all requesting code paths
-   # have a contingency for authentication. Therefore, we emulate the standard
-   # approach instead.
+   # it comes back 401 (because either it doesn't exist or you're not
+   # authenticated), the response contains a WWW-Authenticate header with the
+   # information you need to authenticate. AFAICT, this information is not
+   # available any other way. This seems awkward to me, because it requires
+   # that all requesting code paths have a contingency for authentication.
+   # Therefore, we emulate the standard approach instead.
 
    __slots__ = ("auth",
                 "ref",
