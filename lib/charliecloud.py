@@ -46,6 +46,7 @@ except (ImportError, AttributeError) as x:
 try:
    import requests
    import requests.auth
+   import requests.exceptions
 except ImportError:
    depfails.append(("missing", 'Python module "requests"'))
 
@@ -710,11 +711,14 @@ class Repo_Downloader:
          requests.session.get()."""
       if (auth is None):
          auth = self.auth
-      res = self.session.get(url, headers=headers, auth=auth, **kwargs)
-      if (res.status_code not in expected_statuses):
-         FATAL("HTTP GET failed; expected status %s but got %d: %s"
-               % (" or ".join(str(i) for i in expected_statuses),
-                  res.status_code, res.reason))
+      try:
+         res = self.session.get(url, headers=headers, auth=auth, **kwargs)
+         if (res.status_code not in expected_statuses):
+            FATAL("HTTP GET failed; expected status %s but got %d: %s"
+                  % (" or ".join(str(i) for i in expected_statuses),
+                     res.status_code, res.reason))
+      except requests.exceptions.RequestException as x:
+         FATAL("HTTP GET failed: %s" % x)
       return res
 
    def session_init_maybe(self):
