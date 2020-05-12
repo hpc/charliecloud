@@ -721,6 +721,25 @@ def rmtree(path):
    else:
       assert False, "unimplemented"
 
+def storage_env():
+   """Return path to builder storage as configured by $CH_GROW_STORAGE, or the
+      default if that's not set."""
+   try:
+      return os.environ["CH_GROW_STORAGE"]
+   except KeyError:
+      return storage_default()
+
+def storage_default():
+   # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
+   # environment variable? It seems a lot more robust. But, (1) we'd have
+   # to match it in some scripts and (2) it makes the documentation less
+   # clear becase we have to explain the fallback behavior.
+   try:
+      username = os.environ["USER"]
+   except KeyError:
+      FATAL("can't get username: $USER not set")
+   return "/var/tmp/%s/ch-grow" % username
+
 def symlink(target, source):
    try:
       os.symlink(target, source)
