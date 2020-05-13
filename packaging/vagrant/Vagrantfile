@@ -222,6 +222,10 @@ EOF2
     git checkout "$BUILDAH_VERSION"
     make
     sudo make install
+    # Setup buildah's system configuration files
+    sudo mkdir -p /etc/containers
+    sudo cp tests/policy.json /etc/containers
+    sudo cp tests/registries.conf /etc/containers
   EOF
 
   # Install ch-grow dependencies.
@@ -231,6 +235,7 @@ EOF2
     cd /usr/local/src
     sudo yum -y install python36 python36-pip
     sudo pip3 install lark-parser
+    sudo pip3 install requests
   EOF
 
   # Twiddle vagrant user so Charliecloud tests will pass (add to a second
