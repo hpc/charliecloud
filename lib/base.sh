@@ -171,11 +171,16 @@ if command -v squashfuse_ll > /dev/null 2>&1; then
     squashfuse_ () {
         squashfuse_ll "$@"
     }
-else
+elif command -v squashfuse > /dev/null 2>&1; then
     squashfuse_ () {
         echo "WARNING:" 1>&2
         echo "Low-level FUSE API unavailable; squashfuse will be slower" 1>&2
         squashfuse "$@"
+    }
+else
+    squashfuse_ () {
+        echo "can't mount: no squashfuse or squashfuse_ll command found" 1>&2
+        exit 1
     }
 fi
 
