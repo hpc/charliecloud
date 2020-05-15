@@ -196,9 +196,16 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # in tests (see issue #143). We use readlink(1) rather than realpath(2),
 # despite the admonition in the man page, because it's more portable [1].
 #
+# We use "readlink -m" rather than "-e" or "-f" to account for the possibility
+# of some directory anywhere the path not existing [2], which has bitten us
+# multiple times; see issues #347 and #733. With this switch, if something is
+# missing, readlink(1) returns the path unchanged, and checks later convert
+# that to a proper error.
+#
 # [1]: https://unix.stackexchange.com/a/136527
-ch_imgdir=$(readlink -ef "$CH_TEST_IMGDIR")
-ch_tardir=$(readlink -ef "$CH_TEST_TARDIR")
+# [2]: http://man7.org/linux/man-pages/man1/readlink.1.html
+ch_imgdir=$(readlink -m "$CH_TEST_IMGDIR")
+ch_tardir=$(readlink -m "$CH_TEST_TARDIR")
 # shellcheck disable=SC2034
 ch_mounts="${ch_imgdir}/mounts"
 
