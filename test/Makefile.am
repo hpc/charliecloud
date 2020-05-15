@@ -70,11 +70,11 @@ all-local:
 clean-local:
 	rm -f fixtures/symlink-to-tmp
 install-data-hook:
-	mkdir $(testdir)/fixtures
-	ln -fs /tmp $(testdir)/fixtures/symlink-to-tmp
+	mkdir $(DESTDIR)$(testdir)/fixtures
+	ln -fs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 uninstall-hook:
-	rm -f $(testdir)/fixtures/symlink-to-tmp
-	rmdir $(testdir)/fixtures || true
+	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
+	rmdir $(DESTDIR)$(testdir)/fixtures || true
 endif
 EXTRA_DIST += $(testfiles) $(testfiles_exec) docs-sane.py.in make-perms-test.py.in
 EXTRA_SCRIPTS = $(sobuilts)
