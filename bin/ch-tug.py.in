@@ -62,10 +62,11 @@ pulling image:   %s
 destination:     %s
 """ % (image.ref, image.unpack_path))
    ch.DEBUG("""\
+use cache:       %s
 download cache:  %s
 manifest:        %s
-""" % (image.download_cache, image.manifest_path))
-   image.pull_to_unpacked()
+""" % (not args.no_cache, image.download_cache, image.manifest_path))
+   image.pull_to_unpacked(use_cache=(not args.no_cache))
    ch.INFO("done")
 
 
