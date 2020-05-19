@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!%PYTHON_SHEBANG%
+
 # coding: utf-8
 
 # This script performs sanity checking on the documentation:

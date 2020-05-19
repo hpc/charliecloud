@@ -22,7 +22,9 @@ a.out
 /lib/version.py
 /lib/version.sh
 /lib/version.txt
+/test/docs-sane
 /test/fixtures/symlink-to-tmp
+/test/make-perms-test
 /test/sotest/*.so*
 /test/sotest/sotest
 /test/sotest/bin/
