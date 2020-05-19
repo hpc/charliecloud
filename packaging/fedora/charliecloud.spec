@@ -107,7 +107,7 @@ ln -s "${sphinxdir}/css"   %{buildroot}%{_pkgdocdir}/html/_static/css
 ln -s "${sphinxdir}/fonts" %{buildroot}%{_pkgdocdir}/html/_static/fonts
 ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
-# Remove prefix installed license and readme (prefer %license and %doc).
+# Remove bundled license and readme (prefer license and doc macros).
 %{__rm} -f %{buildroot}%{_pkgdocdir}/LICENSE
 %{__rm} -f %{buildroot}%{_pkgdocdir}/README.rst
 
