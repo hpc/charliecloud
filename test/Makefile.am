@@ -59,6 +59,19 @@ sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
+# FIXME:
+# The automake documentation suggests that TEST and AM_TESTS_ENVIRONMENT can
+# be defined to run a script and set environment variables. For example:
+#
+# TESTS = $(top_builddir)/bin/ch-test
+# AM_TESTS_ENVIRONMENT = \
+#	$(TESTS); \
+#	CH_TEST_IMGDIR=/tmp/ch-test.tmp.${USER}/img; export CH_TEST_IMGDIR; \
+#	CH_TEST_TARDIR=/tmp/ch-test.tmp.${USER}/tar; export CH_TEST_TARDIR; \
+#
+# However, ch-test seemed to just run with defaults, i.e., CH_TEST_* was never
+# set. Thus we just use ch-test in the installcheck-local rule.
+
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
 nobase_test_SCRIPTS = $(testfiles_exec)
@@ -72,6 +85,10 @@ clean-local:
 install-data-hook:
 	mkdir $(testdir)/fixtures
 	ln -fs /tmp $(testdir)/fixtures/symlink-to-tmp
+installcheck-local:
+	$(top_builddir)/bin/ch-test build -b none \
+		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
+        --img-dir=/tmp/ch-test.tmp.${USER}/img
 uninstall-hook:
 	rm -f $(testdir)/fixtures/symlink-to-tmp
 	rmdir $(testdir)/fixtures || true
