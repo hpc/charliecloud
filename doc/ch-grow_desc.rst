@@ -27,7 +27,7 @@ location is configurable. In descending order of priority:
   :code:`$CH_GROW_STORAGE`
     Environment variable.
 
-  :code:`/var/tmp/ch-grow`
+  :code:`/var/tmp/$USER/ch-grow`
     Default.
 
 .. note::
