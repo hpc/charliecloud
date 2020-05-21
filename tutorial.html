@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.15 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.16~pre+44d649d documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.15
+                0.16~pre+44d649d
               </div>
             
           
@@ -787,14 +787,37 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 (<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.centos8</span></code>):</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">centos:8</span>
 
+<span class="c"># This image has two purposes: (1) demonstrate we can build a CentOS 8 image</span>
+<span class="c"># and (2) provide avbuild environment for Charliecloud EPEL 8 RPMs.</span>
+
+<span class="k">RUN</span> dnf -y install epel-release
+
+<span class="c"># Re. ch-grow: Like apt(8), dnf/RPM like to chown(2), etc., if they believe they</span>
+<span class="c"># are root. This fails in an unprivileged user namespace because UID 0 is fake.</span>
+<span class="c"># Unlike apt, RPM makes these system calls directly, so there&#39;s no opportunity</span>
+<span class="c"># for kludges like linking chown(1) to true(1). For example:</span>
+<span class="c">#</span>
+<span class="c">#    Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4</span>
+<span class="c">#  Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64</span>
+<span class="c">#  error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726:</span>
+<span class="c">#    Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4</span>
+<span class="c">#  error: dbus-1:1.10.24-13.el7_6.x86_64: install failed</span>
+<span class="c">#  error: dbus-1:1.10.24-12.el7.x86_64: erase skipped</span>
+<span class="c">#</span>
+<span class="c"># We can instead use fakeroot(1), though there seems to be a performance</span>
+<span class="c"># impact. In the interest of time, we demonstrate this by installing the</span>
+<span class="c"># openssh package, required by git, which reliably tickles the problem.</span>
+<span class="c"># See issue #472.</span>
+<span class="k">RUN</span>          dnf -y install fakeroot
+<span class="k">RUN</span> fakeroot dnf -y install openssh
+
 <span class="c"># 1. Install the dnf ovl plugin to work around RPMDB corruption when building</span>
 <span class="c">#    images with Docker and the OverlayFS storage driver.</span>
 <span class="c">#</span>
 <span class="c"># 2. Enable PowerTools repository, as some packages in EPEL depend on it. Use</span>
 <span class="c">#    sed(1) because we don&#39;t want to install `dnf-plugins-core` just for this.</span>
 <span class="c">#</span>
-<span class="k">RUN</span>    dnf -y install epel-release <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> dnf -y update <span class="se">\</span>
+<span class="k">RUN</span>    dnf -y update <span class="se">\</span>
     <span class="o">&amp;&amp;</span> dnf -y install --enablerepo<span class="o">=</span>epel-playground dnf-plugin-ovl <span class="se">\</span>
     <span class="o">&amp;&amp;</span> sed -ie <span class="s1">&#39;s/enabled=0/enabled=1/&#39;</span> /etc/yum.repos.d/CentOS-PowerTools.repo
 
@@ -803,6 +826,24 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 <span class="k">RUN</span>    <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib&quot;</span> &gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
     <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib64&quot;</span> &gt;&gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
     <span class="o">&amp;&amp;</span> ldconfig
+
+<span class="c"># Install packages needed to build el8 rpms.</span>
+<span class="k">RUN</span> yum -y install <span class="se">\</span>
+           autoconf <span class="se">\</span>
+           automake <span class="se">\</span>
+           gcc <span class="se">\</span>
+           git <span class="se">\</span>
+           make <span class="se">\</span>
+           python3 <span class="se">\</span>
+           python3-sphinx <span class="se">\</span>
+           python3-sphinx_rtd_theme <span class="se">\</span>
+           rpm-build <span class="se">\</span>
+           rpmlint <span class="se">\</span>
+           rsync <span class="se">\</span>
+           wget
+
+<span class="c"># Clean up.</span>
+<span class="k">RUN</span> dnf clean all
 </pre></div>
 </div>
 <p>Then, we add OpenMPI with <code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.openmpi</span></code>. This is a complex
@@ -1082,7 +1123,7 @@ the host.</p>
 <span class="go">4026531837</span>
 <span class="gp">$</span> ch-run /var/tmp/mpihello -- mpirun --version
 <span class="go">mpirun (Open MPI) 2.1.5</span>
-<span class="gp">$</span> srun -n4 ch-run /var/tmp/images/mpihello -- /hello/hello
+<span class="gp">$</span> srun -n4 ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">0: init ok cn001, 4 ranks, userns 4026554650</span>
 <span class="go">1: init ok cn001, 4 ranks, userns 4026554652</span>
 <span class="go">3: init ok cn002, 4 ranks, userns 4026554652</span>
@@ -1442,7 +1483,7 @@ your site administrators for the latter.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014–2019, Triad National Security, LLC
+        &copy; Copyright 2014–2020, Triad National Security, LLC
 
     </p>
   </div> 

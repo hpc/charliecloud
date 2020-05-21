@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Charliecloud command reference &mdash; Charliecloud 0.15 documentation</title>
+  <title>3. Charliecloud command reference &mdash; Charliecloud 0.16~pre+44d649d documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.15
+                0.16~pre+44d649d
               </div>
             
           
@@ -849,7 +849,7 @@ location is configurable. In descending order of priority:</p>
 <dd>Command line option.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">$CH_GROW_STORAGE</span></code></dt>
 <dd>Environment variable.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">/var/tmp/ch-grow</span></code></dt>
+<dt><code class="code docutils literal notranslate"><span class="pre">/var/tmp/$USER/ch-grow</span></code></dt>
 <dd>Default.</dd>
 </dl>
 </div></blockquote>
@@ -875,7 +875,10 @@ environment variable <code class="code docutils literal notranslate"><span class
 output and the exit code is zero; in case of problems, the exit code is
 non-zero.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-f</span></code>, <code class="code docutils literal notranslate"><span class="pre">--file</span> <span class="pre">DOCKERFILE</span></code></dt>
-<dd>Use <code class="code docutils literal notranslate"><span class="pre">DOCKERFILE</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">CONTEXT/Dockerfile</span></code>.</dd>
+<dd>Use <code class="code docutils literal notranslate"><span class="pre">DOCKERFILE</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">CONTEXT/Dockerfile</span></code>. Specify a
+single hyphen (<code class="code docutils literal notranslate"><span class="pre">-</span></code>) to use standard input; note that in this case,
+the context directory is still provided, which matches <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span>
+<span class="pre">-f</span> <span class="pre">-</span></code> behavior.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-h</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt>
 <dd>Print help and exit.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-n</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt>
@@ -1732,6 +1735,9 @@ used for running tests.</p>
 <p>The packed and unpacked image directories specified for testing are volatile.
 The contents of these directories are deleted before the build and run phases,
 respectively.</p>
+<p>In all four cases, when creating directories, only the final path component is
+created. Parent directories must already exist, i.e., <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> uses the
+behavior of <code class="code docutils literal notranslate"><span class="pre">mkdir</span></code> rather than <code class="code docutils literal notranslate"><span class="pre">mkdir</span> <span class="pre">-p</span></code>.</p>
 <p>Some of the tests exercise parallel functionality. If <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> is run
 on a single node, multiple cores will be used; if in a Slurm allocation,
 multiple nodes too.</p>
@@ -1955,7 +1961,7 @@ non-zero.</dd>
 <dd>Use <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> to store downloaded layers and metadata. If not specified
 but environment variable <code class="code docutils literal notranslate"><span class="pre">CH_GROW_STORAGE</span></code> is, then use
 <code class="code docutils literal notranslate"><span class="pre">$CH_GROW_STORAGE/dlcache</span></code>; the default is
-<code class="code docutils literal notranslate"><span class="pre">/var/tmp/ch-grow/dlcache</span></code>.</dd>
+<code class="code docutils literal notranslate"><span class="pre">/var/tmp/$USER/ch-grow/dlcache</span></code>.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code></dt>
 <dd>Always download files, even if they already exist in <code class="code docutils literal notranslate"><span class="pre">--dl-cache</span></code>.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--image-subdir</span> <span class="pre">DIR</span></code></dt>
@@ -1967,7 +1973,8 @@ default is <code class="code docutils literal notranslate"><span class="pre">IMA
 <dt><code class="code docutils literal notranslate"><span class="pre">--unpack-dir</span> <span class="pre">DIR</span></code></dt>
 <dd>Directory containing flattened images. If not specified but environment
 variable <code class="code docutils literal notranslate"><span class="pre">CH_GROW_STORAGE</span></code> is, then use
-<code class="code docutils literal notranslate"><span class="pre">$CH_GROW_STORAGE/img</span></code>; the default is <code class="code docutils literal notranslate"><span class="pre">/var/tmp/ch-grow/img</span></code>.</dd>
+<code class="code docutils literal notranslate"><span class="pre">$CH_GROW_STORAGE/img</span></code>; the default is
+<code class="code docutils literal notranslate"><span class="pre">/var/tmp/$USER/ch-grow/img</span></code>.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt>
 <dd>Print extra chatter; can be repeated.</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt>
@@ -1978,7 +1985,7 @@ variable <code class="code docutils literal notranslate"><span class="pre">CH_GR
 <div class="section" id="id50">
 <h3>3.17.3. Examples<a class="headerlink" href="#id50" title="Permalink to this headline">¶</a></h3>
 <p>Download the classic Docker “hello-world” image and flatten it into
-<code class="code docutils literal notranslate"><span class="pre">/var/tmp/ch-grow/img/hello-world</span></code>:</p>
+<code class="code docutils literal notranslate"><span class="pre">/var/tmp/$USER/ch-grow/img/hello-world</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-tug hello-world
 <span class="go">pulling image: hello-world</span>
 <span class="go">manifest: downloading</span>
@@ -1987,12 +1994,12 @@ variable <code class="code docutils literal notranslate"><span class="pre">CH_GR
 <span class="go">validating tarball members</span>
 <span class="go">resolving whiteouts</span>
 <span class="go">flattening image</span>
-<span class="go">creating new image: /var/tmp/ch-grow/img/hello-world</span>
+<span class="go">creating new image: /var/tmp/charlie/ch-grow/img/hello-world</span>
 <span class="go">layer 1/1: 1b930d0: extracting</span>
 <span class="go">done</span>
-<span class="gp">$</span> ls /var/tmp/ch-grow/img/hello-world
+<span class="gp">$</span> ls /var/tmp/<span class="nv">$USER</span>/ch-grow/img/hello-world
 <span class="go">hello</span>
-<span class="gp">$</span> ls /var/tmp/ch-grow/dlcache
+<span class="gp">$</span> ls /var/tmp/<span class="nv">$USER</span>/ch-grow/dlcache
 <span class="go">1b930d010525941c1d56ec53b97bd057a67ae1865eebf042686d2a2d18271ced.tar.gz</span>
 <span class="go">hello-world.manifest.json</span>
 </pre></div>
@@ -2007,7 +2014,7 @@ variable <code class="code docutils literal notranslate"><span class="pre">CH_GR
 <span class="go">layer 85/86: 59b7abe: extracting</span>
 <span class="go">layer 86/86: e756ca6: extracting</span>
 <span class="go">done</span>
-<span class="gp">$</span> ls /var/tmp/ch-grow/img
+<span class="gp">$</span> ls /var/tmp/<span class="nv">$USER</span>/ch-grow/img
 <span class="go">charliecloud%whiteout:2020-01-10</span>
 </pre></div>
 </div>
@@ -2085,7 +2092,7 @@ Remove empty <code class="code docutils literal notranslate"><span class="pre">M
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014–2019, Triad National Security, LLC
+        &copy; Copyright 2014–2020, Triad National Security, LLC
 
     </p>
   </div> 

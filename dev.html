@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5. Contributor’s guide &mdash; Charliecloud 0.15 documentation</title>
+  <title>5. Contributor’s guide &mdash; Charliecloud 0.16~pre+44d649d documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.15
+                0.16~pre+44d649d
               </div>
             
           
@@ -146,6 +146,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">5.5.4. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c-code">5.5.5. C code</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#const">5.5.5.1. <code class="code docutils literal notranslate"><span class="pre">const</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#oci-technical-notes">5.6. OCI technical notes</a><ul>
@@ -266,14 +270,15 @@ consult the internal documentation and other resources.</p>
 <li><a class="reference internal" href="#documentation" id="id25">Documentation</a></li>
 <li><a class="reference internal" href="#dependency-policy" id="id26">Dependency policy</a></li>
 <li><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id27">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
+<li><a class="reference internal" href="#c-code" id="id28">C code</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#oci-technical-notes" id="id28">OCI technical notes</a><ul>
-<li><a class="reference internal" href="#gotchas" id="id29">Gotchas</a></li>
-<li><a class="reference internal" href="#bundle-directory" id="id30">Bundle directory</a></li>
-<li><a class="reference internal" href="#config-json" id="id31"><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></li>
-<li><a class="reference internal" href="#state" id="id32">State</a></li>
-<li><a class="reference internal" href="#additional-sources" id="id33">Additional sources</a></li>
+<li><a class="reference internal" href="#oci-technical-notes" id="id29">OCI technical notes</a><ul>
+<li><a class="reference internal" href="#gotchas" id="id30">Gotchas</a></li>
+<li><a class="reference internal" href="#bundle-directory" id="id31">Bundle directory</a></li>
+<li><a class="reference internal" href="#config-json" id="id32"><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></li>
+<li><a class="reference internal" href="#state" id="id33">State</a></li>
+<li><a class="reference internal" href="#additional-sources" id="id34">Additional sources</a></li>
 </ul>
 </li>
 </ul>
@@ -526,7 +531,7 @@ days for clarification before closing.</dd>
 <h3><a class="toc-backref" href="#id10">5.2.1. Timing the tests</a><a class="headerlink" href="#timing-the-tests" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="code docutils literal notranslate"><span class="pre">ts</span></code> utility from <code class="code docutils literal notranslate"><span class="pre">moreutils</span></code> is quite handy. The following
 prepends each line with the elapsed time since the previous line:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nv">CH_TEST_SCOPE</span><span class="o">=</span>quick make <span class="nb">test</span> <span class="p">|</span> ts -i <span class="s1">&#39;%M:%.S&#39;</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-test -s quick <span class="p">|</span> ts -i <span class="s1">&#39;%M:%.S&#39;</span>
 </pre></div>
 </div>
 <p>Note: a skipped test isn’t free; I see ~0.15 seconds to do a skip.</p>
@@ -683,11 +688,22 @@ abstracted away.</p>
 <h3><a class="toc-backref" href="#id14">5.3.1. Dependencies</a><a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
-<li>Python 2.7 or 3.4+</li>
+<li>charliecloud</li>
+<li>Python 3.4+</li>
 <li>Either:<ul>
-<li>RPM-based system of roughly RHEL/CentOS 7 vintage or newer, with RPM
-build tools installed</li>
-<li>System that can run Charliecloud containers</li>
+<li>the provided example <code class="code docutils literal notranslate"><span class="pre">centos7</span></code> or <code class="code docutils literal notranslate"><span class="pre">centos8</span></code> image</li>
+<li>a RHEL/CentOS 7 or newer container image with (note there are different
+python version names for the listed packages in RHEL/CentOS 8):
+* autoconf
+* automake
+* gcc
+* make
+* python36
+* python36-sphinx
+* python36-sphinx_rtd_theme
+* rpm-build
+* rpmlint
+* rsync</li>
 </ul>
 </li>
 </ul>
@@ -702,31 +718,28 @@ directory, and (c) build in a Charliecloud container for non-RPM-based
 environments.</p>
 <p>The script must be run from the root of a Charliecloud Git working directory.</p>
 <p>Usage:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> packaging/fedora/build <span class="o">[</span>OPTIONS<span class="o">]</span> VERSION
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> packaging/fedora/build <span class="o">[</span>OPTIONS<span class="o">]</span> IMAGE VERSION
 </pre></div>
 </div>
 <p>Options:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="code docutils literal notranslate"><span class="pre">--image=DIR</span></code> : Build in Charliecloud image directory <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>.</li>
 <li><code class="code docutils literal notranslate"><span class="pre">--install</span></code> : Install the RPMs after building into the build
 environment.</li>
 <li><code class="code docutils literal notranslate"><span class="pre">--rpmbuild=DIR</span></code> : Use RPM build directory root <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>
 (default: <code class="code docutils literal notranslate"><span class="pre">~/rpmbuild</span></code>).</li>
 </ul>
 </div></blockquote>
-<p>For example, to build a version 0.9.7 RPM, on an RPM system, and leave the
-results in <code class="code docutils literal notranslate"><span class="pre">~/rpmbuild/RPMS</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> packaging/fedora/build <span class="m">0</span>.9.7-1
+<p>For example, to build a version 0.9.7 RPM from the CentOS 7 image provided with
+the test suite, on any system, and leave the results in <code class="code docutils literal notranslate"><span class="pre">~/rpmbuild/RPMS</span></code>
+(note that the test suite would also build the necessary image diretory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples <span class="nv">$CH_TEST_IMGDIR</span>
+<span class="gp">$</span> packaging/fedora/build <span class="si">${</span><span class="nv">CH_TEST_IMGDIR</span><span class="si">}</span>/centos7 <span class="m">0</span>.9.7-1
 </pre></div>
 </div>
-<p>To build a pre-release RPM of Git HEAD using the CentOS 7 image provided with
-the test suite (note that the test suite would also build the necessary image
-directory):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-build -t centos7 -f test/Dockerfile.centos7 <span class="nb">test</span>
-<span class="gp">$</span> bin/ch-builder2tar centos7 <span class="nv">$CH_TEST_TARDIR</span>
-<span class="gp">$</span> bin/ch-tar2dir <span class="nv">$CH_TEST_TARDIR</span>/centos7.tar.gz <span class="nv">$CH_TEST_IMGDIR</span>
-<span class="gp">$</span> packaging/fedora/build --image <span class="nv">$CH_TEST_IMGDIR</span>/centos7 HEAD
+<p>To build a pre-release RPM of Git HEAD using the CentOS 7 image:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples <span class="nv">$CH_TEST_IMGDIR</span>
+<span class="gp">$</span> packaging/fedora/build <span class="si">${</span><span class="nv">CH_TEST_IMGDIR</span><span class="si">}</span>/centos7 HEAD
 </pre></div>
 </div>
 </div>
@@ -979,9 +992,35 @@ foo=&quot;${bar}/baz&quot;  # no
 </li>
 </ul>
 </div>
+<div class="section" id="c-code">
+<h3><a class="toc-backref" href="#id28">5.5.5. C code</a><a class="headerlink" href="#c-code" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="const">
+<h4>5.5.5.1. <code class="code docutils literal notranslate"><span class="pre">const</span></code><a class="headerlink" href="#const" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="code docutils literal notranslate"><span class="pre">const</span></code> keyword is used to indicate that variables are read-only. It
+has a variety of uses; in Charliecloud, we use it for <a class="reference external" href="https://softwareengineering.stackexchange.com/a/204720">function pointer
+arguments</a> to state
+whether or not the object pointed to will be altered by the function. For
+example:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">in</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">out</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>is a function that will not alter the string pointed to by <code class="code docutils literal notranslate"><span class="pre">in</span></code> but may
+alter the string pointed to by <code class="code docutils literal notranslate"><span class="pre">out</span></code>. (Note that <code class="code docutils literal notranslate"><span class="pre">char</span> <span class="pre">const</span></code> is
+equivalent to <code class="code docutils literal notranslate"><span class="pre">const</span> <span class="pre">char</span></code>, but we use the latter order because that’s
+what appears in GCC error messages.)</p>
+<p>We do not use <code class="code docutils literal notranslate"><span class="pre">const</span></code> on local variables or function arguments passed by
+value. One could do this to be more clear about what is and isn’t mutable, but
+it adds quite a lot of noise to the source code, and in our evaluations didn’t
+catch any bugs. We also do not use it on double pointers (e.g., <code class="code docutils literal notranslate"><span class="pre">char</span>
+<span class="pre">**out</span></code> used when a function allocates a string and sets the caller’s pointer
+to point to it), because so far those are all out-arguments and C has
+<a class="reference external" href="http://c-faq.com/ansi/constmismatch.html">confusing rules</a> about double
+pointers and <code class="code docutils literal notranslate"><span class="pre">const</span></code>.</p>
+</div>
+</div>
 </div>
 <div class="section" id="oci-technical-notes">
-<h2><a class="toc-backref" href="#id28">5.6. OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id29">5.6. OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
 <p>This section describes our analysis of the Open Container Initiative (OCI)
 specification and implications for our implementation in <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code>.
 Anything relevant for users goes in that man page; here is for technical
@@ -990,7 +1029,7 @@ opportunity for peer-review of our work.</p>
 <p>Currently, <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> is only tested with Buildah. These notes
 describe what we are seeing from Buildah’s runtime expectations.</p>
 <div class="section" id="gotchas">
-<h3><a class="toc-backref" href="#id29">5.6.1. Gotchas</a><a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id30">5.6.1. Gotchas</a><a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="namespaces">
 <h4>5.6.1.1. Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h4>
 <p>Buildah sets up its own user and mount namespaces before invoking the runtime,
@@ -1014,7 +1053,7 @@ the container. This conflicts with Charliecloud’s lack of a supervisor process
 </div>
 </div>
 <div class="section" id="bundle-directory">
-<h3><a class="toc-backref" href="#id30">5.6.2. Bundle directory</a><a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id31">5.6.2. Bundle directory</a><a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>OCI documentation (very incomplete): <a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/bundle.md">https://github.com/opencontainers/runtime-spec/blob/master/bundle.md</a></li>
 </ul>
@@ -1064,7 +1103,7 @@ No other new filesystems are mounted within the namespaces.</li>
 </ol>
 </div>
 <div class="section" id="config-json">
-<h3><a class="toc-backref" href="#id31">5.6.3. <code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id32">5.6.3. <code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>OCI documentation:<ul>
 <li><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/config.md">https://github.com/opencontainers/runtime-spec/blob/master/config.md</a></li>
@@ -1326,7 +1365,7 @@ protects us.)</p>
 <p>End of example.</p>
 </div>
 <div class="section" id="state">
-<h3><a class="toc-backref" href="#id32">5.6.4. State</a><a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id33">5.6.4. State</a><a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h3>
 <p>The OCI spec does not say how the JSON document describing state should be
 given to the caller. Buildah is happy to get it on the runtime’s standard
 output.</p>
@@ -1336,7 +1375,7 @@ essentially a no-op, and annotations are not supported, so the
 <code class="code docutils literal notranslate"><span class="pre">annotations</span></code> key will never be given.</p>
 </div>
 <div class="section" id="additional-sources">
-<h3><a class="toc-backref" href="#id33">5.6.5. Additional sources</a><a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id34">5.6.5. Additional sources</a><a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><code class="code docutils literal notranslate"><span class="pre">buildah</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah.md">https://github.com/containers/buildah/blob/master/docs/buildah.md</a></li>
 <li><code class="code docutils literal notranslate"><span class="pre">buildah</span> <span class="pre">bud</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah-bud.md">https://github.com/containers/buildah/blob/master/docs/buildah-bud.md</a></li>
@@ -1365,7 +1404,7 @@ essentially a no-op, and annotations are not supported, so the
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014–2019, Triad National Security, LLC
+        &copy; Copyright 2014–2020, Triad National Security, LLC
 
     </p>
   </div> 

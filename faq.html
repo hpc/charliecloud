@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Frequently asked questions (FAQ) &mdash; Charliecloud 0.15 documentation</title>
+  <title>4. Frequently asked questions (FAQ) &mdash; Charliecloud 0.16~pre+44d649d documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.15
+                0.16~pre+44d649d
               </div>
             
           
@@ -112,6 +112,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ch-builder2tar-gives-incorrect-image-sizes">4.3.5. <code class="code docutils literal notranslate"><span class="pre">ch-builder2tar</span></code> gives incorrect image sizes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#my-second-level-directory-dev-is-empty">4.3.6. My second-level directory <code class="code docutils literal notranslate"><span class="pre">dev</span></code> is empty</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#my-password-that-contains-digits-doesn-t-work-in-virtualbox-console">4.3.7. My password that contains digits doesn’t work in VirtualBox console</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-is-going-on-with-dockerfile-copy">4.3.8. What is going on with Dockerfile <code class="code docutils literal notranslate"><span class="pre">COPY</span></code>?</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#how-do-i">4.4. How do I ...</a><ul>
@@ -125,6 +126,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#how-do-i-run-x11-apps">4.4.4. How do I run X11 apps?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#how-do-i-specify-an-image-reference">4.4.5. How do I specify an image reference?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#can-i-build-or-pull-images-using-a-tool-charliecloud-doesn-t-know-about">4.4.6. Can I build or pull images using a tool Charliecloud doesn’t know about?</a></li>
 </ul>
 </li>
 </ul>
@@ -215,19 +217,21 @@
 <li><a class="reference internal" href="#ch-builder2tar-gives-incorrect-image-sizes" id="id13"><code class="code docutils literal notranslate"><span class="pre">ch-builder2tar</span></code> gives incorrect image sizes</a></li>
 <li><a class="reference internal" href="#my-second-level-directory-dev-is-empty" id="id14">My second-level directory <code class="code docutils literal notranslate"><span class="pre">dev</span></code> is empty</a></li>
 <li><a class="reference internal" href="#my-password-that-contains-digits-doesn-t-work-in-virtualbox-console" id="id15">My password that contains digits doesn’t work in VirtualBox console</a></li>
+<li><a class="reference internal" href="#what-is-going-on-with-dockerfile-copy" id="id16">What is going on with Dockerfile <code class="code docutils literal notranslate"><span class="pre">COPY</span></code>?</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#how-do-i" id="id16">How do I ...</a><ul>
-<li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id17">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
-<li><a class="reference internal" href="#which-specific-sudo-commands-are-needed" id="id18">Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
-<li><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work" id="id19">OpenMPI Charliecloud jobs don’t work</a><ul>
-<li><a class="reference internal" href="#mpirun-cant-launch-jobs" id="id20"><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></li>
-<li><a class="reference internal" href="#communication-between-ranks-on-the-same-node-fails" id="id21">Communication between ranks on the same node fails</a></li>
-<li><a class="reference internal" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" id="id22">I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a></li>
+<li><a class="reference internal" href="#how-do-i" id="id17">How do I ...</a><ul>
+<li><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id18">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></li>
+<li><a class="reference internal" href="#which-specific-sudo-commands-are-needed" id="id19">Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a></li>
+<li><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work" id="id20">OpenMPI Charliecloud jobs don’t work</a><ul>
+<li><a class="reference internal" href="#mpirun-cant-launch-jobs" id="id21"><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></li>
+<li><a class="reference internal" href="#communication-between-ranks-on-the-same-node-fails" id="id22">Communication between ranks on the same node fails</a></li>
+<li><a class="reference internal" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" id="id23">I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id23">How do I run X11 apps?</a></li>
-<li><a class="reference internal" href="#how-do-i-specify-an-image-reference" id="id24">How do I specify an image reference?</a></li>
+<li><a class="reference internal" href="#how-do-i-run-x11-apps" id="id24">How do I run X11 apps?</a></li>
+<li><a class="reference internal" href="#how-do-i-specify-an-image-reference" id="id25">How do I specify an image reference?</a></li>
+<li><a class="reference internal" href="#can-i-build-or-pull-images-using-a-tool-charliecloud-doesn-t-know-about" id="id26">Can I build or pull images using a tool Charliecloud doesn’t know about?</a></li>
 </ul>
 </li>
 </ul>
@@ -522,11 +526,51 @@ password fields give no feedback, not even whether a character has been typed.</
 <p>Try using the number row instead, toggling Num Lock key, or SSHing into the
 virtual machine.</p>
 </div>
+<div class="section" id="what-is-going-on-with-dockerfile-copy">
+<h3><a class="toc-backref" href="#id16">4.3.8. What is going on with Dockerfile <code class="code docutils literal notranslate"><span class="pre">COPY</span></code>?</a><a class="headerlink" href="#what-is-going-on-with-dockerfile-copy" title="Permalink to this headline">¶</a></h3>
+<p>Especially for people used to UNIX <code class="code docutils literal notranslate"><span class="pre">cp(1)</span></code>, the semantics of the
+Dockerfile <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instruction are confusing, and the <a class="reference external" href="https://docs.docker.com/engine/reference/builder/#copy">Dockerfile
+reference documentation</a> is incomplete. Our
+understanding beyond that documentation is described here, and this is what
+<code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> implements, in an attempt to be bug-compatible with Docker.</p>
+<ol class="arabic simple">
+<li>When a directory is specified as a source, the <em>contents</em> of that
+directory, not the directory itself, are copied. This is documented, but
+it’s a real gotcha because that’s not what <code class="code docutils literal notranslate"><span class="pre">cp(1)</span></code> does, and it means
+that many things you can do in one <code class="code docutils literal notranslate"><span class="pre">cp(1)</span></code> command require multiple
+<code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instructions.</li>
+<li>You can use absolute paths in the source; the root is the context
+directory.</li>
+<li>Destination directories are created if they don’t exist in the following
+situations:<ol class="arabic">
+<li>If the destination path ends in slash. (Documented.)</li>
+<li>If the number of sources is greater than 1, either by wildcard or
+explicitly, regardless of whether the destination ends in slash. (Not
+documented.)</li>
+<li>If there is a single source and it is a directory. (Not documented.)</li>
+</ol>
+</li>
+<li>Symbolic links are particularly messy (this is not documented):<ol class="arabic">
+<li>If named in sources either explicitly or by wildcard, symlinks are
+dereferenced, i.e., the result is a copy of the symlink target, not the
+symlink itself. Keep in mind that directory contents are copied, not
+directories.</li>
+<li>If within a directory named in sources, symlinks are copied as symlinks.</li>
+</ol>
+</li>
+</ol>
+<p>Also, <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> has two known non-conformances; we believe that in
+practice, these should not be a problem:</p>
+<ol class="arabic simple">
+<li>Wildcards use Python glob semantics, not the Go semantics.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">COPY</span> <span class="pre">--chown</span></code> is ignored.</li>
+</ol>
+</div>
 </div>
 <div class="section" id="how-do-i">
-<h2><a class="toc-backref" href="#id16">4.4. How do I ...</a><a class="headerlink" href="#how-do-i" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id17">4.4. How do I ...</a><a class="headerlink" href="#how-do-i" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="my-app-needs-to-write-to-var-log-run-etc">
-<h3><a class="toc-backref" href="#id17">4.4.1. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18">4.4.1. My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h3>
 <p>Because the image is mounted read-only by default, log files, caches, and
 other stuff cannot be written anywhere in the image. You have three options:</p>
 <ol class="arabic simple">
@@ -540,7 +584,7 @@ containers do not try to write to the same files.</li>
 </ol>
 </div>
 <div class="section" id="which-specific-sudo-commands-are-needed">
-<h3><a class="toc-backref" href="#id18">4.4.2. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a><a class="headerlink" href="#which-specific-sudo-commands-are-needed" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19">4.4.2. Which specific <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> commands are needed?</a><a class="headerlink" href="#which-specific-sudo-commands-are-needed" title="Permalink to this headline">¶</a></h3>
 <p>For running images, <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> is not needed at all.</p>
 <p>For building images, it depends on what you would like to support. For
 example, do you want to let users build images with Docker? Do you want to let
@@ -559,10 +603,10 @@ on a case-by-case basis. (The latter includes <code class="code docutils literal
 </div>
 </div>
 <div class="section" id="openmpi-charliecloud-jobs-dont-work">
-<h3><a class="toc-backref" href="#id19">4.4.3. OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-dont-work" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20">4.4.3. OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-dont-work" title="Permalink to this headline">¶</a></h3>
 <p>MPI can be finicky. This section documents some of the problems we’ve seen.</p>
 <div class="section" id="mpirun-cant-launch-jobs">
-<h4><a class="toc-backref" href="#id20">4.4.3.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a><a class="headerlink" href="#mpirun-cant-launch-jobs" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id21">4.4.3.1. <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a><a class="headerlink" href="#mpirun-cant-launch-jobs" title="Permalink to this headline">¶</a></h4>
 <p>For example, you might see:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -np <span class="m">1</span> ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">App launch reported: 2 (out of 2) daemons - 0 (out of 1) procs</span>
@@ -574,7 +618,7 @@ builds inside and outside the container — but in our experience launching with
 <code class="code docutils literal notranslate"><span class="pre">srun</span></code> often works when <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> doesn’t, so try that.</p>
 </div>
 <div class="section" id="communication-between-ranks-on-the-same-node-fails">
-<h4><a class="toc-backref" href="#id21">4.4.3.2. Communication between ranks on the same node fails</a><a class="headerlink" href="#communication-between-ranks-on-the-same-node-fails" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id22">4.4.3.2. Communication between ranks on the same node fails</a><a class="headerlink" href="#communication-between-ranks-on-the-same-node-fails" title="Permalink to this headline">¶</a></h4>
 <p>OpenMPI has many ways to transfer messages between ranks. If the ranks are on
 the same node, it is faster to do these transfers using shared memory rather
 than involving the network stack. There are two ways to use shared memory.</p>
@@ -639,7 +683,7 @@ benchmarks.</p>
 </ul>
 </div>
 <div class="section" id="i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun">
-<h4><a class="toc-backref" href="#id22">4.4.3.3. I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a><a class="headerlink" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id23">4.4.3.3. I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a><a class="headerlink" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" title="Permalink to this headline">¶</a></h4>
 <p>For example, you might be seeing this:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-run /var/tmp/mpihello -- /hello/hello
 <span class="go">0: init ok cn036.localdomain, 1 ranks, userns 4026554634</span>
@@ -687,7 +731,7 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 </div>
 </div>
 <div class="section" id="how-do-i-run-x11-apps">
-<h3><a class="toc-backref" href="#id23">4.4.4. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id24">4.4.4. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
 <p>X11 applications should “just work”. For example, try this Dockerfile:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">debian:stretch</span>
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
@@ -703,7 +747,7 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 figure out why.</p>
 </div>
 <div class="section" id="how-do-i-specify-an-image-reference">
-<h3><a class="toc-backref" href="#id24">4.4.5. How do I specify an image reference?</a><a class="headerlink" href="#how-do-i-specify-an-image-reference" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25">4.4.5. How do I specify an image reference?</a><a class="headerlink" href="#how-do-i-specify-an-image-reference" title="Permalink to this headline">¶</a></h3>
 <p>You must specify an image for many use cases, including <code class="code docutils literal notranslate"><span class="pre">FROM</span></code>
 instructions, the source of an image pull (e.g. <code class="code docutils literal notranslate"><span class="pre">ch-tug</span></code> or
 <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code>), the destination of an image push, and adding image tags.
@@ -785,6 +829,34 @@ from Docker Hub.</li>
 </div></blockquote>
 <p>See <code class="code docutils literal notranslate"><span class="pre">charliecloud.py</span></code> for a specific grammar that implements this.</p>
 </div>
+<div class="section" id="can-i-build-or-pull-images-using-a-tool-charliecloud-doesn-t-know-about">
+<h3><a class="toc-backref" href="#id26">4.4.6. Can I build or pull images using a tool Charliecloud doesn’t know about?</a><a class="headerlink" href="#can-i-build-or-pull-images-using-a-tool-charliecloud-doesn-t-know-about" title="Permalink to this headline">¶</a></h3>
+<p>Yes. Charliecloud deals in well-known UNIX formats like directories, tarballs,
+and SquashFS images. So, once you get your image into some format Charliecloud
+likes, you can enter the workflow.</p>
+<p>For example, <a class="reference external" href="https://github.com/containers/skopeo">skopeo</a> is a tool to
+pull images to OCI format, and <a class="reference external" href="https://umo.ci">umoci</a> can flatten an OCI
+image to a directory. Thus, you can use the following commands to run an
+Alpine 3.9 image pulled from Docker hub:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> skopeo copy docker://alpine:3.9 oci:/tmp/oci:img
+<span class="go">[...]</span>
+<span class="gp">$</span> ls /tmp/oci
+<span class="go">blobs  index.json  oci-layout</span>
+<span class="gp">$</span> umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.9
+<span class="go">[...]</span>
+<span class="gp">$</span> ls /tmp/alpine:3.9
+<span class="go">config.json</span>
+<span class="go">rootfs</span>
+<span class="go">sha256_2ca27acab3a0f4057852d9a8b775791ad8ff62fbedfc99529754549d33965941.mtree</span>
+<span class="go">umoci.json</span>
+<span class="gp">$</span> ls /tmp/alpine:3.9/rootfs
+<span class="go">bin  etc   lib    mnt  proc  run   srv  tmp  var</span>
+<span class="go">dev  home  media  opt  root  sbin  sys  usr</span>
+<span class="gp">$</span> ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
+<span class="go">3.9.5</span>
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 
@@ -808,7 +880,7 @@ from Docker Hub.</li>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014–2019, Triad National Security, LLC
+        &copy; Copyright 2014–2020, Triad National Security, LLC
 
     </p>
   </div> 
