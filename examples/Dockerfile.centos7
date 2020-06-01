@@ -28,7 +28,6 @@ RUN yum install -y epel-release \
                 bats \
                 fakeroot \
                 gcc \
-                git \
                 make \
                 python36 \
                 python36-sphinx \
@@ -37,5 +36,7 @@ RUN yum install -y epel-release \
                 rpmlint \
                 rsync \
                 wget \
- && fakeroot yum install -y openssh \
+ && fakeroot yum install -y \
+                         git \
+                         openssh \
  && yum clean all

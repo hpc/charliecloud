@@ -37,7 +37,6 @@ RUN dnf install -y --setopt=install_weak_deps=false epel-release \
                 autoconf \
                 automake \
                 gcc \
-                git \
                 make \
                 python3 \
                 python3-sphinx \
@@ -47,7 +46,9 @@ RUN dnf install -y --setopt=install_weak_deps=false epel-release \
                 rsync \
                 wget \
                 fakeroot \
- && fakeroot dnf install -y openssh \
+ && fakeroot dnf install -y --setopt=install_weak_deps=false \
+                         git \
+                         openssh \
  && dnf clean all
 
 # CentOS's linker doesn't search these paths by default; add them because we
