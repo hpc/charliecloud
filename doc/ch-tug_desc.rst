@@ -42,7 +42,7 @@ Other arguments:
     Use :code:`DIR` to store downloaded layers and metadata. If not specified
     but environment variable :code:`CH_GROW_STORAGE` is, then use
     :code:`$CH_GROW_STORAGE/dlcache`; the default is
-    :code:`/var/tmp/ch-grow/dlcache`.
+    :code:`/var/tmp/$USER/ch-grow/dlcache`.
 
   :code:`--no-cache`
     Always download files, even if they already exist in :code:`--dl-cache`.
@@ -58,7 +58,8 @@ Other arguments:
   :code:`--unpack-dir DIR`
     Directory containing flattened images. If not specified but environment
     variable :code:`CH_GROW_STORAGE` is, then use
-    :code:`$CH_GROW_STORAGE/img`; the default is :code:`/var/tmp/ch-grow/img`.
+    :code:`$CH_GROW_STORAGE/img`; the default is
+    :code:`/var/tmp/$USER/ch-grow/img`.
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
@@ -70,7 +71,7 @@ Examples
 ========
 
 Download the classic Docker "hello-world" image and flatten it into
-:code:`/var/tmp/ch-grow/img/hello-world`::
+:code:`/var/tmp/$USER/ch-grow/img/hello-world`::
 
   $ ch-tug hello-world
   pulling image: hello-world
@@ -80,12 +81,12 @@ Download the classic Docker "hello-world" image and flatten it into
   validating tarball members
   resolving whiteouts
   flattening image
-  creating new image: /var/tmp/ch-grow/img/hello-world
+  creating new image: /var/tmp/charlie/ch-grow/img/hello-world
   layer 1/1: 1b930d0: extracting
   done
-  $ ls /var/tmp/ch-grow/img/hello-world
+  $ ls /var/tmp/$USER/ch-grow/img/hello-world
   hello
-  $ ls /var/tmp/ch-grow/dlcache
+  $ ls /var/tmp/$USER/ch-grow/dlcache
   1b930d010525941c1d56ec53b97bd057a67ae1865eebf042686d2a2d18271ced.tar.gz
   hello-world.manifest.json
 
@@ -100,7 +101,7 @@ Download the image "charliecloud/whiteout:2020-01-10" and flatten it::
   layer 85/86: 59b7abe: extracting
   layer 86/86: e756ca6: extracting
   done
-  $ ls /var/tmp/ch-grow/img
+  $ ls /var/tmp/$USER/ch-grow/img
   charliecloud%whiteout:2020-01-10
 
 Download the "hello-world" image and flatten it into :code:`/tmp/foo`::

@@ -1,4 +1,4 @@
-# ch-test-scope: full
+# ch-test-scope: skip (issue #741)
 # ch-test-arch-exclude: aarch64  # No lustre RPMS for aarch64
 
 FROM centos7

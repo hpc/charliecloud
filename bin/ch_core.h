@@ -20,18 +20,18 @@ enum bind_dep {
 
 struct container {
    struct bind *binds;
-   bool ch_ssh;         // bind /usr/bin/ch-ssh?
-   gid_t container_gid;
-   uid_t container_uid;
-   char *newroot;
-   bool join;           // is this a synchronized join?
-   int join_ct;         // number of peers in a synchronized join
-   pid_t join_pid;      // process in existing namespace to join
-   char *join_tag;      // identifier for synchronized join
-   bool private_home;   // don't bind user home directory
-   bool private_passwd; // don't bind custom /etc/{passwd,group}
-   bool private_tmp;    // don't bind host's /tmp
-   char *old_home;      // host path to user's home directory (i.e. $HOME)
+   bool ch_ssh;          // bind /usr/bin/ch-ssh?
+   gid_t container_gid;  // GID to use in container
+   uid_t container_uid;  // UID to use in container
+   char *newroot;        // path to new root directory
+   bool join;            // is this a synchronized join?
+   int join_ct;          // number of peers in a synchronized join
+   pid_t join_pid;       // process in existing namespace to join
+   char *join_tag;       // identifier for synchronized join
+   bool private_home;    // don't bind user home directory
+   bool private_passwd;  // don't bind custom /etc/{passwd,group}
+   bool private_tmp;     // don't bind host's /tmp
+   char *old_home;       // host path to user's home directory (i.e. $HOME)
    bool writable;
 };
 
@@ -39,4 +39,4 @@ struct container {
 /** Function prototypes **/
 
 void containerize(struct container *c);
-void run_user_command(char *argv[], char *initial_dir);
+void run_user_command(char *argv[], const char *initial_dir);

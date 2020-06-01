@@ -1,6 +1,28 @@
 # ch-test-scope: standard
 FROM centos:8
 
+# This image has two purposes: (1) demonstrate we can build a CentOS 8 image
+# and (2) provide avbuild environment for Charliecloud EPEL 8 RPMs.
+
+RUN dnf -y install epel-release
+
+# Re. ch-grow: Like apt(8), dnf/RPM like to chown(2), etc., if they believe they
+# are root. This fails in an unprivileged user namespace because UID 0 is fake.
+# Unlike apt, RPM makes these system calls directly, so there's no opportunity
+# for kludges like linking chown(1) to true(1). For example:
+#
+#    Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
+#  Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64
+#  error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726:
+#    Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4
+#  error: dbus-1:1.10.24-13.el7_6.x86_64: install failed
+#  error: dbus-1:1.10.24-12.el7.x86_64: erase skipped
+#
+# We can instead use fakeroot(1), though there seems to be a performance
+# impact. In the interest of time, we demonstrate this by installing the
+# openssh package, required by git, which reliably tickles the problem.
+# See issue #472.
+
 # 1. Install the dnf ovl plugin to work around RPMDB corruption when building
 #    images with Docker and the OverlayFS storage driver.
 #
@@ -20,3 +42,20 @@ RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
  && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf \
  && ldconfig
 
+# Install packages needed to build el8 rpms.
+RUN dnf install -y --setopt=install_weak_deps=false \
+                autoconf \
+                automake \
+                gcc \
+                git \
+                make \
+                python3 \
+                python3-sphinx \
+                python3-sphinx_rtd_theme \
+                rpm-build \
+                rpmlint \
+                rsync \
+                wget \
+                fakeroot
+ && fakeroot dnf install -y openssh
+ && dnf clean all

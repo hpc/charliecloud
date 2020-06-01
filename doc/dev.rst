@@ -313,7 +313,7 @@ Timing the tests
 The :code:`ts` utility from :code:`moreutils` is quite handy. The following
 prepends each line with the elapsed time since the previous line::
 
-  $ CH_TEST_SCOPE=quick make test | ts -i '%M:%.S'
+  $ ch-test -s quick | ts -i '%M:%.S'
 
 Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
 
@@ -484,12 +484,24 @@ abstracted away.
 Dependencies
 ------------
 
-  * Python 2.7 or 3.4+
+  * charliecloud
+  * Python 3.4+
   * Either:
 
-    * RPM-based system of roughly RHEL/CentOS 7 vintage or newer, with RPM
-      build tools installed
-    * System that can run Charliecloud containers
+    * the provided example :code:`centos7` or :code:`centos8` image
+    * a RHEL/CentOS 7 or newer container image with (note there are different
+      python version names for the listed packages in RHEL/CentOS 8):
+      * autoconf
+      * automake
+      * gcc
+      * make
+      * python36
+      * python36-sphinx
+      * python36-sphinx_rtd_theme
+      * rpm-build
+      * rpmlint
+      * rsync
+
 
 :code:`rpmbuild` wrapper script
 -------------------------------
@@ -504,11 +516,9 @@ The script must be run from the root of a Charliecloud Git working directory.
 
 Usage::
 
-  $ packaging/fedora/build [OPTIONS] VERSION
+  $ packaging/fedora/build [OPTIONS] IMAGE VERSION
 
 Options:
-
-  * :code:`--image=DIR` : Build in Charliecloud image directory :code:`DIR`.
 
   * :code:`--install` : Install the RPMs after building into the build
     environment.
@@ -516,19 +526,17 @@ Options:
   * :code:`--rpmbuild=DIR` : Use RPM build directory root :code:`DIR`
     (default: :code:`~/rpmbuild`).
 
-For example, to build a version 0.9.7 RPM, on an RPM system, and leave the
-results in :code:`~/rpmbuild/RPMS`::
+For example, to build a version 0.9.7 RPM from the CentOS 7 image provided with
+the test suite, on any system, and leave the results in :code:`~/rpmbuild/RPMS`
+(note that the test suite would also build the necessary image diretory::
 
-  $ packaging/fedora/build 0.9.7-1
+  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
+  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 0.9.7-1
 
-To build a pre-release RPM of Git HEAD using the CentOS 7 image provided with
-the test suite (note that the test suite would also build the necessary image
-directory)::
+To build a pre-release RPM of Git HEAD using the CentOS 7 image::
 
-  $ bin/ch-build -t centos7 -f test/Dockerfile.centos7 test
-  $ bin/ch-builder2tar centos7 $CH_TEST_TARDIR
-  $ bin/ch-tar2dir $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
-  $ packaging/fedora/build --image $CH_TEST_IMGDIR/centos7 HEAD
+  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
+  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 HEAD
 
 Gotchas and quirks
 ------------------
@@ -809,6 +817,36 @@ Variable conventions in shell scripts and :code:`.bats` files
 
     foo=${bar}/baz    # yes
     foo="${bar}/baz"  # no
+
+C code
+------
+
+:code:`const`
+~~~~~~~~~~~~~
+
+The :code:`const` keyword is used to indicate that variables are read-only. It
+has a variety of uses; in Charliecloud, we use it for `function pointer
+arguments <https://softwareengineering.stackexchange.com/a/204720>`_ to state
+whether or not the object pointed to will be altered by the function. For
+example:
+
+.. code-block:: c
+
+  void foo(const char *in, char *out)
+
+is a function that will not alter the string pointed to by :code:`in` but may
+alter the string pointed to by :code:`out`. (Note that :code:`char const` is
+equivalent to :code:`const char`, but we use the latter order because that's
+what appears in GCC error messages.)
+
+We do not use :code:`const` on local variables or function arguments passed by
+value. One could do this to be more clear about what is and isn't mutable, but
+it adds quite a lot of noise to the source code, and in our evaluations didn't
+catch any bugs. We also do not use it on double pointers (e.g., :code:`char
+**out` used when a function allocates a string and sets the caller's pointer
+to point to it), because so far those are all out-arguments and C has
+`confusing rules <http://c-faq.com/ansi/constmismatch.html>`_ about double
+pointers and :code:`const`.
 
 
 OCI technical notes

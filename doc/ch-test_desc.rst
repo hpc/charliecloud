@@ -41,6 +41,10 @@ The packed and unpacked image directories specified for testing are volatile.
 The contents of these directories are deleted before the build and run phases,
 respectively.
 
+In all four cases, when creating directories, only the final path component is
+created. Parent directories must already exist, i.e., :code:`ch-test` uses the
+behavior of :code:`mkdir` rather than :code:`mkdir -p`.
+
 Some of the tests exercise parallel functionality. If :code:`ch-test` is run
 on a single node, multiple cores will be used; if in a Slurm allocation,
 multiple nodes too.

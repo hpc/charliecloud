@@ -68,11 +68,12 @@ extern int verbose;
 
 /** Function prototypes **/
 
-char *cat(char *a, char *b);
+char *cat(const char *a, const char *b);
 void log_ids(const char *func, int line);
-void msg(int level, char *file, int line, int errno_, char *fmt, ...);
-bool path_exists(char *path);
-unsigned long path_mount_flags(char *path);
-void path_split(char *path, char **dir, char **base);
-void split(char **a, char **b, char *str, char del);
+void msg(int level, const char *file, int line, int errno_,
+         const char *fmt, ...);
+bool path_exists(const char *path);
+unsigned long path_mount_flags(const char *path);
+void path_split(const char *path, char **dir, char **base);
+void split(char **a, char **b, const char *str, char del);
 void version(void);

@@ -222,6 +222,10 @@ EOF2
     git checkout "$BUILDAH_VERSION"
     make
     sudo make install
+    # Setup buildah's system configuration files
+    sudo mkdir -p /etc/containers
+    sudo cp tests/policy.json /etc/containers
+    sudo cp tests/registries.conf /etc/containers
   EOF
 
   # Install ch-grow dependencies.
@@ -229,15 +233,9 @@ EOF2
                  inline: <<-EOF
     set -e
     cd /usr/local/src
-    sudo yum -y install python36 \
-                        python36-pip \
-                        skopeo
-
-    wget https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64
-    sudo chmod 755 umoci.amd64
-    sudo mv umoci.amd64 /usr/bin/umoci
-    umoci --version
+    sudo yum -y install python36 python36-pip
     sudo pip3 install lark-parser
+    sudo pip3 install requests
   EOF
 
   # Twiddle vagrant user so Charliecloud tests will pass (add to a second

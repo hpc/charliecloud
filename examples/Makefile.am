@@ -110,17 +110,17 @@ clean-local:
 	rm -f copy/symlink-to-fileB-B
 
 install-data-hook:
-	ln -fTs dirCb $(examplesdir)/copy/dirCa/symlink-to-dirCb
-	ln -fTs fileDa $(examplesdir)/copy/dirD/symlink-to-fileDa
-	ln -fTs dirEb $(examplesdir)/copy/dirEa/symlink-to-dirEb
-	ln -fTs fileA $(examplesdir)/copy/symlink-to-fileA
-	ln -fTs fileB $(examplesdir)/copy/symlink-to-fileB-A
-	ln -fTs fileB $(examplesdir)/copy/symlink-to-fileB-B
+	ln -fTs dirCb $(DESTDIR)$(examplesdir)/copy/dirCa/symlink-to-dirCb
+	ln -fTs fileDa $(DESTDIR)$(examplesdir)/copy/dirD/symlink-to-fileDa
+	ln -fTs dirEb $(DESTDIR)$(examplesdir)/copy/dirEa/symlink-to-dirEb
+	ln -fTs fileA $(DESTDIR)$(examplesdir)/copy/symlink-to-fileA
+	ln -fTs fileB $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-A
+	ln -fTs fileB $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-B
 
 uninstall-local:
-	rm -f $(examplesdir)/copy/dirCa/symlink-to-dirCb
-	rm -f $(examplesdir)/copy/dirD/symlink-to-fileDa
-	rm -f $(examplesdir)/copy/dirEa/symlink-to-dirEb
-	rm -f $(examplesdir)/copy/symlink-to-fileA
-	rm -f $(examplesdir)/copy/symlink-to-fileB-A
-	rm -f $(examplesdir)/copy/symlink-to-fileB-B
+	rm -f $(DESTDIR)$(examplesdir)/copy/dirCa/symlink-to-dirCb
+	rm -f $(DESTDIR)$(examplesdir)/copy/dirD/symlink-to-fileDa
+	rm -f $(DESTDIR)$(examplesdir)/copy/dirEa/symlink-to-dirEb
+	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileA
+	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-A
+	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-B
