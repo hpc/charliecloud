@@ -4,8 +4,6 @@ FROM centos:8
 # This image has two purposes: (1) demonstrate we can build a CentOS 8 image
 # and (2) provide avbuild environment for Charliecloud EPEL 8 RPMs.
 
-RUN dnf -y install epel-release
-
 # Re. ch-grow: Like apt(8), dnf/RPM like to chown(2), etc., if they believe they
 # are root. This fails in an unprivileged user namespace because UID 0 is fake.
 # Unlike apt, RPM makes these system calls directly, so there's no opportunity
@@ -29,21 +27,13 @@ RUN dnf -y install epel-release
 # 2. Enable PowerTools repository, as some packages in EPEL depend on it. Use
 #    sed(1) because we don't want to install `dnf-plugins-core` just for this.
 #
+# 3. Install packages needed to build el8 rpms.
+#
 RUN dnf install -y --setopt=install_weak_deps=false epel-release \
+ && sed -ie 's/enabled=0/enabled=1/' /etc/yum.repos.d/CentOS-PowerTools.repo \
  && dnf update  -y \
  && dnf install -y --setopt=install_weak_deps=false --enablerepo=epel-playground \
                 dnf-plugin-ovl \
- && dnf clean all \
- && sed -ie 's/enabled=0/enabled=1/' /etc/yum.repos.d/CentOS-PowerTools.repo
-
-# CentOS's linker doesn't search these paths by default; add them because we
-# will install stuff later into /usr/local.
-RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
- && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf \
- && ldconfig
-
-# Install packages needed to build el8 rpms.
-RUN dnf install -y --setopt=install_weak_deps=false \
                 autoconf \
                 automake \
                 gcc \
@@ -56,6 +46,12 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 rpmlint \
                 rsync \
                 wget \
-                fakeroot
- && fakeroot dnf install -y openssh
+                fakeroot \
+ && fakeroot dnf install -y openssh \
  && dnf clean all
+
+# CentOS's linker doesn't search these paths by default; add them because we
+# will install stuff later into /usr/local.
+RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
+ && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf \
+ && ldconfig

@@ -50,7 +50,7 @@ ARG FORCE_UNSAFE_CONFIGURE=1
 # been hundreds if not thousands of commits on the default branch "develop"
 # since then. We follow develop for this reason and also to catch problems
 # installing Charliecloud with latest Spack.
-ARG SPACK_REPO https://github.com/spack/spack
+ARG SPACK_REPO=https://github.com/spack/spack
 #ENV SPACK_VERSION 0.12.1
 #RUN git clone --branch v$SPACK_VERSION --depth 1 $SPACK_REPO
 RUN git clone --depth 1 $SPACK_REPO
