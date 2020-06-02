@@ -16,9 +16,9 @@ RUN dnf install -y --setopt=install_weak_deps=false \
 RUN pip3 install --no-binary :all: cython==0.29.14 mpi4py==3.0.3 numpy==1.18.1
 #RUN ln -s /usr/bin/python3 /usr/bin/python
 # Build LAMMPS.
-ARG LAMMPS_VERSION=19Sep19
-RUN wget -nv https://lammps.sandia.gov/tars/lammps-$LAMMPS_VERSION.tar.gz \
- && tar xf lammps-$LAMMPS_VERSION.tar.gz \
+ARG LAMMPS_VERSION=19Sep2019
+RUN wget -nv https://github.com/lammps/lammps/archive/patch_${LAMMPS_VERSION}.tar.gz \
+ && tar xf patch_$LAMMPS_VERSION.tar.gz \
  && mkdir lammps-${LAMMPS_VERSION}.build \
  && cd lammps-${LAMMPS_VERSION}.build \
  && cmake -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -33,10 +33,10 @@ RUN wget -nv https://lammps.sandia.gov/tars/lammps-$LAMMPS_VERSION.tar.gz \
           -DPKG_USER-REAXC=yes \
           -DPKG_USER-MEAMC=yes \
           -DLAMMPS_MACHINE=mpi \
-    ../lammps-${LAMMPS_VERSION}/cmake \
+    ../lammps-patch_${LAMMPS_VERSION}/cmake \
  && make -j $(getconf _NPROCESSORS_ONLN) install \
- && ln -s /usr/local/src/lammps-${LAMMPS_VERSION}/ /lammps \
- && rm -f ../lammps-$LAMMPS_VERSION.tar.gz
+ && ln -s /usr/local/src/lammps-patch_${LAMMPS_VERSION}/ /lammps \
+ && rm -f ../patch_$LAMMPS_VERSION.tar.gz
 RUN ldconfig
 
 # Patch in.melt to increase problem dimensions.
