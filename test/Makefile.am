@@ -1,4 +1,5 @@
 testdir = $(pkglibexecdir)/test
+topbindir = $(top_builddir)/bin
 
 # These test files require no special handling.
 testfiles = \
@@ -86,7 +87,10 @@ install-data-hook:
 	mkdir $(testdir)/fixtures
 	ln -fs /tmp $(testdir)/fixtures/symlink-to-tmp
 installcheck-local:
-	$(top_builddir)/bin/ch-test build -b none \
+	$(topbindir)/ch-test build -b none \
+		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
+        --img-dir=/tmp/ch-test.tmp.${USER}/img; \
+	$(topbindir)/ch-test run -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
         --img-dir=/tmp/ch-test.tmp.${USER}/img
 uninstall-hook:
