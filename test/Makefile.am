@@ -64,12 +64,13 @@ sotest/sotest
 # FIXME: if a test fails bats simply reports that the test fails, i.e., bats
 # doesn't return a nonzero unless something funky happened. We need to
 # make the 'make check' error if a test fails.
+# FIXME: rename and move somewhere more obscure; we don't want users running
+# the wrapper.
 TESTS = ch-test.make
 
-# Note because we cannot pass a script declared in TESTS any arguments, we are
-# forced to use a wrapper script, ch-test.make, to specify a phase to ch-test.
-# Thus, using AM_TESTS_ENVIRONMENT doesn't seem all that useful and is commented
-# out.
+# Note because it seems we cannot pass a script declared in TESTS arbitrary
+# arguments, we use a wrapper script, ch-test.make, to run to ch-test. Thus,
+# using AM_TESTS_ENVIRONMENT doesn't seem all that useful and is commented out.
 #
 # AM_TESTS_ENVIRONMENT = \
 #	$(TESTS); \
@@ -93,11 +94,13 @@ install-data-hook:
 # FIXME: if a test fails bats simply reports that the test fails, i.e., bats
 # doesn't return a nonzero unless something funky happened. We need to
 # make the installcheck error if a test fails.
+# FIXME: automake assigns bindir a default value of /usr/local/bin; if a ch-test
+# exists ensure it is the correct version.
 installcheck-local:
-	$(topbindir)/ch-test build -b none \
+	$(DESTDIR)$(bindir)/ch-test build -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
         --img-dir=/tmp/ch-test.tmp.${USER}/img; \
-	$(topbindir)/ch-test run -b none \
+	$(DESTDIR)$(bindir)/ch-test run -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
         --img-dir=/tmp/ch-test.tmp.${USER}/img
 
