@@ -86,6 +86,9 @@ clean-local:
 install-data-hook:
 	mkdir $(testdir)/fixtures
 	ln -fs /tmp $(testdir)/fixtures/symlink-to-tmp
+# FIXME: if a test fails bats simply reports that the test fails, i.e., bats
+# doesn't return a nonzero unless something funky happened. We need to
+# make the installcheck error if a test fails.
 installcheck-local:
 	$(topbindir)/ch-test build -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
