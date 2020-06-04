@@ -77,15 +77,16 @@ if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
 nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
-CLEANFILES = $(sobuilts)
+CLEANFILES = $(sobuilts) docs-sane make-perms-test
 # See comment about symlinks in examples/Makefile.am.
 all-local:
 	ln -fs /tmp fixtures/symlink-to-tmp
 clean-local:
 	rm -f fixtures/symlink-to-tmp
 install-data-hook:
-	mkdir $(testdir)/fixtures
-	ln -fs /tmp $(testdir)/fixtures/symlink-to-tmp
+	mkdir $(DESTDIR)$(testdir)/fixtures
+	ln -fs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
+
 # FIXME: if a test fails bats simply reports that the test fails, i.e., bats
 # doesn't return a nonzero unless something funky happened. We need to
 # make the installcheck error if a test fails.
@@ -96,12 +97,18 @@ installcheck-local:
 	$(topbindir)/ch-test run -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
         --img-dir=/tmp/ch-test.tmp.${USER}/img
+
 uninstall-hook:
-	rm -f $(testdir)/fixtures/symlink-to-tmp
-	rmdir $(testdir)/fixtures || true
+	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
+	rmdir $(DESTDIR)$(testdir)/fixtures || true
 endif
-EXTRA_DIST += $(testfiles) $(testfiles_exec)
+EXTRA_DIST += $(testfiles) $(testfiles_exec) docs-sane.py.in make-perms-test.py.in
 EXTRA_SCRIPTS = $(sobuilts)
+
+## Python scripts - need text processing
+docs-sane make-perms-test: %: %.py.in
+	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
+	chmod +rwx $@  # respects umask
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0 sotest/libsotest.so sotest/libsotest.so.1
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^
