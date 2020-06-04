@@ -37,6 +37,7 @@ Build.ch-pull2dir \
 Build.ch-pull2tar \
 Build.docker_pull \
 Build.missing \
+ch-test.make \
 docs-sane \
 make-perms-test
 
@@ -60,18 +61,20 @@ sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
-# FIXME:
-# The automake documentation suggests that TEST and AM_TESTS_ENVIRONMENT can
-# be defined to run a script and set environment variables. For example:
+# FIXME: if a test fails bats simply reports that the test fails, i.e., bats
+# doesn't return a nonzero unless something funky happened. We need to
+# make the 'make check' error if a test fails.
+TESTS = ch-test.make
+
+# Note because we cannot pass a script declared in TESTS any arguments, we are
+# forced to use a wrapper script, ch-test.make, to specify a phase to ch-test.
+# Thus, using AM_TESTS_ENVIRONMENT doesn't seem all that useful and is commented
+# out.
 #
-# TESTS = $(top_builddir)/bin/ch-test
 # AM_TESTS_ENVIRONMENT = \
 #	$(TESTS); \
 #	CH_TEST_IMGDIR=/tmp/ch-test.tmp.${USER}/img; export CH_TEST_IMGDIR; \
-#	CH_TEST_TARDIR=/tmp/ch-test.tmp.${USER}/tar; export CH_TEST_TARDIR; \
-#
-# However, ch-test seemed to just run with defaults, i.e., CH_TEST_* was never
-# set. Thus we just use ch-test in the installcheck-local rule.
+#	CH_TEST_TARDIR=/tmp/ch-test.tmp.${USER}/tar; export CH_TEST_TARDIR;
 
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
