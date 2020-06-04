@@ -640,14 +640,6 @@ class Repo_Downloader:
       """If we need to authenticate, do so using the 401 from url; otherwise
          do nothing."""
       if (self.auth is None):
-         # Apparently parsing the WWW-Authenticate header is pretty hard. This
-         # implementation is a non-compliant regex kludge [1,2]. Alternatives
-         # include putting the grammar into Lark (this can be gotten by
-         # reading the RFCs enough) or using the www-authenticate library [3].
-         #
-         # [1]: https://stackoverflow.com/a/1349528
-         # [2]: https://stackoverflow.com/a/1547940
-         # [3]: https://pypi.org/project/www-authenticate
          DEBUG("requesting auth parameters")
          res = self.get_raw(url, expected_statuses=(401,200))
          if (res.status_code == 200):
@@ -658,6 +650,15 @@ class Repo_Downloader:
             auth = res.headers["WWW-Authenticate"]
             if (not auth.startswith("Bearer ")):
                FATAL("authentication scheme is not Bearer")
+            # Apparently parsing the WWW-Authenticate header correctly is
+            # pretty hard. This is a non-compliant regex kludge [1,2].
+            # Alternatives include putting the grammar into Lark (this can be
+            # gotten by reading the RFCs enough) or using the www-authenticate
+            # library [3].
+            #
+            # [1]: https://stackoverflow.com/a/1349528
+            # [2]: https://stackoverflow.com/a/1547940
+            # [3]: https://pypi.org/project/www-authenticate
             authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
             DEBUG("WWW-Authenticate parse: %s" % authd, v=2)
             for k in ("realm", "service", "scope"):
