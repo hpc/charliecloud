@@ -60,6 +60,10 @@ sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
+# FIXME: assign output from version.txt to variables for comparison.
+# install_ver = $(shell sh -c "cat ${DESTDIR}${libdir}/version.txt")
+# source_ver = $(shell sh -c "cat ${top_builddir}${libdir}/version.txt")
+
 # FIXME: rename and move somewhere more obscure; we don't want users running
 # the wrapper.
 TESTS = ch-test.make
@@ -86,10 +90,15 @@ clean-local:
 install-data-hook:
 	mkdir $(DESTDIR)$(testdir)/fixtures
 	ln -fs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
-
-# FIXME: automake assigns bindir a default value of /usr/local/bin; if a ch-test
-# exists ensure it is the correct version.
 installcheck-local:
+#	if [[ -z $(install_ver) ]]; then \
+#		echo "installcheck: problem with install; no version.txt file found"; \
+#		exit 1;\
+#	fi
+#	if [[ $(install_ver) != $(source_ver) ]]; then \
+#		echo "installcheck: source version does not match install version."; \
+#		exit 1;\
+#	fi
 	$(DESTDIR)$(bindir)/ch-test all -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
 		--img-dir=/tmp/ch-test.tmp.${USER}/img;
