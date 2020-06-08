@@ -1,5 +1,4 @@
 testdir = $(pkglibexecdir)/test
-topbindir = $(top_builddir)/bin
 
 # These test files require no special handling.
 testfiles = \
@@ -88,9 +87,6 @@ install-data-hook:
 	mkdir $(DESTDIR)$(testdir)/fixtures
 	ln -fs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 
-# FIXME: if a test fails bats simply reports that the test fails, i.e., bats
-# doesn't return a nonzero unless something funky happened. We need to
-# make the installcheck error if a test fails.
 # FIXME: automake assigns bindir a default value of /usr/local/bin; if a ch-test
 # exists ensure it is the correct version.
 installcheck-local:
