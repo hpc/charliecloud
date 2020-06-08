@@ -92,7 +92,7 @@ install-data-hook:
 installcheck-local:
 	$(DESTDIR)$(bindir)/ch-test all -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
-        --img-dir=/tmp/ch-test.tmp.${USER}/img;
+		--img-dir=/tmp/ch-test.tmp.${USER}/img;
 
 uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
