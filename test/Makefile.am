@@ -61,9 +61,6 @@ sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
-# FIXME: if a test fails bats simply reports that the test fails, i.e., bats
-# doesn't return a nonzero unless something funky happened. We need to
-# make the 'make check' error if a test fails.
 # FIXME: rename and move somewhere more obscure; we don't want users running
 # the wrapper.
 TESTS = ch-test.make
@@ -97,12 +94,9 @@ install-data-hook:
 # FIXME: automake assigns bindir a default value of /usr/local/bin; if a ch-test
 # exists ensure it is the correct version.
 installcheck-local:
-	$(DESTDIR)$(bindir)/ch-test build -b none \
+	$(DESTDIR)$(bindir)/ch-test all -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
-        --img-dir=/tmp/ch-test.tmp.${USER}/img; \
-	$(DESTDIR)$(bindir)/ch-test run -b none \
-		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
-        --img-dir=/tmp/ch-test.tmp.${USER}/img
+        --img-dir=/tmp/ch-test.tmp.${USER}/img;
 
 uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
