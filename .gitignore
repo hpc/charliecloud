@@ -60,8 +60,6 @@ Makefile.in
 /aclocal.m4
 /autom4te.cache/
 /bin/.deps/
-/bin/ch-test.log
-/bin/ch-test.trs
 /bin/config.h
 /bin/config.h.in
 /bin/stamp-h1
