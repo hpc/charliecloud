@@ -24,6 +24,8 @@ ch-grow_desc.rst \
 ch-grow.rst \
 ch-mount_desc.rst \
 ch-mount.rst \
+ch-nudge.rst \
+ch-nudge_desc.rst \
 ch-pull2dir_desc.rst \
 ch-pull2dir.rst \
 ch-pull2tar_desc.rst \
