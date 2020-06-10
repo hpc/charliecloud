@@ -88,6 +88,10 @@ Vagrant.configure("2") do |c|
     # Optional dependencies.
     yum -y install bats pigz pv python36
 
+    # Squash dependencies.
+    yum -y install squashfs-tools.x86_64
+    yum -y install squashfuse.x86_64
+
     # Add /usr/local/{bin,sbin} to $PATH.
     echo 'export PATH=/usr/local/sbin:/usr/local/bin:$PATH' > /etc/profile.d/path.sh
   EOF
