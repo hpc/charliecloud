@@ -4,8 +4,6 @@ FROM centos:7
 # This image has two purposes: (1) demonstrate we can build a CentOS 7 image
 # and (2) provide a build environment for Charliecloud EPEL 7 RPMs.
 
-RUN yum -y install epel-release
-
 # Re. ch-grow: Like apt(8), Yum/RPM like to chown(2), etc., if they believe they
 # are root. This fails in an unprivileged user namespace because UID 0 is fake.
 # Unlike apt, RPM makes these system calls directly, so there's no opportunity
@@ -22,24 +20,22 @@ RUN yum -y install epel-release
 # impact. In the interest of time, we demonstrate this by installing the
 # openssh package, required by git, which reliably tickles the problem.
 # See issue #472.
-RUN          yum -y install fakeroot
-RUN fakeroot yum -y install openssh
-
-# Install packages we actually need.
-RUN yum -y install \
-           autoconf \
-           automake \
-           bats \
-           gcc \
-           git \
-           make \
-           python36 \
-           python36-sphinx \
-           python36-sphinx_rtd_theme \
-           rpm-build \
-           rpmlint \
-           rsync \
-           wget
-
-# Clean up.
-RUN yum clean all
+RUN yum install -y epel-release \
+ && yum install -y \
+                autoconf \
+                automake \
+                bats \
+                fakeroot \
+                gcc \
+                make \
+                python36 \
+                python36-sphinx \
+                python36-sphinx_rtd_theme \
+                rpm-build \
+                rpmlint \
+                rsync \
+                wget \
+ && fakeroot yum install -y \
+                         git \
+                         openssh \
+ && yum clean all

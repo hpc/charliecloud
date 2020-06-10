@@ -15,7 +15,6 @@ Dockerfile.centos6 \
 Dockerfile.centos7 \
 Dockerfile.centos8 \
 Dockerfile.debian9 \
-Dockerfile.exhaustive \
 Dockerfile.mpich \
 Dockerfile.nvidia \
 Dockerfile.openmpi \
@@ -39,6 +38,7 @@ copy/fileA \
 copy/fileB \
 copy/test.bats \
 dont-init-ucx-on-intel-cray.patch \
+exhaustive/Dockerfile \
 hello/Dockerfile \
 hello/README \
 lammps/Dockerfile \
@@ -65,6 +65,7 @@ spark/Dockerfile \
 spark/slurm.sh
 
 batsfiles = \
+exhaustive/test.bats \
 hello/test.bats \
 lammps/test.bats \
 lustre/test.bats \

@@ -156,8 +156,15 @@ docker)
 
     ;;
 
+none)
+
+    echo 'this script does not support the above builder' 1>&2
+    exit 1
+    ;;
+
 *)
-    Echo "unknown builder: $CH_BUILDER" 1>&2
+    # builder_choose() above should have ensured the builder is good.
+    echo "unreachable code reached: unknown builder: $CH_BUILDER" 1>&2
     exit 1
     ;;
 esac

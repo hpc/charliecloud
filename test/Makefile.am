@@ -2,6 +2,7 @@ testdir = $(pkglibexecdir)/test
 
 # These test files require no special handling.
 testfiles = \
+.dockerignore \
 Dockerfile.00_tiny \
 Dockerfile.argenv \
 Dockerfile.build2dir \
@@ -11,6 +12,7 @@ build/50_dockerfile.bats \
 build/50_misc.bats \
 build/99_cleanup.bats \
 common.bash \
+fixtures/empty-file \
 make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
 make-auto.d/builder_to_archive.bats.in \
@@ -66,12 +68,12 @@ nobase_nodist_test_SCRIPTS = $(sobuilts)
 CLEANFILES = $(sobuilts) docs-sane make-perms-test
 # See comment about symlinks in examples/Makefile.am.
 all-local:
-	ln -fs /tmp fixtures/symlink-to-tmp
+	ln -fTs /tmp fixtures/symlink-to-tmp
 clean-local:
 	rm -f fixtures/symlink-to-tmp
 install-data-hook:
 	mkdir -p $(DESTDIR)$(testdir)/fixtures
-	ln -fs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
+	ln -fTs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
@@ -90,9 +92,9 @@ sotest/libsotest.so.1.0: sotest/libsotest.c
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
 
 sotest/libsotest.so: sotest/libsotest.so.1.0
-	ln -f -s ./libsotest.so.1.0 $@
+	ln -fTs ./libsotest.so.1.0 $@
 sotest/libsotest.so.1: sotest/libsotest.so.1.0
-	ln -f -s ./libsotest.so.1.0 $@
+	ln -fTs ./libsotest.so.1.0 $@
 
 sotest/bin/sotest: sotest/sotest
 	mkdir -p sotest/bin

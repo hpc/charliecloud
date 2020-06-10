@@ -8,6 +8,7 @@ import os
 import getpass
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -19,7 +20,8 @@ import version
 ## Imports not in standard library ##
 
 # These are messy because we need --version and --help even if a dependency is
-# missing.
+# missing. Among other things, nothing can depend on non-standard modules at
+# parse time.
 
 # List of dependency problems.
 depfails = []
@@ -37,11 +39,8 @@ except (ImportError, AttributeError) as x:
    else:
       assert False
    # Mock up a lark module so the rest of the file parses.
-   m = types.ModuleType("lark")
-   class Visitor_Mock(object):
-      pass
-   m.Visitor = Visitor_Mock
-   lark = m
+   lark = types.ModuleType("lark")
+   lark.Visitor = object
 
 try:
    import requests
@@ -49,6 +48,10 @@ try:
    import requests.exceptions
 except ImportError:
    depfails.append(("missing", 'Python module "requests"'))
+   # Mock up a requests.auth module so the rest of the file parses.
+   requests = types.ModuleType("requests")
+   requests.auth = types.ModuleType("requests.auth")
+   requests.auth.AuthBase = object
 
 
 ## Globals ##
@@ -79,13 +82,19 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 
 /// Dockerfile ///
 
-?instruction: _WS? ( cmd | copy | arg | env | from_ | run | workdir )
+// First instruction must be ARG or FROM, but that is not a syntax error.
+dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
-cmd: "CMD"i _WS LINE _NEWLINES
+?instruction: _WS? ( arg | copy | env | from_ | run | workdir | uns_forever | uns_yet )
 
-copy: "COPY"i ( _WS copy_chown )? ( copy_shell ) _NEWLINES
-copy_chown: "--chown" "=" /[^ \t\n]+/
-copy_shell: _WS WORD ( _WS WORD )+
+directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
+DIRECTIVE_NAME: ( "escape" | "syntax" )
+comment: _WS? _COMMENT_BODY _NEWLINES
+_COMMENT_BODY: /#[^\n]*/
+
+copy: "COPY"i ( _WS option )* _WS ( copy_list | copy_shell ) _NEWLINES
+copy_list.2: _string_list
+copy_shell: WORD ( _WS WORD )+
 
 arg: "ARG"i _WS ( arg_bare | arg_equals ) _NEWLINES
 arg_bare: WORD
@@ -96,7 +105,7 @@ env_space: WORD _WS LINE
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i _WS image_ref [ _WS from_alias ] _NEWLINES
+from_: "FROM"i ( _WS option )* _WS image_ref [ _WS from_alias ] _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
@@ -105,7 +114,17 @@ run_shell: LINE
 
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 
+uns_forever: UNS_FOREVER _WS LINE _NEWLINES
+UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
+
+uns_yet: UNS_YET _WS LINE _NEWLINES
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i | "SHELL"i )
+
 /// Common ///
+
+option: "--" OPTION_KEY "=" OPTION_VALUE
+OPTION_KEY: /[a-z]+/
+OPTION_VALUE: /[^ \t\n]+/
 
 HEX_STRING: /[0-9A-Fa-f]+/
 LINE: ( LINE_CONTINUE | /[^\n]/ )+
@@ -116,7 +135,6 @@ _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 LINE_CONTINUE: "\\\n"
 %ignore LINE_CONTINUE
 
-_COMMENT: _WS? /#[^\n]*/ _NEWLINES
 _NEWLINES: _WS? "\n"+
 _WS: /[ \t]/+
 
@@ -309,7 +327,7 @@ nogroup:x:65534:
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
          try:
-            fp = tarfile.open(path)
+            fp = TarFile.open(path)
             members_list = fp.getmembers()  # reads whole file :(
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
@@ -466,6 +484,14 @@ class Image_Ref:
                 "tag",
                 "digest")
 
+   # Reference parser object. Instantiating a parser took 100ms when we tested
+   # it, which means we can't really put it in a loop. But, at parse time,
+   # "lark" may refer to a dummy module (see above), so we can't populate the
+   # parser here either. We use a class varible and populate it at the time of
+   # first use.
+   parser = None
+
+
    def __init__(self, src=None):
       self.host = None
       self.port = None
@@ -495,14 +521,15 @@ class Image_Ref:
          out += "@sha256:" + self.digest
       return out
 
-   @staticmethod
-   def parse(s):
+   @classmethod
+   def parse(class_, s):
+      if (class_.parser is None):
+         class_.parser = lark.Lark("?start: image_ref\n" + GRAMMAR,
+                                   parser="earley", propagate_positions=True)
       if ("%" in s):
          s = s.replace("%", "/")
-      parser = lark.Lark("?start: image_ref\n" + GRAMMAR, parser="earley",
-                         propagate_positions=True)
       try:
-         tree = parser.parse(s)
+         tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
          FATAL("image ref syntax, char %d: %s" % (x.column, s))
       except lark.exceptions.UnexpectedEOF as x:
@@ -588,9 +615,9 @@ fields:
 class Repo_Downloader:
    """Downloads layers and manifests from an image repository via HTTPS.
 
-      Note that authentication is required even for anonymous downloads of
-      public images (which is all that is currently supported). In this case,
-      we just fetch an authentication token anonymously."""
+      Note that with some registries, authentication is required even for
+      anonymous downloads of public images. In this case, we just fetch an
+      authentication token anonymously."""
 
    # The repository protocol follows "ask forgiveness" rather than the
    # standard "ask permission". That is, you request the URL you want, and if
@@ -617,6 +644,11 @@ class Repo_Downloader:
          req.headers["Authorization"] = "Bearer %s" % self.token
          return req
 
+   class Null_Auth(requests.auth.AuthBase):
+
+      def __call__(self, req):
+         return req
+
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
       self.ref = ref.copy()
@@ -635,42 +667,46 @@ class Repo_Downloader:
       """If we need to authenticate, do so using the 401 from url; otherwise
          do nothing."""
       if (self.auth is None):
-         # Apparently parsing the WWW-Authenticate header is pretty hard. This
-         # implementation is a non-compliant regex kludge [1,2]. Alternatives
-         # include putting the grammar into Lark (this can be gotten by
-         # reading the RFCs enough) or using the www-authenticate library [3].
-         #
-         # [1]: https://stackoverflow.com/a/1349528
-         # [2]: https://stackoverflow.com/a/1547940
-         # [3]: https://pypi.org/project/www-authenticate
          DEBUG("requesting auth parameters")
-         res = self.get_raw(url, expected_statuses=(401,))
-         if ("WWW-Authenticate" not in res.headers):
-            FATAL("WWW-Authenticate header not found")
-         auth = res.headers["WWW-Authenticate"]
-         if (not auth.startswith("Bearer ")):
-            FATAL("authentication scheme is not Bearer")
-         authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
-         DEBUG("WWW-Authenticate parse: %s" % authd, v=2)
-         for k in ("realm", "service", "scope"):
-            if (k not in authd):
-               FATAL("WWW-Authenticate missing key: %s" % k)
-         # Request auth token.
-         DEBUG("requesting anonymous auth token")
-         res = self.get_raw(authd["realm"], expected_statuses=(200,403),
-                            params={"service": authd["service"],
-                                    "scope": authd["scope"]})
-         if (res.status_code == 403):
-            INFO("anonymous access rejected")
-            username = input("Username: ")
-            password = getpass.getpass("Password: ")
-            auth = requests.auth.HTTPBasicAuth(username, password)
-            res = self.get_raw(authd["realm"], auth=auth,
+         res = self.get_raw(url, expected_statuses=(401,200))
+         if (res.status_code == 200):
+            self.auth = self.Null_Auth()
+         else:
+            if ("WWW-Authenticate" not in res.headers):
+               FATAL("WWW-Authenticate header not found")
+            auth = res.headers["WWW-Authenticate"]
+            if (not auth.startswith("Bearer ")):
+               FATAL("authentication scheme is not Bearer")
+            # Apparently parsing the WWW-Authenticate header correctly is
+            # pretty hard. This is a non-compliant regex kludge [1,2].
+            # Alternatives include putting the grammar into Lark (this can be
+            # gotten by reading the RFCs enough) or using the www-authenticate
+            # library [3].
+            #
+            # [1]: https://stackoverflow.com/a/1349528
+            # [2]: https://stackoverflow.com/a/1547940
+            # [3]: https://pypi.org/project/www-authenticate
+            authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
+            DEBUG("WWW-Authenticate parse: %s" % authd, v=2)
+            for k in ("realm", "service", "scope"):
+               if (k not in authd):
+                  FATAL("WWW-Authenticate missing key: %s" % k)
+            # Request auth token.
+            DEBUG("requesting anonymous auth token")
+            res = self.get_raw(authd["realm"], expected_statuses=(200,403),
                                params={"service": authd["service"],
                                        "scope": authd["scope"]})
-         token = res.json()["token"]
-         DEBUG("got token: %s..." % (token[:32]))
-         self.auth = self.Bearer_Auth(token)
+            if (res.status_code == 403):
+               INFO("anonymous access rejected")
+               username = input("Username: ")
+               password = getpass.getpass("Password: ")
+               auth = requests.auth.HTTPBasicAuth(username, password)
+               res = self.get_raw(authd["realm"], auth=auth,
+                                  params={"service": authd["service"],
+                                          "scope": authd["scope"]})
+            token = res.json()["token"]
+            DEBUG("got token: %s..." % (token[:32]))
+            self.auth = self.Bearer_Auth(token)
 
    def close(self):
       if (self.session is not None):
@@ -726,6 +762,43 @@ class Repo_Downloader:
       if (self.session is None):
          DEBUG("initializing session")
          self.session = requests.Session()
+
+
+class TarFile(tarfile.TarFile):
+
+   # This subclass augments tarfile.TarFile to add safety code. While the
+   # tarfile module docs [1] say “do not use this class [TarFile] directly”,
+   # they also say “[t]he tarfile.open() function is actually a shortcut” to
+   # class method TarFile.open(), and the source code recommends subclassing
+   # TarFile [2].
+   #
+   # [1]: https://docs.python.org/3/library/tarfile.html
+   # [2]: https://github.com/python/cpython/blob/2bcd0fe7a5d1a3c3dd99e7e067239a514a780402/Lib/tarfile.py#L2159
+
+   def makefile(self, tarinfo, targetpath):
+      """If targetpath is a symlink, stock makefile() overwrites the *target*
+         of that symlink rather than replacing the symlink. This is a known,
+         but long-standing unfixed, bug in Python [1,2]. To work around this,
+         we manually delete targetpath if it exists and is a symlink. See
+         issue #819.
+
+         [1]: https://bugs.python.org/issue35483
+         [2]: https://bugs.python.org/issue19974"""
+      try:
+         st = os.lstat(targetpath)
+         if (stat.S_ISREG(st.st_mode)):
+            pass  # regular file; do nothing (will be overwritten)
+         elif (stat.S_ISDIR(st.st_mode)):
+            FATAL("can't overwrite directory with regular file: %s"
+                  % targetpath)
+         elif (stat.S_ISLNK(st.st_mode)):
+            ossafe(os.unlink, "can't unlink: %s" % targetpath, targetpath)
+         else:
+            FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
+                  % (stat.S_IFMT(st.st_mode), targetpath))
+      except FileNotFoundError:
+         pass
+      super().makefile(tarinfo, targetpath)
 
 
 ## Supporting functions ##
@@ -794,6 +867,14 @@ def mkdirs(path):
    DEBUG("ensuring directory: " + path)
    os.makedirs(path, exist_ok=True)
 
+def ossafe(f, msg, *args, **kwargs):
+   """Call f with args and kwargs. Catch OSError and other problems and fail
+      with a nice error message."""
+   try:
+      f(*args, **kwargs)
+   except OSError as x:
+      FATAL("%s: %s" % (msg, x.strerror))
+
 def rmtree(path):
    if (os.path.isdir(path)):
       DEBUG("deleting directory: " + path)
@@ -834,10 +915,7 @@ def symlink(target, source):
 def tree_child(tree, cname):
    """Locate a descendant subtree named cname using breadth-first search and
       return it. If no such subtree exists, return None."""
-   for st in tree.iter_subtrees_topdown():
-      if (st.data == cname):
-         return st
-   return None
+   return next(tree_children(tree, cname), None)
 
 def tree_child_terminal(tree, cname, tname, i=0):
    """Locate a descendant subtree named cname using breadth-first search and
@@ -857,6 +935,12 @@ def tree_child_terminals(tree, cname, tname):
       if (d.data == cname):
          return tree_terminals(d, tname)
    return []
+
+def tree_children(tree, cname):
+   "Yield children of tree named cname using breadth-first search."
+   for st in tree.iter_subtrees_topdown():
+      if (st.data == cname):
+         yield st
 
 def tree_terminal(tree, tname, i=0):
    """Return the value of the ith child terminal named tname (zero-based), or
