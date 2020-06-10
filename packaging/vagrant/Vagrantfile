@@ -78,10 +78,12 @@ Vagrant.configure("2") do |c|
                    wget
 
     # Git from IUS. This also activates EPEL.
-    wget https://centos7.iuscommunity.org/ius-release.rpm
+    # From here: https://ius.io/setup 
+    # Likely to be deprecated again sometime in the future
+    wget https://repo.ius.io/ius-release-el7.rpm
     yum -y install epel-release
-    rpm --install ius-release.rpm
-    yum -y install git2u
+    rpm --install ius-release-el7.rpm
+    yum -y install git222
 
     # Optional dependencies.
     yum -y install bats pigz pv python36
@@ -224,6 +226,7 @@ EOF2
     sudo make install
     # Setup buildah's system configuration files
     sudo mkdir -p /etc/containers
+    # These files are already on the image, but the defaults don't work with our buildah
     sudo cp tests/policy.json /etc/containers
     sudo cp tests/registries.conf /etc/containers
   EOF
@@ -316,9 +319,9 @@ EOF2
     else
         user=vagrant
     fi
-    sudo -iu $user -- sh -c "ch-test -b docker all"
-    sudo -iu $user -- sh -c "ch-test -b buildah all"
-    sudo -iu $user -- sh -c "ch-test -b ch-grow all"
+    sudo -iu $user -- sh -c "ch-test --pedantic yes -b docker all"
+    sudo -iu $user -- sh -c "ch-test --pedantic yes -b buildah all"
+    sudo -iu $user -- sh -c "ch-test --pedantic yes -b ch-grow all"
   EOF
 end
 
