@@ -18,7 +18,7 @@ setup () {
             skip "$msg"
         fi
     elif [[ ! -d $CH_TEST_LUSTREDIR ]]; then
-        echo "'${CH_TEST_LUSTREDIR}' is not a directory"
+        echo "'${CH_TEST_LUSTREDIR}' is not a directory" 1>&2
         exit 1
     fi
 }
