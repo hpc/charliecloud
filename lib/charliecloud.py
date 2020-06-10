@@ -588,9 +588,9 @@ fields:
 class Repo_Downloader:
    """Downloads layers and manifests from an image repository via HTTPS.
 
-      Note that authentication is required even for anonymous downloads of
-      public images (which is all that is currently supported). In this case,
-      we just fetch an authentication token anonymously."""
+      Note that with some registries, authentication is required even for
+      anonymous downloads of public images. In this case, we just fetch an
+      authentication token anonymously."""
 
    # The repository protocol follows "ask forgiveness" rather than the
    # standard "ask permission". That is, you request the URL you want, and if
@@ -617,6 +617,11 @@ class Repo_Downloader:
          req.headers["Authorization"] = "Bearer %s" % self.token
          return req
 
+   class Null_Auth(requests.auth.AuthBase):
+
+      def __call__(self, req):
+         return req
+
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
       self.ref = ref.copy()
@@ -635,42 +640,46 @@ class Repo_Downloader:
       """If we need to authenticate, do so using the 401 from url; otherwise
          do nothing."""
       if (self.auth is None):
-         # Apparently parsing the WWW-Authenticate header is pretty hard. This
-         # implementation is a non-compliant regex kludge [1,2]. Alternatives
-         # include putting the grammar into Lark (this can be gotten by
-         # reading the RFCs enough) or using the www-authenticate library [3].
-         #
-         # [1]: https://stackoverflow.com/a/1349528
-         # [2]: https://stackoverflow.com/a/1547940
-         # [3]: https://pypi.org/project/www-authenticate
          DEBUG("requesting auth parameters")
-         res = self.get_raw(url, expected_statuses=(401,))
-         if ("WWW-Authenticate" not in res.headers):
-            FATAL("WWW-Authenticate header not found")
-         auth = res.headers["WWW-Authenticate"]
-         if (not auth.startswith("Bearer ")):
-            FATAL("authentication scheme is not Bearer")
-         authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
-         DEBUG("WWW-Authenticate parse: %s" % authd, v=2)
-         for k in ("realm", "service", "scope"):
-            if (k not in authd):
-               FATAL("WWW-Authenticate missing key: %s" % k)
-         # Request auth token.
-         DEBUG("requesting anonymous auth token")
-         res = self.get_raw(authd["realm"], expected_statuses=(200,403),
-                            params={"service": authd["service"],
-                                    "scope": authd["scope"]})
-         if (res.status_code == 403):
-            INFO("anonymous access rejected")
-            username = input("Username: ")
-            password = getpass.getpass("Password: ")
-            auth = requests.auth.HTTPBasicAuth(username, password)
-            res = self.get_raw(authd["realm"], auth=auth,
+         res = self.get_raw(url, expected_statuses=(401,200))
+         if (res.status_code == 200):
+            self.auth = self.Null_Auth()
+         else:
+            if ("WWW-Authenticate" not in res.headers):
+               FATAL("WWW-Authenticate header not found")
+            auth = res.headers["WWW-Authenticate"]
+            if (not auth.startswith("Bearer ")):
+               FATAL("authentication scheme is not Bearer")
+            # Apparently parsing the WWW-Authenticate header correctly is
+            # pretty hard. This is a non-compliant regex kludge [1,2].
+            # Alternatives include putting the grammar into Lark (this can be
+            # gotten by reading the RFCs enough) or using the www-authenticate
+            # library [3].
+            #
+            # [1]: https://stackoverflow.com/a/1349528
+            # [2]: https://stackoverflow.com/a/1547940
+            # [3]: https://pypi.org/project/www-authenticate
+            authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
+            DEBUG("WWW-Authenticate parse: %s" % authd, v=2)
+            for k in ("realm", "service", "scope"):
+               if (k not in authd):
+                  FATAL("WWW-Authenticate missing key: %s" % k)
+            # Request auth token.
+            DEBUG("requesting anonymous auth token")
+            res = self.get_raw(authd["realm"], expected_statuses=(200,403),
                                params={"service": authd["service"],
                                        "scope": authd["scope"]})
-         token = res.json()["token"]
-         DEBUG("got token: %s..." % (token[:32]))
-         self.auth = self.Bearer_Auth(token)
+            if (res.status_code == 403):
+               INFO("anonymous access rejected")
+               username = input("Username: ")
+               password = getpass.getpass("Password: ")
+               auth = requests.auth.HTTPBasicAuth(username, password)
+               res = self.get_raw(authd["realm"], auth=auth,
+                                  params={"service": authd["service"],
+                                          "scope": authd["scope"]})
+            token = res.json()["token"]
+            DEBUG("got token: %s..." % (token[:32]))
+            self.auth = self.Bearer_Auth(token)
 
    def close(self):
       if (self.session is not None):
