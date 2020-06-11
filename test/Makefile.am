@@ -70,7 +70,7 @@ all-local:
 clean-local:
 	rm -f fixtures/symlink-to-tmp
 install-data-hook:
-	mkdir $(DESTDIR)$(testdir)/fixtures
+	mkdir -p $(DESTDIR)$(testdir)/fixtures
 	ln -fs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
