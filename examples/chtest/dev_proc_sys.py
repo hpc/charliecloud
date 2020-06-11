@@ -3,11 +3,12 @@
 import os.path
 import sys
 
-# File in /sys seem to vary between Linux systems. Thus, try a few candidates
-# and use the first one that exists. What we want is any file under /sys with
+# Files in /dev and /sys seem to vary between Linux systems. Thus, try a few
+# candidates and use the first one that exists. What we want is a file with
 # permissions root:root -rw------- that's in a directory readable and
 # executable by unprivileged users, so we know we're testing permissions on
-# the file rather than any of its containing directories. This may help:
+# the file rather than any of its containing directories. This may help for
+# finding such a file in /sys:
 #
 #   $ find /sys -type f -a -perm 600 -ls
 #
@@ -24,8 +25,18 @@ if (sys_file is None):
    print("ERROR\tno test candidates in /sys exist")
    sys.exit(1)
 
+dev_file = None
+for f in ("/dev/cpu_dma_latency", "/dev/mem"):
+   if (os.path.exists(f)):
+      dev_file = f
+      break
+
+if (dev_file is None):
+   print("ERROR\tno test candidates in /dev exist")
+   sys.exit(1)
+
 problem_ct = 0
-for f in ("/dev/mem", "/proc/kcore", sys_file):
+for f in (dev_file, "/proc/kcore", sys_file):
    try:
       open(f, "rb").read(1)
       print("RISK\t%s: read allowed" % f)
