@@ -84,6 +84,7 @@ install-data-hook:
 	mkdir $(DESTDIR)$(testdir)/fixtures
 	ln -fs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 installcheck-local:
+	diff $(top_builddir)/lib/version.txt $(DESTDIR)$(libdir)/version.txt > /dev/null 2>&1
 	$(DESTDIR)$(bindir)/ch-test all -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
 		--img-dir=/tmp/ch-test.tmp.${USER}/img;
