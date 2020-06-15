@@ -31,7 +31,6 @@ FROM centos:8
 #
 RUN dnf install -y --setopt=install_weak_deps=false epel-release \
  && sed -ie 's/enabled=0/enabled=1/' /etc/yum.repos.d/CentOS-PowerTools.repo \
- && dnf update  -y \
  && dnf install -y --setopt=install_weak_deps=false --enablerepo=epel-playground \
                 dnf-plugin-ovl \
                 autoconf \

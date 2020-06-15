@@ -20,8 +20,7 @@ FROM centos:7
 # bzip, file, patch, unzip, and which are packages needed to install 
 # Charliecloud with Spack. These are in Spack's Docker example [2] but are not
 # documented as prerequisites [1].
-RUN yum update  -y \
- && yum install -y \
+RUN yum install -y \
                 curl \
                 gcc \
                 gcc-c++ \

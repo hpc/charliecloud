@@ -21,7 +21,6 @@ FROM centos:7
 # openssh package, required by git, which reliably tickles the problem.
 # See issue #472.
 RUN yum install -y epel-release \
- && yum update  -y \
  && yum install -y \
                 autoconf \
                 automake \
