@@ -1,4 +1,5 @@
 testdir = $(pkglibexecdir)/test
+ch_libdir = $(DESTDIR)$(libdir)/charliecloud
 
 # These test files require no special handling.
 testfiles = \
@@ -60,15 +61,11 @@ sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
-TESTS = ch-test.make
-# Note because it seems we cannot pass a script declared in TESTS arbitrary
-# arguments, we use a wrapper script, ch-test.make, to run to ch-test. Thus,
-# using AM_TESTS_ENVIRONMENT doesn't seem all that useful and is commented out.
-#
-# AM_TESTS_ENVIRONMENT = \
-#	$(TESTS); \
-#	CH_TEST_IMGDIR=/tmp/ch-test.tmp.${USER}/img; export CH_TEST_IMGDIR; \
-#	CH_TEST_TARDIR=/tmp/ch-test.tmp.${USER}/tar; export CH_TEST_TARDIR;
+TESTS = $(top_builddir)/bin/ch-test
+AM_TESTS_ENVIRONMENT = \
+	CH_TEST_PHASE=all; export CH_TEST_PHASE;\
+	CH_TEST_IMGDIR=/tmp/ch-test.tmp.${USER}/img; export CH_TEST_IMGDIR; \
+	CH_TEST_TARDIR=/tmp/ch-test.tmp.${USER}/tar; export CH_TEST_TARDIR;
 
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
@@ -84,7 +81,7 @@ install-data-hook:
 	mkdir $(DESTDIR)$(testdir)/fixtures
 	ln -fs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 installcheck-local:
-	diff $(top_builddir)/lib/version.txt $(DESTDIR)$(libdir)/version.txt > /dev/null 2>&1
+	diff $(top_builddir)/lib/version.txt $(ch_libdir)/version.txt
 	$(DESTDIR)$(bindir)/ch-test all -b none \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
 		--img-dir=/tmp/ch-test.tmp.${USER}/img;

@@ -326,7 +326,8 @@ test_make () {
     local tag
     case $phase in
     build)
-        printf "finding tests compatible with %s phase settings ...\n" "$phase"
+        printf "finding test files compatible with %s phase settings ...\n" \
+               "$phase"
         for i in $images $examples; do
            if test_make_check_image "$i"; then
                echo "found: $i"
@@ -339,7 +340,8 @@ test_make () {
         printf 'ok\n\n'
         ;;
     run)
-        printf "finding tests compatible with %s phase settings ...\n" "$phase"
+        printf "finding test files compatible with %s phase settings ...\n" \
+               "$phase"
         # For each tarball or squashfs file in --pack-dir look for a
         # corresponding example or image that produces a matching tag. If
         # found, check the image for exclusion conidtions.
@@ -363,7 +365,8 @@ test_make () {
         printf 'ok\n\n'
         ;;
     examples)
-        printf "finding tests compatible with %s phase settings ...\n" "$phase"
+        printf "finding test files compatible with %s phase settings ...\n" \
+               "$phase"
         if [[ $CH_TEST_SCOPE == quick ]]; then
             echo 'found: none'
             return
@@ -503,8 +506,9 @@ test_make_check_image () {
 
     # In examples phase, exclude chtest and any images not in a subdirectory of
     # examples.
-    if [[ $phase == examples && ( $dir == chtest || $dir == examples ) ]]; then
-        img_ok=
+    if    [[ $phase == examples \
+       && ( $dir == chtest || $dir == examples ) ]]; then
+            img_ok=
     fi
 
     if [[ -n $img_ok ]]; then
@@ -829,28 +833,12 @@ else
     ch_contributor_note="no; $email not in README.rst"
 fi
 printf 'contributor:  %s\n\n' "$ch_contributor_note"
-
-if [[ $phase = one-file ]]; then
-    if [[ ! -f $one_file ]]; then
-        fatal "not a file: $one_file"
-    fi
-    one_file=$(readlink -f "$one_file")  # make absolute b/c we cd later
-    if [[ $one_file = */test.bats ]]; then
-        fatal '--file: must specify build recipe file, not test.bats'
-    fi
-fi
-
-printf "%-21s %s" 'phase:' "$phase"
-if [[ $phase = one-file ]]; then
-    printf ': %s' "$one_file"
-fi
-if [[ -z $phase ]]; then
-    fatal 'phase: no phase specified'
-fi
 printf '\n'
 
 #    variable name    CLI              environment         default
 #                     desc. width  description
+vset CH_TEST_PHASE    "$phase"         "$CH_TEST_PHASE"    '' \
+                      21 'phase'
 vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
                       21 'scope'
 builder_set 21
@@ -866,10 +854,29 @@ vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
                       21 'Lustre test dir'
+
+if [[ $CH_TEST_PHASE = one-file ]]; then
+    if [[ ! -f $one_file ]]; then
+        fatal "not a file: $one_file"
+    fi
+    one_file=$(readlink -f "$one_file")  # make absolute b/c we cd later
+    if [[ $one_file = */test.bats ]]; then
+        fatal '--file: must specify build recipe file, not test.bats'
+    fi
+fi
+
+if [[ $CH_TEST_PHASE = one-file ]]; then
+    printf ': %s' "$one_file"
+fi
+
+if [[ -z $CH_TEST_PHASE ]]; then
+    fatal 'phase: no phase specified'
+fi
+
 printf '\n'
 
-if [[ $phase == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then
-    fatal "phase $phase: CH_TEST_PERMDIRS: can't be 'skip'"
+if [[ $CH_TEST_PHASE == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then
+    fatal "phase $CH_TEST_PHASE: CH_TEST_PERMDIRS: can't be 'skip'"
 fi
 
 # Check that different sources of version number are consistent.
@@ -935,7 +942,7 @@ examples=$(   find "$CHTEST_EXAMPLES_DIR"    -name 'Dockerfile' \
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 
 # Execute phase
-case $phase in
+case $CH_TEST_PHASE in
     all)
         phase=build
         dir_tar_mk
