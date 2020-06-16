@@ -131,6 +131,10 @@ directly from storage like any other local process would.
 URL contexts are not supported. We have not yet decided whether to implement
 this.
 
+If the Dockerfile is presented on standard input, i.e. with :code:`-f -`,
+:code:`ch-grow` still requires a build context. There is not currently a way
+to have no context directory.
+
 There is not yet a build cache; each instruction will be re-run each time you
 build. However, base images are not re-downloaded or re-built if they're
 already present.
@@ -176,6 +180,11 @@ Substitution happens for *all* instructions, not just the ones listed in the
 reference, which we do not plan to change.
 
 Substitution of variables set in base images is not yet supported.
+
+While :code:`ch-grow` does not yet have a build cache, our plan is that
+:code:`ARG` and :code:`ENV` will cause a cache miss upon *definition*, in
+contrast with Docker where the variables miss upon *use*, except for certain
+cache-excluded variables that never cause misses.
 
 :code:`.dockerignore` file
 --------------------------
@@ -226,3 +235,201 @@ commands.
    Most of these issues affect *any* fully unprivileged container build, not
    just :code:`ch-grow`. This is the bleeding edge. We are working to better
    characterize the problems and add automatic workarounds.
+
+:code:`CMD`
+-----------
+
+Neither :code:`CMD` nor :code:`ENTRYPOINT` are currently supported. See the
+discussion under :code:`ENTRYPOINT` below.
+
+:code:`LABEL`
+-------------
+
+This instruction is not yet supported.
+
+:code:`MAINTAINER`
+------------------
+
+We have no plans to support this instruction, because it is deprecated.
+
+:code:`EXPOSE`
+--------------
+
+Charliecloud does not use the network namespace, so containerized processes
+can simply listen on a host port like other unprivileged processes. We have no
+plans to support this instruction.
+
+:code:`ENV`
+-----------
+
+See section “Environment replacement” above.
+
+Note that :code:`ENV` and :code:`ARG` have different syntax despite very
+similar purposes.
+
+:code:`ADD`
+-----------
+
+This instruction is not currently supported, and we have tentatively assigned
+it a low priority because Docker Inc.'s best practices discourage its use and
+there are workarounds.
+
+We expect that :code:`ADD --chown` will never be supported because it doesn't
+make sense in an unprivileged build.
+
+:code:`COPY`
+------------
+
+Especially for people used to UNIX :code:`cp(1)`, the semantics of the
+Dockerfile :code:`COPY` instruction can be confusing.
+
+Most notably, when a source of the copy is a directory, the *contents* of that
+directory, not the directory itself, are copied. This is documented, but it's
+a real gotcha because that's not what :code:`cp(1)` does, and it means that
+many things you can do in one :code:`cp(1)` command require multiple
+:code:`COPY` instructions.
+
+Also, the reference documentation is incomplete. In our experience, Docker
+also behaves as follows; :code:`ch-grow` does the same in an attempt to be
+bug-compatible for the :code:`COPY` instructions.
+
+1. You can use absolute paths in the source; the root is the context
+   directory.
+
+2. Destination directories are created if they don't exist in the following
+   situations:
+
+   1. If the destination path ends in slash. (Documented.)
+
+   2. If the number of sources is greater than 1, either by wildcard or
+      explicitly, regardless of whether the destination ends in slash. (Not
+      documented.)
+
+   3. If there is a single source and it is a directory. (Not documented.)
+
+3. Symbolic links are particularly messy (this is not documented):
+
+   1. If named in sources either explicitly or by wildcard, symlinks are
+      dereferenced, i.e., the result is a copy of the symlink target, not the
+      symlink itself. Keep in mind that directory contents are copied, not
+      directories.
+
+   2. If within a directory named in sources, symlinks are copied as symlinks.
+
+The following :code:`COPY` features are not yet implemented:
+
+* From prior stage by index or name, because multi-stage build is not yet
+  implemented.
+
+* From an arbitrary image by name.
+
+* List form of the instruction.
+
+* Escaping special characters in filenames.
+
+* :code:`COPY` with Dockerfile on standard input (e.g., :code:`ch-grow -f -`)
+  *does* work, because :code:`ch-grow` currently requires a context directory
+  in this case (see “Usage” above).
+
+We expect the following differences to be permanent:
+
+* Wildcards use Python glob semantics, not the Go semantics.
+
+* :code:`COPY --chown` is ignored, because it doesn't make sense in an
+  unprivileged build.
+
+:code:`ENTRYPOINT`
+------------------
+
+Neither :code:`CMD` nor :code:`ENTRYPOINT` are currently supported. This is
+for two main reasons:
+
+1. It seemed to us the main use case was for these instructions was containers
+   that had a single dominant command line, but we guessed that scientific
+   codes would have more variation in the commands run.
+
+2. They are complex instructions, which complex interactions; see the length
+   of the :code:`ENTRYPOINT` documentation, especially the matrix of
+   interactions with :code:`CMD`.
+
+We are interested in feedback on what we should do.
+
+:code:`VOLUME`
+--------------
+
+This instruction is not currently supported. Charliecloud has good support for
+bind mounts; we anticipate that it will continue to focus on that and will not
+introduce the volume management features that Docker has.
+
+:code:`USER`
+------------
+
+We do not plan to support this instruction, because it does not make sense for
+unprivileged builds.
+
+:code:`WORKDIR`
+---------------
+
+Relative paths are not yet supported.
+
+:code:`ARG`
+-----------
+
+See section “Environment replacement” above.
+
+:code:`ARG` before :code:`FROM` is not yet supported.
+
+Like Docker, :code:`ch-grow` pre-defines the following proxy variables, which
+do not require an :code:`ARG` instruction. However, they are available if the
+same-named environment variable is defined; :code:`--build-arg` is not
+required.
+
+.. code-block:: sh
+
+   HTTP_PROXY
+   http_proxy
+   HTTPS_PROXY
+   https_proxy
+   FTP_PROXY
+   ftp_proxy
+   NO_PROXY
+   no_proxy
+
+Charliecloud does not currently have an equivalent of :code:`docker history`,
+but we do plan to also leave the proxy variables out if/when we do grow one.
+
+The following variables are also pre-defined:
+
+.. code-block:: sh
+
+   PATH=/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+   TAR_OPTIONS=--no-same-owner
+
+Charliecloud does not yet pre-define the “platform :code:`ARG`\ s”.
+
+Note that :code:`ARG` and :code:`ENV` have different syntax despite very
+similar purposes.
+
+:code:`ONBUILD`
+---------------
+
+This instruction is not currently supported. We have not yet decided whether
+to support it in the future.
+
+:code:`STOPSIGNAL`
+------------------
+
+We have no plans to support this instruction, because it requires a container
+supervisor daemon process, which we have no plans to add.
+
+:code:`HEALTHCHECK`
+-------------------
+
+We have no plans to support this instruction, because its main use case is
+monitoring server processes rather than applications. Also, implementing it
+requires a container supervisor daemon, which we have no plans to add.
+
+:code:`SHELL`
+-------------
+
+This instruction is not yet implemented.
