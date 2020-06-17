@@ -153,7 +153,16 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
    if (cli.parse_only):
       sys.exit(0)
 
-   Main_Loop().visit(tree)
+   # We do not actually care whether the tree is traversed breadth-first or
+   # depth-first, but we *do* care that the nodes are visited in order.
+   # Neither visit() nor visit_topdown() are documented as of 2020-06-11 [1],
+   # but examining the source code [2] shows that visit_topdown() uses
+   # Tree.iter_trees_topdown(), which *is* documented to be in-order [3].
+   #
+   # [1]: https://lark-parser.readthedocs.io/en/latest/visitors/#visitors
+   # [2]: https://github.com/lark-parser/lark/blob/445c8d4/lark/visitors.py#L211
+   # [3]: https://lark-parser.readthedocs.io/en/latest/classes/#tree
+   Main_Loop().visit_topdown(tree)
 
    if (len(cli.build_arg) != 0):
       ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
@@ -483,4 +492,3 @@ def unescape(sl):
 
 if (__name__ == "__main__"):
    main()
-
