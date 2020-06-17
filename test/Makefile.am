@@ -61,11 +61,11 @@ sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
-TESTS = $(top_builddir)/bin/ch-test
-AM_TESTS_ENVIRONMENT = \
-	CH_TEST_PHASE=all; export CH_TEST_PHASE;\
-	CH_TEST_IMGDIR=/tmp/ch-test.tmp.${USER}/img; export CH_TEST_IMGDIR; \
-	CH_TEST_TARDIR=/tmp/ch-test.tmp.${USER}/tar; export CH_TEST_TARDIR;
+#TESTS = $(top_builddir)/bin/ch-test
+#AM_TESTS_ENVIRONMENT = \
+#	CH_TEST_PHASE=all; export CH_TEST_PHASE;\
+#	CH_TEST_IMGDIR=/tmp/ch-test.tmp.${USER}/img; export CH_TEST_IMGDIR; \
+#	CH_TEST_TARDIR=/tmp/ch-test.tmp.${USER}/tar; export CH_TEST_TARDIR;
 
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)

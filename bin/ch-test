@@ -5,7 +5,6 @@
 set -e
 export LC_ALL=C  # predictable sorting
 
-
 ### Functions we need right away
 
 fatal () {
@@ -718,7 +717,7 @@ else
     fatal 'Bats not found'
 fi
 
-if [[ $# == 0 ]]; then
+if [[ $# == 0 && -z $CH_TEST_PHASE ]]; then
     usage 1
 fi
 
