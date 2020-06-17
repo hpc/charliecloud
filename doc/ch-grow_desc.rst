@@ -93,7 +93,7 @@ from the `Dockerfile reference documentation
 <https://docs.docker.com/engine/reference/builder/>`_ and miscellaneous other
 sources, which you can examine in the source code.
 
-We believe this indedendence is valuable for several reasons. First, it help
+We believe this indedendence is valuable for several reasons. First, it helps
 the community examine Dockerfile syntax and semantics critically, think
 rigorously about what is really needed, and build a more robust standard.
 Second, it yields disjoint sets of bugs (note that Podman, Buildah, and Docker
