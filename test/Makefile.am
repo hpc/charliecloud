@@ -1,5 +1,4 @@
 testdir = $(pkglibexecdir)/test
-ch_libdir = $(DESTDIR)$(libdir)/charliecloud
 
 # These test files require no special handling.
 testfiles = \

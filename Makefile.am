@@ -1,3 +1,5 @@
+ch_libdir = $(DESTDIR)$(libdir)/charliecloud
+
 SUBDIRS = lib bin doc examples misc packaging test
 
 # The Travis stuff isn't really relevant for the tarballs, but they should
@@ -14,6 +16,6 @@ AM_TESTS_ENVIRONMENT = \
 
 installcheck-local:
 	diff $(top_builddir)/lib/version.txt $(ch_libdir)/version.txt
-	$(DESTDIR)$(bindir)/ch-test all -b none \
+	$(DESTDIR)$(bindir)/ch-test all \
 		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
 		--img-dir=/tmp/ch-test.tmp.${USER}/img;

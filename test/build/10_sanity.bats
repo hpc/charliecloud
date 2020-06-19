@@ -25,6 +25,7 @@ load ../common
 
 @test 'executables seem sane' {
     scope quick
+    local phase
     # Assume that everything in $ch_bin is ours if it starts with "ch-" and
     # either (1) is executable or (2) ends in ".c". Demand satisfaction from
     # each. The latter is to catch cases when we haven't compiled everything;
@@ -46,6 +47,10 @@ load ../common
         [[ $output = *'sage:'* ]]
         # Most, but not all, executables should print usage and exit
         # unsuccessfully when run without arguments.
+        if [[ -n $CH_TEST_PHASE ]]; then
+            phase=$CH_TEST_PHASE
+            unset CH_TEST_PHASE
+        fi
         case $filename in
             ch-checkns)
                 ;;
@@ -56,6 +61,9 @@ load ../common
                 [[ $output = *'sage:'* ]]
                 ;;
         esac
+        if [[ -n $phase ]]; then
+            export CH_TEST_PHASE=$phase
+        fi
         # not setuid or setgid
         ls -l "$path"
         [[ ! -u $path ]]
