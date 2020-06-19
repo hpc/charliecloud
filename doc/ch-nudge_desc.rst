@@ -3,52 +3,28 @@ Synopsis
 
 ::
 
-   $ ch-nudge [OPTIONS] ACTION IMAGE_REF
+   $ ch-nudge [OPTIONS]
 
 Description
 ===========
 
-.. warning::
+Delete or push image by HTTPS from/to repository. See FAQ for a detailed
+description of image reference. Note this script only works with images built
+with ch-grow and stored in :code:`CH_GROW_STORAGE` and is typically not used
+directly.
 
-   This script is experimental. Please report the bugs you find so we can fix
-   them!
+:code:`OPTIONS`:
 
-.. note::
-   This script only works with images built with ch-grow stored in
-   CH_GROW_STORAGE.
+  :code:`delete DEST_IMAGE_REF`
+    Delete image :code:`DEST_IMAGE_REF` from repostiory.
 
-Delete, list, or push image data by HTTPS to repository via :code:`IMAGE_REF`.
-Where the image reference :code:`IMAGE_REF` is loosely defind as a string
-consisting of a hostname, path, and image. For example,
-:code:`HOSTNAME[:PORT]/PATH/[TO/,]/IMAGE[:TAG])`. See examples below and the FAQ
-section for more details.
-
-.. note::
-   See examples below and FAQ for more details.
-
-Note this script is typically not used directly. Most tasks instead use the
-underlying code with :code:`ch-grow(1)`.
-
-:code:`ACTION` must be one of the following:
-
-  :code:`delete IMAGE_REF`
-    TODO
-  :code:`list IMAGE_REF`
-    TODO
-  :code:`push IMAGE_REF`
-    TODO
-
-Note :code:`IMAGE_REF` is described as ``
+  :code:`push IMAGE_REF DEST_IMAGE_REF`
+    Push image :code:`IMAGE_REF` to repository :code:`DEST_IMAGE_REF`.
 
 Other arguments:
 
   :code:`-h`, :code:`--help`
     Print help and exit.
-
-  :code:`--chunk SIZE`
-    Upload layer in chunks of size :code:`SIZE`. This is typically unnecessary
-    and should be used only by users who are familiar with image uploading and
-    why this may useful.
 
   :code:`--dependencies`
     Report any dependency problems and exit. If all is well, there is no
@@ -75,8 +51,8 @@ registry.
 
 ::
 
-  $ ch-nudge push registry-1.docker.io:443/charliecloud/hello-world
-  pushing image: hello-world
+  $ ch-nudge push charliecloud/whiteout:2020-01-10 registry-1.docker.io/charliecloud/whiteout:2020-01-10
+  pushing image: whiteout
   [...]
 
 Delete image "hello-world" from the Charliecloud image repository on the
@@ -85,19 +61,5 @@ Docker registry.
 ::
 
   $ ch-nudge delete registry-1.docker.io:443/charliecloud/hello-world
-  deleting image: hello-world
+  deleting image: whiteout
   [...]
-
-List all available tags in the centos repository on the Docker registry.
-
-::
-
-  $ ch-nudge list registry-1.docker.io:443/charliecloud/tags/list
-  listing tags
-  [...]
-
-List all available repositories from the Docker registry.
-
-::
-
-  $ ch-nudge list registry-1.docker.io:443/_catalog
