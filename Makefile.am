@@ -11,3 +11,9 @@ AM_TESTS_ENVIRONMENT = \
   export CH_TEST_PHASE=all; \
   export CH_TEST_IMGDIR=/tmp/ch-test.tmp.${USER}/img; \
   export CH_TEST_TARDIR=/tmp/ch-test.tmp.${USER}/tar;
+
+installcheck-local:
+	diff $(top_builddir)/lib/version.txt $(ch_libdir)/version.txt
+	$(DESTDIR)$(bindir)/ch-test all -b none \
+		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
+		--img-dir=/tmp/ch-test.tmp.${USER}/img;

@@ -80,12 +80,6 @@ clean-local:
 install-data-hook:
 	mkdir $(DESTDIR)$(testdir)/fixtures
 	ln -fs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
-installcheck-local:
-	diff $(top_builddir)/lib/version.txt $(ch_libdir)/version.txt
-	$(DESTDIR)$(bindir)/ch-test all -b none \
-		--pack-dir=/tmp/ch-test.tmp.${USER}/tar \
-		--img-dir=/tmp/ch-test.tmp.${USER}/img;
-
 uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
