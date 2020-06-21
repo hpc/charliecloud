@@ -69,6 +69,4 @@ Makefile.in
 /config.log
 /config.status
 /configure
-/test/ch-test.make.log
-/test/ch-test.make.trs
 /test/test-suite.log
