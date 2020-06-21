@@ -3,19 +3,25 @@ Synopsis
 
 ::
 
-   $ ch-nudge [OPTIONS]
+   $ ch-nudge [OPTIONS] IMAGE_REF [DEST_IMAGE_REF]
 
 Description
 ===========
 
-Delete or push image by HTTPS from/to repository. See FAQ for a detailed
-description of image reference. Note this script only works with images built
-with ch-grow and stored in :code:`CH_GROW_STORAGE` and is typically not used
-directly.
+Push an image via HTTPS to repository. This script only works with images
+built with ch-grow.
+
+If :code:`IMAGE_REF` contains image information that :code:`ch-nudge` can parse
+to determine to image name and destination repository, 
+
+:code:`DEST_IMAGE_REF` is specified, push to the image instead.
+
 
 :code:`OPTIONS`:
 
-  :code:`delete DEST_IMAGE_REF`
+  
+
+  :code:`--delete IMAGE_REF`
     Delete image :code:`DEST_IMAGE_REF` from repostiory.
 
   :code:`push IMAGE_REF DEST_IMAGE_REF`
@@ -46,20 +52,20 @@ Other arguments:
 Examples
 ========
 
-Push image "hello-world" to the Charliecloud image repository on the Docker
-registry.
+Push image "whiteout" to the Charliecloud repository on the Docker registry.
 
 ::
 
-  $ ch-nudge push charliecloud/whiteout:2020-01-10 registry-1.docker.io/charliecloud/whiteout:2020-01-10
-  pushing image: whiteout
+  $ ch-nudge charliecloud/whiteout:2020-01-10
+  pushing image: registry-1.docker.io/charliecloud/whiteout:2020-01-10
+  # FIXME
   [...]
 
-Delete image "hello-world" from the Charliecloud image repository on the
-Docker registry.
+Delete image "whiteout" from the Charliecloud repository on the Docker registry.
 
 ::
 
   $ ch-nudge delete registry-1.docker.io:443/charliecloud/hello-world
   deleting image: whiteout
+  # FIXME
   [...]

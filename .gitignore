@@ -3,6 +3,7 @@
 a.out
 /bin/ch-checkns
 /bin/ch-grow
+/bin/ch-nudge
 /bin/ch-run
 /bin/ch-run-oci
 /bin/ch-ssh

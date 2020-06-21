@@ -78,7 +78,7 @@ Mount a SquashFS image file using FUSE.
 ch-nudge
 ++++++++
 
-Delete, push, or list image data by HTTPS to repository.
+Delete or push image by HTTPS from or to repository.
 
 .. include:: ./ch-nudge_desc.rst
 

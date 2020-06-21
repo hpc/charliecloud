@@ -1,0 +1,41 @@
+#!%PYTHON_SHEBANG%
+
+import argparse
+import os
+import sys
+
+sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
+                    + "/../lib/charliecloud"))
+import charliecloud as ch
+
+
+def main():
+   ap = argparse.ArgumentParser(
+           formatter_class=argparse.RawDescriptionHelpFormatter,
+           description="Delete or push image by HTTPS from or to repository.",
+           epilog="""\
+""")
+   ap.add_argument("image", metavar="IMAGE_REF",
+                   help="image reference")
+   ap.add_argument("--dependencies", action=ch.CLI_Dependencies,
+                   help="print any missing dependencies and exit")
+   ap.add_argument("--parse-ref-only",
+                   action="store_true",
+                   help="parse image reference, print report, and exit")
+   ap.add_argument("-v", "--verbose", action="count", default=0,
+                   help="print extra chatter (can be repeated)")
+   ap.add_argument("--version", action=ch.CLI_Version,
+                   help="print version and exit")
+   if (len(sys.argv) < 2):
+      ap.print_help(file=sys.stderr)
+      sys.exit(1)
+
+   args = ap.parse_args()
+   ch.verbose = args.verbose
+
+   ch.dependencies_check()
+
+## Bootstrap ##
+
+if (__name__ == "__main__"):
+   main()

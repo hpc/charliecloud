@@ -271,7 +271,7 @@ man_pages = [
     "Mount a SquashFS image file using FUSE",
     [], 1),
    ("ch-nudge", "ch-nudge",
-    "Delete, push, or list image data by HTTPS to repository",
+    "Delete or push image by HTTPS from or to repository",
     [], 1),
    ("ch-pull2dir", "ch-pull2dir",
     "Pull image from a Docker Hub and unpack into directory",
