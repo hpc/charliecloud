@@ -47,23 +47,25 @@ load ../common
         [[ $output = *'sage:'* ]]
         # Most, but not all, executables should print usage and exit
         # unsuccessfully when run without arguments.
-        if [[ -n $CH_TEST_PHASE ]]; then
-            phase=$CH_TEST_PHASE
-            unset CH_TEST_PHASE
-        fi
         case $filename in
             ch-checkns)
                 ;;
             *)
+                # CH_TEST_PHASE is an undocumented variable that allows us to
+                # execute ch-test with the automake without arguments.
+                if [[ -n $CH_TEST_PHASE ]]; then
+                    phase=$CH_TEST_PHASE
+                    unset CH_TEST_PHASE
+                fi
                 run "$path"
                 echo "$output"
                 [[ $status -eq 1 ]]
                 [[ $output = *'sage:'* ]]
+                if [[ -n $phase ]]; then
+                    export CH_TEST_PHASE=$phase
+                fi
                 ;;
         esac
-        if [[ -n $phase ]]; then
-            export CH_TEST_PHASE=$phase
-        fi
         # not setuid or setgid
         ls -l "$path"
         [[ ! -u $path ]]
