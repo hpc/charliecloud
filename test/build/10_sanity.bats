@@ -25,7 +25,6 @@ load ../common
 
 @test 'executables seem sane' {
     scope quick
-    local phase
     # Assume that everything in $ch_bin is ours if it starts with "ch-" and
     # either (1) is executable or (2) ends in ".c". Demand satisfaction from
     # each. The latter is to catch cases when we haven't compiled everything;
@@ -53,6 +52,7 @@ load ../common
             *)
                 # CH_TEST_PHASE is an undocumented variable that allows us to
                 # execute ch-test with the automake without arguments.
+                local phase
                 if [[ -n $CH_TEST_PHASE ]]; then
                     phase=$CH_TEST_PHASE
                     unset CH_TEST_PHASE

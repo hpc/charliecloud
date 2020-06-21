@@ -502,8 +502,8 @@ test_make_check_image () {
 
     # In examples phase, exclude chtest and any images not in a subdirectory of
     # examples.
-    if    [[ $phase == examples ( $dir == chtest || $dir == examples ) ]]; then
-            img_ok=
+    if [[ $phase == examples ( $dir == chtest || $dir == examples ) ]]; then
+        img_ok=
     fi
 
     if [[ -n $img_ok ]]; then
