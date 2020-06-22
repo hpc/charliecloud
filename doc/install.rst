@@ -387,6 +387,19 @@ Python
 We use Python for scripts that would be really hard to do in Bash, when we
 think Python is likely to be available.
 
+ShellCheck
+~~~~~~~~~~
+
+`ShellCheck <https://www.shellcheck.net/>`_ is a very thorough and capable
+linter for shell scripts. In order to pass the full test suite, all the shell
+scripts need to pass ShellCheck.
+
+While it is widely available in distributions, the packaged version is usually
+too old. Building from source is tricky because it's a Haskell program, which
+isn't a widely available tool chain. Fortunately, the developers provide
+pre-compiled `static binaries
+<https://github.com/koalaman/shellcheck/releases>`_ on their GitHub page.
+
 Sphinx
 ~~~~~~
 

@@ -306,6 +306,13 @@ EOF
   AC_MSG_RESULT($have_requests)
 ])
 
+# ShellCheck
+vmin_shellcheck=0.6.0
+AC_CHECK_PROG([SHELLCHECK], [shellcheck], [shellcheck])
+# https://stackoverflow.com/questions/6022384
+CH_CHECK_VERSION([SHELLCHECK], [$vmin_shellcheck],
+                 [--version | sed -n '2{s/^version: //;p;q}'])
+
 # SquashFUSE
 vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
 AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
@@ -473,7 +480,8 @@ AS_IF([   test $have_tests_tar = yes \
 
 # assumes we do have generic sudo
 AS_IF([   test $have_tests_squash = yes \
-       && test -n "$SPHINX"],
+       && test -n "$SPHINX" \
+       && test -n "$SHELLCHECK"],
       [have_tests_all=yes],
       [have_tests_all=no])
 
@@ -610,5 +618,6 @@ Test suite
   complete test suite: ${have_tests_all}
     recommended tests with SquashFS ... ${have_tests_squash}
     documentation ... ${have_docs}
+    ShellCheck ≥ $vmin_shellcheck ... ${SHELLCHECK_VERSION_NOTE}
     generic sudo ... assumed yes
 ])

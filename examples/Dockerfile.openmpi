@@ -61,83 +61,82 @@ FROM centos8
 #
 # As of 2019-10-07, CentOS 8 provides version 22.2 of libibverbs. This is
 # quite new but works for our test systems.
+# Note that libpsm2 is x86-64 only so we skip if missing
 RUN dnf install -y --setopt=install_weak_deps=false \
-    automake \
-    file \
-    flex \
-    gcc \
-    gcc-c++ \
-    gcc-gfortran \
-    git \
-    ibacm \
-    libevent-devel \
-    libtool \
-    libibumad \
-    libibumad-devel \
-    libibverbs \
-    libibverbs-devel \
-    libibverbs-utils \
-    librdmacm \
-    librdmacm-devel \
-    rdma-core \
-    make \
-    numactl-devel \
-    wget
+                automake \
+                file \
+                flex \
+                gcc \
+                gcc-c++ \
+                gcc-gfortran \
+                git \
+                ibacm \
+                libevent-devel \
+                libtool \
+                libibumad \
+                libibumad-devel \
+                libibverbs \
+                libibverbs-devel \
+                libibverbs-utils \
+                librdmacm \
+                librdmacm-devel \
+                rdma-core \
+                make \
+                numactl-devel \
+                wget \
+ && dnf install -y --setopt=install_weak_deps=false --skip-broken \
+                libpsm2 \
+                libpsm2-devel \
+ && dnf clean all
 
 WORKDIR /usr/local/src
 
-# Note that libpsm2 is x86-64 only
-RUN if [ "$(uname -i)" = "x86_64" ] ; then \
-      dnf install -y libpsm2 libpsm2-devel ; \
-    fi
-
-# UCX. There is stuff to build Debian packages, but it seems not too polished.
-ENV UCX_VERSION 1.6.1
+# UCX. There is a package for CentOS 8 but it is old, so build from source.
+ARG UCX_VERSION=1.6.1
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
-              https://github.com/openucx/ucx.git
-RUN    cd ucx \
-    && ./autogen.sh \
-    && ./contrib/configure-release-mt --prefix=/usr/local \
-    && make -j$(getconf _NPROCESSORS_ONLN) install
-RUN rm -Rf ucx*
+              https://github.com/openucx/ucx.git \
+ && cd ucx \
+ && ./autogen.sh \
+ && ./contrib/configure-release-mt --prefix=/usr/local \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../ucx*
 
 # PMI2.
 #
 # CentOS doesn't have a package with the Slurm PMI2 libraries we need, so
 # build them from Slurm's release.
-ENV SLURM_VERSION 19-05-3-2
-RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz
-RUN tar -xf slurm-${SLURM_VERSION}.tar.gz
-RUN cd slurm-slurm-${SLURM_VERSION} \
-    && ./configure --prefix=/usr/local \
-    && cd contribs/pmi2 \
-    && make -j$(getconf _NPROCESSORS_ONLN) install
-RUN rm -Rf slurm*
+ARG SLURM_VERSION=19-05-3-2
+RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz \
+ && tar -xf slurm-${SLURM_VERSION}.tar.gz \
+ && cd slurm-slurm-${SLURM_VERSION} \
+ && ./configure --prefix=/usr/local \
+ && cd contribs/pmi2 \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../../../slurm*
 
 # OpenMPI.
 #
 # Patch OpenMPI to disable UCX plugin on systems with Intel or Cray HSNs. UCX
 # has inferior performance than PSM2/uGNI but higher priority.
-ENV MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
-ENV MPI_VERSION 3.1.5
-RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz
-RUN tar xf openmpi-${MPI_VERSION}.tar.gz
+ARG MPI_URL=https://www.open-mpi.org/software/ompi/v3.1/downloads
+ARG MPI_VERSION=3.1.5
+RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz \
+ && tar xf openmpi-${MPI_VERSION}.tar.gz
 COPY dont-init-ucx-on-intel-cray.patch ./openmpi-${MPI_VERSION}
-RUN cd openmpi-${MPI_VERSION} && git apply dont-init-ucx-on-intel-cray.patch
-RUN    cd openmpi-${MPI_VERSION} \
-    && CFLAGS=-O3 \
-       CXXFLAGS=-O3 \
-       ./configure --prefix=/usr/local \
-                   --sysconfdir=/mnt/0 \
-                   --with-slurm \
-                   --with-pmi=/usr/local \
-                   --with-pmix \
-                   --with-ucx \
-                   --disable-pty-support \
-                   --enable-mca-no-build=btl-openib,plm-slurm \
-    && make -j$(getconf _NPROCESSORS_ONLN) install
+RUN cd openmpi-${MPI_VERSION} && git apply dont-init-ucx-on-intel-cray.patch \
+ && CFLAGS=-O3 \
+    CXXFLAGS=-O3 \
+    ./configure --prefix=/usr/local \
+                --sysconfdir=/mnt/0 \
+                --with-slurm \
+                --with-pmi=/usr/local \
+                --with-pmix \
+                --with-ucx \
+                --disable-pty-support \
+                --enable-mca-no-build=btl-openib,plm-slurm \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../openmpi-${MPI_VERSION}*
 RUN ldconfig
-RUN rm -Rf openmpi-${MPI_VERSION}*
 
 # OpenMPI expects this program to exist, even if it's not used. Default is
 # "ssh : rsh", but that's not installed.
