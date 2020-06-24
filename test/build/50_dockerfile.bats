@@ -1,7 +1,6 @@
 load ../common
 
 @test 'Dockerfile: ARG and ENV' {
-
     # We use full scope for builders other than ch-grow because (1) with
     # ch-grow, we are responsible for --build-arg being implemented correctly
     # and (2) Docker and Buildah take a full minute for this test, vs. three
@@ -196,6 +195,120 @@ EOF
     else
         [[ $status -eq 0 ]]
     fi
+}
+
+@test 'Dockerfile: syntax quirks' {
+    # These should all yield an output image, but we don't actually care about
+    # it, so re-use the same one.
+
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only' # FIXME: other builders?
+
+    # No newline at end of file.
+      printf 'FROM 00_tiny\nRUN echo hello' \
+    | ch-grow -t syntax-quirks -f - .
+
+    # Newline before FROM.
+    ch-grow -t syntax-quirks -f - . <<EOF
+
+FROM 00_tiny
+RUN echo hello
+EOF
+
+    # Comment before FROM.
+    ch-grow -t syntax-quirks -f - . <<EOF
+# foo
+FROM 00_tiny
+RUN echo hello
+EOF
+
+    # Single instruction
+    ch-grow -t syntax-quirks -f - . <<EOF
+FROM 00_tiny
+EOF
+}
+
+@test 'Dockerfile: syntax errors' {
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+
+    # Bad instruction. Also, -v should give interal blabber about the grammar.
+    run ch-grow --verbose -t foo -f - . <<EOF
+FROM 00_tiny
+WEIRDAL
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    # error message
+    [[ $output = *"can't parse: -:2,1"* ]]
+    # internal blabber
+    [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
+    [[ $output = *"Expecting: {"* ]]
+
+    # Bad long option.
+    run ch-grow -t foo -f - . <<EOF
+FROM 00_tiny
+COPY --chown= foo bar
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't parse: -:2,14"* ]]
+
+    # Empty input.
+    run ch-grow -t foo -f /dev/null .
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"no instructions found: /dev/null"* ]]
+
+    # Newline only.
+    run ch-grow -t foo -f - . <<EOF
+
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"no instructions found: -"* ]]
+
+    # Comment only.
+    run ch-grow -t foo -f - . <<EOF
+# foo
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"no instructions found: -"* ]]
+
+    # Only newline, then comment.
+    run ch-grow -t foo -f - . <<EOF
+
+# foo
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"no instructions found: -"* ]]
+
+    # Non-ARG instruction before FROM
+    run ch-grow -t foo -f - . <<EOF
+RUN echo uh oh
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"first instruction must be ARG or FROM"* ]]
+}
+
+@test 'Dockerfile: not-yet-supported instructions' {
+    # This test also creates images we don't care about.
+
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+
+    # ARG before FROM
+    run ch-grow -t not-yet-supported -f - . <<EOF
+ARG foo=bar
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"warning: ARG before FROM not yet supported; see issue #779"* ]]
 }
 
 @test 'Dockerfile: COPY errors' {
