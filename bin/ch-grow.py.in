@@ -1,5 +1,6 @@
 #!%PYTHON_SHEBANG%
 
+import abc
 import argparse
 import ast
 import atexit
@@ -204,38 +205,90 @@ class Main_Loop(lark.Visitor):
 
 ## Instruction classes ##
 
-class Instruction(object):
+class Instruction(abc.ABC):
 
    def __init__(self, tree):
       self.lineno = tree.meta.line
+      self.options = {}
+      for st in ch.tree_children(tree, "option"):
+         k = ch.tree_terminal(st, "OPTION_KEY")
+         v = ch.tree_terminal(st, "OPTION_VALUE")
+         if (k in self.options):
+            ch.FATAL("%3d %s: repeated option --%s"
+                     % (self.lineno, self.str_name(), k))
+         self.options[k] = v
       self.tree = tree
 
    def __str__(self):
-      return ("%3s %s %s"
-              % (self.lineno, self.__class__.__name__.split("_")[1].upper(),
-                 self.str_()))
+      return ("%3s %s %s %s"
+              % (self.lineno, self.str_name(), self.str_options(), self.str_()))
+
+   def _unsupported_yet(self, fn, msg, issue_no):
+      fn("not yet supported: issue #%d: %s %s"
+         % (issue_no, self.str_name(), msg))
 
    def execute(self):
       if (not cli.dry_run):
          self.execute_()
 
+   @abc.abstractmethod
    def execute_(self):
-      pass
+      ...
 
+   def options_assert_empty(self):
+      try:
+         k = next(iter(self.options.keys()))
+         ch.FATAL("%s: invalid option --%s" % (self.str_name(), k))
+      except StopIteration:
+         pass
+
+   @abc.abstractmethod
    def str_(self):
-      return "(unimplemented)"
+      ...
 
+   def str_name(self):
+      return self.__class__.__name__.split("_")[1].upper()
+
+   def str_options(self):
+      return " ".join("--%s=%s" % (k,v) for (k,v) in self.options.items())
+
+   def unsupported_forever_warn(self, msg="instruction"):
+      ch.WARNING("not supported: %s %s" % (self.str_name(), msg))
+
+   def unsupported_yet_warn(self, msg, issue_no):
+      self._unsupported_yet(ch.WARNING, msg, issue_no)
+
+   def unsupported_yet_fatal(self, msg, issue_no):
+      self._unsupported_yet(ch.FATAL, msg, issue_no)
 
 class I_cmd(Instruction):
    pass
 
 
-class Copy(Instruction):
+class I_copy(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      if (ch.tree_child(self.tree, "copy_shell") is not None):
+         paths = [variables_sub(i, env.env_build)
+                  for i in ch.tree_child_terminals(self.tree, "copy_shell",
+                                                   "WORD")]
+         self.srcs = paths[:-1]
+         self.dst = paths[-1]
+      else:
+         assert False, "unimplemented"
 
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
 
    def execute_(self):
+      # Complain about unsupported stuff.
+      if (self.options.pop("chown", False)):
+         self.unsupported_forever_warn("--chown")
+      if (self.options.pop("from", False)):
+         self.unsupported_yet_fatal("--from", 784)
+      # Any remaining options are invalid.
+      self.options_assert_empty()
       # The Dockerfile specification for COPY is complex, messy, inexplicably
       # different from cp(1), and incomplete. We try to be bug-compatible with
       # Docker but probably are not 100%. See the FAQ.
@@ -299,15 +352,6 @@ class Copy(Instruction):
                   ch.FATAL("can't COPY unknown file type: %s" % src2)
          else:
             ch.FATAL("can't COPY unknown file type: %s" % src)
-
-class I_copy_shell(Copy):
-
-   def __init__(self, *args):
-      super().__init__(*args)
-      paths = [variables_sub(i, env.env_build)
-               for i in ch.tree_terminals(self.tree, "WORD")]
-      self.srcs = paths[:-1]
-      self.dst = paths[-1]
 
 class Arg(Instruction):
 

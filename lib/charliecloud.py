@@ -86,8 +86,7 @@ dockerfile: _NEWLINES? ( instruction | _COMMENT )*
 
 cmd: "CMD"i _WS LINE _NEWLINES
 
-copy: "COPY"i ( _WS copy_chown )? ( copy_shell ) _NEWLINES
-copy_chown: "--chown" "=" /[^ \t\n]+/
+copy: "COPY"i ( _WS option )* ( copy_shell ) _NEWLINES
 copy_shell: _WS WORD ( _WS WORD )+
 
 arg: "ARG"i _WS ( arg_bare | arg_equals ) _NEWLINES
@@ -109,6 +108,10 @@ run_shell: LINE
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 
 /// Common ///
+
+option: "--" OPTION_KEY "=" OPTION_VALUE
+OPTION_KEY: /[a-z]+/
+OPTION_VALUE: /[^ \t\n]+/
 
 HEX_STRING: /[0-9A-Fa-f]+/
 LINE: ( LINE_CONTINUE | /[^\n]/ )+
@@ -846,10 +849,7 @@ def symlink(target, source):
 def tree_child(tree, cname):
    """Locate a descendant subtree named cname using breadth-first search and
       return it. If no such subtree exists, return None."""
-   for st in tree.iter_subtrees_topdown():
-      if (st.data == cname):
-         return st
-   return None
+   return next(tree_children(tree, cname), None)
 
 def tree_child_terminal(tree, cname, tname, i=0):
    """Locate a descendant subtree named cname using breadth-first search and
@@ -869,6 +869,12 @@ def tree_child_terminals(tree, cname, tname):
       if (d.data == cname):
          return tree_terminals(d, tname)
    return []
+
+def tree_children(tree, cname):
+   "Yield children of tree named cname using breadth-first search."
+   for st in tree.iter_subtrees_topdown():
+      if (st.data == cname):
+         yield st
 
 def tree_terminal(tree, tname, i=0):
    """Return the value of the ith child terminal named tname (zero-based), or

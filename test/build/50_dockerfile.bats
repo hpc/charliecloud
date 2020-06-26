@@ -1,5 +1,6 @@
 load ../common
 
+
 @test 'Dockerfile: ARG and ENV' {
     # We use full scope for builders other than ch-grow because (1) with
     # ch-grow, we are responsible for --build-arg being implemented correctly
@@ -197,6 +198,7 @@ EOF
     fi
 }
 
+
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
     # it, so re-use the same one.
@@ -227,6 +229,7 @@ EOF
 FROM 00_tiny
 EOF
 }
+
 
 @test 'Dockerfile: syntax errors' {
     scope standard
@@ -295,7 +298,32 @@ EOF
     [[ $output = *"first instruction must be ARG or FROM"* ]]
 }
 
-@test 'Dockerfile: not-yet-supported instructions' {
+
+@test 'Dockerfile: semantic errors' {
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+
+    # Repeated instruction option.
+    run ch-grow -t foo -f - . <<EOF
+FROM 00_tiny
+COPY --chown=foo --chown=bar fixtures/README .
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"  2 COPY: repeated option --chown"* ]]
+
+    # COPY invalid option.
+    run ch-grow -t foo -f - . <<EOF
+FROM 00_tiny
+COPY --foo=foo fixtures/README .
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"COPY: invalid option --foo"* ]]
+}
+
+
+@test 'Dockerfile: not-yet-supported features' {
     # This test also creates images we don't care about.
 
     scope standard
@@ -309,7 +337,34 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"warning: ARG before FROM not yet supported; see issue #779"* ]]
+
+    # COPY --from
+    run ch-grow -t not-yet-supported -f - . <<EOF
+FROM 00_tiny
+COPY --from=foo fixtures/README .
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: not yet supported: issue #784: COPY --from"* ]]
 }
+
+
+@test 'Dockerfile: unsupported features' {
+    # This test also creates images we don't care about.
+
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+
+    # COPY --from
+    run ch-grow -t unsupported -f - . <<EOF
+FROM 00_tiny
+COPY --chown=foo fixtures/README .
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"warning: not supported: COPY --chown"* ]]
+}
+
 
 @test 'Dockerfile: COPY errors' {
     scope standard
