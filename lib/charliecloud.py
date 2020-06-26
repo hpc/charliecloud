@@ -80,9 +80,14 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 /// Dockerfile ///
 
 // First instruction must be ARG or FROM, but that is not a syntax error.
-dockerfile: _NEWLINES? ( instruction | _COMMENT )*
+dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
 ?instruction: _WS? ( cmd | copy | arg | env | from_ | run | workdir )
+
+directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
+DIRECTIVE_NAME: ( "escape" | "syntax" )
+comment: _WS? _COMMENT_BODY _NEWLINES
+_COMMENT_BODY: /#[^\n]*/
 
 cmd: "CMD"i _WS LINE _NEWLINES
 
@@ -122,7 +127,6 @@ _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 LINE_CONTINUE: "\\\n"
 %ignore LINE_CONTINUE
 
-_COMMENT: _WS? /#[^\n]*/ _NEWLINES
 _NEWLINES: _WS? "\n"+
 _WS: /[ \t]/+
 

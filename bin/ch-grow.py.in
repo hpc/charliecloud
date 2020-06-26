@@ -191,21 +191,24 @@ class Main_Loop(lark.Visitor):
       class_ = "I_" + tree.data
       if (class_ in globals()):
          inst = globals()[class_](tree)
-         ch.INFO(inst)
+         inst.announce()
          if (self.instruction_ct == 0):
-            if (isinstance(inst, I_from_)):
+            if (   isinstance(inst, I_directive)
+                or isinstance(inst, I_from_)):
                pass
             elif (isinstance(inst, Arg)):
                ch.WARNING("ARG before FROM not yet supported; see issue #779")
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          inst.execute()
-         self.instruction_ct += 1
+         self.instruction_ct += inst.execute_increment
 
 
 ## Instruction classes ##
 
 class Instruction(abc.ABC):
+
+   execute_increment = 1
 
    def __init__(self, tree):
       self.lineno = tree.meta.line
@@ -226,6 +229,9 @@ class Instruction(abc.ABC):
    def _unsupported_yet(self, fn, msg, issue_no):
       fn("not yet supported: issue #%d: %s %s"
          % (issue_no, self.str_name(), msg))
+
+   def announce(self):
+      ch.INFO(self)
 
    def execute(self):
       if (not cli.dry_run):
@@ -252,7 +258,7 @@ class Instruction(abc.ABC):
    def str_options(self):
       return " ".join("--%s=%s" % (k,v) for (k,v) in self.options.items())
 
-   def unsupported_forever_warn(self, msg="instruction"):
+   def unsupported_forever_warn(self, msg):
       ch.WARNING("not supported: %s %s" % (self.str_name(), msg))
 
    def unsupported_yet_warn(self, msg, issue_no):
@@ -261,8 +267,68 @@ class Instruction(abc.ABC):
    def unsupported_yet_fatal(self, msg, issue_no):
       self._unsupported_yet(ch.FATAL, msg, issue_no)
 
+
+class Instruction_Unsupported(Instruction):
+
+   execute_increment = 0
+
+   def announce(self):
+      self.unsupported_forever_warn("%s instruction" % self.str_name())
+
+   def str_(self):
+      return "(unsupported)"
+
+   def execute_(self):
+      pass
+
+
 class I_cmd(Instruction):
    pass
+
+
+class Arg(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = ch.tree_terminal(self.tree, "WORD", 0)
+      if (self.key in cli.build_arg):
+         self.value = cli.build_arg[self.key]
+         del cli.build_arg[self.key]
+      else:
+         self.value = self.value_default()
+      if (self.value is not None):
+         self.value = variables_sub(self.value, env.env_build)
+
+   def str_(self):
+      if (self.value is None):
+         return self.key
+      else:
+         return "%s='%s'" % (self.key, self.value)
+
+   def execute_(self):
+      if (self.value is not None):
+         env.arg[self.key] = self.value
+
+
+class I_arg_bare(Arg):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+
+   def value_default(self):
+      return None
+
+
+class I_arg_equals(Arg):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+
+   def value_default(self):
+      v = ch.tree_terminal(self.tree, "WORD", 1)
+      if (v is None):
+         v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
+      return v
 
 
 class I_copy(Instruction):
@@ -353,47 +419,15 @@ class I_copy(Instruction):
          else:
             ch.FATAL("can't COPY unknown file type: %s" % src)
 
-class Arg(Instruction):
 
-   def __init__(self, *args):
-      super().__init__(*args)
-      self.key = ch.tree_terminal(self.tree, "WORD", 0)
-      if (self.key in cli.build_arg):
-         self.value = cli.build_arg[self.key]
-         del cli.build_arg[self.key]
-      else:
-         self.value = self.value_default()
-      if (self.value is not None):
-         self.value = variables_sub(self.value, env.env_build)
-
-   def str_(self):
-      if (self.value is None):
-         return self.key
-      else:
-         return "%s='%s'" % (self.key, self.value)
-
-   def execute_(self):
-      if (self.value is not None):
-         env.arg[self.key] = self.value
-
-class I_arg_bare(Arg):
+class I_directive(Instruction_Unsupported):
 
    def __init__(self, *args):
       super().__init__(*args)
 
-   def value_default(self):
-      return None
+   def announce(self):
+      ch.WARNING("not supported: parser directives")
 
-class I_arg_equals(Arg):
-
-   def __init__(self, *args):
-      super().__init__(*args)
-
-   def value_default(self):
-      v = ch.tree_terminal(self.tree, "WORD", 1)
-      if (v is None):
-         v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
-      return v
 
 class Env(Instruction):
 
@@ -540,7 +574,10 @@ def variables_sub(s, variables):
    # not set. We ignore those subsitutions. This is probably wrong (the shell
    # substitutes the empty string).
    for (k, v) in variables.items():
-      #ch.DEBUG("s: %s, k: %s, v: %s" % (s, k, v))
+      # FIXME: remove when issue #774 is fixed
+      m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
+      if (m is not None):
+         ch.FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
       s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
    return s
 

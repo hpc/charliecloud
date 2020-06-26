@@ -211,21 +211,21 @@ EOF
     | ch-grow -t syntax-quirks -f - .
 
     # Newline before FROM.
-    ch-grow -t syntax-quirks -f - . <<EOF
+    ch-grow -t syntax-quirks -f - . <<'EOF'
 
 FROM 00_tiny
 RUN echo hello
 EOF
 
     # Comment before FROM.
-    ch-grow -t syntax-quirks -f - . <<EOF
+    ch-grow -t syntax-quirks -f - . <<'EOF'
 # foo
 FROM 00_tiny
 RUN echo hello
 EOF
 
     # Single instruction
-    ch-grow -t syntax-quirks -f - . <<EOF
+    ch-grow -t syntax-quirks -f - . <<'EOF'
 FROM 00_tiny
 EOF
 }
@@ -236,7 +236,7 @@ EOF
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
     # Bad instruction. Also, -v should give interal blabber about the grammar.
-    run ch-grow --verbose -t foo -f - . <<EOF
+    run ch-grow --verbose -t foo -f - . <<'EOF'
 FROM 00_tiny
 WEIRDAL
 EOF
@@ -246,10 +246,10 @@ EOF
     [[ $output = *"can't parse: -:2,1"* ]]
     # internal blabber
     [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
-    [[ $output = *"Expecting: {"* ]]
+    [[ $output = *'Expecting: {'* ]]
 
     # Bad long option.
-    run ch-grow -t foo -f - . <<EOF
+    run ch-grow -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown= foo bar
 EOF
@@ -261,41 +261,41 @@ EOF
     run ch-grow -t foo -f /dev/null .
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"no instructions found: /dev/null"* ]]
+    [[ $output = *'no instructions found: /dev/null'* ]]
 
     # Newline only.
-    run ch-grow -t foo -f - . <<EOF
+    run ch-grow -t foo -f - . <<'EOF'
 
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"no instructions found: -"* ]]
+    [[ $output = *'no instructions found: -'* ]]
 
     # Comment only.
-    run ch-grow -t foo -f - . <<EOF
+    run ch-grow -t foo -f - . <<'EOF'
 # foo
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"no instructions found: -"* ]]
+    [[ $output = *'no instructions found: -'* ]]
 
     # Only newline, then comment.
-    run ch-grow -t foo -f - . <<EOF
+    run ch-grow -t foo -f - . <<'EOF'
 
 # foo
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"no instructions found: -"* ]]
+    [[ $output = *'no instructions found: -'* ]]
 
     # Non-ARG instruction before FROM
-    run ch-grow -t foo -f - . <<EOF
+    run ch-grow -t foo -f - . <<'EOF'
 RUN echo uh oh
 FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"first instruction must be ARG or FROM"* ]]
+    [[ $output = *'first instruction must be ARG or FROM'* ]]
 }
 
 
@@ -304,22 +304,22 @@ EOF
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
     # Repeated instruction option.
-    run ch-grow -t foo -f - . <<EOF
+    run ch-grow -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown=foo --chown=bar fixtures/README .
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"  2 COPY: repeated option --chown"* ]]
+    [[ $output = *'  2 COPY: repeated option --chown'* ]]
 
     # COPY invalid option.
-    run ch-grow -t foo -f - . <<EOF
+    run ch-grow -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY --foo=foo fixtures/README .
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"COPY: invalid option --foo"* ]]
+    [[ $output = *'COPY: invalid option --foo'* ]]
 }
 
 
@@ -330,22 +330,40 @@ EOF
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
     # ARG before FROM
-    run ch-grow -t not-yet-supported -f - . <<EOF
+    run ch-grow -t not-yet-supported -f - . <<'EOF'
 ARG foo=bar
 FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"warning: ARG before FROM not yet supported; see issue #779"* ]]
+    [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
 
     # COPY --from
-    run ch-grow -t not-yet-supported -f - . <<EOF
+    run ch-grow -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=foo fixtures/README .
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: not yet supported: issue #784: COPY --from"* ]]
+    [[ $output = *'error: not yet supported: issue #784: COPY --from'* ]]
+
+    # variable expansion modifiers
+    run ch-grow -t not-yet-supported -f - . <<'EOF'
+FROM 00_tiny
+ARG foo=README
+COPY fixtures/${foo:+bar} .
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
+    run ch-grow -t not-yet-supported -f - . <<'EOF'
+FROM 00_tiny
+ARG foo=README
+COPY fixtures/${foo:-bar} .
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
 }
 
 
@@ -355,14 +373,31 @@ EOF
     scope standard
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
-    # COPY --from
-    run ch-grow -t unsupported -f - . <<EOF
+    # parser directives
+    run ch-grow -t unsupported -f - . <<'EOF'
+# escape=foo
+# syntax=foo
+#syntax=foo
+ # syntax=foo
+ #syntax=foo
+# foo=bar
+# comment
 FROM 00_tiny
 COPY --chown=foo fixtures/README .
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"warning: not supported: COPY --chown"* ]]
+    [[ $output = *'warning: not supported: parser directives'* ]]
+    [[ $(echo "$output" | fgrep 'parser directives' | wc -l) -eq 5 ]]
+
+    # COPY --from
+    run ch-grow -t unsupported -f - . <<'EOF'
+FROM 00_tiny
+COPY --chown=foo fixtures/README .
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: not supported: COPY --chown'* ]]
 }
 
 
@@ -373,7 +408,7 @@ EOF
 
     # Dockerfile on stdin, so no context directory.
     if [[ $CH_BUILDER != ch-grow ]]; then  # ch-grow doesn't support this yet
-        run ch-build -t foo - <<EOF
+        run ch-build -t foo - <<'EOF'
 FROM 00_tiny
 COPY doesnotexist .
 EOF
@@ -391,7 +426,7 @@ EOF
     # SRC not inside context directory.
     #
     # Case 1: leading "..".
-    run ch-build -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY ../foo .
 EOF
@@ -399,7 +434,7 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
     # Case 2: ".." inside path.
-    run ch-build -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY foo/../../baz .
 EOF
@@ -407,7 +442,7 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
     # Case 3: symlink leading outside context directory.
-    run ch-build -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY fixtures/symlink-to-tmp .
 EOF
@@ -420,14 +455,14 @@ EOF
     fi
 
     # Multiple sources and non-directory destination.
-    run ch-build -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY Build.missing common.bash /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
-    run ch-build -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY Build.missing common.bash /etc/fstab
 EOF
@@ -438,14 +473,14 @@ EOF
     else
         [[ $output = *'not a directory'* ]]
     fi
-    run ch-build -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY run /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
-    run ch-build -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY run /etc/fstab
 EOF
@@ -454,7 +489,7 @@ EOF
     [[ $output = *'not a directory'* ]]
 
     # File not found.
-    run ch-build -t foo -f - . <<EOF
+    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY doesnotexist .
 EOF

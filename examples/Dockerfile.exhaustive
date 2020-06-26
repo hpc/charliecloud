@@ -26,7 +26,9 @@ RUN ls --color=no -lh
 
 RUN apk add --no-cache bc
 RUN ["echo", "hello \n${chse_2} \${chse_2} ${NOTSET}"]
-RUN echo 'hello ${chse_2}' "hello ${chse_2}"
+# should print:
+# a -${chse_2}- b -value2- c -c- d -d-
+RUN echo 'a -${chse_2}-' "b -${chse_2}-" "c -${NOTSET:-c}-" "d -${chse_2:+d}-"
 RUN env
 
  # leading whitespace comment
