@@ -79,6 +79,9 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 
 /// Dockerfile ///
 
+// First instruction must be ARG or FROM, but that is not a syntax error.
+dockerfile: _NEWLINES? ( instruction | _COMMENT )*
+
 ?instruction: _WS? ( cmd | copy | arg | env | from_ | run | workdir )
 
 cmd: "CMD"i _WS LINE _NEWLINES
