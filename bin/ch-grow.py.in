@@ -161,6 +161,15 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
    if (cli.parse_only):
       sys.exit(0)
 
+   # Line noise in the second option is for the git@github.com:... variant.
+   # Username and host characters from https://tools.ietf.org/html/rfc3986.
+   if (re.search(r"""  ^((git|git+ssh|http|https|ssh)://
+                     | ^[\w.~%!$&'\(\)\*\+,;=-]+@[\w.~%!$&'\(\)\*\+,;=-]+:)""",
+                 cli.context, re.VERBOSE) is not None):
+      ch.FATAL("not yet supported: issue #773: URL context: %s" % cli.context)
+   if (os.path.exists(cli.context + "/.dockerignore")):
+      ch.WARNING("not yet supported: issue #777: .dockerignore file")
+
    # We do not actually care whether the tree is traversed breadth-first or
    # depth-first, but we *do* care that the nodes are visited in order.
    # Neither visit() nor visit_topdown() are documented as of 2020-06-11 [1],
