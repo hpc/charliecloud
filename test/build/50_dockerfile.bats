@@ -224,10 +224,24 @@ FROM 00_tiny
 RUN echo hello
 EOF
 
-    # Single instruction
+    # Single instruction.
     ch-grow -t syntax-quirks -f - . <<'EOF'
 FROM 00_tiny
 EOF
+
+    # Whitespace around comment hash.
+    run ch-grow -v -t syntax-quirks -f - . <<'EOF'
+FROM 00_tiny
+#no whitespace
+ #before only
+# after only
+ # both before and after
+  # multiple before
+	# tab before
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | fgrep -c 'comment') -eq 6 ]]
 }
 
 
@@ -388,7 +402,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warning: not supported: parser directives'* ]]
-    [[ $(echo "$output" | fgrep 'parser directives' | wc -l) -eq 5 ]]
+    [[ $(echo "$output" | fgrep -c 'parser directives') -eq 5 ]]
 
     # COPY --from
     run ch-grow -t unsupported -f - . <<'EOF'
