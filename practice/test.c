@@ -2,7 +2,7 @@
 #include "fuseprivate.h"
 //#include <stat.h>
 #include "nonstd.h"
-#include "squashfuse_lib.h"
+//#include "squashfuse_lib.h"
 
 #include <errno.h>
 #include <stddef.h>
