@@ -81,6 +81,8 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
                    help="print any missing dependencies and exit")
    ap.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
+   ap.add_argument("--list", action=CLI_List_Images,
+                   help="List images ch-grow has built")
    ap.add_argument("-n", "--dry-run", action="store_true",
                    help="don't execute instructions")
    ap.add_argument("--no-cache", action="store_true",
@@ -463,6 +465,15 @@ class CLI_Print_Storage(ch.CLI_Action_Exit):
 
    def __call__(self, _, namespace, *args, **kwargs):
       print(namespace.storage)
+      sys.exit(0)
+
+class CLI_List_Images(ch.CLI_Action_Exit):
+
+   def __call__(self, _, namespace, *args, **kwargs):
+      print("IMAGE") 
+      p = pathlib.Path(namespace.storage + '/img')
+      for child in p.iterdir():
+          print(child.name)
       sys.exit(0)
 
 class Environment:
