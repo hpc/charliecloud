@@ -1,5 +1,5 @@
-#include "squashfuse.h"
-#include "fuseprivate.h"
+#include <squashfuse.h>
+#include <fuseprivate.h>
 //#include <stat.h>
 #include "nonstd.h"
 //#include "squashfuse_lib.h"
@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <ops.h>
 
 int main(int argc, char *argv[]) {
 	struct fuse_args args;
