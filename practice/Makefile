@@ -1,13 +1,15 @@
 #CC=gcc
-#CPPFLAGS=-I$(HOME)/squashfuse/
-#CFLAGS=-D_FILE_OFFSET_BITS=64 -v
-#LDFLAGS=-L$(HOME)/squashfuse/.libs -L/usr/lib64
+CPPFLAGS=-I$(HOME)/squashfuse/
+CFLAGS=-D_FILE_OFFSET_BITS=64 -g
+STATIC_LIBS=$(HOME)/squashfuse/.libs/libsquashfuse.a $(HOME)/squashfuse/.libs/libfuseprivate.a
 
-#LIBS=-lsquashall -llzma -lzo2 -llz4 -lz
+LIBS=-llzma -llzo2 -llz4 -lz -lfuse
 
 all: test
 
 test: test.o
-	gcc test.o -llzo2 -lz -llz4 -llzma -lfuse -o test /users/chernikov/squashfuse/.libs/libsquashfuse.a /users/chernikov/squashfuse/.libs/libfuseprivate.a -v 
+	$(CC) test.o $(LIBS) -o test $(STATIC_LIBS)
 test.o: test.c
-	gcc -g -c test.c -I/users/chernikov/squashfuse/ -o test.o -D_FILE_OFFSET_BITS=64
+	$(CC) -c test.c $(CPPFLAGS) -o test.o $(CFLAGS)
+clean:
+	-rm test.o test
