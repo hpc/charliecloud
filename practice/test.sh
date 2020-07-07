@@ -1,7 +1,8 @@
 #!/bin/bash
 
-./test ~/chorkshop/hello.sqfs /var/tmp/anna
+./test ~/chorkshop/hello.sqfs
 mount | grep -F fuse
-ch-run /var/tmp/anna -- ./hello.py
-fusermount -u /var/tmp/anna
+ch-run /var/tmp/hello -- ./hello.py
+fusermount -u /var/tmp/hello
 mount | grep -F fuse
+rm -rf /var/tmp/hello
