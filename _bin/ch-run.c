@@ -60,7 +60,7 @@ const struct argp_option options[] = {
    { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
    { "version",     'V', 0,      0, "print version and exit" },
    { "write",       'w', 0,      0, "mount image read-write"},
-   { "squash",      's', "SQFS:DIR",0, "squashfs"},
+   { "squash",      's', "SQFS",0, "squashfs"},
    { 0 }
 };
 
