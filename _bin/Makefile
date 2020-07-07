@@ -8,11 +8,11 @@ LIBS=-llzma -llzo2 -llz4 -lz -lfuse -lpthread -lrt
 all: ch-run
 
 ch-run: ch-run.o ch_misc.o ch_core.o
-	$(CC) ch-run.o $(LIBS) -o ch-run ch-misc.o ch-core.o $(STATIC_LIBS)
+	$(CC) ch-run.o $(LIBS) -o ch-run ch_misc.o ch_core.o $(STATIC_LIBS)
 ch-run.o: ch-run.c
 	$(CC) -c ch-run.c $(CPPFLAGS) -o ch-run.o $(CFLAGS)
 ch_core.o: ch_core.c
-	$(CC) -c ch_core.c -o ch_core.o $(CFLAGS)
+	$(CC) -c ch_core.c -o ch_core.c $(STATIC_LIBS) $(CFLAGS)
 ch_misc.o: ch_misc.c
 	$(CC) -c ch_misc.c -o ch_misc.o $(CFLAGS)
 clean:
