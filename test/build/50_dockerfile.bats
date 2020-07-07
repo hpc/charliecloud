@@ -334,6 +334,14 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'COPY: invalid option --foo'* ]]
+
+    # FROM invalid option.
+    run ch-grow -t foo -f - . <<'EOF'
+FROM --foo=bar 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'FROM: invalid option --foo'* ]]
 }
 
 
@@ -361,13 +369,21 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'error: not yet supported: issue #784: COPY --from'* ]]
 
+    # FROM --platform
+    run ch-grow -t not-yet-supported -f - . <<'EOF'
+FROM --platform=foo 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: not yet supported: issue #778: FROM --platform'* ]]
+
     # .dockerignore files
     run ch-grow -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'not yet supported: issue #777: .dockerignore file'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #777: .dockerignore file'* ]]
 
     # URL (Git repo) contexts
     run ch-grow -t not-yet-supported -f - \
@@ -376,14 +392,14 @@ FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'not yet supported: issue #773: URL context'* ]]
+    [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
     run ch-grow -t not-yet-supported -f - \
         https://github.com/hpc/charliecloud.git <<'EOF'
 FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'not yet supported: issue #773: URL context'* ]]
+    [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
 
     # variable expansion modifiers
     run ch-grow -t not-yet-supported -f - . <<'EOF'
