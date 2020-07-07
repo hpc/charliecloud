@@ -421,11 +421,10 @@ EOF
 # foo=bar
 # comment
 FROM 00_tiny
-COPY --chown=foo fixtures/README .
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'warning: not supported: parser directives'* ]]
+    [[ $output = *'warning: not supported, ignored: parser directives'* ]]
     [[ $(echo "$output" | fgrep -c 'parser directives') -eq 5 ]]
 
     # COPY --from
@@ -435,7 +434,27 @@ COPY --chown=foo fixtures/README .
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'warning: not supported: COPY --chown'* ]]
+    [[ $output = *'warning: not supported, ignored: COPY --chown'* ]]
+
+    # Unsupported instructions
+    run ch-grow -t unsupported -f - . <<'EOF'
+FROM 00_tiny
+EXPOSE foo
+HEALTHCHECK foo
+MAINTAINER foo
+STOPSIGNAL foo
+USER foo
+VOLUME foo
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | fgrep -c 'not supported') -eq 6 ]]
+    [[ $output = *'warning: not supported, ignored: EXPOSE instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: HEALTHCHECK instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: MAINTAINER instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: STOPSIGNAL instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: USER instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: VOLUME instruction'* ]]
 }
 
 

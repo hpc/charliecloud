@@ -235,10 +235,6 @@ class Instruction(abc.ABC):
       return ("%3s %s %s %s"
               % (self.lineno, self.str_name(), self.str_options(), self.str_()))
 
-   def _unsupported_yet(self, fn, msg, issue_no):
-      fn("not yet supported: issue #%d: %s %s"
-         % (issue_no, self.str_name(), msg))
-
    def announce(self):
       ch.INFO(self)
 
@@ -268,21 +264,25 @@ class Instruction(abc.ABC):
       return " ".join("--%s=%s" % (k,v) for (k,v) in self.options.items())
 
    def unsupported_forever_warn(self, msg):
-      ch.WARNING("not supported: %s %s" % (self.str_name(), msg))
+      ch.WARNING("not supported, ignored: %s %s" % (self.str_name(), msg))
 
    def unsupported_yet_warn(self, msg, issue_no):
+      ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
+                 % (issue_no, self.str_name(), msg))
+
       self._unsupported_yet(ch.WARNING, msg, issue_no)
 
    def unsupported_yet_fatal(self, msg, issue_no):
-      self._unsupported_yet(ch.FATAL, msg, issue_no)
+      ch.FATAL("not yet supported: issue #%d: %s %s"
+               % (issue_no, self.str_name(), msg))
 
 
-class Instruction_Unsupported(Instruction):
+class Instruction_Supported_Never(Instruction):
 
    execute_increment = 0
 
    def announce(self):
-      self.unsupported_forever_warn("%s instruction" % self.str_name())
+      self.unsupported_forever_warn("instruction")
 
    def str_(self):
       return "(unsupported)"
@@ -429,13 +429,13 @@ class I_copy(Instruction):
             ch.FATAL("can't COPY unknown file type: %s" % src)
 
 
-class I_directive(Instruction_Unsupported):
+class I_directive(Instruction_Supported_Never):
 
    def __init__(self, *args):
       super().__init__(*args)
 
    def announce(self):
-      ch.WARNING("not supported: parser directives")
+      ch.WARNING("not supported, ignored: parser directives")
 
 
 class Env(Instruction):
@@ -543,6 +543,14 @@ class I_workdir(Instruction):
       ch.mkdirs(image.unpack_path + "/" + self.path)
       env.chdir(self.path)
 
+class I_unsupported(Instruction_Supported_Never):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.name = ch.tree_terminal(self.tree, "UNSUPPORTED")
+
+   def str_name(self):
+      return self.name
 
 ## Supporting classes ##
 
