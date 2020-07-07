@@ -482,18 +482,18 @@ int squashmount(char *argv)
 		return -1;
 	
 	//make dir to mount
-	char *name = strtok(basename("/var/tmp/megan"),".");
+	char *name = strtok(basename(argv),".");
 	char *buffer = (char *) malloc(strlen(name) + 10);
-	strcopy(buffer, "var/tmp/");
+	strcpy(buffer, "/var/tmp/");
 	char *mountdir = strcat(buffer, name);
 
-	if(mkdir(mountdir, 077) != 0)
+	if(mkdir(mountdir, 0777) != 0)
 		return -1;
 
 	//PASS IN ARGUMENTS TO FUSE MAIN CONTAINING program name, mount locations, single threaded option
-	fuse_opt_add_args(&args, argv[0]);
-	fuse_opt_add_args(&args, mountdir);
-	fuse_opt_add_args(&args, "-s");
+	fuse_opt_add_arg(&args, argv[0]);
+	fuse_opt_add_arg(&args, mountdir);
+	fuse_opt_add_arg(&args, "-s");
 	ret = fuse_main(args.argc, args.argv, &sqfs_hl_ops, hl);
 	fuse_opt_free_args(&args);
 	return ret;
