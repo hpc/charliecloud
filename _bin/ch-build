@@ -1,0 +1,112 @@
+#!/bin/sh
+
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+. "${lib}/base.sh"
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Build an image and place it in the builder's back-end storage.
+
+Usage:
+
+  $ $(basename "$0") [-b BUILDER] [--builder-info] -t TAG [ARGS ...] CONTEXT
+
+BUILDER is one of: buildah ch-grow docker.
+ARGS are passed unchanged to the underlying builder.
+EOF
+)
+
+parse_basic_args "$@"
+
+# This is rather kludgey, because we want to pull off certain arguments and
+# then pass on the rest.
+while true; do
+    case $1 in
+        -b|--builder)
+            shift
+            CH_BUILDER=$1
+            shift
+            ;;
+        --builder-info)
+            builder_info=yes
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+builder_choose
+if [ "$1" = --print-builder ]; then  # undocumented; for test suite
+    echo "$CH_BUILDER"
+    exit 0
+fi
+if [ -n "$builder_info" ]; then
+    printf "builder: %s: " "$CH_BUILDER"
+    case $CH_BUILDER in
+        buildah*)
+            buildah --version
+            ;;
+        ch-grow)
+            "${ch_bin}/ch-grow" --version
+            ;;
+        docker)
+            docker --version  # no wrapper: sudo not needed for --version
+            ;;
+        none)
+            echo 'no builder'
+            ;;
+        *)
+            echo 'unknown builder' 1>&2
+            exit 1
+            ;;
+    esac
+    exit 0
+fi
+echo "building with: ${CH_BUILDER}"
+
+case $CH_BUILDER in
+    buildah*)
+        case $CH_BUILDER in
+            buildah)
+                runtime=${ch_bin}/ch-run-oci
+                ignore_chown=true
+                ;;
+            buildah-runc)
+                runtime=runc
+                ignore_chown=false
+                ;;
+            buildah-setuid)
+                runtime=${ch_bin}/ch-run-oci
+                ignore_chown=false
+                ;;
+        esac
+        BUILDAH_LAYERS=true \
+        buildah --storage-opt .ignore_chown_errors="$ignore_chown" \
+                build-using-dockerfile \
+                --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                --build-arg NO_PROXY="$NO_PROXY" \
+                --build-arg http_proxy="$http_proxy" \
+                --build-arg https_proxy="$https_proxy" \
+                --build-arg no_proxy="$no_proxy" \
+                --isolation=rootless \
+                --runtime="$runtime" \
+                "$@" < /dev/null
+        ;;
+    ch-grow)
+        "${ch_bin}/ch-grow" "$@"
+        ;;
+    docker)
+        # Coordinate this list with test "build.bats/proxy variables".
+        # shellcheck disable=SC2154
+        docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                      --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                      --build-arg NO_PROXY="$NO_PROXY" \
+                      --build-arg http_proxy="$http_proxy" \
+                      --build-arg https_proxy="$https_proxy" \
+                      --build-arg no_proxy="$no_proxy" \
+                      "$@"
+        ;;
+esac

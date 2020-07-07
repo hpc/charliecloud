@@ -1,0 +1,414 @@
+#!/bin/sh
+
+# The basic algorithm here is that we build up a list of file
+# source:destination pairs separated by newlines, then walk through them and
+# copy them into the image. We also maintain a list of directories to create
+# and a list of file globs to remove.
+#
+# The colon separator to avoid the difficulty of iterating through a sequence
+# of pairs with no arrays or structures in POSIX sh. We could avoid it by
+# taking action immediately upon encountering each file in the argument list,
+# but that would (a) yield a half-injected image for basic errors like
+# misspellings on the command line and (b) would require the image to be first
+# on the command line, which seems awkward.
+#
+# The newline separator is for the same reason and also because it's
+# convenient for input from --cmd and --file.
+#
+# Note on looping through the newlines in a variable: The approach in this
+# script is to set IFS to newline, loop, then restore. This is awkward but
+# seemed the least bad. Alternatives include:
+#
+#   1. Piping echo into "while read -r": This executes the while in a
+#      subshell, so variables don't stick.
+#
+#   2. Here document used as input, e.g.:
+#
+#        while IFS= read -r FILE; do
+#          ...
+#        done <<EOF
+#        $FILES
+#        EOF
+#
+#      This works but seems more awkward.
+#
+#   3. Here string, e.g. 'while IFS= read -r FILE; do ... done <<< "$FILES"'.
+#      This is a bashism.
+
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+. "${lib}/base.sh"
+
+set -e
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Inject files from the host into an image directory.
+
+NOTE: This command is experimental. Features may be incomplete and/or buggy.
+
+Usage:
+
+  $ ch-fromhost [OPTION ...] [FILE_OPTION ...] IMGDIR
+
+Which files to inject (one or more required; can be repeated):
+
+  -c, --cmd CMD    listed in the stdout of CMD
+  -f, --file FILE  listed in file FILE
+  -p, --path PATH  inject the file at PATH
+  --cray-mpi       Cray-enable MPICH/OpenMPI installed within the image
+  --nvidia         recommended by nVidia (via "nvidia-container-cli list")
+
+Destination within image:
+
+  -d, --dest DST   place following files in IMGDIR/DST, overriding inference
+
+Options:
+
+  --lib-path       print the inferred destination for shared libraries
+  --no-ldconfig    don't run ldconfig even if we injected shared libraries
+  -h, --help       print this help and exit
+  -v, --verbose    list the injected files
+  --version        print version and exit
+EOF
+)
+
+cray_mpi=          # Cray fixups requested
+cray_openmpi=      # ... for OpenMPI
+cray_mpich=        # ... for MPICH
+dest=
+image=
+newline='
+'
+inject_files=      # source:destination files to inject
+inject_mkdirs=     # directories to create in image (image-rooted)
+inject_unlinks=    # files to rm -f (not rmdir or rm -Rf) (image-rooted)
+lib_dest=
+lib_dest_print=
+lib_found=
+no_ldconfig=
+
+debug () {
+    if [ "$verbose" ]; then
+        printf '%s\n' "$1" 1>&2
+    fi
+}
+
+ensure_nonempty () {
+    [ "$2" ] || fatal "$1 must not be empty"
+}
+
+fatal () {
+    printf 'ch-fromhost: %s\n' "$1" 1>&2
+    exit 1
+}
+
+info () {
+    printf 'ch-fromhost: %s\n' "$1" 1>&2
+}
+
+is_bin () {
+    case $1 in
+        */bin*|*/sbin*)
+            return 0
+            ;;
+        *)
+            return 1
+    esac
+}
+
+is_so () {
+    case $1 in
+        */lib*)
+            return 0
+            ;;
+        *.so)
+            return 0
+            ;;
+        *)
+            return 1
+    esac
+}
+
+queue_files () {
+    old_ifs="$IFS"
+    IFS="$newline"
+    d="${dest:-$2}"
+    for f in $1; do
+        case $f in
+            *:*)
+                fatal "paths can't contain colon: ${f}"
+                ;;
+        esac
+        if is_so "$f"; then
+            debug "found shared library: ${f}"
+            lib_found=yes
+        fi
+        # This adds a delimiter only for the second and subsequent files.
+        # https://chris-lamb.co.uk/posts/joining-strings-in-posix-shell
+        #
+        # If destination empty, we'll infer it later.
+        inject_files="${inject_files:+$inject_files$newline}$f:$d"
+    done
+    IFS="$old_ifs"
+}
+
+queue_mkdir () {
+    [ "$1" ]
+    inject_mkdirs="${inject_mkdirs:+$inject_mkdirs$newline}$1"
+}
+
+queue_unlink () {
+    [ "$1" ]
+    inject_unlinks="${inject_unlinks:+$inject_unlinks$newline}$1"
+}
+
+
+parse_basic_args "$@"
+
+while [ $# -gt 0 ]; do
+    opt=$1; shift
+    case $opt in
+        -c|--cmd)
+            ensure_nonempty --cmd "$1"
+            out=$($1) || fatal "command failed: $1"
+            queue_files "$out"
+            shift
+            ;;
+        --cray-mpi)
+            # Can't act right away because we need the image path.
+            cray_mpi=yes
+            lib_found=yes
+            ;;
+        -d|--dest)
+            ensure_nonempty --dest "$1"
+            dest=$1
+            shift
+            ;;
+        -f|--file)
+            ensure_nonempty --file "$1"
+            out=$(cat "$1") || fatal "cannot read file: ${1}"
+            queue_files "$out"
+            shift
+            ;;
+        --lib-path)
+            # Note: If this is specified along with one of the file
+            # specification options, all the file gathering and checking work
+            # will happen, but it will be discarded.
+            lib_found=yes
+            lib_dest_print=yes
+            ;;
+        --no-ldconfig)
+            no_ldconfig=yes
+            ;;
+        --nvidia)
+               out=$(nvidia-container-cli list --binaries --libraries) \
+            || fatal "nvidia-container-cli failed; does this host have GPUs?"
+            queue_files "$out"
+            ;;
+        -p|--path)
+            ensure_nonempty --path "$1"
+            queue_files "$1"
+            shift
+            ;;
+        -v|--verbose)
+            verbose=yes
+            ;;
+        -*)
+            info "invalid option: ${opt}"
+            usage
+            ;;
+        *)
+            ensure_nonempty "image path" "${opt}"
+            [ -z "$image" ] || fatal "duplicate image: ${opt}"
+            [ -d "$opt" ] || fatal "image not a directory: ${opt}"
+            image="$opt"
+            ;;
+    esac
+done
+
+[ "$image" ] || fatal "no image specified"
+
+if [ $cray_mpi ]; then
+    sentinel=/etc/opt/cray/release/cle-release
+    [ -f $sentinel ] || fatal "not found: ${sentinel}: are you on a Cray?"
+
+    mpi_version=$("${ch_bin}/ch-run" "$image" -- mpirun --version || true)
+    case $mpi_version in
+        *mpich*)
+            cray_mpich=yes
+            ;;
+        *'Open MPI'*)
+            cray_openmpi=yes
+            ;;
+        *)
+            fatal "can't find MPI in image"
+            ;;
+    esac
+fi
+
+if [ $lib_found ]; then
+    # We want to put the libraries in the first directory that ldconfig
+    # searches, so that we can override (or overwrite) any of the same library
+    # that may already be in the image.
+    debug "asking ldconfig for shared library destination"
+    # "ldconfig -Nv" gives some pointless warnings on stderr even if
+    # successful; we don't want to show those to users. However, we don't want
+    # to simply pipe stderr to /dev/null because this hides real errors. Thus,
+    # use the following abomination to pipe stdout and stderr to *separate
+    # grep commands*. See: https://stackoverflow.com/a/31151808
+    lib_dest=$( { "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv \
+                  2>&1 1>&3 3>&- | grep -Ev '(^|dynamic linker, ignoring|given more than once)$' ; } \
+                3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
+    [ -n "$lib_dest" ] || fatal 'empty path from ldconfig'
+    [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
+    debug "shared library destination: ${lib_dest}"
+fi
+
+if [ $lib_dest_print ]; then
+    echo "$lib_dest"
+    exit 0
+fi
+
+if [ $cray_mpich ]; then
+    # Remove open source libmpi.so.
+    #
+    # FIXME: These versions are specific to MPICH 3.2.1. I haven't figured out
+    # how to use glob patterns here (they don't get expanded when I tried
+    # basic things).
+    queue_unlink "$lib_dest/libmpi.so"
+    queue_unlink "$lib_dest/libmpi.so.12"
+    queue_unlink "$lib_dest/libmpi.so.12.1.1"
+
+    # Directory containing Cray's libmpi.so.12.
+    # shellcheck disable=SC2016
+       [ "$CRAY_MPICH_DIR" ] \
+    || fatal '$CRAY_MPICH_DIR not set; is module cray-mpich-abi loaded?'
+    cray_libmpi=$CRAY_MPICH_DIR/lib/libmpi.so.12
+       [ -f "$cray_libmpi" ] \
+    || fatal "not found: ${cray_libmpi}; is module cray-mpich-abi loaded?"
+
+    # Note: Most or all of these filenames are symlinks, and the copy will
+    # convert them to normal files (with the same content). In the
+    # documentation, we say not to do that. However, it seems to work, it's
+    # simpler than resolving them, and we apply greater abuse to libmpi.so.12
+    # below.
+
+    # Cray libmpi.so.12.
+    queue_files "$cray_libmpi"
+    # Linked dependencies.
+    queue_files "$(  ldd "$cray_libmpi" \
+                   | grep -F /opt \
+                   | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')"
+    # dlopen(3)'ed dependencies. I don't know how to not hard-code these.
+    queue_files /opt/cray/alps/default/lib64/libalpsutil.so.0.0.0
+    queue_files /opt/cray/alps/default/lib64/libalpslli.so.0.0.0
+    queue_files /opt/cray/wlm_detect/default/lib64/libwlm_detect.so.0.0.0
+    #queue_files /opt/cray/alps/default/lib64/libalps.so.0.0.0
+fi
+
+if [ $cray_openmpi ]; then
+    # Both MPI_ROOT and MPIHOME are the base of the OpenMPI install tree.
+    # We use MPIHOME because some users unset MPI_ROOT.
+    #
+    # Note also that the OpenMPI module name is not standardized.
+       [ "$MPIHOME" ] \
+    || fatal "MPIHOME not set; is OpenMPI module loaded?"
+
+    # Inject libmpi from the host
+    host_libmpi=${MPIHOME}/lib/libmpi.so
+        [ -f "$host_libmpi" ] \
+    || fatal "not found: ${host_libmpi}; is OpenMPI module loaded?"
+    queue_files "$host_libmpi"
+    queue_files "$(  ldd "$host_libmpi" \
+                   | grep -E "/usr|/opt" \
+                   | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')"
+
+    # Remove libmpi.so* from image. This works around ParaView
+    # dlopen(3)-related errors that we don't understand.
+    image_libmpis=$(  "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -p \
+                    | sed -nr 's|^.* => (/.*/libmpi\.so([0-9.]+)?)$|\1|p')
+    [ "$image_libmpis" ] || fatal "can't find libmpi.so* in image"
+    for f in $image_libmpis; do
+        queue_unlink "$f"
+        queue_unlink "$("${ch_bin}/ch-run" "$image" -- readlink -f "$f")"
+    done
+fi
+
+if [ $cray_mpi ]; then
+    # ALPS libraries require the contents of this directory to be present at
+    # the same path as the host. Create the mount point here, then ch-run
+    # bind-mounts it later.
+    queue_mkdir /var/opt/cray/alps/spool
+
+    # libwlm_detect.so requires this file to be present.
+    queue_mkdir /etc/opt/cray/wlm_detect
+    queue_files /etc/opt/cray/wlm_detect/active_wlm /etc/opt/cray/wlm_detect
+
+    # uGNI needs a pile of hugetlbfs filesystems at paths that are arbitrary
+    # but in a specific order in /proc/mounts. ch-run bind-mounts here later.
+    queue_mkdir /var/opt/cray/hugetlbfs
+fi
+
+
+[ "$inject_files" ] || fatal "empty file list"
+
+debug "injecting into image: ${image}"
+
+old_ifs="$IFS"
+IFS="$newline"
+for u in $inject_unlinks; do
+    debug "  rm -f ${image}${u}"
+    rm -f "${image}${u}"
+done
+for d in $inject_mkdirs; do
+    debug "  mkdir -p ${image}${d}"
+    mkdir -p "${image}${d}"
+done
+for file in $inject_files; do
+    f="${file%%:*}"
+    d="${file#*:}"
+    infer=
+    if is_bin "$f" && [ -z "$d" ]; then
+        d=/usr/bin
+        infer=" (inferred)"
+    elif is_so "$f" && [ -z "$d" ]; then
+        d=$lib_dest
+        infer=" (inferred)"
+    fi
+    debug "  ${f} -> ${d}${infer}"
+    [ "$d" ] || fatal "no destination for: ${f}"
+    [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
+    [ -d "${image}${d}" ] || fatal "not a directory: ${image}${d}"
+    if [ ! -w "${image}${d}" ]; then
+        # Some images unpack with unwriteable directories; fix. This seems
+        # like a bit of a kludge to me, so I'd like to remove this special
+        # case in the future if possible. (#323)
+        info "${image}${d} not writeable; fixing"
+        chmod u+w "${image}${d}" || fatal "can't chmod u+w: ${image}${d}"
+    fi
+       cp --dereference --preserve=all "$f" "${image}${d}" \
+    || fatal "cannot inject: ${f}"
+done
+IFS="$old_ifs"
+
+if [ $cray_mpich ]; then
+    # Restore libmpi.so symlink (it's part of several chains).
+    debug "  ln -s libmpi.so.12 ${image}${lib_dest}/libmpi.so"
+    ln -s libmpi.so.12 "${image}${lib_dest}/libmpi.so"
+
+    # Patch libmpi.so.12 so its soname is "libmpi.so.12" instead of e.g.
+    # "libmpich_gnu_51.so.3". Otherwise, the application won't link without
+    # LD_LIBRARY_PATH, and LD_LIBRARY_PATH is to be avoided.
+    #
+    # Note: This currently requires our patched patchelf (issue #256).
+    debug "fixing soname on libmpi.so.12"
+    "${ch_bin}/ch-run" -w "$image" -- \
+        patchelf --set-soname libmpi.so.12 "$lib_dest/libmpi.so.12"
+fi
+
+if [ $lib_found ] && [ -z "$no_ldconfig" ]; then
+    debug "running ldconfig"
+    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
+else
+    debug "not running ldconfig"
+fi
