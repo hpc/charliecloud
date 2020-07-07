@@ -482,7 +482,7 @@ int squashmount(char *argv)
 		return -1;
 	
 	//make dir to mount
-	char *name = strtok(basename("/var/tmp/megan",".");
+	char *name = strtok(basename("/var/tmp/megan"),".");
 	char *buffer = (char *) malloc(strlen(name) + 10);
 	strcopy(buffer, "var/tmp/");
 	char *mountdir = strcat(buffer, name);
@@ -494,7 +494,7 @@ int squashmount(char *argv)
 	fuse_opt_add_args(&args, argv[0]);
 	fuse_opt_add_args(&args, mountdir);
 	fuse_opt_add_args(&args, "-s");
-	ret = fuse_main(args.argc, args,argv, &sqfs_hl_ops, hl);
+	ret = fuse_main(args.argc, args.argv, &sqfs_hl_ops, hl);
 	fuse_opt_free_args(&args);
 	return ret;
 	
