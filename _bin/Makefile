@@ -12,8 +12,8 @@ ch-run: ch-run.o ch_misc.o ch_core.o
 ch-run.o: ch-run.c
 	$(CC) -c ch-run.c $(CPPFLAGS) -o ch-run.o $(CFLAGS)
 ch_core.o: ch_core.c
-	$(CC) -c ch_core.c $(CPPFLAGS) -o ch_core.o $(CFLAGS)
+	$(CC) -c ch_core.c $(CPPFLAGS) -o ch_core.o $(CFLAGS) $(STATIC_LIBS)
 ch_misc.o: ch_misc.c
 	$(CC) -c ch_misc.c -o ch_misc.o $(CFLAGS)
 clean:
-	-rm ch_core.o ch_misc.o ch-run.o
+	-rm ch_core.o ch_misc.o ch-run.o ch-run
