@@ -367,7 +367,16 @@ COPY --from=foo fixtures/README .
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #784: COPY --from'* ]]
+    [[ $output = *'error: not yet supported: issue #768: COPY --from'* ]]
+
+    # COPY list form
+    run ch-grow -t not-yet-supported -f - . <<'EOF'
+FROM 00_tiny
+COPY ["fixtures/README", "."]
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: not yet supported: issue #784: COPY list form'* ]]
 
     # FROM --platform
     run ch-grow -t not-yet-supported -f - . <<'EOF'

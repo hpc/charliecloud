@@ -351,7 +351,8 @@ class I_copy(Instruction):
          self.srcs = paths[:-1]
          self.dst = paths[-1]
       else:
-         assert False, "unimplemented"
+         assert (ch.tree_child(self.tree, "copy_list") is not None)
+         self.unsupported_yet_fatal("list form", 784)
 
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
@@ -361,7 +362,7 @@ class I_copy(Instruction):
       if (self.options.pop("chown", False)):
          self.unsupported_forever_warn("--chown")
       if (self.options.pop("from", False)):
-         self.unsupported_yet_fatal("--from", 784)
+         self.unsupported_yet_fatal("--from", 768)
       # Any remaining options are invalid.
       self.options_assert_empty()
       # The Dockerfile specification for COPY is complex, messy, inexplicably

@@ -91,8 +91,9 @@ _COMMENT_BODY: /#[^\n]*/
 
 cmd: "CMD"i _WS LINE _NEWLINES
 
-copy: "COPY"i ( _WS option )* ( copy_shell ) _NEWLINES
-copy_shell: _WS WORD ( _WS WORD )+
+copy: "COPY"i ( _WS option )* _WS ( copy_list | copy_shell ) _NEWLINES
+copy_list.2: _string_list
+copy_shell: WORD ( _WS WORD )+
 
 arg: "ARG"i _WS ( arg_bare | arg_equals ) _NEWLINES
 arg_bare: WORD
