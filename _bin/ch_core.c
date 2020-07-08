@@ -490,9 +490,15 @@ int squashmount(char *argv)
 	if(mkdir(mountdir, 0777) != 0)
 		return -1;
 
+
+	args.argc=0;
+	args.argv = NULL;
+	args.allocated = 1;
 	//PASS IN ARGUMENTS TO FUSE MAIN CONTAINING program name, mount locations, single threaded option
-	fuse_opt_add_arg(&args, "./ch-run"); //pass pointer!!
+	//char *progname =&'/users/mphinney/Charliecloud/ch-run';
+	fuse_opt_add_arg(&args, ""); 
 	fuse_opt_add_arg(&args, mountdir);
+	//fuse_opt_add_arg(&args, "/var/tmp/hello");
 	fuse_opt_add_arg(&args, "-s");
 	ret = fuse_main(args.argc, args.argv, &sqfs_hl_ops, hl);
 	fuse_opt_free_args(&args);
