@@ -470,10 +470,9 @@ class CLI_Print_Storage(ch.CLI_Action_Exit):
 class CLI_List_Images(ch.CLI_Action_Exit):
 
    def __call__(self, _, namespace, *args, **kwargs):
-      print("IMAGE") 
       p = pathlib.Path(namespace.storage + '/img')
       for child in p.iterdir():
-          print(child.name)
+          print(ch.Image_Ref(child.name))
       sys.exit(0)
 
 class Environment:
