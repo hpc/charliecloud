@@ -15,7 +15,8 @@ int main(int argc, char *argv[]) {
 	int ret;
 	//struct fuse
 	struct fuse *fuse;
-        
+        // the chan
+        struct fuse_chan *ch;
         //get fuse operations struct from external libraries
 	fuse_operations sqfs_hl_ops;
         get_fuse_ops(&sqfs_hl_ops);
@@ -35,11 +36,24 @@ int main(int argc, char *argv[]) {
 	}
 	char *mountpoint;
 	fuse_opt_add_arg(&args, argv[0]);
-        fuse_opt_add_arg(&args, mountdir);   
-
-	fuse = fuse_setup(args.argc, args.argv, &sqfs_hl_ops, sizeof(sqfs_hl_ops), &mountpoint, 0, hl);
+        //fuse_opt_add_arg(&args, mountdir);
+        //fuse_opt_add_arg(&args, "-f");   
+	ch = fuse_mount(mountdir,&args);
+	if(!ch){
+		fuse_opt_free_args(&args);
+		return 1;
+	}
+	fuse = fuse_new(ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
+	//fuse = fuse_setup(args.argc, args.argv, &sqfs_hl_ops, sizeof(sqfs_hl_ops), &mountpoint, 0, hl);
+	
 	if(fuse == NULL){
 		printf("bois");
+	}
+	if(0 > fuse_daemonize(0)){
+		printf("bois3");
+	}
+	if(0 > fuse_set_signal_handlers(fuse_get_session(fuse))){
+		printf("bois2");
 	}
 	ret = fuse_loop(fuse);
 	fuse_teardown(fuse, mountpoint);
