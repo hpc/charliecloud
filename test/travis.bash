@@ -59,6 +59,7 @@ bin/ch-run --version
 
 if [[ $MAKE_CHECK ]]; then
     make check
+    cat test-suite.log
     exit
 fi
 

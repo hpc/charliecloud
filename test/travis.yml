@@ -94,11 +94,11 @@ jobs:
       env: CH_BUILDER=docker          TARBALL=export       MAKE_INSTALL=yes
 
     - <<: *stage_misc
+      env: CH_BUILDER=docker          MAKE_CHECK=yes
+    - <<: *stage_misc
       env: CH_BUILDER=ch-grow         MINIMAL_DEPS=yes
     - <<: *stage_misc
       env: CH_BUILDER=docker          MINIMAL_DEPS=yes
-    - <<: *stage_misc
-      env: CH_BUILDER=docker          MINIMAL_DEPS=yes     MAKE_CHECK=yes
     - <<: *stage_misc
       env: CH_BUILDER=docker          MINIMAL_CONFIG=yes
     - <<: *stage_misc
