@@ -58,6 +58,7 @@ make "$MAKEJ"
 bin/ch-run --version
 
 if [[ $MAKE_CHECK ]]; then
+    export CH_TEST_PERMDIRS=skip
     if ! make check; then
         cat test-suite.log
         exit 1
