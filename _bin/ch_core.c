@@ -491,9 +491,12 @@ int squashmount(char *argv)
    	                                                                                                                                                                             if(mkdir(mountdir, 0777) != 0){
                                                                                                                                                                                                 return -1;
                                                                                                                                                                                                         }
-        
+        args.argc = 0;
+	args.argv = NULL;
+	args.allocated = 1;
         //set up the mount 
-        fuse_opt_add_arg(&args,argv);
+        //fuse_opt_add_arg(&args,"");
+	fuse_opt_add_arg(&args, argv);
 	ch = fuse_mount(mountdir,&args);
         if(!ch){
         	fuse_opt_free_args(&args);
