@@ -58,9 +58,11 @@ make "$MAKEJ"
 bin/ch-run --version
 
 if [[ $MAKE_CHECK ]]; then
-    make check
-    cat test-suite.log
-    exit
+    if ! make check; then
+        cat test-suite.log
+        exit 1
+    fi
+    exit 0
 fi
 
 if [[ $MAKE_INSTALL ]]; then
