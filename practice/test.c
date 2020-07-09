@@ -49,15 +49,18 @@ int main(int argc, char *argv[]) {
 	if(fuse == NULL){
 		printf("bois");
 	}
-	//if(0 > fuse_daemonize(0)){
+	//if(0 > fuse_daemonize(1)){
 	//	printf("bois3");
 	//}
 	if(0 > fuse_set_signal_handlers(fuse_get_session(fuse))){
 		printf("bois2");
 	}
-	ret = fuse_loop(fuse);
-	fuse_teardown(fuse, mountpoint);
-	return ret;
+	if(fork() == 0){
+		ret = fuse_loop(fuse);
+		fuse_teardown(fuse, mountpoint);
+	} else {
+		return ret;
+	}
 	//pass in arguments to fuse main containing program name, mount location, single threaded option
 	/**
 	struct fuse_chan *ch;
