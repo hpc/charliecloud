@@ -465,44 +465,55 @@ void tmpfs_mount(const char *dst, const char *newroot, const char *data)
 
 int squashmount(char *argv)
 {
-	//fuse args struct
+	
+	
 	struct fuse_args args;
-	//sqfs struct
-	sqfs_hl *hl;
-	//return val
-	int ret;
-
-	//get fuse ops struct frome external libraries
-	struct fuse_operations sqfs_hl_ops;
-	get_fuse_ops(&sqfs_hl_ops);
-
-	//create sqfs struct w/ path to image
-	hl = sqfs_hl_open(argv, 0); //have to change to path??
-	if(!hl)
-		return -1;
-	
-	//make dir to mount
-	char *name = strtok(basename(argv),".");
-	char *buffer = (char *) malloc(strlen(name) + 10);
-	strcpy(buffer, "/var/tmp/");
-	char *mountdir = strcat(buffer, name);
-
-	if(mkdir(mountdir, 0777) != 0)
-		return -1;
-
-
-	args.argc=0;
-	args.argv = NULL;
-	args.allocated = 1;
-	//PASS IN ARGUMENTS TO FUSE MAIN CONTAINING program name, mount locations, single threaded option
-	//char *progname =&'/users/mphinney/Charliecloud/ch-run';
-	fuse_opt_add_arg(&args, ""); 
-	fuse_opt_add_arg(&args, mountdir);
-	//fuse_opt_add_arg(&args, "/var/tmp/hello");
-	fuse_opt_add_arg(&args, "-s");
-	ret = fuse_main(args.argc, args.argv, &sqfs_hl_ops, hl);
-	fuse_opt_free_args(&args);
+        //sqfs struct
+        sqfs_hl *hl;
+        //return value
+        int ret;
+        //struct fuse
+        struct fuse *fuse;
+        // the chan
+        struct fuse_chan *ch;
+        //get fuse operations struct from external libraries
+        fuse_operations sqfs_hl_ops;
+        get_fuse_ops(&sqfs_hl_ops);
+        //create sqfs struct with path to image, and offset
+        hl =sqfs_hl_open(argv, 0);
+        if (!hl)
+        	return -1;
+        //make the directory to mount
+        char *name = strtok(basename(argv),".");
+        char * buffer = (char *) malloc(strlen(name) + 10);
+        strcpy(buffer, "/var/tmp/");
+        char *mountdir = strcat(buffer, name);
+   	                                                                                                                                                                             if(mkdir(mountdir, 0777) != 0){
+                                                                                                                                                                                                return -1;
+                                                                                                                                                                                                        }
+        
+        //set up the mount 
+        fuse_opt_add_arg(&args,argv);
+	ch = fuse_mount(mountdir,&args);
+        if(!ch){
+        	fuse_opt_free_args(&args);
+        	return 1;
+        }
+        //set up the fuse session
+        fuse = fuse_new(ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
+        if(fuse == NULL){
+        	printf("bois");
+        }
+        //set up signal handlers
+        if(0 > fuse_set_signal_handlers(fuse_get_session(fuse))){
+        	printf("bois2");
+        }
+        //run the session handler in the child process, and carry  on in the parent
+        if(fork() == 0){
+                ret = fuse_loop(fuse);
+                fuse_teardown(fuse, mountdir);
+        } else {
+                return ret;
+        }
 	return ret;
-	
-}
-
+} 
