@@ -49,9 +49,9 @@ int main(int argc, char *argv[]) {
 	if(fuse == NULL){
 		printf("bois");
 	}
-	if(0 > fuse_daemonize(0)){
-		printf("bois3");
-	}
+	//if(0 > fuse_daemonize(0)){
+	//	printf("bois3");
+	//}
 	if(0 > fuse_set_signal_handlers(fuse_get_session(fuse))){
 		printf("bois2");
 	}
