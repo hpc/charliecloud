@@ -44,26 +44,18 @@ load ../common
         echo "$output"
         [[ $status -eq 0 ]]
         [[ $output = *'sage:'* ]]
+        # CH_TEST_PHASE is an undocumented variable we use for make check tests.
+        unset CH_TEST_PHASE
         # Most, but not all, executables should print usage and exit
         # unsuccessfully when run without arguments.
         case $filename in
             ch-checkns)
                 ;;
             *)
-                # CH_TEST_PHASE is an undocumented variable that allows us to
-                # execute ch-test with the automake without arguments.
-                local phase
-                if [[ -n $CH_TEST_PHASE ]]; then
-                    phase=$CH_TEST_PHASE
-                    unset CH_TEST_PHASE
-                fi
                 run "$path"
                 echo "$output"
                 [[ $status -eq 1 ]]
                 [[ $output = *'sage:'* ]]
-                if [[ -n $phase ]]; then
-                    export CH_TEST_PHASE=$phase
-                fi
                 ;;
         esac
         # not setuid or setgid

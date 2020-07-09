@@ -36,6 +36,7 @@ compiler: gcc
 # Additional options:
 #
 #   CH_BUILDER              # which builder to use
+#   MAKE_CHECK              # use autotools make check
 #   MINIMAL_CONFIG          # exclude all optional features with --disable-foo
 #   MINIMAL_DEPS            # minimal dependencies; implies PACK_FMT=tar
 #   PACK_FMT=               # squash pack format, ch-mount/ch-unmount
@@ -93,11 +94,11 @@ jobs:
       env: CH_BUILDER=docker          TARBALL=export       MAKE_INSTALL=yes
 
     - <<: *stage_misc
-      env: CH_BUILDER=buildah         MINIMAL_DEPS=yes
-    - <<: *stage_misc
       env: CH_BUILDER=ch-grow         MINIMAL_DEPS=yes
     - <<: *stage_misc
       env: CH_BUILDER=docker          MINIMAL_DEPS=yes
+    - <<: *stage_misc
+      env: CH_BUILDER=docker          MINIMAL_DEPS=yes     MAKE_CHECK=yes
     - <<: *stage_misc
       env: CH_BUILDER=docker          MINIMAL_CONFIG=yes
     - <<: *stage_misc
