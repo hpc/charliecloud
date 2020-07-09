@@ -841,13 +841,7 @@ fi
 
 # Kludge for autoconf make check integration.
 if [[ -z $phase && -n $CH_TEST_PHASE ]]; then
-    case $CH_TEST_PHASE in
-    all|build|examples|run)
-        phase=$CH_TEST_PHASE
-    ;;
-    *)
-    ;;
-    esac
+    phase=$CH_TEST_PHASE
 fi
 
 printf "%-21s %s" 'phase:' "$phase"

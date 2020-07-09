@@ -43,13 +43,16 @@ rm -rf Makefile \
        aclocal.m4 \
        autom4te.cache \
        bin/.deps \
+       bin/ch-test.log \
+       bin/ch-test.trs \
        bin/config.h \
        bin/config.h.in \
        bin/stamp-h1 \
        build-aux \
        config.log \
        config.status \
-       configure
+       configure \
+       test/test-suite.log
 
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
