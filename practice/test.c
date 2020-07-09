@@ -34,50 +34,35 @@ int main(int argc, char *argv[]) {
 	if(mkdir(mountdir, 0777) != 0){
 		return -1;
 	}
-	char *mountpoint;
+	
+	//set up the mount
 	fuse_opt_add_arg(&args, argv[0]);
-        //fuse_opt_add_arg(&args, mountdir);
-        //fuse_opt_add_arg(&args, "-f");   
 	ch = fuse_mount(mountdir,&args);
 	if(!ch){
 		fuse_opt_free_args(&args);
 		return 1;
 	}
-	fuse = fuse_new(ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
-	//fuse = fuse_setup(args.argc, args.argv, &sqfs_hl_ops, sizeof(sqfs_hl_ops), &mountpoint, 0, hl);
 	
+	//set up the fuse session
+	fuse = fuse_new(ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
 	if(fuse == NULL){
 		printf("bois");
 	}
-	//if(0 > fuse_daemonize(1)){
-	//	printf("bois3");
-	//}
+
+	//set up signal handlers
 	if(0 > fuse_set_signal_handlers(fuse_get_session(fuse))){
 		printf("bois2");
 	}
+
+	//run the session handler in the child process, and carry  on in the parent
 	if(fork() == 0){
 		ret = fuse_loop(fuse);
-		fuse_teardown(fuse, mountpoint);
+		fuse_teardown(fuse, mountdir);
 	} else {
 		return ret;
 	}
-	//pass in arguments to fuse main containing program name, mount location, single threaded option
-	/**
-	struct fuse_chan *ch;
-	ifuse_opt_add_arg(&args, argv[0]);
-	//fuse_opt_add_arg(&args, mountdir); 	
-	fuse_opt_add_arg(&args, "-s");
-		
-	ch = fuse_mount(mountdir, &args);
-	if(!ch){
-		printf("bruh");
-		return -1;
-	}
-	fuse = fuse_new(ch,&args, &sqfs_hl_ops,sizeof(sqfs_hl_ops), NULL);
-	//fuse_opt_free_args(&args);i
-	*/
 	return ret; 
 }
 
 
-
+	
