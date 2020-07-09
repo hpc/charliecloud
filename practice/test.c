@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 	struct fuse *fuse;
         
         //get fuse operations struct from external libraries
-	struct fuse_operations sqfs_hl_ops;
+	fuse_operations sqfs_hl_ops;
         get_fuse_ops(&sqfs_hl_ops);
 	
 	//create sqfs struct with path to image, and offset
@@ -29,23 +29,36 @@ int main(int argc, char *argv[]) {
 	char *name = strtok(basename(argv[1]),".");
 	char * buffer = (char *) malloc(strlen(name) + 10);
 	strcpy(buffer, "/var/tmp/");
-	const char *mountdir = strcat(buffer, name);	
+	char *mountdir = strcat(buffer, name);	
 	if(mkdir(mountdir, 0777) != 0){
 		return -1;
 	}
-	//pass in arguments to fuse main containing program name, mount location, single threaded option
-	struct fuse_chan *ch;
+	char *mountpoint;
 	fuse_opt_add_arg(&args, argv[0]);
+        fuse_opt_add_arg(&args, mountdir);   
+
+	fuse = fuse_setup(args.argc, args.argv, &sqfs_hl_ops, sizeof(sqfs_hl_ops), &mountpoint, 0, hl);
+	if(fuse == NULL){
+		printf("bois");
+	}
+	ret = fuse_loop(fuse);
+	fuse_teardown(fuse, mountpoint);
+	return ret;
+	//pass in arguments to fuse main containing program name, mount location, single threaded option
+	/**
+	struct fuse_chan *ch;
+	ifuse_opt_add_arg(&args, argv[0]);
 	//fuse_opt_add_arg(&args, mountdir); 	
 	fuse_opt_add_arg(&args, "-s");
-	
+		
 	ch = fuse_mount(mountdir, &args);
 	if(!ch){
 		printf("bruh");
 		return -1;
 	}
 	fuse = fuse_new(ch,&args, &sqfs_hl_ops,sizeof(sqfs_hl_ops), NULL);
-	//fuse_opt_free_args(&args);
+	//fuse_opt_free_args(&args);i
+	*/
 	return ret; 
 }
 
