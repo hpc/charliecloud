@@ -82,14 +82,12 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 // First instruction must be ARG or FROM, but that is not a syntax error.
 dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( cmd | copy | arg | env | from_ | run | workdir | unsupported )
+?instruction: _WS? ( arg | copy | env | from_ | run | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
 comment: _WS? _COMMENT_BODY _NEWLINES
 _COMMENT_BODY: /#[^\n]*/
-
-cmd: "CMD"i _WS LINE _NEWLINES
 
 copy: "COPY"i ( _WS option )* _WS ( copy_list | copy_shell ) _NEWLINES
 copy_list.2: _string_list
@@ -113,8 +111,11 @@ run_shell: LINE
 
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 
-unsupported: UNSUPPORTED _WS LINE _NEWLINES
-UNSUPPORTED: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
+uns_forever: UNS_FOREVER _WS LINE _NEWLINES
+UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
+
+uns_yet: UNS_YET _WS LINE _NEWLINES
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i | "SHELL"i )
 
 /// Common ///
 

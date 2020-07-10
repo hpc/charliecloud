@@ -273,8 +273,6 @@ class Instruction(abc.ABC):
       ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
                  % (issue_no, self.str_name(), msg))
 
-      self._unsupported_yet(ch.WARNING, msg, issue_no)
-
    def unsupported_yet_fatal(self, msg, issue_no):
       ch.FATAL("not yet supported: issue #%d: %s %s"
                % (issue_no, self.str_name(), msg))
@@ -549,14 +547,43 @@ class I_workdir(Instruction):
       env.chdir(self.path)
       ch.mkdirs(image.unpack_path + env.workdir)
 
-class I_unsupported(Instruction_Supported_Never):
+
+class I_uns_forever(Instruction_Supported_Never):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.name = ch.tree_terminal(self.tree, "UNSUPPORTED")
+      self.name = ch.tree_terminal(self.tree, "UNS_FOREVER")
 
    def str_name(self):
       return self.name
+
+
+class I_uns_yet(Instruction):
+
+   execute_increment = 0
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.name = ch.tree_terminal(self.tree, "UNS_YET")
+      self.issue_no = { "ADD":         782,
+                        "CMD":         780,
+                        "ENTRYPOINT":  780,
+                        "LABEL":       781,
+                        "ONBUILD":     788,
+                        "SHELL":       789 }[self.name]
+
+   def announce(self):
+      self.unsupported_yet_warn("instruction", self.issue_no)
+
+   def str_(self):
+      return "(unsupported)"
+
+   def str_name(self):
+      return self.name
+
+   def execute_(self):
+      pass
+
 
 ## Supporting classes ##
 

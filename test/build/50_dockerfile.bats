@@ -386,6 +386,26 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'error: not yet supported: issue #778: FROM --platform'* ]]
 
+    # other instructions
+    run ch-grow -t unsupported -f - . <<'EOF'
+FROM 00_tiny
+ADD foo
+CMD foo
+ENTRYPOINT foo
+LABEL foo
+ONBUILD foo
+SHELL foo
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | egrep -c 'not yet supported.+instruction') -eq 6 ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #782: ADD instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #780: CMD instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #780: ENTRYPOINT instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #781: LABEL instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #788: ONBUILD instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #789: SHELL instruction'* ]]
+
     # .dockerignore files
     run ch-grow -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
