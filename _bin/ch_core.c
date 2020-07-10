@@ -57,6 +57,7 @@ struct bind BINDS_OPTIONAL[] = {
 
 
 struct fuse *fuse;
+pid_t pid;
 /* Variables for coordinating --join. */
 struct {
    bool winner_p;
@@ -311,7 +312,10 @@ void join_namespaces(pid_t pid)
    join_namespace(pid, "user");
    join_namespace(pid, "mnt");
 }
-
+void kill_fuse_loop(int sig)
+{
+   fuse_exit(fuse);
+}	
 /* Replace the current process with user command and arguments. */
 void run_user_command(char *argv[], const char *initial_dir)
 {
@@ -335,7 +339,9 @@ void run_user_command(char *argv[], const char *initial_dir)
          Tf (0, "can't execve(2): %s", argv[0]);
       }
       wait(&status);
-      fuse_exit(fuse);
+      //fuse_exit(fuse);
+      kill(pid,SIGINT);
+      //wait(&status);
    } else {	
       execvp(argv[0], argv);  // only returns if error
       Tf (0, "can't execve(2): %s", argv[0]);
@@ -551,7 +557,8 @@ int squashmount(char *argv, char *mountdir)
 		return 1;
         } */
         //run the session handler in the child process, and carry  on in the parent
-        if(fork() == 0){
+        signal(SIGINT, (void (*) (int))kill_fuse_loop);
+        if((pid = fork()) == 0){
                 ret = fuse_loop(fuse);
                 fuse_teardown(fuse, mountdir);
 		exit(0);
