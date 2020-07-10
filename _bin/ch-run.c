@@ -89,7 +89,7 @@ char *join_tag(char *cli_tag);
 int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void privs_verify_invoking();
-void gosquash (char *arg);
+void goSquash (char *arg);
 
 
 /** Global variables **/
