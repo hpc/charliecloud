@@ -320,7 +320,7 @@ EOF
     # Repeated instruction option.
     run ch-grow -t foo -f - . <<'EOF'
 FROM 00_tiny
-COPY --chown=foo --chown=bar fixtures/README .
+COPY --chown=foo --chown=bar fixtures/empty-file .
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
@@ -329,7 +329,7 @@ EOF
     # COPY invalid option.
     run ch-grow -t foo -f - . <<'EOF'
 FROM 00_tiny
-COPY --foo=foo fixtures/README .
+COPY --foo=foo fixtures/empty-file .
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
@@ -363,7 +363,7 @@ EOF
     # COPY --from
     run ch-grow -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
-COPY --from=foo fixtures/README .
+COPY --from=foo fixtures/empty-file .
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
@@ -372,7 +372,7 @@ EOF
     # COPY list form
     run ch-grow -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
-COPY ["fixtures/README", "."]
+COPY ["fixtures/empty-file", "."]
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
@@ -477,7 +477,7 @@ EOF
     # COPY --from
     run ch-grow -t unsupported -f - . <<'EOF'
 FROM 00_tiny
-COPY --chown=foo fixtures/README .
+COPY --chown=foo fixtures/empty-file .
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
