@@ -232,8 +232,11 @@ class Instruction(abc.ABC):
       self.tree = tree
 
    def __str__(self):
-      return ("%3s %s %s %s"
-              % (self.lineno, self.str_name(), self.str_options(), self.str_()))
+      options = self.str_options()
+      if (options != ""):
+         options = " " + options
+      return ("%3s %s%s %s"
+              % (self.lineno, self.str_name(), options, self.str_()))
 
    def announce(self):
       ch.INFO(self)
@@ -289,10 +292,6 @@ class Instruction_Supported_Never(Instruction):
 
    def execute_(self):
       pass
-
-
-class I_cmd(Instruction):
-   pass
 
 
 class Arg(Instruction):
@@ -547,8 +546,8 @@ class I_workdir(Instruction):
       return self.path
 
    def execute_(self):
-      ch.mkdirs(image.unpack_path + "/" + self.path)
       env.chdir(self.path)
+      ch.mkdirs(image.unpack_path + env.workdir)
 
 class I_unsupported(Instruction_Supported_Never):
 
