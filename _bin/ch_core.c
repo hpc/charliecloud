@@ -485,10 +485,12 @@ int squashmount(char *argv, char *mountdir)
         get_fuse_ops(&sqfs_hl_ops);
         //create sqfs struct with path to image, and offset
         hl =sqfs_hl_open(argv, 0);
-        if (!hl){
+        Ze(hl, "squashfs does not exist at this location");
+	/*if (!hl){ //Zf(hl, "hl");
 		printf("squashfs does not exist at this location");
         	return -1;
 	}
+*/
         //create a directory of the format /var/tmp/<squashfs-name>
         if(!mountdir){
 		char *name = strtok(basename(argv),".");
@@ -497,13 +499,16 @@ int squashmount(char *argv, char *mountdir)
         	mountdir = strcat(buffer, name);
 	}
 	//create the directory
-        if(opendir(mountdir)){
-		printf("Directory already exists");
-		return 1;
-	} else if(mkdir(mountdir, 0777) != 0){
+        //if(opendir(mountdir)){
+	Te(opendir(mountdir), "Directory already exists");
+	//	printf("Directory already exists");
+	//	return 1;
+	/*} else if(mkdir(mountdir, 0777) != 0){ //Zf(mkdir(mountdir,0777), mountdir);
 		printf("failed to create directory");
         	return 1;
-        }
+        }*/
+	
+	Ze(mkdir(mountdir,0777), "failed to create directory");
         args.argc = 0;
 	args.argv = NULL;
 	args.allocated = 1;
@@ -517,15 +522,21 @@ int squashmount(char *argv, char *mountdir)
         }
         //set up the fuse session
         fuse = fuse_new(ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
-        if(fuse == NULL){
+        
+	Te(fuse==NULL, "failed to create fuse session");
+	
+	/*if(fuse == NULL){ 
+	//Te(fuse==NULL, "failed to create fuse session"); 
         	printf("failed to create fuse session");
 		return 1;
-        }
+        } */
         //set up signal handlers
-        if(0 > fuse_set_signal_handlers(fuse_get_session(fuse))){
+        Te(0>fuse_set_signal_handlers(fuse_get_session(fuse)), "failed to set up signal handlers");
+        /*if(0 > fuse_set_signal_handlers(fuse_get_session(fuse))){ 
+	Te(0>fuse_set_signal_handlers(fuse_get_session(fuse)), "failed to set up signal handlers");
         	printf("failed to set up signal handlers");
 		return 1;
-        }
+        } */
         //run the session handler in the child process, and carry  on in the parent
         if(fork() == 0){
                 ret = fuse_loop(fuse);
