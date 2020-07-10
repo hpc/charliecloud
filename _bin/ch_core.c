@@ -18,6 +18,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <sys/wait.h>
 
 #include "config.h"
 #include "ch_misc.h"
@@ -54,6 +55,8 @@ struct bind BINDS_OPTIONAL[] = {
 
 /** Global variables **/
 
+
+struct fuse *fuse;
 /* Variables for coordinating --join. */
 struct {
    bool winner_p;
@@ -325,8 +328,18 @@ void run_user_command(char *argv[], const char *initial_dir)
    }
 
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
-   execvp(argv[0], argv);  // only returns if error
-   Tf (0, "can't execve(2): %s", argv[0]);
+   if(fuse){
+      int status;
+      if(fork() == 0){
+         execvp(argv[0], argv);
+         Tf (0, "can't execve(2): %s", argv[0]);
+      }
+      wait(&status);
+      fuse_exit(fuse);
+   } else {	
+      execvp(argv[0], argv);  // only returns if error
+      Tf (0, "can't execve(2): %s", argv[0]);
+   }
 }
 
 /* Wait for semaphore sem for up to timeout seconds. If timeout or an error,
@@ -477,7 +490,7 @@ int squashmount(char *argv, char *mountdir)
         //return value
         int ret;
         //struct fuse
-        struct fuse *fuse;
+        //struct fuse *fuse;
         // the chan
         struct fuse_chan *ch;
         //get fuse operations struct from external libraries
@@ -541,6 +554,7 @@ int squashmount(char *argv, char *mountdir)
         if(fork() == 0){
                 ret = fuse_loop(fuse);
                 fuse_teardown(fuse, mountdir);
+		exit(0);
         } else {
                 return ret;
         }
