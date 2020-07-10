@@ -8,7 +8,8 @@
 //#include <fuse_lowlevel.h>
 int main(int argc, char *argv[]) {
 	//fuse args struct
-	struct fuse_args args;
+	struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
+	args.allocated = 1;
 	//sqfs struct
 	sqfs_hl *hl;
 	//return value
