@@ -58,11 +58,11 @@ make "$MAKEJ"
 bin/ch-run --version
 
 if [[ $MAKE_CHECK ]]; then
+    # ch-test file permission testing fixures are created in a different phase.
+    # make check will fail here unless we unset CH_TEST_PERMDIRS.
     export CH_TEST_PERMDIRS=skip
-    if ! make check; then
-        cat test-suite.log
-        exit 1
-    fi
+    tail -F ./test-suite.log &
+    make check
     exit 0
 fi
 
