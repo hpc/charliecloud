@@ -60,6 +60,7 @@ int main(int argc, char *argv[]) {
 		ret = fuse_loop(fuse);
 		fuse_teardown(fuse, mountdir);
 	} else {
+		fuse_exit(fuse);
 		return ret;
 	}
 	return ret; 

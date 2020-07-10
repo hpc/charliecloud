@@ -22,21 +22,24 @@ echo "--------------------------------------------------------------------------
 
 
 
-echo "CASE 2: mount point specified, subdirectory /var/tmp/anna exists, mount does not exist"
+echo "CASE 2: mount point specified, subdirectory /var/tmp/chruntest exists, mount does not exist"
 
-rm -rf /var/tmp/anna
-mkdir /var/tmp/anna
-ls -l /var/tmp/anna
+rm -rf /var/tmp/chruntest
+mkdir /var/tmp/chruntest
+ls -l /var/tmp/chruntest
 mount | grep -F fuse
 
-echo "CMDLINE:./ch-run --squash=$HOME/chorkshop/hello.sqfs:/var/tmp/anna /var/tmp/anna/hello -- ./hello.py"
-./ch-run --squash=$HOME/chorkshop/hello.sqfs:/var/tmp/anna /var/tmp/anna/hello -- ./hello.py
+echo "CMDLINE:./ch-run --squash=$HOME/chorkshop/hello.sqfs:/var/tmp/chruntest /var/tmp/chruntest/hello -- ./hello.py"
+./ch-run --squash=$HOME/chorkshop/hello.sqfs:/var/tmp/chruntest /var/tmp/anna/hello -- ./hello.py
 
 echo "POST"
-ls -l /var/tmp/anna
-ls -l /var/tmp/anna/hello
+ls -l /var/tmp/chruntest
+ls -l /var/tmp/chruntest/hello
 mount | grep -F fuse
 
-echo "CLEANUP: unmount /var/tmp/anna/hello and remove directories"
-fusermount -u /var/tmp/anna/hello
-rm -rf /var/tmp/anna
+echo "CLEANUP: unmount /var/tmp/chruntest/hello and remove directories"
+fusermount -u /var/tmp/chruntest/hello
+rm -rf /var/tmp/chruntest
+
+
+
