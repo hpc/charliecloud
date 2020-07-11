@@ -5,7 +5,16 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <fuse.h>
-//#include <fuse_lowlevel.h>
+#include <signal.h>
+pid_t pid;
+struct fuse *fuse;
+char *mountdir;
+void endLoop(int sig)
+{
+   fuse_exit(fuse);
+   fuse_teardown(fuse, mountdir);
+}
+
 int main(int argc, char *argv[]) {
 	//fuse args struct
 	struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
@@ -15,7 +24,7 @@ int main(int argc, char *argv[]) {
 	//return value
 	int ret;
 	//struct fuse
-	struct fuse *fuse;
+	//struct fuse *fuse;
         // the chan
         struct fuse_chan *ch;
         //get fuse operations struct from external libraries
@@ -31,7 +40,7 @@ int main(int argc, char *argv[]) {
 	char *name = strtok(basename(argv[1]),".");
 	char * buffer = (char *) malloc(strlen(name) + 10);
 	strcpy(buffer, "/var/tmp/");
-	char *mountdir = strcat(buffer, name);	
+	mountdir = strcat(buffer, name);	
 	if(mkdir(mountdir, 0777) != 0){
 		return -1;
 	}
@@ -56,11 +65,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	//run the session handler in the child process, and carry  on in the parent
-	if(fork() == 0){
+	signal(SIGINT,endLoop);
+	if((pid = fork()) == 0){
 		ret = fuse_loop(fuse);
-		fuse_teardown(fuse, mountdir);
 	} else {
-		fuse_exit(fuse);
+		kill(pid, SIGINT);
 		return ret;
 	}
 	return ret; 

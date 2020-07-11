@@ -58,6 +58,7 @@ struct bind BINDS_OPTIONAL[] = {
 
 struct fuse *fuse;
 pid_t pid;
+char *mountpoint;
 /* Variables for coordinating --join. */
 struct {
    bool winner_p;
@@ -315,6 +316,8 @@ void join_namespaces(pid_t pid)
 void kill_fuse_loop(int sig)
 {
    fuse_exit(fuse);
+   fuse_teardown(fuse, mountpoint);
+   remove(mountpoint);
 }	
 /* Replace the current process with user command and arguments. */
 void run_user_command(char *argv[], const char *initial_dir)
@@ -539,6 +542,7 @@ int squashmount(char *argv, char *mountdir)
         	fuse_opt_free_args(&args);
         	return 1;
         }
+	mountpoint = mountdir;
         //set up the fuse session
         fuse = fuse_new(ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
         
@@ -560,7 +564,7 @@ int squashmount(char *argv, char *mountdir)
         signal(SIGINT, (void (*) (int))kill_fuse_loop);
         if((pid = fork()) == 0){
                 ret = fuse_loop(fuse);
-                fuse_teardown(fuse, mountdir);
+                //fuse_teardown(fuse, mountdir);
 		exit(0);
         } else {
                 return ret;

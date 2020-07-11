@@ -30,7 +30,7 @@ ls -l /var/tmp/chruntest
 mount | grep -F fuse
 
 echo "CMDLINE:./ch-run --squash=$HOME/chorkshop/hello.sqfs:/var/tmp/chruntest /var/tmp/chruntest/hello -- ./hello.py"
-./ch-run --squash=$HOME/chorkshop/hello.sqfs:/var/tmp/chruntest /var/tmp/anna/hello -- ./hello.py
+./ch-run --squash=$HOME/chorkshop/hello.sqfs:/var/tmp/chruntest /var/tmp/chruntest/ -- ./hello.py
 
 echo "POST"
 ls -l /var/tmp/chruntest
