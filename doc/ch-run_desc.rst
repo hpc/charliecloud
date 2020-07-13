@@ -91,22 +91,22 @@ Three proccess are needed in the same container to perform such tasks:
 It auto-mounts, run and unmount by:
 
 1. :code:`ch-run` parses the arguments from users and send into :code:`squashmount()`
-inside :code:`ch_core`. It creates a sub-directory in the default :code:`/var/tmp`
-or :code:`DIR`.
+   inside :code:`ch_core`. It creates a sub-directory in the default :code:`/var/tmp`
+   or :code:`DIR`.
 
 2. We get the fuse operations from :code:`get_fuse_ops()` along with updating and
-initalizing the arguments.
+   initalizing the arguments.
 
 3. The :code:`SQFS` gets mounted in mountpoint determined above.
 
 4. Signal handlers are initalized inorder to run the code and open a new process
-so :code:`fuse_loop` can run.
+   so :code:`fuse_loop` can run.
 
 5. :code:`ch-run` continues to run. The next process is created to run :code:`execvp()`.
-That process waits until :code:`execvp()` is done running.
+   That process waits until :code:`execvp()` is done running.
 
 6. The last process is killed and the squash filesystem is unmounted and the sub-directory
-is removed. All the processes are killed.
+   is removed. All the processes are killed.
 
 Host files and directories available in container via bind mounts
 =================================================================
