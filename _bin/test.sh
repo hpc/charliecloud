@@ -1,6 +1,7 @@
 #!/bin/bash
 if ["$1" == ""]; then
-	echo "usage: ./test.sh <hello2 or hello>"
+	echo "usage: ./test.sh <sqfs-filename>"
+	echo "assumes that you have a sqfs file with this path: ~/chorkshop/<sqfs-filename>.sqfs"
 	exit 1
 fi
 
