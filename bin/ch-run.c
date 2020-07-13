@@ -60,6 +60,7 @@ const struct argp_option options[] = {
    { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
    { "version",     'V', 0,      0, "print version and exit" },
    { "write",       'w', 0,      0, "mount image read-write"},
+   { "squash",      's', "SQFS:DIR",0, "mount and run sqfs"},
    { 0 }
 };
 
@@ -88,6 +89,7 @@ char *join_tag(char *cli_tag);
 int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void privs_verify_invoking();
+void goSquash (char *arg);
 
 
 /** Global variables **/
@@ -442,6 +444,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case 'w':
       args->c.writable = true;
       break;
+   case 's':
+	goSquash(arg);
+        break;
    case ARGP_KEY_NO_ARGS:
       argp_state_help(state, stderr, (  ARGP_HELP_SHORT_USAGE
                                       | ARGP_HELP_PRE_DOC
@@ -454,7 +459,19 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
    return 0;
 }
+void goSquash(char *arg)
+{
+	 const char split[2] = ":";
+         char *token = strtok(arg,split);
+         char *filename = token;
+	 token = strtok(NULL, split);
+         char *mountdir = token;
+         
+        
+         squashmount(filename, mountdir);
 
+
+}
 /* Validate that the UIDs and GIDs are appropriate for program start, and
    abort if not.
 
