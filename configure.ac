@@ -35,7 +35,7 @@ AC_CONFIG_FILES([Makefile
 
 # Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
 AC_PROG_CC
-AC_DEFUN([CH_CFLAGS], [-std=c99 -Wpedantic -Wall -Werror])
+AC_DEFUN([CH_CFLAGS], [-std=c99 -Wpedantic -Wall])
 AX_CHECK_COMPILE_FLAG([CH_CFLAGS], [
   CFLAGS+=" CH_CFLAGS"
 ], [
@@ -44,6 +44,9 @@ AX_CHECK_COMPILE_FLAG([CH_CFLAGS], [
 AS_IF([test "$CC" = icc],
       [AC_MSG_ERROR([icc not supported (see PR @%:@481)])])
 
+AC_ARG_ENABLE([Werror],
+  AS_HELP_STRING([--disable-Werror], [do not inject -Werror]),
+  [], [CFLAGS+=" -Werror"])
 
 ## Libraries
 
