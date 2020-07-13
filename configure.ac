@@ -301,7 +301,7 @@ except Exception:
 EOF
   AS_IF([test $? -eq 0],
     [REQUESTS=$PYTHON; have_requests=yes],
-    [REQUEST=;         have_requests=no])
+    [REQUESTS=;         have_requests=no])
   AC_MSG_RESULT($have_requests)
   CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
     [-c 'import requests; print(requests.__version__)'])
