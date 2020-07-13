@@ -476,12 +476,12 @@ void goSquash(char *arg)
          	char * buffer = (char *) malloc(strlen(s.parentdir) + strlen(s.filename));
 	 	strcpy(buffer, s.parentdir);
 	 	s.mountdir = strcat(strcat(buffer, "/"),s.filename);
-	 	squashmount(s.filepath, s.mountdir);
+	 	squashmount(&s);
 	 } else{
 		char * buffer = (char *) malloc(strlen(s.filename) + 10);
               	strcpy(buffer, "/var/tmp/");
 		s.mountdir = strcat(buffer, s.filename);
-		squashmount(s.filepath, s.mountdir);
+		squashmount(&s);
 	}
 
 

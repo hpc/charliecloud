@@ -46,4 +46,4 @@ struct squash {
 
 void containerize(struct container *c);
 void run_user_command(char *argv[], const char *initial_dir);
-int squashmount(/*int argc,*/ char *argv, char *mountdir);
+int squashmount(/*int argc,*/ struct squash *s);

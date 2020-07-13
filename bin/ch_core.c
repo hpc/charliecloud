@@ -486,7 +486,7 @@ void tmpfs_mount(const char *dst, const char *newroot, const char *data)
        "can't mount tmpfs at %s", dst_full);
 }
 
-int squashmount(char *argv, char *mountdir)
+int squashmount(struct squash *s)
 {
 	
 	struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
@@ -496,19 +496,19 @@ int squashmount(char *argv, char *mountdir)
         struct fuse_chan *ch;
         fuse_operations sqfs_hl_ops;
         get_fuse_ops(&sqfs_hl_ops);
-        hl =sqfs_hl_open(argv, 0);
-        Te(hl, "squashfs %s does not exist at this location", argv);
-	Ze(opendir(mountdir), "%s, Directory already exists",mountdir);
+        hl =sqfs_hl_open(s->filepath, 0);
+        Te(hl, "squashfs %s does not exist at this location", s->filepath);
+	Ze(opendir(s->mountdir), "%s, Directory already exists",s->mountdir);
 	
-	Ze(mkdir(mountdir,0777), "%s, failed to create directory", mountdir);
+	Ze(mkdir(s->mountdir,0777), "%s, failed to create directory", s->mountdir);
         
-	fuse_opt_add_arg(&args, argv);
-	ch = fuse_mount(mountdir,&args);
+	fuse_opt_add_arg(&args, s->filename);
+	ch = fuse_mount(s->mountdir,&args);
         if(!ch){
         	fuse_opt_free_args(&args);
         	return 1;
         }
-	mountpoint = mountdir;
+	mountpoint = s->mountdir;
         fuse = fuse_new(ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
         
 	Ze((fuse==NULL), "failed to create fuse session");
