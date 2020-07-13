@@ -24,7 +24,6 @@
 #include "ch_misc.h"
 #include "ch_core.h"
 #include "ops.h"
-
 /** Macros **/
 
 /* Timeout in seconds for waiting for join semaphore. */
@@ -55,7 +54,7 @@ struct bind BINDS_OPTIONAL[] = {
 
 /** Global variables **/
 
-
+ struct fuse_chan *ch;
 struct fuse *fuse;
 pid_t pid;
 char *mountpoint;
@@ -316,7 +315,11 @@ void join_namespaces(pid_t pid)
 void kill_fuse_loop(int sig)
 {
    fuse_exit(fuse);
-   fuse_teardown(fuse, mountpoint);
+   //fuse_teardown(fuse, mountpoint);
+   fuse_remove_signal_handlers(fuse_get_session(fuse));
+   // 1. unmount 2. fuse destroy 3. rmdir
+   fuse_unmount(mountpoint, ch);
+   fuse_destroy(fuse);
    rmdir(mountpoint);
 }	
 /* Replace the current process with user command and arguments. */
@@ -493,7 +496,7 @@ int squashmount(struct squash *s)
 	args.allocated = 1;
         sqfs_hl *hl;
         int ret;
-        struct fuse_chan *ch;
+      //  struct fuse_chan *ch;
         fuse_operations sqfs_hl_ops;
         get_fuse_ops(&sqfs_hl_ops);
         hl =sqfs_hl_open(s->filepath, 0);
