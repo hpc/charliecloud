@@ -35,6 +35,12 @@ struct container {
    bool writable;
 };
 
+struct squash {
+   char *filename;
+   char *filepath;
+   char *parentdir;
+   char *mountdir;
+};
 
 /** Function prototypes **/
 

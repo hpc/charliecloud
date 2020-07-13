@@ -489,54 +489,19 @@ void tmpfs_mount(const char *dst, const char *newroot, const char *data)
 int squashmount(char *argv, char *mountdir)
 {
 	
-	//fuse_args initializer	
-	//MAYBE DO THIS INSTEAD OF WHAT WE HAVE BELOW
-	//struct fuse_args args = FUSE_ARGS_INIT(0,NULL);
-	//args.allocated = 1;
-	struct fuse_args args;
-        //sqfs struct
+	struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
+	args.allocated = 1;
         sqfs_hl *hl;
-        //return value
         int ret;
-        //struct fuse
-        //struct fuse *fuse;
-        // the chan
         struct fuse_chan *ch;
-        //get fuse operations struct from external libraries
         fuse_operations sqfs_hl_ops;
         get_fuse_ops(&sqfs_hl_ops);
-        //create sqfs struct with path to image, and offset
         hl =sqfs_hl_open(argv, 0);
-        Te(hl, "squashfs does not exist at this location");
-	/*if (!hl){ //Zf(hl, "hl");
-		printf("squashfs does not exist at this location");
-        	return -1;
-	}
-*/
-        //create a directory of the format /var/tmp/<squashfs-name>
-        
-	if(!mountdir){
-		char *name = strtok(basename(argv),".");
-        	char * buffer = (char *) malloc(strlen(name) + 10);
-        	strcpy(buffer, "/var/tmp/");
-        	mountdir = strcat(buffer, name);
-	}
-	//create the directory
-        //if(opendir(mountdir)){
-	Ze(opendir(mountdir), "Directory already exists");
-	//	printf("Directory already exists");
-	//	return 1;
-	/*} else if(mkdir(mountdir, 0777) != 0){ //Zf(mkdir(mountdir,0777), mountdir);
-		printf("failed to create directory");
-        	return 1;
-        }*/
+        Te(hl, "squashfs %s does not exist at this location", argv);
+	Ze(opendir(mountdir), "%s, Directory already exists",mountdir);
 	
-	Ze(mkdir(mountdir,0777), "failed to create directory");
-        args.argc = 0;
-	args.argv = NULL;
-	args.allocated = 1;
+	Ze(mkdir(mountdir,0777), "%s, failed to create directory", mountdir);
         
-	//set up the mount 
 	fuse_opt_add_arg(&args, argv);
 	ch = fuse_mount(mountdir,&args);
         if(!ch){
@@ -544,28 +509,14 @@ int squashmount(char *argv, char *mountdir)
         	return 1;
         }
 	mountpoint = mountdir;
-        //set up the fuse session
         fuse = fuse_new(ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
         
 	Ze((fuse==NULL), "failed to create fuse session");
 	
-	/*if(fuse == NULL){ 
-	//Te(fuse==NULL, "failed to create fuse session"); 
-        	printf("failed to create fuse session");
-		return 1;
-        } */
-        //set up signal handlers
         Ze(0>fuse_set_signal_handlers(fuse_get_session(fuse)), "failed to set up signal handlers");
-        /*if(0 > fuse_set_signal_handlers(fuse_get_session(fuse))){ 
-	Te(0>fuse_set_signal_handlers(fuse_get_session(fuse)), "failed to set up signal handlers");
-        	printf("failed to set up signal handlers");
-		return 1;
-        } */
-        //run the session handler in the child process, and carry  on in the parent
         signal(SIGINT, (void (*) (int))kill_fuse_loop);
         if((pid = fork()) == 0){
                 ret = fuse_loop(fuse);
-                //fuse_teardown(fuse, mountdir);
 		exit(0);
         } else 
 	{

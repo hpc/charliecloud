@@ -79,6 +79,8 @@ struct args {
    char *initial_dir;
 };
 
+struct squash s;
+
 /** Function prototypes **/
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
@@ -461,14 +463,26 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 }
 void goSquash(char *arg)
 {
-	 const char split[2] = ":";
-         char *token = strtok(arg,split);
-         char *filename = token;
-	 token = strtok(NULL, split);
-         char *mountdir = token;
-         
-        
-         squashmount(filename, mountdir);
+	
+	
+	//set the parent directory for mounting and sqfs filepath
+	const char split[2] = ":";
+         s.filepath = strtok(arg, split);
+	 char * token = strtok(NULL, split);
+         s.parentdir = token;
+	 s.filename = strtok(basename(strdup(s.filepath)),".");
+  	 //get the actual filename
+	 if(s.parentdir !=NULL){
+         	char * buffer = (char *) malloc(strlen(s.parentdir) + strlen(s.filename));
+	 	strcpy(buffer, s.parentdir);
+	 	s.mountdir = strcat(strcat(buffer, "/"),s.filename);
+	 	squashmount(s.filepath, s.mountdir);
+	 } else{
+		char * buffer = (char *) malloc(strlen(s.filename) + 10);
+              	strcpy(buffer, "/var/tmp/");
+		s.mountdir = strcat(buffer, s.filename);
+		squashmount(s.filepath, s.mountdir);
+	}
 
 
 }
