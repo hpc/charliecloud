@@ -68,6 +68,24 @@ unpacked image directory located at :code:`NEWROOT`.
 
   :code:`-V`, :code:`--version`
     print version and exit
+  
+  :code: `--squash=SQFS:DIR`
+    mounts :code: `SQFS` to :code: `DIR` 
+    (by default, :code: `DIR` is /var/tmp/<filename>)
+    runs and unmounts
+
+Multiple processes in the same container with :code: `--squash`
+================================================================
+By default, :code: `ch-run` espects that the squash filesystem is already
+mounted. Using :code: `--squash` it auto-mounts and un-mount the squash
+file system.
+
+Three proccess are needed in the same container to perform such tasks
+  * :code: `fuse_loop()`: continues to run until the process is killed.
+    This is needed to :code: `ch-run`
+  * waiting for :code: `execvp()` to run: this process waits for 
+    :code: `ch-run` to finish running inorder to know when to un-mount
+  * :code: `execvp()`: runs as :code: `ch-run`  
 
 Host files and directories available in container via bind mounts
 =================================================================
