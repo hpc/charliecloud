@@ -165,12 +165,14 @@ AC_MSG_CHECKING([for asprintf])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
     #define _GNU_SOURCE
     #include <stdio.h>
+    #include <stdlib.h>
 
     int main(void)
     {
-        char *p;
-        asprintf(&p, "WEIRD AL YANKOVIC\n");
-        return 0;
+       char *p;
+       if (asprintf(&p, "WEIRD AL YANKOVIC\n") >= 0)
+          free(p);
+       return 0;
     }
   ]])],
   [AC_MSG_RESULT([yes])],
