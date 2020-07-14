@@ -10,8 +10,6 @@ chtest/signal_out.py \
 hello/hello.sh
 
 noexecs = \
-Dockerfile.alpineedge \
-Dockerfile.centos6 \
 Dockerfile.centos7 \
 Dockerfile.centos8 \
 Dockerfile.debian9 \
@@ -19,8 +17,6 @@ Dockerfile.exhaustive \
 Dockerfile.mpich \
 Dockerfile.nvidia \
 Dockerfile.openmpi \
-Dockerfile.python3 \
-Dockerfile.ubuntu1604 \
 chtest/Makefile \
 chtest/chroot-escape.c \
 chtest/mknods.c \
