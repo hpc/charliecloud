@@ -1,3 +1,10 @@
+Synopsis
+========
+
+::
+
+$ ch-run --squash=[SQFS...]:[DIR...] NEWROOT CMD [ARG...]
+
 Description
 ===============================================================
 By default, :code:`ch-run` expects that the squash filesystem is already
@@ -28,7 +35,5 @@ Multiple processes in the same container with :code:`--squash`
 Three proccess are needed in the same container to perform such tasks:
 
 * :code:`fuse_loop()`: continues to run until the process is killed.
-  This is needed to :code:`ch-run`
-* waiting for :code:`execvp()` to run: this process waits for
-  :code:`ch-run` to finish running inorder to know when to un-mount
-* :code:`execvp()`: runs as :code:`ch-run`
+* waiting for :code:`ch-run` to finish: it is used to tell the parent process when to un-mount
+* :code:`ch-run`: runs normal workflow
