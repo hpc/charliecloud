@@ -166,11 +166,18 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
    # but examining the source code [2] shows that visit_topdown() uses
    # Tree.iter_trees_topdown(), which *is* documented to be in-order [3].
    #
+   # This change seems to have been made in 0.8.6 (see PR #761); before then,
+   # visit() was in order. Therefore, we call that instead, if visit_topdown()
+   # is not present, to improve compatibility (see issue #792).
+   #
    # [1]: https://lark-parser.readthedocs.io/en/latest/visitors/#visitors
    # [2]: https://github.com/lark-parser/lark/blob/445c8d4/lark/visitors.py#L211
    # [3]: https://lark-parser.readthedocs.io/en/latest/classes/#tree
    ml = Main_Loop()
-   ml.visit_topdown(tree)
+   if (hasattr(ml, 'visit_topdown')):
+      ml.visit_topdown(tree)
+   else:
+      ml.visit(tree)
 
    if (len(cli.build_arg) != 0):
       ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))

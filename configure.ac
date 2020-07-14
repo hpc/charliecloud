@@ -204,18 +204,17 @@ AS_IF([test -n "$SPHINX"], [
 
 # "docutils" module
 vmin_docutils=0.14
-docutils=$sphinx_python  # FIXME: output is confusing
 AS_IF([test -n "$SPHINX"], [
   # Sphinx depends on docutils, so we don't need to check if the module exists
   # before checking its version. (CH_CHECK_VERSION isn't smart enough to deal
   # with Python being present but a module not.)
-  CH_CHECK_VERSION([docutils], [$vmin_docutils],
+  DOCUTILS=$sphinx_python  # FIXME: output is confusing
+  CH_CHECK_VERSION([DOCUTILS], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
 ])
 
 # "sphinx-rtd-theme" module
 vmin_rtd=0.2.4
-rtd=$sphinx_python  # FIXME: output is confusing
 AS_IF([test -n "$SPHINX"], [
   AC_MSG_CHECKING([for sphinx_rtd_theme module])
   cat <<EOF | $sphinx_python
@@ -226,15 +225,11 @@ except ImportError:
    sys.exit(1)
 EOF
   AS_IF([test $? -eq 0],
-    [have_rtd=yes],
-    [have_rtd=no])
+    [RTD=$sphinx_python; have_rtd=yes],
+    [RTD=;               have_rtd=no])
   AC_MSG_RESULT([$have_rtd])
-  AS_IF([test $have_rtd = yes], [
-    CH_CHECK_VERSION([rtd], [$vmin_rtd],
-      [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
-  ], [
-    rtd=
-  ])
+  CH_CHECK_VERSION([RTD], [$vmin_rtd],
+    [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
 ])
 
 
@@ -298,6 +293,7 @@ AS_CASE([$python],
 CH_CHECK_VERSION([PYTHON], [$vmin_python], [--version | cut -d' ' -f2])
 
 # Python module "lark-parser"
+vmin_lark=0.7.1
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for lark-parser module])
   cat <<EOF | $PYTHON_SHEBANG
@@ -309,12 +305,15 @@ except Exception:
    sys.exit(1)
 EOF
   AS_IF([test $? -eq 0],
-    [have_lark=yes],
-    [have_lark=no])
-  AC_MSG_RESULT($have_lark)
+    [LARK=$PYTHON; have_lark=yes],
+    [LARK=;        have_lark=no])
+  AC_MSG_RESULT([$have_lark])
+  CH_CHECK_VERSION([LARK], [$vmin_lark],
+    [-c 'import lark; print(lark.__version__)'])
 ])
 
 # Python module "requests"
+vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for requests module])
   cat <<EOF | $PYTHON_SHEBANG
@@ -325,9 +324,11 @@ except Exception:
    sys.exit(1)
 EOF
   AS_IF([test $? -eq 0],
-    [have_requests=yes],
-    [have_requests=no])
+    [REQUESTS=$PYTHON; have_requests=yes],
+    [REQUESTS=;         have_requests=no])
   AC_MSG_RESULT($have_requests)
+  CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
+    [-c 'import requests; print(requests.__version__)'])
 ])
 
 # ShellCheck
@@ -392,8 +393,8 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 ## Adjust build options given what we have available.
 
 AS_IF([   test -n "$SPHINX" \
-       && test -n "$docutils" \
-       && test -n "$rtd"],
+       && test -n "$DOCUTILS" \
+       && test -n "$RTD"],
        [have_docs=yes],
        [have_docs=no])
 
@@ -432,8 +433,8 @@ AS_IF([   test -n "$BUILDAH"],
 AS_IF([   test $enable_ch_grow = yes \
        && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
-       && test $have_lark = yes \
-       && test $have_requests = yes \
+       && test -n "$LARK" \
+       && test -n "$REQUESTS" \
        && test $have_ch_run = yes],
       [have_ch_grow=yes],
       [have_ch_grow=no])
@@ -556,8 +557,8 @@ Building Charliecloud
   documentation: ${have_docs}
     sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
     sphinx-build(1) Python ... ${sphinx_python:-n/a}
-    "docutils" module ≥ $vmin_docutils ... ${docutils_VERSION_NOTE}
-    "sphinx-rtd-theme" module ≥ $vmin_rtd ... ${rtd_VERSION_NOTE}
+    "docutils" module ≥ $vmin_docutils ... ${DOCUTILS_VERSION_NOTE}
+    "sphinx-rtd-theme" module ≥ $vmin_rtd ... ${RTD_VERSION_NOTE}
 
   will build and install:
     HTML documentation ... ${enable_html}
@@ -575,8 +576,8 @@ Building images via our wrappers
     enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
-    "lark-parser" module ... ${have_lark}
-    "requests" module ... ${have_requests}
+    "lark-parser" module ≥ $vmin_lark ... ${LARK_VERSION_NOTE}
+    "requests" module ≥ $vmin_requests ... ${REQUESTS_VERSION_NOTE}
     ch-run(1) ... ${have_ch_run}
 
   with Docker: ${have_docker}
