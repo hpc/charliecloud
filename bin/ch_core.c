@@ -53,11 +53,7 @@ struct bind BINDS_OPTIONAL[] = {
 
 
 /** Global variables **/
-
- struct fuse_chan *ch;
-struct fuse *fuse;
-pid_t pid;
-char *mountpoint;
+struct squash *s;
 /* Variables for coordinating --join. */
 struct {
    bool winner_p;
@@ -312,16 +308,19 @@ void join_namespaces(pid_t pid)
    join_namespace(pid, "user");
    join_namespace(pid, "mnt");
 }
-void kill_fuse_loop(int sig)
-{
-   fuse_exit(fuse);
-   //fuse_teardown(fuse, mountpoint);
-   fuse_remove_signal_handlers(fuse_get_session(fuse));
-   // 1. unmount 2. fuse destroy 3. rmdir
-   fuse_unmount(mountpoint, ch);
-   fuse_destroy(fuse);
-   rmdir(mountpoint);
-}	
+
+/** exit handler ensures that any filesystems are unmounted in 
+ * the event of system exit */
+void kill_fuse_loop()
+{  
+   if(s->fuse){
+      fuse_exit(s->fuse);
+      fuse_unmount(s->mountdir, s->ch);
+      fuse_destroy(s->fuse);
+      rmdir(s->mountdir);
+   }
+}
+	
 /* Replace the current process with user command and arguments. */
 void run_user_command(char *argv[], const char *initial_dir)
 {
@@ -338,16 +337,14 @@ void run_user_command(char *argv[], const char *initial_dir)
    }
 
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
-   if(fuse){
+   if(s->fuse){
       int status;
       if(fork() == 0){
          execvp(argv[0], argv);
          Tf (0, "can't execve(2): %s", argv[0]);
       }
       wait(&status);
-      //fuse_exit(fuse);
-      kill(pid,SIGINT);
-      //wait(&status);
+      kill(s->pid,SIGINT);
    } else {	
       execvp(argv[0], argv);  // only returns if error
       Tf (0, "can't execve(2): %s", argv[0]);
@@ -489,42 +486,33 @@ void tmpfs_mount(const char *dst, const char *newroot, const char *data)
        "can't mount tmpfs at %s", dst_full);
 }
 
+/* mounts a squash file system and starts child process
+ * to handle all file system operations*/
 int squashmount(struct squash *s)
 {
-	
-	struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
-	args.allocated = 1;
-        sqfs_hl *hl;
-        int ret;
-      //  struct fuse_chan *ch;
-        fuse_operations sqfs_hl_ops;
-        get_fuse_ops(&sqfs_hl_ops);
-        hl =sqfs_hl_open(s->filepath, 0);
-        Te(hl, "squashfs %s does not exist at this location", s->filepath);
-	Ze(opendir(s->mountdir), "%s, Directory already exists",s->mountdir);
-	
-	Ze(mkdir(s->mountdir,0777), "%s, failed to create directory", s->mountdir);
-        
-	fuse_opt_add_arg(&args, s->filename);
-	ch = fuse_mount(s->mountdir,&args);
-        if(!ch){
-        	fuse_opt_free_args(&args);
-        	return 1;
-        }
-	mountpoint = s->mountdir;
-        fuse = fuse_new(ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
-        
-	Ze((fuse==NULL), "failed to create fuse session");
-	
-        Ze(0>fuse_set_signal_handlers(fuse_get_session(fuse)), "failed to set up signal handlers");
-        signal(SIGINT, (void (*) (int))kill_fuse_loop);
-        if((pid = fork()) == 0){
-                ret = fuse_loop(fuse);
-		exit(0);
-        } else 
-	{
-	    return ret;
-        }
-	
-	return ret;
+  // s = squash;
+   struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
+   args.allocated = 1;
+   sqfs_hl *hl;
+   int ret;
+   fuse_operations sqfs_hl_ops;
+   get_fuse_ops(&sqfs_hl_ops);
+   printf("%s",s->filepath);
+   hl =sqfs_hl_open(s->filepath, 0);
+   Te(hl, "squashfs %s does not exist at this location", s->filepath);
+   Ze(opendir(s->mountdir), "%s, Directory already exists",s->mountdir);
+   Ze(mkdir(s->mountdir,0777), "%s, failed to create directory", s->mountdir);
+   fuse_opt_add_arg(&args, "");
+   s->ch = fuse_mount(s->mountdir,&args);
+   Te(s->ch, "unable to mount at %s", s->mountdir);
+   s->fuse = fuse_new(s->ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
+   Ze((s->fuse==NULL), "failed to create fuse session");
+   Ze(0>fuse_set_signal_handlers(fuse_get_session(s->fuse)), "failed to set up signal handlers");
+   signal(SIGINT, kill_fuse_loop);
+   if((s->pid = fork()) == 0){
+      ret = fuse_loop(s->fuse);
+      exit(0);
+   } else{
+      return ret;
+   }
 } 

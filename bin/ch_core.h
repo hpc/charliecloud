@@ -36,14 +36,16 @@ struct container {
 };
 
 struct squash {
-   char *filename;
-   char *filepath;
-   char *parentdir;
-   char *mountdir;
+   char *filepath;        // path of sqfs file
+   char *mountdir;        //location where squashfs is mounted
+   pid_t pid;             // process id of the fuse loop
+   struct fuse_chan *ch;  //fuse channel associated with squash fuse session
+   struct fuse *fuse;     //fuse struct associated with squash fuse session
 };
 
 /** Function prototypes **/
 
 void containerize(struct container *c);
 void run_user_command(char *argv[], const char *initial_dir);
-int squashmount(/*int argc,*/ struct squash *s);
+int squashmount(struct squash *s);
+void kill_fuse_loop();

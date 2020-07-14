@@ -109,6 +109,8 @@ int main(int argc, char *argv[])
    int arg_next;
    int c_argc;
    char ** c_argv;
+   
+   atexit(kill_fuse_loop);
 
    privs_verify_invoking();
 
@@ -461,31 +463,28 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
    return 0;
 }
+
+/** handles arguments passed to the squashmount()
+ * if no mount directory specified, /var/tmp is passed */
 void goSquash(char *arg)
 {
-	
-	
-	//set the parent directory for mounting and sqfs filepath
-	const char split[2] = ":";
-         s.filepath = strtok(arg, split);
-	 char * token = strtok(NULL, split);
-         s.parentdir = token;
-	 s.filename = strtok(basename(strdup(s.filepath)),".");
-  	 //get the actual filename
-	 if(s.parentdir !=NULL){
-         	char * buffer = (char *) malloc(strlen(s.parentdir) + strlen(s.filename));
-	 	strcpy(buffer, s.parentdir);
-	 	s.mountdir = strcat(strcat(buffer, "/"),s.filename);
-	 	squashmount(&s);
-	 } else{
-		char * buffer = (char *) malloc(strlen(s.filename) + 10);
-              	strcpy(buffer, "/var/tmp/");
-		s.mountdir = strcat(buffer, s.filename);
-		squashmount(&s);
-	}
-
-
+   s.filepath = strtok(arg, ":");
+   char * parentdir = strtok(NULL, ":");
+   char * filename  = strtok(basename(strdup(s.filepath)),".");
+   if(parentdir !=NULL){
+      char * buffer = (char *) malloc(strlen(parentdir) + strlen(filename));
+      strcpy(buffer, parentdir);
+      s.mountdir = strcat(strcat(buffer, "/"),filename);
+      //printf("%s",s.filepath);
+      squashmount(&s);
+   } else{
+      char * buffer = (char *) malloc(strlen(filename) + 10);
+      strcpy(buffer, "/var/tmp/");
+      s.mountdir = strcat(buffer, filename);
+      squashmount(&s);
+   }
 }
+
 /* Validate that the UIDs and GIDs are appropriate for program start, and
    abort if not.
 
