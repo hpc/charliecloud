@@ -155,8 +155,32 @@ AC_DEFUN([CH_CHECK_VERSION], [
 
 ## Feature tests - build time
 
-AC_CHECK_FUNCS(asprintf, [], [
-  AC_MSG_ERROR([asprintf() not found. Please report this bug.])])
+# asprintf(3)
+#
+# You can do this with AC_CHECK_FUNC or AC_CHECK_FUNCS, but those macros call
+# the function with no arguments. This causes a warning for asprintf() for
+# some compilers (and I have no clue why others accept it); see issue #798.
+# Instead, try to build a small test program that calls asprintf() correctly.
+AC_MSG_CHECKING([for asprintf])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+    #define _GNU_SOURCE
+    #include <stdio.h>
+    #include <stdlib.h>
+
+    int main(void)
+    {
+       char *p;
+       if (asprintf(&p, "WEIRD AL YANKOVIC\n") >= 0)
+          free(p);
+       return 0;
+    }
+  ]])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])
+   AC_MSG_ERROR([asprintf() not found, and we have no workaround; see config.log.])])
+
+#AC_CHECK_FUNCS(asprintfxxx, [], [
+#  AC_MSG_ERROR([asprintf() not found. Please report this bug.])])
 
 # Sphinx
 vmin_sphinx=1.2.3
