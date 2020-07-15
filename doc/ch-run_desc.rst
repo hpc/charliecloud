@@ -3,7 +3,7 @@ Synopsis
 
 ::
 
-  $ ch-run [OPTION...] NEWROOT CMD [ARG...]
+  $ ch-run [OPTION...] IMAGE CMD [ARG...]
 
 Description
 ===========
@@ -69,10 +69,10 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`-V`, :code:`--version`
     print version and exit
   
-  :code:`--squash=SQFS:DIR`
-    mounts :code:`SQFS` to :code:`DIR` 
-    (by default, :code:`DIR` is /var/tmp/<filename>)
-    runs and unmounts
+  :code:`--squashmnt=PARENTDIR`
+    :code:`PARENTDIR` specifies mount point for image
+    (by default, :code:`PARENTDIR` is /var/tmp/)
+    
 
 Host files and directories available in container via bind mounts
 =================================================================
@@ -310,6 +310,27 @@ Example valid lines that are probably not what you want:
      - :code:`FOO`
      - :code:`​ bar`
      - leading space in value
+
+
+Using Squash FileSystems
+--------------------------
+
+ch-run will handle Squash Filesystems passed in as the :code:`IMAGE`. They 
+will be automatically mounted prior to execution, and unmounted as part of
+the cleanup. the :code:`--squash-mnt` option allows you to specify the parent
+directory at which the squash filesystem will be mounted.
+
+Example 1: Create and Run a SquashFilesystem image::
+
+   $ ch-dir2squash $HOME/chorkshop/hello $HOME/images/
+   $ ch-run $HOME/images/hello.sqfs -- ./hello.py
+
+Example 2: Create and Run a Squash Filesystem image but with preferred
+mount directory::
+
+   $ ch-dir2squash $HOME/chorkshop/hello $HOME/images/
+   $ ch-run --squash-mnt=/tmp/mine/ $HOME/images/hello.sqfs -- ./hello.py
+
 
 Removing variables with :code:`--unset-env`
 -------------------------------------------
