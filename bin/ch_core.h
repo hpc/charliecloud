@@ -42,7 +42,7 @@ struct squash {
    struct fuse_chan *ch;  //fuse channel associated with squash fuse session
    struct fuse *fuse;     //fuse struct associated with squash fuse session
 };
-
+extern struct squash *s;
 /** Function prototypes **/
 
 void containerize(struct container *c);

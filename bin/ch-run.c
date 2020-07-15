@@ -79,8 +79,7 @@ struct args {
    char *initial_dir;
 };
 
-struct squash s;
-
+struct squash sq;
 /** Function prototypes **/
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
@@ -115,6 +114,8 @@ int main(int argc, char *argv[])
    privs_verify_invoking();
 
    verbose = 1;  // in charliecloud.h
+   
+   sq = (struct squash) {.filepath = NULL, .mountdir = NULL, .pid = 0, .ch = NULL, .fuse = NULL};
    args = (struct args){ .c = (struct container){ .ch_ssh = false,
                                                   .container_gid = getegid(),
                                                   .container_uid = geteuid(),
@@ -468,21 +469,21 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
  * if no mount directory specified, /var/tmp is passed */
 void goSquash(char *arg)
 {
-   s.filepath = strtok(arg, ":");
+   sq.filepath = strtok(arg, ":");
    char * parentdir = strtok(NULL, ":");
-   char * filename  = strtok(basename(strdup(s.filepath)),".");
+   char * filename  = strtok(basename(strdup(sq.filepath)),".");
+   
    if(parentdir !=NULL){
       char * buffer = (char *) malloc(strlen(parentdir) + strlen(filename));
       strcpy(buffer, parentdir);
-      s.mountdir = strcat(strcat(buffer, "/"),filename);
-      //printf("%s",s.filepath);
-      squashmount(&s);
+      sq.mountdir = strcat(strcat(buffer, "/"),filename);
    } else{
       char * buffer = (char *) malloc(strlen(filename) + 10);
       strcpy(buffer, "/var/tmp/");
-      s.mountdir = strcat(buffer, filename);
-      squashmount(&s);
+      sq.mountdir = strcat(buffer, filename);
    }
+   s=&sq;
+   squashmount(&sq);
 }
 
 /* Validate that the UIDs and GIDs are appropriate for program start, and

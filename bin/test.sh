@@ -18,8 +18,7 @@ echo "POST"
 ls -l /var/tmp/$1
 mount | grep -F fuse
 
-echo "CLEANUP: remove directory"
-rm -rf /var/tmp/$1
+echo "CLEANUP: none :)"
 
 
 
@@ -40,8 +39,7 @@ echo "POST"
 ls -l /tmp/$1
 mount | grep -F fuse
 
-echo "CLEANUP:remove directory"
-rm -rf /tmp/$1
+echo "CLEANUP:none :)"
 
 
 
