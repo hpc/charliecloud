@@ -864,6 +864,55 @@ describe what we are seeing from Buildah's runtime expectations.
 Gotchas
 -------
 
+Squash FUSE Auto-mounted option for :code:`ch-run`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+By default, :code:`ch-run` expects that the squash filesystem is already
+mounted. Using :code:`--squash` it mounts and un-mount the :code:`SQFS`.
+
+The :code:`SQFS` mounts, run and unmounts by:
+
+* :code:`ch-run` checks to see if :code:`NEWROOT` iS an image. If it is, it will follow the new
+  :code:`SQFS` workflow.
+
+* It then checks to see if the user included a :code:`--mount-dir` option or will be using the default
+  :code:`/var/tmp` option. It creates a sub-directroy within one of those two options. That sub-directoy
+  it the new value of :code:`arg.c.newroot`. 
+
+* The image path and mountpoint are passed through :code:`squashmount()` within :code:`ch-core.c`.
+
+1. :code:`ch-run` parses the arguments from the user and sends into :code:`squashmount()`
+   within :code:`ch_core.c` It creates a sub-directory in the default :code:`/var/tmp`
+   or the user input of :code:`DIR`.
+
+2. We get the fuse operations from :code:`get_fuse_ops()` in our new squashfuse API, :code:`ops.c`, 
+   along with updating and initalizing other arguments that are needed.
+ 
+3. The :code:`SQFS` gets mounted in mountpoint sub-directory determined previously.
+
+4. Signal handlers are initalized in order to run the code and fork a new process
+   so :code:`fuse_loop()` can continue running.
+
+5. The :code:`ch-run` workflow continues as usual. The third process is forked to run the desired code
+   using :code:`execvp()`.The parent process waits until :code:`ch-run` is completed.
+
+6. Lastly the environment gets cleaned up. The signal handlers are removed, the :code:`SQFS`
+   gets unmounted and the sub-directory is removed. 
+
+Multiple processes in the same container with squash auto-mounting option
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Three proccess are needed in the same container to perform such tasks:
+
+* Process 1: the only job for this process is to run :code:`fuse_loop()` which allows
+  fuse operations to run. When its 2 child processes are killed, it runs the un-mounting workflow. 
+* Process 2: it waits for :code:`ch-run` to finish and tells the parent process when to un-mount.
+* Process 3: runs normal :code:`ch-run` workflow.
+
+Three processes are needed because 1 process is needed to be running :code:`fuse_loop()`. That is what
+allows fuse operations to occur. :code:`run_user_command()` uses :code:`execvp()` which only ends if
+it errors out. So the other 2 process are needed because of that feature. 1 process runs the normal 
+:code:`ch-run` workflow while the other waits for it to finish and tell the parent process to finish and
+clean up the environment. 
+
 Namespaces
 ~~~~~~~~~~
 
