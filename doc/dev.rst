@@ -848,9 +848,6 @@ to point to it), because so far those are all out-arguments and C has
 `confusing rules <http://c-faq.com/ansi/constmismatch.html>`_ about double
 pointers and :code:`const`.
 
-
-
-
 Squash FUSE auto-mounting option for :code:`ch-run`
 ==================================================
 
