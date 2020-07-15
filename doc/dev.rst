@@ -849,10 +849,11 @@ to point to it), because so far those are all out-arguments and C has
 pointers and :code:`const`.
 
 Squash FUSE auto-mount option for :code:`ch-run`
-===============================================
+================================================
 
-Squash FUSE Auto-mounted option for :code:`ch-run`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Description
+-----------
+
 By default, :code:`ch-run` expects that the squash filesystem is already
 mounted. Using :code:`--squash` it mounts and un-mount the :code:`SQFS`.
 
@@ -885,8 +886,9 @@ The :code:`SQFS` mounts, run and unmounts by:
 6. Lastly the environment gets cleaned up. The signal handlers are removed, the :code:`SQFS`
    gets unmounted and the sub-directory is removed. 
 
-Multiple processes in the same container with squash auto-mounting option
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Multiple processes in the same container
+-------------------------------------------------------------------------
+
 Three proccess are needed in the same container to perform such tasks:
 
 * Process 1: the only job for this process is to run :code:`fuse_loop()` which allows
