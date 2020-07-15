@@ -848,11 +848,11 @@ to point to it), because so far those are all out-arguments and C has
 `confusing rules <http://c-faq.com/ansi/constmismatch.html>`_ about double
 pointers and :code:`const`.
 
-Squash FUSE auto-mounting option for :code:`ch-run`
-==================================================
+Squash FUSE auto-mount option for :code:`ch-run`
+===============================================
 
-Description
-~~~~~~~~~~~
+Squash FUSE Auto-mounted option for :code:`ch-run`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 By default, :code:`ch-run` expects that the squash filesystem is already
 mounted. Using :code:`--squash` it mounts and un-mount the :code:`SQFS`.
 
@@ -885,8 +885,8 @@ The :code:`SQFS` mounts, run and unmounts by:
 6. Lastly the environment gets cleaned up. The signal handlers are removed, the :code:`SQFS`
    gets unmounted and the sub-directory is removed. 
 
-Multiple processes in the same container 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Multiple processes in the same container with squash auto-mounting option
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Three proccess are needed in the same container to perform such tasks:
 
 * Process 1: the only job for this process is to run :code:`fuse_loop()` which allows
@@ -899,9 +899,6 @@ allows fuse operations to occur. :code:`run_user_command()` uses :code:`execvp()
 it errors out. So the other 2 process are needed because of that feature. 1 process runs the normal 
 :code:`ch-run` workflow while the other waits for it to finish and tell the parent process to finish and
 clean up the environment. 
-
-Gotchas
--------
 
 
 OCI technical notes
