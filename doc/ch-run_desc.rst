@@ -317,19 +317,21 @@ Using Squash FileSystems
 
 ch-run will handle Squash Filesystems passed in as the :code:`IMAGE`. They 
 will be automatically mounted prior to execution, and unmounted as part of
-the cleanup. the :code:`--squash-mnt` option allows you to specify the parent
+the cleanup. the :code:`--squashmnt` option allows you to specify the parent
 directory at which the squash filesystem will be mounted.
 
 Example 1: Create and Run a SquashFilesystem image::
 
-   $ ch-dir2squash $HOME/chorkshop/hello $HOME/images/
+   $ ch-build -t hello $HOME/chorkshop/hello
+   $ ch-builder2squash hello $HOME/images/
    $ ch-run $HOME/images/hello.sqfs -- ./hello.py
 
 Example 2: Create and Run a Squash Filesystem image but with preferred
 mount directory::
 
-   $ ch-dir2squash $HOME/chorkshop/hello $HOME/images/
-   $ ch-run --squash-mnt=/tmp/mine/ $HOME/images/hello.sqfs -- ./hello.py
+   $ ch-build -t hello $HOME/chorkshop/hello
+   $ ch-builder2squash hello $HOME/images/
+   $ ch-run --squashmnt=/tmp/mytmp/ $HOME/images/hello.sqfs -- ./hello.py
 
 
 Removing variables with :code:`--unset-env`

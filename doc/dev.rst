@@ -923,7 +923,7 @@ Some things to keep in mind:
   will always be unmounted and the directory removed.
 
 * In the event that unmounting is not working correctly, you may
-  notice :code:`???` appear when :code:`ls` the mountpoint. This
+  notice permissions that appear as :code:`d?????????` at the mountpoint. This
   means that the :code:`fuse_loop()` has been killed but the 
   filesystem was not unmounted. You may find something similar
   if the filesystem is mounted but the :code:`fuse_loop()` never runs.
