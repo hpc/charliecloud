@@ -871,7 +871,7 @@ The SquashFS :code:`IMAGE` is run by:
 1. :code:`squashmount()` sets up a Fuse Session using the libfuse High-Level API.
 
 2. We get the FUSE filesystem operations from :code:`get_fuse_ops()` in our 
-new squashfuse API, :code:`ops.c` (forked repo can be found at hpc/squashfuse).
+   new squashfuse API, :code:`ops.c` (forked repo can be found at hpc/squashfuse).
  
 3. The :code:`IMAGE` gets mounted in mountpoint sub-directory determined previously.
 
