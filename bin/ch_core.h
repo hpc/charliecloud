@@ -43,6 +43,7 @@ struct squash {
    struct fuse *fuse;     //fuse struct associated with squash fuse session
    char *parentdir;	  //location of mountpoint parent directory
 };
+
 extern struct squash *s;
 /** Function prototypes **/
 

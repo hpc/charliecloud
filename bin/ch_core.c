@@ -24,6 +24,8 @@
 #include "ch_misc.h"
 #include "ch_core.h"
 #include "ops.h"
+
+
 /** Macros **/
 
 /* Timeout in seconds for waiting for join semaphore. */
@@ -121,7 +123,7 @@ void containerize(struct container *c)
       join_namespaces(c->join_pid);
       return;
    }
-  if (c->join)
+   if (c->join)
       join_begin(c->join_ct, c->join_tag);
    if (!c->join || join.winner_p) {
       setup_namespaces(c);
@@ -171,7 +173,7 @@ void enter_udss(struct container *c)
       // dotfiles.
       Tf (c->old_home != NULL, "cannot find home directory: is $HOME set?");
       newhome = cat("/home/", getenv("USER"));
-     Z_ (mkdir(cat(c->newroot, newhome), 0755));
+      Z_ (mkdir(cat(c->newroot, newhome), 0755));
       bind_mount(c->old_home, newhome, c->newroot, BD_REQUIRED, 0);
    }
    // Container /usr/bin/ch-ssh.
@@ -187,7 +189,7 @@ void enter_udss(struct container *c)
    }
    // Bind-mount user-specified directories at guest DST and|or /mnt/i,
    // which must exist.
-  bind_mounts(c->binds, c->newroot, BD_REQUIRED, 0);
+   bind_mounts(c->binds, c->newroot, BD_REQUIRED, 0);
 
    // Overmount / to avoid EINVAL if it's a rootfs.
    Z_ (chdir(newroot_parent));

@@ -102,7 +102,7 @@ int arg_next;
 
 /** Main **/
 
-int main(int argc,char * argv[])
+int main(int argc,char *argv[])
 {
    bool argp_help_fmt_set;
    int c_argc;
@@ -263,7 +263,7 @@ void fix_environment(struct args *args)
             unsetenv(3) [1]. Thus, the only safe way without additional
             storage is an O(n^2) search until no matches remain.
 
-         trcmp(":",arg)  It is legal to assign to environ [2]. We build up a copy, omitting
+            It is legal to assign to environ [2]. We build up a copy, omitting
             variables that match the glob, which is O(n), and then do so.
 
             [1]: https://unix.stackexchange.com/a/302987
