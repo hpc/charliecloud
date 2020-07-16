@@ -90,22 +90,23 @@ char *join_tag(char *cli_tag);
 int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void privs_verify_invoking();
-void goSquash (char *arg);
+void goSquash (char *arg, char ** filepath);
 
 
 /** Global variables **/
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
-
+struct args args;
+int arg_next;
 
 /** Main **/
 
-int main(int argc, char *argv[])
+int main(int argc,char * argv[])
 {
    bool argp_help_fmt_set;
-   struct args args;
-   int arg_next;
+   //struct args args;
+ //  int arg_next;
    int c_argc;
    char ** c_argv;
    
@@ -143,11 +144,18 @@ int main(int argc, char *argv[])
       Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
    }
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
+   
+
+  // if (sq.mountdir != NULL)
+    //  argv[arg_next] = sq.mountdir;
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   args.c.newroot = realpath(argv[arg_next], NULL);
+   
+  // if(args.c.newroot == NULL)
+     args.c.newroot = realpath(argv[arg_next], NULL);
+   
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
    arg_next++;
 
@@ -450,7 +458,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.writable = true;
       break;
    case 's':
-	goSquash(arg);
+	goSquash(arg, &state->argv[2]);
         break;
    case ARGP_KEY_NO_ARGS:
       argp_state_help(state, stderr, (  ARGP_HELP_SHORT_USAGE
@@ -467,21 +475,30 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
 /** handles arguments passed to the squashmount()
  * if no mount directory specified, /var/tmp is passed */
-void goSquash(char *arg)
+void goSquash(char *arg, char ** filepath)
 {
-   sq.filepath = strtok(arg, ":");
-   char * parentdir = strtok(NULL, ":");
-   char * filename  = strtok(basename(strdup(sq.filepath)),".");
+   //sq.filepath = strtok(arg, ":");
+   //char * parentdir = strtok(NULL, ":");
+   //char * filename  = strtok(basename(strdup(sq.filepath)),".");
    
-   if(parentdir !=NULL){
-      char * buffer = (char *) malloc(strlen(parentdir) + strlen(filename));
-      strcpy(buffer, parentdir);
-      sq.mountdir = strcat(strcat(buffer, "/"),filename);
-   } else{
+   //args = parent dir
+   sq.filepath = *filepath;
+   char * filename = strtok(basename(strdup(sq.filepath)), ".");
+   //sq.filepath = state.argv[2];
+   if(arg !=NULL){
+      char * buffer = (char *) malloc(strlen(arg) + strlen(filename));
+      strcpy(buffer,arg);
+      sq.mountdir = strcat(strcat(buffer,"/"),filename);
+      // args.c.newroot = realpath(sq.mountdir, NULL);
+      //= sq.mountdir;
+      *filepath = sq.mountdir;
+     
+   }/* else{
       char * buffer = (char *) malloc(strlen(filename) + 10);
       strcpy(buffer, "/var/tmp/");
       sq.mountdir = strcat(buffer, filename);
    }
+*/
    s=&sq;
    squashmount(&sq);
 }
