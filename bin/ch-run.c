@@ -60,7 +60,7 @@ const struct argp_option options[] = {
    { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
    { "version",     'V', 0,      0, "print version and exit" },
    { "write",       'w', 0,      0, "mount image read-write"},
-   { "squash",      's', "DIR",0, "mount and run sqfs"},
+   { "squashmnt",      's', "DIR",0, "mount and run sqfs"},
    { 0 }
 };
 
@@ -143,11 +143,7 @@ int main(int argc,char * argv[])
    }
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if(sqfs_hl_open(argv[arg_next],0))
-    {
        goSquash(sq.parentdir, &argv[arg_next]);
-       //argv[arg_next+1] = sq.mountdir;
-      //args.initaldir=sq.mountdir;
-    }
 
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
@@ -157,12 +153,6 @@ int main(int argc,char * argv[])
      args.c.newroot = realpath(argv[arg_next], NULL);
    
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
-/*   if(sqfs_hl_open(argv[arg_next],0))
-   {
-      goSquash(sq.parentdir, &argv[arg_next]);
-      //argv[arg_next+1] = sq.mountdir;
-     //args.initaldir=sq.mountdir;
-   }*/
    arg_next++;
 
    if (args.c.join) {
@@ -465,7 +455,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case 's':
         sq.parentdir = arg;
-        //goSquash(arg, &state->argv[2]);
         break;
    case ARGP_KEY_NO_ARGS:
       argp_state_help(state, stderr, (  ARGP_HELP_SHORT_USAGE
@@ -484,21 +473,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
  * if no mount directory specified, /var/tmp is passed */
 void goSquash(char *arg, char ** filepath)
 {
-   //args = parent dir
    sq.filepath = *filepath;
    char * filename = strtok(basename(strdup(sq.filepath)), ".");
-  //if(arg!=NULL){
-      char * buffer = (char *) malloc(strlen(arg) + strlen(filename));
-      strcpy(buffer,arg);
-      sq.mountdir = strcat(strcat(buffer,"/"),filename);
-     
-  // } 
-   /*else
-   {
-      char * buffer = (char *) malloc(strlen(filename) + 10);
-      strcpy(buffer, "/var/tmp/");
-      sq.mountdir = strcat(buffer, filename);
-   } */
+   char * buffer = (char *) malloc(strlen(arg) + strlen(filename));
+   strcpy(buffer,arg);
+   sq.mountdir = strcat(strcat(buffer,"/"),filename);
    *filepath=sq.mountdir;
    s=&sq;
    squashmount(&sq);
