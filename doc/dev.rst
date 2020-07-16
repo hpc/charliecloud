@@ -861,34 +861,36 @@ the Squash Filesystem will be mounted in :code:`/var/tmp`.
 
 The SquashFS :code:`IMAGE` is run by:
 
-* :code:`ch-run` processes :code:`IMAGE` and identifies if it as SQFS fileystem. 
-* If user specified :code:`--squashmnt` , the SQFS will be mounted in a subdirectory
-  created at that location. If not, the SQFS filesystem is mounted in a subdirectory created 
-  at :code:`/var/tmp/`.
-* The image path and mountpoint are passed through :code:`squashmount()`
-  within :code:`ch_core.c`.
+1.  :code:`ch-run` processes :code:`IMAGE` and identifies if it as SQFS fileystem. 
 
-1. :code:`squashmount()` sets up a Fuse Session using the libfuse High-Level API.
-
-2. We get the FUSE filesystem operations from :code:`get_fuse_ops()` in our 
-   new squashfuse API, :code:`ops.c` (forked repo can be found at hpc/squashfuse).
+2.  If user specified :code:`--squashmnt` , the SQFS will be mounted in a subdirectory
+    created at that location. If not, the SQFS filesystem is mounted in a subdirectory created 
+    at :code:`/var/tmp/`.
  
-3. The :code:`IMAGE` gets mounted in mountpoint sub-directory determined previously.
+3.  The image path and mountpoint are passed through :code:`squashmount()`
+    within :code:`ch_core.c`.
 
-4. A signal handler is initalized in order to handle fuse session teardown.
+4.  :code:`squashmount()` sets up a Fuse Session using the libfuse High-Level API.
 
-5. A new child process is spawned so :code:`fuse_loop()` can run and process 
-   filesystem operations for as long as the SQFS is mounted.
+5.  We get the FUSE filesystem operations from :code:`get_fuse_ops()` in our 
+    new squashfuse API, :code:`ops.c` (forked repo can be found at hpc/squashfuse).
+ 
+6.  The :code:`IMAGE` gets mounted in mountpoint sub-directory determined previously.
 
-6. The :code:`ch-run` workflow continues as usual. Another child process 
-   is spawned to run :code:`execvp()`.The parent process waits until 
-   :code:`execvp()` is terminated.
+7.  A signal handler is initalized in order to handle fuse session teardown.
 
-7. The parent process sends a kill signal to the child process
-   running :code:`fuse_loop()`.
+8.  A new child process is spawned so :code:`fuse_loop()` can run and process 
+    filesystem operations for as long as the SQFS is mounted.
 
-8. The Signal Handler `kill_fuse_loop()` ensures the environment gets 
-   cleaned up. The :code:`IMAGE` gets unmounted and the sub-directory is removed. 
+9.  The :code:`ch-run` workflow continues as usual. Another child process 
+    is spawned to run :code:`execvp()`.The parent process waits until 
+    :code:`execvp()` is terminated.
+
+10. The parent process sends a kill signal to the child process
+    running :code:`fuse_loop()`.
+
+11. The Signal Handler `kill_fuse_loop()` ensures the environment gets 
+    cleaned up. The :code:`IMAGE` gets unmounted and the sub-directory is removed. 
 
 Multiple processes in the same container
 -------------------------------------------------------------------------
@@ -924,7 +926,7 @@ Some things to keep in mind:
   notice :code:`???` appear when :code:`ls` the mountpoint. This
   means that the :code:`fuse_loop()` has been killed but the 
   filesystem was not unmounted. You may find something similar
-  if the filesystem is mounted but the code:`fuse_loop()` never runs.
+  if the filesystem is mounted but the :code:`fuse_loop()` never runs.
 
 * Most high-level FUSE API calls have low-level "twins", 
   such as :code:`fuse_loop()` has `fuse_session_loop()`, it's possible
