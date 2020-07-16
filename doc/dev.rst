@@ -854,53 +854,82 @@ Squash FUSE auto-mount option for :code:`ch-run`
 Description
 -----------
 
-By default, :code:`ch-run` expects that the squash filesystem is already
-mounted. Using :code:`--squash` it mounts and un-mount the :code:`SQFS`.
+By default, :code:`ch-run` can take Squash Filesystems as the IMAGE argument and
+automount prior to execution and remove the mount after execution.
+Using :code:`--squashmnt` will mount at :code:`PARENTDIR`. If no argument is specified
+the Squash Filesystem will be mounted in :code:`/var/tmp`.
 
-The :code:`SQFS` mounts, run and unmounts by:
+The SquashFS :code:`IMAGE` is run by:
 
-* :code:`ch-run` checks to see if :code:`NEWROOT` iS an image. If it is, it will follow the new
-  :code:`SQFS` workflow.
+* :code:`ch-run` processes :code:`IMAGE` and identifies if it as SQFS fileystem. 
+* If user specified :code:`--squashmnt` , the SQFS will be mounted in a subdirectory
+  created at that location. If not, the SQFS filesystem is mounted in a subdirectory created 
+  at :code:`/var/tmp/`.
+* The image path and mountpoint are passed through :code:`squashmount()`
+  within :code:`ch_core.c`.
 
-* It then checks to see if the user included a :code:`--mount-dir` option or will be using the default
-  :code:`/var/tmp` option. It creates a sub-directroy within one of those two options. That sub-directoy
-  it the new value of :code:`arg.c.newroot`. 
+1. :code:`squashmount()` sets up a Fuse Session using the libfuse High-Level API.
 
-* The image path and mountpoint are passed through :code:`squashmount()` within :code:`ch-core.c`.
-
-1. :code:`ch-run` parses the arguments from the user and sends into :code:`squashmount()`
-   within :code:`ch_core.c` It creates a sub-directory in the default :code:`/var/tmp`
-   or the user input of :code:`DIR`.
-
-2. We get the fuse operations from :code:`get_fuse_ops()` in our new squashfuse API, :code:`ops.c`, 
-   along with updating and initalizing other arguments that are needed.
+2. We get the FUSE filesystem operations from :code:`get_fuse_ops()` in our 
+   new squashfuse API, :code:`ops.c` (forked repo can be found at hpc/squashfuse).
  
-3. The :code:`SQFS` gets mounted in mountpoint sub-directory determined previously.
+3. The :code:`IMAGE` gets mounted in mountpoint sub-directory determined previously.
 
-4. Signal handlers are initalized in order to run the code and fork a new process
-   so :code:`fuse_loop()` can continue running.
+4. A signal handler is initalized in order to handle fuse session teardown.
 
-5. The :code:`ch-run` workflow continues as usual. The third process is forked to run the desired code
-   using :code:`execvp()`.The parent process waits until :code:`ch-run` is completed.
+5. A new child process is spawned so :code:`fuse_loop()` can run and process 
+   filesystem operations for as long as the SQFS is mounted.
 
-6. Lastly the environment gets cleaned up. The signal handlers are removed, the :code:`SQFS`
-   gets unmounted and the sub-directory is removed. 
+6. The :code:`ch-run` workflow continues as usual. Another child process 
+   is spawned to run :code:`execvp()`.The parent process waits until 
+   :code:`execvp()` is terminated.
+
+7. The parent process sends a kill signal to the child process
+   running :code:`fuse_loop()`.
+
+8. The Signal Handler `kill_fuse_loop()` ensures the environment gets 
+   cleaned up. The :code:`IMAGE` gets unmounted and the sub-directory is removed. 
 
 Multiple processes in the same container
 -------------------------------------------------------------------------
 
 Three proccess are needed in the same container to perform such tasks:
 
-* Process 1: the only job for this process is to run :code:`fuse_loop()` which allows
-  fuse operations to run. When its 2 child processes are killed, it runs the un-mounting workflow. 
-* Process 2: it waits for :code:`ch-run` to finish and tells the parent process when to un-mount.
-* Process 3: runs normal :code:`ch-run` workflow.
+* Parent Process: this process executes the workflow of ch-run. It creates 
+  child process 1 to run the :code:`fuse_loop()` and child process 2 to run 
+  the :code:`execvp()`. It waits on completion of child process 2 and kills 
+  child process 1 immediately after.
 
-Three processes are needed because 1 process is needed to be running :code:`fuse_loop()`. That is what
-allows fuse operations to occur. :code:`run_user_command()` uses :code:`execvp()` which only ends if
-it errors out. So the other 2 process are needed because of that feature. 1 process runs the normal 
-:code:`ch-run` workflow while the other waits for it to finish and tell the parent process to finish and
-clean up the environment. 
+* Child Process 1: runs :code:`fuse_loop()` which handles all filesystem 
+  operations for the duration of its execution.
+
+* Child Process 2: :code:`execvp()` the user commmand.
+
+Gotchas
+-------
+
+Some things to keep in mind:
+
+* :code:`fuse_loop()` can only be terminated via an external signal. 
+  There is no known way to safely terminate the loop from the inside.
+
+* :code:`fuse_mount()` and :code:`fuse_unmount()` both create child
+  processes. They terminate immediately after filesystem is mounted.
+
+* an exit handler is registered to point to `kill_fuse_loop()` in
+  the event that any error pops up mid execution, the filesystem 
+  will always be unmounted and the directory removed.
+
+* In the event that unmounting is not working correctly, you may
+  notice :code:`???` appear when :code:`ls` the mountpoint. This
+  means that the :code:`fuse_loop()` has been killed but the 
+  filesystem was not unmounted. You may find something similar
+  if the filesystem is mounted but the code:`fuse_loop()` never runs.
+
+* Most high-level FUSE API calls have low-level "twins", 
+  such as :code:`fuse_loop()` has `fuse_session_loop()`, it's possible
+  to switch these calls in the future but the inputs must be adjusted 
+  in accordance with FUSE version 2.6, since that is what SquashFuse API uses.
 
 
 OCI technical notes
