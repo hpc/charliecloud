@@ -41,6 +41,7 @@ struct squash {
    pid_t pid;             // process id of the fuse loop
    struct fuse_chan *ch;  //fuse channel associated with squash fuse session
    struct fuse *fuse;     //fuse struct associated with squash fuse session
+   char *parentdir;
 };
 extern struct squash *s;
 /** Function prototypes **/
