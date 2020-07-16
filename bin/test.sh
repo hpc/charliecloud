@@ -11,8 +11,8 @@ rm -rf /var/tmp/$1
 ls -l /var/tmp/$1
 mount | grep -F fuse
 
-echo "CMDLINE:./ch-run --squash=$HOME/chorkshop/hello.sqfs /var/tmp/hello -- ./hello.py"
-./ch-run --squash=$HOME/chorkshop/$1.sqfs /var/tmp/$1 -- ./hello.py
+echo "CMDLINE:./ch-run $HOME/chorkshop/hello.sqfs -- ./hello.py"
+./ch-run $HOME/chorkshop/$1.sqfs -- ./hello.py
 
 echo "POST"
 ls -l /var/tmp/$1
@@ -32,8 +32,8 @@ rm -rf /var/tmp/chruntest
 ls -l /var/tmp/chruntest
 mount | grep -F fuse
 
-echo "CMDLINE:./ch-run --squash=$HOME/chorkshop/hello.sqfs:/tmp /tmp/hello/ -- ./hello.py"
-./ch-run --squash=$HOME/chorkshop/$1.sqfs:/tmp /tmp/$1/ -- ./hello.py
+echo "CMDLINE:./ch-run --squash=/tmp/ $HOME/chorkshop/hello.sqfs -- ./hello.py"
+./ch-run --squash=/tmp/ $HOME/chorkshop/$1.sqfs -- ./hello.py
 
 echo "POST"
 ls -l /tmp/$1
