@@ -314,7 +314,7 @@ void join_namespaces(pid_t pid)
 /** exit handler ensures that any filesystems are unmounted in 
  * the event of system exit */
 void kill_fuse_loop()
-{  
+{ 
    if(s->fuse){
       fuse_exit(s->fuse);
       fuse_unmount(s->mountdir, s->ch);
@@ -347,6 +347,7 @@ void run_user_command(char *argv[], const char *initial_dir)
       }
       wait(&status);
       kill(s->pid,SIGINT);
+      exit(0);
    } else {	
       execvp(argv[0], argv);  // only returns if error
       Tf (0, "can't execve(2): %s", argv[0]);
@@ -508,7 +509,7 @@ int squashmount(struct squash *s)
    s->fuse = fuse_new(s->ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
    Ze((s->fuse==NULL), "failed to create fuse session");
    Ze(0>fuse_set_signal_handlers(fuse_get_session(s->fuse)), "failed to set up signal handlers");
-   signal(SIGINT, kill_fuse_loop);
+   //signal(SIGINT, kill_fuse_loop);
    if((s->pid = fork()) == 0){
       ret = fuse_loop(s->fuse);
       exit(0);
