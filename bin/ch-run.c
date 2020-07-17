@@ -13,7 +13,7 @@
 #include "config.h"
 #include "ch_misc.h"
 #include "ch_core.h"
-
+#include "ops.h"
 
 /** Constants and macros **/
 
