@@ -25,7 +25,6 @@
 #include "ch_core.h"
 #include "ops.h"
 
-
 /** Macros **/
 
 /* Timeout in seconds for waiting for join semaphore. */
@@ -37,6 +36,12 @@
 
 
 /** Constants **/
+
+//for testing purposes
+struct timespec start, finish;
+
+
+
 
 /* Default bind-mounts. */
 struct bind BINDS_REQUIRED[] = {
@@ -320,7 +325,15 @@ void kill_fuse_loop()
       fuse_unmount(s->mountdir, s->ch);
       fuse_destroy(s->fuse);
       rmdir(s->mountdir);
-   }
+   }   
+      //FOR TESTING: CH-UMOUNT
+      /*clock_gettime(CLOCK_MONOTONIC, &finish);
+      double time = finish.tv_sec - start.tv_sec;
+      time += ((finish.tv_nsec - start.tv_nsec) / 1000000000.0);
+      fflush(stdout);
+      if(time < 5)
+        printf("unmount %f\n", time);
+   */
 }
 	
 /* Replace the current process with user command and arguments. */
@@ -346,6 +359,17 @@ void run_user_command(char *argv[], const char *initial_dir)
          Tf (0, "can't execve(2): %s", argv[0]);
       }
       wait(&status);
+      
+      //FOR TESTING CH-RUN
+      /*clock_gettime(CLOCK_MONOTONIC, &finish);
+      double time = finish.tv_sec - start.tv_sec;
+      time += ((finish.tv_nsec - start.tv_nsec) / 1000000000.0);
+      fflush(stdout);
+      printf("run %f \n", time);
+      */
+      
+      //FOR TESTING CH-UMOUNT
+      //clock_gettime(CLOCK_MONOTONIC, &start);
       kill(s->pid,SIGINT);
       exit(0);
    } else {	
@@ -505,6 +529,7 @@ int squashmount(struct squash *s)
    Ze(mkdir(s->mountdir,0777), "%s, failed to create directory", s->mountdir);
    fuse_opt_add_arg(&args, "");
    s->ch = fuse_mount(s->mountdir,&args);
+
    Te(s->ch, "unable to mount at %s", s->mountdir);
    s->fuse = fuse_new(s->ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
    Ze((s->fuse==NULL), "failed to create fuse session");
@@ -514,6 +539,8 @@ int squashmount(struct squash *s)
       ret = fuse_loop(s->fuse);
       exit(0);
    } else{
+      //FOR TESTING: CH-RUN
+      //clock_gettime(CLOCK_MONOTONIC, &start);
       return ret;
    }
 } 

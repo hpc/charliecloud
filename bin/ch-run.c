@@ -15,6 +15,7 @@
 #include "ch_core.h"
 #include "ops.h"
 
+#include <time.h>
 /** Constants and macros **/
 
 /* Environment variables used by --join parameters. */
@@ -99,11 +100,13 @@ const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
 struct args args;
 int arg_next;
-
+struct timespec start, finish;
 /** Main **/
 
 int main(int argc,char *argv[])
 {
+   //FOR TESTING CH-MOUNT
+   clock_gettime(CLOCK_MONOTONIC, &start);  
    bool argp_help_fmt_set;
    int c_argc;
    char ** c_argv;
@@ -114,7 +117,7 @@ int main(int argc,char *argv[])
 
    verbose = 1;  // in charliecloud.h
    
-   sq = (struct squash) {.filepath = NULL, .mountdir = NULL, .pid = 0, .ch = NULL, .fuse = NULL, .parentdir = "/var/tmp"};
+   sq = (struct squash) {.filepath = NULL, .mountdir = NULL, .pid = 0, .ch = NULL, .fuse = NULL, .parentdir = "/var/tmp", };
    args = (struct args){ .c = (struct container){ .ch_ssh = false,
                                                   .container_gid = getegid(),
                                                   .container_uid = geteuid(),
@@ -481,6 +484,13 @@ void goSquash(char *arg, char ** filepath)
    *filepath=sq.mountdir;
    s=&sq;
    squashmount(&sq);
+   
+   //FOR TESTING CH_MOUNT
+   clock_gettime(CLOCK_MONOTONIC, &finish);
+   double time = finish.tv_sec - start.tv_sec;
+   time += ((finish.tv_nsec - start.tv_nsec) / 1000000000.0);
+   printf("mount %f\n", time); 
+
 }
 
 /* Validate that the UIDs and GIDs are appropriate for program start, and
