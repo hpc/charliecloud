@@ -39,7 +39,7 @@
 
 //for testing purposes
 struct timespec start, finish;
-
+struct timespec startU, finishU;
 
 
 
@@ -327,13 +327,11 @@ void kill_fuse_loop()
       rmdir(s->mountdir);
    }   
       //FOR TESTING: CH-UMOUNT
-      /*clock_gettime(CLOCK_MONOTONIC, &finish);
-      double time = finish.tv_sec - start.tv_sec;
-      time += ((finish.tv_nsec - start.tv_nsec) / 1000000000.0);
-      fflush(stdout);
-      if(time < 5)
-        printf("unmount %f\n", time);
-   */
+     clock_gettime(CLOCK_MONOTONIC, &finishU);
+     double timeU = finishU.tv_sec - startU.tv_sec;
+     timeU += ((finishU.tv_nsec - startU.tv_nsec) / 1000000000.0);
+     fflush(stdout);
+     printf("unmount %f\n", timeU);
 }
 	
 /* Replace the current process with user command and arguments. */
@@ -361,17 +359,19 @@ void run_user_command(char *argv[], const char *initial_dir)
       wait(&status);
       
       //FOR TESTING CH-RUN
-      /*clock_gettime(CLOCK_MONOTONIC, &finish);
+      clock_gettime(CLOCK_MONOTONIC, &finish);
       double time = finish.tv_sec - start.tv_sec;
       time += ((finish.tv_nsec - start.tv_nsec) / 1000000000.0);
       fflush(stdout);
       printf("run %f \n", time);
-      */
+      
       
       //FOR TESTING CH-UMOUNT
-      //clock_gettime(CLOCK_MONOTONIC, &start);
+      clock_gettime(CLOCK_MONOTONIC, &startU);
+      
       kill(s->pid,SIGINT);
       exit(0);
+      
    } else {	
       execvp(argv[0], argv);  // only returns if error
       Tf (0, "can't execve(2): %s", argv[0]);
@@ -540,7 +540,7 @@ int squashmount(struct squash *s)
       exit(0);
    } else{
       //FOR TESTING: CH-RUN
-      //clock_gettime(CLOCK_MONOTONIC, &start);
+      clock_gettime(CLOCK_MONOTONIC, &start);
       return ret;
    }
 } 
