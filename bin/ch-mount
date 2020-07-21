@@ -35,4 +35,5 @@ if [ -e "$imgdir" ]; then
 fi
 
 mkdir -p "$imgdir"
-squashfuse_ "$image" "$imgdir"
+#squashfuse_ "$image" "$imgdir"
+~/squashfuse/squashfuse "$image" "$imgdir"

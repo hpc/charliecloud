@@ -21,10 +21,9 @@ printf "$i," >> ex02-E2E.csv
 E2ETG1=$((time sh -c 'ch-run ~/hello -- ./hello.py') 2>&1 | grep -F real | awk '{print $2}' | grep -Eo '[+]?([.][0-9]+)?')
 
 
-E2ETG2=time sh -c 'ch-mount ~/chorkshop/hello.sqfs /var/tmp && ch-run /var/tmp/hello -- ./hello.py && ch-umount /var/tmp/hello'
 
 
-E2ETG2=$((time sh -c 'ch-mount ~/chorkshop/hello.sqfs /var/tmp && ch-run /var/tmp/hello -- ./hello.py && ch-umount /var/tmp/hello') 2>&1 | grep -F real | awk '{print $2}' | grep -Eo '[+]?([.][0-9]+)?')
+E2ETG2=$((time sh -c '~/charliecloud/bin/ch-mount ~/chorkshop/hello.sqfs /var/tmp && ch-run /var/tmp/hello -- ./hello.py && ch-umount /var/tmp/hello') 2>&1 | grep -F real | awk '{print $2}' | grep -Eo '[+]?([.][0-9]+)?')
 
 
 
@@ -46,20 +45,25 @@ for i in {1..1}
 do
 
 printf "$i," >> ex02.csv
-#Test group 3
-MTTG3=$((time sh -c 'ch-mount ~/chorkshop/hello.sqfs /var/tmp') 2>&1 | grep -F real | awk '{print $2}' | grep -Eo '[+]?([.][0-9]+)?')
+MTTG2=$((time sh -c '~/charliecloud/bin/ch-mount ~/chorkshop/hello.sqfs /var/tmp') 2>&1 | grep -F real | awk '{print $2}' | grep -Eo '[+]?([.][0-9]+)?')
 
 
-RTTG3=$((time sh -c 'ch-run /var/tmp/hello -- ./hello.py') 2>&1 | grep -F real | awk '{print $2}' | grep -Eo '[+]?([.][0-9]+)?')
-
-
-
-UTTG3=$((time sh -c 'ch-umount /var/tmp/hello') 2>&1 | grep -F real | awk '{print $2}' | grep -Eo '[+]?([.][0-9]+)?')
+RTTG2=$((time sh -c 'ch-run /var/tmp/hello -- ./hello.py') 2>&1 | grep -F real | awk '{print $2}' | grep -Eo '[+]?([.][0-9]+)?')
 
 
 
-#Test group 2
+UTTG2=$((time sh -c 'ch-umount /var/tmp/hello') 2>&1 | grep -F real | awk '{print $2}' | grep -Eo '[+]?([.][0-9]+)?')
 
+
+
+
+
+
+out=$(sh -c '~/charliecloud/bin/ch-run ~/chorkshop/hello.sqfs -- ./hello.py')
+
+MTTG3=$out | grep -F mount | awk '{print $2}'
+RTTG3=$out | grep -F run | awk '{print $2}'
+UTTG3=$out | grep -F unmount | awk '{print $2}'
 
 printf "$MTTG2, $MTTG3, $UTTG2, $UTTG3, $RTTG2,$RTTG3\n" >> ex02.csv
 done 
