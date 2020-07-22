@@ -8,109 +8,147 @@ broken <- read.csv('ex02.csv')
 
 #W R A N G L E
 
-broken <-broken %>% mutate(E2E.TG2.Sum = MT.TG2 + RT.TG2 + UT.TG2) 
+broken <-broken %>% mutate(E2E.TG2A.Sum = MT.TG2A + RT.TG2A + UT.TG2A)
+broken <- broken %>% mutate(E2E.TG2B.Sum = MT.TG2B + RT.TG2B + UT.TG2B) 
 broken <-broken %>% mutate(E2E.TG3.Sum = MT.TG3 + RT.TG3 + UT.TG3) 
 all <- cbind(select(broken, -ID), select(e2e, -ID))
-scaleFactorTG2 <- mean(all$E2E.TG2) / mean(all$E2E.TG2.Sum)
-
+scaleFactorTG2A <- mean(all$E2E.TG2A) / mean(all$E2E.TG2A.Sum)
+scaleFactorTG2B <- mean(all$E2E.TG2B) / mean(all$E2E.TG2B.Sum)
 scaleFactorTG3 <- mean(all$E2E.TG3) / mean(all$E2E.TG3.Sum)
+
 all$MT.TG3 <- all$MT.TG3 * scaleFactorTG3
 all$RT.TG3 <- all$RT.TG3 * scaleFactorTG3
 all$UT.TG3 <- all$UT.TG3 * scaleFactorTG3
 
-all$MT.TG2 <- all$MT.TG2 * scaleFactorTG2
-all$RT.TG2 <- all$RT.TG2 * scaleFactorTG2
-all$UT.TG2 <- all$UT.TG2 * scaleFactorTG2
+all$MT.TG2A <- all$MT.TG2A * scaleFactorTG2A
+all$RT.TG2A <- all$RT.TG2A * scaleFactorTG2A
+all$UT.TG2A <- all$UT.TG2A * scaleFactorTG2A
 
+all$MT.TG2B <- all$MT.TG2B * scaleFactorTG2B
+all$RT.TG2B <- all$RT.TG2B * scaleFactorTG2B
+all$UT.TG2B <- all$UT.TG2B * scaleFactorTG2B
 
+cat("------------------------END TO END STATS-----------------------")
 
 cat("Average and Std Dev End to End Runtime for Test Group 1:\n")
 mean(all$E2E.TG1)
 sd(all$E2E.TG1)
 
-cat("Average and Std Dev End to End Runtime for Test Group 2:\n")
-mean(all$E2E.TG2)
-sd(all$E2E.TG2)
+cat("TTest between test groups 2a and 3:\n")
+t.test(all$E2E.TG3, all$E2E.TG2A)
 
-cat("Average and Std Dev End to End Runtime for Test Group 3:\n")
-mean(all$E2E.TG3)
-sd(all$E2E.TG3)
+cat("Ttest between test groups 2b and 3:\n")
+t.test(all$E2E.TG3, all$E2E.TG2B)
 
-cat("TTest between test groups 2 and 3:\n")
-t.test(all$E2E.TG3, all$E2E.TG2)
+cat("Ttest between test groups 2a and 2b:\n")
+t.test(all$E2E.TG2A, all$E2E.TG2B)
 
-#PLOT THE E2E Data
 
-x <- data.frame(all$E2E.TG1, all$E2E.TG2, all$E2E.TG3)
-x <- apply_labels(x, all.E2E.TG1 = "Unpacked Tar Ball Workflow", all.E2E.TG2 = "Original SquashFS Workflow", all.E2E.TG3 = "Proposed SquashFS Workflow")
+x <- data.frame(all$E2E.TG1, all$E2E.TG2A, all$E2E.TG2B,all$E2E.TG3)
+names(x) = c("Unpacked Tar Ball Workflow", "Original SquashFS Workflow (high level SquashFuse)", "Original SquashfS Workflow (low level SquashFuse)", "Proposed SquashFS Workflow")
+
 df <- melt(x)
-ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Run Workflows") + scale_color_manual(name="Charliecloud container run workflows", labels=c("Unpacked Tar Ball Workflow","Original SquashFS Workflow","Proposed SquashFS Workflow"),values=c("red","green","blue"))
+ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Run Workflows") 
 
-ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud Container Run Workflows") + scale_color_manual(name="Charliecloud container run workflows", labels=c("Unpacked Tar Ball Workflow","Original SquashFS Workflow","Proposed SquashFS Workflow"),values=c("red","green","blue"))
-
-
-cat("Average Mount Time for Test group 2:\n")
-mean(all$MT.TG2)
-sd(all$MT.TG2)
-
-cat("Average Mount time for Test group 3:\n")
-mean(all$MT.TG3)
-sd(all$MT.TG3)
-
-cat("Ttest between mount times for test groups 2 and 3:\n")
-t.test(all$MT.TG3, all$MT.TG2)
+ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud Container Run Workflows") 
 
 
-x <- data.frame(all$MT.TG2, all$MT.TG3)
-x <- apply_labels(x, all.MT.TG2 = "Original SquashFS Workflow", all.MT.TG3 = "Proposed SquashFS Workflow")
+cat("\n\n\n\n")
+cat("-------- MOUNT TIME STATS-----------------------------------------")
+
+cat("TTest between test groups 2a and 3:\n")
+t.test(all$MT.TG3, all$MT.TG2A)
+
+cat("Ttest between test groups 2b and 3:\n")
+t.test(all$MT.TG3, all$MT.TG2B)
+
+cat("Ttest between test groups 2a and 2b:\n")
+t.test(all$MT.TG2A, all$MT.TG2B)
+
+
+
+x <- data.frame(all$MT.TG2A, all$MT.TG2B, all$MT.TG3)
+names(x) = c("Original SquashFS Workflow (high level SquashFuse)", "Original SquashfS Workflow (low level SquashFuse)", "Proposed SquashFS Workflow")
+
 df <- melt(x)
-ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Image Mounting") + scale_color_manual(name="Charliecloud container run workflows", labels=c("Unpacked Tar Ball Workflow","Original SquashFS Workflow","Proposed SquashFS Workflow"),values=c("red","green","blue"))
+ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Image Mounting")
+
+ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Mounting") 
+
+cat("\n\n\n\n")
+cat("-------- RUN TIME STATS-----------------------------------------")
+
+cat("TTest between test groups 2a and 3:\n")
+t.test(all$RT.TG3, all$RT.TG2A)
+
+cat("Ttest between test groups 2b and 3:\n")
+t.test(all$RT.TG3, all$RT.TG2B)
+
+cat("Ttest between test groups 2a and 2b:\n")
+t.test(all$RT.TG2A, all$RT.TG2B)
 
 
-ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Mounting") + scale_color_manual(name="Charliecloud container run workflows", labels=c("Unpacked Tar Ball Workflow","Original SquashFS Workflow","Proposed SquashFS Workflow"),values=c("red","green","blue"))
 
 
-
-cat("Average Run Time for Test group 2:\n")
-mean(all$RT.TG2)
-sd(all$RT.TG2)
-
-cat("Average Run time for Test group 3:\n")
-mean(all$RT.TG3)
-sd(all$RT.TG3)
-
-cat("Ttest between run times for test groups 2 and 3:\n")
-t.test(all$RT.TG3, all$RT.TG2)
+x <- data.frame(all$RT.TG2A, all$RT.TG2B, all$RT.TG3)
+names(x) = c("Original SquashFS Workflow (high level SquashFuse)", "Original SquashfS Workflow (low level SquashFuse)", "Proposed SquashFS Workflow")
 
 
-x <- data.frame(all$RT.TG2, all$RT.TG3)
-x <- apply_labels(x, all.RT.TG2 = "Original SquashFS Workflow", all.RT.TG3 = "Proposed SquashFS Workflow")
 df <- melt(x)
-ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Image Execution") + scale_color_manual(name="Charliecloud container run workflows", labels=c("Unpacked Tar Ball Workflow","Original SquashFS Workflow","Proposed SquashFS Workflow"),values=c("red","green","blue"))
+ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Image Execution") 
 
-ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Container Execution") + scale_color_manual(name="Charliecloud container run workflows", labels=c("Unpacked Tar Ball Workflow","Original SquashFS Workflow","Proposed SquashFS Workflow"),values=c("red","green","blue"))
+ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Container Execution") 
 
+cat("\n\n\n\n")
+cat("-------- UNMOUNT TIME STATS-----------------------------------------")
 
+cat("TTest between test groups 2a and 3:\n")
+t.test(all$UT.TG3, all$UT.TG2A)
 
+cat("Ttest between test groups 2b and 3:\n")
+t.test(all$UT.TG3, all$UT.TG2B)
 
-cat("Average UnMount Time for Test group 2:\n")
-mean(all$UT.TG2)
-sd(all$UT.TG2)
-
-cat("Average Unmount time for Test group 3:\n")
-mean(all$UT.TG3)
-sd(all$UT.TG3)
-
-cat("Ttest between unmount times for test groups 2 and 3:\n")
-t.test(all$UT.TG3, all$UT.TG2)
+cat("Ttest between test groups 2a and 2b:\n")
+t.test(all$UT.TG2A, all$UT.TG2B)
 
 
-x <- data.frame(all$UT.TG2, all$UT.TG3)
-x <- apply_labels(x, all.UT.TG2 = "Original SquashFS Workflow", all.UT.TG3 = "Proposed SquashFS Workflow")
+
+names(x) = c( "Original SquashFS Workflow (high level SquashFuse)", "Original SquashfS Workflow (low level SquashFuse)", "Proposed SquashFS Workflow")
+
 df <- melt(x)
-ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Image Unmounting") + scale_color_manual(name="Charliecloud container run workflows", labels=c("Unpacked Tar Ball Workflow","Original SquashFS Workflow","Proposed SquashFS Workflow"),values=c("red","green","blue"))
+ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Image Unmounting") 
 
-ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Unmounting") + scale_color_manual(name="Charliecloud container run workflows", labels=c("Unpacked Tar Ball Workflow","Original SquashFS Workflow","Proposed SquashFS Workflow"),values=c("red","green","blue"))
+ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Unmounting") 
 
 
 
+
+
+
+
+
+
+
+df <- data.frame(colSums(select(all, -E2E.TG2A.Sum, -E2E.TG2B.Sum, -E2E.TG3.Sum )))
+df <- cbind(df, rownames(df))
+rownames(df) <- NULL
+names(df) <- c("value","id")
+df$id <- gsub("\\.", "_", df$id)
+df <- cbind(df$value, colsplit(type.convert(df$id), '_', c("time", "group")))
+names(df) <-c("value","time","group")
+df <- df %>% spread(time, value)
+
+s.MT <- c(0,0,0,0)
+df <- cbind(df, s.MT)
+
+df <- df %>% select(group, s.MT, MT, RT, UT, E2E) %>% mutate(s.RT = MT) %>% mutate(RT = s.RT + RT) %>% mutate(s.UT = RT) %>% mutate(UT = s.UT + UT) %>% select(group, s.MT, MT, s.RT, RT, s.UT, UT, E2E)
+df <- df %>% gather(phase, start, -group) %>% mutate(end=start) 
+df$phase <- gsub("s.","" , df$phase)
+
+broken <- merge(x = df, y = df, by=c("group","phase"), all = TRUE) %>% select(group, phase, start.x, end.y) %>% where(start.x != end.y)
+e2e <- merge(x = df, y = df, by=c("group","phase"), all = TRUE) %>% select(group, phase, start.x, end.y) %>% where(phase=="E2E")
+e2e$group = c("TG1-Full", "TG2A-Full", "TG2B-Full", "TG3-Full")
+
+all <- rbind(broken, e2e)
+timelineG(df=broken, start="start.x", end="end.y", names="group", phase="phase")
+timelineG(df=all, start="start.x", end="end.y", names="group", phase="phase")
