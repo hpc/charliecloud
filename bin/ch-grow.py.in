@@ -7,7 +7,6 @@ import glob
 import inspect
 import os
 import os.path
-import pathlib
 import re
 import shutil
 import sys
@@ -470,10 +469,11 @@ class CLI_Print_Storage(ch.CLI_Action_Exit):
 class CLI_List_Images(ch.CLI_Action_Exit):
 
    def __call__(self, _, namespace, *args, **kwargs):
-      p = pathlib.Path(namespace.storage + '/img')
-      for child in p.iterdir():
-          print(ch.Image_Ref(child.name))
+      images = os.listdir(namespace.storage + '/img/')
+      for image in images:
+         print(ch.Image_Ref(image))
       sys.exit(0)
+
 
 class Environment:
    "The state we are in: environment variables, working directory, etc."
