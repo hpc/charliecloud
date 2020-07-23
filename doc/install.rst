@@ -103,18 +103,22 @@ prefer :code:`-Werror` unless there is a specific reason to turn it off. For
 example, this approach identified a buggy :code:`configure` test (`issue #798
 <https://github.com/hpc/charliecloud/issues/798>`_).
 
-This approach disagrees with the recommendations of many distributions, such
-as Gentoo, whose "`Common mistakes
+Many others recommend the opposite. For example, Gentoo's "`Common mistakes
 <https://devmanual.gentoo.org/ebuild-writing/common-mistakes/index.html>`_"
 guide advises against :code:`-Werror` because it causes breakage that is
-"random" and "without purpose".
+"random" and "without purpose". There is a well-known `blog post
+<https://flameeyes.blog/2009/02/25/future-proof-your-code-dont-use-werror/>`_
+from Flameeyes that recommends :code:`-Werror` be off by default and used by
+developers and testers only.
 
-We disagree; in our opinion, this breakage is the result of real bugs and
-shouldn't be hidden. Our point of view is that code should have no warnings,
-regardless of compiler, and any spurious warnings should be silenced
-individually. Continuous integration does not test a sufficiently broad set of
-environments. If the standard Charliecloud build has only :code:`-Wall`,
-without :code:`-Werror`, it is all too easy to ignore any warnings.
+In our opinion, for Charliecloud, these warnings are most likely the result of
+real bugs and shouldn't be hidden (i.e., they are neither random nor without
+purpose). Our code should have no warnings, regardless of compiler, and any
+spurious warnings should be silenced individually. We do not have the
+resources to test with a wide variety of compilers, so enabling
+:code:`-Werror` only for development and testing, as recommended by others,
+means that we miss potentially important diagnostics — people typically do not
+pay attention to warnings, only errors.
 
 That said, we recognize that packagers and end users just want to build the
 code with a minimum of hassle. Thus, we provide the :code:`configure` flag:
@@ -122,10 +126,13 @@ code with a minimum of hassle. Thus, we provide the :code:`configure` flag:
 :code:`--enable-buggy-build`
   Remove :code:`-Werror` from :code:`CFLAGS` when building.
 
-Don't hesitate to use it. But if you do, **please**:
+Don't hesitate to use it. But if you do, we would very much appreciate if you:
 
   1. File a bug explaining why! We'll fix it.
   2. Remove it from your package or procedure once we fix that bug.
+
+**Please do not use this option routinely, as that hides bugs that we cannot
+find otherwise.**
 
 Install with package manager
 ============================
