@@ -4,7 +4,7 @@
 printf "ID, Bytes, Filename\n" > ex01-files.csv
 
 
-unsquashfs hello.sqfs 
+unsquashfs hello.sqfs || { echo 'hello.sqfs must be in this directory'; exit 1; }
 
 for i in {0..0}
 do
