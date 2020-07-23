@@ -35,9 +35,26 @@ AC_CONFIG_FILES([Makefile
 
 # Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
 AC_PROG_CC
-AC_DEFUN([CH_CFLAGS], [-std=c99 -Wpedantic -Wall -Werror])
-AX_CHECK_COMPILE_FLAG([CH_CFLAGS], [
-  CFLAGS+=" CH_CFLAGS"
+
+# Set up CFLAGS.
+ch_cflags='-std=c99 -Wpedantic -Wall'
+
+AC_ARG_ENABLE([buggy-build],
+  AS_HELP_STRING(
+    [--enable-buggy-build],
+    [omit -Werror; please see docs before use!]),
+  [AS_CASE([$enableval],
+    [yes], [use_werror=no],
+    [no],  [use_werror=yes],
+    [*],   [AC_MSG_ERROR([--enable-buggy-build: bad argument: $enableval])]
+  )],
+  [use_werror=yes])
+
+AC_MSG_NOTICE([use_werror: $use_werror])
+AS_IF([test $use_werror = yes], [ch_cflags+=' -Werror'])
+
+AX_CHECK_COMPILE_FLAG([$ch_cflags], [
+  CFLAGS+=" $ch_cflags"
 ], [
   AC_MSG_ERROR([no suitable C99 compiler found])
 ])
