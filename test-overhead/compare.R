@@ -2,6 +2,9 @@ library(dplyr)
 library(reshape2)
 library(ggplot2)
 library(expss)
+library(timelineS)
+library(tidyr)
+library(plyr)
 
 e2e <- read.csv('ex02-E2E.csv')
 broken <- read.csv('ex02.csv')
@@ -50,8 +53,7 @@ names(x) = c("Unpacked Tar Ball Workflow", "Original SquashFS Workflow (high lev
 df <- melt(x)
 ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Run Workflows") 
 
-ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud Container Run Workflows") 
-
+ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud Container Run Workflows") + scale_x_discrete(labels=abbreviate)
 
 cat("\n\n\n\n")
 cat("-------- MOUNT TIME STATS-----------------------------------------")
@@ -73,7 +75,7 @@ names(x) = c("Original SquashFS Workflow (high level SquashFuse)", "Original Squ
 df <- melt(x)
 ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Image Mounting")
 
-ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Mounting") 
+ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Mounting") + scale_x_discrete(labels=abbreviate) 
 
 cat("\n\n\n\n")
 cat("-------- RUN TIME STATS-----------------------------------------")
@@ -97,7 +99,7 @@ names(x) = c("Original SquashFS Workflow (high level SquashFuse)", "Original Squ
 df <- melt(x)
 ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Image Execution") 
 
-ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Container Execution") 
+ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Container Execution") + scale_x_discrete(labels=abbreviate)
 
 cat("\n\n\n\n")
 cat("-------- UNMOUNT TIME STATS-----------------------------------------")
@@ -118,8 +120,7 @@ names(x) = c( "Original SquashFS Workflow (high level SquashFuse)", "Original Sq
 df <- melt(x)
 ggplot(df, aes(x=value, fill=variable)) + geom_density(alpha=0.25) + labs(x="Run Time (s)", x = "Density", colour = "Charliecloud container run workflows", title="Density of Run Times for Charliecloud Container Image Unmounting") 
 
-ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Unmounting") 
-
+ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="Charliecloud container run workflows", y="Run Time (s)", title= "Distribution of Run Times for Charliecloud SquashFS Unmounting") + scale_x_discrete(labels=abbreviate)
 
 
 
@@ -149,6 +150,6 @@ broken <- merge(x = df, y = df, by=c("group","phase"), all = TRUE) %>% select(gr
 e2e <- merge(x = df, y = df, by=c("group","phase"), all = TRUE) %>% select(group, phase, start.x, end.y) %>% where(phase=="E2E")
 e2e$group = c("TG1-Full", "TG2A-Full", "TG2B-Full", "TG3-Full")
 
-all <- rbind(broken, e2e)
-timelineG(df=broken, start="start.x", end="end.y", names="group", phase="phase")
-timelineG(df=all, start="start.x", end="end.y", names="group", phase="phase")
+broken$phase <- revalue(broken$phase, c("MT" = "SquashFS Mount", "RT" = "Container Run", "UT"="SquashFS Unmount"))
+names(broken) = c("Workflow","Phase","Duration","end")
+timelineG(df=broken, start="Duration", end="end", names="Workflow", phase="Phase") 

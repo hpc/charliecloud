@@ -65,13 +65,33 @@ UTTG2A=$((time sh -c 'ch-umount /var/tmp/hello') 2>&1 | grep -F real | awk '{pri
 
 
 
+rm -rf out.txt
+
+adddate() {
+    while IFS= read -r line; do
+        printf '%s %s\n' "$(date +%s.%N)" "$line" >> out.txt;
+    done
+}
+
+start=`date +%s.%N`
+
+sh -c '~/charliecloud/bin/ch-run ~/chorkshop/hello.sqfs -- ./hello.py' |& adddate 
 
 
+end1=$(cat out.txt | grep -w "mount" | awk '{printf $1}')
 
-out=$(sh -c '~/charliecloud/bin/ch-run ~/chorkshop/hello.sqfs -- ./hello.py')
-MTTG3=$((echo $out) | awk '{print $4}')
-RTTG3=$((echo $out) | awk '{print $6}')
-UTTG3=$((echo $out) | awk '{print $8}')
+end2=$(cat out.txt | grep -F "run" | awk '{printf $1}')
+
+end3=$(cat out.txt | grep -m2 "unmount" | tail -n1 |  awk '{printf $1}')
+
+
+MTTG3=$(echo "$end1" - "$start" | bc -l)
+
+RTTG3=$(echo "$end2" - "$end1" | bc -l)
+
+UTTG3=$(echo "$end3" - "$end2" | bc -l)
+
+
 
 printf "$MTTG2A,$MTTG2B, $MTTG3, $UTTG2A, $UTTG2B, $UTTG3, $RTTG2A,$RTTG2B,$RTTG3\n" >> ex02.csv
 done 
