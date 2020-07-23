@@ -469,6 +469,9 @@ class Image_Ref:
                 "tag",
                 "digest")
 
+   parser = lark.Lark("?start: image_ref\n" + GRAMMAR, parser="earley",
+                         propagate_positions=True)
+
    def __init__(self, src=None):
       self.host = None
       self.port = None
@@ -502,10 +505,8 @@ class Image_Ref:
    def parse(s):
       if ("%" in s):
          s = s.replace("%", "/")
-      parser = lark.Lark("?start: image_ref\n" + GRAMMAR, parser="earley",
-                         propagate_positions=True)
       try:
-         tree = parser.parse(s)
+         tree = Image_Ref.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
          FATAL("image ref syntax, char %d: %s" % (x.column, s))
       except lark.exceptions.UnexpectedEOF as x:
