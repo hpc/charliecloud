@@ -161,8 +161,11 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
    if (cli.parse_only):
       sys.exit(0)
 
-   # Line noise in the second option is for the git@github.com:... variant.
-   # Username and host characters from https://tools.ietf.org/html/rfc3986.
+   # Guess whether the context is a URL, and error out if so. This can be a
+   # typical looking URL e.g. "https://..." or also something like
+   # "git@github.com:...". The line noise in the second line of the regex is
+   # to match this second form. Username and host characters from
+   # https://tools.ietf.org/html/rfc3986.
    if (re.search(r"""  ^((git|git+ssh|http|https|ssh)://
                      | ^[\w.~%!$&'\(\)\*\+,;=-]+@[\w.~%!$&'\(\)\*\+,;=-]+:)""",
                  cli.context, re.VERBOSE) is not None):
