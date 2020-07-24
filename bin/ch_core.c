@@ -351,7 +351,7 @@ void run_user_command(char *argv[], const char *initial_dir)
    }
 
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
-   if(s->fuse){
+   if(s){
       int status;
       if(fork() == 0){
          execvp(argv[0], argv);
