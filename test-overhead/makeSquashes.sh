@@ -13,7 +13,7 @@ do
 	dd if=/dev/urandom of=ugh.txt bs="$var"M count=1  
 	mv ugh.txt squashfs-root/
 	filename=hello"$var".sqfs
-	mksquashfs squashfs-root "$filename"
+	mksquashfs squashfs-root "$filename" -comp xz
 
 	
 
