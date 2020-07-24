@@ -325,8 +325,8 @@ void kill_fuse_loop()
       fuse_unmount(s->mountdir, s->ch);
       fuse_destroy(s->fuse);
       rmdir(s->mountdir);
+      fprintf(stderr,"unmount\n");
    }  
-   fprintf(stderr,"unmount\n"); 
       //FOR TESTING: CH-UMOUNT
      //clock_gettime(CLOCK_MONOTONIC, &finishU);
      //double timeU = finishU.tv_sec - startU.tv_sec;
@@ -371,7 +371,7 @@ void run_user_command(char *argv[], const char *initial_dir)
       //clock_gettime(CLOCK_MONOTONIC, &startU);
       
       kill(s->pid,SIGINT);
-      exit(0);
+      _Exit(0);
       
    } else {	
       execvp(argv[0], argv);  // only returns if error
