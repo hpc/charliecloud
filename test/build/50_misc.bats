@@ -5,16 +5,14 @@ load ../common
     ch-build --builder-info
 }
 
-@test 'ch-grow --list' {    
-    if [[ $CH_BUILDER = none ]]; then
-        skip 'no builder'
-    else
-        scope standard
-        run ch-grow --list
-        echo "$output"
-        [[ $status -eq 0 ]] 
-        [[ $output = *"hello"* ]]
-    fi
+@test 'ch-grow --list' {
+    scope standard
+    [[ $CH_BUILDER = none ]] && skip 'no builder'
+
+    run ch-grow --list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"00_tiny"* ]]
 }
 
 @test 'sotest executable works' {

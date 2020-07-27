@@ -469,8 +469,13 @@ class Image_Ref:
                 "tag",
                 "digest")
 
-   parser = lark.Lark("?start: image_ref\n" + GRAMMAR, parser="earley",
-                         propagate_positions=True)
+   # Reference parser object. Instantiating a parser took 100ms when we tested
+   # it, which means we can't really put it in a loop. But, at parse time,
+   # "lark" may refer to a dummy module (see above), so we can't populate the
+   # parser here either. We use a class varible and populate it at the time of
+   # first use.
+   parser = None
+
 
    def __init__(self, src=None):
       self.host = None
@@ -501,12 +506,15 @@ class Image_Ref:
          out += "@sha256:" + self.digest
       return out
 
-   @staticmethod
-   def parse(s):
+   @classmethod
+   def parse(class_, s):
+      if (class_.parser is None):
+         class_.parser = lark.Lark("?start: image_ref\n" + GRAMMAR,
+                                   parser="earley", propagate_positions=True)
       if ("%" in s):
          s = s.replace("%", "/")
       try:
-         tree = Image_Ref.parser.parse(s)
+         tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
          FATAL("image ref syntax, char %d: %s" % (x.column, s))
       except lark.exceptions.UnexpectedEOF as x:
