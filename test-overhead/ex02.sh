@@ -13,6 +13,7 @@ CHTAR2DIR=$HOME/charliecloud/bin/ch-tar2dir
 
 SQFS=$HOME/chorkshop/hello.sqfs
 TAR=$HOME/hello.tar.gz
+PROG=/bin/true
 
 #################################################################
 # End to End Workflow just for giggles (giggles.csv)            #
@@ -25,20 +26,20 @@ for i in {1..30}
 do
     start=`date '+%s.%N'`
     #Suggested SquashfS High Level Workflow
-    $CHMOUNTHL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- ./hello.py && $CHUMOUNT /var/tmp/hello
+    $CHMOUNTHL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- $PROG && $CHUMOUNT /var/tmp/hello
 
     end1=`date '+%s.%N'`
 
     #Suggested SquashFS Low Level Workflow
-    $CHMOUNTLL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- ./hello.py && $CHUMOUNT /var/tmp/hello
+    $CHMOUNTLL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- $PROG && $CHUMOUNT /var/tmp/hello
     end2=`date '+%s.%N'`
 
     #Proposed SquashFS High Level Workflow
-    $CHRUN $SQFS -- ./hello.py
+    $CHRUN $SQFS -- $PROG
     end3=`date '+%s.%N'`
 
     #Tar Ball
-    $CHTAR2DIR $TAR /tmp && $CHRUN /tmp/hello -- ./hello.py 
+    $CHTAR2DIR $TAR /tmp && $CHRUN /tmp/hello -- $PROG
     end4=`date '+%s.%N'`
 
     rm -rf /tmp/hello
@@ -73,16 +74,16 @@ for i in {1..1000}
 do
     start=`date '+%s.%N'`
     #Suggested SquashfS High Level Workflow
-    $CHMOUNTHL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- ./hello.py && $CHUMOUNT /var/tmp/hello
+    $CHMOUNTHL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- $PROG && $CHUMOUNT /var/tmp/hello
 
     end1=`date '+%s.%N'`
 
     #Suggested SquashFS Low Level Workflow
-    $CHMOUNTLL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- ./hello.py && $CHUMOUNT /var/tmp/hello
+    $CHMOUNTLL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- $PROG && $CHUMOUNT /var/tmp/hello
     end2=`date '+%s.%N'`
 
     #Proposed SquashFS High Level Workflow
-    $CHRUN $SQFS -- ./hello.py
+    $CHRUN $SQFS -- $PROG
     end3=`date '+%s.%N'`
 
     E2ESFSH=$(echo "$end1" - "$start" | bc -l)
@@ -115,7 +116,7 @@ do
     $CHMOUNTLL $SQFS /var/tmp
     end1=`date '+%s.%N'`
 
-    $CHRUN /var/tmp/hello -- ./hello.py
+    $CHRUN /var/tmp/hello -- $PROG
     end2=`date '+%s.%N'`
 
     $CHUMOUNT /var/tmp/hello
@@ -134,7 +135,7 @@ do
     $CHMOUNTHL $SQFS /var/tmp
     end1=`date '+%s.%N'`
 
-    $CHRUN /var/tmp/hello -- ./hello.py
+    $CHRUN /var/tmp/hello -- $PROG
     end2=`date '+%s.%N'`
 
     $CHUMOUNT /var/tmp/hello
@@ -157,7 +158,7 @@ do
     }
     start=`date '+%s.%N'`
 
-    $CHRUN $SQFS -- ./hello.py |& adddate 
+    $CHRUN $SQFS -- $PROG |& adddate 
 
 
     end1=$(cat out.txt | grep -w "mount" | awk '{printf $1}')
@@ -177,7 +178,7 @@ do
     #Tar Ball Workflow (Just Runtime)
     
     starti=`date '+%s.%N'`    
-    $CHRUN /tmp/hello -- ./hello.py
+    $CHRUN /tmp/hello -- $PROG
     end4=`date '+%s.%N'`
 
     RTTB=$(echo "$end4" - "$starti" | bc -l)

@@ -15,37 +15,16 @@ broken <-broken %>% mutate(E2E.TG2A.Sum = MT.TG2A + RT.TG2A + UT.TG2A)
 broken <- broken %>% mutate(E2E.TG2B.Sum = MT.TG2B + RT.TG2B + UT.TG2B) 
 broken <-broken %>% mutate(E2E.TG3.Sum = MT.TG3 + RT.TG3 + UT.TG3) 
 all <- cbind(select(broken, -ID), select(e2e, -ID))
-scaleFactorTG2A <- mean(all$E2E.TG2A) / mean(all$E2E.TG2A.Sum)
-scaleFactorTG2B <- mean(all$E2E.TG2B) / mean(all$E2E.TG2B.Sum)
-scaleFactorTG3 <- mean(all$E2E.TG3) / mean(all$E2E.TG3.Sum)
 
-all$MT.TG3 <- all$MT.TG3 * scaleFactorTG3
-all$RT.TG3 <- all$RT.TG3 * scaleFactorTG3
-all$UT.TG3 <- all$UT.TG3 * scaleFactorTG3
-
-all$MT.TG2A <- all$MT.TG2A * scaleFactorTG2A
-all$RT.TG2A <- all$RT.TG2A * scaleFactorTG2A
-all$UT.TG2A <- all$UT.TG2A * scaleFactorTG2A
-
-all$MT.TG2B <- all$MT.TG2B * scaleFactorTG2B
-all$RT.TG2B <- all$RT.TG2B * scaleFactorTG2B
-all$UT.TG2B <- all$UT.TG2B * scaleFactorTG2B
+all <- all %>% mutate(MT.TG3 = MT.TG3 * (E2E.TG3 / E2E.TG3.Sum)) %>% mutate(UT.TG3 = UT.TG3 * (E2E.TG3 / E2E.TG3.Sum)) %>% mutate(RT.TG3 = RT.TG3 * (E2E.TG3 / E2E.TG3.Sum)) 
+all <- all %>% mutate(MT.TG2A = MT.TG2A * (E2E.TG2A / E2E.TG2A.Sum)) %>% mutate(UT.TG2A = UT.TG2A * (E2E.TG2A / E2E.TG2A.Sum)) %>% mutate(RT.TG2A = RT.TG2A * (E2E.TG2A / E2E.TG2A.Sum)) 
+all <- all %>% mutate(MT.TG2B = MT.TG2B * (E2E.TG2B / E2E.TG2B.Sum)) %>% mutate(UT.TG2B = UT.TG2B * (E2E.TG2B / E2E.TG2B.Sum)) %>% mutate(RT.TG2B = RT.TG2B * (E2E.TG2B / E2E.TG2B.Sum)) 
 
 cat("------------------------END TO END STATS-----------------------")
 
 cat("Average and Std Dev End to End Runtime for Test Group 1:\n")
 mean(all$E2E.TG1)
 sd(all$E2E.TG1)
-
-cat("TTest between test groups 2a and 3:\n")
-t.test(all$E2E.TG3, all$E2E.TG2A)
-
-cat("Ttest between test groups 2b and 3:\n")
-t.test(all$E2E.TG3, all$E2E.TG2B)
-
-cat("Ttest between test groups 2a and 2b:\n")
-t.test(all$E2E.TG2A, all$E2E.TG2B)
-
 
 x <- data.frame(all$E2E.TG1, all$E2E.TG2A, all$E2E.TG2B,all$E2E.TG3)
 names(x) = c("Unpacked Tar Ball Workflow", "Original SquashFS Workflow (high level SquashFuse)", "Original SquashfS Workflow (low level SquashFuse)", "Proposed SquashFS Workflow")
@@ -57,16 +36,6 @@ ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="C
 
 cat("\n\n\n\n")
 cat("-------- MOUNT TIME STATS-----------------------------------------")
-
-cat("TTest between test groups 2a and 3:\n")
-t.test(all$MT.TG3, all$MT.TG2A)
-
-cat("Ttest between test groups 2b and 3:\n")
-t.test(all$MT.TG3, all$MT.TG2B)
-
-cat("Ttest between test groups 2a and 2b:\n")
-t.test(all$MT.TG2A, all$MT.TG2B)
-
 
 
 x <- data.frame(all$MT.TG2A, all$MT.TG2B, all$MT.TG3)
@@ -80,18 +49,6 @@ ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="C
 cat("\n\n\n\n")
 cat("-------- RUN TIME STATS-----------------------------------------")
 
-cat("TTest between test groups 2a and 3:\n")
-t.test(all$RT.TG3, all$RT.TG2A)
-
-cat("Ttest between test groups 2b and 3:\n")
-t.test(all$RT.TG3, all$RT.TG2B)
-
-cat("Ttest between test groups 2a and 2b:\n")
-t.test(all$RT.TG2A, all$RT.TG2B)
-
-
-
-
 x <- data.frame(all$RT.TG2A, all$RT.TG2B, all$RT.TG3)
 names(x) = c("Original SquashFS Workflow (high level SquashFuse)", "Original SquashfS Workflow (low level SquashFuse)", "Proposed SquashFS Workflow")
 
@@ -104,17 +61,9 @@ ggplot(df, aes(x=variable, y=value, fill=variable)) + geom_boxplot() + labs(x="C
 cat("\n\n\n\n")
 cat("-------- UNMOUNT TIME STATS-----------------------------------------")
 
-cat("TTest between test groups 2a and 3:\n")
-t.test(all$UT.TG3, all$UT.TG2A)
-
-cat("Ttest between test groups 2b and 3:\n")
-t.test(all$UT.TG3, all$UT.TG2B)
-
-cat("Ttest between test groups 2a and 2b:\n")
-t.test(all$UT.TG2A, all$UT.TG2B)
 
 
-
+x <- data.frame(all$UT.TG2A, all$UT.TG2B, all$UT.TG3)
 names(x) = c( "Original SquashFS Workflow (high level SquashFuse)", "Original SquashfS Workflow (low level SquashFuse)", "Proposed SquashFS Workflow")
 
 df <- melt(x)
