@@ -1,5 +1,6 @@
 #!%PYTHON_SHEBANG%
 
+import abc
 import argparse
 import ast
 import atexit
@@ -160,6 +161,18 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
    if (cli.parse_only):
       sys.exit(0)
 
+   # Guess whether the context is a URL, and error out if so. This can be a
+   # typical looking URL e.g. "https://..." or also something like
+   # "git@github.com:...". The line noise in the second line of the regex is
+   # to match this second form. Username and host characters from
+   # https://tools.ietf.org/html/rfc3986.
+   if (re.search(r"""  ^((git|git+ssh|http|https|ssh)://
+                     | ^[\w.~%!$&'\(\)\*\+,;=-]+@[\w.~%!$&'\(\)\*\+,;=-]+:)""",
+                 cli.context, re.VERBOSE) is not None):
+      ch.FATAL("not yet supported: issue #773: URL context: %s" % cli.context)
+   if (os.path.exists(cli.context + "/.dockerignore")):
+      ch.WARNING("not yet supported, ignored: issue #777: .dockerignore file")
+
    # We do not actually care whether the tree is traversed breadth-first or
    # depth-first, but we *do* care that the nodes are visited in order.
    # Neither visit() nor visit_topdown() are documented as of 2020-06-11 [1],
@@ -197,52 +210,168 @@ class Main_Loop(lark.Visitor):
       class_ = "I_" + tree.data
       if (class_ in globals()):
          inst = globals()[class_](tree)
-         ch.INFO(inst)
+         inst.announce()
          if (self.instruction_ct == 0):
-            if (isinstance(inst, I_from_)):
+            if (   isinstance(inst, I_directive)
+                or isinstance(inst, I_from_)):
                pass
             elif (isinstance(inst, Arg)):
                ch.WARNING("ARG before FROM not yet supported; see issue #779")
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          inst.execute()
-         self.instruction_ct += 1
+         self.instruction_ct += inst.execute_increment
 
 
 ## Instruction classes ##
 
-class Instruction(object):
+class Instruction(abc.ABC):
+
+   execute_increment = 1
 
    def __init__(self, tree):
       self.lineno = tree.meta.line
+      self.options = {}
+      for st in ch.tree_children(tree, "option"):
+         k = ch.tree_terminal(st, "OPTION_KEY")
+         v = ch.tree_terminal(st, "OPTION_VALUE")
+         if (k in self.options):
+            ch.FATAL("%3d %s: repeated option --%s"
+                     % (self.lineno, self.str_name(), k))
+         self.options[k] = v
       self.tree = tree
 
    def __str__(self):
-      return ("%3s %s %s"
-              % (self.lineno, self.__class__.__name__.split("_")[1].upper(),
-                 self.str_()))
+      options = self.str_options()
+      if (options != ""):
+         options = " " + options
+      return ("%3s %s%s %s"
+              % (self.lineno, self.str_name(), options, self.str_()))
+
+   def announce(self):
+      ch.INFO(self)
 
    def execute(self):
       if (not cli.dry_run):
          self.execute_()
 
+   @abc.abstractmethod
+   def execute_(self):
+      ...
+
+   def options_assert_empty(self):
+      try:
+         k = next(iter(self.options.keys()))
+         ch.FATAL("%s: invalid option --%s" % (self.str_name(), k))
+      except StopIteration:
+         pass
+
+   @abc.abstractmethod
+   def str_(self):
+      ...
+
+   def str_name(self):
+      return self.__class__.__name__.split("_")[1].upper()
+
+   def str_options(self):
+      return " ".join("--%s=%s" % (k,v) for (k,v) in self.options.items())
+
+   def unsupported_forever_warn(self, msg):
+      ch.WARNING("not supported, ignored: %s %s" % (self.str_name(), msg))
+
+   def unsupported_yet_warn(self, msg, issue_no):
+      ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
+                 % (issue_no, self.str_name(), msg))
+
+   def unsupported_yet_fatal(self, msg, issue_no):
+      ch.FATAL("not yet supported: issue #%d: %s %s"
+               % (issue_no, self.str_name(), msg))
+
+
+class Instruction_Supported_Never(Instruction):
+
+   execute_increment = 0
+
+   def announce(self):
+      self.unsupported_forever_warn("instruction")
+
+   def str_(self):
+      return "(unsupported)"
+
    def execute_(self):
       pass
 
+
+class Arg(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = ch.tree_terminal(self.tree, "WORD", 0)
+      if (self.key in cli.build_arg):
+         self.value = cli.build_arg[self.key]
+         del cli.build_arg[self.key]
+      else:
+         self.value = self.value_default()
+      if (self.value is not None):
+         self.value = variables_sub(self.value, env.env_build)
+
    def str_(self):
-      return "(unimplemented)"
+      if (self.value is None):
+         return self.key
+      else:
+         return "%s='%s'" % (self.key, self.value)
+
+   def execute_(self):
+      if (self.value is not None):
+         env.arg[self.key] = self.value
 
 
-class I_cmd(Instruction):
-   pass
+class I_arg_bare(Arg):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+
+   def value_default(self):
+      return None
 
 
-class Copy(Instruction):
+class I_arg_equals(Arg):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+
+   def value_default(self):
+      v = ch.tree_terminal(self.tree, "WORD", 1)
+      if (v is None):
+         v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
+      return v
+
+
+class I_copy(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      if (ch.tree_child(self.tree, "copy_shell") is not None):
+         paths = [variables_sub(i, env.env_build)
+                  for i in ch.tree_child_terminals(self.tree, "copy_shell",
+                                                   "WORD")]
+         self.srcs = paths[:-1]
+         self.dst = paths[-1]
+      else:
+         assert (ch.tree_child(self.tree, "copy_list") is not None)
+         self.unsupported_yet_fatal("list form", 784)
 
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
 
    def execute_(self):
+      # Complain about unsupported stuff.
+      if (self.options.pop("chown", False)):
+         self.unsupported_forever_warn("--chown")
+      if (self.options.pop("from", False)):
+         self.unsupported_yet_fatal("--from", 768)
+      # Any remaining options are invalid.
+      self.options_assert_empty()
       # The Dockerfile specification for COPY is complex, messy, inexplicably
       # different from cp(1), and incomplete. We try to be bug-compatible with
       # Docker but probably are not 100%. See the FAQ.
@@ -307,56 +436,15 @@ class Copy(Instruction):
          else:
             ch.FATAL("can't COPY unknown file type: %s" % src)
 
-class I_copy_shell(Copy):
 
-   def __init__(self, *args):
-      super().__init__(*args)
-      paths = [variables_sub(i, env.env_build)
-               for i in ch.tree_terminals(self.tree, "WORD")]
-      self.srcs = paths[:-1]
-      self.dst = paths[-1]
-
-class Arg(Instruction):
-
-   def __init__(self, *args):
-      super().__init__(*args)
-      self.key = ch.tree_terminal(self.tree, "WORD", 0)
-      if (self.key in cli.build_arg):
-         self.value = cli.build_arg[self.key]
-         del cli.build_arg[self.key]
-      else:
-         self.value = self.value_default()
-      if (self.value is not None):
-         self.value = variables_sub(self.value, env.env_build)
-
-   def str_(self):
-      if (self.value is None):
-         return self.key
-      else:
-         return "%s='%s'" % (self.key, self.value)
-
-   def execute_(self):
-      if (self.value is not None):
-         env.arg[self.key] = self.value
-
-class I_arg_bare(Arg):
+class I_directive(Instruction_Supported_Never):
 
    def __init__(self, *args):
       super().__init__(*args)
 
-   def value_default(self):
-      return None
+   def announce(self):
+      ch.WARNING("not supported, ignored: parser directives")
 
-class I_arg_equals(Arg):
-
-   def __init__(self, *args):
-      super().__init__(*args)
-
-   def value_default(self):
-      v = ch.tree_terminal(self.tree, "WORD", 1)
-      if (v is None):
-         v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
-      return v
 
 class Env(Instruction):
 
@@ -404,6 +492,12 @@ class I_from_(Instruction):
                                           "IR_PATH_COMPONENT")
 
    def execute_(self):
+      # Complain about unsupported stuff.
+      if (self.options.pop("platform", False)):
+         self.unsupported_yet_fatal("--platform", 778)
+      # Any remaining options are invalid.
+      self.options_assert_empty()
+      # Other error checking.
       if (str(image.ref) == str(self.base_ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       if (not os.path.isdir(self.base_image.unpack_path)):
@@ -460,8 +554,45 @@ class I_workdir(Instruction):
       return self.path
 
    def execute_(self):
-      ch.mkdirs(image.unpack_path + "/" + self.path)
       env.chdir(self.path)
+      ch.mkdirs(image.unpack_path + env.workdir)
+
+
+class I_uns_forever(Instruction_Supported_Never):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.name = ch.tree_terminal(self.tree, "UNS_FOREVER")
+
+   def str_name(self):
+      return self.name
+
+
+class I_uns_yet(Instruction):
+
+   execute_increment = 0
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.name = ch.tree_terminal(self.tree, "UNS_YET")
+      self.issue_no = { "ADD":         782,
+                        "CMD":         780,
+                        "ENTRYPOINT":  780,
+                        "LABEL":       781,
+                        "ONBUILD":     788,
+                        "SHELL":       789 }[self.name]
+
+   def announce(self):
+      self.unsupported_yet_warn("instruction", self.issue_no)
+
+   def str_(self):
+      return "(unsupported)"
+
+   def str_name(self):
+      return self.name
+
+   def execute_(self):
+      pass
 
 
 ## Supporting classes ##
@@ -503,7 +634,10 @@ def variables_sub(s, variables):
    # not set. We ignore those subsitutions. This is probably wrong (the shell
    # substitutes the empty string).
    for (k, v) in variables.items():
-      #ch.DEBUG("s: %s, k: %s, v: %s" % (s, k, v))
+      # FIXME: remove when issue #774 is fixed
+      m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
+      if (m is not None):
+         ch.FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
       s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
    return s
 

@@ -44,6 +44,10 @@ install:            %(install)s
 rpmbuild root:      %(rpmbuild)s
 """ % args.__dict__)
 
+   # Use the generic base locale, rather than whatever the user has set, as
+   # that's the only one guaranteed to be installed in the containers.
+   os.environ["LC_ALL"] = "C"
+
    # What's the real Git version?
    if (args.version == "HEAD"):
       try:

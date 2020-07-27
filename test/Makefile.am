@@ -2,6 +2,7 @@ testdir = $(pkglibexecdir)/test
 
 # These test files require no special handling.
 testfiles = \
+.dockerignore \
 Dockerfile.00_tiny \
 Dockerfile.argenv \
 Dockerfile.build2dir \
@@ -11,6 +12,7 @@ build/50_dockerfile.bats \
 build/50_misc.bats \
 build/99_cleanup.bats \
 common.bash \
+fixtures/empty-file \
 make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
 make-auto.d/builder_to_archive.bats.in \

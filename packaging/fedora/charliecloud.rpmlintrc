@@ -47,3 +47,9 @@ addFilter(r'devel-file-in-non-devel-package')
 
 # The symlink to /usr/bin is created and does exist.
 addFilter(r'dangling-relative-symlink')
+
+# Funky files used as test fixtures:
+addFilter(r'dangling-symlink')  # to /tmp
+addFilter(r'hidden-file-or-dir')         # .dockerignore
+addFilter(r'zero-length')                # for file copy test
+
