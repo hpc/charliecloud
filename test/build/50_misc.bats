@@ -7,7 +7,7 @@ load ../common
 
 @test 'ch-grow --list' {
     scope standard
-    [[ $CH_BUILDER = none ]] && skip 'no builder'
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
     run ch-grow --list
     echo "$output"
