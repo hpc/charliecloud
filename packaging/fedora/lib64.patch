@@ -185,18 +185,3 @@ diff -ur charliecloud/lib/base.sh charliecloud-lib/lib/base.sh
 
 
 Only in charliecloud/packaging/fedora: ch-test.lib.patch
-diff -ur charliecloud/test/build/10_sanity.bats
-charliecloud-lib/test/build/10_sanity.bats
---- charliecloud/test/build/10_sanity.bats    2020-04-16 13:25:13.341230859
--0600
-+++ charliecloud-lib/test/build/10_sanity.bats    2020-04-20 11:55:56.472877646
--0600
-@@ -20,7 +20,7 @@
-     echo "version: ${ch_version}"
-     [[ $(echo "$ch_version" | wc -l) -eq 1 ]]   # one line
-     [[ $ch_version =~ ^0\.[0-9]+(\.[0-9]+)? ]]  # starts with right numbers
--    diff -u <(echo "$ch_version") "${ch_base}/lib/charliecloud/version.txt"
-+    diff -u <(echo "$ch_version") "${ch_base}/lib64/charliecloud/version.txt"
- }
-
- @test 'executables seem sane' {
