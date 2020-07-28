@@ -13,6 +13,7 @@ TAR=$HOME/hello.tar.gz
 PROG=/bin/true
 EX=ex02
 TRIALS=1000
+NAME=$(basename "$SQFS" | (IFS='.' read n a && echo $n))
 
 ########## PROCESSING ##########################################
 
@@ -28,6 +29,7 @@ else
     EX=$1
     TRIALS=$2
     SQFS=$3
+    NAME=$(basename "$SQFS" | (IFS='.' read n a && echo $n))
     echo "defaults have been updated: Identifier is now "$EX", trials is now "$TRIALS",
     sqfs is now "$SQFS""
 fi
@@ -45,12 +47,12 @@ for i in $(seq "$TRIALS")
 do
     #Suggested SquashfS High Level Workflow
     S_SFSH=$(date '+%s.%N')
-    $CHMOUNTHL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- $PROG && $CHUMOUNT /var/tmp/hello
+    $CHMOUNTHL $SQFS /var/tmp && $CHRUN /var/tmp/$NAME -- $PROG && $CHUMOUNT /var/tmp/$NAME
     E_SFSH=$(date '+%s.%N')
 
     #Suggested SquashFS Low Level Workflow
     S_SFSL=$(date '+%s.%N')
-    $CHMOUNTLL $SQFS /var/tmp && $CHRUN /var/tmp/hello -- $PROG && $CHUMOUNT /var/tmp/hello
+    $CHMOUNTLL $SQFS /var/tmp && $CHRUN /var/tmp/$NAME -- $PROG && $CHUMOUNT /var/tmp/$NAME
     E_SFSL=$(date '+%s.%N')
 
     #Proposed SquashFS High Level Workflow
@@ -61,7 +63,6 @@ do
     printf "$i, $S_SFSH,$E_SFSH,$S_SFSL,$E_SFSH,$S_PSFSH,$E_PSFSH\n" >> "$EX"-E2E.csv
 
 done
-
 
 ###################################################################
 # Broken Workflow (ex02.csv)                                      #
@@ -85,11 +86,11 @@ do
     E_SFSL_MT=$(date '+%s.%N')
 
     S_SFSL_RT=$(date '+%s.%N')
-    $CHRUN /var/tmp/hello -- $PROG
+    $CHRUN /var/tmp/$NAME -- $PROG
     E_SFSL_RT=$(date '+%s.%N')
 
     S_SFSL_UT=$(date '+%s.%N')
-    $CHUMOUNT /var/tmp/hello
+    $CHUMOUNT /var/tmp/$NAME
     E_SFSL_UT=$(date '+%s.%N')
 
 
@@ -99,11 +100,11 @@ do
     E_SFSH_MT=$(date '+%s.%N')
 
     S_SFSH_RT=$(date '+%s.%N')
-    $CHRUN /var/tmp/hello -- $PROG
+    $CHRUN /var/tmp/$NAME -- $PROG
     E_SFSH_RT=$(date '+%s.%N')
 
     S_SFSH_UT=$(date '+%s.%N')
-    $CHUMOUNT /var/tmp/hello
+    $CHUMOUNT /var/tmp/$NAME
     E_SFSH_UT=$(date '+%s.%N')
 
     #Proposed SquashFS High Level Workflow
@@ -124,7 +125,7 @@ do
 
     #Tar Ball Workflow (Just Runtime)
     S_TB_RT=$(date '+%s.%N')    
-    $CHRUN /var/tmp/bois/hello -- $PROG
+    $CHRUN /var/tmp/bois/$NAME -- $PROG
     E_TB_RT=$(date '+%s.%N')
 
     printf "$i, $S_SFSH_MT, $E_SFSH_MT, $S_SFSL_MT, $E_SFSL_MT,$S_PSFSH_MT, $E_PSFSH_MT\n" >> "$EX"-MT.csv
@@ -133,6 +134,6 @@ do
 
 done 
 
-rm -rf --one-file-system /var/tmp/bois/hello
+rm -rf --one-file-system /var/tmp/bois/$NAME
 rm out.txt
 

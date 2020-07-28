@@ -1,11 +1,13 @@
 #!/bin/bash
 
 
-while IFS=, read -r bytes file
+f=$(tail -n +2 ex01-files.csv)
+while IFS=, read -r i bytes file
 
 do
 
-./ex02.sh ex01-"$bytes" 30 $file
+ID="ex01-"$i""
+./ex02.sh "$ID" 2 "$file"
 
-done < ex01-files.csv
+done <<< "$f"
 
