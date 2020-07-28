@@ -6,6 +6,5 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=chernikov@lanl.gov
 
-mkdir $(date) && cd $(date)
 
-../ex02.sh
+./ex02.sh

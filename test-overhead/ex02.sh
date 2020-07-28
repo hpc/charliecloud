@@ -58,7 +58,7 @@ do
     $CHRUN $SQFS -- $PROG
     E_PSFSH=$(date '+%s.%N')
 
-    printf "$i, $S_SFSH,$E_SFSH,$S_SFSL,$E_SFSH,$S_PSFSH,$E_PSFSH\n" >> "$EX"-E2E.csv
+    printf "$i, $S_SFSH,$E_SFSH,$S_SFSL,$E_SFSL,$S_PSFSH,$E_PSFSH\n" >> "$EX"-E2E.csv
 
 done
 
@@ -118,8 +118,8 @@ do
     E_PSFSH_MT=$(cat out.txt | grep -w "mount" | awk '{printf $1}')
     S_PSFSH_RT=$E_PSFSH_MT
     E_PSFSH_RT=$(cat out.txt | grep -F "run" | awk '{printf $1}')
-    S_PSFSH_UT=$E_PSFSH_UT
-    E_PSFSH_UT=$(cat out.txt | grep -m2 "unmount" | tail -n1 |  awk '{printf $1}')
+    S_PSFSH_UT=$E_PSFSH_RT
+    E_PSFSH_UT=$(cat out.txt | grep -w "unmount" | awk '{printf $1}')
 
 
     #Tar Ball Workflow (Just Runtime)
@@ -135,4 +135,6 @@ done
 
 rm -rf --one-file-system /var/tmp/bois/hello
 rm out.txt
+
+
 
