@@ -5,12 +5,14 @@ import argparse
 import ast
 import atexit
 import glob
+import hashlib
 import inspect
 import os
 import os.path
 import pathlib
 import re
 import shutil
+import subprocess
 import sys
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
@@ -34,7 +36,6 @@ image = None
 
 # See charliecloud.py for the messy import of this.
 lark = ch.lark
-
 
 ## Constants ##
 
@@ -85,7 +86,7 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
    ap.add_argument("-n", "--dry-run", action="store_true",
                    help="don't execute instructions")
    ap.add_argument("--no-cache", action="store_true",
-                   help="ignored (layer caching not yet supported)")
+                   help="Turn off layer caching")
    ap.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    ap.add_argument("--print-storage", action=CLI_Print_Storage,
@@ -199,6 +200,68 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
       ch.FATAL("no instructions found: %s" % cli.file)
    ch.INFO("done; %d instructions executed" % ml.instruction_ct)
 
+## Git Wrap Class ##
+
+class Cache():
+    def __init__(self):
+        self.prev_hash = None
+        self.valid = True
+        self.cache_path = ch.storage_env() + '/' + 'cache'
+        self.image_path = None
+
+        ch.DEBUG("ensuring directory: " + self.cache_path)
+        os.makedirs(self.cache_path, exist_ok=True)
+
+        # Returns 0 if a git directory or nonzero otherwise
+        # Tried to avoid git plumbing commands, but there was no other 
+        # elengant option here
+        initialized = subprocess.call(['git', 'rev-parse'], cwd=self.cache_path)
+
+        if initialized != 0:
+            ch.INFO("Initializing git repo at %s" % self.cache_path)
+            subprocess.call(['git', 'init'], cwd=self.cache_path) 
+
+    def invalidate(self):
+        ch.INFO("Cache has been invalidated")
+        self.valid = False
+
+    # Check if a cache exists for a base image
+    def exists(self, base_hash):
+        ret = subprocess.call(['git', 'show-ref', '--verify', '--quiet', 
+            f'refs/heads/{base_hash}'], cwd=self.cache_path) == 0
+
+    # Creates a new branch for a new base image
+    def add_base(self, base_hash, path):
+        ch.INFO("Creating branch %s" % base_hash)
+        subprocess.call(['git', 'checkout', '-b', f'{base_hash}'], 
+                cwd=self.cache_path)
+        # Set the path to the image
+        self.image_path = ch.storage_env() + '/img/' + path
+        ch.INFO("Image path is %s" % self.image_path)
+        self.prev_hash = str(base_hash)
+
+    # Add a layer to the cache
+    def add_layer(self, layer_hash, inst):
+        ch.INFO("Adding new layer with instruction: %s" % inst)
+        subprocess.call(['git', '--work-tree=/', 'add', self.image_path], 
+                cwd=self.cache_path)
+        # Commit
+        subprocess.check_output(['git', 'commit', '-m', layer_hash], 
+                cwd=self.cache_path)
+
+
+    # Check if an instruction is in the cache
+    def in_cache(self, layer_hash):
+        # Create a list of commit headers
+        #commits = subprocess.check_output(['git', 'log', '--oneline']).decode('utf-8').splitlines()
+        commit = subprocess.check_output(f"git log --oneline --grep='{layer_hash}'", shell=True).decode('utf-8')
+        return commit
+
+    def get_layer(self, layer_hash):
+        subprocess.call(['git', 'cherry-pick', layer_hash])
+
+
+cache = Cache()
 
 class Main_Loop(lark.Visitor):
 
@@ -253,7 +316,44 @@ class Instruction(abc.ABC):
 
    def execute(self):
       if (not cli.dry_run):
-         self.execute_()
+         if isinstance(self, I_from_):
+            # The pull itself is already cached 
+            self.execute_()
+            metadata = str(self.base_image.metadata).encode('utf-8')
+            base_name = str(self.base_ref).encode('utf-8')
+            base_hash = hashlib.sha256(metadata + base_name).hexdigest()
+
+            # Check if there's already a cache
+            if cache.exists(base_hash) == False:
+               cache.add_base(base_hash, self.base_image.image_subdir)
+               ch.INFO("No cache found for %s" % base_hash)
+               cache.invalidate()
+            else:
+                ch.INFO("Found cache for %s" % base_hash)
+                cache.prev_hash = str(base_hash)
+         elif isinstance(self, I_copy): 
+            # For now just invalidate if we have a copy
+            # Eventually, we might want to do a more intelligent check
+            if cache.valid:
+                cache.invalidate()
+            self.execute_()
+            layer_hash = hashlib.sha256(cache.prev_hash + str(self)).hexdigest()
+            cache.add_layer(layer_hash, str(self))
+         elif isinstance(self, (I_arg_bare, I_arg_equals, I_env_equals, 
+             I_env_space)):
+             cache.invalidate()
+         else:
+            if cache.valid:
+               inst = str(self).encode('utf-8')
+               layer_hash = hashlib.sha256(str(cache.prev_hash).encode('utf-8') + inst).hexdigest()
+               if cache.in_cache(layer_hash):
+                  cache.get_layer(layer_hash, path)
+               else:
+                  cache.invalidate()
+                  cache.add_layer(layer_hash, str(self))
+            else:
+               layer_hash = hashlib.sha256(str(self).encode('utf-8')).hexdigest()
+               cache.add_layer(layer_hash, str(self))
 
    @abc.abstractmethod
    def execute_(self):

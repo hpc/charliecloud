@@ -173,13 +173,16 @@ class Image:
 
         image_subdir .... Subdirectory of unpack_dir to put unpacked image in.
                           If None, infer from id; if the empty string,
-                          unpack_dir will be used directly."""
+                          unpack_dir will be used directly.
+
+        metadata ........ The sha256 digest for the contianer"""
 
    __slots__ = ("ref",
                 "download_cache",
                 "image_subdir",
                 "layer_hashes",
-                "unpack_dir")
+                "unpack_dir", 
+                "metadata")
 
    def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
       assert isinstance(ref, Image_Ref)
@@ -191,6 +194,7 @@ class Image:
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
+      self.metadata = None
 
    def __str__(self):
       return str(self.ref)
@@ -230,6 +234,12 @@ class Image:
       else:
          INFO("manifest: downloading")
          dl.get_manifest(self.manifest_path)
+      with open(self.manifest_path) as manifest:
+          data = json.load(manifest)
+          self.metadata = data['layers'][0]['digest'][len('sha256:'):] 
+          print(self.metadata)
+          print("OOOOOF")
+
       # layers
       self.layer_hashes_load()
       for (i, lh) in enumerate(self.layer_hashes, start=1):
