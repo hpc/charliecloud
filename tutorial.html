@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.16 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.17 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.16
+                0.17
               </div>
             
           
@@ -308,9 +308,9 @@ supported.</p>
 <span class="c"># Unable to convert to a CentOS base until issues #472 and #498 are resolved</span>
 <span class="k">FROM</span> <span class="s">debian:stretch</span>
 
-<span class="k">RUN</span>    apt-get update <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> apt-get install -y openssh-client <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
+<span class="k">RUN</span> apt-get update <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends openssh-client <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
 
 <span class="k">COPY</span> . hello
 
@@ -769,9 +769,9 @@ The <code class="code docutils literal notranslate"><span class="pre">examples/h
 package <code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">debian:stretch</span>
 
-<span class="k">RUN</span>    apt-get update <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> apt-get install -y openssh-client <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
+<span class="k">RUN</span> apt-get update <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends openssh-client <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
 </pre></div>
 </div>
 <p>You can use distribution package managers such as <code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, as
@@ -790,8 +790,6 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 <span class="c"># This image has two purposes: (1) demonstrate we can build a CentOS 8 image</span>
 <span class="c"># and (2) provide avbuild environment for Charliecloud EPEL 8 RPMs.</span>
 
-<span class="k">RUN</span> dnf -y install epel-release
-
 <span class="c"># Re. ch-grow: Like apt(8), dnf/RPM like to chown(2), etc., if they believe they</span>
 <span class="c"># are root. This fails in an unprivileged user namespace because UID 0 is fake.</span>
 <span class="c"># Unlike apt, RPM makes these system calls directly, so there&#39;s no opportunity</span>
@@ -808,8 +806,6 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 <span class="c"># impact. In the interest of time, we demonstrate this by installing the</span>
 <span class="c"># openssh package, required by git, which reliably tickles the problem.</span>
 <span class="c"># See issue #472.</span>
-<span class="k">RUN</span>          dnf -y install fakeroot
-<span class="k">RUN</span> fakeroot dnf -y install openssh
 
 <span class="c"># 1. Install the dnf ovl plugin to work around RPMDB corruption when building</span>
 <span class="c">#    images with Docker and the OverlayFS storage driver.</span>
@@ -817,33 +813,34 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 <span class="c"># 2. Enable PowerTools repository, as some packages in EPEL depend on it. Use</span>
 <span class="c">#    sed(1) because we don&#39;t want to install `dnf-plugins-core` just for this.</span>
 <span class="c">#</span>
-<span class="k">RUN</span>    dnf -y update <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> dnf -y install --enablerepo<span class="o">=</span>epel-playground dnf-plugin-ovl <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> sed -ie <span class="s1">&#39;s/enabled=0/enabled=1/&#39;</span> /etc/yum.repos.d/CentOS-PowerTools.repo
+<span class="c"># 3. Install packages needed to build el8 rpms.</span>
+<span class="c">#</span>
+<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> epel-release <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> sed -ie <span class="s1">&#39;s/enabled=0/enabled=1/&#39;</span> /etc/yum.repos.d/CentOS-PowerTools.repo <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> --enablerepo<span class="o">=</span>epel-playground <span class="se">\</span>
+                dnf-plugin-ovl <span class="se">\</span>
+                autoconf <span class="se">\</span>
+                automake <span class="se">\</span>
+                gcc <span class="se">\</span>
+                make <span class="se">\</span>
+                python3 <span class="se">\</span>
+                python3-sphinx <span class="se">\</span>
+                python3-sphinx_rtd_theme <span class="se">\</span>
+                rpm-build <span class="se">\</span>
+                rpmlint <span class="se">\</span>
+                rsync <span class="se">\</span>
+                wget <span class="se">\</span>
+                fakeroot <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> fakeroot dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
+                         git <span class="se">\</span>
+                         openssh <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf clean all
 
 <span class="c"># CentOS&#39;s linker doesn&#39;t search these paths by default; add them because we</span>
 <span class="c"># will install stuff later into /usr/local.</span>
-<span class="k">RUN</span>    <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib&quot;</span> &gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib64&quot;</span> &gt;&gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> ldconfig
-
-<span class="c"># Install packages needed to build el8 rpms.</span>
-<span class="k">RUN</span> yum -y install <span class="se">\</span>
-           autoconf <span class="se">\</span>
-           automake <span class="se">\</span>
-           gcc <span class="se">\</span>
-           git <span class="se">\</span>
-           make <span class="se">\</span>
-           python3 <span class="se">\</span>
-           python3-sphinx <span class="se">\</span>
-           python3-sphinx_rtd_theme <span class="se">\</span>
-           rpm-build <span class="se">\</span>
-           rpmlint <span class="se">\</span>
-           rsync <span class="se">\</span>
-           wget
-
-<span class="c"># Clean up.</span>
-<span class="k">RUN</span> dnf clean all
+<span class="k">RUN</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib&quot;</span> &gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib64&quot;</span> &gt;&gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> ldconfig
 </pre></div>
 </div>
 <p>Then, we add OpenMPI with <code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.openmpi</span></code>. This is a complex
@@ -912,83 +909,82 @@ useful to show a real example.</p>
 <span class="c">#</span>
 <span class="c"># As of 2019-10-07, CentOS 8 provides version 22.2 of libibverbs. This is</span>
 <span class="c"># quite new but works for our test systems.</span>
+<span class="c"># Note that libpsm2 is x86-64 only so we skip if missing</span>
 <span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
-    automake <span class="se">\</span>
-    file <span class="se">\</span>
-    flex <span class="se">\</span>
-    gcc <span class="se">\</span>
-    gcc-c++ <span class="se">\</span>
-    gcc-gfortran <span class="se">\</span>
-    git <span class="se">\</span>
-    ibacm <span class="se">\</span>
-    libevent-devel <span class="se">\</span>
-    libtool <span class="se">\</span>
-    libibumad <span class="se">\</span>
-    libibumad-devel <span class="se">\</span>
-    libibverbs <span class="se">\</span>
-    libibverbs-devel <span class="se">\</span>
-    libibverbs-utils <span class="se">\</span>
-    librdmacm <span class="se">\</span>
-    librdmacm-devel <span class="se">\</span>
-    rdma-core <span class="se">\</span>
-    make <span class="se">\</span>
-    numactl-devel <span class="se">\</span>
-    wget
+                automake <span class="se">\</span>
+                file <span class="se">\</span>
+                flex <span class="se">\</span>
+                gcc <span class="se">\</span>
+                gcc-c++ <span class="se">\</span>
+                gcc-gfortran <span class="se">\</span>
+                git <span class="se">\</span>
+                ibacm <span class="se">\</span>
+                libevent-devel <span class="se">\</span>
+                libtool <span class="se">\</span>
+                libibumad <span class="se">\</span>
+                libibumad-devel <span class="se">\</span>
+                libibverbs <span class="se">\</span>
+                libibverbs-devel <span class="se">\</span>
+                libibverbs-utils <span class="se">\</span>
+                librdmacm <span class="se">\</span>
+                librdmacm-devel <span class="se">\</span>
+                rdma-core <span class="se">\</span>
+                make <span class="se">\</span>
+                numactl-devel <span class="se">\</span>
+                wget <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> --skip-broken <span class="se">\</span>
+                libpsm2 <span class="se">\</span>
+                libpsm2-devel <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf clean all
 
 <span class="k">WORKDIR</span><span class="s"> /usr/local/src</span>
 
-<span class="c"># Note that libpsm2 is x86-64 only</span>
-<span class="k">RUN</span> <span class="k">if</span> <span class="o">[</span> <span class="s2">&quot;</span><span class="k">$(</span>uname -i<span class="k">)</span><span class="s2">&quot;</span> <span class="o">=</span> <span class="s2">&quot;x86_64&quot;</span> <span class="o">]</span> <span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
-      dnf install -y libpsm2 libpsm2-devel <span class="p">;</span> <span class="se">\</span>
-    <span class="k">fi</span>
-
-<span class="c"># UCX. There is stuff to build Debian packages, but it seems not too polished.</span>
-<span class="k">ENV</span> UCX_VERSION <span class="m">1</span>.6.1
+<span class="c"># UCX. There is a package for CentOS 8 but it is old, so build from source.</span>
+<span class="k">ARG</span> <span class="nv">UCX_VERSION</span><span class="o">=</span><span class="m">1</span>.6.1
 <span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
-              https://github.com/openucx/ucx.git
-<span class="k">RUN</span>    <span class="nb">cd</span> ucx <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> ./contrib/configure-release-mt --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
-<span class="k">RUN</span> rm -Rf ucx*
+              https://github.com/openucx/ucx.git <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ucx <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> ./contrib/configure-release-mt --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> rm -Rf ../ucx*
 
 <span class="c"># PMI2.</span>
 <span class="c">#</span>
 <span class="c"># CentOS doesn&#39;t have a package with the Slurm PMI2 libraries we need, so</span>
 <span class="c"># build them from Slurm&#39;s release.</span>
-<span class="k">ENV</span> SLURM_VERSION <span class="m">19</span>-05-3-2
-<span class="k">RUN</span> wget https://github.com/SchedMD/slurm/archive/slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz
-<span class="k">RUN</span> tar -xf slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz
-<span class="k">RUN</span> <span class="nb">cd</span> slurm-slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span> <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> <span class="nb">cd</span> contribs/pmi2 <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
-<span class="k">RUN</span> rm -Rf slurm*
+<span class="k">ARG</span> <span class="nv">SLURM_VERSION</span><span class="o">=</span><span class="m">19</span>-05-3-2
+<span class="k">RUN</span> wget https://github.com/SchedMD/slurm/archive/slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> tar -xf slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">cd</span> slurm-slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span> <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">cd</span> contribs/pmi2 <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> rm -Rf ../../../slurm*
 
 <span class="c"># OpenMPI.</span>
 <span class="c">#</span>
 <span class="c"># Patch OpenMPI to disable UCX plugin on systems with Intel or Cray HSNs. UCX</span>
 <span class="c"># has inferior performance than PSM2/uGNI but higher priority.</span>
-<span class="k">ENV</span> MPI_URL https://www.open-mpi.org/software/ompi/v3.1/downloads
-<span class="k">ENV</span> MPI_VERSION <span class="m">3</span>.1.5
-<span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
-<span class="k">RUN</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
+<span class="k">ARG</span> <span class="nv">MPI_URL</span><span class="o">=</span>https://www.open-mpi.org/software/ompi/v3.1/downloads
+<span class="k">ARG</span> <span class="nv">MPI_VERSION</span><span class="o">=</span><span class="m">3</span>.1.5
+<span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">COPY</span> dont-init-ucx-on-intel-cray.patch ./openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>
-<span class="k">RUN</span> <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="o">&amp;&amp;</span> git apply dont-init-ucx-on-intel-cray.patch
-<span class="k">RUN</span>    <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-       <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-       ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
-                   --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
-                   --with-slurm <span class="se">\</span>
-                   --with-pmi<span class="o">=</span>/usr/local <span class="se">\</span>
-                   --with-pmix <span class="se">\</span>
-                   --with-ucx <span class="se">\</span>
-                   --disable-pty-support <span class="se">\</span>
-                   --enable-mca-no-build<span class="o">=</span>btl-openib,plm-slurm <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install
+<span class="k">RUN</span> <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="o">&amp;&amp;</span> git apply dont-init-ucx-on-intel-cray.patch <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+    <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+    ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
+                --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
+                --with-slurm <span class="se">\</span>
+                --with-pmi<span class="o">=</span>/usr/local <span class="se">\</span>
+                --with-pmix <span class="se">\</span>
+                --with-ucx <span class="se">\</span>
+                --disable-pty-support <span class="se">\</span>
+                --enable-mca-no-build<span class="o">=</span>btl-openib,plm-slurm <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> rm -Rf ../openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
 <span class="k">RUN</span> ldconfig
-<span class="k">RUN</span> rm -Rf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
 
 <span class="c"># OpenMPI expects this program to exist, even if it&#39;s not used. Default is</span>
 <span class="c"># &quot;ssh : rsh&quot;, but that&#39;s not installed.</span>
