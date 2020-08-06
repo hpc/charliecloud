@@ -80,15 +80,18 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 /// Dockerfile ///
 
 // First instruction must be ARG or FROM, but that is not a syntax error.
-dockerfile: _NEWLINES? ( instruction | _COMMENT )*
+dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( cmd | copy | arg | env | from_ | run | workdir )
+?instruction: _WS? ( arg | copy | env | from_ | run | workdir | uns_forever | uns_yet )
 
-cmd: "CMD"i _WS LINE _NEWLINES
+directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
+DIRECTIVE_NAME: ( "escape" | "syntax" )
+comment: _WS? _COMMENT_BODY _NEWLINES
+_COMMENT_BODY: /#[^\n]*/
 
-copy: "COPY"i ( _WS copy_chown )? ( copy_shell ) _NEWLINES
-copy_chown: "--chown" "=" /[^ \t\n]+/
-copy_shell: _WS WORD ( _WS WORD )+
+copy: "COPY"i ( _WS option )* _WS ( copy_list | copy_shell ) _NEWLINES
+copy_list.2: _string_list
+copy_shell: WORD ( _WS WORD )+
 
 arg: "ARG"i _WS ( arg_bare | arg_equals ) _NEWLINES
 arg_bare: WORD
@@ -99,7 +102,7 @@ env_space: WORD _WS LINE
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i _WS image_ref [ _WS from_alias ] _NEWLINES
+from_: "FROM"i ( _WS option )* _WS image_ref [ _WS from_alias ] _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
@@ -108,7 +111,17 @@ run_shell: LINE
 
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 
+uns_forever: UNS_FOREVER _WS LINE _NEWLINES
+UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
+
+uns_yet: UNS_YET _WS LINE _NEWLINES
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i | "SHELL"i )
+
 /// Common ///
+
+option: "--" OPTION_KEY "=" OPTION_VALUE
+OPTION_KEY: /[a-z]+/
+OPTION_VALUE: /[^ \t\n]+/
 
 HEX_STRING: /[0-9A-Fa-f]+/
 LINE: ( LINE_CONTINUE | /[^\n]/ )+
@@ -119,7 +132,6 @@ _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 LINE_CONTINUE: "\\\n"
 %ignore LINE_CONTINUE
 
-_COMMENT: _WS? /#[^\n]*/ _NEWLINES
 _NEWLINES: _WS? "\n"+
 _WS: /[ \t]/+
 
@@ -846,10 +858,7 @@ def symlink(target, source):
 def tree_child(tree, cname):
    """Locate a descendant subtree named cname using breadth-first search and
       return it. If no such subtree exists, return None."""
-   for st in tree.iter_subtrees_topdown():
-      if (st.data == cname):
-         return st
-   return None
+   return next(tree_children(tree, cname), None)
 
 def tree_child_terminal(tree, cname, tname, i=0):
    """Locate a descendant subtree named cname using breadth-first search and
@@ -869,6 +878,12 @@ def tree_child_terminals(tree, cname, tname):
       if (d.data == cname):
          return tree_terminals(d, tname)
    return []
+
+def tree_children(tree, cname):
+   "Yield children of tree named cname using breadth-first search."
+   for st in tree.iter_subtrees_topdown():
+      if (st.data == cname):
+         yield st
 
 def tree_terminal(tree, tname, i=0):
    """Return the value of the ith child terminal named tname (zero-based), or
