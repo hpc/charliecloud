@@ -37,11 +37,6 @@
 
 /** Constants **/
 
-//for testing purposes
-struct timespec start, finish;
-struct timespec startU, finishU;
-
-
 
 /* Default bind-mounts. */
 struct bind BINDS_REQUIRED[] = {
@@ -325,14 +320,7 @@ void kill_fuse_loop()
       fuse_unmount(s->mountdir, s->ch);
       fuse_destroy(s->fuse);
       rmdir(s->mountdir);
-      fprintf(stderr,"unmount\n");
    }  
-      //FOR TESTING: CH-UMOUNT
-     //clock_gettime(CLOCK_MONOTONIC, &finishU);
-     //double timeU = finishU.tv_sec - startU.tv_sec;
-     //timeU += ((finishU.tv_nsec - startU.tv_nsec) / 1000000000.0);
-     //fflush(stdout);
-     //printf("unmount %f\n", timeU);
 }
 	
 /* Replace the current process with user command and arguments. */
@@ -358,19 +346,6 @@ void run_user_command(char *argv[], const char *initial_dir)
          Tf (0, "can't execve(2): %s", argv[0]);
       }
       wait(&status);
-      fprintf(stderr, "run\n");     
-      //FOR TESTING CH-RUN
-      //clock_gettime(CLOCK_MONOTONIC, &finish);
-      //double time = finish.tv_sec - start.tv_sec;
-      //time += ((finish.tv_nsec - start.tv_nsec) / 1000000000.0);
-      //fflush(stdout);
-      //printf("run %f \n", time);
-      
-      
-      //FOR TESTING CH-UMOUNT
-      //clock_gettime(CLOCK_MONOTONIC, &startU);
-      
-      kill(s->pid,SIGINT);
       _Exit(0);
       
    } else {	
@@ -535,14 +510,10 @@ int squashmount(struct squash *s)
    s->fuse = fuse_new(s->ch,&args, &sqfs_hl_ops, sizeof(sqfs_hl_ops), hl);
    Ze((s->fuse==NULL), "failed to create fuse session");
    Ze(0>fuse_set_signal_handlers(fuse_get_session(s->fuse)), "failed to set up signal handlers");
-   //signal(SIGINT, kill_fuse_loop);
    if((s->pid = fork()) == 0){
       ret = fuse_loop(s->fuse);
       exit(0);
    } else{
-      //FOR TESTING: CH-RUN
-      //clock_gettime(CLOCK_MONOTONIC, &start);
-      fprintf(stderr,"mount\n");
       return ret;
    }
 } 

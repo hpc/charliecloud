@@ -106,8 +106,6 @@ struct timespec start, finish;
 int main(int argc,char *argv[])
 {
    //FOR TESTING CH-MOUNT
-   //clock_gettime(CLOCK_MONOTONIC, &start);  
-   bool argp_help_fmt_set;
    int c_argc;
    char ** c_argv;
    
@@ -485,12 +483,6 @@ void goSquash(char *arg, char ** filepath)
    s=&sq;
    squashmount(&sq);
    
-   //FOR TESTING CH_MOUNT
-   //clock_gettime(CLOCK_MONOTONIC, &finish);
-   //double time = finish.tv_sec - start.tv_sec;
-   //time += ((finish.tv_nsec - start.tv_nsec) / 1000000000.0);
-   //printf("mount %f\n", time); 
-
 }
 
 /* Validate that the UIDs and GIDs are appropriate for program start, and
