@@ -346,6 +346,7 @@ void run_user_command(char *argv[], const char *initial_dir)
          Tf (0, "can't execve(2): %s", argv[0]);
       }
       wait(&status);
+      kill(s->pid,SIGINT);
       _Exit(0);
       
    } else {	
