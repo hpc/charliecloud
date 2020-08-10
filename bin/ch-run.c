@@ -15,7 +15,6 @@
 #include "ch_core.h"
 #include "ops.h"
 
-#include <time.h>
 /** Constants and macros **/
 
 /* Environment variables used by --join parameters. */
@@ -80,7 +79,6 @@ struct args {
    char *initial_dir;
 };
 
-struct squash sq;
 /** Function prototypes **/
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
@@ -98,12 +96,12 @@ void goSquash (char *arg, char ** filepath);
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
-struct args args;
-int arg_next;
-struct timespec start, finish;
+struct squash sq;
+
+
 /** Main **/
 
-int main(int argc,char *argv[])
+int main(int argc, char *argv[])
 {
    bool argp_help_fmt_set;
    struct args args;
@@ -117,7 +115,12 @@ int main(int argc,char *argv[])
 
    verbose = 1;  // in charliecloud.h
    
-   sq = (struct squash) {.filepath = NULL, .mountdir = NULL, .pid = 0, .ch = NULL, .fuse = NULL, .parentdir = "/var/tmp", };
+   sq = (struct squash) {.filepath = NULL,
+                         .mountdir = NULL,
+                         .pid = 0,
+                         .ch = NULL,
+                         .fuse = NULL,
+                         .parentdir = "/var/tmp" };
    args = (struct args){ .c = (struct container){ .ch_ssh = false,
                                                   .container_gid = getegid(),
                                                   .container_uid = geteuid(),
@@ -152,9 +155,7 @@ int main(int argc,char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   
-     args.c.newroot = realpath(argv[arg_next], NULL);
-   
+   args.c.newroot = realpath(argv[arg_next], NULL);
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
    arg_next++;
 

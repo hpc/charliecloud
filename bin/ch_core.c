@@ -56,6 +56,7 @@ struct bind BINDS_OPTIONAL[] = {
 
 /** Global variables **/
 struct squash *s;
+
 /* Variables for coordinating --join. */
 struct {
    bool winner_p;

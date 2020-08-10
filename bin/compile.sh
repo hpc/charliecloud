@@ -1,12 +1,18 @@
 #!/bin/bash
 
+#################################################################################
+# A quick compile script for Woodchuck cluster environment                      #
+#################################################################################
 
-gcc -c ch_misc.c -o ch_misc.o -D_FILE_OFFSET_BITS=64 -g -std=c99
+SQFUSE_HEADERS=$HOME/squashfuse/
+CPPFLAGS=" -I"$SQFUSE_HEADERS""
+CFLAGS="-std=c99 -D_FILE_OFFSET_BITS=64 -g"
+LIBS="-llzma -llzo2 -llz4 -lz -lfuse -lpthread -lrt"
+SQFUSE_LIBS=""$HOME"/squashfuse/.libs/libsquashfuse.a "$HOME"/squashfuse/.libs/libfuseprivate.a"
+gcc -c ch_misc.c -o ch_misc.o $CFLAGS
 
-gcc -c ch_core.c -I/users/chernikov/squashfuse/ -o ch_core.o -D_FILE_OFFSET_BITS=64 -g -std=c99
-#/users/chernikov/squashfuse/.libs/libsquashfuse.a /users/chernikov/squashfuse/.libs/libfuseprivate.a
+gcc -c ch_core.c $CPPFLAGS -o ch_core.o $CFLAGS
 
-gcc -c ch-run.c -I/users/chernikov/squashfuse/ -o ch-run.o -D_FILE_OFFSET_BITS=64 -g -std=c99
+gcc -c ch-run.c $CPPFLAGS -o ch-run.o $CFLAGS
 
-gcc ch-run.o -llzma -llzo2 -llz4 -lz -lfuse -lpthread -lrt -o ch-run ch_misc.o ch_core.o /users/chernikov/squashfuse/.libs/libsquashfuse.a /users/chernikov/squashfuse/.libs/libfuseprivate.a
-
+gcc ch-run.o $LIBS -o ch-run ch_misc.o ch_core.o $SQFUSE_LIBS

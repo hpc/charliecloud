@@ -5,7 +5,6 @@
 #define _GNU_SOURCE
 #include <stdbool.h>
 
-#include <time.h>
 /** Types **/
 
 struct bind {
