@@ -5,57 +5,89 @@
 #############################################################################
 
 NAME=hello2
-PATH=$HOME/chorkshop/hello2.sqfs
+SQPATH=$HOME/chorkshop/hello2.sqfs
+PROG=./hello.py
+
+RED='\033[0;31m'
+NC='\033[0m'
+GREEN='\033[0;32m'
 
 
+checkDirNotExist() {
+   if [ -d "$1" ]; then
+     printf "${RED} not met\n ${NC}"
+   else
+     printf "${GREEN} met\n ${NC}"
+   fi   
+}
 
-if ["$1" -eq ""]; then
-	echo "usage: ./test.sh <sqfs-filename>"
-	echo "assumes that you have a sqfs file with this path: ~/chorkshop/<sqfs-filename>.sqfs"
-	exit 1
-fi
 
-echo "CASE 1: No mount point specified, automount to /var/tmp, subdirectory /var/tmp/hello does not exist, mount does not exist"
+checkNoMount() {
+   if mount | grep "$1" > /dev/null; then
+     printf "${RED} not met\n ${NC}"
+   else
+     printf "${GREEN} met\n ${NC}"
+   fi
+}
 
-rm -rf /var/tmp/$1
-ls -l /var/tmp/$1
-mount | grep -F fuse
+checkSuccess() {
+    if [ $? != 0 ]; then
+        printf "${RED} FAIL\n ${NC}"
+    else
+        printf "${GREEN} SUCCESS\n ${NC}"
+    fi
+}
 
-echo "CMDLINE:./ch-run $HOME/chorkshop/hello.sqfs -- ./hello.py"
-./ch-run $HOME/chorkshop/$1.sqfs -- ./hello.py
+echo "CASE 1: automount to /var/tmp"
 
-echo "POST"
-ls -l /var/tmp/$1
-mount | grep -F fuse
+printf "PRECONDITIONS\n"
+printf "mount directory does not exist:"
+checkDirNotExist /var/tmp/$NAME
+printf "user mount does not exist:"
+checkNoMount $NAME
 
-echo "CLEANUP: none :)"
 
+printf "EXECUTE\n"
+./ch-run $SQPATH -- $PROG
+checkSuccess
+
+
+printf "POSTCONDITIONS\n"
+printf "mount directory does not exist:"
+checkDirNotExist /var/tmp/$NAME
+printf "user mount does not exist:"
+checkNoMount $NAME
 
 
 echo "---------------------------------------------------------------------------------------"
 
 
 
-echo "CASE 2: mount point specified, subdirectory /var/tmp/chruntest does not exist, mount does not exist"
+echo "CASE 2: mount point specified"
 
-rm -rf /var/tmp/chruntest
-ls -l /var/tmp/chruntest
-mount | grep -F fuse
+printf "PRECONDITIONS\n"
+printf "mount directory does not exist:"
+checkDirNotExist /var/tmp/$NAME
+printf "user mount does not exist:"
+checkNoMount $NAME
 
-echo "CMDLINE:./ch-run --squash=/tmp/ $HOME/chorkshop/hello.sqfs -- ./hello.py"
-./ch-run --squash=/tmp/ $HOME/chorkshop/$1.sqfs -- ./hello.py
 
-echo "POST"
-ls -l /tmp/$1
-mount | grep -F fuse
+printf "EXECUTE\n"
+./ch-run --squash=/var/tmp/ $SQPATH -- $PROG
+checkSuccess
 
-echo "CLEANUP:none :)"
+printf "POSTCONDITIONS\n"
+printf "mount directory does not exist:"
+checkDirNotExist /var/tmp/$NAME
+printf "user mount does not exist:"
+checkNoMount $NAME
 
 
 echo "----------------------------------------------------------------------------------------"
 
 echo "CASE 3: original workflow"
 
-./ch-mount $HOME/chorkshop/$1.sqfs /var/tmp
-./ch-run /var/tmp/$1 -- ./hello.py
-./ch-umount /var/tmp/$1
+printf "EXECUTE\n"
+./ch-mount $SQPATH /var/tmp
+./ch-run /var/tmp/$NAME -- $PROG
+./ch-umount /var/tmp/$NAME
