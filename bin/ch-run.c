@@ -105,7 +105,9 @@ struct timespec start, finish;
 
 int main(int argc,char *argv[])
 {
-   //FOR TESTING CH-MOUNT
+   bool argp_help_fmt_set;
+   struct args args;
+   int arg_next;
    int c_argc;
    char ** c_argv;
    
