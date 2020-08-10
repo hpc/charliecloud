@@ -21,8 +21,8 @@ import version
 BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
-OCI_VERSION_MIN = "1.0.1-dev"
-OCI_VERSION_MAX = "1.0.∞-dev"
+OCI_VERSION_MIN = "1.0.1-dev"  # inclusive
+OCI_VERSION_MAX = "1.0.999"    # inclusive
 
 args = None   # CLI Namespace
 l = None      # logger object
@@ -354,8 +354,6 @@ def state_load():
    st.config = json.load(open(args.bundle + "/config.json"))
    #debug_lines(json.dumps(st.config, indent=2))
 
-   # Replace all instances of ∞ in the verison string
-   OCI_VERSION_MAX = OCI_VERSION_MAX.replace('∞', '9999')
    v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
    v_actual = distutils.version.LooseVersion(st.config["ociVersion"])
    v_max = distutils.version.LooseVersion(OCI_VERSION_MAX)
