@@ -359,7 +359,7 @@ def state_load():
    v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
    v_actual = distutils.version.LooseVersion(st.config["ociVersion"])
    v_max = distutils.version.LooseVersion(OCI_VERSION_MAX)
-   if (not v_min <= v_actual < v_max):
+   if (not v_min <= v_actual <= v_max):
       fatal("unsupported OCI version: %s" % st.config["ociVersion"])
 
    try:
