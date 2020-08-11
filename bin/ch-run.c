@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
       Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
    }
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
-   if(sqfs_hl_open(argv[arg_next],0))
+   if(sqfs_hl_check(argv[arg_next],0))
        goSquash(sq.parentdir, &argv[arg_next]);
 
    if (!argp_help_fmt_set)
