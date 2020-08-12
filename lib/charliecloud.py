@@ -238,7 +238,6 @@ class Image:
           data = json.load(manifest)
           self.metadata = data['layers'][0]['digest'][len('sha256:'):] 
           print(self.metadata)
-          print("OOOOOF")
 
       # layers
       self.layer_hashes_load()

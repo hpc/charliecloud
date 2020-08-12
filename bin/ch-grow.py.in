@@ -7,6 +7,7 @@ import atexit
 import glob
 import hashlib
 import inspect
+import json
 import os
 import os.path
 import pathlib
@@ -206,8 +207,10 @@ class Cache():
     def __init__(self):
         self.prev_hash = None
         self.valid = True
-        self.cache_path = ch.storage_env() + '/' + 'cache'
+        self.cache_path = ch.storage_env() + '/' + 'img'
         self.image_path = None
+        self.image_name = None
+        self.current_layer = None
 
         ch.DEBUG("ensuring directory: " + self.cache_path)
         os.makedirs(self.cache_path, exist_ok=True)
@@ -215,50 +218,83 @@ class Cache():
         # Returns 0 if a git directory or nonzero otherwise
         # Tried to avoid git plumbing commands, but there was no other 
         # elengant option here
-        initialized = subprocess.call(['git', 'rev-parse'], cwd=self.cache_path)
+        initialized = subprocess.run(['git', 'rev-parse'], cwd=self.cache_path,
+                stderr=subprocess.DEVNULL).returncode
 
         if initialized != 0:
-            ch.INFO("Initializing git repo at %s" % self.cache_path)
-            subprocess.call(['git', 'init'], cwd=self.cache_path) 
+            ch.INFO("cache: Initializing cache at %s" % self.cache_path)
+            subprocess.run(['git', 'init'], cwd=self.cache_path, 
+                    stdout=subprocess.DEVNULL) 
 
-    def invalidate(self):
-        ch.INFO("Cache has been invalidated")
+    def is_valid(self):
+        return self.valid
+
+    def invalidate(self, base=False):
+        if base == False:
+            # Roll Back to last good commit
+            # Could put a check here for if it's the latest commit
+            # I don't believe it matters?
+            ch.INFO("cache: Cache is invalid")
+            ret = subprocess.run(['git', 'log', '--oneline', 
+                f'--grep={self.prev_hash}'], stdout=subprocess.PIPE, 
+                cwd=self.cache_path).stdout.decode('utf-8')
+            # String is in form <commit_id layer_id>
+            commit = ret.split()[0]
+            ch.INFO("cache: reverting to %s with commit %s" % (self.prev_hash, commit))
+            subprocess.run(['git', '--work-tree', self.image_path, 'reset', '--hard', commit], 
+                    cwd=self.cache_path, stdout=subprocess.DEVNULL) 
         self.valid = False
 
     # Check if a cache exists for a base image
-    def exists(self, base_hash):
-        ret = subprocess.call(['git', 'show-ref', '--verify', '--quiet', 
-            f'refs/heads/{base_hash}'], cwd=self.cache_path) == 0
+    def exists(self, base_hash, image_name):
+        ret = subprocess.run(['git', 'show-ref', '--verify', '--quiet', 
+            f'refs/heads/{base_hash}'], cwd=self.cache_path).returncode == 0
+        return ret
 
-    # Creates a new branch for a new base image
-    def add_base(self, base_hash, path):
-        ch.INFO("Creating branch %s" % base_hash)
-        subprocess.call(['git', 'checkout', '-b', f'{base_hash}'], 
-                cwd=self.cache_path)
-        # Set the path to the image
+    # Setup the base cache
+    def get_base(self, base_hash, image_name, path, create=False):
+        self.image_name = image_name
         self.image_path = ch.storage_env() + '/img/' + path
-        ch.INFO("Image path is %s" % self.image_path)
         self.prev_hash = str(base_hash)
+        if create:
+            ch.INFO("cache: Creating cache for %s with id %s" % (self.image_name, base_hash))
+            # Should switch this to use the GIT_WORK_TREE environment variable
+            subprocess.call(['git', '--work-tree', self.image_path, 'checkout', '-b', f'{base_hash}'], 
+                stderr=subprocess.DEVNULL, cwd=self.cache_path)
+            subprocess.run(['git', '--work-tree', self.image_path, 'add', '--all'], 
+                cwd=self.cache_path, stdout=subprocess.PIPE)
+            subprocess.run(['git', '--work-tree', self.image_path, 'commit', '-m', base_hash], 
+                cwd=self.cache_path, stdout=subprocess.PIPE)
+        else:
+            ch.INFO("cache: Loading cache for %s" % self.image_name)
+            subprocess.call(['git', 'checkout', f'{base_hash}'], 
+                stderr=subprocess.DEVNULL, stdout=subprocess.PIPE, cwd=self.cache_path)
 
     # Add a layer to the cache
     def add_layer(self, layer_hash, inst):
-        ch.INFO("Adding new layer with instruction: %s" % inst)
-        subprocess.call(['git', '--work-tree=/', 'add', self.image_path], 
-                cwd=self.cache_path)
-        # Commit
-        subprocess.check_output(['git', 'commit', '-m', layer_hash], 
-                cwd=self.cache_path)
-
+        subprocess.run(['git', '--work-tree', self.image_path, 'add', '--all'], 
+                cwd=self.cache_path, stdout=subprocess.PIPE)
+        # Commit the new layer to the repo
+        subprocess.run(['git', 'commit', '-m', layer_hash], 
+                cwd=self.cache_path, stdout=subprocess.PIPE)
+        self.prev_hash = layer_hash
 
     # Check if an instruction is in the cache
     def in_cache(self, layer_hash):
-        # Create a list of commit headers
-        #commits = subprocess.check_output(['git', 'log', '--oneline']).decode('utf-8').splitlines()
-        commit = subprocess.check_output(f"git log --oneline --grep='{layer_hash}'", shell=True).decode('utf-8')
-        return commit
+        # This looks for a git commit that has a comment with the layer_hash
+        # If it exists, it will return a string <commit_id layer_hash>
+        # Otherwise, it returns an empty string 
+        # This only works because we're using a sha256 hash of fixed length
+        # Otherwise it returns true if the grep string is a substring of the log
+        # 2dea or 31056 would both return the commit for 2dea31056232
+        ret = subprocess.run(['git', 'log', '--oneline', 
+            f'--grep={layer_hash}'], stdout=subprocess.PIPE, cwd=self.cache_path).stdout.decode('utf-8')
+        return ret != ''
 
     def get_layer(self, layer_hash):
-        subprocess.call(['git', 'cherry-pick', layer_hash])
+        # Just save hash as the previous layer
+        # If the cash ever becomes invalid, we'll revert to this commit
+        self.prev_hash = layer_hash
 
 
 cache = Cache()
@@ -319,41 +355,59 @@ class Instruction(abc.ABC):
          if isinstance(self, I_from_):
             # The pull itself is already cached 
             self.execute_()
-            metadata = str(self.base_image.metadata).encode('utf-8')
-            base_name = str(self.base_ref).encode('utf-8')
-            base_hash = hashlib.sha256(metadata + base_name).hexdigest()
+            if not cli.no_cache:
+               base_name = str(self.base_ref).encode('utf-8')
+               with open(self.base_image.manifest_path, 'r') as manifest_fp:
+                  manifest = json.load(manifest_fp) 
+                  metadata = str(manifest['layers'][0]['digest'][len('sha256:'):]).encode('utf-8')
+                  
+               #metadata = str(self.base_image.metadata).encode('utf-8')
+               base_hash = hashlib.sha256(metadata + base_name).hexdigest()
+               image_name = self.base_image.image_subdir
 
-            # Check if there's already a cache
-            if cache.exists(base_hash) == False:
-               cache.add_base(base_hash, self.base_image.image_subdir)
-               ch.INFO("No cache found for %s" % base_hash)
-               cache.invalidate()
-            else:
-                ch.INFO("Found cache for %s" % base_hash)
-                cache.prev_hash = str(base_hash)
+               # Check if there's already a cache
+               if cache.exists(base_hash, image_name):
+                  ch.INFO("cache: Found cache for %s" % base_hash)
+                  cache.get_base(base_hash, image_name, cli.tag)
+               else:
+                  ch.INFO("cache: No cache found for %s" % image_name)
+                  cache.get_base(base_hash, image_name, cli.tag, create=True)
+                  cache.invalidate(base=True)
          elif isinstance(self, I_copy): 
             # For now just invalidate if we have a copy
             # Eventually, we might want to do a more intelligent check
-            if cache.valid:
-                cache.invalidate()
+            if not cli.no_cache:
+                if cache.is_valid():
+                    cache.invalidate()
             self.execute_()
-            layer_hash = hashlib.sha256(cache.prev_hash + str(self)).hexdigest()
-            cache.add_layer(layer_hash, str(self))
+            if not cli.no_cache:
+                layer_hash = hashlib.sha256(cache.prev_hash + str(self)).hexdigest()
+                cache.add_layer(layer_hash, str(self))
          elif isinstance(self, (I_arg_bare, I_arg_equals, I_env_equals, 
              I_env_space)):
              cache.invalidate()
          else:
-            if cache.valid:
+            if not cli.no_cache:
                inst = str(self).encode('utf-8')
                layer_hash = hashlib.sha256(str(cache.prev_hash).encode('utf-8') + inst).hexdigest()
-               if cache.in_cache(layer_hash):
-                  cache.get_layer(layer_hash, path)
+               # This bit still needs to be refactored
+               if cache.is_valid():
+                  ch.INFO("cache: Looking for instruction id: %s" % layer_hash)
+                  if cache.in_cache(layer_hash):
+                     ch.INFO("cache: Instruction is in cache. Pulling down")
+                     cache.get_layer(layer_hash)
+                  else:
+                     ch.INFO("Instruction is not in cache")
+                     cache.invalidate()
+                     self.execute_()
+                     ch.INFO("Adding new layer with id %s" % layer_hash)
+                     cache.add_layer(layer_hash, str(self))
                else:
-                  cache.invalidate()
+                  ch.INFO("Adding new layer with id %s" % layer_hash)
+                  self.execute_()
                   cache.add_layer(layer_hash, str(self))
             else:
-               layer_hash = hashlib.sha256(str(self).encode('utf-8')).hexdigest()
-               cache.add_layer(layer_hash, str(self))
+                self.execute_()
 
    @abc.abstractmethod
    def execute_(self):
