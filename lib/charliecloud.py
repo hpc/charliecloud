@@ -19,7 +19,8 @@ import version
 ## Imports not in standard library ##
 
 # These are messy because we need --version and --help even if a dependency is
-# missing.
+# missing. Among other things, nothing can depend on non-standard modules at
+# parse time.
 
 # List of dependency problems.
 depfails = []
@@ -37,11 +38,8 @@ except (ImportError, AttributeError) as x:
    else:
       assert False
    # Mock up a lark module so the rest of the file parses.
-   m = types.ModuleType("lark")
-   class Visitor_Mock(object):
-      pass
-   m.Visitor = Visitor_Mock
-   lark = m
+   lark = types.ModuleType("lark")
+   lark.Visitor = object
 
 try:
    import requests
@@ -49,6 +47,10 @@ try:
    import requests.exceptions
 except ImportError:
    depfails.append(("missing", 'Python module "requests"'))
+   # Mock up a requests.auth module so the rest of the file parses.
+   requests = types.ModuleType("requests")
+   requests.auth = types.ModuleType("requests.auth")
+   requests.auth.AuthBase = object
 
 
 ## Globals ##

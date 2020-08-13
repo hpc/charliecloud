@@ -13,10 +13,22 @@ sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/travis
 sudo cat /etc/sudoers.d/travis
 
 # Install conditional packages.
-if [[ "$MINIMAL_DEPS" ]]; then
-    PACK_FMT=tar
-else
+if [[ -z $MINIMAL_DEPS ]]; then
     sudo apt-get install pigz pv
+else
+    PACK_FMT=tar
+    if [[ $CH_BUILDER != ch-grow ]]; then
+        # Remove ch-grow dependency "requests" (issue #806).
+        sudo dpkg --remove \
+                  apport \
+                  cloud-init \
+                  gce-compute-image-packages \
+                  python3-apport \
+                  python3-requests \
+                  python3-requests-unixsocket \
+                  ssh-import-id \
+                  ubuntu-server
+    fi
 fi
 if [[ $CH_BUILDER = ch-grow ]]; then
     sudo pip3 install lark-parser requests
