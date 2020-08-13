@@ -284,20 +284,33 @@ nogroup:x:65534:
 
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
+      def fatal_exception(manifest_path, exception=None, lineno=None):
+         if exception and lineno:
+            FATAL("can't parse manifest file: %s:%d: %s"
+                  % (manifest_path, lineno, exception))
+         elif exception:
+            FATAL("can't open manifest file: %s: %s"
+                  % (manifest_path, exception))
+         else:
+            FATAL("can't parse manifest file: %s" % manifest_path)
       try:
          fp = open(self.manifest_path, "rt", encoding="UTF-8")
       except OSError as x:
-         FATAL("can't open manifest file: %s: %s"
-               % (self.manifest_path, x.strerror))
+         fatal_exception(self.manifest_path, x.strerror)
       try:
          doc = json.load(fp)
       except json.JSONDecodeError as x:
-         FATAL("can't parse manifest file: %s:%d: %s"
-               % (self.manifest_path, x.lineno, x.msg))
+         fatal_exception(self.manifest_path, x.msg, x.lineno)
       try:
          self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
-      except (AttributeError, KeyError, IndexError):
-         FATAL("can't parse manifest file: %s" % self.manifest_path)
+      except (KeyError):
+         # Try v1 schema.
+         try:
+            self.layer_hashes = [i["blobSum"].split(":")[1] for i in doc["fsLayers"]]
+         except (AttributeError, KeyError, IndexError):
+            fatal_exception(self.manifest_path)
+      except (AttributeError, IndexError):
+         fatal_exception(self.manifest_path)
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
@@ -735,8 +748,9 @@ class Repo_Downloader:
    def get_manifest(self, path):
       "GET the manifest for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
-      accept = "application/vnd.docker.distribution.manifest.v2+json"
-      self.get(url, path, { "Accept": accept })
+      accept = ["application/vnd.docker.distribution.manifest.v1+json",
+                "application/vnd.docker.distribution.manifest.v2+json"]
+      self.get(url, path, { "Accept": str(accept) })
 
    def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
                **kwargs):
