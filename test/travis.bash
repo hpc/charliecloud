@@ -63,9 +63,8 @@ esac
 make "$MAKEJ"
 bin/ch-run --version
 
-if [[ $MAKE_INSTALL ]]; then
-    sudo make "$MAKEJ" install
-    ch_test="${PREFIX}/bin/ch-test"
+if [[ $DISTCHECK ]]; then
+    sudo make distcheck
 else
     ch_test=$(readlink -f bin/ch-test)  # need absolute path
 fi

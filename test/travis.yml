@@ -21,8 +21,8 @@ compiler: gcc
 #   TARBALL=              # build in Git checkout
 #   TARBALL=archive       # build from "git archive" tarball
 #   TARBALL=export        # build from "make export" tarball
-#   MAKE_INSTALL=         # run from build directory
-#   MAKE_INSTALL=yes      # "make install"; run that one
+#   DISTCHECK=            # run from build directory
+#   DISTCHECK=yes         # "make distcheck" and "installcheck"
 #
 # Note: $INSTALL is used by Autotools, and setting it to "yes" causes very
 # weird errors, e.g.:
@@ -82,15 +82,15 @@ jobs:
       env: CH_BUILDER=docker          PACK_FMT=tar
 
     - <<: *stage_install
-      env: CH_BUILDER=none            TARBALL=export       MAKE_INSTALL=yes
+      env: CH_BUILDER=none            TARBALL=export       DISTCHECK=yes
     - <<: *stage_install
-      env: CH_BUILDER=buildah         TARBALL=export       MAKE_INSTALL=yes
+      env: CH_BUILDER=buildah         TARBALL=export       DISTCHECK=yes
     - <<: *stage_install
-      env: CH_BUILDER=buildah-runc    TARBALL=export       MAKE_INSTALL=yes
+      env: CH_BUILDER=buildah-runc    TARBALL=export       DISTCHECK=yes
     - <<: *stage_install
-      env: CH_BUILDER=ch-grow         TARBALL=export       MAKE_INSTALL=yes
+      env: CH_BUILDER=ch-grow         TARBALL=export       DISTCHECK=yes
     - <<: *stage_install
-      env: CH_BUILDER=docker          TARBALL=export       MAKE_INSTALL=yes
+      env: CH_BUILDER=docker          TARBALL=export       DISTCHECK=yes
 
     - <<: *stage_misc
       env: CH_BUILDER=buildah         MINIMAL_DEPS=yes

@@ -53,7 +53,7 @@ rm -rf Makefile \
 
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
-    autoreconf --force --install -Wall -Werror
+    autoreconf --force --install -Wno-override -Wall -Werror
 
     set +x
     echo
