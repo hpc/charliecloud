@@ -64,7 +64,7 @@ make "$MAKEJ"
 bin/ch-run --version
 
 if [[ $DISTCHECK ]]; then
-    sudo make distcheck
+    make distcheck
 else
     ch_test=$(readlink -f bin/ch-test)  # need absolute path
 fi
