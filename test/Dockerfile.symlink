@@ -3,12 +3,11 @@
 #
 # To build and push:
 #
-#   $ version=2020-08-17  # use today's date
 #   $ sudo docker login   # if needed
 #   $ sudo docker build -t symlink -f Dockerfile.symlink .
-#   $ sudo docker tag symlink:latest charliecloud/symlink:$version
+#   $ sudo docker tag symlink:latest charliecloud/symlink
 #   $ sudo docker images | fgrep symlink
-#   $ sudo docker push charliecloud/whiteout:$version
+#   $ sudo docker push charliecloud/symlink
 #
 # ch-test-scope: skip
 
@@ -27,7 +26,7 @@ RUN ls -l /test \
 RUN rm source \
  && echo regular > source
 
-# Now source should be a regular file and contain "target".
+# Now source should be a regular file and contain "regular".
 RUN ls -l /test \
  && for i in /test/*; do printf '%s : ' $i; cat $i; done
 

@@ -24,6 +24,7 @@ image_ref_parse () {
 @test 'ch-tug image ref parsing' {
     scope standard
     if ( ! ch-tug --dependencies ); then
+        [[ $CH_BUILDER != ch-grow ]]
         skip "ch-tug missing dependencies"
     fi
 
@@ -201,4 +202,35 @@ EOF
     cat <<'EOF' | image_ref_parse 'name:tag@sha512:feeddad' 1
 error: image ref syntax, char 9: name:tag@sha512:feeddad
 EOF
+}
+
+@test 'ch-tug image with symlink' {
+    # Validate that if a prior layer contains a symlink and a subsequent layer
+    # contains a regular file at the same path, the symlink is replaced with a
+    # regular file and the symlink target is unchanged. See issue #819.
+    scope standard
+    if ( ! ch-tug --dependencies ); then
+        [[ $CH_BUILDER != ch-grow ]]
+        skip "ch-tug missing dependencies"
+    fi
+
+    unpack=$BATS_TMPDIR
+    img=$unpack/charliecloud%symlink
+
+    ch-tug --unpack-dir="$unpack" charliecloud/symlink
+    ls -lh "${img}/test"
+
+    # /test/target should be a regular file with contents "target"
+    run stat -c '%F' $img/test/target
+    [[ $status -eq 0 ]]
+    echo "$output"
+    [[ $output = 'regular file' ]]
+    [[ $(cat "${img}/test/target") = 'target' ]]
+
+    # /test/source should be a regular file with contents "regular"
+    run stat -c '%F' $img/test/source
+    [[ $status -eq 0 ]]
+    echo "$output"
+    [[ $output = 'regular file' ]]
+    [[ $(cat "${img}/test/source") = 'regular' ]]
 }
