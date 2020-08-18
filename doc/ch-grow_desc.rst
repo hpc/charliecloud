@@ -79,6 +79,11 @@ Other arguments:
   :code:`--version`
     Print version number and exit.
 
+Environment variables
+=====================
+
+.. include:: py_env.rst
+
 Conformance
 ===========
 

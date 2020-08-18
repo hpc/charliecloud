@@ -1,13 +1,15 @@
 import argparse
+import atexit
 import collections
 import copy
+import datetime
 import http.client
 import json
-import logging
 import os
 import getpass
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -55,8 +57,10 @@ except ImportError:
 
 ## Globals ##
 
-# Verbosity level. Can be 0, 1, or 2.
-verbose = 0
+# Logging; set using log_setup() below.
+verbose = 0          # Verbosity level. Can be 0, 1, or 2.
+log_festoon = False  # If true, prepend pid and timestamp to chatter.
+log_fp = sys.stderr  # File object to print logs to.
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -217,7 +221,7 @@ class Image:
       "Copy the unpack directory of Image other to my unpack directory."
       DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       self.unpack_create_ok()
-      shutil.copytree(other.unpack_path, self.unpack_path, symlinks=True)
+      copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
    def download(self, use_cache):
       """Download image manifest and layers according to origin and put them
@@ -282,12 +286,15 @@ nogroup:x:65534:
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
-         fp.extractall(path=self.unpack_path, members=members)
+         try:
+            fp.extractall(path=self.unpack_path, members=members)
+         except OSError as x:
+            FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
       try:
-         fp = open(self.manifest_path, "rt", encoding="UTF-8")
+         fp = open_(self.manifest_path, "rt", encoding="UTF-8")
       except OSError as x:
          FATAL("can't open manifest file: %s: %s"
                % (self.manifest_path, x.strerror))
@@ -343,7 +350,7 @@ nogroup:x:65534:
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
          try:
-            fp = tarfile.open(path)
+            fp = TarFile.open(path)
             members_list = fp.getmembers()  # reads whole file :(
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
@@ -464,9 +471,7 @@ nogroup:x:65534:
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          DEBUG("replacing existing image: %s" % self.unpack_path)
-         def fail(function, path, excinfo):
-            FATAL("can't flatten: %s: %s" % (path, excinfo[1]))
-         shutil.rmtree(self.unpack_path, onerror=fail)
+         rmtree(self.unpack_path)
 
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."
@@ -506,7 +511,6 @@ class Image_Ref:
    # parser here either. We use a class varible and populate it at the time of
    # first use.
    parser = None
-
 
    def __init__(self, src=None):
       self.host = None
@@ -736,9 +740,9 @@ class Repo_Downloader:
       self.authenticate_maybe(url)
       res = self.get_raw(url, headers)
       try:
-         fp = open(path, "wb")
-         fp.write(res.content)
-         fp.close()
+         fp = open_(path, "wb")
+         ossafe(fp.write, "can't write: %s" % path, res.content)
+         ossafe(fp.close, "can't close: %s" % path)
       except OSError as x:
          FATAL("can't write: %s: %s" % (path, x))
 
@@ -781,49 +785,92 @@ class Repo_Downloader:
          self.session = requests.Session()
 
 
+class TarFile(tarfile.TarFile):
+
+   # This subclass augments tarfile.TarFile to add safety code. While the
+   # tarfile module docs [1] say “do not use this class [TarFile] directly”,
+   # they also say “[t]he tarfile.open() function is actually a shortcut” to
+   # class method TarFile.open(), and the source code recommends subclassing
+   # TarFile [2].
+   #
+   # [1]: https://docs.python.org/3/library/tarfile.html
+   # [2]: https://github.com/python/cpython/blob/2bcd0fe7a5d1a3c3dd99e7e067239a514a780402/Lib/tarfile.py#L2159
+
+   def makefile(self, tarinfo, targetpath):
+      """If targetpath is a symlink, stock makefile() overwrites the *target*
+         of that symlink rather than replacing the symlink. This is a known,
+         but long-standing unfixed, bug in Python [1,2]. To work around this,
+         we manually delete targetpath if it exists and is a symlink. See
+         issue #819.
+
+         [1]: https://bugs.python.org/issue35483
+         [2]: https://bugs.python.org/issue19974"""
+      try:
+         st = os.lstat(targetpath)
+      except FileNotFoundError:
+         # We could move this except clause after all the stat.S_IS* calls,
+         # but that risks catching FileNotFoundError that came from somewhere
+         # other than lstat().
+         st = None
+      except OSError as x:
+         FATAL("can't lstat: %s" % targetpath, targetpath)
+      if (st is not None):
+         if (stat.S_ISREG(st.st_mode)):
+            pass  # regular file; do nothing (will be overwritten)
+         elif (stat.S_ISDIR(st.st_mode)):
+            FATAL("can't overwrite directory with regular file: %s"
+                  % targetpath)
+         elif (stat.S_ISLNK(st.st_mode)):
+            unlink(targetpath)
+         else:
+            FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
+                  % (stat.S_IFMT(st.st_mode), targetpath))
+      super().makefile(tarinfo, targetpath)
+
+
 ## Supporting functions ##
 
 def DEBUG(*args, v=1, **kwargs):
    if (verbose >= v):
-      color("36m", sys.stderr)
-      print(flush=True, file=sys.stderr, *args, **kwargs)
-      color_reset(sys.stderr)
+      log(color="36m", *args, **kwargs)
 
 def ERROR(*args, **kwargs):
-   color("31m", sys.stderr)
-   print("error: ", file=sys.stderr, end="")
-   print(flush=True, file=sys.stderr, *args, **kwargs)
-   color_reset(sys.stderr)
+   log(color="31m", prefix="error: ", *args, **kwargs)
 
 def FATAL(*args, **kwargs):
    ERROR(*args, **kwargs)
    sys.exit(1)
 
 def INFO(*args, **kwargs):
-   print(flush=True, *args, **kwargs)
+   log(*args, **kwargs)
 
 def WARNING(*args, **kwargs):
-   color("31m", sys.stderr)
-   print("warning: ", file=sys.stderr, end="")
-   print(flush=True, file=sys.stderr, *args, **kwargs)
-   color_reset(sys.stderr)
+   log(color="31m", prefix="warning: ", *args, **kwargs)
 
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
-   color("33m", sys.stdout)
+   color_set("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
    color_reset(sys.stdout)
    if (cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
 
-def color(color, fp):
+def color_reset(*fps):
+   for fp in fps:
+      color_set("0m", fp)
+
+def color_set(color, fp):
    if (fp.isatty()):
       print("\033[" + color, end="", flush=True, file=fp)
 
-def color_reset(*fps):
-   for fp in fps:
-      color("0m", fp)
+def copy2(src, dst, **kwargs):
+   "Wrapper for shutil.copy2() with error checking."
+   ossafe(shutil.copy2, "can't copy: %s -> %s" % (src, dst), src, dst, **kwargs)
+
+def copytree(*args, **kwargs):
+   "Wrapper for shutil.copytree() that exits the program on the first error."
+   shutil.copytree(copy_function=copy2, *args, **kwargs)
 
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
@@ -834,23 +881,70 @@ def dependencies_check():
       sys.exit(1)
 
 def file_ensure_exists(path):
-   with open(path, "a") as fp:
-      pass
+   fp = open_(path, "a")
+   fp.close()
 
 def file_write(path, content, mode=None):
-   with open(path, "wt") as fp:
-      fp.write(content)
-      if (mode is not None):
-         os.chmod(fp.fileno(), mode)
+   fp = open_(path, "wt")
+   ossafe(fp.write, "can't write: %s" % path, content)
+   if (mode is not None):
+      ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
+   fp.close()
+
+def log(*args, color=None, prefix="", **kwargs):
+   if (color is not None):
+      color_set(color, log_fp)
+   if (log_festoon):
+      prefix = ("%5d %s  %s"
+                % (os.getpid(),
+                   datetime.datetime.now().isoformat(timespec="milliseconds"),
+                   prefix))
+   print(prefix, file=log_fp, end="")
+   print(flush=True, file=log_fp, *args, **kwargs)
+   if (color is not None):
+      color_reset(log_fp)
+
+def log_setup(verbose_):
+   global verbose, log_festoon, log_fp
+   assert (0 <= verbose_ <= 2)
+   verbose = verbose_
+   if ("CH_LOG_FESTOON" in os.environ):
+      log_festoon = True
+   file_ = os.getenv("CH_LOG_FILE")
+   if (file_ is not None):
+      verbose = max(verbose_, 1)
+      log_fp = open_(file_, "at")
+   atexit.register(color_reset, log_fp)
 
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)
-   os.makedirs(path, exist_ok=True)
+   try:
+      os.makedirs(path, exist_ok=True)
+   except OSError as x:
+      ch.FATAL("can't create directory: %s: %s: %s"
+               % (path, x.filename, x.strerror))
+
+def open_(path, mode, *args, **kwargs):
+   "Error-checking wrapper for open()."
+   return ossafe(open, "can't open for %s: %s" % (mode, path),
+                 path, mode, *args, **kwargs)
+
+def ossafe(f, msg, *args, **kwargs):
+   """Call f with args and kwargs. Catch OSError and other problems and fail
+      with a nice error message."""
+   try:
+      return f(*args, **kwargs)
+   except OSError as x:
+      FATAL("%s: %s" % (msg, x.strerror))
 
 def rmtree(path):
    if (os.path.isdir(path)):
       DEBUG("deleting directory: " + path)
-      shutil.rmtree(path)
+      try:
+         shutil.rmtree(path)
+      except OSError as x:
+         ch.FATAL("can't recursively delete directory %s: %s: %s"
+                  % (path, x.filename, x.strerror))
    else:
       assert False, "unimplemented"
 
@@ -873,16 +967,19 @@ def storage_default():
       FATAL("can't get username: $USER not set")
    return "/var/tmp/%s/ch-grow" % username
 
-def symlink(target, source):
+def symlink(target, source, clobber=False):
+   if (clobber and os.path.isfile(source)):
+      unlink(source)
    try:
       os.symlink(target, source)
    except FileExistsError:
       if (not os.path.islink(source)):
-         FATAL("can't symlink: source exists and isn't a symlink: %s"
-               % source)
+         FATAL("can't symlink: source exists and isn't a symlink: %s" % source)
       if (os.readlink(source) != target):
          FATAL("can't symlink: %s exists; want target %s but existing is %s"
                % (source, target, os.readlink(source)))
+   except OSError as x:
+      ch.FATAL("can't symlink: %s -> %s: %s" % (source, target, x.strerror))
 
 def tree_child(tree, cname):
    """Locate a descendant subtree named cname using breadth-first search and
@@ -928,3 +1025,7 @@ def tree_terminals(tree, tname):
    for j in tree.children:
       if (isinstance(j, lark.lexer.Token) and j.type == tname):
          yield j.value
+
+def unlink(path, *args, **kwargs):
+   "Error-checking wrapper for os.unlink()."
+   ossafe(os.unlink, "can't unlink: %s" % path, path)

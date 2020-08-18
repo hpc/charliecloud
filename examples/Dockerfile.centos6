@@ -1,6 +1,0 @@
-# ch-test-scope: full
-# ch-test-arch-exclude: aarch64  # No ARM images provided for CentOS 6
-FROM centos:6
-
-RUN yum install -y bc \
- && yum clean all

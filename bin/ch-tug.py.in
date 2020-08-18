@@ -43,7 +43,7 @@ $CH_GROW_STORAGE if set, else %s.
       sys.exit(1)
 
    args = ap.parse_args()
-   ch.verbose = args.verbose
+   ch.log_setup(args.verbose)
 
    ch.dependencies_check()
 

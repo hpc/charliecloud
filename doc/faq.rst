@@ -147,13 +147,13 @@ Examples:
     Github provides. This should make you wary because you don't have any
     provenance. It might even be uncommitted work or an abandoned branch.
 
-  * :code:`0.2.1~pre.1a99f42` : Master branch commit 1a99f42, built from a
+  * :code:`0.2.1~pre+1a99f42` : Master branch commit 1a99f42, built from a
     clean working directory (i.e., no changes since that commit).
 
-  * :code:`0.2.1~pre.foo1.0729a78` : Commit 0729a78 on branch :code:`foo-1`,
+  * :code:`0.2.1~pre+foo1.0729a78` : Commit 0729a78 on branch :code:`foo-1`,
     :code:`foo_1`, etc. built from clean working directory.
 
-  * :code:`0.2.1~pre.foo1.0729a78.dirty` : Commit 0729a78 on one of those
+  * :code:`0.2.1~pre+foo1.0729a78.dirty` : Commit 0729a78 on one of those
     branches, plus un-committed changes.
 
 :code:`--uid 0` lets me read files I can’t otherwise!
