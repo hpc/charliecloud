@@ -220,6 +220,8 @@ class Cache():
         ch.DEBUG("ensuring directory: " + self.cache_path)
         os.makedirs(self.cache_path, exist_ok=True)
 
+
+    def initialize():
         # Returns 0 if a git directory or nonzero otherwise
         # Tried to avoid git plumbing commands, but there was no other 
         # elengant option here
