@@ -19,7 +19,8 @@ import version
 ## Imports not in standard library ##
 
 # These are messy because we need --version and --help even if a dependency is
-# missing.
+# missing. Among other things, nothing can depend on non-standard modules at
+# parse time.
 
 # List of dependency problems.
 depfails = []
@@ -37,11 +38,8 @@ except (ImportError, AttributeError) as x:
    else:
       assert False
    # Mock up a lark module so the rest of the file parses.
-   m = types.ModuleType("lark")
-   class Visitor_Mock(object):
-      pass
-   m.Visitor = Visitor_Mock
-   lark = m
+   lark = types.ModuleType("lark")
+   lark.Visitor = object
 
 try:
    import requests
@@ -49,6 +47,10 @@ try:
    import requests.exceptions
 except ImportError:
    depfails.append(("missing", 'Python module "requests"'))
+   # Mock up a requests.auth module so the rest of the file parses.
+   requests = types.ModuleType("requests")
+   requests.auth = types.ModuleType("requests.auth")
+   requests.auth.AuthBase = object
 
 
 ## Globals ##
@@ -481,6 +483,14 @@ class Image_Ref:
                 "tag",
                 "digest")
 
+   # Reference parser object. Instantiating a parser took 100ms when we tested
+   # it, which means we can't really put it in a loop. But, at parse time,
+   # "lark" may refer to a dummy module (see above), so we can't populate the
+   # parser here either. We use a class varible and populate it at the time of
+   # first use.
+   parser = None
+
+
    def __init__(self, src=None):
       self.host = None
       self.port = None
@@ -510,14 +520,15 @@ class Image_Ref:
          out += "@sha256:" + self.digest
       return out
 
-   @staticmethod
-   def parse(s):
+   @classmethod
+   def parse(class_, s):
+      if (class_.parser is None):
+         class_.parser = lark.Lark("?start: image_ref\n" + GRAMMAR,
+                                   parser="earley", propagate_positions=True)
       if ("%" in s):
          s = s.replace("%", "/")
-      parser = lark.Lark("?start: image_ref\n" + GRAMMAR, parser="earley",
-                         propagate_positions=True)
       try:
-         tree = parser.parse(s)
+         tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
          FATAL("image ref syntax, char %d: %s" % (x.column, s))
       except lark.exceptions.UnexpectedEOF as x:

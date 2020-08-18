@@ -21,8 +21,8 @@ import version
 BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
-OCI_VERSION_MIN = "1.0.1-dev"
-OCI_VERSION_MAX = "1.0.1-dev"
+OCI_VERSION_MIN = "1.0.1-dev"  # inclusive
+OCI_VERSION_MAX = "1.0.999"    # inclusive
 
 args = None   # CLI Namespace
 l = None      # logger object
