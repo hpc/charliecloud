@@ -194,6 +194,10 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
    else:
       ml.visit(tree)
 
+   # If the cache is still valid at the end of the build, just pull it down
+   if cache.is_valid():
+      cache.pull()
+
    if (len(cli.build_arg) != 0):
       ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
 
@@ -229,17 +233,20 @@ class Cache():
     def is_valid(self):
         return self.valid
 
+    def hash2commit(self, hash):
+        # Takes a layer hash and returns a commit
+        ret = subprocess.run(['git', 'log', '--oneline', 
+            f'--grep={hash}'], stdout=subprocess.PIPE, 
+            cwd=self.cache_path).stdout.decode('utf-8')
+        # String is in form <commit_id layer_id>
+        return ret.split()[0]
+
     def invalidate(self, base=False):
         if base == False:
             # Roll Back to last good commit
-            # Could put a check here for if it's the latest commit
-            # I don't believe it matters?
             ch.INFO("cache: Cache is invalid")
-            ret = subprocess.run(['git', 'log', '--oneline', 
-                f'--grep={self.prev_hash}'], stdout=subprocess.PIPE, 
-                cwd=self.cache_path).stdout.decode('utf-8')
-            # String is in form <commit_id layer_id>
-            commit = ret.split()[0]
+            # The commit for the last good hash
+            commit = self.hash2commit(self.prev_hash)
             ch.INFO("cache: reverting to %s with commit %s" % (self.prev_hash, commit))
             subprocess.run(['git', '--work-tree', self.image_path, 'reset', '--hard', commit], 
                     cwd=self.cache_path, stdout=subprocess.DEVNULL) 
@@ -260,7 +267,7 @@ class Cache():
             ch.INFO("cache: Creating cache for %s with id %s" % (self.image_name, base_hash))
             # Should switch this to use the GIT_WORK_TREE environment variable
             subprocess.call(['git', '--work-tree', self.image_path, 'checkout', '-b', f'{base_hash}'], 
-                stderr=subprocess.DEVNULL, cwd=self.cache_path)
+                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd=self.cache_path)
             subprocess.run(['git', '--work-tree', self.image_path, 'add', '--all'], 
                 cwd=self.cache_path, stdout=subprocess.PIPE)
             subprocess.run(['git', '--work-tree', self.image_path, 'commit', '-m', base_hash], 
@@ -268,7 +275,7 @@ class Cache():
         else:
             ch.INFO("cache: Loading cache for %s" % self.image_name)
             subprocess.call(['git', 'checkout', f'{base_hash}'], 
-                stderr=subprocess.DEVNULL, stdout=subprocess.PIPE, cwd=self.cache_path)
+                stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, cwd=self.cache_path)
 
     # Add a layer to the cache
     def add_layer(self, layer_hash, inst):
@@ -295,6 +302,12 @@ class Cache():
         # Just save hash as the previous layer
         # If the cash ever becomes invalid, we'll revert to this commit
         self.prev_hash = layer_hash
+
+    def pull(self):
+        commit = self.hash2commit(self.prev_hash)
+        ch.INFO("cache: reverting to %s with commit %s" % (self.prev_hash, commit))
+        subprocess.run(['git', '--work-tree', self.image_path, 'reset', '--hard', commit], 
+                cwd=self.cache_path, stdout=subprocess.DEVNULL) 
 
 
 cache = Cache()
