@@ -8,6 +8,7 @@ import os
 import getpass
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -326,7 +327,7 @@ nogroup:x:65534:
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
          try:
-            fp = tarfile.open(path)
+            fp = TarFile.open(path)
             members_list = fp.getmembers()  # reads whole file :(
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
@@ -763,6 +764,43 @@ class Repo_Downloader:
          self.session = requests.Session()
 
 
+class TarFile(tarfile.TarFile):
+
+   # This subclass augments tarfile.TarFile to add safety code. While the
+   # tarfile module docs [1] say “do not use this class [TarFile] directly”,
+   # they also say “[t]he tarfile.open() function is actually a shortcut” to
+   # class method TarFile.open(), and the source code recommends subclassing
+   # TarFile [2].
+   #
+   # [1]: https://docs.python.org/3/library/tarfile.html
+   # [2]: https://github.com/python/cpython/blob/2bcd0fe7a5d1a3c3dd99e7e067239a514a780402/Lib/tarfile.py#L2159
+
+   def makefile(self, tarinfo, targetpath):
+      """If targetpath is a symlink, stock makefile() overwrites the *target*
+         of that symlink rather than replacing the symlink. This is a known,
+         but long-standing unfixed, bug in Python [1,2]. To work around this,
+         we manually delete targetpath if it exists and is a symlink. See
+         issue #819.
+
+         [1]: https://bugs.python.org/issue35483
+         [2]: https://bugs.python.org/issue19974"""
+      try:
+         st = os.lstat(targetpath)
+         if (stat.S_ISREG(st.st_mode)):
+            pass  # regular file; do nothing (will be overwritten)
+         elif (stat.S_ISDIR(st.st_mode)):
+            FATAL("can't overwrite directory with regular file: %s"
+                  % targetpath)
+         elif (stat.S_ISLNK(st.st_mode)):
+            ossafe(os.unlink, "can't unlink: %s" % targetpath, targetpath)
+         else:
+            FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
+                  % (stat.S_IFMT(st.st_mode), targetpath))
+      except FileNotFoundError:
+         pass
+      super().makefile(tarinfo, targetpath)
+
+
 ## Supporting functions ##
 
 def DEBUG(*args, v=1, **kwargs):
@@ -828,6 +866,14 @@ def file_write(path, content, mode=None):
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)
    os.makedirs(path, exist_ok=True)
+
+def ossafe(f, msg, *args, **kwargs):
+   """Call f with args and kwargs. Catch OSError and other problems and fail
+      with a nice error message."""
+   try:
+      f(*args, **kwargs)
+   except OSError as x:
+      FATAL("%s: %s" % (msg, x.strerror))
 
 def rmtree(path):
    if (os.path.isdir(path)):
