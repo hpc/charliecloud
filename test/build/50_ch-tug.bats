@@ -221,14 +221,14 @@ EOF
     ls -lh "${img}/test"
 
     # /test/target should be a regular file with contents "target"
-    run stat -c '%F' $img/test/target
+    run stat -c '%F' "${img}/test/target"
     [[ $status -eq 0 ]]
     echo "$output"
     [[ $output = 'regular file' ]]
     [[ $(cat "${img}/test/target") = 'target' ]]
 
     # /test/source should be a regular file with contents "regular"
-    run stat -c '%F' $img/test/source
+    run stat -c '%F' "${img}/test/source"
     [[ $status -eq 0 ]]
     echo "$output"
     [[ $output = 'regular file' ]]
