@@ -785,7 +785,7 @@ class TarFile(tarfile.TarFile):
          [1]: https://bugs.python.org/issue35483
          [2]: https://bugs.python.org/issue19974"""
       try:
-         st = os.lstat(targetpath)
+         st = ossafe(os.lstat, "can't lstat: %s" % targetpath, targetpath)
          if (stat.S_ISREG(st.st_mode)):
             pass  # regular file; do nothing (will be overwritten)
          elif (stat.S_ISDIR(st.st_mode)):
@@ -854,14 +854,15 @@ def dependencies_check():
       sys.exit(1)
 
 def file_ensure_exists(path):
-   with open(path, "a") as fp:
-      pass
+   fp = open_(path, "a")
+   fp.close()
 
 def file_write(path, content, mode=None):
-   with open(path, "wt") as fp:
-      fp.write(content)
-      if (mode is not None):
-         os.chmod(fp.fileno(), mode)
+   fp = open_(path, "wt")
+   ossafe(fp.write, "can't write: %s" % path, content)
+   if (mode is not None):
+      ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
+   fp.close()
 
 def log(color=None, prefix="", *args, **kwargs):
    if (color is not None):
@@ -870,7 +871,7 @@ def log(color=None, prefix="", *args, **kwargs):
       prefix = ("%5d %s %s"
                 % (os.getpid(),
                    datetime.datetime.now().isoformat(timespec="milliseconds"),
-                   prefix)
+                   prefix))
    print(prefix, file=log_fp, end="")
    print(flush=True, file=log_fp, *args, **kwargs)
    if (color is not None):
@@ -888,7 +889,11 @@ def log_setup(verbose_):
 
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)
-   os.makedirs(path, exist_ok=True)
+   try:
+      os.makedirs(path, exist_ok=True)
+   except OSError as x:
+      ch.FATAL("can't create directory: %s: %s: %s"
+               % (path, x.filename, x.strerror))
 
 def open_(path, mode, *args, **kwargs):
    "Error-checking wrapper for open()."

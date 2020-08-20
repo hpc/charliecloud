@@ -4,7 +4,6 @@ import argparse
 import distutils.version
 import inspect
 import json
-import logging
 import os
 import re
 import signal
@@ -116,30 +115,19 @@ def debug_lines(s):
    for line in s.splitlines():
       ch.DEBUG(line)
 
-def file_ensure_exists(path):
-   fp = open_(path, "a")
-   fp.close()
-
-def file_write(path, content, mode=None):
-   fp = open_(path, "wt")
-   ossafe(fp.write, "can't write: %s" % path, content)
-   if (mode is not None):
-      ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
-   fp.close()
-
 def image_fixup(path):
    ch.DEBUG("fixing up image: %s" % path)
    # Metadata directory.
    ch.mkdirs("%s/ch/bin" % path)
    # Mount points.
-   file_ensure_exists("%s/etc/hosts" % path)
-   file_ensure_exists("%s/etc/resolv.conf" % path)
+   ch.file_ensure_exists("%s/etc/hosts" % path)
+   ch.file_ensure_exists("%s/etc/resolv.conf" % path)
    # /etc/{passwd,group}
-   file_write("%s/etc/passwd" % path, """\
+   ch.file_write("%s/etc/passwd" % path, """\
 root:x:0:0:root:/root:/bin/sh
 nobody:x:65534:65534:nobody:/:/bin/false
 """)
-   file_write("%s/etc/group" % path, """\
+   ch.file_write("%s/etc/group" % path, """\
 root:x:0:
 nogroup:x:65534:
 """)
@@ -244,11 +232,11 @@ def op_start():
 
    # Execute user command. We can't execv(2) because we have to do cleanup
    # after it exits.
-   file_ensure_exists(args.bundle + "/user_started")
+   ch.file_ensure_exists(args.bundle + "/user_started")
    ch.DEBUG("user command: %s" % ca)
    # Standard output disappears, so send stdout to stderr.
    cp = subprocess.run(ca, stdout=2)
-   file_ensure_exists(args.bundle + "/user_done")
+   ch.file_ensure_exists(args.bundle + "/user_done")
    ch.DEBUG("user command done")
 
    # Stop dummy supervisor.

@@ -416,7 +416,8 @@ class I_copy(Instruction):
             if (not os.path.isdir(dst)):
                ch.FATAL("can't COPY: destination not a directory: %s to %s"
                         % (src, dst))
-            for src2_basename in os.listdir(src):
+            for src2_basename in ossafe(os.listdir,
+                                        "can't list directory: %s" % src, src):
                src2 = src + "/" + src2_basename
                if (os.path.islink(src2)):
                   # Symlinks within directories do not get dereferenced.
@@ -606,7 +607,8 @@ class CLI_List_Images(ch.CLI_Action_Exit):
 
    def __call__(self, _, namespace, *args, **kwargs):
       ch.dependencies_check()
-      images = os.listdir(namespace.storage + '/img/')
+      imgdir = namespace.storage + '/img'
+      images = ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
       for image in images:
          print(ch.Image_Ref(image))
       sys.exit(0)
