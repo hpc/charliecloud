@@ -61,8 +61,6 @@ ENV_DEFAULTS = { }
 
 def main():
 
-   atexit.register(ch.color_reset, sys.stdout, sys.stderr)
-
    if (not os.path.exists(CH_RUN)):
       ch.depfails.append(("missing", CH_RUN))
 
@@ -107,7 +105,7 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
        sys.exit(1)
 
    cli = ap.parse_args()
-   ch.verbose = cli.verbose
+   ch.log_setup(cli.verbose)
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
    if (cli.tag is None):
@@ -409,7 +407,7 @@ class I_copy(Instruction):
          # Do the copy.
          if (os.path.isfile(src)):   # or symlink to file
             ch.DEBUG("COPY via copy2 file %s to %s" % (src, dst))
-            shutil.copy2(src, dst, follow_symlinks=True)
+            ch.copy(src, dst, follow_symlinks=True)
          elif (os.path.isdir(src)):  # or symlink to directory
             # Copy *contents* of src, not src itself. Note: shutil.copytree()
             # has a parameter dirs_exist_ok that I think will make this easier
@@ -423,15 +421,15 @@ class I_copy(Instruction):
                if (os.path.islink(src2)):
                   # Symlinks within directories do not get dereferenced.
                   ch.DEBUG("symlink via copy2: %s to %s" % (src2, dst))
-                  shutil.copy2(src2, dst, follow_symlinks=False)
+                  ch.copy(src2, dst, follow_symlinks=False)
                elif (os.path.isfile(src2)):  # not symlink to file
                   ch.DEBUG("file via copy2: %s to %s" % (src2, dst))
-                  shutil.copy2(src2, dst)
+                  ch.copy(src2, dst)
                elif (os.path.isdir(src2)):   # not symlink to directory
                   dst2 = dst + "/" + src2_basename
                   ch.DEBUG("directory via copytree: %s to %s" % (src2, dst2))
-                  shutil.copytree(src2, dst2, symlinks=True,
-                                  ignore_dangling_symlinks=True)
+                  ch.copytree(src2, dst2, symlinks=True,
+                              ignore_dangling_symlinks=True)
                else:
                   ch.FATAL("can't COPY unknown file type: %s" % src2)
          else:
