@@ -284,7 +284,7 @@ def pid_file_from_bundle(bundle):
 def state_load():
    st = types.SimpleNamespace()
 
-   st.config = json.load(open(args.bundle + "/config.json"))
+   st.config = json.load(ch.open_(args.bundle + "/config.json"))
    #debug_lines(json.dumps(st.config, indent=2))
 
    v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)

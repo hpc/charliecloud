@@ -288,7 +288,7 @@ nogroup:x:65534:
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
       try:
-         fp = open(self.manifest_path, "rt", encoding="UTF-8")
+         fp = open_(self.manifest_path, "rt", encoding="UTF-8")
       except OSError as x:
          FATAL("can't open manifest file: %s: %s"
                % (self.manifest_path, x.strerror))
@@ -720,9 +720,9 @@ class Repo_Downloader:
       self.authenticate_maybe(url)
       res = self.get_raw(url, headers)
       try:
-         fp = open(path, "wb")
-         fp.write(res.content)
-         fp.close()
+         fp = open_(path, "wb")
+         ossafe(write, "can't write: %s" % path, res.content)
+         ossafe(fp.close, "can't close: %s" % path)
       except OSError as x:
          FATAL("can't write: %s: %s" % (path, x))
 
