@@ -156,7 +156,7 @@ def op_create():
    # Start dummy supervisor.
    if (state.pid is not None):
       ch.FATAL("container already created")
-   pid = ossafe(os.fork, "can't fork")
+   pid = ch.ossafe(os.fork, "can't fork")
    if (pid == 0):
       # Child; the only reason to exist is so Buildah sees a process when it
       # looks for one. Sleep until told to exit.

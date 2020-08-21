@@ -849,7 +849,7 @@ def copy2(src, dst, **kwargs):
 
 def copytree(*args, **kwargs):
    "Wrapper for shutil.copytree() that exits the program on the first error."
-   shutil.copytree(copy_function=copy, *args, **kwargs)
+   shutil.copytree(copy_function=copy2, *args, **kwargs)
 
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
