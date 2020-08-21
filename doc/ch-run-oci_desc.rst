@@ -180,7 +180,7 @@ Unsupported features that are ignored:
 Environment variables
 =====================
 
-.. include:: _py_env.rst
+.. include:: py_env.rst
 
 :code:`CH_RUN_OCI_HANG`
 

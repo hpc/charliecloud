@@ -52,6 +52,7 @@ install.rst \
 logo-sidebar.png \
 make-deps-overview \
 man/README \
+py_env.rst \
 rd100-winner.png \
 see_also.rst \
 tutorial.rst

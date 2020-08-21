@@ -73,7 +73,8 @@ exclude_patterns = ["doctrees", "html", "man"]
 #
 # on files included via ".. include::'. I believe this was fixed in 1.4.3 and
 # the relevant issue is: https://github.com/sphinx-doc/sphinx/issues/2603
-exclude_patterns += ["*_desc.rst", "_deps.rst", "bugs.rst", "see_also.rst"]
+exclude_patterns += ["*_desc.rst", "_deps.rst", "bugs.rst", "py_env.rst",
+                     "see_also.rst"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

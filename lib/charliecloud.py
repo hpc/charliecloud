@@ -1,4 +1,5 @@
 import argparse
+import atexit
 import collections
 import copy
 import datetime
@@ -491,7 +492,6 @@ class Image_Ref:
    # first use.
    parser = None
 
-
    def __init__(self, src=None):
       self.host = None
       self.port = None
@@ -721,7 +721,7 @@ class Repo_Downloader:
       res = self.get_raw(url, headers)
       try:
          fp = open_(path, "wb")
-         ossafe(write, "can't write: %s" % path, res.content)
+         ossafe(fp.write, "can't write: %s" % path, res.content)
          ossafe(fp.close, "can't close: %s" % path)
       except OSError as x:
          FATAL("can't write: %s: %s" % (path, x))
@@ -785,7 +785,15 @@ class TarFile(tarfile.TarFile):
          [1]: https://bugs.python.org/issue35483
          [2]: https://bugs.python.org/issue19974"""
       try:
-         st = ossafe(os.lstat, "can't lstat: %s" % targetpath, targetpath)
+         st = os.lstat(targetpath)
+      except FileNotFoundError:
+         # We could move this except clause after all the stat.S_IS* calls,
+         # but that risks catching FileNotFoundError that came from somewhere
+         # other than lstat().
+         st = None
+      except OSError as x:
+         FATAL("can't lstat: %s" % targetpath, targetpath)
+      if (st is not None):
          if (stat.S_ISREG(st.st_mode)):
             pass  # regular file; do nothing (will be overwritten)
          elif (stat.S_ISDIR(st.st_mode)):
@@ -796,8 +804,6 @@ class TarFile(tarfile.TarFile):
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))
-      except FileNotFoundError:
-         pass
       super().makefile(tarinfo, targetpath)
 
 
@@ -823,21 +829,21 @@ def WARNING(*args, **kwargs):
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
-   color("33m", sys.stdout)
+   color_set("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
    color_reset(sys.stdout)
    if (cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
 
-def color(color, fp):
+def color_reset(*fps):
+   for fp in fps:
+      color_set("0m", fp)
+
+def color_set(color, fp):
    if (fp.isatty()):
       print("\033[" + color, end="", flush=True, file=fp)
 
-def color_reset(*fps):
-   for fp in fps:
-      color("0m", fp)
-
-def copy(src, dst, **kwargs):
+def copy2(src, dst, **kwargs):
    "Wrapper for shutil.copy2() with error checking."
    ossafe(shutil.copy2, "can't copy: %s -> %s" % (src, dst), src, dst, **kwargs)
 
@@ -864,11 +870,11 @@ def file_write(path, content, mode=None):
       ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
    fp.close()
 
-def log(color=None, prefix="", *args, **kwargs):
+def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):
-      color(log_fp, color)
-   if (festoon):
-      prefix = ("%5d %s %s"
+      color_set(color, log_fp)
+   if (log_festoon):
+      prefix = ("%5d %s  %s"
                 % (os.getpid(),
                    datetime.datetime.now().isoformat(timespec="milliseconds"),
                    prefix))
@@ -878,10 +884,11 @@ def log(color=None, prefix="", *args, **kwargs):
       color_reset(log_fp)
 
 def log_setup(verbose_):
+   global verbose, log_festoon, log_fp
    assert (0 <= verbose_ <= 2)
    verbose = verbose_
    if ("CH_LOG_FESTOON" in os.environ):
-      festoon = True
+      log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
       log_fp = open_(file_, "wt")
@@ -897,7 +904,8 @@ def mkdirs(path):
 
 def open_(path, mode, *args, **kwargs):
    "Error-checking wrapper for open()."
-   ossafe(open, "can't open for %s: %s" % (mode, path), *args, **kwargs)
+   return ossafe(open, "can't open for %s: %s" % (mode, path),
+                 path, mode, *args, **kwargs)
 
 def ossafe(f, msg, *args, **kwargs):
    """Call f with args and kwargs. Catch OSError and other problems and fail

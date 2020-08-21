@@ -70,7 +70,7 @@ Other arguments:
 Environment variables
 =====================
 
-.. include:: _py_env.rst
+.. include:: py_env.rst
 
 Examples
 ========
