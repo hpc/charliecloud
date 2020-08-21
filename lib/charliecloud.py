@@ -891,7 +891,8 @@ def log_setup(verbose_):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
-      log_fp = open_(file_, "wt")
+      verbose = max(verbose_, 1)
+      log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
 
 def mkdirs(path):
