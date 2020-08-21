@@ -284,7 +284,10 @@ nogroup:x:65534:
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
-         fp.extractall(path=self.unpack_path, members=members)
+         try:
+            fp.extractall(path=self.unpack_path, members=members)
+         except OSError as x:
+            FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
