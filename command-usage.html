@@ -1,15 +1,18 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html4" lang="en" >
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Charliecloud command reference &mdash; Charliecloud 0.18 documentation</title>
+  <title>3. Charliecloud command reference &mdash; Charliecloud 0.19~pre+fixsearch.06e48a1 documentation</title>
   
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
   
@@ -19,7 +22,9 @@
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,10 +36,6 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="4. Frequently asked questions (FAQ)" href="faq.html" />
     <link rel="prev" title="2. Tutorial" href="tutorial.html" /> 
@@ -51,7 +52,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> Charliecloud
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Charliecloud
           
 
           
@@ -64,7 +65,7 @@
             
             
               <div class="version">
-                0.18
+                0.19~pre+fixsearch.06e48a1
               </div>
             
           
@@ -81,6 +82,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -247,6 +249,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -285,7 +288,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>3. Charliecloud command reference</li>
     
@@ -2046,20 +2049,20 @@ centers:</p>
 </ul>
 </div></blockquote>
 <p>Output has been omitted.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(mybox)</span><span class="gp">$</span> ssh hpc-admin
-<span class="gp gp-VirtualEnv">(hpc-admin)</span><span class="gp">$</span> ch-test mk-perm-dirs --perm-dir /scratch/<span class="nv">$USER</span>/perms <span class="se">\</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">(mybox)$</span> ssh hpc-admin
+<span class="gp">(hpc-admin)$</span> ch-test mk-perm-dirs --perm-dir /scratch/<span class="nv">$USER</span>/perms <span class="se">\</span>
                                   --perm-dir /home/<span class="nv">$USER</span>/perms
-<span class="gp gp-VirtualEnv">(hpc-admin)</span><span class="gp">$</span> <span class="nb">exit</span>
-<span class="gp gp-VirtualEnv">(mybox)</span><span class="gp">$</span> ch-test build --scope full
-<span class="gp gp-VirtualEnv">(mybox)</span><span class="gp">$</span> scp -r /var/tmp/pack hpc:/scratch/<span class="nv">$USER</span>/pack
-<span class="gp gp-VirtualEnv">(mybox)</span><span class="gp">$</span> ssh hpc
-<span class="gp gp-VirtualEnv">(hpc)</span><span class="gp">$</span> salloc -N2
-<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_TARDIR</span><span class="o">=</span>/scratch/<span class="nv">$USER</span>/pack
-<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_IMGDIR</span><span class="o">=</span>/local/tmp
-<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s2">&quot;/scratch/</span><span class="nv">$USER</span><span class="s2">/perms /home/</span><span class="nv">$USER</span><span class="s2">/perms&quot;</span>
-<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_SCOPE</span><span class="o">=</span>full
-<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> ch-test run
-<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> ch-test examples
+<span class="gp">(hpc-admin)$</span> <span class="nb">exit</span>
+<span class="gp">(mybox)$</span> ch-test build --scope full
+<span class="gp">(mybox)$</span> scp -r /var/tmp/pack hpc:/scratch/<span class="nv">$USER</span>/pack
+<span class="gp">(mybox)$</span> ssh hpc
+<span class="gp">(hpc)$</span> salloc -N2
+<span class="gp">(cn001)$</span> <span class="nb">export</span> <span class="nv">CH_TEST_TARDIR</span><span class="o">=</span>/scratch/<span class="nv">$USER</span>/pack
+<span class="gp">(cn001)$</span> <span class="nb">export</span> <span class="nv">CH_TEST_IMGDIR</span><span class="o">=</span>/local/tmp
+<span class="gp">(cn001)$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s2">&quot;/scratch/</span><span class="nv">$USER</span><span class="s2">/perms /home/</span><span class="nv">$USER</span><span class="s2">/perms&quot;</span>
+<span class="gp">(cn001)$</span> <span class="nb">export</span> <span class="nv">CH_TEST_SCOPE</span><span class="o">=</span>full
+<span class="gp">(cn001)$</span> ch-test run
+<span class="gp">(cn001)$</span> ch-test examples
 </pre></div>
 </div>
 </div>
@@ -2236,6 +2239,7 @@ Remove empty <code class="code docutils literal notranslate"><span class="pre">M
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2014–2020, Triad National Security, LLC
 
     </p>
@@ -2250,7 +2254,6 @@ Remove empty <code class="code docutils literal notranslate"><span class="pre">M
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

@@ -1,15 +1,18 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html4" lang="en" >
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Frequently asked questions (FAQ) &mdash; Charliecloud 0.18 documentation</title>
+  <title>4. Frequently asked questions (FAQ) &mdash; Charliecloud 0.19~pre+fixsearch.06e48a1 documentation</title>
   
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
   
@@ -19,7 +22,9 @@
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,10 +36,6 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="5. Contributor’s guide" href="dev.html" />
     <link rel="prev" title="3. Charliecloud command reference" href="command-usage.html" /> 
@@ -51,7 +52,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> Charliecloud
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Charliecloud
           
 
           
@@ -64,7 +65,7 @@
             
             
               <div class="version">
-                0.18
+                0.19~pre+fixsearch.06e48a1
               </div>
             
           
@@ -81,6 +82,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -136,6 +138,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -174,7 +177,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>4. Frequently asked questions (FAQ)</li>
     
@@ -691,7 +694,7 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 <div class="section" id="how-do-i-run-x11-apps">
 <h3><a class="toc-backref" href="#id23">4.4.4. How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
 <p>X11 applications should “just work”. For example, try this Dockerfile:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">debian:stretch</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
     <span class="o">&amp;&amp;</span> apt-get install -y xterm
 </pre></div>
@@ -838,6 +841,7 @@ Alpine 3.9 image pulled from Docker hub:</p>
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2014–2020, Triad National Security, LLC
 
     </p>
@@ -852,7 +856,6 @@ Alpine 3.9 image pulled from Docker hub:</p>
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

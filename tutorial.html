@@ -1,15 +1,18 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html4" lang="en" >
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.18 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.19~pre+fixsearch.06e48a1 documentation</title>
   
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
   
@@ -19,7 +22,9 @@
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -31,10 +36,6 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="3. Charliecloud command reference" href="command-usage.html" />
     <link rel="prev" title="1. Installing" href="install.html" /> 
@@ -51,7 +52,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> Charliecloud
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Charliecloud
           
 
           
@@ -64,7 +65,7 @@
             
             
               <div class="version">
-                0.18
+                0.19~pre+fixsearch.06e48a1
               </div>
             
           
@@ -81,6 +82,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -138,6 +140,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -176,7 +179,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>2. Tutorial</li>
     
@@ -306,7 +309,7 @@ supported.</p>
 <p>We will use the following very simple Dockerfile:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: standard</span>
 <span class="c"># Unable to convert to a CentOS base until issues #472 and #498 are resolved</span>
-<span class="k">FROM</span> <span class="s">debian:stretch</span>
+<span class="k">FROM</span><span class="s"> debian:stretch</span>
 
 <span class="k">RUN</span> apt-get update <span class="se">\</span>
  <span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends openssh-client <span class="se">\</span>
@@ -767,7 +770,7 @@ trustworthy image on Docker Hub you can use as a base?</p>
 <p>This approach is the simplest and fastest way to install stuff in your image.
 The <code class="code docutils literal notranslate"><span class="pre">examples/hello</span></code> Dockerfile also seen above does this to install the
 package <code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">debian:stretch</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
 
 <span class="k">RUN</span> apt-get update <span class="se">\</span>
  <span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends openssh-client <span class="se">\</span>
@@ -785,7 +788,7 @@ image, unless you add an HTTP cache, which is out of scope of this tutorial.</p>
 using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic CentOS image
 (<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.centos8</span></code>):</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">centos:8</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> centos:8</span>
 
 <span class="c"># This image has two purposes: (1) demonstrate we can build a CentOS 8 image</span>
 <span class="c"># and (2) provide avbuild environment for Charliecloud EPEL 8 RPMs.</span>
@@ -847,7 +850,7 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 Dockerfile that compiles several dependencies in addition to OpenMPI. For the
 purposes of this tutorial, you can skip most of it, but we felt it would be
 useful to show a real example.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">centos8</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> centos8</span>
 
 <span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
 <span class="c"># OpenMPI for use inside a container.</span>
@@ -1019,7 +1022,7 @@ source, but you use the <code class="code docutils literal notranslate"><span cl
 host filesystem (rather than the network via HTTP) to the image. For example,
 <code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello/Dockerfile.openmpi</span></code> uses this approach:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: full</span>
-<span class="k">FROM</span> <span class="s">openmpi</span>
+<span class="k">FROM</span><span class="s"> openmpi</span>
 
 <span class="c"># This example</span>
 <span class="k">COPY</span> . /hello
@@ -1415,7 +1418,7 @@ on each compute node. For example (note single quotes):</p>
 <span class="gp">... </span>   <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">x</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span>
 <span class="gp">...</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">SAMPLE_CT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">2e8</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ct</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="n">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SAMPLE_CT</span><span class="p">))</span> \
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ct</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SAMPLE_CT</span><span class="p">))</span> \
 <span class="gp">... </span>       <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> \
 <span class="gp">... </span>       <span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="mf">4.0</span><span class="o">*</span><span class="n">ct</span><span class="o">/</span><span class="n">SAMPLE_CT</span>
@@ -1479,6 +1482,7 @@ your site administrators for the latter.</p>
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2014–2020, Triad National Security, LLC
 
     </p>
@@ -1493,7 +1497,6 @@ your site administrators for the latter.</p>
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
