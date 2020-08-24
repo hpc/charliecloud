@@ -201,8 +201,8 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
 
    if (ml.instruction_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
-   ch.INFO("grew %s in %d instructions"
-           % (images[image_ct - 1], ml.instruction_ct))
+   ch.INFO("grown in %d instructions: %s"
+           % (ml.instruction_ct, images[image_ct - 1]))
 
 
 class Main_Loop(lark.Visitor):
@@ -354,8 +354,21 @@ class I_arg_equals(Arg):
 
 class I_copy(Instruction):
 
+   # Note: The Dockerfile specification for COPY is complex, messy,
+   # inexplicably different from cp(1), and incomplete. We try to be
+   # bug-compatible with Docker but probably are not 100%. See the FAQ.
+   #
+   # Because of these weird semantics, none of this abstracted into a general
+   # copy function. I don't want people calling it except from here.
+
    def __init__(self, *args):
       super().__init__(*args)
+      self.from_ = self.options.pop("from", None)
+      if (self.from_ is not None):
+         try:
+            self.from_ = int(self.from_)
+         except ValueError:
+            pass
       if (ch.tree_child(self.tree, "copy_shell") is not None):
          paths = [variables_sub(i, env.env_build)
                   for i in ch.tree_child_terminals(self.tree, "copy_shell",
@@ -373,22 +386,20 @@ class I_copy(Instruction):
       # Complain about unsupported stuff.
       if (self.options.pop("chown", False)):
          self.unsupported_forever_warn("--chown")
-      if (self.options.pop("from", False)):
-         self.unsupported_yet_fatal("--from", 768)
       # Any remaining options are invalid.
       self.options_assert_empty()
-      # The Dockerfile specification for COPY is complex, messy, inexplicably
-      # different from cp(1), and incomplete. We try to be bug-compatible with
-      # Docker but probably are not 100%. See the FAQ.
-      #
-      # None of this abstracted into a general copy function because the
-      # semantics are really weird, so I don't want people calling it except
-      # from here.
+      # Find the source directory.
+      if (self.from_ is not None):
+         context = images[self.from_].unpack_path
+      else:
+         context = cli.context
+      ch.DEBUG("context: " + context)
+      # Do the copy.
       srcs = list()
       for src in self.srcs:
          if (os.path.normpath(src).startswith("..")):
             ch.FATAL("can't COPY: %s climbs outside context" % src)
-         for i in glob.glob(cli.context + "/" + src):
+         for i in glob.glob(context + "/" + src):
             srcs.append(i)
       if (len(srcs) == 0):
          ch.FATAL("can't COPY: no sources exist")
@@ -406,7 +417,7 @@ class I_copy(Instruction):
       for src in srcs:
          # Check for symlinks to outside context.
          src_real = os.path.realpath(src)
-         context_real = os.path.realpath(cli.context)
+         context_real = os.path.realpath(context)
          if (not os.path.commonpath([src_real, context_real]) \
                  .startswith(context_real)):
             ch.FATAL("can't COPY: %s climbs outside context via symlink" % src)

@@ -8,11 +8,16 @@ setup () {
     prerequisites_ok multistage
 }
 
-@test "${ch_tag}/hello runs" {
+@test "${ch_tag}/hello" {
     run ch-run "$ch_img" -- hello -g 'Hello, Charliecloud!'
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = 'Hello, Charliecloud!' ]]
+}
+
+@test "${ch_tag}/man hello" {
+    skip "issue #833"
+    ch-run "$ch_img" -- man hello > /dev/null
 }
 
 @test "${ch_tag}/files seem OK" {
@@ -20,10 +25,10 @@ setup () {
     test -x "${ch_img}/usr/local/bin/hello"
     # Present by default.
     test -d "${ch_img}/usr/local/share/applications"
-    # Copied from first stage.
     test -d "${ch_img}/usr/local/share/info"
-    test -d "${ch_img}/usr/local/share/locale"
     test -d "${ch_img}/usr/local/share/man"
+    # Copied from first stage.
+    test -d "${ch_img}/usr/local/share/locale"
     # Correct file count in directories.
     ls -lh "${ch_img}/usr/local/bin"
     [[ $(find "${ch_img}/usr/local/bin" -mindepth 1 -maxdepth 1 | wc -l) -eq 1 ]]
