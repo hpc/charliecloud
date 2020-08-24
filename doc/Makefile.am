@@ -88,6 +88,7 @@ html/dev.html \
 html/faq.html \
 html/index.html \
 html/install.html \
+html/search.html \
 html/tutorial.html
 endif
 
@@ -149,7 +150,6 @@ html-local: mkdir_issue115 ../lib/version.txt _deps.rst
 	      $(BUILDDIR)/html/ch-*.html \
 	      $(BUILDDIR)/html/bugs.html \
 	      $(BUILDDIR)/html/objects.inv \
-	      $(BUILDDIR)/html/search.html \
 	      $(BUILDDIR)/html/see_also.html
 
 # FIXME: If Sphinx builds the man pages first, the HTML docs don't get curly
