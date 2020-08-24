@@ -146,7 +146,7 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
       text = sys.stdin.read()
    else:
       fp = ch.open_(cli.file, "rt")
-      text = ossafe(fp.read, "can't read: %s" % cli.file)
+      text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
       fp.close()
    # Avoid Lark issue #237: lark.exceptions.UnexpectedEOF if the file does not
    # end in newline.
