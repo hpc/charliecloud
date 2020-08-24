@@ -360,15 +360,6 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
 
-    # COPY --from
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
-FROM 00_tiny
-COPY --from=foo fixtures/empty-file .
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #768: COPY --from'* ]]
-
     # COPY list form
     run ch-grow -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
