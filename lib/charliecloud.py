@@ -95,7 +95,6 @@ DIRECTIVE_NAME: ( "escape" | "syntax" )
 comment: _WS? _COMMENT_BODY _NEWLINES
 _COMMENT_BODY: /#[^\n]*/
 
->>>>>>> master
 copy: "COPY"i ( _WS option )* _WS ( copy_list | copy_shell ) _NEWLINES
 copy_list.2: _string_list
 copy_shell: WORD ( _WS WORD )+
@@ -917,14 +916,6 @@ def ossafe(f, msg, *args, **kwargs):
       with a nice error message."""
    try:
       return f(*args, **kwargs)
-   except OSError as x:
-      FATAL("%s: %s" % (msg, x.strerror))
-
-def ossafe(f, msg, *args, **kwargs):
-   """Call f with args and kwargs. Catch OSError and other problems and fail
-      with a nice error message."""
-   try:
-      f(*args, **kwargs)
    except OSError as x:
       FATAL("%s: %s" % (msg, x.strerror))
 
