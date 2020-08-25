@@ -144,7 +144,6 @@ html-local: mkdir_issue115 ../lib/version.txt _deps.rst
 # avoid GitHub messing things up with Jekyll
 	touch html/.nojekyll
 # remove unused files that Sphinx made
-	rm -R $(BUILDDIR)/html/_sources
 	rm -f $(BUILDDIR)/html/_deps.html \
 	      $(BUILDDIR)/html/charliecloud.html \
 	      $(BUILDDIR)/html/ch-*.html \
