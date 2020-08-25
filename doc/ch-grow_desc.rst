@@ -111,6 +111,26 @@ yet implemented and our plans, see our `road map
 <https://github.com/hpc/charliecloud/projects/1>`_ on GitHub. Plain old bugs
 are in our `GitHub issues <https://github.com/hpc/charliecloud/issues>`_.
 
+None of these are set in stone. We are very interested in feedback on our
+assessments and open questions. This helps us prioritize new features and
+revise our thinking about what is needed for HPC containers.
+
+Quirks of a fully unprivileged build
+------------------------------------
+
+:code:`ch-grow` is *fully* unprivileged. It runs all instructions as the
+normal user who invokes it, does not use any setuid or setcap helper programs,
+and does not use :code:`/etc/subuid` or :code:`/etc/subgid`, in contrast to
+the “rootless” mode of some competing builders.
+
+:code:`RUN` instructions are executed with :code:`ch-run --uid=0 --gid=0`,
+i.e., host EUID and EGID both mapped to zero inside the container, and only
+one UID (zero) and GID (zero) are available inside the container. Also,
+:code:`/etc/passwd` and :code:`/etc/group` are bind-mounted from temporary
+files outside the container and can't be written. (Strictly speaking, the
+files themselves are read-write, but because they are bind-mounted, the common
+pattern of writing a new file and moving it on top of the existing one fails.)
+
 This has two consequences: the shell and its children appear to be running as
 root but only some privileged system calls are available, and manipulating
 users and groups will fail. This confuses some programs, which fail with
