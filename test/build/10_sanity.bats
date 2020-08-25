@@ -17,10 +17,13 @@ load ../common
 }
 
 @test 'version number seems sane' {
+    # This checks the form of the version number but not whether it's
+    # consistent with anything, because so far that level of strictness has
+    # yielded hundreds of false positives but zero actual bugs.
+    scope quick
     echo "version: ${ch_version}"
-    [[ $(echo "$ch_version" | wc -l) -eq 1 ]]   # one line
-    [[ $ch_version =~ ^0\.[0-9]+(\.[0-9]+)? ]]  # starts with right numbers
-    diff -u <(echo "$ch_version") "${ch_base}/lib/charliecloud/version.txt"
+    re='^0\.[0-9]+(\.[0-9]+)?(~pre\+[A-Za-z0-9]+(\.[0-9a-f]+(\.dirty)?)?)?$'
+    [[ $ch_version =~ $re ]]
 }
 
 @test 'executables seem sane' {
@@ -38,7 +41,6 @@ load ../common
         run "$path" --version
         echo "$output"
         [[ $status -eq 0 ]]
-        diff -u <(echo "${output}") <(echo "$ch_version")
         # --help: returns 0, says "Usage:" somewhere.
         run "$path" --help
         echo "$output"
