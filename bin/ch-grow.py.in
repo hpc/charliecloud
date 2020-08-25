@@ -390,7 +390,9 @@ class I_copy(Instruction):
       # Any remaining options are invalid.
       self.options_assert_empty()
       # Find the source directory.
-      if (self.from_ is not None):
+      if (self.from_ is None):
+         context = cli.context
+      else:
          if (self.from_ == image_i or self.from_ == image_alias):
             ch.FATAL("COPY --from: stage %s is the current stage" % self.from_)
          if (not self.from_ in images):
@@ -405,8 +407,6 @@ class I_copy(Instruction):
             else:
                ch.FATAL("COPY --from: stage %s does not exist" % self.from_)
          context = images[self.from_].unpack_path
-      else:
-         context = cli.context
       ch.DEBUG("context: " + context)
       # Do the copy.
       srcs = list()
