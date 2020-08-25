@@ -597,3 +597,140 @@ EOF
         [[ $output = *'doesnotexist:'*'o such file or directory'* ]]
     fi
 }
+
+@test 'Dockerfile: COPY --from errors' {
+    scope standard
+    [[ $CH_BUILDER = none ]] && skip 'no builder'
+    [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
+
+    # Note: Docker treats several types of erroneous --from names as another
+    # image and tries to pull it. To avoid clashes with real, pullable images,
+    # we use the random name "uhigtsbjmfps" (https://www.random.org/strings/).
+
+    # current index
+    run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY --from=0 /etc/fstab /
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'current'*'stage'* ]]
+
+    # current name
+    run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny AS uhigtsbjmfps
+COPY --from=uhigtsbjmfps /etc/fstab /
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    case $CH_BUILDER in
+        ch-grow)
+            [[ $output = *'current stage'* ]]
+            ;;
+        docker)
+            [[ $output = *'pull access denied'*'repository does not exist'* ]]
+            ;;
+        *)
+            false
+            ;;
+    esac
+
+    # index does not exist
+    run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY --from=1 /etc/fstab /
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    case $CH_BUILDER in
+        ch-grow)
+            [[ $output = *'does not exist'* ]]
+            ;;
+        docker)
+            [[ $output = *'index out of bounds'* ]]
+            ;;
+        *)
+            false
+            ;;
+    esac
+
+    # name does not exist
+    run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY --from=uhigtsbjmfps /etc/fstab /
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    case $CH_BUILDER in
+        ch-grow)
+            [[ $output = *'does not exist'* ]]
+            ;;
+        docker)
+            [[ $output = *'pull access denied'*'repository does not exist'* ]]
+            ;;
+        *)
+            false
+            ;;
+    esac
+
+    # index exists, but is later
+    run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY --from=1 /etc/fstab /
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    case $CH_BUILDER in
+        ch-grow)
+            [[ $output = *'does not exist yet'* ]]
+            ;;
+        docker)
+            [[ $output = *'index out of bounds'* ]]
+            ;;
+        *)
+            false
+            ;;
+    esac
+
+    # name is later
+    run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY --from=uhigtsbjmfps /etc/fstab /
+FROM 00_tiny AS uhigtsbjmfps
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    case $CH_BUILDER in
+        ch-grow)
+            [[ $output = *'does not exist'* ]]
+            [[ $output != *'does not exist yet'* ]]  # so we review test
+            ;;
+        docker)
+            [[ $output = *'pull access denied'*'repository does not exist'* ]]
+            ;;
+        *)
+            false
+            ;;
+    esac
+
+    # negative index
+    run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY --from=-1 /etc/fstab /
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    case $CH_BUILDER in
+        ch-grow)
+            [[ $output = *'invalid negative stage index'* ]]
+            ;;
+        docker)
+            [[ $output = *'index out of bounds'* ]]
+            ;;
+        *)
+            false
+            ;;
+    esac
+}

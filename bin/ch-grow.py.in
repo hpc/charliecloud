@@ -29,9 +29,9 @@ env = None
 # an int key counting stages up from zero. Images with a name (e.g., "FROM ...
 # AS foo") have a second string key of the name.
 images = dict()
-# Image index of the current stage. Incremented by FROM instructions; the
-# first will set it to 0.
+# Current stage. Incremented by FROM instructions; the first will set it to 0.
 image_i = -1
+image_alias = None
 # Number of stages.
 image_ct = None
 
@@ -244,10 +244,14 @@ class Instruction(abc.ABC):
             ch.FATAL("%3d %s: repeated option --%s"
                      % (self.lineno, self.str_name(), k))
          self.options[k] = v
+      # Save original options string because instructions pop() from the dict
+      # to process them.
+      self.options_str = " ".join("--%s=%s" % (k,v)
+                                  for (k,v) in self.options.items())
       self.tree = tree
 
    def __str__(self):
-      options = self.str_options()
+      options = self.options_str
       if (options != ""):
          options = " " + options
       return ("%3s %s%s %s"
@@ -277,9 +281,6 @@ class Instruction(abc.ABC):
 
    def str_name(self):
       return self.__class__.__name__.split("_")[1].upper()
-
-   def str_options(self):
-      return " ".join("--%s=%s" % (k,v) for (k,v) in self.options.items())
 
    def unsupported_forever_warn(self, msg):
       ch.WARNING("not supported, ignored: %s %s" % (self.str_name(), msg))
@@ -390,6 +391,19 @@ class I_copy(Instruction):
       self.options_assert_empty()
       # Find the source directory.
       if (self.from_ is not None):
+         if (self.from_ == image_i or self.from_ == image_alias):
+            ch.FATAL("COPY --from: stage %s is the current stage" % self.from_)
+         if (not self.from_ in images):
+            # FIXME: Would be nice to also report if a named stage is below.
+            if (isinstance(self.from_, int) and self.from_ < image_ct):
+               if (self.from_ < 0):
+                  ch.FATAL("COPY --from: invalid negative stage index %d"
+                           % self.from_)
+               else:
+                  ch.FATAL("COPY --from: stage %d does not exist yet"
+                           % self.from_)
+            else:
+               ch.FATAL("COPY --from: stage %s does not exist" % self.from_)
          context = images[self.from_].unpack_path
       else:
          context = cli.context
@@ -516,6 +530,8 @@ class I_from_(Instruction):
       # Update image globals.
       global image_i
       image_i += 1
+      global image_alias
+      image_alias = self.alias
       if (image_i == image_ct - 1):
          # Last image; use tag unchanged.
          tag = cli.tag
