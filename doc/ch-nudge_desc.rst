@@ -3,7 +3,7 @@ Synopsis
 
 ::
 
-   $ ch-nudge [OPTIONS] IMAGE_REF [DEST_IMAGE_REF]
+   $ ch-nudge [HOSTNAME][:PORT][/PATH/]IMAGE[:TAG]
 
 Description
 ===========
@@ -11,21 +11,16 @@ Description
 Push an image via HTTPS to repository. This script only works with images
 built with ch-grow.
 
-If :code:`IMAGE_REF` contains image information that :code:`ch-nudge` can parse
-to determine to image name and destination repository, 
+Push the image :code:`IMAGE[:TAG]` to repository :code:`[HOSTNAME][:PORT]` at
+path `[/PATH/]`. Defaults: :code:`registry-1.docker.io:443/library/IMAGE:latest`.
 
-:code:`DEST_IMAGE_REF` is specified, push to the image instead.
+See :code:`ch-grow --list` for a list of availagle images.
 
+:code:`OPTIONS`
 
-:code:`OPTIONS`:
-
-  
-
-  :code:`--delete IMAGE_REF`
-    Delete image :code:`DEST_IMAGE_REF` from repostiory.
-
-  :code:`push IMAGE_REF DEST_IMAGE_REF`
-    Push image :code:`IMAGE_REF` to repository :code:`DEST_IMAGE_REF`.
+  :code:`--delete HOSTNAME[:PORT]/[PATH/]IMAGE[:TAG]`
+    Delete image from repository :code:`HOSTNAME[:PORT]` at
+    project :code:`[PATH]` with name and tag :code:`IMAGE[:TAG]`
 
 Other arguments:
 
@@ -37,7 +32,7 @@ Other arguments:
     output and the exit code is zero; in case of problems, the exit code is
     non-zero.
 
-  :code:`--unpack-dir DIR`
+  :code:`--storage-dir DIR`
     Use directory :code:`DIR` for image data. If not specified but environment
     variable :code:`CH_GROW_STORAGE` is, then use
     :code:`$CH_GROW_STORAGE/img`; the default is
@@ -56,16 +51,10 @@ Push image "whiteout" to the Charliecloud repository on the Docker registry.
 
 ::
 
-  $ ch-nudge charliecloud/whiteout:2020-01-10
-  pushing image: registry-1.docker.io/charliecloud/whiteout:2020-01-10
-  # FIXME
-  [...]
+  #TODO [...]
 
 Delete image "whiteout" from the Charliecloud repository on the Docker registry.
 
 ::
 
-  $ ch-nudge delete registry-1.docker.io:443/charliecloud/hello-world
-  deleting image: whiteout
-  # FIXME
-  [...]
+  #TODO [...]
