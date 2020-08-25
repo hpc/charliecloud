@@ -100,7 +100,7 @@ CLEANFILES = $(man1_MANS) $(nobase_html_DATA) \
 if ENABLE_HTML
 # Automake can't remove directories.
 clean-local:
-	rm -Rf doctrees html/_static
+	rm -Rf doctrees html/_sources html/_static html/_images
 endif
 
 # Automake can't install and uninstall directories. _static contains around
@@ -109,12 +109,19 @@ endif
 # the files. These targets deal with it as an opaque directory.
 if ENABLE_HTML
 install-data-hook:
+	cp -r html/_sources $(DESTDIR)$(htmldir)/html
 	cp -r html/_static $(DESTDIR)$(htmldir)/html
+	find $(DESTDIR)$(htmldir)/html/_sources -xtype f -exec chmod 644 {} \;
 	find $(DESTDIR)$(htmldir)/html/_static -xtype d -exec chmod 755 {} \;
 	find $(DESTDIR)$(htmldir)/html/_static -xtype f -exec chmod 644 {} \;
+
 uninstall-hook:
+	   test -d $(DESTDIR)$(htmldir)/html/_sources \
+	&& rm -Rf $(DESTDIR)$(htmldir)/html/_sources \;
 	   test -d $(DESTDIR)$(htmldir)/html/_static \
-	&& rm -Rf $(DESTDIR)$(htmldir)/html/_static
+	&& rm -Rf $(DESTDIR)$(htmldir)/html/_static \;
+	   test -d $(DESTDIR)$(htmldir)/html/_images \
+	&& rm -Rf $(DESTDIR)$(htmldir)/html/_images \;
 endif
 
 # You can set these variables from the command line.
