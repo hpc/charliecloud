@@ -106,7 +106,10 @@ endif
 # Automake can't install and uninstall directories. _static contains around
 # one hundred files in several directories, and I'm pretty sure the contents
 # change depending on Sphinx version and other details, so we can't just list
-# the files. These targets deal with it as an opaque directory.
+# the files. These targets deal with it as an opaque directory. The _sources
+# directory is another generated directory that contains references to the
+# input .rst files which we need for searching to work so we give it a similar
+# treatment.
 if ENABLE_HTML
 install-data-hook:
 	cp -r html/_sources $(DESTDIR)$(htmldir)/html
