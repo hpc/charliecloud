@@ -452,10 +452,12 @@ Sphinx
 We use Sphinx to build the documentation; the theme is
 `sphinx-rtd-theme <https://sphinx-rtd-theme.readthedocs.io/en/stable/>`_.
 
-Minimum versions are listed above. We currently use Sphinx 1.8 for building
+Minimum versions are listed above. We currently use Sphinx 3.2.1 for building
 what's on the web because there are bugs problematic for us in 2.x, e.g. `bad
 spacing in lists
-<https://github.com/readthedocs/sphinx_rtd_theme/issues/799>`_.
+<https://github.com/readthedocs/sphinx_rtd_theme/issues/799>`_ and versions
+prior to 2.x will `return markdown when searching
+<https://github.com/sphinx-doc/sphinx/issues/1618>`_.
 
 If you're on Debian Stretch or some version of Ubuntu, installing with
 :code:`pip3` will silently install into :code:`~/.local`, leaving the
