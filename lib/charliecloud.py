@@ -345,7 +345,7 @@ nogroup:x:65534:
          self.layer_hashes_load()
       layers = collections.OrderedDict()
       if self.schema_version == 1:
-         layers = layers.OrderedDict(reversed(list(layers.items())))
+         collections.OrderedDict(reversed(list(layers.items())))
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
