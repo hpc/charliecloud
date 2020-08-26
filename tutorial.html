@@ -1,18 +1,15 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html4" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.19~pre+fixsearch.60023a8 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.19~pre+fixsearch.51bb007 documentation</title>
   
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
   
@@ -22,20 +19,22 @@
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="3. Charliecloud command reference" href="command-usage.html" />
     <link rel="prev" title="1. Installing" href="install.html" /> 
@@ -52,7 +51,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Charliecloud
+            <a href="index.html" class="icon icon-home"> Charliecloud
           
 
           
@@ -65,7 +64,7 @@
             
             
               <div class="version">
-                0.19~pre+fixsearch.60023a8
+                0.19~pre+fixsearch.51bb007
               </div>
             
           
@@ -82,7 +81,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -140,7 +138,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -179,9 +176,9 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>2. Tutorial</li>
+      <li><span class="section-number">2. </span>Tutorial</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -199,7 +196,7 @@
            <div itemprop="articleBody">
             
   <div class="section" id="tutorial">
-<h1>2. Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">2. </span>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
 <p>This tutorial will teach you how to create and run Charliecloud images, using
 both examples included with the source code as well as new ones you create
 from scratch.</p>
@@ -208,53 +205,58 @@ from scratch.</p>
 code is available at <code class="code docutils literal notranslate"><span class="pre">/usr/local/src/charliecloud</span></code>.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#seconds-to-charliecloud" id="id1">90 seconds to Charliecloud</a></li>
-<li><a class="reference internal" href="#getting-help" id="id2">Getting help</a></li>
-<li><a class="reference internal" href="#your-first-user-defined-software-stack" id="id3">Your first user-defined software stack</a><ul>
-<li><a class="reference internal" href="#defining-your-udss" id="id4">Defining your UDSS</a></li>
-<li><a class="reference internal" href="#build-docker-image" id="id5">Build Docker image</a></li>
-<li><a class="reference internal" href="#share-image-and-other-standard-docker-stuff" id="id6">Share image and other standard Docker stuff</a></li>
-<li><a class="reference internal" href="#flatten-image" id="id7">Flatten image</a></li>
-<li><a class="reference internal" href="#distribute-tarball" id="id8">Distribute tarball</a></li>
-<li><a class="reference internal" href="#unpack-tarball" id="id9">Unpack tarball</a></li>
-<li><a class="reference internal" href="#activate-image" id="id10">Activate image</a></li>
+<li><p><a class="reference internal" href="#seconds-to-charliecloud" id="id1">90 seconds to Charliecloud</a></p></li>
+<li><p><a class="reference internal" href="#getting-help" id="id2">Getting help</a></p></li>
+<li><p><a class="reference internal" href="#your-first-user-defined-software-stack" id="id3">Your first user-defined software stack</a></p>
+<ul>
+<li><p><a class="reference internal" href="#defining-your-udss" id="id4">Defining your UDSS</a></p></li>
+<li><p><a class="reference internal" href="#build-docker-image" id="id5">Build Docker image</a></p></li>
+<li><p><a class="reference internal" href="#share-image-and-other-standard-docker-stuff" id="id6">Share image and other standard Docker stuff</a></p></li>
+<li><p><a class="reference internal" href="#flatten-image" id="id7">Flatten image</a></p></li>
+<li><p><a class="reference internal" href="#distribute-tarball" id="id8">Distribute tarball</a></p></li>
+<li><p><a class="reference internal" href="#unpack-tarball" id="id9">Unpack tarball</a></p></li>
+<li><p><a class="reference internal" href="#activate-image" id="id10">Activate image</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#interacting-with-the-host" id="id11">Interacting with the host</a><ul>
-<li><a class="reference internal" href="#filesystems" id="id12">Filesystems</a></li>
-<li><a class="reference internal" href="#network" id="id13">Network</a></li>
-<li><a class="reference internal" href="#user-and-group-ids" id="id14">User and group IDs</a></li>
+<li><p><a class="reference internal" href="#interacting-with-the-host" id="id11">Interacting with the host</a></p>
+<ul>
+<li><p><a class="reference internal" href="#filesystems" id="id12">Filesystems</a></p></li>
+<li><p><a class="reference internal" href="#network" id="id13">Network</a></p></li>
+<li><p><a class="reference internal" href="#user-and-group-ids" id="id14">User and group IDs</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#installing-your-own-software" id="id15">Installing your own software</a><ul>
-<li><a class="reference internal" href="#third-party-software-via-package-manager" id="id16">Third-party software via package manager</a></li>
-<li><a class="reference internal" href="#third-party-software-compiled-from-source" id="id17">Third-party software compiled from source</a></li>
-<li><a class="reference internal" href="#your-software-stored-in-the-image" id="id18">Your software stored in the image</a></li>
-<li><a class="reference internal" href="#your-software-stored-on-the-host" id="id19">Your software stored on the host</a></li>
+<li><p><a class="reference internal" href="#installing-your-own-software" id="id15">Installing your own software</a></p>
+<ul>
+<li><p><a class="reference internal" href="#third-party-software-via-package-manager" id="id16">Third-party software via package manager</a></p></li>
+<li><p><a class="reference internal" href="#third-party-software-compiled-from-source" id="id17">Third-party software compiled from source</a></p></li>
+<li><p><a class="reference internal" href="#your-software-stored-in-the-image" id="id18">Your software stored in the image</a></p></li>
+<li><p><a class="reference internal" href="#your-software-stored-on-the-host" id="id19">Your software stored on the host</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#your-first-single-node-multi-process-jobs" id="id20">Your first single-node, multi-process jobs</a><ul>
-<li><a class="reference internal" href="#processes-coordinated-by-host" id="id21">Processes coordinated by host</a></li>
-<li><a class="reference internal" href="#processes-coordinated-by-container" id="id22">Processes coordinated by container</a></li>
+<li><p><a class="reference internal" href="#your-first-single-node-multi-process-jobs" id="id20">Your first single-node, multi-process jobs</a></p>
+<ul>
+<li><p><a class="reference internal" href="#processes-coordinated-by-host" id="id21">Processes coordinated by host</a></p></li>
+<li><p><a class="reference internal" href="#processes-coordinated-by-container" id="id22">Processes coordinated by container</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#your-first-multi-node-jobs" id="id23">Your first multi-node jobs</a><ul>
-<li><a class="reference internal" href="#interactive-mpi-hello-world" id="id24">Interactive MPI hello world</a></li>
-<li><a class="reference internal" href="#non-interactive-mpi-hello-world" id="id25">Non-interactive MPI hello world</a></li>
-<li><a class="reference internal" href="#interactive-apache-spark" id="id26">Interactive Apache Spark</a></li>
-<li><a class="reference internal" href="#non-interactive-apache-spark" id="id27">Non-interactive Apache Spark</a></li>
+<li><p><a class="reference internal" href="#your-first-multi-node-jobs" id="id23">Your first multi-node jobs</a></p>
+<ul>
+<li><p><a class="reference internal" href="#interactive-mpi-hello-world" id="id24">Interactive MPI hello world</a></p></li>
+<li><p><a class="reference internal" href="#non-interactive-mpi-hello-world" id="id25">Non-interactive MPI hello world</a></p></li>
+<li><p><a class="reference internal" href="#interactive-apache-spark" id="id26">Interactive Apache Spark</a></p></li>
+<li><p><a class="reference internal" href="#non-interactive-apache-spark" id="id27">Non-interactive Apache Spark</a></p></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Shell sessions throughout this documentation will use the prompt <code class="code docutils literal notranslate"><span class="pre">$</span></code>
+<p class="admonition-title">Note</p>
+<p>Shell sessions throughout this documentation will use the prompt <code class="code docutils literal notranslate"><span class="pre">$</span></code>
 to indicate commands executed natively on the host and <code class="code docutils literal notranslate"><span class="pre">&gt;</span></code> for
 commands executed in a container.</p>
 </div>
 <div class="section" id="seconds-to-charliecloud">
-<h2><a class="toc-backref" href="#id1">2.1. 90 seconds to Charliecloud</a><a class="headerlink" href="#seconds-to-charliecloud" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id1"><span class="section-number">2.1. </span>90 seconds to Charliecloud</a><a class="headerlink" href="#seconds-to-charliecloud" title="Permalink to this headline">¶</a></h2>
 <p>This section is for the impatient. It shows you how to quickly build and run a
 “hello world” Charliecloud container. If you like what you see, then proceed
 with the rest of the tutorial to understand what is happening and how to use
@@ -278,7 +280,7 @@ Charliecloud for your own applications.</p>
 100%.)</p>
 </div>
 <div class="section" id="getting-help">
-<h2><a class="toc-backref" href="#id2">2.2. Getting help</a><a class="headerlink" href="#getting-help" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2"><span class="section-number">2.2. </span>Getting help</a><a class="headerlink" href="#getting-help" title="Permalink to this headline">¶</a></h2>
 <p>All the executables have decent help and can tell you what version of
 Charliecloud you have (if not, please report a bug). For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --help
@@ -294,14 +296,14 @@ Charliecloud you have (if not, please report a bug). For example:</p>
 <a class="reference internal" href="command-usage.html"><span class="doc">Charliecloud command reference</span></a>. In addition, each executable has a man page.</p>
 </div>
 <div class="section" id="your-first-user-defined-software-stack">
-<h2><a class="toc-backref" href="#id3">2.3. Your first user-defined software stack</a><a class="headerlink" href="#your-first-user-defined-software-stack" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id3"><span class="section-number">2.3. </span>Your first user-defined software stack</a><a class="headerlink" href="#your-first-user-defined-software-stack" title="Permalink to this headline">¶</a></h2>
 <p>In this section, we will create and run a simple “hello, world” image. This
 uses the <code class="code docutils literal notranslate"><span class="pre">hello</span></code> example in the Charliecloud source code. Start with:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/serial/hello
 </pre></div>
 </div>
 <div class="section" id="defining-your-udss">
-<h3><a class="toc-backref" href="#id4">2.3.1. Defining your UDSS</a><a class="headerlink" href="#defining-your-udss" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id4"><span class="section-number">2.3.1. </span>Defining your UDSS</a><a class="headerlink" href="#defining-your-udss" title="Permalink to this headline">¶</a></h3>
 <p>You must first write a Dockerfile that describes the image you would like;
 consult the <a class="reference external" href="https://docs.docker.com/engine/reference/builder/">Dockerfile documentation</a> for details on how to do
 this. Note that run-time functionality such as <code class="code docutils literal notranslate"><span class="pre">ENTRYPOINT</span></code> is not
@@ -309,7 +311,7 @@ supported.</p>
 <p>We will use the following very simple Dockerfile:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: standard</span>
 <span class="c"># Unable to convert to a CentOS base until issues #472 and #498 are resolved</span>
-<span class="k">FROM</span><span class="s"> debian:stretch</span>
+<span class="k">FROM</span> <span class="s">debian:stretch</span>
 
 <span class="k">RUN</span> apt-get update <span class="se">\</span>
  <span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends openssh-client <span class="se">\</span>
@@ -323,18 +325,18 @@ supported.</p>
 <p>This creates a minimal Debian Stretch image with <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> installed. We
 will encounter more complex Dockerfiles later in this tutorial.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
+<p class="admonition-title">Note</p>
 <p>Docker does not update the base image unless asked to. Specific images can
 be updated manually; in this case:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker pull debian:stretch
 </pre></div>
 </div>
-<p class="last">There are various resources and scripts online to help automate this
+<p>There are various resources and scripts online to help automate this
 process, as well as <code class="code docutils literal notranslate"><span class="pre">misc/docker-clean.sh</span></code>.</p>
 </div>
 </div>
 <div class="section" id="build-docker-image">
-<h3><a class="toc-backref" href="#id5">2.3.2. Build Docker image</a><a class="headerlink" href="#build-docker-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5"><span class="section-number">2.3.2. </span>Build Docker image</a><a class="headerlink" href="#build-docker-image" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud provides a convenience wrapper <code class="code docutils literal notranslate"><span class="pre">ch-build</span></code> around
 <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code> that mitigates some of the latter’s more irritating
 characteristics. In particular, it passes through any HTTP proxy variables,
@@ -362,7 +364,7 @@ a password on every invocation, so privileged commands may be running even if
 you’re not prompted for a password.</p>
 </div>
 <div class="section" id="share-image-and-other-standard-docker-stuff">
-<h3><a class="toc-backref" href="#id6">2.3.3. Share image and other standard Docker stuff</a><a class="headerlink" href="#share-image-and-other-standard-docker-stuff" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6"><span class="section-number">2.3.3. </span>Share image and other standard Docker stuff</a><a class="headerlink" href="#share-image-and-other-standard-docker-stuff" title="Permalink to this headline">¶</a></h3>
 <p>If needed, the Docker image can be manipulated with standard Docker commands.
 In particular, image sharing using a public or private Docker Hub repository
 can be very useful.</p>
@@ -386,7 +388,7 @@ can have value when debugging Charliecloud.</p>
 </div>
 </div>
 <div class="section" id="flatten-image">
-<h3><a class="toc-backref" href="#id7">2.3.4. Flatten image</a><a class="headerlink" href="#flatten-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id7"><span class="section-number">2.3.4. </span>Flatten image</a><a class="headerlink" href="#flatten-image" title="Permalink to this headline">¶</a></h3>
 <p>Next, we flatten the Docker image into a tarball, which is then a plain file
 amenable to standard file manipulation commands. This tarball is placed in an
 arbitrary directory, here <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>.</p>
@@ -396,7 +398,7 @@ arbitrary directory, here <code class="code docutils literal notranslate"><span 
 </div>
 </div>
 <div class="section" id="distribute-tarball">
-<h3><a class="toc-backref" href="#id8">2.3.5. Distribute tarball</a><a class="headerlink" href="#distribute-tarball" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8"><span class="section-number">2.3.5. </span>Distribute tarball</a><a class="headerlink" href="#distribute-tarball" title="Permalink to this headline">¶</a></h3>
 <p>Thus far, the workflow has taken place on the build system. The next step is
 to copy the tarball to the run system. This can use any appropriate method for
 moving files: <code class="code docutils literal notranslate"><span class="pre">scp</span></code>, <code class="code docutils literal notranslate"><span class="pre">rsync</span></code>, something integrated with the
@@ -405,7 +407,7 @@ scheduler, etc.</p>
 typical use case for development and testing.</p>
 </div>
 <div class="section" id="unpack-tarball">
-<h3><a class="toc-backref" href="#id9">2.3.6. Unpack tarball</a><a class="headerlink" href="#unpack-tarball" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9"><span class="section-number">2.3.6. </span>Unpack tarball</a><a class="headerlink" href="#unpack-tarball" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud runs out of a normal directory rather than a filesystem image. In
 order to create this directory, we unpack the image tarball. This will replace
 the image directory if it already exists.</p>
@@ -419,15 +421,15 @@ Lustre, in favor of local storage such as <code class="code docutils literal not
 This will yield better performance for you and anyone else on the shared
 filesystem.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">You can run perfectly well out of <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>, but because it is
+<p class="admonition-title">Note</p>
+<p>You can run perfectly well out of <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>, but because it is
 bind-mounted automatically, the image root will then appear in multiple
 locations in the container’s filesystem tree. This can cause confusion for
 both users and programs.</p>
 </div>
 </div>
 <div class="section" id="activate-image">
-<h3><a class="toc-backref" href="#id10">2.3.7. Activate image</a><a class="headerlink" href="#activate-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10"><span class="section-number">2.3.7. </span>Activate image</a><a class="headerlink" href="#activate-image" title="Permalink to this headline">¶</a></h3>
 <p>We are now ready to run programs inside a Charliecloud container. This is done
 with the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> command:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/hello -- <span class="nb">echo</span> hello
@@ -463,8 +465,8 @@ multiple simultaneous invocations, they will not share containers. However,
 container overhead is minimal, and containers communicate without hassle, so
 this is generally of peripheral interest.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The <code class="code docutils literal notranslate"><span class="pre">--</span></code> in the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> command line is a standard argument
+<p class="admonition-title">Note</p>
+<p>The <code class="code docutils literal notranslate"><span class="pre">--</span></code> in the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> command line is a standard argument
 that separates options from non-option arguments. Without it,
 <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> would try (and fail) to interpret <code class="code docutils literal notranslate"><span class="pre">ls</span></code>’s <code class="code docutils literal notranslate"><span class="pre">-l</span></code>
 argument.</p>
@@ -504,11 +506,11 @@ container. Next, we explore how Charliecloud accesses host resources.</p>
 </div>
 </div>
 <div class="section" id="interacting-with-the-host">
-<h2><a class="toc-backref" href="#id11">2.4. Interacting with the host</a><a class="headerlink" href="#interacting-with-the-host" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id11"><span class="section-number">2.4. </span>Interacting with the host</a><a class="headerlink" href="#interacting-with-the-host" title="Permalink to this headline">¶</a></h2>
 <p>Charliecloud is not an isolation layer, so containers have full access to host
 resources, with a few quirks. This section demonstrates how this works.</p>
 <div class="section" id="filesystems">
-<h3><a class="toc-backref" href="#id12">2.4.1. Filesystems</a><a class="headerlink" href="#filesystems" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12"><span class="section-number">2.4.1. </span>Filesystems</a><a class="headerlink" href="#filesystems" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud makes host directories available inside the container using bind
 mounts, which is somewhat like a hard link in that it causes a file or
 directory to appear in multiple places in the filesystem tree, but it is a
@@ -547,7 +549,7 @@ can be added using the <code class="code docutils literal notranslate"><span cla
 </div>
 </div>
 <div class="section" id="network">
-<h3><a class="toc-backref" href="#id13">2.4.2. Network</a><a class="headerlink" href="#network" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13"><span class="section-number">2.4.2. </span>Network</a><a class="headerlink" href="#network" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud containers share the host’s network namespace, so most network
 things should be the same.</p>
 <p>However, SSH is not aware of Charliecloud containers. If you SSH to a node
@@ -572,8 +574,8 @@ container. The simplest is to manually invoke <code class="code docutils literal
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Recall that each <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocation creates a new container. That
+<p class="admonition-title">Note</p>
+<p>Recall that each <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocation creates a new container. That
 is, the <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> command above has not entered an existing user
 namespace <code class="code docutils literal notranslate"><span class="pre">’2256</span></code>; rather, it has re-used the namespace ID
 <code class="code docutils literal notranslate"><span class="pre">’2256</span></code>.</p>
@@ -603,15 +605,15 @@ bind-mount):</p>
 <p>This also demonstrates that <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> does not alter your environment
 variables.</p>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<ol class="last arabic simple">
-<li><code class="code docutils literal notranslate"><span class="pre">CH_RUN_ARGS</span></code> is interpreted very simply; the sole delimiter is
+<p class="admonition-title">Warning</p>
+<ol class="arabic simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">CH_RUN_ARGS</span></code> is interpreted very simply; the sole delimiter is
 spaces. It is not shell syntax. In particular, quotes and backslashes
-are not interpreted.</li>
-<li>Argument <code class="code docutils literal notranslate"><span class="pre">-t</span></code> is required for SSH to allocate a pseudo-TTY and
+are not interpreted.</p></li>
+<li><p>Argument <code class="code docutils literal notranslate"><span class="pre">-t</span></code> is required for SSH to allocate a pseudo-TTY and
 thus convince your shell to be interactive. In the case of Bash,
 otherwise you’ll get a shell that accepts commands but doesn’t print
-prompts, among other other issues. (<a class="reference external" href="https://github.com/hpc/charliecloud/issues/2">Issue #2</a>.)</li>
+prompts, among other other issues. (<a class="reference external" href="https://github.com/hpc/charliecloud/issues/2">Issue #2</a>.)</p></li>
 </ol>
 </div>
 <p>A third may be to edit one’s shell initialization scripts to check the command
@@ -619,7 +621,7 @@ line and <code class="code docutils literal notranslate"><span class="pre">exec(
 avoids wrapping <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> or altering its command line.</p>
 </div>
 <div class="section" id="user-and-group-ids">
-<h3><a class="toc-backref" href="#id14">2.4.3. User and group IDs</a><a class="headerlink" href="#user-and-group-ids" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14"><span class="section-number">2.4.3. </span>User and group IDs</a><a class="headerlink" href="#user-and-group-ids" title="Permalink to this headline">¶</a></h3>
 <p>Unlike Docker and some other container systems, Charliecloud tries to make the
 container’s users and groups look the same as the host’s. (This is
 accomplished by bind-mounting <code class="code docutils literal notranslate"><span class="pre">/etc/passwd</span></code> and <code class="code docutils literal notranslate"><span class="pre">/etc/group</span></code> into
@@ -746,31 +748,31 @@ software.</p>
 </div>
 </div>
 <div class="section" id="installing-your-own-software">
-<h2><a class="toc-backref" href="#id15">2.5. Installing your own software</a><a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id15"><span class="section-number">2.5. </span>Installing your own software</a><a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
 <p>This section covers four situations for making software available inside a
 Charliecloud container:</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li>Third-party software installed into the image using a package manager.</li>
-<li>Third-party software compiled from source into the image.</li>
-<li>Your software installed into the image.</li>
-<li>Your software stored on the host but compiled in the container.</li>
+<li><p>Third-party software installed into the image using a package manager.</p></li>
+<li><p>Third-party software compiled from source into the image.</p></li>
+<li><p>Your software installed into the image.</p></li>
+<li><p>Your software stored on the host but compiled in the container.</p></li>
 </ol>
 </div></blockquote>
 <p>Many of Docker’s <a class="reference external" href="https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices">Best practices for writing Dockerfiles</a>
 apply to Charliecloud images as well, so you should be familiar with that
 document.</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Maybe you don’t have to install the software at all. Is there already a
+<p class="admonition-title">Note</p>
+<p>Maybe you don’t have to install the software at all. Is there already a
 trustworthy image on Docker Hub you can use as a base?</p>
 </div>
 <div class="section" id="third-party-software-via-package-manager">
-<h3><a class="toc-backref" href="#id16">2.5.1. Third-party software via package manager</a><a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16"><span class="section-number">2.5.1. </span>Third-party software via package manager</a><a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
 <p>This approach is the simplest and fastest way to install stuff in your image.
 The <code class="code docutils literal notranslate"><span class="pre">examples/hello</span></code> Dockerfile also seen above does this to install the
 package <code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">debian:stretch</span>
 
 <span class="k">RUN</span> apt-get update <span class="se">\</span>
  <span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends openssh-client <span class="se">\</span>
@@ -783,12 +785,12 @@ demonstrated above, or others, such as <code class="code docutils literal notran
 image, unless you add an HTTP cache, which is out of scope of this tutorial.</p>
 </div>
 <div class="section" id="third-party-software-compiled-from-source">
-<h3><a class="toc-backref" href="#id17">2.5.2. Third-party software compiled from source</a><a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17"><span class="section-number">2.5.2. </span>Third-party software compiled from source</a><a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
 <p>Under this method, one uses <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands to fetch the desired software
 using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic CentOS image
 (<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.centos8</span></code>):</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> centos:8</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">centos:8</span>
 
 <span class="c"># This image has two purposes: (1) demonstrate we can build a CentOS 8 image</span>
 <span class="c"># and (2) provide avbuild environment for Charliecloud EPEL 8 RPMs.</span>
@@ -850,7 +852,7 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 Dockerfile that compiles several dependencies in addition to OpenMPI. For the
 purposes of this tutorial, you can skip most of it, but we felt it would be
 useful to show a real example.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> centos8</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">centos8</span>
 
 <span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
 <span class="c"># OpenMPI for use inside a container.</span>
@@ -996,23 +998,24 @@ useful to show a real example.</p>
 </div>
 <p>So what is going on here?</p>
 <ol class="arabic simple">
-<li>Use the latest CentOS 8 as the base image.</li>
-<li>Install a basic build system using the OS package manager.</li>
-<li>For a few dependencies and then OpenMPI itself:<ol class="arabic">
-<li>Download and untar. Note the use of variables to make adjusting the URL
+<li><p>Use the latest CentOS 8 as the base image.</p></li>
+<li><p>Install a basic build system using the OS package manager.</p></li>
+<li><p>For a few dependencies and then OpenMPI itself:</p>
+<ol class="arabic simple">
+<li><p>Download and untar. Note the use of variables to make adjusting the URL
 and versions easier, as well as the explanation of why we’re not using
 <code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, given that several of these packages are included in
-CentOS.</li>
-<li>Build and install OpenMPI. Note the <code class="code docutils literal notranslate"><span class="pre">getconf</span></code> trick to guess at an
-appropriate parallel build.</li>
+CentOS.</p></li>
+<li><p>Build and install OpenMPI. Note the <code class="code docutils literal notranslate"><span class="pre">getconf</span></code> trick to guess at an
+appropriate parallel build.</p></li>
 </ol>
 </li>
-<li>Clean up, in order to reduce the size of layers as well as the resulting
-Charliecloud tarball (<code class="code docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-Rf</span></code>).</li>
+<li><p>Clean up, in order to reduce the size of layers as well as the resulting
+Charliecloud tarball (<code class="code docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-Rf</span></code>).</p></li>
 </ol>
 </div>
 <div class="section" id="your-software-stored-in-the-image">
-<h3><a class="toc-backref" href="#id18">2.5.3. Your software stored in the image</a><a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18"><span class="section-number">2.5.3. </span>Your software stored in the image</a><a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
 <p>This method covers software provided by you that is included in the image.
 This is recommended when your software is relatively stable or is not easily
 available to users of your image, for example a library rather than simulation
@@ -1022,7 +1025,7 @@ source, but you use the <code class="code docutils literal notranslate"><span cl
 host filesystem (rather than the network via HTTP) to the image. For example,
 <code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello/Dockerfile.openmpi</span></code> uses this approach:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: full</span>
-<span class="k">FROM</span><span class="s"> openmpi</span>
+<span class="k">FROM</span> <span class="s">openmpi</span>
 
 <span class="c"># This example</span>
 <span class="k">COPY</span> . /hello
@@ -1032,7 +1035,7 @@ host filesystem (rather than the network via HTTP) to the image. For example,
 </div>
 <p>These Dockerfile instructions:</p>
 <ol class="arabic">
-<li><p class="first">Copy the host directory <code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello</span></code> to the image at path
+<li><p>Copy the host directory <code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello</span></code> to the image at path
 <code class="code docutils literal notranslate"><span class="pre">/hello</span></code>. The host path is relative to the <em>context directory</em>, which
 is tarred up and sent to the Docker daemon. Docker builds have no access to
 the host filesystem outside the context directory.</p>
@@ -1043,11 +1046,9 @@ different node from the client without needing any shared filesystems.)</p>
 the directory containing the Dockerfile in question, and a common pattern,
 used here, is to copy in the entire context.</p>
 </li>
-<li><p class="first"><code class="code docutils literal notranslate"><span class="pre">cd</span></code> to <code class="code docutils literal notranslate"><span class="pre">/hello</span></code>.</p>
-</li>
-<li><p class="first">Compile our example. We include <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code> to remove any leftover
-build files, since they would be inappropriate inside the container.</p>
-</li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">cd</span></code> to <code class="code docutils literal notranslate"><span class="pre">/hello</span></code>.</p></li>
+<li><p>Compile our example. We include <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code> to remove any leftover
+build files, since they would be inappropriate inside the container.</p></li>
 </ol>
 <p>Once the image is built, we can see the results. (Install the image into
 <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code> as outlined above, if you haven’t already.)</p>
@@ -1064,7 +1065,7 @@ build files, since they would be inappropriate inside the container.</p>
 <p>We will revisit this image later.</p>
 </div>
 <div class="section" id="your-software-stored-on-the-host">
-<h3><a class="toc-backref" href="#id19">2.5.4. Your software stored on the host</a><a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19"><span class="section-number">2.5.4. </span>Your software stored on the host</a><a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
 <p>This method leaves your software on the host but compiles it in the image.
 This is recommended when your software is volatile or each image user needs a
 different version, for example a simulation code under active development.</p>
@@ -1095,24 +1096,24 @@ terminal.</p>
 </div>
 </div>
 <div class="section" id="your-first-single-node-multi-process-jobs">
-<h2><a class="toc-backref" href="#id20">2.6. Your first single-node, multi-process jobs</a><a class="headerlink" href="#your-first-single-node-multi-process-jobs" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id20"><span class="section-number">2.6. </span>Your first single-node, multi-process jobs</a><a class="headerlink" href="#your-first-single-node-multi-process-jobs" title="Permalink to this headline">¶</a></h2>
 <p>This is an important use case even for large-scale codes, when testing and
 development happens at small scale but need to use an environment comparable
 to large-scale runs.</p>
 <p>This tutorial covers three approaches:</p>
 <ol class="arabic simple">
-<li>Processes are coordinated by the host, i.e., one process per container.</li>
-<li>Processes are coordinated by the container, i.e., one container with
-multiple processes, using configuration files from the container.</li>
-<li>Processes are coordinated by the container using configuration files from
-the host.</li>
+<li><p>Processes are coordinated by the host, i.e., one process per container.</p></li>
+<li><p>Processes are coordinated by the container, i.e., one container with
+multiple processes, using configuration files from the container.</p></li>
+<li><p>Processes are coordinated by the container using configuration files from
+the host.</p></li>
 </ol>
 <p>In order to test approach 1, you must install OpenMPI 2.1.2 on the host.
 In our experience, we have had success compiling from source with the same
 options as in the Dockerfile, but there is probably more nuance to the match
 than we’ve discovered.</p>
 <div class="section" id="processes-coordinated-by-host">
-<h3><a class="toc-backref" href="#id21">2.6.1. Processes coordinated by host</a><a class="headerlink" href="#processes-coordinated-by-host" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id21"><span class="section-number">2.6.1. </span>Processes coordinated by host</a><a class="headerlink" href="#processes-coordinated-by-host" title="Permalink to this headline">¶</a></h3>
 <p>This approach does the forking and process coordination on the host. Each
 process is spawned in its own container, and because Charliecloud introduces
 minimal isolation, they can communicate as if they were running directly on
@@ -1140,7 +1141,7 @@ to be a moving target, but having the same versions inside and outside the
 container <em>usually</em> works.</p>
 </div>
 <div class="section" id="processes-coordinated-by-container">
-<h3><a class="toc-backref" href="#id22">2.6.2. Processes coordinated by container</a><a class="headerlink" href="#processes-coordinated-by-container" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22"><span class="section-number">2.6.2. </span>Processes coordinated by container</a><a class="headerlink" href="#processes-coordinated-by-container" title="Permalink to this headline">¶</a></h3>
 <p>This approach starts a single container process, which then forks and
 coordinates the parallel work. The advantage is that this approach is
 completely independent of the host for dependency configuration and
@@ -1162,7 +1163,7 @@ want the host’s Slurm coordinating processes anyway.</p>
 </div>
 </div>
 <div class="section" id="your-first-multi-node-jobs">
-<h2><a class="toc-backref" href="#id23">2.7. Your first multi-node jobs</a><a class="headerlink" href="#your-first-multi-node-jobs" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id23"><span class="section-number">2.7. </span>Your first multi-node jobs</a><a class="headerlink" href="#your-first-multi-node-jobs" title="Permalink to this headline">¶</a></h2>
 <p>This section assumes that you are using a Slurm cluster and some type of
 node-local storage. A <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> will suffice, and we use <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>
 for this tutorial. (Using <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> often works but can cause confusion
@@ -1170,29 +1171,29 @@ because it’s shared by the container and host, yielding cycles in the
 directory tree.)</p>
 <p>We cover three cases:</p>
 <ol class="arabic simple">
-<li>The MPI hello world example above, run interactively, with the host
-coordinating.</li>
-<li>Same, non-interactive.</li>
-<li>An Apache Spark example, run interactively.</li>
-<li>Same, non-interactive.</li>
+<li><p>The MPI hello world example above, run interactively, with the host
+coordinating.</p></li>
+<li><p>Same, non-interactive.</p></li>
+<li><p>An Apache Spark example, run interactively.</p></li>
+<li><p>Same, non-interactive.</p></li>
 </ol>
 <p>We think that container-coordinated MPI jobs will also work, but we haven’t
 worked out how to do this yet. (See <a class="reference external" href="https://github.com/hpc/charliecloud/issues/5">issue #5</a>.)</p>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The image directory is mounted read-only by default so it can be shared by
+<p class="admonition-title">Note</p>
+<p>The image directory is mounted read-only by default so it can be shared by
 multiple Charliecloud containers in the same or different jobs. It can be
 mounted read-write with <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>.</p>
 </div>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
+<p class="admonition-title">Warning</p>
 <p>The image can reside on most filesystems, but be aware of metadata impact.
 A non-trivial Charliecloud job may overwhelm a network filesystem, earning
 you the ire of your sysadmins and colleagues.</p>
-<p class="last">NFS sometimes does not work for read-only images; see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/9">issue #9</a>.</p>
+<p>NFS sometimes does not work for read-only images; see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/9">issue #9</a>.</p>
 </div>
 <div class="section" id="interactive-mpi-hello-world">
-<h3><a class="toc-backref" href="#id24">2.7.1. Interactive MPI hello world</a><a class="headerlink" href="#interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id24"><span class="section-number">2.7.1. </span>Interactive MPI hello world</a><a class="headerlink" href="#interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
 <p>First, obtain an interactive allocation of nodes. This tutorial assumes an
 allocation of 4 nodes (but any number should work) and an interactive shell on
 one of those nodes. For example:</p>
@@ -1228,7 +1229,7 @@ so, we run one instance of <code class="code docutils literal notranslate"><span
 <p>Success!</p>
 </div>
 <div class="section" id="non-interactive-mpi-hello-world">
-<h3><a class="toc-backref" href="#id25">2.7.2. Non-interactive MPI hello world</a><a class="headerlink" href="#non-interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25"><span class="section-number">2.7.2. </span>Non-interactive MPI hello world</a><a class="headerlink" href="#non-interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
 <p>Production jobs are normally run non-interactively, via submission of a job
 script that runs when resources are available, placing output into a file.</p>
 <p>The MPI hello world example includes such a script,
@@ -1300,7 +1301,7 @@ srun --cpus-per-task<span class="o">=</span><span class="m">1</span> ch-run <spa
 <p>Success!</p>
 </div>
 <div class="section" id="interactive-apache-spark">
-<h3><a class="toc-backref" href="#id26">2.7.3. Interactive Apache Spark</a><a class="headerlink" href="#interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id26"><span class="section-number">2.7.3. </span>Interactive Apache Spark</a><a class="headerlink" href="#interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
 <p>This example is in <code class="code docutils literal notranslate"><span class="pre">examples/spark</span></code>. Build a tarball and upload it to
 your cluster.</p>
 <p>Once you have an interactive job, unpack the tarball.</p>
@@ -1418,7 +1419,7 @@ on each compute node. For example (note single quotes):</p>
 <span class="gp">... </span>   <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">x</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span>
 <span class="gp">...</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">SAMPLE_CT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">2e8</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ct</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SAMPLE_CT</span><span class="p">))</span> \
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ct</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="n">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SAMPLE_CT</span><span class="p">))</span> \
 <span class="gp">... </span>       <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> \
 <span class="gp">... </span>       <span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="mf">4.0</span><span class="o">*</span><span class="n">ct</span><span class="o">/</span><span class="n">SAMPLE_CT</span>
@@ -1441,7 +1442,7 @@ omitted.)</p>
 <p>Success! Next, we’ll run a similar job non-interactively.</p>
 </div>
 <div class="section" id="non-interactive-apache-spark">
-<h3><a class="toc-backref" href="#id27">2.7.4. Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27"><span class="section-number">2.7.4. </span>Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
 <p>We’ll re-use much of the above to run the same computation non-interactively.
 For brevity, the Slurm script at <code class="code docutils literal notranslate"><span class="pre">examples/other/spark/slurm.sh</span></code> is not
 reproduced here.</p>
@@ -1482,7 +1483,6 @@ your site administrators for the latter.</p>
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2014–2020, Triad National Security, LLC
 
     </p>
@@ -1497,6 +1497,7 @@ your site administrators for the latter.</p>
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {

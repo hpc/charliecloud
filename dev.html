@@ -1,18 +1,15 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html4" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5. Contributor’s guide &mdash; Charliecloud 0.19~pre+fixsearch.60023a8 documentation</title>
+  <title>5. Contributor’s guide &mdash; Charliecloud 0.19~pre+fixsearch.51bb007 documentation</title>
   
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
   
@@ -22,20 +19,22 @@
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="4. Frequently asked questions (FAQ)" href="faq.html" /> 
 </head>
@@ -51,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Charliecloud
+            <a href="index.html" class="icon icon-home"> Charliecloud
           
 
           
@@ -64,7 +63,7 @@
             
             
               <div class="version">
-                0.19~pre+fixsearch.60023a8
+                0.19~pre+fixsearch.51bb007
               </div>
             
           
@@ -81,7 +80,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -173,7 +171,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -212,9 +209,9 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>5. Contributor’s guide</li>
+      <li><span class="section-number">5. </span>Contributor’s guide</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -232,100 +229,106 @@
            <div itemprop="articleBody">
             
   <div class="section" id="contributor-s-guide">
-<h1>5. Contributor’s guide<a class="headerlink" href="#contributor-s-guide" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">5. </span>Contributor’s guide<a class="headerlink" href="#contributor-s-guide" title="Permalink to this headline">¶</a></h1>
 <p>This section is notes on contributing to Charliecloud development. Currently,
 it is messy and incomplete. Patches welcome!</p>
 <p>It documents public stuff only. If you are on the core team at LANL, also
 consult the internal documentation and other resources.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><a class="reference internal" href="#workflow" id="id2">Workflow</a><ul>
-<li><a class="reference internal" href="#milestones" id="id3">Milestones</a></li>
-<li><a class="reference internal" href="#peer-review" id="id4">Peer review</a></li>
-<li><a class="reference internal" href="#branching-and-merging" id="id5">Branching and merging</a></li>
-<li><a class="reference internal" href="#miscellaneous-issue-and-pull-request-notes" id="id6">Miscellaneous issue and pull request notes</a></li>
-<li><a class="reference internal" href="#continuous-integration-testing" id="id7">Continuous integration testing</a></li>
-<li><a class="reference internal" href="#github-tags" id="id8">GitHub tags</a></li>
+<li><p><a class="reference internal" href="#workflow" id="id2">Workflow</a></p>
+<ul>
+<li><p><a class="reference internal" href="#milestones" id="id3">Milestones</a></p></li>
+<li><p><a class="reference internal" href="#peer-review" id="id4">Peer review</a></p></li>
+<li><p><a class="reference internal" href="#branching-and-merging" id="id5">Branching and merging</a></p></li>
+<li><p><a class="reference internal" href="#miscellaneous-issue-and-pull-request-notes" id="id6">Miscellaneous issue and pull request notes</a></p></li>
+<li><p><a class="reference internal" href="#continuous-integration-testing" id="id7">Continuous integration testing</a></p></li>
+<li><p><a class="reference internal" href="#github-tags" id="id8">GitHub tags</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#test-suite" id="id9">Test suite</a><ul>
-<li><a class="reference internal" href="#timing-the-tests" id="id10">Timing the tests</a></li>
-<li><a class="reference internal" href="#ch-test-complains-about-inconsistent-versions" id="id11"><code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a></li>
-<li><a class="reference internal" href="#writing-a-test-image-using-the-standard-workflow" id="id12">Writing a test image using the standard workflow</a></li>
+<li><p><a class="reference internal" href="#test-suite" id="id9">Test suite</a></p>
+<ul>
+<li><p><a class="reference internal" href="#timing-the-tests" id="id10">Timing the tests</a></p></li>
+<li><p><a class="reference internal" href="#ch-test-complains-about-inconsistent-versions" id="id11"><code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a></p></li>
+<li><p><a class="reference internal" href="#writing-a-test-image-using-the-standard-workflow" id="id12">Writing a test image using the standard workflow</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#building-rpms" id="id13">Building RPMs</a><ul>
-<li><a class="reference internal" href="#dependencies" id="id14">Dependencies</a></li>
-<li><a class="reference internal" href="#rpmbuild-wrapper-script" id="id15"><code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a></li>
-<li><a class="reference internal" href="#gotchas-and-quirks" id="id16">Gotchas and quirks</a></li>
+<li><p><a class="reference internal" href="#building-rpms" id="id13">Building RPMs</a></p>
+<ul>
+<li><p><a class="reference internal" href="#dependencies" id="id14">Dependencies</a></p></li>
+<li><p><a class="reference internal" href="#rpmbuild-wrapper-script" id="id15"><code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a></p></li>
+<li><p><a class="reference internal" href="#gotchas-and-quirks" id="id16">Gotchas and quirks</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#build-ova-appliance-file-with-vagrant-and-virtualbox" id="id17">Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a><ul>
-<li><a class="reference internal" href="#remove-old-virtual-machine" id="id18">Remove old virtual machine</a></li>
-<li><a class="reference internal" href="#build-and-provision" id="id19">Build and provision</a></li>
-<li><a class="reference internal" href="#snapshot-for-distribution" id="id20">Snapshot for distribution</a></li>
-<li><a class="reference internal" href="#test-charliecloud" id="id21">Test Charliecloud</a></li>
-<li><a class="reference internal" href="#export-appliance-ova-file" id="id22">Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a></li>
+<li><p><a class="reference internal" href="#build-ova-appliance-file-with-vagrant-and-virtualbox" id="id17">Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a></p>
+<ul>
+<li><p><a class="reference internal" href="#remove-old-virtual-machine" id="id18">Remove old virtual machine</a></p></li>
+<li><p><a class="reference internal" href="#build-and-provision" id="id19">Build and provision</a></p></li>
+<li><p><a class="reference internal" href="#snapshot-for-distribution" id="id20">Snapshot for distribution</a></p></li>
+<li><p><a class="reference internal" href="#test-charliecloud" id="id21">Test Charliecloud</a></p></li>
+<li><p><a class="reference internal" href="#export-appliance-ova-file" id="id22">Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#style-hints" id="id23">Style hints</a><ul>
-<li><a class="reference internal" href="#writing-english" id="id24">Writing English</a></li>
-<li><a class="reference internal" href="#documentation" id="id25">Documentation</a></li>
-<li><a class="reference internal" href="#dependency-policy" id="id26">Dependency policy</a></li>
-<li><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id27">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
-<li><a class="reference internal" href="#c-code" id="id28">C code</a></li>
+<li><p><a class="reference internal" href="#style-hints" id="id23">Style hints</a></p>
+<ul>
+<li><p><a class="reference internal" href="#writing-english" id="id24">Writing English</a></p></li>
+<li><p><a class="reference internal" href="#documentation" id="id25">Documentation</a></p></li>
+<li><p><a class="reference internal" href="#dependency-policy" id="id26">Dependency policy</a></p></li>
+<li><p><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id27">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></p></li>
+<li><p><a class="reference internal" href="#c-code" id="id28">C code</a></p></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#oci-technical-notes" id="id29">OCI technical notes</a><ul>
-<li><a class="reference internal" href="#gotchas" id="id30">Gotchas</a></li>
-<li><a class="reference internal" href="#bundle-directory" id="id31">Bundle directory</a></li>
-<li><a class="reference internal" href="#config-json" id="id32"><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></li>
-<li><a class="reference internal" href="#state" id="id33">State</a></li>
-<li><a class="reference internal" href="#additional-sources" id="id34">Additional sources</a></li>
+<li><p><a class="reference internal" href="#oci-technical-notes" id="id29">OCI technical notes</a></p>
+<ul>
+<li><p><a class="reference internal" href="#gotchas" id="id30">Gotchas</a></p></li>
+<li><p><a class="reference internal" href="#bundle-directory" id="id31">Bundle directory</a></p></li>
+<li><p><a class="reference internal" href="#config-json" id="id32"><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></p></li>
+<li><p><a class="reference internal" href="#state" id="id33">State</a></p></li>
+<li><p><a class="reference internal" href="#additional-sources" id="id34">Additional sources</a></p></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">We’re interested in and will consider all good-faith contributions. While
+<p class="admonition-title">Note</p>
+<p>We’re interested in and will consider all good-faith contributions. While
 it does make things easier and faster if you follow the guidelines here,
 they are not required. We’ll either clean it up for you or walk you through
 any necessary changes.</p>
 </div>
 <div class="section" id="workflow">
-<h2><a class="toc-backref" href="#id2">5.1. Workflow</a><a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2"><span class="section-number">5.1. </span>Workflow</a><a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h2>
 <p>We try to keep procedures and the Git branching model simple. Right now, we’re
 pretty similar to Scott Chacon’s “<a class="reference external" href="http://scottchacon.com/2011/08/31/github-flow.html">GitHub Flow</a>”: Master is stable;
 work on short-lived topic branches; use pull requests to ask for merging; keep issues organized with tags and milestones.</p>
 <p>The standard workflow is:</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li>Propose a change in an issue.</li>
-<li>Tag the issue with its kind (bug, enhancement, question).</li>
-<li>Get consensus on what to do and how to do it, with key information
-recorded in the issue.</li>
-<li>Submit a PR that refers to the issue.</li>
-<li>Assign the issue to a milestone.</li>
-<li>Review/iterate.</li>
-<li>Project lead merges.</li>
+<li><p>Propose a change in an issue.</p></li>
+<li><p>Tag the issue with its kind (bug, enhancement, question).</p></li>
+<li><p>Get consensus on what to do and how to do it, with key information
+recorded in the issue.</p></li>
+<li><p>Submit a PR that refers to the issue.</p></li>
+<li><p>Assign the issue to a milestone.</p></li>
+<li><p>Review/iterate.</p></li>
+<li><p>Project lead merges.</p></li>
 </ol>
 </div></blockquote>
 <p>Core team members may deliberate in public on GitHub or internally, whichever
 they are comfortable with, making sure to follow LANL policy and taking into
 account the probable desires of the recipient as well.</p>
 <div class="section" id="milestones">
-<h3><a class="toc-backref" href="#id3">5.1.1. Milestones</a><a class="headerlink" href="#milestones" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id3"><span class="section-number">5.1.1. </span>Milestones</a><a class="headerlink" href="#milestones" title="Permalink to this headline">¶</a></h3>
 <p>We use milestones to organize what we plan to do next and what happened in a
 given release. There are two groups of milestones:</p>
 <ul class="simple">
-<li><code class="code docutils literal notranslate"><span class="pre">next</span></code> contains the issues that we plan to complete soon but have not
+<li><p><code class="code docutils literal notranslate"><span class="pre">next</span></code> contains the issues that we plan to complete soon but have not
 yet landed on a specific release. Generally, we avoid putting PRs in here
-because of their ticking clocks.</li>
-<li>Each release has a milestone. These are dated with the target date for that
+because of their ticking clocks.</p></li>
+<li><p>Each release has a milestone. These are dated with the target date for that
 release. We put an issue in when it has actually landed in that release or
 we are willing to delay that release until it does. We put a PR in when we
-think it’s reasonably likely to be merged for that release.</li>
+think it’s reasonably likely to be merged for that release.</p></li>
 </ul>
 <p>If an issue is assigned to a person, that means they are actively leading the
 work on it or will do so in the near future. Typically this happens when the
@@ -333,7 +336,7 @@ issue ends up in <code class="code docutils literal notranslate"><span class="pr
 should not be assigned to a person.</p>
 </div>
 <div class="section" id="peer-review">
-<h3><a class="toc-backref" href="#id4">5.1.2. Peer review</a><a class="headerlink" href="#peer-review" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id4"><span class="section-number">5.1.2. </span>Peer review</a><a class="headerlink" href="#peer-review" title="Permalink to this headline">¶</a></h3>
 <p><strong>Issues and pull requests.</strong> The standard workflow is to introduce a
 change in an issue, get consensus on what to do, and then create a <a class="reference external" href="https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project">pull
 request</a>
@@ -363,16 +366,16 @@ closes change over time, and we don’t want to have to edit the description to
 deal with that. We also want this information in only one place (the commit
 log). Instead, use “addresses”, and we’ll edit the keywords into the commit
 message(s) at merge time if needed.</p>
-<p><strong>PR review procedure.</strong> When your PR is ready for review —&nbsp;which may or may
+<p><strong>PR review procedure.</strong> When your PR is ready for review — which may or may
 not be when you want it considered for merging — do one or both of:</p>
 <ul class="simple">
-<li>Request review from the person(s) you want to look at it. If you think it
+<li><p>Request review from the person(s) you want to look at it. If you think it
 may be ready for merge, that should include the project lead. The purpose of
-requsting review is so the person is notified you need their help.</li>
-<li>If you think it may be ready to merge (even if you’re not sure), then also
+requsting review is so the person is notified you need their help.</p></li>
+<li><p>If you think it may be ready to merge (even if you’re not sure), then also
 tag the PR <code class="code docutils literal notranslate"><span class="pre">ready</span> <span class="pre">to</span> <span class="pre">merge</span></code>. The purpose of this is so the project
 lead can see which PRs are ready to consider for merging. If the project
-lead decides it’s ready, they will merge; otherwise, they’ll untag.</li>
+lead decides it’s ready, they will merge; otherwise, they’ll untag.</p></li>
 </ul>
 <p>In both cases, the person from whom you requested review now owns the branch,
 and you should stop work on it unless and until you get it back.</p>
@@ -390,7 +393,7 @@ the PR author gets only a single notification instead of one for every comment
 you make, and it’s clear when they branch is theirs again.</p>
 </div>
 <div class="section" id="branching-and-merging">
-<h3><a class="toc-backref" href="#id5">5.1.3. Branching and merging</a><a class="headerlink" href="#branching-and-merging" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5"><span class="section-number">5.1.3. </span>Branching and merging</a><a class="headerlink" href="#branching-and-merging" title="Permalink to this headline">¶</a></h3>
 <p><strong>Don’t commit directly to master.</strong> Even the project lead doesn’t do this.
 While it may appear that some trivial fixes are being committed to the master
 directly, what’s really happening is that these are prototyped on a branch and
@@ -434,7 +437,7 @@ conflicts before asking for merge.</p>
 <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">branch</span> <span class="pre">-d</span></code> (or <code class="code docutils literal notranslate"><span class="pre">-D</span></code>) and <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">fetch</span> <span class="pre">--prune</span> <span class="pre">--all</span></code>.</p>
 </div>
 <div class="section" id="miscellaneous-issue-and-pull-request-notes">
-<h3><a class="toc-backref" href="#id6">5.1.4. Miscellaneous issue and pull request notes</a><a class="headerlink" href="#miscellaneous-issue-and-pull-request-notes" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6"><span class="section-number">5.1.4. </span>Miscellaneous issue and pull request notes</a><a class="headerlink" href="#miscellaneous-issue-and-pull-request-notes" title="Permalink to this headline">¶</a></h3>
 <p><strong>Acknowledging issues.</strong> Issues and PRs submitted from outside should be
 acknowledged promptly, including adding or correcting tags.</p>
 <p><strong>Closing issues.</strong> We close issues when we’ve taken the requested action,
@@ -448,7 +451,7 @@ rot. We try to either merge or reject PRs in a timely manner.</p>
 arises, for example a <code class="code docutils literal notranslate"><span class="pre">worksforme</span></code> issue with new reproduction steps.</p>
 </div>
 <div class="section" id="continuous-integration-testing">
-<h3><a class="toc-backref" href="#id7">5.1.5. Continuous integration testing</a><a class="headerlink" href="#continuous-integration-testing" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id7"><span class="section-number">5.1.5. </span>Continuous integration testing</a><a class="headerlink" href="#continuous-integration-testing" title="Permalink to this headline">¶</a></h3>
 <p><strong>Quality of testing.</strong> Tagged versions currently get more testing for various
 reasons. We are working to improve testing for normal commits on master, but
 full parity is probably unlikely.</p>
@@ -471,67 +474,67 @@ base images that have actually changed (the ones that haven’t will be
 re-tagged).</p>
 </div>
 <div class="section" id="github-tags">
-<h3><a class="toc-backref" href="#id8">5.1.6. GitHub tags</a><a class="headerlink" href="#github-tags" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8"><span class="section-number">5.1.6. </span>GitHub tags</a><a class="headerlink" href="#github-tags" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="what-kind-of-issue-is-it">
-<h4>5.1.6.1. What kind of issue is it?<a class="headerlink" href="#what-kind-of-issue-is-it" title="Permalink to this headline">¶</a></h4>
-<dl class="docutils">
-<dt><code class="code docutils literal notranslate"><span class="pre">bug</span></code></dt>
-<dd>Problem of some kind that needs to be fixed; i.e., something doesn’t work.
+<h4><span class="section-number">5.1.6.1. </span>What kind of issue is it?<a class="headerlink" href="#what-kind-of-issue-is-it" title="Permalink to this headline">¶</a></h4>
+<dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">bug</span></code></dt><dd><p>Problem of some kind that needs to be fixed; i.e., something doesn’t work.
 This includes usability and documentation problems. Should have steps to
-reproduce with expected and actual behavior.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">enhancement</span></code></dt>
-<dd>Things work, but it would be better if something was different. For example,
+reproduce with expected and actual behavior.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">enhancement</span></code></dt><dd><p>Things work, but it would be better if something was different. For example,
 a new feature proposal or refactoring. Should have steps to reproduce with
-desired and actual behavior.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">help</span> <span class="pre">wanted</span></code></dt>
-<dd>The core team does not plan to address this issue, perhaps because we don’t
+desired and actual behavior.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">help</span> <span class="pre">wanted</span></code></dt><dd><p>The core team does not plan to address this issue, perhaps because we don’t
 know how, but we think it would be good to address it. We hope someone from
-the community will volunteer.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">key</span> <span class="pre">issue</span></code></dt>
-<dd>A particularly important or notable issue.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">question</span></code></dt>
-<dd>Support request that does not report a problem or ask for a change. Close
-these after the question is answered or several days with no activity.</dd>
+the community will volunteer.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">key</span> <span class="pre">issue</span></code></dt><dd><p>A particularly important or notable issue.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">question</span></code></dt><dd><p>Support request that does not report a problem or ask for a change. Close
+these after the question is answered or several days with no activity.</p>
+</dd>
 </dl>
 </div>
 <div class="section" id="what-do-we-plan-to-do-about-it">
-<h4>5.1.6.2. What do we plan to do about it?<a class="headerlink" href="#what-do-we-plan-to-do-about-it" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.1.6.2. </span>What do we plan to do about it?<a class="headerlink" href="#what-do-we-plan-to-do-about-it" title="Permalink to this headline">¶</a></h4>
 <p>For all of these, leave other tags in place, e.g. <code class="code docutils literal notranslate"><span class="pre">bug</span></code>.</p>
-<dl class="docutils">
-<dt><code class="code docutils literal notranslate"><span class="pre">deferred</span></code></dt>
-<dd>No plans to do this, but not rejected. These issues stay open, because we do
+<dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">deferred</span></code></dt><dd><p>No plans to do this, but not rejected. These issues stay open, because we do
 not consider the deferred state resolved. Submitting PRs on these issues is
 risky; you probably want to argue successfully that it should be done before
-starting work on it.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">duplicate</span></code></dt>
-<dd>Same as some other previously reported issue. In addition to this tag,
-duplicates should refer to the other issue and be closed.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">obsolete</span></code></dt>
-<dd>No longer relevant, moot, etc. Close.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">erroneous</span></code></dt>
-<dd>Not a Charliecloud issue; close. <em>Use caution when blaming a problem on user
+starting work on it.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">duplicate</span></code></dt><dd><p>Same as some other previously reported issue. In addition to this tag,
+duplicates should refer to the other issue and be closed.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">obsolete</span></code></dt><dd><p>No longer relevant, moot, etc. Close.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">erroneous</span></code></dt><dd><p>Not a Charliecloud issue; close. <em>Use caution when blaming a problem on user
 error. Often (or usually) there is a documentation or usability bug that
-caused the “user error”.</em></dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">ready</span> <span class="pre">to</span> <span class="pre">merge</span></code></dt>
-<dd>PRs only. Adding this tag speculates that the PR is complete and requests it
+caused the “user error”.</em></p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">ready</span> <span class="pre">to</span> <span class="pre">merge</span></code></dt><dd><p>PRs only. Adding this tag speculates that the PR is complete and requests it
 be considered for merging to master. If the project lead requests changes,
 they’ll remove the tag. Re-add it when you’re ready to try again. Lead
-removes tag after merging.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">wontfix</span></code></dt>
-<dd>We are not going to do this, and we won’t merge PRs. Close issue after
+removes tag after merging.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">wontfix</span></code></dt><dd><p>We are not going to do this, and we won’t merge PRs. Close issue after
 tagging, though sometimes you’ll want to leave a few days to allow for
-further discussion to catch mistaken tags.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">worksforme</span></code></dt>
-<dd>We cannot reproduce the issue. Typical workflow is to tag, then wait a few
-days for clarification before closing.</dd>
+further discussion to catch mistaken tags.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">worksforme</span></code></dt><dd><p>We cannot reproduce the issue. Typical workflow is to tag, then wait a few
+days for clarification before closing.</p>
+</dd>
 </dl>
 </div>
 </div>
 </div>
 <div class="section" id="test-suite">
-<h2><a class="toc-backref" href="#id9">5.2. Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id9"><span class="section-number">5.2. </span>Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="timing-the-tests">
-<h3><a class="toc-backref" href="#id10">5.2.1. Timing the tests</a><a class="headerlink" href="#timing-the-tests" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10"><span class="section-number">5.2.1. </span>Timing the tests</a><a class="headerlink" href="#timing-the-tests" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="code docutils literal notranslate"><span class="pre">ts</span></code> utility from <code class="code docutils literal notranslate"><span class="pre">moreutils</span></code> is quite handy. The following
 prepends each line with the elapsed time since the previous line:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-test -s quick <span class="p">|</span> ts -i <span class="s1">&#39;%M:%.S&#39;</span>
@@ -540,7 +543,7 @@ prepends each line with the elapsed time since the previous line:</p>
 <p>Note: a skipped test isn’t free; I see ~0.15 seconds to do a skip.</p>
 </div>
 <div class="section" id="ch-test-complains-about-inconsistent-versions">
-<h3><a class="toc-backref" href="#id11">5.2.2. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a><a class="headerlink" href="#ch-test-complains-about-inconsistent-versions" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id11"><span class="section-number">5.2.2. </span><code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a><a class="headerlink" href="#ch-test-complains-about-inconsistent-versions" title="Permalink to this headline">¶</a></h3>
 <p>There are multiple ways to ask Charliecloud for its version number. These
 should all give the same result. If they don’t, <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> will fail.
 Typically, something needs to be rebuilt. Recall that <code class="code docutils literal notranslate"><span class="pre">configure</span></code>
@@ -552,14 +555,14 @@ situation is to change Git branches without rebuilding it.</p>
 </div>
 </div>
 <div class="section" id="writing-a-test-image-using-the-standard-workflow">
-<h3><a class="toc-backref" href="#id12">5.2.3. Writing a test image using the standard workflow</a><a class="headerlink" href="#writing-a-test-image-using-the-standard-workflow" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12"><span class="section-number">5.2.3. </span>Writing a test image using the standard workflow</a><a class="headerlink" href="#writing-a-test-image-using-the-standard-workflow" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="summary">
-<h4>5.2.3.1. Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.2.3.1. </span>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h4>
 <p>The Charliecloud test suite has a workflow that can build images by two
 methods:</p>
 <ol class="arabic simple">
-<li>From a Dockerfile, using <code class="code docutils literal notranslate"><span class="pre">ch-build</span></code>.</li>
-<li>By running a custom script.</li>
+<li><p>From a Dockerfile, using <code class="code docutils literal notranslate"><span class="pre">ch-build</span></code>.</p></li>
+<li><p>By running a custom script.</p></li>
 </ol>
 <p>To create an image that will be built and unpacked and/or mounted, create a
 file in <code class="code docutils literal notranslate"><span class="pre">examples</span></code> (if the image recipe is useful as an example) or
@@ -580,16 +583,16 @@ suite. <code class="code docutils literal notranslate"><span class="pre">ch-test
 <p>Image tags in the test suite must be unique.</p>
 <p>Order of processing; within each item, alphabetical order:</p>
 <ol class="arabic simple">
-<li>Dockerfiles in <code class="code docutils literal notranslate"><span class="pre">test</span></code>.</li>
-<li><code class="code docutils literal notranslate"><span class="pre">Build</span></code> files in <code class="code docutils literal notranslate"><span class="pre">test</span></code>.</li>
-<li>Dockerfiles in <code class="code docutils literal notranslate"><span class="pre">examples</span></code>.</li>
-<li><code class="code docutils literal notranslate"><span class="pre">Build</span></code> files in <code class="code docutils literal notranslate"><span class="pre">examples</span></code>.</li>
+<li><p>Dockerfiles in <code class="code docutils literal notranslate"><span class="pre">test</span></code>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">Build</span></code> files in <code class="code docutils literal notranslate"><span class="pre">test</span></code>.</p></li>
+<li><p>Dockerfiles in <code class="code docutils literal notranslate"><span class="pre">examples</span></code>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">Build</span></code> files in <code class="code docutils literal notranslate"><span class="pre">examples</span></code>.</p></li>
 </ol>
 <p>The purpose of doing <code class="code docutils literal notranslate"><span class="pre">Build</span></code> second is so they can leverage what has
 already been built by a Dockerfile, which is often more straightforward.</p>
 </div>
 <div class="section" id="how-to-specify-when-to-include-and-exclude-a-test-image">
-<h4>5.2.3.2. How to specify when to include and exclude a test image<a class="headerlink" href="#how-to-specify-when-to-include-and-exclude-a-test-image" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.2.3.2. </span>How to specify when to include and exclude a test image<a class="headerlink" href="#how-to-specify-when-to-include-and-exclude-a-test-image" title="Permalink to this headline">¶</a></h4>
 <p>Each of these image build files must specify its scope for building and
 running, which must be greater than or equal than the scope of all tests in
 any corresponding <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files. Exactly one of the following strings
@@ -602,71 +605,73 @@ ch-test-scope: full
 <p>Other stuff on the line (e.g., comment syntax) is ignored.</p>
 <p>Optional test modification directives are:</p>
 <blockquote>
-<div><dl class="docutils">
-<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-arch-exclude:</span> <span class="pre">ARCH</span></code></dt>
-<dd>If the output of <code class="code docutils literal notranslate"><span class="pre">uname</span> <span class="pre">-m</span></code> matches <code class="code docutils literal notranslate"><span class="pre">ARCH</span></code>, skip the file.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-builder-exclude:</span> <span class="pre">BUILDER</span></code></dt>
-<dd>If using <code class="code docutils literal notranslate"><span class="pre">BUILDER</span></code>, skip the file.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-builder-include:</span> <span class="pre">BUILDER</span></code></dt>
-<dd>If specified, run only if using <code class="code docutils literal notranslate"><span class="pre">BUILDER</span></code>. Can be repeated to
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-arch-exclude:</span> <span class="pre">ARCH</span></code></dt><dd><p>If the output of <code class="code docutils literal notranslate"><span class="pre">uname</span> <span class="pre">-m</span></code> matches <code class="code docutils literal notranslate"><span class="pre">ARCH</span></code>, skip the file.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-builder-exclude:</span> <span class="pre">BUILDER</span></code></dt><dd><p>If using <code class="code docutils literal notranslate"><span class="pre">BUILDER</span></code>, skip the file.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-builder-include:</span> <span class="pre">BUILDER</span></code></dt><dd><p>If specified, run only if using <code class="code docutils literal notranslate"><span class="pre">BUILDER</span></code>. Can be repeated to
 include multiple builders. If specified zero times, all builders are
-included.</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-need-sudo</span></code></dt>
-<dd>Run only if user has sudo.</dd>
+included.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">ch-test-need-sudo</span></code></dt><dd><p>Run only if user has sudo.</p>
+</dd>
 </dl>
 </div></blockquote>
 </div>
 <div class="section" id="how-to-write-a-dockerfile-recipe">
-<h4>5.2.3.3. How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe<a class="headerlink" href="#how-to-write-a-dockerfile-recipe" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.2.3.3. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe<a class="headerlink" href="#how-to-write-a-dockerfile-recipe" title="Permalink to this headline">¶</a></h4>
 <p>It’s a standard Dockerfile.</p>
 </div>
 <div class="section" id="how-to-write-a-build-recipe">
-<h4>5.2.3.4. How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe<a class="headerlink" href="#how-to-write-a-build-recipe" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.2.3.4. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe<a class="headerlink" href="#how-to-write-a-build-recipe" title="Permalink to this headline">¶</a></h4>
 <p>This is an arbitrary script or program that builds the image. It gets three
 command line arguments:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="code docutils literal notranslate"><span class="pre">$1</span></code>: Absolute path to directory containing <code class="code docutils literal notranslate"><span class="pre">Build</span></code>.</li>
-<li><code class="code docutils literal notranslate"><span class="pre">$2</span></code>: Absolute path and name of output image, without extension.
-This can be either:<ul>
-<li>Tarball compressed with gzip or xz; append <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code> or
+<li><p><code class="code docutils literal notranslate"><span class="pre">$1</span></code>: Absolute path to directory containing <code class="code docutils literal notranslate"><span class="pre">Build</span></code>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">$2</span></code>: Absolute path and name of output image, without extension.
+This can be either:</p>
+<ul>
+<li><p>Tarball compressed with gzip or xz; append <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code> or
 <code class="code docutils literal notranslate"><span class="pre">.tar.xz</span></code> to <code class="code docutils literal notranslate"><span class="pre">$2</span></code>. If <code class="code docutils literal notranslate"><span class="pre">ch-test</span> <span class="pre">--pack-fmt=squash</span></code>,
 then this tarball will be unpacked and repacked as a SquashFS.
 Therefore, only use tarball output if the image build process naturally
 produces it and you would have to unpack it to get a directory (e.g.,
-<code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">export</span></code>).</li>
-<li>Directory; use <code class="code docutils literal notranslate"><span class="pre">$2</span></code> unchanged. The contents of this directory will
+<code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">export</span></code>).</p></li>
+<li><p>Directory; use <code class="code docutils literal notranslate"><span class="pre">$2</span></code> unchanged. The contents of this directory will
 be packed without any enclosing directory, so if you want an enclosing
-directory, include one. Hidden (dot) files in <code class="code docutils literal notranslate"><span class="pre">$2</span></code> will be ignored.</li>
+directory, include one. Hidden (dot) files in <code class="code docutils literal notranslate"><span class="pre">$2</span></code> will be ignored.</p></li>
 </ul>
 </li>
-<li><code class="code docutils literal notranslate"><span class="pre">$3</span></code>: Absolute path to temporary directory for use by the script.
+<li><p><code class="code docutils literal notranslate"><span class="pre">$3</span></code>: Absolute path to temporary directory for use by the script.
 This can be used for whatever and need no be cleaned up; the test harness
-will delete it.</li>
+will delete it.</p></li>
 </ul>
 </div></blockquote>
 <p>Other requirements:</p>
 <blockquote>
 <div><ul class="simple">
-<li>The script may write only in two directories: (a) the parent directory of
+<li><p>The script may write only in two directories: (a) the parent directory of
 <code class="code docutils literal notranslate"><span class="pre">$2</span></code> and (b) <code class="code docutils literal notranslate"><span class="pre">$3</span></code>. Specifically, it may not write to the
 current working directory. Everything written to the parent directory of
-<code class="code docutils literal notranslate"><span class="pre">$2</span></code> must have a name starting with <code class="code docutils literal notranslate"><span class="pre">$(basename</span> <span class="pre">$2)</span></code>.</li>
-<li>The first entry in <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code> will be the Charliecloud under test,
-i.e., bare <code class="code docutils literal notranslate"><span class="pre">ch-*</span></code> commands will be the right ones.</li>
-<li>Any programming language is permitted. To be included in the Charliecloud
+<code class="code docutils literal notranslate"><span class="pre">$2</span></code> must have a name starting with <code class="code docutils literal notranslate"><span class="pre">$(basename</span> <span class="pre">$2)</span></code>.</p></li>
+<li><p>The first entry in <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code> will be the Charliecloud under test,
+i.e., bare <code class="code docutils literal notranslate"><span class="pre">ch-*</span></code> commands will be the right ones.</p></li>
+<li><p>Any programming language is permitted. To be included in the Charliecloud
 source code, a language already in the test suite dependencies is
-required.</li>
-<li>The script must test for its dependencies and fail with appropriate error
+required.</p></li>
+<li><p>The script must test for its dependencies and fail with appropriate error
 message and exit code if something is missing. To be included in the
 Charliecloud source code, all dependencies must be something we are
-willing to install and test.</li>
-<li>Exit codes:<ul>
-<li>0: Image successfully created.</li>
-<li>65: One or more dependencies were not met.</li>
-<li>126 or 127: No interpreter available for script language (the shell
-takes care of this).</li>
-<li>else: An error occurred.</li>
+willing to install and test.</p></li>
+<li><p>Exit codes:</p>
+<ul>
+<li><p>0: Image successfully created.</p></li>
+<li><p>65: One or more dependencies were not met.</p></li>
+<li><p>126 or 127: No interpreter available for script language (the shell
+takes care of this).</p></li>
+<li><p>else: An error occurred.</p></li>
 </ul>
 </li>
 </ul>
@@ -675,27 +680,28 @@ takes care of this).</li>
 </div>
 </div>
 <div class="section" id="building-rpms">
-<h2><a class="toc-backref" href="#id13">5.3. Building RPMs</a><a class="headerlink" href="#building-rpms" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id13"><span class="section-number">5.3. </span>Building RPMs</a><a class="headerlink" href="#building-rpms" title="Permalink to this headline">¶</a></h2>
 <p>We maintain <code class="code docutils literal notranslate"><span class="pre">.spec</span></code> files and infrastructure for building RPMs in the
 Charliecloud source code. This is for two purposes:</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li>We maintain our own Fedora RPMs (see <a class="reference external" href="https://docs.fedoraproject.org/en-US/packaging-guidelines/">packaging guidelines</a>).</li>
-<li>We want to be able to build an RPM of any commit.</li>
+<li><p>We maintain our own Fedora RPMs (see <a class="reference external" href="https://docs.fedoraproject.org/en-US/packaging-guidelines/">packaging guidelines</a>).</p></li>
+<li><p>We want to be able to build an RPM of any commit.</p></li>
 </ol>
 </div></blockquote>
 <p>Item 2 is tested; i.e., if you break the RPM build, the test suite will fail.</p>
 <p>This section describes how to build the RPMs and the pain we’ve hopefully
 abstracted away.</p>
 <div class="section" id="dependencies">
-<h3><a class="toc-backref" href="#id14">5.3.1. Dependencies</a><a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14"><span class="section-number">5.3.1. </span>Dependencies</a><a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
-<li>charliecloud</li>
-<li>Python 3.4+</li>
-<li>Either:<ul>
-<li>the provided example <code class="code docutils literal notranslate"><span class="pre">centos7</span></code> or <code class="code docutils literal notranslate"><span class="pre">centos8</span></code> image</li>
-<li>a RHEL/CentOS 7 or newer container image with (note there are different
+<li><p>charliecloud</p></li>
+<li><p>Python 3.4+</p></li>
+<li><p>Either:</p>
+<ul>
+<li><p>the provided example <code class="code docutils literal notranslate"><span class="pre">centos7</span></code> or <code class="code docutils literal notranslate"><span class="pre">centos8</span></code> image</p></li>
+<li><p>a RHEL/CentOS 7 or newer container image with (note there are different
 python version names for the listed packages in RHEL/CentOS 8):
 * autoconf
 * automake
@@ -706,14 +712,14 @@ python version names for the listed packages in RHEL/CentOS 8):
 * python36-sphinx_rtd_theme
 * rpm-build
 * rpmlint
-* rsync</li>
+* rsync</p></li>
 </ul>
 </li>
 </ul>
 </div></blockquote>
 </div>
 <div class="section" id="rpmbuild-wrapper-script">
-<h3><a class="toc-backref" href="#id15">5.3.2. <code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a><a class="headerlink" href="#rpmbuild-wrapper-script" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15"><span class="section-number">5.3.2. </span><code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a><a class="headerlink" href="#rpmbuild-wrapper-script" title="Permalink to this headline">¶</a></h3>
 <p>While building the Charliecloud RPMs is not too weird, we provide a script to
 streamline it. The purpose is to (a) make it easy to build versions not
 matching the working directory, (b) use an arbitrary <code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code>
@@ -727,10 +733,10 @@ environments.</p>
 <p>Options:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="code docutils literal notranslate"><span class="pre">--install</span></code> : Install the RPMs after building into the build
-environment.</li>
-<li><code class="code docutils literal notranslate"><span class="pre">--rpmbuild=DIR</span></code> : Use RPM build directory root <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>
-(default: <code class="code docutils literal notranslate"><span class="pre">~/rpmbuild</span></code>).</li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">--install</span></code> : Install the RPMs after building into the build
+environment.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">--rpmbuild=DIR</span></code> : Use RPM build directory root <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>
+(default: <code class="code docutils literal notranslate"><span class="pre">~/rpmbuild</span></code>).</p></li>
 </ul>
 </div></blockquote>
 <p>For example, to build a version 0.9.7 RPM from the CentOS 7 image provided with
@@ -747,9 +753,9 @@ the test suite, on any system, and leave the results in <code class="code docuti
 </div>
 </div>
 <div class="section" id="gotchas-and-quirks">
-<h3><a class="toc-backref" href="#id16">5.3.3. Gotchas and quirks</a><a class="headerlink" href="#gotchas-and-quirks" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16"><span class="section-number">5.3.3. </span>Gotchas and quirks</a><a class="headerlink" href="#gotchas-and-quirks" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="rpm-versions-and-releases">
-<h4>5.3.3.1. RPM versions and releases<a class="headerlink" href="#rpm-versions-and-releases" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.3.3.1. </span>RPM versions and releases<a class="headerlink" href="#rpm-versions-and-releases" title="Permalink to this headline">¶</a></h4>
 <p>If <code class="code docutils literal notranslate"><span class="pre">VERSION</span></code> is <code class="code docutils literal notranslate"><span class="pre">HEAD</span></code>, then the RPM version will be the content
 of <code class="code docutils literal notranslate"><span class="pre">VERSION.full</span></code> for that commit, including Git gobbledygook, and the
 RPM release will be <code class="code docutils literal notranslate"><span class="pre">0</span></code>. Note that such RPMs cannot be reliably upgraded
@@ -760,7 +766,7 @@ by a hyphen and the desired RPM release, e.g. <code class="code docutils literal
 supported.</p>
 </div>
 <div class="section" id="packaged-source-code-and-rpm-build-config-come-from-different-commits">
-<h4>5.3.3.2. Packaged source code and RPM build config come from different commits<a class="headerlink" href="#packaged-source-code-and-rpm-build-config-come-from-different-commits" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.3.3.2. </span>Packaged source code and RPM build config come from different commits<a class="headerlink" href="#packaged-source-code-and-rpm-build-config-come-from-different-commits" title="Permalink to this headline">¶</a></h4>
 <p>The spec file, <code class="code docutils literal notranslate"><span class="pre">build</span></code> script, <code class="code docutils literal notranslate"><span class="pre">.rpmlintrc</span></code>, etc. come from the
 working directory, but the package source is from the specified commit. This
 is what enables us to make additional RPM releases for a given Charliecloud
@@ -769,7 +775,7 @@ release (e.g. 0.9.7-2).</p>
 commit, and it’s not possible to create an RPM of uncommitted source code.</p>
 </div>
 <div class="section" id="changelog-maintenance">
-<h4>5.3.3.3. Changelog maintenance<a class="headerlink" href="#changelog-maintenance" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.3.3.3. </span>Changelog maintenance<a class="headerlink" href="#changelog-maintenance" title="Permalink to this headline">¶</a></h4>
 <p>The spec file contains a manually maintained changelog. Add a new entry for
 each new RPM release; do not include the Charliecloud release notes.</p>
 <p>For released versions, <code class="code docutils literal notranslate"><span class="pre">build</span></code> verifies that the most recent changelog
@@ -781,12 +787,12 @@ with the appropriate version stating that it’s a pre-release RPM.</p>
 </div>
 </div>
 <div class="section" id="build-ova-appliance-file-with-vagrant-and-virtualbox">
-<span id="build-ova"></span><h2><a class="toc-backref" href="#id17">5.4. Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a><a class="headerlink" href="#build-ova-appliance-file-with-vagrant-and-virtualbox" title="Permalink to this headline">¶</a></h2>
+<span id="build-ova"></span><h2><a class="toc-backref" href="#id17"><span class="section-number">5.4. </span>Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a><a class="headerlink" href="#build-ova-appliance-file-with-vagrant-and-virtualbox" title="Permalink to this headline">¶</a></h2>
 <p>This section uses Vagrant and the VirtualBox GUI to create a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file
 that you can provide to end users as described in Installation. You should
 read the section on building the VM with Vagrant there as well.</p>
 <div class="section" id="remove-old-virtual-machine">
-<h3><a class="toc-backref" href="#id18">5.4.1. Remove old virtual machine</a><a class="headerlink" href="#remove-old-virtual-machine" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18"><span class="section-number">5.4.1. </span>Remove old virtual machine</a><a class="headerlink" href="#remove-old-virtual-machine" title="Permalink to this headline">¶</a></h3>
 <p>Each time we create a new image to distribute, we start from scratch rather
 than updating the old image. Therefore, we must remove the old image:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> packaging/vagrant
@@ -795,7 +801,7 @@ than updating the old image. Therefore, we must remove the old image:</p>
 </div>
 </div>
 <div class="section" id="build-and-provision">
-<h3><a class="toc-backref" href="#id19">5.4.2. Build and provision</a><a class="headerlink" href="#build-and-provision" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19"><span class="section-number">5.4.2. </span>Build and provision</a><a class="headerlink" href="#build-and-provision" title="Permalink to this headline">¶</a></h3>
 <p>The most important differences with this build procedure have to do with
 login. A second user <code class="code docutils literal notranslate"><span class="pre">charlie</span></code> is created and endowed with passwordless
 <code class="code docutils literal notranslate"><span class="pre">sudo</span></code>; SSH will allow login with password; and the console will
@@ -807,7 +813,7 @@ take effect (which is done in the next step).</p>
 </div>
 </div>
 <div class="section" id="snapshot-for-distribution">
-<h3><a class="toc-backref" href="#id20">5.4.3. Snapshot for distribution</a><a class="headerlink" href="#snapshot-for-distribution" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20"><span class="section-number">5.4.3. </span>Snapshot for distribution</a><a class="headerlink" href="#snapshot-for-distribution" title="Permalink to this headline">¶</a></h3>
 <p>We want to distribute a small appliance file, but one that passes the tests.
 Running the tests greatly bloats the appliance. Therefore, we’ll take a
 snapshot of the powered-off VM named <code class="code docutils literal notranslate"><span class="pre">exportme</span></code>, run the tests, and then
@@ -818,14 +824,14 @@ roll back to the snapshot before exporting.</p>
 </pre></div>
 </div>
 <div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">If you wish to use the appliance yourself, and you prefer to use plain
+<p class="admonition-title">Note</p>
+<p>If you wish to use the appliance yourself, and you prefer to use plain
 VirtualBox instead of Vagrant, now is a good time to clone the VM in the
 GUI. The clone will be protected from Vagrant’s attentions later.</p>
 </div>
 </div>
 <div class="section" id="test-charliecloud">
-<h3><a class="toc-backref" href="#id21">5.4.4. Test Charliecloud</a><a class="headerlink" href="#test-charliecloud" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id21"><span class="section-number">5.4.4. </span>Test Charliecloud</a><a class="headerlink" href="#test-charliecloud" title="Permalink to this headline">¶</a></h3>
 <p>Restart and test:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant up --provision-with<span class="o">=</span><span class="nb">test</span>
 </pre></div>
@@ -834,7 +840,7 @@ GUI. The clone will be protected from Vagrant’s attentions later.</p>
 logged in.</p>
 </div>
 <div class="section" id="export-appliance-ova-file">
-<h3><a class="toc-backref" href="#id22">5.4.5. Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a><a class="headerlink" href="#export-appliance-ova-file" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22"><span class="section-number">5.4.5. </span>Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a><a class="headerlink" href="#export-appliance-ova-file" title="Permalink to this headline">¶</a></h3>
 <p>This creates a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file, which is a standard way to package a virtual
 machine image with metadata. Some else can then import it into their own
 VirtualBox, as described above. (In principle, other virtual machine emulators
@@ -842,27 +848,28 @@ should work as well, but we haven’t tried.)</p>
 <p>These steps are done in the VirtualBox GUI because I haven’t figured
 out a way to produce a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> in Vagrant, only Vagrant “boxes”.</p>
 <ol class="arabic simple">
-<li>Shut down the VM (you can just power it off).</li>
-<li>Restore the snapshot <em>exportme</em>. (Don’t use <code class="code docutils literal notranslate"><span class="pre">vagrant</span> <span class="pre">shapshot</span>
-<span class="pre">restore</span></code> because it boots the snapshot and runs the provisioners again.)</li>
-<li><em>File</em> → <em>Export appliance</em>.</li>
-<li>Select your VM, <em>charliebox</em>. Click <em>Continue</em>.</li>
-<li>Configure the export:<ul>
-<li><em>Format</em>: OVF 2.0. (Note: Changing this menu resets the filename.)</li>
-<li><em>File</em>: Directory and filename you want. (The install procedure above
-uses <code class="code docutils literal notranslate"><span class="pre">charliecloud_centos7.ova</span></code>.)</li>
-<li><em>Write manifest file</em>: unchecked</li>
+<li><p>Shut down the VM (you can just power it off).</p></li>
+<li><p>Restore the snapshot <em>exportme</em>. (Don’t use <code class="code docutils literal notranslate"><span class="pre">vagrant</span> <span class="pre">shapshot</span>
+<span class="pre">restore</span></code> because it boots the snapshot and runs the provisioners again.)</p></li>
+<li><p><em>File</em> → <em>Export appliance</em>.</p></li>
+<li><p>Select your VM, <em>charliebox</em>. Click <em>Continue</em>.</p></li>
+<li><p>Configure the export:</p>
+<ul class="simple">
+<li><p><em>Format</em>: OVF 2.0. (Note: Changing this menu resets the filename.)</p></li>
+<li><p><em>File</em>: Directory and filename you want. (The install procedure above
+uses <code class="code docutils literal notranslate"><span class="pre">charliecloud_centos7.ova</span></code>.)</p></li>
+<li><p><em>Write manifest file</em>: unchecked</p></li>
 </ul>
 </li>
-<li>Click <em>Continue</em>.</li>
-<li>Check the descriptive information and click <em>Export</em>. (For example, maybe
-you want to put the Charliecloud version in the <em>Version</em> field.)</li>
-<li>Distribute the resulting file, which should be about 800–900MiB.</li>
+<li><p>Click <em>Continue</em>.</p></li>
+<li><p>Check the descriptive information and click <em>Export</em>. (For example, maybe
+you want to put the Charliecloud version in the <em>Version</em> field.)</p></li>
+<li><p>Distribute the resulting file, which should be about 800–900MiB.</p></li>
 </ol>
 </div>
 </div>
 <div class="section" id="style-hints">
-<h2><a class="toc-backref" href="#id23">5.5. Style hints</a><a class="headerlink" href="#style-hints" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id23"><span class="section-number">5.5. </span>Style hints</a><a class="headerlink" href="#style-hints" title="Permalink to this headline">¶</a></h2>
 <p>We haven’t written down a comprehensive style guide. Generally, follow the
 style of the surrounding code, think in rectangles rather than lines of code
 or text, and avoid CamelCase.</p>
@@ -870,9 +877,9 @@ or text, and avoid CamelCase.</p>
 complains (or even updates this section based on your patch!). He tries to be
 nice about it.</p>
 <div class="section" id="writing-english">
-<h3><a class="toc-backref" href="#id24">5.5.1. Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id24"><span class="section-number">5.5.1. </span>Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
 <ul>
-<li><p class="first">When describing what something does (e.g., your PR or a command), use the
+<li><p>When describing what something does (e.g., your PR or a command), use the
 <a class="reference external" href="https://chris.beams.io/posts/git-commit/#imperative">imperative mood</a>,
 i.e., write the orders you are giving rather than describe what the thing
 does. For example, do:</p>
@@ -890,34 +897,31 @@ does. For example, do:</p>
 </div>
 </div></blockquote>
 </li>
-<li><p class="first">Use sentence case for titles, not title case.</p>
-</li>
-<li><p class="first">If it’s not a sentence, start with a lower-case character.</p>
-</li>
-<li><p class="first">Use spell check. Keep your personal dictionary updated so your editor is not
-filled with false positives.</p>
-</li>
+<li><p>Use sentence case for titles, not title case.</p></li>
+<li><p>If it’s not a sentence, start with a lower-case character.</p></li>
+<li><p>Use spell check. Keep your personal dictionary updated so your editor is not
+filled with false positives.</p></li>
 </ul>
 </div>
 <div class="section" id="documentation">
-<h3><a class="toc-backref" href="#id25">5.5.2. Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25"><span class="section-number">5.5.2. </span>Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
 <p>Heading underline characters:</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li>Asterisk, <code class="code docutils literal notranslate"><span class="pre">*</span></code>, e.g. “5. Contributor’s guide”</li>
-<li>Equals, <code class="code docutils literal notranslate"><span class="pre">=</span></code>, e.g. “5.7 OCI technical notes”</li>
-<li>Hyphen, <code class="code docutils literal notranslate"><span class="pre">-</span></code>, e.g. “5.7.1 Gotchas”</li>
-<li>Tilde, <code class="code docutils literal notranslate"><span class="pre">~</span></code>, e.g. “5.7.1.1 Namespaces” (try to avoid)</li>
+<li><p>Asterisk, <code class="code docutils literal notranslate"><span class="pre">*</span></code>, e.g. “5. Contributor’s guide”</p></li>
+<li><p>Equals, <code class="code docutils literal notranslate"><span class="pre">=</span></code>, e.g. “5.7 OCI technical notes”</p></li>
+<li><p>Hyphen, <code class="code docutils literal notranslate"><span class="pre">-</span></code>, e.g. “5.7.1 Gotchas”</p></li>
+<li><p>Tilde, <code class="code docutils literal notranslate"><span class="pre">~</span></code>, e.g. “5.7.1.1 Namespaces” (try to avoid)</p></li>
 </ol>
 </div></blockquote>
 </div>
 <div class="section" id="dependency-policy">
-<span id="id1"></span><h3><a class="toc-backref" href="#id26">5.5.3. Dependency policy</a><a class="headerlink" href="#dependency-policy" title="Permalink to this headline">¶</a></h3>
+<span id="id1"></span><h3><a class="toc-backref" href="#id26"><span class="section-number">5.5.3. </span>Dependency policy</a><a class="headerlink" href="#dependency-policy" title="Permalink to this headline">¶</a></h3>
 <p>Specific dependencies (prerequisites) are stated elsewhere in the
 documentation. This section describes our policy on which dependencies are
 acceptable.</p>
 <div class="section" id="generally">
-<h4>5.5.3.1. Generally<a class="headerlink" href="#generally" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.5.3.1. </span>Generally<a class="headerlink" href="#generally" title="Permalink to this headline">¶</a></h4>
 <p>All dependencies must be stated and justified in the documentation.</p>
 <p>We want Charliecloud to run on as many systems as practical, so we work hard
 to keep dependencies minimal. However, because Charliecloud depends on new-ish
@@ -927,11 +931,11 @@ distributions, so dependencies for run-time and build-time are only the bare
 essentials. Exceptions, to be used judiciously:</p>
 <blockquote>
 <div><ul class="simple">
-<li>Features that add convenience rather than functionality may have
+<li><p>Features that add convenience rather than functionality may have
 additional dependencies that are reasonably expected on most systems where
-the convenience would be used.</li>
-<li>Features that only work if some other software is present (example: the
-Docker wrapper scripts) can add dependencies of that other software.</li>
+the convenience would be used.</p></li>
+<li><p>Features that only work if some other software is present (example: the
+Docker wrapper scripts) can add dependencies of that other software.</p></li>
 </ul>
 </div></blockquote>
 <p>The test suite is tricky, because we need a test framework and to set up
@@ -946,7 +950,7 @@ enough to support Charliecloud. You might need to install additional packages
 (but not from third-party repositories).</p>
 </div>
 <div class="section" id="curl-vs-wget">
-<h4>5.5.3.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.5.3.2. </span><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h4>
 <p>For URL downloading in shell code, including Dockerfiles, use <code class="code docutils literal notranslate"><span class="pre">wget</span> <span class="pre">-nv</span></code>.</p>
 <p>Both work fine for our purposes, and we need to use one or the other
 consistently. According to Debian’s popularity contest, 99.88% of reporting
@@ -957,20 +961,16 @@ other hand, <code class="code docutils literal notranslate"><span class="pre">cu
 </div>
 </div>
 <div class="section" id="variable-conventions-in-shell-scripts-and-bats-files">
-<h3><a class="toc-backref" href="#id27">5.5.4. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27"><span class="section-number">5.5.4. </span>Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
 <ul>
-<li><p class="first">Separate words with underscores.</p>
-</li>
-<li><p class="first">User-configured environment variables: all uppercase, <code class="code docutils literal notranslate"><span class="pre">CH_TEST_</span></code>
+<li><p>Separate words with underscores.</p></li>
+<li><p>User-configured environment variables: all uppercase, <code class="code docutils literal notranslate"><span class="pre">CH_TEST_</span></code>
 prefix. Do not use in individual <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files; instead, provide an
-intermediate variable.</p>
-</li>
-<li><p class="first">Variables local to a given file: lower case, no prefix.</p>
-</li>
-<li><p class="first">Bats: set in <code class="code docutils literal notranslate"><span class="pre">common.bash</span></code> and then used in <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files: lower
-case, <code class="code docutils literal notranslate"><span class="pre">ch_</span></code> prefix.</p>
-</li>
-<li><p class="first">Surround lower-case variables expanded in strings with curly braces, unless
+intermediate variable.</p></li>
+<li><p>Variables local to a given file: lower case, no prefix.</p></li>
+<li><p>Bats: set in <code class="code docutils literal notranslate"><span class="pre">common.bash</span></code> and then used in <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files: lower
+case, <code class="code docutils literal notranslate"><span class="pre">ch_</span></code> prefix.</p></li>
+<li><p>Surround lower-case variables expanded in strings with curly braces, unless
 they’re the only thing in the string. E.g.:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>&quot;${foo}/bar&quot;  # yes
 &quot;$foo&quot;        # yes
@@ -979,14 +979,14 @@ they’re the only thing in the string. E.g.:</p>
 </pre></div>
 </div>
 </li>
-<li><p class="first">Quote the entire string instead of just the variable when practical:</p>
+<li><p>Quote the entire string instead of just the variable when practical:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>&quot;${foo}/bar&quot;  # yes
 &quot;${foo}&quot;/bar  # no
 &quot;$foo&quot;/bar    # no
 </pre></div>
 </div>
 </li>
-<li><p class="first">Don’t quote variable assignments or other places where not needed (e.g.,
+<li><p>Don’t quote variable assignments or other places where not needed (e.g.,
 case statements). E.g.:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>foo=${bar}/baz    # yes
 foo=&quot;${bar}/baz&quot;  # no
@@ -996,9 +996,9 @@ foo=&quot;${bar}/baz&quot;  # no
 </ul>
 </div>
 <div class="section" id="c-code">
-<h3><a class="toc-backref" href="#id28">5.5.5. C code</a><a class="headerlink" href="#c-code" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id28"><span class="section-number">5.5.5. </span>C code</a><a class="headerlink" href="#c-code" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="const">
-<h4>5.5.5.1. <code class="code docutils literal notranslate"><span class="pre">const</span></code><a class="headerlink" href="#const" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.5.5.1. </span><code class="code docutils literal notranslate"><span class="pre">const</span></code><a class="headerlink" href="#const" title="Permalink to this headline">¶</a></h4>
 <p>The <code class="code docutils literal notranslate"><span class="pre">const</span></code> keyword is used to indicate that variables are read-only. It
 has a variety of uses; in Charliecloud, we use it for <a class="reference external" href="https://softwareengineering.stackexchange.com/a/204720">function pointer
 arguments</a> to state
@@ -1023,7 +1023,7 @@ pointers and <code class="code docutils literal notranslate"><span class="pre">c
 </div>
 </div>
 <div class="section" id="oci-technical-notes">
-<h2><a class="toc-backref" href="#id29">5.6. OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id29"><span class="section-number">5.6. </span>OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
 <p>This section describes our analysis of the Open Container Initiative (OCI)
 specification and implications for our implementation in <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code>.
 Anything relevant for users goes in that man page; here is for technical
@@ -1032,33 +1032,33 @@ opportunity for peer-review of our work.</p>
 <p>Currently, <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> is only tested with Buildah. These notes
 describe what we are seeing from Buildah’s runtime expectations.</p>
 <div class="section" id="gotchas">
-<h3><a class="toc-backref" href="#id30">5.6.1. Gotchas</a><a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id30"><span class="section-number">5.6.1. </span>Gotchas</a><a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="namespaces">
-<h4>5.6.1.1. Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.6.1.1. </span>Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h4>
 <p>Buildah sets up its own user and mount namespaces before invoking the runtime,
 though it does not change the root directory. We do not understand why. In
 particular, this means that you cannot see the container root filesystem it
 provides without joining those namespaces. To do so:</p>
 <ol class="arabic simple">
-<li>Export <code class="code docutils literal notranslate"><span class="pre">CH_RUN_OCI_LOGFILE</span></code> with some logfile path.</li>
-<li>Export <code class="code docutils literal notranslate"><span class="pre">CH_RUN_OCI_DEBUG_HANG</span></code> with the step you want to examine
-(e.g., <code class="code docutils literal notranslate"><span class="pre">create</span></code>).</li>
-<li>Run <code class="code docutils literal notranslate"><span class="pre">ch-build</span> <span class="pre">-b</span> <span class="pre">buildah</span></code>.</li>
-<li>Make note of the PID in the logfile.</li>
-<li><code class="code docutils literal notranslate"><span class="pre">$</span> <span class="pre">nsenter</span> <span class="pre">-U</span> <span class="pre">-m</span> <span class="pre">-t</span> <span class="pre">$PID</span> <span class="pre">bash</span></code></li>
+<li><p>Export <code class="code docutils literal notranslate"><span class="pre">CH_RUN_OCI_LOGFILE</span></code> with some logfile path.</p></li>
+<li><p>Export <code class="code docutils literal notranslate"><span class="pre">CH_RUN_OCI_DEBUG_HANG</span></code> with the step you want to examine
+(e.g., <code class="code docutils literal notranslate"><span class="pre">create</span></code>).</p></li>
+<li><p>Run <code class="code docutils literal notranslate"><span class="pre">ch-build</span> <span class="pre">-b</span> <span class="pre">buildah</span></code>.</p></li>
+<li><p>Make note of the PID in the logfile.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">$</span> <span class="pre">nsenter</span> <span class="pre">-U</span> <span class="pre">-m</span> <span class="pre">-t</span> <span class="pre">$PID</span> <span class="pre">bash</span></code></p></li>
 </ol>
 </div>
 <div class="section" id="supervisor-process-and-maintaining-state">
-<h4>5.6.1.2. Supervisor process and maintaining state<a class="headerlink" href="#supervisor-process-and-maintaining-state" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.6.1.2. </span>Supervisor process and maintaining state<a class="headerlink" href="#supervisor-process-and-maintaining-state" title="Permalink to this headline">¶</a></h4>
 <p>OCI (and thus Buildah) expects a process that exists throughout the life of
 the container. This conflicts with Charliecloud’s lack of a supervisor process.</p>
 <p><strong>FIXME</strong></p>
 </div>
 </div>
 <div class="section" id="bundle-directory">
-<h3><a class="toc-backref" href="#id31">5.6.2. Bundle directory</a><a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id31"><span class="section-number">5.6.2. </span>Bundle directory</a><a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>OCI documentation (very incomplete): <a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/bundle.md">https://github.com/opencontainers/runtime-spec/blob/master/bundle.md</a></li>
+<li><p>OCI documentation (very incomplete): <a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/bundle.md">https://github.com/opencontainers/runtime-spec/blob/master/bundle.md</a></p></li>
 </ul>
 <p>The bundle directory defines the container and is used to communicate between
 Buildah and the runtime. The root filesystem (<code class="code docutils literal notranslate"><span class="pre">mnt/rootfs</span></code>) is mounted
@@ -1096,21 +1096,22 @@ state.</p>
 </div>
 <p>Observations:</p>
 <ol class="arabic simple">
-<li>The weird permissions on <code class="code docutils literal notranslate"><span class="pre">empty</span></code> (000) and <code class="code docutils literal notranslate"><span class="pre">mnt</span></code> (100) persist
-within the namespaces, so you’ll want to be namespace root to look around.</li>
-<li><code class="code docutils literal notranslate"><span class="pre">hosts</span></code> and <code class="code docutils literal notranslate"><span class="pre">resolv.conf</span></code> are identical to the host’s.</li>
-<li><code class="code docutils literal notranslate"><span class="pre">empty</span></code> is still an empty directory with in the namespaces. What is
-this for?</li>
-<li><code class="code docutils literal notranslate"><span class="pre">mnt/rootfs</span></code> contains the container root filesystem. It is a tmpfs.
-No other new filesystems are mounted within the namespaces.</li>
+<li><p>The weird permissions on <code class="code docutils literal notranslate"><span class="pre">empty</span></code> (000) and <code class="code docutils literal notranslate"><span class="pre">mnt</span></code> (100) persist
+within the namespaces, so you’ll want to be namespace root to look around.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">hosts</span></code> and <code class="code docutils literal notranslate"><span class="pre">resolv.conf</span></code> are identical to the host’s.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">empty</span></code> is still an empty directory with in the namespaces. What is
+this for?</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">mnt/rootfs</span></code> contains the container root filesystem. It is a tmpfs.
+No other new filesystems are mounted within the namespaces.</p></li>
 </ol>
 </div>
 <div class="section" id="config-json">
-<h3><a class="toc-backref" href="#id32">5.6.3. <code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id32"><span class="section-number">5.6.3. </span><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li>OCI documentation:<ul>
-<li><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/config.md">https://github.com/opencontainers/runtime-spec/blob/master/config.md</a></li>
-<li><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md">https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md</a></li>
+<li><p>OCI documentation:</p>
+<ul>
+<li><p><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/config.md">https://github.com/opencontainers/runtime-spec/blob/master/config.md</a></p></li>
+<li><p><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md">https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md</a></p></li>
 </ul>
 </li>
 </ul>
@@ -1368,7 +1369,7 @@ protects us.)</p>
 <p>End of example.</p>
 </div>
 <div class="section" id="state">
-<h3><a class="toc-backref" href="#id33">5.6.4. State</a><a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id33"><span class="section-number">5.6.4. </span>State</a><a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h3>
 <p>The OCI spec does not say how the JSON document describing state should be
 given to the caller. Buildah is happy to get it on the runtime’s standard
 output.</p>
@@ -1378,12 +1379,12 @@ essentially a no-op, and annotations are not supported, so the
 <code class="code docutils literal notranslate"><span class="pre">annotations</span></code> key will never be given.</p>
 </div>
 <div class="section" id="additional-sources">
-<h3><a class="toc-backref" href="#id34">5.6.5. Additional sources</a><a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id34"><span class="section-number">5.6.5. </span>Additional sources</a><a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><code class="code docutils literal notranslate"><span class="pre">buildah</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah.md">https://github.com/containers/buildah/blob/master/docs/buildah.md</a></li>
-<li><code class="code docutils literal notranslate"><span class="pre">buildah</span> <span class="pre">bud</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah-bud.md">https://github.com/containers/buildah/blob/master/docs/buildah-bud.md</a></li>
-<li><code class="code docutils literal notranslate"><span class="pre">runc</span> <span class="pre">create</span></code> man page: <a class="reference external" href="https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md">https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md</a></li>
-<li><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/runtime.md">https://github.com/opencontainers/runtime-spec/blob/master/runtime.md</a></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah.md">https://github.com/containers/buildah/blob/master/docs/buildah.md</a></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span> <span class="pre">bud</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah-bud.md">https://github.com/containers/buildah/blob/master/docs/buildah-bud.md</a></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">runc</span> <span class="pre">create</span></code> man page: <a class="reference external" href="https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md">https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md</a></p></li>
+<li><p><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/runtime.md">https://github.com/opencontainers/runtime-spec/blob/master/runtime.md</a></p></li>
 </ul>
 </div>
 </div>
@@ -1407,7 +1408,6 @@ essentially a no-op, and annotations are not supported, so the
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2014–2020, Triad National Security, LLC
 
     </p>
@@ -1422,6 +1422,7 @@ essentially a no-op, and annotations are not supported, so the
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {
