@@ -344,8 +344,6 @@ nogroup:x:65534:
       if (self.layer_hashes is None):
          self.layer_hashes_load()
       layers = collections.OrderedDict()
-      if self.schema_version == 1:
-         collections.OrderedDict(reversed(list(layers.items())))
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
@@ -355,7 +353,14 @@ nogroup:x:65534:
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
          members = collections.OrderedDict([(m, None) for m in members_list])
-         layers[lh] = TT(fp, members)
+         if members:
+            layers[lh] = TT(fp, members)
+         else:
+            WARNING("layer %d/%d: %s: has no members; ignoring"
+                   % (i, len(self.layer_hashes), lh[:7]))
+      if self.schema_version == 1:
+         DEBUG('using schema version one (1); revering layer order')
+         layers = collections.OrderedDict(reversed(list(layers.items())))
       return layers
 
    def pull_to_unpacked(self, use_cache=True, fixup=False):
