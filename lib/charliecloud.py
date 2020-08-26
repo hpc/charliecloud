@@ -181,6 +181,7 @@ class Image:
                 "download_cache",
                 "image_subdir",
                 "layer_hashes",
+                "schema_version",
                 "unpack_dir")
 
    def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
@@ -193,6 +194,7 @@ class Image:
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
+      self.schema_version = None
 
    def __str__(self):
       return str(self.ref)
@@ -284,33 +286,33 @@ nogroup:x:65534:
 
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
-      def fatal_exception(manifest_path, exception=None, lineno=None):
-         if exception and lineno:
-            FATAL("can't parse manifest file: %s:%d: %s"
-                  % (manifest_path, lineno, exception))
-         elif exception:
-            FATAL("can't open manifest file: %s: %s"
-                  % (manifest_path, exception))
-         else:
-            FATAL("can't parse manifest file: %s" % manifest_path)
       try:
          fp = open(self.manifest_path, "rt", encoding="UTF-8")
       except OSError as x:
-         fatal_exception(self.manifest_path, x.strerror)
+         FATAL("can't open manifest file: %s: %s"
+               % (self.manifest_path, x.strerror))
       try:
          doc = json.load(fp)
       except json.JSONDecodeError as x:
-         fatal_exception(self.manifest_path, x.msg, x.lineno)
-      try:
-         self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
-      except (KeyError):
-         # Try v1 schema.
+         FATAL("can't parse manifest file: %s:%d %s"
+               % (self.manifest_path, x.lineno, x.msg))
+
+      self.schema_version = doc['schemaVersion']
+      if self.schema_version == 1:
+         DEBUG('using schema version one (1) manifest')
          try:
             self.layer_hashes = [i["blobSum"].split(":")[1] for i in doc["fsLayers"]]
          except (AttributeError, KeyError, IndexError):
-            fatal_exception(self.manifest_path)
-      except (AttributeError, IndexError):
-         fatal_exception(self.manifest_path)
+            FATAL("can't parse manifest file: %s" % self.manifest_path)
+      elif self.schema_version == 2:
+         DEBUG('using schema version two (2) manifest')
+         try:
+            self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
+         except (AttributeError, KeyError, IndexError):
+            FATAL("can't parse manifest file: %s" % self.manifest_path)
+      else:
+         FATAL("unrecognized manifest schema version: 'schemaVersion' :%s"
+               % self.schema_version)
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
@@ -335,6 +337,8 @@ nogroup:x:65534:
       if (self.layer_hashes is None):
          self.layer_hashes_load()
       layers = collections.OrderedDict()
+      if self.schema_version == 1:
+         layers = layers.OrderedDict(reversed(list(layers.items())))
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
@@ -748,8 +752,8 @@ class Repo_Downloader:
    def get_manifest(self, path):
       "GET the manifest for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
-      accept = ["application/vnd.docker.distribution.manifest.v1+json",
-                "application/vnd.docker.distribution.manifest.v2+json"]
+      accept = ["application/vnd.docker.distribution.manifest.v2+json",
+                "application/vnd.docker.distribution.manifest.v1+json"]
       self.get(url, path, { "Accept": str(accept) })
 
    def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
