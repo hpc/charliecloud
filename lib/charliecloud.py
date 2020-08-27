@@ -57,6 +57,13 @@ except ImportError:
 
 ## Globals ##
 
+# Undocumented environment variable for developer testing.
+env_schema_version = None
+try:
+    env_schema_version = os.environ['CH_SCHEMA_VER']
+except:
+    pass
+
 # Logging; set using log_setup() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
@@ -301,24 +308,24 @@ nogroup:x:65534:
       try:
          doc = json.load(fp)
       except json.JSONDecodeError as x:
-         FATAL("can't parse manifest file: %s:%d %s"
+         FATAL("can't parse manifest file: %s:%d: %s"
                % (self.manifest_path, x.lineno, x.msg))
 
       self.schema_version = doc['schemaVersion']
       if self.schema_version == 1:
-         DEBUG('using schema version one (1) manifest')
+         DEBUG('loading layer hashes from schema version one (1) manifest')
          try:
             self.layer_hashes = [i["blobSum"].split(":")[1] for i in doc["fsLayers"]]
          except (AttributeError, KeyError, IndexError):
             FATAL("can't parse manifest file: %s" % self.manifest_path)
       elif self.schema_version == 2:
-         DEBUG('using schema version two (2) manifest')
+         DEBUG('loading layer hashes from schema version two (2) manifest')
          try:
             self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
          except (AttributeError, KeyError, IndexError):
             FATAL("can't parse manifest file: %s" % self.manifest_path)
       else:
-         FATAL("unrecognized manifest schema version: 'schemaVersion' :%s"
+         FATAL("unsupported manifest schema version: 'schemaVersion':%s"
                % self.schema_version)
 
    def layer_path(self, layer_hash):
@@ -344,7 +351,15 @@ nogroup:x:65534:
       if (self.layer_hashes is None):
          self.layer_hashes_load()
       layers = collections.OrderedDict()
+      # Schema version one (v1) allows one or more empty layers for Dockerfile
+      # entries like CMD (https://github.com/containers/skopeo/issues/393).
+      # Unpacking an empty layer doesn't accomplish much so we ignore them.
+      empty = 'a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4'
       for (i, lh) in enumerate(self.layer_hashes, start=1):
+         if lh == empty:
+            INFO("layer %d/%d: %s: skipping (empty)"
+                 % (i, len(self.layer_hashes), lh[:7]))
+            continue
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
          try:
@@ -353,13 +368,11 @@ nogroup:x:65534:
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
          members = collections.OrderedDict([(m, None) for m in members_list])
-         if members:
-            layers[lh] = TT(fp, members)
-         else:
-            WARNING("layer %d/%d: %s: has no members; ignoring"
-                   % (i, len(self.layer_hashes), lh[:7]))
+         if lh in layers and members:
+            FATAL("duplicate non-empty layer %s" % lh[:7])
+         layers[lh] = TT(fp, members)
       if self.schema_version == 1:
-         DEBUG('using schema version one (1); revering layer order')
+         DEBUG('reversing layer order for schema version one (1)')
          layers = collections.OrderedDict(reversed(list(layers.items())))
       return layers
 
@@ -733,6 +746,16 @@ class Repo_Downloader:
             DEBUG("got token: %s..." % (token[:32]))
             self.auth = self.Bearer_Auth(token)
 
+   def check_response_schema_maybe(self, url, response):
+      "Ensure the schema is what we requested"
+      if 'manifest' in url and env_schema_version:
+         content = response.headers['Content-Type']
+         DEBUG("preferred schema: v%s (environment)" % env_schema_version)
+         DEBUG("response schema content: %s" % content)
+         if not ("v" + env_schema_version) in content:
+            FATAL("requested schema v%s and response returned Content-Type: %s"
+                  % (env_schema_version, content))
+
    def close(self):
       if (self.session is not None):
          self.session.close()
@@ -744,6 +767,7 @@ class Repo_Downloader:
       self.session_init_maybe()
       self.authenticate_maybe(url)
       res = self.get_raw(url, headers)
+      self.check_response_schema_maybe(url, res)
       try:
          fp = open_(path, "wb")
          ossafe(fp.write, "can't write: %s" % path, res.content)
@@ -761,9 +785,21 @@ class Repo_Downloader:
    def get_manifest(self, path):
       "GET the manifest for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
-      accept = ["application/vnd.docker.distribution.manifest.v2+json",
-                "application/vnd.docker.distribution.manifest.v1+json"]
+      sv = {'1': "application/vnd.docker.distribution.manifest.v1+json",
+            '2': "application/vnd.docker.distribution.manifest.v2+json"}
+      # Use undocumented variable to specify schema version for testing.
+      if 'CH_SCHEMA_VER' in os.environ:
+         env_sv = os.environ['CH_SCHEMA_VER']
+         if env_sv == '1' or env_sv == '2':
+            DEBUG('requesting schema version %s (environment)' % env_sv)
+            accept = sv[env_sv]
+         else:
+            WARNING('CH_SCHEMA_VER=%s: invalid version number; ignorning'
+                     % env_sv)
+      else:
+         accept = [sv['2'], sv['1']]
       self.get(url, path, { "Accept": str(accept) })
+
 
    def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
                **kwargs):

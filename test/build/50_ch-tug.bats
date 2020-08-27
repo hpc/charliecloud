@@ -234,3 +234,48 @@ EOF
     [[ $output = 'regular file' ]]
     [[ $(cat "${img}/test/source") = 'regular' ]]
 }
+
+@test 'ch-tug image with specified schema' {
+    # Validate that we handle both schema version (1) and (2) image formats.
+    scope standard
+    if ( ! ch-tug --dependencies ); then
+
+        [[ $CH_BUILDER != ch-grow ]]
+        skip "ch-tug missing dependencies"
+    fi
+
+    unpack=$BATS_TMPDIR
+    cache=$unpack/dlcache
+    img=charliecloud%symlink
+
+    export CH_SCHEMA_VER=1
+    img1=$unpack/charliecloud%symlink%v1
+    ch-tug --unpack-dir="$img1" \
+           --dl-cache="$cache" \
+           --no-cache charliecloud/symlink
+    [[ $status -eq 0 ]]
+    cat "${cache}/charliecloud%symlink.manifest.json" | grep -F '"schemaVersion": 1'
+
+    export CH_SCHEMA_VER=2
+    img2=$unpack/charliecloud%symlink%v2
+    ch-tug --unpack-dir="$img2" \
+           --dl-cache="$cache" \
+           --no-cache charliecloud/symlink
+    [[ $status -eq 0 ]]
+    cat "${cache}/charliecloud%symlink.manifest.json" | grep -F '"schemaVersion": 2'
+
+    # The following horror ensures that the same image unpacked via different
+    # schemas are the same.
+    cd "$img1"
+    find "$img" -type f -exec md5sum {} + | sort > "${img1}/contents.txt"
+    cd "$img2"
+    find "$img" -type f -exec md5sum {} + | sort > "${img2}/contents.txt"
+    diff -u "${img1}/contents.txt" "${img2}/contents.txt"
+    [[ $status -eq 0 ]]
+
+    # Ensure we error if we don't get the specified schem
+    run ch-tug --unpack-dir="$unpack" \
+               --dl-cache="$cache" \
+               --no-cache quay.io:443/fenicsproject/stable:latest
+    [[ $status -ne 0 ]]
+}
