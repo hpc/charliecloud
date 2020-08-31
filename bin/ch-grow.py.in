@@ -201,8 +201,9 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
 
    if (ml.instruction_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
+   assert (image_i + 1 == image_ct)  # should have errored already if not
    ch.INFO("grown in %d instructions: %s"
-           % (ml.instruction_ct, images[image_ct - 1]))
+           % (ml.instruction_ct, images[image_i]))
 
 
 class Main_Loop(lark.Visitor):
@@ -535,6 +536,10 @@ class I_from_(Instruction):
       if (image_i == image_ct - 1):
          # Last image; use tag unchanged.
          tag = cli.tag
+      elif (image_i > image_ct - 1):
+         # Too many images!
+         ch.FATAL("expected %d stages but found at least %d"
+                  % (image_ct, image_i + 1))
       else:
          # Not last image; append stage index to tag.
          tag = "%s/_stage%d" % (cli.tag, image_i)
