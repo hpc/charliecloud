@@ -303,17 +303,24 @@ nogroup:x:65534:
                % (self.manifest_path, x.lineno, x.msg))
 
       schema_version = doc['schemaVersion']
-      if schema_version == 1:
+      if (schema_version == 1):
          DEBUG('loading layer hashes from schema version one (1) manifest')
          try:
             self.layer_hashes = [i["blobSum"].split(":")[1] for i in doc["fsLayers"]]
-         except (AttributeError, KeyError, IndexError):
-            FATAL("can't parse manifest file: %s" % self.manifest_path)
-      elif schema_version == 2:
+         except (KeyError):
+            FATAL("manifest file %s missing expected %s version keys"
+                  % (self.manifest_path, env_schema_version))
+         except (AttributeError, IndexError):
+            FATAL("can't parse manifest %s file: %s"
+                  % (env_schema_version, self.manifest_path))
+      elif (schema_version == 2):
          DEBUG('loading layer hashes from schema version two (2) manifest')
          try:
             self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
-         except (AttributeError, KeyError, IndexError):
+         except (KeyError):
+            FATAL("manifest file %s missing expected %s version keys"
+                  % (self.manifest_path, env_schema_version))
+         except (AttributeError, IndexError):
             FATAL("can't parse manifest file: %s" % self.manifest_path)
       else:
          FATAL("unsupported manifest schema version: 'schemaVersion':%s"
