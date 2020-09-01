@@ -48,6 +48,7 @@ mpihello/Dockerfile.openmpi \
 mpihello/Makefile \
 mpihello/hello.c \
 mpihello/slurm.sh \
+multistage/Dockerfile \
 obspy/Dockerfile \
 obspy/README \
 paraview/Dockerfile \
@@ -67,6 +68,7 @@ lammps/test.bats \
 lustre/test.bats \
 mpibench/test.bats \
 mpihello/test.bats \
+multistage/test.bats \
 obspy/test.bats \
 paraview/test.bats \
 spack/test.bats \

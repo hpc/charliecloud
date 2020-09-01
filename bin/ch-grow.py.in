@@ -24,9 +24,16 @@ cli = None
 # Environment object.
 env = None
 
-# Image that we are building.
-image = None
-
+# Images that we are building. Each stage gets its own image. In this
+# dictionary, an image appears exactly once or twice. All images appear with
+# an int key counting stages up from zero. Images with a name (e.g., "FROM ...
+# AS foo") have a second string key of the name.
+images = dict()
+# Current stage. Incremented by FROM instructions; the first will set it to 0.
+image_i = -1
+image_alias = None
+# Number of stages.
+image_ct = None
 
 ## Imports not in standard library ##
 
@@ -127,15 +134,8 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
    if (cli.build_arg is None):
       cli.build_arg = list()
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
-
-   ch.dependencies_check()
-
-   global image
-   image = ch.Image(ch.Image_Ref(cli.tag), cli.storage + "/dlcache",
-                    cli.storage + "/img")
-   ch.INFO("growing: %s" % image)
-   ch.DEBUG("image path: %s" % image.unpack_path)
    ch.DEBUG(cli)
+   ch.dependencies_check()
 
    global env
    env = Environment()
@@ -173,6 +173,10 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
    if (os.path.exists(cli.context + "/.dockerignore")):
       ch.WARNING("not yet supported, ignored: issue #777: .dockerignore file")
 
+   # Count the number of stages (i.e., FROM instructions)
+   global image_ct
+   image_ct = sum(1 for i in ch.tree_children(tree, "from_"))
+
    # We do not actually care whether the tree is traversed breadth-first or
    # depth-first, but we *do* care that the nodes are visited in order.
    # Neither visit() nor visit_topdown() are documented as of 2020-06-11 [1],
@@ -197,7 +201,9 @@ defined of --storage, $CH_GROW_STORAGE, and %s.
 
    if (ml.instruction_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
-   ch.INFO("done; %d instructions executed" % ml.instruction_ct)
+   assert (image_i + 1 == image_ct)  # should have errored already if not
+   ch.INFO("grown in %d instructions: %s"
+           % (ml.instruction_ct, images[image_i]))
 
 
 class Main_Loop(lark.Visitor):
@@ -239,10 +245,14 @@ class Instruction(abc.ABC):
             ch.FATAL("%3d %s: repeated option --%s"
                      % (self.lineno, self.str_name(), k))
          self.options[k] = v
+      # Save original options string because instructions pop() from the dict
+      # to process them.
+      self.options_str = " ".join("--%s=%s" % (k,v)
+                                  for (k,v) in self.options.items())
       self.tree = tree
 
    def __str__(self):
-      options = self.str_options()
+      options = self.options_str
       if (options != ""):
          options = " " + options
       return ("%3s %s%s %s"
@@ -272,9 +282,6 @@ class Instruction(abc.ABC):
 
    def str_name(self):
       return self.__class__.__name__.split("_")[1].upper()
-
-   def str_options(self):
-      return " ".join("--%s=%s" % (k,v) for (k,v) in self.options.items())
 
    def unsupported_forever_warn(self, msg):
       ch.WARNING("not supported, ignored: %s %s" % (self.str_name(), msg))
@@ -349,8 +356,21 @@ class I_arg_equals(Arg):
 
 class I_copy(Instruction):
 
+   # Note: The Dockerfile specification for COPY is complex, messy,
+   # inexplicably different from cp(1), and incomplete. We try to be
+   # bug-compatible with Docker but probably are not 100%. See the FAQ.
+   #
+   # Because of these weird semantics, none of this abstracted into a general
+   # copy function. I don't want people calling it except from here.
+
    def __init__(self, *args):
       super().__init__(*args)
+      self.from_ = self.options.pop("from", None)
+      if (self.from_ is not None):
+         try:
+            self.from_ = int(self.from_)
+         except ValueError:
+            pass
       if (ch.tree_child(self.tree, "copy_shell") is not None):
          paths = [variables_sub(i, env.env_build)
                   for i in ch.tree_child_terminals(self.tree, "copy_shell",
@@ -368,26 +388,37 @@ class I_copy(Instruction):
       # Complain about unsupported stuff.
       if (self.options.pop("chown", False)):
          self.unsupported_forever_warn("--chown")
-      if (self.options.pop("from", False)):
-         self.unsupported_yet_fatal("--from", 768)
       # Any remaining options are invalid.
       self.options_assert_empty()
-      # The Dockerfile specification for COPY is complex, messy, inexplicably
-      # different from cp(1), and incomplete. We try to be bug-compatible with
-      # Docker but probably are not 100%. See the FAQ.
-      #
-      # None of this abstracted into a general copy function because the
-      # semantics are really weird, so I don't want people calling it except
-      # from here.
+      # Find the source directory.
+      if (self.from_ is None):
+         context = cli.context
+      else:
+         if (self.from_ == image_i or self.from_ == image_alias):
+            ch.FATAL("COPY --from: stage %s is the current stage" % self.from_)
+         if (not self.from_ in images):
+            # FIXME: Would be nice to also report if a named stage is below.
+            if (isinstance(self.from_, int) and self.from_ < image_ct):
+               if (self.from_ < 0):
+                  ch.FATAL("COPY --from: invalid negative stage index %d"
+                           % self.from_)
+               else:
+                  ch.FATAL("COPY --from: stage %d does not exist yet"
+                           % self.from_)
+            else:
+               ch.FATAL("COPY --from: stage %s does not exist" % self.from_)
+         context = images[self.from_].unpack_path
+      ch.DEBUG("context: " + context)
+      # Do the copy.
       srcs = list()
       for src in self.srcs:
          if (os.path.normpath(src).startswith("..")):
             ch.FATAL("can't COPY: %s climbs outside context" % src)
-         for i in glob.glob(cli.context + "/" + src):
+         for i in glob.glob(context + "/" + src):
             srcs.append(i)
       if (len(srcs) == 0):
          ch.FATAL("can't COPY: no sources exist")
-      dst = image.unpack_path + "/"
+      dst = images[image_i].unpack_path + "/"
       if (not self.dst.startswith("/")):
          dst += env.workdir + "/"
       dst += self.dst
@@ -401,7 +432,7 @@ class I_copy(Instruction):
       for src in srcs:
          # Check for symlinks to outside context.
          src_real = os.path.realpath(src)
-         context_real = os.path.realpath(cli.context)
+         context_real = os.path.realpath(context)
          if (not os.path.commonpath([src_real, context_real]) \
                  .startswith(context_real)):
             ch.FATAL("can't COPY: %s climbs outside context via symlink" % src)
@@ -454,7 +485,8 @@ class Env(Instruction):
 
    def execute_(self):
       env.env[self.key] = self.value
-      with ch.open_(image.unpack_path + "/ch/environment", "wt") as fp:
+      with ch.open_(images[image_i].unpack_path + "/ch/environment", "wt") \
+           as fp:
          for (k, v) in env.env.items():
             print("%s=%s" % (k, v), file=fp)
 
@@ -487,8 +519,6 @@ class I_from_(Instruction):
    def __init__(self, *args):
       super().__init__(*args)
       self.base_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"))
-      self.base_image = ch.Image(self.base_ref, image.download_cache,
-                                 image.unpack_dir)
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
 
@@ -498,9 +528,33 @@ class I_from_(Instruction):
          self.unsupported_yet_fatal("--platform", 778)
       # Any remaining options are invalid.
       self.options_assert_empty()
+      # Update image globals.
+      global image_i
+      image_i += 1
+      global image_alias
+      image_alias = self.alias
+      if (image_i == image_ct - 1):
+         # Last image; use tag unchanged.
+         tag = cli.tag
+      elif (image_i > image_ct - 1):
+         # Too many images!
+         ch.FATAL("expected %d stages but found at least %d"
+                  % (image_ct, image_i + 1))
+      else:
+         # Not last image; append stage index to tag.
+         tag = "%s/_stage%d" % (cli.tag, image_i)
+      image = ch.Image(ch.Image_Ref(tag), cli.storage + "/dlcache",
+                       cli.storage + "/img")
+      images[image_i] = image
+      if (self.alias is not None):
+         images[self.alias] = image
+      ch.DEBUG("image path: %s" % image.unpack_path)
       # Other error checking.
       if (str(image.ref) == str(self.base_ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
+      # Initialize image.
+      self.base_image = ch.Image(self.base_ref, image.download_cache,
+                                 image.unpack_dir)
       if (not os.path.isdir(self.base_image.unpack_path)):
          ch.DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
          self.base_image.pull_to_unpacked(fixup=True)
@@ -515,7 +569,7 @@ class I_from_(Instruction):
 class Run(Instruction):
 
    def execute_(self):
-      rootfs = image.unpack_path
+      rootfs = images[image_i].unpack_path
       ch.file_ensure_exists(rootfs + "/etc/resolv.conf")
       ch.file_ensure_exists(rootfs + "/etc/hosts")
       args = [CH_BIN + "/ch-run", "-w", "--no-home", "--no-passwd",
@@ -556,7 +610,7 @@ class I_workdir(Instruction):
 
    def execute_(self):
       env.chdir(self.path)
-      ch.mkdirs(image.unpack_path + env.workdir)
+      ch.mkdirs(images[image_i].unpack_path + env.workdir)
 
 
 class I_uns_forever(Instruction_Supported_Never):
@@ -610,8 +664,8 @@ class CLI_List_Images(ch.CLI_Action_Exit):
       ch.dependencies_check()
       imgdir = namespace.storage + '/img'
       imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
-      for image in imgs:
-         print(ch.Image_Ref(image))
+      for img in imgs:
+         print(ch.Image_Ref(img))
       sys.exit(0)
 
 

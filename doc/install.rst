@@ -452,10 +452,10 @@ Sphinx
 We use Sphinx to build the documentation; the theme is
 `sphinx-rtd-theme <https://sphinx-rtd-theme.readthedocs.io/en/stable/>`_.
 
-Minimum versions are listed above. We currently use Sphinx 1.8 for building
-what's on the web because there are bugs problematic for us in 2.x, e.g. `bad
-spacing in lists
-<https://github.com/readthedocs/sphinx_rtd_theme/issues/799>`_.
+Minimum versions are listed above. Note that while anything greater than the
+minimum should yield readable documentation, we don't test quality with
+anything other than what we use to build the website, which is usually but not
+always the most recent version available on PyPI.
 
 If you're on Debian Stretch or some version of Ubuntu, installing with
 :code:`pip3` will silently install into :code:`~/.local`, leaving the

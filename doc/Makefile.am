@@ -89,6 +89,7 @@ html/dev.html \
 html/faq.html \
 html/index.html \
 html/install.html \
+html/search.html \
 html/tutorial.html
 endif
 
@@ -100,21 +101,31 @@ CLEANFILES = $(man1_MANS) $(nobase_html_DATA) \
 if ENABLE_HTML
 # Automake can't remove directories.
 clean-local:
-	rm -Rf doctrees html/_static
+	rm -Rf doctrees html/_sources html/_static html/_images
 endif
 
 # Automake can't install and uninstall directories. _static contains around
 # one hundred files in several directories, and I'm pretty sure the contents
 # change depending on Sphinx version and other details, so we can't just list
-# the files. These targets deal with it as an opaque directory.
+# the files. These targets deal with it as an opaque directory. The _sources
+# directory is another generated directory that contains references to the
+# input .rst files which we need for searching to work so we give it a similar
+# treatment.
 if ENABLE_HTML
 install-data-hook:
+	cp -r html/_sources $(DESTDIR)$(htmldir)/html
 	cp -r html/_static $(DESTDIR)$(htmldir)/html
+	find $(DESTDIR)$(htmldir)/html/_sources -xtype f -exec chmod 644 {} \;
 	find $(DESTDIR)$(htmldir)/html/_static -xtype d -exec chmod 755 {} \;
 	find $(DESTDIR)$(htmldir)/html/_static -xtype f -exec chmod 644 {} \;
+
 uninstall-hook:
+	   test -d $(DESTDIR)$(htmldir)/html/_sources \
+	&& rm -Rf $(DESTDIR)$(htmldir)/html/_sources \;
 	   test -d $(DESTDIR)$(htmldir)/html/_static \
-	&& rm -Rf $(DESTDIR)$(htmldir)/html/_static
+	&& rm -Rf $(DESTDIR)$(htmldir)/html/_static \;
+	   test -d $(DESTDIR)$(htmldir)/html/_images \
+	&& rm -Rf $(DESTDIR)$(htmldir)/html/_images \;
 endif
 
 # You can set these variables from the command line.
@@ -144,13 +155,11 @@ html-local: mkdir_issue115 ../lib/version.txt _deps.rst
 # avoid GitHub messing things up with Jekyll
 	touch html/.nojekyll
 # remove unused files that Sphinx made
-	rm -R $(BUILDDIR)/html/_sources
 	rm -f $(BUILDDIR)/html/_deps.html \
 	      $(BUILDDIR)/html/charliecloud.html \
 	      $(BUILDDIR)/html/ch-*.html \
 	      $(BUILDDIR)/html/bugs.html \
 	      $(BUILDDIR)/html/objects.inv \
-	      $(BUILDDIR)/html/search.html \
 	      $(BUILDDIR)/html/see_also.html
 
 # FIXME: If Sphinx builds the man pages first, the HTML docs don't get curly
