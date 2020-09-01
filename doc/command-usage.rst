@@ -64,7 +64,7 @@ Inject files from the host into an image directory.
 ch-grow
 +++++++
 
-Build an image from a Dockerfile; completely unprivileged.
+Build and manage images; completely unprivileged.
 
 .. include:: ./ch-grow_desc.rst
 
@@ -127,13 +127,6 @@ ch-test
 Run some or all of the Charliecloud test suite.
 
 .. include:: ./ch-test_desc.rst
-
-ch-tug
-++++++
-
-Pull and flatten image from repository to local filesystem.
-
-.. include:: ./ch-tug_desc.rst
 
 ch-umount
 +++++++++
