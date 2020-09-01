@@ -185,7 +185,6 @@ class Image:
                 "download_cache",
                 "image_subdir",
                 "layer_hashes",
-                "schema_version",
                 "unpack_dir")
 
    def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):

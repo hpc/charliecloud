@@ -272,8 +272,12 @@ EOF
     find "$img" -type f -exec md5sum {} + | sort > "${img2}/contents.txt"
     diff -u "${img1}/contents.txt" "${img2}/contents.txt"
     [[ $status -eq 0 ]]
+}
 
+@test 'ch-tug image errors' {
     # Ensure we error if we don't get the specified schem
+    unpack=$BATS_TMPDIR
+    cache=$unpack/dlcache
     run ch-tug --unpack-dir="$unpack" \
                --dl-cache="$cache" \
                --no-cache quay.io:443/fenicsproject/stable:latest
