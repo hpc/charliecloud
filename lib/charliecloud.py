@@ -60,7 +60,11 @@ except ImportError:
 # Undocumented environment variable for developer testing.
 env_schema_version = None
 try:
-    env_schema_version = os.environ['CH_SCHEMA_VER']
+   env_schema_version = os.environ['CH_SCHEMA_VER']
+   if env_schema_version != 1 and env_schema_version != 2:
+      WARNING('CH_SCHEMA_VER set to invalid value: %s; ignoring'
+            % env_schema_version)
+      env_schema_version = None
 except:
     pass
 
@@ -788,14 +792,10 @@ class Repo_Downloader:
       sv = {'1': "application/vnd.docker.distribution.manifest.v1+json",
             '2': "application/vnd.docker.distribution.manifest.v2+json"}
       # Use undocumented variable to specify schema version for testing.
-      if 'CH_SCHEMA_VER' in os.environ:
-         env_sv = os.environ['CH_SCHEMA_VER']
-         if env_sv == '1' or env_sv == '2':
-            DEBUG('requesting schema version %s (environment)' % env_sv)
-            accept = sv[env_sv]
-         else:
-            WARNING('CH_SCHEMA_VER=%s: invalid version number; ignorning'
-                     % env_sv)
+      if env_schema_version:
+            DEBUG('requesting schema version %s (environment)'
+                   % env_schema_version)
+            accept = sv[env_schema_version]
       else:
          accept = [sv['2'], sv['1']]
       self.get(url, path, { "Accept": str(accept) })
