@@ -131,7 +131,7 @@ def main():
    add_opts(sp, common_opts, True)
 
    # pull
-   help="pull image from remote repository to local filesystem"
+   help="pull image from remote repository to local fileysystem"
    sp = sps.add_parser("pull", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.pull)

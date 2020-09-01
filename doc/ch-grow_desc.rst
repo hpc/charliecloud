@@ -65,7 +65,9 @@ Charliecloud test suite uses approximately 400,000 files and directories in
 the storage directory as of this writing. Place it on a filesystem appropriate
 for this; tmpfs'es such as :code:`/var/tmp` are a good choice if you have
 enough RAM (:code:`/tmp` is not recommended because :code:`ch-run` bind-mounts
-it into containers by default).
+it into containers by default). Network filesystems, especially Lustre, are
+typically bad choices. This is a site-specific question and your local support
+will likely have strong opinions.
 
 While you can currently poke around in the storage directory and find unpacked
 images runnable with :code:`ch-run`, this is not a supported use case. The
