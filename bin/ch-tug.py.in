@@ -31,6 +31,9 @@ $CH_GROW_STORAGE if set, else %s.
    ap.add_argument("--parse-ref-only",
                    action="store_true",
                    help="parse image reference, print report, and exit")
+   ap.add_argument("--pull-manifest-version",
+                   help="manifest schema version (v1 or v2)",
+                   default=None)
    ap.add_argument("--unpack-dir", metavar="DIR",
                    help="directory containing unpacked images",
                    default=(ch.storage_env() + "/img"))
@@ -47,6 +50,8 @@ $CH_GROW_STORAGE if set, else %s.
 
    ch.dependencies_check()
 
+   ch.manifest_pull_set(args.pull_manifest_version)
+
    ref = ch.Image_Ref(args.image)
    if (args.parse_ref_only):
       print(ref.as_verbose_str)
@@ -61,7 +66,9 @@ destination:     %s
 use cache:       %s
 download cache:  %s
 manifest:        %s
-""" % (not args.no_cache, image.download_cache, image.manifest_path))
+manifest schema: %s
+""" % (not args.no_cache, image.download_cache, image.manifest_path,
+       ch.env_schema_version))
    image.pull_to_unpacked(use_cache=(not args.no_cache))
    ch.INFO("done")
 

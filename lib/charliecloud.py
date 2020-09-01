@@ -57,17 +57,6 @@ except ImportError:
 
 ## Globals ##
 
-# Undocumented environment variable for developer testing.
-env_schema_version = None
-try:
-   env_schema_version = os.environ['CH_SCHEMA_VER']
-   if env_schema_version != 1 and env_schema_version != 2:
-      WARNING('CH_SCHEMA_VER set to invalid value: %s; ignoring'
-            % env_schema_version)
-      env_schema_version = None
-except:
-    pass
-
 # Logging; set using log_setup() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
@@ -209,7 +198,6 @@ class Image:
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
-      self.schema_version = None
 
    def __str__(self):
       return str(self.ref)
@@ -315,14 +303,14 @@ nogroup:x:65534:
          FATAL("can't parse manifest file: %s:%d: %s"
                % (self.manifest_path, x.lineno, x.msg))
 
-      self.schema_version = doc['schemaVersion']
-      if self.schema_version == 1:
+      schema_version = doc['schemaVersion']
+      if schema_version == 1:
          DEBUG('loading layer hashes from schema version one (1) manifest')
          try:
             self.layer_hashes = [i["blobSum"].split(":")[1] for i in doc["fsLayers"]]
          except (AttributeError, KeyError, IndexError):
             FATAL("can't parse manifest file: %s" % self.manifest_path)
-      elif self.schema_version == 2:
+      elif schema_version == 2:
          DEBUG('loading layer hashes from schema version two (2) manifest')
          try:
             self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
@@ -330,7 +318,7 @@ nogroup:x:65534:
             FATAL("can't parse manifest file: %s" % self.manifest_path)
       else:
          FATAL("unsupported manifest schema version: 'schemaVersion':%s"
-               % self.schema_version)
+               % schema_version)
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
@@ -355,15 +343,11 @@ nogroup:x:65534:
       if (self.layer_hashes is None):
          self.layer_hashes_load()
       layers = collections.OrderedDict()
+      empty_cnt = 0
       # Schema version one (v1) allows one or more empty layers for Dockerfile
       # entries like CMD (https://github.com/containers/skopeo/issues/393).
       # Unpacking an empty layer doesn't accomplish much so we ignore them.
-      empty = 'a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4'
       for (i, lh) in enumerate(self.layer_hashes, start=1):
-         if lh == empty:
-            INFO("layer %d/%d: %s: skipping (empty)"
-                 % (i, len(self.layer_hashes), lh[:7]))
-            continue
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
          try:
@@ -372,12 +356,17 @@ nogroup:x:65534:
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
          members = collections.OrderedDict([(m, None) for m in members_list])
-         if lh in layers and members:
+         if (lh in layers and members):
             FATAL("duplicate non-empty layer %s" % lh[:7])
-         layers[lh] = TT(fp, members)
-      if self.schema_version == 1:
+         if (members):
+            layers[lh] = TT(fp, members)
+         else:
+            empty_cnt += 1
+      if (env_schema_version == 'v1'):
          DEBUG('reversing layer order for schema version one (1)')
          layers = collections.OrderedDict(reversed(list(layers.items())))
+      if (empty_cnt > 0):
+         INFO("skipped %d empty layers" % empty_cnt)
       return layers
 
    def pull_to_unpacked(self, use_cache=True, fixup=False):
@@ -750,16 +739,6 @@ class Repo_Downloader:
             DEBUG("got token: %s..." % (token[:32]))
             self.auth = self.Bearer_Auth(token)
 
-   def check_response_schema_maybe(self, url, response):
-      "Ensure the schema is what we requested"
-      if 'manifest' in url and env_schema_version:
-         content = response.headers['Content-Type']
-         DEBUG("preferred schema: v%s (environment)" % env_schema_version)
-         DEBUG("response schema content: %s" % content)
-         if not ("v" + env_schema_version) in content:
-            FATAL("requested schema v%s and response returned Content-Type: %s"
-                  % (env_schema_version, content))
-
    def close(self):
       if (self.session is not None):
          self.session.close()
@@ -771,7 +750,11 @@ class Repo_Downloader:
       self.session_init_maybe()
       self.authenticate_maybe(url)
       res = self.get_raw(url, headers)
-      self.check_response_schema_maybe(url, res)
+      if 'manifest' in url:
+         content = res.headers['Content-Type']
+         if not env_schema_version in content:
+            FATAL("requested schema %s but received Content-Type: %s"
+                  % (env_schema_version, content))
       try:
          fp = open_(path, "wb")
          ossafe(fp.write, "can't write: %s" % path, res.content)
@@ -789,15 +772,10 @@ class Repo_Downloader:
    def get_manifest(self, path):
       "GET the manifest for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
-      sv = {'1': "application/vnd.docker.distribution.manifest.v1+json",
-            '2': "application/vnd.docker.distribution.manifest.v2+json"}
-      # Use undocumented variable to specify schema version for testing.
-      if env_schema_version:
-            DEBUG('requesting schema version %s (environment)'
-                   % env_schema_version)
-            accept = sv[env_schema_version]
-      else:
-         accept = [sv['2'], sv['1']]
+      media = {'v1': "application/vnd.docker.distribution.manifest.v1+json",
+               'v2': "application/vnd.docker.distribution.manifest.v2+json"}
+      DEBUG('requesting schema version %s (environment)' % env_schema_version)
+      accept = media[env_schema_version]
       self.get(url, path, { "Accept": str(accept) })
 
 
@@ -956,6 +934,20 @@ def log_setup(verbose_):
       verbose = max(verbose_, 1)
       log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
+
+def manifest_pull_default():
+    global env_schema_version
+    env_schema_version = os.environ.get('CH_PULL_MANIFEST_VERSION', 'v2')
+
+def manifest_pull_set(ver):
+   if ver:
+      if ver != 'v1' and ver != 'v2':
+         FATAL("unsupported manifest schema version: %s (must be v1 or v2)"
+               % ver)
+      global env_schema_version
+      env_schema_version = ver
+   else:
+      manifest_pull_default()
 
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)

@@ -248,15 +248,15 @@ EOF
     cache=$unpack/dlcache
     img=charliecloud%symlink
 
-    export CH_SCHEMA_VER=1
     img1=$unpack/charliecloud%symlink%v1
     ch-tug --unpack-dir="$img1" \
            --dl-cache="$cache" \
-           --no-cache charliecloud/symlink
+           --no-cache \
+           --pull-manifest-version=v1 \
+           charliecloud/symlink
     [[ $status -eq 0 ]]
     cat "${cache}/charliecloud%symlink.manifest.json" | grep -F '"schemaVersion": 1'
 
-    export CH_SCHEMA_VER=2
     img2=$unpack/charliecloud%symlink%v2
     ch-tug --unpack-dir="$img2" \
            --dl-cache="$cache" \
