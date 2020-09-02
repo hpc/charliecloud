@@ -236,10 +236,9 @@ EOF
 }
 
 @test 'ch-tug image with v1 manifest schema' {
-    # Validate that we handle both schema version (1) and (2) image formats.
+    # Validate that we handle schema version (1) image formats.
     scope standard
     if ( ! ch-tug --dependencies ); then
-
         [[ $CH_BUILDER != ch-grow ]]
         skip "ch-tug missing dependencies"
     fi
@@ -276,7 +275,12 @@ EOF
 }
 
 @test 'ch-tug image error' {
-    # Ensure we error if we don't get the specified schem
+    # Ensure we error if we don't get the specified schema.
+    scope standard
+    if ( ! ch-tug --dependencies ); then
+        [[ $CH_BUILDER != ch-grow ]]
+        skip "ch-tug missing dependencies"
+    fi
     unpack=$BATS_TMPDIR
     cache=$unpack/dlcache
     run ch-tug --unpack-dir="$unpack" \
