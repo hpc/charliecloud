@@ -57,6 +57,9 @@ except ImportError:
 
 ## Globals ##
 
+# Download v2 schema unless otherwise specified.
+manifest_schema_version = 'v2'
+
 # Logging; set using log_setup() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
@@ -309,17 +312,17 @@ nogroup:x:65534:
             self.layer_hashes = [i["blobSum"].split(":")[1] for i in doc["fsLayers"]]
          except (KeyError):
             FATAL("manifest file %s missing expected %s version keys"
-                  % (self.manifest_path, env_schema_version))
+                  % (self.manifest_path, manifest_schema_version))
          except (AttributeError, IndexError):
             FATAL("can't parse manifest %s file: %s"
-                  % (env_schema_version, self.manifest_path))
+                  % (manifest_schema_version, self.manifest_path))
       elif (schema_version == 2):
          DEBUG('loading layer hashes from schema version two (2) manifest')
          try:
             self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
          except (KeyError):
             FATAL("manifest file %s missing expected %s version keys"
-                  % (self.manifest_path, env_schema_version))
+                  % (self.manifest_path, manifest_schema_version))
          except (AttributeError, IndexError):
             FATAL("can't parse manifest file: %s" % self.manifest_path)
       else:
@@ -368,7 +371,7 @@ nogroup:x:65534:
             layers[lh] = TT(fp, members)
          else:
             empty_cnt += 1
-      if (env_schema_version == 'v1'):
+      if (manifest_schema_version == 'v1'):
          DEBUG('reversing layer order for schema version one (1)')
          layers = collections.OrderedDict(reversed(list(layers.items())))
       if (empty_cnt > 0):
@@ -758,9 +761,9 @@ class Repo_Downloader:
       res = self.get_raw(url, headers)
       if 'manifest' in url:
          content = res.headers['Content-Type']
-         if not env_schema_version in content:
-            FATAL("requested schema %s but received Content-Type: %s"
-                  % (env_schema_version, content))
+         if not manifest_schema_version in content:
+            FATAL("requested manifest schema %s but received Content-Type: %s"
+                  % (manifest_schema_version, content))
       try:
          fp = open_(path, "wb")
          ossafe(fp.write, "can't write: %s" % path, res.content)
@@ -780,8 +783,8 @@ class Repo_Downloader:
       url = self._url_of("manifests", self.ref.version)
       media = {'v1': "application/vnd.docker.distribution.manifest.v1+json",
                'v2': "application/vnd.docker.distribution.manifest.v2+json"}
-      DEBUG('requesting schema version %s (environment)' % env_schema_version)
-      accept = media[env_schema_version]
+      DEBUG('requesting manifest schema %s' % manifest_schema_version)
+      accept = media[manifest_schema_version]
       self.get(url, path, { "Accept": str(accept) })
 
 
@@ -941,19 +944,9 @@ def log_setup(verbose_):
       log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
 
-def manifest_pull_default():
-    global env_schema_version
-    env_schema_version = os.environ.get('CH_PULL_MANIFEST_VERSION', 'v2')
-
-def manifest_pull_set(ver):
-   if ver:
-      if ver != 'v1' and ver != 'v2':
-         FATAL("unsupported manifest schema version: %s (must be v1 or v2)"
-               % ver)
-      global env_schema_version
-      env_schema_version = ver
-   else:
-      manifest_pull_default()
+def manifest_pull_v1():
+    global manifest_schema_version
+    manifest_schema_version = 'v1'
 
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)

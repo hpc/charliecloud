@@ -235,7 +235,7 @@ EOF
     [[ $(cat "${img}/test/source") = 'regular' ]]
 }
 
-@test 'ch-tug image with specified schema' {
+@test 'ch-tug image with v1 manifest schema' {
     # Validate that we handle both schema version (1) and (2) image formats.
     scope standard
     if ( ! ch-tug --dependencies ); then
@@ -252,17 +252,18 @@ EOF
     ch-tug --unpack-dir="$img1" \
            --dl-cache="$cache" \
            --no-cache \
-           --pull-manifest-version=v1 \
+           --pull-manifest-v1 \
            charliecloud/symlink
     [[ $status -eq 0 ]]
-    cat "${cache}/charliecloud%symlink.manifest.json" | grep -F '"schemaVersion": 1'
+    grep -F '"schemaVersion": 1' "${cache}/charliecloud%symlink.manifest.json"
 
+    # Download default v2 schema image for comparison.
     img2=$unpack/charliecloud%symlink%v2
     ch-tug --unpack-dir="$img2" \
            --dl-cache="$cache" \
            --no-cache charliecloud/symlink
     [[ $status -eq 0 ]]
-    cat "${cache}/charliecloud%symlink.manifest.json" | grep -F '"schemaVersion": 2'
+    grep -F '"schemaVersion": 2' "${cache}/charliecloud%symlink.manifest.json"
 
     # The following horror ensures that the same image unpacked via different
     # schemas are the same.
@@ -274,7 +275,7 @@ EOF
     [[ $status -eq 0 ]]
 }
 
-@test 'ch-tug image errors' {
+@test 'ch-tug image error' {
     # Ensure we error if we don't get the specified schem
     unpack=$BATS_TMPDIR
     cache=$unpack/dlcache
@@ -282,4 +283,7 @@ EOF
                --dl-cache="$cache" \
                --no-cache quay.io:443/fenicsproject/stable:latest
     [[ $status -ne 0 ]]
+    echo "$output"
+    [[ $output = *'requested manifest schema'* ]]
+    [[ $output = *'but received Content-Type'* ]]
 }
