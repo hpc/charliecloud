@@ -15,8 +15,6 @@ import sys
 import tarfile
 import types
 
-import version
-
 
 ## Imports not in standard library ##
 
@@ -147,22 +145,29 @@ _WS: /[ \t]/+
 
 ## Classes ##
 
-class CLI_Action_Exit(argparse.Action):
+class HelpFormatter(argparse.HelpFormatter):
 
    def __init__(self, *args, **kwargs):
-      super().__init__(nargs=0, *args, **kwargs)
+      # max_help_position is undocumented but I don't know how else to do this.
+      #kwargs["max_help_position"] = 26
+      super().__init__(max_help_position=26, *args, **kwargs)
 
-class CLI_Dependencies(CLI_Action_Exit):
-
-   def __call__(self, *args, **kwargs):
-      dependencies_check()
-      sys.exit(0)
-
-class CLI_Version(CLI_Action_Exit):
-
-   def __call__(self, *args, **kwargs):
-      print(version.VERSION)
-      sys.exit(0)
+   # Suppress duplicate metavar printing when option has both short and long
+   # flavors. E.g., instead of:
+   #
+   #   -s DIR, --storage DIR  set builder internal storage directory to DIR
+   #
+   # print:
+   #
+   #   -s, --storage DIR      set builder internal storage directory to DIR
+   #
+   # From https://stackoverflow.com/a/31124505.
+   def _format_action_invocation(self, action):
+      if (not action.option_strings or action.nargs == 0):
+         return super()._format_action_invocation(action)
+      default = self._get_default_metavar_for_optional(action)
+      args_string = self._format_args(action, default)
+      return ', '.join(action.option_strings) + ' ' + args_string
 
 class Image:
    """Container image object.
