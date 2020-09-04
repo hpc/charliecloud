@@ -5,11 +5,11 @@ load ../common
     ch-build --builder-info
 }
 
-@test 'ch-grow --list' {
+@test 'ch-grow list' {
     scope standard
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
-    run ch-grow --list
+    run ch-grow list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"00_tiny"* ]]

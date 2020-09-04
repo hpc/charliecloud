@@ -108,7 +108,7 @@ AC_ARG_ENABLE([test],
 
 AC_ARG_ENABLE([ch-grow],
   AS_HELP_STRING([--disable-ch-grow],
-                 [ch-grow unprivileged builder and ch-tug]),
+                 [ch-grow unprivileged builder & image manager]),
   [], [enable_ch_grow=yes])
 
 
@@ -581,7 +581,7 @@ Building Charliecloud
     HTML documentation ... ${enable_html}
     man pages ... ${enable_man}
     test suite ... ${enable_test}
-    ch-grow(1) and ch-tug(1) ... ${enable_ch_grow}
+    ch-grow(1) ... ${enable_ch_grow}
 
 Building images via our wrappers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

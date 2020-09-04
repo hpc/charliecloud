@@ -7,7 +7,7 @@ image_ref_parse () {
     retcode_expected=$2
     echo "--- parsing: ${ref}"
     set +e
-    out=$(ch-tug --parse-ref-only "$ref" 2>&1)
+    out=$(ch-grow pull --parse-only "$ref" 2>&1)
     retcode=$?
     set -e
     echo "--- return code: ${retcode}"
@@ -21,11 +21,11 @@ image_ref_parse () {
 }
 
 
-@test 'ch-tug image ref parsing' {
+@test 'image ref parsing' {
     scope standard
-    if ( ! ch-tug --dependencies ); then
+    if ( ! ch-grow --dependencies ); then
         [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-tug missing dependencies"
+        skip "ch-grow missing dependencies"
     fi
 
     # simplest
@@ -204,20 +204,19 @@ error: image ref syntax, char 9: name:tag@sha512:feeddad
 EOF
 }
 
-@test 'ch-tug image with symlink' {
+@test 'pull image with symlink' {
     # Validate that if a prior layer contains a symlink and a subsequent layer
     # contains a regular file at the same path, the symlink is replaced with a
     # regular file and the symlink target is unchanged. See issue #819.
     scope standard
-    if ( ! ch-tug --dependencies ); then
+    if ( ! ch-grow --dependencies ); then
         [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-tug missing dependencies"
+        skip "ch-grow missing dependencies"
     fi
 
-    unpack=$BATS_TMPDIR
-    img=$unpack/charliecloud%symlink
+    img=$BATS_TMPDIR/charliecloud%symlink
 
-    ch-tug --unpack-dir="$unpack" charliecloud/symlink
+    ch-grow pull charliecloud/symlink "$img"
     ls -lh "${img}/test"
 
     # /test/target should be a regular file with contents "target"
