@@ -263,7 +263,7 @@ man_pages = [
     "Create a SquashFS file from an image directory",
     [], 1),
    ("ch-grow", "ch-grow",
-    "Build an image from a Dockerfile; completely unprivileged",
+    "Build and manage images; completely unprivileged",
     [], 1),
    ("ch-fromhost", "ch-fromhost",
     "Inject files from the host into an image directory",

@@ -71,15 +71,15 @@ diff -ur charliecloud/bin/ch-fromhost charliecloud-lib/bin/ch-fromhost
 diff -ur charliecloud/bin/ch-grow.py.in charliecloud-lib/bin/ch-grow.py.in
 --- charliecloud/bin/ch-grow.py.in    2020-04-20 10:34:22.163969775 -0600
 +++ charliecloud-lib/bin/ch-grow.py.in    2020-04-20 11:53:58.006701265 -0600
-@@ -12,7 +12,7 @@
+@@ -6,7 +6,7 @@
  import sys
 
  sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
 -                    + "/../lib/charliecloud"))
 +                    + "/../lib64/charliecloud"))
  import charliecloud as ch
-
-
+ import build
+ import misc
 diff -ur charliecloud/bin/ch-mount charliecloud-lib/bin/ch-mount
 --- charliecloud/bin/ch-mount    2020-04-01 14:59:49.395882236 -0600
 +++ charliecloud-lib/bin/ch-mount    2020-04-20 11:54:10.166822016 -0600
@@ -123,7 +123,7 @@ diff -ur charliecloud/bin/ch-run-oci.py.in charliecloud-lib/bin/ch-run-oci.py.in
 -                    + "/../lib/charliecloud"))
 +                    + "/../lib64/charliecloud"))
  import charliecloud as ch
-
+ import misc
 
 diff -ur charliecloud/bin/ch-tar2dir charliecloud-lib/bin/ch-tar2dir
 --- charliecloud/bin/ch-tar2dir    2020-04-01 14:59:49.396882245 -0600

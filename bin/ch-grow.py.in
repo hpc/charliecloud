@@ -31,7 +31,7 @@ def main():
    #HF = lambda prog: argparse.HelpFormatter(prog, max_help_position=26)
 
    ap = argparse.ArgumentParser(formatter_class=ch.HelpFormatter,
-      description="FIXME",
+      description="Build and manage images; completely unprivileged.",
       epilog="""Storage directory is used for caching and temporary images.
                 Location: first defined of --storage, $CH_GROW_STORAGE, and
                 %s.""" % ch.storage_default())
