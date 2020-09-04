@@ -77,6 +77,16 @@ def main():
    sp = sps.add_parser("list", help=help, description=help)
    sp.set_defaults(func=misc.list_)
 
+   # pull
+   help="pull image from remote repository to local fileysystem"
+   sp = sps.add_parser("pull", help=help, description=help)
+   sp.set_defaults(func=misc.pull)
+   sp.add_argument("--parse-only", action="store_true",
+                   help="stop after parsing the image reference")
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
+   sp.add_argument("image_dir", metavar="IMAGE_DIR", nargs="?",
+                   help="unpacked image path (default: undefined, in storage directory)")
+
    # storage-path
    help="print storage directory path"
    sp = sps.add_parser("storage-path", help=help, description=help)
@@ -91,9 +101,6 @@ def main():
 
    # Dispatch.
    cli.func(cli)
-
-
-
 
 
 ## Bootstrap ##

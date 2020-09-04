@@ -4,9 +4,11 @@ Synopsis
 ::
 
    $ ch-grow [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
-   $ ch-grow [...] print-storage
+   $ ch-grow [...] list
    $ ch-grow [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-grow [...] storage-path
    $ ch-grow { --help | --version | --dependencies }
+
 
 Description
 ===========
@@ -38,6 +40,40 @@ Common options placed before the sub-command:
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
+
+
+Storage directory
+=================
+
+:code:`ch-grow` maintains state using normal files and directories, including
+unpacked container images, located in its *storage directory*. There is no
+notion of storage drivers, graph drivers, etc., to select and/or configure. In
+descending order of priority, this directory is located at:
+
+  :code:`-s`, :code:`--storage DIR`
+    Command line option.
+
+  :code:`$CH_GROW_STORAGE`
+    Environment variable.
+
+  :code:`/var/tmp/$USER/ch-grow`
+    Default.
+
+The storage directory can reside on any filesystem. However, it contains lots
+of small files and metadata traffic can be intense. For example, the
+Charliecloud test suite uses approximately 400,000 files and directories in
+the storage directory as of this writing. Place it on a filesystem appropriate
+for this; tmpfs'es such as :code:`/var/tmp` are a good choice if you have
+enough RAM (:code:`/tmp` is not recommended because :code:`ch-run` bind-mounts
+it into containers by default). Network filesystems, especially Lustre, are
+typically bad choices. This is a site-specific question and your local support
+will likely have strong opinions.
+
+While you can currently poke around in the storage directory and find unpacked
+images runnable with :code:`ch-run`, this is not a supported use case. The
+supported workflow uses :code:`ch-builder2tar` or :code:`ch-builder2squash` to
+obtain a packed image; see the tutorial for details.
+
 
 Subcommands
 ===========
@@ -77,8 +113,8 @@ Options:
     Name of image to create. If not specified, use the final component of path
     :code:`CONTEXT`. Append :code:`:latest` if no colon present.
 
-:code:`print-storage`
----------------------
+:code:`storage-path`
+--------------------
 
 Print the storage directory path and exit.
 
@@ -106,39 +142,9 @@ Destination argument:
 
 Options:
 
-  :code:`--parse-ref-only`
+  :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
-
-
-Storage directory
-=================
-
-:code:`ch-grow` maintains state using normal files and directories, including
-unpacked container images. This storage directory can reside on any
-filesystem, and its location is configurable. In descending order of priority:
-
-  :code:`-s`, :code:`--storage DIR`
-    Command line option.
-
-  :code:`$CH_GROW_STORAGE`
-    Environment variable.
-
-  :code:`/var/tmp/$USER/ch-grow`
-    Default.
-
-Because it contains unpacked container images with lots of small files,
-metadata traffic on the storage directory can be intense. For example, the
-Charliecloud test suite uses approximately 400,000 files and directories.
-Place it on a filesystem appropriate for this; network filesystems, especially
-Lustre, are typically bad choices. This is a site-specific question and your
-local support will have strong opinions.
-
-While it is currently possible to poke around in the storage directory and
-find unpacked images runnable with :code:`ch-run`, this is not a supported use
-case. The supported workflow uses :code:`ch-builder2tar` or
-:code:`ch-builder2squash` to obtain a packed image; see the tutorial for
-details.
 
 
 Compatibility with other Dockerfile interpreters
