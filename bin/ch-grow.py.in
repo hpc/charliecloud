@@ -14,18 +14,20 @@ import misc
 
 ## Constants ##
 
-CH_BIN = os.path.dirname(os.path.abspath(
-           inspect.getframeinfo(inspect.currentframe()).filename))
-CH_RUN = CH_BIN + "/ch-run"
+# FIXME: It's currently easy to get the ch-run path from another script, but
+# hard from something in lib. So, despite the fact that only build needs this,
+# we set it here for now.
+build.CH_BIN = os.path.dirname(os.path.abspath(
+                 inspect.getframeinfo(inspect.currentframe()).filename))
+build.CH_RUN = build.CH_BIN + "/ch-run"
 
 
 ## Main ##
 
 def main():
 
-   # FIXME: ch-run is only actually needed for "build".
-   if (not os.path.exists(CH_RUN)):
-      ch.depfails.append(("missing", CH_RUN))
+   if (not os.path.exists(build.CH_RUN)):
+      ch.depfails.append(("missing", build.CH_RUN))
 
    # https://stackoverflow.com/a/5464440
    #HF = lambda prog: argparse.HelpFormatter(prog, max_help_position=26)
@@ -71,6 +73,9 @@ def main():
                    help="name of image to create (default: inferred)")
    sp.add_argument("context", metavar="CONTEXT",
                    help="context directory")
+   # FIXME: Kludge to accept some general args to make tests pass. See #844.
+   sp.add_argument("--no-cache", action="store_true", help=argparse.SUPPRESS)
+
 
    # list
    help="list images in storage"

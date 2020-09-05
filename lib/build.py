@@ -8,6 +8,7 @@ import os
 import os.path
 import re
 import shutil
+import sys
 
 import charliecloud as ch
 
@@ -39,6 +40,10 @@ lark = ch.lark
 
 
 ## Constants ##
+
+# FIXME: currently set in ch-grow :P
+CH_BIN = None
+CH_RUN = None
 
 ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
