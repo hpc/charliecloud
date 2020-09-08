@@ -48,7 +48,7 @@ def pull(cli):
       unpack_dir = cli.image_dir
       image_subdir = ""
    else:
-      unpack_dir = cli.storage + "/tmp"
+      unpack_dir = cli.storage + "/img"
       image_subdir = None  # infer from image ref
    # Set things up.
    ref = ch.Image_Ref(cli.image_ref)
