@@ -902,6 +902,7 @@ def log_setup(verbose_):
       verbose = max(verbose_, 1)
       log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
+   DEBUG("verbose level: %d" % verbose)
 
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)

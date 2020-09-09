@@ -44,22 +44,71 @@ def main():
    #
    # --dependencies (and --help and --version) are options rather than
    # subcommands for consistency with other commands.
-   ap.add_argument("--dependencies", action=misc.Dependencies,
-                   help="print any missing dependencies and exit")
-   ap.add_argument("--no-cache", action="store_true",
-                   help="download everything needed, ignoring the cache")
-   ap.add_argument("-s", "--storage", metavar="DIR", default=ch.storage_env(),
-                   help="set builder internal storage directory to DIR")
-   ap.add_argument("-v", "--verbose", action="count", default=0,
-                   help="print extra chatter (can be repeated)")
-   ap.add_argument("--version", action=misc.Version,
-                   help="print version and exit")
+   #
+   # These are also accepted *after* the subcommand, as it makes wrapping
+   # ch-grow easier and possibly improve the UX. There are multiple ways to do
+   # this, though no tidy ones unfortunately. Here, we build up a dictionary
+   # of options we want, and pass it to both main and subcommand parsers; this
+   # works because both go into the same Namespace object. There are two
+   # quirks to be aware of:
+   #
+   #   1. We omit the common options from subcommand --help for clarity and
+   #      because before the subcommand is preferred.
+   #
+   #   2. We suppress defaults in the subcommand [1]. Without this, the
+   #      subcommand option value wins even it it's the default. :P Currently,
+   #      if specified in both places, the subcommand value wins and the
+   #      before value is not considered at all, e.g. "ch-grow -v -v foo -v"
+   #      gives verbosity 1, not 3. This oddity seemed acceptable.
+   #
+   # Alternate approaches include:
+   #
+   #   * Set the main parser as the "parent" of the subcommand parser [2].
+   #     This may be the documented approach? However, it adds all the
+   #     subcommands to the subparser, which we don't want. A workaround would
+   #     be to create a *third* parser that's the parent of both the main and
+   #     subcommand parsers, but that seems like too much indirection to me.
+   #
+   #   * A two-stage parse (parse_known_args(), then parse_args() to have the
+   #     main parser look again) works [3], but is complicated and has some
+   #     odd side effects e.g. multiple subcommands will be accepted.
+   #
+   # [1]: https://bugs.python.org/issue9351#msg373665
+   # [2]: https://docs.python.org/3/library/argparse.html#parents
+   # [3]: https://stackoverflow.com/a/54936198
+   common_opts = \
+      [[ ["--dependencies"],
+         { "action": misc.Dependencies,
+           "help": "print any missing dependencies and exit" }],
+       [ ["--no-cache"],
+         { "action": "store_true",
+           "help": "download everything needed, ignoring the cache" }],
+       [ ["-s", "--storage"],
+         { "metavar": "DIR",
+           "default": ch.storage_env(),
+           "help": "set builder internal storage directory to DIR" }],
+       [ ["-v", "--verbose"],
+         { "action": "count",
+           "default": 0,
+           "help": "print extra chatter (can be repeated)" } ],
+       [ ["--version"],
+         { "action": misc.Version,
+           "help": "print version and exit" } ]]
+   def add_opts(p, opts, sub):
+      for (args, kwargs) in opts:
+         if (sub):
+            kwargs = { **kwargs,
+                       "default": argparse.SUPPRESS,
+                       "help": argparse.SUPPRESS }
+         p.add_argument(*args, **kwargs)
+   add_opts(ap, common_opts, False)
 
    # build
    help="build image from Dockerfile"
    sp = sps.add_parser("build", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=build.main)
+   add_opts(sp, common_opts, True)
    sp.add_argument("--build-arg", action="append", default=None,
                    metavar="ARG[=VAL]",
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
@@ -73,29 +122,32 @@ def main():
                    help="name of image to create (default: inferred)")
    sp.add_argument("context", metavar="CONTEXT",
                    help="context directory")
-   # FIXME: Kludge to accept some general args to make tests pass. See #844.
-   sp.add_argument("--no-cache", action="store_true", help=argparse.SUPPRESS)
-
 
    # list
    help="list images in storage"
-   sp = sps.add_parser("list", help=help, description=help)
+   sp = sps.add_parser("list", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.list_)
+   add_opts(sp, common_opts, True)
 
    # pull
    help="pull image from remote repository to local fileysystem"
-   sp = sps.add_parser("pull", help=help, description=help)
+   sp = sps.add_parser("pull", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.pull)
+   add_opts(sp, common_opts, True)
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the image reference")
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
    sp.add_argument("image_dir", metavar="IMAGE_DIR", nargs="?",
-                   help="unpacked image path (default: undefined, in storage directory)")
+                   help="unpacked image path (default: opaque path in storage dir)")
 
    # storage-path
    help="print storage directory path"
-   sp = sps.add_parser("storage-path", help=help, description=help)
+   sp = sps.add_parser("storage-path", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.storage_path)
+   add_opts(sp, common_opts, True)
 
    # Parse it up!
    if (len(sys.argv) < 2):
