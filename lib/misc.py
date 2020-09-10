@@ -69,7 +69,42 @@ def pull(cli):
    # Done.
    ch.INFO("done")
 
+def push(cli):
+   ch.dependencies_check()
+   ulcache = cli.storage + "/ulcache"
+   if (cli.image_dir is not None):
+      image_dir = cli.image_dir
+   else:
+      image_dir = cli.storage + "/img"
+   # Stage upload.
+   image_ref = ch.Image_Ref(cli.local_image_ref)
+   image_manifest = str(image_ref) + ".manifest.json"
+   image_path = os.path.join(image_dir, image_ref.for_path)
+   if (not os.path.isdir(image_path)):
+      ch.FATAL("local image '%s' not found" % image_path)
+   # Images we push will always be different from those we pull fro dockerhub
+   # because we don't preserve gid/uid mapping (can't without
+   # set[u|g]id helpers). Thus we store our artifacts in the STORAGE/ulcache
+   # directory.
+   #
+   # FIXME: if we have an existing upload manifest, do we push it's exiting
+   # referenced artifacts (i.e., layer tarballs, manifest, etc.)?
+   if (os.path.isfile(os.path.join(ulcache, image_manifest))):
+      ch.DEBUG("FIXME: local image upload manifest '%s/%s' found; use it?"
+               % (ulcache, image_manifest))
+   if (cli.dest_image_ref):
+      dest_image_ref = ch.Image_Ref(cli.dest_image_ref)
+      dest_image_ref.defaults_add()
+   else:
+      dest_image_ref = image_ref
+   dest_image_ref.defaults_add()
+   ch.INFO("pushing image:   %s" % image_ref)
+   ch.INFO("destination:     https://%s" % dest_image_ref)
+   upload = ch.Image_Upload(image_path, dest_image_ref)
+   # Koby!
+   upload.push_to_repo(image_path, ulcache)
+   # upload.push_to_repo(image_path, ulcache, cli.chunked_upload)
+
 def storage_path(cli):
    print(cli.storage)
-
 

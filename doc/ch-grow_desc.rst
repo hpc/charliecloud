@@ -65,9 +65,7 @@ Charliecloud test suite uses approximately 400,000 files and directories in
 the storage directory as of this writing. Place it on a filesystem appropriate
 for this; tmpfs'es such as :code:`/var/tmp` are a good choice if you have
 enough RAM (:code:`/tmp` is not recommended because :code:`ch-run` bind-mounts
-it into containers by default). Network filesystems, especially Lustre, are
-typically bad choices. This is a site-specific question and your local support
-will likely have strong opinions.
+it into containers by default).
 
 While you can currently poke around in the storage directory and find unpacked
 images runnable with :code:`ch-run`, this is not a supported use case. The
@@ -152,6 +150,24 @@ Options:
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
 
+:code:`push`
+------------
+
+Push the local image described by the image reference :code:`IMAGE_REF` from
+storage to the repository described by the image reference
+:code:`DEST_IMAGE_REF` via HTTPS. See the FAQ for the gory details on specifying
+image references.
+
+Images pushed with this method have their file ownership bits fixed in order to
+support an uprivileged ecosystem and reomove sensitive information, e.g.,
+:code:`uid/gid`. All image files will be owned and group owned by
+:code:`nobody`, i.e., :code:`65534`.
+
+Options:
+
+   :code:`--image-dir DIR`
+    If specified, look for the image :code:`IMAGE_REF` in :code:`DIR`;
+    otherwise use :code:`CH_GROW_STORAGE`
 
 Compatibility with other Dockerfile interpreters
 ================================================
@@ -391,3 +407,9 @@ Same, except place the image in :code:`/tmp/buster`::
    boot  etc  lib   media  opt  root  sbin  sys  usr
 
 ..  LocalWords:  tmpfs'es
+
+:code:`push`
+------------
+
+Push the local CentOS 8 image to foo
+FIXME

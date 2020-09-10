@@ -3,16 +3,20 @@ import atexit
 import collections
 import copy
 import datetime
+import gzip
+import hashlib
 import http.client
 import json
 import os
 import getpass
+import pathlib
 import re
 import shutil
 import stat
 import subprocess
 import sys
 import tarfile
+import time
 import types
 
 
@@ -230,7 +234,7 @@ class Image:
          cache are skipped; if use_cache is False, download them anyway,
          overwriting what's in the cache."""
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
-      dl = Repo_Downloader(self.ref)
+      dl = Repo_Data_Transfer(self.ref)
       DEBUG("downloading image: %s" % dl.ref)
       mkdirs(self.download_cache)
       # manifest
@@ -464,6 +468,230 @@ nogroup:x:65534:
       self.unpack_create_ok()
       mkdirs(self.unpack_path)
 
+
+class Image_Upload():
+   """Image Upload object.
+      chunks                dict where k = chunked upload url and v = headers (
+                            e.g., content-length, content-range)
+      layers                dict where k = layer's compressed tarball sha256hex
+                            digest and v = list consisting of: 1) the
+                            compressed archive size, and 2) the path to the
+                            compressed archive
+      manifest_path         path to generated image manifest
+      path                  local image path
+      ref                   remote repository reference
+      url                   list of upload urls
+   """
+   __slots__ = ("chunks",
+                "layers",
+                "manifest_path",
+                "path",
+                "ref",
+                "url")
+
+   def __init__(self, path, dest):
+      self.chunks = collections.OrderedDict()
+      self.layers = None
+      self.manifest_path = None
+      self.path = path
+      self.ref = dest
+      self.url = []
+
+   def archive_fixup(self, tarinfo):
+      # FIXME: The uid and gid of "nobody" is not always  65534. The files
+      #        files should be mapped to 0/0 with the following restrictions:
+      #           1. no leading '/'
+      #           2. no setuid or setguid files
+      tarinfo.uid = tarinfo.gid = 65534
+      tarinfo.uname = "nobody"
+      tarinfo.gname = "nogroup"
+      return tarinfo
+
+   def archive_image(self, image, ulcache):
+      """Create compressed image tarball."""
+      mkdirs(ulcache)
+      name = image.split('/')[-1]
+      tar = os.path.join(ulcache, name) + '.tar'
+      INFO('creating uncompressed tar ...')
+      DEBUG('uncompressed tar: %s' % tar)
+      if os.path.isfile(tar):
+         DEBUG("removing %s" % tar)
+         os.remove(tar)
+      # Add image to uncompressed tar archive.
+      with tarfile.open(tar, "w") as archive:
+         archive.add(self.path, arcname=None, recursive=True,
+                     filter=self.archive_fixup)
+      # Compress tar archive for uploading.
+      # FIXME: This is pretty hideous. Is there a better way to create
+      # identical (same hash) compressed tarballs of the same filesystem
+      # tree?
+      gzp = tar + '.gz'
+      with open_(tar, 'rb') as archive:
+         data=archive.read()
+         with open_(gzp, 'wb') as out:
+            INFO("compressing tar archive ...")
+            DEBUG("compressing %s ..." % gzp)
+            with  gzip.GzipFile(filename='', mode='wb', compresslevel=9,
+                                fileobj=out, mtime=0.) as gz:
+               gz.write(data)
+      if (not os.path.isfile(gzp)):
+         FATAL('failed to create compressed archive %s'
+               % gzp)
+      # FIXME: update when (if) we have multiple layers.
+      digest = self.get_layer_hash(gzp)
+      size = None
+      size = pathlib.Path(gzp).stat().st_size
+      if (not size):
+         FATAL("invalid tar archive size: %s" % size)
+      INFO("size: %s" % size)
+      dest = os.path.join(ulcache, digest + '.tar.gz')
+      DEBUG("renaming compressed archive: %s " % dest)
+      os.rename(gzp, dest)
+      os.remove(tar)
+      self.layers = {digest: [size, dest]}
+
+   def get_digest(self, data):
+      h = hashlib.sha256()
+      h.update(data)
+      return "sha256:%s" % h.hexdigest()
+
+   def get_layer_hash(self, archive):
+      with open_(archive,"rb") as f:
+            encode = hashlib.sha256(f.read()).hexdigest()
+      DEBUG("compressed archive sha256hex hash: %s " % encode)
+      return encode
+
+   def generate_manifest(self, path, ulcache):
+      "Create image manifest json"
+      # FIXME: implement ulcache, e.g., "use_cache"
+      fp = os.path.join(ulcache, path.split('/')[-1])
+      fp += ".manifest.json"
+      mkdirs(ulcache)
+      manifest = {"schemaVersion": 2,
+                  "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+                  "config": None,
+                  "layers": []}
+      archive_media = "application/vnd.docker.image.rootfs.diff.tar.gzip"
+      for k,v in self.layers.items():
+         manifest['layers'].append({'mediaType': archive_media,
+                                 'size': v[0],
+                                 'digest': str('sha256:%s' % k)})
+      # Write file
+      fp = os.path.join(ulcache, path.split('/')[-1])
+      fp += ".manifest.json"
+      with open_(fp, "wt", encoding='utf-8') as f:
+         json.dump(manifest, f)
+         self.manifest_path = fp
+      json_dump = json.dumps(manifest)
+      manifest_json = json.loads(json_dump)
+      DEBUG("generated manfiest:\n%s" % json.dumps(manifest, indent=3))
+
+   def layer_exists(self, upload, digest):
+      """Determine if a layer already exists."""
+      res = upload.head_layer(digest=digest, auth=upload.auth)
+      if (res.status_code == 200):
+         return True
+      return False
+
+   def push_chunk(self, upload, size, range_, data):
+      "Take an upload object and upload a layer chunk via HTTP PATCH request"
+      headers={'Content-Length': str(len(data)),
+               'Content-Range': str(range_),
+               'Content-Type': 'application/octet-stream'}
+      self.chunks[self.url[-1]] = headers
+      res = upload.patch(self.url[-1], headers=headers, data=data,
+                         expected_statuses=('202',))
+      self.url.append(res.headers['Location'])
+
+   def push_last_chunk(self, upload, digest, size, range_, data):
+      "Use upload object to push the final layer chunk via HTTP PUT request."
+      headers={'Content-Length': str(len(data)),
+               'Content-Range': str(range_),
+               'Content-Type': 'application/octet-stream'}
+      self.chunks[self.url[-1]] = headers
+      upload.put(self.url[-1] + "&digest=%s" % digest, headers=headers,
+                 data=data, expected_statuses=('201',))
+
+   def push_init(self, upload):
+      """Initiate upload process; append upload url upon success"""
+      url = upload._url_of("blobs", "uploads/")
+      res = upload.post(url=url, expected_statuses=(202,))
+      self.url.append(res.headers['Location'])
+
+   def push_layers(self, upload, chunked=False):
+      """Push image layers to repository."""
+      INFO("pushing layers ...")
+      for i, k in enumerate(self.layers):
+         digest = "sha256:%s" % k
+         size = str(self.layers[k][0])  # compressed archive size
+         path = self.layers[k][1]       # compressed archive path
+         if (self.layer_exists(upload, digest)):
+            INFO("layer %d/%d: %s exists; skipping" % (i + 1, len(self.layers),
+                                                       k[:7]))
+            continue
+         else:
+            INFO("uploading layer %d/%d: %s" % (i + 1, len(self.layers),
+                                                k[:7]))
+         # Monolithic
+         if (not chunked):
+            if (len(self.url) == 0):
+               FATAL("monolithicc upload failed: no valid upload url."
+                     % self.url)
+            with open_(path, "rb") as f:
+               data = f.read()
+               upload.put_layer(self.url[-1], digest, data=data)
+            # FIXME: implement upload status check
+
+         # chunked
+         # FIXME: the following chunked upload implementation works, however,
+         # we don't use it. The chunked boolean is always false and thus we
+         # we will always perform a monolithic upload. This code exists here
+         # in the event that we wish to enable chunked uploads in the future.
+         else:
+            chunk_size = 1049600 # 1 MiB
+            bytes_read = 0
+            range_ = None
+            with open(path, "rb") as f:
+               while (bytes_read <= (int(size) - chunk_size)):
+                  data = f.read(chunk_size)
+                  if not range_:
+                     range_ = "0-%s" % (chunk_size - 1)
+                  else:
+                     range_ = "%s-%s" % (bytes_read, bytes_read + len(data) - 1)
+                  bytes_read += len(data)
+                  self.push_chunk(upload, len(data), range_, data)
+
+               # The final chunk has to be a PUT.
+               data = f.read()
+               range_ = "%s-%s" % (bytes_read, bytes_read + len(data) - 1)
+               self.push_last_chunk(upload, digest, len(data), range_, data)
+
+               # FIXME: implement upload status check.
+               # Iterate over the chunk dict and submit GET requests to each
+               # chunk key (upload url) and compare the response header
+               # 'Content-Range' to that of the chunk key value. If it matches
+               # increment the count of uploaded chunks. Repeat until upload
+               # count matches the length of the chunk dict.
+
+   def push_manifest(self, upload):
+      with open_(self.manifest_path, 'r', encoding='utf-8') as f:
+         data = f.read()
+         upload.put_manifest(data=data)
+
+   def push_to_repo(self, path, ulcache, chunked=False):
+      """Stage image upload process."""
+      self.archive_image(path, ulcache)
+      self.generate_manifest(path, ulcache)
+
+      # FIXME: we manage a single upload object to pass around the auth
+      # credentials. Probably a better way to handle this.
+      ul  = Repo_Data_Transfer(self.ref)
+      self.push_init(ul)
+      self.push_layers(ul, chunked)
+      self.push_manifest(ul)
+      ul.close()
+
+
 class Image_Ref:
    """Reference to an image in a remote repository.
 
@@ -618,8 +846,8 @@ fields:
          self.path.insert(0, self.host)
          self.host = None
 
-class Repo_Downloader:
-   """Downloads layers and manifests from an image repository via HTTPS.
+class Repo_Data_Transfer:
+   """Transfers image data to and from a remote image repository via HTTPS.
 
       Note that with some registries, authentication is required even for
       anonymous downloads of public images. In this case, we just fetch an
@@ -669,14 +897,21 @@ class Repo_Downloader:
       url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
       return "/".join((url_base, self.ref.path_full, type_, address))
 
-   def authenticate_maybe(self, url):
+   def authenticate_maybe(self, url, request):
       """If we need to authenticate, do so using the 401 from url; otherwise
          do nothing."""
       if (self.auth is None):
          DEBUG("requesting auth parameters")
-         res = self.get_raw(url, expected_statuses=(401,200))
+         # FIXME: Has to be a more pythonic or OO way to alter this function
+         #        based on a get or post.
+         if (request == 'get'):
+            res = self.get_raw(url, expected_statuses=(401,200))
+         elif (request == 'post'):
+            res = self.post_raw(url, expected_statuses=(401,200))
+         else:
+            FATAL('invalid http request %s', request)
          if (res.status_code == 200):
-            self.auth = self.Null_Auth()
+            self.auth = self.Null_Auth()
          else:
             if ("WWW-Authenticate" not in res.headers):
                FATAL("WWW-Authenticate header not found")
@@ -723,7 +958,7 @@ class Repo_Downloader:
          and write the body of the response to path."""
       DEBUG("GETting: %s" % url)
       self.session_init_maybe()
-      self.authenticate_maybe(url)
+      self.authenticate_maybe(url, 'get')
       res = self.get_raw(url, headers)
       try:
          fp = open_(path, "wb")
@@ -761,6 +996,114 @@ class Repo_Downloader:
                      res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          FATAL("HTTP GET failed: %s" % x)
+      return res
+
+   def head_layer(self, digest, auth=None):
+      """Check if a layer already exists in the repository."""
+      url = self._url_of("blobs", digest)
+      DEBUG("HEADing %s" % digest)
+      return self.session.head(url, auth=auth)
+
+   def patch(self, url, headers=dict(), data=None, expected_statuses=(202,)):
+      DEBUG("PATCHing: %s" % url)
+      self.session_init_maybe()
+      self.authenticate_maybe(url, 'post') #FIXME, should be 'patch'
+      return self.patch_raw(url, data=data, expected_statuses=expected_statuses,
+                            headers=headers)
+
+   def patch_raw(self, url, headers=dict(), auth=None,
+                expected_statuses=(202,416,), data=None, **kwargs):
+      """PATCH url, passing headers, with no magic. If auth is None, use
+         self.auth (which might also be None). If status is not in
+         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
+         requests.session.get()."""
+      # FIXME: This function is identical to get_raw with the exception of the
+      #        expected status 202, the session.post method, and error message.
+      if (auth is None):
+         auth = self.auth
+      try:
+         res = self.session.patch(url, headers=headers, auth=auth, data=data,
+                                  **kwargs)
+         if (res.status_code not in expected_statuses):
+            FATAL("HTTP PATCH failed; expected status %s but got %d: %s"
+                  % (" or ".join(str(i) for i in expected_statuses),
+                     res.status_code, res.reason))
+      except requests.exceptions.RequestException as x:
+         FATAL("HTTP PATCH failed: %s" % x)
+      return res
+
+   def post(self, url, headers=dict(), data=None, expected_statuses=(200,0)):
+      """POST url, passing headers, including athentication and session magic."""
+      DEBUG("POSTing: %s" % url)
+      self.session_init_maybe()
+      self.authenticate_maybe(url, 'post')
+      res = self.post_raw(url, headers=headers,
+                          expected_statuses=expected_statuses)
+      return res
+
+   def post_raw(self, url, headers=dict(), auth=None,
+                expected_statuses=(200,202,), **kwargs):
+      """POST url, passing headers, with no magic. If auth is None, use
+         self.auth (which might also be None). If status is not in
+         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
+         requests.session.get()."""
+      # FIXME: This function is identical to get_raw with the exception of the
+      #        expected status 202, the session.post method, and error message.
+      if (auth is None):
+         auth = self.auth
+      try:
+         res = self.session.post(url, headers=headers, auth=auth, **kwargs)
+         if (res.status_code not in expected_statuses):
+            FATAL("HTTP POST failed; expected status %s but got %d: %s"
+                  % (" or ".join(str(i) for i in expected_statuses),
+                     res.status_code, res.reason))
+      except requests.exceptions.RequestException as x:
+         FATAL("HTTP POST failed: %s" % x)
+      return res
+
+   def put(self, url, data=None, expected_statuses=(200,), headers=dict()):
+      """GET url, passing headers, including authentication and session magic,
+         and write the body of the response to path."""
+      DEBUG("PUTing: %s" % url)
+      self.session_init_maybe()
+      self.authenticate_maybe(url, 'post') #FIXME, should be 'put'
+      self.put_raw(url, data=data, expected_statuses=expected_statuses,
+                   headers=headers)
+
+   def put_layer(self, url, digest, data):
+      """Upload the monolithic layer."""
+      headers = {'Content-Length': str(len(data)),
+                 'Content-Type': 'application/octet-stream'}
+      url += "&digest=%s" % digest
+      self.put(url, headers=headers, data=data, expected_statuses=(201,))
+
+   def put_manifest(self, data):
+      url = self._url_of("manifests", self.ref.tag)
+      headers = {'Content-Type': 'application/vnd.docker.distribution.manifest.v2+json',
+                 'Content-Length': str(len(data)),
+                 'Connection': 'close'}
+      res = self.put(url, data=data, headers=headers, expected_statuses=(201,))
+
+   def put_raw(self, url, headers=dict(), auth=None,
+                expected_statuses=(200,), **kwargs):
+      """PUT url, passing headers, with no magic. If auth is None, use
+         self.auth (which might also be None). If status is not in
+         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
+         requests.session.get()."""
+      # FIXME: This function is identical to get_raw and put_raw with the
+      # exception of HTTP request and error message.
+      if (auth is None):
+         auth = self.auth
+      try:
+         res = self.session.put(url, headers=headers, auth=auth, **kwargs)
+         DEBUG(res.headers)
+         DEBUG(res.content)
+         if (res.status_code not in expected_statuses):
+            FATAL("HTTP PUT failed; expected status %s but got %d: %s"
+                  % (" or ".join(str(i) for i in expected_statuses),
+                     res.status_code, res.reason))
+      except requests.exceptions.RequestException as x:
+         FATAL("HTTP PUT failed: %s" % x)
       return res
 
    def session_init_maybe(self):
