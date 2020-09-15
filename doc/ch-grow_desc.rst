@@ -65,14 +65,18 @@ Charliecloud test suite uses approximately 400,000 files and directories in
 the storage directory as of this writing. Place it on a filesystem appropriate
 for this; tmpfs'es such as :code:`/var/tmp` are a good choice if you have
 enough RAM (:code:`/tmp` is not recommended because :code:`ch-run` bind-mounts
-it into containers by default). Network filesystems, especially Lustre, are
-typically bad choices. This is a site-specific question and your local support
-will likely have strong opinions.
+it into containers by default).
 
 While you can currently poke around in the storage directory and find unpacked
 images runnable with :code:`ch-run`, this is not a supported use case. The
 supported workflow uses :code:`ch-builder2tar` or :code:`ch-builder2squash` to
 obtain a packed image; see the tutorial for details.
+
+.. warning::
+
+   Network filesystems, especially Lustre, are typically bad choices for the
+   storage directory. This is a site-specific question and your local support
+   will likely have strong opinions.
 
 
 Subcommands
@@ -156,7 +160,7 @@ from the `Dockerfile reference documentation
 <https://docs.docker.com/engine/reference/builder/>`_ and miscellaneous other
 sources, which you can examine in the source code.
 
-We believe this indedendence is valuable for several reasons. First, it helps
+We believe this independence is valuable for several reasons. First, it helps
 the community examine Dockerfile syntax and semantics critically, think
 rigorously about what is really needed, and build a more robust standard.
 Second, it yields disjoint sets of bugs (note that Podman, Buildah, and Docker
@@ -383,3 +387,5 @@ Same, except place the image in :code:`/tmp/buster`::
    $ ls /tmp/buster
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
+
+..  LocalWords:  tmpfs'es
