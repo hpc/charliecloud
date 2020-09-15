@@ -130,16 +130,14 @@ OPTION_KEY: /[a-z]+/
 OPTION_VALUE: /[^ \t\n]+/
 
 HEX_STRING: /[0-9A-Fa-f]+/
-LINE: ( LINE_CONTINUE | /[^\n]/ )+
+LINE: ( _LINE_CONTINUE | /[^\n]/ )+
 WORD: /[^ \t\n=]/+
 
 _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 
-LINE_CONTINUE: "\\\n"
-%ignore LINE_CONTINUE
-
 _NEWLINES: _WS? "\n"+
-_WS: /[ \t]/+
+_WS: /[ \t]|\\\n/+
+_LINE_CONTINUE: "\\\n"
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
