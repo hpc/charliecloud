@@ -1,204 +1,6 @@
 load ../common
 
 
-@test 'Dockerfile: ARG and ENV' {
-    # We use full scope for builders other than ch-grow because (1) with
-    # ch-grow, we are responsible for --build-arg being implemented correctly
-    # and (2) Docker and Buildah take a full minute for this test, vs. three
-    # seconds for ch-grow.
-    if [[ $CH_BUILDER = ch-grow ]]; then
-        scope standard
-    elif [[ $CH_BUILDER = none ]]; then
-        skip 'no builder'
-    else
-        scope full
-    fi
-    prerequisites_ok argenv
-
-    # Note that this test illustrates a number of behavior differences between
-    # the builders. For most of these, but not all, Docker and Buildah have
-    # the same behavior and ch-grow differs.
-
-    echo '*** default (no --build-arg)'
-    env_expected=$(cat <<'EOF'
-chse_arg2_df=arg2
-chse_arg3_df=arg3 arg2
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    run ch-build --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
-    diff -u <(echo "$env_expected") <(echo "$env_actual")
-
-    echo '*** one --build-arg, has no default'
-    env_expected=$(cat <<'EOF'
-chse_arg1_df=foo1
-chse_arg2_df=arg2
-chse_arg3_df=arg3 arg2
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    run ch-build --build-arg chse_arg1_df=foo1 \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
-    diff -u <(echo "$env_expected") <(echo "$env_actual")
-
-    echo '*** one --build-arg, has default'
-    env_expected=$(cat <<'EOF'
-chse_arg2_df=foo2
-chse_arg3_df=arg3 foo2
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    run ch-build --build-arg chse_arg2_df=foo2 \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
-    diff -u <(echo "$env_expected") <(echo "$env_actual")
-
-    echo '*** one --build-arg from environment'
-    if [[ $CH_BUILDER == ch-grow ]]; then
-        env_expected=$(cat <<'EOF'
-chse_arg1_df=foo1
-chse_arg2_df=arg2
-chse_arg3_df=arg3 arg2
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    else
-        # Docker and Buildah do not appear to take --build-arg values from the
-        # environment. This is contrary to the "docker build" documentation;
-        # "buildah bud" does not mention it either way. Tested on 18.09.7 and
-        # 1.9.1-dev, respectively.
-        env_expected=$(cat <<'EOF'
-chse_arg2_df=arg2
-chse_arg3_df=arg3 arg2
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    fi
-    chse_arg1_df=foo1 \
-    run ch-build --build-arg chse_arg1_df \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
-    diff -u <(echo "$env_expected") <(echo "$env_actual")
-
-    echo '*** one --build-arg set to empty string'
-    env_expected=$(cat <<'EOF'
-chse_arg1_df=
-chse_arg2_df=arg2
-chse_arg3_df=arg3 arg2
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    chse_arg1_df=foo1 \
-    run ch-build --build-arg chse_arg1_df= \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
-    diff -u <(echo "$env_expected") <(echo "$env_actual")
-
-    echo '*** two --build-arg'
-    env_expected=$(cat <<'EOF'
-chse_arg2_df=bar2
-chse_arg3_df=bar3
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    run ch-build --build-arg chse_arg2_df=bar2 \
-                 --build-arg chse_arg3_df=bar3 \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
-    diff -u <(echo "$env_expected") <(echo "$env_actual")
-
-    echo '*** repeated --build-arg'
-    env_expected=$(cat <<'EOF'
-chse_arg2_df=bar2
-chse_arg3_df=arg3 bar2
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    run ch-build --build-arg chse_arg2_df=FOO \
-                 --build-arg chse_arg2_df=bar2 \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
-    diff -u <(echo "$env_expected") <(echo "$env_actual")
-
-    echo '*** two --build-arg with substitution'
-    if [[ $CH_BUILDER == ch-grow ]]; then
-        env_expected=$(cat <<'EOF'
-chse_arg2_df=bar2
-chse_arg3_df=bar3 bar2
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    else
-        # Docker and Buildah don't substitute provided values.
-        env_expected=$(cat <<'EOF'
-chse_arg2_df=bar2
-chse_arg3_df=bar3 ${chse_arg2_df}
-chse_env1_df=env1
-chse_env2_df=env2 env1
-EOF
-)
-    fi
-    # shellcheck disable=SC2016
-    run ch-build --build-arg chse_arg2_df=bar2 \
-                 --build-arg chse_arg3_df='bar3 ${chse_arg2_df}' \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
-    diff -u <(echo "$env_expected") <(echo "$env_actual")
-
-    echo '*** ARG not in Dockerfile'
-    # Note: We don't test it, but for Buildah, the variable does show up in
-    # the build environment.
-    run ch-build --build-arg chse_doesnotexist=foo \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    if [[ $CH_BUILDER = ch-grow ]]; then
-        [[ $status -eq 1 ]]
-    else
-        [[ $status -eq 0 ]]
-    fi
-    [[ $output = *'not consumed'* ]]
-    [[ $output = *'chse_doesnotexist'* ]]
-
-    echo '*** ARG not in environment'
-    run ch-build --build-arg chse_arg1_df \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
-    echo "$output"
-    if [[ $CH_BUILDER = ch-grow ]]; then
-        [[ $status -eq 1 ]]
-        [[ $output = *'--build-arg: chse_arg1_df: no value and not in environment'* ]]
-    else
-        [[ $status -eq 0 ]]
-    fi
-}
-
-
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
     # it, so re-use the same one.
@@ -493,6 +295,282 @@ EOF
     [[ $output = *'warning: not supported, ignored: STOPSIGNAL instruction'* ]]
     [[ $output = *'warning: not supported, ignored: USER instruction'* ]]
     [[ $output = *'warning: not supported, ignored: VOLUME instruction'* ]]
+}
+
+
+@test 'Dockerfile: ENV parsing' {
+    scope standard
+    [[ $CH_BUILDER = none ]] && skip 'no builder'
+
+    env_expected=$(cat <<'EOF'
+('chse_0a', 'value 0a')
+('chse_0b', 'value 0b')
+('chse_1b', 'value 1b ')
+('chse_2', 'value2')
+('chse_2a', 'chse2: value2')
+('chse_2b', 'chse2: value2')
+('chse_3a', '"value3a"')
+('chse_4a', 'value4a')
+('chse_4b', 'value4b')
+('chse_5a', 'value5a')
+('chse_5b', 'value5b')
+('chse_6a', 'value6a')
+('chse_6b', 'value6b')
+EOF
+)
+    run ch-build --no-cache -t env-syntax -f - . <<'EOF'
+FROM centos8
+
+# FIXME: make this more comprehensive, e.g. space-separate vs.
+# equals-separated for everything.
+
+# Value has internal space.
+ENV chse_0a value 0a
+ENV chse_0b="value 0b"
+
+# Value has internal space and trailing space. NOTE: Beware your editor
+# "helpfully" removing the trailing space.
+#
+# FIXME: Docker removes the trailing space!
+#ENV chse_1a value 1a 
+ENV chse_1b="value 1b "
+# FIXME: currently a parse error.
+#ENV chse_1c=value\ 1c\ 
+
+# Value surrounded by double quotes, which are not part of the value.
+ENV chse_2 "value2"
+
+# Substitute previous value, space-separated, without quotes.
+ENV chse_2a chse2: ${chse_2}
+
+# Substitute a previous value, equals-separated, with quotes.
+ENV chse_2b="chse2: ${chse_2}"
+
+# Backslashed quotes are included in value.
+ENV chse_3a \"value3a\"
+# FIXME: backslashes end up literal
+#ENV chse_3b=\"value3b\"
+
+# Multiple variables in the same instruction.
+ENV chse_4a=value4a chse_5a=value5a
+ENV chse_4b=value4b \
+    chse_5b=value5b
+
+# Value contains line continuation. FIXME: I think something isn't quite right
+# here. The backslash, newline sequence appears in the parse tree but not in
+# the output. That doesn't seem right.
+ENV chse_6a value\
+6a
+ENV chse_6b "value\
+6b"
+
+# FIXME: currently a parse error.
+#ENV chse_4=value4 chse_5="value5 foo" chse_6=value6\ foo chse_7=\"value7\"
+
+# Print output with Python to avoid ambiguity.
+RUN python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'
+EOF
+  echo "$output"
+  [[ $status -eq 0 ]]
+  diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
+}
+
+
+@test 'Dockerfile: ARG and ENV values' {
+    # We use full scope for builders other than ch-grow because (1) with
+    # ch-grow, we are responsible for --build-arg being implemented correctly
+    # and (2) Docker and Buildah take a full minute for this test, vs. three
+    # seconds for ch-grow.
+    if [[ $CH_BUILDER = ch-grow ]]; then
+        scope standard
+    elif [[ $CH_BUILDER = none ]]; then
+        skip 'no builder'
+    else
+        scope full
+    fi
+    prerequisites_ok argenv
+
+    # Note that this test illustrates a number of behavior differences between
+    # the builders. For most of these, but not all, Docker and Buildah have
+    # the same behavior and ch-grow differs.
+
+    echo '*** default (no --build-arg)'
+    env_expected=$(cat <<'EOF'
+chse_arg2_df=arg2
+chse_arg3_df=arg3 arg2
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    run ch-build --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    env_actual=$(echo "$output" | grep -E '^chse_')
+    diff -u <(echo "$env_expected") <(echo "$env_actual")
+
+    echo '*** one --build-arg, has no default'
+    env_expected=$(cat <<'EOF'
+chse_arg1_df=foo1
+chse_arg2_df=arg2
+chse_arg3_df=arg3 arg2
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    run ch-build --build-arg chse_arg1_df=foo1 \
+                 --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    env_actual=$(echo "$output" | grep -E '^chse_')
+    diff -u <(echo "$env_expected") <(echo "$env_actual")
+
+    echo '*** one --build-arg, has default'
+    env_expected=$(cat <<'EOF'
+chse_arg2_df=foo2
+chse_arg3_df=arg3 foo2
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    run ch-build --build-arg chse_arg2_df=foo2 \
+                 --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    env_actual=$(echo "$output" | grep -E '^chse_')
+    diff -u <(echo "$env_expected") <(echo "$env_actual")
+
+    echo '*** one --build-arg from environment'
+    if [[ $CH_BUILDER == ch-grow ]]; then
+        env_expected=$(cat <<'EOF'
+chse_arg1_df=foo1
+chse_arg2_df=arg2
+chse_arg3_df=arg3 arg2
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    else
+        # Docker and Buildah do not appear to take --build-arg values from the
+        # environment. This is contrary to the "docker build" documentation;
+        # "buildah bud" does not mention it either way. Tested on 18.09.7 and
+        # 1.9.1-dev, respectively.
+        env_expected=$(cat <<'EOF'
+chse_arg2_df=arg2
+chse_arg3_df=arg3 arg2
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    fi
+    chse_arg1_df=foo1 \
+    run ch-build --build-arg chse_arg1_df \
+                 --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    env_actual=$(echo "$output" | grep -E '^chse_')
+    diff -u <(echo "$env_expected") <(echo "$env_actual")
+
+    echo '*** one --build-arg set to empty string'
+    env_expected=$(cat <<'EOF'
+chse_arg1_df=
+chse_arg2_df=arg2
+chse_arg3_df=arg3 arg2
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    chse_arg1_df=foo1 \
+    run ch-build --build-arg chse_arg1_df= \
+                 --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    env_actual=$(echo "$output" | grep -E '^chse_')
+    diff -u <(echo "$env_expected") <(echo "$env_actual")
+
+    echo '*** two --build-arg'
+    env_expected=$(cat <<'EOF'
+chse_arg2_df=bar2
+chse_arg3_df=bar3
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    run ch-build --build-arg chse_arg2_df=bar2 \
+                 --build-arg chse_arg3_df=bar3 \
+                 --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    env_actual=$(echo "$output" | grep -E '^chse_')
+    diff -u <(echo "$env_expected") <(echo "$env_actual")
+
+    echo '*** repeated --build-arg'
+    env_expected=$(cat <<'EOF'
+chse_arg2_df=bar2
+chse_arg3_df=arg3 bar2
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    run ch-build --build-arg chse_arg2_df=FOO \
+                 --build-arg chse_arg2_df=bar2 \
+                 --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    env_actual=$(echo "$output" | grep -E '^chse_')
+    diff -u <(echo "$env_expected") <(echo "$env_actual")
+
+    echo '*** two --build-arg with substitution'
+    if [[ $CH_BUILDER == ch-grow ]]; then
+        env_expected=$(cat <<'EOF'
+chse_arg2_df=bar2
+chse_arg3_df=bar3 bar2
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    else
+        # Docker and Buildah don't substitute provided values.
+        env_expected=$(cat <<'EOF'
+chse_arg2_df=bar2
+chse_arg3_df=bar3 ${chse_arg2_df}
+chse_env1_df=env1
+chse_env2_df=env2 env1
+EOF
+)
+    fi
+    # shellcheck disable=SC2016
+    run ch-build --build-arg chse_arg2_df=bar2 \
+                 --build-arg chse_arg3_df='bar3 ${chse_arg2_df}' \
+                 --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    env_actual=$(echo "$output" | grep -E '^chse_')
+    diff -u <(echo "$env_expected") <(echo "$env_actual")
+
+    echo '*** ARG not in Dockerfile'
+    # Note: We don't test it, but for Buildah, the variable does show up in
+    # the build environment.
+    run ch-build --build-arg chse_doesnotexist=foo \
+                 --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    if [[ $CH_BUILDER = ch-grow ]]; then
+        [[ $status -eq 1 ]]
+    else
+        [[ $status -eq 0 ]]
+    fi
+    [[ $output = *'not consumed'* ]]
+    [[ $output = *'chse_doesnotexist'* ]]
+
+    echo '*** ARG not in environment'
+    run ch-build --build-arg chse_arg1_df \
+                 --no-cache -t argenv -f ./Dockerfile.argenv .
+    echo "$output"
+    if [[ $CH_BUILDER = ch-grow ]]; then
+        [[ $status -eq 1 ]]
+        [[ $output = *'--build-arg: chse_arg1_df: no value and not in environment'* ]]
+    else
+        [[ $status -eq 0 ]]
+    fi
 }
 
 
