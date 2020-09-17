@@ -294,9 +294,9 @@ EOF2
     cp /lib/systemd/system/getty@.service getty@tty1.service
     sed -ri 's|^ExecStart=.*$|ExecStart=-/sbin/agetty --autologin charlie --noclear %I|' getty@tty1.service
 
-    # Enable other TTYs
-    sudo systemctl enable getty@tty2.service getty@tty3.service getty@tty4.service
-    sudo systemctl enable getty@tty5.service getty@tty6.service 
+    # We need to enable another TTY for the tests to pass
+    # One test attempts to signal this getty process from within the container
+    sudo systemctl enable getty@tty2.service
 
     # Configure SSH to allow password logins. We would prefer to keep the
     # Vagrant default of SSH keys only, but I can't figure out how to get the

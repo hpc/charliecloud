@@ -138,6 +138,7 @@ setup () {
 
 @test 'signal process outside container' {
     # Send a signal to a process we shouldn't be able to signal.
-    [[ $(pgrep -c getty) -eq 0 ]] && pedantic_fail 'no getty process found'
+    [[ $(pgrep -c getty) -eq 0 ]] && pedantic_fail \
+    'Need to enable a getty tty service via systemctl. Please refer to PR #845.'
     ch-run $uid_args $gid_args "$ch_timg" -- /test/signal_out.py
 }
