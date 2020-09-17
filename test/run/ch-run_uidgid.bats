@@ -137,8 +137,12 @@ setup () {
 }
 
 @test 'signal process outside container' {
-    # Send a signal to a process we shouldn't be able to signal.
-    [[ $(pgrep -c getty) -eq 0 ]] && pedantic_fail \
-    'Need to enable a getty tty service via systemctl. Please refer to PR #845.'
+    # Send a signal to a process we shouldn't be able to signal, in this case
+    # getty. This requires at least one getty running, i.e., at least one
+    # virtual console waiting for login. In the past, distributions ran gettys
+    # on several VCs by default, but in recent years they are often started
+    # dynamically, so there may be none running. See your distro's
+    # documentation on how to configure this. See also e.g. issue #840.
+    [[ $(pgrep -c getty) -eq 0 ]] && pedantic_fail 'no getty process found'
     ch-run $uid_args $gid_args "$ch_timg" -- /test/signal_out.py
 }
