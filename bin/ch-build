@@ -82,6 +82,14 @@ case $CH_BUILDER in
                 ignore_chown=false
                 ;;
         esac
+        # If Buildah sees a terminal on stdin, it does TTY stuff that confuses
+        # ch-run-oci, so we always have to redirect stdin. If it's already
+        # redirected, just pass that through; otherwise, use /dev/null.
+        if [ -t 0 ]; then
+            stdin=/dev/null   # is TTY
+        else
+            stdin=/dev/stdin  # not TTY
+        fi
         BUILDAH_LAYERS=true \
         buildah --storage-opt .ignore_chown_errors="$ignore_chown" \
                 build-using-dockerfile \
@@ -93,7 +101,7 @@ case $CH_BUILDER in
                 --build-arg no_proxy="$no_proxy" \
                 --isolation=rootless \
                 --runtime="$runtime" \
-                "$@" < /dev/null
+                "$@" < $stdin
         ;;
     ch-grow)
         "${ch_bin}/ch-grow" "$@"
