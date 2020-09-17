@@ -1,4 +1,9 @@
-# Test ARG and ENV handling.
+# Test how ARG and ENV variables flow around. This does not address syntax
+# quirks; for that see test 'Dockerfile: syntax quirks' in
+# build/50_dockerfile.bats. Results are checked in both test 'Dockerfile: ARG
+# and ENV values' in build/50_dockerfile.bats and multiple tests in
+# run/ch-run_misc.bats. The latter is why this is a separate Dockerfile
+# instead of embedded in a .bats file.
 
 # ch-test-scope: standard
 FROM 00_tiny
@@ -8,4 +13,4 @@ ARG chse_arg2_df=arg2
 ARG chse_arg3_df="arg3 ${chse_arg2_df}"
 ENV chse_env1_df env1
 ENV chse_env2_df="env2 ${chse_env1_df}"
-RUN env | egrep '^chse_' | sort
+RUN env | sort

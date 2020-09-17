@@ -14,15 +14,6 @@
 # Use a moderately complex image reference.
 FROM registry-1.docker.io:443/library/alpine:3.9 AS stage1
 
-# FIXME: These should maybe be moved into Dockerfile.argenv?
-ENV chse_1 value1 with spaces and trailing space 
-ENV chse_2 "value2"
-ENV chse_2a chse2: ${chse_2}
-ENV chse_2b="chse2: ${chse_2}"
-ENV chse_3 \"value3\"
-ENV chse_4=value4 chse_5="value5 foo" chse_7=\"value7\"
-#ENV chse_4=value4 chse_5="value5 foo" chse_6=value6\ foo chse_7=\"value7\"
-
 RUN pwd
 WORKDIR /usr/local/src
 RUN pwd
