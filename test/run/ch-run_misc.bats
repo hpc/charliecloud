@@ -61,6 +61,21 @@ EOF
 
 
 # shellcheck disable=SC2016
+@test '$CH_RUNNING' {
+    scope standard
+
+    if [[ -v CH_RUNNING ]]; then
+      echo "\$CH_RUNNING already set: $CH_RUNNING"
+      false
+    fi
+
+    run ch-run "$ch_timg" -- /bin/sh -c 'env | grep -E ^CH_RUNNING'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
+}
+
+# shellcheck disable=SC2016
 @test '$HOME' {
     scope quick
     echo "host: $HOME"
@@ -375,6 +390,7 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
+
 @test 'ch-run --set-env errors' {
     scope standard
     f_in=${BATS_TMPDIR}/env.txt
@@ -404,6 +420,7 @@ EOF
     [[ $output = *"--set-env: empty name: ${f_in}:1"* ]]
 }
 
+
 @test 'ch-run --unset-env' {
     scope standard
 
@@ -414,20 +431,21 @@ EOF
     run ch-run --unset-env=doesnotmatch "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
-    ex='^(_|HOME|PATH|SHLVL)='  # variables expected to change
+    ex='^(_|CH_RUNNING|HOME|PATH|SHLVL)='  # variables expected to change
     diff -u <(env | grep -Ev "$ex") <(echo "$output" | grep -Ev "$ex")
 
     printf '\n# Everything\n\n'
     run ch-run --unset-env='*' "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = '' ]]
+    [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
 
     printf '\n# Everything, plus shell re-adds\n\n'
-    run ch-run --unset-env='*' "$ch_timg" -- /bin/sh -c env
+    run ch-run --unset-env='*' "$ch_timg" -- /bin/sh -c 'env | sort'
     echo "$output"
     [[ $status -eq 0 ]]
-    diff -u <(printf 'SHLVL=1\nPWD=/\n') <(echo "$output")
+    diff -u <(printf 'CH_RUNNING=Weird Al Yankovic\nPWD=/\nSHLVL=1\n') \
+            <(echo "$output")
 
     printf '\n# Without wildcards\n\n'
     run ch-run --unset-env=chue_1 "$ch_timg" -- env
@@ -447,6 +465,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'--unset-env: GLOB must have non-zero length'* ]]
 }
+
 
 @test 'ch-run mixed --set-env and --unset-env' {
     scope standard
@@ -555,6 +574,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$output_expected") <(echo "$output")
 }
+
 
 @test 'broken image errors' {
     scope standard
@@ -693,6 +713,7 @@ EOF
     [[ $(find /tmp -maxdepth 1 -name 'ch-run_passwd*' | wc -l) -eq 0 ]]
     [[ $(find /tmp -maxdepth 1 -name 'ch-run_group*' | wc -l) -eq 0 ]]
 }
+
 
 @test 'UID and/or GID invalid on host' {
     scope standard
