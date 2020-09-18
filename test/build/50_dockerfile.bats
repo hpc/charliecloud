@@ -10,29 +10,29 @@ load ../common
 
     # No newline at end of file.
       printf 'FROM 00_tiny\nRUN echo hello' \
-    | ch-grow -t syntax-quirks -f - .
+    | ch-grow build -t syntax-quirks -f - .
 
     # Newline before FROM.
-    ch-grow -t syntax-quirks -f - . <<'EOF'
+    ch-grow build -t syntax-quirks -f - . <<'EOF'
 
 FROM 00_tiny
 RUN echo hello
 EOF
 
     # Comment before FROM.
-    ch-grow -t syntax-quirks -f - . <<'EOF'
+    ch-grow build -t syntax-quirks -f - . <<'EOF'
 # foo
 FROM 00_tiny
 RUN echo hello
 EOF
 
     # Single instruction.
-    ch-grow -t syntax-quirks -f - . <<'EOF'
+    ch-grow build -t syntax-quirks -f - . <<'EOF'
 FROM 00_tiny
 EOF
 
     # Whitespace around comment hash.
-    run ch-grow -v -t syntax-quirks -f - . <<'EOF'
+    run ch-grow -v build -t syntax-quirks -f - . <<'EOF'
 FROM 00_tiny
 #no whitespace
  #before only
@@ -52,7 +52,7 @@ EOF
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
     # Bad instruction. Also, -v should give interal blabber about the grammar.
-    run ch-grow --verbose -t foo -f - . <<'EOF'
+    run ch-grow -v build -t foo -f - . <<'EOF'
 FROM 00_tiny
 WEIRDAL
 EOF
@@ -65,7 +65,7 @@ EOF
     [[ $output = *'Expecting: {'* ]]
 
     # Bad long option.
-    run ch-grow -t foo -f - . <<'EOF'
+    run ch-grow build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown= foo bar
 EOF
@@ -74,13 +74,13 @@ EOF
     [[ $output = *"can't parse: -:2,14"* ]]
 
     # Empty input.
-    run ch-grow -t foo -f /dev/null .
+    run ch-grow build -t foo -f /dev/null .
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'no instructions found: /dev/null'* ]]
 
     # Newline only.
-    run ch-grow -t foo -f - . <<'EOF'
+    run ch-grow build -t foo -f - . <<'EOF'
 
 EOF
     echo "$output"
@@ -88,7 +88,7 @@ EOF
     [[ $output = *'no instructions found: -'* ]]
 
     # Comment only.
-    run ch-grow -t foo -f - . <<'EOF'
+    run ch-grow build -t foo -f - . <<'EOF'
 # foo
 EOF
     echo "$output"
@@ -96,7 +96,7 @@ EOF
     [[ $output = *'no instructions found: -'* ]]
 
     # Only newline, then comment.
-    run ch-grow -t foo -f - . <<'EOF'
+    run ch-grow build -t foo -f - . <<'EOF'
 
 # foo
 EOF
@@ -105,7 +105,7 @@ EOF
     [[ $output = *'no instructions found: -'* ]]
 
     # Non-ARG instruction before FROM
-    run ch-grow -t foo -f - . <<'EOF'
+    run ch-grow build -t foo -f - . <<'EOF'
 RUN echo uh oh
 FROM 00_tiny
 EOF
@@ -120,7 +120,7 @@ EOF
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
     # Repeated instruction option.
-    run ch-grow -t foo -f - . <<'EOF'
+    run ch-grow build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown=foo --chown=bar fixtures/empty-file .
 EOF
@@ -129,7 +129,7 @@ EOF
     [[ $output = *'  2 COPY: repeated option --chown'* ]]
 
     # COPY invalid option.
-    run ch-grow -t foo -f - . <<'EOF'
+    run ch-grow build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY --foo=foo fixtures/empty-file .
 EOF
@@ -138,7 +138,7 @@ EOF
     [[ $output = *'COPY: invalid option --foo'* ]]
 
     # FROM invalid option.
-    run ch-grow -t foo -f - . <<'EOF'
+    run ch-grow build -t foo -f - . <<'EOF'
 FROM --foo=bar 00_tiny
 EOF
     echo "$output"
@@ -154,7 +154,7 @@ EOF
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
     # ARG before FROM
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
 ARG foo=bar
 FROM 00_tiny
 EOF
@@ -163,7 +163,7 @@ EOF
     [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
 
     # COPY list form
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 COPY ["fixtures/empty-file", "."]
 EOF
@@ -172,7 +172,7 @@ EOF
     [[ $output = *'error: not yet supported: issue #784: COPY list form'* ]]
 
     # FROM --platform
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
 FROM --platform=foo 00_tiny
 EOF
     echo "$output"
@@ -180,7 +180,7 @@ EOF
     [[ $output = *'error: not yet supported: issue #778: FROM --platform'* ]]
 
     # other instructions
-    run ch-grow -t unsupported -f - . <<'EOF'
+    run ch-grow build -t unsupported -f - . <<'EOF'
 FROM 00_tiny
 ADD foo
 CMD foo
@@ -200,7 +200,7 @@ EOF
     [[ $output = *'warning: not yet supported, ignored: issue #789: SHELL instruction'* ]]
 
     # .dockerignore files
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 EOF
     echo "$output"
@@ -208,14 +208,14 @@ EOF
     [[ $output = *'warning: not yet supported, ignored: issue #777: .dockerignore file'* ]]
 
     # URL (Git repo) contexts
-    run ch-grow -t not-yet-supported -f - \
+    run ch-grow build -t not-yet-supported -f - \
         git@github.com:hpc/charliecloud.git <<'EOF'
 FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
-    run ch-grow -t not-yet-supported -f - \
+    run ch-grow build -t not-yet-supported -f - \
         https://github.com/hpc/charliecloud.git <<'EOF'
 FROM 00_tiny
 EOF
@@ -224,7 +224,7 @@ EOF
     [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
 
     # variable expansion modifiers
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 ARG foo=README
 COPY fixtures/${foo:+bar} .
@@ -233,7 +233,7 @@ EOF
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
     [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 ARG foo=README
 COPY fixtures/${foo:-bar} .
@@ -252,7 +252,7 @@ EOF
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
 
     # parser directives
-    run ch-grow -t unsupported -f - . <<'EOF'
+    run ch-grow build -t unsupported -f - . <<'EOF'
 # escape=foo
 # syntax=foo
 #syntax=foo
@@ -268,7 +268,7 @@ EOF
     [[ $(echo "$output" | grep -Fc 'parser directives') -eq 5 ]]
 
     # COPY --from
-    run ch-grow -t unsupported -f - . <<'EOF'
+    run ch-grow build -t unsupported -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown=foo fixtures/empty-file .
 EOF
@@ -277,7 +277,7 @@ EOF
     [[ $output = *'warning: not supported, ignored: COPY --chown'* ]]
 
     # Unsupported instructions
-    run ch-grow -t unsupported -f - . <<'EOF'
+    run ch-grow build -t unsupported -f - . <<'EOF'
 FROM 00_tiny
 EXPOSE foo
 HEALTHCHECK foo

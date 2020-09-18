@@ -6,7 +6,6 @@ a.out
 /bin/ch-run
 /bin/ch-run-oci
 /bin/ch-ssh
-/bin/ch-tug
 /examples/copy/dirCa/symlink-to-dirCb
 /examples/copy/dirD/symlink-to-fileDa
 /examples/copy/dirEa/symlink-to-dirEb

@@ -133,7 +133,7 @@ EOF
 ch-grow)
 
     echo "exporting"
-    storage=$("${ch_bin}/ch-grow" --print-storage /doesnotexist)
+    storage=$("${ch_bin}/ch-grow" storage-path)
     ( cd "${storage}/img/${image}" && tar cf - . ) | pv_ > "$tar"
 
     ;;

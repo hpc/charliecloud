@@ -104,7 +104,7 @@ case $CH_BUILDER in
                 "$@" < $stdin
         ;;
     ch-grow)
-        "${ch_bin}/ch-grow" "$@"
+        "${ch_bin}/ch-grow" build "$@"
         ;;
     docker)
         # Coordinate this list with test "build.bats/proxy variables".

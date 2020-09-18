@@ -119,8 +119,10 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 # Library files.
 %{_libdir}/%{name}/base.sh
+%{_libdir}/%{name}/build.py
 %{_libdir}/%{name}/charliecloud.py
 %{_libdir}/%{name}/contributors.bash
+%{_libdir}/%{name}/misc.py
 %{_libdir}/%{name}/version.py
 %{_libdir}/%{name}/version.sh
 %{_libdir}/%{name}/version.txt

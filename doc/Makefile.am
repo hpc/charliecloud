@@ -38,8 +38,6 @@ ch-tar2dir_desc.rst \
 ch-tar2dir.rst \
 ch-test_desc.rst \
 ch-test.rst \
-ch-tug_desc.rst \
-ch-tug.rst \
 ch-umount_desc.rst \
 ch-umount.rst \
 command-usage.rst \
@@ -76,7 +74,6 @@ man/ch-run-oci.1 \
 man/ch-ssh.1 \
 man/ch-tar2dir.1 \
 man/ch-test.1 \
-man/ch-tug.1 \
 man/ch-umount.1
 endif
 

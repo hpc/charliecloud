@@ -69,7 +69,7 @@ can exclude some features with:
   :code:`--disable-html`     HTML documentation
   :code:`--disable-man`      man pages
   :code:`--disable-tests`    test suite
-  :code:`--disable-ch-grow`  :code:`ch-grow` unprivileged builder and :code:`ch-tug`
+  :code:`--disable-ch-grow`  :code:`ch-grow` unprivileged builder & image manager
   =========================  =======================================================
 
 You can also say :code:`--enable-FOO` to fail the build if :code:`FOO` can't

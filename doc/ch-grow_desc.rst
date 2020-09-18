@@ -3,18 +3,52 @@ Synopsis
 
 ::
 
-   $ ch-grow [OPTIONS] [-t TAG] [-f DOCKERFILE] CONTEXT
+   $ ch-grow [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
+   $ ch-grow [...] list
+   $ ch-grow [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-grow [...] storage-path
+   $ ch-grow { --help | --version | --dependencies }
+
 
 Description
 ===========
 
-Build an image named :code:`TAG` as specified in :code:`DOCKERFILE`; use
-:code:`ch-run(1)` to execute :code:`RUN` instructions. This builder is
-completely unprivileged, with no setuid/setgid/setcap helpers.
+:code:`ch-grow` is a tool for building and manipulating container images, but
+not running them (for that you want :code:`ch-run`). It is completely
+unprivileged, with no setuid/setgid/setcap helpers.
 
-:code:`ch-grow` maintains state and temporary images using normal files and
-directories. This storage directory can reside on any filesystem, and its
-location is configurable. In descending order of priority:
+Options that print brief information and then exit:
+
+  :code:`-h`, :code:`--help`
+    Print help and exit successfully.
+
+  :code:`--dependencies`
+    Report dependency problems on standard output, if any, and exit. If all is
+    well, there is no output and the exit is successful; in case of problems,
+    the exit is unsuccessful.
+
+  :code:`--version`
+    Print version number and exit successfully.
+
+Common options placed before the sub-command:
+
+  :code:`--no-cache`
+    Download everything needed, ignoring the cache.
+
+  :code:`-s`, :code:`--storage DIR`
+    Set the storage directory (see below for important details).
+
+  :code:`-v`, :code:`--verbose`
+    Print extra chatter; can be repeated.
+
+
+Storage directory
+=================
+
+:code:`ch-grow` maintains state using normal files and directories, including
+unpacked container images, located in its *storage directory*. There is no
+notion of storage drivers, graph drivers, etc., to select and/or configure. In
+descending order of priority, this directory is located at:
 
   :code:`-s`, :code:`--storage DIR`
     Command line option.
@@ -25,28 +59,47 @@ location is configurable. In descending order of priority:
   :code:`/var/tmp/$USER/ch-grow`
     Default.
 
-.. note::
+The storage directory can reside on any filesystem. However, it contains lots
+of small files and metadata traffic can be intense. For example, the
+Charliecloud test suite uses approximately 400,000 files and directories in
+the storage directory as of this writing. Place it on a filesystem appropriate
+for this; tmpfs'es such as :code:`/var/tmp` are a good choice if you have
+enough RAM (:code:`/tmp` is not recommended because :code:`ch-run` bind-mounts
+it into containers by default).
 
-   Images are stored unpacked, so place your storage directory on a filesystem
-   that can handle the metadata traffic for large numbers of small files. For
-   example, the Charliecloud test suite uses approximately 400,000 files and
-   directories.
+While you can currently poke around in the storage directory and find unpacked
+images runnable with :code:`ch-run`, this is not a supported use case. The
+supported workflow uses :code:`ch-builder2tar` or :code:`ch-builder2squash` to
+obtain a packed image; see the tutorial for details.
 
-Other arguments:
+.. warning::
+
+   Network filesystems, especially Lustre, are typically bad choices for the
+   storage directory. This is a site-specific question and your local support
+   will likely have strong opinions.
+
+
+Subcommands
+===========
+
+:code:`build`
+-------------
+
+Build an image from a Dockerfile and put it in the storage directory. Use
+:code:`ch-run(1)` to execute :code:`RUN` instructions.
+
+Required argument:
 
   :code:`CONTEXT`
-    Context directory; this is the root of :code:`COPY` and :code:`ADD`
-    instructions in the Dockerfile.
+    Path to context directory; this is the root of :code:`COPY` and
+    :code:`ADD` instructions in the Dockerfile.
+
+Options:
 
   :code:`--build-arg KEY[=VALUE]`
     Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
     to :code:`VALUE`. If :code:`VALUE` not specified, use the value of
     environment variable :code:`KEY`.
-
-  :code:`--dependencies`
-    Report any dependency problems and exit. If all is well, there is no
-    output and the exit code is zero; in case of problems, the exit code is
-    non-zero.
 
   :code:`-f`, :code:`--file DOCKERFILE`
     Use :code:`DOCKERFILE` instead of :code:`CONTEXT/Dockerfile`. Specify a
@@ -54,38 +107,52 @@ Other arguments:
     the context directory is still provided, which matches :code:`docker build
     -f -` behavior.
 
-  :code:`-h`, :code:`--help`
-    Print help and exit.
-
   :code:`-n`, :code:`--dry-run`
     Do not actually execute any Dockerfile instructions.
-
-  :code:`--no-cache`
-    Ignored (:code:`ch-grow` does not yet support layer caching).
 
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
 
-  :code:`--print-storage`
-    Print the storage directory path and exit. Must be after
-    :code:`--storage`, if any, for correct results.
-
   :code:`-t`, :code:`-tag TAG`
-    Name of image to create. Append :code:`:latest` if no colon present.
+    Name of image to create. If not specified, use the final component of path
+    :code:`CONTEXT`. Append :code:`:latest` if no colon present.
 
-  :code:`-v`, :code:`--verbose`
-    Print extra chatter; can be repeated.
+:code:`storage-path`
+--------------------
 
-  :code:`--version`
-    Print version number and exit.
+Print the storage directory path and exit.
 
-Environment variables
-=====================
+:code:`pull`
+------------
 
-.. include:: py_env.rst
+Pull the image described by the image reference :code:`IMAGE_REF` from a
+repository by HTTPS. See the FAQ for the gory details on specifying image
+references.
 
-Conformance
-===========
+This script does a fair amount of validation and fixing of the layer tarballs
+before flattening in order to support unprivileged use despite image problems
+we frequently see in the wild. For example, device files are ignored, and file
+and directory permissions are increased to a minimum of :code:`rwx------` and
+:code:`rw-------` respectively. Note, however, that symlinks pointing outside
+the image are permitted, because they are not resolved until runtime within a
+container.
+
+Destination argument:
+
+  :code:`IMAGE_DIR`
+    If specified, place the unpacked image at this path; it is then ready for
+    use by :code:`ch-run` or other tools. The storage directory will not
+    contain a copy of the image, i.e., it is only unpacked once.
+
+Options:
+
+  :code:`--parse-only`
+    Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
+    without talking to the internet or touching the storage directory.
+
+
+Compatibility with other Dockerfile interpreters
+================================================
 
 :code:`ch-grow` is an independent implementation and shares no code with other
 Dockerfile interpreters. It uses a formal Dockerfile parsing grammar developed
@@ -93,7 +160,7 @@ from the `Dockerfile reference documentation
 <https://docs.docker.com/engine/reference/builder/>`_ and miscellaneous other
 sources, which you can examine in the source code.
 
-We believe this indedendence is valuable for several reasons. First, it helps
+We believe this independence is valuable for several reasons. First, it helps
 the community examine Dockerfile syntax and semantics critically, think
 rigorously about what is really needed, and build a more robust standard.
 Second, it yields disjoint sets of bugs (note that Podman, Buildah, and Docker
@@ -268,3 +335,57 @@ Features we do not plan to support
   has good support for bind mounts; we anticipate that it will continue to
   focus on that and will not introduce the volume management features that
   Docker has.
+
+
+Environment variables
+=====================
+
+.. include:: py_env.rst
+
+
+Examples
+========
+
+:code:`build`
+-------------
+
+Build image :code:`bar` using :code:`./foo/bar/Dockerfile` and context
+directory :code:`./foo/bar`::
+
+   $ ch-grow build -t bar -f ./foo/bar/Dockerfile ./foo/bar
+   [...]
+   grown in 4 instructions: bar
+
+Same, but infer the image name and Dockerfile from the context directory
+path::
+
+   $ ch-grow build ./foo/bar
+   [...]
+   grown in 4 instructions: bar
+
+:code:`pull`
+------------
+
+Download the Debian Buster image and place it in the storage directory::
+
+  $ ch-grow pull debian:buster
+  pulling image:   debian:buster
+
+  manifest: downloading
+  layer 1/1: d6ff36c: downloading
+  layer 1/1: d6ff36c: listing
+  validating tarball members
+  resolving whiteouts
+  flattening image
+  layer 1/1: d6ff36c: extracting
+  done
+
+Same, except place the image in :code:`/tmp/buster`::
+
+   $ ch-grow pull debian:buster /tmp/buster
+   [...]
+   $ ls /tmp/buster
+   bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
+   boot  etc  lib   media  opt  root  sbin  sys  usr
+
+..  LocalWords:  tmpfs'es
