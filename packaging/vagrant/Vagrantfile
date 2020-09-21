@@ -254,8 +254,8 @@ EOF2
     echo '%vagrant ALL=(ALL:ALL) NOPASSWD: ALL' > /etc/sudoers.d/vagrant
 
     # Configure subuids and subgids for runc.
-    sudo usermod --add-subuids 10000-65536 vagrant
-    sudo usermod --add-subgids 10000-65536 vagrant
+    usermod --add-subuids 10000-65536 vagrant
+    usermod --add-subgids 10000-65536 vagrant
   EOF
 
   # Remove unneeded packages.
@@ -284,8 +284,8 @@ EOF2
     chown -R charlie:charlie /usr/local/src/charliecloud
 
     # Configure subuids and subgids for runc.
-    sudo usermod --add-subuids 10000-65536 charlie
-    sudo usermod --add-subgids 10000-65536 charlie
+    usermod --add-subuids 10000-65536 charlie
+    usermod --add-subgids 10000-65536 charlie
 
     # Automatically log in "charlie" on the console, so they have a way to get
     # in if SSH isn't working.
@@ -293,6 +293,10 @@ EOF2
     rm -f getty@tty1.service
     cp /lib/systemd/system/getty@.service getty@tty1.service
     sed -ri 's|^ExecStart=.*$|ExecStart=-/sbin/agetty --autologin charlie --noclear %I|' getty@tty1.service
+
+    # A test tries to signal a getty process from within the container, so
+    # we need at least one enabled.
+    sudo systemctl enable getty@tty2.service
 
     # Configure SSH to allow password logins. We would prefer to keep the
     # Vagrant default of SSH keys only, but I can't figure out how to get the
@@ -302,7 +306,7 @@ EOF2
 
     # Fix /etc/shadow permissions. Not clear where they were broken, but
     # passwd(1) below fails without this.
-    sudo restorecon -v /etc/shadow
+    restorecon -v /etc/shadow
 
     # Lock out password login for root and vagrant, because the default
     # password is well-known and we now allow password login.
