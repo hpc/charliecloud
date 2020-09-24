@@ -15,22 +15,18 @@ import misc
 ## Constants ##
 
 # FIXME: It's currently easy to get the ch-run path from another script, but
-# hard from something in lib. So, despite the fact that only build needs this,
-# we set it here for now.
-build.CH_BIN = os.path.dirname(os.path.abspath(
+# hard from something in lib. So, we set it here for now.
+ch.CH_BIN = os.path.dirname(os.path.abspath(
                  inspect.getframeinfo(inspect.currentframe()).filename))
-build.CH_RUN = build.CH_BIN + "/ch-run"
+ch.CH_RUN = ch.CH_BIN + "/ch-run"
 
 
 ## Main ##
 
 def main():
 
-   if (not os.path.exists(build.CH_RUN)):
-      ch.depfails.append(("missing", build.CH_RUN))
-
-   # https://stackoverflow.com/a/5464440
-   #HF = lambda prog: argparse.HelpFormatter(prog, max_help_position=26)
+   if (not os.path.exists(ch.CH_RUN)):
+      ch.depfails.append(("missing", ch.CH_RUN))
 
    ap = argparse.ArgumentParser(formatter_class=ch.HelpFormatter,
       description="Build and manage images; completely unprivileged.",
@@ -116,6 +112,8 @@ def main():
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
    sp.add_argument("-n", "--dry-run", action="store_true",
                    help="don't execute instructions")
+   sp.add_argument("--no-fakeroot", action="store_true",
+                   help="FIXME")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",

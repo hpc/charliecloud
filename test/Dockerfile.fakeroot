@@ -1,0 +1,16 @@
+# Several images that fail to build without fakeroot injection.
+#
+# These images don't build on one another; they're a multi-stage simply for
+# organizational convenience.
+#
+# ch-test-scope: standard
+# ch-test-builder-include: ch-grow
+
+# Debian 9 (Stretch)
+# Note: tests list form of RUN.
+
+# Debian 10 (Buster)
+# Note: tests two apt-get in the same RUN.
+FROM debian:buster
+RUN apt-get update \
+ && apt-get install -y openssh-client

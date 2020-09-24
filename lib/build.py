@@ -11,6 +11,7 @@ import shutil
 import sys
 
 import charliecloud as ch
+import fakeroot
 
 
 ## Globals ##
@@ -40,10 +41,6 @@ lark = ch.lark
 
 
 ## Constants ##
-
-# FIXME: currently set in ch-grow :P
-CH_BIN = None
-CH_RUN = None
 
 ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
@@ -532,6 +529,9 @@ class I_from_(Instruction):
          self.base_image.pull_to_unpacked(fixup=True)
       image.copy_unpacked(self.base_image)
       env.reset()
+      # Inject fakeroot preparatory stuff if needed.
+      if (not cli.no_fakeroot):
+         fakeroot.inject_first(image.unpack_path, env.env_build)
 
    def str_(self):
       alias = "AS %s" % self.alias if self.alias else ""
@@ -540,14 +540,16 @@ class I_from_(Instruction):
 
 class Run(Instruction):
 
+   def cmd_set(self, *args):
+      args = list(args)
+      if (cli.no_fakeroot):
+         self.cmd = args
+      else:
+         self.cmd = fakeroot.inject_each(images[image_i].unpack_path, args)
+
    def execute_(self):
       rootfs = images[image_i].unpack_path
-      ch.file_ensure_exists(rootfs + "/etc/resolv.conf")
-      ch.file_ensure_exists(rootfs + "/etc/hosts")
-      args = [CH_BIN + "/ch-run", "-w", "--no-home", "--no-passwd",
-              "--cd", env.workdir, "--uid=0", "--gid=0",
-              rootfs, "--"] + self.cmd
-      ch.cmd(args, env=env.env_build)
+      ch.ch_run_modify(rootfs, self.cmd, env.env_build, env.workdir)
 
    def str_(self):
       return str(self.cmd)
@@ -557,8 +559,8 @@ class I_run_exec(Run):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.cmd = [    variables_sub(unescape(i), env.env_build)
-                  for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
+      self.cmd_set(    variables_sub(unescape(i), env.env_build)
+                   for i in ch.tree_terminals(self.tree, "STRING_QUOTED"))
 
 
 class I_run_shell(Run):
@@ -567,7 +569,7 @@ class I_run_shell(Run):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
       cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
-      self.cmd = ["/bin/sh", "-c", cmd]
+      self.cmd_set("/bin/sh", "-c", cmd)
 
 
 class I_workdir(Instruction):
