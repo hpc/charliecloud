@@ -307,7 +307,8 @@ AS_CASE([$python],
   [/*], [PYTHON="$python"],                              # absolute
   [*],  [AC_CHECK_PROG([PYTHON], [$python], [$python])]  # verify it's in $PATH
 )
-CH_CHECK_VERSION([PYTHON], [$vmin_python], [--version | cut -d' ' -f2])
+CH_CHECK_VERSION([PYTHON], [$vmin_python],
+                 [--version | head -1 | cut -d' ' -f2])
 
 # Python module "lark-parser"
 vmin_lark=0.7.1
