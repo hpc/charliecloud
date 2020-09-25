@@ -540,8 +540,7 @@ class I_from_(Instruction):
 
 class Run(Instruction):
 
-   def cmd_set(self, *args):
-      args = list(args)
+   def cmd_set(self, args):
       if (cli.no_fakeroot):
          self.cmd = args
       else:
@@ -559,8 +558,8 @@ class I_run_exec(Run):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.cmd_set(    variables_sub(unescape(i), env.env_build)
-                   for i in ch.tree_terminals(self.tree, "STRING_QUOTED"))
+      self.cmd_set([    variables_sub(unescape(i), env.env_build)
+                    for i in ch.tree_terminals(self.tree, "STRING_QUOTED")])
 
 
 class I_run_shell(Run):
@@ -569,7 +568,7 @@ class I_run_shell(Run):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
       cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
-      self.cmd_set("/bin/sh", "-c", cmd)
+      self.cmd_set(["/bin/sh", "-c", cmd])
 
 
 class I_workdir(Instruction):

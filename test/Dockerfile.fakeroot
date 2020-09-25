@@ -8,9 +8,13 @@
 
 # Debian 9 (Stretch)
 # Note: tests list form of RUN.
+FROM debian:stretch
+RUN ["apt-get", "update"]
+RUN ["apt-get", "install", "-y", "openssh-client"]
 
 # Debian 10 (Buster)
-# Note: tests two apt-get in the same RUN.
+# Note: Tests two apt-get in the same RUN. echo(1) should not get fakeroot.
 FROM debian:buster
+RUN echo hello
 RUN apt-get update \
  && apt-get install -y openssh-client

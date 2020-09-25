@@ -113,7 +113,7 @@ def main():
    sp.add_argument("-n", "--dry-run", action="store_true",
                    help="don't execute instructions")
    sp.add_argument("--no-fakeroot", action="store_true",
-                   help="FIXME")
+                   help="don't try unprivileged build workarounds")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",
