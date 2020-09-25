@@ -12,8 +12,10 @@ DEFAULT_CONFIGS = [
 
    # General notes:
    #
-   # 1. There are three implementations of fakeroot: fakeroot, fakeroot-ng,
-   #    and pseudo. As of 2020-09-02:
+   # 1. The first match here wins.
+   #
+   # 2. There are three implementations of fakeroot that I could find:
+   #    fakeroot, fakeroot-ng, and pseudo. As of 2020-09-02:
    #
    #    * fakeroot-ng and pseudo use a daemon process, while fakeroot does
    #      not. pseudo also uses a persistent database.
@@ -30,12 +32,35 @@ DEFAULT_CONFIGS = [
    #    * pseudo is aslo a bit old: last upstream version was 1.9.0 on
    #      2018-01-20, and the last Git commit was 2019-08-02.
    #
-   #   Generally, we select the first one that seems to work in the order
-   #   fakeroot, pseudo, fakeroot-ng.
+   #    Generally, we select the first one that seems to work in the order
+   #    fakeroot, pseudo, fakeroot-ng.
+   #
+   # 3. Why grep specified files vs. simpler alternatives?
+   #
+   #    * Look at image name: Misses derived images, large number of tags
+   #      seems a maintenance headache, :latest changes.
+   #
+   #    * grep the same file for each distro: No standardized file for this.
+   #
+   #    * Ask lsb_release(1): Not always installed, requires executing ch-run.
 
-   # CentOS/RHEL 7
+   # CentOS/RHEL notes:
+   #
+   # 1. CentOS seems to have only fakeroot, which is in EPEL, not the standard
+   #    repos.
 
-   # CentOS/RHEL 8
+   { "match":  ("/etc/redhat-release", r"release 7\."),
+     "config": { "name": "CentOS/RHEL 7",
+                 "first": ["yum install -y epel-release",
+                           "yum install -y fakeroot"],
+                 "cmds_each": ["dnf", "rpm", "yum"],
+                 "each": ["fakeroot"] } },
+   { "match":  ("/etc/redhat-release", r"release 8\."),
+     "config": { "name": "CentOS/RHEL 8",
+                 "first": ["dnf install -y epel-release",
+                           "dnf install -y fakeroot"],
+                 "cmds_each": ["dnf", "rpm", "yum"],
+                 "each": ["fakeroot"] } },
 
    # Debian notes:
    #
@@ -55,7 +80,7 @@ DEFAULT_CONFIGS = [
    #    this user and eliminates the warning.
 
    { "match":  ("/etc/debian_version", r"^(9|10)\."),
-     "config": { "name": "Debian 9 (Strecth) or 10 (Buster)",
+     "config": { "name": "Debian 9 (Stretch) or 10 (Buster)",
                  "first":
 ["echo 'APT::Sandbox::User \"root\";' > /etc/apt/apt.conf.d/no-sandbox",
  "apt-get update",  # base image ships with no package indexes
@@ -71,9 +96,10 @@ def config(img):
    ch.DEBUG("fakeroot: checking configs: %s" % img)
    for c in DEFAULT_CONFIGS:
       (path, rx) = c["match"]
+      path_full = "%s/%s" % (img, path)
       ch.DEBUG("fakeroot: checking %s: grep '%s' %s"
                % (c["config"]["name"], rx, path))
-      if ch.grep_p("%s/%s" % (img, path), rx):
+      if (os.path.isfile(path_full) and ch.grep_p(path_full, rx)):
          ch.DEBUG("fakeroot: using config %s" % c["config"]["name"])
          return c["config"]
    ch.DEBUG("fakeroot: no config found")
