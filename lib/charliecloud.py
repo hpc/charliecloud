@@ -57,9 +57,6 @@ except ImportError:
 
 ## Globals ##
 
-# Download v2 schema unless otherwise specified.
-manifest_schema_version = 'v2'
-
 # Logging; set using log_setup() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
@@ -352,10 +349,10 @@ nogroup:x:65534:
       if (self.layer_hashes is None):
          self.layer_hashes_load()
       layers = collections.OrderedDict()
-      empty_cnt = 0
       # Schema version one (v1) allows one or more empty layers for Dockerfile
       # entries like CMD (https://github.com/containers/skopeo/issues/393).
       # Unpacking an empty layer doesn't accomplish much so we ignore them.
+      empty_cnt = 0
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
@@ -759,11 +756,6 @@ class Repo_Downloader:
       self.session_init_maybe()
       self.authenticate_maybe(url)
       res = self.get_raw(url, headers)
-      if 'manifest' in url:
-         content = res.headers['Content-Type']
-         if not manifest_schema_version in content:
-            FATAL("requested manifest schema %s but received Content-Type: %s"
-                  % (manifest_schema_version, content))
       try:
          fp = open_(path, "wb")
          ossafe(fp.write, "can't write: %s" % path, res.content)
@@ -781,11 +773,8 @@ class Repo_Downloader:
    def get_manifest(self, path):
       "GET the manifest for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
-      media = {'v1': "application/vnd.docker.distribution.manifest.v1+json",
-               'v2': "application/vnd.docker.distribution.manifest.v2+json"}
-      DEBUG('requesting manifest schema %s' % manifest_schema_version)
-      accept = media[manifest_schema_version]
-      self.get(url, path, { "Accept": str(accept) })
+      accept = "application/vnd.docker.distribution.manifest.v2+json"
+      self.get(url, path, { "Accept": accept })
 
 
    def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
