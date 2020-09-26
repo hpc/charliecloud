@@ -265,15 +265,6 @@ class Image:
       # Mount points.
       file_ensure_exists("%s/etc/hosts" % self.unpack_path)
       file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
-      # /etc/{passwd,group}
-      file_write("%s/etc/passwd" % self.unpack_path, """\
-root:x:0:0:root:/root:/bin/sh
-nobody:x:65534:65534:nobody:/:/bin/false
-""")
-      file_write("%s/etc/group" % self.unpack_path, """\
-root:x:0:
-nogroup:x:65534:
-""")
 
    def flatten(self):
       "Flatten the layers in the download cache into the unpack directory."

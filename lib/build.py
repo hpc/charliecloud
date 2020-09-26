@@ -50,7 +50,7 @@ ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "https_proxy": os.environ.get("https_proxy"),
                  "ftp_proxy": os.environ.get("ftp_proxy"),
                  "no_proxy": os.environ.get("no_proxy"),
-                 "PATH": "/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                 "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                  # GNU tar, when it thinks it's running as root, tries to
                  # chown(2) and chgrp(2) files to whatever's in the tarball.
                  "TAR_OPTIONS": "--no-same-owner" }
@@ -541,7 +541,9 @@ class I_from_(Instruction):
 class Run(Instruction):
 
    def cmd_set(self, args):
-      if (cli.no_fakeroot):
+      # This can be called if RUN is erroneously place before FROM; in this
+      # case there is no image yet, so don't inject.
+      if (cli.no_fakeroot or image_i not in images):
          self.cmd = args
       else:
          self.cmd = fakeroot.inject_each(images[image_i].unpack_path, args)
