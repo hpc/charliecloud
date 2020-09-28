@@ -314,17 +314,17 @@ nogroup:x:65534:
             self.layer_hashes = [i["blobSum"].split(":")[1] for i in doc["fsLayers"]]
          except (KeyError):
             FATAL("manifest file %s missing expected v1 version keys"
-                  % (self.manifest_path)
+                  % self.manifest_path)
          except (AttributeError, IndexError):
             FATAL("can't parse manifest %s file: %s"
-                  % (manifest_schema_version, self.manifest_path))
+                  % self.manifest_path)
       elif (schema_version == 2):
          DEBUG('loading layer hashes from schema version two (2) manifest')
          try:
             self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
          except (KeyError):
             FATAL("manifest file %s missing expected v2 version keys"
-                  % (self.manifest_path)
+                  % self.manifest_path)
          except (AttributeError, IndexError):
             FATAL("can't parse manifest file: %s" % self.manifest_path)
       else:
