@@ -234,59 +234,21 @@ EOF
     [[ $(cat "${img}/test/source") = 'regular' ]]
 }
 
-@test 'ch-tug image with v1 manifest schema' {
-    # Validate that we handle schema version (1) image formats.
+@test 'pull image with manifest schema v1' {
+    # Verify we handle images with manifest schema version one (1).
     scope standard
-    if ( ! ch-tug --dependencies ); then
+    if ( ! ch-grow --dependencies ); then
         [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-tug missing dependencies"
+        skip "ch-grow missing dependencies"
     fi
 
     unpack=$BATS_TMPDIR
     cache=$unpack/dlcache
-    img=charliecloud%symlink
+    img=debian:squeeze
 
-    img1=$unpack/charliecloud%symlink%v1
-    ch-tug --unpack-dir="$img1" \
-           --dl-cache="$cache" \
-           --no-cache \
-           --pull-manifest-v1 \
-           charliecloud/symlink
+    ch-grow pull --storage="$unpack" \
+                 --no-cache \
+                 "$img"
     [[ $status -eq 0 ]]
-    grep -F '"schemaVersion": 1' "${cache}/charliecloud%symlink.manifest.json"
-
-    # Download default v2 schema image for comparison.
-    img2=$unpack/charliecloud%symlink%v2
-    ch-tug --unpack-dir="$img2" \
-           --dl-cache="$cache" \
-           --no-cache charliecloud/symlink
-    [[ $status -eq 0 ]]
-    grep -F '"schemaVersion": 2' "${cache}/charliecloud%symlink.manifest.json"
-
-    # The following horror ensures that the same image unpacked via different
-    # schemas are the same.
-    cd "$img1"
-    find "$img" -type f -exec md5sum {} + | sort > "${img1}/contents.txt"
-    cd "$img2"
-    find "$img" -type f -exec md5sum {} + | sort > "${img2}/contents.txt"
-    diff -u "${img1}/contents.txt" "${img2}/contents.txt"
-    [[ $status -eq 0 ]]
-}
-
-@test 'ch-tug image error' {
-    # Ensure we error if we don't get the specified schema.
-    scope standard
-    if ( ! ch-tug --dependencies ); then
-        [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-tug missing dependencies"
-    fi
-    unpack=$BATS_TMPDIR
-    cache=$unpack/dlcache
-    run ch-tug --unpack-dir="$unpack" \
-               --dl-cache="$cache" \
-               --no-cache quay.io:443/fenicsproject/stable:latest
-    [[ $status -ne 0 ]]
-    echo "$output"
-    [[ $output = *'requested manifest schema'* ]]
-    [[ $output = *'but received Content-Type'* ]]
+    grep -F '"schemaVersion": 1' "${cache}/${img}.manifest.json"
 }

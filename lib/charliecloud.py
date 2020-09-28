@@ -188,6 +188,7 @@ class Image:
                 "download_cache",
                 "image_subdir",
                 "layer_hashes",
+                "schema_version",
                 "unpack_dir")
 
    def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
@@ -200,6 +201,7 @@ class Image:
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
+      self.schema_version = None
 
    def __str__(self):
       return str(self.ref)
@@ -328,6 +330,7 @@ nogroup:x:65534:
       else:
          FATAL("unsupported manifest schema version: 'schemaVersion':%s"
                % schema_version)
+      self.schema_version = schema_version
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
@@ -371,7 +374,7 @@ nogroup:x:65534:
             layers[lh] = TT(fp, members)
          else:
             empty_cnt += 1
-      if (manifest_schema_version == 'v1'):
+      if (self.schema_version == 'v1'):
          DEBUG('reversing layer order for schema version one (1)')
          layers = collections.OrderedDict(reversed(list(layers.items())))
       if (empty_cnt > 0):
@@ -779,7 +782,6 @@ class Repo_Downloader:
       accept = "application/vnd.docker.distribution.manifest.v2+json"
       self.get(url, path, { "Accept": accept })
 
-
    def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
                **kwargs):
       """GET url, passing headers, with no magic. If auth is None, use
@@ -936,10 +938,6 @@ def log_setup(verbose_):
       log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
    DEBUG("verbose level: %d" % verbose)
-
-def manifest_pull_v1():
-    global manifest_schema_version
-    manifest_schema_version = 'v1'
 
 def mkdirs(path):
    DEBUG("ensuring directory: " + path)
