@@ -15,6 +15,7 @@ import types
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../lib/charliecloud"))
 import charliecloud as ch
+import misc
 
 
 BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
@@ -49,7 +50,7 @@ def args_parse():
    ap = argparse.ArgumentParser(description='OCI wrapper for "ch-run".')
    ap.add_argument("-v", "--verbose", action="count", default=0,
                    help="print extra chatter (can be repeated)")
-   ap.add_argument("--version", action=ch.CLI_Version,
+   ap.add_argument("--version", action=misc.Version,
                    help="print version and exit")
    sps = ap.add_subparsers()
 

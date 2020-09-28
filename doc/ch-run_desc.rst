@@ -171,8 +171,9 @@ Environment variables
 environment is passed through unaltered, except:
 
 * limited tweaks to avoid significant guest breakage;
-* user-set variables via :code:`--set-env`; and
-* user-unset variables via :code:`--unset-env`.
+* user-set variables via :code:`--set-env`;
+* user-unset variables via :code:`--unset-env`; and
+* set :code:`CH_RUNNING`.
 
 This section describes these features.
 
@@ -185,6 +186,13 @@ Default behavior
 ----------------
 
 By default, :code:`ch-run` makes the following environment variable changes:
+
+* :code:`$CH_RUNNING`: Set to :code:`Weird Al Yankovic`. While a process can
+  figure out that it's in an unprivileged container and what namespaces are
+  active without this hint, the checks can be messy, and there is no way to
+  tell that it's a *Charliecloud* container specifically. This variable makes
+  such a test simple and well-defined. (Note: This variable is unaffected by
+  :code:`--unset-env`.)
 
 * :code:`$HOME`: If the path to your home directory is not :code:`/home/$USER`
   on the host, then an inherited :code:`$HOME` will be incorrect inside the

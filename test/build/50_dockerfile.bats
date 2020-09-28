@@ -1,7 +1,382 @@
 load ../common
 
 
-@test 'Dockerfile: ARG and ENV' {
+@test 'Dockerfile: syntax quirks' {
+    # These should all yield an output image, but we don't actually care about
+    # it, so re-use the same one.
+
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only' # FIXME: other builders?
+
+    # No newline at end of file.
+      printf 'FROM 00_tiny\nRUN echo hello' \
+    | ch-grow build -t syntax-quirks -f - .
+
+    # Newline before FROM.
+    ch-grow build -t syntax-quirks -f - . <<'EOF'
+
+FROM 00_tiny
+RUN echo hello
+EOF
+
+    # Comment before FROM.
+    ch-grow build -t syntax-quirks -f - . <<'EOF'
+# foo
+FROM 00_tiny
+RUN echo hello
+EOF
+
+    # Single instruction.
+    ch-grow build -t syntax-quirks -f - . <<'EOF'
+FROM 00_tiny
+EOF
+
+    # Whitespace around comment hash.
+    run ch-grow -v build -t syntax-quirks -f - . <<'EOF'
+FROM 00_tiny
+#no whitespace
+ #before only
+# after only
+ # both before and after
+  # multiple before
+	# tab before
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'comment') -eq 6 ]]
+}
+
+
+@test 'Dockerfile: syntax errors' {
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+
+    # Bad instruction. Also, -v should give interal blabber about the grammar.
+    run ch-grow -v build -t foo -f - . <<'EOF'
+FROM 00_tiny
+WEIRDAL
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    # error message
+    [[ $output = *"can't parse: -:2,1"* ]]
+    # internal blabber
+    [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
+    [[ $output = *'Expecting: {'* ]]
+
+    # Bad long option.
+    run ch-grow build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY --chown= foo bar
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't parse: -:2,14"* ]]
+
+    # Empty input.
+    run ch-grow build -t foo -f /dev/null .
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'no instructions found: /dev/null'* ]]
+
+    # Newline only.
+    run ch-grow build -t foo -f - . <<'EOF'
+
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'no instructions found: -'* ]]
+
+    # Comment only.
+    run ch-grow build -t foo -f - . <<'EOF'
+# foo
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'no instructions found: -'* ]]
+
+    # Only newline, then comment.
+    run ch-grow build -t foo -f - . <<'EOF'
+
+# foo
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'no instructions found: -'* ]]
+
+    # Non-ARG instruction before FROM
+    run ch-grow build -t foo -f - . <<'EOF'
+RUN echo uh oh
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'first instruction must be ARG or FROM'* ]]
+}
+
+
+@test 'Dockerfile: semantic errors' {
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+
+    # Repeated instruction option.
+    run ch-grow build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY --chown=foo --chown=bar fixtures/empty-file .
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'  2 COPY: repeated option --chown'* ]]
+
+    # COPY invalid option.
+    run ch-grow build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY --foo=foo fixtures/empty-file .
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'COPY: invalid option --foo'* ]]
+
+    # FROM invalid option.
+    run ch-grow build -t foo -f - . <<'EOF'
+FROM --foo=bar 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'FROM: invalid option --foo'* ]]
+}
+
+
+@test 'Dockerfile: not-yet-supported features' {
+    # This test also creates images we don't care about.
+
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+
+    # ARG before FROM
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+ARG foo=bar
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
+
+    # COPY list form
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+FROM 00_tiny
+COPY ["fixtures/empty-file", "."]
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: not yet supported: issue #784: COPY list form'* ]]
+
+    # FROM --platform
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+FROM --platform=foo 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: not yet supported: issue #778: FROM --platform'* ]]
+
+    # other instructions
+    run ch-grow build -t unsupported -f - . <<'EOF'
+FROM 00_tiny
+ADD foo
+CMD foo
+ENTRYPOINT foo
+LABEL foo
+ONBUILD foo
+SHELL foo
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 6 ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #782: ADD instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #780: CMD instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #780: ENTRYPOINT instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #781: LABEL instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #788: ONBUILD instruction'* ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #789: SHELL instruction'* ]]
+
+    # .dockerignore files
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: not yet supported, ignored: issue #777: .dockerignore file'* ]]
+
+    # URL (Git repo) contexts
+    run ch-grow build -t not-yet-supported -f - \
+        git@github.com:hpc/charliecloud.git <<'EOF'
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
+    run ch-grow build -t not-yet-supported -f - \
+        https://github.com/hpc/charliecloud.git <<'EOF'
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
+
+    # variable expansion modifiers
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+FROM 00_tiny
+ARG foo=README
+COPY fixtures/${foo:+bar} .
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    # shellcheck disable=SC2016
+    [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
+    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+FROM 00_tiny
+ARG foo=README
+COPY fixtures/${foo:-bar} .
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    # shellcheck disable=SC2016
+    [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
+}
+
+
+@test 'Dockerfile: unsupported features' {
+    # This test also creates images we don't care about.
+
+    scope standard
+    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+
+    # parser directives
+    run ch-grow build -t unsupported -f - . <<'EOF'
+# escape=foo
+# syntax=foo
+#syntax=foo
+ # syntax=foo
+ #syntax=foo
+# foo=bar
+# comment
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: not supported, ignored: parser directives'* ]]
+    [[ $(echo "$output" | grep -Fc 'parser directives') -eq 5 ]]
+
+    # COPY --from
+    run ch-grow build -t unsupported -f - . <<'EOF'
+FROM 00_tiny
+COPY --chown=foo fixtures/empty-file .
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: not supported, ignored: COPY --chown'* ]]
+
+    # Unsupported instructions
+    run ch-grow build -t unsupported -f - . <<'EOF'
+FROM 00_tiny
+EXPOSE foo
+HEALTHCHECK foo
+MAINTAINER foo
+STOPSIGNAL foo
+USER foo
+VOLUME foo
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'not supported') -eq 6 ]]
+    [[ $output = *'warning: not supported, ignored: EXPOSE instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: HEALTHCHECK instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: MAINTAINER instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: STOPSIGNAL instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: USER instruction'* ]]
+    [[ $output = *'warning: not supported, ignored: VOLUME instruction'* ]]
+}
+
+
+@test 'Dockerfile: ENV parsing' {
+    scope standard
+    [[ $CH_BUILDER = none ]] && skip 'no builder'
+
+    env_expected=$(cat <<'EOF'
+('chse_0a', 'value 0a')
+('chse_0b', 'value 0b')
+('chse_1b', 'value 1b ')
+('chse_2', 'value2')
+('chse_2a', 'chse2: value2')
+('chse_2b', 'chse2: value2')
+('chse_3a', '"value3a"')
+('chse_4a', 'value4a')
+('chse_4b', 'value4b')
+('chse_5a', 'value5a')
+('chse_5b', 'value5b')
+('chse_6a', 'value6a')
+('chse_6b', 'value6b')
+EOF
+)
+    run ch-build --no-cache -t env-syntax -f - . <<'EOF'
+FROM centos8
+
+# FIXME: make this more comprehensive, e.g. space-separate vs.
+# equals-separated for everything.
+
+# Value has internal space.
+ENV chse_0a value 0a
+ENV chse_0b="value 0b"
+
+# Value has internal space and trailing space. NOTE: Beware your editor
+# "helpfully" removing the trailing space.
+#
+# FIXME: Docker removes the trailing space!
+#ENV chse_1a value 1a 
+ENV chse_1b="value 1b "
+# FIXME: currently a parse error.
+#ENV chse_1c=value\ 1c\ 
+
+# Value surrounded by double quotes, which are not part of the value.
+ENV chse_2 "value2"
+
+# Substitute previous value, space-separated, without quotes.
+ENV chse_2a chse2: ${chse_2}
+
+# Substitute a previous value, equals-separated, with quotes.
+ENV chse_2b="chse2: ${chse_2}"
+
+# Backslashed quotes are included in value.
+ENV chse_3a \"value3a\"
+# FIXME: backslashes end up literal
+#ENV chse_3b=\"value3b\"
+
+# Multiple variables in the same instruction.
+ENV chse_4a=value4a chse_5a=value5a
+ENV chse_4b=value4b \
+    chse_5b=value5b
+
+# Value contains line continuation. FIXME: I think something isn't quite right
+# here. The backslash, newline sequence appears in the parse tree but not in
+# the output. That doesn't seem right.
+ENV chse_6a value\
+6a
+ENV chse_6b "value\
+6b"
+
+# FIXME: currently a parse error.
+#ENV chse_4=value4 chse_5="value5 foo" chse_6=value6\ foo chse_7=\"value7\"
+
+# Print output with Python to avoid ambiguity.
+RUN python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'
+EOF
+  echo "$output"
+  [[ $status -eq 0 ]]
+  diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
+}
+
+
+@test 'Dockerfile: ARG and ENV values' {
     # We use full scope for builders other than ch-grow because (1) with
     # ch-grow, we are responsible for --build-arg being implemented correctly
     # and (2) Docker and Buildah take a full minute for this test, vs. three
@@ -196,303 +571,6 @@ EOF
     else
         [[ $status -eq 0 ]]
     fi
-}
-
-
-@test 'Dockerfile: syntax quirks' {
-    # These should all yield an output image, but we don't actually care about
-    # it, so re-use the same one.
-
-    scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only' # FIXME: other builders?
-
-    # No newline at end of file.
-      printf 'FROM 00_tiny\nRUN echo hello' \
-    | ch-grow -t syntax-quirks -f - .
-
-    # Newline before FROM.
-    ch-grow -t syntax-quirks -f - . <<'EOF'
-
-FROM 00_tiny
-RUN echo hello
-EOF
-
-    # Comment before FROM.
-    ch-grow -t syntax-quirks -f - . <<'EOF'
-# foo
-FROM 00_tiny
-RUN echo hello
-EOF
-
-    # Single instruction.
-    ch-grow -t syntax-quirks -f - . <<'EOF'
-FROM 00_tiny
-EOF
-
-    # Whitespace around comment hash.
-    run ch-grow -v -t syntax-quirks -f - . <<'EOF'
-FROM 00_tiny
-#no whitespace
- #before only
-# after only
- # both before and after
-  # multiple before
-	# tab before
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Fc 'comment') -eq 6 ]]
-}
-
-
-@test 'Dockerfile: syntax errors' {
-    scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
-
-    # Bad instruction. Also, -v should give interal blabber about the grammar.
-    run ch-grow --verbose -t foo -f - . <<'EOF'
-FROM 00_tiny
-WEIRDAL
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    # error message
-    [[ $output = *"can't parse: -:2,1"* ]]
-    # internal blabber
-    [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
-    [[ $output = *'Expecting: {'* ]]
-
-    # Bad long option.
-    run ch-grow -t foo -f - . <<'EOF'
-FROM 00_tiny
-COPY --chown= foo bar
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"can't parse: -:2,14"* ]]
-
-    # Empty input.
-    run ch-grow -t foo -f /dev/null .
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'no instructions found: /dev/null'* ]]
-
-    # Newline only.
-    run ch-grow -t foo -f - . <<'EOF'
-
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'no instructions found: -'* ]]
-
-    # Comment only.
-    run ch-grow -t foo -f - . <<'EOF'
-# foo
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'no instructions found: -'* ]]
-
-    # Only newline, then comment.
-    run ch-grow -t foo -f - . <<'EOF'
-
-# foo
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'no instructions found: -'* ]]
-
-    # Non-ARG instruction before FROM
-    run ch-grow -t foo -f - . <<'EOF'
-RUN echo uh oh
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'first instruction must be ARG or FROM'* ]]
-}
-
-
-@test 'Dockerfile: semantic errors' {
-    scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
-
-    # Repeated instruction option.
-    run ch-grow -t foo -f - . <<'EOF'
-FROM 00_tiny
-COPY --chown=foo --chown=bar fixtures/empty-file .
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'  2 COPY: repeated option --chown'* ]]
-
-    # COPY invalid option.
-    run ch-grow -t foo -f - . <<'EOF'
-FROM 00_tiny
-COPY --foo=foo fixtures/empty-file .
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'COPY: invalid option --foo'* ]]
-
-    # FROM invalid option.
-    run ch-grow -t foo -f - . <<'EOF'
-FROM --foo=bar 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'FROM: invalid option --foo'* ]]
-}
-
-
-@test 'Dockerfile: not-yet-supported features' {
-    # This test also creates images we don't care about.
-
-    scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
-
-    # ARG before FROM
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
-ARG foo=bar
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
-
-    # COPY list form
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
-FROM 00_tiny
-COPY ["fixtures/empty-file", "."]
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #784: COPY list form'* ]]
-
-    # FROM --platform
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
-FROM --platform=foo 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #778: FROM --platform'* ]]
-
-    # other instructions
-    run ch-grow -t unsupported -f - . <<'EOF'
-FROM 00_tiny
-ADD foo
-CMD foo
-ENTRYPOINT foo
-LABEL foo
-ONBUILD foo
-SHELL foo
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 6 ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #782: ADD instruction'* ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #780: CMD instruction'* ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #780: ENTRYPOINT instruction'* ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #781: LABEL instruction'* ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #788: ONBUILD instruction'* ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #789: SHELL instruction'* ]]
-
-    # .dockerignore files
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #777: .dockerignore file'* ]]
-
-    # URL (Git repo) contexts
-    run ch-grow -t not-yet-supported -f - \
-        git@github.com:hpc/charliecloud.git <<'EOF'
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
-    run ch-grow -t not-yet-supported -f - \
-        https://github.com/hpc/charliecloud.git <<'EOF'
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
-
-    # variable expansion modifiers
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
-FROM 00_tiny
-ARG foo=README
-COPY fixtures/${foo:+bar} .
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    # shellcheck disable=SC2016
-    [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
-    run ch-grow -t not-yet-supported -f - . <<'EOF'
-FROM 00_tiny
-ARG foo=README
-COPY fixtures/${foo:-bar} .
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    # shellcheck disable=SC2016
-    [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
-}
-
-
-@test 'Dockerfile: unsupported features' {
-    # This test also creates images we don't care about.
-
-    scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
-
-    # parser directives
-    run ch-grow -t unsupported -f - . <<'EOF'
-# escape=foo
-# syntax=foo
-#syntax=foo
- # syntax=foo
- #syntax=foo
-# foo=bar
-# comment
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'warning: not supported, ignored: parser directives'* ]]
-    [[ $(echo "$output" | grep -Fc 'parser directives') -eq 5 ]]
-
-    # COPY --from
-    run ch-grow -t unsupported -f - . <<'EOF'
-FROM 00_tiny
-COPY --chown=foo fixtures/empty-file .
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'warning: not supported, ignored: COPY --chown'* ]]
-
-    # Unsupported instructions
-    run ch-grow -t unsupported -f - . <<'EOF'
-FROM 00_tiny
-EXPOSE foo
-HEALTHCHECK foo
-MAINTAINER foo
-STOPSIGNAL foo
-USER foo
-VOLUME foo
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Fc 'not supported') -eq 6 ]]
-    [[ $output = *'warning: not supported, ignored: EXPOSE instruction'* ]]
-    [[ $output = *'warning: not supported, ignored: HEALTHCHECK instruction'* ]]
-    [[ $output = *'warning: not supported, ignored: MAINTAINER instruction'* ]]
-    [[ $output = *'warning: not supported, ignored: STOPSIGNAL instruction'* ]]
-    [[ $output = *'warning: not supported, ignored: USER instruction'* ]]
-    [[ $output = *'warning: not supported, ignored: VOLUME instruction'* ]]
 }
 
 

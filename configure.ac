@@ -108,7 +108,7 @@ AC_ARG_ENABLE([test],
 
 AC_ARG_ENABLE([ch-grow],
   AS_HELP_STRING([--disable-ch-grow],
-                 [ch-grow unprivileged builder and ch-tug]),
+                 [ch-grow unprivileged builder & image manager]),
   [], [enable_ch_grow=yes])
 
 
@@ -287,7 +287,7 @@ AC_CHECK_PROG([NVIDIA_CLI], [nvidia-container-cli], [nvidia-container-cli])
 CH_CHECK_VERSION([NVIDIA_CLI], [$vmin_nvidia_CLI],
                  [-V | head -1 | cut -d' ' -f2])
 AC_MSG_CHECKING([for nVidia libraries & executables])
-AS_IF([test -n "$NVIDIA_CLI_VERSION"],
+AS_IF([test -n "$NVIDIA_CLI"],
   [AS_IF([nvidia-container-cli list | grep -Fq libnvidia-glcore.so],
         [have_nvidia_libs=yes],
         [have_nvidia_libs=no])],
@@ -307,7 +307,8 @@ AS_CASE([$python],
   [/*], [PYTHON="$python"],                              # absolute
   [*],  [AC_CHECK_PROG([PYTHON], [$python], [$python])]  # verify it's in $PATH
 )
-CH_CHECK_VERSION([PYTHON], [$vmin_python], [--version | cut -d' ' -f2])
+CH_CHECK_VERSION([PYTHON], [$vmin_python],
+                 [--version | head -1 | cut -d' ' -f2])
 
 # Python module "lark-parser"
 vmin_lark=0.7.1
@@ -581,7 +582,7 @@ Building Charliecloud
     HTML documentation ... ${enable_html}
     man pages ... ${enable_man}
     test suite ... ${enable_test}
-    ch-grow(1) and ch-tug(1) ... ${enable_ch_grow}
+    ch-grow(1) ... ${enable_ch_grow}
 
 Building images via our wrappers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

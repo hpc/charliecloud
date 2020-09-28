@@ -278,6 +278,9 @@ void fix_environment(struct args *args)
          environ = new_environ;
       }
    }
+
+   // $CH_RUNNING
+   Z_ (setenv("CH_RUNNING", "Weird Al Yankovic", 1));
 }
 
 /* Find the first environment variable in array that is set; put its name in
