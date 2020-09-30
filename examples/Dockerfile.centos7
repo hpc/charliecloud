@@ -4,7 +4,9 @@ FROM centos:7
 # This image has two purposes: (1) demonstrate we can build a CentOS 7 image
 # and (2) provide a build environment for Charliecloud EPEL 7 RPMs.
 
+# Configure yum to fail if a package can't be installed (see issue #858).
 RUN echo 'skip_missing_names_on_install=0' >> /etc/yum.conf
+
 RUN yum install -y epel-release \
  && yum install -y \
                 autoconf \
