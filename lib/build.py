@@ -541,7 +541,7 @@ class I_from_(Instruction):
 class Run(Instruction):
 
    def cmd_set(self, args):
-      # This can be called if RUN is erroneously place before FROM; in this
+      # This can be called if RUN is erroneously placed before FROM; in this
       # case there is no image yet, so don't inject.
       if (cli.no_fakeroot or image_i not in images):
          self.cmd = args
