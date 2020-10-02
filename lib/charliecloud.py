@@ -309,27 +309,21 @@ nogroup:x:65534:
 
       schema_version = doc['schemaVersion']
       if (schema_version == 1):
-         DEBUG('loading layer hashes from schema version one (1) manifest')
+         DEBUG('loading layer hashes from schema version 1 manifest')
          try:
             self.layer_hashes = [i["blobSum"].split(":")[1] for i in doc["fsLayers"]]
-         except (KeyError):
-            FATAL("manifest file %s missing expected v1 version keys"
-                  % self.manifest_path)
-         except (AttributeError, IndexError):
-            FATAL("can't parse manifest %s file: %s"
+         except (KeyError, AttributeError, IndexError):
+            FATAL("manifest file %s missing expected v1 keys"
                   % self.manifest_path)
       elif (schema_version == 2):
-         DEBUG('loading layer hashes from schema version two (2) manifest')
+         DEBUG('loading layer hashes from schema version 2 manifest')
          try:
             self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
-         except (KeyError):
-            FATAL("manifest file %s missing expected v2 version keys"
+         except (KeyError, AttributeError, IndexError):
+            FATAL("manifest file %s missing expected v2 keys"
                   % self.manifest_path)
-         except (AttributeError, IndexError):
-            FATAL("can't parse manifest file: %s" % self.manifest_path)
       else:
-         FATAL("unsupported manifest schema version: 'schemaVersion':%s"
-               % schema_version)
+         FATAL("unsupported manifest schema version: %s" % schema_version)
       self.schema_version = schema_version
 
    def layer_path(self, layer_hash):
@@ -368,15 +362,15 @@ nogroup:x:65534:
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
          members = collections.OrderedDict([(m, None) for m in members_list])
-         if (lh in layers and members):
+         if ((lh in layers) and (len(members) > 0)):
             FATAL("duplicate non-empty layer %s" % lh[:7])
-         if (members):
+         if (len(members) > 0):
             layers[lh] = TT(fp, members)
          else:
             empty_cnt += 1
       if (self.schema_version == 'v1'):
          DEBUG('reversing layer order for schema version one (1)')
-         layers = collections.OrderedDict(reversed(list(layers.items())))
+         layers = collections.OrderedDict(reversed(layers.items()))
       if (empty_cnt > 0):
          INFO("skipped %d empty layers" % empty_cnt)
       return layers
