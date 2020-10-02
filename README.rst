@@ -1,4 +1,4 @@
-What is Charliecloud?
+What is Charlie Cloud?
 ---------------------
 
 Charliecloud provides user-defined software stacks (UDSS) for high-performance
