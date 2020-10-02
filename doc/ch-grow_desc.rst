@@ -149,6 +149,12 @@ Destination argument:
     contain a copy of the image, i.e., it is only unpacked once.
 
 Options:
+  :code:`-a, --architecture`
+    Check the target image :code:`IMAGE_REF` manifest for a specified
+    architecture. If found pull it; otherwise error.
+
+  :code:`--print-manifest`
+    Print the image :code:`IMAGE_REF` manifest contents and exit.
 
   :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
