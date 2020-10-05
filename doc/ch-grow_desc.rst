@@ -149,12 +149,15 @@ Destination argument:
     contain a copy of the image, i.e., it is only unpacked once.
 
 Options:
-  :code:`-a, --architecture`
-    Check the target image :code:`IMAGE_REF` manifest for a specified
-    architecture. If found pull it; otherwise error.
+  :code:`--arch`
+    Check the target image :code:`IMAGE_REF` fat manifest for a reference that
+    targets the specified architecture. If found pull it; otherwise error.
 
-  :code:`--print-manifest`
-    Print the image :code:`IMAGE_REF` manifest contents and exit.
+  :code:`--inspect-manifest`
+    Print the image :code:`IMAGE_REF` index (fat manifest). This is typically
+    used to list the image's supported platform digests, e.g., :code:`arm64`,
+    :code:`ppc64le`, etc. Note: some images do not have fat manifests; print
+    the default manifest if a fat manifest is unavailable.
 
   :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully

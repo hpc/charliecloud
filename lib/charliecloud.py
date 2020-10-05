@@ -214,6 +214,11 @@ class Image:
       return "%s/%s" % (self.unpack_dir, self.image_subdir)
 
    @property
+   def index_path(self):
+      "Path to the manifest list file."
+      return "%s/%s.manifest.list.json" % (self.download_cache,
+                                           self.ref.for_path)
+   @property
    def manifest_path(self):
       "Path to the manifest file."
       return "%s/%s.manifest.json" % (self.download_cache, self.ref.for_path)
@@ -256,6 +261,19 @@ class Image:
             dl.get_layer(lh, path)
       dl.close()
 
+   def download_manifest_index(self, dl=None, use_cache=True):
+      """Download image manifest list according to origin and put it in the
+         download cache."""
+      if (dl is None):
+         dl = Repo_Downloader(self.ref)
+      # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
+      mkdirs(self.download_cache)
+      if (os.path.exists(self.index_path) and use_cache):
+         INFO("manifest index: using existing file")
+      else:
+         INFO("manifest index: downloading")
+         dl.get_manifest_index(self.index_path)
+
    def fixup(self):
       "Add the Charliecloud workarounds to the unpacked image."
       DEBUG("fixing up image: %s" % self.unpack_path)
@@ -280,6 +298,47 @@ class Image:
          except OSError as x:
             FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
+   def get_arch_ref(self, arch=None, use_cache=True):
+      """Return the Image Reference for an arch-specific image variant."""
+      self.download_manifest_index(use_cache=use_cache)
+      if (not os.path.exists(self.index_path)):
+         FATAL("image doesn't have a fat manifest; multi-platform unsupported")
+      try:
+         fp = open_(self.index_path, "rt", encoding="UTF-8")
+      except OSError as x:
+            FATAL("can't open manifest file: %s: %s"
+                  % (self.index_path, x.strerror))
+      try:
+         doc = json.load(fp)
+      except json.JSONDecodeError as x:
+         FATAL("can't parse manifest file: %s:%d: %s"
+               % (self.manifest_path, x.lineno, x.msg))
+      # Does the arch argument match any manifest keys?
+      digest = None
+      for d in doc['manifests']:
+          if (arch == (d.get('platform').get('architecture'))):
+              DEBUG("found matching arch digest: %s" % d.get('digest'))
+              digest = d.get('digest')
+              break
+      if (digest is not None):
+         ref = ''
+         if (self.ref.host is not None):
+            ref += self.ref.host
+         if (self.ref.port is not None):
+            ref += ':' + self.ref.port
+         if (self.ref.path is not None):
+            for p in self.ref.path:
+                ref+= '/' + p
+         if (self.ref.name is not None):
+            ref += self.ref.name
+         ref += '@' + digest
+         return ref
+      else:
+         FATAL("arch '%s' did not match any available platform for %s:%s;"
+               % (arch, self.ref.name, self.ref.tag),
+               "see ch-grow pull --inspect-manifest %s:%s" %(self.ref.name,
+                                                             self.ref.tag))
+
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
       try:
@@ -296,6 +355,7 @@ class Image:
          self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
       except (AttributeError, KeyError, IndexError):
          FATAL("can't parse manifest file: %s" % self.manifest_path)
+      fp.close()
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
@@ -332,10 +392,39 @@ class Image:
          layers[lh] = TT(fp, members)
       return layers
 
+   def print_manifest(self, use_cache=True):
+      """Print fat manifest. If it doesn't exist and can't be downloaded then
+         print default manifest. If default manifest doesn't exist then
+         download it first."""
+      dl = Repo_Downloader(self.ref)
+      self.download_manifest_index(dl, use_cache)
+      if (os.path.exists(self.index_path)):
+         try:
+            fp = open_(self.index_path, "rt", encoding="UTF-8")
+         except OSError as x:
+            FATAL("can't open manifest file: %s: %s"
+                   % (self.manifest_path, x.strerror))
+      # image doesn't have fat manifest
+      else:
+         self.download_manifest(dl, use_cache)
+         if (os.path.exists(self.manifest_path)):
+            try:
+               fp = open_(self.manifest_path, "rt", encoding="UTF-8")
+            except OSError as x:
+               FATAL("can't open manifest file: %s: %s"
+                     % (self.manifest_path, x.strerror))
+      try:
+         doc = json.load(fp)
+      except json.JSONDecodeError as x:
+         FATAL("can't parse manifest file: %s:%d: %s"
+               % (fp, x.lineno, x.msg))
+      INFO(json.dumps(doc, indent=3))
+      fp.close()
+
    def pull_to_unpacked(self, use_cache=True, fixup=False):
       """Pull and flatten image. If fixup, then also add the Charliecloud
          workarounds to the image directory."""
-      self.download(use_cache)
+      self.download(use_cache, arch)
       self.flatten()
       if (fixup):
          self.fixup()
@@ -732,6 +821,18 @@ class Repo_Downloader:
       url = self._url_of("manifests", self.ref.version)
       accept = "application/vnd.docker.distribution.manifest.v2+json"
       self.get(url, path, { "Accept": accept })
+
+   def get_manifest_index(self, path):
+      "GET the fat manifest (image index) for the image and save it at path."
+      url = self._url_of("manifests", self.ref.version)
+      accept = "application/vnd.docker.distribution.manifest.list.v2+json"
+      self.session_init_maybe()
+      self.authenticate_maybe(url)
+      res = self.get_raw(url, headers={ "Accept": accept })
+      if (res.headers['Content-Type'] != accept):
+         WARNING("no manifest index, i.e., image doesn't support multi-platform")
+      else:
+         self.get(url, path, { "Accept": accept })
 
    def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
                **kwargs):

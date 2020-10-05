@@ -55,7 +55,14 @@ def pull(cli):
    if (cli.parse_only):
       print(ref.as_verbose_str)
       sys.exit(0)
+   if (cli.arch):
+      raw_image = ch.Image(ref, dlcache, unpack_dir, image_subdir)
+      arch_ref = raw_image.get_arch_ref(cli.arch, use_cache=(not cli.no_cache))
+      ref = ch.Image_Ref(arch_ref)
    image = ch.Image(ref, dlcache, unpack_dir, image_subdir)
+   if (cli.inspect_manifest):
+      ch.INFO("%s" % image.print_manifest(use_cache=(not cli.no_cache)))
+      sys.exit(0)
    ch.INFO("pulling image:   %s" % image.ref)
    if (cli.image_dir is not None):
       ch.INFO( "destination:     %s" % image.unpack_path)
