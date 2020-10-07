@@ -9,7 +9,7 @@ Flatten a builder image into a Charliecloud packed file.
 
 Usage:
 
-  $ $(basename "$0") [-b BUILDER] [--fmt CH_PACK_FMT] IMAGE OUTDIR [ARGS ...]
+  $ $(basename "$0") [-b BUILDER] [--format CH_PACK_FORMAT] IMAGE OUTDIR [ARGS ...]
 
 You must have sufficient privilege (via sudo) to run the Docker commands.
 EOF
@@ -29,13 +29,13 @@ while true; do
             CH_BUILDER=${1#*=}
             shift
             ;;
-        --pack-fmt)
+        --format|--format=*)
             shift
-            CH_PACK_FMT=$1
+            CH_PACK_FORMAT=$1
             shift
             ;;
         --pack-fmt=*)
-            CH_PACK_FMT=${1#*=}
+            CH_PACK_FORMAT=${1#*=}
             shift
             ;;
         *)

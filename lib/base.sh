@@ -53,14 +53,14 @@ pack_fmt_valid () {
 }
 
 pack_fmt_choose () {
-    if [ -z "$CH_PACK_FMT" ]; then
+    if [ -z "$CH_PACK_FORMAT" ]; then
         if command -v mksquashfs > /dev/null 2>&1; then
-            export CH_PACK_FMT=squash
+            export CH_PACK_FORMAT=squash
         else
-            export CH_PACK_FMT=tar
+            export CH_PACK_FORMAT=tar
         fi
     fi
-    pack_fmt_valid "$CH_PACK_FMT"
+    pack_fmt_valid "$CH_PACK_FORMAT"
 }
 
 parse_basic_args () {
