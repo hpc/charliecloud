@@ -212,17 +212,17 @@ pack_fmt_set () {
             pack_fmt=tar
             ;;
         esac
-        export CH_PACK_FMT=$pack_fmt
+        export CH_PACK_FORMAT=$pack_fmt
         method='command line'
-    elif [[ -n $CH_PACK_FMT ]]; then
+    elif [[ -n $CH_PACK_FORMAT ]]; then
         method='environment'
     else
         pack_fmt_choose
         method='default'
     fi
     printf "%-*s %s (%s)\n" \
-           "$width" 'packed image format:' "$CH_PACK_FMT" "$method"
-    pack_fmt_valid "$CH_PACK_FMT"
+           "$width" 'packed image format:' "$CH_PACK_FORMAT" "$method"
+    pack_fmt_valid "$CH_PACK_FORMAT"
 }
 
 pedantry_set () {

@@ -3,7 +3,7 @@ Synopsis
 
 ::
 
-  $ ch-pack-image [-b BUILDER] [--fmt CH_PACK_FMT] IMAGE OUTDIR [ARGS ...]
+  $ ch-pack-image [-b BUILDER] [--format CH_PACK_FORMAT] IMAGE OUTDIR [ARGS ...]
 
 Description
 ===========

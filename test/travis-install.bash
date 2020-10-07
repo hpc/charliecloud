@@ -35,18 +35,19 @@ if [[ $CH_BUILDER = ch-grow ]]; then
 fi
 case $PACK_FMT in
     '')  # default
-        export CH_PACK_FMT=squash
+        export CH_PACK_FORMAT=squash
         sudo apt-get install squashfs-tools squashfuse
         ;;
     squash-unpack)
-        export CH_PACK_FMT=squash
+        export CH_PACK_FORMAT=squash
         sudo apt-get install squashfs-tools
         ;;
     tar)
-        export CH_PACK_FMT=tar
+        export CH_PACK_FORMAT=tar
         # tar already installed
         ;;
     *)
+        # TODO FOLLOW UP ON THIS VARIABLE
         echo "unknown \$PACK_FMT: $PACK_FMT" 1>&2
         exit 1
         ;;

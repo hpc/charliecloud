@@ -13,16 +13,16 @@
         tarballs=( "$out".tar.* )
         [[ ${#tarballs[@]} -eq 1 ]]  # fail if both extensions were provided
         tarball=${tarballs[0]}
-        if [[ $CH_PACK_FMT = squash ]]; then
+        if [[ $CH_PACK_FORMAT = squash ]]; then
             # Tarball provided but pack format is SquashFS; repack.
             ch-tar2dir "$tarball" "$workdir"
             ch-dir2squash "${workdir}/%(tag)s" "$ch_tardir"
             rm "$tarball"
         fi
     elif [[ -d $out ]]; then
-        if [[ $CH_PACK_FMT = tar ]]; then
+        if [[ $CH_PACK_FORMAT = tar ]]; then
             ( cd "$out" && tar czf "${out}.tar.gz" -- * )
-        elif [[ $CH_PACK_FMT = squash ]]; then
+        elif [[ $CH_PACK_FORMAT = squash ]]; then
             ch-dir2squash "$out" "$ch_tardir"
         else
             false  # unknown pack format
