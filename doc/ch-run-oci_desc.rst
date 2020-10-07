@@ -180,11 +180,7 @@ Unsupported features that are ignored:
 Environment variables
 =====================
 
-:code:`CH_RUN_OCI_LOGFILE`
-
-  If set, send log chatter to this file. We use a side channel because
-  standard error and standard output may be arbitrarily messed up by the
-  caller.
+.. include:: py_env.rst
 
 :code:`CH_RUN_OCI_HANG`
 

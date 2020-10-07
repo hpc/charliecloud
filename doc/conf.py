@@ -42,14 +42,14 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Charliecloud'
-copyright = u'2014–2019, Triad National Security, LLC'
+copyright = u'2014–2020, Triad National Security, LLC'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = open("../libexec/version.txt", "r").read().rstrip()
+version = open("../lib/version.txt", "r").read().rstrip()
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -73,7 +73,8 @@ exclude_patterns = ["doctrees", "html", "man"]
 #
 # on files included via ".. include::'. I believe this was fixed in 1.4.3 and
 # the relevant issue is: https://github.com/sphinx-doc/sphinx/issues/2603
-exclude_patterns += ["*_desc.rst", "_deps.rst", "bugs.rst", "see_also.rst"]
+exclude_patterns += ["*_desc.rst", "_deps.rst", "bugs.rst", "py_env.rst",
+                     "see_also.rst"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -259,7 +260,7 @@ man_pages = [
     "Create a SquashFS file from an image directory",
     [], 1),
    ("ch-grow", "ch-grow",
-    "Build an image from a Dockerfile; completely unprivileged",
+    "Build and manage images; completely unprivileged",
     [], 1),
    ("ch-fromhost", "ch-fromhost",
     "Inject files from the host into an image directory",
@@ -289,9 +290,6 @@ man_pages = [
     [], 1),
    ("ch-test", "ch-test",
     "Run some or all of the Charliecloud test suite",
-    [], 1),
-   ("ch-tug", "ch-tug",
-    "Pull and flatten image from repository to local filesystem",
     [], 1),
    ("ch-umount", "ch-umount",
     "Unmount a FUSE mounted squash filesystem and remove the mount point",

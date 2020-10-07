@@ -1,8 +1,8 @@
 true
 # shellcheck disable=SC2034
-CH_TEST_TAG=%ch_test_tag%
+CH_TEST_TAG=$ch_test_tag
 
-load ../../../test/common
+load "${CHTEST_DIR}/common.bash"
 
 setup () {
     scope skip  # issue #64

@@ -13,6 +13,13 @@ AC_INIT([Charliecloud], [m4_esyscmd_s([misc/version])],
 AC_PREREQ([2.69])
 AC_CONFIG_SRCDIR([bin/ch-run.c])
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIRS([misc/m4])
+
+AC_CANONICAL_HOST
+AS_CASE([$host_os],
+  [linux*], [],
+  [*],      [AC_MSG_ERROR([Linux is the only supported OS; see issue @%:@42.])]
+)
 
 AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
 
@@ -21,16 +28,33 @@ AC_CONFIG_FILES([Makefile
                  bin/Makefile
                  doc/Makefile
                  examples/Makefile
-                 libexec/Makefile
+                 lib/Makefile
                  misc/Makefile
                  packaging/Makefile
                  test/Makefile])
 
 # Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
 AC_PROG_CC
-AC_DEFUN([CH_CFLAGS], [-std=c99 -Wpedantic -Wall -Werror])
-AX_CHECK_COMPILE_FLAG([CH_CFLAGS], [
-  CFLAGS+=" CH_CFLAGS"
+
+# Set up CFLAGS.
+ch_cflags='-std=c99 -Wpedantic -Wall'
+
+AC_ARG_ENABLE([buggy-build],
+  AS_HELP_STRING(
+    [--enable-buggy-build],
+    [omit -Werror; please see docs before use!]),
+  [AS_CASE([$enableval],
+    [yes], [use_werror=no],
+    [no],  [use_werror=yes],
+    [*],   [AC_MSG_ERROR([--enable-buggy-build: bad argument: $enableval])]
+  )],
+  [use_werror=yes])
+
+AC_MSG_NOTICE([use_werror: $use_werror])
+AS_IF([test $use_werror = yes], [ch_cflags+=' -Werror'])
+
+AX_CHECK_COMPILE_FLAG([$ch_cflags], [
+  CFLAGS+=" $ch_cflags"
 ], [
   AC_MSG_ERROR([no suitable C99 compiler found])
 ])
@@ -84,7 +108,7 @@ AC_ARG_ENABLE([test],
 
 AC_ARG_ENABLE([ch-grow],
   AS_HELP_STRING([--disable-ch-grow],
-                 [ch-grow unprivileged builder and ch-tug]),
+                 [ch-grow unprivileged builder & image manager]),
   [], [enable_ch_grow=yes])
 
 
@@ -97,16 +121,31 @@ AC_ARG_ENABLE([ch-grow],
 #   $3  append to $1 to make shell pipeline to get actual version only
 #       (e.g., without program name)
 #
-# If ${!1} is empty, do nothing.
+# This macro is not able to determine if a program exists, only whether its
+# version is sufficient. ${!1} (i.e, the value of the variable whose name is
+# stored in $1) must be either empty, an absolute path to an executable, or
+# the name of a program in $PATH. A prior macro such as AX_WITH_PROG can be
+# used to ensure this condition.
 #
-# If minimum version is less than actual version, unset $1. Otherwise, also
-# set $1_VERSION to the actual version.
+# If ${!1} is an absolute path, and that file isn't executable, error out. If
+# it's something other than an absolute path, assume it's the name of a
+# program in $PATH; if not, the behavior is undefined but not good (FIXME).
 #
-# If given absolute path, and that file isn't executable, error out.
+# Post-conditions:
+#
+#   1. If ${!1} is non-empty and the version reported by the program is
+#      greater than or equal to the minimum, ${!1} is unchanged. If ${!1} is
+#      empty or reported version is insufficient, ${!1} is the empty string.
+#      This lets you test version sufficiency by whether ${!1} is empty.
+#
+#   2. $1_VERSION_NOTE contains a brief explanatory note.
+#
 AC_DEFUN([CH_CHECK_VERSION], [
   AS_VAR_PUSHDEF([prog], [$1])
   AS_IF([test -n "$prog"], [
+    # ${!1} is non-empty
     AS_CASE([$prog],
+      # absolute path; check if executable
       [/*], [AC_MSG_CHECKING([if $prog is executable])
              AS_IF([test -e "$prog"],
               [AC_MSG_RESULT([ok])],
@@ -114,11 +153,18 @@ AC_DEFUN([CH_CHECK_VERSION], [
                AC_MSG_ERROR([must be executable])])])
     AC_MSG_CHECKING([if $prog version >= $2])
     vact=$($prog $3)
-    AX_COMPARE_VERSION([$2], [le], [$vact],
-      [AC_MSG_RESULT([ok ($vact)])
-       AC_SUBST([$1_VERSION], [$vact])],
-      [AC_MSG_RESULT([too old ($vact)])
-       AS_UNSET([$1])])
+    AX_COMPARE_VERSION([$2], [le], [$vact], [
+      AC_SUBST([$1_VERSION_NOTE], ["ok ($vact)"])
+      AC_MSG_RESULT([ok ($vact)])
+    ], [
+      AC_SUBST([$1_VERSION_NOTE], ["too old ($vact)"])
+      AC_MSG_RESULT([too old ($vact)])
+      AS_UNSET([$1])
+    ])
+  ], [
+    # ${!} is empty
+    AC_SUBST([$1_VERSION_NOTE], ["not found"])
+    AS_UNSET([$1])
   ])
   AS_VAR_POPDEF([prog])
 ])
@@ -126,8 +172,32 @@ AC_DEFUN([CH_CHECK_VERSION], [
 
 ## Feature tests - build time
 
-AC_CHECK_FUNCS(asprintf, [], [
-  AC_MSG_ERROR([asprintf() not found. Please report this bug.])])
+# asprintf(3)
+#
+# You can do this with AC_CHECK_FUNC or AC_CHECK_FUNCS, but those macros call
+# the function with no arguments. This causes a warning for asprintf() for
+# some compilers (and I have no clue why others accept it); see issue #798.
+# Instead, try to build a small test program that calls asprintf() correctly.
+AC_MSG_CHECKING([for asprintf])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+    #define _GNU_SOURCE
+    #include <stdio.h>
+    #include <stdlib.h>
+
+    int main(void)
+    {
+       char *p;
+       if (asprintf(&p, "WEIRD AL YANKOVIC\n") >= 0)
+          free(p);
+       return 0;
+    }
+  ]])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])
+   AC_MSG_ERROR([asprintf() not found, and we have no workaround; see config.log.])])
+
+#AC_CHECK_FUNCS(asprintfxxx, [], [
+#  AC_MSG_ERROR([asprintf() not found. Please report this bug.])])
 
 # Sphinx
 vmin_sphinx=1.2.3
@@ -151,18 +221,17 @@ AS_IF([test -n "$SPHINX"], [
 
 # "docutils" module
 vmin_docutils=0.14
-docutils=$sphinx_python  # FIXME: output is confusing
 AS_IF([test -n "$SPHINX"], [
   # Sphinx depends on docutils, so we don't need to check if the module exists
   # before checking its version. (CH_CHECK_VERSION isn't smart enough to deal
   # with Python being present but a module not.)
-  CH_CHECK_VERSION([docutils], [$vmin_docutils],
+  DOCUTILS=$sphinx_python  # FIXME: output is confusing
+  CH_CHECK_VERSION([DOCUTILS], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
 ])
 
 # "sphinx-rtd-theme" module
 vmin_rtd=0.2.4
-rtd=$sphinx_python  # FIXME: output is confusing
 AS_IF([test -n "$SPHINX"], [
   AC_MSG_CHECKING([for sphinx_rtd_theme module])
   cat <<EOF | $sphinx_python
@@ -173,15 +242,11 @@ except ImportError:
    sys.exit(1)
 EOF
   AS_IF([test $? -eq 0],
-    [have_rtd=yes],
-    [have_rtd=no])
+    [RTD=$sphinx_python; have_rtd=yes],
+    [RTD=;               have_rtd=no])
   AC_MSG_RESULT([$have_rtd])
-  AS_IF([test $have_rtd = yes], [
-    CH_CHECK_VERSION([rtd], [$vmin_rtd],
-      [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
-  ], [
-    rtd=
-  ])
+  CH_CHECK_VERSION([RTD], [$vmin_rtd],
+    [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
 ])
 
 
@@ -222,7 +287,7 @@ AC_CHECK_PROG([NVIDIA_CLI], [nvidia-container-cli], [nvidia-container-cli])
 CH_CHECK_VERSION([NVIDIA_CLI], [$vmin_nvidia_CLI],
                  [-V | head -1 | cut -d' ' -f2])
 AC_MSG_CHECKING([for nVidia libraries & executables])
-AS_IF([test -n "$NVIDIA_CLI_VERSION"],
+AS_IF([test -n "$NVIDIA_CLI"],
   [AS_IF([nvidia-container-cli list | grep -Fq libnvidia-glcore.so],
         [have_nvidia_libs=yes],
         [have_nvidia_libs=no])],
@@ -242,9 +307,11 @@ AS_CASE([$python],
   [/*], [PYTHON="$python"],                              # absolute
   [*],  [AC_CHECK_PROG([PYTHON], [$python], [$python])]  # verify it's in $PATH
 )
-CH_CHECK_VERSION([PYTHON], [$vmin_python], [--version | cut -d' ' -f2])
+CH_CHECK_VERSION([PYTHON], [$vmin_python],
+                 [--version | head -1 | cut -d' ' -f2])
 
 # Python module "lark-parser"
+vmin_lark=0.7.1
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for lark-parser module])
   cat <<EOF | $PYTHON_SHEBANG
@@ -256,12 +323,15 @@ except Exception:
    sys.exit(1)
 EOF
   AS_IF([test $? -eq 0],
-    [have_lark=yes],
-    [have_lark=no])
-  AC_MSG_RESULT($have_lark)
+    [LARK=$PYTHON; have_lark=yes],
+    [LARK=;        have_lark=no])
+  AC_MSG_RESULT([$have_lark])
+  CH_CHECK_VERSION([LARK], [$vmin_lark],
+    [-c 'import lark; print(lark.__version__)'])
 ])
 
 # Python module "requests"
+vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for requests module])
   cat <<EOF | $PYTHON_SHEBANG
@@ -272,10 +342,19 @@ except Exception:
    sys.exit(1)
 EOF
   AS_IF([test $? -eq 0],
-    [have_requests=yes],
-    [have_requests=no])
+    [REQUESTS=$PYTHON; have_requests=yes],
+    [REQUESTS=;         have_requests=no])
   AC_MSG_RESULT($have_requests)
+  CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
+    [-c 'import requests; print(requests.__version__)'])
 ])
+
+# ShellCheck
+vmin_shellcheck=0.6.0
+AC_CHECK_PROG([SHELLCHECK], [shellcheck], [shellcheck])
+# https://stackoverflow.com/questions/6022384
+CH_CHECK_VERSION([SHELLCHECK], [$vmin_shellcheck],
+                 [--version | sed -n '2{s/^version: //;p;q}'])
 
 # SquashFUSE
 vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
@@ -332,8 +411,8 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 ## Adjust build options given what we have available.
 
 AS_IF([   test -n "$SPHINX" \
-       && test -n "$docutils" \
-       && test -n "$rtd"],
+       && test -n "$DOCUTILS" \
+       && test -n "$RTD"],
        [have_docs=yes],
        [have_docs=no])
 
@@ -365,20 +444,20 @@ AS_IF([   test $have_userns = yes],
 
 # image builders
 
-AS_IF([   test -n "$BUILDAH_VERSION"],
+AS_IF([   test -n "$BUILDAH"],
       [have_buildah=yes],
       [have_buildah=no])
 
 AS_IF([   test $enable_ch_grow = yes \
-       && test -n "$PYTHON_VERSION" \
+       && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
-       && test $have_lark = yes \
-       && test $have_requests = yes \
+       && test -n "$LARK" \
+       && test -n "$REQUESTS" \
        && test $have_ch_run = yes],
       [have_ch_grow=yes],
       [have_ch_grow=no])
 
-AS_IF([   test -n "$DOCKER_VERSION" \
+AS_IF([   test -n "$DOCKER" \
        && test -n "$MKTEMP"],
       [have_docker=yes],
       [have_docker=no])
@@ -400,7 +479,7 @@ AS_IF([   test -n "$TAR"],
       [have_pack_tar=no])
 
 AS_IF([   test $have_any_builder = yes \
-       && test -n "$MKSQUASHFS_VERSION"],
+       && test -n "$MKSQUASHFS"],
       [have_pack_squash=yes],
       [have_pack_squash=no])
 
@@ -410,11 +489,11 @@ AS_IF([   test -n "$TAR"],
       [have_unpack_tar=yes],
       [have_unpack_tar=no])
 
-AS_IF([   test -n "$SQUASHFUSE_VERSION"],
+AS_IF([   test -n "$SQUASHFUSE"],
       [have_ch_mount=yes],
       [have_ch_mount=no])
 
-AS_IF([   test -n "$NVIDIA_CLI_VERSION" \
+AS_IF([   test -n "$NVIDIA_CLI" \
        && test $have_nvidia_libs = yes],
       [have_nvidia=yes],
       [have_nvidia=no])
@@ -423,9 +502,9 @@ AS_IF([   test -n "$NVIDIA_CLI_VERSION" \
 
 AS_IF([   test $enable_test = yes \
        && test $have_ch_run = yes \
-       && test -n "$_BASH_VERSION" \
-       && test -n "$BATS_VERSION" \
-       && test -n "$WGET_VERSION"],
+       && test -n "$_BASH" \
+       && test -n "$BATS" \
+       && test -n "$WGET"],
       [have_tests_basic=yes],
       [have_tests_basic=no])
 
@@ -444,7 +523,8 @@ AS_IF([   test $have_tests_tar = yes \
 
 # assumes we do have generic sudo
 AS_IF([   test $have_tests_squash = yes \
-       && test -n "$SPHINX_VERSION"],
+       && test -n "$SPHINX" \
+       && test -n "$SHELLCHECK"],
       [have_tests_all=yes],
       [have_tests_all=no])
 
@@ -493,33 +573,33 @@ Building Charliecloud
     C99 compiler ... ${CC} ${CC_VERSION}
 
   documentation: ${have_docs}
-    sphinx-build(1) $vmin_sphinx ... ${SPHINX:-not found} ${SPHINX_VERSION}
+    sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
     sphinx-build(1) Python ... ${sphinx_python:-n/a}
-    "docutils" module $vmin_docutils ... ${docutils_VERSION:-not found}
-    "sphinx-rtd-theme" module $vmin_rtd ... ${rtd_VERSION:-not found}
+    "docutils" module ≥ $vmin_docutils ... ${DOCUTILS_VERSION_NOTE}
+    "sphinx-rtd-theme" module ≥ $vmin_rtd ... ${RTD_VERSION_NOTE}
 
   will build and install:
     HTML documentation ... ${enable_html}
     man pages ... ${enable_man}
     test suite ... ${enable_test}
-    ch-grow builder ... ${enable_ch_grow}
+    ch-grow(1) ... ${enable_ch_grow}
 
-Image builders via our wrappers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Building images via our wrappers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Buildah: ${have_buildah}
-    Buildah $vmin_buildah ... ${BUILDAH_VERSION:-not found}
+  with Buildah: ${have_buildah}
+    Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
-  ch-grow(1) and ch-tug(1): ${have_ch_grow}
+  with ch-grow(1): ${have_ch_grow}
     enabled ... ${enable_ch_grow}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
-    Python in shebang $vmin_python ... ${PYTHON_VERSION:-not found}
-    "lark-parser" module ... ${have_lark}
-    "requests" module ... ${have_requests}
+    Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
+    "lark-parser" module ≥ $vmin_lark ... ${LARK_VERSION_NOTE}
+    "requests" module ≥ $vmin_requests ... ${REQUESTS_VERSION_NOTE}
     ch-run(1) ... ${have_ch_run}
 
-  Docker: ${have_docker}
-    Docker $vmin_docker ... ${DOCKER_VERSION:-not found}
+  with Docker: ${have_docker}
+    Docker ≥ $vmin_docker ... ${DOCKER_VERSION_NOTE}
     mktemp(1) ... ${MKTEMP:-not found}
 
 Managing container images
@@ -535,7 +615,7 @@ Managing container images
 
   pack images from builder storage to SquashFS: ${have_pack_squash}
     at least one builder ... ${have_any_builder}
-    mksquashfs(1) $vmin_mksquashfs ... ${MKSQUASHFS_VERSION}
+    mksquashfs(1) ≥ $vmin_mksquashfs ... ${MKSQUASHFS_VERSION_NOTE}
 
   Note: Pulling/pushing images from/to a repository is currently done using
   the builder directly.
@@ -550,10 +630,10 @@ Running containers
     tar(1) ... ${TAR:-not found}
 
   ch-mount(1) and ch-umount(1) SquashFS images: ${have_ch_mount}
-    SquashFUSE $vmin_squashfuse ... ${SQUASHFUSE_VERSION:-not found}
+    SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION_NOTE}
 
   inject nVidia GPU libraries: ${have_nvidia}
-    nvidia-container-cli(1) $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION:-not found}
+    nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION_NOTE}
     nVidia libraries & executables present ... ${have_nvidia_libs}
 
 Test suite
@@ -562,9 +642,9 @@ Test suite
   basic tests: ${have_tests_basic}
     test suite enabled ... ${enable_test}
     ch-run(1) ... ${have_ch_run}
-    Bats $vmin_bats ... ${BATS_VERSION:-not found}
-    Bash $vmin_bash ... ${_BASH_VERSION:-not found}
-    wget(1) $vmin_wget ... ${WGET_VERSION:-not found}
+    Bats ≥ $vmin_bats ... ${BATS_VERSION_NOTE}
+    Bash ≥ $vmin_bash ... ${_BASH_VERSION_NOTE}
+    wget(1) ≥ $vmin_wget ... ${WGET_VERSION_NOTE}
 
   recommended tests with tarballs: ${have_tests_tar}
     basic tests ... ${have_tests_basic}
@@ -581,5 +661,6 @@ Test suite
   complete test suite: ${have_tests_all}
     recommended tests with SquashFS ... ${have_tests_squash}
     documentation ... ${have_docs}
+    ShellCheck ≥ $vmin_shellcheck ... ${SHELLCHECK_VERSION_NOTE}
     generic sudo ... assumed yes
 ])

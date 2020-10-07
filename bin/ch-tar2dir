@@ -2,8 +2,8 @@
 
 set -e
 
-libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
-. "${libexec}/base.sh"
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+. "${lib}/base.sh"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF

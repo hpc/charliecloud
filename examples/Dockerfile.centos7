@@ -2,23 +2,12 @@
 FROM centos:7
 
 # This image has two purposes: (1) demonstrate we can build a CentOS 7 image
-# and (2) provide a build environment for Charliecloud RPMs.
+# and (2) provide a build environment for Charliecloud EPEL 7 RPMs.
 
-# Install packages we actually need.
-RUN yum -y install epel-release
-RUN yum -y install \
-           bats \
-           gcc \
-           make \
-           python36 \
-           rpm-build \
-           rpmlint \
-           wget
-
-# Like apt(8), Yum/RPM like to chown(2), etc., if they believe they are root.
-# This fails in an unprivileged user namespace because UID 0 is fake. Unlike
-# apt, RPM makes these system calls directly, so there's no opportunity for
-# kludges like linking chown(1) to true(1). For example:
+# Re. ch-grow: Like apt(8), Yum/RPM like to chown(2), etc., if they believe they
+# are root. This fails in an unprivileged user namespace because UID 0 is fake.
+# Unlike apt, RPM makes these system calls directly, so there's no opportunity
+# for kludges like linking chown(1) to true(1). For example:
 #
 #    Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
 #  Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64
@@ -28,11 +17,25 @@ RUN yum -y install \
 #  error: dbus-1:1.10.24-12.el7.x86_64: erase skipped
 #
 # We can instead use fakeroot(1), though there seems to be a performance
-# impact. In the interest of time, we demonstrate this by upgrading a single
-# package, though "yum upgrade" seems to pretty reliably tickle the problem.
+# impact. In the interest of time, we demonstrate this by installing the
+# openssh package, required by git, which reliably tickles the problem.
 # See issue #472.
-RUN          yum -y install fakeroot
-RUN fakeroot yum -y upgrade dbus
-
-# Clean up.
-RUN yum clean all
+RUN yum install -y epel-release \
+ && yum install -y \
+                autoconf \
+                automake \
+                bats \
+                fakeroot \
+                gcc \
+                make \
+                python36 \
+                python36-sphinx \
+                python36-sphinx_rtd_theme \
+                rpm-build \
+                rpmlint \
+                rsync \
+                wget \
+ && fakeroot yum install -y \
+                         git \
+                         openssh \
+ && yum clean all

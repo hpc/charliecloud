@@ -10,23 +10,31 @@ chtest/signal_out.py \
 hello/hello.sh
 
 noexecs = \
-Dockerfile.alpine39 \
-Dockerfile.alpineedge \
-Dockerfile.centos6 \
 Dockerfile.centos7 \
+Dockerfile.centos8 \
 Dockerfile.debian9 \
-Dockerfile.exhaustive \
 Dockerfile.mpich \
 Dockerfile.nvidia \
 Dockerfile.openmpi \
-Dockerfile.python3 \
-Dockerfile.ubuntu1604 \
 chtest/Makefile \
 chtest/chroot-escape.c \
 chtest/mknods.c \
 chtest/setgroups.c \
 chtest/setuid.c \
+copy/Dockerfile \
+copy/dirA/fileAa \
+copy/dirB/fileBa \
+copy/dirB/fileBb \
+copy/dirCa/dirCb/fileCba \
+copy/dirCa/dirCb/fileCbb \
+copy/dirD/fileDa \
+copy/dirEa/dirEb/fileEba \
+copy/dirEa/dirEb/fileEbb \
+copy/fileA \
+copy/fileB \
+copy/test.bats \
 dont-init-ucx-on-intel-cray.patch \
+exhaustive/Dockerfile \
 hello/Dockerfile \
 hello/README \
 lammps/Dockerfile \
@@ -40,6 +48,7 @@ mpihello/Dockerfile.openmpi \
 mpihello/Makefile \
 mpihello/hello.c \
 mpihello/slurm.sh \
+multistage/Dockerfile \
 obspy/Dockerfile \
 obspy/README \
 paraview/Dockerfile \
@@ -53,11 +62,13 @@ spark/Dockerfile \
 spark/slurm.sh
 
 batsfiles = \
+exhaustive/test.bats \
 hello/test.bats \
 lammps/test.bats \
 lustre/test.bats \
 mpibench/test.bats \
 mpihello/test.bats \
+multistage/test.bats \
 obspy/test.bats \
 paraview/test.bats \
 spack/test.bats \
@@ -71,3 +82,44 @@ nobase_examples_DATA += $(batsfiles)
 endif
 
 EXTRA_DIST = $(execs) $(noexecs) $(batsfiles)
+
+# Automake is completely unable to deal with symlinks; we cannot include them
+# in the source code or "make dist" won't work, and we can't include them in
+# the files to install or "make install" won't work. These targets take care
+# of everything manually.
+#
+# Note: -T prevents ln(1) from dereferencing and descending into symlinks to
+# directories. Without this, new symlinks are created within symlink-to-dir*,
+# instead of replacing the existing symlink as we wanted. See PR #722.
+
+all-local:
+	ln -fTs dirCb copy/dirCa/symlink-to-dirCb
+	ln -fTs fileDa copy/dirD/symlink-to-fileDa
+	ln -fTs dirEb copy/dirEa/symlink-to-dirEb
+	ln -fTs fileA copy/symlink-to-fileA
+	ln -fTs fileB copy/symlink-to-fileB-A
+	ln -fTs fileB copy/symlink-to-fileB-B
+
+clean-local:
+	rm -f copy/dirCa/symlink-to-dirCb
+	rm -f copy/dirD/symlink-to-fileDa
+	rm -f copy/dirEa/symlink-to-dirEb
+	rm -f copy/symlink-to-fileA
+	rm -f copy/symlink-to-fileB-A
+	rm -f copy/symlink-to-fileB-B
+
+install-data-hook:
+	ln -fTs dirCb $(DESTDIR)$(examplesdir)/copy/dirCa/symlink-to-dirCb
+	ln -fTs fileDa $(DESTDIR)$(examplesdir)/copy/dirD/symlink-to-fileDa
+	ln -fTs dirEb $(DESTDIR)$(examplesdir)/copy/dirEa/symlink-to-dirEb
+	ln -fTs fileA $(DESTDIR)$(examplesdir)/copy/symlink-to-fileA
+	ln -fTs fileB $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-A
+	ln -fTs fileB $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-B
+
+uninstall-local:
+	rm -f $(DESTDIR)$(examplesdir)/copy/dirCa/symlink-to-dirCb
+	rm -f $(DESTDIR)$(examplesdir)/copy/dirD/symlink-to-fileDa
+	rm -f $(DESTDIR)$(examplesdir)/copy/dirEa/symlink-to-dirEb
+	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileA
+	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-A
+	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-B

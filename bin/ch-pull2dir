@@ -1,7 +1,7 @@
 #!/bin/sh
 
-libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
-. "${libexec}/base.sh"
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+. "${lib}/base.sh"
 
 set -e
 
@@ -28,5 +28,6 @@ image=$1
 dest=$2
 
 "${ch_bin}/ch-pull2tar" "$image" "$dest"
-"${ch_bin}/ch-tar2dir" "${dest}/$(echo "$image" | sed 's/\//\./').tar.gz" "$dest"
+image=$(echo "$image" | sed 's/\//\./g')
+"${ch_bin}/ch-tar2dir" "${dest}/${image}.tar.gz" "$dest"
 rm -v "${dest}/${image}.tar.gz"

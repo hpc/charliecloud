@@ -7,6 +7,7 @@
 
 set -e
 PREFIX=/var/tmp
+MAKEJ=-j$(getconf _NPROCESSORS_ONLN)
 
 # Remove sbin directories from $PATH (see issue #43). Assume none are first.
 echo "$PATH"
@@ -20,7 +21,13 @@ set -x
 ./autogen.sh
 
 # Remove Autotools to make sure everything works without them.
-sudo apt-get remove autoconf autoconf-archive automake
+sudo apt-get remove autoconf automake
+
+if [[ $MINIMAL_DEPS && $CH_BUILDER != ch-grow ]]; then
+    # Make sure ch-grow dependencies haven't crept back somehow (issue #806).
+    ( pip3 freeze | grep -F lark-parser ) && exit 1
+    ( pip3 freeze | grep -F requests ) && exit 1
+fi
 
 if [[ $MINIMAL_CONFIG ]]; then
     # Everything except --disable-test, which would defeat the point.
@@ -31,7 +38,7 @@ case $TARBALL in
     export)
         # shellcheck disable=SC2086
         ./configure --prefix="$PREFIX" $disable
-        make dist
+        make "$MAKEJ" dist
         mv charliecloud-*.tar.gz "$PREFIX"
         cd "$PREFIX"
         tar xf charliecloud-*.tar.gz
@@ -53,11 +60,11 @@ esac
 
 # shellcheck disable=SC2086
 ./configure --prefix="$PREFIX" $disable
-make
+make "$MAKEJ"
 bin/ch-run --version
 
 if [[ $MAKE_INSTALL ]]; then
-    sudo make install
+    sudo make "$MAKEJ" install
     ch_test="${PREFIX}/bin/ch-test"
 else
     ch_test=$(readlink -f bin/ch-test)  # need absolute path
@@ -68,7 +75,7 @@ fi
 if [[ $SUDO_RM_FIRST ]]; then
     sudo rm /etc/sudoers.d/travis
 fi
-if ( sudo -v ); then
+if sudo -v; then
     sudo_=--sudo
 else
     sudo_=
@@ -80,7 +87,7 @@ ls -lha "$CH_TEST_TARDIR"
 if [[ $SUDO_RM_AFTER_BUILD ]]; then
     sudo rm /etc/sudoers.d/travis
 fi
-if ( sudo -v ); then
+if sudo -v; then
     sudo_=--sudo
 else
     sudo_=

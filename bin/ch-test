@@ -1,8 +1,12 @@
 #!/bin/bash
 
-set -e
+### Setup we need right away
 
+set -e
 export LC_ALL=C  # predictable sorting
+
+
+### Functions we need right away
 
 fatal () {
     printf 'error: %s\n' "$1" 1>&2
@@ -13,13 +17,15 @@ warning () {
     printf 'warning: %s\n' "$1" 1>&2
 }
 
-libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
-if [[ ! -f ${libexec}/base.sh ]]; then
-    fatal "install or build problem: not found: ${libexec}/base.sh"
-fi
-. "${libexec}/base.sh"
-. "${libexec}/contributors.bash"
 
+### Setup
+
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+if [[ ! -f ${lib}/base.sh ]]; then
+    fatal "install or build problem: not found: ${lib}/base.sh"
+fi
+. "${lib}/base.sh"
+. "${lib}/contributors.bash"
 export ch_bin
 
 # shellcheck disable=SC2034
@@ -30,17 +36,19 @@ Usage:
 
   $ $(basename "$0") [PHASE] [--scope SCOPE] [OPTIONS]
 
-Valid phases: build, run, examples, mk-perm-dirs, clean, rm-perm-dirs
+Valid phases: build, run, examples, all, mk-perm-dirs, clean, rm-perm-dirs
 Valid scopes: quick, standard, full
 
 Additional options:
 
   -b, --builder BUILDER  image builder to use
   --dry-run              print summary of what would be tested and exit
+  --file FILE            run tests in FILE only
   -h, --help             print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
   --pack-fmt FMT         packed image format ("squash" or "tar")
+  --pedandic {yes,no}    set pedantic mode rather than guessing
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
   --fmt FMT              packed image format (squashfs, tar)
   --sudo                 enable tests that need sudo
@@ -51,11 +59,14 @@ See the man page for important details.
 EOF
 )
 
+
+### Functions
+
 builder_check () {
     printf 'checking builder ...\n'
     case $CH_BUILDER in
     ch-grow)
-        if ! ("${ch_bin}/ch-grow" --dependencies); then
+        if ! "${ch_bin}/ch-grow" --dependencies; then
             fatal 'builder: ch-grow: missing dependencies'
         fi
         bl=$(readlink -f "${ch_bin}/ch-grow")
@@ -66,7 +77,7 @@ builder_check () {
     buildah-runc)
         ;&
     buildah-setuid)
-        if (! command -v buildah &> /dev/null); then
+        if ! command -v buildah > /dev/null 2>&1; then
             fatal 'builder: buildah: not installed.'
         fi
         bl=$(command -v buildah)
@@ -74,7 +85,7 @@ builder_check () {
         min='1.11.2'
         ;;
     docker)
-        if (! command -v docker &> /dev/null); then
+        if ! command -v docker > /dev/null 2>&1; then
             fatal 'builder: docker: not installed'
         fi
         bl=$(command -v docker)
@@ -105,7 +116,7 @@ builder_set () {
     fi
     printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
     if [[ $CH_BUILDER == ch-grow ]]; then
-        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" /var/tmp/ch-grow \
+        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" "/var/tmp/$USER/ch-grow" \
                              "$width" 'ch-grow storage'
     fi
 }
@@ -190,14 +201,28 @@ dirs_unpriv_rm () {
     dir_tmp_rm
 }
 
-pq_missing () {
-    if [[ $phase == all || $phase == build ]]; then
-        local img=$1
-        local out=$2
-        local tag
-        tag=$(test_make_auto tag "$img")
-        printf '%s\n' "$out" >> "${CH_TEST_TARDIR}/${tag}.pq_missing"
+pack_fmt_set () {
+    width=$1
+    if [[ -n $pack_fmt ]]; then
+        case $pack_fmt in
+        '🐘')  # elephant emoji
+            pack_fmt=squash
+            ;;
+        '📠')  # fax machine emoji
+            pack_fmt=tar
+            ;;
+        esac
+        export CH_PACK_FMT=$pack_fmt
+        method='command line'
+    elif [[ -n $CH_PACK_FMT ]]; then
+        method='environment'
+    else
+        pack_fmt_choose
+        method='default'
     fi
+    printf "%-*s %s (%s)\n" \
+           "$width" 'packed image format:' "$CH_PACK_FMT" "$method"
+    pack_fmt_valid "$CH_PACK_FMT"
 }
 
 pedantry_set () {
@@ -219,11 +244,21 @@ pedantry_set () {
     # output (not exit code) and it generates a failed password log message if
     # there is not already a sudo session going.
     if    [[ -n $ch_pedantic ]] \
-       && (command -v sudo > /dev/null) \
-       && (sudo -v > /dev/null 2>&1); then
+       && command -v sudo > /dev/null \
+       && sudo -v > /dev/null 2>&1; then
         use_sudo_default=yes
     else
         use_sudo_default=
+    fi
+}
+
+pq_missing () {
+    if [[ $phase == all || $phase == build ]]; then
+        local img=$1
+        local out=$2
+        local tag
+        tag=$(test_make_auto tag "$img")
+        printf '%s\n' "$out" >> "${CH_TEST_TARDIR}/${tag}.pq_missing"
     fi
 }
 
@@ -273,7 +308,7 @@ test_build () {
     if [[ ! -f ${TMP_}/build_auto.bats ]]; then
         fatal "${TMP_}/build_auto.bats not found"
     fi
-    bats build.bats "${TMP_}/build_auto.bats" build_post.bats
+    bats "${TMP_}/build_auto.bats" build/*.bats
 }
 
 test_examples () {
@@ -282,29 +317,9 @@ test_examples () {
         echo "no examples for $CH_TEST_SCOPE scope"
     fi
     echo 'executing example phase tests ...'
-    if (find "$TMP_" -name '*_example.bats' | grep -q .); then
+    if find "$TMP_" -name '*_example.bats' | grep -q .; then
         bats "${TMP_}"/*_example.bats
     fi
-}
-
-test_run () {
-    echo 'executing run phase tests ...'
-    if [[ ! -f ${TMP_}/run_auto.bats ]]; then
-        fatal "${TMP_}/run_auto.bats not found"
-    fi
-    bats run_first.bats "${TMP_}/run_auto.bats" ./run/*.bats
-    set -e
-    if [[ $CH_TEST_SCOPE != quick ]]; then
-        for guest_user in $(id -un) root nobody; do
-            for guest_group in $(id -gn) root $(id -gn nobody); do
-                export GUEST_USER=$guest_user
-                export GUEST_GROUP=$guest_group
-                echo "testing as $GUEST_USER $GUEST_GROUP"
-                bats run/ch-run_uidgid.bats
-            done
-        done
-    fi
-    set +e
 }
 
 test_make () {
@@ -316,7 +331,7 @@ test_make () {
     build)
         printf "finding tests compatible with %s phase settings ...\n" "$phase"
         for i in $images $examples; do
-           if (test_make_check_image "$i"); then
+           if test_make_check_image "$i"; then
                echo "found: $i"
                build_targets+=( "$i" )
            fi
@@ -338,7 +353,7 @@ test_make () {
             img_pack=${img_pack%%.*}
             for j in $images $examples; do
                 if [[ $(test_make_tag_from_path "$j") == "$img_pack" ]]; then
-                    if (test_make_check_image "$j"); then
+                    if test_make_check_image "$j"; then
                         echo "found: $i"
                         run_targets+=( "$j" )
                     fi
@@ -357,11 +372,15 @@ test_make () {
             return
         fi
         for i in $examples; do
-            if (test_make_check_image "$i"); then
+            if test_make_check_image "$i"; then
                 bat_file=$(dirname "$i")/test.bats
                 tag=$(test_make_tag_from_path "$i")
                 cp "$bat_file" "${TMP_}/${tag}_example.bats"
-                sed -i "s/%ch_test_tag%/${tag}/g" "${TMP_}/${tag}_example.bats"
+                # Substitute $ch_test_tag here with sed because we run all the
+                # examples together later, but the value needs to vary between
+                # the files. Watch the escaping here.
+                sed -i "s/\\\$ch_test_tag/${tag}/g" \
+                       "${TMP_}/${tag}_example.bats"
                 echo "found: $(dirname "$i")"
             fi
         done
@@ -397,14 +416,18 @@ test_make_auto () {
         fi
 
         if [[ $mode == build ]]; then
-            if (echo "$basename_" | grep Build &> /dev/null); then
-                test_make_template_print 'build_custom.bats.in'
-            elif (echo "$basename_" | grep Docker &> /dev/null); then
-                test_make_template_print 'build.bats.in'
-                test_make_template_print 'builder_to_archive.bats.in'
-            else
-                fatal "test_make_auto: unknown build type"
-            fi
+            case $basename_ in
+                Build|Build.*)
+                    test_make_template_print 'build_custom.bats.in'
+                    ;;
+                Dockerfile|Dockerfile.*)
+                    test_make_template_print 'build.bats.in'
+                    test_make_template_print 'builder_to_archive.bats.in'
+                    ;;
+                *)
+                    fatal "test_make_auto: unknown build type"
+                    ;;
+            esac
         elif [[ $mode == run ]];then
             test_make_template_print 'unpack.bats.in'
         else
@@ -561,28 +584,36 @@ test_make_template_print () {
     return
 }
 
-pack_fmt_set () {
-    width=$1
-    if [[ -n $pack_fmt ]]; then
-        case $pack_fmt in
-        '🐘')  # elephant emoji
-            pack_fmt=squash
-            ;;
-        '📠')  # fax machine emoji
-            pack_fmt=tar
-            ;;
-        esac
-        export CH_PACK_FMT=$pack_fmt
-        method='command line'
-    elif [[ -n $CH_PACK_FMT ]]; then
-        method='environment'
-    else
-        pack_fmt_choose
-        method='default'
+test_one_file () {
+    if [[ $one_file != *.bats ]]; then
+        # Assume it's a Dockerfile or Build file; derive tag and test.bats.
+        ch_test_tag=$(test_make_tag_from_path "$one_file")
+        export ch_test_tag
+        one_file=$(dirname "$one_file")/test.bats
+        printf 'tag:   %s\n' "$ch_test_tag"
     fi
-    printf "%-*s %s (%s)\n" \
-           "$width" 'packed image format:' "$CH_PACK_FMT" "$method"
-    pack_fmt_valid "$CH_PACK_FMT"
+    printf 'file:  %s\n' "$one_file"
+    bats "$one_file"
+}
+
+test_run () {
+    echo 'executing run phase tests ...'
+    if [[ ! -f ${TMP_}/run_auto.bats ]]; then
+        fatal "${TMP_}/run_auto.bats not found"
+    fi
+    bats run_first.bats "${TMP_}/run_auto.bats" ./run/*.bats
+    set -e
+    if [[ $CH_TEST_SCOPE != quick ]]; then
+        for guest_user in $(id -un) root nobody; do
+            for guest_group in $(id -gn) root $(id -gn nobody); do
+                export GUEST_USER=$guest_user
+                export GUEST_GROUP=$guest_group
+                echo "testing as $GUEST_USER $GUEST_GROUP"
+                bats run/ch-run_uidgid.bats
+            done
+        done
+    fi
+    set +e
 }
 
 # Exit with failure if given version number is below a minimum.
@@ -604,13 +635,16 @@ win () {
     printf "\nAll tests passed.\n"
 }
 
+
+### Body of script
+
 # Ensure ch-run has been compiled (issue #329).
-if (! "${ch_bin}/ch-run" --version &> /dev/null); then
+if ! "${ch_bin}/ch-run" --version > /dev/null 2>&1; then
     fatal "no working ch-run found in $ch_bin"
 fi
 
 # Ensure we have Bash 4.1 or higher
-if (bash -c 'set -e; [[ 1 = 0 ]]; exit 0'); then
+if /bin/bash -c 'set -e; [[ 1 = 0 ]]; exit 0'; then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
     # https://github.com/sstephenson/bats/issues/49
     fatal 'Bash minimum version is 4.1'
@@ -661,7 +695,7 @@ fi
 # Is the user a contributor?
 email=
 # First, ask Git for the configured e-mail address.
-if ( command -v git > /dev/null 2>&1 ); then
+if command -v git > /dev/null 2>&1; then
     email="$(git config --get user.email || true)"
 fi
 # If that doesn't work, construct it from the environment.
@@ -676,18 +710,22 @@ for i in "${ch_contributors[@]}"; do
 done
 
 # Ensure Bats is installed.
-if (command -v bats &> /dev/null); then
+if command -v bats > /dev/null 2>&1; then
     bats=$(command -v bats)
     bats_version="$(bats --version | awk '{print $2}')"
 else
     fatal 'Bats not found'
 fi
 
+if [[ $# == 0 ]]; then
+    usage 1
+fi
+
 # Parse arguments.
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
+    all|build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
         require_unset phase
         phase=$opt
         ;;
@@ -701,6 +739,16 @@ while [[ $# -gt 0 ]]; do
         ;;
     --dry-run)
         dry=true
+        ;;
+    -f|--file)
+        require_unset phase
+        phase=one-file
+        one_file=$1; shift
+        ;;
+    --file=*)
+        require_unset phase
+        phase=one-file
+        one_file=${opt#*=}
         ;;
     -h|--help)
         usage 0
@@ -785,10 +833,22 @@ else
 fi
 printf 'contributor:  %s\n\n' "$ch_contributor_note"
 
+if [[ $phase = one-file ]]; then
+    if [[ ! -f $one_file ]]; then
+        fatal "not a file: $one_file"
+    fi
+    one_file=$(readlink -f "$one_file")  # make absolute b/c we cd later
+    if [[ $one_file = */test.bats ]]; then
+        fatal '--file: must specify build recipe file, not test.bats'
+    fi
+fi
+
 printf "%-21s %s" 'phase:' "$phase"
+if [[ $phase = one-file ]]; then
+    printf ': %s' "$one_file"
+fi
 if [[ -z $phase ]]; then
-    phase=all
-    printf 'build run examples'
+    fatal 'phase: no phase specified'
 fi
 printf '\n'
 
@@ -840,7 +900,7 @@ fi
 
 # Ensure namespaces are configured properly.
 printf 'checking namespaces ...\n'
-if (! "${ch_bin}/ch-checkns"); then
+if ! "${ch_bin}/ch-checkns"; then
     fatal 'namespace sanity check (ch-checkns) failed'
 fi
 printf '\n'
@@ -864,38 +924,21 @@ export PATH=$ch_bin:$PATH
 # we source CHTEST_DIR/common.bash.
 . "${CHTEST_DIR}/common.bash"
 
-# The distinction here is that "images" are purely for testing and have no value
-# as examples for the user, while "examples" are dual-purpose.
-images=$(find   "$CHTEST_DIR"             -name 'Build' \
-                                       -o -name 'Build.*' \
-                                       -o -name 'Dockerfile.*' | sort)
-examples=$(find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
-                                       -o -name 'Build.*' \
-                                       -o -name 'Dockerfile' \
-                                       -o -name 'Dockerfile.*' | sort)
+# The distinction here is that "images" are purely for testing and have no
+# value as examples for the user, while "examples" are dual-purpose. We call
+# "find" twice for each to preserve desired sort order.
+images=$(     find "$CHTEST_DIR"             -name 'Dockerfile.*' | sort \
+           && find "$CHTEST_DIR"             -name 'Build' \
+                                          -o -name 'Build.*' | sort)
+examples=$(   find "$CHTEST_EXAMPLES_DIR"    -name 'Dockerfile' \
+                                          -o -name 'Dockerfile.*' | sort \
+           && find "$CHTEST_EXAMPLES_DIR"    -name 'Build' \
+                                          -o -name 'Build.*' | sort)
 
 scope_int=$(scope_to_digit "$CH_TEST_SCOPE")
 
 # Execute phase
 case $phase in
-    build)
-        builder_check
-        dir_tar_mk
-        test_make
-        test_build
-        win
-        ;;
-    run)
-        dir_img_mk
-        test_make
-        test_run
-        win
-        ;;
-    examples)
-        test_make
-        test_examples
-        win
-        ;;
     all)
         phase=build
         dir_tar_mk
@@ -917,6 +960,25 @@ case $phase in
         # Kobe.
         win
         ;;
+    build)
+        builder_check
+        dir_tar_mk
+        test_make
+        test_build
+        win
+        ;;
+    clean)
+        dirs_unpriv_rm
+        if [[ -d $TMP_ ]] && [[ -e $TMP_/build_auto.bats ]]; then
+            echo "removing $TMP_"
+            rm -rf --one-file-system "$TMP_"
+        fi
+        ;;
+    examples)
+        test_make
+        test_examples
+        win
+        ;;
     mk-perm-dirs)
         printf 'creating filesystem permissions fixtures ...\n'
         for d in $CH_TEST_PERMDIRS; do
@@ -929,16 +991,19 @@ case $phase in
         done
         echo
         ;;
+    one-file)
+        test_one_file
+        win
+        ;;
     rm-perm-dirs)
         for d in $CH_TEST_PERMDIRS; do
             dir_perm_rm "$d"
         done
         ;;
-    clean)
-        dirs_unpriv_rm
-        if [[ -d $TMP_ ]] && [[ -e $TMP_/build_auto.bats ]]; then
-            echo "removing $TMP_"
-            rm -rf --one-file-system "$TMP_"
-        fi
+    run)
+        dir_img_mk
+        test_make
+        test_run
+        win
         ;;
 esac

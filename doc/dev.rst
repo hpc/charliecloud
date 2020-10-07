@@ -231,7 +231,7 @@ commit (Travis tests only the most recent commit in a pushed group).
 branch that you force-push or squash-merge. Don't submit a PR with half a
 dozen "fix Travis" commits.
 
-**Purging Docker cache.** :code:`test/docker-clean.sh` can be used to purge
+**Purging Docker cache.** :code:`misc/docker-clean.sh` can be used to purge
 your Docker cache, either by removing all tags or deleting all containers and
 images. The former is generally preferred, as it lets you update only those
 base images that have actually changed (the ones that haven't will be
@@ -313,7 +313,7 @@ Timing the tests
 The :code:`ts` utility from :code:`moreutils` is quite handy. The following
 prepends each line with the elapsed time since the previous line::
 
-  $ CH_TEST_SCOPE=quick make test | ts -i '%M:%.S'
+  $ ch-test -s quick | ts -i '%M:%.S'
 
 Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
 
@@ -334,32 +334,53 @@ Charliecloud is small enough to just rebuild everything with::
 Writing a test image using the standard workflow
 ------------------------------------------------
 
-The Charliecloud test suite has a workflow that can build images by three
+Summary
+~~~~~~~
+
+The Charliecloud test suite has a workflow that can build images by two
 methods:
 
 1. From a Dockerfile, using :code:`ch-build`.
-2. By pulling a Docker image, with :code:`docker pull`.
-3. By running a custom script.
+2. By running a custom script.
 
-To create an image that will be built, unpacked, and basic tests run within,
-create a file in :code:`test/` called
-:code:`{Dockerfile,Docker_Pull,Build}.foo`. This will create an image tagged
-:code:`foo`.
+To create an image that will be built and unpacked and/or mounted, create a
+file in :code:`examples` (if the image recipe is useful as an example) or
+:code:`test` (if not) called :code:`{Dockerfile,Build}.foo`. This will create
+an image tagged :code:`foo`. Additional tests can be added to the test suite
+Bats files.
 
 To create an image with its own tests, documentation, etc., create a directory
-in :code:`examples/*`. In this directory, place
-:code:`{Dockerfile,Docker_Pull,Build}[.foo]` to build the image and
-:code:`test.bats` with your tests. For example, the file
-:code:`examples/mpi/foo/Dockerfile` will create an image tagged :code:`foo`,
-and :code:`examples/mpi/foo/Dockerfile.bar` tagged :code:`foo-bar`. These
-images also get the basic tests.
+in :code:`examples`. In this directory, place
+:code:`{Dockerfile,Build}[.foo]` to build the image and :code:`test.bats` with
+your tests. For example, the file :code:`examples/foo/Dockerfile` will create
+an image tagged :code:`foo`, and :code:`examples/foo/Dockerfile.bar` tagged
+:code:`foo-bar`. These images also get the build and unpack/mount tests.
+
+Additional directories can be symlinked into :code:`examples` and will be
+integrated into the test suite. This allows you to create a site-specific test
+suite. :code:`ch-test` finds tests at any directory depth; e.g.
+:code:`examples/foo/bar/Dockerfile.baz` will create a test image tagged
+:code:`bar-baz`.
 
 Image tags in the test suite must be unique.
 
+Order of processing; within each item, alphabetical order:
+
+1. Dockerfiles in :code:`test`.
+2. :code:`Build` files in :code:`test`.
+3. Dockerfiles in :code:`examples`.
+4. :code:`Build` files in :code:`examples`.
+
+The purpose of doing :code:`Build` second is so they can leverage what has
+already been built by a Dockerfile, which is often more straightforward.
+
+How to specify when to include and exclude a test image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Each of these image build files must specify its scope for building and
 running, which must be greater than or equal than the scope of all tests in
-the corresponding :code:`test.bats`. Exactly one of the following strings must
-be in each file:
+any corresponding :code:`.bats` files. Exactly one of the following strings
+must appear:
 
 .. code-block:: none
 
@@ -369,57 +390,62 @@ be in each file:
 
 Other stuff on the line (e.g., comment syntax) is ignored.
 
-Similarly, you can exclude an architecture with e.g.:
+Optional test modification directives are:
 
-.. code-block:: none
+  :code:`ch-test-arch-exclude: ARCH`
+    If the output of :code:`uname -m` matches :code:`ARCH`, skip the file.
 
-  ch-test-arch-exclude: aarch64  # ARM not supported upstream
+  :code:`ch-test-builder-exclude: BUILDER`
+    If using :code:`BUILDER`, skip the file.
 
-Additional subdirectories can be symlinked into :code:`examples/` and will be
-integrated into the test suite. This allows you to create a site-specific test
-suite.
+  :code:`ch-test-builder-include: BUILDER`
+    If specified, run only if using :code:`BUILDER`. Can be repeated to
+    include multiple builders. If specified zero times, all builders are
+    included.
 
-:code:`Dockerfile`:
+  :code:`ch-test-need-sudo`
+    Run only if user has sudo.
 
-  * It's a Dockerfile.
+How to write a :code:`Dockerfile` recipe
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:code:`Docker_Pull`:
+It's a standard Dockerfile.
 
-  * First line states the address to pull from Docker Hub.
-  * Second line is a scope expression as described above.
-  * Examples (these refer to the same image as of this writing):
+How to write a :code:`Build` recipe
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    .. code-block:: none
+This is an arbitrary script or program that builds the image. It gets three
+command line arguments:
 
-      alpine:3.6
-      alpine@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d
+  * :code:`$1`: Absolute path to directory containing :code:`Build`.
 
-:code:`Build`:
+  * :code:`$2`: Absolute path and name of output image, without extension.
+    This can be either:
 
-  * Script or program that builds the image.
+    * Tarball compressed with gzip or xz; append :code:`.tar.gz` or
+      :code:`.tar.xz` to :code:`$2`. If :code:`ch-test --pack-fmt=squash`,
+      then this tarball will be unpacked and repacked as a SquashFS.
+      Therefore, only use tarball output if the image build process naturally
+      produces it and you would have to unpack it to get a directory (e.g.,
+      :code:`docker export`).
 
-  * Arguments:
+    * Directory; use :code:`$2` unchanged. The contents of this directory will
+      be packed without any enclosing directory, so if you want an enclosing
+      directory, include one. Hidden (dot) files in :code:`$2` will be ignored.
 
-    * :code:`$1`: Absolute path to directory containing :code:`Build`.
+  * :code:`$3`: Absolute path to temporary directory for use by the script.
+    This can be used for whatever and need no be cleaned up; the test harness
+    will delete it.
 
-    * :code:`$2`: Absolute path and name of output archive, without extension.
-      The script should use an archive format compatible with
-      :code:`ch-tar2dir` and append the appropriate extension (e.g.,
-      :code:`.tar.gz`).
+Other requirements:
 
-    * :code:`$3`: Absolute path to appropriate temporary directory.
-
-  * The script must not write anything in the current directory.
-
-  * Temporary directory can be used for whatever and need not be cleaned up.
-    It will be deleted by the test harness.
+  * The script may write only in two directories: (a) the parent directory of
+    :code:`$2` and (b) :code:`$3`. Specifically, it may not write to the
+    current working directory. Everything written to the parent directory of
+    :code:`$2` must have a name starting with :code:`$(basename $2)`.
 
   * The first entry in :code:`$PATH` will be the Charliecloud under test,
     i.e., bare :code:`ch-*` commands will be the right ones.
-
-  * The tarball must not contain leading directory components; top-level
-    filesystem directories such as bin and usr must be at the root of the
-    tarball with no leading path (:code:`./` is acceptable).
 
   * Any programming language is permitted. To be included in the Charliecloud
     source code, a language already in the test suite dependencies is
@@ -432,7 +458,7 @@ suite.
 
   * Exit codes:
 
-    * 0: Image tarball successfully created.
+    * 0: Image successfully created.
     * 65: One or more dependencies were not met.
     * 126 or 127: No interpreter available for script language (the shell
       takes care of this).
@@ -458,12 +484,24 @@ abstracted away.
 Dependencies
 ------------
 
-  * Python 2.7 or 3.4+
+  * charliecloud
+  * Python 3.4+
   * Either:
 
-    * RPM-based system of roughly RHEL/CentOS 7 vintage or newer, with RPM
-      build tools installed
-    * System that can run Charliecloud containers
+    * the provided example :code:`centos7` or :code:`centos8` image
+    * a RHEL/CentOS 7 or newer container image with (note there are different
+      python version names for the listed packages in RHEL/CentOS 8):
+      * autoconf
+      * automake
+      * gcc
+      * make
+      * python36
+      * python36-sphinx
+      * python36-sphinx_rtd_theme
+      * rpm-build
+      * rpmlint
+      * rsync
+
 
 :code:`rpmbuild` wrapper script
 -------------------------------
@@ -478,11 +516,9 @@ The script must be run from the root of a Charliecloud Git working directory.
 
 Usage::
 
-  $ packaging/fedora/build [OPTIONS] VERSION
+  $ packaging/fedora/build [OPTIONS] IMAGE VERSION
 
 Options:
-
-  * :code:`--image=DIR` : Build in Charliecloud image directory :code:`DIR`.
 
   * :code:`--install` : Install the RPMs after building into the build
     environment.
@@ -490,19 +526,17 @@ Options:
   * :code:`--rpmbuild=DIR` : Use RPM build directory root :code:`DIR`
     (default: :code:`~/rpmbuild`).
 
-For example, to build a version 0.9.7 RPM, on an RPM system, and leave the
-results in :code:`~/rpmbuild/RPMS`::
+For example, to build a version 0.9.7 RPM from the CentOS 7 image provided with
+the test suite, on any system, and leave the results in :code:`~/rpmbuild/RPMS`
+(note that the test suite would also build the necessary image diretory::
 
-  $ packaging/fedora/build 0.9.7-1
+  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
+  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 0.9.7-1
 
-To build a pre-release RPM of Git HEAD using the CentOS 7 image provided with
-the test suite (note that the test suite would also build the necessary image
-directory)::
+To build a pre-release RPM of Git HEAD using the CentOS 7 image::
 
-  $ bin/ch-build -t centos7 -f test/Dockerfile.centos7 test
-  $ bin/ch-builder2tar centos7 $CH_TEST_TARDIR
-  $ bin/ch-tar2dir $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
-  $ packaging/fedora/build --image $CH_TEST_IMGDIR/centos7 HEAD
+  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
+  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 HEAD
 
 Gotchas and quirks
 ------------------
@@ -783,6 +817,36 @@ Variable conventions in shell scripts and :code:`.bats` files
 
     foo=${bar}/baz    # yes
     foo="${bar}/baz"  # no
+
+C code
+------
+
+:code:`const`
+~~~~~~~~~~~~~
+
+The :code:`const` keyword is used to indicate that variables are read-only. It
+has a variety of uses; in Charliecloud, we use it for `function pointer
+arguments <https://softwareengineering.stackexchange.com/a/204720>`_ to state
+whether or not the object pointed to will be altered by the function. For
+example:
+
+.. code-block:: c
+
+  void foo(const char *in, char *out)
+
+is a function that will not alter the string pointed to by :code:`in` but may
+alter the string pointed to by :code:`out`. (Note that :code:`char const` is
+equivalent to :code:`const char`, but we use the latter order because that's
+what appears in GCC error messages.)
+
+We do not use :code:`const` on local variables or function arguments passed by
+value. One could do this to be more clear about what is and isn't mutable, but
+it adds quite a lot of noise to the source code, and in our evaluations didn't
+catch any bugs. We also do not use it on double pointers (e.g., :code:`char
+**out` used when a function allocates a string and sets the caller's pointer
+to point to it), because so far those are all out-arguments and C has
+`confusing rules <http://c-faq.com/ansi/constmismatch.html>`_ about double
+pointers and :code:`const`.
 
 
 OCI technical notes

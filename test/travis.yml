@@ -1,5 +1,5 @@
-dist: xenial
-sudo: required
+os: linux
+dist: bionic
 language: c
 compiler: gcc
 
@@ -28,10 +28,10 @@ compiler: gcc
 # weird errors, e.g.:
 #
 #   make[2]: Entering directory [...]
-#    /bin/mkdir -p '/var/tmp/libexec/charliecloud'
-#    ../yes base.sh '/var/tmp/libexec/charliecloud'
+#    /bin/mkdir -p '/var/tmp/lib/charliecloud'
+#    ../yes base.sh '/var/tmp/lib/charliecloud'
 #   /bin/bash: line 23: ../yes: No such file or directory
-#  Makefile:323: recipe for target 'install-dist_pkglibexecSCRIPTS' failed
+#  Makefile:323: recipe for target 'install-dist_pkglibSCRIPTS' failed
 #
 # Additional options:
 #
@@ -55,13 +55,13 @@ stages:
   - install
   - misc
 
-stage_quick: &stage_quick
+_stage_quick: &stage_quick
   stage: quick
-stage_builders: &stage_builders
+_stage_builders: &stage_builders
   stage: builders
-stage_install: &stage_install
+_stage_install: &stage_install
   stage: install
-stage_misc: &stage_misc
+_stage_misc: &stage_misc
   stage: misc
 
 jobs:
@@ -109,7 +109,6 @@ addons:
       - sourceline: 'ppa:projectatomic/ppa'
     packages:
       - autoconf
-      - autoconf-archive
       - automake
       - bats
       - python3-pip

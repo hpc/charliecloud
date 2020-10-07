@@ -1,7 +1,7 @@
 #!/bin/sh
 
-libexec=$(cd "$(dirname "$0")" && pwd)/../libexec/charliecloud
-. "${libexec}/base.sh"
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+. "${lib}/base.sh"
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
@@ -132,16 +132,8 @@ EOF
 
 ch-grow)
 
-    case $image in
-        *:*)
-            ;;
-        *)
-            image="${image}:latest"
-            ;;
-    esac
-
     echo "exporting"
-    storage=$("${ch_bin}/ch-grow" --print-storage /doesnotexist)
+    storage=$("${ch_bin}/ch-grow" storage-path)
     ( cd "${storage}/img/${image}" && tar cf - . ) | pv_ > "$tar"
 
     ;;
@@ -164,8 +156,15 @@ docker)
 
     ;;
 
+none)
+
+    echo 'this script does not support the above builder' 1>&2
+    exit 1
+    ;;
+
 *)
-    Echo "unknown builder: $CH_BUILDER" 1>&2
+    # builder_choose() above should have ensured the builder is good.
+    echo "unreachable code reached: unknown builder: $CH_BUILDER" 1>&2
     exit 1
     ;;
 esac
@@ -178,5 +177,3 @@ else
     rm "$tar"
     ls -lh "$tar_gzipped"
 fi
-
-

@@ -3,6 +3,10 @@
 
 # charliecloud.spec
 
+# The chroot tests are very fragile and have been removed upstream. See:
+# https://github.com/rpm-software-management/rpmlint/commit/83f915a54d23f7a912ed42b84ccb4e373bec8ad9
+addFilter(r'missing-call-to-chdir-with-chroot')
+
 # The RPM build script will generate invalid source URLs for non-release
 # versions, e.g., '0.9.8~pre+epelpackage.41fe9fd'.
 addFilter(r'invalid-url')
@@ -14,6 +18,9 @@ addFilter(r'invalid-url')
 # Charliecloud's security posture.
 addFilter(r'missing-call-to-chdir-with-chroot')
 
+# The charliecloud example, chtest, has python scripts.
+addFilter(r'doc-file-dependency')
+
 # charliecloud-debuginfo
 
 # The only files under /usr/lib are those placed there by rpmbuild.
@@ -21,18 +28,18 @@ addFilter(r'only-non-binary-in-usr-lib')
 
 # charliecloud-test
 
-# Charliecloud is a container runtime. These shared objects are never used in 
-# the host environment; rather, they are compiled by the test suite (both 
+# Charliecloud is a container runtime. These shared objects are never used in
+# the host environment; rather, they are compiled by the test suite (both
 # running and examination of which serve as end-user documentation) and injected
-# into the container (guest) via utility script 'ch-fromhost'. The ldconfig 
-# links are generated inside the container runtime environment. For more 
+# into the container (guest) via utility script 'ch-fromhost'. The ldconfig
+# links are generated inside the container runtime environment. For more
 # information, see the test file: test/run/ch-fromhost.bats (line 108).
 addFilter(r'no-ldconfig-symlink')
 addFilter(r'library-without-ldconfig-postin')
 addFilter(r'library-without-ldconfig-postun')
 
-# The test suite has a few C files, e.g. userns.c, pivot_root.c, 
-# chroot-escape.c, sotest.c, setgroups.c, mknods.c, setuid.c, etc., that 
+# The test suite has a few C files, e.g. userns.c, pivot_root.c,
+# chroot-escape.c, sotest.c, setgroups.c, mknods.c, setuid.c, etc., that
 # document -- line-by-line in some cases -- various components of the open source
 # runtime. These C files serve to show end users how containers work; some of
 # them are used explicitly during test suite runtime.
@@ -40,3 +47,9 @@ addFilter(r'devel-file-in-non-devel-package')
 
 # The symlink to /usr/bin is created and does exist.
 addFilter(r'dangling-relative-symlink')
+
+# Funky files used as test fixtures:
+addFilter(r'dangling-symlink')  # to /tmp
+addFilter(r'hidden-file-or-dir')         # .dockerignore
+addFilter(r'zero-length')                # for file copy test
+

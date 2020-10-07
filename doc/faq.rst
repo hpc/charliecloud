@@ -147,13 +147,13 @@ Examples:
     Github provides. This should make you wary because you don't have any
     provenance. It might even be uncommitted work or an abandoned branch.
 
-  * :code:`0.2.1~pre.1a99f42` : Master branch commit 1a99f42, built from a
+  * :code:`0.2.1~pre+1a99f42` : Master branch commit 1a99f42, built from a
     clean working directory (i.e., no changes since that commit).
 
-  * :code:`0.2.1~pre.foo1.0729a78` : Commit 0729a78 on branch :code:`foo-1`,
+  * :code:`0.2.1~pre+foo1.0729a78` : Commit 0729a78 on branch :code:`foo-1`,
     :code:`foo_1`, etc. built from clean working directory.
 
-  * :code:`0.2.1~pre.foo1.0729a78.dirty` : Commit 0729a78 on one of those
+  * :code:`0.2.1~pre+foo1.0729a78.dirty` : Commit 0729a78 on one of those
     branches, plus un-committed changes.
 
 :code:`--uid 0` lets me read files I can’t otherwise!
@@ -562,7 +562,7 @@ How do I specify an image reference?
 ------------------------------------
 
 You must specify an image for many use cases, including :code:`FROM`
-instructions, the source of an image pull (e.g. :code:`ch-tug` or
+instructions, the source of an image pull (e.g. :code:`ch-grow pull` or
 :code:`docker pull`), the destination of an image push, and adding image tags.
 Charliecloud calls this an *image reference*, but there appears to be no
 established name for this concept.
@@ -649,3 +649,32 @@ see image references like:
     from Docker Hub.
 
 See :code:`charliecloud.py` for a specific grammar that implements this.
+
+Can I build or pull images using a tool Charliecloud doesn't know about?
+------------------------------------------------------------------------
+
+Yes. Charliecloud deals in well-known UNIX formats like directories, tarballs,
+and SquashFS images. So, once you get your image into some format Charliecloud
+likes, you can enter the workflow.
+
+For example, `skopeo <https://github.com/containers/skopeo>`_ is a tool to
+pull images to OCI format, and `umoci <https://umo.ci>`_ can flatten an OCI
+image to a directory. Thus, you can use the following commands to run an
+Alpine 3.9 image pulled from Docker hub::
+
+  $ skopeo copy docker://alpine:3.9 oci:/tmp/oci:img
+  [...]
+  $ ls /tmp/oci
+  blobs  index.json  oci-layout
+  $ umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.9
+  [...]
+  $ ls /tmp/alpine:3.9
+  config.json
+  rootfs
+  sha256_2ca27acab3a0f4057852d9a8b775791ad8ff62fbedfc99529754549d33965941.mtree
+  umoci.json
+  $ ls /tmp/alpine:3.9/rootfs
+  bin  etc   lib    mnt  proc  run   srv  tmp  var
+  dev  home  media  opt  root  sbin  sys  usr
+  $ ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
+  3.9.5
