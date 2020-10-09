@@ -55,6 +55,10 @@ except ImportError:
 
 ## Globals ##
 
+# FIXME: currently set in ch-grow :P
+CH_BIN = None
+CH_RUN = None
+
 # Logging; set using log_setup() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
@@ -220,8 +224,8 @@ class Image:
 
    def copy_unpacked(self, other):
       "Copy the unpack directory of Image other to my unpack directory."
-      DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       self.unpack_create_ok()
+      DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
    def download(self, use_cache):
@@ -256,27 +260,11 @@ class Image:
       "Add the Charliecloud workarounds to the unpacked image."
       DEBUG("fixing up image: %s" % self.unpack_path)
       # Metadata directory.
-      mkdirs("%s/ch/bin" % self.unpack_path)
+      mkdirs("%s/ch" % self.unpack_path)
       file_ensure_exists("%s/ch/environment" % self.unpack_path)
       # Mount points.
       file_ensure_exists("%s/etc/hosts" % self.unpack_path)
       file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
-      # /etc/{passwd,group}
-      file_write("%s/etc/passwd" % self.unpack_path, """\
-root:x:0:0:root:/root:/bin/sh
-nobody:x:65534:65534:nobody:/:/bin/false
-""")
-      file_write("%s/etc/group" % self.unpack_path, """\
-root:x:0:
-nogroup:x:65534:
-""")
-      # Kludges to work around expectations of real root, not UID 0 in a
-      # unprivileged user namespace. See also the default environment.
-      #
-      # Debian "apt" and friends want to chown(1), chgrp(1), etc.
-      symlink("/bin/true", "%s/ch/bin/chown" % self.unpack_path)
-      symlink("/bin/true", "%s/ch/bin/chgrp" % self.unpack_path)
-      symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % self.unpack_path)
 
    def flatten(self):
       "Flatten the layers in the download cache into the unpack directory."
@@ -832,6 +820,11 @@ def INFO(*args, **kwargs):
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)
 
+def ch_run_modify(img, args, env, workdir="/"):
+   args = [CH_BIN + "/ch-run", "-w", "--cd", workdir, "--uid=0", "--gid=0",
+           "--no-home", "--no-passwd", img, "--"] + args
+   cmd(args, env)
+
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
@@ -875,6 +868,19 @@ def file_write(path, content, mode=None):
    if (mode is not None):
       ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
    fp.close()
+
+def grep_p(path, rx):
+   """Return True if file at path contains a line matching regular expression
+      rx, False if it does not."""
+   rx = re.compile(rx)
+   try:
+      with open(path, "rt") as fp:
+         for line in fp:
+            if (rx.search(line) is not None):
+               return True
+      return False
+   except OSError as x:
+      FATAL("error reading %s: %s" % (path, x.strerror))
 
 def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):

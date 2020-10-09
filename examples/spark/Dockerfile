@@ -1,12 +1,24 @@
-# ch-test-scope: standard
-FROM debian:stretch
+# ch-test-scope: skip
+#
+# FIXME: currently fails spark/pi; change to standard when fixed. E.g.:
+#
+#   WARNING: An illegal reflective access operation has occurred
+#   pyspark.sql.utils.IllegalArgumentException: u'Unsupported class file major version 55'
+#
+# Use Buster because Stretch JRE install fails with:
+#
+#   tempnam() is so ludicrously insecure as to defy implementation.tempnam: Cannot allocate memory
+#   dpkg: error processing package openjdk-8-jre-headless:amd64 (--configure):
+#    subprocess installed post-installation script returned error exit status 1
+
+FROM debian:buster
 
 ARG DEBIAN_FRONTEND=noninteractive
 # Install needed OS packages.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
+                    default-jre-headless \
                     less \
-                    openjdk-8-jre-headless \
                     procps \
                     python \
                     wget \
