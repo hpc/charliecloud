@@ -30,11 +30,11 @@ Charliecloud for your own applications.
 
 ::
 
-  $ cd /usr/local/src/charliecloud/examples/serial/hello
+  $ cd /usr/local/share/doc/charliecloud/examples/hello
   $ ch-build -t hello .
   Sending build context to Docker daemon  5.632kB
   [...]
-  Successfully built 1136de7d4c0a
+  Successfully built eb5f42d5bb54
   $ ch-builder2tar hello /var/tmp
    114MiB 0:00:03 [=============================================] 103%
   -rw-r----- 1 reidpr reidpr 49M Nov 21 14:05 /var/tmp/hello.tar.gz
@@ -70,7 +70,7 @@ Your first user-defined software stack
 In this section, we will create and run a simple "hello, world" image. This
 uses the :code:`hello` example in the Charliecloud source code. Start with::
 
-  $ cd examples/serial/hello
+  $ cd examples/hello
 
 Defining your UDSS
 ------------------
@@ -86,7 +86,7 @@ We will use the following very simple Dockerfile:
 .. literalinclude:: ../examples/hello/Dockerfile
    :language: docker
 
-This creates a minimal Debian Stretch image with :code:`ssh` installed. We
+This creates a minimal CentOS 8 image with :code:`ssh` installed. We
 will encounter more complex Dockerfiles later in this tutorial.
 
 .. note::
@@ -94,7 +94,7 @@ will encounter more complex Dockerfiles later in this tutorial.
    Docker does not update the base image unless asked to. Specific images can
    be updated manually; in this case::
 
-     $ sudo docker pull debian:stretch
+     $ sudo docker pull centos:8
 
    There are various resources and scripts online to help automate this
    process, as well as :code:`misc/docker-clean.sh`.
@@ -116,12 +116,12 @@ directory, which in this case is the current directory.
 
    $ ch-build -t hello .
    Sending build context to Docker daemon  5.632kB
-   Step 1/4 : FROM debian:stretch
-    ---> be2868bebaba
+   Step 1/4 : FROM centos:8
+    ---> 0d120b6ccaa8
    [...]
    Step 4/4 : RUN touch /usr/bin/ch-ssh
-    ---> e5920427a8f2
-   Successfully built e5920427a8f2
+    ---> eb5f42d5bb54
+   Successfully built eb5f42d5bb54
    Successfully tagged hello:latest
 
 Note that Docker prints each step of the Dockerfile as it's executed.
@@ -142,9 +142,9 @@ can be very useful.
 ::
 
   $ sudo docker images
-  REPOSITORY  TAG      IMAGE ID      CREATED      SIZE
-  debian      stretch  1742affe03b5  10 days ago  125.1 MB
-  hello       latest   1742affe03b5  10 days ago  139.7 MB
+  REPOSITORY  TAG      IMAGE ID      CREATED        SIZE
+  centos8     latest   0d120b6ccaa8  2 months ago   215MB MB
+  hello       latest   eb5f42d5bb54  5 minutes ago  235MB MB
   $ sudo docker push  # FIXME
 
 Running the image with Docker is not generally useful, because Docker's
@@ -170,7 +170,7 @@ arbitrary directory, here :code:`/var/tmp`.
 ::
 
   $ ch-builder2tar hello /var/tmp
-  57M /var/tmp/hello.tar.gz
+  74M /var/tmp/hello.tar.gz
 
 Distribute tarball
 ------------------
