@@ -143,7 +143,7 @@ can be very useful.
 
   $ sudo docker images
   REPOSITORY  TAG      IMAGE ID      CREATED        SIZE
-  centos8     latest   0d120b6ccaa8  2 months ago   215MB MB
+  centos      8        0d120b6ccaa8  2 months ago   215MB MB
   hello       latest   eb5f42d5bb54  5 minutes ago  235MB MB
   $ sudo docker push  # FIXME
 
