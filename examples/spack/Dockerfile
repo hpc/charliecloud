@@ -1,5 +1,5 @@
 # ch-test-scope: full
-FROM centos:7
+FROM centos:8
 
 # Note: Spack is a bit of an odd duck testing wise. Because it's a package
 # manager, the key tests we want are to install stuff (this includes the Spack
@@ -15,25 +15,22 @@ FROM centos:7
 
 # Packages needed to install Spack [1].
 #
-# Note: Spack claims that Python 3 works, but using python3 here fails later
-# with "/usr/bin/env: 'python': No such file or directory".
-# bzip, file, patch, unzip, and which are packages needed to install 
+# bzip, file, patch, unzip, and which are packages needed to install
 # Charliecloud with Spack. These are in Spack's Docker example [2] but are not
 # documented as prerequisites [1].
-RUN yum install -y \
-                curl \
+RUN dnf install -y --setopt=install_weak_deps=false \
                 gcc \
                 gcc-c++ \
                 git \
                 gnupg2-smime \
-                python \
+                python3 \
                 make \
                 bzip2 \
                 file \
                 patch \
                 unzip \
                 which \
- && yum clean all
+ && dnf clean all
 
 # Certain Spack packages (e.g., tar) puke if they detect themselves being
 # configured as UID 0. This is the override. See issue #540 and [2].
