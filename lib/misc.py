@@ -43,12 +43,19 @@ def list_(cli):
 def pull(cli):
    ch.dependencies_check()
    # Where does it go?
-   dlcache = cli.storage + "/dlcache"
+   if (cli.arch):
+      arch = ch.arch_arg_validate(str(cli.arch))
+   else:
+      arch = ch.host_get_arch()
+   fatdir = cli.storage + '/fatman'
+   dlcache = cli.storage + '/' + arch + "/dlcache"
+   ch.DEBUG("download storage: %s" % dlcache)
+
    if (cli.image_dir is not None):
       unpack_dir = cli.image_dir
       image_subdir = ""
    else:
-      unpack_dir = cli.storage + "/img"
+      unpack_dir = cli.storage + '/' + arch + "/img"
       image_subdir = None  # infer from image ref
    # Set things up.
    ref = ch.Image_Ref(cli.image_ref)
@@ -56,12 +63,15 @@ def pull(cli):
       print(ref.as_verbose_str)
       sys.exit(0)
    if (cli.arch):
-      raw_image = ch.Image(ref, dlcache, unpack_dir, image_subdir)
-      arch_ref = raw_image.get_arch_ref(cli.arch, use_cache=(not cli.no_cache))
+      raw_image = ch.Image(ref, dlcache, fatdir, unpack_dir, image_subdir)
+      arch_ref = raw_image.get_arch_ref(arch, use_cache=(not cli.no_cache))
       ref = ch.Image_Ref(arch_ref)
-   image = ch.Image(ref, dlcache, unpack_dir, image_subdir)
+   image = ch.Image(ref, dlcache, fatdir, unpack_dir, image_subdir)
    if (cli.inspect_manifest):
-      ch.INFO("%s" % image.print_manifest(use_cache=(not cli.no_cache)))
+      image.print_manifest(use_cache=(not cli.no_cache))
+      sys.exit(0)
+   if (cli.inspect_arch):
+      image.print_manifest_arch_list(use_cache=(not cli.no_cache))
       sys.exit(0)
    ch.INFO("pulling image:   %s" % image.ref)
    if (cli.image_dir is not None):

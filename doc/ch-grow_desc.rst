@@ -150,14 +150,17 @@ Destination argument:
 
 Options:
   :code:`--arch`
-    Check the target image :code:`IMAGE_REF` fat manifest for a reference that
-    targets the specified architecture. If found pull it; otherwise error.
+    Check the image :code:`IMAGE_REF` fat manifest for the architecture
+    :code:`--arch=ARCH[/VARIANT]` image manifest. If found pull it; otherwise
+    error. See :code:`--inspect-arch IMAGE_REF` for list of valid platform
+    architectures.
+
+  :code:`--inspect-arch`
+    Print a list of targitable platforms to use with :code:`--arch`.
 
   :code:`--inspect-manifest`
-    Print the image :code:`IMAGE_REF` index (fat manifest). This is typically
-    used to list the image's supported platform digests, e.g., :code:`arm64`,
-    :code:`ppc64le`, etc. Note: some images do not have fat manifests; print
-    the default manifest if a fat manifest is unavailable.
+    Print the image :code:`IMAGE_REF` index, i.e., fat manifest if available;
+    otherwise print the standard default manifest.
 
   :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully

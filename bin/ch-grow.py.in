@@ -138,8 +138,10 @@ def main():
                    help="specify image architecture")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the image reference")
+   sp.add_argument("--inspect-arch", action="store_true",
+                   help="print available arch platforms")
    sp.add_argument("--inspect-manifest", action="store_true",
-                   help="print the image index (fat manifest)")
+                   help="print image's fat manifest (image index)")
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
    sp.add_argument("image_dir", metavar="IMAGE_DIR", nargs="?",
                    help="unpacked image path (default: opaque path in storage dir)")

@@ -6,6 +6,7 @@ import datetime
 import http.client
 import json
 import os
+import platform
 import getpass
 import re
 import shutil
@@ -54,6 +55,15 @@ except ImportError:
 
 
 ## Globals ##
+
+# Map common uname machine type to manifest platform architecture.
+ARCH_MAP = {'aarch32': {'architecture': 'arm',   'variant': 'v7'},
+            'aarch64': {'architecture': 'arm64', 'variant': 'v8'},
+            'armv5l':  {'architecture': 'arm',   'variant': 'v5'},
+            'armv6l':  {'architecture': 'arm',   'variant': 'v6'},
+            'armv7l':  {'architecture': 'arm',   'variant': 'v7'},
+            'armv8l':  {'architecture': 'arm64', 'variant': 'v8'},
+            'x86_64':  {'architecture': 'amd64'}}
 
 # FIXME: currently set in ch-grow :P
 CH_BIN = None
@@ -190,14 +200,17 @@ class Image:
 
    __slots__ = ("ref",
                 "download_cache",
+                "fat_manifest_dir",
                 "image_subdir",
                 "layer_hashes",
                 "unpack_dir")
 
-   def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
+   def __init__(self, ref, download_cache, fat_manifest_dir, unpack_dir,
+                image_subdir=None):
       assert isinstance(ref, Image_Ref)
       self.ref = ref
       self.download_cache = download_cache
+      self.fat_manifest_dir = fat_manifest_dir
       self.unpack_dir = unpack_dir
       if (image_subdir is None):
          self.image_subdir = self.ref.for_path
@@ -214,9 +227,9 @@ class Image:
       return "%s/%s" % (self.unpack_dir, self.image_subdir)
 
    @property
-   def index_path(self):
+   def fat_manifest_path(self):
       "Path to the manifest list file."
-      return "%s/%s.manifest.list.json" % (self.download_cache,
+      return "%s/%s.manifest.list.json" % (self.fat_manifest_dir,
                                            self.ref.for_path)
    @property
    def manifest_path(self):
@@ -261,18 +274,17 @@ class Image:
             dl.get_layer(lh, path)
       dl.close()
 
-   def download_manifest_index(self, dl=None, use_cache=True):
+   def download_fat_manifest(self, dl=None, use_cache=True):
       """Download image manifest list according to origin and put it in the
          download cache."""
       if (dl is None):
          dl = Repo_Downloader(self.ref)
-      # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
-      mkdirs(self.download_cache)
-      if (os.path.exists(self.index_path) and use_cache):
-         INFO("manifest index: using existing file")
+      mkdirs(self.fat_manifest_dir)
+      if (os.path.exists(self.fat_manifest_path) and use_cache):
+         INFO("fat manifest: using existing file")
       else:
-         INFO("manifest index: downloading")
-         dl.get_manifest_index(self.index_path)
+         INFO("fat manifest: downloading")
+         dl.get_fat_manifest(self.fat_manifest_path)
 
    def fixup(self):
       "Add the Charliecloud workarounds to the unpacked image."
@@ -300,27 +312,39 @@ class Image:
 
    def get_arch_ref(self, arch=None, use_cache=True):
       """Return the Image Reference for an arch-specific image variant."""
-      self.download_manifest_index(use_cache=use_cache)
-      if (not os.path.exists(self.index_path)):
+      self.download_fat_manifest(use_cache=use_cache)
+      if (not os.path.exists(self.fat_manifest_path)):
          FATAL("image doesn't have a fat manifest; multi-platform unsupported")
       try:
-         fp = open_(self.index_path, "rt", encoding="UTF-8")
+         fp = open_(self.fat_manifest_path, "rt", encoding="UTF-8")
       except OSError as x:
             FATAL("can't open manifest file: %s: %s"
-                  % (self.index_path, x.strerror))
+                  % (self.fat_manifest_path, x.strerror))
       try:
          doc = json.load(fp)
       except json.JSONDecodeError as x:
-         FATAL("can't parse manifest file: %s:%d: %s"
-               % (self.manifest_path, x.lineno, x.msg))
-      # Does the arch argument match any manifest keys?
+         FATAL("can't parse fat manifest file: %s:%d: %s"
+               % (self.fat_manifest_path, x.lineno, x.msg))
       digest = None
+      os_    = 'linux'
+      if ('%' in arch):
+         arch, variant = arch.split('%')
+      else:
+         variant = None
       for d in doc['manifests']:
-          if (arch == (d.get('platform').get('architecture'))):
-              DEBUG("found matching arch digest: %s" % d.get('digest'))
-              digest = d.get('digest')
-              break
+          if (variant is None):
+             if     (arch == d.get('platform').get('architecture')) \
+                and (os_  == d.get('platform').get('os')):
+                       digest  = d.get('digest')
+                       break
+          else:
+             if     (arch    == d.get('platform').get('architecture')) \
+                and (os_     == d.get('platform').get('os')) \
+                and (variant == d.get('platform').get('variant')):
+                       digest = d.get('digest')
+                       break
       if (digest is not None):
+         DEBUG("found matching arch digest: %s" % d.get('digest'))
          ref = ''
          if (self.ref.host is not None):
             ref += self.ref.host
@@ -394,13 +418,13 @@ class Image:
 
    def print_manifest(self, use_cache=True):
       """Print fat manifest. If it doesn't exist and can't be downloaded then
-         print default manifest. If default manifest doesn't exist then
-         download it first."""
+         print default manifest. If default manifest isn't cached download it.
+      """
       dl = Repo_Downloader(self.ref)
-      self.download_manifest_index(dl, use_cache)
-      if (os.path.exists(self.index_path)):
+      self.download_fat_manifest(dl, use_cache)
+      if (os.path.exists(self.fat_manifest_path)):
          try:
-            fp = open_(self.index_path, "rt", encoding="UTF-8")
+            fp = open_(self.fat_manifest_path, "rt", encoding="UTF-8")
          except OSError as x:
             FATAL("can't open manifest file: %s: %s"
                    % (self.manifest_path, x.strerror))
@@ -419,6 +443,33 @@ class Image:
          FATAL("can't parse manifest file: %s:%d: %s"
                % (fp, x.lineno, x.msg))
       INFO(json.dumps(doc, indent=3))
+      fp.close()
+
+   def print_manifest_arch_list(self, use_cache=True):
+      dl = Repo_Downloader(self.ref)
+      self.download_fat_manifest(dl, use_cache)
+      if (os.path.exists(self.fat_manifest_path)):
+         try:
+            fp = open_(self.fat_manifest_path, "rt", encoding="UTF-8")
+         except OSError as x:
+            FATAL("can't open manifest file: %s: %s"
+                   % (self.manifest_path, x.strerror))
+      else:
+            INFO('image has no alternate platforms')
+      try:
+         doc = json.load(fp)
+      except json.JSONDecodeError as x:
+         FATAL("can't parse fat manifest file: %s:%d: %s"
+               % (fp, x.lineno, x.msg))
+      INFO('available platforms:')
+      for k in doc['manifests']:
+        if (k.get('platform').get('os') != 'linux'):
+           continue
+        if (k.get('platform').get('variant') is not None):
+           INFO('%s/%s' % (k.get('platform').get('architecture'),
+                              k.get('platform').get('variant')))
+        else:
+           INFO('%s' % k.get('platform').get('architecture'))
       fp.close()
 
    def pull_to_unpacked(self, use_cache=True, fixup=False):
@@ -822,7 +873,7 @@ class Repo_Downloader:
       accept = "application/vnd.docker.distribution.manifest.v2+json"
       self.get(url, path, { "Accept": accept })
 
-   def get_manifest_index(self, path):
+   def get_fat_manifest(self, path):
       "GET the fat manifest (image index) for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
       accept = "application/vnd.docker.distribution.manifest.list.v2+json"
@@ -920,6 +971,35 @@ def INFO(*args, **kwargs):
 
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)
+
+def arch_arg_fixup(arch):
+    if arch[0] == '/': # leading '/' is optional; remove it
+       arch = arch[1:]
+    return arch.replace('/', '%')
+
+def arch_arg_validate(arch):
+    rx = re.compile('^(/?\w+(/\w+)?)$')
+    m = rx.match(arch)
+    if (m is not None):
+        return arch_arg_fixup(arch)
+    FATAL('invalid arch argument %s' % arg)
+
+def host_get_arch():
+   machine = platform.uname().machine
+   try:
+      map_ = ARCH_MAP[machine]
+      arch = map_['architecture']
+      try:
+         variant = map_['variant']
+      except KeyError:
+         variant = None
+   except KeyError:
+      if ('arm' in machine):
+         FATAL("arm arch: '%s' not in architecture map, report this bug")
+      arch = machine
+   if (variant is not None):
+      return "%s%%%s" % (arch, variant)
+   return "%s" % arch
 
 def ch_run_modify(img, args, env, workdir="/"):
    args = [CH_BIN + "/ch-run", "-w", "--cd", workdir, "--uid=0", "--gid=0",
