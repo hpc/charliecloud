@@ -41,14 +41,9 @@ ARG FORCE_UNSAFE_CONFIGURE=1
 # place it at a standard path ("spack clone" simply clones another working
 # directory to a new path).
 #
-# Spack does have releases, but they seem pretty stale. As of 2019-09-12, the
-# most recent version is 0.12.1 dated 8 months ago, 2019-01-13; there have
-# been hundreds if not thousands of commits on the default branch "develop"
-# since then. We follow develop for this reason and also to catch problems
-# installing Charliecloud with latest Spack.
+# We follow the develop branch to catch problems installing Charliecloud with
+# the latest Spack.
 ARG SPACK_REPO=https://github.com/spack/spack
-#ENV SPACK_VERSION 0.12.1
-#RUN git clone --branch v$SPACK_VERSION --depth 1 $SPACK_REPO
 RUN git clone --depth 1 $SPACK_REPO
 RUN cd spack && git status && git rev-parse --short HEAD
 
