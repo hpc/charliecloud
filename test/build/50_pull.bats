@@ -204,7 +204,7 @@ error: image ref syntax, char 9: name:tag@sha512:feeddad
 EOF
 }
 
-@test 'pull image with symlink' {
+@test 'pull image with symlink replacements' {
     # Validate that if a prior layer contains a symlink and a subsequent layer
     # contains a regular file at the same path, the symlink is replaced with a
     # regular file and the symlink target is unchanged. See issue #819.

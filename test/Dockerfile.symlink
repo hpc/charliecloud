@@ -1,5 +1,6 @@
-# This Dockerfile is used to test that ch-tug deals with replacement of
-# symlink with a regular file correctly (see issue #819).
+# This Dockerfile is used to test that pull deals with replacement of symlinks
+# correctly. Scope is “skip” because we pull the image to test it; see
+# test/build/50_pull.bats.
 #
 # To build and push:
 #
@@ -14,19 +15,21 @@
 FROM 00_tiny
 WORKDIR /test
 
+## Replace symlink with regular file (issue #819).
+
 # Set up a symlink.
 RUN echo target > target \
  && ln -s target source
-
 # source and target should both contain "target".
 RUN ls -l /test \
  && for i in /test/*; do printf '%s : ' $i; cat $i; done
-
 # Overwrite it with a regular file.
 RUN rm source \
  && echo regular > source
-
 # Now source should be a regular file and contain "regular".
 RUN ls -l /test \
  && for i in /test/*; do printf '%s : ' $i; cat $i; done
 
+## Replace symlink with symlink (issue #825).
+
+## Replace symlink with directory.
