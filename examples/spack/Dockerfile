@@ -71,8 +71,8 @@ RUN spack compilers
 RUN spack spec charliecloud
 
 # Test: Install Charliecloud.
-RUN spack spec charliecloud+docs
-RUN spack install charliecloud+docs
+RUN spack spec charliecloud+docs^py-sphinx-rtd-theme@0.4.3
+RUN spack install charliecloud+docs^py-sphinx-rtd-theme@0.4.3
 
 # Clean up.
 RUN spack clean --all
