@@ -1,5 +1,5 @@
 # ch-test-scope: full
-FROM centos:7
+FROM centos:8
 
 # Note: Spack is a bit of an odd duck testing wise. Because it's a package
 # manager, the key tests we want are to install stuff (this includes the Spack
@@ -15,25 +15,22 @@ FROM centos:7
 
 # Packages needed to install Spack [1].
 #
-# Note: Spack claims that Python 3 works, but using python3 here fails later
-# with "/usr/bin/env: 'python': No such file or directory".
-# bzip, file, patch, unzip, and which are packages needed to install 
+# bzip, file, patch, unzip, and which are packages needed to install
 # Charliecloud with Spack. These are in Spack's Docker example [2] but are not
 # documented as prerequisites [1].
-RUN yum install -y \
-                curl \
+RUN dnf install -y --setopt=install_weak_deps=false \
                 gcc \
                 gcc-c++ \
                 git \
                 gnupg2-smime \
-                python \
+                python3 \
                 make \
                 bzip2 \
                 file \
                 patch \
                 unzip \
                 which \
- && yum clean all
+ && dnf clean all
 
 # Certain Spack packages (e.g., tar) puke if they detect themselves being
 # configured as UID 0. This is the override. See issue #540 and [2].
@@ -44,14 +41,9 @@ ARG FORCE_UNSAFE_CONFIGURE=1
 # place it at a standard path ("spack clone" simply clones another working
 # directory to a new path).
 #
-# Spack does have releases, but they seem pretty stale. As of 2019-09-12, the
-# most recent version is 0.12.1 dated 8 months ago, 2019-01-13; there have
-# been hundreds if not thousands of commits on the default branch "develop"
-# since then. We follow develop for this reason and also to catch problems
-# installing Charliecloud with latest Spack.
+# We follow the develop branch to catch problems installing Charliecloud with
+# the latest Spack.
 ARG SPACK_REPO=https://github.com/spack/spack
-#ENV SPACK_VERSION 0.12.1
-#RUN git clone --branch v$SPACK_VERSION --depth 1 $SPACK_REPO
 RUN git clone --depth 1 $SPACK_REPO
 RUN cd spack && git status && git rev-parse --short HEAD
 
