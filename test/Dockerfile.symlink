@@ -4,32 +4,69 @@
 #
 # To build and push:
 #
-#   $ sudo docker login   # if needed
+#   $ VERSION=$(date +%Y-%m-%d)             # or other date as appropriate
+#   $ sudo docker login                     # if needed
 #   $ sudo docker build -t symlink -f Dockerfile.symlink .
-#   $ sudo docker tag symlink:latest charliecloud/symlink
+#   $ sudo docker rmi charliecloud/symlink  # avoid updating old tags
+#   $ sudo docker tag symlink:latest charliecloud/symlink:$VERSION
 #   $ sudo docker images | fgrep symlink
-#   $ sudo docker push charliecloud/symlink
+#   $ sudo docker push charliecloud/symlink:$VERSION
 #
 # ch-test-scope: skip
 
 FROM 00_tiny
 WORKDIR /test
 
+
 ## Replace symlink with regular file (issue #819).
 
 # Set up a symlink.
-RUN echo target > target \
- && ln -s target source
-# source and target should both contain "target".
+RUN echo target > f_target \
+ && ln -s f_target f_link
+# link and target should both contain "target".
 RUN ls -l /test \
- && for i in /test/*; do printf '%s : ' $i; cat $i; done
+ && for i in /test/f_*; do printf '%s : ' $i; cat $i; done
 # Overwrite it with a regular file.
-RUN rm source \
- && echo regular > source
-# Now source should be a regular file and contain "regular".
+RUN rm f_link \
+ && echo regular > f_link
+# Now link should be a regular file and contain "regular".
 RUN ls -l /test \
- && for i in /test/*; do printf '%s : ' $i; cat $i; done
+ && for i in /test/f_*; do printf '%s : ' $i; cat $i; done
+
 
 ## Replace symlink with symlink (issue #825).
 
+# Set up a symlink.
+RUN echo target1 > s_target1 \
+ && ln -s s_target1 s_link
+# link and target should both contain "target1"
+RUN ls -l /test \
+ && for i in /test/s_*; do printf '%s : ' $i; cat $i; done
+# Overwrite it with a new symlink.
+RUN echo target2 > s_target2 \
+ && rm s_link \
+ && ln -s s_target2 s_link
+# Now link should still be a symlink but contain "target2".
+RUN ls -l /test \
+ && for i in /test/s_*; do printf '%s : ' $i; cat $i; done
+
+
 ## Replace symlink with directory.
+
+# Set up a symlink.
+RUN echo target > d_target \
+ && ln -s d_target d_link
+# link and target should both contain "target"
+RUN ls -l /test \
+ && for i in /test/d_*; do printf '%s : ' $i; cat $i; done
+# Overwrite it with a directory.
+RUN rm d_link \
+ && mkdir d_link
+# Now link should be a directory.
+RUN ls -l /test
+
+
+# everything above, but reversed
+# directory thing from python bug
+# whatever is going on with the neo4j image
+# add ch-grow pull --last-layer=N

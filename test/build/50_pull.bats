@@ -22,6 +22,7 @@ image_ref_parse () {
 
 
 @test 'image ref parsing' {
+    skip FIXME
     scope standard
     if ( ! ch-grow --dependencies ); then
         [[ $CH_BUILDER != ch-grow ]]
@@ -205,9 +206,8 @@ EOF
 }
 
 @test 'pull image with symlink replacements' {
-    # Validate that if a prior layer contains a symlink and a subsequent layer
-    # contains a regular file at the same path, the symlink is replaced with a
-    # regular file and the symlink target is unchanged. See issue #819.
+    # Validate that layers replace symlinks correctly. See
+    # test/Dockerfile.symlink and issues #819 & 825.
     scope standard
     if ( ! ch-grow --dependencies ); then
         [[ $CH_BUILDER != ch-grow ]]
@@ -216,20 +216,41 @@ EOF
 
     img=$BATS_TMPDIR/charliecloud%symlink
 
-    ch-grow pull charliecloud/symlink "$img"
+    ch-grow pull charliecloud/symlink:2020-10-20 "$img"
     ls -lh "${img}/test"
 
-    # /test/target should be a regular file with contents "target"
-    run stat -c '%F' "${img}/test/target"
-    [[ $status -eq 0 ]]
-    echo "$output"
-    [[ $output = 'regular file' ]]
-    [[ $(cat "${img}/test/target") = 'target' ]]
+    # Replace symlink with regular file (issue #819).
 
-    # /test/source should be a regular file with contents "regular"
-    run stat -c '%F' "${img}/test/source"
+    run stat -c '%F' "${img}/test/f_target"
     [[ $status -eq 0 ]]
     echo "$output"
     [[ $output = 'regular file' ]]
-    [[ $(cat "${img}/test/source") = 'regular' ]]
+    [[ $(cat "${img}/test/f_target") = 'target' ]]
+
+    run stat -c '%F' "${img}/test/f_link"
+    [[ $status -eq 0 ]]
+    echo "$output"
+    [[ $output = 'regular file' ]]
+    [[ $(cat "${img}/test/f_link") = 'regular' ]]
+
+    # Replace symlink with symlink (issue #825).
+
+    run stat -c '%F' "${img}/test/s_target1"
+    [[ $status -eq 0 ]]
+    echo "$output"
+    [[ $output = 'regular file' ]]
+    [[ $(cat "${img}/test/s_target1") = 'target1' ]]
+
+    run stat -c '%F' "${img}/test/s_target2"
+    [[ $status -eq 0 ]]
+    echo "$output"
+    [[ $output = 'regular file' ]]
+    [[ $(cat "${img}/test/s_target2") = 'target2' ]]
+
+    run stat -c '%F %N' "${img}/test/s_link"
+    [[ $status -eq 0 ]]
+    echo "$output"
+    [[ $output = "symbolic link 's_link' -> 'target2'" ]]
+    [[ $(cat "${img}/test/f_link") = 'target2' ]]
+
 }

@@ -266,19 +266,25 @@ class Image:
       file_ensure_exists("%s/etc/hosts" % self.unpack_path)
       file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
 
-   def flatten(self):
+   def flatten(self, last_layer=None):
       "Flatten the layers in the download cache into the unpack directory."
+      if (last_layer is None):
+         last_layer = sys.maxsize
       layers = self.layers_read()
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
       INFO("flattening image")
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
-         INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
-         try:
-            fp.extractall(path=self.unpack_path, members=members)
-         except OSError as x:
-            FATAL("can't extract layer %d: %s" % (i, x.strerror))
+         if (i > last_layer):
+            INFO("layer %d/%d: %s: skipping per --last-layer"
+                 % (i, len(layers), lh[:7]))
+         else:
+            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
+            try:
+               fp.extractall(path=self.unpack_path, members=members)
+            except OSError as x:
+               FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
@@ -332,11 +338,11 @@ class Image:
          layers[lh] = TT(fp, members)
       return layers
 
-   def pull_to_unpacked(self, use_cache=True, fixup=False):
+   def pull_to_unpacked(self, use_cache=True, fixup=False, last_layer=None):
       """Pull and flatten image. If fixup, then also add the Charliecloud
          workarounds to the image directory."""
       self.download(use_cache)
-      self.flatten()
+      self.flatten(last_layer)
       if (fixup):
          self.fixup()
 
