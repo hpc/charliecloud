@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.19 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.20 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.19
+                0.20
               </div>
             
           
@@ -797,31 +797,17 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 
 <span class="c"># This image has two purposes: (1) demonstrate we can build a CentOS 8 image</span>
 <span class="c"># and (2) provide avbuild environment for Charliecloud EPEL 8 RPMs.</span>
-
-<span class="c"># Re. ch-grow: Like apt(8), dnf/RPM like to chown(2), etc., if they believe they</span>
-<span class="c"># are root. This fails in an unprivileged user namespace because UID 0 is fake.</span>
-<span class="c"># Unlike apt, RPM makes these system calls directly, so there&#39;s no opportunity</span>
-<span class="c"># for kludges like linking chown(1) to true(1). For example:</span>
 <span class="c">#</span>
-<span class="c">#    Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4</span>
-<span class="c">#  Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64</span>
-<span class="c">#  error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726:</span>
-<span class="c">#    Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4</span>
-<span class="c">#  error: dbus-1:1.10.24-13.el7_6.x86_64: install failed</span>
-<span class="c">#  error: dbus-1:1.10.24-12.el7.x86_64: erase skipped</span>
+<span class="c"># Quirks:</span>
 <span class="c">#</span>
-<span class="c"># We can instead use fakeroot(1), though there seems to be a performance</span>
-<span class="c"># impact. In the interest of time, we demonstrate this by installing the</span>
-<span class="c"># openssh package, required by git, which reliably tickles the problem.</span>
-<span class="c"># See issue #472.</span>
-
-<span class="c"># 1. Install the dnf ovl plugin to work around RPMDB corruption when building</span>
-<span class="c">#    images with Docker and the OverlayFS storage driver.</span>
+<span class="c">#   1. Install the dnf ovl plugin to work around RPMDB corruption when</span>
+<span class="c">#      building images with Docker and the OverlayFS storage driver.</span>
 <span class="c">#</span>
-<span class="c"># 2. Enable PowerTools repository, as some packages in EPEL depend on it. Use</span>
-<span class="c">#    sed(1) because we don&#39;t want to install `dnf-plugins-core` just for this.</span>
+<span class="c">#   2. Enable PowerTools repository, because some packages in EPEL depend on</span>
+<span class="c">#      it. Use sed(1) because we don&#39;t want to install `dnf-plugins-core` just</span>
+<span class="c">#      for this.</span>
 <span class="c">#</span>
-<span class="c"># 3. Install packages needed to build el8 rpms.</span>
+<span class="c">#   3. Install packages needed to build el8 rpms.</span>
 <span class="c">#</span>
 <span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> epel-release <span class="se">\</span>
  <span class="o">&amp;&amp;</span> sed -ie <span class="s1">&#39;s/enabled=0/enabled=1/&#39;</span> /etc/yum.repos.d/CentOS-PowerTools.repo <span class="se">\</span>
@@ -830,6 +816,7 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
                 autoconf <span class="se">\</span>
                 automake <span class="se">\</span>
                 gcc <span class="se">\</span>
+                git <span class="se">\</span>
                 make <span class="se">\</span>
                 python3 <span class="se">\</span>
                 python3-sphinx <span class="se">\</span>
@@ -838,10 +825,6 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
                 rpmlint <span class="se">\</span>
                 rsync <span class="se">\</span>
                 wget <span class="se">\</span>
-                fakeroot <span class="se">\</span>
- <span class="o">&amp;&amp;</span> fakeroot dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
-                         git <span class="se">\</span>
-                         openssh <span class="se">\</span>
  <span class="o">&amp;&amp;</span> dnf clean all
 
 <span class="c"># CentOS&#39;s linker doesn&#39;t search these paths by default; add them because we</span>

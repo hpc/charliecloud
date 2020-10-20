@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Charliecloud command reference &mdash; Charliecloud 0.19 documentation</title>
+  <title>3. Charliecloud command reference &mdash; Charliecloud 0.20 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.19
+                0.20
               </div>
             
           
@@ -157,19 +157,19 @@
 <li class="toctree-l4"><a class="reference internal" href="#pull">3.8.4.3. <code class="code docutils literal notranslate"><span class="pre">pull</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#compatibility-with-other-dockerfile-interpreters">3.8.5. Compatibility with other Dockerfile interpreters</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#quirks-of-a-fully-unprivileged-build">3.8.5.1. Quirks of a fully unprivileged build</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#context-directory">3.8.5.2. Context directory</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#authentication">3.8.5.3. Authentication</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#environment-variables">3.8.5.4. Environment variables</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#copy">3.8.5.5. <code class="code docutils literal notranslate"><span class="pre">COPY</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#features-we-do-not-plan-to-support">3.8.5.6. Features we do not plan to support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quirks-of-a-fully-unprivileged-build">3.8.5. Quirks of a fully unprivileged build</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compatibility-with-other-dockerfile-interpreters">3.8.6. Compatibility with other Dockerfile interpreters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#context-directory">3.8.6.1. Context directory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#authentication">3.8.6.2. Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#environment-variables">3.8.6.3. Environment variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#copy">3.8.6.4. <code class="code docutils literal notranslate"><span class="pre">COPY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#features-we-do-not-plan-to-support">3.8.6.5. Features we do not plan to support</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#id21">3.8.6. Environment variables</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id22">3.8.7. Examples</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#id23">3.8.7.1. <code class="code docutils literal notranslate"><span class="pre">build</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id24">3.8.7.2. <code class="code docutils literal notranslate"><span class="pre">pull</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id21">3.8.7. Environment variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id22">3.8.8. Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id23">3.8.8.1. <code class="code docutils literal notranslate"><span class="pre">build</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id24">3.8.8.2. <code class="code docutils literal notranslate"><span class="pre">pull</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -944,7 +944,10 @@ single hyphen (<code class="code docutils literal notranslate"><span class="pre"
 the context directory is still provided, which matches <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span>
 <span class="pre">-f</span> <span class="pre">-</span></code> behavior.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">-n</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt><dd><p>Do not actually execute any Dockerfile instructions.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">-n</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt><dd><p>Don’t actually execute any Dockerfile instructions.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-fakeroot</span></code></dt><dd><p>Don’t try any of the unprivileged build workarounds (see section “Quirks
+of a fully unprivileged builds” below).</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--parse-only</span></code></dt><dd><p>Stop after parsing the Dockerfile.</p>
 </dd>
@@ -989,8 +992,59 @@ without talking to the internet or touching the storage directory.</p>
 </div></blockquote>
 </div>
 </div>
+<div class="section" id="quirks-of-a-fully-unprivileged-build">
+<h3><span class="section-number">3.8.5. </span>Quirks of a fully unprivileged build<a class="headerlink" href="#quirks-of-a-fully-unprivileged-build" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> is <em>fully</em> unprivileged. It runs all instructions as the
+normal user who invokes it, does not use any setuid or setcap helper programs,
+and does not use <code class="code docutils literal notranslate"><span class="pre">/etc/subuid</span></code> or <code class="code docutils literal notranslate"><span class="pre">/etc/subgid</span></code>, in contrast to
+the “rootless” mode of some competing builders. This is accomplished by
+executing <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions with <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span> <span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code> (and
+some other arguments), i.e., your host EUID and EGID both mapped to zero
+inside the container, and only one UID (zero) and GID (zero) are available
+inside the container.</p>
+<p>Under this arrangement, processes running in the container <em>appear</em> to be
+running as root, but many privileged system calls will fail without the
+workarounds described below. <strong>This affects any fully unprivileged
+container build, not just Charliecloud.</strong></p>
+<p>The most common time to see this is installing packages. For example, here is
+RPM failing to <code class="code docutils literal notranslate"><span class="pre">chown(2)</span></code> a file, which makes the package update fail:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>  Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
+Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64
+error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726: cpio: chown
+  Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4
+error: dbus-1:1.10.24-13.el7_6.x86_64: install failed
+</pre></div>
+</div>
+<p>This one is (ironically) <code class="code docutils literal notranslate"><span class="pre">apt-get</span></code> failing to drop privileges:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>E: setgroups 65534 failed - setgroups (1: Operation not permitted)
+E: setegid 65534 failed - setegid (22: Invalid argument)
+E: seteuid 100 failed - seteuid (22: Invalid argument)
+E: setgroups 0 failed - setgroups (1: Operation not permitted)
+</pre></div>
+</div>
+<p>The solution <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> uses is to intercept these system calls and fake
+a successful result. We accomplish this by altering the Dockerfile to call
+<code class="code docutils literal notranslate"><span class="pre">fakeroot(1)</span></code> (of which there are several implementations) for
+<code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions that seem to need it. There are two basic steps:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>After <code class="code docutils literal notranslate"><span class="pre">FROM</span></code>, install a <code class="code docutils literal notranslate"><span class="pre">fakeroot(1)</span></code> implementation. This
+sometimes also needs extra steps like turning off the <code class="code docutils literal notranslate"><span class="pre">apt</span></code> sandbox
+(for Debian Buster) or enabling EPEL (for CentOS/RHEL).</p></li>
+<li><p>Prepend <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code> to <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions that seem to need
+it, e.g. ones that contain <code class="code docutils literal notranslate"><span class="pre">apt</span></code>, <code class="code docutils literal notranslate"><span class="pre">apt-get</span></code>, <code class="code docutils literal notranslate"><span class="pre">dpkg</span></code> for
+Debian derivatives and <code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, <code class="code docutils literal notranslate"><span class="pre">rpm</span></code>, or <code class="code docutils literal notranslate"><span class="pre">yum</span></code> for
+RPM-based distributions.</p></li>
+</ol>
+</div></blockquote>
+<p>The details are specific to each distribution. <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> analyzes image
+content (e.g., grepping <code class="code docutils literal notranslate"><span class="pre">/etc/debian_version</span></code>) to select a
+configuration; see <code class="code docutils literal notranslate"><span class="pre">lib/fakeroot.py</span></code> for details. <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> prints
+exactly what it is doing.</p>
+<p>To turn off this behavior, use the <code class="code docutils literal notranslate"><span class="pre">--no-fakeroot</span></code> option.</p>
+</div>
 <div class="section" id="compatibility-with-other-dockerfile-interpreters">
-<h3><span class="section-number">3.8.5. </span>Compatibility with other Dockerfile interpreters<a class="headerlink" href="#compatibility-with-other-dockerfile-interpreters" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">3.8.6. </span>Compatibility with other Dockerfile interpreters<a class="headerlink" href="#compatibility-with-other-dockerfile-interpreters" title="Permalink to this headline">¶</a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> is an independent implementation and shares no code with other
 Dockerfile interpreters. It uses a formal Dockerfile parsing grammar developed
 from the <a class="reference external" href="https://docs.docker.com/engine/reference/builder/">Dockerfile reference documentation</a> and miscellaneous other
@@ -1012,49 +1066,21 @@ are in our <a class="reference external" href="https://github.com/hpc/charlieclo
 <p>None of these are set in stone. We are very interested in feedback on our
 assessments and open questions. This helps us prioritize new features and
 revise our thinking about what is needed for HPC containers.</p>
-<div class="section" id="quirks-of-a-fully-unprivileged-build">
-<h4><span class="section-number">3.8.5.1. </span>Quirks of a fully unprivileged build<a class="headerlink" href="#quirks-of-a-fully-unprivileged-build" title="Permalink to this headline">¶</a></h4>
-<p><code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> is <em>fully</em> unprivileged. It runs all instructions as the
-normal user who invokes it, does not use any setuid or setcap helper programs,
-and does not use <code class="code docutils literal notranslate"><span class="pre">/etc/subuid</span></code> or <code class="code docutils literal notranslate"><span class="pre">/etc/subgid</span></code>, in contrast to
-the “rootless” mode of some competing builders.</p>
-<p><code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions are executed with <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code>,
-i.e., host EUID and EGID both mapped to zero inside the container, and only
-one UID (zero) and GID (zero) are available inside the container. Also,
-<code class="code docutils literal notranslate"><span class="pre">/etc/passwd</span></code> and <code class="code docutils literal notranslate"><span class="pre">/etc/group</span></code> are bind-mounted from temporary
-files outside the container and can’t be written. (Strictly speaking, the
-files themselves are read-write, but because they are bind-mounted, the common
-pattern of writing a new file and moving it on top of the existing one fails.)</p>
-<p>This has two consequences: the shell and its children appear to be running as
-root but only some privileged system calls are available, and manipulating
-users and groups will fail. This confuses some programs, which fail with
-“permission denied” and related errors; for example, <code class="code docutils literal notranslate"><span class="pre">chgrp(1)</span></code> often
-appears in Debian package post-install scripts. We have worked around some of
-these problems, but many remain. Another manual workaround is to install
-<code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code> in the Dockerfile and prepend <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code> to problem
-commands.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Most of these issues affect <em>any</em> fully unprivileged container build, not
-just <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code>. We are working to better characterize the problems
-and add automatic workarounds.</p>
-</div>
-</div>
 <div class="section" id="context-directory">
-<h4><span class="section-number">3.8.5.2. </span>Context directory<a class="headerlink" href="#context-directory" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">3.8.6.1. </span>Context directory<a class="headerlink" href="#context-directory" title="Permalink to this headline">¶</a></h4>
 <p>The context directory is bind-mounted into the build, rather than copied like
 Docker. Thus, the size of the context is immaterial, and the build reads
 directly from storage like any other local process would. However, you still
 can’t access anything outside the context directory.</p>
 </div>
 <div class="section" id="authentication">
-<h4><span class="section-number">3.8.5.3. </span>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">3.8.6.2. </span>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">¶</a></h4>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> can authenticate using one-time passwords, e.g. those provided
 by a security token. Unlike <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">login</span></code>, it does not assume passwords
 are persistent.</p>
 </div>
 <div class="section" id="environment-variables">
-<h4><span class="section-number">3.8.5.4. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">3.8.6.3. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h4>
 <p>Variable substitution happens for <em>all</em> instructions, not just the ones listed
 in the Dockerfile reference.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">ARG</span></code> and <code class="code docutils literal notranslate"><span class="pre">ENV</span></code> cause cache misses upon <em>definition</em>, in contrast
@@ -1083,7 +1109,7 @@ no_proxy
 similar semantics.</p>
 </div>
 <div class="section" id="copy">
-<h4><span class="section-number">3.8.5.5. </span><code class="code docutils literal notranslate"><span class="pre">COPY</span></code><a class="headerlink" href="#copy" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">3.8.6.4. </span><code class="code docutils literal notranslate"><span class="pre">COPY</span></code><a class="headerlink" href="#copy" title="Permalink to this headline">¶</a></h4>
 <p>Especially for people used to UNIX <code class="code docutils literal notranslate"><span class="pre">cp(1)</span></code>, the semantics of the
 Dockerfile <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instruction can be confusing.</p>
 <p>Most notably, when a source of the copy is a directory, the <em>contents</em> of that
@@ -1125,7 +1151,7 @@ unprivileged build.</p></li>
 </ul>
 </div>
 <div class="section" id="features-we-do-not-plan-to-support">
-<h4><span class="section-number">3.8.5.6. </span>Features we do not plan to support<a class="headerlink" href="#features-we-do-not-plan-to-support" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">3.8.6.5. </span>Features we do not plan to support<a class="headerlink" href="#features-we-do-not-plan-to-support" title="Permalink to this headline">¶</a></h4>
 <ul class="simple">
 <li><p>Parser directives are not supported. We have not identified a need for any
 of them.</p></li>
@@ -1147,7 +1173,7 @@ Docker has.</p></li>
 </div>
 </div>
 <div class="section" id="id21">
-<h3><span class="section-number">3.8.6. </span>Environment variables<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">3.8.7. </span>Environment variables<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">CH_LOG_FILE</span></code></p>
 <blockquote>
 <div><p>If set, append log chatter to this file, rather than standard error. This is
@@ -1160,9 +1186,9 @@ useful for debugging situations where standard error is consumed or lost.</p>
 </div></blockquote>
 </div>
 <div class="section" id="id22">
-<h3><span class="section-number">3.8.7. </span>Examples<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">3.8.8. </span>Examples<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="id23">
-<h4><span class="section-number">3.8.7.1. </span><code class="code docutils literal notranslate"><span class="pre">build</span></code><a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">3.8.8.1. </span><code class="code docutils literal notranslate"><span class="pre">build</span></code><a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h4>
 <p>Build image <code class="code docutils literal notranslate"><span class="pre">bar</span></code> using <code class="code docutils literal notranslate"><span class="pre">./foo/bar/Dockerfile</span></code> and context
 directory <code class="code docutils literal notranslate"><span class="pre">./foo/bar</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-grow build -t bar -f ./foo/bar/Dockerfile ./foo/bar
@@ -1179,7 +1205,7 @@ path:</p>
 </div>
 </div>
 <div class="section" id="id24">
-<h4><span class="section-number">3.8.7.2. </span><code class="code docutils literal notranslate"><span class="pre">pull</span></code><a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">3.8.8.2. </span><code class="code docutils literal notranslate"><span class="pre">pull</span></code><a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h4>
 <p>Download the Debian Buster image and place it in the storage directory:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-grow pull debian:buster
 <span class="go">pulling image:   debian:buster</span>
