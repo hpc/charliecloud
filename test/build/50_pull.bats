@@ -239,7 +239,7 @@ EOF
 )
 
     cd "${img}/test"
-    run stat -c '%-14F %N' *
+    run stat -c '%-14F %N' -- *
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$output_expected") <(echo "$output")
