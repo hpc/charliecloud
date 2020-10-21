@@ -1,10 +1,8 @@
 # ch-test-scope: standard
-# Unable to convert to a CentOS base until issues #472 and #498 are resolved
-FROM debian:stretch
+FROM centos:8
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends openssh-client \
- && rm -rf /var/lib/apt/lists/*
+RUN dnf install -y --setopt=install_weak_deps=false openssh-clients \
+ && dnf clean all
 
 COPY . hello
 
