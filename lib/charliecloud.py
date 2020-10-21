@@ -324,8 +324,8 @@ nogroup:x:65534:
          try:
             self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
          except (KeyError, AttributeError, IndexError):
-            FATAL("manifest file %s missing expected v2 keys"
-                  % self.manifest_path)
+            FATAL("can't parse manifest file: %s:%d :%s"
+                  % self.manifest_path, x.lineno, x.msg)
       else:
          FATAL("unsupported manifest schema version: %s" % schema_version)
       self.schema_version = schema_version
