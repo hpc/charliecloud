@@ -1,0 +1,2 @@
+# Unlike the other examples we need everything but test.bats.
+test.bats

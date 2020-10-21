@@ -1,0 +1,5 @@
+# Exclude everything by default.
+*
+
+# Include hello.sh needed by the tests.
+!hello.sh

@@ -1,0 +1,6 @@
+# Exclude everything by default.
+*
+
+# Include hello.c and the Makefile.
+!hello.c
+!Makefile

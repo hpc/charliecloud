@@ -1,1 +1,11 @@
-# Nothing yet; used for testing ch-grow warnings.
+# Exclude everything by default.
+*
+
+# Used by 50_dockerfile.bats.
+!bar
+!Build.missing
+!common.bash
+!doesnotexist
+!fixtures/
+!foo
+!run

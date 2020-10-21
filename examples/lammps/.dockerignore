@@ -1,0 +1,6 @@
+# Exclude everything by default.
+*
+
+# Include the patch files.
+!*.patch
+
