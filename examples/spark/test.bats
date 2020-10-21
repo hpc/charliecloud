@@ -23,6 +23,10 @@ setup () {
     scope standard
     prerequisites_ok spark
     umask 0077
+
+    # Unset these Java variables so the container doesn't use host paths.
+    unset JAVA_BINDIR JAVA_HOME JAVA_ROOT
+
     spark_dir=${TMP_}/spark  # runs before each test, so no mktemp
     spark_config=$spark_dir
     spark_log=/tmp/sparklog
@@ -44,13 +48,6 @@ setup () {
     fi
     master_url="spark://${master_ip}:7077"
     master_log="${spark_log}/*master.Master*.out"
-}
-
-unset_vars() {
-    # Unset these Java variables so the container doesn't use host paths.
-    unset JAVA_BINDIR
-    unset JAVA_HOME
-    unset JAVA_ROOT
 }
 
 @test "${ch_tag}/configure" {
@@ -80,8 +77,6 @@ EOF
 }
 
 @test "${ch_tag}/start" {
-    unset_vars
-
     # remove old master logs so new one has predictable name
     rm -Rf --one-file-system "$spark_log"
     # start the master
@@ -113,8 +108,6 @@ EOF
 }
 
 @test "${ch_tag}/pi" {
-    unset_vars
-
     run ch-run -b "$spark_config" "$ch_img" -- \
                /opt/spark/bin/spark-submit --master "$master_url" \
                /opt/spark/examples/src/main/python/pi.py 64
@@ -126,8 +119,6 @@ EOF
 }
 
 @test "${ch_tag}/stop" {
-    unset_vars
-
     $pernode ch-run -b "$spark_config" "$ch_img" -- /opt/spark/sbin/stop-slave.sh
     ch-run -b "$spark_config" "$ch_img" -- /opt/spark/sbin/stop-master.sh
     sleep 2
