@@ -306,16 +306,20 @@ nogroup:x:65534:
       except json.JSONDecodeError as x:
          FATAL("can't parse manifest file: %s:%d: %s"
                % (self.manifest_path, x.lineno, x.msg))
-
-      schema_version = doc['schemaVersion']
-      if (schema_version == 1):
+      try:
+         schema_version = str(doc['schemaVersion'])
+      except KeyError:
+         FATAL("manifest file %s missing expected key 'schemaVersion'"
+               % self.manifest_path)
+      if (schema_version == '1'):
          DEBUG('loading layer hashes from schema version 1 manifest')
          try:
-            self.layer_hashes = [i["blobSum"].split(":")[1] for i in doc["fsLayers"]]
-         except (KeyError, AttributeError, IndexError):
-            FATAL("manifest file %s missing expected v1 keys"
-                  % self.manifest_path)
-      elif (schema_version == 2):
+            self.layer_hashes = [i["blobSum"].split(":")[1]
+                                 for i in doc["fsLayers"]]
+         except (KeyError, AttributeError, IndexError) as x:
+            FATAL("can't parse manifest file: %s:%d :%s"
+                  % self.manifest_path, x.lineno, x.msg)
+      elif (schema_version == '2'):
          DEBUG('loading layer hashes from schema version 2 manifest')
          try:
             self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
@@ -351,7 +355,7 @@ nogroup:x:65534:
       layers = collections.OrderedDict()
       # Schema version one (v1) allows one or more empty layers for Dockerfile
       # entries like CMD (https://github.com/containers/skopeo/issues/393).
-      # Unpacking an empty layer doesn't accomplish much so we ignore them.
+      # Unpacking an empty layer doesn't accomplish anything so we ignore them.
       empty_cnt = 0
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
@@ -362,17 +366,16 @@ nogroup:x:65534:
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
          members = collections.OrderedDict([(m, None) for m in members_list])
-         if ((lh in layers) and (len(members) > 0)):
+         if (lh in layers and len(members) > 0):
             FATAL("duplicate non-empty layer %s" % lh[:7])
          if (len(members) > 0):
             layers[lh] = TT(fp, members)
          else:
             empty_cnt += 1
-      if (self.schema_version == 'v1'):
-         DEBUG('reversing layer order for schema version one (1)')
+      if (self.schema_version == '1'):
+         DEBUG('reversing layer order for schema version one (v1)')
          layers = collections.OrderedDict(reversed(layers.items()))
-      if (empty_cnt > 0):
-         INFO("skipped %d empty layers" % empty_cnt)
+      DEBUG("skipped %d empty layers" % empty_cnt)
       return layers
 
    def pull_to_unpacked(self, use_cache=True, fixup=False):

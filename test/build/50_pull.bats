@@ -235,7 +235,7 @@ EOF
 }
 
 @test 'pull image with manifest schema v1' {
-    # Verify we handle images with manifest schema version one (1).
+    # Verify we handle images with manifest schema version one (v1).
     scope standard
     if ( ! ch-grow --dependencies ); then
         [[ $CH_BUILDER != ch-grow ]]
@@ -244,6 +244,9 @@ EOF
 
     unpack=$BATS_TMPDIR
     cache=$unpack/dlcache
+    # We target debian:squeeze because 1) it always returns a v1 manifest
+    # schema (regardless of media type specified), and 2) it isn't very large,
+    # thus keeps test time down.
     img=debian:squeeze
 
     ch-grow pull --storage="$unpack" \
