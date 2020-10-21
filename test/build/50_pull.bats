@@ -22,7 +22,6 @@ image_ref_parse () {
 
 
 @test 'image ref parsing' {
-    skip FIXME
     scope standard
     if ( ! ch-grow --dependencies ); then
         [[ $CH_BUILDER != ch-grow ]]
@@ -214,43 +213,35 @@ EOF
         skip "ch-grow missing dependencies"
     fi
 
-    img=$BATS_TMPDIR/charliecloud%symlink
+    img=$BATS_TMPDIR/charliecloud%file-quirks
 
-    ch-grow pull charliecloud/symlink:2020-10-20 "$img"
+    ch-grow pull charliecloud/file-quirks:2020-10-21 "$img"
     ls -lh "${img}/test"
 
-    # Replace symlink with regular file (issue #819).
+    output_expected=$(cat <<'EOF'
+regular file   'df_member'
+symbolic link  'ds_link' -> 'ds_target'
+regular file   'ds_target'
+directory      'fd_member'
+symbolic link  'fs_link' -> 'fs_target'
+regular file   'fs_target'
+symbolic link  'link_b0rken' -> 'doesnotexist'
+symbolic link  'link_imageonly' -> '/test'
+symbolic link  'link_self' -> 'link_self'
+directory      'sd_link'
+regular file   'sd_target'
+regular file   'sf_link'
+regular file   'sf_target'
+symbolic link  'ss_link' -> 'ss_target2'
+regular file   'ss_target1'
+regular file   'ss_target2'
+EOF
+)
 
-    run stat -c '%F' "${img}/test/f_target"
-    [[ $status -eq 0 ]]
+    cd "${img}/test"
+    run stat -c '%-14F %N' *
     echo "$output"
-    [[ $output = 'regular file' ]]
-    [[ $(cat "${img}/test/f_target") = 'target' ]]
-
-    run stat -c '%F' "${img}/test/f_link"
     [[ $status -eq 0 ]]
-    echo "$output"
-    [[ $output = 'regular file' ]]
-    [[ $(cat "${img}/test/f_link") = 'regular' ]]
-
-    # Replace symlink with symlink (issue #825).
-
-    run stat -c '%F' "${img}/test/s_target1"
-    [[ $status -eq 0 ]]
-    echo "$output"
-    [[ $output = 'regular file' ]]
-    [[ $(cat "${img}/test/s_target1") = 'target1' ]]
-
-    run stat -c '%F' "${img}/test/s_target2"
-    [[ $status -eq 0 ]]
-    echo "$output"
-    [[ $output = 'regular file' ]]
-    [[ $(cat "${img}/test/s_target2") = 'target2' ]]
-
-    run stat -c '%F %N' "${img}/test/s_link"
-    [[ $status -eq 0 ]]
-    echo "$output"
-    [[ $output = "symbolic link 's_link' -> 'target2'" ]]
-    [[ $(cat "${img}/test/f_link") = 'target2' ]]
-
+    diff -u <(echo "$output_expected") <(echo "$output")
+    cd -
 }

@@ -357,17 +357,22 @@ class Image:
                # Device or FIFO: Ignore.
                dev_ct += 1
                del members[m]
-            if (m.islnk()):
+            elif (m.issym()):
+               # Symlink: Nothing to change, but accept it.
+               pass
+            elif (m.islnk()):
                # Hard link: Fail if pointing outside top level. (Note that we
                # let symlinks point wherever they want, because they aren't
                # interpreted until run time in a container.)
                self.validate_tar_link(self.layer_path(lh), m.name, m.linkname)
-            if (m.isdir()):
-               # Fix bad directory permissions (hello, Red Hat).
+            elif (m.isdir()):
+               # Directory: Fix bad permissions (hello, Red Hat).
                m.mode |= 0o700
-            if (m.isfile()):
-               # Fix bad file permissions (HELLO RED HAT!!).
+            elif (m.isfile()):
+               # Regular file: Fix bad permissions (HELLO RED HAT!!).
                m.mode |= 0o600
+            else:
+               FATAL("unknown member type: %s" % m.name)
          if (dev_ct > 0):
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
@@ -772,18 +777,18 @@ class TarFile(tarfile.TarFile):
    # class method TarFile.open(), and the source code recommends subclassing
    # TarFile [2].
    #
+   # It's here because the standard library class has multiple symlink
+   # handling problems; see issues #819 and #825 as well as multiple unfixed
+   # Python bugs [e.g. 3,4,5]. We work around this with manual deletions.
+   #
    # [1]: https://docs.python.org/3/library/tarfile.html
    # [2]: https://github.com/python/cpython/blob/2bcd0fe7a5d1a3c3dd99e7e067239a514a780402/Lib/tarfile.py#L2159
+   # [3]: https://bugs.python.org/issue35483
+   # [4]: https://bugs.python.org/issue19974
+   # [5]: https://bugs.python.org/issue23228
 
-   def makefile(self, tarinfo, targetpath):
-      """If targetpath is a symlink, stock makefile() overwrites the *target*
-         of that symlink rather than replacing the symlink. This is a known,
-         but long-standing unfixed, bug in Python [1,2]. To work around this,
-         we manually delete targetpath if it exists and is a symlink. See
-         issue #819.
-
-         [1]: https://bugs.python.org/issue35483
-         [2]: https://bugs.python.org/issue19974"""
+   def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
+      assert (regulars or symlinks or dirs)
       try:
          st = os.lstat(targetpath)
       except FileNotFoundError:
@@ -795,16 +800,34 @@ class TarFile(tarfile.TarFile):
          FATAL("can't lstat: %s" % targetpath, targetpath)
       if (st is not None):
          if (stat.S_ISREG(st.st_mode)):
-            pass  # regular file; do nothing (will be overwritten)
-         elif (stat.S_ISDIR(st.st_mode)):
-            FATAL("can't overwrite directory with regular file: %s"
-                  % targetpath)
+            if (regulars):
+               unlink(targetpath)
          elif (stat.S_ISLNK(st.st_mode)):
-            unlink(targetpath)
+            if (symlinks):
+               unlink(targetpath)
+         elif (stat.S_ISDIR(st.st_mode)):
+            if (dirs):
+               rmtree(targetpath)
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))
+
+   def makedir(self, tarinfo, targetpath):
+      # Note: This gets called a lot, e.g. once for each component in the path
+      # of the member being extracted.
+      DEBUG("makedir: %s" % targetpath)
+      self.clobber(targetpath, regulars=True, symlinks=True)
+      super().makedir(tarinfo, targetpath)
+
+   def makefile(self, tarinfo, targetpath):
+      DEBUG("makefile: %s" % targetpath)
+      self.clobber(targetpath, symlinks=True, dirs=True)
       super().makefile(tarinfo, targetpath)
+
+   def makelink(self, tarinfo, targetpath):
+      DEBUG("makelink: %s -> %s" % (targetpath, tarinfo.linkname))
+      self.clobber(targetpath, regulars=True, symlinks=True, dirs=True)
+      super().makelink(tarinfo, targetpath)
 
 
 ## Supporting functions ##
