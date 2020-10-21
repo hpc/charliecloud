@@ -777,9 +777,10 @@ class TarFile(tarfile.TarFile):
    # class method TarFile.open(), and the source code recommends subclassing
    # TarFile [2].
    #
-   # It's here because the standard library class has multiple symlink
-   # handling problems; see issues #819 and #825 as well as multiple unfixed
-   # Python bugs [e.g. 3,4,5]. We work around this with manual deletions.
+   # It's here because the standard library class has problems with symlinks
+   # and replacing one file type with another; see issues #819 and #825 as
+   # well as multiple unfixed Python bugs [e.g. 3,4,5]. We work around this
+   # with manual deletions.
    #
    # [1]: https://docs.python.org/3/library/tarfile.html
    # [2]: https://github.com/python/cpython/blob/2bcd0fe7a5d1a3c3dd99e7e067239a514a780402/Lib/tarfile.py#L2159

@@ -204,7 +204,7 @@ error: image ref syntax, char 9: name:tag@sha512:feeddad
 EOF
 }
 
-@test 'pull image with symlink replacements' {
+@test 'pull image with quirky files' {
     # Validate that layers replace symlinks correctly. See
     # test/Dockerfile.symlink and issues #819 & 825.
     scope standard
