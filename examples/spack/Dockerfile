@@ -72,8 +72,9 @@ RUN spack spec charliecloud
 
 # Test: Install Charliecloud.
 # Kludge: here we specify an older python sphinx rtd_theme version because
-# newer default version, 0.5.0, introduces a dependency on npm which doesn't
-# appear to build on gcc 4.8.5. see: https://github.com/spack/spack/issues/19310.
+# newer default version, 0.5.0, introduces a dependency on node-js which doesn't
+# appear to build on gcc 4.8 or gcc 8.3
+# (see: https://github.com/spack/spack/issues/19310).
 RUN spack spec charliecloud+docs^py-sphinx-rtd-theme@0.4.3
 RUN spack install charliecloud+docs^py-sphinx-rtd-theme@0.4.3
 
