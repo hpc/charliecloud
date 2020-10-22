@@ -192,6 +192,7 @@ class Image:
                 "download_cache",
                 "image_subdir",
                 "layer_hashes",
+                "schema_version",
                 "unpack_dir")
 
    def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
@@ -204,6 +205,7 @@ class Image:
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
+      self.schema_version = None
 
    def __str__(self):
       return str(self.ref)
@@ -293,9 +295,28 @@ class Image:
          FATAL("can't parse manifest file: %s:%d: %s"
                % (self.manifest_path, x.lineno, x.msg))
       try:
-         self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
-      except (AttributeError, KeyError, IndexError):
-         FATAL("can't parse manifest file: %s" % self.manifest_path)
+         schema_version = str(doc['schemaVersion'])
+      except KeyError:
+         FATAL("manifest file %s missing expected key 'schemaVersion'"
+               % self.manifest_path)
+      if (schema_version == '1'):
+         DEBUG('loading layer hashes from schema version 1 manifest')
+         try:
+            self.layer_hashes = [i["blobSum"].split(":")[1]
+                                 for i in doc["fsLayers"]]
+         except (KeyError, AttributeError, IndexError) as x:
+            FATAL("can't parse manifest file: %s:%d :%s"
+                  % self.manifest_path, x.lineno, x.msg)
+      elif (schema_version == '2'):
+         DEBUG('loading layer hashes from schema version 2 manifest')
+         try:
+            self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
+         except (KeyError, AttributeError, IndexError):
+            FATAL("can't parse manifest file: %s:%d :%s"
+                  % self.manifest_path, x.lineno, x.msg)
+      else:
+         FATAL("unsupported manifest schema version: %s" % schema_version)
+      self.schema_version = schema_version
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
@@ -320,6 +341,10 @@ class Image:
       if (self.layer_hashes is None):
          self.layer_hashes_load()
       layers = collections.OrderedDict()
+      # Schema version one (v1) allows one or more empty layers for Dockerfile
+      # entries like CMD (https://github.com/containers/skopeo/issues/393).
+      # Unpacking an empty layer doesn't accomplish anything so we ignore them.
+      empty_cnt = 0
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
@@ -329,7 +354,16 @@ class Image:
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
          members = collections.OrderedDict([(m, None) for m in members_list])
-         layers[lh] = TT(fp, members)
+         if (lh in layers and len(members) > 0):
+            FATAL("duplicate non-empty layer %s" % lh[:7])
+         if (len(members) > 0):
+            layers[lh] = TT(fp, members)
+         else:
+            empty_cnt += 1
+      if (self.schema_version == '1'):
+         DEBUG('reversing layer order for schema version one (v1)')
+         layers = collections.OrderedDict(reversed(layers.items()))
+      DEBUG("skipped %d empty layers" % empty_cnt)
       return layers
 
    def pull_to_unpacked(self, use_cache=True, fixup=False):
