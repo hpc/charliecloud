@@ -57,7 +57,7 @@ tutorial.rst
 
 if ENABLE_MAN
 man1_MANS = \
-man/charliecloud.1 \
+man/charliecloud.7 \
 man/ch-build.1 \
 man/ch-build2dir.1 \
 man/ch-builder2squash.1 \
