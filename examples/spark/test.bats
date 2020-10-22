@@ -23,6 +23,10 @@ setup () {
     scope standard
     prerequisites_ok spark
     umask 0077
+
+    # Unset these Java variables so the container doesn't use host paths.
+    unset JAVA_BINDIR JAVA_HOME JAVA_ROOT
+
     spark_dir=${TMP_}/spark  # runs before each test, so no mktemp
     spark_config=$spark_dir
     spark_log=/tmp/sparklog
