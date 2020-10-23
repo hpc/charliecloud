@@ -10,6 +10,21 @@ lib="${ch_bin}/../lib/charliecloud"
 . "${lib}/version.sh"
 
 
+architecture_choose () {
+    host_arch=$(uname -m)
+    case $host_arch in
+        aarch32) arch='arm/v7';;
+        aarch64) arch='arm64/v8';;
+        armv5l)  arch='arm/v5';;
+        armv6l)  arch='arm/v6';;
+        armv7l)  arch='arm/v7';;
+        armv8l)  arch='arm64/v8';;
+        x86_64)  arch='amd64';;
+        *)       arch="$host_arch";;
+    esac
+    export CH_GROW_ARCH=$arch
+}
+
 # Don't call in a subshell or the selection will be lost.
 builder_choose () {
     if [ -z "$CH_BUILDER" ]; then

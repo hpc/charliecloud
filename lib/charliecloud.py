@@ -205,12 +205,11 @@ class Image:
                 "layer_hashes",
                 "unpack_dir")
 
-   def __init__(self, ref, download_cache, fat_manifest_dir, unpack_dir,
-                image_subdir=None):
+   def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
       assert isinstance(ref, Image_Ref)
       self.ref = ref
       self.download_cache = download_cache
-      self.fat_manifest_dir = fat_manifest_dir
+      self.fat_manifest_dir = self.inferred_fat_dir
       self.unpack_dir = unpack_dir
       if (image_subdir is None):
          self.image_subdir = self.ref.for_path
@@ -220,6 +219,15 @@ class Image:
 
    def __str__(self):
       return str(self.ref)
+
+   @property
+   def inferred_fat_dir(self):
+      return os.path.dirname(os.path.dirname(self.download_cache)) + '/fatman'
+
+   @property
+   def inferred_arch(self):
+      "Preferred image architecture and variant key"
+      return "%s" % os.path.basename(os.path.dirname(self.download_cache))
 
    @property
    def unpack_path(self):
@@ -310,11 +318,13 @@ class Image:
          except OSError as x:
             FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
-   def get_arch_ref(self, arch=None, use_cache=True):
-      """Return the Image Reference for an arch-specific image variant."""
+   def set_digest_for_arch(self, use_cache=True):
+      "Update reference for target architecture."
+      arch = self.inferred_arch
       self.download_fat_manifest(use_cache=use_cache)
       if (not os.path.exists(self.fat_manifest_path)):
-         FATAL("image doesn't have a fat manifest; multi-platform unsupported")
+         DEBUG("image doesn't have a fat manifest; using default")
+         return
       try:
          fp = open_(self.fat_manifest_path, "rt", encoding="UTF-8")
       except OSError as x:
@@ -344,21 +354,10 @@ class Image:
                        digest = d.get('digest')
                        break
       if (digest is not None):
-         DEBUG("found matching arch digest: %s" % d.get('digest'))
-         ref = ''
-         if (self.ref.host is not None):
-            ref += self.ref.host
-         if (self.ref.port is not None):
-            ref += ':' + self.ref.port
-         if (self.ref.path is not None):
-            for p in self.ref.path:
-                ref+= '/' + p
-         if (self.ref.name is not None):
-            ref += self.ref.name
-         ref += '@' + digest
-         return ref
+         DEBUG("found matching arch manifest digest: %s" % d.get('digest'))
+         self.ref.digest = digest.split(':')[-1]
       else:
-         FATAL("arch '%s' did not match any available platform for %s:%s;"
+         FATAL("arch '%s' did not match any available platform for %s:%s"
                % (arch, self.ref.name, self.ref.tag),
                "see ch-grow pull --inspect-manifest %s:%s" %(self.ref.name,
                                                              self.ref.tag))
@@ -708,10 +707,10 @@ fields:
 
    @property
    def version(self):
-      if (self.tag is not None):
-         return self.tag
       if (self.digest is not None):
          return "sha256:" + self.digest
+      if (self.tag is not None):
+         return self.tag
       assert False, "version invalid with no tag or digest"
 
    @property
@@ -881,7 +880,7 @@ class Repo_Downloader:
       self.authenticate_maybe(url)
       res = self.get_raw(url, headers={ "Accept": accept })
       if (res.headers['Content-Type'] != accept):
-         WARNING("no manifest index, i.e., image doesn't support multi-platform")
+         DEBUG("image doesn't have a fat manifest")
       else:
          self.get(url, path, { "Accept": accept })
 
@@ -984,7 +983,7 @@ def arch_arg_validate(arch):
         return arch_arg_fixup(arch)
     FATAL('invalid arch argument %s' % arg)
 
-def host_get_arch():
+def host_arch_get():
    machine = platform.uname().machine
    try:
       map_ = ARCH_MAP[machine]
@@ -1138,7 +1137,15 @@ def storage_default():
       username = os.environ["USER"]
    except KeyError:
       FATAL("can't get username: $USER not set")
-   return "/var/tmp/%s/ch-grow" % username
+   arch = host_arch_get()
+   return "/var/tmp/%s/ch-grow/%s" % (username, arch)
+
+def storage_fixup(storage, arch=None):
+   if (arch is not None):
+      storage = storage + '/' + arch_arg_validate(arch)
+   else:
+      storage = storage + '/' + host_arch_get()
+   return storage
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):

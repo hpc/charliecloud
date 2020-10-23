@@ -113,9 +113,11 @@ builder_set () {
         builder_choose
         method='default'
     fi
+    architecture_choose
     printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
     if [[ $CH_BUILDER == ch-grow ]]; then
-        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" "/var/tmp/$USER/ch-grow" \
+        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" \
+                             "/var/tmp/$USER/ch-grow/$CH_GROW_ARCH" \
                              "$width" 'ch-grow storage'
     fi
 }
