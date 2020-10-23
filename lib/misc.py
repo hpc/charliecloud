@@ -35,23 +35,34 @@ class Version(Action_Exit):
 
 def list_(cli):
    ch.dependencies_check()
-   imgdir = cli.storage + '/img'
-   imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
-   for img in sorted(imgs):
-      print(ch.Image_Ref(img))
+   storagedir = os.path.dirname(cli.storage)
+   imgdirs = ch.ossafe(os.listdir, "can't list directory: %s" % storagedir,
+                       storagedir)
+   for arch in sorted(imgdirs):
+       if (arch == 'fatman'):
+          continue
+       print(arch)
+       imgdir = storagedir + '/' + arch + '/img'
+       imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
+       for i in sorted(imgs):
+          print("   %s" % ch.Image_Ref(i))
+       print()
 
 def pull(cli):
    ch.dependencies_check()
    # Where does it go?
-   storage = ch.storage_fixup(cli.storage, cli.arch)
-   dlcache = cli.storage + '/dlcache'
+   if (cli.arch):
+      storage = ch.storage_fixup(cli.storage, cli.arch)
+   else:
+      storage = cli.storage
+   dlcache = storage + '/dlcache'
    ch.DEBUG("download storage: %s" % dlcache)
 
    if (cli.image_dir is not None):
       unpack_dir = cli.image_dir
       image_subdir = ""
    else:
-      unpack_dir = cli.storage + '/img'
+      unpack_dir = storage + '/img'
       image_subdir = None  # infer from image ref
    # Set things up.
    ref = ch.Image_Ref(cli.image_ref)

@@ -523,7 +523,7 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
       self.base_image = ch.Image(self.base_ref, image.download_cache,
-                                 image.fat_manifest_dir, image.unpack_dir)
+                                 image.unpack_dir)
       if (not os.path.isdir(self.base_image.unpack_path)):
          ch.DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
          self.base_image.pull_to_unpacked(fixup=True)

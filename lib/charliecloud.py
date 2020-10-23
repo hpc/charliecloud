@@ -200,7 +200,6 @@ class Image:
 
    __slots__ = ("ref",
                 "download_cache",
-                "fat_manifest_dir",
                 "image_subdir",
                 "layer_hashes",
                 "unpack_dir")
@@ -209,7 +208,6 @@ class Image:
       assert isinstance(ref, Image_Ref)
       self.ref = ref
       self.download_cache = download_cache
-      self.fat_manifest_dir = self.inferred_fat_dir
       self.unpack_dir = unpack_dir
       if (image_subdir is None):
          self.image_subdir = self.ref.for_path
@@ -237,7 +235,7 @@ class Image:
    @property
    def fat_manifest_path(self):
       "Path to the manifest list file."
-      return "%s/%s.manifest.list.json" % (self.fat_manifest_dir,
+      return "%s/%s.manifest.list.json" % (self.inferred_fat_dir,
                                            self.ref.for_path)
    @property
    def manifest_path(self):
@@ -287,7 +285,7 @@ class Image:
          download cache."""
       if (dl is None):
          dl = Repo_Downloader(self.ref)
-      mkdirs(self.fat_manifest_dir)
+      mkdirs(self.inferred_fat_dir)
       if (os.path.exists(self.fat_manifest_path) and use_cache):
          INFO("fat manifest: using existing file")
       else:
@@ -1140,12 +1138,8 @@ def storage_default():
    arch = host_arch_get()
    return "/var/tmp/%s/ch-grow/%s" % (username, arch)
 
-def storage_fixup(storage, arch=None):
-   if (arch is not None):
-      storage = storage + '/' + arch_arg_validate(arch)
-   else:
-      storage = storage + '/' + host_arch_get()
-   return storage
+def storage_fixup(storage, arch):
+      return os.path.dirname(storage) + '/' + arch_arg_validate(arch)
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):
