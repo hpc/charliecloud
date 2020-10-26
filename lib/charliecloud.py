@@ -281,8 +281,7 @@ class Image:
       dl.close()
 
    def download_fat_manifest(self, dl=None, use_cache=True):
-      """Download image manifest list according to origin and put it in the
-         download cache."""
+      """Download image manifest list and put it in the download cache."""
       if (dl is None):
          dl = Repo_Downloader(self.ref)
       mkdirs(self.inferred_fat_dir)

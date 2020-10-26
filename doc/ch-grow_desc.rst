@@ -156,7 +156,7 @@ Options:
     architectures.
 
   :code:`--inspect-arch`
-    Print a list of targitable platforms to use with :code:`--arch`.
+    Print a list of targetable platforms to use with :code:`--arch`.
 
   :code:`--inspect-manifest`
     Print the image :code:`IMAGE_REF` index, i.e., fat manifest if available;
@@ -414,7 +414,7 @@ Download the Debian Buster image and place it in the storage directory::
 
   $ ch-grow pull debian:buster
   pulling image:   debian:buster
-
+  fat manifest: downloading
   manifest: downloading
   layer 1/1: d6ff36c: downloading
   layer 1/1: d6ff36c: listing
@@ -431,5 +431,33 @@ Same, except place the image in :code:`/tmp/buster`::
    $ ls /tmp/buster
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
+
+Print list of targetable platforms for the Debian Buster image.::
+
+   $ ch-grow pull --inspect-arch debian:buster
+   fat manifest: downloading
+   available platforms:
+   amd64
+   arm/v5
+   arm/v7
+   arm64/v8
+   386
+   mips64le
+   ppc64le
+   s390x
+
+Download the arm64 variant of Debian Stretch.::
+
+   $ ch-grow pull --arch=arm64/v8 debian:buster
+   pulling image:   debian:buster
+   fat manifest: using existing file
+   manifest: downloading
+   layer 1/1: 04aacb1: downloading
+   layer 1/1: 04aacb1: listing
+   validating tarball members
+   resolving whiteouts
+   flattening image
+   layer 1/1: 04aacb1: extracting
+   done
 
 ..  LocalWords:  tmpfs'es

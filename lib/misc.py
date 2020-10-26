@@ -83,8 +83,8 @@ def pull(cli):
       ch.DEBUG("destination:     %s" % image.unpack_path)
    ch.DEBUG("use cache:       %s" % (not cli.no_cache))
    ch.DEBUG("download cache:  %s" % image.download_cache)
-   image.set_digest_for_arch(use_cache=(not cli.no_cache))
    ch.DEBUG("manifest:        %s" % image.manifest_path)
+   image.set_digest_for_arch(use_cache=(not cli.no_cache))
    # Pull!
    image.pull_to_unpacked(use_cache=(not cli.no_cache))
    # Done.
