@@ -1015,6 +1015,7 @@ def arch_arg_validate(arch):
     FATAL('invalid arch argument %s' % arg)
 
 def host_arch_get():
+   arch = variant = None
    machine = platform.uname().machine
    try:
       map_ = ARCH_MAP[machine]
