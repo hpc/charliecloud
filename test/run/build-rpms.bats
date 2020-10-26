@@ -37,7 +37,7 @@ setup () {
     [[ $output = *'/usr/bin/ch-run'* ]]
     [[ $output = *'/usr/lib64/charliecloud/base.sh'* ]]
     [[ $output = *'/usr/share/doc/charliecloud-'*'/examples/lammps/Dockerfile'* ]]
-    [[ $output = *'/usr/share/man/man1/charliecloud.1.gz'* ]]
+    [[ $output = *'/usr/share/man/man7/charliecloud.7.gz'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud-debuginfo"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -103,7 +103,7 @@ setup () {
     [[ $output = *'/usr/bin/ch-run'* ]]
     [[ $output = *'/usr/lib64/charliecloud/base.sh'* ]]
     [[ $output = *'/usr/share/doc/charliecloud/examples/lammps/Dockerfile'* ]]
-    [[ $output = *'/usr/share/man/man1/charliecloud.1.gz'* ]]
+    [[ $output = *'/usr/share/man/man7/charliecloud.7.gz'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud-debuginfo"
     echo "$output"
     [[ $status -eq 0 ]]

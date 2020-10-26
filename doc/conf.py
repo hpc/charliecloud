@@ -243,7 +243,7 @@ latex_documents = [
 man_pages = [
    ("charliecloud", "charliecloud",
     "Lightweight user-defined software stacks for high-performance computing",
-    [], 1),
+    [], 7),
    ("ch-build", "ch-build",
     "Build an image and place it in the builder's back-end storage",
     [], 1),

@@ -56,8 +56,8 @@ see_also.rst \
 tutorial.rst
 
 if ENABLE_MAN
-man1_MANS = \
-man/charliecloud.1 \
+man_MANS = \
+man/charliecloud.7 \
 man/ch-build.1 \
 man/ch-build2dir.1 \
 man/ch-builder2squash.1 \
@@ -93,7 +93,7 @@ endif
 
 # NOTE: ./html might be a Git checkout to support "make web", so make sure not
 # to delete it.
-CLEANFILES = $(man1_MANS) $(nobase_html_DATA) \
+CLEANFILES = $(man_MANS) $(nobase_html_DATA) \
              _deps.rst html/.buildinfo html/.nojekyll
 if ENABLE_HTML
 # Automake can't remove directories.
@@ -165,6 +165,6 @@ if ENABLE_HTML
 HTML_FIRST = html
 endif
 
-$(man1_MANS): man
+$(man_MANS): man
 man: mkdir_issue115 ../lib/version.txt _deps.rst $(HTML_FIRST)
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
