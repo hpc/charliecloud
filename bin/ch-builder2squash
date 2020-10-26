@@ -20,6 +20,12 @@ parse_basic_args "$@"
 # Kludgey argument parsing.
 while true; do
     case $1 in
+        --arch=*)
+            arch=$1
+            arch=$(printf '%s' $arch | sed 's/--arch=//g')
+            arch=$(printf '%s' "$arch" | sed 's/\//%/g')
+            shift
+            ;;
         -b|--builder)
             shift
             CH_BUILDER=$1
@@ -50,7 +56,13 @@ fi
 # certain filesystems
 temp=$(mktemp -d --tmpdir ch-builder2squash.XXXXXX)
 # Get image as a directory
-"${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" --nocompress "$image" "$temp"
+if [ -n $arch ]; then
+    "${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" --nocompress --arch="$arch" \
+                               "$image" "$temp"
+else
+    "${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" --nocompress --arch="$arch" \
+                               "$image" "$temp"
+fi
 image=$(tag_to_path "$image")
 tar=${temp}/${image}.tar
 "${ch_bin}/ch-tar2dir" "${tar}" "$temp"

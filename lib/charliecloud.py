@@ -221,6 +221,16 @@ class Image:
       return str(self.ref)
 
    @property
+   def default_arch_dlcache(self):
+      return os.path.dirname(os.path.dirname(
+                             self.download_cache)) + '/amd64/dlcache'
+
+   @property
+   def default_arch_unpack(self):
+      return os.path.dirname(os.path.dirname(
+                             self.download_cache)) + '/amd64/img'
+
+   @property
    def inferred_fat_dir(self):
       return os.path.dirname(os.path.dirname(self.download_cache)) + '/fatman'
 
@@ -322,7 +332,11 @@ class Image:
       arch = self.inferred_arch
       self.download_fat_manifest(use_cache=use_cache)
       if (not os.path.exists(self.fat_manifest_path)):
-         DEBUG("image doesn't have a fat manifest; using default")
+         INFO("no fat fat manifest; assuming amd64 architecture")
+         self.download_cache = self.default_arch_dlcache
+         DEBUG('updated download cache: %s' % self.download_cache)
+         self.unpack_dir = self.default_arch_unpack
+         DEBUG('updated unpack directory: %s' % self.unpack_dir)
          return
       try:
          fp = open_(self.fat_manifest_path, "rt", encoding="UTF-8")
