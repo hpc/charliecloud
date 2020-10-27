@@ -37,7 +37,7 @@ while true; do
     case $1 in
         --arch=*)
             arch=$1
-            arch=$(printf '%s' $arch | sed 's/--arch=//g')
+            arch=$(printf '%s' "$arch" | sed 's/--arch=//g')
             arch=$(printf '%s' "$arch" | sed 's/\//%/g')
             shift
             ;;
@@ -142,7 +142,7 @@ ch-grow)
 
     echo "exporting"
     storage=$("${ch_bin}/ch-grow" storage-path)
-    if [ -n $arch ]; then
+    if [ -n "$arch" ]; then
         storage="${storage%/*}/${arch}"
     fi
     ( cd "${storage}/img/${image}" && tar cf - . ) | pv_ > "$tar"
