@@ -1,0 +1,145 @@
+# This Dockerfile is used to test that pull deals with quirky files, e.g.
+# replacement by different types (issues #819 and #825)`. Scope is “skip”
+# because we pull the image to test it; see test/build/50_pull.bats.
+#
+# To build and push:
+#
+#   $ VERSION=$(date +%Y-%m-%d)             # or other date as appropriate
+#   $ sudo docker login                     # if needed
+#   $ sudo docker build -t file-quirks -f Dockerfile.file-quirks .
+#   $ sudo docker tag file-quirks:latest charliecloud/file-quirks:$VERSION
+#   $ sudo docker images | fgrep file-quirks
+#   $ sudo docker push charliecloud/file-quirks:$VERSION
+#
+# ch-test-scope: skip
+
+FROM 00_tiny
+WORKDIR /test
+
+
+## Replace symlink with symlink.
+
+# Set up a symlink & targets.
+RUN echo target1 > ss_target1 \
+ && echo target2 > ss_target2 \
+ && ln -s ss_target1 ss_link
+# link and target should both contain "target1"
+RUN ls -l \
+ && for i in ss_*; do printf '%s : ' $i; cat $i; done
+# Overwrite it with a new symlink.
+RUN rm ss_link \
+ && ln -s ss_target2 ss_link
+# Now link should still be a symlink but contain "target2".
+RUN ls -l \
+ && for i in ss_*; do printf '%s : ' $i; cat $i; done
+
+
+## Replace symlink with regular file (issue #819).
+
+# Set up a symlink.
+RUN echo target > sf_target \
+ && ln -s sf_target sf_link
+# Link and target should both contain "target".
+RUN ls -l \
+ && for i in sf_*; do printf '%s : ' $i; cat $i; done
+# Overwrite it with a regular file.
+RUN rm sf_link \
+ && echo regular > sf_link
+# Now link should be a regular file and contain "regular".
+RUN ls -l \
+ && for i in sf_*; do printf '%s : ' $i; cat $i; done
+
+
+## Replace regular file with symlink.
+
+# Set up two regular files.
+RUN echo regular > fs_link \
+ && echo target > fs_target
+# Link should be a regular file and contain "regular".
+RUN ls -l \
+ && for i in fs_*; do printf '%s : ' $i; cat $i; done
+# Overwrite it with a symlink.
+RUN rm fs_link \
+ && ln -s fs_target fs_link
+# Now link should be a symlink; both should contain "target".
+RUN ls -l \
+ && for i in fs_*; do printf '%s : ' $i; cat $i; done
+
+
+## Replace symlink with directory.
+
+# Set up a symlink.
+RUN echo target > sd_target \
+ && ln -s sd_target sd_link
+# link and target should both contain "target"
+RUN ls -l \
+ && for i in sd_*; do printf '%s : ' $i; cat $i; done
+# Overwrite it with a directory.
+RUN rm sd_link \
+ && mkdir sd_link
+# Now link should be a directory.
+RUN ls -l
+
+
+## Replace directory with symlink.
+
+# I think this is what's in image ppc64le.neo4j/2.3.5, as reported in issue
+# #825, but it doesn't cause the same infinite recursion.
+
+# Set up a directory and a target.
+RUN mkdir ds_link \
+ && echo target > ds_target
+# It should be a directory.
+RUN ls -l
+# Overwrite it with a symlink.
+RUN rmdir ds_link \
+ && ln -s ds_target ds_link
+# Now link should be a symlink; both should contain "target".
+RUN ls -l \
+ && for i in ds_*; do printf '%s : ' $i; cat $i; done
+
+
+## Replace regular file with directory.
+
+# Set up a file.
+RUN echo regular > fd_member
+# It should be a file.
+RUN ls -l \
+ && for i in fd_*; do printf '%s : ' $i; cat $i; done
+# Overwrite it with a directory.
+RUN rm fd_member \
+ && mkdir fd_member
+# Now it should be a directory.
+RUN ls -l
+
+
+## Replace directory with regular file.
+
+# Set up a directory.
+RUN mkdir df_member
+# It should be a directory.
+RUN ls -l
+# Overwrite it with a file.
+RUN rmdir df_member \
+ && echo regular > df_member
+# Now it should be a file.
+RUN ls -l \
+ && for i in df_*; do printf '%s : ' $i; cat $i; done
+
+
+## Symlink with cycle (https://bugs.python.org/file37774).
+
+# Set up a symlink pointing to itself.
+RUN ln -s link_self link_self
+# List.
+RUN ls -l
+
+
+## Broken symlinks (https://bugs.python.org/file37774).
+
+# Set up a symlink pointing to (1) a nonexistent file and (2) a directory that
+# only exists in the image.
+RUN ln -s doesnotexist link_b0rken \
+ && ln -s /test link_imageonly
+# List.
+RUN ls -l
