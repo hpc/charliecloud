@@ -62,13 +62,13 @@ DEFAULT_CONFIGS = [
                  "cmds_each": ["dnf", "rpm", "yum"],
                  "each": ["fakeroot"] } },
 
-   # Debian notes:
+   # Debian/Ubuntu notes:
    #
-   # 1. By default in recent Debians, apt(8) runs as an unprivileged user.
-   #    This makes *all* apt operations fail in an unprivileged container
-   #    because it can't drop privileges. There are multiple ways to turn the
-   #    “sandbox” off. As far as I can tell, none are documented, but this one
-   #    at least appears in google searches a lot.
+   # 1. In recent Debians based distributions, by default, `apt(8) runs as an
+   #    unprivileged user. This makes *all* apt operations fail in an
+   #    unprivileged container because it can't drop privileges. There are
+   #    multiple ways to turn the “sandbox” off. As far as I can tell, none are
+   #    documented, but this one at least appears in google searches a lot.
    #
    #    apt also doesn't drop privileges if there is no user _apt; in my
    #    testing, sometimes this user is present and sometimes not, for reasons
@@ -79,8 +79,10 @@ DEFAULT_CONFIGS = [
    #    Configuring apt not to use the sandbox seemed cleaner than deleting
    #    this user and eliminates the warning.
 
-   { "match":  ("/etc/debian_version", r"^(9|10)\."),
-     "config": { "name": "Debian 9 (Stretch) or 10 (Buster)",
+   { "match":  ("/etc/os-release", r"(stretch|buster|xenial|bionic|focal)"),
+     "config": { "name": ("Debian based ditribution from following list:\n"
+                          "Debian 9 (Stretch) or 10 (Buster)\n"
+                          "Ubuntu 16 (Xenial), 18 (Bionic), or 20 (Focal)"),
                  "first":
 ["echo 'APT::Sandbox::User \"root\";' > /etc/apt/apt.conf.d/no-sandbox",
  "apt-get update",  # base image ships with no package indexes
