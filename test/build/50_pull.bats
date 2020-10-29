@@ -204,32 +204,66 @@ error: image ref syntax, char 9: name:tag@sha512:feeddad
 EOF
 }
 
-@test 'pull image with symlink' {
-    # Validate that if a prior layer contains a symlink and a subsequent layer
-    # contains a regular file at the same path, the symlink is replaced with a
-    # regular file and the symlink target is unchanged. See issue #819.
+@test 'pull image with quirky files' {
+    # Validate that layers replace symlinks correctly. See
+    # test/Dockerfile.symlink and issues #819 & 825.
     scope standard
     if ( ! ch-grow --dependencies ); then
         [[ $CH_BUILDER != ch-grow ]]
         skip "ch-grow missing dependencies"
     fi
 
-    img=$BATS_TMPDIR/charliecloud%symlink
+    img=$BATS_TMPDIR/charliecloud%file-quirks
 
-    ch-grow pull charliecloud/symlink "$img"
+    ch-grow pull charliecloud/file-quirks:2020-10-21 "$img"
     ls -lh "${img}/test"
 
-    # /test/target should be a regular file with contents "target"
-    run stat -c '%F' "${img}/test/target"
-    [[ $status -eq 0 ]]
-    echo "$output"
-    [[ $output = 'regular file' ]]
-    [[ $(cat "${img}/test/target") = 'target' ]]
+    output_expected=$(cat <<'EOF'
+regular file   'df_member'
+symbolic link  'ds_link' -> 'ds_target'
+regular file   'ds_target'
+directory      'fd_member'
+symbolic link  'fs_link' -> 'fs_target'
+regular file   'fs_target'
+symbolic link  'link_b0rken' -> 'doesnotexist'
+symbolic link  'link_imageonly' -> '/test'
+symbolic link  'link_self' -> 'link_self'
+directory      'sd_link'
+regular file   'sd_target'
+regular file   'sf_link'
+regular file   'sf_target'
+symbolic link  'ss_link' -> 'ss_target2'
+regular file   'ss_target1'
+regular file   'ss_target2'
+EOF
+)
 
-    # /test/source should be a regular file with contents "regular"
-    run stat -c '%F' "${img}/test/source"
-    [[ $status -eq 0 ]]
+    cd "${img}/test"
+    run stat -c '%-14F %N' -- *
     echo "$output"
-    [[ $output = 'regular file' ]]
-    [[ $(cat "${img}/test/source") = 'regular' ]]
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+    cd -
+}
+
+@test 'pull image with manifest schema v1' {
+    # Verify we handle images with manifest schema version one (v1).
+    scope standard
+    if ( ! ch-grow --dependencies ); then
+        [[ $CH_BUILDER != ch-grow ]]
+        skip "ch-grow missing dependencies"
+    fi
+
+    unpack=$BATS_TMPDIR
+    cache=$unpack/dlcache
+    # We target debian:squeeze because 1) it always returns a v1 manifest
+    # schema (regardless of media type specified), and 2) it isn't very large,
+    # thus keeps test time down.
+    img=debian:squeeze
+
+    ch-grow pull --storage="$unpack" \
+                 --no-cache \
+                 "$img"
+    [[ $status -eq 0 ]]
+    grep -F '"schemaVersion": 1' "${cache}/${img}.manifest.json"
 }

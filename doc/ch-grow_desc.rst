@@ -150,6 +150,10 @@ Destination argument:
 
 Options:
 
+  :code:`--last-layer N`
+    Unpack only :code:`N` layers, leaving an incomplete image. This option is
+    intended for debugging.
+
   :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.

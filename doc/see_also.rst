@@ -1,6 +1,6 @@
 See also
 ========
 
-charliecloud(1)
+charliecloud(7)
 
 Full documentation at: <https://hpc.github.io/charliecloud>

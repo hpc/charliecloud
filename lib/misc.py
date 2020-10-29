@@ -65,7 +65,8 @@ def pull(cli):
    ch.DEBUG("download cache:  %s" % image.download_cache)
    ch.DEBUG("manifest:        %s" % image.manifest_path)
    # Pull!
-   image.pull_to_unpacked(use_cache=(not cli.no_cache))
+   image.pull_to_unpacked(use_cache=(not cli.no_cache),
+                          last_layer=cli.last_layer)
    # Done.
    ch.INFO("done")
 
