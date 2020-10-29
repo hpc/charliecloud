@@ -192,6 +192,7 @@ class Image:
                 "download_cache",
                 "image_subdir",
                 "layer_hashes",
+                "schema_version",
                 "unpack_dir")
 
    def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
@@ -204,6 +205,7 @@ class Image:
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
+      self.schema_version = None
 
    def __str__(self):
       return str(self.ref)
@@ -266,19 +268,25 @@ class Image:
       file_ensure_exists("%s/etc/hosts" % self.unpack_path)
       file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
 
-   def flatten(self):
+   def flatten(self, last_layer=None):
       "Flatten the layers in the download cache into the unpack directory."
+      if (last_layer is None):
+         last_layer = sys.maxsize
       layers = self.layers_read()
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
       INFO("flattening image")
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
-         INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
-         try:
-            fp.extractall(path=self.unpack_path, members=members)
-         except OSError as x:
-            FATAL("can't extract layer %d: %s" % (i, x.strerror))
+         if (i > last_layer):
+            INFO("layer %d/%d: %s: skipping per --last-layer"
+                 % (i, len(layers), lh[:7]))
+         else:
+            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
+            try:
+               fp.extractall(path=self.unpack_path, members=members)
+            except OSError as x:
+               FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
@@ -293,9 +301,28 @@ class Image:
          FATAL("can't parse manifest file: %s:%d: %s"
                % (self.manifest_path, x.lineno, x.msg))
       try:
-         self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
-      except (AttributeError, KeyError, IndexError):
-         FATAL("can't parse manifest file: %s" % self.manifest_path)
+         schema_version = str(doc['schemaVersion'])
+      except KeyError:
+         FATAL("manifest file %s missing expected key 'schemaVersion'"
+               % self.manifest_path)
+      if (schema_version == '1'):
+         DEBUG('loading layer hashes from schema version 1 manifest')
+         try:
+            self.layer_hashes = [i["blobSum"].split(":")[1]
+                                 for i in doc["fsLayers"]]
+         except (KeyError, AttributeError, IndexError) as x:
+            FATAL("can't parse manifest file: %s:%d :%s"
+                  % self.manifest_path, x.lineno, x.msg)
+      elif (schema_version == '2'):
+         DEBUG('loading layer hashes from schema version 2 manifest')
+         try:
+            self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
+         except (KeyError, AttributeError, IndexError):
+            FATAL("can't parse manifest file: %s:%d :%s"
+                  % self.manifest_path, x.lineno, x.msg)
+      else:
+         FATAL("unsupported manifest schema version: %s" % schema_version)
+      self.schema_version = schema_version
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
@@ -320,6 +347,10 @@ class Image:
       if (self.layer_hashes is None):
          self.layer_hashes_load()
       layers = collections.OrderedDict()
+      # Schema version one (v1) allows one or more empty layers for Dockerfile
+      # entries like CMD (https://github.com/containers/skopeo/issues/393).
+      # Unpacking an empty layer doesn't accomplish anything so we ignore them.
+      empty_cnt = 0
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
@@ -329,14 +360,23 @@ class Image:
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
          members = collections.OrderedDict([(m, None) for m in members_list])
-         layers[lh] = TT(fp, members)
+         if (lh in layers and len(members) > 0):
+            FATAL("duplicate non-empty layer %s" % lh[:7])
+         if (len(members) > 0):
+            layers[lh] = TT(fp, members)
+         else:
+            empty_cnt += 1
+      if (self.schema_version == '1'):
+         DEBUG('reversing layer order for schema version one (v1)')
+         layers = collections.OrderedDict(reversed(layers.items()))
+      DEBUG("skipped %d empty layers" % empty_cnt)
       return layers
 
-   def pull_to_unpacked(self, use_cache=True, fixup=False):
+   def pull_to_unpacked(self, use_cache=True, fixup=False, last_layer=None):
       """Pull and flatten image. If fixup, then also add the Charliecloud
          workarounds to the image directory."""
       self.download(use_cache)
-      self.flatten()
+      self.flatten(last_layer)
       if (fixup):
          self.fixup()
 
@@ -351,17 +391,22 @@ class Image:
                # Device or FIFO: Ignore.
                dev_ct += 1
                del members[m]
-            if (m.islnk()):
+            elif (m.issym()):
+               # Symlink: Nothing to change, but accept it.
+               pass
+            elif (m.islnk()):
                # Hard link: Fail if pointing outside top level. (Note that we
                # let symlinks point wherever they want, because they aren't
                # interpreted until run time in a container.)
                self.validate_tar_link(self.layer_path(lh), m.name, m.linkname)
-            if (m.isdir()):
-               # Fix bad directory permissions (hello, Red Hat).
+            elif (m.isdir()):
+               # Directory: Fix bad permissions (hello, Red Hat).
                m.mode |= 0o700
-            if (m.isfile()):
-               # Fix bad file permissions (HELLO RED HAT!!).
+            elif (m.isfile()):
+               # Regular file: Fix bad permissions (HELLO RED HAT!!).
                m.mode |= 0o600
+            else:
+               FATAL("unknown member type: %s" % m.name)
          if (dev_ct > 0):
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
@@ -766,18 +811,19 @@ class TarFile(tarfile.TarFile):
    # class method TarFile.open(), and the source code recommends subclassing
    # TarFile [2].
    #
+   # It's here because the standard library class has problems with symlinks
+   # and replacing one file type with another; see issues #819 and #825 as
+   # well as multiple unfixed Python bugs [e.g. 3,4,5]. We work around this
+   # with manual deletions.
+   #
    # [1]: https://docs.python.org/3/library/tarfile.html
    # [2]: https://github.com/python/cpython/blob/2bcd0fe7a5d1a3c3dd99e7e067239a514a780402/Lib/tarfile.py#L2159
+   # [3]: https://bugs.python.org/issue35483
+   # [4]: https://bugs.python.org/issue19974
+   # [5]: https://bugs.python.org/issue23228
 
-   def makefile(self, tarinfo, targetpath):
-      """If targetpath is a symlink, stock makefile() overwrites the *target*
-         of that symlink rather than replacing the symlink. This is a known,
-         but long-standing unfixed, bug in Python [1,2]. To work around this,
-         we manually delete targetpath if it exists and is a symlink. See
-         issue #819.
-
-         [1]: https://bugs.python.org/issue35483
-         [2]: https://bugs.python.org/issue19974"""
+   def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
+      assert (regulars or symlinks or dirs)
       try:
          st = os.lstat(targetpath)
       except FileNotFoundError:
@@ -789,16 +835,34 @@ class TarFile(tarfile.TarFile):
          FATAL("can't lstat: %s" % targetpath, targetpath)
       if (st is not None):
          if (stat.S_ISREG(st.st_mode)):
-            pass  # regular file; do nothing (will be overwritten)
-         elif (stat.S_ISDIR(st.st_mode)):
-            FATAL("can't overwrite directory with regular file: %s"
-                  % targetpath)
+            if (regulars):
+               unlink(targetpath)
          elif (stat.S_ISLNK(st.st_mode)):
-            unlink(targetpath)
+            if (symlinks):
+               unlink(targetpath)
+         elif (stat.S_ISDIR(st.st_mode)):
+            if (dirs):
+               rmtree(targetpath)
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))
+
+   def makedir(self, tarinfo, targetpath):
+      # Note: This gets called a lot, e.g. once for each component in the path
+      # of the member being extracted.
+      DEBUG("makedir: %s" % targetpath)
+      self.clobber(targetpath, regulars=True, symlinks=True)
+      super().makedir(tarinfo, targetpath)
+
+   def makefile(self, tarinfo, targetpath):
+      DEBUG("makefile: %s" % targetpath)
+      self.clobber(targetpath, symlinks=True, dirs=True)
       super().makefile(tarinfo, targetpath)
+
+   def makelink(self, tarinfo, targetpath):
+      DEBUG("makelink: %s -> %s" % (targetpath, tarinfo.linkname))
+      self.clobber(targetpath, regulars=True, symlinks=True, dirs=True)
+      super().makelink(tarinfo, targetpath)
 
 
 ## Supporting functions ##

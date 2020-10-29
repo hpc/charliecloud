@@ -134,6 +134,8 @@ def main():
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.pull)
    add_opts(sp, common_opts, True)
+   sp.add_argument("--last-layer", metavar="N", type=int,
+                   help="stop after unpacking N layers")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the image reference")
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")

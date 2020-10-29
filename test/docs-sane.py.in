@@ -6,7 +6,7 @@
 #
 #   1. Man page consistency.
 #
-#      a. man/charliecloud.1 exists.
+#      a. man/charliecloud.7 exists.
 #
 #      b. Every executable FOO in bin has:
 #
@@ -14,7 +14,7 @@
 #           - doc/FOO_desc.rst
 #           - doc/man/FOO.1
 #           - a section in doc/command-usage.rst
-#           - an entry under "See also" in charliecloud.1
+#           - an entry under "See also" in charliecloud.7
 #
 #      c. There aren't the things in (b) except for the executables (modulo a
 #         few execeptions for the other documentation source files).
@@ -89,17 +89,20 @@ def check_man():
          lose("conf.py: startdocname != name: %s != %s" % (docname, name))
       if (len(authors) != 0):
          lose("conf.py: bad authors: %s: %s" % (name, authors))
-      if (section != 1):
-         lose("conf.py: bad section: %s: %s != 1" % (name, section))
       if (name != "charliecloud"):
+         if (section != 1):
+            lose("conf.py: bad section: %s: %s != 1" % (name, section))
          if (name not in helps):
             lose("conf.py: unexpected man page: %s" % name)
          elif (desc + "." != helps[name]):
             lose("conf.py: bad summary: %s: %s" % (name, desc))
+      else:
+         if (section != 7):
+            lose("conf.py: bad section: %s: %s != 7" % (name, section))
 
    os.chdir(CH_BASE + "/doc/man")
 
-   mans = set(glob.glob("*.1")) - { "charliecloud.1" }
+   mans = set(glob.glob("*.1"))
    mans_expected = { i + ".1" for i in execs }
    lose_lots("unexpected man", mans - mans_expected)
    lose_lots("missing man",    mans_expected - mans)

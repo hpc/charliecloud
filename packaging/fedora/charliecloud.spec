@@ -115,6 +115,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %license LICENSE
 %doc README.rst %{?el7:README.EL7}
 %{_mandir}/man1/ch*
+%{_mandir}/man7/charliecloud*
 %{_pkgdocdir}/examples
 
 # Library files.
