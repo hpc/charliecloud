@@ -57,5 +57,4 @@ RUN test -f /mnt/9/empty-file
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    false
 }
