@@ -96,6 +96,11 @@ Required argument:
 
 Options:
 
+  :code:`-b`, :code:`--bind SRC[:DST]`
+    Bind-mount host directory :code:`SRC` at container directory :code:`DST`
+    during :code:`RUN` instructions. Can be repeated; the default destination
+    if :code:`DST` is omitted is :code:`/mnt/0`, :code:`/mnt/1`, etc.
+
   :code:`--build-arg KEY[=VALUE]`
     Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
     to :code:`VALUE`. If :code:`VALUE` not specified, use the value of

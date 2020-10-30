@@ -90,8 +90,6 @@ def main(cli_):
          if (v is None):
             ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
          return (kv[0], v)
-   if (cli.build_arg is None):
-      cli.build_arg = list()
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
 
    # Finish CLI initialization.
@@ -550,7 +548,7 @@ class Run(Instruction):
 
    def execute_(self):
       rootfs = images[image_i].unpack_path
-      ch.ch_run_modify(rootfs, self.cmd, env.env_build, env.workdir)
+      ch.ch_run_modify(rootfs, self.cmd, env.env_build, env.workdir, cli.bind)
 
    def str_(self):
       return str(self.cmd)

@@ -81,6 +81,7 @@ else
     sudo_=
 fi
 
+# shellcheck disable=SC2086
 "$ch_test" build $sudo_
 ls -lha "$CH_TEST_TARDIR"
 
@@ -93,6 +94,8 @@ else
     sudo_=
 fi
 
+# shellcheck disable=SC2086
 "$ch_test" run $sudo_
 ls -lha "$CH_TEST_IMGDIR"
+# shellcheck disable=SC2086
 "$ch_test" examples $sudo_

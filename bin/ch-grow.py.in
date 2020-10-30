@@ -105,8 +105,11 @@ def main():
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=build.main)
    add_opts(sp, common_opts, True)
-   sp.add_argument("--build-arg", action="append", default=None,
-                   metavar="ARG[=VAL]",
+   sp.add_argument("-b", "--bind", metavar="SRC[:DST]",
+                   action="append", default=[],
+                   help="mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)")
+   sp.add_argument("--build-arg", metavar="ARG[=VAL]",
+                   action="append", default=[],
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
    sp.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
