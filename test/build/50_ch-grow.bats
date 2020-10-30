@@ -50,9 +50,12 @@ setup () {
     run ch-grow --no-cache build -t build-bind -f - \
                 -b ./fixtures -b ./fixtures:/mnt/9 . <<'EOF'
 FROM 00_tiny
-RUN test -f /mnt/0/README
-RUN test -f /mnt/9/README
+RUN mount
+RUN ls -lR /mnt
+RUN test -f /mnt/0/empty-file
+RUN test -f /mnt/9/empty-file
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
+    false
 }
