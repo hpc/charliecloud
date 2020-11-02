@@ -103,6 +103,7 @@ def push(cli):
    upload = ch.Image_Upload(image_path, dest_image_ref)
    # Koby!
    upload.push_to_repo(image_path, ulcache)
+   ch.INFO('done')
    # upload.push_to_repo(image_path, ulcache, cli.chunked_upload)
 
 def storage_path(cli):

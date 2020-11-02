@@ -10,6 +10,7 @@ import json
 import os
 import getpass
 import pathlib
+import random
 import re
 import shutil
 import stat
@@ -473,29 +474,28 @@ class Image_Upload():
    """Image Upload object.
       chunks                dict where k = chunked upload url and v = headers (
                             e.g., content-length, content-range)
-      layers                dict where k = layer's compressed tarball sha256hex
-                            digest and v = list consisting of: 1) the
-                            compressed archive size, and 2) the path to the
-                            compressed archive
+      layers                dict where k = layer's compressed tarball path and
+                            v = list consisting of: uncompressed and compressed
+                            image data, e.g., size, and hash
+      config                named tuple with config path, size, and digest
       manifest_path         path to generated image manifest
       path                  local image path
       ref                   remote repository reference
-      url                   list of upload urls
    """
-   __slots__ = ("chunks",
-                "layers",
+   __slots__ = ("layers",
+                "config",
                 "manifest_path",
                 "path",
                 "ref",
-                "url")
+                "upload_url")
 
    def __init__(self, path, dest):
-      self.chunks = collections.OrderedDict()
       self.layers = None
+      self.config = None
       self.manifest_path = None
       self.path = path
       self.ref = dest
-      self.url = []
+      self.upload_url = []
 
    def archive_fixup(self, tarinfo):
       # FIXME: The uid and gid of "nobody" is not always  65534. The files
@@ -509,6 +509,12 @@ class Image_Upload():
 
    def archive_image(self, image, ulcache):
       """Create compressed image tarball."""
+      # FIXME: update when (if) we have multiple layers.
+
+      size   = {'compressed':   None, # compressed referenced by image manifest
+                'uncompressed': None}
+      hash_ = {'compressed':   None,
+                'uncompressed': None}
       mkdirs(ulcache)
       name = image.split('/')[-1]
       tar = os.path.join(ulcache, name) + '.tar'
@@ -521,6 +527,12 @@ class Image_Upload():
       with tarfile.open(tar, "w") as archive:
          archive.add(self.path, arcname=None, recursive=True,
                      filter=self.archive_fixup)
+      # Store uncompressed layer data.
+      hash_['uncompressed'] = 'sha256:%s' % self.get_layer_hash(tar)
+      size['uncompressed'] = pathlib.Path(tar).stat().st_size
+      DEBUG('uncompressed digest: %s' % hash_['uncompressed'])
+      DEBUG('uncompressed size: %s' % size['uncompressed'])
+
       # Compress tar archive for uploading.
       # FIXME: This is pretty hideous. Is there a better way to create
       # identical (same hash) compressed tarballs of the same filesystem
@@ -530,25 +542,23 @@ class Image_Upload():
          data=archive.read()
          with open_(gzp, 'wb') as out:
             INFO("compressing tar archive ...")
-            DEBUG("compressing %s ..." % gzp)
+            DEBUG("compressed tar: %s ..." % gzp)
             with  gzip.GzipFile(filename='', mode='wb', compresslevel=9,
                                 fileobj=out, mtime=0.) as gz:
                gz.write(data)
       if (not os.path.isfile(gzp)):
          FATAL('failed to create compressed archive %s'
                % gzp)
-      # FIXME: update when (if) we have multiple layers.
-      digest = self.get_layer_hash(gzp)
-      size = None
-      size = pathlib.Path(gzp).stat().st_size
-      if (not size):
-         FATAL("invalid tar archive size: %s" % size)
-      INFO("size: %s" % size)
-      dest = os.path.join(ulcache, digest + '.tar.gz')
-      DEBUG("renaming compressed archive: %s " % dest)
-      os.rename(gzp, dest)
+      # Store compressed layer data.
+      hash_['compressed'] = 'sha256:%s' % self.get_layer_hash(gzp)
+      size['compressed'] = pathlib.Path(gzp).stat().st_size
+      DEBUG('compressed digest: %s' % hash_['compressed'])
+      DEBUG('compressed size: %s' % size['compressed'])
+      gzp_path = os.path.join(ulcache, hash_['compressed'] + '.tar.gz')
+      DEBUG("renaming compressed archive: %s " % gzp_path)
+      os.rename(gzp, gzp_path)
       os.remove(tar)
-      self.layers = {digest: [size, dest]}
+      self.layers = { gzp_path: {'size': size, 'hash': hash_}}
 
    def get_digest(self, data):
       h = hashlib.sha256()
@@ -558,24 +568,72 @@ class Image_Upload():
    def get_layer_hash(self, archive):
       with open_(archive,"rb") as f:
             encode = hashlib.sha256(f.read()).hexdigest()
-      DEBUG("compressed archive sha256hex hash: %s " % encode)
       return encode
+
+   def generate_config(self, path, ulcache):
+      "Create image config"
+      mkdirs(ulcache)
+      config =  {"architecture": "amd64", #FIXME
+                 "comment": "pushed with ch-grow",
+                 "config": {}, #FIXME
+                 "container_config": {}, #FIXME
+                 "created": "" , #FIXME
+                 "charliecloud_version": "fixme", # FIXME
+                 "history": [], #FIXME
+                 "os": "linux",
+                 "rootfs": {
+                    "diff_ids":[],
+                    "type": "layers"}}
+
+      # add layers
+      for k in self.layers:
+         config['rootfs']['diff_ids'].append(self.layers[k]['hash']['uncompressed'])
+
+      # FIXME: add correct time
+      now = datetime.datetime.now()
+      config['created'] = now.strftime("%Y-%m-%d %H:%M:%S")
+
+      # Write file
+      fp = os.path.join(ulcache, path.split('/')[-1])
+      fp += ".config.json"
+      with open_(fp, "wt", encoding='utf-8') as f:
+         json.dump(config, f)
+      json_dump = json.dumps(config)
+      config_json = json.loads(json_dump)
+
+      with open_(fp, "rb") as f:
+         data = f.read()
+         size = len(data)
+         digest = self.get_digest(data)
+         CT = collections.namedtuple('config', ['path', 'size', 'digest'])
+         self.config = CT(fp, size, digest)
+      DEBUG('config size: %s' % size)
+      DEBUG('config digest: %s' % digest)
+      DEBUG("generated config:\n%s" % json.dumps(config, indent=3))
 
    def generate_manifest(self, path, ulcache):
       "Create image manifest json"
-      # FIXME: implement ulcache, e.g., "use_cache"
-      fp = os.path.join(ulcache, path.split('/')[-1])
-      fp += ".manifest.json"
+      # FIXME: implement ulcache, e.g., "use_cache"?
       mkdirs(ulcache)
       manifest = {"schemaVersion": 2,
                   "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
-                  "config": None,
+                  "config": {
+                     "mediaType":"application/vnd.docker.container.image.v1+json",
+                     "size":"",
+                     "digest":""},
                   "layers": []}
+
+      # add layers
       archive_media = "application/vnd.docker.image.rootfs.diff.tar.gzip"
       for k,v in self.layers.items():
          manifest['layers'].append({'mediaType': archive_media,
-                                 'size': v[0],
-                                 'digest': str('sha256:%s' % k)})
+                                 'size': v['size']['compressed'],
+                                 'digest': v['hash']['compressed']})
+      # add config
+      c_path, c_size, c_digest = self.config
+      manifest['config']['size'] = c_size
+      manifest['config']['digest'] = c_digest
+
       # Write file
       fp = os.path.join(ulcache, path.split('/')[-1])
       fp += ".manifest.json"
@@ -586,20 +644,35 @@ class Image_Upload():
       manifest_json = json.loads(json_dump)
       DEBUG("generated manfiest:\n%s" % json.dumps(manifest, indent=3))
 
-   def layer_exists(self, upload, digest):
+   def blob_exists(self, upload, digest):
       """Determine if a layer already exists."""
-      res = upload.head_layer(digest=digest, auth=upload.auth)
+      res = upload.head_blob(digest=digest, auth=upload.auth)
       if (res.status_code == 200):
          return True
       return False
+
+   def push_config(self, upload):
+      INFO('pushing config ... ')
+      c_path, c_size, c_digest = self.config
+      head_url = upload._url_of("blobs", c_digest)
+      if (not self.blob_exists(upload, c_digest)):
+         self.push_init(upload) # get new upload url
+         with open_(c_path, "rb") as f:
+            data = f.read()
+            res = upload.patch(self.upload_url, data=data,
+                               expected_statuses=(202,))
+            upload.put(res.headers['Location'] + '&digest=%s' % c_digest,
+                       expected_statuses=(201,))
+      else:
+         INFO('config exists; skipping')
 
    def push_chunk(self, upload, size, range_, data):
       "Take an upload object and upload a layer chunk via HTTP PATCH request"
       headers={'Content-Length': str(len(data)),
                'Content-Range': str(range_),
                'Content-Type': 'application/octet-stream'}
-      self.chunks[self.url[-1]] = headers
-      res = upload.patch(self.url[-1], headers=headers, data=data,
+      self.chunks[self.upload_url] = headers
+      res = upload.patch(self.upload_url, headers=headers, data=data,
                          expected_statuses=('202',))
       self.url.append(res.headers['Location'])
 
@@ -608,86 +681,54 @@ class Image_Upload():
       headers={'Content-Length': str(len(data)),
                'Content-Range': str(range_),
                'Content-Type': 'application/octet-stream'}
-      self.chunks[self.url[-1]] = headers
-      upload.put(self.url[-1] + "&digest=%s" % digest, headers=headers,
+      self.chunks[self.upload_url] = headers
+      upload.put(self.upload_url + "&digest=%s" % digest, headers=headers,
                  data=data, expected_statuses=('201',))
 
    def push_init(self, upload):
       """Initiate upload process; append upload url upon success"""
       url = upload._url_of("blobs", "uploads/")
       res = upload.post(url=url, expected_statuses=(202,))
-      self.url.append(res.headers['Location'])
+      self.upload_url = res.headers['Location']
 
-   def push_layers(self, upload, chunked=False):
+   def push_layer(self, path, digest, upload):
+      blob_url = upload._url_of("blobs", digest)
+      with open_(path, "rb") as f:
+         data = f.read()
+         upload.put_layer(self.upload_url + "&digest=%s" % digest, data)
+      upload.head_blob(blob_url, auth=upload.auth, expected_statuses=(200,))
+
+   def push_layers(self, upload):
       """Push image layers to repository."""
-      INFO("pushing layers ...")
-      for i, k in enumerate(self.layers):
-         digest = "sha256:%s" % k
-         size = str(self.layers[k][0])  # compressed archive size
-         path = self.layers[k][1]       # compressed archive path
-         if (self.layer_exists(upload, digest)):
-            INFO("layer %d/%d: %s exists; skipping" % (i + 1, len(self.layers),
-                                                       k[:7]))
-            continue
-         else:
+      INFO("pushing layers")
+      for i, path in enumerate(self.layers):
+         digest = self.layers[path]['hash']['compressed']
+         if (not self.blob_exists(upload, digest)):
             INFO("uploading layer %d/%d: %s" % (i + 1, len(self.layers),
-                                                k[:7]))
-         # Monolithic
-         if (not chunked):
-            if (len(self.url) == 0):
-               FATAL("monolithicc upload failed: no valid upload url."
-                     % self.url)
-            with open_(path, "rb") as f:
-               data = f.read()
-               upload.put_layer(self.url[-1], digest, data=data)
-            # FIXME: implement upload status check
-
-         # chunked
-         # FIXME: the following chunked upload implementation works, however,
-         # we don't use it. The chunked boolean is always false and thus we
-         # we will always perform a monolithic upload. This code exists here
-         # in the event that we wish to enable chunked uploads in the future.
+                                                digest.split(':')[-1][:7]))
+            self.push_layer(path, digest, upload)
          else:
-            chunk_size = 1049600 # 1 MiB
-            bytes_read = 0
-            range_ = None
-            with open(path, "rb") as f:
-               while (bytes_read <= (int(size) - chunk_size)):
-                  data = f.read(chunk_size)
-                  if not range_:
-                     range_ = "0-%s" % (chunk_size - 1)
-                  else:
-                     range_ = "%s-%s" % (bytes_read, bytes_read + len(data) - 1)
-                  bytes_read += len(data)
-                  self.push_chunk(upload, len(data), range_, data)
-
-               # The final chunk has to be a PUT.
-               data = f.read()
-               range_ = "%s-%s" % (bytes_read, bytes_read + len(data) - 1)
-               self.push_last_chunk(upload, digest, len(data), range_, data)
-
-               # FIXME: implement upload status check.
-               # Iterate over the chunk dict and submit GET requests to each
-               # chunk key (upload url) and compare the response header
-               # 'Content-Range' to that of the chunk key value. If it matches
-               # increment the count of uploaded chunks. Repeat until upload
-               # count matches the length of the chunk dict.
+            INFO("layer %d/%d: %s exists; skipping" % (i + 1, len(self.layers),
+                                                       digest.split(':')[-1][:7]))
 
    def push_manifest(self, upload):
+      INFO('pushing manifest')
       with open_(self.manifest_path, 'r', encoding='utf-8') as f:
          data = f.read()
          upload.put_manifest(data=data)
 
-   def push_to_repo(self, path, ulcache, chunked=False):
+   def push_to_repo(self, path, ulcache):
       """Stage image upload process."""
       self.archive_image(path, ulcache)
+      self.generate_config(path, ulcache)
       self.generate_manifest(path, ulcache)
 
       # FIXME: we manage a single upload object to pass around the auth
       # credentials. Probably a better way to handle this.
-      ul  = Repo_Data_Transfer(self.ref)
+      ul = Repo_Data_Transfer(self.ref)
       self.push_init(ul)
-      self.push_layers(ul, chunked)
+      self.push_layers(ul)
+      self.push_config(ul)
       self.push_manifest(ul)
       ul.close()
 
@@ -949,6 +990,9 @@ class Repo_Data_Transfer:
             DEBUG("got token: %s..." % (token[:32]))
             self.auth = self.Bearer_Auth(token)
 
+   def blob_url(self):
+      return "https://%s:%d/v2/blobs/uploads/" % (self.ref.host, self.ref.port)
+
    def close(self):
       if (self.session is not None):
          self.session.close()
@@ -998,11 +1042,33 @@ class Repo_Data_Transfer:
          FATAL("HTTP GET failed: %s" % x)
       return res
 
-   def head_layer(self, digest, auth=None):
-      """Check if a layer already exists in the repository."""
+   def head_blob(self, digest, auth=None, expected_statuses=(200,404)):
+      """Check if a blob already exists in the repository."""
       url = self._url_of("blobs", digest)
-      DEBUG("HEADing %s" % digest)
-      return self.session.head(url, auth=auth)
+      DEBUG("HEADing %s" % url)
+      return self.head_raw(url, auth=auth, expected_statuses=expected_statuses)
+
+   def head_raw(self, url, headers=dict(), auth=None,
+                expected_statuses=(200,404), **kwargs):
+      """POST url, passing headers, with no magic. If auth is None, use
+         self.auth (which might also be None). If status is not in
+         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
+         requests.session.get()."""
+      # FIXME: This function is identical to get_raw with the exception of the
+      #        expected status 202, the session.post method, and error message.
+      if (auth is None):
+         auth = self.auth
+      try:
+         res = self.session.head(url, headers=headers, auth=auth, **kwargs)
+         if (res.status_code not in expected_statuses):
+            DEBUG(res.headers)
+            DEBUG(res.content)
+            FATAL("HTTP HEAD failed; expected status %s but got %d: %s"
+                  % (" or ".join(str(i) for i in expected_statuses),
+                     res.status_code, res.reason))
+      except requests.exceptions.RequestException as x:
+         FATAL("HTTP HEAD failed: %s" % x)
+      return res
 
    def patch(self, url, headers=dict(), data=None, expected_statuses=(202,)):
       DEBUG("PATCHing: %s" % url)
@@ -1042,7 +1108,7 @@ class Repo_Data_Transfer:
       return res
 
    def post_raw(self, url, headers=dict(), auth=None,
-                expected_statuses=(200,202,), **kwargs):
+                expected_statuses=(202,), **kwargs):
       """POST url, passing headers, with no magic. If auth is None, use
          self.auth (which might also be None). If status is not in
          expected_statuses, barf with a fatal error. Pass kwargs unchanged to
@@ -1061,21 +1127,20 @@ class Repo_Data_Transfer:
          FATAL("HTTP POST failed: %s" % x)
       return res
 
-   def put(self, url, data=None, expected_statuses=(200,), headers=dict()):
+   def put(self, url, data=None, expected_statuses=(201,), headers=dict()):
       """GET url, passing headers, including authentication and session magic,
          and write the body of the response to path."""
       DEBUG("PUTing: %s" % url)
       self.session_init_maybe()
       self.authenticate_maybe(url, 'post') #FIXME, should be 'put'
-      self.put_raw(url, data=data, expected_statuses=expected_statuses,
+      return self.put_raw(url, data=data, expected_statuses=expected_statuses,
                    headers=headers)
 
-   def put_layer(self, url, digest, data):
-      """Upload the monolithic layer."""
+   def put_layer(self, url, data):
+      "Upload monolithic layer."
       headers = {'Content-Length': str(len(data)),
                  'Content-Type': 'application/octet-stream'}
-      url += "&digest=%s" % digest
-      self.put(url, headers=headers, data=data, expected_statuses=(201,))
+      self.put(url, headers=headers, data=data)
 
    def put_manifest(self, data):
       url = self._url_of("manifests", self.ref.tag)
