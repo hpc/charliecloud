@@ -519,7 +519,7 @@ class Image_Upload():
       mkdirs(ulcache)
       name = image.split('/')[-1]
       tar = os.path.join(ulcache, name) + '.tar'
-      INFO('creating uncompressed tar ...')
+      INFO('creating tarball')
       DEBUG('uncompressed tar: %s' % tar)
       if os.path.isfile(tar):
          DEBUG("removing %s" % tar)
@@ -542,7 +542,7 @@ class Image_Upload():
       with open_(tar, 'rb') as archive:
          data=archive.read()
          with open_(gzp, 'wb') as out:
-            INFO("compressing tar archive ...")
+            INFO("fixing and compressing tarball")
             DEBUG("compressed tar: %s ..." % gzp)
             with  gzip.GzipFile(filename='', mode='wb', compresslevel=9,
                                 fileobj=out, mtime=0.) as gz:
@@ -653,7 +653,7 @@ class Image_Upload():
       return False
 
    def push_config(self, upload):
-      INFO('pushing config ... ')
+      INFO('pushing config')
       c_path, c_size, c_digest = self.config
       head_url = upload._url_of("blobs", c_digest)
       if (not self.blob_exists(upload, c_digest)):
@@ -667,25 +667,6 @@ class Image_Upload():
       else:
          INFO('config exists; skipping')
 
-   def push_chunk(self, upload, size, range_, data):
-      "Take an upload object and upload a layer chunk via HTTP PATCH request"
-      headers={'Content-Length': str(len(data)),
-               'Content-Range': str(range_),
-               'Content-Type': 'application/octet-stream'}
-      self.chunks[self.upload_url] = headers
-      res = upload.patch(self.upload_url, headers=headers, data=data,
-                         expected_statuses=('202',))
-      self.url.append(res.headers['Location'])
-
-   def push_last_chunk(self, upload, digest, size, range_, data):
-      "Use upload object to push the final layer chunk via HTTP PUT request."
-      headers={'Content-Length': str(len(data)),
-               'Content-Range': str(range_),
-               'Content-Type': 'application/octet-stream'}
-      self.chunks[self.upload_url] = headers
-      upload.put(self.upload_url + "&digest=%s" % digest, headers=headers,
-                 data=data, expected_statuses=('201',))
-
    def push_init(self, upload):
       "Initiate upload process and store upload url."
       url = upload._url_of("blobs", "uploads/")
@@ -698,11 +679,10 @@ class Image_Upload():
       with open_(path, "rb") as f:
          data = f.read()
          upload.put_layer(self.upload_url + "&digest=%s" % digest, data)
-      upload.head_blob(blob_url, auth=upload.auth, expected_statuses=(200,))
+      upload.head_blob(blob_url, auth=upload.auth, expected_statuses=(200,301))
 
    def push_layers(self, upload):
       """Push image layers to repository."""
-      INFO("pushing layers")
       for i, path in enumerate(self.layers):
          digest = self.layers[path]['hash']['compressed']
          if (not self.blob_exists(upload, digest)):
@@ -710,8 +690,8 @@ class Image_Upload():
                                                 digest.split(':')[-1][:7]))
             self.push_layer(path, digest, upload)
          else:
-            INFO("layer %d/%d: %s exists; skipping" % (i + 1, len(self.layers),
-                                                       digest.split(':')[-1][:7]))
+            INFO("uploading layer %d/%d: %s (exists; skipping)"
+                 % (i + 1, len(self.layers), digest.split(':')[-1][:7]))
 
    def push_manifest(self, upload):
       INFO('pushing manifest')
