@@ -4,6 +4,7 @@ import collections
 import copy
 import datetime
 import gzip
+import getpass
 import hashlib
 import http.client
 import json
@@ -645,7 +646,7 @@ class Image_Upload():
       DEBUG("generated manfiest:\n%s" % json.dumps(manifest, indent=3))
 
    def blob_exists(self, upload, digest):
-      """Determine if a layer already exists."""
+      """Determine if a blob already exists."""
       res = upload.head_blob(digest=digest, auth=upload.auth)
       if (res.status_code == 200):
          return True
@@ -686,12 +687,13 @@ class Image_Upload():
                  data=data, expected_statuses=('201',))
 
    def push_init(self, upload):
-      """Initiate upload process; append upload url upon success"""
+      "Initiate upload process and store upload url."
       url = upload._url_of("blobs", "uploads/")
-      res = upload.post(url=url, expected_statuses=(202,))
+      res = upload.post(url=url, expected_statuses=(202,401))
       self.upload_url = res.headers['Location']
 
    def push_layer(self, path, digest, upload):
+      "Push layer to repository via HTTPS PUT request and confirm with HEAD."
       blob_url = upload._url_of("blobs", digest)
       with open_(path, "rb") as f:
          data = f.read()
@@ -1050,7 +1052,7 @@ class Repo_Data_Transfer:
 
    def head_raw(self, url, headers=dict(), auth=None,
                 expected_statuses=(200,404), **kwargs):
-      """POST url, passing headers, with no magic. If auth is None, use
+      """HEAD url, passing headers, with no magic. If auth is None, use
          self.auth (which might also be None). If status is not in
          expected_statuses, barf with a fatal error. Pass kwargs unchanged to
          requests.session.get()."""
@@ -1061,8 +1063,6 @@ class Repo_Data_Transfer:
       try:
          res = self.session.head(url, headers=headers, auth=auth, **kwargs)
          if (res.status_code not in expected_statuses):
-            DEBUG(res.headers)
-            DEBUG(res.content)
             FATAL("HTTP HEAD failed; expected status %s but got %d: %s"
                   % (" or ".join(str(i) for i in expected_statuses),
                      res.status_code, res.reason))
@@ -1108,7 +1108,7 @@ class Repo_Data_Transfer:
       return res
 
    def post_raw(self, url, headers=dict(), auth=None,
-                expected_statuses=(202,), **kwargs):
+                expected_statuses=(200,), **kwargs):
       """POST url, passing headers, with no magic. If auth is None, use
          self.auth (which might also be None). If status is not in
          expected_statuses, barf with a fatal error. Pass kwargs unchanged to
@@ -1161,8 +1161,6 @@ class Repo_Data_Transfer:
          auth = self.auth
       try:
          res = self.session.put(url, headers=headers, auth=auth, **kwargs)
-         DEBUG(res.headers)
-         DEBUG(res.content)
          if (res.status_code not in expected_statuses):
             FATAL("HTTP PUT failed; expected status %s but got %d: %s"
                   % (" or ".join(str(i) for i in expected_statuses),
