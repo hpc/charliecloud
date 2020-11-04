@@ -523,7 +523,7 @@ class Image_Upload():
          with open_(dst, 'wb') as out:
             # FIXME: this horror is a proof of concept; perhaps there are better
             # ways to implement the progress bar here.
-            with tqdm.tqdm(total=total, colour='magenta') as pb:
+            with tqdm.tqdm(total=total) as pb:
                with gzip.GzipFile(filename='', mode='a', compresslevel=9,
                                   fileobj=out, mtime=0.) as gz:
                   for i in range(chunks):

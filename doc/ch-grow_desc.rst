@@ -153,21 +153,13 @@ Options:
 :code:`push`
 ------------
 
-Push the local image described by the image reference :code:`IMAGE_REF` from
-storage to the repository described by the image reference
-:code:`DEST_IMAGE_REF` via HTTPS. See the FAQ for the gory details on specifying
-image references.
+Push the image described by the image reference :code:`IMAGE_REF` from
+storage to a repository described by the image reference :code:`DEST_IMAGE_REF`
+via HTTPS. See the FAQ for the gory details on specifying image references.
 
-Images pushed with this method have their file ownership bits fixed in order to
-support an uprivileged ecosystem and reomove sensitive information, e.g.,
-:code:`uid/gid`. All image files will be owned and group owned by
-:code:`nobody`, i.e., :code:`65534`.
-
-Options:
-
-   :code:`--image-dir DIR`
-    If specified, look for the image :code:`IMAGE_REF` in :code:`DIR`;
-    otherwise use :code:`CH_GROW_STORAGE`
+Images pushed this way have their file ownership bits fixed in order to
+support an uprivileged ecosystem and reomove sensitive information. All image
+files will be owned and group owned by :code:`nobody`, i.e., :code:`65534`.
 
 Compatibility with other Dockerfile interpreters
 ================================================
