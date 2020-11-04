@@ -473,8 +473,6 @@ nogroup:x:65534:
 
 class Image_Upload():
    """Image Upload object.
-      chunks                dict where k = chunked upload url and v = headers (
-                            e.g., content-length, content-range)
       layers                dict where k = layer's compressed tarball path and
                             v = list consisting of: uncompressed and compressed
                             image data, e.g., size, and hash
@@ -496,35 +494,66 @@ class Image_Upload():
       self.manifest_path = None
       self.path = path
       self.ref = dest
-      self.upload_url = []
+      self.upload_url = None
 
    def archive_fixup(self, tarinfo):
       # FIXME: The uid and gid of "nobody" is not always  65534. The files
-      #        files should be mapped to 0/0 with the following restrictions:
-      #           1. no leading '/'
-      #           2. no setuid or setguid files
+      # should be mapped to 0/0 with the following restrictions:
+      #    1. no leading '/'
+      #    2. no setuid or setguid files
       tarinfo.uid = tarinfo.gid = 65534
       tarinfo.uname = "nobody"
       tarinfo.gname = "nogroup"
       return tarinfo
 
-   def archive_image(self, image, ulcache):
-      """Create compressed image tarball."""
-      # FIXME: update when (if) we have multiple layers.
+   def compress_tarball(self, tar, dst):
+      with open_(tar, 'rb') as archive:
+         data=archive.read()
+         with open_(dst, 'wb') as out:
+            with  gzip.GzipFile(filename='', mode='wb', compresslevel=9,
+                                fileobj=out, mtime=0.) as gz:
+               gz.write(data)
+         if (not os.path.isfile(dst)):
+            FATAL('failed to create compressed archive %s' % dst)
 
-      size   = {'compressed':   None, # compressed referenced by image manifest
-                'uncompressed': None}
-      hash_ = {'compressed':   None,
-                'uncompressed': None}
+   def compress_tarball_progress(self, tar, dst, total):
+      import tqdm
+      chunks, r = divmod(total, 32768)
+      with open_(tar, 'rb') as archive:
+         with open_(dst, 'wb') as out:
+            # FIXME: this horror is a proof of concept; perhaps there are better
+            # ways to implement the progress bar here.
+            with tqdm.tqdm(total=total, colour='magenta') as pb:
+               with gzip.GzipFile(filename='', mode='a', compresslevel=9,
+                                  fileobj=out, mtime=0.) as gz:
+                  for i in range(chunks):
+                     data = archive.read(32768)
+                     gz.write(data)
+                     pb.update(32768)
+                  if ( r > 0 ):
+                     data = archive.read(r)
+                     gz.write(data)
+                     pb.update(r)
+      if (not os.path.isfile(dst)):
+         FATAL('failed to create compressed archive %s' % dst)
+
+   def create_tarball(self, image, ulcache):
+      "Pack image to tarball, compress it, and store metadata"
+      # FIXME: update when (if) we have multiple layers.
       mkdirs(ulcache)
+      size  = {'compressed':   None,
+               'uncompressed': None}
+      hash_ = {'compressed':   None,
+               'uncompressed': None}
       name = image.split('/')[-1]
       tar = os.path.join(ulcache, name) + '.tar'
-      INFO('creating tarball')
-      DEBUG('uncompressed tar: %s' % tar)
       if os.path.isfile(tar):
          DEBUG("removing %s" % tar)
          os.remove(tar)
+      INFO('creating tarball')
+      DEBUG('uncompressed tar: %s' % tar)
       # Add image to uncompressed tar archive.
+      # FIXME: add tqdm progress bar here.
       with tarfile.open(tar, "w") as archive:
          archive.add(self.path, arcname=None, recursive=True,
                      filter=self.archive_fixup)
@@ -534,22 +563,18 @@ class Image_Upload():
       DEBUG('uncompressed digest: %s' % hash_['uncompressed'])
       DEBUG('uncompressed size: %s' % size['uncompressed'])
 
-      # Compress tar archive for uploading.
-      # FIXME: This is pretty hideous. Is there a better way to create
-      # identical (same hash) compressed tarballs of the same filesystem
-      # tree?
       gzp = tar + '.gz'
-      with open_(tar, 'rb') as archive:
-         data=archive.read()
-         with open_(gzp, 'wb') as out:
-            INFO("fixing and compressing tarball")
-            DEBUG("compressed tar: %s ..." % gzp)
-            with  gzip.GzipFile(filename='', mode='wb', compresslevel=9,
-                                fileobj=out, mtime=0.) as gz:
-               gz.write(data)
-      if (not os.path.isfile(gzp)):
-         FATAL('failed to create compressed archive %s'
-               % gzp)
+      if (os.path.exists(gzp)):
+         os.remove(gzp)
+      INFO("compressing tarball")
+      DEBUG("compressed tar: %s ..." % gzip)
+      try:
+         import tqdm
+         DEBUG('using tqdm for compression progress')
+         self.compress_tarball_progress(tar, gzp, size.get('uncompressed'))
+      except (ModuleNotFoundError):
+         self.compress_tarball(tar, gzp)
+
       # Store compressed layer data.
       hash_['compressed'] = 'sha256:%s' % self.get_layer_hash(gzp)
       size['compressed'] = pathlib.Path(gzp).stat().st_size
@@ -571,7 +596,7 @@ class Image_Upload():
             encode = hashlib.sha256(f.read()).hexdigest()
       return encode
 
-   def generate_config(self, path, ulcache):
+   def create_config(self, path, ulcache):
       "Create image config"
       mkdirs(ulcache)
       config =  {"architecture": "amd64", #FIXME
@@ -612,7 +637,7 @@ class Image_Upload():
       DEBUG('config digest: %s' % digest)
       DEBUG("generated config:\n%s" % json.dumps(config, indent=3))
 
-   def generate_manifest(self, path, ulcache):
+   def create_manifest(self, path, ulcache):
       "Create image manifest json"
       # FIXME: implement ulcache, e.g., "use_cache"?
       mkdirs(ulcache)
@@ -671,7 +696,7 @@ class Image_Upload():
       "Initiate upload process and store upload url."
       url = upload._url_of("blobs", "uploads/")
       res = upload.post(url=url, expected_statuses=(202,401))
-      self.upload_url = res.headers['Location']
+      self.upload_url = res.headers.get('Location')
 
    def push_layer(self, path, digest, upload):
       "Push layer to repository via HTTPS PUT request and confirm with HEAD."
@@ -701,9 +726,9 @@ class Image_Upload():
 
    def push_to_repo(self, path, ulcache):
       """Stage image upload process."""
-      self.archive_image(path, ulcache)
-      self.generate_config(path, ulcache)
-      self.generate_manifest(path, ulcache)
+      self.create_tarball(path, ulcache)
+      self.create_config(path, ulcache)
+      self.create_manifest(path, ulcache)
 
       # FIXME: we manage a single upload object to pass around the auth
       # credentials. Probably a better way to handle this.
@@ -971,9 +996,6 @@ class Repo_Data_Transfer:
             token = res.json()["token"]
             DEBUG("got token: %s..." % (token[:32]))
             self.auth = self.Bearer_Auth(token)
-
-   def blob_url(self):
-      return "https://%s:%d/v2/blobs/uploads/" % (self.ref.host, self.ref.port)
 
    def close(self):
       if (self.session is not None):
