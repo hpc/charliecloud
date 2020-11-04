@@ -22,7 +22,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Install CUDA from nVidia.
-# See: https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=2004&target_type=debnetwork 
+# See: https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=2004&target_type=debnetwork
 WORKDIR /usr/local/src
 RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin \
  && mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600 \
@@ -43,9 +43,10 @@ FROM ubuntu:20.04
 
 COPY --from=0 /usr/local/cuda-11.0/samples/0_Simple/matrixMulCUBLAS /
 
-# This is the one nVidia shared library that the sample app needs. We could be
-# smarter about finding this path. However, one thing to avoid is copying in
+# These are the two nVidia shared libraries that the sample app needs. We could
+# be smarter about finding this path. However, one thing to avoid is copying in
 # all of /usr/local/cuda-11.0/targets/x86_64-linux/lib, because that directory
 # is quite large.
 COPY --from=0 /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcublas.so.11.2.0.252 /usr/local/lib
+COPY --from=0 /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcublasLt.so.11.2.0.252 /usr/local/lib
 RUN ldconfig
