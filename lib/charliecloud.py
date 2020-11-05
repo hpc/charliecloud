@@ -267,6 +267,8 @@ class Image:
       # Mount points.
       file_ensure_exists("%s/etc/hosts" % self.unpack_path)
       file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
+      for i in range(10):
+         mkdirs("%s/mnt/%d" % (self.unpack_path, i))
 
    def flatten(self, last_layer=None):
       "Flatten the layers in the download cache into the unpack directory."
@@ -884,9 +886,11 @@ def INFO(*args, **kwargs):
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)
 
-def ch_run_modify(img, args, env, workdir="/"):
-   args = [CH_BIN + "/ch-run", "-w", "--cd", workdir, "--uid=0", "--gid=0",
-           "--no-home", "--no-passwd", img, "--"] + args
+def ch_run_modify(img, args, env, workdir="/", binds=[]):
+   args = (  [CH_BIN + "/ch-run"]
+           + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
+           + sum([["-b", i] for i in binds], [])
+           + [img, "--"] + args)
    cmd(args, env)
 
 def cmd(args, env=None):

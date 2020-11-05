@@ -96,6 +96,15 @@ Required argument:
 
 Options:
 
+  :code:`-b`, :code:`--bind SRC[:DST]`
+    Bind-mount host directory :code:`SRC` at container directory :code:`DST`
+    during :code:`RUN` instructions. Can be repeated; the default destination
+    if :code:`DST` is omitted is :code:`/mnt/0`, :code:`/mnt/1`, etc.
+
+    **Note:** This applies only to :code:`RUN` instructions. Other
+    instructions that modify the image filesystem, e.g. :code:`COPY`, can only
+    access host files from the context directory.
+
   :code:`--build-arg KEY[=VALUE]`
     Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
     to :code:`VALUE`. If :code:`VALUE` not specified, use the value of
@@ -399,6 +408,18 @@ path::
    [...]
    grown in 4 instructions: bar
 
+Build using humongous vendor compilers you want to bind-mount instead of
+installing into a layer::
+
+   $ ch-grow build --bind /opt/bigvendor:/opt .
+   $ cat Dockerfile
+   FROM centos:7
+
+   RUN /opt/bin/cc hello.c
+   #COPY /opt/lib/*.so /usr/local/lib   # fail: COPY doesn't bind mount
+   RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround
+   RUN ldconfig
+
 :code:`pull`
 ------------
 
@@ -424,4 +445,4 @@ Same, except place the image in :code:`/tmp/buster`::
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
 
-..  LocalWords:  tmpfs'es
+..  LocalWords:  tmpfs'es bigvendor
