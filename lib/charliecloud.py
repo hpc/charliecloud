@@ -485,7 +485,7 @@ class Image:
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
          if (   not os.path.isdir(self.unpack_path + "/bin")
-             or not os.path.isdir(self.unpack_path + "/lib")
+             or not os.path.isdir(self.unpack_path + "/dev")
              or not os.path.isdir(self.unpack_path + "/usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
@@ -850,17 +850,17 @@ class TarFile(tarfile.TarFile):
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path
       # of the member being extracted.
-      DEBUG("makedir: %s" % targetpath)
+      DEBUG("makedir: %s" % targetpath, v=2)
       self.clobber(targetpath, regulars=True, symlinks=True)
       super().makedir(tarinfo, targetpath)
 
    def makefile(self, tarinfo, targetpath):
-      DEBUG("makefile: %s" % targetpath)
+      DEBUG("makefile: %s" % targetpath, v=2)
       self.clobber(targetpath, symlinks=True, dirs=True)
       super().makefile(tarinfo, targetpath)
 
    def makelink(self, tarinfo, targetpath):
-      DEBUG("makelink: %s -> %s" % (targetpath, tarinfo.linkname))
+      DEBUG("makelink: %s -> %s" % (targetpath, tarinfo.linkname), v=2)
       self.clobber(targetpath, regulars=True, symlinks=True, dirs=True)
       super().makelink(tarinfo, targetpath)
 
