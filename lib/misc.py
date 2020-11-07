@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+import shutil
 
 import charliecloud as ch
 import version
@@ -33,6 +34,18 @@ class Version(Action_Exit):
 # Argument: command line arguments Namespace. Do not need to call sys.exit()
 # because caller manages that.
 
+##NEW STUFF######################
+def delete(cli):
+   imgdir = cli.storage + '/img'
+   print (imgdir)
+   isDIR = os.path.isdir(imgdir)
+   if(isDIR):
+    #  shutil.rmtree(imgdir)
+      print("Image Deleted")
+   else:
+      print("not an directory")
+
+     
 def list_(cli):
    ch.dependencies_check()
    imgdir = cli.storage + '/img'
