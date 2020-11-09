@@ -38,6 +38,10 @@ Common options placed before the sub-command:
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory (see below for important details).
 
+  :code:`--tls-no-verify`
+    Don't verify TLS certificates of the repository. (Do not use this option
+    unless you understand the risks.)
+
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
 

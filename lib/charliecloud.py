@@ -64,6 +64,9 @@ verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 
+# Verify TLS certificates? Passed to requests.
+tls_verify = True
+
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
 GRAMMAR = r"""
@@ -632,7 +635,10 @@ fields:
       "Set defaults for all empty fields."
       if (self.host is None): self.host = "registry-1.docker.io"
       if (self.port is None): self.port = 443
-      if (len(self.path) == 0): self.path = ["library"]
+      if (self.host == "registry-1.docker.io" and len(self.path) == 0):
+         # FIXME: For Docker Hub only, images with no path need a path of
+         # "library" substituted. Need to understand/document the rules here.
+         self.path = ["library"]
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
@@ -708,26 +714,15 @@ class Repo_Downloader:
       url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
       return "/".join((url_base, self.ref.path_full, type_, address))
 
-   def authorize(self, res):
-      "Authorize using the WWW-Authenticate header in failed response res."
-      DEBUG("authorizing")
-      assert (res.status_code == 401)
-      # Get authentication instructions.
-      if ("WWW-Authenticate" not in res.headers):
-         FATAL("WWW-Authenticate header not found")
-      auth_h = res.headers["WWW-Authenticate"]
-      if (not auth_h.startswith("Bearer ")):
-         FATAL("authentication scheme is not Bearer: %s" % auth_h)
-      # Parse the WWW-Authenticate header. Apparently doing this correctly is
-      # pretty hard. We use a non-compliant regex kludge [1,2]. Alternatives
-      # include putting the grammar into Lark (this can be gotten by reading
-      # the RFCs enough) or using the www-authenticate library [3].
-      #
-      # [1]: https://stackoverflow.com/a/1349528
-      # [2]: https://stackoverflow.com/a/1547940
-      # [3]: https://pypi.org/project/www-authenticate
-      auth_d = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth_h))
-      DEBUG("WWW-Authenticate parse: %s" % auth_d)
+   def authenticate_basic(self, res, auth_d):
+      DEBUG("authenticating using Basic")
+      if ("realm" not in auth_d):
+         FATAL("WWW-Authenticate missing realm")
+      (username, password) = self.credentials_read()
+      self.auth = requests.auth.HTTPBasicAuth(username, password)
+
+   def authenticate_bearer(self, res, auth_d):
+      DEBUG("authenticating using Bearer")
       for k in ("realm", "service", "scope"):
          if (k not in auth_d):
             FATAL("WWW-Authenticate missing key: %s" % k)
@@ -739,8 +734,7 @@ class Repo_Downloader:
                                  "scope": auth_d["scope"]})
       if (res.status_code == 403):
          INFO("anonymous access rejected")
-         username = input("Username: ")
-         password = getpass.getpass("Password: ")
+         (username, password) = self.credentials_read()
          auth = requests.auth.HTTPBasicAuth(username, password)
          res = self.get_raw(auth_d["realm"], [200], auth=auth,
                             params={"service": auth_d["service"],
@@ -749,9 +743,42 @@ class Repo_Downloader:
       DEBUG("received auth token: %s" % (token[:32]))
       self.auth = self.Bearer_Auth(token)
 
+   def authorize(self, res):
+      "Authorize using the WWW-Authenticate header in failed response res."
+      DEBUG("authorizing")
+      assert (res.status_code == 401)
+      # Get authentication instructions.
+      if ("WWW-Authenticate" not in res.headers):
+         FATAL("WWW-Authenticate header not found")
+      auth_h = res.headers["WWW-Authenticate"]
+      DEBUG("WWW-Authenticate raw: %s" % auth_h)
+      # Parse the WWW-Authenticate header. Apparently doing this correctly is
+      # pretty hard. We use a non-compliant regex kludge [1,2]. Alternatives
+      # include putting the grammar into Lark (this can be gotten by reading
+      # the RFCs enough) or using the www-authenticate library [3].
+      #
+      # [1]: https://stackoverflow.com/a/1349528
+      # [2]: https://stackoverflow.com/a/1547940
+      # [3]: https://pypi.org/project/www-authenticate
+      auth_type = auth_h.split()[0]
+      auth_d = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth_h))
+      DEBUG("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
+      # Dispatch to proper method.
+      if   (auth_type == "Bearer"):
+         self.authenticate_bearer(res, auth_d)
+      elif (auth_type == "Basic"):
+         self.authenticate_basic(res, auth_d)
+      else:
+         FATAL("unknown auth type: %s" % auth_h)
+
    def close(self):
       if (self.session is not None):
          self.session.close()
+
+   def credentials_read(self):
+      username = input("Username: ")
+      password = getpass.getpass("Password: ")
+      return (username, password)
 
    def get(self, url, path, headers=dict(), statuses=[200]):
       """GET url, passing headers, and write the body of the response to path.
@@ -812,6 +839,7 @@ class Repo_Downloader:
       if (self.session is None):
          DEBUG("initializing session")
          self.session = requests.Session()
+         self.session.verify = tls_verify
 
 
 class TarFile(tarfile.TarFile):

@@ -83,6 +83,9 @@ def main():
          { "metavar": "DIR",
            "default": ch.storage_env(),
            "help": "set builder internal storage directory to DIR" }],
+       [ ["--tls-no-verify"],
+         { "action": "store_true",
+           "help": "don't verify registry certificates (dangerous!)" }],
        [ ["-v", "--verbose"],
          { "action": "count",
            "default": 0,
@@ -155,6 +158,7 @@ def main():
        sys.exit(1)
    cli = ap.parse_args()
    ch.log_setup(cli.verbose)
+   ch.tls_verify = not cli.tls_no_verify
 
    # Dispatch.
    cli.func(cli)
