@@ -298,20 +298,20 @@ EOF
 
     # Things not here (yet?):
     #
-    # 1. Harbor: Has a demo repo (https://demo.goharbor.io) that you can make
-    #    an account on, but I couldn't find a public repo, and the demo repo
-    #    gets reset every two days.
+    # 1. Harbor (issue #899): Has a demo repo (https://demo.goharbor.io) that
+    #    you can make an account on, but I couldn't find a public repo, and
+    #    the demo repo gets reset every two days.
     #
     # 2. Docker registry container (https://hub.docker.com/_/registry): Would
     #    need to set up an instance.
     #
-    # 3. Amazon public repo
-    #    (https://aws.amazon.com/blogs/containers/advice-for-customers-dealing-with-docker-hub-rate-limits-and-a-coming-soon-announcement/):
+    # 3. Amazon public repo (issue #901,
+    #    https://aws.amazon.com/blogs/containers/advice-for-customers-dealing-with-docker-hub-rate-limits-and-a-coming-soon-announcement/):
     #    Does not exist yet; coming "within weeks" of 2020-11-02.
     #
-    # 4. Microsoft Azure registry [1]: I could not find any public images. It
-    #    seems that public pull is "currently a preview feature" as of
-    #    2020-11-06 [2].
+    # 4. Microsoft Azure registry [1] (issue #902): I could not find any
+    #    public images. It seems that public pull is "currently a preview
+    #    feature" as of 2020-11-06 [2].
     #
     #    [1]: https://azure.microsoft.com/en-us/services/container-registry
     #    [2]: https://docs.microsoft.com/en-us/azure/container-registry/container-registry-faq#how-do-i-enable-anonymous-pull-access
