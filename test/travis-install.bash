@@ -17,8 +17,8 @@ if [[ -z $MINIMAL_DEPS ]]; then
     sudo apt-get install pigz pv
 else
     PACK_FMT=tar
-    if [[ $CH_BUILDER != ch-grow ]]; then
-        # Remove ch-grow dependency "requests" (issue #806).
+    if [[ $CH_BUILDER != ch-image ]]; then
+        # Remove ch-image dependency "requests" (issue #806).
         sudo dpkg --remove \
                   apport \
                   cloud-init \
@@ -30,7 +30,7 @@ else
                   ubuntu-server
     fi
 fi
-if [[ $CH_BUILDER = ch-grow ]]; then
+if [[ $CH_BUILDER = ch-image ]]; then
     sudo pip3 install lark-parser requests
 fi
 case $PACK_FMT in

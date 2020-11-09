@@ -7,7 +7,7 @@ Dockerfile.00_tiny \
 Dockerfile.argenv \
 Dockerfile.build2dir \
 build/10_sanity.bats \
-build/50_ch-grow.bats \
+build/50_ch-image.bats \
 build/50_dockerfile.bats \
 build/50_misc.bats \
 build/50_pull.bats \

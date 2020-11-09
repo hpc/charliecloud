@@ -23,15 +23,15 @@ set -x
 # Remove Autotools to make sure everything works without them.
 sudo apt-get remove autoconf automake
 
-if [[ $MINIMAL_DEPS && $CH_BUILDER != ch-grow ]]; then
-    # Make sure ch-grow dependencies haven't crept back somehow (issue #806).
+if [[ $MINIMAL_DEPS && $CH_BUILDER != ch-image ]]; then
+    # Make sure ch-image dependencies haven't crept back somehow (issue #806).
     ( pip3 freeze | grep -F lark-parser ) && exit 1
     ( pip3 freeze | grep -F requests ) && exit 1
 fi
 
 if [[ $MINIMAL_CONFIG ]]; then
     # Everything except --disable-test, which would defeat the point.
-    disable='--disable-html --disable-man --disable-ch-grow'
+    disable='--disable-html --disable-man --disable-ch-image'
 fi
 
 case $TARBALL in

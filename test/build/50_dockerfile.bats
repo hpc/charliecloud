@@ -6,33 +6,33 @@ load ../common
     # it, so re-use the same one.
 
     scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only' # FIXME: other builders?
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only' # FIXME: other builders?
 
     # No newline at end of file.
       printf 'FROM 00_tiny\nRUN echo hello' \
-    | ch-grow build -t syntax-quirks -f - .
+    | ch-image build -t syntax-quirks -f - .
 
     # Newline before FROM.
-    ch-grow build -t syntax-quirks -f - . <<'EOF'
+    ch-image build -t syntax-quirks -f - . <<'EOF'
 
 FROM 00_tiny
 RUN echo hello
 EOF
 
     # Comment before FROM.
-    ch-grow build -t syntax-quirks -f - . <<'EOF'
+    ch-image build -t syntax-quirks -f - . <<'EOF'
 # foo
 FROM 00_tiny
 RUN echo hello
 EOF
 
     # Single instruction.
-    ch-grow build -t syntax-quirks -f - . <<'EOF'
+    ch-image build -t syntax-quirks -f - . <<'EOF'
 FROM 00_tiny
 EOF
 
     # Whitespace around comment hash.
-    run ch-grow -v build -t syntax-quirks -f - . <<'EOF'
+    run ch-image -v build -t syntax-quirks -f - . <<'EOF'
 FROM 00_tiny
 #no whitespace
  #before only
@@ -49,10 +49,10 @@ EOF
 
 @test 'Dockerfile: syntax errors' {
     scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # Bad instruction. Also, -v should give interal blabber about the grammar.
-    run ch-grow -v build -t foo -f - . <<'EOF'
+    run ch-image -v build -t foo -f - . <<'EOF'
 FROM 00_tiny
 WEIRDAL
 EOF
@@ -65,7 +65,7 @@ EOF
     [[ $output = *'Expecting: {'* ]]
 
     # Bad long option.
-    run ch-grow build -t foo -f - . <<'EOF'
+    run ch-image build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown= foo bar
 EOF
@@ -74,13 +74,13 @@ EOF
     [[ $output = *"can't parse: -:2,14"* ]]
 
     # Empty input.
-    run ch-grow build -t foo -f /dev/null .
+    run ch-image build -t foo -f /dev/null .
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'no instructions found: /dev/null'* ]]
 
     # Newline only.
-    run ch-grow build -t foo -f - . <<'EOF'
+    run ch-image build -t foo -f - . <<'EOF'
 
 EOF
     echo "$output"
@@ -88,7 +88,7 @@ EOF
     [[ $output = *'no instructions found: -'* ]]
 
     # Comment only.
-    run ch-grow build -t foo -f - . <<'EOF'
+    run ch-image build -t foo -f - . <<'EOF'
 # foo
 EOF
     echo "$output"
@@ -96,7 +96,7 @@ EOF
     [[ $output = *'no instructions found: -'* ]]
 
     # Only newline, then comment.
-    run ch-grow build -t foo -f - . <<'EOF'
+    run ch-image build -t foo -f - . <<'EOF'
 
 # foo
 EOF
@@ -105,7 +105,7 @@ EOF
     [[ $output = *'no instructions found: -'* ]]
 
     # Non-ARG instruction before FROM
-    run ch-grow build -t foo -f - . <<'EOF'
+    run ch-image build -t foo -f - . <<'EOF'
 RUN echo uh oh
 FROM 00_tiny
 EOF
@@ -117,10 +117,10 @@ EOF
 
 @test 'Dockerfile: semantic errors' {
     scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # Repeated instruction option.
-    run ch-grow build -t foo -f - . <<'EOF'
+    run ch-image build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown=foo --chown=bar fixtures/empty-file .
 EOF
@@ -129,7 +129,7 @@ EOF
     [[ $output = *'  2 COPY: repeated option --chown'* ]]
 
     # COPY invalid option.
-    run ch-grow build -t foo -f - . <<'EOF'
+    run ch-image build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY --foo=foo fixtures/empty-file .
 EOF
@@ -138,7 +138,7 @@ EOF
     [[ $output = *'COPY: invalid option --foo'* ]]
 
     # FROM invalid option.
-    run ch-grow build -t foo -f - . <<'EOF'
+    run ch-image build -t foo -f - . <<'EOF'
 FROM --foo=bar 00_tiny
 EOF
     echo "$output"
@@ -151,10 +151,10 @@ EOF
     # This test also creates images we don't care about.
 
     scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # ARG before FROM
-    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t not-yet-supported -f - . <<'EOF'
 ARG foo=bar
 FROM 00_tiny
 EOF
@@ -163,7 +163,7 @@ EOF
     [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
 
     # COPY list form
-    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 COPY ["fixtures/empty-file", "."]
 EOF
@@ -172,7 +172,7 @@ EOF
     [[ $output = *'error: not yet supported: issue #784: COPY list form'* ]]
 
     # FROM --platform
-    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t not-yet-supported -f - . <<'EOF'
 FROM --platform=foo 00_tiny
 EOF
     echo "$output"
@@ -180,7 +180,7 @@ EOF
     [[ $output = *'error: not yet supported: issue #778: FROM --platform'* ]]
 
     # other instructions
-    run ch-grow build -t unsupported -f - . <<'EOF'
+    run ch-image build -t unsupported -f - . <<'EOF'
 FROM 00_tiny
 ADD foo
 CMD foo
@@ -200,7 +200,7 @@ EOF
     [[ $output = *'warning: not yet supported, ignored: issue #789: SHELL instruction'* ]]
 
     # .dockerignore files
-    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 EOF
     echo "$output"
@@ -208,14 +208,14 @@ EOF
     [[ $output = *'warning: not yet supported, ignored: issue #777: .dockerignore file'* ]]
 
     # URL (Git repo) contexts
-    run ch-grow build -t not-yet-supported -f - \
+    run ch-image build -t not-yet-supported -f - \
         git@github.com:hpc/charliecloud.git <<'EOF'
 FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
-    run ch-grow build -t not-yet-supported -f - \
+    run ch-image build -t not-yet-supported -f - \
         https://github.com/hpc/charliecloud.git <<'EOF'
 FROM 00_tiny
 EOF
@@ -224,7 +224,7 @@ EOF
     [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
 
     # variable expansion modifiers
-    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 ARG foo=README
 COPY fixtures/${foo:+bar} .
@@ -233,7 +233,7 @@ EOF
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
     [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
-    run ch-grow build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t not-yet-supported -f - . <<'EOF'
 FROM 00_tiny
 ARG foo=README
 COPY fixtures/${foo:-bar} .
@@ -249,10 +249,10 @@ EOF
     # This test also creates images we don't care about.
 
     scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # parser directives
-    run ch-grow build -t unsupported -f - . <<'EOF'
+    run ch-image build -t unsupported -f - . <<'EOF'
 # escape=foo
 # syntax=foo
 #syntax=foo
@@ -268,7 +268,7 @@ EOF
     [[ $(echo "$output" | grep -Fc 'parser directives') -eq 5 ]]
 
     # COPY --from
-    run ch-grow build -t unsupported -f - . <<'EOF'
+    run ch-image build -t unsupported -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown=foo fixtures/empty-file .
 EOF
@@ -277,7 +277,7 @@ EOF
     [[ $output = *'warning: not supported, ignored: COPY --chown'* ]]
 
     # Unsupported instructions
-    run ch-grow build -t unsupported -f - . <<'EOF'
+    run ch-image build -t unsupported -f - . <<'EOF'
 FROM 00_tiny
 EXPOSE foo
 HEALTHCHECK foo
@@ -377,11 +377,11 @@ EOF
 
 
 @test 'Dockerfile: ARG and ENV values' {
-    # We use full scope for builders other than ch-grow because (1) with
-    # ch-grow, we are responsible for --build-arg being implemented correctly
+    # We use full scope for builders other than ch-image because (1) with
+    # ch-image, we are responsible for --build-arg being implemented correctly
     # and (2) Docker and Buildah take a full minute for this test, vs. three
-    # seconds for ch-grow.
-    if [[ $CH_BUILDER = ch-grow ]]; then
+    # seconds for ch-image.
+    if [[ $CH_BUILDER = ch-image ]]; then
         scope standard
     elif [[ $CH_BUILDER = none ]]; then
         skip 'no builder'
@@ -392,7 +392,7 @@ EOF
 
     # Note that this test illustrates a number of behavior differences between
     # the builders. For most of these, but not all, Docker and Buildah have
-    # the same behavior and ch-grow differs.
+    # the same behavior and ch-image differs.
 
     echo '*** default (no --build-arg)'
     env_expected=$(cat <<'EOF'
@@ -440,7 +440,7 @@ EOF
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** one --build-arg from environment'
-    if [[ $CH_BUILDER == ch-grow ]]; then
+    if [[ $CH_BUILDER == ch-image ]]; then
         env_expected=$(cat <<'EOF'
 chse_arg1_df=foo1
 chse_arg2_df=arg2
@@ -520,7 +520,7 @@ EOF
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** two --build-arg with substitution'
-    if [[ $CH_BUILDER == ch-grow ]]; then
+    if [[ $CH_BUILDER == ch-image ]]; then
         env_expected=$(cat <<'EOF'
 chse_arg2_df=bar2
 chse_arg3_df=bar3 bar2
@@ -553,7 +553,7 @@ EOF
     run ch-build --build-arg chse_doesnotexist=foo \
                  --no-cache -t argenv -f ./Dockerfile.argenv .
     echo "$output"
-    if [[ $CH_BUILDER = ch-grow ]]; then
+    if [[ $CH_BUILDER = ch-image ]]; then
         [[ $status -eq 1 ]]
     else
         [[ $status -eq 0 ]]
@@ -565,7 +565,7 @@ EOF
     run ch-build --build-arg chse_arg1_df \
                  --no-cache -t argenv -f ./Dockerfile.argenv .
     echo "$output"
-    if [[ $CH_BUILDER = ch-grow ]]; then
+    if [[ $CH_BUILDER = ch-image ]]; then
         [[ $status -eq 1 ]]
         [[ $output = *'--build-arg: chse_arg1_df: no value and not in environment'* ]]
     else
@@ -580,7 +580,7 @@ EOF
     [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
 
     # Dockerfile on stdin, so no context directory.
-    if [[ $CH_BUILDER != ch-grow ]]; then  # ch-grow doesn't support this yet
+    if [[ $CH_BUILDER != ch-image ]]; then  # ch-image doesn't support this yet
         run ch-build -t foo - <<'EOF'
 FROM 00_tiny
 COPY doesnotexist .
@@ -668,7 +668,7 @@ COPY doesnotexist .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = ch-grow ]]; then
+    if [[ $CH_BUILDER = ch-image ]]; then
         # This diagnostic is not fantastic, but it's what we got for now.
         [[ $output = *'no sources exist'* ]]
     else
@@ -702,7 +702,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     case $CH_BUILDER in
-        ch-grow)
+        ch-image)
             [[ $output = *'current stage'* ]]
             ;;
         docker)
@@ -721,7 +721,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     case $CH_BUILDER in
-        ch-grow)
+        ch-image)
             [[ $output = *'does not exist'* ]]
             ;;
         docker)
@@ -740,7 +740,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     case $CH_BUILDER in
-        ch-grow)
+        ch-image)
             [[ $output = *'does not exist'* ]]
             ;;
         docker)
@@ -760,7 +760,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     case $CH_BUILDER in
-        ch-grow)
+        ch-image)
             [[ $output = *'does not exist yet'* ]]
             ;;
         docker)
@@ -780,7 +780,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     case $CH_BUILDER in
-        ch-grow)
+        ch-image)
             [[ $output = *'does not exist'* ]]
             [[ $output != *'does not exist yet'* ]]  # so we review test
             ;;
@@ -801,7 +801,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     case $CH_BUILDER in
-        ch-grow)
+        ch-image)
             [[ $output = *'invalid negative stage index'* ]]
             ;;
         docker)

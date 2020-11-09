@@ -7,7 +7,7 @@ image_ref_parse () {
     retcode_expected=$2
     echo "--- parsing: ${ref}"
     set +e
-    out=$(ch-grow pull --parse-only "$ref" 2>&1)
+    out=$(ch-image pull --parse-only "$ref" 2>&1)
     retcode=$?
     set -e
     echo "--- return code: ${retcode}"
@@ -23,9 +23,9 @@ image_ref_parse () {
 
 @test 'image ref parsing' {
     scope standard
-    if ( ! ch-grow --dependencies ); then
-        [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-grow missing dependencies"
+    if ( ! ch-image --dependencies ); then
+        [[ $CH_BUILDER != ch-image ]]
+        skip "ch-image missing dependencies"
     fi
 
     # simplest
@@ -208,14 +208,14 @@ EOF
     # Validate that layers replace symlinks correctly. See
     # test/Dockerfile.symlink and issues #819 & 825.
     scope standard
-    if ( ! ch-grow --dependencies ); then
-        [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-grow missing dependencies"
+    if ( ! ch-image --dependencies ); then
+        [[ $CH_BUILDER != ch-image ]]
+        skip "ch-image missing dependencies"
     fi
 
     img=$BATS_TMPDIR/charliecloud%file-quirks
 
-    ch-grow pull charliecloud/file-quirks:2020-10-21 "$img"
+    ch-image pull charliecloud/file-quirks:2020-10-21 "$img"
     ls -lh "${img}/test"
 
     output_expected=$(cat <<'EOF'
@@ -249,9 +249,9 @@ EOF
 @test 'pull image with manifest schema v1' {
     # Verify we handle images with manifest schema version one (v1).
     scope standard
-    if ( ! ch-grow --dependencies ); then
-        [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-grow missing dependencies"
+    if ( ! ch-image --dependencies ); then
+        [[ $CH_BUILDER != ch-image ]]
+        skip "ch-image missing dependencies"
     fi
 
     unpack=$BATS_TMPDIR
@@ -261,9 +261,9 @@ EOF
     # thus keeps test time down.
     img=debian:squeeze
 
-    ch-grow pull --storage="$unpack" \
-                 --no-cache \
-                 "$img"
+    ch-image pull --storage="$unpack" \
+                  --no-cache \
+                  "$img"
     [[ $status -eq 0 ]]
     grep -F '"schemaVersion": 1' "${cache}/${img}.manifest.json"
 }

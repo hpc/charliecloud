@@ -55,7 +55,7 @@ except ImportError:
 
 ## Globals ##
 
-# FIXME: currently set in ch-grow :P
+# FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
 
@@ -1025,7 +1025,7 @@ def storage_default():
       username = os.environ["USER"]
    except KeyError:
       FATAL("can't get username: $USER not set")
-   return "/var/tmp/%s/ch-grow" % username
+   return "/var/tmp/%s/ch-image" % username
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):

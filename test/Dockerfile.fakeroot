@@ -4,7 +4,7 @@
 # organizational convenience.
 #
 # ch-test-scope: standard
-# ch-test-builder-include: ch-grow
+# ch-test-builder-include: ch-image
 
 # CentOS 7
 FROM centos:7

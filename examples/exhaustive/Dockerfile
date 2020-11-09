@@ -2,14 +2,14 @@
 # comprehensiveness of Dockerfile feature support.
 #
 # FIXME: That focus is a bit out of date. I think really what is here is the
-# ways we want to exercise ch-grow in ways we care about the resulting image.
+# ways we want to exercise ch-image in ways we care about the resulting image.
 # Exercises where we don't care are in test/build/50_dockerfile.bats. But, I
 # don't want to do the refactoring right now.
 #
 # See: https://docs.docker.com/engine/reference/builder
 #
 # ch-test-scope: standard
-# ch-test-builder-include: ch-grow
+# ch-test-builder-include: ch-image
 
 # Use a moderately complex image reference.
 FROM registry-1.docker.io:443/library/alpine:3.9 AS stage1
@@ -26,7 +26,7 @@ RUN ["echo", "hello \n${chse_2} \${chse_2} ${NOTSET}"]
 RUN echo 'a -${chse_2}-' "b -${chse_2}-" "c -${NOTSET:-c}-" "d -${chse_2:+d}-"
 RUN env
 
-# WORKDIR. See test/run/ch-grow.bats where we validate this all worked OK.
+# WORKDIR. See test/run/ch-image.bats where we validate this all worked OK.
 # FIXME: test with variable
 #
 # filesystem root

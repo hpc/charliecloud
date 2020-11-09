@@ -1,4 +1,4 @@
-# Implementation of "ch-grow build".
+# Implementation of "ch-image build".
 
 import abc
 import ast

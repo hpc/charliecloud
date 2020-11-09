@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# Wrapper for deprecated ch-grow script. Warn users and pass arguments to
+# ch-image after five (5) seconds.
+
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+. "${lib}/base.sh"
+
+if [[ ! -x ${ch_bin}/ch-image ]]; then
+    printf 'error: %s/ch-image not found; did you build?\n' "$ch_bin"
+    exit 1
+fi
+
+usage () {
+    cat <<'EOF'
+usage: ch-grow build [-h] [-b SRC[:DST]] [--build-arg ARG[=VAL]]
+                     [-f DOCKERFILE] [-n] [--no-fakeroot] [--parse-only]
+                     [-t TAG]
+                     CONTEXT
+
+Deprecated; see ch-image.
+
+positional arguments:
+  CONTEXT                context directory
+
+optional arguments:
+  -h, --help             show this help message and exit
+  -b, --bind SRC[:DST]   mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)
+  --build-arg ARG[=VAL]  set build-time variable ARG to VAL, or $ARG if no VAL
+  -f, --file DOCKERFILE  Dockerfile to use (default: CONTEXT/Dockerfile)
+  -n, --dry-run          don't execute instructions
+  --no-fakeroot          don't try unprivileged build workarounds
+  --parse-only           stop after parsing the Dockerfile
+  -t, --tag TAG          name of image to create (default: inferred)
+EOF
+}
+
+
+# Usage Kludges to make docs-sane happy.
+if [[ $# == 0 ]]; then
+    usage
+    exit 1
+fi
+for a in "$@"; do
+    if [[ $a == '--help' || $a == '-h' ]]; then
+        usage
+        exit 0
+    fi
+done
+
+red='\033[0;31m'
+nocolor='\033[0m'
+warning=$(cat <<'EOF'
+
+WARNING: ch-grow is deprecated and will be removed in a future release; use
+ch-image. Forwarding arguments to ch-image after five (5) seconds."${nocolor}"
+
+EOF
+)
+
+# Shellcheck complains about using variables in printf, however, echo doesn't
+# seems to respect terminal color. Thus we disable the shellcheck warning.
+# shellcheck disable=SC2059
+printf "${red}${warning}${nocolor}\n\n"
+
+sleep 5
+"${ch_bin}/ch-image" build "$@"

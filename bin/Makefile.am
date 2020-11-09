@@ -22,6 +22,7 @@ dist_bin_SCRIPTS = ch-build \
                    ch-builder2squash \
                    ch-builder2tar \
                    ch-dir2squash \
+				   ch-grow \
                    ch-fromhost \
                    ch-mount \
                    ch-pull2dir \
@@ -34,14 +35,14 @@ dist_bin_SCRIPTS = ch-build \
 ## Python scripts - need text processing
 
 bin_SCRIPTS = ch-run-oci
-EXTRA_SCRIPTS = ch-grow
+EXTRA_SCRIPTS = ch-image
 if ENABLE_CH_GROW
-bin_SCRIPTS += ch-grow
+bin_SCRIPTS += ch-image
 endif
-EXTRA_DIST = ch-grow.py.in ch-run-oci.py.in
+EXTRA_DIST = ch-image.py.in ch-run-oci.py.in
 CLEANFILES = $(bin_SCRIPTS)
 
-ch-grow: ch-grow.py.in
+ch-image: ch-image.py.in
 ch-run-oci: ch-run-oci.py.in
 
 $(bin_SCRIPTS): %: %.py.in
