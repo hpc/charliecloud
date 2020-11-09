@@ -683,16 +683,22 @@ class Repo_Downloader:
          req.headers["Authorization"] = "Bearer %s" % self.token
          return req
 
+      def __str__(self):
+         return ("Bearer %s" % self.token[:32])
+
    class Null_Auth(requests.auth.AuthBase):
 
       def __call__(self, req):
          return req
 
+      def __str__(self):
+         return "no authorization"
+
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
       self.ref = ref.copy()
       self.ref.defaults_add()
-      self.auth = None
+      self.auth = self.Null_Auth()
       self.session = None
       if (verbose >= 2):
          http.client.HTTPConnection.debuglevel = 1
@@ -702,62 +708,64 @@ class Repo_Downloader:
       url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
       return "/".join((url_base, self.ref.path_full, type_, address))
 
-   def authenticate_maybe(self, url):
-      """If we need to authenticate, do so using the 401 from url; otherwise
-         do nothing."""
-      if (self.auth is None):
-         DEBUG("requesting auth parameters")
-         res = self.get_raw(url, expected_statuses=(401,200))
-         if (res.status_code == 200):
-            self.auth = self.Null_Auth()
-         else:
-            if ("WWW-Authenticate" not in res.headers):
-               FATAL("WWW-Authenticate header not found")
-            auth = res.headers["WWW-Authenticate"]
-            if (not auth.startswith("Bearer ")):
-               FATAL("authentication scheme is not Bearer")
-            # Apparently parsing the WWW-Authenticate header correctly is
-            # pretty hard. This is a non-compliant regex kludge [1,2].
-            # Alternatives include putting the grammar into Lark (this can be
-            # gotten by reading the RFCs enough) or using the www-authenticate
-            # library [3].
-            #
-            # [1]: https://stackoverflow.com/a/1349528
-            # [2]: https://stackoverflow.com/a/1547940
-            # [3]: https://pypi.org/project/www-authenticate
-            authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
-            DEBUG("WWW-Authenticate parse: %s" % authd, v=2)
-            for k in ("realm", "service", "scope"):
-               if (k not in authd):
-                  FATAL("WWW-Authenticate missing key: %s" % k)
-            # Request auth token.
-            DEBUG("requesting anonymous auth token")
-            res = self.get_raw(authd["realm"], expected_statuses=(200,403),
-                               params={"service": authd["service"],
-                                       "scope": authd["scope"]})
-            if (res.status_code == 403):
-               INFO("anonymous access rejected")
-               username = input("Username: ")
-               password = getpass.getpass("Password: ")
-               auth = requests.auth.HTTPBasicAuth(username, password)
-               res = self.get_raw(authd["realm"], auth=auth,
-                                  params={"service": authd["service"],
-                                          "scope": authd["scope"]})
-            token = res.json()["token"]
-            DEBUG("got token: %s..." % (token[:32]))
-            self.auth = self.Bearer_Auth(token)
+   def authorize(self, res):
+      "Authorize using the WWW-Authenticate header in failed response res."
+      DEBUG("authorizing")
+      assert (res.status_code == 401)
+      # Get authentication instructions.
+      if ("WWW-Authenticate" not in res.headers):
+         FATAL("WWW-Authenticate header not found")
+      auth_h = res.headers["WWW-Authenticate"]
+      if (not auth_h.startswith("Bearer ")):
+         FATAL("authentication scheme is not Bearer: %s" % auth_h)
+      # Parse the WWW-Authenticate header. Apparently doing this correctly is
+      # pretty hard. We use a non-compliant regex kludge [1,2]. Alternatives
+      # include putting the grammar into Lark (this can be gotten by reading
+      # the RFCs enough) or using the www-authenticate library [3].
+      #
+      # [1]: https://stackoverflow.com/a/1349528
+      # [2]: https://stackoverflow.com/a/1547940
+      # [3]: https://pypi.org/project/www-authenticate
+      auth_d = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth_h))
+      DEBUG("WWW-Authenticate parse: %s" % auth_d)
+      for k in ("realm", "service", "scope"):
+         if (k not in auth_d):
+            FATAL("WWW-Authenticate missing key: %s" % k)
+      # First, try for an anonymous auth token. If that fails, try for an
+      # authenticated token.
+      DEBUG("requesting anonymous auth token")
+      res = self.get_raw(auth_d["realm"], [200,403],
+                         params={"service": auth_d["service"],
+                                 "scope": auth_d["scope"]})
+      if (res.status_code == 403):
+         INFO("anonymous access rejected")
+         username = input("Username: ")
+         password = getpass.getpass("Password: ")
+         auth = requests.auth.HTTPBasicAuth(username, password)
+         res = self.get_raw(auth_d["realm"], [200], auth=auth,
+                            params={"service": auth_d["service"],
+                                    "scope": auth_d["scope"]})
+      token = res.json()["token"]
+      DEBUG("received auth token: %s" % (token[:32]))
+      self.auth = self.Bearer_Auth(token)
 
    def close(self):
       if (self.session is not None):
          self.session.close()
 
-   def get(self, url, path, headers=dict()):
-      """GET url, passing headers, including authentication and session magic,
-         and write the body of the response to path."""
+   def get(self, url, path, headers=dict(), statuses=[200]):
+      """GET url, passing headers, and write the body of the response to path.
+         Use current session if there is one, or start a new one if not.
+         Authenticate if needed."""
       DEBUG("GETting: %s" % url)
       self.session_init_maybe()
-      self.authenticate_maybe(url)
-      res = self.get_raw(url, headers)
+      DEBUG("auth: %s" % self.auth)
+      res = self.get_raw(url, statuses+[401], headers)
+      if (res.status_code == 401):
+         DEBUG("HTTP 401 unauthorized")
+         self.authorize(res)
+         DEBUG("retrying with auth: %s" % self.auth)
+         res = self.get_raw(url, statuses, headers)
       try:
          fp = open_(path, "wb")
          ossafe(fp.write, "can't write: %s" % path, res.content)
@@ -778,22 +786,25 @@ class Repo_Downloader:
       accept = "application/vnd.docker.distribution.manifest.v2+json"
       self.get(url, path, { "Accept": accept })
 
-   def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
-               **kwargs):
-      """GET url, passing headers, with no magic. If auth is None, use
-         self.auth (which might also be None). If status is not in
-         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
-         requests.session.get()."""
+   def get_raw(self, url, statuses, headers=dict(), auth=None, **kwargs):
+      """GET url, expecting a status code in statuses, passing headers.
+         self.session must be valid. If auth is None, use self.auth (which
+         might also be None). If status is not in statuses, barf with a fatal
+         error. Pass kwargs unchanged to requests.session.get()."""
       if (auth is None):
          auth = self.auth
       try:
          res = self.session.get(url, headers=headers, auth=auth, **kwargs)
-         if (res.status_code not in expected_statuses):
+         if (res.status_code not in statuses):
             FATAL("HTTP GET failed; expected status %s but got %d: %s"
-                  % (" or ".join(str(i) for i in expected_statuses),
+                  % (" or ".join(str(i) for i in statuses),
                      res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          FATAL("HTTP GET failed: %s" % x)
+      # Log the rate limit headers if present.
+      for h in ("RateLimit-Limit", "RateLimit-Remaining"):
+         if (h in res.headers):
+            DEBUG("%s: %s" % (h, res.headers[h]))
       return res
 
    def session_init_maybe(self):
