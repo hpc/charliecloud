@@ -6,50 +6,28 @@
 lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
 . "${lib}/base.sh"
 
+usage () {
+    cat <<'EOF'
+usage: ch-grow [-h] [--dependencies] [--no-cache] [-s DIR] [-v] [--version] CMD
+
+Deprecated; see ch-image.
+EOF
+}
+
+# Kludges to pass our tests.
 if [[ ! -x ${ch_bin}/ch-image ]]; then
     # We can't exit 1 here because the executables sane test will fail when
     # ch-image isn't build and ch-grow is executed with zero arguments.
     printf '%s/ch-image not found; did you build?\n' "$ch_bin"
+    exit 0
 fi
-
-usage () {
-    cat <<'EOF'
-usage: ch-grow build [-h] [-b SRC[:DST]] [--build-arg ARG[=VAL]]
-                     [-f DOCKERFILE] [-n] [--no-fakeroot] [--parse-only]
-                     [-t TAG]
-                     CONTEXT
-
-Deprecated; see ch-image.
-
-positional arguments:
-  CONTEXT                context directory
-
-optional arguments:
-  -h, --help             show this help message and exit
-  -b, --bind SRC[:DST]   mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)
-  --build-arg ARG[=VAL]  set build-time variable ARG to VAL, or $ARG if no VAL
-  -f, --file DOCKERFILE  Dockerfile to use (default: CONTEXT/Dockerfile)
-  -n, --dry-run          don't execute instructions
-  --no-fakeroot          don't try unprivileged build workarounds
-  --parse-only           stop after parsing the Dockerfile
-  -t, --tag TAG          name of image to create (default: inferred)
-EOF
-}
-
-
-# Usage Kludges to make docs-sane happy.
 if [[ $# == 0 ]]; then
     usage
     exit 1
 fi
-for a in "$@"; do
-    if [[ $a == '--help' || $a == '-h' ]]; then
+for arg in "$@"; do
+    if [[ $arg == '--help' || $arg == '-h' ]]; then
         usage
-        exit 0
-    fi
-    # version kludge to make executables sane happy
-    if [[ $a == '--version' || $a == '-v' ]]; then
-        ${ch_bin}/ch-run --version
         exit 0
     fi
 done
@@ -59,15 +37,14 @@ nocolor='\033[0m'
 warning=$(cat <<'EOF'
 
 WARNING: ch-grow is deprecated and will be removed in a future release; use
-ch-image. Forwarding arguments to ch-image after five (5) seconds."${nocolor}"
-
+ch-image. Forwarding arguments to ch-image after five (5) seconds.
 EOF
+
 )
 
-# Shellcheck complains about using variables in printf, however, echo doesn't
-# seems to respect terminal color. Thus we disable the shellcheck warning.
-# shellcheck disable=SC2059
-printf "${red}${warning}${nocolor}\n\n"
+echo -e "${red}${warning}${nocolor}"
+echo
+echo
 
 sleep 5
-"${ch_bin}/ch-image" build "$@"
+"${ch_bin}/ch-image" "$@"
