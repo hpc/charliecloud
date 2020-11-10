@@ -1,5 +1,11 @@
 load ../common
 
+# FIXME: this function is temporary; remove when references to ch-grow are gone.
+setup () {
+    if [[ $CH_BUILDER = ch-grow ]]; then
+       CH_BUILDER=ch-image
+    fi
+}
 
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
