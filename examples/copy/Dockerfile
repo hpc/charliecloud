@@ -6,17 +6,6 @@
 # ch-test-builder-exclude: buildah-runc
 # ch-test-builder-exclude: buildah-setuid
 
-# symlinks at destination
-#   - regular file, symlink to file
-#   - regular file, symlink to directory
-#   - symlink to file, symlink to file
-#   - symlink to file, symlink to directory
-#   - symlink to directory, symlink to file
-#   - symlink to directory, symlink to directory
-#   - directory, symlink to file
-#   - directory, symlink to directory
-# file to directory
-# directory to file
 
 FROM 00_tiny
 
@@ -41,6 +30,12 @@ RUN echo 'this should be overwritten' > file3
 COPY fileA file3
 
 # Source:  one file
+# Dest:    symlink to existing file
+RUN echo 'this should be overwritten' > file4 \
+ && ln -s file4 symlink-to-file4
+COPY fileA symlink-to-file4
+
+# Source:  one file
 # Dest:    existing directory, no trailing slash
 #
 # Note: This behavior is inconsistent with the Dockerfile reference, which
@@ -49,9 +44,19 @@ RUN mkdir dir01a
 COPY fileA dir01a
 
 # Source:  one file
+# Dest:    symlink to existing directory, no trailing slash
+RUN ln -s dir01a symlink-to-dir01a
+COPY fileB symlink-to-dir01a
+
+# Source:  one file
 # Dest:    existing directory, trailing slash
 RUN mkdir dir01b
 COPY fileA dir01b/
+
+# Source:  one file
+# Dest:    symlink to existing directory, trailing slash
+RUN ln -s dir01b symlink-to-dir01b
+COPY fileB symlink-to-dir01b/
 
 # Source:  one file
 # Dest:    new directory, one level of creation
@@ -86,9 +91,19 @@ RUN mkdir dir07a
 COPY dirA dir07a
 
 # Source:  one directory
+# Dest:    symlink to existing directory, no trailing slash
+RUN ln -s dir07a symlink-to-dir07a
+COPY dirB symlink-to-dir07a
+
+# Source:  one directory
 # Dest:    existing directory, trailing slash
 RUN mkdir dir07b
 COPY dirA dir07b/
+
+# Source:  one directory
+# Dest:    symlink to existing directory, trailing slash
+RUN ln -s dir07b symlink-to-dir07b
+COPY dirB symlink-to-dir07b/
 
 # Source:  one directory
 # Dest:    new directory, one level, no trailing slash
@@ -190,8 +205,39 @@ RUN mkdir dir19 \
 # the old or new version.
 COPY dirF dir19/
 
-# Check permissions on overwritten directory.
-RUN stat -c '%n: %A' dir19/dir19a2
+
+## Destination: Symlink, 2nd level.
+
+# Note: This behavior is DIFFERENT from the symlink at 1st level tests above.
+
+# Set up destination.
+RUN mkdir dir20 \
+ && echo new > dir20/filex \
+ && mkdir dir20/dirx \
+ && for i in $(seq 4); do \
+           echo file$i > dir20/file$i \
+        && ln -s file$i dir20/s_file$i \
+        && mkdir dir20/dir$i \
+        && echo dir$i/file_ > dir20/dir$i/file_ \
+        && ln -s dir$i dir20/s_dir$i; \
+    done \
+ && ls -lR dir20
+
+# Copy in the new directory tree. In all of these cases, the source simply
+# overwrites the destination; symlinks are not followed.
+#
+#      name     source        destination
+#      -------  ------------  ------------
+#   1. s_file1  file          link to file
+#   2. s_dir1   file          link to dir
+#   3. s_file2  link to file  link to file
+#   4. s_dir2   link to file  link to dir
+#   5. s_file3  link to dir   link to file
+#   6. s_dir3   link to dir   link to dir
+#   7. s_file4  directory     link to file
+#   8. s_dir4   directory     link to dir
+#
+COPY dirG dir20/
 
 
 ## Wrap up; this output helps to build the expectations in test.bats.
@@ -207,3 +253,6 @@ RUN find . -type f -printf '%y: %p: ' -a -exec cat {} \; | sort
 
 # Symlink targets.
 RUN find . -type l -printf '%y: %p -> %l\n' | sort
+
+# Check permissions on overwritten directory.
+RUN stat -c '%n: %A' dir19/dir19a2
