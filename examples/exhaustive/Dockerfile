@@ -26,7 +26,7 @@ RUN ["echo", "hello \n${chse_2} \${chse_2} ${NOTSET}"]
 RUN echo 'a -${chse_2}-' "b -${chse_2}-" "c -${NOTSET:-c}-" "d -${chse_2:+d}-"
 RUN env
 
-# WORKDIR. See test/run/ch-image.bats where we validate this all worked OK.
+# WORKDIR. See test/build/50_ch-image.bats where we validate this all worked OK.
 # FIXME: test with variable
 #
 # filesystem root

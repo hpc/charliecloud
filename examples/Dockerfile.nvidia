@@ -1,5 +1,5 @@
 # ch-test-scope: full
-# ch-test-arch-exclude: aarch64     # only x86-64, ppc64le supported by nVidia
+# ch-test-arch-exclude: aarch64      # only x86-64, ppc64le supported by nVidia
 # ch-test-builder-exclude: ch-image  # multi-stage build not yet supported
 
 # This Dockerfile demonstrates a multi-stage build. With a single-stage build

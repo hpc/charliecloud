@@ -22,7 +22,7 @@ dist_bin_SCRIPTS = ch-build \
                    ch-builder2squash \
                    ch-builder2tar \
                    ch-dir2squash \
-				   ch-grow \
+                   ch-grow \
                    ch-fromhost \
                    ch-mount \
                    ch-pull2dir \
