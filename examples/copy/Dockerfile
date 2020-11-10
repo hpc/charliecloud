@@ -6,6 +6,18 @@
 # ch-test-builder-exclude: buildah-runc
 # ch-test-builder-exclude: buildah-setuid
 
+# symlinks at destination
+#   - regular file, symlink to file
+#   - regular file, symlink to directory
+#   - symlink to file, symlink to file
+#   - symlink to file, symlink to directory
+#   - symlink to directory, symlink to file
+#   - symlink to directory, symlink to directory
+#   - directory, symlink to file
+#   - directory, symlink to directory
+# file to directory
+# directory to file
+
 FROM 00_tiny
 
 # Test directory
@@ -143,6 +155,43 @@ COPY fileB symlink-to-fileB-A symlink-to-fileB-B dir17/
 # Dest:    existing directory
 RUN mkdir dir18
 COPY fileB symlink-to-fileB-* dir18/
+
+
+## Merge directory trees
+
+# Set up destination directory tree.
+RUN mkdir dir19 \
+ && mkdir dir19/dir19a1 \
+ && mkdir dir19/dir19a2 \
+ && mkdir dir19/dir19a2/dir19b1 \
+ && mkdir dir19/dir19a2/dir19b2 \
+ && echo old > dir19/file19a1 \
+ && echo old > dir19/file19a2 \
+ && echo old > dir19/dir19a1/file19b1 \
+ && echo old > dir19/dir19a2/file19b1 \
+ && echo old > dir19/dir19a2/file19b2 \
+ && echo old > dir19/dir19a2/dir19b2/file19c1 \
+ && chmod 777 dir19/dir19a2 \
+ && stat -c '%n: %A' dir19/dir19a2
+
+# Copy in the new directory tree. This is supposed to merge the two trees.
+# Important considerations, from perspective of destination tree:
+#
+#   1. File at top level, new.
+#   2. File at top level, existing (should overwrite).
+#   3. File at 2nd level, new.
+#   4. File at 2nd level, existing (should overwrite).
+#   5. Directory at top level, new.
+#   6. Directory at top level, existing (permissions should overwrite).
+#   7. Directory at 2nd level, new.
+#   8. Directory at 2nd level, existing (permissions should overwrite).
+#
+# The directories should be o-rwx so we can see if the permissions were from
+# the old or new version.
+COPY dirF dir19/
+
+# Check permissions on overwritten directory.
+RUN stat -c '%n: %A' dir19/dir19a2
 
 
 ## Wrap up; this output helps to build the expectations in test.bats.
