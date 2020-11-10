@@ -47,6 +47,11 @@ for a in "$@"; do
         usage
         exit 0
     fi
+    # version kludge to make executables sane happy
+    if [[ $a == '--version' || $a == '-v' ]]; then
+        ${ch_bin}/ch-run --version
+        exit 0
+    fi
 done
 
 red='\033[0;31m'
