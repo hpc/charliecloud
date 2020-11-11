@@ -186,8 +186,7 @@ RUN mkdir dir19 \
  && echo old > dir19/dir19a2/file19b1 \
  && echo old > dir19/dir19a2/file19b2 \
  && echo old > dir19/dir19a2/dir19b2/file19c1 \
- && chmod 777 dir19/dir19a2 \
- && stat -c '%n: %A' dir19/dir19a2
+ && chmod 777 dir19/dir19a2
 
 # Copy in the new directory tree. This is supposed to merge the two trees.
 # Important considerations, from perspective of destination tree:
@@ -203,7 +202,11 @@ RUN mkdir dir19 \
 #
 # The directories should be o-rwx so we can see if the permissions were from
 # the old or new version.
+RUN test $(stat -c '%A' dir19/dir19a2 | cut -c8-) = 'rwx' \
+ && stat -c '%n: %A' dir19/dir19a2
 COPY dirF dir19/
+RUN test $(stat -c '%A' dir19/dir19a2 | cut -c8-) != 'rwx' \
+ && stat -c '%n: %A' dir19/dir19a2
 
 
 ## Destination: Symlink, 2nd level.
@@ -253,6 +256,3 @@ RUN find . -type f -printf '%y: %p: ' -a -exec cat {} \; | sort
 
 # Symlink targets.
 RUN find . -type l -printf '%y: %p -> %l\n' | sort
-
-# Check permissions on overwritten directory.
-RUN stat -c '%n: %A' dir19/dir19a2
