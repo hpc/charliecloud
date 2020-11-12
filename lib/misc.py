@@ -36,9 +36,8 @@ class Version(Action_Exit):
 
 ##NEW STUFF######################
 def delete(cli):
-   imgdir = cli.storage + '/img/' + cli.img_dir
-   print (imgdir)
-   #ch.rmtree(imgdir)
+   imgdir = cli.storage + '/img/' + cli.image_ref
+   ch.rmtree(imgdir)
 
      
 def list_(cli):

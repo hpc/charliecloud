@@ -126,12 +126,13 @@ def main():
                    help="context directory")
 
    #new delete ####################
-   
    help="delete image"
    sp = sps.add_parser("delete", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.delete)
    add_opts(sp, common_opts, True)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
+  
 
    # list
    help="list images in storage"
