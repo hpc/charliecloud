@@ -460,35 +460,6 @@ class Image:
       DEBUG("skipped %d empty layers" % empty_cnt)
       return layers
 
-   def print_manifest(self, use_cache=True):
-      """Print fat manifest. If it doesn't exist and can't be downloaded then
-         print default manifest. If default manifest isn't cached download it.
-      """
-      dl = Repo_Downloader(self.ref)
-      self.download_fat_manifest(dl, use_cache)
-      if (os.path.exists(self.fat_manifest_path)):
-         try:
-            fp = open_(self.fat_manifest_path, "rt", encoding="UTF-8")
-         except OSError as x:
-            FATAL("can't open manifest file: %s: %s"
-                   % (self.manifest_path, x.strerror))
-      # image doesn't have fat manifest
-      else:
-         self.download_manifest(dl, use_cache)
-         if (os.path.exists(self.manifest_path)):
-            try:
-               fp = open_(self.manifest_path, "rt", encoding="UTF-8")
-            except OSError as x:
-               FATAL("can't open manifest file: %s: %s"
-                     % (self.manifest_path, x.strerror))
-      try:
-         doc = json.load(fp)
-      except json.JSONDecodeError as x:
-         FATAL("can't parse manifest file: %s:%d: %s"
-               % (fp, x.lineno, x.msg))
-      INFO(json.dumps(doc, indent=3))
-      fp.close()
-
    def print_manifest_arch_list(self, use_cache=True):
       dl = Repo_Downloader(self.ref)
       self.download_fat_manifest(dl, use_cache)

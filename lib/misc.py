@@ -70,9 +70,6 @@ def pull(cli):
    if (cli.parse_only):
       print(ref.as_verbose_str)
       sys.exit(0)
-   if (cli.inspect_manifest):
-      image.print_manifest(use_cache=(not cli.no_cache))
-      sys.exit(0)
    if (cli.inspect_arch):
       image.print_manifest_arch_list(use_cache=(not cli.no_cache))
       sys.exit(0)
