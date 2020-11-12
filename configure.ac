@@ -429,7 +429,7 @@ AS_IF([   test $enable_man = yes && test $have_docs = no],
 AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
 AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
-AM_CONDITIONAL([ENABLE_CH_GROW], [test $enable_ch_image = yes])
+AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
 
 
 ## Prepare report.

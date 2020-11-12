@@ -14,13 +14,7 @@ Deprecated; see ch-image.
 EOF
 }
 
-# Kludges to pass our tests.
-if [[ ! -x ${ch_bin}/ch-image ]]; then
-    # We can't exit 1 here because the executables sane test will fail when
-    # ch-image isn't build and ch-grow is executed with zero arguments.
-    printf '%s/ch-image not found; did you build?\n' "$ch_bin"
-    exit 0
-fi
+# Kludges to make our tests work.
 if [[ $# == 0 ]]; then
     usage
     exit 1

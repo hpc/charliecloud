@@ -2,6 +2,7 @@
 *.o
 a.out
 /bin/ch-checkns
+/bin/ch-grow
 /bin/ch-image
 /bin/ch-run
 /bin/ch-run-oci

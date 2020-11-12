@@ -22,7 +22,6 @@ dist_bin_SCRIPTS = ch-build \
                    ch-builder2squash \
                    ch-builder2tar \
                    ch-dir2squash \
-                   ch-grow \
                    ch-fromhost \
                    ch-mount \
                    ch-pull2dir \
@@ -36,12 +35,13 @@ dist_bin_SCRIPTS = ch-build \
 
 bin_SCRIPTS = ch-run-oci
 EXTRA_SCRIPTS = ch-image
-if ENABLE_CH_GROW
-bin_SCRIPTS += ch-image
+if ENABLE_CH_IMAGE
+bin_SCRIPTS += ch-image ch-grow
 endif
 EXTRA_DIST = ch-image.py.in ch-run-oci.py.in
-CLEANFILES = $(bin_SCRIPTS)
+CLEANFILES = $(bin_SCRIPTS) ch-grow
 
+ch-grow: ch-grow.py.in
 ch-image: ch-image.py.in
 ch-run-oci: ch-run-oci.py.in
 
