@@ -57,12 +57,9 @@ fi
 temp=$(mktemp -d --tmpdir ch-builder2squash.XXXXXX)
 # Get image as a directory
 if [ -n "$arch" ]; then
-    "${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" --nocompress --arch="$arch" \
-                               "$image" "$temp"
-else
-    "${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" --nocompress --arch="$arch" \
-                               "$image" "$temp"
+    arch="--arch =$arch"
 fi
+"${ch_bin}/ch-builder2tar" -b "$CH_BUILDER" --nocompress "$arch" "$image" "$temp"
 image=$(tag_to_path "$image")
 tar=${temp}/${image}.tar
 "${ch_bin}/ch-tar2dir" "${tar}" "$temp"
