@@ -993,6 +993,7 @@ def arch_arg_fixup(arch):
     return arch.replace('/', '%')
 
 def arch_arg_validate(arch):
+    arch = arch[0] # nargs=1 produces a list
     rx = re.compile('^(/?\w+(/\w+)?)$')
     m = rx.match(arch)
     if (m is not None):

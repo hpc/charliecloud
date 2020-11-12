@@ -134,7 +134,7 @@ def main():
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.pull)
    add_opts(sp, common_opts, True)
-   sp.add_argument("--arch", nargs="?", default=None,
+   sp.add_argument("--arch", nargs=1, default=None,
                    help="specify image architecture")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the image reference")
