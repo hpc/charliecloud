@@ -57,13 +57,13 @@ except ImportError:
 ## Globals ##
 
 # Map common uname machine type to manifest platform architecture.
-ARCH_MAP = {'aarch32': {'architecture': 'arm',   'variant': 'v7'},
-            'aarch64': {'architecture': 'arm64', 'variant': 'v8'},
-            'armv5l':  {'architecture': 'arm',   'variant': 'v5'},
-            'armv6l':  {'architecture': 'arm',   'variant': 'v6'},
-            'armv7l':  {'architecture': 'arm',   'variant': 'v7'},
-            'armv8l':  {'architecture': 'arm64', 'variant': 'v8'},
-            'x86_64':  {'architecture': 'amd64'}}
+ARCH_MAP = {"aarch32": ("arm",   "v7"),
+            "aarch64": ("arm64", "v8"),
+            "armv5l":  ("arm",   "v5"),
+            "armv6l":  ("arm",   "v6"),
+            "armv7l":  ("arm",   "v7"),
+            "armv8l":  ("arm64", "v8"),
+            "x86_64":  ("amd64", None)}
 
 # FIXME: currently set in ch-grow :P
 CH_BIN = None
@@ -1000,15 +1000,9 @@ def arch_arg_validate(arch):
     FATAL('invalid arch argument %s' % arg)
 
 def host_arch_get():
-   arch = variant = None
    machine = platform.uname().machine
    try:
-      map_ = ARCH_MAP[machine]
-      arch = map_['architecture']
-      try:
-         variant = map_['variant']
-      except KeyError:
-         variant = None
+      arch, variant = ARCH_MAP[machine]
    except KeyError:
       if ('arm' in machine):
          FATAL("arm arch: '%s' not in architecture map, report this bug")
