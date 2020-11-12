@@ -298,9 +298,9 @@ class Image:
          dl = Repo_Downloader(self.ref)
       mkdirs(self.inferred_fat_dir)
       if (os.path.exists(self.fat_manifest_path) and use_cache):
-         INFO("fat manifest: using existing file")
+         INFO("image index: using existing file")
       else:
-         INFO("fat manifest: downloading")
+         INFO("image index: downloading")
          dl.get_fat_manifest(self.fat_manifest_path)
 
    def fixup(self):

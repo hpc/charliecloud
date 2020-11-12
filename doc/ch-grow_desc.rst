@@ -409,7 +409,7 @@ Download the Debian Buster image and place it in the storage directory::
 
   $ ch-grow pull debian:buster
   pulling image:   debian:buster
-  fat manifest: downloading
+  image index: downloading
   manifest: downloading
   layer 1/1: d6ff36c: downloading
   layer 1/1: d6ff36c: listing
@@ -430,7 +430,7 @@ Same, except place the image in :code:`/tmp/buster`::
 Print list of targetable platforms for the Debian Buster image.::
 
    $ ch-grow pull --inspect-arch debian:buster
-   fat manifest: downloading
+   image index: use existing
    available platforms:
    amd64
    arm/v5
