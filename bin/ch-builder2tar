@@ -60,8 +60,6 @@ if [ "$#" -ne 2 ]; then
     usage
 fi
 
-
-
 image=$1
 outdir=$2
 tar=${outdir}/$(tag_to_path "$image").tar
