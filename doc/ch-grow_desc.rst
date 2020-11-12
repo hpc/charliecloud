@@ -150,8 +150,8 @@ Destination argument:
 
 Options:
   :code:`--arch`
-    Attempt to pull architecture variant :code:`--arch=ARCH[/VARIANT]` of
-    image. If found pull it; otherwise error. See
+    Attempt to pull architecture variant :code:`--arch=ARCH[/VARIANT]` for
+    image described by :code:`IMAGE_REF`. If found pull it; otherwise error. See
     :code:`--list-arch IMAGE_REF` for list of valid platform architectures.
 
   :code:`--list-arch`
