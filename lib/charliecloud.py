@@ -460,7 +460,7 @@ class Image:
       DEBUG("skipped %d empty layers" % empty_cnt)
       return layers
 
-   def print_manifest_arch_list(self, use_cache=True):
+   def print_arch_list(self, use_cache=True):
       dl = Repo_Downloader(self.ref)
       self.download_fat_manifest(dl, use_cache)
       if (os.path.exists(self.fat_manifest_path)):
@@ -994,8 +994,7 @@ def arch_arg_fixup(arch):
 
 def arch_arg_validate(arch):
     arch = arch[0] # nargs=1 produces a list
-    rx = re.compile('^(/?\w+(/\w+)?)$')
-    m = rx.match(arch)
+    m = re.match("^(/?\w+(/\w+)?)$", arch)
     if (m is not None):
         return arch_arg_fixup(arch)
     FATAL('invalid arch argument %s' % arg)
