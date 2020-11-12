@@ -35,7 +35,8 @@ parse_basic_args "$@"
 # Kludgey argument parsing.
 while true; do
     case $1 in
-        --arch=*)
+        --arch)
+            shift
             arch=$1
             arch=$(printf '%s' "$arch" | sed 's/--arch=//g')
             arch=$(printf '%s' "$arch" | sed 's/\//%/g')
