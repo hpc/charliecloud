@@ -36,14 +36,9 @@ class Version(Action_Exit):
 
 ##NEW STUFF######################
 def delete(cli):
-   imgdir = cli.storage + '/img'
+   imgdir = cli.storage + '/img/' + cli.img_dir
    print (imgdir)
-   isDIR = os.path.isdir(imgdir)
-   if(isDIR):
-    #  shutil.rmtree(imgdir)
-      print("Image Deleted")
-   else:
-      print("not an directory")
+   #ch.rmtree(imgdir)
 
      
 def list_(cli):
