@@ -85,7 +85,13 @@ fileBa
 fileBb
 
 ./dir08a:
+dirCb/
 fileAa
+symlink-to-dirCb@
+
+./dir08a/dirCb:
+fileCba
+fileCbb
 
 ./dir08b:
 fileAa
@@ -242,6 +248,8 @@ f: ./dir07a/fileBb: dirB/fileBb
 f: ./dir07b/fileAa: dirA/fileAa
 f: ./dir07b/fileBa: dirB/fileBa
 f: ./dir07b/fileBb: dirB/fileBb
+f: ./dir08a/dirCb/fileCba: dirCa/dirCb/fileCba
+f: ./dir08a/dirCb/fileCbb: dirCa/dirCb/fileCbb
 f: ./dir08a/fileAa: dirA/fileAa
 f: ./dir08b/fileAa: dirA/fileAa
 f: ./dir09/fileAa: dirA/fileAa
@@ -307,6 +315,7 @@ EOF
 
     diff -u - <(ch-run --cd /test "$ch_img" \
                 -- find . -type l -printf '%y: %p -> %l\n' | sort) <<EOF
+l: ./dir08a/symlink-to-dirCb -> dirCb
 l: ./dir14/symlink-to-fileDa -> fileDa
 l: ./dir15/symlink-to-fileDa -> fileDa
 l: ./dir16/symlink-to-dirEb -> dirEb

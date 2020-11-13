@@ -115,6 +115,15 @@ COPY dirA dir08a
 # Dest:    new directory, one level, trailing slash
 COPY dirA dir08b/
 
+# Source:  one directory
+# Dest:    existing file, 2nd level
+#
+# Note: While this fails if the existing file is at the top level (which we
+# verify in test/build/50_dockerfile.bats), if the existing file is at the 2nd
+# level, it's overwritten by the directory.
+RUN touch dir08a/dirCb
+COPY dirCa dir08a
+
 # Source:  two directories, explicit
 # Dest:    existing directory
 RUN mkdir dir09
