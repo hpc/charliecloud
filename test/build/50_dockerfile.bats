@@ -601,7 +601,7 @@ EOF
     # Case 1: leading "..".
     run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-COPY ../foo .
+COPY ../VERSION .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
@@ -609,7 +609,7 @@ EOF
     # Case 2: ".." inside path.
     run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-COPY foo/../../baz .
+COPY fixtures/../../VERSION .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
@@ -670,7 +670,7 @@ EOF
     [[ $status -ne 0 ]]
     if [[ $CH_BUILDER = ch-grow ]]; then
         # This diagnostic is not fantastic, but it's what we got for now.
-        [[ $output = *'no sources exist'* ]]
+        [[ $output = *'no sources found'* ]]
     else
         [[ $output = *'doesnotexist:'*'o such file or directory'* ]]
     fi

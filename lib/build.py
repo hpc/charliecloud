@@ -356,16 +356,16 @@ class I_copy(Instruction):
 
    def copy_src_dir(self, src, dst):
       """Copy the contents of directory src, named by COPY, either explicitly
-         or with wildcards, to dst. Both src and dst are canonical paths but
-         must be at the top level of the COPY instruction; i.e., this function
-         must not be called recursively. dst must exist already and be a
-         directory. Unlike subdirectories, the metadata of dst will not be
-         altered to match src."""
+         or with wildcards, to dst. src might be a symlink, but dst is a
+         canonical paths. Both must be at the top level of the COPY
+         instruction; i.e., this function must not be called recursively. dst
+         must exist already and be a directory. Unlike subdirectories, the
+         metadata of dst will not be altered to match src."""
       def onerror(x):
          ch.FATAL("error scanning directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
-      src = pathlib.Path(src)
+      src = pathlib.Path(os.path.realpath(src))
       dst = pathlib.Path(dst)
       assert (os.path.isdir(src) and not os.path.islink(src))
       assert (os.path.isdir(dst) and not os.path.islink(dst))
@@ -374,12 +374,21 @@ class I_copy(Instruction):
          dirpath = pathlib.Path(dirpath)
          subdir = dirpath.relative_to(src)
          dst_dir = dst / subdir
-         for d in dirnames:
+         # dirnames can contain symlinks, which we handle as files, so we'll
+         # rebuild it; the walk will not descend into those "directories".
+         dirnames2 = dirnames.copy()  # shallow copy
+         dirnames[:] = list()         # clear in place
+         for d in dirnames2:
             d = pathlib.Path(d)
             src_path = dirpath / d
             dst_path = dst_dir / d
-            assert (os.path.isdir(src_path))
             ch.DEBUG("dir: %s -> %s" % (src_path, dst_path), v=2)
+            if (os.path.islink(src_path)):
+               filenames.append(d)  # symlink, handle as file
+               ch.DEBUG("symlink to dir, will handle as file")
+               continue
+            else:
+               dirnames.append(d)   # directory, descend into later
             # If destination exists, but isn't a directory, remove it.
             if (os.path.exists(dst_path)):
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
@@ -400,31 +409,31 @@ class I_copy(Instruction):
             f = pathlib.Path(f)
             src_path = dirpath / f
             dst_path = dst_dir / f
-            if (not os.path.isfile(src_path)):
-               ch.FATAL("can't COPY: unknown file type: %s" % src_path)
             ch.DEBUG("file or symlink via copy2: %s -> %s"
                      % (src_path, dst_path), v=2)
+            if (not (os.path.isfile(src_path) or os.path.islink(src_path))):
+               ch.FATAL("can't COPY: unknown file type: %s" % src_path)
             if (os.path.exists(dst_path)):
                ch.DEBUG("destination exists, removing")
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
                   ch.rmtree(dst_path)
                else:
                   ch.unlink(dst_path)
-            ch.copy2(src_path, dst_path)
+            ch.copy2(src_path, dst_path, follow_symlinks=False)
 
    def copy_src_file(self, src, dst):
       """Copy file src, named by COPY either explicitly or with wildcards, to
-         dst. Both src and dst are canonical paths but must be at the top
-         level of the COPY instruction; i.e., this function must not be called
-         recursively. If dst is a directory, file should go in that directory
-         named src (i.e., the directory creation magic has already
-         happened)."""
-      assert (os.path.isfile(src) and not os.path.islink(src))
+         dst. src might be a symlink, but dst is a canonical paths. Both must
+         be at the top level of the COPY instruction; i.e., this function must
+         not be called recursively. If dst is a directory, file should go in
+         that directory named src (i.e., the directory creation magic has
+         already happened)."""
+      assert (os.path.isfile(src))
       assert (   not os.path.exists(dst)
               or (os.path.isdir(dst) and not os.path.islink(dst))
               or (os.path.isfile(dst) and not os.path.islink(dst)))
       ch.DEBUG("copying named file: %s -> %s" % (src, dst))
-      ch.copy2(src, dst, follow_symlinks=False)
+      ch.copy2(src, dst, follow_symlinks=True)
 
    def execute_(self):
       # Complain about unsupported stuff.
@@ -453,17 +462,18 @@ class I_copy(Instruction):
       context_canon = os.path.realpath(context)
       ch.DEBUG("context: %s" % context)
       # Expand source wildcards.
-      srcs_canon = list()
+      srcs = list()
       for src in self.srcs:
          for i in glob.glob(context + "/" + src):
-            i = os.path.realpath(i)
-            srcs_canon.append(i)
+            srcs.append(i)
             ch.DEBUG("found source: %s" % i)
-      if (len(srcs_canon) == 0):
+      if (len(srcs) == 0):
          ch.FATAL("can't COPY: no sources found")
-      # Validate sources are within context directory.
-      for src in srcs_canon:
-         if (not os.path.commonpath([src, context_canon])
+      # Validate sources are within context directory. (Can't convert to
+      # canonical paths yet because we need the source path as given.)
+      for src in srcs:
+         src_canon = os.path.realpath(src)
+         if (not os.path.commonpath([src_canon, context_canon])
                  .startswith(context_canon)):
             ch.FATAL("can't COPY from outside context: %s" % src)
       # Locate the destination.
@@ -478,15 +488,13 @@ class I_copy(Instruction):
          ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
       ch.DEBUG("destination: %s" % dst_canon)
       # Create the destination directory if needed.
-      if (   dst.endswith("/")
-          or len(srcs_canon) > 1
-          or os.path.isdir(srcs_canon[0])):
+      if (dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
          if (not os.path.exists(dst_canon)):
             ch.mkdirs(dst_canon)
          elif (not os.path.isdir(dst_canon)):  # not symlink b/c realpath()
             ch.FATAL("can't COPY: not a directory: %s" % dst_canon)
       # Copy each source.
-      for src in srcs_canon:
+      for src in srcs:
          if (os.path.isfile(src)):
             self.copy_src_file(src, dst_canon)
          elif (os.path.isdir(src)):
