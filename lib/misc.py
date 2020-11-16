@@ -39,6 +39,7 @@ def delete(cli):
    imgdir = cli.storage + '/img/' + cli.image_ref
    ch.rmtree(imgdir)
 
+
      
 def list_(cli):
    ch.dependencies_check()
