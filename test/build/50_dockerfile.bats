@@ -599,17 +599,17 @@ EOF
     # SRC not inside context directory.
     #
     # Case 1: leading "..".
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t foo -f - sotest <<'EOF'
 FROM 00_tiny
-COPY ../VERSION .
+COPY ../common.bash .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
     # Case 2: ".." inside path.
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t foo -f - sotest <<'EOF'
 FROM 00_tiny
-COPY fixtures/../../VERSION .
+COPY lib/../../common.bash .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]

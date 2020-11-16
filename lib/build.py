@@ -357,7 +357,7 @@ class I_copy(Instruction):
    def copy_src_dir(self, src, dst):
       """Copy the contents of directory src, named by COPY, either explicitly
          or with wildcards, to dst. src might be a symlink, but dst is a
-         canonical paths. Both must be at the top level of the COPY
+         canonical path. Both must be at the top level of the COPY
          instruction; i.e., this function must not be called recursively. dst
          must exist already and be a directory. Unlike subdirectories, the
          metadata of dst will not be altered to match src."""
@@ -423,7 +423,7 @@ class I_copy(Instruction):
 
    def copy_src_file(self, src, dst):
       """Copy file src, named by COPY either explicitly or with wildcards, to
-         dst. src might be a symlink, but dst is a canonical paths. Both must
+         dst. src might be a symlink, but dst is a canonical path. Both must
          be at the top level of the COPY instruction; i.e., this function must
          not be called recursively. If dst is a directory, file should go in
          that directory named src (i.e., the directory creation magic has

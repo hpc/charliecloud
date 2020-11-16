@@ -6,7 +6,6 @@
 # ch-test-builder-exclude: buildah-runc
 # ch-test-builder-exclude: buildah-setuid
 
-
 FROM 00_tiny
 
 # Test directory
@@ -220,7 +219,8 @@ RUN test $(stat -c '%A' dir19/dir19a2 | cut -c8-) != 'rwx' \
 
 ## Destination: Symlink, 2nd level.
 
-# Note: This behavior is DIFFERENT from the symlink at 1st level tests above.
+# Note: This behavior is DIFFERENT from the symlink at 1st level tests above
+# (recall we are trying to be bug-compatible with Docker).
 
 # Set up destination.
 RUN mkdir dir20 \
