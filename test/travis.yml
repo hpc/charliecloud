@@ -95,7 +95,7 @@ jobs:
     - <<: *stage_misc
       env: CH_BUILDER=buildah         MINIMAL_DEPS=yes
     - <<: *stage_misc
-      env: CH_BUILDER=ch-image         MINIMAL_DEPS=yes
+      env: CH_BUILDER=ch-image        MINIMAL_DEPS=yes
     - <<: *stage_misc
       env: CH_BUILDER=docker          MINIMAL_DEPS=yes
     - <<: *stage_misc
