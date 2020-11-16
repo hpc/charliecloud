@@ -13,5 +13,5 @@ Synopsis
 Description
 ===========
 
-:code:`ch-grow` is deprecated and will be removed in a future release. See
-replacement :code:`ch-image`.
+:code:`ch-grow` has been renamed to :code:`ch-image`. The :code:`ch-grow` will
+be removed in version 0.23.

@@ -10,7 +10,7 @@ usage () {
     cat <<'EOF'
 usage: ch-grow [-h] [--dependencies] [--no-cache] [-s DIR] [-v] [--version] CMD
 
-Deprecated; see ch-image.
+Renamed to ch-image. Will be removed in 0.23. See ch-image.
 EOF
 }
 
@@ -21,18 +21,19 @@ for arg in "$@"; do
     fi
 done
 
-warning=$(cat <<'EOF'
+cat <<'EOF'
 
 WARNING: ch-grow has been renamed to ch-image. The old name will be removed in
 version 0.23. Forwarding arguments to ch-image after five (5) seconds.
 
 
 EOF
-)
-
-echo "$warning"
-echo
 sleep 5
 "${ch_bin}/ch-image" "$@"
-echo "$warning"
-echo
+cat <<'EOF'
+
+WARNING: ch-grow has been renamed to ch-image. The old name will be removed in
+version 0.23.
+
+
+EOF
