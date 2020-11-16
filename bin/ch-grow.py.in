@@ -14,11 +14,6 @@ Deprecated; see ch-image.
 EOF
 }
 
-# Kludges to make our tests work.
-if [[ $# == 0 ]]; then
-    usage
-    exit 1
-fi
 for arg in "$@"; do
     if [[ $arg == '--help' || $arg == '-h' ]]; then
         usage
@@ -26,19 +21,18 @@ for arg in "$@"; do
     fi
 done
 
-red='\033[0;31m'
-nocolor='\033[0m'
 warning=$(cat <<'EOF'
 
-WARNING: ch-grow is deprecated and will be removed in a future release; use
-ch-image. Forwarding arguments to ch-image after five (5) seconds.
-EOF
+WARNING: ch-grow has been renamed to ch-image. The old name will be removed in
+version 0.23. Forwarding arguments to ch-image after five (5) seconds.
 
+
+EOF
 )
 
-echo -e "${red}${warning}${nocolor}"
+echo "$warning"
 echo
-echo
-
 sleep 5
 "${ch_bin}/ch-image" "$@"
+echo "$warning"
+echo
