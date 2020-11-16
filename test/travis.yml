@@ -88,7 +88,7 @@ jobs:
     - <<: *stage_install
       env: CH_BUILDER=buildah-runc    TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
-      env: CH_BUILDER=ch-image         TARBALL=export       MAKE_INSTALL=yes
+      env: CH_BUILDER=ch-image        TARBALL=export       MAKE_INSTALL=yes
     - <<: *stage_install
       env: CH_BUILDER=docker          TARBALL=export       MAKE_INSTALL=yes
 
