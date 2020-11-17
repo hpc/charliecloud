@@ -15,7 +15,7 @@ a.out
 /doc/_deps.rst
 /doc/doctrees/
 /doc/html/
-/doc/man/*.1
+/doc/man/*.[17]
 /lib/charliecloud
 /lib/contributors.bash
 /lib/version.py

@@ -115,6 +115,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %license LICENSE
 %doc README.rst %{?el7:README.EL7}
 %{_mandir}/man1/ch*
+%{_mandir}/man7/charliecloud*
 %{_pkgdocdir}/examples
 
 # Library files.
@@ -122,6 +123,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_libdir}/%{name}/build.py
 %{_libdir}/%{name}/charliecloud.py
 %{_libdir}/%{name}/contributors.bash
+%{_libdir}/%{name}/fakeroot.py
 %{_libdir}/%{name}/misc.py
 %{_libdir}/%{name}/version.py
 %{_libdir}/%{name}/version.sh

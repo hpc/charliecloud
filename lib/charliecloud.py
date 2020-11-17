@@ -61,10 +61,17 @@ except ImportError:
 
 ## Globals ##
 
+# FIXME: currently set in ch-grow :P
+CH_BIN = None
+CH_RUN = None
+
 # Logging; set using log_setup() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
+
+# Verify TLS certificates? Passed to requests.
+tls_verify = True
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -194,6 +201,7 @@ class Image:
                 "download_cache",
                 "image_subdir",
                 "layer_hashes",
+                "schema_version",
                 "unpack_dir")
 
    def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
@@ -206,6 +214,7 @@ class Image:
       else:
          self.image_subdir = image_subdir
       self.layer_hashes = None
+      self.schema_version = None
 
    def __str__(self):
       return str(self.ref)
@@ -226,8 +235,8 @@ class Image:
 
    def copy_unpacked(self, other):
       "Copy the unpack directory of Image other to my unpack directory."
-      DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       self.unpack_create_ok()
+      DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
    def download(self, use_cache):
@@ -262,41 +271,33 @@ class Image:
       "Add the Charliecloud workarounds to the unpacked image."
       DEBUG("fixing up image: %s" % self.unpack_path)
       # Metadata directory.
-      mkdirs("%s/ch/bin" % self.unpack_path)
+      mkdirs("%s/ch" % self.unpack_path)
       file_ensure_exists("%s/ch/environment" % self.unpack_path)
       # Mount points.
       file_ensure_exists("%s/etc/hosts" % self.unpack_path)
       file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
-      # /etc/{passwd,group}
-      file_write("%s/etc/passwd" % self.unpack_path, """\
-root:x:0:0:root:/root:/bin/sh
-nobody:x:65534:65534:nobody:/:/bin/false
-""")
-      file_write("%s/etc/group" % self.unpack_path, """\
-root:x:0:
-nogroup:x:65534:
-""")
-      # Kludges to work around expectations of real root, not UID 0 in a
-      # unprivileged user namespace. See also the default environment.
-      #
-      # Debian "apt" and friends want to chown(1), chgrp(1), etc.
-      symlink("/bin/true", "%s/ch/bin/chown" % self.unpack_path)
-      symlink("/bin/true", "%s/ch/bin/chgrp" % self.unpack_path)
-      symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % self.unpack_path)
+      for i in range(10):
+         mkdirs("%s/mnt/%d" % (self.unpack_path, i))
 
-   def flatten(self):
+   def flatten(self, last_layer=None):
       "Flatten the layers in the download cache into the unpack directory."
+      if (last_layer is None):
+         last_layer = sys.maxsize
       layers = self.layers_read()
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
       INFO("flattening image")
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
-         INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
-         try:
-            fp.extractall(path=self.unpack_path, members=members)
-         except OSError as x:
-            FATAL("can't extract layer %d: %s" % (i, x.strerror))
+         if (i > last_layer):
+            INFO("layer %d/%d: %s: skipping per --last-layer"
+                 % (i, len(layers), lh[:7]))
+         else:
+            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
+            try:
+               fp.extractall(path=self.unpack_path, members=members)
+            except OSError as x:
+               FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
    def layer_hashes_load(self):
       "Load the layer hashes from the manifest file."
@@ -311,9 +312,28 @@ nogroup:x:65534:
          FATAL("can't parse manifest file: %s:%d: %s"
                % (self.manifest_path, x.lineno, x.msg))
       try:
-         self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
-      except (AttributeError, KeyError, IndexError):
-         FATAL("can't parse manifest file: %s" % self.manifest_path)
+         schema_version = str(doc['schemaVersion'])
+      except KeyError:
+         FATAL("manifest file %s missing expected key 'schemaVersion'"
+               % self.manifest_path)
+      if (schema_version == '1'):
+         DEBUG('loading layer hashes from schema version 1 manifest')
+         try:
+            self.layer_hashes = [i["blobSum"].split(":")[1]
+                                 for i in doc["fsLayers"]]
+         except (KeyError, AttributeError, IndexError) as x:
+            FATAL("can't parse manifest file: %s:%d :%s"
+                  % self.manifest_path, x.lineno, x.msg)
+      elif (schema_version == '2'):
+         DEBUG('loading layer hashes from schema version 2 manifest')
+         try:
+            self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
+         except (KeyError, AttributeError, IndexError):
+            FATAL("can't parse manifest file: %s:%d :%s"
+                  % self.manifest_path, x.lineno, x.msg)
+      else:
+         FATAL("unsupported manifest schema version: %s" % schema_version)
+      self.schema_version = schema_version
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
@@ -338,6 +358,10 @@ nogroup:x:65534:
       if (self.layer_hashes is None):
          self.layer_hashes_load()
       layers = collections.OrderedDict()
+      # Schema version one (v1) allows one or more empty layers for Dockerfile
+      # entries like CMD (https://github.com/containers/skopeo/issues/393).
+      # Unpacking an empty layer doesn't accomplish anything so we ignore them.
+      empty_cnt = 0
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
          path = self.layer_path(lh)
@@ -347,14 +371,23 @@ nogroup:x:65534:
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
          members = collections.OrderedDict([(m, None) for m in members_list])
-         layers[lh] = TT(fp, members)
+         if (lh in layers and len(members) > 0):
+            FATAL("duplicate non-empty layer %s" % lh[:7])
+         if (len(members) > 0):
+            layers[lh] = TT(fp, members)
+         else:
+            empty_cnt += 1
+      if (self.schema_version == '1'):
+         DEBUG('reversing layer order for schema version one (v1)')
+         layers = collections.OrderedDict(reversed(layers.items()))
+      DEBUG("skipped %d empty layers" % empty_cnt)
       return layers
 
-   def pull_to_unpacked(self, use_cache=True, fixup=False):
+   def pull_to_unpacked(self, use_cache=True, fixup=False, last_layer=None):
       """Pull and flatten image. If fixup, then also add the Charliecloud
          workarounds to the image directory."""
       self.download(use_cache)
-      self.flatten()
+      self.flatten(last_layer)
       if (fixup):
          self.fixup()
 
@@ -369,17 +402,22 @@ nogroup:x:65534:
                # Device or FIFO: Ignore.
                dev_ct += 1
                del members[m]
-            if (m.islnk()):
+            elif (m.issym()):
+               # Symlink: Nothing to change, but accept it.
+               pass
+            elif (m.islnk()):
                # Hard link: Fail if pointing outside top level. (Note that we
                # let symlinks point wherever they want, because they aren't
                # interpreted until run time in a container.)
                self.validate_tar_link(self.layer_path(lh), m.name, m.linkname)
-            if (m.isdir()):
-               # Fix bad directory permissions (hello, Red Hat).
+            elif (m.isdir()):
+               # Directory: Fix bad permissions (hello, Red Hat).
                m.mode |= 0o700
-            if (m.isfile()):
-               # Fix bad file permissions (HELLO RED HAT!!).
+            elif (m.isfile()):
+               # Regular file: Fix bad permissions (HELLO RED HAT!!).
                m.mode |= 0o600
+            else:
+               FATAL("unknown member type: %s" % m.name)
          if (dev_ct > 0):
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
@@ -458,7 +496,7 @@ nogroup:x:65534:
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
          if (   not os.path.isdir(self.unpack_path + "/bin")
-             or not os.path.isdir(self.unpack_path + "/lib")
+             or not os.path.isdir(self.unpack_path + "/dev")
              or not os.path.isdir(self.unpack_path + "/usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
@@ -875,7 +913,10 @@ fields:
       "Set defaults for all empty fields."
       if (self.host is None): self.host = "registry-1.docker.io"
       if (self.port is None): self.port = 443
-      if (len(self.path) == 0): self.path = ["library"]
+      if (self.host == "registry-1.docker.io" and len(self.path) == 0):
+         # FIXME: For Docker Hub only, images with no path need a path of
+         # "library" substituted. Need to understand/document the rules here.
+         self.path = ["library"]
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
@@ -926,16 +967,22 @@ class Repo_Data_Transfer:
          req.headers["Authorization"] = "Bearer %s" % self.token
          return req
 
+      def __str__(self):
+         return ("Bearer %s" % self.token[:32])
+
    class Null_Auth(requests.auth.AuthBase):
 
       def __call__(self, req):
          return req
 
+      def __str__(self):
+         return "no authorization"
+
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
       self.ref = ref.copy()
       self.ref.defaults_add()
-      self.auth = None
+      self.auth = self.Null_Auth()
       self.session = None
       if (verbose >= 2):
          http.client.HTTPConnection.debuglevel = 1
@@ -945,69 +992,85 @@ class Repo_Data_Transfer:
       url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
       return "/".join((url_base, self.ref.path_full, type_, address))
 
-   def authenticate_maybe(self, url, request):
-      """If we need to authenticate, do so using the 401 from url; otherwise
-         do nothing."""
-      if (self.auth is None):
-         DEBUG("requesting auth parameters")
-         # FIXME: Has to be a more pythonic or OO way to alter this function
-         #        based on a get or post.
-         if (request == 'get'):
-            res = self.get_raw(url, expected_statuses=(401,200))
-         elif (request == 'post'):
-            res = self.post_raw(url, expected_statuses=(401,200))
-         else:
-            FATAL('invalid http request %s', request)
-         if (res.status_code == 200):
-            self.auth = self.Null_Auth()
-         else:
-            if ("WWW-Authenticate" not in res.headers):
-               FATAL("WWW-Authenticate header not found")
-            auth = res.headers["WWW-Authenticate"]
-            if (not auth.startswith("Bearer ")):
-               FATAL("authentication scheme is not Bearer")
-            # Apparently parsing the WWW-Authenticate header correctly is
-            # pretty hard. This is a non-compliant regex kludge [1,2].
-            # Alternatives include putting the grammar into Lark (this can be
-            # gotten by reading the RFCs enough) or using the www-authenticate
-            # library [3].
-            #
-            # [1]: https://stackoverflow.com/a/1349528
-            # [2]: https://stackoverflow.com/a/1547940
-            # [3]: https://pypi.org/project/www-authenticate
-            authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
-            DEBUG("WWW-Authenticate parse: %s" % authd, v=2)
-            for k in ("realm", "service", "scope"):
-               if (k not in authd):
-                  FATAL("WWW-Authenticate missing key: %s" % k)
-            # Request auth token.
-            DEBUG("requesting anonymous auth token")
-            res = self.get_raw(authd["realm"], expected_statuses=(200,403),
-                               params={"service": authd["service"],
-                                       "scope": authd["scope"]})
-            if (res.status_code == 403):
-               INFO("anonymous access rejected")
-               username = input("Username: ")
-               password = getpass.getpass("Password: ")
-               auth = requests.auth.HTTPBasicAuth(username, password)
-               res = self.get_raw(authd["realm"], auth=auth,
-                                  params={"service": authd["service"],
-                                          "scope": authd["scope"]})
-            token = res.json()["token"]
-            DEBUG("got token: %s..." % (token[:32]))
-            self.auth = self.Bearer_Auth(token)
+   def authenticate_basic(self, res, auth_d):
+      DEBUG("authenticating using Basic")
+      if ("realm" not in auth_d):
+         FATAL("WWW-Authenticate missing realm")
+      (username, password) = self.credentials_read()
+      self.auth = requests.auth.HTTPBasicAuth(username, password)
+
+   def authenticate_bearer(self, res, auth_d):
+      DEBUG("authenticating using Bearer")
+      for k in ("realm", "service", "scope"):
+         if (k not in auth_d):
+            FATAL("WWW-Authenticate missing key: %s" % k)
+      # First, try for an anonymous auth token. If that fails, try for an
+      # authenticated token.
+      DEBUG("requesting anonymous auth token")
+      res = self.get_raw(auth_d["realm"], [200,403],
+                         params={"service": auth_d["service"],
+                                 "scope": auth_d["scope"]})
+      if (res.status_code == 403):
+         INFO("anonymous access rejected")
+         (username, password) = self.credentials_read()
+         auth = requests.auth.HTTPBasicAuth(username, password)
+         res = self.get_raw(auth_d["realm"], [200], auth=auth,
+                            params={"service": auth_d["service"],
+                                    "scope": auth_d["scope"]})
+      token = res.json()["token"]
+      DEBUG("received auth token: %s" % (token[:32]))
+      self.auth = self.Bearer_Auth(token)
+
+   def authorize(self, res):
+      "Authorize using the WWW-Authenticate header in failed response res."
+      DEBUG("authorizing")
+      assert (res.status_code == 401)
+      # Get authentication instructions.
+      if ("WWW-Authenticate" not in res.headers):
+         FATAL("WWW-Authenticate header not found")
+      auth_h = res.headers["WWW-Authenticate"]
+      DEBUG("WWW-Authenticate raw: %s" % auth_h)
+      # Parse the WWW-Authenticate header. Apparently doing this correctly is
+      # pretty hard. We use a non-compliant regex kludge [1,2]. Alternatives
+      # include putting the grammar into Lark (this can be gotten by reading
+      # the RFCs enough) or using the www-authenticate library [3].
+      #
+      # [1]: https://stackoverflow.com/a/1349528
+      # [2]: https://stackoverflow.com/a/1547940
+      # [3]: https://pypi.org/project/www-authenticate
+      auth_type = auth_h.split()[0]
+      auth_d = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth_h))
+      DEBUG("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
+      # Dispatch to proper method.
+      if   (auth_type == "Bearer"):
+         self.authenticate_bearer(res, auth_d)
+      elif (auth_type == "Basic"):
+         self.authenticate_basic(res, auth_d)
+      else:
+         FATAL("unknown auth type: %s" % auth_h)
 
    def close(self):
       if (self.session is not None):
          self.session.close()
 
-   def get(self, url, path, headers=dict()):
-      """GET url, passing headers, including authentication and session magic,
-         and write the body of the response to path."""
+   def credentials_read(self):
+      username = input("Username: ")
+      password = getpass.getpass("Password: ")
+      return (username, password)
+
+   def get(self, url, path, headers=dict(), statuses=[200]):
+      """GET url, passing headers, and write the body of the response to path.
+         Use current session if there is one, or start a new one if not.
+         Authenticate if needed."""
       DEBUG("GETting: %s" % url)
       self.session_init_maybe()
-      self.authenticate_maybe(url, 'get')
-      res = self.get_raw(url, headers)
+      DEBUG("auth: %s" % self.auth)
+      res = self.get_raw(url, statuses+[401], headers)
+      if (res.status_code == 401):
+         DEBUG("HTTP 401 unauthorized")
+         self.authorize(res)
+         DEBUG("retrying with auth: %s" % self.auth)
+         res = self.get_raw(url, statuses, headers)
       try:
          fp = open_(path, "wb")
          ossafe(fp.write, "can't write: %s" % path, res.content)
@@ -1028,22 +1091,25 @@ class Repo_Data_Transfer:
       accept = "application/vnd.docker.distribution.manifest.v2+json"
       self.get(url, path, { "Accept": accept })
 
-   def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
-               **kwargs):
-      """GET url, passing headers, with no magic. If auth is None, use
-         self.auth (which might also be None). If status is not in
-         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
-         requests.session.get()."""
+   def get_raw(self, url, statuses, headers=dict(), auth=None, **kwargs):
+      """GET url, expecting a status code in statuses, passing headers.
+         self.session must be valid. If auth is None, use self.auth (which
+         might also be None). If status is not in statuses, barf with a fatal
+         error. Pass kwargs unchanged to requests.session.get()."""
       if (auth is None):
          auth = self.auth
       try:
          res = self.session.get(url, headers=headers, auth=auth, **kwargs)
-         if (res.status_code not in expected_statuses):
+         if (res.status_code not in statuses):
             FATAL("HTTP GET failed; expected status %s but got %d: %s"
-                  % (" or ".join(str(i) for i in expected_statuses),
+                  % (" or ".join(str(i) for i in statuses),
                      res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          FATAL("HTTP GET failed: %s" % x)
+      # Log the rate limit headers if present.
+      for h in ("RateLimit-Limit", "RateLimit-Remaining"):
+         if (h in res.headers):
+            DEBUG("%s: %s" % (h, res.headers[h]))
       return res
 
    def head_blob(self, digest, auth=None, expected_statuses=(200,404)):
@@ -1176,6 +1242,7 @@ class Repo_Data_Transfer:
       if (self.session is None):
          DEBUG("initializing session")
          self.session = requests.Session()
+         self.session.verify = tls_verify
 
 
 class TarFile(tarfile.TarFile):
@@ -1186,18 +1253,19 @@ class TarFile(tarfile.TarFile):
    # class method TarFile.open(), and the source code recommends subclassing
    # TarFile [2].
    #
+   # It's here because the standard library class has problems with symlinks
+   # and replacing one file type with another; see issues #819 and #825 as
+   # well as multiple unfixed Python bugs [e.g. 3,4,5]. We work around this
+   # with manual deletions.
+   #
    # [1]: https://docs.python.org/3/library/tarfile.html
    # [2]: https://github.com/python/cpython/blob/2bcd0fe7a5d1a3c3dd99e7e067239a514a780402/Lib/tarfile.py#L2159
+   # [3]: https://bugs.python.org/issue35483
+   # [4]: https://bugs.python.org/issue19974
+   # [5]: https://bugs.python.org/issue23228
 
-   def makefile(self, tarinfo, targetpath):
-      """If targetpath is a symlink, stock makefile() overwrites the *target*
-         of that symlink rather than replacing the symlink. This is a known,
-         but long-standing unfixed, bug in Python [1,2]. To work around this,
-         we manually delete targetpath if it exists and is a symlink. See
-         issue #819.
-
-         [1]: https://bugs.python.org/issue35483
-         [2]: https://bugs.python.org/issue19974"""
+   def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
+      assert (regulars or symlinks or dirs)
       try:
          st = os.lstat(targetpath)
       except FileNotFoundError:
@@ -1209,16 +1277,34 @@ class TarFile(tarfile.TarFile):
          FATAL("can't lstat: %s" % targetpath, targetpath)
       if (st is not None):
          if (stat.S_ISREG(st.st_mode)):
-            pass  # regular file; do nothing (will be overwritten)
-         elif (stat.S_ISDIR(st.st_mode)):
-            FATAL("can't overwrite directory with regular file: %s"
-                  % targetpath)
+            if (regulars):
+               unlink(targetpath)
          elif (stat.S_ISLNK(st.st_mode)):
-            unlink(targetpath)
+            if (symlinks):
+               unlink(targetpath)
+         elif (stat.S_ISDIR(st.st_mode)):
+            if (dirs):
+               rmtree(targetpath)
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))
+
+   def makedir(self, tarinfo, targetpath):
+      # Note: This gets called a lot, e.g. once for each component in the path
+      # of the member being extracted.
+      DEBUG("makedir: %s" % targetpath, v=2)
+      self.clobber(targetpath, regulars=True, symlinks=True)
+      super().makedir(tarinfo, targetpath)
+
+   def makefile(self, tarinfo, targetpath):
+      DEBUG("makefile: %s" % targetpath, v=2)
+      self.clobber(targetpath, symlinks=True, dirs=True)
       super().makefile(tarinfo, targetpath)
+
+   def makelink(self, tarinfo, targetpath):
+      DEBUG("makelink: %s -> %s" % (targetpath, tarinfo.linkname), v=2)
+      self.clobber(targetpath, regulars=True, symlinks=True, dirs=True)
+      super().makelink(tarinfo, targetpath)
 
 
 ## Supporting functions ##
@@ -1239,6 +1325,13 @@ def INFO(*args, **kwargs):
 
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)
+
+def ch_run_modify(img, args, env, workdir="/", binds=[]):
+   args = (  [CH_BIN + "/ch-run"]
+           + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
+           + sum([["-b", i] for i in binds], [])
+           + [img, "--"] + args)
+   cmd(args, env)
 
 def cmd(args, env=None):
    DEBUG("environment: %s" % env)
@@ -1283,6 +1376,19 @@ def file_write(path, content, mode=None):
    if (mode is not None):
       ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
    fp.close()
+
+def grep_p(path, rx):
+   """Return True if file at path contains a line matching regular expression
+      rx, False if it does not."""
+   rx = re.compile(rx)
+   try:
+      with open(path, "rt") as fp:
+         for line in fp:
+            if (rx.search(line) is not None):
+               return True
+      return False
+   except OSError as x:
+      FATAL("error reading %s: %s" % (path, x.strerror))
 
 def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):

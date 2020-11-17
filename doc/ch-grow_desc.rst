@@ -38,6 +38,10 @@ Common options placed before the sub-command:
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory (see below for important details).
 
+  :code:`--tls-no-verify`
+    Don't verify TLS certificates of the repository. (Do not use this option
+    unless you understand the risks.)
+
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
 
@@ -96,6 +100,15 @@ Required argument:
 
 Options:
 
+  :code:`-b`, :code:`--bind SRC[:DST]`
+    Bind-mount host directory :code:`SRC` at container directory :code:`DST`
+    during :code:`RUN` instructions. Can be repeated; the default destination
+    if :code:`DST` is omitted is :code:`/mnt/0`, :code:`/mnt/1`, etc.
+
+    **Note:** This applies only to :code:`RUN` instructions. Other
+    instructions that modify the image filesystem, e.g. :code:`COPY`, can only
+    access host files from the context directory.
+
   :code:`--build-arg KEY[=VALUE]`
     Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
     to :code:`VALUE`. If :code:`VALUE` not specified, use the value of
@@ -108,7 +121,11 @@ Options:
     -f -` behavior.
 
   :code:`-n`, :code:`--dry-run`
-    Do not actually execute any Dockerfile instructions.
+    Don't actually execute any Dockerfile instructions.
+
+  :code:`--no-fakeroot`
+    Don't try any of the unprivileged build workarounds (see section "Quirks
+    of a fully unprivileged builds" below).
 
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
@@ -146,6 +163,10 @@ Destination argument:
 
 Options:
 
+  :code:`--last-layer N`
+    Unpack only :code:`N` layers, leaving an incomplete image. This option is
+    intended for debugging.
+
   :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
@@ -160,6 +181,65 @@ via HTTPS. See the FAQ for the gory details on specifying image references.
 Images pushed this way have their file ownership bits fixed in order to
 support an uprivileged ecosystem and reomove sensitive information. All image
 files will be owned and group owned by :code:`nobody`, i.e., :code:`65534`.
+
+Quirks of a fully unprivileged build
+====================================
+
+:code:`ch-grow` is *fully* unprivileged. It runs all instructions as the
+normal user who invokes it, does not use any setuid or setcap helper programs,
+and does not use :code:`/etc/subuid` or :code:`/etc/subgid`, in contrast to
+the “rootless” mode of some competing builders. This is accomplished by
+executing :code:`RUN` instructions with :code:`ch-run -w --uid=0 --gid=0` (and
+some other arguments), i.e., your host EUID and EGID both mapped to zero
+inside the container, and only one UID (zero) and GID (zero) are available
+inside the container.
+
+Under this arrangement, processes running in the container *appear* to be
+running as root, but many privileged system calls will fail without the
+workarounds described below. **This affects any fully unprivileged
+container build, not just Charliecloud.**
+
+The most common time to see this is installing packages. For example, here is
+RPM failing to :code:`chown(2)` a file, which makes the package update fail:
+
+.. code-block:: none
+
+    Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
+  Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64
+  error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726: cpio: chown
+    Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4
+  error: dbus-1:1.10.24-13.el7_6.x86_64: install failed
+
+This one is (ironically) :code:`apt-get` failing to drop privileges:
+
+.. code-block:: none
+
+  E: setgroups 65534 failed - setgroups (1: Operation not permitted)
+  E: setegid 65534 failed - setegid (22: Invalid argument)
+  E: seteuid 100 failed - seteuid (22: Invalid argument)
+  E: setgroups 0 failed - setgroups (1: Operation not permitted)
+
+The solution :code:`ch-grow` uses is to intercept these system calls and fake
+a successful result. We accomplish this by altering the Dockerfile to call
+:code:`fakeroot(1)` (of which there are several implementations) for
+:code:`RUN` instructions that seem to need it. There are two basic steps:
+
+  1. After :code:`FROM`, install a :code:`fakeroot(1)` implementation. This
+     sometimes also needs extra steps like turning off the :code:`apt` sandbox
+     (for Debian Buster) or enabling EPEL (for CentOS/RHEL).
+
+  2. Prepend :code:`fakeroot` to :code:`RUN` instructions that seem to need
+     it, e.g. ones that contain :code:`apt`, :code:`apt-get`, :code:`dpkg` for
+     Debian derivatives and :code:`dnf`, :code:`rpm`, or :code:`yum` for
+     RPM-based distributions.
+
+The details are specific to each distribution. :code:`ch-grow` analyzes image
+content (e.g., grepping :code:`/etc/debian_version`) to select a
+configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-grow` prints
+exactly what it is doing.
+
+To turn off this behavior, use the :code:`--no-fakeroot` option.
+
 
 Compatibility with other Dockerfile interpreters
 ================================================
@@ -191,37 +271,6 @@ are in our `GitHub issues <https://github.com/hpc/charliecloud/issues>`_.
 None of these are set in stone. We are very interested in feedback on our
 assessments and open questions. This helps us prioritize new features and
 revise our thinking about what is needed for HPC containers.
-
-Quirks of a fully unprivileged build
-------------------------------------
-
-:code:`ch-grow` is *fully* unprivileged. It runs all instructions as the
-normal user who invokes it, does not use any setuid or setcap helper programs,
-and does not use :code:`/etc/subuid` or :code:`/etc/subgid`, in contrast to
-the “rootless” mode of some competing builders.
-
-:code:`RUN` instructions are executed with :code:`ch-run --uid=0 --gid=0`,
-i.e., host EUID and EGID both mapped to zero inside the container, and only
-one UID (zero) and GID (zero) are available inside the container. Also,
-:code:`/etc/passwd` and :code:`/etc/group` are bind-mounted from temporary
-files outside the container and can't be written. (Strictly speaking, the
-files themselves are read-write, but because they are bind-mounted, the common
-pattern of writing a new file and moving it on top of the existing one fails.)
-
-This has two consequences: the shell and its children appear to be running as
-root but only some privileged system calls are available, and manipulating
-users and groups will fail. This confuses some programs, which fail with
-"permission denied" and related errors; for example, :code:`chgrp(1)` often
-appears in Debian package post-install scripts. We have worked around some of
-these problems, but many remain. Another manual workaround is to install
-:code:`fakeroot` in the Dockerfile and prepend :code:`fakeroot` to problem
-commands.
-
-.. note::
-
-   Most of these issues affect *any* fully unprivileged container build, not
-   just :code:`ch-grow`. We are working to better characterize the problems
-   and add automatic workarounds.
 
 Context directory
 -----------------
@@ -373,6 +422,18 @@ path::
    [...]
    grown in 4 instructions: bar
 
+Build using humongous vendor compilers you want to bind-mount instead of
+installing into a layer::
+
+   $ ch-grow build --bind /opt/bigvendor:/opt .
+   $ cat Dockerfile
+   FROM centos:7
+
+   RUN /opt/bin/cc hello.c
+   #COPY /opt/lib/*.so /usr/local/lib   # fail: COPY doesn't bind mount
+   RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround
+   RUN ldconfig
+
 :code:`pull`
 ------------
 
@@ -398,10 +459,10 @@ Same, except place the image in :code:`/tmp/buster`::
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
 
-..  LocalWords:  tmpfs'es
-
 :code:`push`
 ------------
 
 Push the local CentOS 8 image to foo
 FIXME
+
+..  LocalWords:  tmpfs'es bigvendor

@@ -15,22 +15,18 @@ import misc
 ## Constants ##
 
 # FIXME: It's currently easy to get the ch-run path from another script, but
-# hard from something in lib. So, despite the fact that only build needs this,
-# we set it here for now.
-build.CH_BIN = os.path.dirname(os.path.abspath(
+# hard from something in lib. So, we set it here for now.
+ch.CH_BIN = os.path.dirname(os.path.abspath(
                  inspect.getframeinfo(inspect.currentframe()).filename))
-build.CH_RUN = build.CH_BIN + "/ch-run"
+ch.CH_RUN = ch.CH_BIN + "/ch-run"
 
 
 ## Main ##
 
 def main():
 
-   if (not os.path.exists(build.CH_RUN)):
-      ch.depfails.append(("missing", build.CH_RUN))
-
-   # https://stackoverflow.com/a/5464440
-   #HF = lambda prog: argparse.HelpFormatter(prog, max_help_position=26)
+   if (not os.path.exists(ch.CH_RUN)):
+      ch.depfails.append(("missing", ch.CH_RUN))
 
    ap = argparse.ArgumentParser(formatter_class=ch.HelpFormatter,
       description="Build and manage images; completely unprivileged.",
@@ -87,6 +83,9 @@ def main():
          { "metavar": "DIR",
            "default": ch.storage_env(),
            "help": "set builder internal storage directory to DIR" }],
+       [ ["--tls-no-verify"],
+         { "action": "store_true",
+           "help": "don't verify registry certificates (dangerous!)" }],
        [ ["-v", "--verbose"],
          { "action": "count",
            "default": 0,
@@ -109,13 +108,18 @@ def main():
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=build.main)
    add_opts(sp, common_opts, True)
-   sp.add_argument("--build-arg", action="append", default=None,
-                   metavar="ARG[=VAL]",
+   sp.add_argument("-b", "--bind", metavar="SRC[:DST]",
+                   action="append", default=[],
+                   help="mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)")
+   sp.add_argument("--build-arg", metavar="ARG[=VAL]",
+                   action="append", default=[],
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
    sp.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
    sp.add_argument("-n", "--dry-run", action="store_true",
                    help="don't execute instructions")
+   sp.add_argument("--no-fakeroot", action="store_true",
+                   help="don't try unprivileged build workarounds")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",
@@ -136,6 +140,8 @@ def main():
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.pull)
    add_opts(sp, common_opts, True)
+   sp.add_argument("--last-layer", metavar="N", type=int,
+                   help="stop after unpacking N layers")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the image reference")
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
@@ -170,6 +176,7 @@ def main():
        sys.exit(1)
    cli = ap.parse_args()
    ch.log_setup(cli.verbose)
+   ch.tls_verify = not cli.tls_no_verify
 
    # Dispatch.
    cli.func(cli)

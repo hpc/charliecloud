@@ -5,7 +5,7 @@
 # See: https://www.gnu.org/software/automake/manual/html_node/Uniform.html
 mylibdir = $(pkglibdir)
 
-dist_mylib_DATA = base.sh build.py charliecloud.py misc.py
+dist_mylib_DATA = base.sh build.py fakeroot.py charliecloud.py misc.py
 noinst_DATA = charliecloud
 mylib_DATA = contributors.bash version.py version.sh version.txt
 

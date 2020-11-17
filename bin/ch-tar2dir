@@ -90,7 +90,7 @@ if [ ! -d "$newroot" ]; then
 else
     if    [ -f "${newroot}/${sentinel}" ] \
        && [ -d "${newroot}/bin" ] \
-       && [ -d "${newroot}/lib" ] \
+       && [ -d "${newroot}/dev" ] \
        && [ -d "${newroot}/usr" ]; then
         echo "replacing existing image ${newroot}" 1>&2
         rm -Rf --one-file-system "${newroot}"

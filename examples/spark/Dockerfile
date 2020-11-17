@@ -1,12 +1,18 @@
 # ch-test-scope: standard
-FROM debian:stretch
+# Use Buster because Stretch JRE install fails with:
+#
+#   tempnam() is so ludicrously insecure as to defy implementation.tempnam: Cannot allocate memory
+#   dpkg: error processing package openjdk-8-jre-headless:amd64 (--configure):
+#    subprocess installed post-installation script returned error exit status 1
+
+FROM debian:buster
 
 ARG DEBIAN_FRONTEND=noninteractive
 # Install needed OS packages.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
+                    default-jre-headless \
                     less \
-                    openjdk-8-jre-headless \
                     procps \
                     python \
                     wget \
@@ -24,8 +30,8 @@ RUN touch /usr/bin/ch-ssh
 #
 # 3. We disapprove of Spark's master/slave terminology, but it's what the
 #    scripts are called, so we don't see a way to avoid it currently.
-ARG URLPATH=https://archive.apache.org/dist/spark/spark-2.4.7/
-ARG DIR=spark-2.4.7-bin-hadoop2.7
+ARG URLPATH=https://archive.apache.org/dist/spark/spark-3.0.1/
+ARG DIR=spark-3.0.1-bin-hadoop2.7
 ARG TAR=$DIR.tgz
 RUN wget -nv $URLPATH/$TAR \
  && tar xf $TAR \

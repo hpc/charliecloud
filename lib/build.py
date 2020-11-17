@@ -11,6 +11,7 @@ import shutil
 import sys
 
 import charliecloud as ch
+import fakeroot
 
 
 ## Globals ##
@@ -41,10 +42,6 @@ lark = ch.lark
 
 ## Constants ##
 
-# FIXME: currently set in ch-grow :P
-CH_BIN = None
-CH_RUN = None
-
 ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
                  "FTP_PROXY": os.environ.get("FTP_PROXY"),
@@ -53,7 +50,7 @@ ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "https_proxy": os.environ.get("https_proxy"),
                  "ftp_proxy": os.environ.get("ftp_proxy"),
                  "no_proxy": os.environ.get("no_proxy"),
-                 "PATH": "/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                 "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                  # GNU tar, when it thinks it's running as root, tries to
                  # chown(2) and chgrp(2) files to whatever's in the tarball.
                  "TAR_OPTIONS": "--no-same-owner" }
@@ -93,8 +90,6 @@ def main(cli_):
          if (v is None):
             ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
          return (kv[0], v)
-   if (cli.build_arg is None):
-      cli.build_arg = list()
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
 
    # Finish CLI initialization.
@@ -532,6 +527,9 @@ class I_from_(Instruction):
          self.base_image.pull_to_unpacked(fixup=True)
       image.copy_unpacked(self.base_image)
       env.reset()
+      # Inject fakeroot preparatory stuff if needed.
+      if (not cli.no_fakeroot):
+         fakeroot.inject_first(image.unpack_path, env.env_build)
 
    def str_(self):
       alias = "AS %s" % self.alias if self.alias else ""
@@ -540,14 +538,17 @@ class I_from_(Instruction):
 
 class Run(Instruction):
 
+   def cmd_set(self, args):
+      # This can be called if RUN is erroneously placed before FROM; in this
+      # case there is no image yet, so don't inject.
+      if (cli.no_fakeroot or image_i not in images):
+         self.cmd = args
+      else:
+         self.cmd = fakeroot.inject_each(images[image_i].unpack_path, args)
+
    def execute_(self):
       rootfs = images[image_i].unpack_path
-      ch.file_ensure_exists(rootfs + "/etc/resolv.conf")
-      ch.file_ensure_exists(rootfs + "/etc/hosts")
-      args = [CH_BIN + "/ch-run", "-w", "--no-home", "--no-passwd",
-              "--cd", env.workdir, "--uid=0", "--gid=0",
-              rootfs, "--"] + self.cmd
-      ch.cmd(args, env=env.env_build)
+      ch.ch_run_modify(rootfs, self.cmd, env.env_build, env.workdir, cli.bind)
 
    def str_(self):
       return str(self.cmd)
@@ -557,8 +558,8 @@ class I_run_exec(Run):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.cmd = [    variables_sub(unescape(i), env.env_build)
-                  for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
+      self.cmd_set([    variables_sub(unescape(i), env.env_build)
+                    for i in ch.tree_terminals(self.tree, "STRING_QUOTED")])
 
 
 class I_run_shell(Run):
@@ -567,7 +568,7 @@ class I_run_shell(Run):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
       cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
-      self.cmd = ["/bin/sh", "-c", cmd]
+      self.cmd_set(["/bin/sh", "-c", cmd])
 
 
 class I_workdir(Instruction):

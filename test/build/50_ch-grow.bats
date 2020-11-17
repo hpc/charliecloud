@@ -45,3 +45,16 @@ setup () {
     [[ $output = /* ]]                                      # absolute path
     [[ $CH_GROW_STORAGE && $output = "$CH_GROW_STORAGE" ]]  # match what we set
 }
+
+@test 'ch-grow build --bind' {
+    run ch-grow --no-cache build -t build-bind -f - \
+                -b ./fixtures -b ./fixtures:/mnt/9 . <<'EOF'
+FROM 00_tiny
+RUN mount
+RUN ls -lR /mnt
+RUN test -f /mnt/0/empty-file
+RUN test -f /mnt/9/empty-file
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+}
