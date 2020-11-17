@@ -4,7 +4,6 @@ import argparse
 import inspect
 import os.path
 import sys
-#import shutil 
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../lib/charliecloud"))
