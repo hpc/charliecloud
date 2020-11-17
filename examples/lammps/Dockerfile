@@ -1,5 +1,4 @@
 # ch-test-scope: full
-# ch-test-builder-exclude: ch-grow  # See issue #890
 FROM openmpi
 WORKDIR /usr/local/src
 
