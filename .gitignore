@@ -52,7 +52,7 @@ a.out
 # Python crap
 __pycache__
 
-#Vim crap
+# Vim crap.
 *.swp
 
 # Autotools crap. Coordinate with autogen.sh. Note negations.

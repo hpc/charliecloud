@@ -23,6 +23,7 @@ class Dependencies(Action_Exit):
       sys.exit(0)
 
 class Version(Action_Exit):
+
    def __call__(self, *args, **kwargs):
       print(version.VERSION)
       sys.exit(0)
@@ -38,7 +39,7 @@ def delete(cli):
    if(os.path.isdir(imgdir)):
       ch.rmtree(imgdir)
    else:
-      ch.ERROR("image doesn't exist")	
+      ch.ERROR("image %s doesn't exist" % cli.image_ref)	
 
 def list_(cli):
    ch.dependencies_check()
