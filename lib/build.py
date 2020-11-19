@@ -369,7 +369,7 @@ class I_copy(Instruction):
       dst = pathlib.Path(dst)
       assert (os.path.isdir(src) and not os.path.islink(src))
       assert (os.path.isdir(dst) and not os.path.islink(dst))
-      ch.DEBUG("copying named directory: %s -> %s" % (src, dst))
+      ch.DEBUG("copying named directory: %s -> %s" % (src, dst), v=2)
       for (dirpath, dirnames, filenames) in os.walk(src, onerror=onerror):
          dirpath = pathlib.Path(dirpath)
          subdir = dirpath.relative_to(src)
@@ -385,7 +385,7 @@ class I_copy(Instruction):
             ch.DEBUG("dir: %s -> %s" % (src_path, dst_path), v=2)
             if (os.path.islink(src_path)):
                filenames.append(d)  # symlink, handle as file
-               ch.DEBUG("symlink to dir, will handle as file")
+               ch.DEBUG("symlink to dir, will handle as file", v=2)
                continue
             else:
                dirnames.append(d)   # directory, descend into later
@@ -414,7 +414,7 @@ class I_copy(Instruction):
             if (not (os.path.isfile(src_path) or os.path.islink(src_path))):
                ch.FATAL("can't COPY: unknown file type: %s" % src_path)
             if (os.path.exists(dst_path)):
-               ch.DEBUG("destination exists, removing")
+               ch.DEBUG("destination exists, removing", v=2)
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
                   ch.rmtree(dst_path)
                else:
@@ -432,8 +432,25 @@ class I_copy(Instruction):
       assert (   not os.path.exists(dst)
               or (os.path.isdir(dst) and not os.path.islink(dst))
               or (os.path.isfile(dst) and not os.path.islink(dst)))
-      ch.DEBUG("copying named file: %s -> %s" % (src, dst))
+      ch.DEBUG("copying named file: %s -> %s" % (src, dst), v=2)
       ch.copy2(src, dst, follow_symlinks=True)
+
+   def dest_realpath(self, unpack_path, dst):
+      """Return the canonicalized version of path dst. We can't use
+         os.path.realpath() because if dst is an absolute symlink, we need to
+         use the *image's* root directory, not the host."""
+      dst = dst.rstrip("/")  # trailing slash confuses islink()
+      if (not os.path.islink(dst)):
+         ch.DEBUG("not a symlink: %s" % dst, v=2)
+      else:
+         dst_target = os.readlink(dst)
+         ch.DEBUG("is symlink: %s -> %s" % (dst, dst_target), v=2)
+         if (dst_target[0] == "/"):  # POSIX says symlink can't be empty
+            dst = unpack_path + dst_target
+            ch.DEBUG("computing new target: %s" % dst, v=2)
+            if (os.path.islink(dst)):
+               ch.FATAL("too many symlinks; please report this bug: %s" % dst)
+      return os.path.realpath(dst)
 
    def execute_(self):
       # Complain about unsupported stuff.
@@ -466,7 +483,7 @@ class I_copy(Instruction):
       for src in self.srcs:
          for i in glob.glob(context + "/" + src):
             srcs.append(i)
-            ch.DEBUG("found source: %s" % i)
+            ch.DEBUG("source: %s" % i)
       if (len(srcs) == 0):
          ch.FATAL("can't COPY: no sources found")
       # Validate sources are within context directory. (Can't convert to
@@ -477,16 +494,17 @@ class I_copy(Instruction):
                  .startswith(context_canon)):
             ch.FATAL("can't COPY from outside context: %s" % src)
       # Locate the destination.
+      unpack_canon = os.path.realpath(images[image_i].unpack_path)
       dst = images[image_i].unpack_path + "/"
       if (not self.dst.startswith("/")):
          dst += env.workdir + "/"
       dst += self.dst
-      dst_canon = os.path.realpath(dst)  # strips trailing slash if any
-      unpack_canon = os.path.realpath(images[image_i].unpack_path)
+      ch.DEBUG("destination, as given: %s" % dst)
+      dst_canon = self.dest_realpath(unpack_canon, dst) # strips trailing slash
+      ch.DEBUG("destination, canonical: %s" % dst_canon)
       if (not os.path.commonpath([dst_canon, unpack_canon])
               .startswith(unpack_canon)):
          ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
-      ch.DEBUG("destination: %s" % dst_canon)
       # Create the destination directory if needed.
       if (dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
          if (not os.path.exists(dst_canon)):

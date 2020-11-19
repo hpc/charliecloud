@@ -13,6 +13,10 @@ load "${CHTEST_DIR}/common.bash"
 .:
 dir01a/
 dir01b/
+dir01c/
+dir01d/
+dir01e/
+dir01f/
 dir02/
 dir03a/
 dir04/
@@ -20,6 +24,10 @@ dir05/
 dir06/
 dir07a/
 dir07b/
+dir07c/
+dir07d/
+dir07e/
+dir07f/
 dir08a/
 dir08b/
 dir09/
@@ -38,19 +46,35 @@ file1
 file2
 file3
 file4
-symlink-to-dir01a@
-symlink-to-dir01b@
-symlink-to-dir07a@
-symlink-to-dir07b@
+file5
+symlink-to-dir01c@
+symlink-to-dir01d@
+symlink-to-dir01e@
+symlink-to-dir01f@
+symlink-to-dir07c@
+symlink-to-dir07d@
+symlink-to-dir07e@
+symlink-to-dir07f@
 symlink-to-file4@
+symlink-to-file5@
 symlink-to-fileA
 
 ./dir01a:
 fileA
-fileB
 
 ./dir01b:
 fileA
+
+./dir01c:
+fileB
+
+./dir01d:
+fileB
+
+./dir01e:
+fileB
+
+./dir01f:
 fileB
 
 ./dir02:
@@ -76,13 +100,21 @@ fileB
 
 ./dir07a:
 fileAa
-fileBa
-fileBb
 
 ./dir07b:
 fileAa
-fileBa
-fileBb
+
+./dir07c:
+fileAa
+
+./dir07d:
+fileAa
+
+./dir07e:
+fileAa
+
+./dir07f:
+fileAa
 
 ./dir08a:
 dirCb/
@@ -231,9 +263,11 @@ EOF
                 --   find . -type f -printf '%y: %p: ' -a -exec cat {} \; \
                    | sort) <<EOF
 f: ./dir01a/fileA: fileA
-f: ./dir01a/fileB: fileB
 f: ./dir01b/fileA: fileA
-f: ./dir01b/fileB: fileB
+f: ./dir01c/fileB: fileB
+f: ./dir01d/fileB: fileB
+f: ./dir01e/fileB: fileB
+f: ./dir01f/fileB: fileB
 f: ./dir02/fileA: fileA
 f: ./dir03a/dir03b/fileA: fileA
 f: ./dir04/fileA: fileA
@@ -243,11 +277,11 @@ f: ./dir05/fileB: fileB
 f: ./dir06/fileA: fileA
 f: ./dir06/fileB: fileB
 f: ./dir07a/fileAa: dirA/fileAa
-f: ./dir07a/fileBa: dirB/fileBa
-f: ./dir07a/fileBb: dirB/fileBb
 f: ./dir07b/fileAa: dirA/fileAa
-f: ./dir07b/fileBa: dirB/fileBa
-f: ./dir07b/fileBb: dirB/fileBb
+f: ./dir07c/fileAa: dirA/fileAa
+f: ./dir07d/fileAa: dirA/fileAa
+f: ./dir07e/fileAa: dirA/fileAa
+f: ./dir07f/fileAa: dirA/fileAa
 f: ./dir08a/dirCb/fileCba: dirCa/dirCb/fileCba
 f: ./dir08a/dirCb/fileCbb: dirCa/dirCb/fileCbb
 f: ./dir08a/fileAa: dirA/fileAa
@@ -305,6 +339,7 @@ f: ./file1: fileA
 f: ./file2: fileB
 f: ./file3: fileA
 f: ./file4: fileA
+f: ./file5: fileA
 f: ./symlink-to-fileA: fileA
 EOF
 }
@@ -323,10 +358,15 @@ l: ./dir20/s_dir2 -> filey
 l: ./dir20/s_dir3 -> diry
 l: ./dir20/s_file2 -> filey
 l: ./dir20/s_file3 -> diry
-l: ./symlink-to-dir01a -> dir01a
-l: ./symlink-to-dir01b -> dir01b
-l: ./symlink-to-dir07a -> dir07a
-l: ./symlink-to-dir07b -> dir07b
+l: ./symlink-to-dir01c -> dir01c
+l: ./symlink-to-dir01d -> /test/dir01d
+l: ./symlink-to-dir01e -> dir01e
+l: ./symlink-to-dir01f -> /test/dir01f
+l: ./symlink-to-dir07c -> dir07c
+l: ./symlink-to-dir07d -> /test/dir07d
+l: ./symlink-to-dir07e -> dir07e
+l: ./symlink-to-dir07f -> /test/dir07f
 l: ./symlink-to-file4 -> file4
+l: ./symlink-to-file5 -> /test/file5
 EOF
 }

@@ -29,10 +29,16 @@ RUN echo 'this should be overwritten' > file3
 COPY fileA file3
 
 # Source:  one file
-# Dest:    symlink to existing file
+# Dest:    symlink to existing file, relative path
 RUN echo 'this should be overwritten' > file4 \
  && ln -s file4 symlink-to-file4
 COPY fileA symlink-to-file4
+
+# Source:  one file
+# Dest:    symlink to existing file, absolute path
+RUN echo 'this should be overwritten' > file5 \
+ && ln -s /test/file5 symlink-to-file5
+COPY fileA symlink-to-file5
 
 # Source:  one file
 # Dest:    existing directory, no trailing slash
@@ -43,19 +49,33 @@ RUN mkdir dir01a
 COPY fileA dir01a
 
 # Source:  one file
-# Dest:    symlink to existing directory, no trailing slash
-RUN ln -s dir01a symlink-to-dir01a
-COPY fileB symlink-to-dir01a
-
-# Source:  one file
 # Dest:    existing directory, trailing slash
 RUN mkdir dir01b
 COPY fileA dir01b/
 
 # Source:  one file
-# Dest:    symlink to existing directory, trailing slash
-RUN ln -s dir01b symlink-to-dir01b
-COPY fileB symlink-to-dir01b/
+# Dest:    symlink to existing directory, relative, no trailing slash
+RUN mkdir dir01c \
+ && ln -s dir01c symlink-to-dir01c
+COPY fileB symlink-to-dir01c
+
+# Source:  one file
+# Dest:    symlink to existing directory, absolute, no trailing slash
+RUN mkdir dir01d \
+ && ln -s /test/dir01d symlink-to-dir01d
+COPY fileB symlink-to-dir01d
+
+# Source:  one file
+# Dest:    symlink to existing directory, relative, trailing slash
+RUN mkdir dir01e \
+ && ln -s dir01e symlink-to-dir01e
+COPY fileB symlink-to-dir01e/
+
+# Source:  one file
+# Dest:    symlink to existing directory, absolute, trailing slash
+RUN mkdir dir01f \
+ && ln -s /test/dir01f symlink-to-dir01f
+COPY fileB symlink-to-dir01f/
 
 # Source:  one file
 # Dest:    new directory, one level of creation
@@ -90,19 +110,33 @@ RUN mkdir dir07a
 COPY dirA dir07a
 
 # Source:  one directory
-# Dest:    symlink to existing directory, no trailing slash
-RUN ln -s dir07a symlink-to-dir07a
-COPY dirB symlink-to-dir07a
-
-# Source:  one directory
 # Dest:    existing directory, trailing slash
 RUN mkdir dir07b
 COPY dirA dir07b/
 
 # Source:  one directory
-# Dest:    symlink to existing directory, trailing slash
-RUN ln -s dir07b symlink-to-dir07b
-COPY dirB symlink-to-dir07b/
+# Dest:    symlink to existing directory, relative, no trailing slash
+RUN mkdir dir07c \
+ && ln -s dir07c symlink-to-dir07c
+COPY dirA symlink-to-dir07c
+
+# Source:  one directory
+# Dest:    symlink to existing directory, absolute, no trailing slash
+RUN mkdir dir07d \
+ && ln -s /test/dir07d symlink-to-dir07d
+COPY dirA symlink-to-dir07d
+
+# Source:  one directory
+# Dest:    symlink to existing directory, relative, trailing slash
+RUN mkdir dir07e \
+ && ln -s dir07e symlink-to-dir07e
+COPY dirA symlink-to-dir07e/
+
+# Source:  one directory
+# Dest:    symlink to existing directory, absolute, trailing slash
+RUN mkdir dir07f \
+ && ln -s /test/dir07f symlink-to-dir07f
+COPY dirA symlink-to-dir07f/
 
 # Source:  one directory
 # Dest:    new directory, one level, no trailing slash
