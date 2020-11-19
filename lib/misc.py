@@ -23,7 +23,6 @@ class Dependencies(Action_Exit):
       sys.exit(0)
 
 class Version(Action_Exit):
-
    def __call__(self, *args, **kwargs):
       print(version.VERSION)
       sys.exit(0)
@@ -34,13 +33,13 @@ class Version(Action_Exit):
 # Argument: command line arguments Namespace. Do not need to call sys.exit()
 # because caller manages that.
 
-##NEW STUFF######################
 def delete(cli):
    imgdir = cli.storage + '/img/' + cli.image_ref
-   ch.rmtree(imgdir)
+   if(os.path.isdir(imgdir)):
+      ch.rmtree(imgdir)
+   else:
+      ch.ERROR("image doesn't exist")	
 
-
-     
 def list_(cli):
    ch.dependencies_check()
    imgdir = cli.storage + '/img'
