@@ -16,8 +16,12 @@ WORKDIR /test
 ## Source: Regular file(s)
 
 # Source:  one file
-# Dest:    new file
-COPY fileA file1
+# Dest:    new file, relative to workdir
+COPY fileA file1a
+
+# Source:  one file
+# Dest:    new file, absolute path
+COPY fileA /test/file1b
 
 # Source:  one file, absolute path (root is context directory)
 # Dest:    new file
@@ -57,25 +61,37 @@ COPY fileA dir01b/
 # Dest:    symlink to existing directory, relative, no trailing slash
 RUN mkdir dir01c \
  && ln -s dir01c symlink-to-dir01c
-COPY fileB symlink-to-dir01c
+COPY fileA symlink-to-dir01c
 
 # Source:  one file
 # Dest:    symlink to existing directory, absolute, no trailing slash
 RUN mkdir dir01d \
  && ln -s /test/dir01d symlink-to-dir01d
-COPY fileB symlink-to-dir01d
+COPY fileA symlink-to-dir01d
 
 # Source:  one file
 # Dest:    symlink to existing directory, relative, trailing slash
 RUN mkdir dir01e \
  && ln -s dir01e symlink-to-dir01e
-COPY fileB symlink-to-dir01e/
+COPY fileA symlink-to-dir01e/
 
 # Source:  one file
 # Dest:    symlink to existing directory, absolute, trailing slash
 RUN mkdir dir01f \
  && ln -s /test/dir01f symlink-to-dir01f
-COPY fileB symlink-to-dir01f/
+COPY fileA symlink-to-dir01f/
+
+# Source:  one file
+# Dest:    symlink to existing directory, multi-level, relative, no slash
+RUN mkdir -p dir01g/dir \
+ && ln -s dir01g symlink-to-dir01g
+COPY fileA symlink-to-dir01g/dir
+
+# Source:  one file
+# Dest:    symlink to existing directory,  multi-level, absolute, no slash
+RUN mkdir -p dir01h/dir \
+ && ln -s /test/dir01h symlink-to-dir01h
+COPY fileA symlink-to-dir01h/dir
 
 # Source:  one file
 # Dest:    new directory, one level of creation

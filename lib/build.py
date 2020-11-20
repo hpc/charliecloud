@@ -436,21 +436,41 @@ class I_copy(Instruction):
       ch.copy2(src, dst, follow_symlinks=True)
 
    def dest_realpath(self, unpack_path, dst):
-      """Return the canonicalized version of path dst. We can't use
-         os.path.realpath() because if dst is an absolute symlink, we need to
-         use the *image's* root directory, not the host."""
-      dst = dst.rstrip("/")  # trailing slash confuses islink()
-      if (not os.path.islink(dst)):
-         ch.DEBUG("not a symlink: %s" % dst, v=2)
-      else:
-         dst_target = os.readlink(dst)
-         ch.DEBUG("is symlink: %s -> %s" % (dst, dst_target), v=2)
-         if (dst_target[0] == "/"):  # POSIX says symlink can't be empty
-            dst = unpack_path + dst_target
-            ch.DEBUG("computing new target: %s" % dst, v=2)
-            if (os.path.islink(dst)):
-               ch.FATAL("too many symlinks; please report this bug: %s" % dst)
-      return os.path.realpath(dst)
+      """Return the canonicalized version of path dst within (canonical) image
+        path unpack_path. We can't use os.path.realpath() because if dst is
+        an absolute symlink, we need to use the *image's* root directory, not
+        the host. Thus, we have to resolve symlinks manually."""
+      unpack_path = pathlib.Path(unpack_path)
+      dst_canon = pathlib.Path(unpack_path)
+      dst = pathlib.Path(dst)
+      dst_parts = list(reversed(dst.parts))  # easier to operate on end of list
+      iter_ct = 0
+      while (len(dst_parts) > 0):
+         iter_ct += 1
+         if (iter_ct > 100):  # arbitrary
+            ch.FATAL("can't COPY: too many path components")
+         ch.DEBUG("current destination: %d %s" % (iter_ct, dst_canon), v=2)
+         #ch.DEBUG("parts remaining: %s" % dst_parts, v=2)
+         part = dst_parts.pop()
+         if (part == "/"):
+            ch.DEBUG("skipping root")
+            continue
+         cand = dst_canon / part
+         ch.DEBUG("checking: %s" % cand, v=2)
+         if (not cand.is_symlink()):
+            ch.DEBUG("not symlink", v=2)
+            dst_canon = cand
+         else:
+            target = pathlib.Path(os.readlink(cand))
+            ch.DEBUG("symlink to: %s" % target, v=2)
+            assert (len(target.parts) > 0)  # POSIX says no empty symlinks
+            if (target.is_absolute()):
+               ch.DEBUG("absolute")
+               dst_canon = pathlib.Path(unpack_path)
+            else:
+               ch.DEBUG("relative", v=2)
+            dst_parts.extend(reversed(target.parts))
+      return dst_canon
 
    def execute_(self):
       # Complain about unsupported stuff.
@@ -495,10 +515,10 @@ class I_copy(Instruction):
             ch.FATAL("can't COPY from outside context: %s" % src)
       # Locate the destination.
       unpack_canon = os.path.realpath(images[image_i].unpack_path)
-      dst = images[image_i].unpack_path + "/"
-      if (not self.dst.startswith("/")):
-         dst += env.workdir + "/"
-      dst += self.dst
+      if (self.dst.startswith("/")):
+         dst = self.dst
+      else:
+         dst = env.workdir + "/" + self.dst
       ch.DEBUG("destination, as given: %s" % dst)
       dst_canon = self.dest_realpath(unpack_canon, dst) # strips trailing slash
       ch.DEBUG("destination, canonical: %s" % dst_canon)

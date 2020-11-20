@@ -17,6 +17,8 @@ dir01c/
 dir01d/
 dir01e/
 dir01f/
+dir01g/
+dir01h/
 dir02/
 dir03a/
 dir04/
@@ -42,7 +44,8 @@ dir17/
 dir18/
 dir19/
 dir20/
-file1
+file1a
+file1b
 file2
 file3
 file4
@@ -51,6 +54,8 @@ symlink-to-dir01c@
 symlink-to-dir01d@
 symlink-to-dir01e@
 symlink-to-dir01f@
+symlink-to-dir01g@
+symlink-to-dir01h@
 symlink-to-dir07c@
 symlink-to-dir07d@
 symlink-to-dir07e@
@@ -66,16 +71,28 @@ fileA
 fileA
 
 ./dir01c:
-fileB
+fileA
 
 ./dir01d:
-fileB
+fileA
 
 ./dir01e:
-fileB
+fileA
 
 ./dir01f:
-fileB
+fileA
+
+./dir01g:
+dir/
+
+./dir01g/dir:
+fileA
+
+./dir01h:
+dir/
+
+./dir01h/dir:
+fileA
 
 ./dir02:
 fileA
@@ -264,10 +281,12 @@ EOF
                    | sort) <<EOF
 f: ./dir01a/fileA: fileA
 f: ./dir01b/fileA: fileA
-f: ./dir01c/fileB: fileB
-f: ./dir01d/fileB: fileB
-f: ./dir01e/fileB: fileB
-f: ./dir01f/fileB: fileB
+f: ./dir01c/fileA: fileA
+f: ./dir01d/fileA: fileA
+f: ./dir01e/fileA: fileA
+f: ./dir01f/fileA: fileA
+f: ./dir01g/dir/fileA: fileA
+f: ./dir01h/dir/fileA: fileA
 f: ./dir02/fileA: fileA
 f: ./dir03a/dir03b/fileA: fileA
 f: ./dir04/fileA: fileA
@@ -335,7 +354,8 @@ f: ./dir20/s_dir1: new
 f: ./dir20/s_dir4/file_: s_dir4/file_
 f: ./dir20/s_file1: new
 f: ./dir20/s_file4/file_: s_file4/file_
-f: ./file1: fileA
+f: ./file1a: fileA
+f: ./file1b: fileA
 f: ./file2: fileB
 f: ./file3: fileA
 f: ./file4: fileA
@@ -362,6 +382,8 @@ l: ./symlink-to-dir01c -> dir01c
 l: ./symlink-to-dir01d -> /test/dir01d
 l: ./symlink-to-dir01e -> dir01e
 l: ./symlink-to-dir01f -> /test/dir01f
+l: ./symlink-to-dir01g -> dir01g
+l: ./symlink-to-dir01h -> /test/dir01h
 l: ./symlink-to-dir07c -> dir07c
 l: ./symlink-to-dir07d -> /test/dir07d
 l: ./symlink-to-dir07e -> dir07e
