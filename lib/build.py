@@ -452,7 +452,7 @@ class I_copy(Instruction):
          ch.DEBUG("current destination: %d %s" % (iter_ct, dst_canon), v=2)
          #ch.DEBUG("parts remaining: %s" % dst_parts, v=2)
          part = dst_parts.pop()
-         if (part == "/"):
+         if (part == "/" or part == "//"):  # 3 or more slashes yields "/"
             ch.DEBUG("skipping root")
             continue
          cand = dst_canon / part
