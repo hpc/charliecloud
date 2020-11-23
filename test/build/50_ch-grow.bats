@@ -31,6 +31,29 @@ setup () {
     [[ $output = *'verbose level: 1'* ]]
 }
 
+@test 'ch-grow delete' {
+	run ch-grow build -t delete_test -f - . << 'EOF'
+FROM 00_tiny
+EOF
+   echo "$output"
+ 	[[ $status -eq 0 ]]
+	
+   run ch-grow list
+	echo "$output"
+	[[ $status -eq 0 ]]
+	[[ $output = *"delete_test"* ]]
+	
+	run ch-grow delete delete_test
+	echo "$output"
+	[[ status -eq 0 ]]
+
+	run ch-grow list
+	echo "$output"
+	[[ $status -eq 0 ]]
+	[[ $output != *"delete_test"* ]]
+
+}
+
 @test 'ch-grow list' {
     run ch-grow list
     echo "$output"
@@ -44,7 +67,7 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = /* ]]                                      # absolute path
     [[ $CH_GROW_STORAGE && $output = "$CH_GROW_STORAGE" ]]  # match what we set
-}
+}	
 
 @test 'ch-grow build --bind' {
     run ch-grow --no-cache build -t build-bind -f - \
