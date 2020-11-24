@@ -10,24 +10,24 @@ DEFAULT_CONFIGS = {
    # General notes:
    #
    # 1. Semantics of these configurations. (Character limits are to support
-   #    tidy code formatting.)
+   #    tidy code and message formatting.)
    #
    #    a. This is a dictionary of configurations, which themselves are
    #       dictionaries.
    #
    #    b. Key is an arbitrary tag; user-visible. There's no enforced
    #       character set but let's stick with [a-z0-9_] for now and limit to
-   #       at most 12 characters.
+   #       at most 10 characters.
    #
    #    c. A configuration has the following keys.
    #
-   #       name ... Human-readable name for the configuration. Max 60 chars.
+   #       name ... Human-readable name for the configuration. Max 46 chars.
    #
    #       match .. Tuple; first item is the name of a file and the second is
    #                a regular expression. If the regex matches any line in the
    #                file, that configuration is used for the image.
    #
-   #       first .. List of tuples containing POSIX shell commands to perform
+   #       init ... List of tuples containing POSIX shell commands to perform
    #                fakeroot installation and any other initialization steps.
    #
    #                Item 1: Command to detect if the step is necessary. If the
@@ -59,11 +59,11 @@ DEFAULT_CONFIGS = {
    #                For both commands, the output is visible to the user but
    #                is not analyzed.
    #
-   #       cmds ... List of RUN commands that need fakeroot injection. Each
-   #                item in the list is matched against each
+   #       cmds ... List of RUN command words that need fakeroot injection.
+   #                Each item in the list is matched against each
    #                whitespace-separated word in the RUN instructions. For
-   #                example, suppose that cmds_each contains "dnf", and
-   #                consider the following RUN instructions:
+   #                example, suppose that each is the list "dnf", "rpm", and
+   #                "yum"; consider the following RUN instructions:
    #
    #                  RUN ['dnf', 'install', 'foo']
    #                  RUN dnf install foo
@@ -147,21 +147,21 @@ DEFAULT_CONFIGS = {
    # 1. CentOS seems to have only fakeroot, which is in EPEL, not the standard
    #    repos.
 
-   { "rhel7":
-     { "name": "CentOS/RHEL 7",
-       "match": ("/etc/redhat-release", r"release 7\."),
-       "first": [ ("command -v fakeroot > /dev/null",
-                   "yum install -y epel-release && yum install -y fakeroot") ],
-       "cmds", ["dnf", "rpm", "yum"],
-       "each": ["fakeroot"] },
+   "rhel7":
+   { "name": "CentOS/RHEL 7",
+     "match": ("/etc/redhat-release", r"release 7\."),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "yum install -y epel-release && yum install -y fakeroot") ],
+     "cmds": ["dnf", "rpm", "yum"],
+     "each": ["fakeroot"] },
 
-   { "rhel8":
-     { "name": "CentOS/RHEL 8",
-       "match":  ("/etc/redhat-release", r"release 8\."),
-       "first": [ ("command -v fakeroot > /dev/null",
-                   "dnf install -y epel-release && dnf install -y fakeroot") ],
-       "cmds", ["dnf", "rpm", "yum"],
-       "each": ["fakeroot"] },
+   "rhel8":
+   { "name": "CentOS/RHEL 8",
+     "match":  ("/etc/redhat-release", r"release 8\."),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "dnf install -y epel-release && dnf install -y fakeroot") ],
+     "cmds": ["dnf", "rpm", "yum"],
+     "each": ["fakeroot"] },
 
    # Debian notes:
    #
@@ -186,56 +186,132 @@ DEFAULT_CONFIGS = {
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
    "debSB":
-     { "name": "Debian 9 (Stretch) or 10 (Buster)",
-       "match": ("/etc/debian_version", r"^(9|10)\."),
-       "first": [ ("""apt-config dump | fgrep -q 'APT::Sandbox::User "root"' \
-                      || ! fgrep -q _apt /etc/passwd""",
-                   """echo 'APT::Sandbox::User "root";' \
-                      > /etc/apt/apt.conf.d/no-sandbox"""),
-                  ("""command -v fakeroot > /dev/null""",
-                   # update b/c base image ships with no package indexes
-                   """apt-get update && apt-get install -y pseudo""") ],
-       "cmds": ["apt", "apt-get", "dpkg"],
-       "each": ["fakeroot"] } },
+   { "name": "Debian 9 (Stretch) or 10 (Buster)",
+     "match": ("/etc/debian_version", r"^(9|10)\."),
+     "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
+                " || ! fgrep -q _apt /etc/passwd",
+                "echo 'APT::Sandbox::User \"root\";'"
+                " > /etc/apt/apt.conf.d/no-sandbox"),
+                ("command -v fakeroot > /dev/null",
+                 # update b/c base image ships with no package indexes
+                 "apt-get update && apt-get install -y pseudo") ],
+     "cmds": ["apt", "apt-get", "dpkg"],
+     "each": ["fakeroot"] },
 
 }
 
 
-## Functions ##
+## Functions ###
 
-def config(img):
-   ch.DEBUG("fakeroot: checking configs: %s" % img)
-   for c in DEFAULT_CONFIGS:
-      (path, rx) = c["match"]
-      path_full = "%s/%s" % (img, path)
-      ch.DEBUG("fakeroot: checking %s: grep '%s' %s"
-               % (c["config"]["name"], rx, path))
-      if (os.path.isfile(path_full) and ch.grep_p(path_full, rx)):
-         ch.DEBUG("fakeroot: using config %s" % c["config"]["name"])
-         return c["config"]
-   ch.DEBUG("fakeroot: no config found")
-   return None
+def detect(image, force, no_force_detect):
+   f = None
+   if (not no_force_detect):
+      # Try to find a real fakeroot config.
+      for (tag, cfg) in DEFAULT_CONFIGS.items():
+         try:
+            f = Fakeroot(image, tag, cfg, force)
+         except Config_Aint_Matched:
+            pass
+      # Report findings.
+      if (f is None):
+         if (force):
+            ch.FATAL("can't find suitable config for --force")
+         else:
+            ch.INFO("--force not available (no suitable config found)")
+      else:
+         if (force):
+            adj = "will use"
+         else:
+            adj = "available"
+         ch.INFO("%s --force: %s: %s" % (adj, f.tag, f.name))
+   # Wrap up
+   if (f is None):
+      f = Fakeroot_Noop()
+   return f
 
-def inject_each(img, args):
-   c = config(img)
-   if (c is None):
+
+## Classes ##
+
+class Config_Aint_Matched(Exception):
+   pass
+
+class Fakeroot_Noop():
+
+   @property
+   def init_done(self):
+      return False
+
+   def init_maybe(self, img_path, args, env):
+      pass
+
+   def inject_each(self, args):
       return args
-   # Match on words, not substrings.
-   for each in c["cmds_each"]:
-      for arg in args:
-         if (each in arg.split()):
-            return c["each"] + args
-   return args
 
-def inject_first(img, env):
-   c = config(img)
-   if (c is None):
-      return
-   if (os.path.exists("%s/ch/fakeroot-first-run")):
-      ch.DEBUG("fakeroot: already initialized")
-      return
-   ch.INFO("fakeroot: initializing for %s" % c["name"])
-   for cl in c["first"]:
-      ch.INFO("fakeroot: $ %s" % cl)
-      args = ["/bin/sh", "-c", cl]
-      ch.ch_run_modify(img, args, env)
+class Fakeroot():
+
+   __slots__ = ("tag",
+                "name",
+                "init",
+                "cmds",
+                "each",
+                "init_done",
+                "inject_ct",
+                "inject_p")
+
+   def __init__(self, image_path, tag, cfg, inject_p):
+      ch.DEBUG("workarounds: testing config: %s" % tag)
+      file_path = "%s/%s" % (image_path, cfg["match"][0])
+      if (not (    os.path.isfile(file_path)
+               and ch.grep_p(file_path, cfg["match"][1]))):
+          raise Config_Aint_Matched(tag)
+      self.tag = tag
+      self.inject_ct = 0
+      self.inject_p = inject_p
+      for i in ("name", "init", "cmds", "each"):
+         setattr(self, i, cfg[i])
+      self.init_done = False
+
+   def init_maybe(self, img_path, args, env):
+      if (not self.needs_inject(args)):
+         ch.DEBUG("workarounds: init: instruction doesn't need injection")
+         return
+      if (self.init_done):
+         ch.DEBUG("workarounds: init: already initialized")
+         return
+      for (i, (test_cmd, init_cmd)) in enumerate(self.init, 1):
+         ch.INFO("workarounds: init step %s: checking: $ %s" % (i, test_cmd))
+         args = ["/bin/sh", "-c", test_cmd]
+         exit_code = ch.ch_run_modify(img_path, args, env, fail_ok=True)
+         if (exit_code == 0):
+            ch.INFO("workarounds: init step %d: exit code %d, step not needed"
+                    % (i, exit_code))
+         else:
+            if (not self.inject_p):
+               ch.INFO("workarounds: init step %d: no --force, skipping" % i)
+            else:
+               ch.INFO("workarounds: init step %d: $ %s" % (i, init_cmd))
+               args = ["/bin/sh", "-c", init_cmd]
+               ch.ch_run_modify(img_path, args, env)
+      self.init_done = True
+
+   def inject_run(self, args):
+      if (not self.needs_inject(args)):
+         ch.DEBUG("workarounds: RUN: instruction doesn't need injection")
+         return args
+      assert (self.init_done)
+      if (not self.inject_p):
+         ch.INFO("workarounds: RUN: available here with --force")
+         return args
+      args = self.each + args
+      self.inject_ct += 1
+      ch.INFO("workarounds: RUN: new command: %s" % args)
+      return args
+
+   def needs_inject(self, args):
+      """Return True if the command in args seems to need fakeroot injection,
+         False otherwise."""
+      for word in self.cmds:
+         for arg in args:
+            if (word in arg.split()):  # arg words separate by whitespace
+               return True
+      return False

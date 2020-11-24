@@ -22,6 +22,9 @@ cli = None
 # Environment object.
 env = None
 
+# Fakeroot configuration (initialized during FROM).
+fakeroot_config = None
+
 # Images that we are building. Each stage gets its own image. In this
 # dictionary, an image appears exactly once or twice. All images appear with
 # an int key counting stages up from zero. Images with a name (e.g., "FROM ...
@@ -65,6 +68,10 @@ def main(cli_):
    # CLI namespace. :P
    global cli
    cli = cli_
+
+   # Check argument validity.
+   if (cli.force and cli.no_force_detect):
+      ch.FATAL("--force and --no-force-detect are incompatible")
 
    # Infer input file if needed.
    if (cli.file is None):
@@ -170,6 +177,13 @@ def main(cli_):
    if (ml.instruction_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
    assert (image_i + 1 == image_ct)  # should have errored already if not
+   if (cli.force):
+      if (fakeroot_config.inject_ct == 0):
+         assert (not fakeroot_config.init_done)
+         ch.WARNING("--force specified, but nothing to do")
+      else:
+         ch.INFO("--force: init OK & modified %d RUN instructions"
+                 % fakeroot_config.inject_ct)
    ch.INFO("grown in %d instructions: %s"
            % (ml.instruction_ct, images[image_i]))
 
@@ -527,9 +541,10 @@ class I_from_(Instruction):
          self.base_image.pull_to_unpacked(fixup=True)
       image.copy_unpacked(self.base_image)
       env.reset()
-      # Inject fakeroot preparatory stuff if needed.
-      if (not cli.no_fakeroot):
-         fakeroot.inject_first(image.unpack_path, env.env_build)
+      # Find fakeroot configuration, if any.
+      global fakeroot_config
+      fakeroot_config = fakeroot.detect(image.unpack_path,
+                                        cli.force, cli.no_force_detect)
 
    def str_(self):
       alias = "AS %s" % self.alias if self.alias else ""
@@ -538,17 +553,19 @@ class I_from_(Instruction):
 
 class Run(Instruction):
 
-   def cmd_set(self, args):
-      # This can be called if RUN is erroneously placed before FROM; in this
-      # case there is no image yet, so don't inject.
-      if (cli.no_fakeroot or image_i not in images):
-         self.cmd = args
-      else:
-         self.cmd = fakeroot.inject_each(images[image_i].unpack_path, args)
-
    def execute_(self):
       rootfs = images[image_i].unpack_path
-      ch.ch_run_modify(rootfs, self.cmd, env.env_build, env.workdir, cli.bind)
+      fakeroot_config.init_maybe(rootfs, self.cmd, env.env_build)
+      cmd = fakeroot_config.inject_run(self.cmd)
+      exit_code = ch.ch_run_modify(rootfs, cmd, env.env_build, env.workdir,
+                                   cli.bind, fail_ok=True)
+      if (exit_code != 0):
+         if (not cli.force and not cli.no_force_detect):
+            if (fakeroot_config.first_done):
+               ch.ERROR("build failed: --force may fix it")
+            else:
+               ch.ERROR("build failed: current version of --force wouldn't help")
+         ch.FATAL("build failed: RUN command exited with %d" % exit_code)
 
    def str_(self):
       return str(self.cmd)
@@ -558,8 +575,8 @@ class I_run_exec(Run):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.cmd_set([    variables_sub(unescape(i), env.env_build)
-                    for i in ch.tree_terminals(self.tree, "STRING_QUOTED")])
+      self.cmd = [    variables_sub(unescape(i), env.env_build)
+                  for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
 
 
 class I_run_shell(Run):
@@ -568,7 +585,7 @@ class I_run_shell(Run):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
       cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
-      self.cmd_set(["/bin/sh", "-c", cmd])
+      self.cmd = ["/bin/sh", "-c", cmd]
 
 
 class I_workdir(Instruction):
