@@ -205,19 +205,23 @@ DEFAULT_CONFIGS = {
 
 def detect(image, force, no_force_detect):
    f = None
-   if (not no_force_detect):
+   if (no_force_detect):
+      ch.DEBUG("not detecting --force config, per --no-force-detect")
+   else:
       # Try to find a real fakeroot config.
       for (tag, cfg) in DEFAULT_CONFIGS.items():
          try:
             f = Fakeroot(image, tag, cfg, force)
+            break
          except Config_Aint_Matched:
             pass
       # Report findings.
       if (f is None):
+         msg = "--force not available (no suitable config found)"
          if (force):
-            ch.FATAL("can't find suitable config for --force")
+            ch.WARNING(msg)
          else:
-            ch.INFO("--force not available (no suitable config found)")
+            ch.DEBUG(msg)
       else:
          if (force):
             adj = "will use"
@@ -237,14 +241,17 @@ class Config_Aint_Matched(Exception):
 
 class Fakeroot_Noop():
 
-   @property
-   def init_done(self):
-      return False
+   __slots__ = ("init_done",
+                "inject_ct")
+
+   def __init__(self):
+      self.init_done = False
+      self.inject_ct = 0
 
    def init_maybe(self, img_path, args, env):
       pass
 
-   def inject_each(self, args):
+   def inject_run(self, args):
       return args
 
 class Fakeroot():

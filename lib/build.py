@@ -560,8 +560,13 @@ class Run(Instruction):
       exit_code = ch.ch_run_modify(rootfs, cmd, env.env_build, env.workdir,
                                    cli.bind, fail_ok=True)
       if (exit_code != 0):
-         if (not cli.force and not cli.no_force_detect):
-            if (fakeroot_config.first_done):
+         if (cli.force):
+            if (isinstance(fakeroot_config, fakeroot.Fakeroot_Noop)):
+               ch.ERROR("build failed: --force specified, but no suitable config found")
+            else:
+               pass  # we did init --force OK but the build still failed
+         elif (not cli.no_force_detect):
+            if (fakeroot_config.init_done):
                ch.ERROR("build failed: --force may fix it")
             else:
                ch.ERROR("build failed: current version of --force wouldn't help")

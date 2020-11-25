@@ -141,9 +141,10 @@ Options:
 
 :code:`ch-grow` is a *fully* unprivileged image builder. It does not use any
 setuid or setcap helper programs, and it does not use configuration files
-:code:`/etc/subuid` or :code:`/etc/subgid`. This contrasts with the
-partially-privileged “rootless” or “fakeroot” modes of some competing
-builders.
+:code:`/etc/subuid` or :code:`/etc/subgid`. This contrasts with the “rootless”
+or “`fakeroot <https://sylabs.io/guides/3.7/user-guide/fakeroot.html>`_” modes
+of some competing builders, which do require privileged supporting code or
+utilities.
 
 This approach does yield some quirks. We provide built-in workarounds that
 should mostly work (i.e., :code:`--force`), but it can be helpful to
@@ -180,17 +181,21 @@ This one is (ironically) :code:`apt-get` failing to drop privileges:
   E: setgroups 0 failed - setgroups (1: Operation not permitted)
 
 By default, nothing is done to avoid these problems, though :code:`ch-grow`
-does tries detect if the workarounds could help. :code:`--force` activates the
-workarounds: :code:`ch-grow` injects extra commands to intercept these system
-calls and fake a successful result, using :code:`fakeroot(1)`. There are two
-basic steps:
+does try to detect if the workarounds could help. :code:`--force` activates
+the workarounds: :code:`ch-grow` injects extra commands to intercept these
+system calls and fake a successful result, using :code:`fakeroot(1)`. There
+are three basic steps:
 
-  1. After :code:`FROM`, install :code:`fakeroot(1)` if one is not already
-     installed. This sometimes also needs extra steps, like turning off the
-     :code:`apt` sandbox (for Debian Buster) or enabling EPEL (for
-     CentOS/RHEL).
+  1. After :code:`FROM`, analyze the image to see what distribution it
+     contains, which determines the specific workarounds.
 
-  2. Prepend :code:`fakeroot` to :code:`RUN` instructions that seem to need
+  2. Before the user command in the first :code:`RUN` instruction where the
+     injection seems needed, install :code:`fakeroot(1)` in the image, if one
+     is not already installed, as well as any other necessary initialization
+     commands. For example, we turn off the :code:`apt` sandbox (for Debian
+     Buster) and enable EPEL (for CentOS/RHEL).
+
+  3. Prepend :code:`fakeroot` to :code:`RUN` instructions that seem to need
      it, e.g. ones that contain :code:`apt`, :code:`apt-get`, :code:`dpkg` for
      Debian derivatives and :code:`dnf`, :code:`rpm`, or :code:`yum` for
      RPM-based distributions.
