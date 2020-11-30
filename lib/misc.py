@@ -36,15 +36,16 @@ class Version(Action_Exit):
 
 def delete(cli):
    imgdir = cli.storage + '/img/' + cli.image_ref
-   print(imgdir)
-   if(os.path.isdir(imgdir) and os.path.isdir(imgdir + "/bin") and 
-		os.path.isdir(imgdir + "/dev") and os.path.isdir(imgdir + "/usr")):
+   if(os.path.isdir(imgdir) and os.path.isdir(imgdir + '/bin') and 
+		os.path.isdir(imgdir + '/dev') and os.path.isdir(imgdir + '/usr')):
       ch.rmtree(imgdir)
    else:
       ch.ERROR("image %s doesn't exist" % cli.image_ref)	
-   for dir in os.walk("/"):
-      if(dir[0].endswith('/alpine')):
-         if(os.path.isdir(dir[0] + "/bin") and os.path.isdir(dir[0] + "/dev") and os.path.isdir(dir[0] +"/usr")):
+   paths = ('/var/tmp', '/home/'+os.environ["USER"])
+   for path in paths:
+      for dir in os.walk(path):
+         if(dir[0].endswith('/'+cli.image_ref) and os.path.isdir(dir[0] + '/bin') and 
+            os.path.isdir(dir[0] + '/dev') and os.path.isdir(dir[0] +'/usr')):
             ch.rmtree(dir[0])
 
 def list_(cli):
