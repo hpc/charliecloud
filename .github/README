@@ -108,7 +108,8 @@ To-do items for later (FIXME):
   * Currently we rebuild all Dockerfiles from scratch on every job. It would
     be nice to cache these; we may be able to bring wall time down to 10–15
     minutes with caching, as it would let us use wider parallelism via more
-    dimensions in the matrix. Considerations & gotchas off the top of my head:
+    dimensions in the matrix. I think this is already issue #477.
+    Considerations & gotchas off the top of my head:
 
     * Docker, Buildah, and ch-grow will all need different treatment.
 
