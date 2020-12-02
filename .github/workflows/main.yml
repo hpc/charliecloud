@@ -205,10 +205,11 @@ jobs:
           ./configure --prefix=/doesnotexist \
                       --disable-html --disable-man --disable-ch-grow
           set -x
-          fgrep 'documentation: yes' config.log
-          [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          [[ $CH_BUILDER = ch-grow ]] && fgrep 'with ch-grow(1): yes' config.log
+          fgrep 'HTML documentation ... no' config.log
+          fgrep 'man pages ... no' config.log
+          fgrep 'ch-grow(1) ... no' config.log
+          fgrep 'with Docker: yes' config.log
+          fgrep 'with ch-grow(1): no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
