@@ -1089,3 +1089,11 @@ def tree_terminals(tree, tname):
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
+
+def image_unpacked_p(cli):
+   """Return the image directory if unpacked or returns false""" 
+   imgdir = cli.storage + '/img/' + cli.image_ref
+   if(os.path.isdir(imgdir) and os.path.isdir(imgdir + '/bin') and 
+      os.path.isdir(imgdir + '/dev') and os.path.isdir(imgdir + '/opt')):
+      return imgdir
+   return False

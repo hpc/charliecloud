@@ -32,26 +32,26 @@ setup () {
 }
 
 @test 'ch-grow delete' {
-	run ch-grow build -t delete_test -f - . << 'EOF'
+   run ch-grow list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output != *"delete-test"* ]]
+  
+	ch-grow build -t delete-test -f - . << 'EOF'
 FROM 00_tiny
 EOF
-   echo "$output"
- 	[[ $status -eq 0 ]]
 	
    run ch-grow list
 	echo "$output"
 	[[ $status -eq 0 ]]
-	[[ $output = *"delete_test"* ]]
+	[[ $output = *"delete-test"* ]]
 	
-	run ch-grow delete delete_test
-	echo "$output"
-	[[ status -eq 0 ]]
+	ch-grow delete delete-test
 
 	run ch-grow list
 	echo "$output"
 	[[ $status -eq 0 ]]
-	[[ $output != *"delete_test"* ]]
-
+	[[ $output != *"delete-test"* ]]
 }
 
 @test 'ch-grow list' {

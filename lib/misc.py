@@ -35,18 +35,11 @@ class Version(Action_Exit):
 # because caller manages that.
 
 def delete(cli):
-   imgdir = cli.storage + '/img/' + cli.image_ref
-   if(os.path.isdir(imgdir) and os.path.isdir(imgdir + '/bin') and 
-		os.path.isdir(imgdir + '/dev') and os.path.isdir(imgdir + '/usr')):
+   imgdir = ch.image_unpacked_p(cli)
+   if(imgdir):
       ch.rmtree(imgdir)
    else:
       ch.ERROR("image %s doesn't exist" % cli.image_ref)	
-   paths = ('/var/tmp', '/home/'+os.environ["USER"])
-   for path in paths:
-      for dir in os.walk(path):
-         if(dir[0].endswith('/'+cli.image_ref) and os.path.isdir(dir[0] + '/bin') and 
-            os.path.isdir(dir[0] + '/dev') and os.path.isdir(dir[0] +'/usr')):
-            ch.rmtree(dir[0])
 
 def list_(cli):
    ch.dependencies_check()
