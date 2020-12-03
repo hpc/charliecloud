@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tarfile
 import types
-
+import cProfile
 
 ## Imports not in standard library ##
 
@@ -279,7 +279,8 @@ class Image:
          last_layer = sys.maxsize
       layers = self.layers_read()
       self.validate_members(layers)
-      self.whiteouts_resolve(layers)
+      #self.whiteouts_resolve(layers)
+      cProfile.runctx('self.whiteouts_resolve(layers)', None, locals())
       INFO("flattening image")
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
@@ -479,7 +480,8 @@ class Image:
          if (wo_ct > 0):
             DEBUG("layer %d/%d: %s: processed %d whiteouts; %d members ignored"
                   % (i, len(layers), lh[:7], wo_ct, ig_ct))
-
+         else:
+            DEBUG("layer %d/%d: ran with no whiteouts" %(i, len(layers)))
    def unpack_create_ok(self):
       """Ensure the unpack directory can be created. If the unpack directory
          is already an image, remove it."""
