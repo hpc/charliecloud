@@ -11,8 +11,13 @@ Description
 
 .. note::
 
-   This command is experimental. Features may be incomplete and/or buggy.
-   Please report any issues you find, so we can fix them!
+   This command does a lot of heuristic magic; it is not a general file
+   copy-to-image tool. For that, the best practice is :code:`COPY` instruction
+   within your Dockerfile. :code:`cp(1)` into an unpacked image will also work
+   but is discouraged.
+
+   It is known to be somewhat buggy. Please report any issues you find, so we
+   can fix them!
 
 Inject files from the host into the Charliecloud image directory
 :code:`IMGDIR`.

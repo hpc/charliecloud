@@ -42,9 +42,7 @@ set -e
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
-Inject files from the host into an image directory.
-
-NOTE: This command is experimental. Features may be incomplete and/or buggy.
+Inject files from the host into an image directory, with various magic.
 
 Usage:
 

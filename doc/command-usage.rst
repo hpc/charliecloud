@@ -57,7 +57,7 @@ Flatten a builder image into a Charliecloud SquashFS file.
 ch-fromhost
 +++++++++++
 
-Inject files from the host into an image directory.
+Inject files from the host into an image directory, with various magic.
 
 .. include:: ./ch-fromhost_desc.rst
 
