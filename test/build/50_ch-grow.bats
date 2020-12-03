@@ -35,23 +35,23 @@ setup () {
    run ch-grow list
    echo "$output"
    [[ $status -eq 0 ]]
-   [[ $output != *"delete-test"* ]]
+   [[ $output != *"delete/test"* ]]
   
-	ch-grow build -t delete-test -f - . << 'EOF'
+	ch-grow build -t delete/test -f - . << 'EOF'
 FROM 00_tiny
 EOF
 	
    run ch-grow list
 	echo "$output"
 	[[ $status -eq 0 ]]
-	[[ $output = *"delete-test"* ]]
+	[[ $output = *"delete/test"* ]]
 	
-	ch-grow delete delete-test
+   ch-grow delete delete%test
 
 	run ch-grow list
 	echo "$output"
 	[[ $status -eq 0 ]]
-	[[ $output != *"delete-test"* ]]
+	[[ $output != *"delete/test"* ]]
 }
 
 @test 'ch-grow list' {
