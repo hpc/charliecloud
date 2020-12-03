@@ -57,7 +57,7 @@ Miscellaneous notes and gotchas:
   * GitHub doesn’t seem to notice our setup if .github is a symlink. :(
 
   * GitHub seems to want us to encapsulate some of the steps that are now just
-    shell scripts into “actions”. I haven’t looked into this.
+    shell scripts into “actions”. I haven’t looked into this. Issue #914.
 
   * Force-push does start a new build.
 
@@ -90,32 +90,6 @@ Miscellaneous notes and gotchas:
       is blank; in this case, clicking a different job and coming back seems
       to fix things.
 
-To-do items for later (FIXME):
-
-  * Can we e-mail charliecloud-dev with failures?
-
   * Previously we listed $CH_TEST_TARDIR and $CH_TEST_IMGDIR between phases. I
-    didn’t transfer that over. It must have been useful for some reason.
-    Perhaps we should do this in ch-test? Or maybe an Action is appropriate?
-
-  * Review these and turn them into GitHub issues.
-
-  * There is not currently a way to skip testing a commit. GitHub Actions has
-    no in-built keywords like Travis’ “[skip ci]”, so we’d need to implement
-    it ourselves. I did find a recipe for examining commit messages of a push
-    event but not pull requests. Possibly we could look at PR tags?
-
-  * Currently we rebuild all Dockerfiles from scratch on every job. It would
-    be nice to cache these; we may be able to bring wall time down to 10–15
-    minutes with caching, as it would let us use wider parallelism via more
-    dimensions in the matrix. I think this is already issue #477.
-    Considerations & gotchas off the top of my head:
-
-    * Docker, Buildah, and ch-grow will all need different treatment.
-
-    * There do seem to be Actions for caching both Docker images as well as
-      generic directories. However, actions/cache at least has a limit of 5GiB
-      for the whole repo, which may not help us.
-
-  * It may be good to use the GitHub container registry. E.g. can we set it up
-    as a pull-through cache from Docker Hub?
+    didn’t transfer that over. It must have been useful, so let’s pay
+    attention to see if it needs to be re-added.
