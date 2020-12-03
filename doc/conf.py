@@ -263,7 +263,7 @@ man_pages = [
     "Create a SquashFS file from an image directory",
     [], 1),
    ("ch-grow", "ch-grow",
-    "Renamed to ch-image. Will be removed in 0.23. See ch-image",
+    'Deprecated name for "ch-image"; will be removed in version 0.23.',
     [], 1),
    ("ch-fromhost", "ch-fromhost",
     "Inject files from the host into an image directory",

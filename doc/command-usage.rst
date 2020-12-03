@@ -57,7 +57,7 @@ Flatten a builder image into a Charliecloud SquashFS file.
 ch-grow
 +++++++
 
-Renamed to ch-image. Will be removed in 0.23. See ch-image.
+Deprecated name for :code:`ch-image`; will be removed in version 0.23.
 
 .. include:: ./ch-grow_desc.rst
 

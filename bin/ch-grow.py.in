@@ -1,19 +1,20 @@
-#!/bin/bash
+#!%PYTHON_SHEBANG%
 
-# Wrapper for deprecated ch-grow script. Warn users and pass arguments to
-# ch-image after five (5) seconds.
+import subprocess
+import sys
 
-lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
-. "${lib}/base.sh"
+ch_image = sys.path[0] + "/ch-image"
+rc = subprocess.call([ch_image] + sys.argv[1:])
 
-"${ch_bin}/ch-image" "$@"
-exit_status=$?
-cat <<'EOF'
-
-WARNING: ch-grow has been renamed to ch-image. The old name will be removed in
-version 0.23.
+print("""\
 
 
-EOF
-sleep 5
-exit "$exit_status"
+******************************************************************************
+
+NOTE: This program is now called ch-image. We plan to remove the ch-grow name
+in Charliecloud version 0.23.
+
+******************************************************************************
+""", end="", file=sys.stderr)
+
+sys.exit(rc)

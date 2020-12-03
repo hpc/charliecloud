@@ -39,7 +39,7 @@ if ENABLE_CH_IMAGE
 bin_SCRIPTS += ch-image ch-grow
 endif
 EXTRA_DIST = ch-grow.py.in ch-image.py.in ch-run-oci.py.in
-CLEANFILES = $(bin_SCRIPTS) ch-grow
+CLEANFILES = $(bin_SCRIPTS)
 
 ch-grow: ch-grow.py.in
 ch-image: ch-image.py.in
