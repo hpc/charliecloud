@@ -452,7 +452,7 @@ class Env(Instruction):
 
    def execute_(self):
       env.env[self.key] = self.value
-      with ch.open_(images[image_i].unpack_path / "/ch/environment", "wt") \
+      with ch.open_(images[image_i].unpack_path + "/ch/environment", "wt") \
            as fp:
          for (k, v) in env.env.items():
             print("%s=%s" % (k, v), file=fp)
