@@ -65,7 +65,7 @@ except ImportError:
 CH_BIN = None
 CH_RUN = None
 
-# Logging; set using log_setup() below.
+# Logging; set using init() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
@@ -185,49 +185,33 @@ class Image:
 
       Constructor arguments:
 
-        ref.............. Image_Ref object to identify the image.
+        ref........... Image_Ref object to identify the image.
 
-        download_cache .. Directory containing the download cache; this is
-                          where layers and manifests go. If None,
-                          download-related operations will not be available.
-
-        unpack_dir ...... Directory containing unpacked images.
-
-        image_subdir .... Subdirectory of unpack_dir to put unpacked image in.
-                          If None, infer from id; if the empty string,
-                          unpack_dir will be used directly."""
+        unpack_path .. Directory to unpack the image in; if None, infer path
+                       in storage dir from ref."""
 
    __slots__ = ("ref",
-                "download_cache",
-                "image_subdir",
                 "layer_hashes",
                 "schema_version",
-                "unpack_dir")
+                "unpack_path")
 
-   def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
+   def __init__(self, ref, unpack_path=None):
       assert isinstance(ref, Image_Ref)
       self.ref = ref
-      self.download_cache = download_cache
-      self.unpack_dir = unpack_dir
-      if (image_subdir is None):
-         self.image_subdir = self.ref.for_path
-      else:
-         self.image_subdir = image_subdir
       self.layer_hashes = None
       self.schema_version = None
+      if (unpack_path is not None):
+         self.unpack_path = unpack_path
+      else:
+         self.unpack_path = storage.unpack(self.ref)
 
    def __str__(self):
       return str(self.ref)
 
    @property
-   def unpack_path(self):
-      "Path to the directory containing the image."
-      return "%s/%s" % (self.unpack_dir, self.image_subdir)
-
-   @property
    def manifest_path(self):
       "Path to the manifest file."
-      return "%s/%s.manifest.json" % (self.download_cache, self.ref.for_path)
+      return storage.manifest(self.ref)
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -247,7 +231,7 @@ class Image:
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       dl = Repo_Data_Transfer(self.ref)
       DEBUG("downloading image: %s" % dl.ref)
-      mkdirs(self.download_cache)
+      mkdirs(storage.download_cache)
       # manifest
       if (os.path.exists(self.manifest_path) and use_cache):
          INFO("manifest: using existing file")
@@ -337,7 +321,7 @@ class Image:
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
-      return "%s/%s.tar.gz" % (self.download_cache, layer_hash)
+      return "%s/%s.tar.gz" % (storage.download_cache, layer_hash)
 
    def layers_read(self):
       """Open the layer tarballs and read some metadata. Return an OrderedDict
@@ -495,9 +479,9 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path + "/bin")
-             or not os.path.isdir(self.unpack_path + "/dev")
-             or not os.path.isdir(self.unpack_path + "/usr")):
+         if (   not os.path.isdir(self.unpack_path / "bin")
+             or not os.path.isdir(self.unpack_path / "dev")
+             or not os.path.isdir(self.unpack_path / "usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          DEBUG("replacing existing image: %s" % self.unpack_path)
@@ -1245,6 +1229,59 @@ class Repo_Data_Transfer:
          self.session.verify = tls_verify
 
 
+class Storage:
+
+   """Source of truth for all paths within the storage directory. Do not
+      compute any such paths yourself!"""
+
+   __slots__ = ("root",)
+
+   def __init__(self, storage_cli):
+      self.root = storage_cli
+      if (self.root is None):
+         self.root = self.root_env()
+      if (self.root is None):
+         self.root = self.root_default()
+      self.root = pathlib.Path(self.root)
+
+   @property
+   def download_cache(self):
+      return self.root / "dlcache"
+
+   @property
+   def unpack_base(self):
+      return self.root / "img"
+
+   @property
+   def upload_cache(self):
+      return self.root / "ulcache"
+
+   @staticmethod
+   def root_default():
+      # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
+      # environment variable? It seems a lot more robust. But, (1) we'd have
+      # to match it in some scripts and (2) it makes the documentation less
+      # clear becase we have to explain the fallback behavior.
+      try:
+         username = os.environ["USER"]
+      except KeyError:
+         FATAL("can't get username: $USER not set")
+      return "/var/tmp/%s/ch-grow" % username
+
+   @staticmethod
+   def root_env():
+      try:
+         return os.environ["CH_GROW_STORAGE"]
+      except KeyError:
+         return None
+
+   def manifest(self, image_ref):
+      return self.download_cache / ("%s.manifest.json" % image_ref.for_path)
+
+   def unpack(self, image_ref):
+      return self.unpack_base / image_ref.for_path
+
+
 class TarFile(tarfile.TarFile):
 
    # This subclass augments tarfile.TarFile to add safety code. While the
@@ -1390,6 +1427,22 @@ def grep_p(path, rx):
    except OSError as x:
       FATAL("error reading %s: %s" % (path, x.strerror))
 
+def init(cli):
+   global verbose, log_festoon, log_fp, storage
+   # logging
+   assert (0 <= cli.verbose <= 2)
+   verbose = cli.verbose
+   if ("CH_LOG_FESTOON" in os.environ):
+      log_festoon = True
+   file_ = os.getenv("CH_LOG_FILE")
+   if (file_ is not None):
+      verbose = max(verbose_, 1)
+      log_fp = open_(file_, "at")
+   atexit.register(color_reset, log_fp)
+   DEBUG("verbose level: %d" % verbose)
+   # storage object
+   storage = Storage(cli.storage)
+
 def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):
       color_set(color, log_fp)
@@ -1403,21 +1456,8 @@ def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):
       color_reset(log_fp)
 
-def log_setup(verbose_):
-   global verbose, log_festoon, log_fp
-   assert (0 <= verbose_ <= 2)
-   verbose = verbose_
-   if ("CH_LOG_FESTOON" in os.environ):
-      log_festoon = True
-   file_ = os.getenv("CH_LOG_FILE")
-   if (file_ is not None):
-      verbose = max(verbose_, 1)
-      log_fp = open_(file_, "at")
-   atexit.register(color_reset, log_fp)
-   DEBUG("verbose level: %d" % verbose)
-
 def mkdirs(path):
-   DEBUG("ensuring directory: " + path)
+   DEBUG("ensuring directory: %s" % path)
    try:
       os.makedirs(path, exist_ok=True)
    except OSError as x:
@@ -1439,7 +1479,7 @@ def ossafe(f, msg, *args, **kwargs):
 
 def rmtree(path):
    if (os.path.isdir(path)):
-      DEBUG("deleting directory: " + path)
+      DEBUG("deleting directory: %s" % path)
       try:
          shutil.rmtree(path)
       except OSError as x:
@@ -1447,25 +1487,6 @@ def rmtree(path):
                   % (path, x.filename, x.strerror))
    else:
       assert False, "unimplemented"
-
-def storage_env():
-   """Return path to builder storage as configured by $CH_GROW_STORAGE, or the
-      default if that's not set."""
-   try:
-      return os.environ["CH_GROW_STORAGE"]
-   except KeyError:
-      return storage_default()
-
-def storage_default():
-   # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
-   # environment variable? It seems a lot more robust. But, (1) we'd have
-   # to match it in some scripts and (2) it makes the documentation less
-   # clear becase we have to explain the fallback behavior.
-   try:
-      username = os.environ["USER"]
-   except KeyError:
-      FATAL("can't get username: $USER not set")
-   return "/var/tmp/%s/ch-grow" % username
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):

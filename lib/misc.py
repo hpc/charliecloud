@@ -35,34 +35,26 @@ class Version(Action_Exit):
 
 def list_(cli):
    ch.dependencies_check()
-   imgdir = cli.storage + '/img'
+   imgdir = ch.storage.unpack_base
    imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
    for img in sorted(imgs):
       print(ch.Image_Ref(img))
 
 def pull(cli):
    ch.dependencies_check()
-   # Where does it go?
-   dlcache = cli.storage + "/dlcache"
-   if (cli.image_dir is not None):
-      unpack_dir = cli.image_dir
-      image_subdir = ""
-   else:
-      unpack_dir = cli.storage + "/img"
-      image_subdir = None  # infer from image ref
    # Set things up.
-   ref = ch.Image_Ref(cli.image_ref)
+   ref = ch.Image_Ref(cli.image_ref, cli.image_dir)
    if (cli.parse_only):
       print(ref.as_verbose_str)
       sys.exit(0)
-   image = ch.Image(ref, dlcache, unpack_dir, image_subdir)
+   image = ch.Image(ref)
    ch.INFO("pulling image:   %s" % image.ref)
    if (cli.image_dir is not None):
       ch.INFO( "destination:     %s" % image.unpack_path)
    else:
       ch.DEBUG("destination:     %s" % image.unpack_path)
    ch.DEBUG("use cache:       %s" % (not cli.no_cache))
-   ch.DEBUG("download cache:  %s" % image.download_cache)
+   ch.DEBUG("download cache:  %s" % storage.download_cache)
    ch.DEBUG("manifest:        %s" % image.manifest_path)
    # Pull!
    image.pull_to_unpacked(use_cache=(not cli.no_cache),
@@ -72,11 +64,11 @@ def pull(cli):
 
 def push(cli):
    ch.dependencies_check()
-   ulcache = cli.storage + "/ulcache"
+   ulcache = ch.storage.upload_cache
    if (cli.image_dir is not None):
       image_dir = cli.image_dir
    else:
-      image_dir = cli.storage + "/img"
+      image_dir = ch.storage.unpack(image_ref)
    # Stage upload.
    image_ref = ch.Image_Ref(cli.local_image_ref)
    image_manifest = str(image_ref) + ".manifest.json"
@@ -108,5 +100,5 @@ def push(cli):
    # upload.push_to_repo(image_path, ulcache, cli.chunked_upload)
 
 def storage_path(cli):
-   print(cli.storage)
+   print(ch.storage.root)
 

@@ -452,7 +452,7 @@ class Env(Instruction):
 
    def execute_(self):
       env.env[self.key] = self.value
-      with ch.open_(images[image_i].unpack_path + "/ch/environment", "wt") \
+      with ch.open_(images[image_i].unpack_path / "/ch/environment", "wt") \
            as fp:
          for (k, v) in env.env.items():
             print("%s=%s" % (k, v), file=fp)
@@ -510,8 +510,7 @@ class I_from_(Instruction):
       else:
          # Not last image; append stage index to tag.
          tag = "%s/_stage%d" % (cli.tag, image_i)
-      image = ch.Image(ch.Image_Ref(tag), cli.storage + "/dlcache",
-                       cli.storage + "/img")
+      image = ch.Image(ch.Image_Ref(tag))
       images[image_i] = image
       if (self.alias is not None):
          images[self.alias] = image
@@ -520,8 +519,7 @@ class I_from_(Instruction):
       if (str(image.ref) == str(self.base_ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
-      self.base_image = ch.Image(self.base_ref, image.download_cache,
-                                 image.unpack_dir)
+      self.base_image = ch.Image(self.base_ref)
       if (not os.path.isdir(self.base_image.unpack_path)):
          ch.DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
          self.base_image.pull_to_unpacked(fixup=True)
