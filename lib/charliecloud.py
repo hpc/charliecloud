@@ -480,7 +480,8 @@ class Image:
          if (wo_ct > 0):
             DEBUG("layer %d/%d: %s: processed %d whiteouts; %d members ignored"
                   % (i, len(layers), lh[:7], wo_ct, ig_ct))
-            WARNING("layer %d has whiteouts which can significantly increase pull time" %(i)) 
+            if(wo_ct > 20):           
+               WARNING("layer %d has %d whiteouts which can significantly increase pull time" %(i, wo_ct)) 
          else:
             DEBUG("layer %d/%d: ran with no whiteouts" %(i, len(layers)))
    def unpack_create_ok(self):
