@@ -6,6 +6,7 @@ Synopsis
    $ ch-grow [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-grow [...] list
    $ ch-grow [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-grow [...] push [--image DIR] SOURCE_REF [DEST_REF]
    $ ch-grow [...] storage-path
    $ ch-grow { --help | --version | --dependencies }
 
@@ -134,17 +135,12 @@ Options:
     Name of image to create. If not specified, use the final component of path
     :code:`CONTEXT`. Append :code:`:latest` if no colon present.
 
-:code:`storage-path`
---------------------
-
-Print the storage directory path and exit.
-
 :code:`pull`
 ------------
 
 Pull the image described by the image reference :code:`IMAGE_REF` from a
-repository by HTTPS. See the FAQ for the gory details on specifying image
-references.
+repository to the local filesystem. See the FAQ for the gory details on
+specifying image references.
 
 This script does a fair amount of validation and fixing of the layer tarballs
 before flattening in order to support unprivileged use despite image problems
@@ -154,7 +150,7 @@ and directory permissions are increased to a minimum of :code:`rwx------` and
 the image are permitted, because they are not resolved until runtime within a
 container.
 
-Destination argument:
+Destination:
 
   :code:`IMAGE_DIR`
     If specified, place the unpacked image at this path; it is then ready for
@@ -174,13 +170,34 @@ Options:
 :code:`push`
 ------------
 
-Push the image described by the image reference :code:`IMAGE_REF` from
-storage to a repository described by the image reference :code:`DEST_IMAGE_REF`
-via HTTPS. See the FAQ for the gory details on specifying image references.
+Push the image described by the image reference :code:`IMAGE_REF` from the
+local filesystem to a repository. See the FAQ for the gory details on
+specifying image references.
 
-Images pushed this way have their file ownership bits fixed in order to
-support an uprivileged ecosystem and reomove sensitive information. All image
-files will be owned and group owned by :code:`nobody`, i.e., :code:`65534`.
+Because Charliecloud is fully unprivileged, the owner and group of files in
+its images are not meaningful in the broader ecosystem. Thus, when pushed,
+everything in the image is flattened to user:group :code:`root:root`. Also,
+setuid/setgid bits are removed, to avoid surprises if the image is pulled by a
+privileged container implementation.
+
+Destination:
+
+  :code:`DEST_REF`
+    If specified, use this as the destination image reference, rather than
+    :code:`IMAGE_REF`. This lets you push to a repository without permanently
+    adding a tag to the image.
+
+Options:
+
+  :code:`--image DIR`
+    Use the unpacked image located at :code:`DIR` rather than an image in the
+    storage directory named :code:`IMAGE_REF`.
+
+:code:`storage-path`
+--------------------
+
+Print the storage directory path and exit.
+
 
 Quirks of a fully unprivileged build
 ====================================
@@ -462,7 +479,9 @@ Same, except place the image in :code:`/tmp/buster`::
 :code:`push`
 ------------
 
-Push the local CentOS 8 image to foo
-FIXME
+FIXME:
+
+* push local CentOS 8 image to git.example.com, no dest_ref
+* same, with dest_ref
 
 ..  LocalWords:  tmpfs'es bigvendor

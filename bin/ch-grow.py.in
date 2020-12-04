@@ -153,14 +153,11 @@ def main():
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.push)
    add_opts(sp, common_opts, True)
-   # sp.add_argument("--chunked-upload", action="store_true", default=False,
-   #                 help="split layer upload into 1 MiB chunks")
-   sp.add_argument("local_image_ref", metavar="IMAGE_REF",
-                   help="local image reference")
-   sp.add_argument("--image-dir", metavar="IMAGE_DIR", nargs="?",
-                   help="IMAGE_DIR of IMAGE_REF (default opaque path in storage dir)")
-   sp.add_argument("dest_image_ref", metavar="DEST_IMAGE_REF",
-                   help="remote image reference")
+   sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
+   sp.add_argument("--image", metavar="DIR",
+                   help="path to unpacked image (default: opaque path in storage dir)")
+   sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
+                   help="destination image reference (default: IMAGE_REF)")
 
    # storage-path
    help="print storage directory path"
