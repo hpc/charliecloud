@@ -1,3 +1,6 @@
+[This file is not called README because files named .github/README.* get
+picked up by GitHub and used as the main project README.]
+
 This directory defines our GitHub Actions test suite setup.
 
 The basic strategy is to start one “job” per builder; these run in parallel.
