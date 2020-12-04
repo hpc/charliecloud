@@ -271,8 +271,8 @@ EOF
 @test 'pull from public repos' {
     scope standard
     [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
-    if [[ -z $TRAVIS ]]; then
-        # Verify we can reach the public internet, except on Travis, where we
+    if [[ -z $CI ]]; then
+        # Verify we can reach the public internet, except on CI, where we
         # insist this should work.
         ping -c3 8.8.8.8 || skip "no public internet (can't ping 8.8.8.8)"
     fi
