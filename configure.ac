@@ -228,7 +228,7 @@ AS_IF([test -n "$SPHINX"], [
   DOCUTILS=$sphinx_python  # FIXME: output is confusing
   CH_CHECK_VERSION([DOCUTILS], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
-])
+], [DOCUTILS_VERSION_NOTE='moot b/c no sphinx-build'])
 
 # "sphinx-rtd-theme" module
 vmin_rtd=0.2.4
@@ -247,7 +247,7 @@ EOF
   AC_MSG_RESULT([$have_rtd])
   CH_CHECK_VERSION([RTD], [$vmin_rtd],
     [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
-])
+], [RTD_VERSION_NOTE='moot b/c no sphinx-build'])
 
 
 ## Feature tests - run time
