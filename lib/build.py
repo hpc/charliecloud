@@ -381,18 +381,16 @@ class I_copy(Instruction):
       for src in self.srcs:
          if (os.path.normpath(src).startswith("..")):
             ch.FATAL("can't COPY: %s climbs outside context" % src)
-         for i in glob.glob(context + "/" + src):
+         for i in glob.glob("%s/%s" % (context, src)):  # glob can't take Path
             srcs.append(i)
       if (len(srcs) == 0):
          ch.FATAL("can't COPY: no sources exist")
-      dst = images[image_i].unpack_path + "/"
+      dst = images[image_i].unpack_path
       if (not self.dst.startswith("/")):
-         dst += env.workdir + "/"
+         dst += env.workdir
       dst += self.dst
-      if (dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
+      if (self.dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
          # Create destination directory.
-         if (dst.endswith("/")):
-            dst = dst[:-1]
          if (os.path.exists(dst) and not os.path.isdir(dst)):
             ch.FATAL("can't COPY: %s exists but is not a directory" % dst)
          ch.mkdirs(dst)

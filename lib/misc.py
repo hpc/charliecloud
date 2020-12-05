@@ -43,18 +43,18 @@ def list_(cli):
 def pull(cli):
    ch.dependencies_check()
    # Set things up.
-   ref = ch.Image_Ref(cli.image_ref, cli.image_dir)
+   ref = ch.Image_Ref(cli.image_ref)
    if (cli.parse_only):
       print(ref.as_verbose_str)
       sys.exit(0)
-   image = ch.Image(ref)
+   image = ch.Image(ref, cli.image_dir)
    ch.INFO("pulling image:   %s" % image.ref)
    if (cli.image_dir is not None):
       ch.INFO( "destination:     %s" % image.unpack_path)
    else:
       ch.DEBUG("destination:     %s" % image.unpack_path)
    ch.DEBUG("use cache:       %s" % (not cli.no_cache))
-   ch.DEBUG("download cache:  %s" % storage.download_cache)
+   ch.DEBUG("download cache:  %s" % ch.storage.download_cache)
    ch.DEBUG("manifest:        %s" % image.manifest_path)
    # Pull!
    image.pull_to_unpacked(use_cache=(not cli.no_cache),

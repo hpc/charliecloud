@@ -479,9 +479,9 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path / "bin")
-             or not os.path.isdir(self.unpack_path / "dev")
-             or not os.path.isdir(self.unpack_path / "usr")):
+         if (   not os.path.isdir(self.unpack_path + "bin")
+             or not os.path.isdir(self.unpack_path + "dev")
+             or not os.path.isdir(self.unpack_path + "usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          DEBUG("replacing existing image: %s" % self.unpack_path)
@@ -581,7 +581,7 @@ class Image_Upload():
                      filter=self.archive_fixup)
       # Store uncompressed layer data.
       hash_['uncompressed'] = 'sha256:%s' % self.get_layer_hash(tar)
-      size['uncompressed'] = pathlib.Path(tar).stat().st_size
+      size['uncompressed'] = Path(tar).stat().st_size
       DEBUG('uncompressed digest: %s' % hash_['uncompressed'])
       DEBUG('uncompressed size: %s' % size['uncompressed'])
 
@@ -599,7 +599,7 @@ class Image_Upload():
 
       # Store compressed layer data.
       hash_['compressed'] = 'sha256:%s' % self.get_layer_hash(gzp)
-      size['compressed'] = pathlib.Path(gzp).stat().st_size
+      size['compressed'] = Path(gzp).stat().st_size
       DEBUG('compressed digest: %s' % hash_['compressed'])
       DEBUG('compressed size: %s' % size['compressed'])
       gzp_path = os.path.join(ulcache, hash_['compressed'] + '.tar.gz')
@@ -918,6 +918,66 @@ fields:
           and self.port is None):
          self.path.insert(0, self.host)
          self.host = None
+
+
+class Path(pathlib.PosixPath):
+   """Stock Path objects have the very weird property that appending an
+      *absolute* path to an existing path ignores the left operand, leaving
+      only the absolute right operand:
+
+        >>> import pathlib
+        >>> a = pathlib.Path("/foo/bar")
+        >>> a.joinpath("baz")
+        PosixPath('/foo/bar/baz')
+        >>> a.joinpath("/baz")
+        PosixPath('/baz')
+
+      This is contrary to long-standing UNIX/POSIX, where extra slashes in a
+      path are ignored, e.g. the path "foo//bar" is equivalent to "foo/bar".
+      It seems to be inherited from os.path.join().
+
+      Even with the relatively limited use of Path objects so far, this has
+      caused quite a few bugs. IMO it's too difficult and error-prone to
+      manually manage whether paths are absolute or relative. Thus, this
+      subclass introduces a new operator "+" which does the right thing, i.e.,
+      if the right operand is absolute, that fact is ignored. E.g.:
+
+        >>> a = Path("/foo/bar")
+        >>> a.joinpath_posix("baz")
+        Path('/foo/bar/baz')
+        >>> a.joinpath_posix("/baz")
+        Path('/foo/bar/baz')
+        >>> a + "/baz"
+        Path('/foo/bar/baz')
+        >>> "/baz" + a
+        Path('/baz/foo/bar')
+
+      We introduce a new operator because it seemed like too subtle a change
+      to an existing operator, and we disable the old operator (slash) to
+      avoid getting burned here in Charliecloud."""
+
+   def __add__(self, right):
+      return self.joinpath_posix(right)
+
+   def __radd__(self, left):
+      left = Path(left)
+      return left.joinpath_posix(self)
+
+   def __truediv__(self, right):
+      return NotImplemented
+
+   def __rtruediv__(self, left):
+      return NotImplemented
+
+   def joinpath_posix(self, *others):
+      others2 = list()
+      for other in others:
+         other = Path(other)
+         if (other.is_absolute()):
+            other = other.relative_to("/")
+            assert (not other.is_absolute())
+         others2.append(other)
+      return self.joinpath(*others2)
 
 class Repo_Data_Transfer:
    """Transfers image data to and from a remote image repository via HTTPS.
@@ -1242,19 +1302,19 @@ class Storage:
          self.root = self.root_env()
       if (self.root is None):
          self.root = self.root_default()
-      self.root = pathlib.Path(self.root)
+      self.root = Path(self.root)
 
    @property
    def download_cache(self):
-      return self.root / "dlcache"
+      return self.root + "dlcache"
 
    @property
    def unpack_base(self):
-      return self.root / "img"
+      return self.root + "img"
 
    @property
    def upload_cache(self):
-      return self.root / "ulcache"
+      return self.root + "ulcache"
 
    @staticmethod
    def root_default():
@@ -1276,10 +1336,10 @@ class Storage:
          return None
 
    def manifest(self, image_ref):
-      return self.download_cache / ("%s.manifest.json" % image_ref.for_path)
+      return self.download_cache + ("%s.manifest.json" % image_ref.for_path)
 
    def unpack(self, image_ref):
-      return self.unpack_base / image_ref.for_path
+      return self.unpack_base + image_ref.for_path
 
 
 class TarFile(tarfile.TarFile):
