@@ -45,11 +45,7 @@ make-perms-test
 
 # Stuff that doesn't need to be installed.
 EXTRA_DIST = \
-fixtures/README \
-travis.bash \
-travis-before.bash \
-travis-install.bash \
-travis.yml
+fixtures/README
 
 # Program and shared library used for testing shared library injection. It's
 # built according to the rules below. In principle, we could use libtool for

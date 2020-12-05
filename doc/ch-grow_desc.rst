@@ -339,7 +339,7 @@ many things you can do in one :code:`cp(1)` command require multiple
 
 Also, the reference documentation is incomplete. In our experience, Docker
 also behaves as follows; :code:`ch-grow` does the same in an attempt to be
-bug-compatible for the :code:`COPY` instructions.
+bug-compatible.
 
 1. You can use absolute paths in the source; the root is the context
    directory.
@@ -355,14 +355,34 @@ bug-compatible for the :code:`COPY` instructions.
 
    3. If there is a single source and it is a directory. (Not documented.)
 
-3. Symbolic links are particularly messy (this is not documented):
+3. Symbolic links behave differently depending on how deep in the copied tree
+   they are. (Not documented.)
 
-   1. If named in sources either explicitly or by wildcard, symlinks are
-      dereferenced, i.e., the result is a copy of the symlink target, not the
-      symlink itself. Keep in mind that directory contents are copied, not
-      directories.
+   1. Symlinks at the top level — i.e., named as the destination or the
+      source, either explicitly or by wildcards — are dereferenced. They are
+      followed, and whatever they point to is used as the destination or
+      source, respectively.
 
-   2. If within a directory named in sources, symlinks are copied as symlinks.
+   2. Symlinks at deeper levels are not dereferenced, i.e., the symlink
+      itself is copied.
+
+4. If a directory appears at the same path in source and destination, and is
+   at the 2nd level or deeper, the source directory's metadata (e.g.,
+   permissions) are copied to the destination directory. (Not documented.)
+
+5. If an object appears in both the source and destination, and is at the 2nd
+   level or deeper, and is of different types in the source and destination,
+   then the source object will overwrite the destination object. (Not
+   documented.) For example, if :code:`/tmp/foo/bar` is a regular file, and
+   :code:`/tmp` is the context directory, then the following Dockerfile
+   snippet will result in a *file* in the container at :code:`/foo/bar`
+   (copied from :code:`/tmp/foo/bar`); the directory and all its contents will
+   be lost.
+
+     .. code-block:: docker
+
+       RUN mkdir -p /foo/bar && touch /foo/bar/baz
+       COPY foo /foo
 
 We expect the following differences to be permanent:
 

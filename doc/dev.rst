@@ -81,9 +81,6 @@ If consensus is obtained through other means (e.g., in-person discussion),
 then open a PR directly. In this case, the PR should be tagged and milestoned,
 since there is no issue.
 
-Trivial changes (e.g., fix Travis, fix a regression within a release,
-code formatting) can be done without an issue or PR.
-
 **Address a single concern.** When possible, issues and PRs should address
 completely one self-contained change. If there are multiple concerns, make
 separate issues and/or PRs. For example, PRs should not tidy unrelated code,
@@ -95,7 +92,7 @@ implement the code. Reviews of the form "you need a completely different
 approach" are no fun.
 
 **Tests must pass.** PRs will not be merged until they pass the tests. While
-this most saliently includes Travis, the tests should also pass on your
+this most saliently includes CI, the tests should also pass on your
 development box as well as all relevant clusters (if appropriate for the
 changes).
 
@@ -177,8 +174,8 @@ After merge, the branch is deleted via the web interface.
 **Branch history tidiness.** Commit frequently at semantically relevant times,
 and keep in mind that this history will probably be squashed per above. It is
 not necessary to rebase or squash to keep branch history tidy. But, don't go
-crazy. Commit messages like "try 2" and "fix Travis again" are a bad sign; so
-are carefully proofread ones. Commit messages that are brief, technically
+crazy. Commit messages like "try 2" and "fix CI again" are a bad sign; so are
+carefully proofread ones. Commit messages that are brief, technically
 relevant, and quick to write are what you want on feature branches.
 
 **Keep branches up to date.** Merge master into your branch, rather than
@@ -216,20 +213,15 @@ Continuous integration testing
 reasons. We are working to improve testing for normal commits on master, but
 full parity is probably unlikely.
 
-**Travis budget.** Because we're on the free tier, we only get 5 Travis jobs
-running at a time. Currently, each job takes about ten minutes, there are
-seven of them per tested commit, and PRs double this (once on the branch and
-once with a test merge commit). The resource is there for your use, so take
-advantage of it, but be mindful of the cost, since your fellow developers
-might be trying to get in too.
+**Cycles budget.** The resource is there for your use, so take advantage of
+it, but be mindful of the various costs of this compute time.
 
 Things you can do include testing locally first, cancelling jobs you know will
 fail or that won't give you additional information, and not pushing every
-commit (Travis tests only the most recent commit in a pushed group).
+commit (CI tests only the most recent commit in a pushed group).
 
-**Iterating with Travis.** When trying to make Travis happy, use a throwaway
-branch that you force-push or squash-merge. Don't submit a PR with half a
-dozen "fix Travis" commits.
+**Iterating.** When trying to make CI happy, force-push or squash-merge. Don't
+submit a PR with half a dozen "fix CI" commits.
 
 **Purging Docker cache.** :code:`misc/docker-clean.sh` can be used to purge
 your Docker cache, either by removing all tags or deleting all containers and

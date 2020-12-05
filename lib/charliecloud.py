@@ -1017,7 +1017,7 @@ def log_setup(verbose_):
    DEBUG("verbose level: %d" % verbose)
 
 def mkdirs(path):
-   DEBUG("ensuring directory: " + path)
+   DEBUG("ensuring directory: %s" % path)
    try:
       os.makedirs(path, exist_ok=True)
    except OSError as x:

@@ -9,6 +9,10 @@ a.out
 /examples/copy/dirCa/symlink-to-dirCb
 /examples/copy/dirD/symlink-to-fileDa
 /examples/copy/dirEa/symlink-to-dirEb
+/examples/copy/dirG/s_dir2
+/examples/copy/dirG/s_dir3
+/examples/copy/dirG/s_file2
+/examples/copy/dirG/s_file3
 /examples/copy/symlink-to-fileA
 /examples/copy/symlink-to-fileB-A
 /examples/copy/symlink-to-fileB-B
