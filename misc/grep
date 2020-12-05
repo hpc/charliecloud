@@ -21,6 +21,7 @@ find . \(    -path ./.git \
           -o -path ./doc/doctrees \
           -o -path ./doc/html \
           -o -path ./doc/man \
+          -o -path ./packaging/vagrant/.vagrant \
           -o -name '*.pyc' \
           -o -name configure \
           -o -name 'config.*' \
