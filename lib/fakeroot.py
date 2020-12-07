@@ -146,12 +146,29 @@ DEFAULT_CONFIGS = {
    #
    # 1. CentOS seems to have only fakeroot, which is in EPEL, not the standard
    #    repos.
+   #
+   # 2. Enabling EPEL can have undesirable side effects, e.g. different
+   #    version of things in the base repo that breaks other things. Thus,
+   #    when we install EPEL, we don't enable it. Existing EPEL installations
+   #    are left alone.
+   #
+   # 3. "yum repolist" has a lot of side effects, e.g. locking the RPM
+   #    database and asking configured repos for something or other.
+   #
+   # 4. "dnf config-manager" (CentOS 8) requires installing dnf-plugins-core,
+   #    which requires fakeroot, which we don't have when initializing
+   #    fakeroot. So sed it is. :P
 
    "rhel7":
    { "name": "CentOS/RHEL 7",
      "match": ("/etc/redhat-release", r"release 7\."),
      "init": [ ("command -v fakeroot > /dev/null",
-                "yum install -y epel-release && yum install -y fakeroot") ],
+                "set -ex; "
+                "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
+                "yum install -y epel-release; "
+                "yum-config-manager --disable epel; "
+                "fi; "
+                "yum --enablerepo=epel install -y fakeroot; ") ],
      "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 
@@ -159,7 +176,13 @@ DEFAULT_CONFIGS = {
    { "name": "CentOS/RHEL 8",
      "match":  ("/etc/redhat-release", r"release 8\."),
      "init": [ ("command -v fakeroot > /dev/null",
-                "dnf install -y epel-release && dnf install -y fakeroot") ],
+                "set -ex; "
+                "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
+                "dnf install -y epel-release; "
+                "ls -lh /etc/yum.repos.d; "
+                "sed -Ei 's/enabled=1$/enabled=0/g' /etc/yum.repos.d/epel*.repo; "
+                "fi; "
+                "dnf --enablerepo=epel install -y fakeroot; ") ],
      "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 

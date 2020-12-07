@@ -193,7 +193,7 @@ are three basic steps:
      injection seems needed, install :code:`fakeroot(1)` in the image, if one
      is not already installed, as well as any other necessary initialization
      commands. For example, we turn off the :code:`apt` sandbox (for Debian
-     Buster) and enable EPEL (for CentOS/RHEL).
+     Buster) and configure EPEL but leave it disabled (for CentOS/RHEL).
 
   3. Prepend :code:`fakeroot` to :code:`RUN` instructions that seem to need
      it, e.g. ones that contain :code:`apt`, :code:`apt-get`, :code:`dpkg` for

@@ -69,9 +69,8 @@ EOF
     [[ $output = *'grown in 4 instructions: fakeroot-temp'* ]]
 }
 
-@test "${tag}: CentOS 7" {
-    scope full
-
+@test "${tag}: CentOS 7: unneeded, no --force, build succeeds" {
+    scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config, last config tested is the one selected
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
@@ -82,7 +81,10 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'available --force: rhel7'* ]]
     [[ $output = *$'testing config: rhel7\navailable --force'* ]]
+}
 
+@test "${tag}: CentOS 7: unneeded, no --force, build fails" {
+    scope full
     # no commands that may need it, without --force, build fails
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
@@ -92,7 +94,10 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"build failed: current version of --force wouldn't help"* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
 
+@test "${tag}: CentOS 7: unneeded, with --force" {
+    scope full
     # no commands that may need it, with --force, warning
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
@@ -101,7 +106,10 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
+}
 
+@test "${tag}: CentOS 7: maybe needed but actually not, no --force" {
+    scope full
     # commands that may need it, but turns out they don’t, without --force
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
@@ -111,7 +119,10 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'available --force'* ]]
     [[ $output = *'RUN: available here with --force'* ]]
+}
 
+@test "${tag}: CentOS 7: maybe needed but actually not, with --force" {
+    scope full
     # commands that may need it, but turns out they don’t, with --force
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
@@ -121,7 +132,10 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+}
 
+@test "${tag}: CentOS 7: needed but no --force" {
+    scope full
     # commands that may need it, they do, fail & suggest
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
@@ -133,7 +147,10 @@ EOF
     [[ $output = *'RUN: available here with --force'* ]]
     [[ $output = *'build failed: --force may fix it'* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
 
+@test "${tag}: CentOS 7: needed, with --force" {
+    scope standard
     # commands that may need it, they do, --force, success
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
@@ -145,9 +162,35 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-@test "${tag}: CentOS 8" {
+@test "${tag}: CentOS 7: EPEL already enabled" {
     scope standard
 
+    # 7: install EPEL (no fakeroot)
+    run ch-grow -v build -t centos7-epel1 -f - . <<'EOF'
+FROM centos:7
+RUN yum install -y epel-release
+RUN yum repolist | egrep '^epel/'
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'available --force'* ]]
+    echo "$output" | egrep 'Installing.+: epel-release'
+
+    # 7: install openssh (with fakeroot)
+    run ch-grow -v build --force -t centos7-epel2 -f - . <<'EOF'
+FROM centos7-epel1
+RUN yum install -y openssh
+RUN yum repolist | egrep '^epel/'
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'will use --force'* ]]
+    [[ $output = *'--force: init OK & modified 2 RUN instructions'* ]]
+    ! ( echo "$output" | egrep '(Updating|Installing).+: epel-release' )
+}
+
+@test "${tag}: CentOS 8: unneeded, no --force, build succeeds" {
+    scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
@@ -157,7 +200,10 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'available --force: rhel8'* ]]
+}
 
+@test "${tag}: CentOS 8: unneeded, no --force, build fails" {
+    scope standard
     # no commands that may need it, without --force, build fails
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
@@ -167,7 +213,10 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"build failed: current version of --force wouldn't help"* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
 
+@test "${tag}: CentOS 8: unneeded, with --force" {
+    scope standard
     # no commands that may need it, with --force, warning
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
@@ -176,7 +225,10 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
+}
 
+@test "${tag}: CentOS 8: maybe needed but actually not, no --force" {
+    scope standard
     # commands that may need it, but turns out they don’t, without --force
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
@@ -186,7 +238,10 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'available --force'* ]]
     [[ $output = *'RUN: available here with --force'* ]]
+}
 
+@test "${tag}: CentOS 8: maybe needed but actually not, with --force" {
+    scope standard
     # commands that may need it, but turns out they don’t, with --force
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
@@ -196,7 +251,10 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+}
 
+@test "${tag}: CentOS 8: needed but no --force" {
+    scope standard
     # commands that may need it, they do, fail & suggest
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
@@ -208,7 +266,10 @@ EOF
     [[ $output = *'RUN: available here with --force'* ]]
     [[ $output = *'build failed: --force may fix it'* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
 
+@test "${tag}: CentOS 8: needed, with --force" {
+    scope standard
     # commands that may need it, they do, --force, success
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
@@ -218,11 +279,43 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+    # validate EPEL is installed but not enabled
+    ls -lh $CH_GROW_STORAGE/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+    ! grep -Eq 'enabled=1' $CH_GROW_STORAGE/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
 }
 
-@test "${tag}: Debian Stretch" {
-    scope full
+@test "${tag}: CentOS 8: EPEL already installed" {
+    scope standard
 
+    # install EPEL, no --force
+    run ch-grow -v build -t epel1 -f - . <<'EOF'
+FROM centos:8
+RUN dnf install -y epel-release
+RUN dnf repolist | egrep '^epel'
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'available --force'* ]]
+    echo "$output" | egrep 'Installing.+: epel-release'
+
+    # new image based on that
+    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+FROM epel1
+RUN dnf install -y openssh
+RUN dnf repolist | egrep '^epel'
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'will use --force'* ]]
+    [[ $output = *'--force: init OK & modified 2 RUN instructions'* ]]
+    ! ( echo "$output" | egrep '(Updating|Installing).+: epel-release' )
+    # validate EPEL is installed *and* enabled
+    ls -lh $CH_GROW_STORAGE/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+    grep -Eq 'enabled=1' $CH_GROW_STORAGE/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+}
+
+@test "${tag}: Debian Stretch: unneeded, no --force, build succeeds" {
+    scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
@@ -232,7 +325,10 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'available --force: debSB'* ]]
+}
 
+@test "${tag}: Debian Stretch: unneeded, no --force, build fails" {
+    scope full
     # no commands that may need it, without --force, build fails
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:stretch
@@ -242,7 +338,10 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"build failed: current version of --force wouldn't help"* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
 
+@test "${tag}: Debian Stretch: unneeded, with --force" {
+    scope full
     # no commands that may need it, with --force, warning
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM debian:stretch
@@ -251,17 +350,20 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
+}
 
-    # commands that may need it, but turns out they don’t, without --force
-    #
-    # FIXME: Not sure how to do this on Debian; any use of apt-get to install
-    # needs "apt-get update" first, which requires --force.
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, no --force" {
+#}
 
-    # commands that may need it, but turns out they don’t, with --force
-    #
-    # FIXME: Not sure how to do this on Debian; any use of apt-get to install
-    # needs "apt-get update" first, which requires --force.
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, with --force" {
+#}
 
+@test "${tag}: Debian Stretch: needed but no --force" {
+    scope full
     # commands that may need it, they do, fail & suggest
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:stretch
@@ -273,7 +375,10 @@ EOF
     [[ $output = *'RUN: available here with --force'* ]]
     [[ $output = *'build failed: --force may fix it'* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
 
+@test "${tag}: Debian Stretch: needed, with --force" {
+    scope full
     # commands that may need it, they do, --force, success
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM debian:stretch
@@ -285,9 +390,8 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-@test "${tag}: Debian Buster" {
-    scope full
-
+@test "${tag}: Debian Buster: unneeded, no --force, build succeeds" {
+    scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
@@ -297,7 +401,10 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'available --force: debSB'* ]]
+}
 
+@test "${tag}: Debian Buster: unneeded, no --force, build fails" {
+    scope full
     # no commands that may need it, without --force, build fails
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
@@ -307,7 +414,10 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"build failed: current version of --force wouldn't help"* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
 
+@test "${tag}: Debian Buster: unneeded, with --force" {
+    scope full
     # no commands that may need it, with --force, warning
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
@@ -316,17 +426,20 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
+}
 
-    # commands that may need it, but turns out they don’t, without --force
-    #
-    # FIXME: Not sure how to do this on Debian; any use of apt-get to install
-    # needs "apt-get update" first, which requires --force.
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, no --force" {
+#}
 
-    # commands that may need it, but turns out they don’t, with --force
-    #
-    # FIXME: Not sure how to do this on Debian; any use of apt-get to install
-    # needs "apt-get update" first, which requires --force.
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, with --force" {
+#}
 
+@test "${tag}: Debian Buster: needed but no --force" {
+    scope full
     # commands that may need it, they do, fail & suggest
     run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
@@ -338,7 +451,10 @@ EOF
     [[ $output = *'RUN: available here with --force'* ]]
     [[ $output = *'build failed: --force may fix it'* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
 
+@test "${tag}: Debian Buster: needed, with --force" {
+    scope standard
     # commands that may need it, they do, --force, success
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
