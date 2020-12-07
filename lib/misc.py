@@ -64,17 +64,35 @@ def pull(cli):
 
 def push(cli):
    ch.dependencies_check()
-   ulcache = ch.storage.upload_cache
+   # FIXME: validate it's an image using Megan's new function
+   src_ref = ch.Image_Ref(cli.source_ref)
+   ch.INFO("pushing image:   %s" % src_ref)
    if (cli.image_dir is not None):
       image_dir = cli.image_dir
+      if (not os.path.isdir(image_dir)):
+          ch.FATAL("can't push: %s does not appear to be an image" % image_dir)
    else:
-      image_dir = ch.storage.unpack(image_ref)
+      image_dir = ch.storage.unpack(src_ref)
+      if (not os.path.isdir(image_dir)):
+          ch.FATAL("can't push: no image %s" % src_ref)
+   if (clid.dest_ref is not None):
+      dst_ref = ch.Image_Ref(cli.dest_ref)
+      ch.INFO("destination:     %s" % dst_ref)
+   else:
+      dst_ref = ch.Image_Ref(cli.source_ref)
+   dst_ref.defaults_add()
+   # FIXME -- YOU ARE HERE
+   # Should we split out the downloading stuff from Image?
+   # main Image has from_layers() and to_layers()?
+   up = ch.Image_Upload(image_dir, dst_ref)
+   up.push()
+   ch.INFO("done")
+
+   
+   # FIXME -- old stuff follows
    # Stage upload.
-   image_ref = ch.Image_Ref(cli.local_image_ref)
    image_manifest = str(image_ref) + ".manifest.json"
    image_path = os.path.join(image_dir, image_ref.for_path)
-   if (not os.path.isdir(image_path)):
-      ch.FATAL("local image '%s' not found" % image_path)
    # Images we push will always be different from those we pull fro dockerhub
    # because we don't preserve gid/uid mapping (can't without
    # set[u|g]id helpers). Thus we store our artifacts in the STORAGE/ulcache
@@ -85,15 +103,6 @@ def push(cli):
    if (os.path.isfile(os.path.join(ulcache, image_manifest))):
       ch.DEBUG("FIXME: local image upload manifest '%s/%s' found; use it?"
                % (ulcache, image_manifest))
-   if (cli.dest_image_ref):
-      dest_image_ref = ch.Image_Ref(cli.dest_image_ref)
-      dest_image_ref.defaults_add()
-   else:
-      dest_image_ref = image_ref
-   dest_image_ref.defaults_add()
-   ch.INFO("pushing image:   %s" % image_ref)
-   ch.INFO("destination:     https://%s" % dest_image_ref)
-   upload = ch.Image_Upload(image_path, dest_image_ref)
    # Koby!
    upload.push_to_repo(image_path, ulcache)
    ch.INFO('done')

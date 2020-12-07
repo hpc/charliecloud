@@ -1292,7 +1292,7 @@ class Repo_Data_Transfer:
 class Storage:
 
    """Source of truth for all paths within the storage directory. Do not
-      compute any such paths yourself!"""
+      compute any such paths elsewhere!"""
 
    __slots__ = ("root",)
 
