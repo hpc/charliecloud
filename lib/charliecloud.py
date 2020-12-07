@@ -280,7 +280,7 @@ class Image:
       layers = self.layers_read()
       self.validate_members(layers)
       #self.whiteouts_resolve(layers)
-      cProfile.runctx('self.whiteouts_resolve(layers)', None, locals())
+      cProfile.runctx('self.whiteouts_resolve(layers)', None, locals(), '/home/vm-user/test_prof')
       INFO("flattening image")
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
