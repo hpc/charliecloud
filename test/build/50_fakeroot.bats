@@ -174,7 +174,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'available --force'* ]]
-    echo "$output" | egrep 'Installing.+: epel-release'
+    echo "$output" | grep -E 'Installing.+: epel-release'
 
     # 7: install openssh (with fakeroot)
     run ch-grow -v build --force -t centos7-epel2 -f - . <<'EOF'
@@ -186,7 +186,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 2 RUN instructions'* ]]
-    ! ( echo "$output" | egrep '(Updating|Installing).+: epel-release' )
+    ! ( echo "$output" | grep -E '(Updating|Installing).+: epel-release' )
 }
 
 @test "${tag}: CentOS 8: unneeded, no --force, build succeeds" {
@@ -280,8 +280,8 @@ EOF
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
     # validate EPEL is installed but not enabled
-    ls -lh $CH_GROW_STORAGE/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
-    ! grep -Eq 'enabled=1' $CH_GROW_STORAGE/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+    ls -lh "$CH_GROW_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+    ! grep -Eq 'enabled=1' "$CH_GROW_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
 }
 
 @test "${tag}: CentOS 8: EPEL already installed" {
@@ -296,7 +296,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'available --force'* ]]
-    echo "$output" | egrep 'Installing.+: epel-release'
+    echo "$output" | grep -E 'Installing.+: epel-release'
 
     # new image based on that
     run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
@@ -308,10 +308,10 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 2 RUN instructions'* ]]
-    ! ( echo "$output" | egrep '(Updating|Installing).+: epel-release' )
+    ! ( echo "$output" | grep -E '(Updating|Installing).+: epel-release' )
     # validate EPEL is installed *and* enabled
-    ls -lh $CH_GROW_STORAGE/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
-    grep -Eq 'enabled=1' $CH_GROW_STORAGE/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+    ls -lh "$CH_GROW_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+    grep -Eq 'enabled=1' "$CH_GROW_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
 }
 
 @test "${tag}: Debian Stretch: unneeded, no --force, build succeeds" {
