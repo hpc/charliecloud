@@ -11,21 +11,18 @@ Description
 
 .. note::
 
-   This command does a lot of heuristic magic; it is not a general file
-   copy-to-image tool. For that, the best practice is :code:`COPY` instruction
-   within your Dockerfile. :code:`cp(1)` into an unpacked image will also work
-   but is discouraged.
-
-   It is known to be somewhat buggy. Please report any issues you find, so we
-   can fix them!
+   This command is experimental. Features may be incomplete and/or buggy.
+   Please report any issues you find, so we can fix them!
 
 Inject files from the host into the Charliecloud image directory
 :code:`IMGDIR`.
 
-The purpose of this command is to provide host-specific files, such as GPU
-libraries, to a container. It should be run after :code:`ch-tar2dir` and
-before :code:`ch-run`. After invocation, the image is no longer portable to
-other hosts.
+The purpose of this command is to inject files into a container image that are
+necessary to run the container on a specific host; e.g., GPU libraries that
+are tied to a specific kernel version. **It is not a general copy-to-image
+tool**; see further discussion on use cases below. It should be run after
+:code:`ch-tar2dir` and before :code:`ch-run`. After invocation, the image is
+no longer portable to other hosts.
 
 Injection is not atomic; if an error occurs partway through injection, the
 image is left in an undefined state. Injection is currently implemented using
@@ -95,6 +92,34 @@ Additional arguments
 
   :code:`--version`
     Print version and exit.
+
+
+When to use :code:`ch-fromhost`
+===============================
+
+This command does a lot of heuristic magic; while it *can* copy arbitrary
+files into an image, this usage is discouraged and prone to error. Here are
+some use cases and the recommended approach:
+
+1. *I have some files on my build host that I want to include in the image.*
+   Use the :code:`COPY` instruction within your Dockerfile. Note that it's OK
+   to build an image that meets your specific needs but isn't generally
+   portable, e.g., only runs on specific micro-architectures you're using.
+
+2. *I have an already built image and want to install a program I compiled
+   separately into the image.* Consider whether a building a new derived image
+   with a Dockerfile is appropriate. Another good option is to bind-mount the
+   directory containing your program at run time. A less good option is to
+   :code:`cp(1)` the program into your image, because this permanently alters
+   the image in a non-reproducible way.
+
+3. *I have some shared libraries that I need in the image for functionality or
+   performance, and they aren't available in a place where I can use*
+   :code:`COPY`. This is the intended use case of :code:`ch-fromhost`. You can
+   use :code:`--cmd`, :code:`--file`, and/or :code:`--path` to put together a
+   custom solution. But, please consider filing an issue so we can package
+   your functionality with a tidy option like :code:`--cray-mpi` or
+   :code:`--nvidia`.
 
 
 :code:`--cray-mpi` dependencies and quirks

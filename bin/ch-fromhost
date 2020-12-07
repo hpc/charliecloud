@@ -67,6 +67,8 @@ Options:
   -h, --help       print this help and exit
   -v, --verbose    list the injected files
   --version        print version and exit
+
+NOTE: This command is experimental. Features may be incomplete and/or buggy.
 EOF
 )
 
