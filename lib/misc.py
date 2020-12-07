@@ -35,9 +35,8 @@ class Version(Action_Exit):
 # because caller manages that.
 
 def delete(cli):
-   imgdir = ch.image_unpacked_p(cli)
-   if(imgdir):
-      ch.rmtree(imgdir)
+   if(ch.image_unpacked_p(cli)):
+      ch.rmtree(ch.unpack(cli)) #update to ch.storage.unpack(cli.image_ref)
    else:
       ch.ERROR("image %s doesn't exist" % cli.image_ref)	
 

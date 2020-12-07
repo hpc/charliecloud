@@ -1090,10 +1090,16 @@ def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
 
+def unpack(cli): # tmp for ch.Storage.unpack(cli.image_ref) in ch-grow push PR
+   """Return the name of image directory"""
+   return cli.storage + '/img/' + cli.image_ref
+
 def image_unpacked_p(cli):
-   """Return the image directory if unpacked or returns false""" 
-   imgdir = cli.storage + '/img/' + cli.image_ref
-   if(os.path.isdir(imgdir) and os.path.isdir(imgdir + '/bin') and 
-      os.path.isdir(imgdir + '/dev') and os.path.isdir(imgdir + '/opt')):
-      return imgdir
+   """Returns true if unpacked or returns false""" 
+   imgdir = unpack(cli)
+   if (    os.path.isdir(imgdir) 
+       and os.path.isdir(imgdir + '/bin') 
+       and os.path.isdir(imgdir + '/dev')
+       and os.path.isdir(imgdir + '/opt')):
+      return True
    return False
