@@ -210,7 +210,7 @@ CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
 AS_IF([test -n "$SPHINX"], [
   AS_IF([test -z "$sphinx_python"], [
     AC_MSG_CHECKING([for sphinx-build Python])
-    sphinx_python=$(head -1 "$SPHINX" | sed -E -e 's/^#!\s*//' -e 's/\s+$//')
+    sphinx_python=$(head -1 "$SPHINX" | sed -E -e 's/^#!\s*//' -e 's/\s.*$//')
     AC_MSG_RESULT([$sphinx_python])
   AC_MSG_CHECKING([if "$sphinx_python" starts with slash])
   AS_CASE([$sphinx_python],
