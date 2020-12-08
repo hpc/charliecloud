@@ -14,7 +14,6 @@ import subprocess
 import sys
 import tarfile
 import types
-import cProfile
 
 ## Imports not in standard library ##
 
@@ -279,7 +278,7 @@ class Image:
          last_layer = sys.maxsize
       layers = self.layers_read()
       self.validate_members(layers)
-      #self.whiteouts_resolve(layers)
+      self.whiteouts_resolve(layers)
       cProfile.runctx('self.whiteouts_resolve(layers)', None, locals())#'/home/vm-user/test_prof')
       INFO("flattening image")
       self.unpack_create()
