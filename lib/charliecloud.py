@@ -445,7 +445,7 @@ class Image:
          if (i > max_i): break
          members2 = list(members.keys())  # copy b/c we'll alter members
          for m in members2:
-             if (prefix == m.name[:len(prefix)]):  
+            if (prefix == m.name or (prefix + '/' == m.name[:len(prefix) + 1])):  
                ignore_ct += 1
                del members[m]
                DEBUG("layer %d/%d: %s: ignoring %s"
