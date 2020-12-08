@@ -280,7 +280,7 @@ class Image:
       layers = self.layers_read()
       self.validate_members(layers)
       #self.whiteouts_resolve(layers)
-      cProfile.runctx('self.whiteouts_resolve(layers)', None, locals(), '/home/vm-user/test_prof')
+      cProfile.runctx('self.whiteouts_resolve(layers)', None, locals())#'/home/vm-user/test_prof')
       INFO("flattening image")
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
@@ -447,7 +447,7 @@ class Image:
          if (i > max_i): break
          members2 = list(members.keys())  # copy b/c we'll alter members
          for m in members2:
-            if (os.path.commonpath([prefix, m.name]) == prefix):
+             if (prefix == m.name[:len(prefix)]):  
                ignore_ct += 1
                del members[m]
                DEBUG("layer %d/%d: %s: ignoring %s"
@@ -482,8 +482,6 @@ class Image:
                   % (i, len(layers), lh[:7], wo_ct, ig_ct))
             if(wo_ct > 20):           
                WARNING("layer %d has %d whiteouts which can significantly increase pull time" %(i, wo_ct)) 
-         else:
-            DEBUG("layer %d/%d: ran with no whiteouts" %(i, len(layers)))
    def unpack_create_ok(self):
       """Ensure the unpack directory can be created. If the unpack directory
          is already an image, remove it."""
