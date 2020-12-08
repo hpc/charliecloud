@@ -15,10 +15,13 @@ FROM centos:8
 #
 #   3. Install packages needed to build el8 rpms.
 #
-RUN dnf install -y --setopt=install_weak_deps=false epel-release \
- && sed -ie 's/enabled=0/enabled=1/' /etc/yum.repos.d/epel.repo \
- && sed -ie 's/enabled=0/enabled=1/' /etc/yum.repos.d/CentOS-PowerTools.repo \
- && dnf install -y --setopt=install_weak_deps=false --enablerepo=epel-playground \
+RUN dnf install -y --setopt=install_weak_deps=false \
+                epel-release \
+                'dnf-command(config-manager)' \
+ && dnf config-manager --enable epel \
+ && dnf config-manager --enable powertools \
+ && dnf install -y --setopt=install_weak_deps=false \
+                   --enablerepo=epel-playground \
                 dnf-plugin-ovl \
                 autoconf \
                 automake \
