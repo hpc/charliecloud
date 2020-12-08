@@ -3,17 +3,17 @@ Synopsis
 
 ::
 
-   $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
-   $ ch-image [...] list
-   $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
-   $ ch-image [...] storage-path
-   $ ch-image { --help | --version | --dependencies }
+   $ ch-grow [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
+   $ ch-grow [...] list
+   $ ch-grow [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-grow [...] storage-path
+   $ ch-grow { --help | --version | --dependencies }
 
 
 Description
 ===========
 
-:code:`ch-image` is a tool for building and manipulating container images, but
+:code:`ch-grow` is a tool for building and manipulating container images, but
 not running them (for that you want :code:`ch-run`). It is completely
 unprivileged, with no setuid/setgid/setcap helpers.
 
@@ -38,6 +38,10 @@ Common options placed before the sub-command:
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory (see below for important details).
 
+  :code:`--tls-no-verify`
+    Don't verify TLS certificates of the repository. (Do not use this option
+    unless you understand the risks.)
+
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
 
@@ -45,7 +49,7 @@ Common options placed before the sub-command:
 Storage directory
 =================
 
-:code:`ch-image` maintains state using normal files and directories, including
+:code:`ch-grow` maintains state using normal files and directories, including
 unpacked container images, located in its *storage directory*. There is no
 notion of storage drivers, graph drivers, etc., to select and/or configure. In
 descending order of priority, this directory is located at:
@@ -56,7 +60,7 @@ descending order of priority, this directory is located at:
   :code:`$CH_GROW_STORAGE`
     Environment variable.
 
-  :code:`/var/tmp/$USER/ch-image`
+  :code:`/var/tmp/$USER/ch-grow`
     Default.
 
 The storage directory can reside on any filesystem. However, it contains lots
@@ -171,7 +175,7 @@ Options:
 Quirks of a fully unprivileged build
 ====================================
 
-:code:`ch-image` is *fully* unprivileged. It runs all instructions as the
+:code:`ch-grow` is *fully* unprivileged. It runs all instructions as the
 normal user who invokes it, does not use any setuid or setcap helper programs,
 and does not use :code:`/etc/subuid` or :code:`/etc/subgid`, in contrast to
 the “rootless” mode of some competing builders. This is accomplished by
@@ -205,7 +209,7 @@ This one is (ironically) :code:`apt-get` failing to drop privileges:
   E: seteuid 100 failed - seteuid (22: Invalid argument)
   E: setgroups 0 failed - setgroups (1: Operation not permitted)
 
-The solution :code:`ch-image` uses is to intercept these system calls and fake
+The solution :code:`ch-grow` uses is to intercept these system calls and fake
 a successful result. We accomplish this by altering the Dockerfile to call
 :code:`fakeroot(1)` (of which there are several implementations) for
 :code:`RUN` instructions that seem to need it. There are two basic steps:
@@ -219,9 +223,9 @@ a successful result. We accomplish this by altering the Dockerfile to call
      Debian derivatives and :code:`dnf`, :code:`rpm`, or :code:`yum` for
      RPM-based distributions.
 
-The details are specific to each distribution. :code:`ch-image` analyzes image
+The details are specific to each distribution. :code:`ch-grow` analyzes image
 content (e.g., grepping :code:`/etc/debian_version`) to select a
-configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image` prints
+configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-grow` prints
 exactly what it is doing.
 
 To turn off this behavior, use the :code:`--no-fakeroot` option.
@@ -230,7 +234,7 @@ To turn off this behavior, use the :code:`--no-fakeroot` option.
 Compatibility with other Dockerfile interpreters
 ================================================
 
-:code:`ch-image` is an independent implementation and shares no code with other
+:code:`ch-grow` is an independent implementation and shares no code with other
 Dockerfile interpreters. It uses a formal Dockerfile parsing grammar developed
 from the `Dockerfile reference documentation
 <https://docs.docker.com/engine/reference/builder/>`_ and miscellaneous other
@@ -244,7 +248,7 @@ all share the same Dockerfile parser). Third, because it is a much smaller
 code base, it illustrates how Dockerfiles work more clearly. Finally, it
 allows straightforward extensions if needed to support scientific computing.
 
-:code:`ch-image` tries hard to be compatible with Docker and other
+:code:`ch-grow` tries hard to be compatible with Docker and other
 interpreters, though as an independent implementation, it is not
 bug-compatible.
 
@@ -269,7 +273,7 @@ can't access anything outside the context directory.
 Authentication
 --------------
 
-:code:`ch-image` can authenticate using one-time passwords, e.g. those provided
+:code:`ch-grow` can authenticate using one-time passwords, e.g. those provided
 by a security token. Unlike :code:`docker login`, it does not assume passwords
 are persistent.
 
@@ -283,7 +287,7 @@ in the Dockerfile reference.
 with Docker where these variables miss upon *use*, except for certain
 cache-excluded variables that never cause misses, listed below.
 
-Like Docker, :code:`ch-image` pre-defines the following proxy variables, which
+Like Docker, :code:`ch-grow` pre-defines the following proxy variables, which
 do not require an :code:`ARG` instruction. However, they are available if the
 same-named environment variable is defined; :code:`--build-arg` is not
 required. Changes to these variables do not cause a cache miss.
@@ -322,8 +326,8 @@ many things you can do in one :code:`cp(1)` command require multiple
 :code:`COPY` instructions.
 
 Also, the reference documentation is incomplete. In our experience, Docker
-also behaves as follows; :code:`ch-image` does the same in an attempt to be
-bug-compatible for the :code:`COPY` instructions.
+also behaves as follows; :code:`ch-grow` does the same in an attempt to be
+bug-compatible.
 
 1. You can use absolute paths in the source; the root is the context
    directory.
@@ -339,14 +343,34 @@ bug-compatible for the :code:`COPY` instructions.
 
    3. If there is a single source and it is a directory. (Not documented.)
 
-3. Symbolic links are particularly messy (this is not documented):
+3. Symbolic links behave differently depending on how deep in the copied tree
+   they are. (Not documented.)
 
-   1. If named in sources either explicitly or by wildcard, symlinks are
-      dereferenced, i.e., the result is a copy of the symlink target, not the
-      symlink itself. Keep in mind that directory contents are copied, not
-      directories.
+   1. Symlinks at the top level — i.e., named as the destination or the
+      source, either explicitly or by wildcards — are dereferenced. They are
+      followed, and whatever they point to is used as the destination or
+      source, respectively.
 
-   2. If within a directory named in sources, symlinks are copied as symlinks.
+   2. Symlinks at deeper levels are not dereferenced, i.e., the symlink
+      itself is copied.
+
+4. If a directory appears at the same path in source and destination, and is
+   at the 2nd level or deeper, the source directory's metadata (e.g.,
+   permissions) are copied to the destination directory. (Not documented.)
+
+5. If an object appears in both the source and destination, and is at the 2nd
+   level or deeper, and is of different types in the source and destination,
+   then the source object will overwrite the destination object. (Not
+   documented.) For example, if :code:`/tmp/foo/bar` is a regular file, and
+   :code:`/tmp` is the context directory, then the following Dockerfile
+   snippet will result in a *file* in the container at :code:`/foo/bar`
+   (copied from :code:`/tmp/foo/bar`); the directory and all its contents will
+   be lost.
+
+     .. code-block:: docker
+
+       RUN mkdir -p /foo/bar && touch /foo/bar/baz
+       COPY foo /foo
 
 We expect the following differences to be permanent:
 
@@ -397,21 +421,21 @@ Examples
 Build image :code:`bar` using :code:`./foo/bar/Dockerfile` and context
 directory :code:`./foo/bar`::
 
-   $ ch-image build -t bar -f ./foo/bar/Dockerfile ./foo/bar
+   $ ch-grow build -t bar -f ./foo/bar/Dockerfile ./foo/bar
    [...]
    grown in 4 instructions: bar
 
 Same, but infer the image name and Dockerfile from the context directory
 path::
 
-   $ ch-image build ./foo/bar
+   $ ch-grow build ./foo/bar
    [...]
    grown in 4 instructions: bar
 
 Build using humongous vendor compilers you want to bind-mount instead of
 installing into a layer::
 
-   $ ch-image build --bind /opt/bigvendor:/opt .
+   $ ch-grow build --bind /opt/bigvendor:/opt .
    $ cat Dockerfile
    FROM centos:7
 
@@ -425,7 +449,7 @@ installing into a layer::
 
 Download the Debian Buster image and place it in the storage directory::
 
-  $ ch-image pull debian:buster
+  $ ch-grow pull debian:buster
   pulling image:   debian:buster
 
   manifest: downloading
@@ -439,7 +463,7 @@ Download the Debian Buster image and place it in the storage directory::
 
 Same, except place the image in :code:`/tmp/buster`::
 
-   $ ch-image pull debian:buster /tmp/buster
+   $ ch-grow pull debian:buster /tmp/buster
    [...]
    $ ls /tmp/buster
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var

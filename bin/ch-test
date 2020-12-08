@@ -237,7 +237,7 @@ pedantry_set () {
     width=$1
     default=no
     # Default to pedantic on CI or if user is a contributor.
-    if [[ -n $ch_contributor || -n $TRAVIS ]]; then
+    if [[ -n $ch_contributor || -n $CI ]]; then
         default=yes
     fi
     vset ch_pedantic "$pedantic" '' $default "$width" 'pedantic mode'
@@ -769,6 +769,12 @@ while [[ $# -gt 0 ]]; do
         require_unset imgdir
         imgdir=${opt#*=}
         ;;
+    --is-pedantic)  # undocumented; for CI
+        is_pedantic=yes
+        ;;
+    --is-sudo)      # undocumented; for CI
+        is_sudo=yes
+        ;;
     --pack-dir)
         require_unset tardir
         tardir=$1; shift
@@ -917,6 +923,16 @@ if [[ $CH_TEST_SUDO ]]; then
     printf 'checking sudo ...\n'
     sudo echo ok
     printf '\n'
+fi
+
+if [[ -n $is_pedantic ]]; then
+    printf 'exiting per --is-pedantic\n'
+    if [[ -n $ch_pedantic ]]; then exit 0; else exit 1; fi
+fi
+
+if [[ -n $is_sudo ]]; then
+    printf 'exiting per --is-sudo\n'
+    if [[ -n $CH_TEST_SUDO ]]; then exit 0; else exit 1; fi
 fi
 
 if [[ -n $dry ]];then
