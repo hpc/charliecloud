@@ -210,7 +210,7 @@ CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
 AS_IF([test -n "$SPHINX"], [
   AS_IF([test -z "$sphinx_python"], [
     AC_MSG_CHECKING([for sphinx-build Python])
-    sphinx_python=$(head -1 "$SPHINX" | sed -E 's/^..//')
+    sphinx_python=$(head -1 "$SPHINX" | sed -E -e 's/^#!\s*//' -e 's/\s+$//')
     AC_MSG_RESULT([$sphinx_python])
   AC_MSG_CHECKING([if "$sphinx_python" starts with slash])
   AS_CASE([$sphinx_python],
@@ -228,7 +228,7 @@ AS_IF([test -n "$SPHINX"], [
   DOCUTILS=$sphinx_python  # FIXME: output is confusing
   CH_CHECK_VERSION([DOCUTILS], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
-])
+], [DOCUTILS_VERSION_NOTE='moot b/c no sphinx-build'])
 
 # "sphinx-rtd-theme" module
 vmin_rtd=0.2.4
@@ -247,7 +247,7 @@ EOF
   AC_MSG_RESULT([$have_rtd])
   CH_CHECK_VERSION([RTD], [$vmin_rtd],
     [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
-])
+], [RTD_VERSION_NOTE='moot b/c no sphinx-build'])
 
 
 ## Feature tests - run time

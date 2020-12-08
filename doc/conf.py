@@ -266,7 +266,7 @@ man_pages = [
     "Build and manage images; completely unprivileged",
     [], 1),
    ("ch-fromhost", "ch-fromhost",
-    "Inject files from the host into an image directory",
+    "Inject files from the host into an image directory, with various magic",
     [], 1),
    ("ch-mount", "ch-mount",
     "Mount a SquashFS image file using FUSE",
