@@ -80,8 +80,9 @@ EXTRA_SCRIPTS = $(sobuilts)
 
 ## Python scripts - need text processing
 docs-sane make-perms-test: %: %.py.in
+	rm -f $@
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
-	chmod +rwx $@  # respects umask
+	chmod +rx,-w $@  # respects umask
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0 sotest/libsotest.so sotest/libsotest.so.1
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^

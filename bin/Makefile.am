@@ -46,5 +46,6 @@ ch-image: ch-image.py.in
 ch-run-oci: ch-run-oci.py.in
 
 $(bin_SCRIPTS): %: %.py.in
+	rm -f $@
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
-	chmod +rwx $@  # respects umask
+	chmod +rx,-w $@  # respects umask
