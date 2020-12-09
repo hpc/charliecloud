@@ -1,6 +1,12 @@
 @test 'ch-build %(tag)s' {
     scope %(scope)s
-    ch-build -t %(tag)s --file="%(path)s" "%(dirname)s"
+    if [[ $CH_BUILDER = ch-grow ]]; then
+        force=--force
+    else
+        force=
+    fi
+    # shellcheck disable=SC2086
+    ch-build $force -t %(tag)s --file="%(path)s" "%(dirname)s"
     #sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
     builder_ok %(tag)s
 }
