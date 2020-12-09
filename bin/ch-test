@@ -125,8 +125,8 @@ EOF
     fi
     printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
     if [[ $CH_BUILDER == ch-image ]]; then
-        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" "/var/tmp/$USER/ch-image" \
-                             "$width" 'ch-image storage'
+        vset CH_IMAGE_STORAGE '' "$CH_IMAGE_STORAGE" "/var/tmp/$USER/ch-image" \
+                              "$width" 'ch-image storage'
     fi
 }
 
