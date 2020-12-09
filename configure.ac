@@ -106,10 +106,10 @@ AC_ARG_ENABLE([test],
   AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
 
-AC_ARG_ENABLE([ch-grow],
-  AS_HELP_STRING([--disable-ch-grow],
-                 [ch-grow unprivileged builder & image manager]),
-  [], [enable_ch_grow=yes])
+AC_ARG_ENABLE([ch-image],
+  AS_HELP_STRING([--disable-ch-image],
+                 [ch-image unprivileged builder & image manager]),
+  [], [enable_ch_image=yes])
 
 
 ## Feature test macros
@@ -210,7 +210,7 @@ CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
 AS_IF([test -n "$SPHINX"], [
   AS_IF([test -z "$sphinx_python"], [
     AC_MSG_CHECKING([for sphinx-build Python])
-    sphinx_python=$(head -1 "$SPHINX" | sed -E 's/^..//')
+    sphinx_python=$(head -1 "$SPHINX" | sed -E -e 's/^#!\s*//' -e 's/\s+$//')
     AC_MSG_RESULT([$sphinx_python])
   AC_MSG_CHECKING([if "$sphinx_python" starts with slash])
   AS_CASE([$sphinx_python],
@@ -228,7 +228,7 @@ AS_IF([test -n "$SPHINX"], [
   DOCUTILS=$sphinx_python  # FIXME: output is confusing
   CH_CHECK_VERSION([DOCUTILS], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
-])
+], [DOCUTILS_VERSION_NOTE='moot b/c no sphinx-build'])
 
 # "sphinx-rtd-theme" module
 vmin_rtd=0.2.4
@@ -247,7 +247,7 @@ EOF
   AC_MSG_RESULT([$have_rtd])
   CH_CHECK_VERSION([RTD], [$vmin_rtd],
     [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
-])
+], [RTD_VERSION_NOTE='moot b/c no sphinx-build'])
 
 
 ## Feature tests - run time
@@ -429,7 +429,7 @@ AS_IF([   test $enable_man = yes && test $have_docs = no],
 AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
 AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
-AM_CONDITIONAL([ENABLE_CH_GROW], [test $enable_ch_grow = yes])
+AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
 
 
 ## Prepare report.
@@ -448,14 +448,14 @@ AS_IF([   test -n "$BUILDAH"],
       [have_buildah=yes],
       [have_buildah=no])
 
-AS_IF([   test $enable_ch_grow = yes \
+AS_IF([   test $enable_ch_image = yes \
        && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
        && test -n "$LARK" \
        && test -n "$REQUESTS" \
        && test $have_ch_run = yes],
-      [have_ch_grow=yes],
-      [have_ch_grow=no])
+      [have_ch_image=yes],
+      [have_ch_image=no])
 
 AS_IF([   test -n "$DOCKER" \
        && test -n "$MKTEMP"],
@@ -465,7 +465,7 @@ AS_IF([   test -n "$DOCKER" \
 # managing container images
 
 AS_IF([   test $have_buildah = yes \
-       || test $have_ch_grow = yes \
+       || test $have_ch_image = yes \
        || test $have_docker = yes],
       [have_any_builder=yes],
       [have_any_builder=no])
@@ -582,7 +582,7 @@ Building Charliecloud
     HTML documentation ... ${enable_html}
     man pages ... ${enable_man}
     test suite ... ${enable_test}
-    ch-grow(1) ... ${enable_ch_grow}
+    ch-image(1) ... ${enable_ch_image}
 
 Building images via our wrappers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -590,8 +590,8 @@ Building images via our wrappers
   with Buildah: ${have_buildah}
     Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
-  with ch-grow(1): ${have_ch_grow}
-    enabled ... ${enable_ch_grow}
+  with ch-image(1): ${have_ch_image}
+    enabled ... ${enable_ch_image}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
     "lark-parser" module ≥ $vmin_lark ... ${LARK_VERSION_NOTE}

@@ -57,7 +57,7 @@ rpmbuild root:      %(rpmbuild)s
                                            "--short", "HEAD"])[:-1]
       except subprocess.CalledProcessError as x:
          if (x.returncode != 1): raise
-         # Detached HEAD (e.g. Travis) is also fine; use commit hash.
+         # Detached HEAD (e.g. CI) is also fine; use commit hash.
          commit = subprocess.check_output(["git", "rev-parse",
                                            "--verify", "HEAD"])[:-1]
       rpm_release = "0"

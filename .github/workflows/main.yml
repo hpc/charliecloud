@@ -1,0 +1,276 @@
+name: test suite
+
+on:
+  pull_request:           # all pull requests
+  push:
+    branches: [ master ]  # all commits on master
+  schedule:
+    - cron: '0 2 * * 0'   # every Sunday at 2:00am UTC  (Saturday 7:00pm MST)
+
+jobs:
+  main:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: true  # if any job fails, cancel the rest immediately
+      matrix:
+        builder: [none, docker, ch-image, buildah, buildah-runc, buildah-setuid]
+        keep_sudo:  # if false, remove self from sudoers after install/setup
+          - false
+        include:
+          - builder: docker
+            keep_sudo: true
+    env:
+      CH_BUILDER: ${{ matrix.builder }}
+      CH_TEST_TARDIR: /mnt/tarballs
+      CH_TEST_IMGDIR: /mnt/images
+      CH_TEST_PERMDIRS: /mnt/perms_test /run/perms_test
+      ch_prefix: /var/tmp
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: early setup & validation
+        run: |
+          sudo chmod 1777 /mnt /usr/local/src
+          [[ -n $CH_BUILDER ]]
+          echo "ch_makej=-j$(getconf _NPROCESSORS_ONLN)" >> $GITHUB_ENV
+          # Remove sbin directories from $PATH (see issue #43). Assume none of
+          # these are the first entry in $PATH.
+          echo "PATH=$PATH"
+          path_new=$PATH
+          for i in /sbin /usr/sbin /usr/local/sbin; do
+              path_new=${path_new/:$i/}
+          done
+          echo "path_new=$path_new"
+          echo "PATH=$path_new" >> $GITHUB_ENV
+
+      - name: print starting environment
+        run: |
+          env | egrep '^(PATH|USER)='
+          env | egrep '^(ch|CH)_'
+          [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
+          id
+          pwd
+          getconf _NPROCESSORS_ONLN
+          free -m
+          df -h
+
+      - name: install Bats
+        # We need (1) old Bats, not bats-core and (2) prior to commit 1735a4f,
+        # because this is what is provided in distros we need to support and
+        # it contains a bug we work around (see issue #552).
+        run: |
+          cd /usr/local/src
+          git clone --depth 1 --branch v0.4.0 https://github.com/sstephenson/bats.git
+          cd bats
+          sudo ./install.sh /usr/local
+          command -v bats
+          bats --version
+          [[ $(command -v bats) == /usr/local/bin/bats ]]
+          [[ $(bats --version) == 'Bats 0.4.0' ]]
+
+      - name: install/configure dependencies, all
+        run: |
+          # configure doesn't tell us about these.
+          sudo apt-get install pigz pv
+          # configure does tell us about these.
+          sudo apt-get install squashfs-tools squashfuse
+          # Track newest Sphinx in case it breaks things.
+          sudo pip3 install sphinx sphinx-rtd-theme
+
+      - name: install/configure dependencies, ch-image
+        if: ${{ matrix.builder == 'ch-image' }}
+        run: |
+          # Use most current Lark rather than the one in Ubuntu b/c new
+          # versions sometimes break things.
+          sudo pip3 install lark-parser
+
+      - name: install/configure dependencies, all Buildah
+        if: ${{ startsWith(matrix.builder, 'buildah') }}
+        run: |
+          command -v buildah
+          buildah --version
+          command -v runc
+          runc --version
+          # As of 2020-11-30, stock registries.conf is pretty simple; it
+          # includes Docker Hub (docker.io) and then quay.io. Still, use ours
+          # for stability.
+          cat /etc/containers/registries.conf
+          cat <<'EOF' | sudo tee /etc/containers/registries.conf
+          [registries.search]
+            registries = ['docker.io']
+          EOF
+
+      - name: install/configure dependencies, privileged Buildah
+        if: ${{ startsWith(matrix.builder, 'buildah-') }}
+        run: |
+          sudo usermod --add-subuids 10000-65536 $USER
+          sudo usermod --add-subgids 10000-65536 $USER
+
+      - name: build/install from Git
+        run: |
+          ./autogen.sh
+          # Remove Autotools to make sure everything works without them.
+          sudo apt-get remove autoconf automake
+          # Configure and verify output.
+          ./configure --prefix=$ch_prefix/from-git
+          set -x
+          fgrep 'documentation: yes' config.log
+          [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
+          [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
+          fgrep 'at least one builder ... yes' config.log
+          fgrep 'ch-run(1): yes' config.log
+          fgrep 'complete test suite: yes' config.log
+          set +x
+          # Build and install.
+          make $ch_makej
+          sudo make $ch_makej install
+          bin/ch-run --version
+          $ch_prefix/from-git/bin/ch-run --version
+
+      - name: late setup & validation
+        run: |
+          bin/ch-test --is-pedantic all
+          bin/ch-test --is-sudo all
+
+      - name: make filesystem permissions fixtures
+        run: |
+          bin/ch-test mk-perm-dirs
+
+      - name: configure sudo to user root, group non-root
+        if: ${{ matrix.keep_sudo }}
+        run: |
+          sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/runner
+          sudo cat /etc/sudoers.d/runner
+
+      - name: remove sudo
+        if: ${{ ! matrix.keep_sudo }}
+        run: |
+          sudo rm /etc/sudoers.d/runner
+          ! sudo echo hello
+
+      - name: build/install from tarball
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        run: |
+          # Create and unpack tarball. The wildcard saves us having to put the
+          # version in a variable. This assumes there isn't already a tarball
+          # or unpacked directory in $ch_prefix, which is true on the clean
+          # VMs GitHub gives us. Note that cd fails if it gets more than one
+          # argument, which helps, but this is probably kind of brittle.
+          make $ch_makej dist
+          mv charliecloud-*.tar.gz $ch_prefix
+          cd $ch_prefix
+          tar xf charliecloud-*.tar.gz
+          rm charliecloud-*.tar.gz  # else cd fails with "too many arguments"
+          cd charliecloud-*
+          pwd
+          # Configure and verify output.
+          ./configure --prefix=$ch_prefix/from-tarball
+          set -x
+          fgrep 'documentation: yes' config.log
+          [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
+          [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
+          fgrep 'at least one builder ... yes' config.log
+          fgrep 'ch-run(1): yes' config.log
+          fgrep 'complete test suite: yes' config.log
+          set +x
+          # Build and install.
+          make $ch_makej
+          sudo make $ch_makej install
+          bin/ch-run --version
+          $ch_prefix/from-tarball/bin/ch-run --version
+
+      - name: run test suite (Git WD, quick, squash)
+        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+        run: |
+          bin/ch-test --scope=quick --pack-fmt=squash all
+
+      - name: run test suite (Git WD, standard, squash)
+        run: |
+          bin/ch-test --pack-fmt=squash all
+
+      - name: run test suite (installed from Git WD, standard, squash)
+        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+        run: |
+          $ch_prefix/from-git/bin/ch-test --pack-fmt=squash all
+
+      - name: run test suite (installed from tarball, standard, squash)
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        run: |
+          $ch_prefix/from-tarball/bin/ch-test --pack-fmt=squash all
+
+      - name: rebuild with most things --disable’d
+        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+        run: |
+          make distclean
+          ./configure --prefix=/doesnotexist \
+                      --disable-html --disable-man --disable-ch-image
+          set -x
+          fgrep 'HTML documentation ... no' config.log
+          fgrep 'man pages ... no' config.log
+          fgrep 'ch-image(1) ... no' config.log
+          fgrep 'with Docker: yes' config.log
+          fgrep 'with ch-image(1): no' config.log
+          fgrep 'at least one builder ... yes' config.log
+          fgrep 'ch-run(1): yes' config.log
+          fgrep 'complete test suite: yes' config.log
+          set +x
+          # Build.
+          make $ch_makej
+          bin/ch-run --version
+
+      - name: run test suite (Git WD, standard, squash)
+        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+        run: |
+          bin/ch-test --pack-fmt=squash all
+
+      - name: remove non-essential dependencies
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        run: |
+          set -x
+          # This breaks lots of dependencies unrelated to our build but YOLO.
+          sudo dpkg --remove --force-depends \
+                    pigz \
+                    pv \
+                    python3-requests \
+                    squashfs-tools \
+                    squashfuse
+          sudo pip3 uninstall -y sphinx sphinx-rtd-theme
+          ! python3 -c 'import requests'
+          ! python3 -c 'import lark'
+          test -e bin/ch-image
+          bin/ch-test -f test/build/10_sanity.bats  # issue #806
+
+      - name: rebuild
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        run: |
+          make distclean
+          ./configure --prefix=/doesnotexist
+          set -x
+          fgrep 'documentation: no' config.log
+          fgrep 'with Docker: yes' config.log
+          fgrep 'with ch-image(1): no' config.log
+          fgrep 'at least one builder ... yes' config.log
+          fgrep 'ch-run(1): yes' config.log
+          fgrep 'recommended tests with tarballs: yes' config.log
+          fgrep 'complete test suite: no' config.log
+          set +x
+          # Build and install.
+          make $ch_makej
+          bin/ch-run --version
+
+      - name: run test suite (Git WD, standard, tarballs)
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        run: |
+          bin/ch-test --pack-fmt=tar all
+
+      - name: print ending environment
+        if: ${{ always() }}
+        run: |
+          free -m
+          df -h
+          du -sch $CH_TEST_TARDIR/*
+          du -sch $CH_TEST_IMGDIR/*

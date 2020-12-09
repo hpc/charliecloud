@@ -22,7 +22,7 @@ load ../common
     # yielded hundreds of false positives but zero actual bugs.
     scope quick
     echo "version: ${ch_version}"
-    re='^0\.[0-9]+(\.[0-9]+)?(~pre\+[A-Za-z0-9]+(\.[0-9a-f]+(\.dirty)?)?)?$'
+    re='^0\.[0-9]+(\.[0-9]+)?(~pre\+([A-Za-z0-9]+\.)?([0-9a-f]+(\.dirty)?)?)?$'
     [[ $ch_version =~ $re ]]
 }
 
@@ -107,6 +107,7 @@ load ../common
         shellcheck -e SC1090,SC2002,SC2154 "$i"
     done < <( find "$ch_base" \
                    \(    -name .git \
+                      -o -name .vagrant \
                       -o -name build-aux \) -prune \
                 -o \( -name '*.sh' -print \) \
                 -o \( -name '*.bash' -print \) \

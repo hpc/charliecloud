@@ -55,7 +55,7 @@ except ImportError:
 
 ## Globals ##
 
-# FIXME: currently set in ch-grow :P
+# FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
 
@@ -63,6 +63,9 @@ CH_RUN = None
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
+
+# Verify TLS certificates? Passed to requests.
+tls_verify = True
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -267,6 +270,8 @@ class Image:
       # Mount points.
       file_ensure_exists("%s/etc/hosts" % self.unpack_path)
       file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
+      for i in range(10):
+         mkdirs("%s/mnt/%d" % (self.unpack_path, i))
 
    def flatten(self, last_layer=None):
       "Flatten the layers in the download cache into the unpack directory."
@@ -485,7 +490,7 @@ class Image:
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
          if (   not os.path.isdir(self.unpack_path + "/bin")
-             or not os.path.isdir(self.unpack_path + "/lib")
+             or not os.path.isdir(self.unpack_path + "/dev")
              or not os.path.isdir(self.unpack_path + "/usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
@@ -632,7 +637,10 @@ fields:
       "Set defaults for all empty fields."
       if (self.host is None): self.host = "registry-1.docker.io"
       if (self.port is None): self.port = 443
-      if (len(self.path) == 0): self.path = ["library"]
+      if (self.host == "registry-1.docker.io" and len(self.path) == 0):
+         # FIXME: For Docker Hub only, images with no path need a path of
+         # "library" substituted. Need to understand/document the rules here.
+         self.path = ["library"]
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
@@ -683,16 +691,22 @@ class Repo_Downloader:
          req.headers["Authorization"] = "Bearer %s" % self.token
          return req
 
+      def __str__(self):
+         return ("Bearer %s" % self.token[:32])
+
    class Null_Auth(requests.auth.AuthBase):
 
       def __call__(self, req):
          return req
 
+      def __str__(self):
+         return "no authorization"
+
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
       self.ref = ref.copy()
       self.ref.defaults_add()
-      self.auth = None
+      self.auth = self.Null_Auth()
       self.session = None
       if (verbose >= 2):
          http.client.HTTPConnection.debuglevel = 1
@@ -702,62 +716,85 @@ class Repo_Downloader:
       url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
       return "/".join((url_base, self.ref.path_full, type_, address))
 
-   def authenticate_maybe(self, url):
-      """If we need to authenticate, do so using the 401 from url; otherwise
-         do nothing."""
-      if (self.auth is None):
-         DEBUG("requesting auth parameters")
-         res = self.get_raw(url, expected_statuses=(401,200))
-         if (res.status_code == 200):
-            self.auth = self.Null_Auth()
-         else:
-            if ("WWW-Authenticate" not in res.headers):
-               FATAL("WWW-Authenticate header not found")
-            auth = res.headers["WWW-Authenticate"]
-            if (not auth.startswith("Bearer ")):
-               FATAL("authentication scheme is not Bearer")
-            # Apparently parsing the WWW-Authenticate header correctly is
-            # pretty hard. This is a non-compliant regex kludge [1,2].
-            # Alternatives include putting the grammar into Lark (this can be
-            # gotten by reading the RFCs enough) or using the www-authenticate
-            # library [3].
-            #
-            # [1]: https://stackoverflow.com/a/1349528
-            # [2]: https://stackoverflow.com/a/1547940
-            # [3]: https://pypi.org/project/www-authenticate
-            authd = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth))
-            DEBUG("WWW-Authenticate parse: %s" % authd, v=2)
-            for k in ("realm", "service", "scope"):
-               if (k not in authd):
-                  FATAL("WWW-Authenticate missing key: %s" % k)
-            # Request auth token.
-            DEBUG("requesting anonymous auth token")
-            res = self.get_raw(authd["realm"], expected_statuses=(200,403),
-                               params={"service": authd["service"],
-                                       "scope": authd["scope"]})
-            if (res.status_code == 403):
-               INFO("anonymous access rejected")
-               username = input("Username: ")
-               password = getpass.getpass("Password: ")
-               auth = requests.auth.HTTPBasicAuth(username, password)
-               res = self.get_raw(authd["realm"], auth=auth,
-                                  params={"service": authd["service"],
-                                          "scope": authd["scope"]})
-            token = res.json()["token"]
-            DEBUG("got token: %s..." % (token[:32]))
-            self.auth = self.Bearer_Auth(token)
+   def authenticate_basic(self, res, auth_d):
+      DEBUG("authenticating using Basic")
+      if ("realm" not in auth_d):
+         FATAL("WWW-Authenticate missing realm")
+      (username, password) = self.credentials_read()
+      self.auth = requests.auth.HTTPBasicAuth(username, password)
+
+   def authenticate_bearer(self, res, auth_d):
+      DEBUG("authenticating using Bearer")
+      for k in ("realm", "service", "scope"):
+         if (k not in auth_d):
+            FATAL("WWW-Authenticate missing key: %s" % k)
+      # First, try for an anonymous auth token. If that fails, try for an
+      # authenticated token.
+      DEBUG("requesting anonymous auth token")
+      res = self.get_raw(auth_d["realm"], [200,403],
+                         params={"service": auth_d["service"],
+                                 "scope": auth_d["scope"]})
+      if (res.status_code == 403):
+         INFO("anonymous access rejected")
+         (username, password) = self.credentials_read()
+         auth = requests.auth.HTTPBasicAuth(username, password)
+         res = self.get_raw(auth_d["realm"], [200], auth=auth,
+                            params={"service": auth_d["service"],
+                                    "scope": auth_d["scope"]})
+      token = res.json()["token"]
+      DEBUG("received auth token: %s" % (token[:32]))
+      self.auth = self.Bearer_Auth(token)
+
+   def authorize(self, res):
+      "Authorize using the WWW-Authenticate header in failed response res."
+      DEBUG("authorizing")
+      assert (res.status_code == 401)
+      # Get authentication instructions.
+      if ("WWW-Authenticate" not in res.headers):
+         FATAL("WWW-Authenticate header not found")
+      auth_h = res.headers["WWW-Authenticate"]
+      DEBUG("WWW-Authenticate raw: %s" % auth_h)
+      # Parse the WWW-Authenticate header. Apparently doing this correctly is
+      # pretty hard. We use a non-compliant regex kludge [1,2]. Alternatives
+      # include putting the grammar into Lark (this can be gotten by reading
+      # the RFCs enough) or using the www-authenticate library [3].
+      #
+      # [1]: https://stackoverflow.com/a/1349528
+      # [2]: https://stackoverflow.com/a/1547940
+      # [3]: https://pypi.org/project/www-authenticate
+      auth_type = auth_h.split()[0]
+      auth_d = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth_h))
+      DEBUG("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
+      # Dispatch to proper method.
+      if   (auth_type == "Bearer"):
+         self.authenticate_bearer(res, auth_d)
+      elif (auth_type == "Basic"):
+         self.authenticate_basic(res, auth_d)
+      else:
+         FATAL("unknown auth type: %s" % auth_h)
 
    def close(self):
       if (self.session is not None):
          self.session.close()
 
-   def get(self, url, path, headers=dict()):
-      """GET url, passing headers, including authentication and session magic,
-         and write the body of the response to path."""
+   def credentials_read(self):
+      username = input("Username: ")
+      password = getpass.getpass("Password: ")
+      return (username, password)
+
+   def get(self, url, path, headers=dict(), statuses=[200]):
+      """GET url, passing headers, and write the body of the response to path.
+         Use current session if there is one, or start a new one if not.
+         Authenticate if needed."""
       DEBUG("GETting: %s" % url)
       self.session_init_maybe()
-      self.authenticate_maybe(url)
-      res = self.get_raw(url, headers)
+      DEBUG("auth: %s" % self.auth)
+      res = self.get_raw(url, statuses+[401], headers)
+      if (res.status_code == 401):
+         DEBUG("HTTP 401 unauthorized")
+         self.authorize(res)
+         DEBUG("retrying with auth: %s" % self.auth)
+         res = self.get_raw(url, statuses, headers)
       try:
          fp = open_(path, "wb")
          ossafe(fp.write, "can't write: %s" % path, res.content)
@@ -778,22 +815,25 @@ class Repo_Downloader:
       accept = "application/vnd.docker.distribution.manifest.v2+json"
       self.get(url, path, { "Accept": accept })
 
-   def get_raw(self, url, headers=dict(), auth=None, expected_statuses=(200,),
-               **kwargs):
-      """GET url, passing headers, with no magic. If auth is None, use
-         self.auth (which might also be None). If status is not in
-         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
-         requests.session.get()."""
+   def get_raw(self, url, statuses, headers=dict(), auth=None, **kwargs):
+      """GET url, expecting a status code in statuses, passing headers.
+         self.session must be valid. If auth is None, use self.auth (which
+         might also be None). If status is not in statuses, barf with a fatal
+         error. Pass kwargs unchanged to requests.session.get()."""
       if (auth is None):
          auth = self.auth
       try:
          res = self.session.get(url, headers=headers, auth=auth, **kwargs)
-         if (res.status_code not in expected_statuses):
+         if (res.status_code not in statuses):
             FATAL("HTTP GET failed; expected status %s but got %d: %s"
-                  % (" or ".join(str(i) for i in expected_statuses),
+                  % (" or ".join(str(i) for i in statuses),
                      res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          FATAL("HTTP GET failed: %s" % x)
+      # Log the rate limit headers if present.
+      for h in ("RateLimit-Limit", "RateLimit-Remaining"):
+         if (h in res.headers):
+            DEBUG("%s: %s" % (h, res.headers[h]))
       return res
 
    def session_init_maybe(self):
@@ -801,6 +841,7 @@ class Repo_Downloader:
       if (self.session is None):
          DEBUG("initializing session")
          self.session = requests.Session()
+         self.session.verify = tls_verify
 
 
 class TarFile(tarfile.TarFile):
@@ -850,17 +891,17 @@ class TarFile(tarfile.TarFile):
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path
       # of the member being extracted.
-      DEBUG("makedir: %s" % targetpath)
+      DEBUG("makedir: %s" % targetpath, v=2)
       self.clobber(targetpath, regulars=True, symlinks=True)
       super().makedir(tarinfo, targetpath)
 
    def makefile(self, tarinfo, targetpath):
-      DEBUG("makefile: %s" % targetpath)
+      DEBUG("makefile: %s" % targetpath, v=2)
       self.clobber(targetpath, symlinks=True, dirs=True)
       super().makefile(tarinfo, targetpath)
 
    def makelink(self, tarinfo, targetpath):
-      DEBUG("makelink: %s -> %s" % (targetpath, tarinfo.linkname))
+      DEBUG("makelink: %s -> %s" % (targetpath, tarinfo.linkname), v=2)
       self.clobber(targetpath, regulars=True, symlinks=True, dirs=True)
       super().makelink(tarinfo, targetpath)
 
@@ -884,19 +925,22 @@ def INFO(*args, **kwargs):
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)
 
-def ch_run_modify(img, args, env, workdir="/"):
-   args = [CH_BIN + "/ch-run", "-w", "--cd", workdir, "--uid=0", "--gid=0",
-           "--no-home", "--no-passwd", img, "--"] + args
-   cmd(args, env)
+def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
+   args = (  [CH_BIN + "/ch-run"]
+           + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
+           + sum([["-b", i] for i in binds], [])
+           + [img, "--"] + args)
+   return cmd(args, env, fail_ok)
 
-def cmd(args, env=None):
+def cmd(args, env=None, fail_ok=False):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
    color_set("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
    color_reset(sys.stdout)
-   if (cp.returncode):
+   if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
+   return cp.returncode
 
 def color_reset(*fps):
    for fp in fps:
@@ -973,7 +1017,7 @@ def log_setup(verbose_):
    DEBUG("verbose level: %d" % verbose)
 
 def mkdirs(path):
-   DEBUG("ensuring directory: " + path)
+   DEBUG("ensuring directory: %s" % path)
    try:
       os.makedirs(path, exist_ok=True)
    except OSError as x:
@@ -1021,7 +1065,7 @@ def storage_default():
       username = os.environ["USER"]
    except KeyError:
       FATAL("can't get username: $USER not set")
-   return "/var/tmp/%s/ch-grow" % username
+   return "/var/tmp/%s/ch-image" % username
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):

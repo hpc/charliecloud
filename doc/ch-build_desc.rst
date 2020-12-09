@@ -24,7 +24,7 @@ Supported builders, unprivileged:
     :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions. This
     requires Buildah v1.10.1+; see the install instructions.
 
-  * :code:`ch-grow`: Our internal builder.
+  * :code:`ch-image`: Our internal builder.
 
 Supported builders, privileged:
 
@@ -46,7 +46,7 @@ Specifying the builder, in descending order of priority:
     Environment variable
 
   Default
-    :code:`docker` if Docker is installed; otherwise, :code:`ch-grow`.
+    :code:`docker` if Docker is installed; otherwise, :code:`ch-image`.
 
 Other arguments:
 
@@ -95,12 +95,12 @@ Instead, use :code:`/bar/Dockerfile.baz`::
 
   $ ch-build -t foo --file=/bar/Dockerfile.baz /bar
 
-Equivalent to the first example, but use :code:`ch-grow` even if Docker is
+Equivalent to the first example, but use :code:`ch-image` even if Docker is
 installed::
 
-  $ ch-build -b ch-grow -t foo /bar
+  $ ch-build -b ch-image -t foo /bar
 
 Equivalent to above::
 
-  $ export CH_BUILDER=ch-grow
+  $ export CH_BUILDER=ch-image
   $ ch-build -t foo /bar

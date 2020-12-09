@@ -7,8 +7,9 @@ Dockerfile.00_tiny \
 Dockerfile.argenv \
 Dockerfile.build2dir \
 build/10_sanity.bats \
-build/50_ch-grow.bats \
+build/50_ch-image.bats \
 build/50_dockerfile.bats \
+build/50_fakeroot.bats \
 build/50_misc.bats \
 build/50_pull.bats \
 build/99_cleanup.bats \
@@ -44,11 +45,7 @@ make-perms-test
 
 # Stuff that doesn't need to be installed.
 EXTRA_DIST = \
-fixtures/README \
-travis.bash \
-travis-before.bash \
-travis-install.bash \
-travis.yml
+fixtures/README
 
 # Program and shared library used for testing shared library injection. It's
 # built according to the rules below. In principle, we could use libtool for
@@ -84,8 +81,9 @@ EXTRA_SCRIPTS = $(sobuilts)
 
 ## Python scripts - need text processing
 docs-sane make-perms-test: %: %.py.in
+	rm -f $@
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
-	chmod +rwx $@  # respects umask
+	chmod +rx,-w $@  # respects umask
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0 sotest/libsotest.so sotest/libsotest.so.1
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^

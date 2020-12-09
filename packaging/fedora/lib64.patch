@@ -68,9 +68,9 @@ diff -ur charliecloud/bin/ch-fromhost charliecloud-lib/bin/ch-fromhost
  . "${lib}/base.sh"
 
  set -e
-diff -ur charliecloud/bin/ch-grow.py.in charliecloud-lib/bin/ch-grow.py.in
---- charliecloud/bin/ch-grow.py.in    2020-04-20 10:34:22.163969775 -0600
-+++ charliecloud-lib/bin/ch-grow.py.in    2020-04-20 11:53:58.006701265 -0600
+diff -ur charliecloud/bin/ch-image.py.in charliecloud-lib/bin/ch-image.py.in
+--- charliecloud/bin/ch-image.py.in    2020-04-20 10:34:22.163969775 -0600
++++ charliecloud-lib/bin/ch-image.py.in    2020-04-20 11:53:58.006701265 -0600
 @@ -6,7 +6,7 @@
  import sys
 

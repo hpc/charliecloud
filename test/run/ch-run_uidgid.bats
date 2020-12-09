@@ -29,23 +29,29 @@ setup () {
 }
 
 @test 'user and group as specified' {
+    # shellcheck disable=SC2086
     g=$(ch-run $uid_args $gid_args "$ch_timg" -- id -un)
     [[ $GUEST_USER = "$g" ]]
+    # shellcheck disable=SC2086
     g=$(ch-run $uid_args $gid_args "$ch_timg" -- id -u)
     [[ $guest_uid = "$g" ]]
+    # shellcheck disable=SC2086
     g=$(ch-run $uid_args $gid_args "$ch_timg" -- id -gn)
     [[ $GUEST_GROUP = "$g" ]]
+    # shellcheck disable=SC2086
     g=$(ch-run $uid_args $gid_args "$ch_timg" -- id -g)
     [[ $guest_gid = "$g" ]]
 }
 
 @test 'chroot escape' {
     # Try to escape a chroot(2) using the standard approach.
+    # shellcheck disable=SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- /test/chroot-escape
 }
 
 @test '/dev /proc /sys' {
     # Read some files in /dev, /proc, and /sys that I shouldn't have access to.
+    # shellcheck disable=SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- /test/dev_proc_sys.py
 }
 
@@ -54,16 +60,17 @@ setup () {
     for d in $CH_TEST_PERMDIRS; do
         d="${d}/pass"
         echo "verifying: ${d}"
-          ch-run --no-home --private-tmp \
-                 $uid_args $gid_args -b "$d" "$ch_timg" -- \
-                 /test/fs_perms.py /mnt/0
+        # shellcheck disable=SC2086
+        ch-run --no-home --private-tmp \
+               $uid_args $gid_args -b "$d" "$ch_timg" -- \
+               /test/fs_perms.py /mnt/0
     done
 }
 
 @test 'mknod(2)' {
     # Make some device files. If this works, we might be able to later read or
     # write them to do things we shouldn't. Try on all mount points.
-    # shellcheck disable=SC2016
+    # shellcheck disable=SC2016,SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- \
            sh -c '/test/mknods $(cat /proc/mounts | cut -d" " -f2)'
 }
@@ -88,11 +95,14 @@ setup () {
     #   - We leave the filesystem mounted even if successful, again to make
     #     the test simpler. The rest of the tests will ignore it or maybe
     #     over-mount something else.
+    #
+    # shellcheck disable=SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- \
            sh -c '[ -f /bin/mount -a -x /bin/mount ]'
     dev=$(findmnt -n -o SOURCE -T /)
     type=$(findmnt -n -o FSTYPE -T /)
     opts=$(findmnt -n -o OPTIONS -T /)
+    # shellcheck disable=SC2086
     run ch-run $uid_args $gid_args "$ch_timg" -- \
                /bin/mount -n -o "$opts" -t "$type" "$dev" /mnt/0
     echo "$output"
@@ -128,11 +138,13 @@ setup () {
 
 @test 'setgroups(2)' {
     # Can we change our supplemental groups?
+    # shellcheck disable=SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- /test/setgroups
 }
 
 @test 'seteuid(2)' {
     # Try to seteuid(2) to another UID we shouldn't have access to
+    # shellcheck disable=SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- /test/setuid
 }
 
@@ -144,5 +156,6 @@ setup () {
     # dynamically, so there may be none running. See your distro's
     # documentation on how to configure this. See also e.g. issue #840.
     [[ $(pgrep -c getty) -eq 0 ]] && pedantic_fail 'no getty process found'
+    # shellcheck disable=SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- /test/signal_out.py
 }
