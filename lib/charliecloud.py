@@ -1,6 +1,7 @@
 import argparse
 import atexit
 import collections
+import collections.abc
 import copy
 import datetime
 import gzip
@@ -180,6 +181,7 @@ class HelpFormatter(argparse.HelpFormatter):
       args_string = self._format_args(action, default)
       return ', '.join(action.option_strings) + ' ' + args_string
 
+
 class Image:
    """Container image object.
 
@@ -191,15 +193,11 @@ class Image:
                        in storage dir from ref."""
 
    __slots__ = ("ref",
-                "layer_hashes",
-                "schema_version",
                 "unpack_path")
 
    def __init__(self, ref, unpack_path=None):
       assert isinstance(ref, Image_Ref)
       self.ref = ref
-      self.layer_hashes = None
-      self.schema_version = None
       if (unpack_path is not None):
          self.unpack_path = unpack_path
       else:
@@ -207,11 +205,6 @@ class Image:
 
    def __str__(self):
       return str(self.ref)
-
-   @property
-   def manifest_path(self):
-      "Path to the manifest file."
-      return storage.manifest(self.ref)
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -223,36 +216,8 @@ class Image:
       DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
-   def download(self, use_cache):
-      """Download image manifest and layers according to origin and put them
-         in the download cache. By default, any components already in the
-         cache are skipped; if use_cache is False, download them anyway,
-         overwriting what's in the cache."""
-      # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
-      dl = Repo_Data_Transfer(self.ref)
-      DEBUG("downloading image: %s" % dl.ref)
-      mkdirs(storage.download_cache)
-      # manifest
-      if (os.path.exists(self.manifest_path) and use_cache):
-         INFO("manifest: using existing file")
-      else:
-         INFO("manifest: downloading")
-         dl.get_manifest(self.manifest_path)
-      # layers
-      self.layer_hashes_load()
-      for (i, lh) in enumerate(self.layer_hashes, start=1):
-         path = self.layer_path(lh)
-         DEBUG("layer path: %s" % path)
-         INFO("layer %d/%d: %s: " % (i, len(self.layer_hashes), lh[:7]), end="")
-         if (os.path.exists(path) and use_cache):
-            INFO("using existing file")
-         else:
-            INFO("downloading")
-            dl.get_layer(lh, path)
-      dl.close()
-
    def fixup(self):
-      "Add the Charliecloud workarounds to the unpacked image."
+      "Add the Charliecloud workarounds to my unpacked image."
       DEBUG("fixing up image: %s" % self.unpack_path)
       # Metadata directory.
       mkdirs("%s/ch" % self.unpack_path)
@@ -263,129 +228,80 @@ class Image:
       for i in range(10):
          mkdirs("%s/mnt/%d" % (self.unpack_path, i))
 
-   def flatten(self, last_layer=None):
-      "Flatten the layers in the download cache into the unpack directory."
+   def flatten(self, layer_tars, last_layer=None):
+      """Unpack layer_tars (sequence of paths to tarballs, with lowest layer
+         first) into the unpack directory, validating layer contents and
+         dealing with whiteouts. Empty layers are ignored."""
       if (last_layer is None):
          last_layer = sys.maxsize
-      layers = self.layers_read()
+      layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
       INFO("flattening image")
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         lh_short = lh[:7]
          if (i > last_layer):
             INFO("layer %d/%d: %s: skipping per --last-layer"
-                 % (i, len(layers), lh[:7]))
+                 % (i, len(layers), lh_short))
          else:
-            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
+            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh_short))
             try:
                fp.extractall(path=self.unpack_path, members=members)
             except OSError as x:
                FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
-   def layer_hashes_load(self):
-      "Load the layer hashes from the manifest file."
-      try:
-         fp = open_(self.manifest_path, "rt", encoding="UTF-8")
-      except OSError as x:
-         FATAL("can't open manifest file: %s: %s"
-               % (self.manifest_path, x.strerror))
-      try:
-         doc = json.load(fp)
-      except json.JSONDecodeError as x:
-         FATAL("can't parse manifest file: %s:%d: %s"
-               % (self.manifest_path, x.lineno, x.msg))
-      try:
-         schema_version = str(doc['schemaVersion'])
-      except KeyError:
-         FATAL("manifest file %s missing expected key 'schemaVersion'"
-               % self.manifest_path)
-      if (schema_version == '1'):
-         DEBUG('loading layer hashes from schema version 1 manifest')
-         try:
-            self.layer_hashes = [i["blobSum"].split(":")[1]
-                                 for i in doc["fsLayers"]]
-         except (KeyError, AttributeError, IndexError) as x:
-            FATAL("can't parse manifest file: %s:%d :%s"
-                  % self.manifest_path, x.lineno, x.msg)
-      elif (schema_version == '2'):
-         DEBUG('loading layer hashes from schema version 2 manifest')
-         try:
-            self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
-         except (KeyError, AttributeError, IndexError):
-            FATAL("can't parse manifest file: %s:%d :%s"
-                  % self.manifest_path, x.lineno, x.msg)
-      else:
-         FATAL("unsupported manifest schema version: %s" % schema_version)
-      self.schema_version = schema_version
+   def layers_open(self, layer_tars):
+      """Open the layer tarballs and read some metadata (which unfortunately
+         means reading the entirety of every file). Return an OrderedDict:
 
-   def layer_path(self, layer_hash):
-      "Return the path to tarball for layer layer_hash."
-      return "%s/%s.tar.gz" % (storage.download_cache, layer_hash)
+           keys:    layer hash (full)
+           values:  namedtuple with two fields:
+                      fp:       open TarFile object
+                      members:  sequence of members (OrderedSet)
 
-   def layers_read(self):
-      """Open the layer tarballs and read some metadata. Return an OrderedDict
-         with the lowest layer first; key is hash string, value is namedtuple
-         with fields fp, the open TarFile object, and members, an OrderedDict
-         of members obtained from fp.getmembers() (key TarInfo object, value
-         None).
+         Empty layers are skipped.
 
-         We use an OrderedDict for members because tarballs are a stream
-         format with very poor random access performance. Under the hood,
-         TarFile.extractall() extracts the members in the order they are
-         specified. Thus, we need to preserve the order given by getmembers()
-         while also making it fast to remove members we don't want to
-         extract, which rules out retaining them as a list.
-
-         FIXME: Once we get to Python 3.7, we should just use plain dict."""
+         Important note: TarFile.extractall() extracts the given members in
+         the order they are specified, so we need to preserve their order from
+         the file, as returned by getmembers(). We also need to quickly remove
+         members we don't want from this sequence. Thus, we use the OrderedSet
+         class defined in this module."""
       TT = collections.namedtuple("TT", ["fp", "members"])
-      if (self.layer_hashes is None):
-         self.layer_hashes_load()
       layers = collections.OrderedDict()
       # Schema version one (v1) allows one or more empty layers for Dockerfile
       # entries like CMD (https://github.com/containers/skopeo/issues/393).
       # Unpacking an empty layer doesn't accomplish anything so we ignore them.
       empty_cnt = 0
-      for (i, lh) in enumerate(self.layer_hashes, start=1):
-         INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
-         path = self.layer_path(lh)
+      for (i, path) in enumerate(layer_tars, start=1):
+         lh = os.path.basename(path).split(".", 1)[0]
+         lh_short = lh[:7]
+         INFO("layer %d/%d: %s: listing" % (i, len(layer_tars), lh_short))
          try:
             fp = TarFile.open(path)
-            members_list = fp.getmembers()  # reads whole file :(
+            members = OrderedSet(fp.getmembers())  # reads whole file :(
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
-         members = collections.OrderedDict([(m, None) for m in members_list])
          if (lh in layers and len(members) > 0):
-            FATAL("duplicate non-empty layer %s" % lh[:7])
+            FATAL("duplicate non-empty layer %s" % lh)
          if (len(members) > 0):
             layers[lh] = TT(fp, members)
          else:
             empty_cnt += 1
-      if (self.schema_version == '1'):
-         DEBUG('reversing layer order for schema version one (v1)')
-         layers = collections.OrderedDict(reversed(layers.items()))
       DEBUG("skipped %d empty layers" % empty_cnt)
       return layers
-
-   def pull_to_unpacked(self, use_cache=True, fixup=False, last_layer=None):
-      """Pull and flatten image. If fixup, then also add the Charliecloud
-         workarounds to the image directory."""
-      self.download(use_cache)
-      self.flatten(last_layer)
-      if (fixup):
-         self.fixup()
 
    def validate_members(self, layers):
       INFO("validating tarball members")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          dev_ct = 0
-         members2 = list(members.keys())  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
-            self.validate_tar_path(self.layer_path(lh), m.name)
+            self.validate_tar_path(fp.name, m.name)
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
-               del members[m]
+               members.remove(m)
             elif (m.issym()):
                # Symlink: Nothing to change, but accept it.
                pass
@@ -393,7 +309,7 @@ class Image:
                # Hard link: Fail if pointing outside top level. (Note that we
                # let symlinks point wherever they want, because they aren't
                # interpreted until run time in a container.)
-               self.validate_tar_link(self.layer_path(lh), m.name, m.linkname)
+               self.validate_tar_link(fp.name, m.name, m.linkname)
             elif (m.isdir()):
                # Directory: Fix bad permissions (hello, Red Hat).
                m.mode |= 0o700
@@ -434,11 +350,11 @@ class Image:
       ignore_ct = 0
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          if (i > max_i): break
-         members2 = list(members.keys())  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
             if (os.path.commonpath([prefix, m.name]) == prefix):
                ignore_ct += 1
-               del members[m]
+               members.remove(m)
                DEBUG("layer %d/%d: %s: ignoring %s"
                      % (i, len(layers), lh[:7], m.name), v=2)
       return ignore_ct
@@ -450,13 +366,13 @@ class Image:
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          wo_ct = 0
          ig_ct = 0
-         members2 = list(members.keys())  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
             dir_ = os.path.dirname(m.name)
             filename = os.path.basename(m.name)
             if (filename.startswith(".wh.")):
                wo_ct += 1
-               del members[m]
+               members.remove(m)
                if (filename == ".wh..wh..opq"):
                   # "Opaque whiteout": remove contents of dir_.
                   DEBUG("found opaque whiteout: %s" % m.name, v=2)
@@ -918,6 +834,41 @@ fields:
           and self.port is None):
          self.path.insert(0, self.host)
          self.host = None
+
+
+class OrderedSet(collections.abc.MutableSet):
+
+   # Note: The superclass provides basic implementations of all the other
+   # methods. I didn't evaluate any of these.
+
+   __slots__ = ("data",)
+
+   def __init__(self, others=None):
+      self.data = collections.OrderedDict()
+      if (others is not None):
+         self.data.update((i, None) for i in others)
+
+   def __contains__(self, item):
+      return (item in self.data)
+
+   def __iter__(self):
+      return iter(self.data.keys())
+
+   def __len__(self):
+      return len(self.data)
+
+   def __repr__(self):
+      return "%s(%s)" % (self.__class__.__name__, list(iter(self)))
+
+   def add(self, x):
+      self.data[x] = None
+
+   def clear(self):
+      # Superclass provides an implementation but warns it's slow (and it is).
+      self.data.clear()
+
+   def discard(self, x):
+      self.data.pop(x, None)
 
 
 class Path(pathlib.PosixPath):

@@ -40,28 +40,6 @@ def list_(cli):
    for img in sorted(imgs):
       print(ch.Image_Ref(img))
 
-def pull(cli):
-   ch.dependencies_check()
-   # Set things up.
-   ref = ch.Image_Ref(cli.image_ref)
-   if (cli.parse_only):
-      print(ref.as_verbose_str)
-      sys.exit(0)
-   image = ch.Image(ref, cli.image_dir)
-   ch.INFO("pulling image:   %s" % image.ref)
-   if (cli.image_dir is not None):
-      ch.INFO( "destination:     %s" % image.unpack_path)
-   else:
-      ch.DEBUG("destination:     %s" % image.unpack_path)
-   ch.DEBUG("use cache:       %s" % (not cli.no_cache))
-   ch.DEBUG("download cache:  %s" % ch.storage.download_cache)
-   ch.DEBUG("manifest:        %s" % image.manifest_path)
-   # Pull!
-   image.pull_to_unpacked(use_cache=(not cli.no_cache),
-                          last_layer=cli.last_layer)
-   # Done.
-   ch.INFO("done")
-
 def push(cli):
    ch.dependencies_check()
    # FIXME: validate it's an image using Megan's new function

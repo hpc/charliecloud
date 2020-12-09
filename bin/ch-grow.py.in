@@ -10,6 +10,7 @@ sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
 import charliecloud as ch
 import build
 import misc
+import pull
 
 
 ## Constants ##
@@ -137,7 +138,7 @@ def main():
    help="pull image from remote repository to local filesystem"
    sp = sps.add_parser("pull", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=misc.pull)
+   sp.set_defaults(func=pull.main)
    add_opts(sp, common_opts, True)
    sp.add_argument("--last-layer", metavar="N", type=int,
                    help="stop after unpacking N layers")
