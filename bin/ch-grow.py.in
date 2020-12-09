@@ -116,10 +116,12 @@ def main():
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
    sp.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
+   sp.add_argument("--force", action="store_true",
+                   help="inject unprivileged build workarounds")
    sp.add_argument("-n", "--dry-run", action="store_true",
                    help="don't execute instructions")
-   sp.add_argument("--no-fakeroot", action="store_true",
-                   help="don't try unprivileged build workarounds")
+   sp.add_argument("--no-force-detect", action="store_true",
+                   help="don't try to detect if --force workarounds would work")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",

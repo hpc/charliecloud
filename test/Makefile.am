@@ -9,6 +9,7 @@ Dockerfile.build2dir \
 build/10_sanity.bats \
 build/50_ch-grow.bats \
 build/50_dockerfile.bats \
+build/50_fakeroot.bats \
 build/50_misc.bats \
 build/50_pull.bats \
 build/99_cleanup.bats \
@@ -44,11 +45,7 @@ make-perms-test
 
 # Stuff that doesn't need to be installed.
 EXTRA_DIST = \
-fixtures/README \
-travis.bash \
-travis-before.bash \
-travis-install.bash \
-travis.yml
+fixtures/README
 
 # Program and shared library used for testing shared library injection. It's
 # built according to the rules below. In principle, we could use libtool for

@@ -43,7 +43,7 @@ builder_tag_p () {
             fi
             ;;
         docker)
-            hash_=$(sudo docker images -q "$1" | sort -u)
+            hash_=$(docker_ images -q "$1" | sort -u)
             if [[ $hash_ ]]; then
                 echo "$hash_"
                 return 0
@@ -62,6 +62,17 @@ crayify_mpi_or_skip () {
         skip 'host is not a Cray'
     fi
 }
+
+# Do we need sudo to run docker?
+if docker info > /dev/null 2>&1; then
+    docker_ () {
+        docker "$@"
+    }
+else
+    docker_ () {
+        sudo docker "$@"
+    }
+fi
 
 env_require () {
     if [[ -z ${!1} ]]; then

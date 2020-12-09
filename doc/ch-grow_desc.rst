@@ -121,12 +121,17 @@ Options:
     the context directory is still provided, which matches :code:`docker build
     -f -` behavior.
 
+  :code:`--force`
+    Inject the unprivileged build workarounds; see discussion later in this
+    section for details on what this does and when you might need it. If a
+    build fails and :code:`ch-grow` thinks :code:`--force` would help, it will
+    suggest it.
+
   :code:`-n`, :code:`--dry-run`
     Don't actually execute any Dockerfile instructions.
 
-  :code:`--no-fakeroot`
-    Don't try any of the unprivileged build workarounds (see section "Quirks
-    of a fully unprivileged builds" below).
+  :code:`--no-force-detect`
+    Don't try to detect if the workarounds in :code:`--force` would help.
 
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
@@ -134,6 +139,72 @@ Options:
   :code:`-t`, :code:`-tag TAG`
     Name of image to create. If not specified, use the final component of path
     :code:`CONTEXT`. Append :code:`:latest` if no colon present.
+
+:code:`ch-grow` is a *fully* unprivileged image builder. It does not use any
+setuid or setcap helper programs, and it does not use configuration files
+:code:`/etc/subuid` or :code:`/etc/subgid`. This contrasts with the “rootless”
+or “`fakeroot <https://sylabs.io/guides/3.7/user-guide/fakeroot.html>`_” modes
+of some competing builders, which do require privileged supporting code or
+utilities.
+
+This approach does yield some quirks. We provide built-in workarounds that
+should mostly work (i.e., :code:`--force`), but it can be helpful to
+understand what is going on.
+
+:code:`ch-grow` executes all instructions as the normal user who invokes it.
+For :code:`RUN`, this is accomplished with :code:`ch-run -w --uid=0 --gid=0`
+(and some other arguments), i.e., your host EUID and EGID both mapped to zero
+inside the container, and only one UID (zero) and GID (zero) are available
+inside the container. Under this arrangement, processes running in the
+container for each :code:`RUN` *appear* to be running as root, but many
+privileged system calls will fail without the workarounds described below.
+**This affects any fully unprivileged container build, not just
+Charliecloud.**
+
+The most common time to see this is installing packages. For example, here is
+RPM failing to :code:`chown(2)` a file, which makes the package update fail:
+
+.. code-block:: none
+
+    Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
+  Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64
+  error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726: cpio: chown
+    Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4
+  error: dbus-1:1.10.24-13.el7_6.x86_64: install failed
+
+This one is (ironically) :code:`apt-get` failing to drop privileges:
+
+.. code-block:: none
+
+  E: setgroups 65534 failed - setgroups (1: Operation not permitted)
+  E: setegid 65534 failed - setegid (22: Invalid argument)
+  E: seteuid 100 failed - seteuid (22: Invalid argument)
+  E: setgroups 0 failed - setgroups (1: Operation not permitted)
+
+By default, nothing is done to avoid these problems, though :code:`ch-grow`
+does try to detect if the workarounds could help. :code:`--force` activates
+the workarounds: :code:`ch-grow` injects extra commands to intercept these
+system calls and fake a successful result, using :code:`fakeroot(1)`. There
+are three basic steps:
+
+  1. After :code:`FROM`, analyze the image to see what distribution it
+     contains, which determines the specific workarounds.
+
+  2. Before the user command in the first :code:`RUN` instruction where the
+     injection seems needed, install :code:`fakeroot(1)` in the image, if one
+     is not already installed, as well as any other necessary initialization
+     commands. For example, we turn off the :code:`apt` sandbox (for Debian
+     Buster) and configure EPEL but leave it disabled (for CentOS/RHEL).
+
+  3. Prepend :code:`fakeroot` to :code:`RUN` instructions that seem to need
+     it, e.g. ones that contain :code:`apt`, :code:`apt-get`, :code:`dpkg` for
+     Debian derivatives and :code:`dnf`, :code:`rpm`, or :code:`yum` for
+     RPM-based distributions.
+
+The details are specific to each distribution. :code:`ch-grow` analyzes image
+content (e.g., grepping :code:`/etc/debian_version`) to select a
+configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-grow` prints
+exactly what it is doing.
 
 :code:`pull`
 ------------
@@ -197,65 +268,6 @@ Options:
 --------------------
 
 Print the storage directory path and exit.
-
-
-Quirks of a fully unprivileged build
-====================================
-
-:code:`ch-grow` is *fully* unprivileged. It runs all instructions as the
-normal user who invokes it, does not use any setuid or setcap helper programs,
-and does not use :code:`/etc/subuid` or :code:`/etc/subgid`, in contrast to
-the “rootless” mode of some competing builders. This is accomplished by
-executing :code:`RUN` instructions with :code:`ch-run -w --uid=0 --gid=0` (and
-some other arguments), i.e., your host EUID and EGID both mapped to zero
-inside the container, and only one UID (zero) and GID (zero) are available
-inside the container.
-
-Under this arrangement, processes running in the container *appear* to be
-running as root, but many privileged system calls will fail without the
-workarounds described below. **This affects any fully unprivileged
-container build, not just Charliecloud.**
-
-The most common time to see this is installing packages. For example, here is
-RPM failing to :code:`chown(2)` a file, which makes the package update fail:
-
-.. code-block:: none
-
-    Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
-  Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64
-  error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726: cpio: chown
-    Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4
-  error: dbus-1:1.10.24-13.el7_6.x86_64: install failed
-
-This one is (ironically) :code:`apt-get` failing to drop privileges:
-
-.. code-block:: none
-
-  E: setgroups 65534 failed - setgroups (1: Operation not permitted)
-  E: setegid 65534 failed - setegid (22: Invalid argument)
-  E: seteuid 100 failed - seteuid (22: Invalid argument)
-  E: setgroups 0 failed - setgroups (1: Operation not permitted)
-
-The solution :code:`ch-grow` uses is to intercept these system calls and fake
-a successful result. We accomplish this by altering the Dockerfile to call
-:code:`fakeroot(1)` (of which there are several implementations) for
-:code:`RUN` instructions that seem to need it. There are two basic steps:
-
-  1. After :code:`FROM`, install a :code:`fakeroot(1)` implementation. This
-     sometimes also needs extra steps like turning off the :code:`apt` sandbox
-     (for Debian Buster) or enabling EPEL (for CentOS/RHEL).
-
-  2. Prepend :code:`fakeroot` to :code:`RUN` instructions that seem to need
-     it, e.g. ones that contain :code:`apt`, :code:`apt-get`, :code:`dpkg` for
-     Debian derivatives and :code:`dnf`, :code:`rpm`, or :code:`yum` for
-     RPM-based distributions.
-
-The details are specific to each distribution. :code:`ch-grow` analyzes image
-content (e.g., grepping :code:`/etc/debian_version`) to select a
-configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-grow` prints
-exactly what it is doing.
-
-To turn off this behavior, use the :code:`--no-fakeroot` option.
 
 
 Compatibility with other Dockerfile interpreters
@@ -354,7 +366,7 @@ many things you can do in one :code:`cp(1)` command require multiple
 
 Also, the reference documentation is incomplete. In our experience, Docker
 also behaves as follows; :code:`ch-grow` does the same in an attempt to be
-bug-compatible for the :code:`COPY` instructions.
+bug-compatible.
 
 1. You can use absolute paths in the source; the root is the context
    directory.
@@ -370,14 +382,34 @@ bug-compatible for the :code:`COPY` instructions.
 
    3. If there is a single source and it is a directory. (Not documented.)
 
-3. Symbolic links are particularly messy (this is not documented):
+3. Symbolic links behave differently depending on how deep in the copied tree
+   they are. (Not documented.)
 
-   1. If named in sources either explicitly or by wildcard, symlinks are
-      dereferenced, i.e., the result is a copy of the symlink target, not the
-      symlink itself. Keep in mind that directory contents are copied, not
-      directories.
+   1. Symlinks at the top level — i.e., named as the destination or the
+      source, either explicitly or by wildcards — are dereferenced. They are
+      followed, and whatever they point to is used as the destination or
+      source, respectively.
 
-   2. If within a directory named in sources, symlinks are copied as symlinks.
+   2. Symlinks at deeper levels are not dereferenced, i.e., the symlink
+      itself is copied.
+
+4. If a directory appears at the same path in source and destination, and is
+   at the 2nd level or deeper, the source directory's metadata (e.g.,
+   permissions) are copied to the destination directory. (Not documented.)
+
+5. If an object appears in both the source and destination, and is at the 2nd
+   level or deeper, and is of different types in the source and destination,
+   then the source object will overwrite the destination object. (Not
+   documented.) For example, if :code:`/tmp/foo/bar` is a regular file, and
+   :code:`/tmp` is the context directory, then the following Dockerfile
+   snippet will result in a *file* in the container at :code:`/foo/bar`
+   (copied from :code:`/tmp/foo/bar`); the directory and all its contents will
+   be lost.
+
+     .. code-block:: docker
+
+       RUN mkdir -p /foo/bar && touch /foo/bar/baz
+       COPY foo /foo
 
 We expect the following differences to be permanent:
 

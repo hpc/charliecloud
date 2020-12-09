@@ -1374,21 +1374,22 @@ def INFO(*args, **kwargs):
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)
 
-def ch_run_modify(img, args, env, workdir="/", binds=[]):
+def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    args = (  [CH_BIN + "/ch-run"]
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
-   cmd(args, env)
+   return cmd(args, env, fail_ok)
 
-def cmd(args, env=None):
+def cmd(args, env=None, fail_ok=False):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
    color_set("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
    color_reset(sys.stdout)
-   if (cp.returncode):
+   if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
+   return cp.returncode
 
 def color_reset(*fps):
    for fp in fps:
