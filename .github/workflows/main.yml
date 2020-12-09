@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: true  # if any job fails, cancel the rest immediately
       matrix:
-        builder: [none, docker, ch-grow, buildah, buildah-runc, buildah-setuid]
+        builder: [none, docker, ch-image, buildah, buildah-runc, buildah-setuid]
         keep_sudo:  # if false, remove self from sudoers after install/setup
           - false
         include:
@@ -79,8 +79,8 @@ jobs:
           # Track newest Sphinx in case it breaks things.
           sudo pip3 install sphinx sphinx-rtd-theme
 
-      - name: install/configure dependencies, ch-grow
-        if: ${{ matrix.builder == 'ch-grow' }}
+      - name: install/configure dependencies, ch-image
+        if: ${{ matrix.builder == 'ch-image' }}
         run: |
           # Use most current Lark rather than the one in Ubuntu b/c new
           # versions sometimes break things.
@@ -119,7 +119,7 @@ jobs:
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
           [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          [[ $CH_BUILDER = ch-grow ]] && fgrep 'with ch-grow(1): yes' config.log
+          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
@@ -172,7 +172,7 @@ jobs:
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
           [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          [[ $CH_BUILDER = ch-grow ]] && fgrep 'with ch-grow(1): yes' config.log
+          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
@@ -207,13 +207,13 @@ jobs:
         run: |
           make distclean
           ./configure --prefix=/doesnotexist \
-                      --disable-html --disable-man --disable-ch-grow
+                      --disable-html --disable-man --disable-ch-image
           set -x
           fgrep 'HTML documentation ... no' config.log
           fgrep 'man pages ... no' config.log
-          fgrep 'ch-grow(1) ... no' config.log
+          fgrep 'ch-image(1) ... no' config.log
           fgrep 'with Docker: yes' config.log
-          fgrep 'with ch-grow(1): no' config.log
+          fgrep 'with ch-image(1): no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
@@ -241,7 +241,7 @@ jobs:
           sudo pip3 uninstall -y sphinx sphinx-rtd-theme
           ! python3 -c 'import requests'
           ! python3 -c 'import lark'
-          test -e bin/ch-grow
+          test -e bin/ch-image
           bin/ch-test -f test/build/10_sanity.bats  # issue #806
 
       - name: rebuild
@@ -252,7 +252,7 @@ jobs:
           set -x
           fgrep 'documentation: no' config.log
           fgrep 'with Docker: yes' config.log
-          fgrep 'with ch-grow(1): no' config.log
+          fgrep 'with ch-image(1): no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'recommended tests with tarballs: yes' config.log
