@@ -266,7 +266,7 @@ man_pages = [
     'Deprecated name for "ch-image"; will be removed in version 0.23.',
     [], 1),
    ("ch-fromhost", "ch-fromhost",
-    "Inject files from the host into an image directory",
+    "Inject files from the host into an image directory, with various magic",
     [], 1),
    ("ch-image", "ch-image",
     "Build and manage images; completely unprivileged",

@@ -64,7 +64,7 @@ Deprecated name for :code:`ch-image`; will be removed in version 0.23.
 ch-fromhost
 +++++++++++
 
-Inject files from the host into an image directory.
+Inject files from the host into an image directory, with various magic.
 
 .. include:: ./ch-fromhost_desc.rst
 
