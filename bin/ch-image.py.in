@@ -42,11 +42,11 @@ def main():
    # subcommands for consistency with other commands.
    #
    # These are also accepted *after* the subcommand, as it makes wrapping
-   # ch-grow easier and possibly improve the UX. There are multiple ways to do
-   # this, though no tidy ones unfortunately. Here, we build up a dictionary
-   # of options we want, and pass it to both main and subcommand parsers; this
-   # works because both go into the same Namespace object. There are two
-   # quirks to be aware of:
+   # ch-image easier and possibly improve the UX. There are multiple ways to
+   # do this, though no tidy ones unfortunately. Here, we build up a
+   # dictionary of options we want, and pass it to both main and subcommand
+   # parsers; this works because both go into the same Namespace object. There
+   # are two quirks to be aware of:
    #
    #   1. We omit the common options from subcommand --help for clarity and
    #      because before the subcommand is preferred.
@@ -54,7 +54,7 @@ def main():
    #   2. We suppress defaults in the subcommand [1]. Without this, the
    #      subcommand option value wins even it it's the default. :P Currently,
    #      if specified in both places, the subcommand value wins and the
-   #      before value is not considered at all, e.g. "ch-grow -v -v foo -v"
+   #      before value is not considered at all, e.g. "ch-image -vv foo -v"
    #      gives verbosity 1, not 3. This oddity seemed acceptable.
    #
    # Alternate approaches include:

@@ -113,12 +113,8 @@ builder_set () {
         builder_choose
         method='default'
     fi
-    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
-    if [[ $CH_BUILDER == ch-image || $CH_BUILDER == ch-grow ]]; then
-        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" "/var/tmp/$USER/ch-image" \
-                             "$width" 'ch-image storage'
-    fi
     if [[ $CH_BUILDER == ch-grow ]]; then
+        export CH_BUILDER=ch-image
         cat <<'EOF'
 
 WARNING: ch-grow has been renamed to ch-image. The old name will be removed in
@@ -126,6 +122,11 @@ version 0.23.
 
 
 EOF
+    fi
+    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
+    if [[ $CH_BUILDER == ch-image ]]; then
+        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" "/var/tmp/$USER/ch-image" \
+                             "$width" 'ch-image storage'
     fi
 }
 

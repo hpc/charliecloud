@@ -3,17 +3,17 @@ Synopsis
 
 ::
 
-   $ ch-grow [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
-   $ ch-grow [...] list
-   $ ch-grow [...] pull [...] IMAGE_REF [IMAGE_DIR]
-   $ ch-grow [...] storage-path
-   $ ch-grow { --help | --version | --dependencies }
+   $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
+   $ ch-image [...] list
+   $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-image [...] storage-path
+   $ ch-image { --help | --version | --dependencies }
 
 
 Description
 ===========
 
-:code:`ch-grow` is a tool for building and manipulating container images, but
+:code:`ch-image` is a tool for building and manipulating container images, but
 not running them (for that you want :code:`ch-run`). It is completely
 unprivileged, with no setuid/setgid/setcap helpers.
 
@@ -49,7 +49,7 @@ Common options placed before the sub-command:
 Storage directory
 =================
 
-:code:`ch-grow` maintains state using normal files and directories, including
+:code:`ch-image` maintains state using normal files and directories, including
 unpacked container images, located in its *storage directory*. There is no
 notion of storage drivers, graph drivers, etc., to select and/or configure. In
 descending order of priority, this directory is located at:
@@ -60,7 +60,7 @@ descending order of priority, this directory is located at:
   :code:`$CH_GROW_STORAGE`
     Environment variable.
 
-  :code:`/var/tmp/$USER/ch-grow`
+  :code:`/var/tmp/$USER/ch-image`
     Default.
 
 The storage directory can reside on any filesystem. However, it contains lots
@@ -123,8 +123,8 @@ Options:
   :code:`--force`
     Inject the unprivileged build workarounds; see discussion later in this
     section for details on what this does and when you might need it. If a
-    build fails and :code:`ch-grow` thinks :code:`--force` would help, it will
-    suggest it.
+    build fails and :code:`ch-image` thinks :code:`--force` would help, it
+    will suggest it.
 
   :code:`-n`, :code:`--dry-run`
     Don't actually execute any Dockerfile instructions.
@@ -139,7 +139,7 @@ Options:
     Name of image to create. If not specified, use the final component of path
     :code:`CONTEXT`. Append :code:`:latest` if no colon present.
 
-:code:`ch-grow` is a *fully* unprivileged image builder. It does not use any
+:code:`ch-image` is a *fully* unprivileged image builder. It does not use any
 setuid or setcap helper programs, and it does not use configuration files
 :code:`/etc/subuid` or :code:`/etc/subgid`. This contrasts with the “rootless”
 or “`fakeroot <https://sylabs.io/guides/3.7/user-guide/fakeroot.html>`_” modes
@@ -150,7 +150,7 @@ This approach does yield some quirks. We provide built-in workarounds that
 should mostly work (i.e., :code:`--force`), but it can be helpful to
 understand what is going on.
 
-:code:`ch-grow` executes all instructions as the normal user who invokes it.
+:code:`ch-image` executes all instructions as the normal user who invokes it.
 For `RUN`, this is accomplished with :code:`ch-run -w --uid=0 --gid=0` (and
 some other arguments), i.e., your host EUID and EGID both mapped to zero
 inside the container, and only one UID (zero) and GID (zero) are available
@@ -180,9 +180,9 @@ This one is (ironically) :code:`apt-get` failing to drop privileges:
   E: seteuid 100 failed - seteuid (22: Invalid argument)
   E: setgroups 0 failed - setgroups (1: Operation not permitted)
 
-By default, nothing is done to avoid these problems, though :code:`ch-grow`
+By default, nothing is done to avoid these problems, though :code:`ch-image`
 does try to detect if the workarounds could help. :code:`--force` activates
-the workarounds: :code:`ch-grow` injects extra commands to intercept these
+the workarounds: :code:`ch-image` injects extra commands to intercept these
 system calls and fake a successful result, using :code:`fakeroot(1)`. There
 are three basic steps:
 
@@ -200,10 +200,10 @@ are three basic steps:
      Debian derivatives and :code:`dnf`, :code:`rpm`, or :code:`yum` for
      RPM-based distributions.
 
-The details are specific to each distribution. :code:`ch-grow` analyzes image
+The details are specific to each distribution. :code:`ch-image` analyzes image
 content (e.g., grepping :code:`/etc/debian_version`) to select a
-configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-grow` prints
-exactly what it is doing.
+configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image`
+prints exactly what it is doing.
 
 :code:`storage-path`
 --------------------
@@ -246,9 +246,9 @@ Options:
 Compatibility with other Dockerfile interpreters
 ================================================
 
-:code:`ch-grow` is an independent implementation and shares no code with other
-Dockerfile interpreters. It uses a formal Dockerfile parsing grammar developed
-from the `Dockerfile reference documentation
+:code:`ch-image` is an independent implementation and shares no code with
+other Dockerfile interpreters. It uses a formal Dockerfile parsing grammar
+developed from the `Dockerfile reference documentation
 <https://docs.docker.com/engine/reference/builder/>`_ and miscellaneous other
 sources, which you can examine in the source code.
 
@@ -260,7 +260,7 @@ all share the same Dockerfile parser). Third, because it is a much smaller
 code base, it illustrates how Dockerfiles work more clearly. Finally, it
 allows straightforward extensions if needed to support scientific computing.
 
-:code:`ch-grow` tries hard to be compatible with Docker and other
+:code:`ch-image` tries hard to be compatible with Docker and other
 interpreters, though as an independent implementation, it is not
 bug-compatible.
 
@@ -285,9 +285,9 @@ can't access anything outside the context directory.
 Authentication
 --------------
 
-:code:`ch-grow` can authenticate using one-time passwords, e.g. those provided
-by a security token. Unlike :code:`docker login`, it does not assume passwords
-are persistent.
+:code:`ch-image` can authenticate using one-time passwords, e.g. those
+provided by a security token. Unlike :code:`docker login`, it does not assume
+passwords are persistent.
 
 Environment variables
 ---------------------
@@ -299,7 +299,7 @@ in the Dockerfile reference.
 with Docker where these variables miss upon *use*, except for certain
 cache-excluded variables that never cause misses, listed below.
 
-Like Docker, :code:`ch-grow` pre-defines the following proxy variables, which
+Like Docker, :code:`ch-image` pre-defines the following proxy variables, which
 do not require an :code:`ARG` instruction. However, they are available if the
 same-named environment variable is defined; :code:`--build-arg` is not
 required. Changes to these variables do not cause a cache miss.
@@ -338,7 +338,7 @@ many things you can do in one :code:`cp(1)` command require multiple
 :code:`COPY` instructions.
 
 Also, the reference documentation is incomplete. In our experience, Docker
-also behaves as follows; :code:`ch-grow` does the same in an attempt to be
+also behaves as follows; :code:`ch-image` does the same in an attempt to be
 bug-compatible.
 
 1. You can use absolute paths in the source; the root is the context
@@ -433,21 +433,21 @@ Examples
 Build image :code:`bar` using :code:`./foo/bar/Dockerfile` and context
 directory :code:`./foo/bar`::
 
-   $ ch-grow build -t bar -f ./foo/bar/Dockerfile ./foo/bar
+   $ ch-image build -t bar -f ./foo/bar/Dockerfile ./foo/bar
    [...]
    grown in 4 instructions: bar
 
 Same, but infer the image name and Dockerfile from the context directory
 path::
 
-   $ ch-grow build ./foo/bar
+   $ ch-image build ./foo/bar
    [...]
    grown in 4 instructions: bar
 
 Build using humongous vendor compilers you want to bind-mount instead of
 installing into a layer::
 
-   $ ch-grow build --bind /opt/bigvendor:/opt .
+   $ ch-image build --bind /opt/bigvendor:/opt .
    $ cat Dockerfile
    FROM centos:7
 
@@ -461,7 +461,7 @@ installing into a layer::
 
 Download the Debian Buster image and place it in the storage directory::
 
-  $ ch-grow pull debian:buster
+  $ ch-image pull debian:buster
   pulling image:   debian:buster
 
   manifest: downloading
@@ -475,7 +475,7 @@ Download the Debian Buster image and place it in the storage directory::
 
 Same, except place the image in :code:`/tmp/buster`::
 
-   $ ch-grow pull debian:buster /tmp/buster
+   $ ch-image pull debian:buster /tmp/buster
    [...]
    $ ls /tmp/buster
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var

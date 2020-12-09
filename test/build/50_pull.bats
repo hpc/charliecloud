@@ -270,7 +270,7 @@ EOF
 
 @test 'pull from public repos' {
     scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
     if [[ -z $CI ]]; then
         # Verify we can reach the public internet, except on CI, where we
         # insist this should work.
@@ -282,19 +282,19 @@ EOF
     # may be worth our while to upload some small test images to these places.
 
     # Docker Hub: https://hub.docker.com/_/alpine
-    ch-grow pull registry-1.docker.io/library/alpine:latest
+    ch-image pull registry-1.docker.io/library/alpine:latest
 
     # quay.io: https://quay.io/repository/quay/busybox
-    ch-grow pull quay.io/quay/busybox:latest
+    ch-image pull quay.io/quay/busybox:latest
 
     # gitlab.com: https://gitlab.com/pages/hugo
     # FIXME: 50 MiB, try to do better; seems to be the slowest repo.
-    ch-grow pull registry.gitlab.com/pages/hugo:latest
+    ch-image pull registry.gitlab.com/pages/hugo:latest
 
     # Google Container Registry:
     # https://console.cloud.google.com/gcr/images/google-containers/GLOBAL
     # FIXME: "latest" tags do not work, but they do in Docker (issue #896)
-    ch-grow pull gcr.io/google-containers/busybox:1.27
+    ch-image pull gcr.io/google-containers/busybox:1.27
 
     # Things not here (yet?):
     #

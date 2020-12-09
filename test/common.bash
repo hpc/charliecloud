@@ -36,7 +36,7 @@ builder_tag_p () {
                 return 0
             fi
             ;;
-        ch-image|ch-grow)
+        ch-image)
             if [[ -d ${CH_GROW_STORAGE}/img/${1} ]]; then
                 echo "ok"
                 return 0

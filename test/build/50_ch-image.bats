@@ -2,8 +2,7 @@ load ../common
 
 setup () {
     scope standard
-    [[ $CH_BUILDER = ch-image || $CH_BUILDER = ch-grow ]] \
-    || skip 'ch-image only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
 @test 'ch-image common options' {
