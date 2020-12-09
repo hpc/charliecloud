@@ -67,7 +67,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = /* ]]                                      # absolute path
     [[ $CH_GROW_STORAGE && $output = "$CH_GROW_STORAGE" ]]  # match what we set
-}	
+}
 
 @test 'ch-grow build --bind' {
     run ch-grow --no-cache build -t build-bind -f - \
