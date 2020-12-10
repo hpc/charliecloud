@@ -199,7 +199,7 @@ class Image:
       assert isinstance(ref, Image_Ref)
       self.ref = ref
       if (unpack_path is not None):
-         self.unpack_path = unpack_path
+         self.unpack_path = Path(unpack_path)
       else:
          self.unpack_path = storage.unpack(self.ref)
 
