@@ -1,17 +1,17 @@
 load ../common
 
 # shellcheck disable=SC2034
-tag='ch-grow --force'
+tag='ch-image --force'
 
 setup () {
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
 @test "${tag}: no matching distro" {
     scope standard
 
     # without --force
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM alpine:3.9
 EOF
     echo "$output"
@@ -19,7 +19,7 @@ EOF
     [[ $output = *'--force not available (no suitable config found)'* ]]
 
     # with --force
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM alpine:3.9
 EOF
     echo "$output"
@@ -30,7 +30,7 @@ EOF
 @test "${tag}: --no-force-detect" {
     scope standard
 
-    run ch-grow -v build --no-force-detect -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --no-force-detect -t fakeroot-temp -f - . <<'EOF'
 FROM alpine:3.9
 EOF
     echo "$output"
@@ -42,7 +42,7 @@ EOF
 @test "${tag}: misc errors" {
     scope standard
 
-    run ch-grow build --force --no-force-detect .
+    run ch-image build --force --no-force-detect .
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = 'error'*'are incompatible'* ]]
@@ -53,7 +53,7 @@ EOF
 
     # 1. List form of RUN.
     # 2. apt-get not at beginning.
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
 RUN true
 RUN true && apt-get update
@@ -73,7 +73,7 @@ EOF
     scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config, last config tested is the one selected
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
 RUN true
 EOF
@@ -86,7 +86,7 @@ EOF
 @test "${tag}: CentOS 7: unneeded, no --force, build fails" {
     scope full
     # no commands that may need it, without --force, build fails
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
 RUN false
 EOF
@@ -99,7 +99,7 @@ EOF
 @test "${tag}: CentOS 7: unneeded, with --force" {
     scope full
     # no commands that may need it, with --force, warning
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
 RUN true
 EOF
@@ -111,7 +111,7 @@ EOF
 @test "${tag}: CentOS 7: maybe needed but actually not, no --force" {
     scope full
     # commands that may need it, but turns out they don’t, without --force
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
 RUN yum install -y ed
 EOF
@@ -124,7 +124,7 @@ EOF
 @test "${tag}: CentOS 7: maybe needed but actually not, with --force" {
     scope full
     # commands that may need it, but turns out they don’t, with --force
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
 RUN yum install -y ed
 EOF
@@ -137,7 +137,7 @@ EOF
 @test "${tag}: CentOS 7: needed but no --force" {
     scope full
     # commands that may need it, they do, fail & suggest
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
 RUN yum install -y openssh
 EOF
@@ -152,7 +152,7 @@ EOF
 @test "${tag}: CentOS 7: needed, with --force" {
     scope standard
     # commands that may need it, they do, --force, success
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:7
 RUN yum install -y openssh
 EOF
@@ -166,7 +166,7 @@ EOF
     scope standard
 
     # 7: install EPEL (no fakeroot)
-    run ch-grow -v build -t centos7-epel1 -f - . <<'EOF'
+    run ch-image -v build -t centos7-epel1 -f - . <<'EOF'
 FROM centos:7
 RUN yum install -y epel-release
 RUN yum repolist | egrep '^epel/'
@@ -177,7 +177,7 @@ EOF
     echo "$output" | grep -E 'Installing.+: epel-release'
 
     # 7: install openssh (with fakeroot)
-    run ch-grow -v build --force -t centos7-epel2 -f - . <<'EOF'
+    run ch-image -v build --force -t centos7-epel2 -f - . <<'EOF'
 FROM centos7-epel1
 RUN yum install -y openssh
 RUN yum repolist | egrep '^epel/'
@@ -193,7 +193,7 @@ EOF
     scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
 RUN true
 EOF
@@ -205,7 +205,7 @@ EOF
 @test "${tag}: CentOS 8: unneeded, no --force, build fails" {
     scope standard
     # no commands that may need it, without --force, build fails
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
 RUN false
 EOF
@@ -218,7 +218,7 @@ EOF
 @test "${tag}: CentOS 8: unneeded, with --force" {
     scope standard
     # no commands that may need it, with --force, warning
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
 RUN true
 EOF
@@ -230,7 +230,7 @@ EOF
 @test "${tag}: CentOS 8: maybe needed but actually not, no --force" {
     scope standard
     # commands that may need it, but turns out they don’t, without --force
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
 RUN dnf install -y ed
 EOF
@@ -243,7 +243,7 @@ EOF
 @test "${tag}: CentOS 8: maybe needed but actually not, with --force" {
     scope standard
     # commands that may need it, but turns out they don’t, with --force
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
 RUN dnf install -y ed
 EOF
@@ -256,7 +256,7 @@ EOF
 @test "${tag}: CentOS 8: needed but no --force" {
     scope standard
     # commands that may need it, they do, fail & suggest
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
 RUN dnf install -y --setopt=install_weak_deps=false openssh
 EOF
@@ -271,7 +271,7 @@ EOF
 @test "${tag}: CentOS 8: needed, with --force" {
     scope standard
     # commands that may need it, they do, --force, success
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM centos:8
 RUN dnf install -y --setopt=install_weak_deps=false openssh
 EOF
@@ -288,7 +288,7 @@ EOF
     scope standard
 
     # install EPEL, no --force
-    run ch-grow -v build -t epel1 -f - . <<'EOF'
+    run ch-image -v build -t epel1 -f - . <<'EOF'
 FROM centos:8
 RUN dnf install -y epel-release
 RUN dnf repolist | egrep '^epel'
@@ -299,7 +299,7 @@ EOF
     echo "$output" | grep -E 'Installing.+: epel-release'
 
     # new image based on that
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM epel1
 RUN dnf install -y openssh
 RUN dnf repolist | egrep '^epel'
@@ -318,7 +318,7 @@ EOF
     scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:stretch
 RUN true
 EOF
@@ -330,7 +330,7 @@ EOF
 @test "${tag}: Debian Stretch: unneeded, no --force, build fails" {
     scope full
     # no commands that may need it, without --force, build fails
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:stretch
 RUN false
 EOF
@@ -343,7 +343,7 @@ EOF
 @test "${tag}: Debian Stretch: unneeded, with --force" {
     scope full
     # no commands that may need it, with --force, warning
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM debian:stretch
 RUN true
 EOF
@@ -365,7 +365,7 @@ EOF
 @test "${tag}: Debian Stretch: needed but no --force" {
     scope full
     # commands that may need it, they do, fail & suggest
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:stretch
 RUN apt-get update && apt-get install -y openssh-client
 EOF
@@ -380,7 +380,7 @@ EOF
 @test "${tag}: Debian Stretch: needed, with --force" {
     scope full
     # commands that may need it, they do, --force, success
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM debian:stretch
 RUN apt-get update && apt-get install -y openssh-client
 EOF
@@ -394,7 +394,7 @@ EOF
     scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
 RUN true
 EOF
@@ -406,7 +406,7 @@ EOF
 @test "${tag}: Debian Buster: unneeded, no --force, build fails" {
     scope full
     # no commands that may need it, without --force, build fails
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
 RUN false
 EOF
@@ -419,7 +419,7 @@ EOF
 @test "${tag}: Debian Buster: unneeded, with --force" {
     scope full
     # no commands that may need it, with --force, warning
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
 RUN true
 EOF
@@ -441,7 +441,7 @@ EOF
 @test "${tag}: Debian Buster: needed but no --force" {
     scope full
     # commands that may need it, they do, fail & suggest
-    run ch-grow -v build -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
 RUN apt-get update && apt-get install -y openssh-client
 EOF
@@ -456,7 +456,7 @@ EOF
 @test "${tag}: Debian Buster: needed, with --force" {
     scope standard
     # commands that may need it, they do, --force, success
-    run ch-grow -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
 FROM debian:buster
 RUN apt-get update && apt-get install -y openssh-client
 EOF

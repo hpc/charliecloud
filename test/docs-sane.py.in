@@ -74,7 +74,9 @@ def check_man():
    lose_lots("bad summary in command-usage.rst",
              {     "%s: %s" % (p, s)
                for (p, s) in sect_helps.items()
-               if (p in helps and summary_unrest(s) != helps[p]) })
+               if (    p in helps
+                   and summary_unrest(s) != helps[p])
+                   and "deprecated" not in s.lower() })
 
    sees = { m.group(0) for m in re.finditer(r"ch-[a-z0-9-]+\(1\)",
                                             open("charliecloud.rst").read()) }
@@ -94,7 +96,7 @@ def check_man():
             lose("conf.py: bad section: %s: %s != 1" % (name, section))
          if (name not in helps):
             lose("conf.py: unexpected man page: %s" % name)
-         elif (desc + "." != helps[name]):
+         elif (desc + "." != helps[name] and "deprecated" not in desc.lower()):
             lose("conf.py: bad summary: %s: %s" % (name, desc))
       else:
          if (section != 7):

@@ -562,7 +562,7 @@ How do I specify an image reference?
 ------------------------------------
 
 You must specify an image for many use cases, including :code:`FROM`
-instructions, the source of an image pull (e.g. :code:`ch-grow pull` or
+instructions, the source of an image pull (e.g. :code:`ch-image pull` or
 :code:`docker pull`), the destination of an image push, and adding image tags.
 Charliecloud calls this an *image reference*, but there appears to be no
 established name for this concept.

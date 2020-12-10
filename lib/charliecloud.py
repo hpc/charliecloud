@@ -62,7 +62,7 @@ except ImportError:
 
 ## Globals ##
 
-# FIXME: currently set in ch-grow :P
+# FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
 
