@@ -58,7 +58,7 @@ descending order of priority, this directory is located at:
   :code:`-s`, :code:`--storage DIR`
     Command line option.
 
-  :code:`$CH_GROW_STORAGE`
+  :code:`$CH_IMAGE_STORAGE`
     Environment variable.
 
   :code:`/var/tmp/$USER/ch-image`

@@ -32,7 +32,7 @@ def main():
    ap = argparse.ArgumentParser(formatter_class=ch.HelpFormatter,
       description="Build and manage images; completely unprivileged.",
       epilog="""Storage directory is used for caching and temporary images.
-                Location: first defined of --storage, $CH_GROW_STORAGE, and
+                Location: first defined of --storage, $CH_IMAGE_STORAGE, and
                 %s.""" % ch.Storage.root_default())
    ap._optionals.title = "options"  # https://stackoverflow.com/a/16981688
    sps = ap.add_subparsers(title="subcommands", metavar="CMD")

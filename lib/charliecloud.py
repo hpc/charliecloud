@@ -1282,9 +1282,15 @@ class Storage:
    @staticmethod
    def root_env():
       try:
-         return os.environ["CH_GROW_STORAGE"]
+         return os.environ["CH_IMAGE_STORAGE"]
       except KeyError:
-         return None
+         try:
+            p = os.environ["CH_GROW_STORAGE"]
+            WARNING("$CH_GROW_STORAGE is deprecated in favor of $CH_IMAGE_STORAGE")
+            WARNING("the old name will be removed in Charliecloud version 0.23")
+            return p
+         except KeyError:
+            return None
 
    def manifest(self, image_ref):
       return self.download_cache + ("%s.manifest.json" % image_ref.for_path)
