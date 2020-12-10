@@ -1049,12 +1049,18 @@ def rmtree(path):
       assert False, "unimplemented"
 
 def storage_env():
-   """Return path to builder storage as configured by $CH_GROW_STORAGE, or the
-      default if that's not set."""
+   """Return path to builder storage as configured by $CH_IMAGE_STORAGE, or
+      the default if that's not set."""
    try:
-      return os.environ["CH_GROW_STORAGE"]
+      return os.environ["CH_IMAGE_STORAGE"]
    except KeyError:
-      return storage_default()
+      try:
+         p = os.environ["CH_GROW_STORAGE"]
+         WARNING("$CH_GROW_STORAGE is deprecated in favor of $CH_IMAGE_STORAGE")
+         WARNING("the old name will be removed in Charliecloud version 0.23")
+         return p
+      except KeyError:
+         return storage_default()
 
 def storage_default():
    # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
