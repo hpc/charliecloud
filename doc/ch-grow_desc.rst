@@ -6,6 +6,7 @@ Synopsis
    $ ch-grow [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-grow [...] list
    $ ch-grow [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-grow [...] delete IMAGE_REF
    $ ch-grow [...] storage-path
    $ ch-grow { --help | --version | --dependencies }
 
@@ -167,6 +168,11 @@ Options:
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
 
+:code:'delete'
+--------------
+
+Delete the image described by the image reference :code:'IMAGE_REF' from the
+storage directory. Any other copies of image will remain unchanged.  
 
 Quirks of a fully unprivileged build
 ====================================
