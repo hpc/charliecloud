@@ -115,11 +115,20 @@ builder_set () {
     fi
     if [[ $CH_BUILDER == ch-grow ]]; then
         export CH_BUILDER=ch-image
-        cat <<'EOF'
+        cat <<'EOF' 1>&2
 
-WARNING: ch-grow has been renamed to ch-image. The old name will be removed in
-version 0.23.
+WARNING: ch-grow is now called ch-image. We plan to remove the ch-grow name in
+Charliecloud version 0.23.
 
+EOF
+    fi
+    if [[ -n $CH_GROW_STORAGE ]]; then
+        export CH_IMAGE_STORAGE=$CH_GROW_STORAGE
+        unset CH_GROW_STORAGE
+        cat <<'EOF' 1>&2
+
+WARNING: $CH_GROW_STORAGE is now called $CH_IMAGE_STORAGE. We plan to remove
+the old name in Charliecloud version 0.23.
 
 EOF
     fi
