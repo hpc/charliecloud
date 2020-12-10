@@ -1,4 +1,4 @@
-# ch-test-scope: standard
+# ch-test-scope: full
 # Use Buster because Stretch JRE install fails with:
 #
 #   tempnam() is so ludicrously insecure as to defy implementation.tempnam: Cannot allocate memory
