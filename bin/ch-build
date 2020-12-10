@@ -11,7 +11,7 @@ Usage:
 
   $ $(basename "$0") [-b BUILDER] [--builder-info] -t TAG [ARGS ...] CONTEXT
 
-BUILDER is one of: buildah ch-grow docker.
+BUILDER is one of: buildah ch-image docker.
 ARGS are passed unchanged to the underlying builder.
 EOF
 )
@@ -48,8 +48,8 @@ if [ -n "$builder_info" ]; then
         buildah*)
             buildah --version
             ;;
-        ch-grow)
-            "${ch_bin}/ch-grow" --version
+        ch-image|ch-grow)
+            "${ch_bin}/ch-image" --version
             ;;
         docker)
             docker --version  # no wrapper: sudo not needed for --version
@@ -103,8 +103,8 @@ case $CH_BUILDER in
                 --runtime="$runtime" \
                 "$@" < $stdin
         ;;
-    ch-grow)
-        "${ch_bin}/ch-grow" build "$@"
+    ch-image|ch-grow)
+        "${ch_bin}/ch-image" build "$@"
         ;;
     docker)
         # Coordinate this list with test "build.bats/proxy variables".

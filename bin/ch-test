@@ -64,11 +64,11 @@ EOF
 builder_check () {
     printf 'checking builder ...\n'
     case $CH_BUILDER in
-    ch-grow)
-        if ! "${ch_bin}/ch-grow" --dependencies; then
-            fatal 'builder: ch-grow: missing dependencies'
+    ch-image|ch-grow)
+        if ! "${ch_bin}/ch-image" --dependencies; then
+            fatal 'builder: ch-image: missing dependencies'
         fi
-        bl=$(readlink -f "${ch_bin}/ch-grow")
+        bl=$(readlink -f "${ch_bin}/ch-image")
         bv=$("$bl" --version)
         ;;
     buildah)
@@ -113,10 +113,20 @@ builder_set () {
         builder_choose
         method='default'
     fi
-    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
     if [[ $CH_BUILDER == ch-grow ]]; then
-        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" "/var/tmp/$USER/ch-grow" \
-                             "$width" 'ch-grow storage'
+        export CH_BUILDER=ch-image
+        cat <<'EOF'
+
+WARNING: ch-grow has been renamed to ch-image. The old name will be removed in
+version 0.23.
+
+
+EOF
+    fi
+    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
+    if [[ $CH_BUILDER == ch-image ]]; then
+        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" "/var/tmp/$USER/ch-image" \
+                             "$width" 'ch-image storage'
     fi
 }
 

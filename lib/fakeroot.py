@@ -50,7 +50,7 @@ DEFAULT_CONFIGS = {
    #                Item 2: Command to do the init step.
    #
    #                I.e., to perform each fakeroot initialization step,
-   #                ch-grow does roughly:
+   #                ch-image does roughly:
    #
    #                  if ( ! $CMD_1 ); then
    #                      $CMD_2

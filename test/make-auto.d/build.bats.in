@@ -1,6 +1,6 @@
 @test 'ch-build %(tag)s' {
     scope %(scope)s
-    if [[ $CH_BUILDER = ch-grow ]]; then
+    if [[ $CH_BUILDER = ch-image ]]; then
         force=--force
     else
         force=

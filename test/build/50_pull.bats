@@ -7,7 +7,7 @@ image_ref_parse () {
     retcode_expected=$2
     echo "--- parsing: ${ref}"
     set +e
-    out=$(ch-grow pull --parse-only "$ref" 2>&1)
+    out=$(ch-image pull --parse-only "$ref" 2>&1)
     retcode=$?
     set -e
     echo "--- return code: ${retcode}"
@@ -23,9 +23,9 @@ image_ref_parse () {
 
 @test 'image ref parsing' {
     scope standard
-    if ( ! ch-grow --dependencies ); then
-        [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-grow missing dependencies"
+    if ( ! ch-image --dependencies ); then
+        [[ $CH_BUILDER != ch-image ]]
+        skip "ch-image missing dependencies"
     fi
 
     # simplest
@@ -208,14 +208,14 @@ EOF
     # Validate that layers replace symlinks correctly. See
     # test/Dockerfile.symlink and issues #819 & 825.
     scope standard
-    if ( ! ch-grow --dependencies ); then
-        [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-grow missing dependencies"
+    if ( ! ch-image --dependencies ); then
+        [[ $CH_BUILDER != ch-image ]]
+        skip "ch-image missing dependencies"
     fi
 
     img=$BATS_TMPDIR/charliecloud%file-quirks
 
-    ch-grow pull charliecloud/file-quirks:2020-10-21 "$img"
+    ch-image pull charliecloud/file-quirks:2020-10-21 "$img"
     ls -lh "${img}/test"
 
     output_expected=$(cat <<'EOF'
@@ -249,9 +249,9 @@ EOF
 @test 'pull image with manifest schema v1' {
     # Verify we handle images with manifest schema version one (v1).
     scope standard
-    if ( ! ch-grow --dependencies ); then
-        [[ $CH_BUILDER != ch-grow ]]
-        skip "ch-grow missing dependencies"
+    if ( ! ch-image --dependencies ); then
+        [[ $CH_BUILDER != ch-image ]]
+        skip "ch-image missing dependencies"
     fi
 
     unpack=$BATS_TMPDIR
@@ -261,16 +261,16 @@ EOF
     # thus keeps test time down.
     img=debian:squeeze
 
-    ch-grow pull --storage="$unpack" \
-                 --no-cache \
-                 "$img"
+    ch-image pull --storage="$unpack" \
+                  --no-cache \
+                  "$img"
     [[ $status -eq 0 ]]
     grep -F '"schemaVersion": 1' "${cache}/${img}.manifest.json"
 }
 
 @test 'pull from public repos' {
     scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
     if [[ -z $CI ]]; then
         # Verify we can reach the public internet, except on CI, where we
         # insist this should work.
@@ -282,19 +282,19 @@ EOF
     # may be worth our while to upload some small test images to these places.
 
     # Docker Hub: https://hub.docker.com/_/alpine
-    ch-grow pull registry-1.docker.io/library/alpine:latest
+    ch-image pull registry-1.docker.io/library/alpine:latest
 
     # quay.io: https://quay.io/repository/quay/busybox
-    ch-grow pull quay.io/quay/busybox:latest
+    ch-image pull quay.io/quay/busybox:latest
 
     # gitlab.com: https://gitlab.com/pages/hugo
     # FIXME: 50 MiB, try to do better; seems to be the slowest repo.
-    ch-grow pull registry.gitlab.com/pages/hugo:latest
+    ch-image pull registry.gitlab.com/pages/hugo:latest
 
     # Google Container Registry:
     # https://console.cloud.google.com/gcr/images/google-containers/GLOBAL
     # FIXME: "latest" tags do not work, but they do in Docker (issue #896)
-    ch-grow pull gcr.io/google-containers/busybox:1.27
+    ch-image pull gcr.io/google-containers/busybox:1.27
 
     # Things not here (yet?):
     #
