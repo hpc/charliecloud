@@ -168,7 +168,7 @@ Options:
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
 
-:code:'delete'
+:code:`delete`
 --------------
 
 Delete the image described by the image reference :code:'IMAGE_REF' from the
