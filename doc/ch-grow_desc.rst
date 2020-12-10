@@ -171,7 +171,7 @@ Options:
 :code:`delete`
 --------------
 
-Delete the image described by the image reference :code:'IMAGE_REF' from the
+Delete the image described by the image reference :code:`IMAGE_REF` from the
 storage directory. Any other copies of image will remain unchanged.  
 
 Quirks of a fully unprivileged build
