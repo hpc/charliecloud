@@ -42,8 +42,8 @@ setup () {
     run ch-image storage-path
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = /* ]]                                      # absolute path
-    [[ $CH_GROW_STORAGE && $output = "$CH_GROW_STORAGE" ]]  # match what we set
+    [[ $output = /* ]]                                        # absolute path
+    [[ $CH_IMAGE_STORAGE && $output = "$CH_IMAGE_STORAGE" ]]  # match what we set
 }
 
 @test 'ch-image build --bind' {
