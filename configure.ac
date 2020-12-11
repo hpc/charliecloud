@@ -413,8 +413,8 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 AS_IF([   test -n "$SPHINX" \
        && test -n "$DOCUTILS" \
        && test -n "$RTD" \
-       && (test "$enable_man" = yes \ 
-       || test "$enable_html" = yes)],
+       && test "$enable_man" = yes \ 
+       || test "$enable_html" = yes],
        [have_docs=yes],
        [have_docs=no])
 
