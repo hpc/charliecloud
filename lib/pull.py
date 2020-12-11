@@ -24,11 +24,9 @@ def main(cli):
    ch.DEBUG("use cache:       %s" % (not cli.no_cache))
    ch.DEBUG("download cache:  %s" % ch.storage.download_cache)
    ch.DEBUG("manifest:        %s" % pullet.manifest_path)
-   # Pull!
    pullet.pull_to_unpacked(use_cache=(not cli.no_cache),
                            last_layer=cli.last_layer)
-   # Done.
-   ch.INFO("done")
+   ch.done_notify()
 
 
 ## Classes ##
@@ -111,7 +109,7 @@ class Image_Puller:
 
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
-      return "%s/%s.tar.gz" % (ch.storage.download_cache, layer_hash)
+      return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
    def layers_enumerate(self):
       """Read the manifest and return a sequence of layer tarball paths,

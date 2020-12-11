@@ -385,15 +385,15 @@ class I_copy(Instruction):
       for (dirpath, dirnames, filenames) in os.walk(src, onerror=onerror):
          dirpath = ch.Path(dirpath)
          subdir = dirpath.relative_to(src)
-         dst_dir = dst + subdir
+         dst_dir = dst // subdir
          # dirnames can contain symlinks, which we handle as files, so we'll
          # rebuild it; the walk will not descend into those "directories".
          dirnames2 = dirnames.copy()  # shallow copy
          dirnames[:] = list()         # clear in place
          for d in dirnames2:
             d = ch.Path(d)
-            src_path = dirpath + d
-            dst_path = dst_dir + d
+            src_path = dirpath // d
+            dst_path = dst_dir // d
             ch.DEBUG("dir: %s -> %s" % (src_path, dst_path), v=2)
             if (os.path.islink(src_path)):
                filenames.append(d)  # symlink, handle as file
@@ -419,8 +419,8 @@ class I_copy(Instruction):
                       src_path, dst_path, follow_symlinks=False)
          for f in filenames:
             f = ch.Path(f)
-            src_path = dirpath + f
-            dst_path = dst_dir + f
+            src_path = dirpath // f
+            dst_path = dst_dir // f
             ch.DEBUG("file or symlink via copy2: %s -> %s"
                      % (src_path, dst_path), v=2)
             if (not (os.path.isfile(src_path) or os.path.islink(src_path))):
@@ -467,7 +467,7 @@ class I_copy(Instruction):
          if (part == "/" or part == "//"):  # 3 or more slashes yields "/"
             ch.DEBUG("skipping root")
             continue
-         cand = dst_canon + part
+         cand = dst_canon // part
          ch.DEBUG("checking: %s" % cand, v=2)
          if (not cand.is_symlink()):
             ch.DEBUG("not symlink", v=2)
@@ -530,7 +530,7 @@ class I_copy(Instruction):
       if (self.dst.startswith("/")):
          dst = ch.Path(self.dst)
       else:
-         dst = env.workdir + self.dst
+         dst = env.workdir // self.dst
       ch.DEBUG("destination, as given: %s" % dst)
       dst_canon = self.dest_realpath(unpack_canon, dst) # strips trailing slash
       ch.DEBUG("destination, canonical: %s" % dst_canon)
@@ -763,7 +763,7 @@ class Environment:
       if (path.startswith("/")):
          self.workdir = ch.Path(path)
       else:
-         self.workdir += path
+         self.workdir //= path
 
    def reset(self):
       self.workdir = ch.Path("/")

@@ -12,6 +12,7 @@ import json
 import os
 import getpass
 import pathlib
+import platform
 import random
 import re
 import shutil
@@ -291,6 +292,24 @@ class Image:
       DEBUG("skipped %d empty layers" % empty_cnt)
       return layers
 
+   def tarballs_write(self, tarball_dir):
+      """Write one uncompressed tarball per layer to tarball_dir. Return a
+         sequence of tarball basenames, with the lowest layer first."""
+      # FIXME: Yes, there is only one layer for now and we'll need to update
+      # it when (if) we have multiple layers. But, I wanted the interface to
+      # support multiple layers.
+      base = "%s.tar" % self.ref.for_path
+      path = tarball_dir // base
+      try:
+         INFO("layer 1/1: gathering")
+         DEBUG("writing tarball: %s" % path)
+         fp = TarFile.open(path, "w", format=tarfile.PAX_FORMAT)
+         fp.add_(self.unpack_path, arcname=".")
+         fp.close()
+      except OSError as x:
+         FATAL("can't write tarball: %s" % x.strerror)
+      return [base]
+
    def validate_members(self, layers):
       INFO("validating tarball members")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
@@ -395,9 +414,9 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path + "bin")
-             or not os.path.isdir(self.unpack_path + "dev")
-             or not os.path.isdir(self.unpack_path + "usr")):
+         if (   not os.path.isdir(self.unpack_path // "bin")
+             or not os.path.isdir(self.unpack_path // "dev")
+             or not os.path.isdir(self.unpack_path // "usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          DEBUG("replacing existing image: %s" % self.unpack_path)
@@ -433,180 +452,6 @@ class Image_Upload():
       self.path = path
       self.ref = dest
       self.upload_url = None
-
-   def archive_fixup(self, tarinfo):
-      # FIXME: The uid and gid of "nobody" is not always  65534. The files
-      # should be mapped to 0/0 with the following restrictions:
-      #    1. no leading '/'
-      #    2. no setuid or setguid files
-      tarinfo.uid = tarinfo.gid = 65534
-      tarinfo.uname = "nobody"
-      tarinfo.gname = "nogroup"
-      return tarinfo
-
-   def compress_tarball(self, tar, dst):
-      with open_(tar, 'rb') as archive:
-         data=archive.read()
-         with open_(dst, 'wb') as out:
-            with  gzip.GzipFile(filename='', mode='wb', compresslevel=9,
-                                fileobj=out, mtime=0.) as gz:
-               gz.write(data)
-         if (not os.path.isfile(dst)):
-            FATAL('failed to create compressed archive %s' % dst)
-
-   def compress_tarball_progress(self, tar, dst, total):
-      import tqdm
-      chunks, r = divmod(total, 32768)
-      with open_(tar, 'rb') as archive:
-         with open_(dst, 'wb') as out:
-            # FIXME: this horror is a proof of concept; perhaps there are better
-            # ways to implement the progress bar here.
-            with tqdm.tqdm(total=total) as pb:
-               with gzip.GzipFile(filename='', mode='a', compresslevel=9,
-                                  fileobj=out, mtime=0.) as gz:
-                  for i in range(chunks):
-                     data = archive.read(32768)
-                     gz.write(data)
-                     pb.update(32768)
-                  if ( r > 0 ):
-                     data = archive.read(r)
-                     gz.write(data)
-                     pb.update(r)
-      if (not os.path.isfile(dst)):
-         FATAL('failed to create compressed archive %s' % dst)
-
-   def create_tarball(self, image, ulcache):
-      "Pack image to tarball, compress it, and store metadata"
-      # FIXME: update when (if) we have multiple layers.
-      mkdirs(ulcache)
-      size  = {'compressed':   None,
-               'uncompressed': None}
-      hash_ = {'compressed':   None,
-               'uncompressed': None}
-      name = image.split('/')[-1]
-      tar = os.path.join(ulcache, name) + '.tar'
-      if os.path.isfile(tar):
-         DEBUG("removing %s" % tar)
-         os.remove(tar)
-      INFO('creating tarball')
-      DEBUG('uncompressed tar: %s' % tar)
-      # Add image to uncompressed tar archive.
-      # FIXME: add tqdm progress bar here.
-      with tarfile.open(tar, "w") as archive:
-         archive.add(self.path, arcname=None, recursive=True,
-                     filter=self.archive_fixup)
-      # Store uncompressed layer data.
-      hash_['uncompressed'] = 'sha256:%s' % self.get_layer_hash(tar)
-      size['uncompressed'] = Path(tar).stat().st_size
-      DEBUG('uncompressed digest: %s' % hash_['uncompressed'])
-      DEBUG('uncompressed size: %s' % size['uncompressed'])
-
-      gzp = tar + '.gz'
-      if (os.path.exists(gzp)):
-         os.remove(gzp)
-      INFO("compressing tarball")
-      DEBUG("compressed tar: %s ..." % gzip)
-      try:
-         import tqdm
-         DEBUG('using tqdm for compression progress')
-         self.compress_tarball_progress(tar, gzp, size.get('uncompressed'))
-      except (ModuleNotFoundError):
-         self.compress_tarball(tar, gzp)
-
-      # Store compressed layer data.
-      hash_['compressed'] = 'sha256:%s' % self.get_layer_hash(gzp)
-      size['compressed'] = Path(gzp).stat().st_size
-      DEBUG('compressed digest: %s' % hash_['compressed'])
-      DEBUG('compressed size: %s' % size['compressed'])
-      gzp_path = os.path.join(ulcache, hash_['compressed'] + '.tar.gz')
-      DEBUG("renaming compressed archive: %s " % gzp_path)
-      os.rename(gzp, gzp_path)
-      os.remove(tar)
-      self.layers = { gzp_path: {'size': size, 'hash': hash_}}
-
-   def get_digest(self, data):
-      h = hashlib.sha256()
-      h.update(data)
-      return "sha256:%s" % h.hexdigest()
-
-   def get_layer_hash(self, archive):
-      with open_(archive,"rb") as f:
-            encode = hashlib.sha256(f.read()).hexdigest()
-      return encode
-
-   def create_config(self, path, ulcache):
-      "Create image config"
-      mkdirs(ulcache)
-      config =  {"architecture": "amd64", #FIXME
-                 "comment": "pushed with ch-grow",
-                 "config": {}, #FIXME
-                 "container_config": {}, #FIXME
-                 "created": "" , #FIXME
-                 "charliecloud_version": "fixme", # FIXME
-                 "history": [], #FIXME
-                 "os": "linux",
-                 "rootfs": {
-                    "diff_ids":[],
-                    "type": "layers"}}
-
-      # add layers
-      for k in self.layers:
-         config['rootfs']['diff_ids'].append(self.layers[k]['hash']['uncompressed'])
-
-      # FIXME: add correct time
-      now = datetime.datetime.now()
-      config['created'] = now.strftime("%Y-%m-%d %H:%M:%S")
-
-      # Write file
-      fp = os.path.join(ulcache, path.split('/')[-1])
-      fp += ".config.json"
-      with open_(fp, "wt", encoding='utf-8') as f:
-         json.dump(config, f)
-      json_dump = json.dumps(config)
-      config_json = json.loads(json_dump)
-
-      with open_(fp, "rb") as f:
-         data = f.read()
-         size = len(data)
-         digest = self.get_digest(data)
-         CT = collections.namedtuple('config', ['path', 'size', 'digest'])
-         self.config = CT(fp, size, digest)
-      DEBUG('config size: %s' % size)
-      DEBUG('config digest: %s' % digest)
-      DEBUG("generated config:\n%s" % json.dumps(config, indent=3))
-
-   def create_manifest(self, path, ulcache):
-      "Create image manifest json"
-      # FIXME: implement ulcache, e.g., "use_cache"?
-      mkdirs(ulcache)
-      manifest = {"schemaVersion": 2,
-                  "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
-                  "config": {
-                     "mediaType":"application/vnd.docker.container.image.v1+json",
-                     "size":"",
-                     "digest":""},
-                  "layers": []}
-
-      # add layers
-      archive_media = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-      for k,v in self.layers.items():
-         manifest['layers'].append({'mediaType': archive_media,
-                                 'size': v['size']['compressed'],
-                                 'digest': v['hash']['compressed']})
-      # add config
-      c_path, c_size, c_digest = self.config
-      manifest['config']['size'] = c_size
-      manifest['config']['digest'] = c_digest
-
-      # Write file
-      fp = os.path.join(ulcache, path.split('/')[-1])
-      fp += ".manifest.json"
-      with open_(fp, "wt", encoding='utf-8') as f:
-         json.dump(manifest, f)
-         self.manifest_path = fp
-      json_dump = json.dumps(manifest)
-      manifest_json = json.loads(json_dump)
-      DEBUG("generated manfiest:\n%s" % json.dumps(manifest, indent=3))
 
    def blob_exists(self, upload, digest):
       """Determine if a blob already exists."""
@@ -890,27 +735,29 @@ class Path(pathlib.PosixPath):
       Even with the relatively limited use of Path objects so far, this has
       caused quite a few bugs. IMO it's too difficult and error-prone to
       manually manage whether paths are absolute or relative. Thus, this
-      subclass introduces a new operator "+" which does the right thing, i.e.,
-      if the right operand is absolute, that fact is ignored. E.g.:
+      subclass introduces a new operator "//" which does the right thing,
+      i.e., if the right operand is absolute, that fact is ignored. E.g.:
 
         >>> a = Path("/foo/bar")
         >>> a.joinpath_posix("baz")
         Path('/foo/bar/baz')
         >>> a.joinpath_posix("/baz")
         Path('/foo/bar/baz')
-        >>> a + "/baz"
+        >>> a // "/baz"
         Path('/foo/bar/baz')
-        >>> "/baz" + a
+        >>> "/baz" // a
         Path('/baz/foo/bar')
 
       We introduce a new operator because it seemed like too subtle a change
-      to an existing operator, and we disable the old operator (slash) to
-      avoid getting burned here in Charliecloud."""
+      to the existing operator "/" (which we disable to avoid getting burned
+      here in Charliecloud). An alternative was "+" like strings, but that led
+      to silently wrong results when the paths *were* strings (components
+      concatenated with no slash)."""
 
-   def __add__(self, right):
+   def __floordiv__(self, right):
       return self.joinpath_posix(right)
 
-   def __radd__(self, left):
+   def __rfloordiv__(self, left):
       left = Path(left)
       return left.joinpath_posix(self)
 
@@ -936,15 +783,6 @@ class Repo_Data_Transfer:
       Note that with some registries, authentication is required even for
       anonymous downloads of public images. In this case, we just fetch an
       authentication token anonymously."""
-
-   # The repository protocol follows "ask forgiveness" rather than the
-   # standard "ask permission". That is, you request the URL you want, and if
-   # it comes back 401 (because either it doesn't exist or you're not
-   # authenticated), the response contains a WWW-Authenticate header with the
-   # information you need to authenticate. AFAICT, this information is not
-   # available any other way. This seems awkward to me, because it requires
-   # that all requesting code paths have a contingency for authentication.
-   # Therefore, we emulate the standard approach instead.
 
    __slots__ = ("auth",
                 "ref",
@@ -1257,15 +1095,15 @@ class Storage:
 
    @property
    def download_cache(self):
-      return self.root + "dlcache"
+      return self.root // "dlcache"
 
    @property
    def unpack_base(self):
-      return self.root + "img"
+      return self.root // "img"
 
    @property
    def upload_cache(self):
-      return self.root + "ulcache"
+      return self.root // "ulcache"
 
    @staticmethod
    def root_default():
@@ -1277,7 +1115,7 @@ class Storage:
          username = os.environ["USER"]
       except KeyError:
          FATAL("can't get username: $USER not set")
-      return "/var/tmp/%s/ch-grow" % username
+      return "/var/tmp/%s/ch-image" % username
 
    @staticmethod
    def root_env():
@@ -1292,11 +1130,11 @@ class Storage:
          except KeyError:
             return None
 
-   def manifest(self, image_ref):
-      return self.download_cache + ("%s.manifest.json" % image_ref.for_path)
+   def manifest_download(self, image_ref):
+      return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
    def unpack(self, image_ref):
-      return self.unpack_base + image_ref.for_path
+      return self.unpack_base // image_ref.for_path
 
 
 class TarFile(tarfile.TarFile):
@@ -1317,6 +1155,12 @@ class TarFile(tarfile.TarFile):
    # [3]: https://bugs.python.org/issue35483
    # [4]: https://bugs.python.org/issue19974
    # [5]: https://bugs.python.org/issue23228
+
+   # Need new method name because add() is called recursively and we don't
+   # want those internal calls to get our special sauce.
+   def add_(self, name, **kwargs):
+      kwargs["filter"] = self.fix_new_member
+      super().add(name, **kwargs)
 
    def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
       assert (regulars or symlinks or dirs)
@@ -1342,6 +1186,25 @@ class TarFile(tarfile.TarFile):
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))
+
+   @staticmethod
+   def fix_new_member(ti):
+      assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
+      if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
+         FATAL("invalid file type: %s" % ti.name)
+      ti.uid = 0
+      ti.uname = "root"
+      ti.gid = 0
+      ti.gname = "root"
+      if (ti.name == "./ch/environment"):
+         DEBUG("%s" % oct(ti.mode))
+      if (ti.mode & stat.S_ISUID):
+         WARNING("stripping unsafe setuid bit: %s" % ti.name)
+         ti.mode &= ~stat.S_ISUID
+      if (ti.mode & stat.S_ISGID):
+         WARNING("stripping unsafe setgid bit: %s" % ti.name)
+         ti.mode &= ~stat.S_ISGID
+      return ti
 
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path
@@ -1379,6 +1242,12 @@ def INFO(*args, **kwargs):
 
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)
+
+def bytes_hash(data):
+   "Return the hash of data, as a hex string with no leading algorithm tag."
+   h = hashlib.sha256()
+   h.update(data)
+   return h.hexdigest()
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    args = (  [CH_BIN + "/ch-run"]
@@ -1421,12 +1290,63 @@ def dependencies_check():
    if (len(depfails) > 0):
       sys.exit(1)
 
+def done_notify():
+   if (os.environ.get("USER", None) == "jogas"):
+      INFO("!!! KOBE !!!")
+   else:
+      INFO("done")
+
 def file_ensure_exists(path):
    fp = open_(path, "a")
    fp.close()
 
+def file_gzip(path, args=[]):
+   """Run pigz if it's available, otherwise gzip, on file at path and return
+      the file's new name. Pass args to the gzip executable. This lets us gzip
+      files (a) in parallel if pigz is installed and (b) without reading them
+      into memory."""
+   path_c = Path(str(path) + ".gz")
+   # On first call, remember first available of pigz and gzip using an
+   # attribute of this function (yes, you can do that lol).
+   if (not hasattr(file_gzip, "gzip")):
+      if (shutil.which("pigz") is not None):
+         file_gzip.gzip = "pigz"
+      elif (shutil.which("gzip") is not None):
+         file_gzip.gzip = "gzip"
+      else:
+         FATAL("can't find path to gzip or pigz")
+   # Remove destination file if it already exists, because gzip --force does
+   # several other things too. (Note: pigz sometimes confusingly reports
+   # "Inappropriate ioctl for device" if destination already exists.)
+   if (os.path.exists(path_c)):
+      unlink(path_c)
+   # Compress.
+   cmd([file_gzip.gzip] + args + [str(path)])
+   return path_c
+
+def file_hash(path):
+   """Return the hash of data in file at path, as a hex string with no
+      algorithm tag. File is read in chunks and can be larger than memory."""
+   fp = open_(path, "rb")
+   h = hashlib.sha256()
+   while True:
+      data = ossafe(fp.read, "can't read: %s" % path, 2**18)
+      if (len(data) == 0):
+         break  # EOF
+      h.update(data)
+   ossafe(fp.close, "can't close: %s" % path)
+   return h.hexdigest()
+
+def file_size(path, follow_symlinks=False):
+   "Return the size of file at path in bytes."
+   st = ossafe(os.stat, "can't stat: %s" % path,
+               path, follow_symlinks=follow_symlinks)
+   return st.st_size
+
 def file_write(path, content, mode=None):
-   fp = open_(path, "wt")
+   if (isinstance(content, str)):
+      content = content.encode("UTF-8")
+   fp = open_(path, "wb")
    ossafe(fp.write, "can't write: %s" % path, content)
    if (mode is not None):
       ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
@@ -1481,6 +1401,9 @@ def mkdirs(path):
    except OSError as x:
       ch.FATAL("can't create directory: %s: %s: %s"
                % (path, x.filename, x.strerror))
+
+def now_utc_iso8601():
+   return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
 
 def open_(path, mode, *args, **kwargs):
    "Error-checking wrapper for open()."
