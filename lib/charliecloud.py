@@ -446,7 +446,7 @@ class Image:
          if (i > max_i): break
          members2 = list(members.keys())  # copy b/c we'll alter members
          for m in members2:
-            if (prefix == m.name or (prefix + '/' == m.name[:len(prefix) + 1])):  
+            if (prefix_path(prefix, m.name)):  
                ignore_ct += 1
                del members[m]
                DEBUG("layer %d/%d: %s: ignoring %s"
@@ -1037,6 +1037,13 @@ def ossafe(f, msg, *args, **kwargs):
    except OSError as x:
       FATAL("%s: %s" % (msg, x.strerror))
 
+def prefix_path(prefix, path):
+   "Returns true is prefix is a parent directory of path"
+   if (prefix == path or (prefix + '/' == path[:len(prefix) + 1])):
+      return True
+   else:
+      return False
+                        
 def rmtree(path):
    if (os.path.isdir(path)):
       DEBUG("deleting directory: " + path)
