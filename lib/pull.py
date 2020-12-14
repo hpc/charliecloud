@@ -15,14 +15,14 @@ def main(cli):
       print(ref.as_verbose_str)
       sys.exit(0)
    image = ch.Image(ref, cli.image_dir)
-   pullet = Image_Puller(image)
-   ch.INFO("pulling image:   %s" % image.ref)
+   ch.INFO("pulling image:   %s" % ref)
    if (cli.image_dir is not None):
       ch.INFO( "destination:     %s" % image.unpack_path)
    else:
       ch.DEBUG("destination:     %s" % image.unpack_path)
    ch.DEBUG("use cache:       %s" % (not cli.no_cache))
    ch.DEBUG("download cache:  %s" % ch.storage.download_cache)
+   pullet = Image_Puller(image)
    ch.DEBUG("manifest:        %s" % pullet.manifest_path)
    pullet.pull_to_unpacked(use_cache=(not cli.no_cache),
                            last_layer=cli.last_layer)
@@ -41,7 +41,7 @@ class Image_Puller:
    @property
    def manifest_path(self):
       "Path to the manifest file."
-      return ch.storage.manifest(self.image.ref)
+      return ch.storage.manifest_for_download(self.image.ref)
 
    def download(self, use_cache):
       """Download image manifest and layers according to origin and put them
@@ -49,7 +49,7 @@ class Image_Puller:
          cache are skipped; if use_cache is False, download them anyway,
          overwriting what's in the cache."""
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
-      dl = ch.Repo_Data_Transfer(self.image.ref)
+      dl = ch.Registry_HTTP(self.image.ref)
       ch.DEBUG("downloading image: %s" % dl.ref)
       ch.mkdirs(ch.storage.download_cache)
       # manifest
@@ -57,7 +57,7 @@ class Image_Puller:
          ch.INFO("manifest: using existing file")
       else:
          ch.INFO("manifest: downloading")
-         dl.get_manifest(self.manifest_path)
+         dl.manifest_to_file(self.manifest_path)
       # layers
       layer_hashes = self.layer_hashes_load()
       for (i, lh) in enumerate(layer_hashes, start=1):
@@ -68,7 +68,7 @@ class Image_Puller:
             ch.INFO("using existing file")
          else:
             ch.INFO("downloading")
-            dl.get_layer(lh, path)
+            dl.layer_to_file(lh, path)
       dl.close()
 
    def layer_hashes_load(self):

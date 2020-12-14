@@ -777,12 +777,16 @@ class Path(pathlib.PosixPath):
          others2.append(other)
       return self.joinpath(*others2)
 
-class Repo_Data_Transfer:
+
+class Registry_HTTP:
    """Transfers image data to and from a remote image repository via HTTPS.
 
-      Note that with some registries, authentication is required even for
-      anonymous downloads of public images. In this case, we just fetch an
-      authentication token anonymously."""
+      Note that ref refers to the *remote* image. Objects of this class have
+      no information about the local image."""
+
+   # Note that with some registries, authentication is required even for
+   # anonymous downloads of public images. In this case, we just fetch an
+   # authentication token anonymously.
 
    __slots__ = ("auth",
                 "ref",
@@ -840,16 +844,16 @@ class Repo_Data_Transfer:
       # First, try for an anonymous auth token. If that fails, try for an
       # authenticated token.
       DEBUG("requesting anonymous auth token")
-      res = self.get_raw(auth_d["realm"], [200,403],
-                         params={"service": auth_d["service"],
-                                 "scope": auth_d["scope"]})
+      res = self.request_raw("GET", auth_d["realm"], {200,403},
+                             params={"service": auth_d["service"],
+                                     "scope": auth_d["scope"]})
       if (res.status_code == 403):
          INFO("anonymous access rejected")
          (username, password) = self.credentials_read()
          auth = requests.auth.HTTPBasicAuth(username, password)
-         res = self.get_raw(auth_d["realm"], [200], auth=auth,
-                            params={"service": auth_d["service"],
-                                    "scope": auth_d["scope"]})
+         res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
+                                params={"service": auth_d["service"],
+                                        "scope": auth_d["scope"]})
       token = res.json()["token"]
       DEBUG("received auth token: %s" % (token[:32]))
       self.auth = self.Bearer_Auth(token)
@@ -891,59 +895,78 @@ class Repo_Data_Transfer:
       password = getpass.getpass("Password: ")
       return (username, password)
 
-   def get(self, url, path, headers=dict(), statuses=[200]):
-      """GET url, passing headers, and write the body of the response to path.
-         Use current session if there is one, or start a new one if not.
-         Authenticate if needed."""
-      DEBUG("GETting: %s" % url)
-      self.session_init_maybe()
-      DEBUG("auth: %s" % self.auth)
-      res = self.get_raw(url, statuses+[401], headers)
-      if (res.status_code == 401):
-         DEBUG("HTTP 401 unauthorized")
-         self.authorize(res)
-         DEBUG("retrying with auth: %s" % self.auth)
-         res = self.get_raw(url, statuses, headers)
-      try:
-         fp = open_(path, "wb")
-         ossafe(fp.write, "can't write: %s" % path, res.content)
-         ossafe(fp.close, "can't close: %s" % path)
-      except OSError as x:
-         FATAL("can't write: %s: %s" % (path, x))
+   # request() : like get(), but any method; authenticate/new session if needed
+   #   statuses= : barf if other status
+   #   out= : write response data (requird) to a file at this path
+   #   from requests:
+   #     url
+   #     method
+   #     data= : bytes or open file object to stream
+   #     other kwargs to requests.Session.request()
+   # request_raw() - like request(), but no authentication/session magic
 
-   def get_layer(self, hash_, path):
+   def layer_to_file(self, hash_, path):
       "GET the layer with hash hash_ and save it at path."
       # /v1/library/hello-world/blobs/<layer-hash>
       url = self._url_of("blobs", "sha256:" + hash_)
       accept = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-      self.get(url, path, { "Accept": accept })
+      self.request("GET", url, out=path, headers={ "Accept": accept })
 
-   def get_manifest(self, path):
+   def manifest_to_file(self, path):
       "GET the manifest for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
       accept = "application/vnd.docker.distribution.manifest.v2+json"
-      self.get(url, path, { "Accept": accept })
+      self.request("GET", url, out=path, headers={ "Accept": accept })
 
-   def get_raw(self, url, statuses, headers=dict(), auth=None, **kwargs):
-      """GET url, expecting a status code in statuses, passing headers.
-         self.session must be valid. If auth is None, use self.auth (which
-         might also be None). If status is not in statuses, barf with a fatal
-         error. Pass kwargs unchanged to requests.session.get()."""
+   def request(self, method, url, out=None, statuses={200}, **kwargs):
+      """Request url using method. If out is given, response content must be
+         non-zero length and will be written to file at this path. If statuses
+         is given, it is set of acceptable response status codes defaulting to
+         {200}; any other response is a fatal error.
+
+         Use current session if there is one, or starts a new one if not. If
+         authentication fails (or isn't initialized), then authenticate and
+         re-try the request."""
+      DEBUG("%s: %s" % (method, url))
+      self.session_init_maybe()
+      DEBUG("auth: %s" % self.auth)
+      res = self.request_raw(method, url, statuses | {401}, **kwargs)
+      if (res.status_code == 401):
+         DEBUG("HTTP 401 unauthorized")
+         self.authorize(res)
+         DEBUG("retrying with auth: %s" % self.auth)
+         res = self.request_raw(method, url, statuses, **kwargs)
+      if (out is not None):
+         if (len(res.content) == 0):
+            FATAL("no response body: %s %s" % (method, url))
+         fp = open_(out, "wb")
+         ossafe(fp.write, "can't write: %s" % out, res.content)
+         ossafe(fp.close, "can't close: %s" % out)
+
+   def request_raw(self, method, url, statuses, auth=None, **kwargs):
+      """Request url using method. statuses is an iterable of acceptable
+         response status codes; any other response is a fatal error. Return
+         the requests.Response object.
+
+         Session must already exist. If auth arg given, use it; otherwise, use
+         object's stored authentication if initialized; otherwise, use no
+         authentication."""
       if (auth is None):
          auth = self.auth
       try:
-         res = self.session.get(url, headers=headers, auth=auth, **kwargs)
+         res = self.session.request(method, url, auth=auth, **kwargs)
          if (res.status_code not in statuses):
-            FATAL("HTTP GET failed; expected status %s but got %d: %s"
-                  % (" or ".join(str(i) for i in statuses),
-                     res.status_code, res.reason))
+            FATAL("%s failed; expected status %s but got %d: %s"
+                  % (method, statuses, res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
-         FATAL("HTTP GET failed: %s" % x)
+         FATAL("%s failed: %s" % (method, x))
       # Log the rate limit headers if present.
       for h in ("RateLimit-Limit", "RateLimit-Remaining"):
          if (h in res.headers):
             DEBUG("%s: %s" % (h, res.headers[h]))
       return res
+
+   # FIXME: OLD METHODS FOLLOW
 
    def head_blob(self, digest, auth=None, expected_statuses=(200,404)):
       """Check if a blob already exists in the repository."""
@@ -1130,7 +1153,7 @@ class Storage:
          except KeyError:
             return None
 
-   def manifest_download(self, image_ref):
+   def manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
    def unpack(self, image_ref):

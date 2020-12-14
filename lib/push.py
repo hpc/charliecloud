@@ -25,7 +25,6 @@ def main(cli):
       ch.INFO("destination:     %s" % dst_ref)
    else:
       dst_ref = ch.Image_Ref(cli.source_ref)
-   dst_ref.defaults_add()
    up = Image_Pusher(image, dst_ref)
    up.push()
    ch.done_notify()
@@ -42,12 +41,18 @@ class Image_Pusher:
    TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
    TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
-   __slots__ = ("image",
-                "dst_ref")
+   __slots__ = ("config",    # sequence of bytes
+                "dst_ref",   # destination of upload
+                "image",     # Image object we are uploading
+                "layers",    # list of paths to gzipped tarballs, lowest first
+                "manifest")  # sequence of bytes
 
    def __init__(self, image, dst_ref):
-      self.image = image
+      self.config = None
       self.dst_ref = dst_ref
+      self.image = image
+      self.layers = None
+      self.manifest = None
 
    @classmethod
    def config_new(class_):
@@ -76,8 +81,17 @@ class Image_Pusher:
                "layers": [],
                "weirdal": "yankovic" }
 
-   def push(self):
-      """Push self.image to self.dst_ref.
+   def cleanup(self):
+      ch.INFO("cleaning up")
+      # Delete the tarballs since we can't yet cache them.
+      for tar_c in self.layers:
+         ch.DEBUG("deleting tarball: %s" % tar_c)
+         ch.unlink(tar_c)
+
+   def prepare(self):
+      """Prepare self.image for pushing to self.dst_ref. Return tuple: (list
+         of gzipped layer tarball paths, config as a sequence of bytes,
+         manifest as a sequence of bytes).
 
          There is not currently any support for re-using any previously
          prepared files already in the upload cache, because we don't yet have
@@ -89,7 +103,7 @@ class Image_Pusher:
       manifest = self.manifest_new()
       # Prepare layers.
       for (i, tar_uc) in enumerate(tars_uc, start=1):
-         ch.INFO("layer %d/%d: preparing for upload" % (i, len(tars_uc)))
+         ch.INFO("layer %d/%d: preparing" % (i, len(tars_uc)))
          path_uc = ch.storage.upload_cache // tar_uc
          hash_uc = ch.file_hash(path_uc)
          config["rootfs"]["diff_ids"].append("sha256:" + hash_uc)
@@ -102,7 +116,8 @@ class Image_Pusher:
          manifest["layers"].append({ "mediaType": self.TYPE_LAYER,
                                      "size": size_c,
                                      "digest": "sha256:" + hash_c })
-      # Prepare config and manifest.
+      # Prepare metadata.
+      ch.INFO("preparing metadata")
       config_bytes = json.dumps(config, indent=2).encode("UTF-8")
       config_hash = ch.bytes_hash(config_bytes)
       manifest["config"]["size"] = len(config_bytes)
@@ -110,12 +125,22 @@ class Image_Pusher:
       ch.DEBUG("config: %s\n%s" % (config_hash, config_bytes.decode("UTF-8")))
       manifest_bytes = json.dumps(manifest, indent=2).encode("UTF-8")
       ch.DEBUG("manifest:\n%s" % manifest_bytes.decode("UTF-8"))
-      ch.INFO("prepared metadata")
-      # Upload to registry.
-      # Delete the tarballs since we can't yet cache them.
-      for tar_c in tars_c:
-         ch.DEBUG("deleting tarball: %s" % tar_c)
-         ch.unlink(tar_c)
+      # Store for the next steps.
+      self.layers = tars_c
+      self.config = config_bytes
+      self.manifest = manifest_bytes
+
+   def push(self):
+      self.prepare()
+      self.upload()
+      self.cleanup()
+
+   def upload(self):
+      ch.INFO("starting upload")
+      ul = ch.Registry_Transfer(self.dst_ref)
+      # The first step is a zero-length POST. If all goes well, this succeeds
+      # with 202 and we get the URL of the first layer as a response header.
+      ul.close()
 
 
 ## Functions ##
