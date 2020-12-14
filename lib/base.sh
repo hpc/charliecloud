@@ -15,14 +15,14 @@ builder_choose () {
     if [ -z "$CH_BUILDER" ]; then
         if command -v docker > /dev/null 2>&1; then
             export CH_BUILDER=docker
-        elif "${ch_bin}/ch-grow" --dependencies > /dev/null 2>&1; then
-            export CH_BUILDER=ch-grow
+        elif "${ch_bin}/ch-image" --dependencies > /dev/null 2>&1; then
+            export CH_BUILDER=ch-image
         else
             export CH_BUILDER=none
         fi
     fi
     case $CH_BUILDER in
-        buildah|buildah-runc|buildah-setuid|ch-grow|docker|none)
+        buildah|buildah-runc|buildah-setuid|ch-image|ch-grow|docker|none)
             ;;
         *)
             echo "unknown builder: $CH_BUILDER" 1>&2

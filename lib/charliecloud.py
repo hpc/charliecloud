@@ -55,7 +55,7 @@ except ImportError:
 
 ## Globals ##
 
-# FIXME: currently set in ch-grow :P
+# FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
 
@@ -925,21 +925,22 @@ def INFO(*args, **kwargs):
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)
 
-def ch_run_modify(img, args, env, workdir="/", binds=[]):
+def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    args = (  [CH_BIN + "/ch-run"]
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
-   cmd(args, env)
+   return cmd(args, env, fail_ok)
 
-def cmd(args, env=None):
+def cmd(args, env=None, fail_ok=False):
    DEBUG("environment: %s" % env)
    DEBUG("executing: %s" % args)
    color_set("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
    color_reset(sys.stdout)
-   if (cp.returncode):
+   if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
+   return cp.returncode
 
 def color_reset(*fps):
    for fp in fps:
@@ -1048,12 +1049,18 @@ def rmtree(path):
       assert False, "unimplemented"
 
 def storage_env():
-   """Return path to builder storage as configured by $CH_GROW_STORAGE, or the
-      default if that's not set."""
+   """Return path to builder storage as configured by $CH_IMAGE_STORAGE, or
+      the default if that's not set."""
    try:
-      return os.environ["CH_GROW_STORAGE"]
+      return os.environ["CH_IMAGE_STORAGE"]
    except KeyError:
-      return storage_default()
+      try:
+         p = os.environ["CH_GROW_STORAGE"]
+         WARNING("$CH_GROW_STORAGE is deprecated in favor of $CH_IMAGE_STORAGE")
+         WARNING("the old name will be removed in Charliecloud version 0.23")
+         return p
+      except KeyError:
+         return storage_default()
 
 def storage_default():
    # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
@@ -1064,7 +1071,7 @@ def storage_default():
       username = os.environ["USER"]
    except KeyError:
       FATAL("can't get username: $USER not set")
-   return "/var/tmp/%s/ch-grow" % username
+   return "/var/tmp/%s/ch-image" % username
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):

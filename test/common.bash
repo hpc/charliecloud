@@ -36,8 +36,8 @@ builder_tag_p () {
                 return 0
             fi
             ;;
-        ch-grow)
-            if [[ -d ${CH_GROW_STORAGE}/img/${1} ]]; then
+        ch-image)
+            if [[ -d ${CH_IMAGE_STORAGE}/img/${1} ]]; then
                 echo "ok"
                 return 0
             fi
@@ -178,8 +178,8 @@ env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
 env_require CH_TEST_PERMDIRS
 env_require CH_BUILDER
-if [[ $CH_BUILDER == ch-grow ]]; then
-    env_require CH_GROW_STORAGE
+if [[ $CH_BUILDER == ch-image ]]; then
+    env_require CH_IMAGE_STORAGE
 fi
 
 # User-private temporary directory in case multiple users are running the
