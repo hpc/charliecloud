@@ -1038,11 +1038,9 @@ def ossafe(f, msg, *args, **kwargs):
       FATAL("%s: %s" % (msg, x.strerror))
 
 def prefix_path(prefix, path):
-   "Returns true is prefix is a parent directory of path"
-   if (prefix == path or (prefix + '/' == path[:len(prefix) + 1])):
-      return True
-   else:
-      return False
+   """"Return True if prefix is a parent directory of path.
+       Assume that prefix and path are strings."""
+   return prefix == path or (prefix + '/' == path[:len(prefix) + 1])
                         
 def rmtree(path):
    if (os.path.isdir(path)):
