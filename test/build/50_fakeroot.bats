@@ -504,14 +504,14 @@ EOF
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
 }
 
-# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Debian Stretch: maybe needed but actually not, no --force" {
+#@test "${tag}: Ubuntu Xenial: maybe needed but actually not, no --force" {
 #}
 
-# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Debian Stretch: maybe needed but actually not, with --force" {
+#@test "${tag}: Ubuntu Xenial: maybe needed but actually not, with --force" {
 #}
 
 @test "${tag}: Ubuntu Xenial: needed but no --force" {
@@ -580,14 +580,14 @@ EOF
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
 }
 
-# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Debian Stretch: maybe needed but actually not, no --force" {
+#@test "${tag}: Ubuntu Focal: maybe needed but actually not, no --force" {
 #}
 
-# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Debian Stretch: maybe needed but actually not, with --force" {
+#@test "${tag}: Ubuntu Focal: maybe needed but actually not, with --force" {
 #}
 
 @test "${tag}: Ubuntu Focal: needed but no --force" {
@@ -656,14 +656,14 @@ EOF
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
 }
 
-# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Debian Stretch: maybe needed but actually not, no --force" {
+#@test "${tag}: Ubuntu Bionic: maybe needed but actually not, no --force" {
 #}
 
-# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Debian Stretch: maybe needed but actually not, with --force" {
+#@test "${tag}: Ubuntu Bionic: maybe needed but actually not, with --force" {
 #}
 
 @test "${tag}: Ubuntu Bionic: needed but no --force" {
