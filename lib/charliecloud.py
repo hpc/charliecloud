@@ -17,6 +17,7 @@ import random
 import re
 import shutil
 import stat
+import string
 import subprocess
 import sys
 import tarfile
@@ -74,6 +75,11 @@ log_fp = sys.stderr  # File object to print logs to.
 
 # Verify TLS certificates? Passed to requests.
 tls_verify = True
+
+# Content types for some stuff we care about.
+TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
+TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -453,13 +459,6 @@ class Image_Upload():
       self.ref = dest
       self.upload_url = None
 
-   def blob_exists(self, upload, digest):
-      """Determine if a blob already exists."""
-      res = upload.head_blob(digest=digest, auth=upload.auth)
-      if (res.status_code == 200):
-         return True
-      return False
-
    def push_config(self, upload):
       INFO('pushing config')
       c_path, c_size, c_digest = self.config
@@ -474,20 +473,6 @@ class Image_Upload():
                        expected_statuses=(201,))
       else:
          INFO('config exists; skipping')
-
-   def push_init(self, upload):
-      "Initiate upload process and store upload url."
-      url = upload._url_of("blobs", "uploads/")
-      res = upload.post(url=url, expected_statuses=(202,401))
-      self.upload_url = res.headers.get('Location')
-
-   def push_layer(self, path, digest, upload):
-      "Push layer to repository via HTTPS PUT request and confirm with HEAD."
-      blob_url = upload._url_of("blobs", digest)
-      with open_(path, "rb") as f:
-         data = f.read()
-         upload.put_layer(self.upload_url + "&digest=%s" % digest, data)
-      upload.head_blob(blob_url, auth=upload.auth, expected_statuses=(200,301))
 
    def push_layers(self, upload):
       """Push image layers to repository."""
@@ -794,24 +779,18 @@ class Registry_HTTP:
 
    # https://stackoverflow.com/a/58055668
    class Bearer_Auth(requests.auth.AuthBase):
-
       __slots__ = ("token",)
-
       def __init__(self, token):
          self.token = token
-
       def __call__(self, req):
          req.headers["Authorization"] = "Bearer %s" % self.token
          return req
-
       def __str__(self):
          return ("Bearer %s" % self.token[:32])
 
    class Null_Auth(requests.auth.AuthBase):
-
       def __call__(self, req):
          return req
-
       def __str__(self):
          return "no authorization"
 
@@ -886,43 +865,84 @@ class Registry_HTTP:
       else:
          FATAL("unknown auth type: %s" % auth_h)
 
+   def blob_exists_p(self, digest):
+      """Return true if a blob with digest digest (hex string) exists in the
+         remote repository, false otherwise."""
+      url = self._url_of("blobs", "sha256:%s" % digest)
+      # FIXME: Sometimes we get 301 Moved Permanently. requests.head() doesn't
+      # follow redirects (but requests.request("HEAD", ...) does), and I
+      # wasn't able to figure out why. So possibly there is some gotcha here.
+      res = self.request("HEAD", url, {200,404})
+      return (res.status_code == 200)
+
+   def blob_upload(self, digest, data):
+      """Upload blob with hash digest to url. data is the data to upload, and
+         can be anything requests can handle, including an open file."""
+      INFO("%s: " % digest[:7], end="")
+      # 1. Check if blob already exists. If so, stop.
+      if (self.blob_exists_p(digest)):
+         INFO("already exists")
+         return
+      INFO("uploading")
+      # 2. Get upload URL for blob.
+      url = self._url_of("blobs", "uploads/")
+      res = self.request("POST", url, {202})
+      # 3. Upload blob. We do a "monolithic" upload (i.e., send all the
+      # content in a single PUT request) as opposed to a "chunked" upload
+      # (i.e., send data in multiple PATCH requests followed by a PUT request
+      # with no body).
+      url = res.headers["Location"]
+      res = self.request("PUT", url, {201}, data=data,
+                         params={ "digest": "sha256:%s" % digest })
+      # 4. Verify blob now exists.
+      if (not self.blob_exists_p(digest)):
+         FATAL("blob just uploaded does not exist: %s" % digest[:7])
+
    def close(self):
       if (self.session is not None):
          self.session.close()
+
+   def config_upload(self, config):
+      "Upload config (sequence of bytes)."
+      self.blob_upload(bytes_hash(config), data=config)
 
    def credentials_read(self):
       username = input("Username: ")
       password = getpass.getpass("Password: ")
       return (username, password)
 
-   # request() : like get(), but any method; authenticate/new session if needed
-   #   statuses= : barf if other status
-   #   out= : write response data (requird) to a file at this path
-   #   from requests:
-   #     url
-   #     method
-   #     data= : bytes or open file object to stream
-   #     other kwargs to requests.Session.request()
-   # request_raw() - like request(), but no authentication/session magic
+   def layer_from_file(self, digest, path):
+      "Upload gzipped tarball layer at path, which must have hash digest."
+      # NOTE: We don't verify the digest b/c that means reading the whole file.
+      DEBUG("layer tarball: %s" % path)
+      fp = open_(path, "rb")  # open file avoids reading it all into memory
+      self.blob_upload(digest, fp)
+      ossafe(fp.close, "can't close: %s" % path)
 
-   def layer_to_file(self, hash_, path):
-      "GET the layer with hash hash_ and save it at path."
+   def layer_to_file(self, digest, path):
+      "GET the layer with hash digest and save it at path."
       # /v1/library/hello-world/blobs/<layer-hash>
-      url = self._url_of("blobs", "sha256:" + hash_)
-      accept = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-      self.request("GET", url, out=path, headers={ "Accept": accept })
+      url = self._url_of("blobs", "sha256:" + digest)
+      self.request("GET", url, out=path, headers={ "Accept": TYPE_LAYER })
 
    def manifest_to_file(self, path):
       "GET the manifest for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
-      accept = "application/vnd.docker.distribution.manifest.v2+json"
-      self.request("GET", url, out=path, headers={ "Accept": accept })
+      self.request("GET", url, out=path, headers={ "Accept": TYPE_MANIFEST })
 
-   def request(self, method, url, out=None, statuses={200}, **kwargs):
-      """Request url using method. If out is given, response content must be
-         non-zero length and will be written to file at this path. If statuses
-         is given, it is set of acceptable response status codes defaulting to
-         {200}; any other response is a fatal error.
+   def manifest_upload(self, manifest):
+      "Upload manifest (sequence of bytes)."
+      # Note: The manifest is *not* uploaded as a blob. We just do one PUT.
+      url = self._url_of("manifests", self.ref.tag)
+      self.request("PUT", url, {201}, data=manifest,
+                   headers={ "Content-Type": TYPE_MANIFEST })
+
+   def request(self, method, url, statuses={200}, out=None, **kwargs):
+      """Request url using method and return the response object. If statuses
+         is given, it is set of acceptable response status codes, defaulting
+         to {200}; any other response is a fatal error. If out is given,
+         response content must be non-zero length and will be written to file
+         at this path.
 
          Use current session if there is one, or starts a new one if not. If
          authentication fails (or isn't initialized), then authenticate and
@@ -942,6 +962,7 @@ class Registry_HTTP:
          fp = open_(out, "wb")
          ossafe(fp.write, "can't write: %s" % out, res.content)
          ossafe(fp.close, "can't close: %s" % out)
+      return res
 
    def request_raw(self, method, url, statuses, auth=None, **kwargs):
       """Request url using method. statuses is an iterable of acceptable
@@ -966,104 +987,17 @@ class Registry_HTTP:
             DEBUG("%s: %s" % (h, res.headers[h]))
       return res
 
+   def session_init_maybe(self):
+      "Initialize session if it's not initialized; otherwise do nothing."
+      if (self.session is None):
+         DEBUG("initializing session")
+         self.session = requests.Session()
+         self.session.verify = tls_verify
+
    # FIXME: OLD METHODS FOLLOW
-
-   def head_blob(self, digest, auth=None, expected_statuses=(200,404)):
-      """Check if a blob already exists in the repository."""
-      url = self._url_of("blobs", digest)
-      DEBUG("HEADing %s" % url)
-      return self.head_raw(url, auth=auth, expected_statuses=expected_statuses)
-
-   def head_raw(self, url, headers=dict(), auth=None,
-                expected_statuses=(200,404), **kwargs):
-      """HEAD url, passing headers, with no magic. If auth is None, use
-         self.auth (which might also be None). If status is not in
-         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
-         requests.session.get()."""
-      # FIXME: This function is identical to get_raw with the exception of the
-      #        expected status 202, the session.post method, and error message.
-      if (auth is None):
-         auth = self.auth
-      try:
-         res = self.session.head(url, headers=headers, auth=auth, **kwargs)
-         if (res.status_code not in expected_statuses):
-            FATAL("HTTP HEAD failed; expected status %s but got %d: %s"
-                  % (" or ".join(str(i) for i in expected_statuses),
-                     res.status_code, res.reason))
-      except requests.exceptions.RequestException as x:
-         FATAL("HTTP HEAD failed: %s" % x)
-      return res
-
-   def patch(self, url, headers=dict(), data=None, expected_statuses=(202,)):
-      DEBUG("PATCHing: %s" % url)
-      self.session_init_maybe()
-      self.authenticate_maybe(url, 'post') #FIXME, should be 'patch'
-      return self.patch_raw(url, data=data, expected_statuses=expected_statuses,
-                            headers=headers)
-
-   def patch_raw(self, url, headers=dict(), auth=None,
-                expected_statuses=(202,416,), data=None, **kwargs):
-      """PATCH url, passing headers, with no magic. If auth is None, use
-         self.auth (which might also be None). If status is not in
-         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
-         requests.session.get()."""
-      # FIXME: This function is identical to get_raw with the exception of the
-      #        expected status 202, the session.post method, and error message.
-      if (auth is None):
-         auth = self.auth
-      try:
-         res = self.session.patch(url, headers=headers, auth=auth, data=data,
-                                  **kwargs)
-         if (res.status_code not in expected_statuses):
-            FATAL("HTTP PATCH failed; expected status %s but got %d: %s"
-                  % (" or ".join(str(i) for i in expected_statuses),
-                     res.status_code, res.reason))
-      except requests.exceptions.RequestException as x:
-         FATAL("HTTP PATCH failed: %s" % x)
-      return res
-
-   def post(self, url, headers=dict(), data=None, expected_statuses=(200,0)):
-      """POST url, passing headers, including athentication and session magic."""
-      DEBUG("POSTing: %s" % url)
-      self.session_init_maybe()
-      self.authenticate_maybe(url, 'post')
-      res = self.post_raw(url, headers=headers,
-                          expected_statuses=expected_statuses)
-      return res
-
-   def post_raw(self, url, headers=dict(), auth=None,
-                expected_statuses=(200,), **kwargs):
-      """POST url, passing headers, with no magic. If auth is None, use
-         self.auth (which might also be None). If status is not in
-         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
-         requests.session.get()."""
-      # FIXME: This function is identical to get_raw with the exception of the
-      #        expected status 202, the session.post method, and error message.
-      if (auth is None):
-         auth = self.auth
-      try:
-         res = self.session.post(url, headers=headers, auth=auth, **kwargs)
-         if (res.status_code not in expected_statuses):
-            FATAL("HTTP POST failed; expected status %s but got %d: %s"
-                  % (" or ".join(str(i) for i in expected_statuses),
-                     res.status_code, res.reason))
-      except requests.exceptions.RequestException as x:
-         FATAL("HTTP POST failed: %s" % x)
-      return res
-
-   def put(self, url, data=None, expected_statuses=(201,), headers=dict()):
-      """GET url, passing headers, including authentication and session magic,
-         and write the body of the response to path."""
-      DEBUG("PUTing: %s" % url)
-      self.session_init_maybe()
-      self.authenticate_maybe(url, 'post') #FIXME, should be 'put'
-      return self.put_raw(url, data=data, expected_statuses=expected_statuses,
-                   headers=headers)
 
    def put_layer(self, url, data):
       "Upload monolithic layer."
-      headers = {'Content-Length': str(len(data)),
-                 'Content-Type': 'application/octet-stream'}
       self.put(url, headers=headers, data=data)
 
    def put_manifest(self, data):
@@ -1092,13 +1026,6 @@ class Registry_HTTP:
       except requests.exceptions.RequestException as x:
          FATAL("HTTP PUT failed: %s" % x)
       return res
-
-   def session_init_maybe(self):
-      "Initialize session if it's not initialized; otherwise do nothing."
-      if (self.session is None):
-         DEBUG("initializing session")
-         self.session = requests.Session()
-         self.session.verify = tls_verify
 
 
 class Storage:
@@ -1389,7 +1316,7 @@ def grep_p(path, rx):
       FATAL("error reading %s: %s" % (path, x.strerror))
 
 def init(cli):
-   global verbose, log_festoon, log_fp, storage
+   global verbose, log_festoon, log_fp, storage, tls_verify
    # logging
    assert (0 <= cli.verbose <= 2)
    verbose = cli.verbose
@@ -1403,6 +1330,11 @@ def init(cli):
    DEBUG("verbose level: %d" % verbose)
    # storage object
    storage = Storage(cli.storage)
+   # TLS verification
+   if (cli.tls_no_verify):
+      tls_verify = False
+      rpu = requests.packages.urllib3
+      rpu.disable_warnings(rpu.exceptions.InsecureRequestWarning)
 
 def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):

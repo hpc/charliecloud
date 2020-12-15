@@ -176,7 +176,6 @@ def main():
        sys.exit(1)
    cli = ap.parse_args()
    ch.init(cli)
-   ch.tls_verify = not cli.tls_no_verify
 
    # Dispatch.
    cli.func(cli)

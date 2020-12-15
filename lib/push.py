@@ -37,14 +37,10 @@ class Image_Pusher:
    # Note; We use functions to create the blank config and manifest to to
    # avoid copy/deepcopy complexity from just copying a default dict.
 
-   TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
-   TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
-   TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
-
    __slots__ = ("config",    # sequence of bytes
                 "dst_ref",   # destination of upload
                 "image",     # Image object we are uploading
-                "layers",    # list of paths to gzipped tarballs, lowest first
+                "layers",    # list of (digest, .tar.gz path), lowest first
                 "manifest")  # sequence of bytes
 
    def __init__(self, image, dst_ref):
@@ -74,8 +70,8 @@ class Image_Pusher:
    def manifest_new(class_):
       "Return an empty manifest, ready to be filled in."
       return { "schemaVersion": 2,
-               "mediaType": class_.TYPE_MANIFEST,
-               "config": { "mediaType": class_.TYPE_CONFIG,
+               "mediaType": ch.TYPE_MANIFEST,
+               "config": { "mediaType": ch.TYPE_CONFIG,
                            "size": None,
                            "digest": None },
                "layers": [],
@@ -84,7 +80,7 @@ class Image_Pusher:
    def cleanup(self):
       ch.INFO("cleaning up")
       # Delete the tarballs since we can't yet cache them.
-      for tar_c in self.layers:
+      for (_, tar_c) in self.layers:
          ch.DEBUG("deleting tarball: %s" % tar_c)
          ch.unlink(tar_c)
 
@@ -108,12 +104,12 @@ class Image_Pusher:
          hash_uc = ch.file_hash(path_uc)
          config["rootfs"]["diff_ids"].append("sha256:" + hash_uc)
          #size_uc = ch.file_size(path_uc)
-         path_c = ch.file_gzip(path_uc, ["-9"])
-         tars_c.append(path_c)
+         path_c = ch.file_gzip(path_uc, ["-9", "--no-name"])
          tar_c = path_c.name
          hash_c = ch.file_hash(path_c)
          size_c = ch.file_size(path_c)
-         manifest["layers"].append({ "mediaType": self.TYPE_LAYER,
+         tars_c.append((hash_c, path_c))
+         manifest["layers"].append({ "mediaType": ch.TYPE_LAYER,
                                      "size": size_c,
                                      "digest": "sha256:" + hash_c })
       # Prepare metadata.
@@ -137,11 +133,12 @@ class Image_Pusher:
 
    def upload(self):
       ch.INFO("starting upload")
-      ul = ch.Registry_Transfer(self.dst_ref)
-      # The first step is a zero-length POST. If all goes well, this succeeds
-      # with 202 and we get the URL of the first layer as a response header.
+      ul = ch.Registry_HTTP(self.dst_ref)
+      for (i, (digest, tarball)) in enumerate(self.layers, start=1):
+         ch.INFO("layer %d/%d: " % (i, len(self.layers)), end="")
+         ul.layer_from_file(digest, tarball)
+      ch.INFO("config: ", end="")
+      ul.config_upload(self.config)
+      ch.INFO("manifest: uploading")
+      ul.manifest_upload(self.manifest)
       ul.close()
-
-
-## Functions ##
-
