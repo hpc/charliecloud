@@ -216,7 +216,7 @@ jobs:
           fgrep 'with ch-image(1): no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
-          fgrep 'complete test suite: yes' config.log
+          fgrep 'complete test suite: no' config.log
           set +x
           # Build.
           make $ch_makej
