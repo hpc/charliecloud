@@ -511,9 +511,66 @@ Same, except place the image in :code:`/tmp/buster`::
 :code:`push`
 ------------
 
-FIXME:
+Push a local image to the registry :code:`example.com:5000` at path
+:code:`/foo/bar` with tag :code:`latest`. Note that in this form, the local
+image must be named to match that remote reference.
 
-* push local CentOS 8 image to git.example.com, no dest_ref
-* same, with dest_ref
+::
+
+   $ ch-image push example.com:5000/foo/bar:latest
+   pushing image:   example.com:5000/foo/bar:latest
+   layer 1/1: gathering
+   layer 1/1: preparing
+   preparing metadata
+   starting upload
+   layer 1/1: a1664c4: checking if already in repository
+   layer 1/1: a1664c4: not present, uploading
+   config: 89315a2: checking if already in repository
+   config: 89315a2: not present, uploading
+   manifest: uploading
+   cleaning up
+   done
+
+Same, except use local image :code:`alpine:3.9`. In this form, the local image
+name does not have to match the destination reference.
+
+::
+
+   $ ch-image push alpine:3.9 example.com:5000/foo/bar:latest
+   pushing image:   alpine:3.9
+   destination:     example.com:5000/foo/bar:latest
+   layer 1/1: gathering
+   layer 1/1: preparing
+   preparing metadata
+   starting upload
+   layer 1/1: a1664c4: checking if already in repository
+   layer 1/1: a1664c4: not present, uploading
+   config: 89315a2: checking if already in repository
+   config: 89315a2: not present, uploading
+   manifest: uploading
+   cleaning up
+   done
+
+Same, except use unpacked image located at :code:`/var/tmp/image` rather than
+an image in :code:`ch-image` storage. (Also, the sole layer is already present
+in the remote registry, so we don't upload it again.)
+
+::
+
+   $ ch-image push --image /var/tmp/image example.com:5000/foo/bar:latest
+   pushing image:   example.com:5000/foo/bar:latest
+   image path:      /var/tmp/image
+   layer 1/1: gathering
+   layer 1/1: preparing
+   preparing metadata
+   starting upload
+   layer 1/1: 892e38d: checking if already in repository
+   layer 1/1: 892e38d: already present
+   config: 546f447: checking if already in repository
+   config: 546f447: not present, uploading
+   manifest: uploading
+   cleaning up
+   done
+
 
 ..  LocalWords:  tmpfs'es bigvendor

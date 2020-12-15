@@ -19,7 +19,10 @@ def main(cli):
          ch.FATAL("can't push: %s does not appear to be an image" % cli.image)
       else:
          ch.FATAL("can't push: no image %s" % src_ref)
-   ch.DEBUG("source path: %s" % image.unpack_path)
+   if (cli.image is not None):
+      ch.INFO("image path:      %s" % image.unpack_path)
+   else:
+      ch.DEBUG("image path:      %s" % image.unpack_path)
    if (cli.dest_ref is not None):
       dst_ref = ch.Image_Ref(cli.dest_ref)
       ch.INFO("destination:     %s" % dst_ref)
