@@ -208,7 +208,7 @@ DEFAULT_CONFIGS = {
    #      dpkg-query -Wf '${Package}\n' \
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
-   "debSB":
+   "debdistro":
    { "name":   "Debian (9, 10) or Ubuntu (16, 18, 20)",
      "match":  ("/etc/os-release", r"(stretch|buster|xenial|bionic|focal)"),
      "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
