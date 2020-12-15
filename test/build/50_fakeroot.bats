@@ -324,7 +324,7 @@ RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debSB'* ]]
+    [[ $output = *'available --force: debdistro'* ]]
 }
 
 @test "${tag}: Debian Stretch: unneeded, no --force, build fails" {
@@ -400,7 +400,7 @@ RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debSB'* ]]
+    [[ $output = *'available --force: debdistro'* ]]
 }
 
 @test "${tag}: Debian Buster: unneeded, no --force, build fails" {
@@ -476,7 +476,7 @@ RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debSB'* ]]
+    [[ $output = *'available --force: debdistro'* ]]
 }
 
 @test "${tag}: Ubuntu Xenial: unneeded, no --force, build fails" {
@@ -552,7 +552,7 @@ RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debSB'* ]]
+    [[ $output = *'available --force: debdistro'* ]]
 }
 
 @test "${tag}: Ubuntu Focal: unneeded, no --force, build fails" {
@@ -628,7 +628,7 @@ RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debSB'* ]]
+    [[ $output = *'available --force: debdistro'* ]]
 }
 
 @test "${tag}: Ubuntu Bionic: unneeded, no --force, build fails" {
