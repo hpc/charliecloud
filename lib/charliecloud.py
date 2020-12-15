@@ -875,15 +875,16 @@ class Registry_HTTP:
       res = self.request("HEAD", url, {200,404})
       return (res.status_code == 200)
 
-   def blob_upload(self, digest, data):
+   def blob_upload(self, digest, data, note=""):
       """Upload blob with hash digest to url. data is the data to upload, and
-         can be anything requests can handle, including an open file."""
-      INFO("%s: " % digest[:7], end="")
+         can be anything requests can handle, including an open file. note is
+         a string to prepend to the log messages; default empty string."""
+      INFO("%s%s: checking if already in repository" % (note, digest[:7]))
       # 1. Check if blob already exists. If so, stop.
       if (self.blob_exists_p(digest)):
-         INFO("already exists")
+         INFO("%s%s: already present" % (note, digest[:7]))
          return
-      INFO("uploading")
+      INFO("%s%s: not present, uploading" % (note, digest[:7]))
       # 2. Get upload URL for blob.
       url = self._url_of("blobs", "uploads/")
       res = self.request("POST", url, {202})
@@ -904,19 +905,19 @@ class Registry_HTTP:
 
    def config_upload(self, config):
       "Upload config (sequence of bytes)."
-      self.blob_upload(bytes_hash(config), data=config)
+      self.blob_upload(bytes_hash(config), config, "config: ")
 
    def credentials_read(self):
-      username = input("Username: ")
+      username = input("\nUsername: ")
       password = getpass.getpass("Password: ")
       return (username, password)
 
-   def layer_from_file(self, digest, path):
+   def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
       # NOTE: We don't verify the digest b/c that means reading the whole file.
       DEBUG("layer tarball: %s" % path)
       fp = open_(path, "rb")  # open file avoids reading it all into memory
-      self.blob_upload(digest, fp)
+      self.blob_upload(digest, fp, note)
       ossafe(fp.close, "can't close: %s" % path)
 
    def layer_to_file(self, digest, path):

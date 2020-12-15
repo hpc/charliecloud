@@ -135,9 +135,8 @@ class Image_Pusher:
       ch.INFO("starting upload")
       ul = ch.Registry_HTTP(self.dst_ref)
       for (i, (digest, tarball)) in enumerate(self.layers, start=1):
-         ch.INFO("layer %d/%d: " % (i, len(self.layers)), end="")
-         ul.layer_from_file(digest, tarball)
-      ch.INFO("config: ", end="")
+         ul.layer_from_file(digest, tarball,
+                            "layer %d/%d: " % (i, len(self.layers)))
       ul.config_upload(self.config)
       ch.INFO("manifest: uploading")
       ul.manifest_upload(self.manifest)
