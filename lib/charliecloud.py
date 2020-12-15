@@ -4,24 +4,18 @@ import collections
 import collections.abc
 import copy
 import datetime
-import gzip
 import getpass
 import hashlib
 import http.client
-import json
 import os
 import getpass
 import pathlib
-import platform
-import random
 import re
 import shutil
 import stat
-import string
 import subprocess
 import sys
 import tarfile
-import time
 import types
 
 
@@ -432,80 +426,6 @@ class Image:
       "Ensure the unpack directory exists, replacing or creating if needed."
       self.unpack_create_ok()
       mkdirs(self.unpack_path)
-
-
-class Image_Upload():
-   """Image Upload object.
-      layers                dict where k = layer's compressed tarball path and
-                            v = list consisting of: uncompressed and compressed
-                            image data, e.g., size, and hash
-      config                named tuple with config path, size, and digest
-      manifest_path         path to generated image manifest
-      path                  local image path
-      ref                   remote repository reference
-   """
-   __slots__ = ("layers",
-                "config",
-                "manifest_path",
-                "path",
-                "ref",
-                "upload_url")
-
-   def __init__(self, path, dest):
-      self.layers = None
-      self.config = None
-      self.manifest_path = None
-      self.path = path
-      self.ref = dest
-      self.upload_url = None
-
-   def push_config(self, upload):
-      INFO('pushing config')
-      c_path, c_size, c_digest = self.config
-      head_url = upload._url_of("blobs", c_digest)
-      if (not self.blob_exists(upload, c_digest)):
-         self.push_init(upload) # get new upload url
-         with open_(c_path, "rb") as f:
-            data = f.read()
-            res = upload.patch(self.upload_url, data=data,
-                               expected_statuses=(202,))
-            upload.put(res.headers['Location'] + '&digest=%s' % c_digest,
-                       expected_statuses=(201,))
-      else:
-         INFO('config exists; skipping')
-
-   def push_layers(self, upload):
-      """Push image layers to repository."""
-      for i, path in enumerate(self.layers):
-         digest = self.layers[path]['hash']['compressed']
-         if (not self.blob_exists(upload, digest)):
-            INFO("uploading layer %d/%d: %s" % (i + 1, len(self.layers),
-                                                digest.split(':')[-1][:7]))
-            self.push_layer(path, digest, upload)
-         else:
-            INFO("uploading layer %d/%d: %s (exists; skipping)"
-                 % (i + 1, len(self.layers), digest.split(':')[-1][:7]))
-
-   def push_manifest(self, upload):
-      INFO('pushing manifest')
-      with open_(self.manifest_path, 'r', encoding='utf-8') as f:
-         data = f.read()
-         upload.put_manifest(data=data)
-
-   def push_to_repo(self, path, ulcache):
-      """Stage image upload process."""
-      self.create_tarball(path, ulcache)
-      self.create_config(path, ulcache)
-      self.create_manifest(path, ulcache)
-
-      # FIXME: we manage a single upload object to pass around the auth
-      # credentials. Probably a better way to handle this.
-      ul = Repo_Data_Transfer(self.ref)
-      self.push_init(ul)
-      self.push_layers(ul)
-      self.push_config(ul)
-      self.push_manifest(ul)
-      ul.close()
 
 
 class Image_Ref:
@@ -995,39 +915,6 @@ class Registry_HTTP:
          self.session = requests.Session()
          self.session.verify = tls_verify
 
-   # FIXME: OLD METHODS FOLLOW
-
-   def put_layer(self, url, data):
-      "Upload monolithic layer."
-      self.put(url, headers=headers, data=data)
-
-   def put_manifest(self, data):
-      url = self._url_of("manifests", self.ref.tag)
-      headers = {'Content-Type': 'application/vnd.docker.distribution.manifest.v2+json',
-                 'Content-Length': str(len(data)),
-                 'Connection': 'close'}
-      res = self.put(url, data=data, headers=headers, expected_statuses=(201,))
-
-   def put_raw(self, url, headers=dict(), auth=None,
-                expected_statuses=(200,), **kwargs):
-      """PUT url, passing headers, with no magic. If auth is None, use
-         self.auth (which might also be None). If status is not in
-         expected_statuses, barf with a fatal error. Pass kwargs unchanged to
-         requests.session.get()."""
-      # FIXME: This function is identical to get_raw and put_raw with the
-      # exception of HTTP request and error message.
-      if (auth is None):
-         auth = self.auth
-      try:
-         res = self.session.put(url, headers=headers, auth=auth, **kwargs)
-         if (res.status_code not in expected_statuses):
-            FATAL("HTTP PUT failed; expected status %s but got %d: %s"
-                  % (" or ".join(str(i) for i in expected_statuses),
-                     res.status_code, res.reason))
-      except requests.exceptions.RequestException as x:
-         FATAL("HTTP PUT failed: %s" % x)
-      return res
-
 
 class Storage:
 
@@ -1147,8 +1034,6 @@ class TarFile(tarfile.TarFile):
       ti.uname = "root"
       ti.gid = 0
       ti.gname = "root"
-      if (ti.name == "./ch/environment"):
-         DEBUG("%s" % oct(ti.mode))
       if (ti.mode & stat.S_ISUID):
          WARNING("stripping unsafe setuid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISUID

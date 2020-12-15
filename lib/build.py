@@ -3,7 +3,6 @@
 import abc
 import ast
 import glob
-import inspect
 import os
 import os.path
 import re
