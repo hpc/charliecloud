@@ -465,3 +465,231 @@ EOF
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
+
+@test "${tag}: Ubuntu Xenial: unneeded, no --force, build succeeds" {
+    scope standard
+    # no commands that may need it, without --force, build succeeds
+    # also: correct config
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:xenial
+RUN true
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'available --force: debSB'* ]]
+}
+
+@test "${tag}: Ubuntu Xenial: unneeded, no --force, build fails" {
+    scope full
+    # no commands that may need it, without --force, build fails
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:xenial
+RUN false
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"build failed: current version of --force wouldn't help"* ]]
+    [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
+
+@test "${tag}: Ubuntu Xenial: unneeded, with --force" {
+    scope full
+    # no commands that may need it, with --force, warning
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:xenial
+RUN true
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: --force specified, but nothing to do'* ]]
+}
+
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, no --force" {
+#}
+
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, with --force" {
+#}
+
+@test "${tag}: Ubuntu Xenial: needed but no --force" {
+    scope full
+    # commands that may need it, they do, fail & suggest
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:xenial
+RUN apt-get update && apt-get install -y openssh-client
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'available --force'* ]]
+    [[ $output = *'RUN: available here with --force'* ]]
+    [[ $output = *'build failed: --force may fix it'* ]]
+    [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
+
+@test "${tag}: Ubuntu Xenial: needed, with --force" {
+    scope standard
+    # commands that may need it, they do, --force, success
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:xenial
+RUN apt-get update && apt-get install -y openssh-client
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'will use --force'* ]]
+    [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+}
+
+@test "${tag}: Ubuntu Focal: unneeded, no --force, build succeeds" {
+    scope standard
+    # no commands that may need it, without --force, build succeeds
+    # also: correct config
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:focal
+RUN true
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'available --force: debSB'* ]]
+}
+
+@test "${tag}: Ubuntu Focal: unneeded, no --force, build fails" {
+    scope full
+    # no commands that may need it, without --force, build fails
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:focal
+RUN false
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"build failed: current version of --force wouldn't help"* ]]
+    [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
+
+@test "${tag}: Ubuntu Focal: unneeded, with --force" {
+    scope full
+    # no commands that may need it, with --force, warning
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:focal
+RUN true
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: --force specified, but nothing to do'* ]]
+}
+
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, no --force" {
+#}
+
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, with --force" {
+#}
+
+@test "${tag}: Ubuntu Focal: needed but no --force" {
+    scope full
+    # commands that may need it, they do, fail & suggest
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:focal
+RUN apt-get update && apt-get install -y openssh-client
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'available --force'* ]]
+    [[ $output = *'RUN: available here with --force'* ]]
+    [[ $output = *'build failed: --force may fix it'* ]]
+    [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
+
+@test "${tag}: Ubuntu Focal: needed, with --force" {
+    scope standard
+    # commands that may need it, they do, --force, success
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:focal
+RUN apt-get update && apt-get install -y openssh-client
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'will use --force'* ]]
+    [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+}
+
+@test "${tag}: Ubuntu Bionic: unneeded, no --force, build succeeds" {
+    scope standard
+    # no commands that may need it, without --force, build succeeds
+    # also: correct config
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:bionic
+RUN true
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'available --force: debSB'* ]]
+}
+
+@test "${tag}: Ubuntu Bionic: unneeded, no --force, build fails" {
+    scope full
+    # no commands that may need it, without --force, build fails
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:bionic
+RUN false
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"build failed: current version of --force wouldn't help"* ]]
+    [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
+
+@test "${tag}: Ubuntu Bionic: unneeded, with --force" {
+    scope full
+    # no commands that may need it, with --force, warning
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:bionic
+RUN true
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: --force specified, but nothing to do'* ]]
+}
+
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, no --force" {
+#}
+
+# FIXME: Not sure how to do this on Debian; any use of apt-get to install
+# needs "apt-get update" first, which requires --force.
+#@test "${tag}: Debian Stretch: maybe needed but actually not, with --force" {
+#}
+
+@test "${tag}: Ubuntu Bionic: needed but no --force" {
+    scope full
+    # commands that may need it, they do, fail & suggest
+    run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:bionic
+RUN apt-get update && apt-get install -y openssh-client
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'available --force'* ]]
+    [[ $output = *'RUN: available here with --force'* ]]
+    [[ $output = *'build failed: --force may fix it'* ]]
+    [[ $output = *'build failed: RUN command exited with 1'* ]]
+}
+
+@test "${tag}: Ubuntu Bionic: needed, with --force" {
+    scope standard
+    # commands that may need it, they do, --force, success
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
+FROM ubuntu:bionic
+RUN apt-get update && apt-get install -y openssh-client
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'will use --force'* ]]
+    [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+}
