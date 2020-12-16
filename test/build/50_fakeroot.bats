@@ -467,7 +467,7 @@ EOF
 }
 
 @test "${tag}: Ubuntu Xenial: unneeded, no --force, build succeeds" {
-    scope standard
+    scope full
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
@@ -543,7 +543,7 @@ EOF
 }
 
 @test "${tag}: Ubuntu Focal: unneeded, no --force, build succeeds" {
-    scope standard
+    scope full
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
@@ -619,7 +619,7 @@ EOF
 }
 
 @test "${tag}: Ubuntu Bionic: unneeded, no --force, build succeeds" {
-    scope standard
+    scope full
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
