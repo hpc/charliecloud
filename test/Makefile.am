@@ -20,6 +20,7 @@ make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
 make-auto.d/builder_to_archive.bats.in \
 make-auto.d/unpack.bats.in \
+registry-config.yml \
 run/build-rpms.bats \
 run/ch-fromhost.bats \
 run/ch-run_escalated.bats \

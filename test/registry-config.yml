@@ -1,0 +1,30 @@
+# Sample registry configuration file. Used for CI testing.
+#
+# WARNING: Ports will be incorrect for mitmproxy. See HOWTO in Google Docs.
+
+version: 0.1
+log:
+  fields:
+    service: registry
+storage:
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+auth:
+  htpasswd:
+    realm: i-lost-on-jeopardy
+    path: /etc/docker/registry/htpasswd
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+    X-Weird-Al: [Yankovic]
+  tls:
+    certificate: /etc/docker/registry/localhost.crt
+    key: /etc/docker/registry/localhost.key
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3

@@ -139,6 +139,27 @@ jobs:
         run: |
           bin/ch-test mk-perm-dirs
 
+      - name: start local registry, ch-image
+        if: ${{ matrix.builder == 'ch-image' }}
+        # See HOWTO in Google Docs for details.
+        run: |
+          set -x
+          mkdir ~/registry-etc
+          cp test/registry-config.yml ~/registry-etc/config.yml
+          cd ~/registry-etc
+          openssl req -batch -subj '/C=US/ST=NM/L=LA/O=LANL/CN=localhost' \
+                      -newkey rsa:4096 -nodes -sha256 -x509 -days 36500 \
+                      -keyout localhost.key -out localhost.crt
+          openssl x509 -text -noout -in localhost.crt
+          sudo apt-get install apache2-utils
+          htpasswd -Bbn charlie test > ./htpasswd
+          diff -u <(docker run --rm registry:2 \
+                           cat /etc/docker/registry/config.yml) \
+                  config.yml || true
+          docker run -d --rm -p 127.0.0.1:5000:5000 \
+                  -v ~/registry-etc:/etc/docker/registry registry:2
+          docker ps -a
+
       - name: configure sudo to user root, group non-root
         if: ${{ matrix.keep_sudo }}
         run: |
