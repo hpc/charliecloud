@@ -10,6 +10,7 @@ build/10_sanity.bats \
 build/50_ch-image.bats \
 build/50_dockerfile.bats \
 build/50_fakeroot.bats \
+build/50_localregistry.bats \
 build/50_misc.bats \
 build/50_pull.bats \
 build/99_cleanup.bats \

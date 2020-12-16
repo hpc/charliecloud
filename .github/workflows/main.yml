@@ -272,5 +272,5 @@ jobs:
         run: |
           free -m
           df -h
-          du -sch $CH_TEST_TARDIR/*
-          du -sch $CH_TEST_IMGDIR/*
+          du -sch $CH_TEST_TARDIR/* || true
+          du -sch $CH_TEST_IMGDIR/* || true

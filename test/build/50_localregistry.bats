@@ -1,0 +1,90 @@
+load ../common
+
+# shellcheck disable=SC2034
+tag='ch-image push'
+
+# Note: These tests use a local registry listening on localhost:5000 but do
+# not start it. Therefore, they do not depend on whether the pushed images are
+# already present.
+
+
+setup () {
+    scope standard
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    # Skip unless CI or there is a listener on localhost:5000.
+    if [[ -z $CI ]] && ! (   command -v ss > /dev/null 2>&1 \
+                          && ss -lnt | grep -F :5000); then
+        skip 'no local registry'
+    fi
+
+    # WARNING: If you came here looking for a way to non-interactively
+    # authenticate with ch-image, be aware that these environment variables
+    # are currently undocumented and unsupported.
+    export CH_IMAGE_USERNAME=charlie
+    export CH_IMAGE_PASSWORD=test
+}
+
+@test "${tag}: without destination reference" {
+    # FIXME: This test sets up an alias tag manually so we can use it to push.
+    # Remove when we have real aliasing support for images.
+    ln -vfns 00_tiny "$CH_IMAGE_STORAGE"/img/localhost:5000%00_tiny
+
+    run ch-image -v --tls-no-verify push localhost:5000/00_tiny
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'pushing image:   localhost:5000/00_tiny'* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost:5000%00_tiny"* ]]
+
+    rm "$CH_IMAGE_STORAGE"/img/localhost:5000%00_tiny
+}
+
+@test "${tag}: with destination reference" {
+    run ch-image -v --tls-no-verify push 00_tiny localhost:5000/00_tiny
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'pushing image:   00_tiny'* ]]
+    [[ $output = *'destination:     localhost:5000/00_tiny'* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/00_tiny"* ]]
+    re='layer 1/1: [0-9a-f]{7}: already present'
+    [[ $output =~ $re ]]
+}
+
+@test "${tag}: with --image" {
+    img="$BATS_TMPDIR"/pushtest-up
+    img2="$BATS_TMPDIR"/pushtest-down
+    mkdir -p "$img" "$img"/{bin,dev,usr}
+
+    # Set up setuid/setgid files and directories.
+    touch "$img"/{setuid_file,setgid_file}
+    chmod 4640 "$img"/setuid_file
+    chmod 2640 "$img"/setgid_file
+    mkdir -p "$img"/{setuid_dir,setgid_dir}
+    chmod 4750 "$img"/setuid_dir
+    chmod 2750 "$img"/setgid_dir
+    ls -l "$img"
+    [[ $(stat -c '%A' "$img"/setuid_file) = -rwSr----- ]]
+    [[ $(stat -c '%A' "$img"/setgid_file) = -rw-r-S--- ]]
+    [[ $(stat -c '%A' "$img"/setuid_dir) =  drwsr-x--- ]]
+    [[ $(stat -c '%A' "$img"/setgid_dir) =  drwxr-s--- ]]
+
+    # Push the image
+    run ch-image -v --tls-no-verify push --image "$img" localhost:5000/pushtest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'pushing image:   localhost:5000/pushtest'* ]]
+    [[ $output = *"image path:      ${img}"* ]]
+    [[ $output = *'warning: stripping unsafe setgid bit: ./setgid_dir'* ]]
+    [[ $output = *'warning: stripping unsafe setgid bit: ./setgid_file'* ]]
+    [[ $output = *'warning: stripping unsafe setuid bit: ./setuid_dir'* ]]
+    [[ $output = *'warning: stripping unsafe setuid bit: ./setuid_file'* ]]
+
+    # Pull it back
+    run ch-image -v --tls-no-verify pull localhost:5000/pushtest "$img2"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls -l "$img2"
+    [[ $(stat -c '%A' "$img2"/setuid_file) = -rw-r----- ]]
+    [[ $(stat -c '%A' "$img2"/setgid_file) = -rw-r----- ]]
+    [[ $(stat -c '%A' "$img2"/setuid_dir) =  drwxr-x--- ]]
+    [[ $(stat -c '%A' "$img2"/setgid_dir) =  drwxr-x--- ]]
+}

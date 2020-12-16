@@ -81,6 +81,7 @@ def args_parse():
 
    args_ = ap.parse_args()
    args_.storage = None
+   args_.tls_no_verify = False
    ch.init(args_)
 
    if len(sys.argv) < 2:

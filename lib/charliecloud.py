@@ -304,7 +304,9 @@ class Image:
          INFO("layer 1/1: gathering")
          DEBUG("writing tarball: %s" % path)
          fp = TarFile.open(path, "w", format=tarfile.PAX_FORMAT)
-         fp.add_(self.unpack_path, arcname=".")
+         unpack_path = self.unpack_path.resolve()  # aliases use symlinks
+         DEBUG("canonicalized unpack path: %s" % unpack_path)
+         fp.add_(unpack_path, arcname=".")
          fp.close()
       except OSError as x:
          FATAL("can't write tarball: %s" % x.strerror)
@@ -828,8 +830,16 @@ class Registry_HTTP:
       self.blob_upload(bytes_hash(config), config, "config: ")
 
    def credentials_read(self):
-      username = input("\nUsername: ")
-      password = getpass.getpass("Password: ")
+      try:
+         # FIXME: We use these environment variables in the test suite, but
+         # they are currently undocumented while we think more carefully about
+         # how to do non-interactive authentication (issue #849).
+         username = os.environ["CH_IMAGE_USERNAME"]
+         password = os.environ["CH_IMAGE_PASSWORD"]
+      except KeyError:
+         # FIXME: This hangs in Bats; sys.stdin.isatty() was still True though.
+         username = input("\nUsername: ")
+         password = getpass.getpass("Password: ")
       return (username, password)
 
    def layer_from_file(self, digest, path, note=""):
