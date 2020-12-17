@@ -186,17 +186,15 @@ CMD foo
 ENTRYPOINT foo
 LABEL foo
 ONBUILD foo
-SHELL foo
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 6 ]]
+    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 5 ]]
     [[ $output = *'warning: not yet supported, ignored: issue #782: ADD instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #780: CMD instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #780: ENTRYPOINT instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #781: LABEL instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #788: ONBUILD instruction'* ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #789: SHELL instruction'* ]]
 
     # .dockerignore files
     run ch-image build -t not-yet-supported -f - . <<'EOF'
@@ -374,7 +372,17 @@ EOF
   diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
 }
 
+@test 'Dockerfile: SHELL' {
+   scope standard
+   run ch-build -t foo - <<'EOF'
+FROM 00_tiny
+SHELL ["/bin/bash", "-c"]
+EOF
+   echo "$output"
+   [[ $status -eq 0 ]]
 
+
+}
 @test 'Dockerfile: ARG and ENV values' {
     # We use full scope for builders other than ch-image because (1) with
     # ch-image, we are responsible for --build-arg being implemented correctly

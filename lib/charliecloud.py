@@ -93,7 +93,7 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 // First instruction must be ARG or FROM, but that is not a syntax error.
 dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( arg | copy | env | from_ | run | workdir | uns_forever | uns_yet )
+?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
@@ -119,6 +119,8 @@ from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
 run_shell: LINE
+
+shell: "SHELL"i _WS _string_list _NEWLINES
 
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 

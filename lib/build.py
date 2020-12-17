@@ -693,7 +693,7 @@ class I_run_shell(Run):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
       cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
-      self.cmd = ["/bin/sh", "-c", cmd]
+      self.cmd = [env.shell, env.shell_p , cmd]
 
 
 class I_workdir(Instruction):
@@ -732,8 +732,7 @@ class I_uns_yet(Instruction):
                         "CMD":         780,
                         "ENTRYPOINT":  780,
                         "LABEL":       781,
-                        "ONBUILD":     788,
-                        "SHELL":       789 }[self.name]
+                        "ONBUILD":     788 }[self.name]
 
    def announce(self):
       self.unsupported_yet_warn("instruction", self.issue_no)
@@ -770,6 +769,8 @@ class Environment:
       self.workdir = "/"
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
       self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
+      self.shell = "/bin/sh"
+      self.shell_p = "-c"
 
 
 ## Supporting functions ###
