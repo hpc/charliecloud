@@ -150,7 +150,7 @@ jobs:
           openssl req -batch -subj '/C=US/ST=NM/L=LA/O=LANL/CN=localhost' \
                       -newkey rsa:4096 -nodes -sha256 -x509 -days 36500 \
                       -keyout localhost.key -out localhost.crt
-          openssl x509 -text -noout -in localhost.crt
+          #openssl x509 -text -noout -in localhost.crt
           sudo apt-get install apache2-utils
           htpasswd -Bbn charlie test > ./htpasswd
           diff -u <(docker run --rm registry:2 \
