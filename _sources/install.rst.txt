@@ -63,14 +63,14 @@ Feature selection
 By default, all features that can be built will be built and installed. You
 can exclude some features with:
 
-  =========================  =======================================================
+  ========================== =======================================================
   option                     don't build or install
-  =========================  =======================================================
+  ========================== =======================================================
   :code:`--disable-html`     HTML documentation
   :code:`--disable-man`      man pages
   :code:`--disable-tests`    test suite
-  :code:`--disable-ch-grow`  :code:`ch-grow` unprivileged builder & image manager
-  =========================  =======================================================
+  :code:`--disable-ch-image` :code:`ch-image` unprivileged builder & image manager
+  ========================== =======================================================
 
 You can also say :code:`--enable-FOO` to fail the build if :code:`FOO` can't
 be built.
@@ -145,7 +145,7 @@ Maintained by us:
   * Generic RPMs downloadable from our `releases page <https://github.com/hpc/charliecloud/releases>`_.
   * `Spack
     <https://spack.readthedocs.io/en/latest/package_list.html#charliecloud>`_;
-    install with :code:`+builder` to get :code:`ch-grow`.
+    install with :code:`+builder` to get :code:`ch-image`.
   * `Fedora/EPEL <https://bodhi.fedoraproject.org/updates/?search=charliecloud>`_;
     check for availabile versions with :code:`{yum,dnf} list charliecloud`.
 
@@ -418,7 +418,7 @@ Options include:
     GitLab instance.
 
   * Filesystem directory, for builders that support this (e.g.,
-    :code:`ch-grow`).
+    :code:`ch-image`).
 
 "lark-parser" Python package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

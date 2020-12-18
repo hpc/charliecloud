@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.20 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.21 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.20
+                0.21
               </div>
             
           
@@ -264,11 +264,11 @@ commands executed in a container.</p>
 “hello world” Charliecloud container. If you like what you see, then proceed
 with the rest of the tutorial to understand what is happening and how to use
 Charliecloud for your own applications.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /usr/local/src/charliecloud/examples/serial/hello
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /usr/local/share/doc/charliecloud/examples/hello
 <span class="gp">$</span> ch-build -t hello .
 <span class="go">Sending build context to Docker daemon  5.632kB</span>
 <span class="go">[...]</span>
-<span class="go">Successfully built 1136de7d4c0a</span>
+<span class="go">Successfully built eb5f42d5bb54</span>
 <span class="gp">$</span> ch-builder2tar hello /var/tmp
 <span class="go"> 114MiB 0:00:03 [=============================================] 103%</span>
 <span class="go">-rw-r----- 1 reidpr reidpr 49M Nov 21 14:05 /var/tmp/hello.tar.gz</span>
@@ -302,7 +302,7 @@ Charliecloud you have (if not, please report a bug). For example:</p>
 <h2><a class="toc-backref" href="#id3"><span class="section-number">2.3. </span>Your first user-defined software stack</a><a class="headerlink" href="#your-first-user-defined-software-stack" title="Permalink to this headline">¶</a></h2>
 <p>In this section, we will create and run a simple “hello, world” image. This
 uses the <code class="code docutils literal notranslate"><span class="pre">hello</span></code> example in the Charliecloud source code. Start with:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/serial/hello
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/hello
 </pre></div>
 </div>
 <div class="section" id="defining-your-udss">
@@ -313,25 +313,23 @@ this. Note that run-time functionality such as <code class="code docutils litera
 supported.</p>
 <p>We will use the following very simple Dockerfile:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: standard</span>
-<span class="c"># Unable to convert to a CentOS base until issues #472 and #498 are resolved</span>
-<span class="k">FROM</span> <span class="s">debian:stretch</span>
+<span class="k">FROM</span> <span class="s">centos:8</span>
 
-<span class="k">RUN</span> apt-get update <span class="se">\</span>
- <span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends openssh-client <span class="se">\</span>
- <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
+<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> openssh-clients <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf clean all
 
 <span class="k">COPY</span> . hello
 
 <span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
 </div>
-<p>This creates a minimal Debian Stretch image with <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> installed. We
+<p>This creates a minimal CentOS 8 image with <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> installed. We
 will encounter more complex Dockerfiles later in this tutorial.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Docker does not update the base image unless asked to. Specific images can
 be updated manually; in this case:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker pull debian:stretch
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker pull centos:8
 </pre></div>
 </div>
 <p>There are various resources and scripts online to help automate this
@@ -350,12 +348,12 @@ directory in more detail later.)</p>
 directory, which in this case is the current directory.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-build -t hello .
 <span class="go">Sending build context to Docker daemon  5.632kB</span>
-<span class="go">Step 1/4 : FROM debian:stretch</span>
-<span class="go"> ---&gt; be2868bebaba</span>
+<span class="go">Step 1/4 : FROM centos:8</span>
+<span class="go"> ---&gt; 0d120b6ccaa8</span>
 <span class="go">[...]</span>
 <span class="go">Step 4/4 : RUN touch /usr/bin/ch-ssh</span>
-<span class="go"> ---&gt; e5920427a8f2</span>
-<span class="go">Successfully built e5920427a8f2</span>
+<span class="go"> ---&gt; eb5f42d5bb54</span>
+<span class="go">Successfully built eb5f42d5bb54</span>
 <span class="go">Successfully tagged hello:latest</span>
 </pre></div>
 </div>
@@ -372,9 +370,9 @@ you’re not prompted for a password.</p>
 In particular, image sharing using a public or private Docker Hub repository
 can be very useful.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker images
-<span class="go">REPOSITORY  TAG      IMAGE ID      CREATED      SIZE</span>
-<span class="go">debian      stretch  1742affe03b5  10 days ago  125.1 MB</span>
-<span class="go">hello       latest   1742affe03b5  10 days ago  139.7 MB</span>
+<span class="go">REPOSITORY  TAG      IMAGE ID      CREATED        SIZE</span>
+<span class="go">centos      8        0d120b6ccaa8  2 months ago   215MB MB</span>
+<span class="go">hello       latest   eb5f42d5bb54  5 minutes ago  235MB MB</span>
 <span class="gp">$</span> sudo docker push  <span class="c1"># FIXME</span>
 </pre></div>
 </div>
@@ -396,7 +394,7 @@ can have value when debugging Charliecloud.</p>
 amenable to standard file manipulation commands. This tarball is placed in an
 arbitrary directory, here <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-builder2tar hello /var/tmp
-<span class="go">57M /var/tmp/hello.tar.gz</span>
+<span class="go">74M /var/tmp/hello.tar.gz</span>
 </pre></div>
 </div>
 </div>
@@ -775,11 +773,10 @@ trustworthy image on Docker Hub you can use as a base?</p>
 <p>This approach is the simplest and fastest way to install stuff in your image.
 The <code class="code docutils literal notranslate"><span class="pre">examples/hello</span></code> Dockerfile also seen above does this to install the
 package <code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">debian:stretch</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> openssh-clients <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf clean all
 
-<span class="k">RUN</span> apt-get update <span class="se">\</span>
- <span class="o">&amp;&amp;</span> apt-get install -y --no-install-recommends openssh-client <span class="se">\</span>
- <span class="o">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*
+<span class="k">COPY</span> . hello
 </pre></div>
 </div>
 <p>You can use distribution package managers such as <code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, as
@@ -809,9 +806,13 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 <span class="c">#</span>
 <span class="c">#   3. Install packages needed to build el8 rpms.</span>
 <span class="c">#</span>
-<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> epel-release <span class="se">\</span>
- <span class="o">&amp;&amp;</span> sed -ie <span class="s1">&#39;s/enabled=0/enabled=1/&#39;</span> /etc/yum.repos.d/CentOS-PowerTools.repo <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> --enablerepo<span class="o">=</span>epel-playground <span class="se">\</span>
+<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
+                epel-release <span class="se">\</span>
+                <span class="s1">&#39;dnf-command(config-manager)&#39;</span> <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf config-manager --enable epel <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf config-manager --enable powertools <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
+                   --enablerepo<span class="o">=</span>epel-playground <span class="se">\</span>
                 dnf-plugin-ovl <span class="se">\</span>
                 autoconf <span class="se">\</span>
                 automake <span class="se">\</span>

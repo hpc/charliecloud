@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installing &mdash; Charliecloud 0.20 documentation</title>
+  <title>1. Installing &mdash; Charliecloud 0.21 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.20
+                0.21
               </div>
             
           
@@ -300,8 +300,8 @@ can exclude some features with:</p>
 <blockquote>
 <div><table class="docutils align-default">
 <colgroup>
-<col style="width: 31%" />
-<col style="width: 69%" />
+<col style="width: 32%" />
+<col style="width: 68%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>option</p></th>
@@ -318,8 +318,8 @@ can exclude some features with:</p>
 <tr class="row-even"><td><p><code class="code docutils literal notranslate"><span class="pre">--disable-tests</span></code></p></td>
 <td><p>test suite</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="code docutils literal notranslate"><span class="pre">--disable-ch-grow</span></code></p></td>
-<td><p><code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code> unprivileged builder &amp; image manager</p></td>
+<tr class="row-odd"><td><p><code class="code docutils literal notranslate"><span class="pre">--disable-ch-image</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> unprivileged builder &amp; image manager</p></td>
 </tr>
 </tbody>
 </table>
@@ -390,7 +390,7 @@ package managers.</p>
 <div><ul class="simple">
 <li><p>Generic RPMs downloadable from our <a class="reference external" href="https://github.com/hpc/charliecloud/releases">releases page</a>.</p></li>
 <li><p><a class="reference external" href="https://spack.readthedocs.io/en/latest/package_list.html#charliecloud">Spack</a>;
-install with <code class="code docutils literal notranslate"><span class="pre">+builder</span></code> to get <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code>.</p></li>
+install with <code class="code docutils literal notranslate"><span class="pre">+builder</span></code> to get <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>.</p></li>
 <li><p><a class="reference external" href="https://bodhi.fedoraproject.org/updates/?search=charliecloud">Fedora/EPEL</a>;
 check for availabile versions with <code class="code docutils literal notranslate"><span class="pre">{yum,dnf}</span> <span class="pre">list</span> <span class="pre">charliecloud</span></code>.</p></li>
 </ul>
@@ -491,7 +491,7 @@ shell and utilities.</p>
 <li><p>Buildah ≥ 1.11.2</p></li>
 </ul>
 </div></blockquote>
-<p>with <code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code>:</p>
+<p>with <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>enabled</p></li>
@@ -745,7 +745,7 @@ Options include:</p>
 <li><p>A private Docker-compatible registry, such as a private Docker Hub or
 GitLab instance.</p></li>
 <li><p>Filesystem directory, for builders that support this (e.g.,
-<code class="code docutils literal notranslate"><span class="pre">ch-grow</span></code>).</p></li>
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>).</p></li>
 </ul>
 </div></blockquote>
 </div>
