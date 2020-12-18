@@ -25,6 +25,7 @@ struct container {
    uid_t container_uid;  // UID to use in container
    char *newroot;        // path to new root directory
    bool join;            // is this a synchronized join?
+   char *join_mode;      // requested join behavior
    int join_ct;          // number of peers in a synchronized join
    pid_t join_pid;       // process in existing namespace to join
    char *join_tag;       // identifier for synchronized join

@@ -25,6 +25,12 @@ char *JOIN_CT_ENV[] =  { "OMPI_COMM_WORLD_LOCAL_SIZE",
 char *JOIN_TAG_ENV[] = { "SLURM_STEP_ID",
                          NULL };
 
+/* List of processes used to determine --join default. */
+char *JOIN_P_NAMES[] =   { "slurmstepd",
+                           "slurm_scipt",
+                           "mpirun",
+                           "mpiexec",
+                           NULL };
 
 /** Command line options **/
 
@@ -43,23 +49,24 @@ const char args_doc[] = "NEWROOT CMD [ARG...]";
 
 const struct argp_option options[] = {
    { "bind",        'b', "SRC[:DST]", 0,
-     "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
-   { "cd",          'c', "DIR",  0, "initial working directory in container"},
-   { "ch-ssh",       -8, 0,      0, "bind ch-ssh into image"},
+     "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)" },
+   { "cd",          'c', "DIR",  0, "initial working directory in container" },
+   { "ch-ssh",       -8, 0,      0, "bind ch-ssh into image" },
    { "gid",         'g', "GID",  0, "run as GID within container" },
-   { "join",        'j', 0,      0, "use same container as peer ch-run" },
+   { "join",        'j', "true|false|auto", 0,
+     "use same container as peer ch-run (default auto)" },
    { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",      -3, "N",    0, "number of ch-run peers (implies --join)" },
    { "join-tag",     -4, "TAG",  0, "label for peer group (implies --join)" },
-   { "no-home",      -2, 0,      0, "don't bind-mount your home directory"},
-   { "no-passwd",    -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
+   { "no-home",      -2, 0,      0, "don't bind-mount your home directory" },
+   { "no-passwd",    -9, 0,      0, "don't bind-mount /etc/{passwd,group}" },
    { "private-tmp", 't', 0,      0, "use container-private /tmp" },
-   { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
+   { "set-env",      -6, "FILE", 0, "set environment variables in FILE" },
    { "uid",         'u', "UID",  0, "run as UID within container" },
    { "unset-env",    -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
    { "version",     'V', 0,      0, "print version and exit" },
-   { "write",       'w', 0,      0, "mount image read-write"},
+   { "write",       'w', 0,      0, "mount image read-write" },
    { 0 }
 };
 
@@ -83,8 +90,9 @@ struct args {
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
-int join_ct(int cli_ct);
-char *join_tag(char *cli_tag);
+int join_ct(int cli_ct, char *join_mode);
+bool join_check_launcher();
+char *join_tag(char *cli_tag, char *join_mode);
 int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void privs_verify_invoking();
@@ -114,6 +122,7 @@ int main(int argc, char *argv[])
                                                   .container_uid = geteuid(),
                                                   .newroot = NULL,
                                                   .join = false,
+                                                  .join_mode = "auto",
                                                   .join_ct = 0,
                                                   .join_pid = 0,
                                                   .join_tag = NULL,
@@ -144,11 +153,16 @@ int main(int argc, char *argv[])
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
    arg_next++;
 
-   if (args.c.join) {
-      args.c.join_ct = join_ct(args.c.join_ct);
-      args.c.join_tag = join_tag(args.c.join_tag);
-   }
+   if(strcasecmp(args.c.join_mode, "auto") == 0)
+      args.c.join = join_check_launcher();
 
+   if (args.c.join) {
+      args.c.join_ct = join_ct(args.c.join_ct, args.c.join_mode);
+      args.c.join_tag = join_tag(args.c.join_tag, args.c.join_mode);
+   }
+   INFO("Join count: %d, join tag: %s", args.c.join_ct, args.c.join_tag);
+   if(args.c.join_ct < 2 || args.c.join_tag[0] == '\0')
+     args.c.join = false;
    c_argc = argc - arg_next;
    T_ (c_argv = calloc(c_argc + 1, sizeof(char *)));
    for (int i = 0; i < c_argc; i++)
@@ -158,7 +172,7 @@ int main(int argc, char *argv[])
    INFO("newroot: %s", args.c.newroot);
    INFO("container uid: %u", args.c.container_uid);
    INFO("container gid: %u", args.c.container_gid);
-   INFO("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag,
+   INFO("join: %d %s %d %s %d", args.c.join, args.c.join_mode, args.c.join_ct, args.c.join_tag,
         args.c.join_pid);
    INFO("private /tmp: %d", args.c.private_tmp);
 
@@ -300,7 +314,7 @@ bool get_first_env(char **array, char **name, char **value)
 
 /* Find an appropriate join count; assumes --join was specified or implied.
    Exit with error if no valid value is available. */
-int join_ct(int cli_ct)
+int join_ct(int cli_ct, char *join_mode)
 {
    int j = 0;
    char *ev_name, *ev_value;
@@ -318,13 +332,13 @@ int join_ct(int cli_ct)
    }
 
 end:
-   Te(j > 0, "join: no valid peer group size found");
+   Zf((j < 2) && !strcasecmp(join_mode, "true"), "join: no valid peer group size found");
    return j;
 }
 
 /* Find an appropriate join tag; assumes --join was specified or implied. Exit
    with error if no valid value is found. */
-char *join_tag(char *cli_tag)
+char *join_tag(char *cli_tag, char *join_mode)
 {
    char *tag;
    char *ev_name, *ev_value;
@@ -345,7 +359,7 @@ char *join_tag(char *cli_tag)
    T_ (1 <= asprintf(&tag, "%d", getppid()));
 
 end:
-   Te(tag[0] != '\0', "join: peer group tag cannot be empty string");
+   Zf(tag[0] == '\0' && !strcasecmp(join_mode, "true"), "join: peer group tag cannot be empty string");
    return tag;
 }
 
@@ -379,10 +393,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case -3: // --join-ct
       args->c.join = true;
+      args->c.join_mode = "true";
       args->c.join_ct = parse_int(arg, false, "--join-ct");
       break;
    case -4: // --join-tag
       args->c.join = true;
+      args->c.join_mode = "true";
       args->c.join_tag = arg;
       break;
    case -5: // --join-pid
@@ -424,8 +440,21 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.container_gid = (gid_t) i;
       break;
    case 'j':
-      args->c.join = true;
-      break;
+      if(strcasecmp(arg, "true") == 0){
+         args->c.join = true;
+         args->c.join_mode = "true";
+         break;
+      }
+      else if(strcasecmp(arg, "false") == 0){
+         args->c.join_mode = "false";
+         break;
+      }
+      else if(strcasecmp(arg, "auto") == 0){
+         args->c.join_mode = "auto";
+         break;
+      }
+      else
+         Zf (1, "--join: option must be true, false, or auto");
    case 't':
       args->c.private_tmp = true;
       break;
@@ -485,3 +514,36 @@ void privs_verify_invoking()
    T_ (euid != 0);                           // no privilege
    T_ (euid == ruid && euid == suid);        // no setuid or funny business
 }
+
+bool join_check_launcher()
+{
+   pid_t ppid;
+   FILE *fp;
+   char *p_name = NULL;
+
+   /* The max size of a pid on a 64 bit system is 2^22 [1] which is 7
+      characters in length so allocate enough space for that and the rest of
+      the path  the null terminator.
+      The max size of command name stored in /proc/[pid]/comm is 16
+      characters, longer than that is silently truncated [1].
+
+      [1]: https://man7.org/linux/man-pages/man5/proc.5.html */
+
+   char comm_path[19];
+   size_t proc_len = 17;
+
+   ppid = getppid();
+   sprintf(comm_path, "/proc/%d/comm", ppid);
+   Tf (fp = fopen(comm_path, "r"), "--join: can't open: %s", comm_path);
+   Tf (getline(&p_name, &proc_len, fp), "--join: can't read: %s", comm_path);
+   fclose(fp);
+   if (p_name[strlen(p_name) - 1] == '\n')
+      p_name[strlen(p_name) - 1] = 0;  // remove newline
+    for (int i = 0; JOIN_P_NAMES[i] != NULL; i++) {
+      if (strcasecmp(p_name, JOIN_P_NAMES[i]) == 0)
+         return true;
+    }
+    return false;
+}
+
+
