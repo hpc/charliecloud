@@ -788,7 +788,7 @@ class Registry_HTTP:
          FATAL("unknown auth type: %s" % auth_h)
 
    def blob_exists_p(self, digest):
-      """Return true if a blob with digest digest (hex string) exists in the
+      """Return true if a blob with digest (hex string) exists in the
          remote repository, false otherwise."""
       url = self._url_of("blobs", "sha256:%s" % digest)
       # FIXME: Sometimes we get 301 Moved Permanently. requests.head() doesn't
@@ -875,7 +875,7 @@ class Registry_HTTP:
          response content must be non-zero length and will be written to file
          at this path.
 
-         Use current session if there is one, or starts a new one if not. If
+         Use current session if there is one, or start a new one if not. If
          authentication fails (or isn't initialized), then authenticate and
          re-try the request."""
       DEBUG("%s: %s" % (method, url))

@@ -638,6 +638,7 @@ class I_from_(Instruction):
       self.base_image = ch.Image(self.base_ref)
       if (not os.path.isdir(self.base_image.unpack_path)):
          ch.DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
+         # a young hen, especially one less than one year old.
          pullet = pull.Image_Puller(self.base_image)
          pullet.pull_to_unpacked(fixup=True)
       image.copy_unpacked(self.base_image)
