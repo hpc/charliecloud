@@ -50,6 +50,8 @@ setup () {
 }
 
 @test "${tag}: with --image" {
+    # NOTE: This also tests round-tripping and a more complex destination ref.
+
     img="$BATS_TMPDIR"/pushtest-up
     img2="$BATS_TMPDIR"/pushtest-down
     mkdir -p "$img" "$img"/{bin,dev,usr}
@@ -68,10 +70,11 @@ setup () {
     [[ $(stat -c '%A' "$img"/setgid_dir) =  drwxr-s--- ]]
 
     # Push the image
-    run ch-image -v --tls-no-verify push --image "$img" localhost:5000/pushtest
+    run ch-image -v --tls-no-verify push --image "$img" \
+                                         localhost:5000/foo/bar:weirdal
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pushing image:   localhost:5000/pushtest'* ]]
+    [[ $output = *'pushing image:   localhost:5000/foo/bar:weirdal'* ]]
     [[ $output = *"image path:      ${img}"* ]]
     [[ $output = *'warning: stripping unsafe setgid bit: ./setgid_dir'* ]]
     [[ $output = *'warning: stripping unsafe setgid bit: ./setgid_file'* ]]
@@ -79,7 +82,7 @@ setup () {
     [[ $output = *'warning: stripping unsafe setuid bit: ./setuid_file'* ]]
 
     # Pull it back
-    run ch-image -v --tls-no-verify pull localhost:5000/pushtest "$img2"
+    run ch-image -v --tls-no-verify pull localhost:5000/foo/bar:weirdal "$img2"
     echo "$output"
     [[ $status -eq 0 ]]
     ls -l "$img2"

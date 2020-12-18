@@ -852,7 +852,7 @@ class Registry_HTTP:
 
    def layer_to_file(self, digest, path):
       "GET the layer with hash digest and save it at path."
-      # /v1/library/hello-world/blobs/<layer-hash>
+      # /v2/library/hello-world/blobs/<layer-hash>
       url = self._url_of("blobs", "sha256:" + digest)
       self.request("GET", url, out=path, headers={ "Accept": TYPE_LAYER })
 
