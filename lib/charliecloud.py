@@ -128,7 +128,7 @@ uns_forever: UNS_FOREVER _WS LINE _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
 uns_yet: UNS_YET _WS LINE _NEWLINES
-UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i | "SHELL"i )
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
 
 /// Common ///
 

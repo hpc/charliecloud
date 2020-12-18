@@ -693,22 +693,24 @@ class I_run_shell(Run):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
       cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
-      self.cmd = [env.shell, env.shell_p, cmd]
+      self.cmd = [env.shell]
+      for i in env.shell_p:
+         self.cmd.append(i)
+      self.cmd.append(cmd)
 
 class I_shell(Instruction):
-   
+ 
    def __init__(self, *args):
       super().__init__(*args)
-      self.shell =    [ variables_sub(unescape(i), env.env_build)
+      self.str = [    variables_sub(unescape(i), env.env_build)
                   for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
-
-   
+  
    def str_(self):
-      return self.shell
+      return self.str
 
    def execute_(self):
-      env.shell = ch.tree_terminal(self.tree, "STRING_QUOTED", 0).replace('"', '')
-      env.shell_p = ch.tree_terminal(self.tree, "STRING_QUOTED", 1).replace('"', '')
+      env.shell = self.str.pop(0)
+      env.shell_p = self.str
 
 class I_workdir(Instruction):
 
@@ -784,7 +786,7 @@ class Environment:
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
       self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
       self.shell   = "/bin/sh"
-      self.shell_p = "-c"
+      self.shell_p = ["-c"]
 
 
 ## Supporting functions ###
