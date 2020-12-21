@@ -374,9 +374,12 @@ EOF
 
 @test 'Dockerfile: SHELL' {
    scope standard
-   run ch-build -t foo - <<'EOF'
+   run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-SHELL ["/bin/bash", "-c"]
+RUN echo 1
+SHELL ["/bin/bash","-c", "-v"]
+RUN  echo 1
+
 EOF
    echo "$output"
    [[ $status -eq 0 ]]
