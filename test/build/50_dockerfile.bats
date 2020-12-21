@@ -373,10 +373,12 @@ EOF
 }
 
 @test 'Dockerfile: SHELL' {
-   # We use centos as base image instead of 00_tiny because it has /bin/bash
    scope standard
+   [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+
+ # We use centos as base image instead of 00_tiny because it has /bin/bash
    run ch-build -t foo -f - . <<'EOF'
-FROM centos:8
+FROM centos8
 RUN echo 1
 SHELL ["/bin/bash","-c"]
 RUN  echo 1
@@ -387,12 +389,11 @@ EOF
    [[ $status -eq 0 ]]
 
    run ch-build -t foo -f - . <<'EOF'
-FROM centos:8
+FROM centos8
 SHELL ["/bin/bash"]
 EOF
    echo "$output"
-   [[ $status -eq 1 ]]
-   [[ $output = *"SHELL needs at least 1 parameter"* ]]
+   [[ $status -ne 0 ]]
 }
 @test 'Dockerfile: ARG and ENV values' {
     # We use full scope for builders other than ch-image because (1) with
