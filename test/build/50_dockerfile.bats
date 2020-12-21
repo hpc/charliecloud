@@ -391,7 +391,8 @@ FROM centos:8
 SHELL ["/bin/bash"]
 EOF
    echo "$output"
-   [[ $status -ne 0 ]]
+   [[ $status -eq 1 ]]
+   [[ $output = *"SHELL needs at least 1 parameter"* ]]
 }
 @test 'Dockerfile: ARG and ENV values' {
     # We use full scope for builders other than ch-image because (1) with
