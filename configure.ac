@@ -412,8 +412,7 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 
 AS_IF([   test -n "$SPHINX" \
        && test -n "$DOCUTILS" \
-       && test -n "$RTD" \
-       && (test "$enable_man" = yes || test "$enable_html" = yes)],
+       && test -n "$RTD"],
        [have_docs=yes],
        [have_docs=no])
 
@@ -525,8 +524,7 @@ AS_IF([   test $have_tests_tar = yes \
 # assumes we do have generic sudo
 AS_IF([   test $have_tests_squash = yes \
        && test -n "$SPHINX" \
-       && test -n "$SHELLCHECK" \
-       && test $have_docs = yes],
+       && test -n "$SHELLCHECK"],
       [have_tests_all=yes],
       [have_tests_all=no])
 
@@ -571,12 +569,6 @@ thinks a version is too old, and please report back to us.
 Building Charliecloud
 ~~~~~~~~~~~~~~~~~~~~~
 
-  will build and install:
-    HTML documentation ... ${enable_html}
-    man pages ... ${enable_man}
-    test suite ... ${enable_test}
-    ch-image(1) ... ${enable_ch_image}
-
   required:
     C99 compiler ... ${CC} ${CC_VERSION}
 
@@ -585,6 +577,12 @@ Building Charliecloud
     sphinx-build(1) Python ... ${sphinx_python:-n/a}
     "docutils" module ≥ $vmin_docutils ... ${DOCUTILS_VERSION_NOTE}
     "sphinx-rtd-theme" module ≥ $vmin_rtd ... ${RTD_VERSION_NOTE}
+
+  will build and install:
+    HTML documentation ... ${enable_html}
+    man pages ... ${enable_man}
+    test suite ... ${enable_test}
+    ch-image(1) ... ${enable_ch_image}
 
 Building images via our wrappers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
