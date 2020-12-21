@@ -711,6 +711,8 @@ class I_shell(Instruction):
    def execute_(self):
       env.shell = self.str.pop(0)
       env.shell_p = self.str
+      if (not env.shell_p):
+         ch.FATAL("SHELL needs at least 1 parameter")
 
 class I_workdir(Instruction):
 

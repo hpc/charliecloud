@@ -373,18 +373,25 @@ EOF
 }
 
 @test 'Dockerfile: SHELL' {
+   # We use centos as base image instead of 00_tiny because it has /bin/bash
    scope standard
    run ch-build -t foo -f - . <<'EOF'
-FROM 00_tiny
+FROM centos:8
 RUN echo 1
-SHELL ["/bin/bash","-c", "-v"]
+SHELL ["/bin/bash","-c"]
 RUN  echo 1
-
+SHELL ["/bin/sh", "-v", "-c"]
+RUN echo 1
 EOF
    echo "$output"
    [[ $status -eq 0 ]]
 
-
+   run ch-build -t foo -f - . <<'EOF'
+FROM centos:8
+SHELL ["/bin/bash"]
+EOF
+   echo "$output"
+   [[ $status -ne 0 ]]
 }
 @test 'Dockerfile: ARG and ENV values' {
     # We use full scope for builders other than ch-image because (1) with
