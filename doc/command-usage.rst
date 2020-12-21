@@ -54,19 +54,26 @@ Flatten a builder image into a Charliecloud SquashFS file.
 
 .. include:: ./ch-builder2squash_desc.rst
 
-ch-fromhost
-+++++++++++
-
-Inject files from the host into an image directory.
-
-.. include:: ./ch-fromhost_desc.rst
-
 ch-grow
 +++++++
 
-Build and manage images; completely unprivileged.
+Deprecated name for :code:`ch-image`; will be removed in version 0.23.
 
 .. include:: ./ch-grow_desc.rst
+
+ch-fromhost
++++++++++++
+
+Inject files from the host into an image directory, with various magic.
+
+.. include:: ./ch-fromhost_desc.rst
+
+ch-image
+++++++++
+
+Build and manage images; completely unprivileged.
+
+.. include:: ./ch-image_desc.rst
 
 ch-mount
 ++++++++

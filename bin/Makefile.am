@@ -33,17 +33,19 @@ dist_bin_SCRIPTS = ch-build \
 
 ## Python scripts - need text processing
 
-bin_SCRIPTS = ch-run-oci
-EXTRA_SCRIPTS = ch-grow
-if ENABLE_CH_GROW
-bin_SCRIPTS += ch-grow
+bin_SCRIPTS = ch-run-oci          # scripts to build
+EXTRA_SCRIPTS = ch-image ch-grow  # more scripts that *may* be built
+if ENABLE_CH_IMAGE
+bin_SCRIPTS += ch-image ch-grow
 endif
-EXTRA_DIST = ch-grow.py.in ch-run-oci.py.in
-CLEANFILES = $(bin_SCRIPTS)
+EXTRA_DIST = ch-grow.py.in ch-image.py.in ch-run-oci.py.in
+CLEANFILES = $(EXTRA_SCRIPTS)
 
 ch-grow: ch-grow.py.in
+ch-image: ch-image.py.in
 ch-run-oci: ch-run-oci.py.in
 
 $(bin_SCRIPTS): %: %.py.in
+	rm -f $@
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
-	chmod +rwx $@  # respects umask
+	chmod +rx,-w $@  # respects umask

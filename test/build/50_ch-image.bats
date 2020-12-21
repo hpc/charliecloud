@@ -2,75 +2,75 @@ load ../common
 
 setup () {
     scope standard
-    [[ $CH_BUILDER = ch-grow ]] || skip 'ch-grow only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
-@test 'ch-grow common options' {
+@test 'ch-image common options' {
     # no common options
-    run ch-grow storage-path
+    run ch-image storage-path
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *'verbose level'* ]]
 
     # before only
-    run ch-grow -vv storage-path
+    run ch-image -vv storage-path
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'verbose level: 2'* ]]
 
     # after only
-    run ch-grow storage-path -vv
+    run ch-image storage-path -vv
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'verbose level: 2'* ]]
 
     # before and after; after wins
-    run ch-grow -vv storage-path -v
+    run ch-image -vv storage-path -v
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'verbose level: 1'* ]]
 }
 
-@test 'ch-grow delete' {
-   run ch-grow list
+@test 'ch-image delete' {
+   run ch-image list
    echo "$output"
    [[ $status -eq 0 ]]
    [[ $output != *"delete/test"* ]]
   
-	ch-grow build -t delete/test -f - . << 'EOF'
+	ch-image build -t delete/test -f - . << 'EOF'
 FROM 00_tiny
 EOF
 	
-   run ch-grow list
+   run ch-image list
 	echo "$output"
 	[[ $status -eq 0 ]]
 	[[ $output = *"delete/test"* ]]
 	
-   ch-grow delete delete%test
+   ch-image delete delete%test
 
-	run ch-grow list
+	run ch-image list
 	echo "$output"
 	[[ $status -eq 0 ]]
 	[[ $output != *"delete/test"* ]]
 }
 
-@test 'ch-grow list' {
-    run ch-grow list
+@test 'ch-image list' {
+    run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"00_tiny"* ]]
 }
 
-@test 'ch-grow storage-path' {
-    run ch-grow storage-path
+@test 'ch-image storage-path' {
+    run ch-image storage-path
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = /* ]]                                      # absolute path
-    [[ $CH_GROW_STORAGE && $output = "$CH_GROW_STORAGE" ]]  # match what we set
+    [[ $output = /* ]]                                        # absolute path
+    [[ $CH_IMAGE_STORAGE && $output = "$CH_IMAGE_STORAGE" ]]  # match what we set
 }
 
-@test 'ch-grow build --bind' {
-    run ch-grow --no-cache build -t build-bind -f - \
+@test 'ch-image build --bind' {
+    run ch-image --no-cache build -t build-bind -f - \
                 -b ./fixtures -b ./fixtures:/mnt/9 . <<'EOF'
 FROM 00_tiny
 RUN mount

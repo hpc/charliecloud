@@ -60,6 +60,7 @@ Contributors:
 * Christoph Junghans <junghans@lanl.gov>
 * Jordan Ogas <jogas@lanl.gov>
 * Kevin Pelzel <kpelzel@lanl.gov>
+* Megan Phinney <mphinney@lanl.gov>
 * Reid Priedhorsky <reidpr@lanl.gov>, co-founder and project lead
 * Tim Randles <trandles@lanl.gov>, co-founder
 * Matthew Vernon <mv3@sanger.ac.uk>

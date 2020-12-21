@@ -64,11 +64,11 @@ EOF
 builder_check () {
     printf 'checking builder ...\n'
     case $CH_BUILDER in
-    ch-grow)
-        if ! "${ch_bin}/ch-grow" --dependencies; then
-            fatal 'builder: ch-grow: missing dependencies'
+    ch-image|ch-grow)
+        if ! "${ch_bin}/ch-image" --dependencies; then
+            fatal 'builder: ch-image: missing dependencies'
         fi
-        bl=$(readlink -f "${ch_bin}/ch-grow")
+        bl=$(readlink -f "${ch_bin}/ch-image")
         bv=$("$bl" --version)
         ;;
     buildah)
@@ -113,10 +113,29 @@ builder_set () {
         builder_choose
         method='default'
     fi
-    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
     if [[ $CH_BUILDER == ch-grow ]]; then
-        vset CH_GROW_STORAGE '' "$CH_GROW_STORAGE" "/var/tmp/$USER/ch-grow" \
-                             "$width" 'ch-grow storage'
+        export CH_BUILDER=ch-image
+        cat <<'EOF' 1>&2
+
+WARNING: ch-grow is now called ch-image. We plan to remove the ch-grow name in
+Charliecloud version 0.23.
+
+EOF
+    fi
+    if [[ -n $CH_GROW_STORAGE ]]; then
+        export CH_IMAGE_STORAGE=$CH_GROW_STORAGE
+        unset CH_GROW_STORAGE
+        cat <<'EOF' 1>&2
+
+WARNING: $CH_GROW_STORAGE is now called $CH_IMAGE_STORAGE. We plan to remove
+the old name in Charliecloud version 0.23.
+
+EOF
+    fi
+    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
+    if [[ $CH_BUILDER == ch-image ]]; then
+        vset CH_IMAGE_STORAGE '' "$CH_IMAGE_STORAGE" "/var/tmp/$USER/ch-image" \
+                              "$width" 'ch-image storage'
     fi
 }
 
@@ -228,7 +247,7 @@ pedantry_set () {
     width=$1
     default=no
     # Default to pedantic on CI or if user is a contributor.
-    if [[ -n $ch_contributor || -n $TRAVIS ]]; then
+    if [[ -n $ch_contributor || -n $CI ]]; then
         default=yes
     fi
     vset ch_pedantic "$pedantic" '' $default "$width" 'pedantic mode'
@@ -760,6 +779,12 @@ while [[ $# -gt 0 ]]; do
         require_unset imgdir
         imgdir=${opt#*=}
         ;;
+    --is-pedantic)  # undocumented; for CI
+        is_pedantic=yes
+        ;;
+    --is-sudo)      # undocumented; for CI
+        is_sudo=yes
+        ;;
     --pack-dir)
         require_unset tardir
         tardir=$1; shift
@@ -908,6 +933,16 @@ if [[ $CH_TEST_SUDO ]]; then
     printf 'checking sudo ...\n'
     sudo echo ok
     printf '\n'
+fi
+
+if [[ -n $is_pedantic ]]; then
+    printf 'exiting per --is-pedantic\n'
+    if [[ -n $ch_pedantic ]]; then exit 0; else exit 1; fi
+fi
+
+if [[ -n $is_sudo ]]; then
+    printf 'exiting per --is-sudo\n'
+    if [[ -n $CH_TEST_SUDO ]]; then exit 0; else exit 1; fi
 fi
 
 if [[ -n $dry ]];then

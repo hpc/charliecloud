@@ -235,8 +235,8 @@ EOF2
     sudo cp tests/registries.conf /etc/containers
   EOF
 
-  # Install ch-grow dependencies.
-  c.vm.provision "ch-grow", type: "shell", privileged: false,
+  # Install ch-image dependencies.
+  c.vm.provision "ch-image", type: "shell", privileged: false,
                  inline: <<-EOF
     set -e
     cd /usr/local/src
@@ -329,7 +329,7 @@ EOF2
     fi
     sudo -iu $user -- sh -c "ch-test --pedantic yes -b docker all"
     sudo -iu $user -- sh -c "ch-test --pedantic yes -b buildah all"
-    sudo -iu $user -- sh -c "ch-test --pedantic yes -b ch-grow all"
+    sudo -iu $user -- sh -c "ch-test --pedantic yes -b ch-image all"
   EOF
 end
 
