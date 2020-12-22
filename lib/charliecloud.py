@@ -373,7 +373,7 @@ class Image:
          if (i > max_i): break
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
-            if (os.path.commonpath([prefix, m.name]) == prefix):
+            if (prefix_path(prefix, m.name)):  
                ignore_ct += 1
                members.remove(m)
                DEBUG("layer %d/%d: %s: ignoring %s"
@@ -1269,6 +1269,11 @@ def ossafe(f, msg, *args, **kwargs):
    except OSError as x:
       FATAL("%s: %s" % (msg, x.strerror))
 
+def prefix_path(prefix, path):
+   """"Return True if prefix is a parent directory of path.
+       Assume that prefix and path are strings."""
+   return prefix == path or (prefix + '/' == path[:len(prefix) + 1])
+                        
 def rmtree(path):
    if (os.path.isdir(path)):
       DEBUG("deleting directory: %s" % path)
