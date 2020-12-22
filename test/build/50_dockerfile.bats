@@ -389,7 +389,9 @@ EOF
    echo "$output"
    [[ $status -eq 0 ]]
    if [[ $CH_BUILDER = ch-image ]]; then  
-      [[ $output = *"grown in 6 instructions: foo"* ]] 
+      [[ $output = *"grown in 6 instructions: foo"* ]]
+   else
+      [[ $output = *"Successfully built"* ]]
    fi
 
    run ch-build -t foo -f - . <<'EOF'
@@ -401,18 +403,18 @@ EOF
    [[ $status -ne 0 ]]
    if [[ $CH_BUILDER = ch-image ]]; then
       [[ $output = *"error: build failed: RUN command exited with 1"* ]]
+   else
+      [[ $output = *"returned a non-zero code: 1"* ]]
    fi
 
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-SHELL ["/bin/false"]
+SHELL ["/bin/ash"]
 RUN echo 1
 EOF
    echo "$output"
    [[ status -ne 0 ]]
-   if [[ $CH_BUILDER = ch-image ]]; then
-      [[ $output = *"error: build failed: RUN command exited with 1"* ]]
-   fi
+   [[ $output = *"/bin/ash: can't open 'echo 1': No such file or directory"* ]]
 }
 @test 'Dockerfile: ARG and ENV values' {
     # We use full scope for builders other than ch-image because (1) with
