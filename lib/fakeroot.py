@@ -209,8 +209,8 @@ DEFAULT_CONFIGS = {
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
    "debdistro":
-   { "name":   "Debian (9, 10) or Ubuntu (16, 18, 20)",
-     "match":  ("/etc/os-release", r"(stretch|buster|xenial|bionic|focal)"),
+   { "name": "Debian (9, 10) or Ubuntu (16, 18, 20)",
+     "match": ("/etc/os-release", r"(stretch|buster|xenial|bionic|focal)"),
      "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
                 " || ! fgrep -q _apt /etc/passwd",
                 "echo 'APT::Sandbox::User \"root\";'"
