@@ -480,6 +480,11 @@ AS_IF([   test -n "$TAR"],
       [have_pack_tar=no])
 
 AS_IF([   test $have_any_builder = yes \
+       && test $have_pack_tar = yes],
+      [have_builder_to_tar = yes],
+      [have_builder_to_tar = no])
+
+AS_IF([   test $have_any_builder = yes \
        && test -n "$MKSQUASHFS"],
       [have_pack_squash=yes],
       [have_pack_squash=no])
@@ -611,7 +616,7 @@ Managing container images
     at least one builder ... ${have_any_builder}
     access to an image repository ... assumed yes
 
-  pack images from builder storage to tarball: ${have_pack_tar}
+  pack images from builder storage to tarball: ${have_builder_to_tar}
     at least one builder ... ${have_any_builder}
     tar(1) ... ${TAR:-not found}
 
