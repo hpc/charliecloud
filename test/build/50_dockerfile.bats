@@ -375,6 +375,8 @@ EOF
 @test 'Dockerfile: SHELL' {
    scope standard
    [[ $CH_BUILDER = none ]] && skip 'no builder'
+   [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
+
    
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
