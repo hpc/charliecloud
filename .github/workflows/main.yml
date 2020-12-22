@@ -56,6 +56,12 @@ jobs:
           free -m
           df -h
 
+      - name: lines of code
+        if: ${{ matrix.builder == 'none' }}
+        run: |
+          sudo apt-get install cloc
+          misc/loc
+
       - name: install Bats
         # We need (1) old Bats, not bats-core and (2) prior to commit 1735a4f,
         # because this is what is provided in distros we need to support and
