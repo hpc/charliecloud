@@ -391,7 +391,7 @@ EOF
 
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-SHELL ["/bin/ash"]
+SHELL ["/bin/false"]
 RUN echo 1
 EOF
    echo "$output"
