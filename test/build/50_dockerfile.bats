@@ -387,8 +387,6 @@ EOF
    [[ $status -eq 0 ]]
    if [[ $CH_BUILDER = ch-image ]]; then  
       [[ $output = *"grown in 6 instructions: foo"* ]] 
-   else
-      [[ $output = *"Successfully built"* ]]
    fi
 
    run ch-build -t foo -f - . <<'EOF'
@@ -409,8 +407,6 @@ EOF
    [[ status -ne 0 ]]
    if [[ $CH_BUILDER = ch-image ]]; then
       [[ $output = *"error: build failed: RUN command exited with 1"* ]]
-   else
-      [[ $output = *"returned a non-zero code: 1"* ]]
    fi
 }
 @test 'Dockerfile: ARG and ENV values' {
