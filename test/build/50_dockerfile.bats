@@ -374,7 +374,8 @@ EOF
 
 @test 'Dockerfile: SHELL' {
    scope standard
-
+   [[ $CH_BUILDER = none ]] && skip 'no builder'
+   
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 RUN echo 1
@@ -396,7 +397,9 @@ RUN echo 1
 EOF
    echo "$output"
    [[ $status -ne 0 ]]
-   [[ $output = *"/bin/ash: can't open 'echo 1': No such file or directory"* ]]
+   if [[ $CH_BUILDER = ch-image ]]; then
+      [[ $output = *"error: build failed: RUN command exited with 1"* ]]
+   fi
 
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
