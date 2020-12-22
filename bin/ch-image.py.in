@@ -10,6 +10,8 @@ sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
 import charliecloud as ch
 import build
 import misc
+import pull
+import push
 
 
 ## Constants ##
@@ -32,7 +34,7 @@ def main():
       description="Build and manage images; completely unprivileged.",
       epilog="""Storage directory is used for caching and temporary images.
                 Location: first defined of --storage, $CH_IMAGE_STORAGE, and
-                %s.""" % ch.storage_default())
+                %s.""" % ch.Storage.root_default())
    ap._optionals.title = "options"  # https://stackoverflow.com/a/16981688
    sps = ap.add_subparsers(title="subcommands", metavar="CMD")
 
@@ -81,7 +83,6 @@ def main():
            "help": "download everything needed, ignoring the cache" }],
        [ ["-s", "--storage"],
          { "metavar": "DIR",
-           "default": ch.storage_env(),
            "help": "set builder internal storage directory to DIR" }],
        [ ["--tls-no-verify"],
          { "action": "store_true",
@@ -140,7 +141,7 @@ def main():
    help="pull image from remote repository to local filesystem"
    sp = sps.add_parser("pull", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=misc.pull)
+   sp.set_defaults(func=pull.main)
    add_opts(sp, common_opts, True)
    sp.add_argument("--last-layer", metavar="N", type=int,
                    help="stop after unpacking N layers")
@@ -149,6 +150,18 @@ def main():
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
    sp.add_argument("image_dir", metavar="IMAGE_DIR", nargs="?",
                    help="unpacked image path (default: opaque path in storage dir)")
+
+   # push
+   help="push image from local filesystem to remote repository"
+   sp = sps.add_parser("push", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=push.main)
+   add_opts(sp, common_opts, True)
+   sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
+   sp.add_argument("--image", metavar="DIR",
+                   help="path to unpacked image (default: opaque path in storage dir)")
+   sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
+                   help="destination image reference (default: IMAGE_REF)")
 
    # storage-path
    help="print storage directory path"
@@ -162,8 +175,7 @@ def main():
        ap.print_help(file=sys.stderr)
        sys.exit(1)
    cli = ap.parse_args()
-   ch.log_setup(cli.verbose)
-   ch.tls_verify = not cli.tls_no_verify
+   ch.init(cli)
 
    # Dispatch.
    cli.func(cli)
