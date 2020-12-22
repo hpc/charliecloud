@@ -479,8 +479,8 @@ AS_IF([   test -n "$TAR"],
       [have_pack_tar=yes],
       [have_pack_tar=no])
 
-AS_IF([   test $have_pack_tar = yes \
-       && test $have_any_builder = yes],
+AS_IF([   test $have_any_builder = yes \
+       && test $have_pack_tar = yes],
       [have_builder_to_tar = yes],
       [have_builder_to_tar = no])
 
