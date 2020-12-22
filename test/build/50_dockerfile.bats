@@ -374,26 +374,44 @@ EOF
 
 @test 'Dockerfile: SHELL' {
    scope standard
-   [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 
- # We use centos as base image instead of 00_tiny because it has /bin/bash
    run ch-build -t foo -f - . <<'EOF'
-FROM centos8
+FROM 00_tiny
 RUN echo 1
-SHELL ["/bin/bash","-c"]
+SHELL ["/bin/ash","-c"]
 RUN  echo 1
 SHELL ["/bin/sh", "-v", "-c"]
 RUN echo 1
 EOF
    echo "$output"
    [[ $status -eq 0 ]]
+   if [[ $CH_BUILDER = ch-image ]]; then  
+      [[ $output = *"grown in 6 instructions: foo"* ]] 
+   else
+      [[ $output = *"Successfully built"* ]]
+   fi
 
    run ch-build -t foo -f - . <<'EOF'
-FROM centos8
-SHELL ["/bin/bash"]
+FROM 00_tiny
+SHELL ["/bin/ash"]
+RUN echo 1
 EOF
    echo "$output"
    [[ $status -ne 0 ]]
+   [[ $output = *"/bin/ash: can't open 'echo 1': No such file or directory"* ]]
+
+   run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+SHELL ["/bin/false"]
+RUN echo 1
+EOF
+   echo "$output"
+   [[ status -ne 0 ]]
+   if [[ $CH_BUILDER = ch-image ]]; then
+      [[ $output = *"error: build failed: RUN command exited with 1"* ]]
+   else
+      [[ $output = *"returned a non-zero code: 1"* ]]
+   fi
 }
 @test 'Dockerfile: ARG and ENV values' {
     # We use full scope for builders other than ch-image because (1) with
