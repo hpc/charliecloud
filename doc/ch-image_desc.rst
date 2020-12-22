@@ -6,7 +6,7 @@ Synopsis
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] list
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
-   $ ch-image [...] push [--image DIR] SOURCE_REF [DEST_REF]
+   $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
