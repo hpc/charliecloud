@@ -1,12 +1,15 @@
 import argparse
 import atexit
 import collections
+import collections.abc
 import copy
 import datetime
+import getpass
+import hashlib
 import http.client
-import json
 import os
 import getpass
+import pathlib
 import re
 import shutil
 import stat
@@ -59,13 +62,18 @@ except ImportError:
 CH_BIN = None
 CH_RUN = None
 
-# Logging; set using log_setup() below.
+# Logging; set using init() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 
 # Verify TLS certificates? Passed to requests.
 tls_verify = True
+
+# Content types for some stuff we care about.
+TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
+TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -176,54 +184,30 @@ class HelpFormatter(argparse.HelpFormatter):
       args_string = self._format_args(action, default)
       return ', '.join(action.option_strings) + ' ' + args_string
 
+
 class Image:
    """Container image object.
 
       Constructor arguments:
 
-        ref.............. Image_Ref object to identify the image.
+        ref........... Image_Ref object to identify the image.
 
-        download_cache .. Directory containing the download cache; this is
-                          where layers and manifests go. If None,
-                          download-related operations will not be available.
-
-        unpack_dir ...... Directory containing unpacked images.
-
-        image_subdir .... Subdirectory of unpack_dir to put unpacked image in.
-                          If None, infer from id; if the empty string,
-                          unpack_dir will be used directly."""
+        unpack_path .. Directory to unpack the image in; if None, infer path
+                       in storage dir from ref."""
 
    __slots__ = ("ref",
-                "download_cache",
-                "image_subdir",
-                "layer_hashes",
-                "schema_version",
-                "unpack_dir")
+                "unpack_path")
 
-   def __init__(self, ref, download_cache, unpack_dir, image_subdir=None):
+   def __init__(self, ref, unpack_path=None):
       assert isinstance(ref, Image_Ref)
       self.ref = ref
-      self.download_cache = download_cache
-      self.unpack_dir = unpack_dir
-      if (image_subdir is None):
-         self.image_subdir = self.ref.for_path
+      if (unpack_path is not None):
+         self.unpack_path = Path(unpack_path)
       else:
-         self.image_subdir = image_subdir
-      self.layer_hashes = None
-      self.schema_version = None
+         self.unpack_path = storage.unpack(self.ref)
 
    def __str__(self):
       return str(self.ref)
-
-   @property
-   def unpack_path(self):
-      "Path to the directory containing the image."
-      return "%s/%s" % (self.unpack_dir, self.image_subdir)
-
-   @property
-   def manifest_path(self):
-      "Path to the manifest file."
-      return "%s/%s.manifest.json" % (self.download_cache, self.ref.for_path)
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -235,36 +219,8 @@ class Image:
       DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
-   def download(self, use_cache):
-      """Download image manifest and layers according to origin and put them
-         in the download cache. By default, any components already in the
-         cache are skipped; if use_cache is False, download them anyway,
-         overwriting what's in the cache."""
-      # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
-      dl = Repo_Downloader(self.ref)
-      DEBUG("downloading image: %s" % dl.ref)
-      mkdirs(self.download_cache)
-      # manifest
-      if (os.path.exists(self.manifest_path) and use_cache):
-         INFO("manifest: using existing file")
-      else:
-         INFO("manifest: downloading")
-         dl.get_manifest(self.manifest_path)
-      # layers
-      self.layer_hashes_load()
-      for (i, lh) in enumerate(self.layer_hashes, start=1):
-         path = self.layer_path(lh)
-         DEBUG("layer path: %s" % path)
-         INFO("layer %d/%d: %s: " % (i, len(self.layer_hashes), lh[:7]), end="")
-         if (os.path.exists(path) and use_cache):
-            INFO("using existing file")
-         else:
-            INFO("downloading")
-            dl.get_layer(lh, path)
-      dl.close()
-
    def fixup(self):
-      "Add the Charliecloud workarounds to the unpacked image."
+      "Add the Charliecloud workarounds to my unpacked image."
       DEBUG("fixing up image: %s" % self.unpack_path)
       # Metadata directory.
       mkdirs("%s/ch" % self.unpack_path)
@@ -275,129 +231,100 @@ class Image:
       for i in range(10):
          mkdirs("%s/mnt/%d" % (self.unpack_path, i))
 
-   def flatten(self, last_layer=None):
-      "Flatten the layers in the download cache into the unpack directory."
+   def flatten(self, layer_tars, last_layer=None):
+      """Unpack layer_tars (sequence of paths to tarballs, with lowest layer
+         first) into the unpack directory, validating layer contents and
+         dealing with whiteouts. Empty layers are ignored."""
       if (last_layer is None):
          last_layer = sys.maxsize
-      layers = self.layers_read()
+      layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
       INFO("flattening image")
       self.unpack_create()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         lh_short = lh[:7]
          if (i > last_layer):
             INFO("layer %d/%d: %s: skipping per --last-layer"
-                 % (i, len(layers), lh[:7]))
+                 % (i, len(layers), lh_short))
          else:
-            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh[:7]))
+            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh_short))
             try:
                fp.extractall(path=self.unpack_path, members=members)
             except OSError as x:
                FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
-   def layer_hashes_load(self):
-      "Load the layer hashes from the manifest file."
-      try:
-         fp = open_(self.manifest_path, "rt", encoding="UTF-8")
-      except OSError as x:
-         FATAL("can't open manifest file: %s: %s"
-               % (self.manifest_path, x.strerror))
-      try:
-         doc = json.load(fp)
-      except json.JSONDecodeError as x:
-         FATAL("can't parse manifest file: %s:%d: %s"
-               % (self.manifest_path, x.lineno, x.msg))
-      try:
-         schema_version = str(doc['schemaVersion'])
-      except KeyError:
-         FATAL("manifest file %s missing expected key 'schemaVersion'"
-               % self.manifest_path)
-      if (schema_version == '1'):
-         DEBUG('loading layer hashes from schema version 1 manifest')
-         try:
-            self.layer_hashes = [i["blobSum"].split(":")[1]
-                                 for i in doc["fsLayers"]]
-         except (KeyError, AttributeError, IndexError) as x:
-            FATAL("can't parse manifest file: %s:%d :%s"
-                  % self.manifest_path, x.lineno, x.msg)
-      elif (schema_version == '2'):
-         DEBUG('loading layer hashes from schema version 2 manifest')
-         try:
-            self.layer_hashes = [i["digest"].split(":")[1] for i in doc["layers"]]
-         except (KeyError, AttributeError, IndexError):
-            FATAL("can't parse manifest file: %s:%d :%s"
-                  % self.manifest_path, x.lineno, x.msg)
-      else:
-         FATAL("unsupported manifest schema version: %s" % schema_version)
-      self.schema_version = schema_version
+   def layers_open(self, layer_tars):
+      """Open the layer tarballs and read some metadata (which unfortunately
+         means reading the entirety of every file). Return an OrderedDict:
 
-   def layer_path(self, layer_hash):
-      "Return the path to tarball for layer layer_hash."
-      return "%s/%s.tar.gz" % (self.download_cache, layer_hash)
+           keys:    layer hash (full)
+           values:  namedtuple with two fields:
+                      fp:       open TarFile object
+                      members:  sequence of members (OrderedSet)
 
-   def layers_read(self):
-      """Open the layer tarballs and read some metadata. Return an OrderedDict
-         with the lowest layer first; key is hash string, value is namedtuple
-         with fields fp, the open TarFile object, and members, an OrderedDict
-         of members obtained from fp.getmembers() (key TarInfo object, value
-         None).
+         Empty layers are skipped.
 
-         We use an OrderedDict for members because tarballs are a stream
-         format with very poor random access performance. Under the hood,
-         TarFile.extractall() extracts the members in the order they are
-         specified. Thus, we need to preserve the order given by getmembers()
-         while also making it fast to remove members we don't want to
-         extract, which rules out retaining them as a list.
-
-         FIXME: Once we get to Python 3.7, we should just use plain dict."""
+         Important note: TarFile.extractall() extracts the given members in
+         the order they are specified, so we need to preserve their order from
+         the file, as returned by getmembers(). We also need to quickly remove
+         members we don't want from this sequence. Thus, we use the OrderedSet
+         class defined in this module."""
       TT = collections.namedtuple("TT", ["fp", "members"])
-      if (self.layer_hashes is None):
-         self.layer_hashes_load()
       layers = collections.OrderedDict()
       # Schema version one (v1) allows one or more empty layers for Dockerfile
       # entries like CMD (https://github.com/containers/skopeo/issues/393).
       # Unpacking an empty layer doesn't accomplish anything so we ignore them.
       empty_cnt = 0
-      for (i, lh) in enumerate(self.layer_hashes, start=1):
-         INFO("layer %d/%d: %s: listing" % (i, len(self.layer_hashes), lh[:7]))
-         path = self.layer_path(lh)
+      for (i, path) in enumerate(layer_tars, start=1):
+         lh = os.path.basename(path).split(".", 1)[0]
+         lh_short = lh[:7]
+         INFO("layer %d/%d: %s: listing" % (i, len(layer_tars), lh_short))
          try:
             fp = TarFile.open(path)
-            members_list = fp.getmembers()  # reads whole file :(
+            members = OrderedSet(fp.getmembers())  # reads whole file :(
          except tarfile.TarError as x:
             FATAL("cannot open: %s: %s" % (path, x))
-         members = collections.OrderedDict([(m, None) for m in members_list])
          if (lh in layers and len(members) > 0):
-            FATAL("duplicate non-empty layer %s" % lh[:7])
+            FATAL("duplicate non-empty layer %s" % lh)
          if (len(members) > 0):
             layers[lh] = TT(fp, members)
          else:
             empty_cnt += 1
-      if (self.schema_version == '1'):
-         DEBUG('reversing layer order for schema version one (v1)')
-         layers = collections.OrderedDict(reversed(layers.items()))
       DEBUG("skipped %d empty layers" % empty_cnt)
       return layers
 
-   def pull_to_unpacked(self, use_cache=True, fixup=False, last_layer=None):
-      """Pull and flatten image. If fixup, then also add the Charliecloud
-         workarounds to the image directory."""
-      self.download(use_cache)
-      self.flatten(last_layer)
-      if (fixup):
-         self.fixup()
+   def tarballs_write(self, tarball_dir):
+      """Write one uncompressed tarball per layer to tarball_dir. Return a
+         sequence of tarball basenames, with the lowest layer first."""
+      # FIXME: Yes, there is only one layer for now and we'll need to update
+      # it when (if) we have multiple layers. But, I wanted the interface to
+      # support multiple layers.
+      base = "%s.tar" % self.ref.for_path
+      path = tarball_dir // base
+      try:
+         INFO("layer 1/1: gathering")
+         DEBUG("writing tarball: %s" % path)
+         fp = TarFile.open(path, "w", format=tarfile.PAX_FORMAT)
+         unpack_path = self.unpack_path.resolve()  # aliases use symlinks
+         DEBUG("canonicalized unpack path: %s" % unpack_path)
+         fp.add_(unpack_path, arcname=".")
+         fp.close()
+      except OSError as x:
+         FATAL("can't write tarball: %s" % x.strerror)
+      return [base]
 
    def validate_members(self, layers):
       INFO("validating tarball members")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          dev_ct = 0
-         members2 = list(members.keys())  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
-            self.validate_tar_path(self.layer_path(lh), m.name)
+            self.validate_tar_path(fp.name, m.name)
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
-               del members[m]
+               members.remove(m)
             elif (m.issym()):
                # Symlink: Nothing to change, but accept it.
                pass
@@ -405,7 +332,7 @@ class Image:
                # Hard link: Fail if pointing outside top level. (Note that we
                # let symlinks point wherever they want, because they aren't
                # interpreted until run time in a container.)
-               self.validate_tar_link(self.layer_path(lh), m.name, m.linkname)
+               self.validate_tar_link(fp.name, m.name, m.linkname)
             elif (m.isdir()):
                # Directory: Fix bad permissions (hello, Red Hat).
                m.mode |= 0o700
@@ -446,11 +373,11 @@ class Image:
       ignore_ct = 0
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          if (i > max_i): break
-         members2 = list(members.keys())  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
             if (prefix_path(prefix, m.name)):  
                ignore_ct += 1
-               del members[m]
+               members.remove(m)
                DEBUG("layer %d/%d: %s: ignoring %s"
                      % (i, len(layers), lh[:7], m.name), v=2)
       return ignore_ct
@@ -462,13 +389,13 @@ class Image:
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          wo_ct = 0
          ig_ct = 0
-         members2 = list(members.keys())  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
             dir_ = os.path.dirname(m.name)
             filename = os.path.basename(m.name)
             if (filename.startswith(".wh.")):
                wo_ct += 1
-               del members[m]
+               members.remove(m)
                if (filename == ".wh..wh..opq"):
                   # "Opaque whiteout": remove contents of dir_.
                   DEBUG("found opaque whiteout: %s" % m.name, v=2)
@@ -491,9 +418,9 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path + "/bin")
-             or not os.path.isdir(self.unpack_path + "/dev")
-             or not os.path.isdir(self.unpack_path + "/usr")):
+         if (   not os.path.isdir(self.unpack_path // "bin")
+             or not os.path.isdir(self.unpack_path // "dev")
+             or not os.path.isdir(self.unpack_path // "usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          DEBUG("replacing existing image: %s" % self.unpack_path)
@@ -503,6 +430,7 @@ class Image:
       "Ensure the unpack directory exists, replacing or creating if needed."
       self.unpack_create_ok()
       mkdirs(self.unpack_path)
+
 
 class Image_Ref:
    """Reference to an image in a remote repository.
@@ -661,21 +589,113 @@ fields:
          self.path.insert(0, self.host)
          self.host = None
 
-class Repo_Downloader:
-   """Downloads layers and manifests from an image repository via HTTPS.
 
-      Note that with some registries, authentication is required even for
-      anonymous downloads of public images. In this case, we just fetch an
-      authentication token anonymously."""
+class OrderedSet(collections.abc.MutableSet):
 
-   # The repository protocol follows "ask forgiveness" rather than the
-   # standard "ask permission". That is, you request the URL you want, and if
-   # it comes back 401 (because either it doesn't exist or you're not
-   # authenticated), the response contains a WWW-Authenticate header with the
-   # information you need to authenticate. AFAICT, this information is not
-   # available any other way. This seems awkward to me, because it requires
-   # that all requesting code paths have a contingency for authentication.
-   # Therefore, we emulate the standard approach instead.
+   # Note: The superclass provides basic implementations of all the other
+   # methods. I didn't evaluate any of these.
+
+   __slots__ = ("data",)
+
+   def __init__(self, others=None):
+      self.data = collections.OrderedDict()
+      if (others is not None):
+         self.data.update((i, None) for i in others)
+
+   def __contains__(self, item):
+      return (item in self.data)
+
+   def __iter__(self):
+      return iter(self.data.keys())
+
+   def __len__(self):
+      return len(self.data)
+
+   def __repr__(self):
+      return "%s(%s)" % (self.__class__.__name__, list(iter(self)))
+
+   def add(self, x):
+      self.data[x] = None
+
+   def clear(self):
+      # Superclass provides an implementation but warns it's slow (and it is).
+      self.data.clear()
+
+   def discard(self, x):
+      self.data.pop(x, None)
+
+
+class Path(pathlib.PosixPath):
+   """Stock Path objects have the very weird property that appending an
+      *absolute* path to an existing path ignores the left operand, leaving
+      only the absolute right operand:
+
+        >>> import pathlib
+        >>> a = pathlib.Path("/foo/bar")
+        >>> a.joinpath("baz")
+        PosixPath('/foo/bar/baz')
+        >>> a.joinpath("/baz")
+        PosixPath('/baz')
+
+      This is contrary to long-standing UNIX/POSIX, where extra slashes in a
+      path are ignored, e.g. the path "foo//bar" is equivalent to "foo/bar".
+      It seems to be inherited from os.path.join().
+
+      Even with the relatively limited use of Path objects so far, this has
+      caused quite a few bugs. IMO it's too difficult and error-prone to
+      manually manage whether paths are absolute or relative. Thus, this
+      subclass introduces a new operator "//" which does the right thing,
+      i.e., if the right operand is absolute, that fact is ignored. E.g.:
+
+        >>> a = Path("/foo/bar")
+        >>> a.joinpath_posix("baz")
+        Path('/foo/bar/baz')
+        >>> a.joinpath_posix("/baz")
+        Path('/foo/bar/baz')
+        >>> a // "/baz"
+        Path('/foo/bar/baz')
+        >>> "/baz" // a
+        Path('/baz/foo/bar')
+
+      We introduce a new operator because it seemed like too subtle a change
+      to the existing operator "/" (which we disable to avoid getting burned
+      here in Charliecloud). An alternative was "+" like strings, but that led
+      to silently wrong results when the paths *were* strings (components
+      concatenated with no slash)."""
+
+   def __floordiv__(self, right):
+      return self.joinpath_posix(right)
+
+   def __rfloordiv__(self, left):
+      left = Path(left)
+      return left.joinpath_posix(self)
+
+   def __truediv__(self, right):
+      return NotImplemented
+
+   def __rtruediv__(self, left):
+      return NotImplemented
+
+   def joinpath_posix(self, *others):
+      others2 = list()
+      for other in others:
+         other = Path(other)
+         if (other.is_absolute()):
+            other = other.relative_to("/")
+            assert (not other.is_absolute())
+         others2.append(other)
+      return self.joinpath(*others2)
+
+
+class Registry_HTTP:
+   """Transfers image data to and from a remote image repository via HTTPS.
+
+      Note that ref refers to the *remote* image. Objects of this class have
+      no information about the local image."""
+
+   # Note that with some registries, authentication is required even for
+   # anonymous downloads of public images. In this case, we just fetch an
+   # authentication token anonymously.
 
    __slots__ = ("auth",
                 "ref",
@@ -683,24 +703,18 @@ class Repo_Downloader:
 
    # https://stackoverflow.com/a/58055668
    class Bearer_Auth(requests.auth.AuthBase):
-
       __slots__ = ("token",)
-
       def __init__(self, token):
          self.token = token
-
       def __call__(self, req):
          req.headers["Authorization"] = "Bearer %s" % self.token
          return req
-
       def __str__(self):
          return ("Bearer %s" % self.token[:32])
 
    class Null_Auth(requests.auth.AuthBase):
-
       def __call__(self, req):
          return req
-
       def __str__(self):
          return "no authorization"
 
@@ -733,16 +747,16 @@ class Repo_Downloader:
       # First, try for an anonymous auth token. If that fails, try for an
       # authenticated token.
       DEBUG("requesting anonymous auth token")
-      res = self.get_raw(auth_d["realm"], [200,403],
-                         params={"service": auth_d["service"],
-                                 "scope": auth_d["scope"]})
+      res = self.request_raw("GET", auth_d["realm"], {200,403},
+                             params={"service": auth_d["service"],
+                                     "scope": auth_d["scope"]})
       if (res.status_code == 403):
          INFO("anonymous access rejected")
          (username, password) = self.credentials_read()
          auth = requests.auth.HTTPBasicAuth(username, password)
-         res = self.get_raw(auth_d["realm"], [200], auth=auth,
-                            params={"service": auth_d["service"],
-                                    "scope": auth_d["scope"]})
+         res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
+                                params={"service": auth_d["service"],
+                                        "scope": auth_d["scope"]})
       token = res.json()["token"]
       DEBUG("received auth token: %s" % (token[:32]))
       self.auth = self.Bearer_Auth(token)
@@ -775,63 +789,131 @@ class Repo_Downloader:
       else:
          FATAL("unknown auth type: %s" % auth_h)
 
+   def blob_exists_p(self, digest):
+      """Return true if a blob with digest (hex string) exists in the
+         remote repository, false otherwise."""
+      url = self._url_of("blobs", "sha256:%s" % digest)
+      # FIXME: Sometimes we get 301 Moved Permanently. requests.head() doesn't
+      # follow redirects (but requests.request("HEAD", ...) does), and I
+      # wasn't able to figure out why. So possibly there is some gotcha here.
+      res = self.request("HEAD", url, {200,404})
+      return (res.status_code == 200)
+
+   def blob_upload(self, digest, data, note=""):
+      """Upload blob with hash digest to url. data is the data to upload, and
+         can be anything requests can handle, including an open file. note is
+         a string to prepend to the log messages; default empty string."""
+      INFO("%s%s: checking if already in repository" % (note, digest[:7]))
+      # 1. Check if blob already exists. If so, stop.
+      if (self.blob_exists_p(digest)):
+         INFO("%s%s: already present" % (note, digest[:7]))
+         return
+      INFO("%s%s: not present, uploading" % (note, digest[:7]))
+      # 2. Get upload URL for blob.
+      url = self._url_of("blobs", "uploads/")
+      res = self.request("POST", url, {202})
+      # 3. Upload blob. We do a "monolithic" upload (i.e., send all the
+      # content in a single PUT request) as opposed to a "chunked" upload
+      # (i.e., send data in multiple PATCH requests followed by a PUT request
+      # with no body).
+      url = res.headers["Location"]
+      res = self.request("PUT", url, {201}, data=data,
+                         params={ "digest": "sha256:%s" % digest })
+      # 4. Verify blob now exists.
+      if (not self.blob_exists_p(digest)):
+         FATAL("blob just uploaded does not exist: %s" % digest[:7])
+
    def close(self):
       if (self.session is not None):
          self.session.close()
 
+   def config_upload(self, config):
+      "Upload config (sequence of bytes)."
+      self.blob_upload(bytes_hash(config), config, "config: ")
+
    def credentials_read(self):
-      username = input("Username: ")
-      password = getpass.getpass("Password: ")
+      try:
+         # FIXME: We use these environment variables in the test suite, but
+         # they are currently undocumented while we think more carefully about
+         # how to do non-interactive authentication (issue #849).
+         username = os.environ["CH_IMAGE_USERNAME"]
+         password = os.environ["CH_IMAGE_PASSWORD"]
+      except KeyError:
+         # FIXME: This hangs in Bats; sys.stdin.isatty() was still True though.
+         username = input("\nUsername: ")
+         password = getpass.getpass("Password: ")
       return (username, password)
 
-   def get(self, url, path, headers=dict(), statuses=[200]):
-      """GET url, passing headers, and write the body of the response to path.
-         Use current session if there is one, or start a new one if not.
-         Authenticate if needed."""
-      DEBUG("GETting: %s" % url)
+   def layer_from_file(self, digest, path, note=""):
+      "Upload gzipped tarball layer at path, which must have hash digest."
+      # NOTE: We don't verify the digest b/c that means reading the whole file.
+      DEBUG("layer tarball: %s" % path)
+      fp = open_(path, "rb")  # open file avoids reading it all into memory
+      self.blob_upload(digest, fp, note)
+      ossafe(fp.close, "can't close: %s" % path)
+
+   def layer_to_file(self, digest, path):
+      "GET the layer with hash digest and save it at path."
+      # /v2/library/hello-world/blobs/<layer-hash>
+      url = self._url_of("blobs", "sha256:" + digest)
+      self.request("GET", url, out=path, headers={ "Accept": TYPE_LAYER })
+
+   def manifest_to_file(self, path):
+      "GET the manifest for the image and save it at path."
+      url = self._url_of("manifests", self.ref.version)
+      self.request("GET", url, out=path, headers={ "Accept": TYPE_MANIFEST })
+
+   def manifest_upload(self, manifest):
+      "Upload manifest (sequence of bytes)."
+      # Note: The manifest is *not* uploaded as a blob. We just do one PUT.
+      url = self._url_of("manifests", self.ref.tag)
+      self.request("PUT", url, {201}, data=manifest,
+                   headers={ "Content-Type": TYPE_MANIFEST })
+
+   def request(self, method, url, statuses={200}, out=None, **kwargs):
+      """Request url using method and return the response object. If statuses
+         is given, it is set of acceptable response status codes, defaulting
+         to {200}; any other response is a fatal error. If out is given,
+         response content must be non-zero length and will be written to file
+         at this path.
+
+         Use current session if there is one, or start a new one if not. If
+         authentication fails (or isn't initialized), then authenticate and
+         re-try the request."""
+      DEBUG("%s: %s" % (method, url))
       self.session_init_maybe()
       DEBUG("auth: %s" % self.auth)
-      res = self.get_raw(url, statuses+[401], headers)
+      res = self.request_raw(method, url, statuses | {401}, **kwargs)
       if (res.status_code == 401):
          DEBUG("HTTP 401 unauthorized")
          self.authorize(res)
          DEBUG("retrying with auth: %s" % self.auth)
-         res = self.get_raw(url, statuses, headers)
-      try:
-         fp = open_(path, "wb")
-         ossafe(fp.write, "can't write: %s" % path, res.content)
-         ossafe(fp.close, "can't close: %s" % path)
-      except OSError as x:
-         FATAL("can't write: %s: %s" % (path, x))
+         res = self.request_raw(method, url, statuses, **kwargs)
+      if (out is not None):
+         if (len(res.content) == 0):
+            FATAL("no response body: %s %s" % (method, url))
+         fp = open_(out, "wb")
+         ossafe(fp.write, "can't write: %s" % out, res.content)
+         ossafe(fp.close, "can't close: %s" % out)
+      return res
 
-   def get_layer(self, hash_, path):
-      "GET the layer with hash hash_ and save it at path."
-      # /v1/library/hello-world/blobs/<layer-hash>
-      url = self._url_of("blobs", "sha256:" + hash_)
-      accept = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-      self.get(url, path, { "Accept": accept })
+   def request_raw(self, method, url, statuses, auth=None, **kwargs):
+      """Request url using method. statuses is an iterable of acceptable
+         response status codes; any other response is a fatal error. Return
+         the requests.Response object.
 
-   def get_manifest(self, path):
-      "GET the manifest for the image and save it at path."
-      url = self._url_of("manifests", self.ref.version)
-      accept = "application/vnd.docker.distribution.manifest.v2+json"
-      self.get(url, path, { "Accept": accept })
-
-   def get_raw(self, url, statuses, headers=dict(), auth=None, **kwargs):
-      """GET url, expecting a status code in statuses, passing headers.
-         self.session must be valid. If auth is None, use self.auth (which
-         might also be None). If status is not in statuses, barf with a fatal
-         error. Pass kwargs unchanged to requests.session.get()."""
+         Session must already exist. If auth arg given, use it; otherwise, use
+         object's stored authentication if initialized; otherwise, use no
+         authentication."""
       if (auth is None):
          auth = self.auth
       try:
-         res = self.session.get(url, headers=headers, auth=auth, **kwargs)
+         res = self.session.request(method, url, auth=auth, **kwargs)
          if (res.status_code not in statuses):
-            FATAL("HTTP GET failed; expected status %s but got %d: %s"
-                  % (" or ".join(str(i) for i in statuses),
-                     res.status_code, res.reason))
+            FATAL("%s failed; expected status %s but got %d: %s"
+                  % (method, statuses, res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
-         FATAL("HTTP GET failed: %s" % x)
+         FATAL("%s failed: %s" % (method, x))
       # Log the rate limit headers if present.
       for h in ("RateLimit-Limit", "RateLimit-Remaining"):
          if (h in res.headers):
@@ -844,6 +926,65 @@ class Repo_Downloader:
          DEBUG("initializing session")
          self.session = requests.Session()
          self.session.verify = tls_verify
+
+
+class Storage:
+
+   """Source of truth for all paths within the storage directory. Do not
+      compute any such paths elsewhere!"""
+
+   __slots__ = ("root",)
+
+   def __init__(self, storage_cli):
+      self.root = storage_cli
+      if (self.root is None):
+         self.root = self.root_env()
+      if (self.root is None):
+         self.root = self.root_default()
+      self.root = Path(self.root)
+
+   @property
+   def download_cache(self):
+      return self.root // "dlcache"
+
+   @property
+   def unpack_base(self):
+      return self.root // "img"
+
+   @property
+   def upload_cache(self):
+      return self.root // "ulcache"
+
+   @staticmethod
+   def root_default():
+      # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
+      # environment variable? It seems a lot more robust. But, (1) we'd have
+      # to match it in some scripts and (2) it makes the documentation less
+      # clear becase we have to explain the fallback behavior.
+      try:
+         username = os.environ["USER"]
+      except KeyError:
+         FATAL("can't get username: $USER not set")
+      return "/var/tmp/%s/ch-image" % username
+
+   @staticmethod
+   def root_env():
+      try:
+         return os.environ["CH_IMAGE_STORAGE"]
+      except KeyError:
+         try:
+            p = os.environ["CH_GROW_STORAGE"]
+            WARNING("$CH_GROW_STORAGE is deprecated in favor of $CH_IMAGE_STORAGE")
+            WARNING("the old name will be removed in Charliecloud version 0.23")
+            return p
+         except KeyError:
+            return None
+
+   def manifest_for_download(self, image_ref):
+      return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
+
+   def unpack(self, image_ref):
+      return self.unpack_base // image_ref.for_path
 
 
 class TarFile(tarfile.TarFile):
@@ -864,6 +1005,12 @@ class TarFile(tarfile.TarFile):
    # [3]: https://bugs.python.org/issue35483
    # [4]: https://bugs.python.org/issue19974
    # [5]: https://bugs.python.org/issue23228
+
+   # Need new method name because add() is called recursively and we don't
+   # want those internal calls to get our special sauce.
+   def add_(self, name, **kwargs):
+      kwargs["filter"] = self.fix_new_member
+      super().add(name, **kwargs)
 
    def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
       assert (regulars or symlinks or dirs)
@@ -889,6 +1036,23 @@ class TarFile(tarfile.TarFile):
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))
+
+   @staticmethod
+   def fix_new_member(ti):
+      assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
+      if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
+         FATAL("invalid file type: %s" % ti.name)
+      ti.uid = 0
+      ti.uname = "root"
+      ti.gid = 0
+      ti.gname = "root"
+      if (ti.mode & stat.S_ISUID):
+         WARNING("stripping unsafe setuid bit: %s" % ti.name)
+         ti.mode &= ~stat.S_ISUID
+      if (ti.mode & stat.S_ISGID):
+         WARNING("stripping unsafe setgid bit: %s" % ti.name)
+         ti.mode &= ~stat.S_ISGID
+      return ti
 
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path
@@ -926,6 +1090,12 @@ def INFO(*args, **kwargs):
 
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)
+
+def bytes_hash(data):
+   "Return the hash of data, as a hex string with no leading algorithm tag."
+   h = hashlib.sha256()
+   h.update(data)
+   return h.hexdigest()
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    args = (  [CH_BIN + "/ch-run"]
@@ -968,12 +1138,63 @@ def dependencies_check():
    if (len(depfails) > 0):
       sys.exit(1)
 
+def done_notify():
+   if (os.environ.get("USER", None) == "jogas"):
+      INFO("!!! KOBE !!!")
+   else:
+      INFO("done")
+
 def file_ensure_exists(path):
    fp = open_(path, "a")
    fp.close()
 
+def file_gzip(path, args=[]):
+   """Run pigz if it's available, otherwise gzip, on file at path and return
+      the file's new name. Pass args to the gzip executable. This lets us gzip
+      files (a) in parallel if pigz is installed and (b) without reading them
+      into memory."""
+   path_c = Path(str(path) + ".gz")
+   # On first call, remember first available of pigz and gzip using an
+   # attribute of this function (yes, you can do that lol).
+   if (not hasattr(file_gzip, "gzip")):
+      if (shutil.which("pigz") is not None):
+         file_gzip.gzip = "pigz"
+      elif (shutil.which("gzip") is not None):
+         file_gzip.gzip = "gzip"
+      else:
+         FATAL("can't find path to gzip or pigz")
+   # Remove destination file if it already exists, because gzip --force does
+   # several other things too. (Note: pigz sometimes confusingly reports
+   # "Inappropriate ioctl for device" if destination already exists.)
+   if (os.path.exists(path_c)):
+      unlink(path_c)
+   # Compress.
+   cmd([file_gzip.gzip] + args + [str(path)])
+   return path_c
+
+def file_hash(path):
+   """Return the hash of data in file at path, as a hex string with no
+      algorithm tag. File is read in chunks and can be larger than memory."""
+   fp = open_(path, "rb")
+   h = hashlib.sha256()
+   while True:
+      data = ossafe(fp.read, "can't read: %s" % path, 2**18)
+      if (len(data) == 0):
+         break  # EOF
+      h.update(data)
+   ossafe(fp.close, "can't close: %s" % path)
+   return h.hexdigest()
+
+def file_size(path, follow_symlinks=False):
+   "Return the size of file at path in bytes."
+   st = ossafe(os.stat, "can't stat: %s" % path,
+               path, follow_symlinks=follow_symlinks)
+   return st.st_size
+
 def file_write(path, content, mode=None):
-   fp = open_(path, "wt")
+   if (isinstance(content, str)):
+      content = content.encode("UTF-8")
+   fp = open_(path, "wb")
    ossafe(fp.write, "can't write: %s" % path, content)
    if (mode is not None):
       ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
@@ -992,6 +1213,27 @@ def grep_p(path, rx):
    except OSError as x:
       FATAL("error reading %s: %s" % (path, x.strerror))
 
+def init(cli):
+   global verbose, log_festoon, log_fp, storage, tls_verify
+   # logging
+   assert (0 <= cli.verbose <= 2)
+   verbose = cli.verbose
+   if ("CH_LOG_FESTOON" in os.environ):
+      log_festoon = True
+   file_ = os.getenv("CH_LOG_FILE")
+   if (file_ is not None):
+      verbose = max(verbose_, 1)
+      log_fp = open_(file_, "at")
+   atexit.register(color_reset, log_fp)
+   DEBUG("verbose level: %d" % verbose)
+   # storage object
+   storage = Storage(cli.storage)
+   # TLS verification
+   if (cli.tls_no_verify):
+      tls_verify = False
+      rpu = requests.packages.urllib3
+      rpu.disable_warnings(rpu.exceptions.InsecureRequestWarning)
+
 def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):
       color_set(color, log_fp)
@@ -1005,19 +1247,6 @@ def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):
       color_reset(log_fp)
 
-def log_setup(verbose_):
-   global verbose, log_festoon, log_fp
-   assert (0 <= verbose_ <= 2)
-   verbose = verbose_
-   if ("CH_LOG_FESTOON" in os.environ):
-      log_festoon = True
-   file_ = os.getenv("CH_LOG_FILE")
-   if (file_ is not None):
-      verbose = max(verbose_, 1)
-      log_fp = open_(file_, "at")
-   atexit.register(color_reset, log_fp)
-   DEBUG("verbose level: %d" % verbose)
-
 def mkdirs(path):
    DEBUG("ensuring directory: %s" % path)
    try:
@@ -1025,6 +1254,9 @@ def mkdirs(path):
    except OSError as x:
       ch.FATAL("can't create directory: %s: %s: %s"
                % (path, x.filename, x.strerror))
+
+def now_utc_iso8601():
+   return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
 
 def open_(path, mode, *args, **kwargs):
    "Error-checking wrapper for open()."
@@ -1046,7 +1278,7 @@ def prefix_path(prefix, path):
                         
 def rmtree(path):
    if (os.path.isdir(path)):
-      DEBUG("deleting directory: " + path)
+      DEBUG("deleting directory: %s" % path)
       try:
          shutil.rmtree(path)
       except OSError as x:
@@ -1054,31 +1286,6 @@ def rmtree(path):
                   % (path, x.filename, x.strerror))
    else:
       assert False, "unimplemented"
-
-def storage_env():
-   """Return path to builder storage as configured by $CH_IMAGE_STORAGE, or
-      the default if that's not set."""
-   try:
-      return os.environ["CH_IMAGE_STORAGE"]
-   except KeyError:
-      try:
-         p = os.environ["CH_GROW_STORAGE"]
-         WARNING("$CH_GROW_STORAGE is deprecated in favor of $CH_IMAGE_STORAGE")
-         WARNING("the old name will be removed in Charliecloud version 0.23")
-         return p
-      except KeyError:
-         return storage_default()
-
-def storage_default():
-   # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
-   # environment variable? It seems a lot more robust. But, (1) we'd have
-   # to match it in some scripts and (2) it makes the documentation less
-   # clear becase we have to explain the fallback behavior.
-   try:
-      username = os.environ["USER"]
-   except KeyError:
-      FATAL("can't get username: $USER not set")
-   return "/var/tmp/%s/ch-image" % username
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):
