@@ -142,12 +142,11 @@ package managers.
 
 Maintained by us:
 
-  * Generic RPMs downloadable from our `releases page <https://github.com/hpc/charliecloud/releases>`_.
   * `Spack
     <https://spack.readthedocs.io/en/latest/package_list.html#charliecloud>`_;
     install with :code:`+builder` to get :code:`ch-image`.
   * `Fedora/EPEL <https://bodhi.fedoraproject.org/updates/?search=charliecloud>`_;
-    check for availabile versions with :code:`{yum,dnf} list charliecloud`.
+    check for available versions with :code:`{yum,dnf} list charliecloud`.
 
 Maintained by others:
 
