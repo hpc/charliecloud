@@ -1,7 +1,9 @@
 # ch-test-scope: full
+#
 # Use Buster because Stretch JRE install fails with:
 #
-#   tempnam() is so ludicrously insecure as to defy implementation.tempnam: Cannot allocate memory
+#   tempnam() is so ludicrously insecure as to defy implementation.
+#   tempnam: Cannot allocate memory
 #   dpkg: error processing package openjdk-8-jre-headless:amd64 (--configure):
 #    subprocess installed post-installation script returned error exit status 1
 
