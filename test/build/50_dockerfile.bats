@@ -375,16 +375,17 @@ EOF
 @test 'Dockerfile: SHELL' {
    scope standard
    [[ $CH_BUILDER = none ]] && skip 'no builder'
-   [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
-
-   
+   [[ $CH_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
+  
+   # testing that SHELL command can change executables and paramaters
+   prerequisites_ok 00_tiny 
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-RUN echo 1
+RUN ps | grep "/bin/sh -c"
 SHELL ["/bin/ash","-c"]
-RUN  echo 1
+RUN  ps | grep "/bin/ash -c"
 SHELL ["/bin/sh", "-v", "-c"]
-RUN echo 1
+RUN ps | grep "/bin/sh -v -c"
 EOF
    echo "$output"
    [[ $status -eq 0 ]]
@@ -393,28 +394,47 @@ EOF
    else
       [[ $output = *"Successfully built"* ]]
    fi
+   [[ $output = *"/bin/sh -c"* ]]
+   [[ $output = *"/bin/ash -c"* ]]
+   [[ $output = *"/bin/sh -v -c"* ]]
 
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 SHELL ["/bin/false"]
-RUN echo 1
+RUN /bin/true
 EOF
    echo "$output"
-   [[ $status -ne 0 ]]
-   if [[ $CH_BUILDER = ch-image ]]; then
-      [[ $output = *"error: build failed: RUN command exited with 1"* ]]
-   else
-      [[ $output = *"returned a non-zero code: 1"* ]]
-   fi
+   [[ $status -eq 1 ]]
+
+   run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+SHELL ["/bin/bin/python3", "-c"]
+RUN print("hello")
+EOF
+   echo "$output"
+   [[ status -eq 1 ]]
 
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 SHELL ["/bin/ash"]
-RUN echo 1
+RUN true
 EOF
    echo "$output"
    [[ status -ne 0 ]]
-   [[ $output = *"/bin/ash: can't open 'echo 1': No such file or directory"* ]]
+   [[ $output = *"/bin/ash: can't open 'true': No such file or directory"* ]]
+
+   run ch-build -t foo -f - . <<'EOF'
+FROM centos7
+SHELL ["/usr/bin/python3", "-c"]
+RUN print ("hello")
+EOF
+   echo "$output"
+   [[ status -eq 0 ]]
+   if [[ $CH_BUILDER = ch-image ]]; then
+      [[ $output = *"grown in 3 instructions: foo"* ]]
+   else
+      [[ $output = *"Successfully built"* ]]
+   fi
 }
 @test 'Dockerfile: ARG and ENV values' {
     # We use full scope for builders other than ch-image because (1) with
