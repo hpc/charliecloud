@@ -324,7 +324,7 @@ RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debdistro'* ]]
+    [[ $output = *'available --force: debderiv'* ]]
 }
 
 @test "${tag}: Debian Stretch: unneeded, no --force, build fails" {
@@ -400,7 +400,7 @@ RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debdistro'* ]]
+    [[ $output = *'available --force: debderiv'* ]]
 }
 
 @test "${tag}: Debian Buster: unneeded, no --force, build fails" {
@@ -466,7 +466,7 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-@test "${tag}: Ubuntu Xenial: unneeded, no --force, build succeeds" {
+@test "${tag}: Ubuntu 16 (Xenial): unneeded, no --force, build succeeds" {
     scope full
     # no commands that may need it, without --force, build succeeds
     # also: correct config
@@ -476,10 +476,10 @@ RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debdistro'* ]]
+    [[ $output = *'available --force: debderiv'* ]]
 }
 
-@test "${tag}: Ubuntu Xenial: unneeded, no --force, build fails" {
+@test "${tag}: Ubuntu 16 (Xenial): unneeded, no --force, build fails" {
     scope full
     # no commands that may need it, without --force, build fails
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
@@ -492,7 +492,7 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Ubuntu Xenial: unneeded, with --force" {
+@test "${tag}: Ubuntu 16 (Xenial): unneeded, with --force" {
     scope full
     # no commands that may need it, with --force, warning
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
@@ -506,15 +506,15 @@ EOF
 
 # FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Ubuntu Xenial: maybe needed but actually not, no --force" {
+#@test "${tag}: Ubuntu 16 (Xenial): maybe needed but actually not, no --force" {
 #}
 
 # FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Ubuntu Xenial: maybe needed but actually not, with --force" {
+#@test "${tag}: Ubuntu 16 (Xenial): maybe needed but actually not, with --force" {
 #}
 
-@test "${tag}: Ubuntu Xenial: needed but no --force" {
+@test "${tag}: Ubuntu 16 (Xenial): needed but no --force" {
     scope full
     # commands that may need it, they do, fail & suggest
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
@@ -529,7 +529,7 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Ubuntu Xenial: needed, with --force" {
+@test "${tag}: Ubuntu 16 (Xenial): needed, with --force" {
     scope standard
     # commands that may need it, they do, --force, success
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
@@ -542,24 +542,24 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-@test "${tag}: Ubuntu Focal: unneeded, no --force, build succeeds" {
+@test "${tag}: Ubuntu 18 (Bionic): unneeded, no --force, build succeeds" {
     scope full
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:focal
+FROM ubuntu:bionic
 RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debdistro'* ]]
+    [[ $output = *'available --force: debderiv'* ]]
 }
 
-@test "${tag}: Ubuntu Focal: unneeded, no --force, build fails" {
+@test "${tag}: Ubuntu 18 (Bionic): unneeded, no --force, build fails" {
     scope full
     # no commands that may need it, without --force, build fails
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:focal
+FROM ubuntu:bionic
 RUN false
 EOF
     echo "$output"
@@ -568,11 +568,11 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Ubuntu Focal: unneeded, with --force" {
+@test "${tag}: Ubuntu 18 (Bionic): unneeded, with --force" {
     scope full
     # no commands that may need it, with --force, warning
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:focal
+FROM ubuntu:bionic
 RUN true
 EOF
     echo "$output"
@@ -582,19 +582,19 @@ EOF
 
 # FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Ubuntu Focal: maybe needed but actually not, no --force" {
+#@test "${tag}: Ubuntu 18 (Bionic): maybe needed but actually not, no --force" {
 #}
 
 # FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Ubuntu Focal: maybe needed but actually not, with --force" {
+#@test "${tag}: Ubuntu 18 (Bionic): maybe needed but actually not, with --force" {
 #}
 
-@test "${tag}: Ubuntu Focal: needed but no --force" {
+@test "${tag}: Ubuntu 18 (Bionic): needed but no --force" {
     scope full
     # commands that may need it, they do, fail & suggest
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:focal
+FROM ubuntu:bionic
 RUN apt-get update && apt-get install -y openssh-client
 EOF
     echo "$output"
@@ -605,11 +605,11 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Ubuntu Focal: needed, with --force" {
+@test "${tag}: Ubuntu 18 (Bionic): needed, with --force" {
     scope standard
     # commands that may need it, they do, --force, success
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:focal
+FROM ubuntu:bionic
 RUN apt-get update && apt-get install -y openssh-client
 EOF
     echo "$output"
@@ -618,24 +618,24 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-@test "${tag}: Ubuntu Bionic: unneeded, no --force, build succeeds" {
+@test "${tag}: Ubuntu 20 (Focal): unneeded, no --force, build succeeds" {
     scope full
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:bionic
+FROM ubuntu:focal
 RUN true
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available --force: debdistro'* ]]
+    [[ $output = *'available --force: debderiv'* ]]
 }
 
-@test "${tag}: Ubuntu Bionic: unneeded, no --force, build fails" {
+@test "${tag}: Ubuntu 20 (Focal): unneeded, no --force, build fails" {
     scope full
     # no commands that may need it, without --force, build fails
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:bionic
+FROM ubuntu:focal
 RUN false
 EOF
     echo "$output"
@@ -644,11 +644,11 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Ubuntu Bionic: unneeded, with --force" {
+@test "${tag}: Ubuntu 20 (Focal): unneeded, with --force" {
     scope full
     # no commands that may need it, with --force, warning
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:bionic
+FROM ubuntu:focal
 RUN true
 EOF
     echo "$output"
@@ -658,19 +658,19 @@ EOF
 
 # FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Ubuntu Bionic: maybe needed but actually not, no --force" {
+#@test "${tag}: Ubuntu 20 (Focal): maybe needed but actually not, no --force" {
 #}
 
 # FIXME: Not sure how to do this on Ubuntu; any use of apt-get to install
 # needs "apt-get update" first, which requires --force.
-#@test "${tag}: Ubuntu Bionic: maybe needed but actually not, with --force" {
+#@test "${tag}: Ubuntu 20 (Focal): maybe needed but actually not, with --force" {
 #}
 
-@test "${tag}: Ubuntu Bionic: needed but no --force" {
+@test "${tag}: Ubuntu 20 (Focal): needed but no --force" {
     scope full
     # commands that may need it, they do, fail & suggest
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:bionic
+FROM ubuntu:focal
 RUN apt-get update && apt-get install -y openssh-client
 EOF
     echo "$output"
@@ -681,11 +681,11 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Ubuntu Bionic: needed, with --force" {
+@test "${tag}: Ubuntu 20 (Focal): needed, with --force" {
     scope standard
     # commands that may need it, they do, --force, success
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM ubuntu:bionic
+FROM ubuntu:focal
 RUN apt-get update && apt-get install -y openssh-client
 EOF
     echo "$output"
