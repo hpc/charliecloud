@@ -372,6 +372,7 @@ EOF
   diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
 }
 
+
 @test 'Dockerfile: SHELL' {
    scope standard
    [[ $CH_BUILDER = none ]] && skip 'no builder'
@@ -436,6 +437,8 @@ EOF
       [[ $output = *"Successfully built"* ]]
    fi
 }
+
+
 @test 'Dockerfile: ARG and ENV values' {
     # We use full scope for builders other than ch-image because (1) with
     # ch-image, we are responsible for --build-arg being implemented correctly

@@ -783,6 +783,7 @@ class Environment:
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
       self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
 
+
 ## Supporting functions ###
 
 def variables_sub(s, variables):
