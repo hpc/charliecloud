@@ -183,6 +183,21 @@ EOF
     fi
 }
 
+if [[ -e ./Makefile.in ]]; then
+    echo '🚨🚨🚨 Makefile.in seems to exist 🚨🚨🚨'
+    echo 'did you "make distclean; ./autogen.sh --clean"?'
+    exit 1
+fi
+
+min_cloc=1.81
+if    ! command -v cloc > /dev/null \
+   || [[ $(  printf '%s\n%s\n' "$min_cloc" "$(cloc --version)" \
+           | sort -V | head -1 ) != "$min_cloc" ]]; then
+    echo "🚨🚨🚨 no cloc version ≥ $min_cloc 🚨🚨🚨"
+    echo 'did you try a better operating system?'
+    exit 1
+fi
+
 # program (Charliecloud itself)
 find ./bin ./lib -type f -a \( \
         -name '*.c' \
@@ -260,6 +275,7 @@ countem "MISCELLANEOUS" /tmp/loc.misc
 find . -type f -a \( \
         -name '*.ico' \
      -o -name '*.png' \
+     -o -name '*.tar.gz' \
      -o -name 'file[A-Z0-9y]*' \
      -o -name 's_dir?' \
      -o -name 's_file?' \
