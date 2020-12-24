@@ -1,5 +1,4 @@
 # ch-test-scope: full
-# ch-test-builder-exclude: ch-image  # deferred
 FROM openmpi
 WORKDIR /usr/local/src
 
@@ -9,6 +8,10 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 libpng-devel \
                 llvm \
                 llvm-devel \
+                mesa-libGL \
+                mesa-libGL-devel \
+                mesa-libOSMesa \
+                mesa-libOSMesa-devel \
                 python3 \
                 python3-devel \
                 python3-mako \
@@ -18,36 +21,6 @@ RUN dnf install -y --setopt=install_weak_deps=false \
 RUN pip3 install --no-binary=mpi4py \
     cython \
     mpi4py
-
-
-# Mesa. We need a version newer than what CentOS 8 offers as versions prior
-# to 19 appear to have issues rendering on ARM.
-ARG MESA_VERSION=19.0.5
-RUN wget -nv https://mesa.freedesktop.org/archive/mesa-${MESA_VERSION}.tar.xz \
- && tar xf mesa-${MESA_VERSION}.tar.xz \
- && cd mesa-${MESA_VERSION} \
- && ./configure --prefix=/usr/local \
-                --enable-autotools \
-                --enable-opengl \
-                --disable-gles1 \
-                --disable-gles2 \
-                --disable-va \
-                --disable-xvmc \
-                --disable-vdpau \
-                --disable-dri \
-                --disable-egl \
-                --disable-gbm \
-                --disable-glx \
-                --disable-osmesa \
-                --enable-shared-glapi \
-                --enable-llvm \
-                --enable-llvm-shared-libs \
-                --enable-gallium-osmesa \
-                --with-gallium-drivers=swrast \
-                --with-dri-drivers= \
-                --with-platforms= \
- && make -j$(getconf _NPROCESSORS_ONLN) install \
- && rm -Rf ../mesa-${MESA_VERSION}*
 
 # ParaView. Use system libpng to work around issues linking with NEON specific
 # symbols on ARM.
