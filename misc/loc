@@ -218,6 +218,7 @@ find ./.github ./examples ./test -type f -a \( \
      -o -name '*.py.in' \
      -o -name '*.sh' \
      -o -name '*.vtk' \
+     -o -name '*.yml' \
      -o -name 'Build.*' \
      -o -name 'Dockerfile.*' \
      -o -name .dockerignore \
@@ -227,7 +228,6 @@ find ./.github ./examples ./test -type f -a \( \
      -o -name README \
      -o -path ./test/fixtures/README \
      -o -path ./.github/PERUSEME \
-     -o -path ./.github/workflows/main.yml \
      -o -path ./examples/chtest/printns \
      -o -path ./test/common.bash \
      -o -path ./test/sotest/files_inferrable.txt \
