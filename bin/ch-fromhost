@@ -327,7 +327,8 @@ if [ $cray_openmpi ]; then
     # dlopen(3)-related errors that we don't understand.
     image_mpilibs=$(  "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -p \
                     | sed -nr 's|^.* => (/.*/(libmpi\|libopen-rte\|libopen-pal)\.so([0-9.]+)?)$|\1|p')
-    [ !$(echo "$image_mpilibs" | grep -q "libmpi") ] || fatal "can't find libmpi.so* in image"
+       echo "$image_mpilibs" | grep -q "libmpi" \
+    || fatal "can't find libmpi.so* in image"
     for f in $image_mpilibs; do
         queue_unlink "$f"
         queue_unlink "$("${ch_bin}/ch-run" "$image" -- readlink -f "$f")"
