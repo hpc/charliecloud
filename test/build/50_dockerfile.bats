@@ -378,52 +378,41 @@ EOF
    [[ $CH_BUILDER = none ]] && skip 'no builder'
    [[ $CH_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
   
-   # testing that SHELL command can change executables and paramaters
-   prerequisites_ok 00_tiny 
+   # tests that SHELL command can change executables and paramaters
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-RUN ps | grep "/bin/sh -c"
+RUN echo "1" $0
 SHELL ["/bin/ash","-c"]
-RUN  ps | grep "/bin/ash -c"
+RUN  echo "2" $0
 SHELL ["/bin/sh", "-v", "-c"]
-RUN ps | grep "/bin/sh -v -c"
+RUN echo "3" $0
 EOF
    echo "$output"
    [[ $status -eq 0 ]]
-   if [[ $CH_BUILDER = ch-image ]]; then  
-      [[ $output = *"grown in 6 instructions: foo"* ]]
-   else
-      [[ $output = *"Successfully built"* ]]
-   fi
-   [[ $output = *"/bin/sh -c"* ]]
-   [[ $output = *"/bin/ash -c"* ]]
-   [[ $output = *"/bin/sh -v -c"* ]]
+   [[ $output = *"1 /bin/sh"* ]]
+   [[ $output = *"2 /bin/ash"* ]]
+   [[ $output = *"3 /bin/sh"* ]]
 
+   # tests that it fails if shell doesn't exist
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-SHELL ["/bin/false"]
-RUN /bin/true
-EOF
-   echo "$output"
-   [[ $status -eq 1 ]]
-
-   run ch-build -t foo -f - . <<'EOF'
-FROM 00_tiny
-SHELL ["/bin/bin/python3", "-c"]
+SHELL ["/usr/bin/doesnotexist", "-c"]
 RUN print("hello")
 EOF
    echo "$output"
    [[ status -eq 1 ]]
 
+   # tests that it fails if no paramaters
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-SHELL ["/bin/ash"]
+SHELL ["/bin/sh"]
 RUN true
 EOF
    echo "$output"
-   [[ status -ne 0 ]]
-   [[ $output = *"/bin/ash: can't open 'true': No such file or directory"* ]]
+   [[ status -ne 0 ]] #different builder use different error exit codes
+   [[ $output = *"/bin/sh: can't open 'true': No such file or directory"* ]]
 
+   # tests that it works with python3 
    run ch-build -t foo -f - . <<'EOF'
 FROM centos7
 SHELL ["/usr/bin/python3", "-c"]
