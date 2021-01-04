@@ -150,7 +150,7 @@ Maintained by us:
 
 Maintained by others:
 
-  * `Debian <https://packages.debian.org/search?keywords=charliecloud>`_
+  * `Debian <https://packages.debian.org/source/charliecloud>`_
   * `Gentoo <https://packages.gentoo.org/packages/sys-cluster/charliecloud>`_
   * `NixOS <https://github.com/NixOS/nixpkgs/tree/master/pkgs/applications/virtualization/charliecloud>`_
   * `SUSE <https://packagehub.suse.com/packages/charliecloud/>`_ and `openSUSE <https://build.opensuse.org/package/show/network:cluster/charliecloud>`_
