@@ -240,6 +240,10 @@ expansion, comments, etc. are provided. The value may be empty, but not the
 key. (This syntax is designed to accept the output of :code:`printenv` and be
 easily produced by other simple mechanisms.) Examples of valid lines:
 
+To set :code:`PATH=$PATH:bar`, in :code:`FILE` it would typed as
+:code:`PATH=:bar`. The :code:`:` is the indicator to append something to a global
+variable.
+
 .. list-table::
    :header-rows: 1
 
@@ -267,6 +271,9 @@ easily produced by other simple mechanisms.) Examples of valid lines:
    * - :code:`FOO=''''`
      - :code:`FOO`
      - :code:`''` (two single quotes)
+   * - :code:`PATH=:bar`
+     - :code:`PATH`
+     - :code:`$PATH:bar`
 
 Example invalid lines:
 
