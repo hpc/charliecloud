@@ -379,7 +379,7 @@ EOF
    [[ $CH_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
   
    # tests that SHELL command can change executables and paramaters
-   run ch-build -t foo -f - . <<'EOF'
+   run ch-build -t foo --no-cache -f - . <<'EOF'
 FROM 00_tiny
 RUN echo "1" $0
 SHELL ["/bin/ash","-c"]
