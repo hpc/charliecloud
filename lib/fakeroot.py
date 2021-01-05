@@ -186,13 +186,13 @@ DEFAULT_CONFIGS = {
      "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 
-   # Debian notes:
+   # Debian/Ubuntu notes:
    #
-   # 1. By default in recent Debians, apt(8) runs as an unprivileged user.
-   #    This makes *all* apt operations fail in an unprivileged container
-   #    because it can't drop privileges. There are multiple ways to turn the
-   #    “sandbox” off. As far as I can tell, none are documented, but this one
-   #    at least appears in google searches a lot.
+   # 1. In recent Debian-based distributions apt(8) runs as an unprivileged
+   #    user by default. This makes *all* apt operations fail in an
+   #    unprivileged container because it can't drop privileges. There are
+   #    multiple ways to turn the “sandbox” off. AFAICT, none are documented,
+   #    but this one at least appears in Google searches a lot.
    #
    #    apt also doesn't drop privileges if there is no user _apt; in my
    #    testing, sometimes this user is present and sometimes not, for reasons
@@ -208,9 +208,9 @@ DEFAULT_CONFIGS = {
    #      dpkg-query -Wf '${Package}\n' \
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
-   "debSB":
-   { "name": "Debian 9 (Stretch) or 10 (Buster)",
-     "match": ("/etc/debian_version", r"^(9|10)\."),
+   "debderiv":
+   { "name": "Debian (9, 10) or Ubuntu (16, 18, 20)",
+     "match": ("/etc/os-release", r"(stretch|buster|xenial|bionic|focal)"),
      "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
                 " || ! fgrep -q _apt /etc/passwd",
                 "echo 'APT::Sandbox::User \"root\";'"
