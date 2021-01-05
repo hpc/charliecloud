@@ -3,7 +3,6 @@
 import argparse
 import os
 import sys
-import shutil
 
 import charliecloud as ch
 import version
