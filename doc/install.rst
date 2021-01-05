@@ -142,16 +142,15 @@ package managers.
 
 Maintained by us:
 
-  * Generic RPMs downloadable from our `releases page <https://github.com/hpc/charliecloud/releases>`_.
   * `Spack
     <https://spack.readthedocs.io/en/latest/package_list.html#charliecloud>`_;
     install with :code:`+builder` to get :code:`ch-image`.
   * `Fedora/EPEL <https://bodhi.fedoraproject.org/updates/?search=charliecloud>`_;
-    check for availabile versions with :code:`{yum,dnf} list charliecloud`.
+    check for available versions with :code:`{yum,dnf} list charliecloud`.
 
 Maintained by others:
 
-  * `Debian <https://packages.debian.org/search?keywords=charliecloud>`_
+  * `Debian <https://packages.debian.org/source/charliecloud>`_
   * `Gentoo <https://packages.gentoo.org/packages/sys-cluster/charliecloud>`_
   * `NixOS <https://github.com/NixOS/nixpkgs/tree/master/pkgs/applications/virtualization/charliecloud>`_
   * `SUSE <https://packagehub.suse.com/packages/charliecloud/>`_ and `openSUSE <https://build.opensuse.org/package/show/network:cluster/charliecloud>`_

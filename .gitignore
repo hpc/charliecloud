@@ -39,16 +39,6 @@ a.out
 /charliecloud-*.tar*
 /charliecloud-*/
 
-# for Debian package
-*.debhelper.log
-*.substvars
-/packaging/debian/.debhelper/
-/packaging/debian/debhelper-build-stamp
-/packaging/debian/charliecloud/
-/packaging/debian/charliecloud-doc/
-/packaging/debian/files
-/packaging/debian/tmp
-
 # OS X crap
 ._*
 .DS_Store

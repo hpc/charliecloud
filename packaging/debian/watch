@@ -1,5 +1,0 @@
-version=3
-
-opts="filenamemangle=s/(?:.*)?v?(\d[\d\.]*)\.tar\.gz/charliecloud-$1.tar.gz/" \
-  https://github.com/hpc/charliecloud/tags (?:.*/)?v?(\d[\d\.]*)\.tar\.gz
-
