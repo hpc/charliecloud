@@ -44,10 +44,13 @@ jobs:
           done
           echo "path_new=$path_new"
           echo "PATH=$path_new" >> $GITHUB_ENV
-          # Set umask to something quite restrictive. The default is 0022, but
-          # we had a "make install" bug that was tickled by 0027, which is a
-          # better setting. For reasons I don't understand, this only affects
-          # sudo, but since that's what we want, I left it. (Issue #945.)
+          # Set sudo umask to something quite restrictive. The default is
+          # 0022, but we had a "make install" bug (issue #947) that was
+          # tickled by 0027, which is a better setting. For reasons I don't
+          # understand, this only affects sudo, but since that's what we want,
+          # I left it. Note there are a few dependency installs below that
+          # have similar permissions bugs; these relax the umask on a
+          # case-by-case basis.
           sudo sed -i -E 's/^UMASK\s+022/UMASK 0077/' /etc/login.defs
           fgrep UMASK /etc/login.defs
 

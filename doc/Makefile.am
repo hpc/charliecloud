@@ -142,7 +142,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 # simultaneously. It is temporary and can be removed when Sphinx >= 1.6.6 is
 # an appropriate dependency. See issue #115.
 .PHONY: mkdir_issue115
-	mkdir -p $(BUILDDIR)/doctrees
+	mkdir $(BUILDDIR)/doctrees
 
 _deps.rst: ../config.log make-deps-overview
 	cat $< | ./make-deps-overview > $@
