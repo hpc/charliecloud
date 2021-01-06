@@ -481,8 +481,8 @@ AS_IF([   test -n "$TAR"],
 
 AS_IF([   test $have_any_builder = yes \
        && test $have_pack_tar = yes],
-      [have_builder_to_tar = yes],
-      [have_builder_to_tar = no])
+      [have_builder_to_tar=yes],
+      [have_builder_to_tar=no])
 
 AS_IF([   test $have_any_builder = yes \
        && test -n "$MKSQUASHFS"],
