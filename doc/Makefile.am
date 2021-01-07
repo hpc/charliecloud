@@ -3,6 +3,21 @@
 # Automake-ification, I stripped out most of the boilderplate and left only
 # the targets that we use.
 
+# We turn off parallel build in doc:
+#
+#   1. Sphinx handles building the whole documentation internally already, as
+#      a unit, so we shouldn't call sphinx-build more than once for different
+#      output files at all, let alone in parallel.
+#
+#   2. Serial build is plenty fast.
+#
+#   3. There is a race condition in Sphinx < 1.6.6 that's triggered when two
+#      instances (e.g., for html and man targets) try to "mkdir doctrees"
+#      simultaneously. See issue #115.
+#
+# This special target was introduced in GNU Make 3.79, in April 2000.
+.NOTPARALLEL:
+
 EXTRA_DIST = \
 bugs.rst \
 charliecloud.rst \
@@ -137,37 +152,36 @@ BUILDDIR      = .
 # Internal variables.
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 
-# This target works around a race condition in Sphinx that's triggered when
-# two instances (e.g., for html and man targets) try to "mkdir doctrees"
-# simultaneously. It is temporary and can be removed when Sphinx >= 1.6.6 is
-# an appropriate dependency. See issue #115.
-.PHONY: mkdir_issue115
-	mkdir $(BUILDDIR)/doctrees
-
 _deps.rst: ../config.log make-deps-overview
 	cat $< | ./make-deps-overview > $@
 
-# This called "html-local" because Automake has a Texinfo target called "html"
-# and gripes if we override it.
-$(nobase_html_DATA): html-local
-html-local: mkdir_issue115 ../lib/version.txt _deps.rst
+# Since we're not doing anything in parallel anyway, just put the HTML and the
+# man pages in the same target, with conditionals. Gotchas:
+#
+#   1. If we build both, the HTML needs to go first otherwise it doesn't get
+#      curly quotes. ¯\_(ツ)_/¯
+#
+#   2. This not a "grouped target" but rather an "independent target" [1],
+#      because the former came in GNU Make 4.3 which is quite new. However it
+#      does seem to get run only once.
+#
+# [1]: https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html
+$(nobase_html_DATA) $(man_MANS): ../lib/version.txt _deps.rst $(EXTRA_DIST)
+if ENABLE_HTML
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-# avoid GitHub messing things up with Jekyll
+#       Avoid GitHub messing things up with Jekyll.
 	touch html/.nojekyll
-# remove unused files that Sphinx made
+#       Some output files are copies with same timestamp as source; fix. Note
+#       we need all the HTML output files, not just the one picked in $@.
+	touch --no-create $(nobase_html_DATA)
+#       remove unused files that Sphinx made
 	rm -f $(BUILDDIR)/html/_deps.html \
 	      $(BUILDDIR)/html/charliecloud.html \
 	      $(BUILDDIR)/html/ch-*.html \
 	      $(BUILDDIR)/html/bugs.html \
 	      $(BUILDDIR)/html/objects.inv \
 	      $(BUILDDIR)/html/see_also.html
-
-# FIXME: If Sphinx builds the man pages first, the HTML docs don't get curly
-# quotes. ¯\_(ツ)_/¯ Force HTML to go first.
-if ENABLE_HTML
-HTML_FIRST = html
 endif
-
-$(man_MANS): man
-man: mkdir_issue115 ../lib/version.txt _deps.rst $(HTML_FIRST)
+if ENABLE_MAN
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
+endif
