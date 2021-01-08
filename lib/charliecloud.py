@@ -7,6 +7,7 @@ import datetime
 import getpass
 import hashlib
 import http.client
+import json
 import os
 import getpass
 import pathlib
@@ -213,44 +214,9 @@ class Image:
 
    def copy_unpacked(self, other):
       "Copy the unpack directory of Image other to my unpack directory."
-      self.unpack_create_ok()
-      DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
-      copytree(other.unpack_path, self.unpack_path, symlinks=True)
-
-   def fixup(self):
-      "Add the Charliecloud workarounds to my unpacked image."
-      DEBUG("fixing up image: %s" % self.unpack_path)
-      # Metadata directory.
-      mkdirs("%s/ch" % self.unpack_path)
-      file_ensure_exists("%s/ch/environment" % self.unpack_path)
-      # Mount points.
-      file_ensure_exists("%s/etc/hosts" % self.unpack_path)
-      file_ensure_exists("%s/etc/resolv.conf" % self.unpack_path)
-      for i in range(10):
-         mkdirs("%s/mnt/%d" % (self.unpack_path, i))
-
-   def flatten(self, layer_tars, last_layer=None):
-      """Unpack layer_tars (sequence of paths to tarballs, with lowest layer
-         first) into the unpack directory, validating layer contents and
-         dealing with whiteouts. Empty layers are ignored."""
-      if (last_layer is None):
-         last_layer = sys.maxsize
-      layers = self.layers_open(layer_tars)
-      self.validate_members(layers)
-      self.whiteouts_resolve(layers)
-      INFO("flattening image")
       self.unpack_create()
-      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
-         lh_short = lh[:7]
-         if (i > last_layer):
-            INFO("layer %d/%d: %s: skipping per --last-layer"
-                 % (i, len(layers), lh_short))
-         else:
-            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh_short))
-            try:
-               fp.extractall(path=self.unpack_path, members=members)
-            except OSError as x:
-               FATAL("can't extract layer %d: %s" % (i, x.strerror))
+      VERBOSE("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
+      copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
    def layers_open(self, layer_tars):
       """Open the layer tarballs and read some metadata (which unfortunately
@@ -289,7 +255,7 @@ class Image:
             layers[lh] = TT(fp, members)
          else:
             empty_cnt += 1
-      DEBUG("skipped %d empty layers" % empty_cnt)
+      VERBOSE("skipped %d empty layers" % empty_cnt)
       return layers
 
    def tarballs_write(self, tarball_dir):
@@ -302,10 +268,10 @@ class Image:
       path = tarball_dir // base
       try:
          INFO("layer 1/1: gathering")
-         DEBUG("writing tarball: %s" % path)
+         VERBOSE("writing tarball: %s" % path)
          fp = TarFile.open(path, "w", format=tarfile.PAX_FORMAT)
          unpack_path = self.unpack_path.resolve()  # aliases use symlinks
-         DEBUG("canonicalized unpack path: %s" % unpack_path)
+         VERBOSE("canonicalized unpack path: %s" % unpack_path)
          fp.add_(unpack_path, arcname=".")
          fp.close()
       except OSError as x:
@@ -366,18 +332,18 @@ class Image:
          prefix of prefix. For example, if prefix is foo/bar, then ignore
          foo/bar and foo/bar/baz but not foo/barbaz. Return count of members
          ignored."""
-      DEBUG("finding members with prefix: %s" % prefix, v=2)
+      TRACE("finding members with prefix: %s" % prefix)
       prefix = os.path.normpath(prefix)  # "./foo" == "foo"
       ignore_ct = 0
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          if (i > max_i): break
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
-            if (prefix_path(prefix, m.name)):  
+            if (prefix_path(prefix, m.name)):
                ignore_ct += 1
                members.remove(m)
-               DEBUG("layer %d/%d: %s: ignoring %s"
-                     % (i, len(layers), lh[:7], m.name), v=2)
+               TRACE("layer %d/%d: %s: ignoring %s"
+                     % (i, len(layers), lh[:7], m.name))
       return ignore_ct
 
    def whiteouts_resolve(self, layers):
@@ -396,38 +362,108 @@ class Image:
                members.remove(m)
                if (filename == ".wh..wh..opq"):
                   # "Opaque whiteout": remove contents of dir_.
-                  DEBUG("found opaque whiteout: %s" % m.name, v=2)
+                  DEBUG("found opaque whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1, dir_)
                else:
                   # "Explicit whiteout": remove same-name file without ".wh.".
-                  DEBUG("found explicit whiteout: %s" % m.name, v=2)
+                  DEBUG("found explicit whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1,
                                                    dir_ + "/" + filename[4:])
          if (wo_ct > 0):
-            DEBUG("layer %d/%d: %s: processed %d whiteouts; %d members ignored"
-                  % (i, len(layers), lh[:7], wo_ct, ig_ct))
+            VERBOSE("layer %d/%d: %s: %d whiteouts; %d members ignored"
+                    % (i, len(layers), lh[:7], wo_ct, ig_ct))
 
-   def unpack_create_ok(self):
-      """Ensure the unpack directory can be created. If the unpack directory
-         is already an image, remove it."""
+   def unpack(self, config_json, layer_tars, last_layer=None):
+      """Unpack config_json (path to JSON config file) and layer_tars
+         (sequence of paths to tarballs, with lowest layer first) into the
+         unpack directory, validating layer contents and dealing with
+         whiteouts. Empty layers are ignored. Overwrite any existing image in
+         the unpack directory."""
+      if (last_layer is None):
+         last_layer = sys.maxsize
+      INFO("flattening image")
+      self.unpack_init()
+      self.unpack_config(config_json)
+      self.unpack_layers(layer_tars, last_layer)
+
+   def unpack_config(self, config_json):
+      # FIXME: init metadata structure
+      if (config_json is None):
+         INFO("image has no config")
+      else:
+         # FIXME: copy json file verbatim
+         # FIXME: print json
+         # Open and parse JSON.
+         fp = open_(config_json, "rt", encoding="UTF-8")
+         text = ossafe(fp.read, "can't read: %s" % config_json)
+         ossafe(fp.close, "can't close: %s" % config_json)
+         try:
+            config = json.loads(text)
+         except json.JSONDecodeError as x:
+            FATAL("can't parse config file: %s:%d: %s"
+                  % (config_json, x.lineno, x.msg))
+         DEBUG("config:\n%s" % json.dumps(config, indent=2))
+         # FIXME: interpret all the crap in the config
+         # - volumes: create dirs?
+         # - workingdir: create, set default WD?
+         # - labels: ???
+         # - env: save to /ch/environment
+         # - architecture: ???
+         # - shell: where does it show up?
+         # - history?
+      # FIXME: save metadata structure - JSON/pickle?
+
+   def unpack_create(self):
+      """Create an empty directory for unpacking into. If the directory is
+         already an image, remove it."""
       if (not os.path.exists(self.unpack_path)):
-         DEBUG("creating new image: %s" % self.unpack_path)
+         VERBOSE("creating new image: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
          if (   not os.path.isdir(self.unpack_path // "bin")
              or not os.path.isdir(self.unpack_path // "dev")
+             or not os.path.isdir(self.unpack_path // "etc")
              or not os.path.isdir(self.unpack_path // "usr")):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
-         DEBUG("replacing existing image: %s" % self.unpack_path)
+         VERBOSE("replacing existing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
-
-   def unpack_create(self):
-      "Ensure the unpack directory exists, replacing or creating if needed."
-      self.unpack_create_ok()
       mkdirs(self.unpack_path)
+
+   def unpack_init(self):
+      """Initialize the unpack directory, replacing or creating if needed.
+         After calling this, self.unpack_path is a valid Charliecloud image
+         directory."""
+      self.unpack_create()
+      # Metadata directory.
+      mkdirs(self.unpack_path // "ch")
+      file_ensure_exists(self.unpack_path // "ch/environment")
+      # Essential top-level directories.
+      for d in ("bin", "dev", "etc", "mnt", "usr"):
+         mkdirs(self.unpack_path // d)
+      # Mount points.
+      file_ensure_exists(self.unpack_path // "etc/hosts")
+      file_ensure_exists(self.unpack_path // "etc/resolv.conf")
+      for i in range(10):
+         mkdirs(self.unpack_path // "mnt" // str(i))
+
+   def unpack_layers(self, layer_tars, last_layer):
+      layers = self.layers_open(layer_tars)
+      self.validate_members(layers)
+      self.whiteouts_resolve(layers)
+      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         lh_short = lh[:7]
+         if (i > last_layer):
+            INFO("layer %d/%d: %s: skipping per --last-layer"
+                 % (i, len(layers), lh_short))
+         else:
+            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh_short))
+            try:
+               fp.extractall(path=self.unpack_path, members=members)
+            except OSError as x:
+               FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
 
 class Image_Ref:
@@ -508,7 +544,7 @@ class Image_Ref:
          # We get UnexpectedEOF because of Lark issue #237. This exception
          # doesn't have a column location.
          FATAL("image ref syntax, at end: %s" % s)
-      DEBUG(tree.pretty(), v=2)
+      VERBOSE(tree.pretty())
       return tree
 
    @property
@@ -722,8 +758,12 @@ class Registry_HTTP:
       self.ref.defaults_add()
       self.auth = self.Null_Auth()
       self.session = None
-      if (verbose >= 2):
-         http.client.HTTPConnection.debuglevel = 1
+      # This is commented out because it prints full request and response
+      # bodies to standard output (not stderr), which overwhelms the terminal.
+      # Normally, a better debugging approach if you need this is to sniff the
+      # connection using e.g. mitmproxy.
+      #if (verbose >= 2):
+      #   http.client.HTTPConnection.debuglevel = 1
 
    def _url_of(self, type_, address):
       "Return an appropriate repository URL."
@@ -731,20 +771,20 @@ class Registry_HTTP:
       return "/".join((url_base, self.ref.path_full, type_, address))
 
    def authenticate_basic(self, res, auth_d):
-      DEBUG("authenticating using Basic")
+      VERBOSE("authenticating using Basic")
       if ("realm" not in auth_d):
          FATAL("WWW-Authenticate missing realm")
       (username, password) = self.credentials_read()
       self.auth = requests.auth.HTTPBasicAuth(username, password)
 
    def authenticate_bearer(self, res, auth_d):
-      DEBUG("authenticating using Bearer")
+      VERBOSE("authenticating using Bearer")
       for k in ("realm", "service", "scope"):
          if (k not in auth_d):
             FATAL("WWW-Authenticate missing key: %s" % k)
       # First, try for an anonymous auth token. If that fails, try for an
       # authenticated token.
-      DEBUG("requesting anonymous auth token")
+      VERBOSE("requesting anonymous auth token")
       res = self.request_raw("GET", auth_d["realm"], {200,403},
                              params={"service": auth_d["service"],
                                      "scope": auth_d["scope"]})
@@ -756,18 +796,18 @@ class Registry_HTTP:
                                 params={"service": auth_d["service"],
                                         "scope": auth_d["scope"]})
       token = res.json()["token"]
-      DEBUG("received auth token: %s" % (token[:32]))
+      VERBOSE("received auth token: %s" % (token[:32]))
       self.auth = self.Bearer_Auth(token)
 
    def authorize(self, res):
       "Authorize using the WWW-Authenticate header in failed response res."
-      DEBUG("authorizing")
+      VERBOSE("authorizing")
       assert (res.status_code == 401)
       # Get authentication instructions.
       if ("WWW-Authenticate" not in res.headers):
          FATAL("WWW-Authenticate header not found")
       auth_h = res.headers["WWW-Authenticate"]
-      DEBUG("WWW-Authenticate raw: %s" % auth_h)
+      VERBOSE("WWW-Authenticate raw: %s" % auth_h)
       # Parse the WWW-Authenticate header. Apparently doing this correctly is
       # pretty hard. We use a non-compliant regex kludge [1,2]. Alternatives
       # include putting the grammar into Lark (this can be gotten by reading
@@ -778,7 +818,7 @@ class Registry_HTTP:
       # [3]: https://pypi.org/project/www-authenticate
       auth_type = auth_h.split()[0]
       auth_d = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth_h))
-      DEBUG("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
+      VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
       # Dispatch to proper method.
       if   (auth_type == "Bearer"):
          self.authenticate_bearer(res, auth_d)
@@ -796,6 +836,12 @@ class Registry_HTTP:
       # wasn't able to figure out why. So possibly there is some gotcha here.
       res = self.request("HEAD", url, {200,404})
       return (res.status_code == 200)
+
+   def blob_to_file(self, digest, path):
+      "GET the blob with hash digest and save it at path."
+      # /v2/library/hello-world/blobs/<layer-hash>
+      url = self._url_of("blobs", "sha256:" + digest)
+      self.request("GET", url, out=path)
 
    def blob_upload(self, digest, data, note=""):
       """Upload blob with hash digest to url. data is the data to upload, and
@@ -845,16 +891,10 @@ class Registry_HTTP:
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
       # NOTE: We don't verify the digest b/c that means reading the whole file.
-      DEBUG("layer tarball: %s" % path)
+      VERBOSE("layer tarball: %s" % path)
       fp = open_(path, "rb")  # open file avoids reading it all into memory
       self.blob_upload(digest, fp, note)
       ossafe(fp.close, "can't close: %s" % path)
-
-   def layer_to_file(self, digest, path):
-      "GET the layer with hash digest and save it at path."
-      # /v2/library/hello-world/blobs/<layer-hash>
-      url = self._url_of("blobs", "sha256:" + digest)
-      self.request("GET", url, out=path, headers={ "Accept": TYPE_LAYER })
 
    def manifest_to_file(self, path):
       "GET the manifest for the image and save it at path."
@@ -878,14 +918,14 @@ class Registry_HTTP:
          Use current session if there is one, or start a new one if not. If
          authentication fails (or isn't initialized), then authenticate and
          re-try the request."""
-      DEBUG("%s: %s" % (method, url))
+      VERBOSE("%s: %s" % (method, url))
       self.session_init_maybe()
-      DEBUG("auth: %s" % self.auth)
+      VERBOSE("auth: %s" % self.auth)
       res = self.request_raw(method, url, statuses | {401}, **kwargs)
       if (res.status_code == 401):
-         DEBUG("HTTP 401 unauthorized")
+         VERBOSE("HTTP 401 unauthorized")
          self.authorize(res)
-         DEBUG("retrying with auth: %s" % self.auth)
+         VERBOSE("retrying with auth: %s" % self.auth)
          res = self.request_raw(method, url, statuses, **kwargs)
       if (out is not None):
          if (len(res.content) == 0):
@@ -915,13 +955,13 @@ class Registry_HTTP:
       # Log the rate limit headers if present.
       for h in ("RateLimit-Limit", "RateLimit-Remaining"):
          if (h in res.headers):
-            DEBUG("%s: %s" % (h, res.headers[h]))
+            VERBOSE("%s: %s" % (h, res.headers[h]))
       return res
 
    def session_init_maybe(self):
       "Initialize session if it's not initialized; otherwise do nothing."
       if (self.session is None):
-         DEBUG("initializing session")
+         VERBOSE("initializing session")
          self.session = requests.Session()
          self.session.verify = tls_verify
 
@@ -1055,29 +1095,29 @@ class TarFile(tarfile.TarFile):
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path
       # of the member being extracted.
-      DEBUG("makedir: %s" % targetpath, v=2)
+      TRACE("makedir: %s" % targetpath)
       self.clobber(targetpath, regulars=True, symlinks=True)
       super().makedir(tarinfo, targetpath)
 
    def makefile(self, tarinfo, targetpath):
-      DEBUG("makefile: %s" % targetpath, v=2)
+      TRACE("makefile: %s" % targetpath)
       self.clobber(targetpath, symlinks=True, dirs=True)
       super().makefile(tarinfo, targetpath)
 
    def makelink(self, tarinfo, targetpath):
-      DEBUG("makelink: %s -> %s" % (targetpath, tarinfo.linkname), v=2)
+      TRACE("makelink: %s -> %s" % (targetpath, tarinfo.linkname))
       self.clobber(targetpath, regulars=True, symlinks=True, dirs=True)
       super().makelink(tarinfo, targetpath)
 
 
 ## Supporting functions ##
 
-def DEBUG(*args, v=1, **kwargs):
-   if (verbose >= v):
-      log(color="36m", *args, **kwargs)
+def DEBUG(*args, **kwargs):
+   if (verbose >= 2):
+      log(color="38;5;6m", *args, **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(*args, **kwargs):
-   log(color="31m", prefix="error: ", *args, **kwargs)
+   log(color="1;31m", prefix="error: ", *args, **kwargs)  # bold red
 
 def FATAL(*args, **kwargs):
    ERROR(*args, **kwargs)
@@ -1086,8 +1126,16 @@ def FATAL(*args, **kwargs):
 def INFO(*args, **kwargs):
    log(*args, **kwargs)
 
+def TRACE(*args, **kwargs):
+   if (verbose >= 3):
+      log(color="38;5;6m", *args, **kwargs)  # dark cyan (same as 36m)
+
+def VERBOSE(*args, **kwargs):
+   if (verbose >= 1):
+      log(color="38;5;14m", *args, **kwargs)  # light cyan (1;36m but not bold)
+
 def WARNING(*args, **kwargs):
-   log(color="31m", prefix="warning: ", *args, **kwargs)
+   log(color="31m", prefix="warning: ", *args, **kwargs)  # red
 
 def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
@@ -1103,8 +1151,8 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    return cmd(args, env, fail_ok)
 
 def cmd(args, env=None, fail_ok=False):
-   DEBUG("environment: %s" % env)
-   DEBUG("executing: %s" % args)
+   VERBOSE("environment: %s" % env)
+   VERBOSE("executing: %s" % args)
    color_set("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
    color_reset(sys.stdout)
@@ -1135,6 +1183,20 @@ def dependencies_check():
       ERROR("%s dependency: %s" % (p, v))
    if (len(depfails) > 0):
       sys.exit(1)
+
+def digest_trim(d):
+   """Remove the algorithm tag from digest d and return the rest.
+
+        >>> digest_trim("sha256:foobar")
+        'foobar'
+
+      Note: Does not validate the form of the rest."""
+   try:
+      return d.split(":", maxsplit=1)[1]
+   except AttributeError:
+      FATAL("not a string: %s" % repr(d))
+   except IndexError:
+      FATAL("no algorithm tag: %s" % d)
 
 def done_notify():
    if (os.environ.get("USER", None) == "jogas"):
@@ -1223,7 +1285,7 @@ def init(cli):
       verbose = max(verbose_, 1)
       log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
-   DEBUG("verbose level: %d" % verbose)
+   VERBOSE("verbose level: %d" % verbose)
    # storage object
    storage = Storage(cli.storage)
    # TLS verification
@@ -1246,7 +1308,7 @@ def log(*args, color=None, prefix="", **kwargs):
       color_reset(log_fp)
 
 def mkdirs(path):
-   DEBUG("ensuring directory: %s" % path)
+   TRACE("ensuring directory: %s" % path)
    try:
       os.makedirs(path, exist_ok=True)
    except OSError as x:
@@ -1273,10 +1335,10 @@ def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.
        Assume that prefix and path are strings."""
    return prefix == path or (prefix + '/' == path[:len(prefix) + 1])
-                        
+
 def rmtree(path):
    if (os.path.isdir(path)):
-      DEBUG("deleting directory: %s" % path)
+      TRACE("deleting directory: %s" % path)
       try:
          shutil.rmtree(path)
       except OSError as x:

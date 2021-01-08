@@ -138,7 +138,6 @@ def main(cli_):
    except lark.exceptions.UnexpectedInput as x:
       ch.DEBUG(x)  # noise about what was expected in the grammar
       ch.FATAL("can't parse: %s:%d,%d\n\n%s" % (cli.file, x.line, x.column, x.get_context(text, 39)))
-   ch.DEBUG(tree.pretty())
 
    # Sometimes we exit after parsing.
    if (cli.parse_only):
@@ -380,7 +379,7 @@ class I_copy(Instruction):
       dst = ch.Path(dst)
       assert (os.path.isdir(src) and not os.path.islink(src))
       assert (os.path.isdir(dst) and not os.path.islink(dst))
-      ch.DEBUG("copying named directory: %s -> %s" % (src, dst), v=2)
+      ch.DEBUG("copying named directory: %s -> %s" % (src, dst))
       for (dirpath, dirnames, filenames) in os.walk(src, onerror=onerror):
          dirpath = ch.Path(dirpath)
          subdir = dirpath.relative_to(src)
@@ -393,23 +392,23 @@ class I_copy(Instruction):
             d = ch.Path(d)
             src_path = dirpath // d
             dst_path = dst_dir // d
-            ch.DEBUG("dir: %s -> %s" % (src_path, dst_path), v=2)
+            ch.TRACE("dir: %s -> %s" % (src_path, dst_path))
             if (os.path.islink(src_path)):
                filenames.append(d)  # symlink, handle as file
-               ch.DEBUG("symlink to dir, will handle as file", v=2)
+               ch.TRACE("symlink to dir, will handle as file")
                continue
             else:
                dirnames.append(d)   # directory, descend into later
             # If destination exists, but isn't a directory, remove it.
             if (os.path.exists(dst_path)):
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
-                  ch.DEBUG("dst_path exists and is a directory", v=2)
+                  ch.TRACE("dst_path exists and is a directory")
                else:
-                  ch.DEBUG("dst_path exists, not a directory, removing", v=2)
+                  ch.TRACE("dst_path exists, not a directory, removing")
                   ch.unlink(dst_path)
             # If destination directory doesn't exist, create it.
             if (not os.path.exists(dst_path)):
-               ch.DEBUG("mkdir dst_path", v=2)
+               ch.TRACE("mkdir dst_path")
                ch.ossafe(os.mkdir, "can't mkdir: %s" % dst_path, dst_path)
             # Copy metadata, now that we know the destination exists and is a
             # directory.
@@ -420,12 +419,12 @@ class I_copy(Instruction):
             f = ch.Path(f)
             src_path = dirpath // f
             dst_path = dst_dir // f
-            ch.DEBUG("file or symlink via copy2: %s -> %s"
-                     % (src_path, dst_path), v=2)
+            ch.TRACE("file or symlink via copy2: %s -> %s"
+                      % (src_path, dst_path))
             if (not (os.path.isfile(src_path) or os.path.islink(src_path))):
                ch.FATAL("can't COPY: unknown file type: %s" % src_path)
             if (os.path.exists(dst_path)):
-               ch.DEBUG("destination exists, removing", v=2)
+               ch.TRACE("destination exists, removing")
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
                   ch.rmtree(dst_path)
                else:
@@ -443,7 +442,7 @@ class I_copy(Instruction):
       assert (   not os.path.exists(dst)
               or (os.path.isdir(dst) and not os.path.islink(dst))
               or (os.path.isfile(dst) and not os.path.islink(dst)))
-      ch.DEBUG("copying named file: %s -> %s" % (src, dst), v=2)
+      ch.DEBUG("copying named file: %s -> %s" % (src, dst))
       ch.copy2(src, dst, follow_symlinks=True)
 
    def dest_realpath(self, unpack_path, dst):
@@ -460,26 +459,26 @@ class I_copy(Instruction):
          iter_ct += 1
          if (iter_ct > 100):  # arbitrary
             ch.FATAL("can't COPY: too many path components")
-         ch.DEBUG("current destination: %d %s" % (iter_ct, dst_canon), v=2)
-         #ch.DEBUG("parts remaining: %s" % dst_parts, v=2)
+         ch.TRACE("current destination: %d %s" % (iter_ct, dst_canon))
+         #ch.TRACE("parts remaining: %s" % dst_parts)
          part = dst_parts.pop()
          if (part == "/" or part == "//"):  # 3 or more slashes yields "/"
-            ch.DEBUG("skipping root")
+            ch.TRACE("skipping root")
             continue
          cand = dst_canon // part
-         ch.DEBUG("checking: %s" % cand, v=2)
+         ch.TRACE("checking: %s" % cand)
          if (not cand.is_symlink()):
-            ch.DEBUG("not symlink", v=2)
+            ch.TRACE("not symlink")
             dst_canon = cand
          else:
             target = ch.Path(os.readlink(cand))
-            ch.DEBUG("symlink to: %s" % target, v=2)
+            ch.TRACE("symlink to: %s" % target)
             assert (len(target.parts) > 0)  # POSIX says no empty symlinks
             if (target.is_absolute()):
-               ch.DEBUG("absolute")
+               ch.TRACE("absolute")
                dst_canon = ch.Path(unpack_path)
             else:
-               ch.DEBUG("relative", v=2)
+               ch.TRACE("relative")
             dst_parts.extend(reversed(target.parts))
       return dst_canon
 
@@ -508,13 +507,13 @@ class I_copy(Instruction):
                ch.FATAL("COPY --from: stage %s does not exist" % self.from_)
          context = images[self.from_].unpack_path
       context_canon = os.path.realpath(context)
-      ch.DEBUG("context: %s" % context)
+      ch.VERBOSE("context: %s" % context)
       # Expand source wildcards.
       srcs = list()
       for src in self.srcs:
          for i in glob.glob("%s/%s" % (context, src)):  # glob can't take Path
             srcs.append(i)
-            ch.DEBUG("source: %s" % i)
+            ch.VERBOSE("source: %s" % i)
       if (len(srcs) == 0):
          ch.FATAL("can't COPY: no sources found")
       # Validate sources are within context directory. (Can't convert to
@@ -530,9 +529,9 @@ class I_copy(Instruction):
          dst = ch.Path(self.dst)
       else:
          dst = env.workdir // self.dst
-      ch.DEBUG("destination, as given: %s" % dst)
+      ch.VERBOSE("destination, as given: %s" % dst)
       dst_canon = self.dest_realpath(unpack_canon, dst) # strips trailing slash
-      ch.DEBUG("destination, canonical: %s" % dst_canon)
+      ch.VERBOSE("destination, canonical: %s" % dst_canon)
       if (not os.path.commonpath([dst_canon, unpack_canon])
               .startswith(unpack_canon)):
          ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
@@ -630,17 +629,18 @@ class I_from_(Instruction):
       images[image_i] = image
       if (self.alias is not None):
          images[self.alias] = image
-      ch.DEBUG("image path: %s" % image.unpack_path)
+      ch.VERBOSE("image path: %s" % image.unpack_path)
       # Other error checking.
       if (str(image.ref) == str(self.base_ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
       self.base_image = ch.Image(self.base_ref)
       if (not os.path.isdir(self.base_image.unpack_path)):
-         ch.DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
+         ch.VERBOSE("image not found, pulling: %s"
+                    % self.base_image.unpack_path)
          # a young hen, especially one less than one year old.
          pullet = pull.Image_Puller(self.base_image)
-         pullet.pull_to_unpacked(fixup=True)
+         pullet.pull_to_unpacked()
       image.copy_unpacked(self.base_image)
       env.reset()
       # Find fakeroot configuration, if any.
