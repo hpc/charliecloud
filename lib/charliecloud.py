@@ -995,6 +995,7 @@ class Storage:
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
 
+
 class TarFile(tarfile.TarFile):
 
    # This subclass augments tarfile.TarFile to add safety code. While the
