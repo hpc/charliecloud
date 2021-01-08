@@ -217,6 +217,13 @@ class Image:
       DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
+   def delete (self):
+      if(unpacked_image_p(self.unpack_path)):
+         rmtree(self.unpack_path)
+         INFO("image %s deleted" % (self.ref))
+      else:
+         FATAL ("%s is not an image" % (self.ref)) 
+
    def fixup(self):
       "Add the Charliecloud workarounds to my unpacked image."
       DEBUG("fixing up image: %s" % self.unpack_path)
@@ -423,6 +430,10 @@ class Image:
                   % self.unpack_path)
          DEBUG("replacing existing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
+
+   def unpack_exist(self):
+      if (not os.path.exists(self.unpack_path)):
+            ch.FATAL("%s image not found" % (self.ref))
 
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."
@@ -984,16 +995,6 @@ class Storage:
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
 
-   def image_unpacked_p(self, image_ref):
-      imgdir = self.unpack(image_ref)
-      if (    os.path.isdir(imgdir)
-          and os.path.isdir(imgdir // '/bin')
-          and os.path.isdir(imgdir // '/dev')
-          and os.path.isdir(imgdir // '/opt')):
-         return True
-      return False
-
-
 class TarFile(tarfile.TarFile):
 
    # This subclass augments tarfile.TarFile to add safety code. While the
@@ -1356,3 +1357,11 @@ def tree_terminals(tree, tname):
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
+
+def unpacked_image_p(imgdir):
+   if (    os.path.isdir(imgdir)
+       and os.path.isdir(imgdir // 'bin')
+       and os.path.isdir(imgdir // 'dev')
+       and os.path.isdir(imgdir // 'opt')):
+      return True
+   return False

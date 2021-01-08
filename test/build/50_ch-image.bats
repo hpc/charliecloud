@@ -32,26 +32,28 @@ setup () {
 }
 
 @test 'ch-image delete' {
-   run ch-image list
-   echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output != *"delete/test"* ]]
+    # delete/test image doesn't exist
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"delete/test"* ]]
   
-	ch-image build -t delete/test -f - . << 'EOF'
+    # builds image 
+    # called delete/test to check name parsing
+	 ch-image build -t delete/test -f - . << 'EOF'
 FROM 00_tiny
 EOF
+    run ch-image list
+	 echo "$output"
+	 [[ $status -eq 0 ]]
+	 [[ $output = *"delete/test"* ]]
 	
-   run ch-image list
-	echo "$output"
-	[[ $status -eq 0 ]]
-	[[ $output = *"delete/test"* ]]
-	
-   ch-image delete delete%test
-
-	run ch-image list
-	echo "$output"
-	[[ $status -eq 0 ]]
-	[[ $output != *"delete/test"* ]]
+    # delete image 
+    ch-image delete delete/test
+    run ch-image list
+  	 echo "$output"
+	 [[ $status -eq 0 ]]
+  	 [[ $output != *"delete/test"* ]]
 }
 
 @test 'ch-image list' {

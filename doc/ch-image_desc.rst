@@ -211,7 +211,7 @@ prints exactly what it is doing.
 --------------
 
 Delete the image described by the image reference :code:`IMAGE_REF` from the
-storage directory. Any other copies of image will remain unchanged.
+storage directory.
 
 :code:`pull`
 ------------

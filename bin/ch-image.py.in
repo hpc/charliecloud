@@ -131,7 +131,7 @@ def main():
                    help="context directory")
 
    # delete
-   help="delete image directory from internal storage"
+   help="delete image from internal storage"
    sp = sps.add_parser("delete", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.delete)
