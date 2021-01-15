@@ -1,3 +1,6 @@
+openSUSE
+--------
+
 openSUSE packages are maintained and built using the openSUSE Build
 Service (OBS) at https://build.opensuse.org
 
@@ -14,4 +17,4 @@ your copy (or branch), make your changes and send them to OBS that will
 build packages and create package repositories for your branch.
 
 The beginner's guide on how to use OBS with the osc command-line tool
-can be found at https://openbuildservice.org/help/manuals/obs-beginners-guide/
+can be found at https://openbuildservice.org/help/manuals/obs-user-guide/

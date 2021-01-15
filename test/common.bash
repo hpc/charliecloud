@@ -134,6 +134,14 @@ run () {
 }
 
 scope () {
+    if [[ -n $ch_one_test ]]; then
+        # Ignore scope if a single test is given.
+        if [[ $ch_one_test != "$BATS_TEST_DESCRIPTION" ]]; then
+            skip 'per --file'
+        else
+            return 0
+        fi
+    fi
     case $1 in  # $1 is the test's scope
         quick)
             ;;  # always run quick-scope tests
