@@ -1,5 +1,10 @@
 load ../common
 
+setup () {
+    scope standard
+    [[ $CH_BUILDER != ch-image ]] || skip 'ch-image only'
+}
+
 image_ref_parse () {
     # Try to parse image ref $1; expected output is provided on stdin and
     # expected exit code in $2.
@@ -22,12 +27,6 @@ image_ref_parse () {
 
 
 @test 'image ref parsing' {
-    scope standard
-    if ( ! ch-image --dependencies ); then
-        [[ $CH_BUILDER != ch-image ]]
-        skip "ch-image missing dependencies"
-    fi
-
     # simplest
     cat <<'EOF' | image_ref_parse name 0
 as string:    name
@@ -206,12 +205,7 @@ EOF
 
 @test 'pull image with quirky files' {
     # Validate that layers replace symlinks correctly. See
-    # test/Dockerfile.symlink and issues #819 & 825.
-    scope standard
-    if ( ! ch-image --dependencies ); then
-        [[ $CH_BUILDER != ch-image ]]
-        skip "ch-image missing dependencies"
-    fi
+    # test/Dockerfile.symlink and issues #819 & #825.
 
     img=$BATS_TMPDIR/charliecloud%file-quirks
 
@@ -248,11 +242,6 @@ EOF
 
 @test 'pull image with manifest schema v1' {
     # Verify we handle images with manifest schema version one (v1).
-    scope standard
-    if ( ! ch-image --dependencies ); then
-        [[ $CH_BUILDER != ch-image ]]
-        skip "ch-image missing dependencies"
-    fi
 
     unpack=$BATS_TMPDIR
     cache=$unpack/dlcache
@@ -269,8 +258,6 @@ EOF
 }
 
 @test 'pull from public repos' {
-    scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
     if [[ -z $CI ]]; then
         # Verify we can reach the public internet, except on CI, where we
         # insist this should work.
@@ -321,4 +308,12 @@ EOF
     #
     # 6. nVidia NGC (https://ngc.nvidia.com, issue #897): (1) does not work
     #    and (2) appears to contain only monster images.
+}
+
+@test 'pull image with metadata' {
+    tag=2021-01-07
+    name=charliecloud/metadata:$tag
+    img=$CH_IMAGE_STORAGE/img/charliecloud%metadata:$tag
+
+    ch-image -v pull "$name"
 }

@@ -27,8 +27,9 @@ LABEL foo=bar baz=qux
 MAINTAINER charlie@example.com
 ONBUILD RUN echo hello
 RUN echo hello
+RUN ["/bin/echo", "world"]
 SHELL ["/bin/ash", "-c"]
 STOPSIGNAL SIGWINCH
 USER charlie:chargrp
 WORKDIR /mnt
-VOLUME /mnt/foo /mnt/bar
+VOLUME /mnt/foo /mnt/bar /mnt/foo

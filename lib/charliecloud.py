@@ -194,7 +194,8 @@ class Image:
         unpack_path .. Directory to unpack the image in; if None, infer path
                        in storage dir from ref."""
 
-   __slots__ = ("ref",
+   __slots__ = ("metadata",
+                "ref",
                 "unpack_path")
 
    def __init__(self, ref, unpack_path=None):
@@ -204,6 +205,11 @@ class Image:
          self.unpack_path = Path(unpack_path)
       else:
          self.unpack_path = storage.unpack(self.ref)
+      self.metadata_init()
+
+   @property
+   def metadata_path(self):
+      return self.unpack_path // "ch"
 
    def __str__(self):
       return str(self.ref)
@@ -257,6 +263,74 @@ class Image:
             empty_cnt += 1
       VERBOSE("skipped %d empty layers" % empty_cnt)
       return layers
+
+   def metadata_init(self):
+      "Initialize empty metadata structure."
+      # Elsewhere can assume the existence and types of everything here.
+      self.metadata = { "arch": None,
+                        "cwd": "/",
+                        "env": dict(),
+                        "volumes": list() }  # set isn't JSON-serializable
+
+   def metadata_merge_from_config(self, config):
+      """Interpret all the crap in the config data structure that is meaingful
+         to us, and add it to self.metadata. Ignore anything we expect in
+         config that's missing."""
+      if ("config" not in config):
+         FATAL("config missing key 'config'")
+      # Architecture.
+      try:
+         self.metadata["arch"] = config["architecture"]
+      except KeyError:
+         pass
+      # Environment.
+      try:
+         for line in config["config"]["Env"]:
+            try:
+               (k,v) = line.split("=", maxsplit=1)
+            except AttributeError:
+               FATAL("can't parse config: bad Env line: %s" % line)
+            self.metadata["env"][k] = v
+      except KeyError:
+         pass
+      # Volumes. FIXME: Why is this a dict with empty dicts as values?
+      try:
+         for k in config["config"]["Volumes"].keys():
+            self.metadata["volumes"].append(k)
+      except KeyError:
+         pass
+      # $CWD
+      try:
+         self.metadata["cwd"] = config["config"]["WorkingDir"]
+      except KeyError:
+         pass
+      # Shell.
+      try:
+         self.metadata["shell"] = config["config"]["Shell"]
+      except KeyError:
+         pass
+
+   def metadata_save(self):
+      """Dump image's metadata to disk, including the main data structure but
+         also all auxiliary files, e.g. ch/environment."""
+      # Serialize. We take care to pretty-print this so it can (sometimes) be
+      # parsed by simple things like grep and sed.
+      out = json.dumps(self.metadata, indent=2)
+      DEBUG("metadata:\n%s" % out)
+      # Main metadata file.
+      path = self.metadata_path // "metadata.json"
+      VERBOSE("writing metadata file: %s" % path)
+      file_write(path, out + "\n")
+      # /ch/environment
+      path = self.metadata_path // "environment"
+      VERBOSE("writing environment file: %s" % path)
+      file_write(path, (  "\n".join("%s=%s" % (k,v) for (k,v)
+                                    in sorted(self.metadata["env"].items()))
+                        + "\n"))
+      # mkdir volumes
+      VERBOSE("ensuring volume directories exist")
+      for path in self.metadata["volumes"]:
+         mkdirs(self.unpack_path // path)
 
    def tarballs_write(self, tarball_dir):
       """Write one uncompressed tarball per layer to tarball_dir. Return a
@@ -387,12 +461,13 @@ class Image:
       self.unpack_layers(layer_tars, last_layer)
 
    def unpack_config(self, config_json):
-      # FIXME: init metadata structure
       if (config_json is None):
          INFO("image has no config")
       else:
-         # FIXME: copy json file verbatim
-         # FIXME: print json
+         # Copy pulled config file into the image so we still have it.
+         path = self.metadata_path // "config.pulled.json"
+         copy2(config_json, path)
+         VERBOSE("pulled config path: %s" % path)
          # Open and parse JSON.
          fp = open_(config_json, "rt", encoding="UTF-8")
          text = ossafe(fp.read, "can't read: %s" % config_json)
@@ -402,16 +477,9 @@ class Image:
          except json.JSONDecodeError as x:
             FATAL("can't parse config file: %s:%d: %s"
                   % (config_json, x.lineno, x.msg))
-         DEBUG("config:\n%s" % json.dumps(config, indent=2))
-         # FIXME: interpret all the crap in the config
-         # - volumes: create dirs?
-         # - workingdir: create, set default WD?
-         # - labels: ???
-         # - env: save to /ch/environment
-         # - architecture: ???
-         # - shell: where does it show up?
-         # - history?
-      # FIXME: save metadata structure - JSON/pickle?
+         DEBUG("pulled config:\n%s" % json.dumps(config, indent=2))
+         self.metadata_merge_from_config(config)
+      self.metadata_save()
 
    def unpack_create(self):
       """Create an empty directory for unpacking into. If the directory is
@@ -1258,7 +1326,7 @@ def file_write(path, content, mode=None):
    ossafe(fp.write, "can't write: %s" % path, content)
    if (mode is not None):
       ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
-   fp.close()
+   ossafe(fp.close, "can't close: %s" % path)
 
 def grep_p(path, rx):
    """Return True if file at path contains a line matching regular expression
