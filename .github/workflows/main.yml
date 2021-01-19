@@ -44,6 +44,15 @@ jobs:
           done
           echo "path_new=$path_new"
           echo "PATH=$path_new" >> $GITHUB_ENV
+          # Set sudo umask to something quite restrictive. The default is
+          # 0022, but we had a "make install" bug (issue #947) that was
+          # tickled by 0027, which is a better setting. For reasons I don't
+          # understand, this only affects sudo, but since that's what we want,
+          # I left it. Note there are a few dependency installs below that
+          # have similar permissions bugs; these relax the umask on a
+          # case-by-case basis.
+          sudo sed -i -E 's/^UMASK\s+022/UMASK 0077/' /etc/login.defs
+          fgrep UMASK /etc/login.defs
 
       - name: print starting environment
         run: |
@@ -51,6 +60,10 @@ jobs:
           env | egrep '^(ch|CH)_'
           [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
           id
+          printf 'umask for %s: ' $USER && umask
+          printf 'umask under sudo: ' && sudo sh -c umask
+          [[ $(umask) = 0022 ]]
+          [[ $(sudo sh -c umask) = 0077 ]]
           pwd
           getconf _NPROCESSORS_ONLN
           free -m
@@ -70,7 +83,7 @@ jobs:
           cd /usr/local/src
           git clone --depth 1 --branch v0.4.0 https://github.com/sstephenson/bats.git
           cd bats
-          sudo ./install.sh /usr/local
+          sudo sh -c 'umask 0022 && ./install.sh /usr/local'
           command -v bats
           bats --version
           [[ $(command -v bats) == /usr/local/bin/bats ]]
@@ -83,14 +96,14 @@ jobs:
           # configure does tell us about these.
           sudo apt-get install squashfs-tools squashfuse
           # Track newest Sphinx in case it breaks things.
-          sudo pip3 install sphinx sphinx-rtd-theme
+          sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
 
       - name: install/configure dependencies, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
           # Use most current Lark rather than the one in Ubuntu b/c new
           # versions sometimes break things.
-          sudo pip3 install lark-parser
+          sudo su -c 'umask 0022 && pip3 install lark-parser'
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
