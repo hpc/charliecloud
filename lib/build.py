@@ -58,8 +58,6 @@ ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  # chown(2) and chgrp(2) files to whatever's in the tarball.
                  "TAR_OPTIONS": "--no-same-owner" }
 
-ENV_DEFAULTS = { }
-
 
 ## Main ##
 
@@ -206,6 +204,7 @@ class Main_Loop(lark.Visitor):
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          inst.execute()
+         images[image_i].metadata_save()
          self.instruction_ct += inst.execute_increment
 
 
@@ -642,6 +641,7 @@ class I_from_(Instruction):
          pullet = pull.Image_Puller(self.base_image)
          pullet.pull_to_unpacked()
       image.copy_unpacked(self.base_image)
+      image.metadata_load()
       env.reset()
       # Find fakeroot configuration, if any.
       global fakeroot_config
@@ -750,14 +750,33 @@ class I_uns_yet(Instruction):
 ## Supporting classes ##
 
 class Environment:
-   "The state we are in: environment variables, working directory, etc."
+   """The state we are in: environment variables, working directory, etc. Most
+      of this is just passed through from the image metadata."""
+
+   __slots__ = ("arg",)
 
    def __init__(self):
       self.reset()
 
    @property
+   def env(self):
+      return images[image_i].metadata["env"]
+
+   @env.setter
+   def env(self, x):
+      images[image_i].metadata["env"] = x
+
+   @property
    def env_build(self):
       return { **self.arg, **self.env }
+
+   @property
+   def workdir(self):
+      return ch.Path(images[image_i].metadata["cwd"])
+
+   @workdir.setter
+   def workdir(self, x):
+      images[image_i].metadata["cwd"] = str(x)
 
    def chdir(self, path):
       if (path.startswith("/")):
@@ -766,9 +785,8 @@ class Environment:
          self.workdir //= path
 
    def reset(self):
-      self.workdir = ch.Path("/")
+      # This resets only things that aren't part of the image metadata.
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
-      self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
 
 
 ## Supporting functions ###

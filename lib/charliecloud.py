@@ -220,7 +220,7 @@ class Image:
 
    def copy_unpacked(self, other):
       "Copy the unpack directory of Image other to my unpack directory."
-      self.unpack_create()
+      self.unpack_clear()
       VERBOSE("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
@@ -272,18 +272,31 @@ class Image:
                         "env": dict(),
                         "volumes": list() }  # set isn't JSON-serializable
 
+   def metadata_load(self):
+      "Load metadata file, replacing the existing metadata object."
+      path = self.metadata_path // "metadata.json"
+      fp = open_(path, "rt")
+      text = ossafe(fp.read, "can't read: %s" % path)
+      ossafe(fp.close, "can't close: %s" % path)
+      self.metadata = json.loads(text)  # we made this, so just crash if broken
+
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
          to us, and add it to self.metadata. Ignore anything we expect in
          config that's missing."""
       if ("config" not in config):
          FATAL("config missing key 'config'")
-      # Architecture.
+      # architecture
       try:
          self.metadata["arch"] = config["architecture"]
       except KeyError:
          pass
-      # Environment.
+      # $CWD
+      try:
+         self.metadata["cwd"] = config["config"]["WorkingDir"]
+      except KeyError:
+         pass
+      # environment
       try:
          for line in config["config"]["Env"]:
             try:
@@ -293,20 +306,20 @@ class Image:
             self.metadata["env"][k] = v
       except KeyError:
          pass
+      # labels
+      try:
+         self.metadata["labels"] = config["config"]["Labels"].copy()
+      except KeyError:
+         pass
+      # shell
+      try:
+         self.metadata["shell"] = config["config"]["Shell"]
+      except KeyError:
+         pass
       # Volumes. FIXME: Why is this a dict with empty dicts as values?
       try:
          for k in config["config"]["Volumes"].keys():
             self.metadata["volumes"].append(k)
-      except KeyError:
-         pass
-      # $CWD
-      try:
-         self.metadata["cwd"] = config["config"]["WorkingDir"]
-      except KeyError:
-         pass
-      # Shell.
-      try:
-         self.metadata["shell"] = config["config"]["Shell"]
       except KeyError:
          pass
 
@@ -315,7 +328,7 @@ class Image:
          also all auxiliary files, e.g. ch/environment."""
       # Serialize. We take care to pretty-print this so it can (sometimes) be
       # parsed by simple things like grep and sed.
-      out = json.dumps(self.metadata, indent=2)
+      out = json.dumps(self.metadata, indent=2, sort_keys=True)
       DEBUG("metadata:\n%s" % out)
       # Main metadata file.
       path = self.metadata_path // "metadata.json"
@@ -351,6 +364,91 @@ class Image:
       except OSError as x:
          FATAL("can't write tarball: %s" % x.strerror)
       return [base]
+
+   def unpack(self, config_json, layer_tars, last_layer=None):
+      """Unpack config_json (path to JSON config file) and layer_tars
+         (sequence of paths to tarballs, with lowest layer first) into the
+         unpack directory, validating layer contents and dealing with
+         whiteouts. Empty layers are ignored. Overwrite any existing image in
+         the unpack directory."""
+      if (last_layer is None):
+         last_layer = sys.maxsize
+      INFO("flattening image")
+      self.unpack_init()
+      self.unpack_config(config_json)
+      self.unpack_layers(layer_tars, last_layer)
+
+   def unpack_config(self, config_json):
+      if (config_json is None):
+         INFO("image has no config")
+      else:
+         # Copy pulled config file into the image so we still have it.
+         path = self.metadata_path // "config.pulled.json"
+         copy2(config_json, path)
+         VERBOSE("pulled config path: %s" % path)
+         # Open and parse JSON.
+         fp = open_(config_json, "rt", encoding="UTF-8")
+         text = ossafe(fp.read, "can't read: %s" % config_json)
+         ossafe(fp.close, "can't close: %s" % config_json)
+         try:
+            config = json.loads(text)
+         except json.JSONDecodeError as x:
+            FATAL("can't parse config file: %s:%d: %s"
+                  % (config_json, x.lineno, x.msg))
+         DEBUG("pulled config:\n%s" % json.dumps(config, indent=2))
+         self.metadata_merge_from_config(config)
+      self.metadata_save()
+
+   def unpack_clear(self):
+      """If the unpack directory does not exist, do nothing. If the unpack
+         directory is already an image, remove it. Otherwise, error."""
+      if (not os.path.exists(self.unpack_path)):
+         VERBOSE("no image found: %s" % self.unpack_path)
+      else:
+         if (not os.path.isdir(self.unpack_path)):
+            FATAL("can't flatten: %s exists but is not a directory"
+                  % self.unpack_path)
+         if (   not os.path.isdir(self.unpack_path // "bin")
+             or not os.path.isdir(self.unpack_path // "dev")
+             or not os.path.isdir(self.unpack_path // "etc")
+             or not os.path.isdir(self.unpack_path // "usr")):
+            FATAL("can't flatten: %s exists but does not appear to be an image"
+                  % self.unpack_path)
+         VERBOSE("removing existing image: %s" % self.unpack_path)
+         rmtree(self.unpack_path)
+
+   def unpack_init(self):
+      """Initialize the unpack directory, replacing or creating if needed.
+         After calling this, self.unpack_path is a valid Charliecloud image
+         directory."""
+      self.unpack_clear()
+      # Metadata directory.
+      mkdirs(self.unpack_path // "ch")
+      file_ensure_exists(self.unpack_path // "ch/environment")
+      # Essential top-level directories.
+      for d in ("bin", "dev", "etc", "mnt", "usr"):
+         mkdirs(self.unpack_path // d)
+      # Mount points.
+      file_ensure_exists(self.unpack_path // "etc/hosts")
+      file_ensure_exists(self.unpack_path // "etc/resolv.conf")
+      for i in range(10):
+         mkdirs(self.unpack_path // "mnt" // str(i))
+
+   def unpack_layers(self, layer_tars, last_layer):
+      layers = self.layers_open(layer_tars)
+      self.validate_members(layers)
+      self.whiteouts_resolve(layers)
+      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         lh_short = lh[:7]
+         if (i > last_layer):
+            INFO("layer %d/%d: %s: skipping per --last-layer"
+                 % (i, len(layers), lh_short))
+         else:
+            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh_short))
+            try:
+               fp.extractall(path=self.unpack_path, members=members)
+            except OSError as x:
+               FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
    def validate_members(self, layers):
       INFO("validating tarball members")
@@ -446,92 +544,6 @@ class Image:
          if (wo_ct > 0):
             VERBOSE("layer %d/%d: %s: %d whiteouts; %d members ignored"
                     % (i, len(layers), lh[:7], wo_ct, ig_ct))
-
-   def unpack(self, config_json, layer_tars, last_layer=None):
-      """Unpack config_json (path to JSON config file) and layer_tars
-         (sequence of paths to tarballs, with lowest layer first) into the
-         unpack directory, validating layer contents and dealing with
-         whiteouts. Empty layers are ignored. Overwrite any existing image in
-         the unpack directory."""
-      if (last_layer is None):
-         last_layer = sys.maxsize
-      INFO("flattening image")
-      self.unpack_init()
-      self.unpack_config(config_json)
-      self.unpack_layers(layer_tars, last_layer)
-
-   def unpack_config(self, config_json):
-      if (config_json is None):
-         INFO("image has no config")
-      else:
-         # Copy pulled config file into the image so we still have it.
-         path = self.metadata_path // "config.pulled.json"
-         copy2(config_json, path)
-         VERBOSE("pulled config path: %s" % path)
-         # Open and parse JSON.
-         fp = open_(config_json, "rt", encoding="UTF-8")
-         text = ossafe(fp.read, "can't read: %s" % config_json)
-         ossafe(fp.close, "can't close: %s" % config_json)
-         try:
-            config = json.loads(text)
-         except json.JSONDecodeError as x:
-            FATAL("can't parse config file: %s:%d: %s"
-                  % (config_json, x.lineno, x.msg))
-         DEBUG("pulled config:\n%s" % json.dumps(config, indent=2))
-         self.metadata_merge_from_config(config)
-      self.metadata_save()
-
-   def unpack_create(self):
-      """Create an empty directory for unpacking into. If the directory is
-         already an image, remove it."""
-      if (not os.path.exists(self.unpack_path)):
-         VERBOSE("creating new image: %s" % self.unpack_path)
-      else:
-         if (not os.path.isdir(self.unpack_path)):
-            FATAL("can't flatten: %s exists but is not a directory"
-                  % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path // "bin")
-             or not os.path.isdir(self.unpack_path // "dev")
-             or not os.path.isdir(self.unpack_path // "etc")
-             or not os.path.isdir(self.unpack_path // "usr")):
-            FATAL("can't flatten: %s exists but does not appear to be an image"
-                  % self.unpack_path)
-         VERBOSE("replacing existing image: %s" % self.unpack_path)
-         rmtree(self.unpack_path)
-      mkdirs(self.unpack_path)
-
-   def unpack_init(self):
-      """Initialize the unpack directory, replacing or creating if needed.
-         After calling this, self.unpack_path is a valid Charliecloud image
-         directory."""
-      self.unpack_create()
-      # Metadata directory.
-      mkdirs(self.unpack_path // "ch")
-      file_ensure_exists(self.unpack_path // "ch/environment")
-      # Essential top-level directories.
-      for d in ("bin", "dev", "etc", "mnt", "usr"):
-         mkdirs(self.unpack_path // d)
-      # Mount points.
-      file_ensure_exists(self.unpack_path // "etc/hosts")
-      file_ensure_exists(self.unpack_path // "etc/resolv.conf")
-      for i in range(10):
-         mkdirs(self.unpack_path // "mnt" // str(i))
-
-   def unpack_layers(self, layer_tars, last_layer):
-      layers = self.layers_open(layer_tars)
-      self.validate_members(layers)
-      self.whiteouts_resolve(layers)
-      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
-         lh_short = lh[:7]
-         if (i > last_layer):
-            INFO("layer %d/%d: %s: skipping per --last-layer"
-                 % (i, len(layers), lh_short))
-         else:
-            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh_short))
-            try:
-               fp.extractall(path=self.unpack_path, members=members)
-            except OSError as x:
-               FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
 
 class Image_Ref:

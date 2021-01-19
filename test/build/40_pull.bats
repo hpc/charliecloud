@@ -2,7 +2,7 @@ load ../common
 
 setup () {
     scope standard
-    [[ $CH_BUILDER != ch-image ]] || skip 'ch-image only'
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
 image_ref_parse () {
@@ -311,9 +311,53 @@ EOF
 }
 
 @test 'pull image with metadata' {
-    tag=2021-01-07
+    tag=2021-01-15
     name=charliecloud/metadata:$tag
     img=$CH_IMAGE_STORAGE/img/charliecloud%metadata:$tag
 
-    ch-image -v pull "$name"
+    ch-image pull "$name"
+
+    # Correct files?
+    diff -u - <(ls "${img}/ch") <<'EOF'
+config.pulled.json
+environment
+metadata.json
+EOF
+
+    # Volume mount points exist?
+    ls -lh "${img}/mnt"
+    test -d "${img}/mnt/foo"
+    test -d "${img}/mnt/bar"
+
+    # /ch/environment contents
+    diff -u - "${img}/ch/environment" <<'EOF'
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ch_bar=bar-ev
+ch_foo=foo-ev
+EOF
+
+    # /ch/metadata.json contents
+    diff -u - "${img}/ch/metadata.json" <<'EOF'
+{
+  "arch": "amd64",
+  "cwd": "/mnt",
+  "env": {
+    "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "ch_bar": "bar-ev",
+    "ch_foo": "foo-ev"
+  },
+  "labels": {
+    "ch_bar": "bar-label",
+    "ch_foo": "foo-label"
+  },
+  "shell": [
+    "/bin/ash",
+    "-c"
+  ],
+  "volumes": [
+    "/mnt/bar",
+    "/mnt/foo"
+  ]
+}
+EOF
 }
