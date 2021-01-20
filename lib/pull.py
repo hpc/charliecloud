@@ -12,7 +12,7 @@ def main(cli):
    # Set things up.
    ref = ch.Image_Ref(cli.image_ref)
    if (cli.parse_only):
-      print(ref.as_verbose_str)
+      ch.INFO(ref.as_verbose_str)
       sys.exit(0)
    image = ch.Image(ref, cli.image_dir)
    ch.INFO("pulling image:   %s" % ref)
@@ -72,11 +72,12 @@ class Image_Puller:
       self.manifest_load()
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
-      if (os.path.exists(self.config_path) and use_cache):
-         ch.INFO("config: using existing file")
-      else:
-         ch.INFO("config: downloading")
-         dl.blob_to_file(self.config_hash, self.config_path)
+      if (self.config_path is not None):
+         if (os.path.exists(self.config_path) and use_cache):
+            ch.INFO("config: using existing file")
+         else:
+            ch.INFO("config: downloading")
+            dl.blob_to_file(self.config_hash, self.config_path)
       # layers
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          path = self.layer_path(lh)

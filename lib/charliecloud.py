@@ -270,11 +270,17 @@ class Image:
       self.metadata = { "arch": None,
                         "cwd": "/",
                         "env": dict(),
+                        "labels": dict(),
                         "volumes": list() }  # set isn't JSON-serializable
 
    def metadata_load(self):
-      "Load metadata file, replacing the existing metadata object."
+      """Load metadata file, replacing the existing metadata object. If
+         metadata doesn't exist, warn and use defaults."""
       path = self.metadata_path // "metadata.json"
+      if (not path.exists()):
+         WARNING("no metadata for image; using defaults")
+         self.metadata_init()
+         return
       fp = open_(path, "rt")
       text = ossafe(fp.read, "can't read: %s" % path)
       ossafe(fp.close, "can't close: %s" % path)
@@ -284,44 +290,45 @@ class Image:
       """Interpret all the crap in the config data structure that is meaingful
          to us, and add it to self.metadata. Ignore anything we expect in
          config that's missing."""
+      def get(*keys):
+         d = config
+         keys = list(keys)
+         VERBOSE(str(keys))
+         while (len(keys) > 1):
+            try:
+               d = d[keys.pop(0)]
+            except KeyError:
+               return None
+         assert (len(keys) == 1)
+         return d.get(keys[0])
+      def set_(dst_key, *src_keys):
+         v = get(*src_keys)
+         if (v is not None and v != ""):
+            self.metadata[dst_key] = v
       if ("config" not in config):
          FATAL("config missing key 'config'")
       # architecture
-      try:
-         self.metadata["arch"] = config["architecture"]
-      except KeyError:
-         pass
+      set_("arch", "architecture")
       # $CWD
-      try:
-         self.metadata["cwd"] = config["config"]["WorkingDir"]
-      except KeyError:
-         pass
+      set_("cwd", "config", "WorkingDir")
       # environment
-      try:
-         for line in config["config"]["Env"]:
+      env = get("config", "Env")
+      if (env is not None):
+         for line in env:
             try:
                (k,v) = line.split("=", maxsplit=1)
             except AttributeError:
                FATAL("can't parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
-      except KeyError:
-         pass
       # labels
-      try:
-         self.metadata["labels"] = config["config"]["Labels"].copy()
-      except KeyError:
-         pass
+      set_("labels", "config", "Labels")  # copy reference
       # shell
-      try:
-         self.metadata["shell"] = config["config"]["Shell"]
-      except KeyError:
-         pass
+      set_("shell", "config", "Shell")
       # Volumes. FIXME: Why is this a dict with empty dicts as values?
-      try:
+      vols = get("config", "Volumes")
+      if (vols is not None):
          for k in config["config"]["Volumes"].keys():
             self.metadata["volumes"].append(k)
-      except KeyError:
-         pass
 
    def metadata_save(self):
       """Dump image's metadata to disk, including the main data structure but
@@ -426,7 +433,7 @@ class Image:
       mkdirs(self.unpack_path // "ch")
       file_ensure_exists(self.unpack_path // "ch/environment")
       # Essential top-level directories.
-      for d in ("bin", "dev", "etc", "mnt", "usr"):
+      for d in ("bin", "dev", "etc", "mnt", "proc", "usr"):
          mkdirs(self.unpack_path // d)
       # Mount points.
       file_ensure_exists(self.unpack_path // "etc/hosts")
@@ -624,7 +631,7 @@ class Image_Ref:
          # We get UnexpectedEOF because of Lark issue #237. This exception
          # doesn't have a column location.
          FATAL("image ref syntax, at end: %s" % s)
-      VERBOSE(tree.pretty())
+      DEBUG(tree.pretty())
       return tree
 
    @property

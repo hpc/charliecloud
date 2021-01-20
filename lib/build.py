@@ -134,8 +134,9 @@ def main(cli_):
    try:
       tree = parser.parse(text)
    except lark.exceptions.UnexpectedInput as x:
-      ch.DEBUG(x)  # noise about what was expected in the grammar
+      ch.VERBOSE(x)  # noise about what was expected in the grammar
       ch.FATAL("can't parse: %s:%d,%d\n\n%s" % (cli.file, x.line, x.column, x.get_context(text, 39)))
+   ch.VERBOSE(tree.pretty())
 
    # Sometimes we exit after parsing.
    if (cli.parse_only):
@@ -204,7 +205,8 @@ class Main_Loop(lark.Visitor):
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          inst.execute()
-         images[image_i].metadata_save()
+         if (image_i != -1):
+            images[image_i].metadata_save()
          self.instruction_ct += inst.execute_increment
 
 
@@ -760,7 +762,10 @@ class Environment:
 
    @property
    def env(self):
-      return images[image_i].metadata["env"]
+      if (image_i == -1):
+         return dict()
+      else:
+         return images[image_i].metadata["env"]
 
    @env.setter
    def env(self, x):
