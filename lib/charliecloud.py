@@ -750,22 +750,25 @@ class Registry_HTTP:
 
    def authenticate_bearer(self, res, auth_d):
       DEBUG("authenticating using Bearer")
-      for k in ("realm", "service", "scope"):
+      # Registries vary in what they put in WWW-Authenticate. Specifically,
+      # for everything except NGC, we get back realm, service, and scope. NGC
+      # just gives service and scope. We need realm because it's the URL to
+      # use for a token. scope also seems critical, so check we have that.
+      # Otherwise, just give back all the keys we got.
+      for k in ("realm", "scope"):
          if (k not in auth_d):
             FATAL("WWW-Authenticate missing key: %s" % k)
+      params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
       # First, try for an anonymous auth token. If that fails, try for an
       # authenticated token.
       DEBUG("requesting anonymous auth token")
-      res = self.request_raw("GET", auth_d["realm"], {200,403},
-                             params={"service": auth_d["service"],
-                                     "scope": auth_d["scope"]})
+      res = self.request_raw("GET", auth_d["realm"], {200,403}, params=params)
       if (res.status_code == 403):
          INFO("anonymous access rejected")
          (username, password) = self.credentials_read()
          auth = requests.auth.HTTPBasicAuth(username, password)
          res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
-                                params={"service": auth_d["service"],
-                                        "scope": auth_d["scope"]})
+                                params=params)
       token = res.json()["token"]
       DEBUG("received auth token: %s" % (token[:32]))
       self.auth = self.Bearer_Auth(token)
@@ -889,7 +892,6 @@ class Registry_HTTP:
          Use current session if there is one, or start a new one if not. If
          authentication fails (or isn't initialized), then authenticate and
          re-try the request."""
-      DEBUG("%s: %s" % (method, url))
       self.session_init_maybe()
       DEBUG("auth: %s" % self.auth)
       res = self.request_raw(method, url, statuses | {401}, **kwargs)
@@ -914,6 +916,7 @@ class Registry_HTTP:
          Session must already exist. If auth arg given, use it; otherwise, use
          object's stored authentication if initialized; otherwise, use no
          authentication."""
+      DEBUG("%s: %s" % (method, url))
       if (auth is None):
          auth = self.auth
       try:
