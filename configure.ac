@@ -21,6 +21,26 @@ AS_CASE([$host_os],
   [*],      [AC_MSG_ERROR([Linux is the only supported OS; see issue @%:@42.])]
 )
 
+# By default, Autotools honors umask for directories but not files. Thus, if
+# you "sudo make install" with a umask more restrictive than 0022, the result
+# is an installation unavailable to most users (issue #947). This appears to
+# be a somewhat common complaint.
+#
+# Our workaround is to set the "mkdir -p" command [1]. (Note those
+# instructions also mention a different variable ac_cv_path_mkdir, but I
+# couldn't figure out how to set it.) This needs to be before AM_INIT_AUTOMAKE
+# because that macro does something with the value. We use "install -d" rather
+# than "mkdir -m" because the latter still uses only umask for intermediate
+# directories [2].
+#
+# This can still be overridden on the configure command line; for example, to
+# restore the previous behavior, use "./configure MKDIR_P='mkdir -p'" [3].
+#
+# [1]: https://unix.stackexchange.com/a/436000
+# [2]: http://gnu-automake.7480.n7.nabble.com/bug-12130-sudo-make-install-applies-umask-to-new-directories-tp18545p18548.html
+# [3]: https://lists.gnu.org/archive/html/automake/2004-01/msg00013.html
+MKDIR_P=${MKDIR_P:-install -d -m 0755}
+
 AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
 
 AC_CONFIG_HEADERS([bin/config.h])
@@ -210,7 +230,7 @@ CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
 AS_IF([test -n "$SPHINX"], [
   AS_IF([test -z "$sphinx_python"], [
     AC_MSG_CHECKING([for sphinx-build Python])
-    sphinx_python=$(head -1 "$SPHINX" | sed -E -e 's/^#!\s*//' -e 's/\s+$//')
+    sphinx_python=$(head -1 "$SPHINX" | sed -E -e 's/^#!\s*//' -e 's/\s.*$//')
     AC_MSG_RESULT([$sphinx_python])
   AC_MSG_CHECKING([if "$sphinx_python" starts with slash])
   AS_CASE([$sphinx_python],
@@ -481,8 +501,8 @@ AS_IF([   test -n "$TAR"],
 
 AS_IF([   test $have_any_builder = yes \
        && test $have_pack_tar = yes],
-      [have_builder_to_tar = yes],
-      [have_builder_to_tar = no])
+      [have_builder_to_tar=yes],
+      [have_builder_to_tar=no])
 
 AS_IF([   test $have_any_builder = yes \
        && test -n "$MKSQUASHFS"],

@@ -43,7 +43,7 @@ Additional options:
 
   -b, --builder BUILDER  image builder to use
   --dry-run              print summary of what would be tested and exit
-  --file FILE            run tests in FILE only
+  --file FILE[:TEST]     run tests in FILE only, or even just TEST
   -h, --help             print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
@@ -858,6 +858,11 @@ fi
 printf 'contributor:  %s\n\n' "$ch_contributor_note"
 
 if [[ $phase = one-file ]]; then
+    if [[ $one_file == *:* ]]; then
+        x=$one_file
+        one_file=${x%%:*}            # before first colon
+        export ch_one_test=${x#*:}   # after first colon
+    fi
     if [[ ! -f $one_file ]]; then
         fatal "not a file: $one_file"
     fi
@@ -869,7 +874,7 @@ fi
 
 printf "%-21s %s" 'phase:' "$phase"
 if [[ $phase = one-file ]]; then
-    printf ': %s' "$one_file"
+    printf ': %s (%s)' "$one_file" "$ch_one_test"
 fi
 if [[ -z $phase ]]; then
     fatal 'phase: no phase specified'

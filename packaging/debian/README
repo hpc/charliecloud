@@ -1,6 +1,0 @@
-Use debuild at the root of the Charliecloud source code, e.g.:
-
-  $ make deb
-  $ debuild   # arguments unknown; please send a patch!
-
-See travis.sh for an example of a build under Travis' Ubuntu image.
