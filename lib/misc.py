@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+import shutil
 
 import charliecloud as ch
 import version
@@ -39,6 +40,9 @@ def list_(cli):
    imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
    for img in sorted(imgs):
       print(ch.Image_Ref(img))
+
+def reset(cli):
+   shutil.rmtree(ch.storage.root)
 
 def storage_path(cli):
    print(ch.storage.root)

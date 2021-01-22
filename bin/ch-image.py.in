@@ -163,6 +163,14 @@ def main():
    sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
                    help="destination image reference (default: IMAGE_REF)")
 
+   # reset
+   help="delete all images in internal repo"
+   sp = sps.add_parser("reset", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=misc.reset)
+   add_opts(sp, common_opts, True)
+
+
    # storage-path
    help="print storage directory path"
    sp = sps.add_parser("storage-path", help=help, description=help,
