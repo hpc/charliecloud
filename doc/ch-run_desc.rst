@@ -45,8 +45,10 @@ unpacked image directory located at :code:`NEWROOT`.
     use container-private :code:`/tmp` (by default, :code:`/tmp` is shared with
     the host)
 
-  :code:`--set-env=FILE`
+  :code:`--set-env=FILE`, :code:`--set-env=ENV='$ENV:PATH'`
     set environment variables as specified in host path :code:`FILE`
+    or append or prepend :code:`PATH` to environment variable :code:`ENV` 
+    directly in the command line
 
   :code:`-u`, :code:`--uid=UID`
     run as user :code:`UID` within container
@@ -240,10 +242,6 @@ expansion, comments, etc. are provided. The value may be empty, but not the
 key. (This syntax is designed to accept the output of :code:`printenv` and be
 easily produced by other simple mechanisms.) Examples of valid lines:
 
-To set :code:`PATH=$PATH:bar`, in :code:`FILE` it would typed as
-:code:`PATH=:bar`. The :code:`:` is the indicator to append something to a global
-variable.
-
 .. list-table::
    :header-rows: 1
 
@@ -271,9 +269,6 @@ variable.
    * - :code:`FOO=''''`
      - :code:`FOO`
      - :code:`''` (two single quotes)
-   * - :code:`PATH=:bar`
-     - :code:`PATH`
-     - :code:`$PATH:bar`
 
 Example invalid lines:
 
@@ -320,6 +315,30 @@ Example valid lines that are probably not what you want:
      - :code:`FOO`
      - :code:`​ bar`
      - leading space in value
+
+Appending and Prepending variables with :code:`--set-env`
+---------------------------------------------------------
+There are two ways to append or prepend to an environment variable. Option 1 
+is adding the information in the file used in :code:`--set-env=FILE`. It needs to 
+be formatted in the way shown below.
+
+    * :code:`PATH=$PATH:foo`
+    * :code:`PATH=foo:$PATH`
+
+Option 2 is adding the line directly in the ch-run command formatted below.
+
+		:code:`ch-run --set-env=PATH=`$PATH:foo``
+
+In both options, it checks to see if there is a :code:`$` to know that it should 
+append/prepend the environment variable. The delimiter to parse the 
+environment variable and the added path is a :code:`:`.
+
+PATH can be exchanged for any environment variable
+
+Gotchas
+    * If environment variable is NULL, an addition :code:`:` won’t 
+      be added like it does in a SHELL. 
+
 
 Removing variables with :code:`--unset-env`
 -------------------------------------------
