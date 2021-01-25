@@ -387,7 +387,7 @@ class Image:
 
    def unpack_config(self, config_json):
       if (config_json is None):
-         INFO("image has no config")
+         WARNING("image has no config and thus no metadata")
       else:
          # Copy pulled config file into the image so we still have it.
          path = self.metadata_path // "config.pulled.json"
