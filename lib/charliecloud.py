@@ -323,6 +323,7 @@ class Image:
                # Device or FIFO: Ignore.
                dev_ct += 1
                members.remove(m)
+               continue
             elif (m.issym()):
                # Symlink: Nothing to change, but accept it.
                pass
