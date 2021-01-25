@@ -68,6 +68,7 @@ jobs:
           getconf _NPROCESSORS_ONLN
           free -m
           df -h
+          locale -a
 
       - name: lines of code
         if: ${{ matrix.builder == 'none' }}
