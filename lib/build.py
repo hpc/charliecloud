@@ -762,7 +762,7 @@ class I_uns_yet(Instruction):
 
 class Environment:
    "The state we are in: environment variables, working directory, etc."
-   __slots__ = ['workdir','shell', 'arg','env']
+   __slots__ = ('arg', 'env', 'shell', 'workdir')
  
    def __init__(self):
       self.reset()
@@ -779,7 +779,7 @@ class Environment:
 
    def reset(self):
       self.workdir = ch.Path("/")
-      self.shell   = ["/bin/sh","-c"]
+      self.shell   = ["/bin/sh", "-c"]
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
       self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
 

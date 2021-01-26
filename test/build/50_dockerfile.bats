@@ -378,41 +378,46 @@ EOF
    [[ $CH_BUILDER = none ]] && skip 'no builder'
    [[ $CH_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
   
-   # tests that SHELL command can change executables and paramaters
+   # test that SHELL command can change executables and parameters
    run ch-build -t foo --no-cache -f - . <<'EOF'
 FROM 00_tiny
-RUN echo "1" $0
-SHELL ["/bin/ash","-c"]
-RUN  echo "2" $0
+RUN echo default: $0
+SHELL ["/bin/ash", "-c"]
+RUN  echo ash: $0
 SHELL ["/bin/sh", "-v", "-c"]
-RUN echo "3" $0
+RUN echo sh-v: $0
 EOF
    echo "$output"
    [[ $status -eq 0 ]]
-   [[ $output = *"1 /bin/sh"* ]]
-   [[ $output = *"2 /bin/ash"* ]]
-   [[ $output = *"3 /bin/sh"* ]]
+   [[ $output = *"default: /bin/sh"* ]]
+   [[ $output = *"ash: /bin/ash"* ]]
+   [[ $output = *"sh-v: /bin/sh"* ]]
 
-   # tests that it fails if shell doesn't exist
+   # test that it fails if shell doesn't exist
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
-SHELL ["/usr/bin/doesnotexist", "-c"]
+SHELL ["/doesnotexist", "-c"]
 RUN print("hello")
 EOF
    echo "$output"
    [[ status -eq 1 ]]
+   if [[ $CH_BUILDER = ch-image ]]; then
+      [[ $output = *"/doesnotexist: No such file or directory"* ]]
+   else
+      [[ $output = *"/doesnotexist: no such file or directory"* ]]
+   fi
 
-   # tests that it fails if no paramaters
+   # test that it fails if no paramaters
    run ch-build -t foo -f - . <<'EOF'
 FROM 00_tiny
 SHELL ["/bin/sh"]
 RUN true
 EOF
    echo "$output"
-   [[ status -ne 0 ]] #different builder use different error exit codes
+   [[ status -ne 0 ]] # different builders use different error exit codes
    [[ $output = *"/bin/sh: can't open 'true': No such file or directory"* ]]
 
-   # tests that it works with python3 
+   # test that it works with python3 
    run ch-build -t foo -f - . <<'EOF'
 FROM centos7
 SHELL ["/usr/bin/python3", "-c"]
