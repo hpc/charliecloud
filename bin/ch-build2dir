@@ -33,9 +33,17 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# If no tag given, we don't know what to tar and things get exciting.
+if [[ -z $tag ]]; then
+    echo 'error: must specify -t' 1>&2
+    exit 1
+fi
+
+tag_fs=$(tag_to_path "$tag")
+
 set -x
 
 "${ch_bin}"/ch-build "${args[@]}"
 "${ch_bin}"/ch-builder2tar "$tag" "$outdir"
-"${ch_bin}"/ch-tar2dir "${outdir}/${tag}.tar.gz" "$outdir"
-rm "${outdir}/${tag}.tar.gz"
+"${ch_bin}"/ch-tar2dir "${outdir}/${tag_fs}.tar.gz" "$outdir"
+rm "${outdir}/${tag_fs}.tar.gz"
