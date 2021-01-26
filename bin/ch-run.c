@@ -256,7 +256,23 @@ void fix_environment(struct args *args)
                      T_ (1 <= asprintf(&new_env, "%s:%s", path_new, old_env));
                   }
                   else {
-                     T_ (1 <=asprintf(&new_env, "%s", path_new));
+                     T_ (1 <= asprintf(&new_env, "%s", path_new));
+                  }
+                  Z_ (setenv(name, new_env, 1));
+                  INFO("new $%s: %s", name, new_env);
+               }
+               else { //append
+                  char *env_var, *path_new;
+                  split(&env_var, &path_new, new_value, ':'); //split at first :
+                  env_var++;
+                  DEBUG("new_path:%s, env_var:%s", path_new, env_var);
+                  char *old_env, *new_env;
+                  old_env = getenv(env_var);
+                  if (old_env !=  NULL) {
+                     T_ (1 <= asprintf(&new_env, "%s:%s", old_env, path_new));
+                  }
+                  else { 
+                     T_ (1 <= asprintf(&new_env, "%s", path_new));
                   }
                   Z_ (setenv(name, new_env, 1));
                   INFO("new $%s: %s", name, new_env);
