@@ -31,6 +31,7 @@ RUN wget -nv -O ParaView-v${PARAVIEW_VERSION}.tar.xz "https://www.paraview.org/p
  && mkdir ParaView-v${PARAVIEW_VERSION}.build \
  && cd ParaView-v${PARAVIEW_VERSION}.build \
  && cmake -DCMAKE_INSTALL_PREFIX=/usr/local \
+          -DCMAKE_BUILD_TYPE=Release \
           -DBUILD_TESTING=OFF \
           -DBUILD_SHARED_LIBS=ON \
           -DPARAVIEW_ENABLE_PYTHON=ON \
