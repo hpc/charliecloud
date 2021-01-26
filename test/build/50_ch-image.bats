@@ -32,28 +32,27 @@ setup () {
 }
 
 @test 'ch-image delete' {
-    # delete/test image doesn't exist
+    # verify delete/test image doesn't exist
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *"delete/test"* ]]
   
-    # builds image 
-    # called delete/test to check name parsing
+    # Build image. It's called called delete/test to check ref parsing with slash present.
 	 ch-image build -t delete/test -f - . << 'EOF'
 FROM 00_tiny
 EOF
     run ch-image list
-	 echo "$output"
-	 [[ $status -eq 0 ]]
-	 [[ $output = *"delete/test"* ]]
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"delete/test"* ]]
 	
     # delete image 
     ch-image delete delete/test
     run ch-image list
   	 echo "$output"
-	 [[ $status -eq 0 ]]
-  	 [[ $output != *"delete/test"* ]]
+    [[ $status -eq 0 ]]
+    [[ $output != *"delete/test"* ]]
 }
 
 @test 'ch-image list' {

@@ -217,13 +217,6 @@ class Image:
       DEBUG("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       copytree(other.unpack_path, self.unpack_path, symlinks=True)
 
-   def delete (self):
-      if(unpacked_image_p(self.unpack_path)):
-         rmtree(self.unpack_path)
-         INFO("image %s deleted" % (self.ref))
-      else:
-         FATAL ("%s is not an image" % (self.ref)) 
-
    def fixup(self):
       "Add the Charliecloud workarounds to my unpacked image."
       DEBUG("fixing up image: %s" % self.unpack_path)
@@ -417,7 +410,7 @@ class Image:
    def unpack_create_ok(self):
       """Ensure the unpack directory can be created. If the unpack directory
          is already an image, remove it."""
-      if (not os.path.exists(self.unpack_path)):
+      if (not self.unpack_exist_p()):
          DEBUG("creating new image: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
@@ -431,9 +424,18 @@ class Image:
          DEBUG("replacing existing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
 
-   def unpack_exist(self):
-      if (not os.path.exists(self.unpack_path)):
-            ch.FATAL("%s image not found" % (self.ref))
+   def unpack_delete (self):
+      if (not self.unpack_exist_p()):
+          FATAL("%s image not found" % (self.ref))
+      if (unpacked_image_p(self.unpack_path)):
+         rmtree(self.unpack_path)
+         INFO("image deleted: %s" % (self.ref))
+      else:
+         FATAL ("storage directory seems broken: %s is not an image" % (self.ref))
+   
+   def unpack_exist_p(self):
+      if (os.path.exists(self.unpack_path)):
+          return True            
 
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."

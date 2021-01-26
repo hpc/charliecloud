@@ -36,8 +36,7 @@ class Version(Action_Exit):
 def delete(cli):
    img_ref = ch.Image_Ref(cli.image_ref)
    img = ch.Image(img_ref, cli.storage)
-   img.unpack_exist()
-   img.delete()
+   img.unpack_delete()
 
 def list_(cli):
    ch.dependencies_check()
