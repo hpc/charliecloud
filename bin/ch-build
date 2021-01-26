@@ -82,26 +82,46 @@ case $CH_BUILDER in
                 ignore_chown=false
                 ;;
         esac
+        # Set BUILDAH_LAYERS instead of using "--layers=true" to avoid the
+        # error "can only set one of 'layers' or 'no-cache'".
+        export BUILDAH_LAYERS=true
         # If Buildah sees a terminal on stdin, it does TTY stuff that confuses
         # ch-run-oci, so we always have to redirect stdin. If it's already
         # redirected, just pass that through; otherwise, use /dev/null.
+        #
+        # We used to redirect from /dev/stdin in the former case. However,
+        # this started throwing errors in CI out of the blue (issue #964):
+        #
+        #   cannot open /dev/stdin: No such device or address
+        #
+        # The buildah invocation is repeated because I couldn't figure out how
+        # to put the arguments in a variable and then get them out again
+        # reliably without Bash arrays.
         if [ -t 0 ]; then
-            stdin=/dev/null   # is TTY
+            buildah --storage-opt .ignore_chown_errors="$ignore_chown" \
+                    build-using-dockerfile \
+                    --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                    --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                    --build-arg NO_PROXY="$NO_PROXY" \
+                    --build-arg http_proxy="$http_proxy" \
+                    --build-arg https_proxy="$https_proxy" \
+                    --build-arg no_proxy="$no_proxy" \
+                    --isolation=rootless \
+                    --runtime="$runtime" \
+                    "$@" < /dev/null
         else
-            stdin=/dev/stdin  # not TTY
+            buildah --storage-opt .ignore_chown_errors="$ignore_chown" \
+                    build-using-dockerfile \
+                    --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                    --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                    --build-arg NO_PROXY="$NO_PROXY" \
+                    --build-arg http_proxy="$http_proxy" \
+                    --build-arg https_proxy="$https_proxy" \
+                    --build-arg no_proxy="$no_proxy" \
+                    --isolation=rootless \
+                    --runtime="$runtime" \
+                    "$@"
         fi
-        BUILDAH_LAYERS=true \
-        buildah --storage-opt .ignore_chown_errors="$ignore_chown" \
-                build-using-dockerfile \
-                --build-arg HTTP_PROXY="$HTTP_PROXY" \
-                --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
-                --build-arg NO_PROXY="$NO_PROXY" \
-                --build-arg http_proxy="$http_proxy" \
-                --build-arg https_proxy="$https_proxy" \
-                --build-arg no_proxy="$no_proxy" \
-                --isolation=rootless \
-                --runtime="$runtime" \
-                "$@" < $stdin
         ;;
     ch-image|ch-grow)
         "${ch_bin}/ch-image" build "$@"
