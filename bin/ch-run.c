@@ -240,8 +240,32 @@ void fix_environment(struct args *args)
                new_value[strlen(new_value) - 1] = 0;  // strip trailing quote
                new_value++;                           // strip leading
             }
-            INFO("environment: %s=%s", name, new_value);
-            Z_ (setenv(name, new_value, 1));
+            if (strchr(new_value, '$') != NULL) { //does input contain '$'
+               if (new_value[0] != '$') { //prepend
+                  char* env_var;
+                  env_var = strrchr(new_value, ':'); //split at last :
+                  int len = env_var - new_value;
+                  char path_new[len];
+                  memset(path_new, '\0', len);
+                  strncpy(path_new, new_value, len); //save new path to path_new
+                  env_var+=2;
+                  DEBUG("new_path:%s, env_var:%s", path_new, env_var);
+                  char *old_env, *new_env;
+                  old_env = getenv(env_var);
+                  if (old_env != NULL) {
+                     T_ (1 <= asprintf(&new_env, "%s:%s", path_new, old_env));
+                  }
+                  else {
+                     T_ (1 <=asprintf(&new_env, "%s", path_new));
+                  }
+                  Z_ (setenv(name, new_env, 1));
+                  INFO("new $%s: %s", name, new_env);
+               }
+            }
+            else {
+               INFO("environment: %s=%s", name, new_value);
+               Z_ (setenv(name, new_value, 1));
+            }
          }
          fclose(fp);
       } else {

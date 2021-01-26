@@ -316,7 +316,7 @@ Example valid lines that are probably not what you want:
      - :code:`​ bar`
      - leading space in value
 
-Appending and Prepending variables with :code:`--set-env`
+Appending and prepending variables with :code:`--set-env`
 ---------------------------------------------------------
 There are two ways to append or prepend to an environment variable. Option 1 
 is adding the information in the file used in :code:`--set-env=FILE`. It needs to 
