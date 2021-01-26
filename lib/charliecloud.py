@@ -323,6 +323,7 @@ class Image:
                # Device or FIFO: Ignore.
                dev_ct += 1
                members.remove(m)
+               continue
             elif (m.issym()):
                # Symlink: Nothing to change, but accept it.
                pass
@@ -339,6 +340,7 @@ class Image:
                m.mode |= 0o600
             else:
                FATAL("unknown member type: %s" % m.name)
+            TarFile.fix_member_uidgid(m)
          if (dev_ct > 0):
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
@@ -1010,7 +1012,7 @@ class TarFile(tarfile.TarFile):
    # Need new method name because add() is called recursively and we don't
    # want those internal calls to get our special sauce.
    def add_(self, name, **kwargs):
-      kwargs["filter"] = self.fix_new_member
+      kwargs["filter"] = self.fix_member_uidgid
       super().add(name, **kwargs)
 
    def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
@@ -1039,7 +1041,7 @@ class TarFile(tarfile.TarFile):
                   % (stat.S_IFMT(st.st_mode), targetpath))
 
    @staticmethod
-   def fix_new_member(ti):
+   def fix_member_uidgid(ti):
       assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
       if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
          FATAL("invalid file type: %s" % ti.name)
@@ -1048,10 +1050,10 @@ class TarFile(tarfile.TarFile):
       ti.gid = 0
       ti.gname = "root"
       if (ti.mode & stat.S_ISUID):
-         WARNING("stripping unsafe setuid bit: %s" % ti.name)
+         DEBUG("stripping unsafe setuid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISUID
       if (ti.mode & stat.S_ISGID):
-         WARNING("stripping unsafe setgid bit: %s" % ti.name)
+         DEBUG("stripping unsafe setgid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISGID
       return ti
 
