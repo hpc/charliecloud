@@ -101,7 +101,7 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 // First instruction must be ARG or FROM, but that is not a syntax error.
 dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( arg | copy | env | from_ | run | workdir | uns_forever | uns_yet )
+?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
@@ -128,13 +128,15 @@ run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
 run_shell: LINE
 
+shell: "SHELL"i _WS _string_list _NEWLINES
+
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 
 uns_forever: UNS_FOREVER _WS LINE _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
 uns_yet: UNS_YET _WS LINE _NEWLINES
-UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i | "SHELL"i )
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
 
 /// Common ///
 
