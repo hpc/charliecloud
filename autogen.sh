@@ -55,6 +55,10 @@ rm -rf Makefile \
 if [[ $1 != --clean ]]; then
     autoreconf --force --install -Wall -Werror
 
+    tar xf lib/0.11.1.tar.gz -C lib/
+    cd lib/lark-0.11.1/
+    python3 setup.py build
+    cp -r build/lib/* ../
     set +x
     echo
     echo 'Done. Now you can "./configure".'

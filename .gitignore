@@ -23,6 +23,9 @@ a.out
 /doc/man/*.[17]
 /lib/charliecloud
 /lib/contributors.bash
+/lib/lark-0.11.1/
+/lib/lark-stubs/
+/lib/lark/
 /lib/version.py
 /lib/version.sh
 /lib/version.txt
