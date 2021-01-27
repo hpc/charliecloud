@@ -10,6 +10,7 @@ build/10_sanity.bats \
 build/50_ch-image.bats \
 build/50_dockerfile.bats \
 build/50_fakeroot.bats \
+build/50_localregistry.bats \
 build/50_misc.bats \
 build/50_pull.bats \
 build/99_cleanup.bats \
@@ -19,6 +20,7 @@ make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
 make-auto.d/builder_to_archive.bats.in \
 make-auto.d/unpack.bats.in \
+registry-config.yml \
 run/build-rpms.bats \
 run/ch-fromhost.bats \
 run/ch-run_escalated.bats \
@@ -70,7 +72,7 @@ all-local:
 clean-local:
 	rm -f fixtures/symlink-to-tmp
 install-data-hook:
-	mkdir -p $(DESTDIR)$(testdir)/fixtures
+	$(MKDIR_P) $(DESTDIR)$(testdir)/fixtures
 	ln -fTs /tmp $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp

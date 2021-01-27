@@ -3,16 +3,15 @@
 import abc
 import ast
 import glob
-import inspect
 import os
 import os.path
-import pathlib
 import re
 import shutil
 import sys
 
 import charliecloud as ch
 import fakeroot
+import pull
 
 
 ## Globals ##
@@ -377,23 +376,23 @@ class I_copy(Instruction):
          ch.FATAL("error scanning directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
-      src = pathlib.Path(os.path.realpath(src))
-      dst = pathlib.Path(dst)
+      src = ch.Path(os.path.realpath(src))
+      dst = ch.Path(dst)
       assert (os.path.isdir(src) and not os.path.islink(src))
       assert (os.path.isdir(dst) and not os.path.islink(dst))
       ch.DEBUG("copying named directory: %s -> %s" % (src, dst), v=2)
       for (dirpath, dirnames, filenames) in os.walk(src, onerror=onerror):
-         dirpath = pathlib.Path(dirpath)
+         dirpath = ch.Path(dirpath)
          subdir = dirpath.relative_to(src)
-         dst_dir = dst / subdir
+         dst_dir = dst // subdir
          # dirnames can contain symlinks, which we handle as files, so we'll
          # rebuild it; the walk will not descend into those "directories".
          dirnames2 = dirnames.copy()  # shallow copy
          dirnames[:] = list()         # clear in place
          for d in dirnames2:
-            d = pathlib.Path(d)
-            src_path = dirpath / d
-            dst_path = dst_dir / d
+            d = ch.Path(d)
+            src_path = dirpath // d
+            dst_path = dst_dir // d
             ch.DEBUG("dir: %s -> %s" % (src_path, dst_path), v=2)
             if (os.path.islink(src_path)):
                filenames.append(d)  # symlink, handle as file
@@ -418,9 +417,9 @@ class I_copy(Instruction):
                       "can't copy metadata: %s -> %s" % (src_path, dst_path),
                       src_path, dst_path, follow_symlinks=False)
          for f in filenames:
-            f = pathlib.Path(f)
-            src_path = dirpath / f
-            dst_path = dst_dir / f
+            f = ch.Path(f)
+            src_path = dirpath // f
+            dst_path = dst_dir // f
             ch.DEBUG("file or symlink via copy2: %s -> %s"
                      % (src_path, dst_path), v=2)
             if (not (os.path.isfile(src_path) or os.path.islink(src_path))):
@@ -452,9 +451,9 @@ class I_copy(Instruction):
         path unpack_path. We can't use os.path.realpath() because if dst is
         an absolute symlink, we need to use the *image's* root directory, not
         the host. Thus, we have to resolve symlinks manually."""
-      unpack_path = pathlib.Path(unpack_path)
-      dst_canon = pathlib.Path(unpack_path)
-      dst = pathlib.Path(dst)
+      unpack_path = ch.Path(unpack_path)
+      dst_canon = ch.Path(unpack_path)
+      dst = ch.Path(dst)
       dst_parts = list(reversed(dst.parts))  # easier to operate on end of list
       iter_ct = 0
       while (len(dst_parts) > 0):
@@ -467,18 +466,18 @@ class I_copy(Instruction):
          if (part == "/" or part == "//"):  # 3 or more slashes yields "/"
             ch.DEBUG("skipping root")
             continue
-         cand = dst_canon / part
+         cand = dst_canon // part
          ch.DEBUG("checking: %s" % cand, v=2)
          if (not cand.is_symlink()):
             ch.DEBUG("not symlink", v=2)
             dst_canon = cand
          else:
-            target = pathlib.Path(os.readlink(cand))
+            target = ch.Path(os.readlink(cand))
             ch.DEBUG("symlink to: %s" % target, v=2)
             assert (len(target.parts) > 0)  # POSIX says no empty symlinks
             if (target.is_absolute()):
                ch.DEBUG("absolute")
-               dst_canon = pathlib.Path(unpack_path)
+               dst_canon = ch.Path(unpack_path)
             else:
                ch.DEBUG("relative", v=2)
             dst_parts.extend(reversed(target.parts))
@@ -513,7 +512,7 @@ class I_copy(Instruction):
       # Expand source wildcards.
       srcs = list()
       for src in self.srcs:
-         for i in glob.glob(context + "/" + src):
+         for i in glob.glob("%s/%s" % (context, src)):  # glob can't take Path
             srcs.append(i)
             ch.DEBUG("source: %s" % i)
       if (len(srcs) == 0):
@@ -528,9 +527,9 @@ class I_copy(Instruction):
       # Locate the destination.
       unpack_canon = os.path.realpath(images[image_i].unpack_path)
       if (self.dst.startswith("/")):
-         dst = self.dst
+         dst = ch.Path(self.dst)
       else:
-         dst = env.workdir + "/" + self.dst
+         dst = env.workdir // self.dst
       ch.DEBUG("destination, as given: %s" % dst)
       dst_canon = self.dest_realpath(unpack_canon, dst) # strips trailing slash
       ch.DEBUG("destination, canonical: %s" % dst_canon)
@@ -538,7 +537,7 @@ class I_copy(Instruction):
               .startswith(unpack_canon)):
          ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
       # Create the destination directory if needed.
-      if (dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
+      if (self.dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
          if (not os.path.exists(dst_canon)):
             ch.mkdirs(dst_canon)
          elif (not os.path.isdir(dst_canon)):  # not symlink b/c realpath()
@@ -569,7 +568,7 @@ class Env(Instruction):
 
    def execute_(self):
       env.env[self.key] = self.value
-      with ch.open_(images[image_i].unpack_path + "/ch/environment", "wt") \
+      with ch.open_(images[image_i].unpack_path // "/ch/environment", "wt") \
            as fp:
          for (k, v) in env.env.items():
             print("%s=%s" % (k, v), file=fp)
@@ -627,8 +626,7 @@ class I_from_(Instruction):
       else:
          # Not last image; append stage index to tag.
          tag = "%s/_stage%d" % (cli.tag, image_i)
-      image = ch.Image(ch.Image_Ref(tag), cli.storage + "/dlcache",
-                       cli.storage + "/img")
+      image = ch.Image(ch.Image_Ref(tag))
       images[image_i] = image
       if (self.alias is not None):
          images[self.alias] = image
@@ -637,11 +635,12 @@ class I_from_(Instruction):
       if (str(image.ref) == str(self.base_ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
-      self.base_image = ch.Image(self.base_ref, image.download_cache,
-                                 image.unpack_dir)
+      self.base_image = ch.Image(self.base_ref)
       if (not os.path.isdir(self.base_image.unpack_path)):
          ch.DEBUG("image not found, pulling: %s" % self.base_image.unpack_path)
-         self.base_image.pull_to_unpacked(fixup=True)
+         # a young hen, especially one less than one year old.
+         pullet = pull.Image_Puller(self.base_image)
+         pullet.pull_to_unpacked(fixup=True)
       image.copy_unpacked(self.base_image)
       env.reset()
       # Find fakeroot configuration, if any.
@@ -693,8 +692,20 @@ class I_run_shell(Run):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
       cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
-      self.cmd = ["/bin/sh", "-c", cmd]
+      self.cmd = env.shell + [cmd]
 
+class I_shell(Instruction):
+ 
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.shell = [variables_sub(unescape(i), env.env_build)
+                    for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
+  
+   def str_(self):
+      return str(self.shell)
+
+   def execute_(self):
+      env.shell = list(self.shell) #copy
 
 class I_workdir(Instruction):
 
@@ -708,7 +719,7 @@ class I_workdir(Instruction):
 
    def execute_(self):
       env.chdir(self.path)
-      ch.mkdirs(images[image_i].unpack_path + env.workdir)
+      ch.mkdirs(images[image_i].unpack_path // env.workdir)
 
 
 class I_uns_forever(Instruction_Supported_Never):
@@ -732,8 +743,7 @@ class I_uns_yet(Instruction):
                         "CMD":         780,
                         "ENTRYPOINT":  780,
                         "LABEL":       781,
-                        "ONBUILD":     788,
-                        "SHELL":       789 }[self.name]
+                        "ONBUILD":     788 }[self.name]
 
    def announce(self):
       self.unsupported_yet_warn("instruction", self.issue_no)
@@ -752,7 +762,8 @@ class I_uns_yet(Instruction):
 
 class Environment:
    "The state we are in: environment variables, working directory, etc."
-
+   __slots__ = ('arg', 'env', 'shell', 'workdir')
+ 
    def __init__(self):
       self.reset()
 
@@ -762,12 +773,13 @@ class Environment:
 
    def chdir(self, path):
       if (path.startswith("/")):
-         self.workdir = path
+         self.workdir = ch.Path(path)
       else:
-         self.workdir += "/" + path
+         self.workdir //= path
 
    def reset(self):
-      self.workdir = "/"
+      self.workdir = ch.Path("/")
+      self.shell   = ["/bin/sh", "-c"]
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
       self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
 

@@ -186,17 +186,15 @@ CMD foo
 ENTRYPOINT foo
 LABEL foo
 ONBUILD foo
-SHELL foo
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 6 ]]
+    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 5 ]]
     [[ $output = *'warning: not yet supported, ignored: issue #782: ADD instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #780: CMD instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #780: ENTRYPOINT instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #781: LABEL instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #788: ONBUILD instruction'* ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #789: SHELL instruction'* ]]
 
     # .dockerignore files
     run ch-image build -t not-yet-supported -f - . <<'EOF'
@@ -372,6 +370,66 @@ EOF
   echo "$output"
   [[ $status -eq 0 ]]
   diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
+}
+
+
+@test 'Dockerfile: SHELL' {
+   scope standard
+   [[ $CH_BUILDER = none ]] && skip 'no builder'
+   [[ $CH_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
+  
+   # test that SHELL command can change executables and parameters
+   run ch-build -t foo --no-cache -f - . <<'EOF'
+FROM 00_tiny
+RUN echo default: $0
+SHELL ["/bin/ash", "-c"]
+RUN  echo ash: $0
+SHELL ["/bin/sh", "-v", "-c"]
+RUN echo sh-v: $0
+EOF
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"default: /bin/sh"* ]]
+   [[ $output = *"ash: /bin/ash"* ]]
+   [[ $output = *"sh-v: /bin/sh"* ]]
+
+   # test that it fails if shell doesn't exist
+   run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+SHELL ["/doesnotexist", "-c"]
+RUN print("hello")
+EOF
+   echo "$output"
+   [[ status -eq 1 ]]
+   if [[ $CH_BUILDER = ch-image ]]; then
+      [[ $output = *"/doesnotexist: No such file or directory"* ]]
+   else
+      [[ $output = *"/doesnotexist: no such file or directory"* ]]
+   fi
+
+   # test that it fails if no paramaters
+   run ch-build -t foo -f - . <<'EOF'
+FROM 00_tiny
+SHELL ["/bin/sh"]
+RUN true
+EOF
+   echo "$output"
+   [[ status -ne 0 ]] # different builders use different error exit codes
+   [[ $output = *"/bin/sh: can't open 'true': No such file or directory"* ]]
+
+   # test that it works with python3 
+   run ch-build -t foo -f - . <<'EOF'
+FROM centos7
+SHELL ["/usr/bin/python3", "-c"]
+RUN print ("hello")
+EOF
+   echo "$output"
+   [[ status -eq 0 ]]
+   if [[ $CH_BUILDER = ch-image ]]; then
+      [[ $output = *"grown in 3 instructions: foo"* ]]
+   else
+      [[ $output = *"Successfully built"* ]]
+   fi
 }
 
 

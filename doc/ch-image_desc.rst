@@ -6,6 +6,7 @@ Synopsis
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] list
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
@@ -151,8 +152,8 @@ should mostly work (i.e., :code:`--force`), but it can be helpful to
 understand what is going on.
 
 :code:`ch-image` executes all instructions as the normal user who invokes it.
-For `RUN`, this is accomplished with :code:`ch-run -w --uid=0 --gid=0` (and
-some other arguments), i.e., your host EUID and EGID both mapped to zero
+For :code:`RUN`, this is accomplished with :code:`ch-run -w --uid=0 --gid=0`
+(and some other arguments), i.e., your host EUID and EGID both mapped to zero
 inside the container, and only one UID (zero) and GID (zero) are available
 inside the container. Under this arrangement, processes running in the
 container for each :code:`RUN` *appear* to be running as root, but many
@@ -205,17 +206,12 @@ content (e.g., grepping :code:`/etc/debian_version`) to select a
 configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image`
 prints exactly what it is doing.
 
-:code:`storage-path`
---------------------
-
-Print the storage directory path and exit.
-
 :code:`pull`
 ------------
 
 Pull the image described by the image reference :code:`IMAGE_REF` from a
-repository by HTTPS. See the FAQ for the gory details on specifying image
-references.
+repository to the local filesystem. See the FAQ for the gory details on
+specifying image references.
 
 This script does a fair amount of validation and fixing of the layer tarballs
 before flattening in order to support unprivileged use despite image problems
@@ -225,7 +221,7 @@ and directory permissions are increased to a minimum of :code:`rwx------` and
 the image are permitted, because they are not resolved until runtime within a
 container.
 
-Destination argument:
+Destination:
 
   :code:`IMAGE_DIR`
     If specified, place the unpacked image at this path; it is then ready for
@@ -241,6 +237,37 @@ Options:
   :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
+
+:code:`push`
+------------
+
+Push the image described by the image reference :code:`IMAGE_REF` from the
+local filesystem to a repository. See the FAQ for the gory details on
+specifying image references.
+
+Because Charliecloud is fully unprivileged, the owner and group of files in
+its images are not meaningful in the broader ecosystem. Thus, when pushed,
+everything in the image is flattened to user:group :code:`root:root`. Also,
+setuid/setgid bits are removed, to avoid surprises if the image is pulled by a
+privileged container implementation.
+
+Destination:
+
+  :code:`DEST_REF`
+    If specified, use this as the destination image reference, rather than
+    :code:`IMAGE_REF`. This lets you push to a repository without permanently
+    adding a tag to the image.
+
+Options:
+
+  :code:`--image DIR`
+    Use the unpacked image located at :code:`DIR` rather than an image in the
+    storage directory named :code:`IMAGE_REF`.
+
+:code:`storage-path`
+--------------------
+
+Print the storage directory path and exit.
 
 
 Compatibility with other Dockerfile interpreters
@@ -480,5 +507,70 @@ Same, except place the image in :code:`/tmp/buster`::
    $ ls /tmp/buster
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
+
+:code:`push`
+------------
+
+Push a local image to the registry :code:`example.com:5000` at path
+:code:`/foo/bar` with tag :code:`latest`. Note that in this form, the local
+image must be named to match that remote reference.
+
+::
+
+   $ ch-image push example.com:5000/foo/bar:latest
+   pushing image:   example.com:5000/foo/bar:latest
+   layer 1/1: gathering
+   layer 1/1: preparing
+   preparing metadata
+   starting upload
+   layer 1/1: a1664c4: checking if already in repository
+   layer 1/1: a1664c4: not present, uploading
+   config: 89315a2: checking if already in repository
+   config: 89315a2: not present, uploading
+   manifest: uploading
+   cleaning up
+   done
+
+Same, except use local image :code:`alpine:3.9`. In this form, the local image
+name does not have to match the destination reference.
+
+::
+
+   $ ch-image push alpine:3.9 example.com:5000/foo/bar:latest
+   pushing image:   alpine:3.9
+   destination:     example.com:5000/foo/bar:latest
+   layer 1/1: gathering
+   layer 1/1: preparing
+   preparing metadata
+   starting upload
+   layer 1/1: a1664c4: checking if already in repository
+   layer 1/1: a1664c4: not present, uploading
+   config: 89315a2: checking if already in repository
+   config: 89315a2: not present, uploading
+   manifest: uploading
+   cleaning up
+   done
+
+Same, except use unpacked image located at :code:`/var/tmp/image` rather than
+an image in :code:`ch-image` storage. (Also, the sole layer is already present
+in the remote registry, so we don't upload it again.)
+
+::
+
+   $ ch-image push --image /var/tmp/image example.com:5000/foo/bar:latest
+   pushing image:   example.com:5000/foo/bar:latest
+   image path:      /var/tmp/image
+   layer 1/1: gathering
+   layer 1/1: preparing
+   preparing metadata
+   starting upload
+   layer 1/1: 892e38d: checking if already in repository
+   layer 1/1: 892e38d: already present
+   config: 546f447: checking if already in repository
+   config: 546f447: not present, uploading
+   manifest: uploading
+   cleaning up
+   done
+
 
 ..  LocalWords:  tmpfs'es bigvendor

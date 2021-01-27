@@ -44,6 +44,15 @@ jobs:
           done
           echo "path_new=$path_new"
           echo "PATH=$path_new" >> $GITHUB_ENV
+          # Set sudo umask to something quite restrictive. The default is
+          # 0022, but we had a "make install" bug (issue #947) that was
+          # tickled by 0027, which is a better setting. For reasons I don't
+          # understand, this only affects sudo, but since that's what we want,
+          # I left it. Note there are a few dependency installs below that
+          # have similar permissions bugs; these relax the umask on a
+          # case-by-case basis.
+          sudo sed -i -E 's/^UMASK\s+022/UMASK 0077/' /etc/login.defs
+          fgrep UMASK /etc/login.defs
 
       - name: print starting environment
         run: |
@@ -51,10 +60,20 @@ jobs:
           env | egrep '^(ch|CH)_'
           [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
           id
+          printf 'umask for %s: ' $USER && umask
+          printf 'umask under sudo: ' && sudo sh -c umask
+          [[ $(umask) = 0022 ]]
+          [[ $(sudo sh -c umask) = 0077 ]]
           pwd
           getconf _NPROCESSORS_ONLN
           free -m
           df -h
+
+      - name: lines of code
+        if: ${{ matrix.builder == 'none' }}
+        run: |
+          sudo apt-get install cloc
+          misc/loc
 
       - name: install Bats
         # We need (1) old Bats, not bats-core and (2) prior to commit 1735a4f,
@@ -64,7 +83,7 @@ jobs:
           cd /usr/local/src
           git clone --depth 1 --branch v0.4.0 https://github.com/sstephenson/bats.git
           cd bats
-          sudo ./install.sh /usr/local
+          sudo sh -c 'umask 0022 && ./install.sh /usr/local'
           command -v bats
           bats --version
           [[ $(command -v bats) == /usr/local/bin/bats ]]
@@ -77,14 +96,14 @@ jobs:
           # configure does tell us about these.
           sudo apt-get install squashfs-tools squashfuse
           # Track newest Sphinx in case it breaks things.
-          sudo pip3 install sphinx sphinx-rtd-theme
+          sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
 
       - name: install/configure dependencies, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
           # Use most current Lark rather than the one in Ubuntu b/c new
           # versions sometimes break things.
-          sudo pip3 install lark-parser
+          sudo su -c 'umask 0022 && pip3 install lark-parser'
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -138,6 +157,27 @@ jobs:
       - name: make filesystem permissions fixtures
         run: |
           bin/ch-test mk-perm-dirs
+
+      - name: start local registry, ch-image
+        if: ${{ matrix.builder == 'ch-image' }}
+        # See HOWTO in Google Docs for details.
+        run: |
+          set -x
+          mkdir ~/registry-etc
+          cp test/registry-config.yml ~/registry-etc/config.yml
+          cd ~/registry-etc
+          openssl req -batch -subj '/C=US/ST=NM/L=LA/O=LANL/CN=localhost' \
+                      -newkey rsa:4096 -nodes -sha256 -x509 -days 36500 \
+                      -keyout localhost.key -out localhost.crt
+          #openssl x509 -text -noout -in localhost.crt
+          sudo apt-get install apache2-utils
+          htpasswd -Bbn charlie test > ./htpasswd
+          diff -u <(docker run --rm registry:2 \
+                           cat /etc/docker/registry/config.yml) \
+                  config.yml || true
+          docker run -d --rm -p 127.0.0.1:5000:5000 \
+                  -v ~/registry-etc:/etc/docker/registry registry:2
+          docker ps -a
 
       - name: configure sudo to user root, group non-root
         if: ${{ matrix.keep_sudo }}
@@ -216,7 +256,7 @@ jobs:
           fgrep 'with ch-image(1): no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
-          fgrep 'complete test suite: yes' config.log
+          fgrep 'complete test suite: no' config.log
           set +x
           # Build.
           make $ch_makej
@@ -272,5 +312,5 @@ jobs:
         run: |
           free -m
           df -h
-          du -sch $CH_TEST_TARDIR/*
-          du -sch $CH_TEST_IMGDIR/*
+          du -sch $CH_TEST_TARDIR/* || true
+          du -sch $CH_TEST_IMGDIR/* || true
