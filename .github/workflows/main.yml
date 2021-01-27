@@ -103,7 +103,7 @@ jobs:
         run: |
           # Use most current Lark rather than the one in Ubuntu b/c new
           # versions sometimes break things.
-          sudo su -c 'umask 0022 && pip3 install lark-parser'
+          #sudo su -c 'umask 0022 && pip3 install lark-parser'
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
