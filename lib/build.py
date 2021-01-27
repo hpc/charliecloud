@@ -766,7 +766,7 @@ class Environment:
    """The state we are in: environment variables, working directory, etc. Most
       of this is just passed through from the image metadata."""
 
-   __slots__ = ("arg", "shell")
+   __slots__ = ("arg",)
 
    def __init__(self):
       self.reset()
@@ -787,6 +787,14 @@ class Environment:
       return { **self.arg, **self.env }
 
    @property
+   def shell(self):
+     return images[image_i].metadata["shell"]
+
+   @shell.setter
+   def shell(self, x):
+      images[image_i].metadata["shell"] = x
+
+   @property
    def workdir(self):
       return ch.Path(images[image_i].metadata["cwd"])
 
@@ -802,7 +810,6 @@ class Environment:
 
    def reset(self):
       # This resets only things that aren't part of the image metadata.
-      self.shell   = ["/bin/sh", "-c"]
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
 
 

@@ -62,7 +62,6 @@ EOF
 @test 'ch-image build: metadata carry-forward' {
     img=$CH_IMAGE_STORAGE/img/build-metadata
 
-    # FIXME: also shell
     # Print out current metadata, then update it.
     run ch-image build --no-cache -t build-metadata -f - . <<'EOF'
 FROM charliecloud/metadata:2021-01-15
@@ -72,6 +71,9 @@ RUN echo "cwd2: $PWD"
 RUN env | egrep '^(PATH=|ch_)' | sed -E 's/^/env1: /' | sort
 ENV ch_baz=baz-ev
 RUN env | egrep '^(PATH=|ch_)' | sed -E 's/^/env2: /' | sort
+RUN echo "shell1: $0"
+SHELL ["/bin/sh", "-v", "-c"]
+RUN echo "shell2: $0"
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
@@ -84,6 +86,8 @@ EOF
     [[ $output = *'env2: ch_bar=bar-ev'* ]]
     [[ $output = *'env2: ch_baz=baz-ev'* ]]
     [[ $output = *'env2: ch_foo=foo-ev'* ]]
+    [[ $output = *'shell1: /bin/ash'* ]]
+    [[ $output = *'shell2: /bin/sh'* ]]
 
     # Correct files?
     diff -u - <(ls "${img}/ch") <<'EOF'
@@ -121,7 +125,8 @@ EOF
     "ch_foo": "foo-label"
   },
   "shell": [
-    "/bin/ash",
+    "/bin/sh",
+    "-v",
     "-c"
   ],
   "volumes": [

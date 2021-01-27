@@ -273,6 +273,7 @@ class Image:
                         "cwd": "/",
                         "env": dict(),
                         "labels": dict(),
+                        "shell": ["/bin/sh", "-c"],
                         "volumes": list() }  # set isn't JSON-serializable
 
    def metadata_load(self):
