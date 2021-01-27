@@ -102,7 +102,7 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 // First instruction must be ARG or FROM, but that is not a syntax error.
 dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( arg | copy | env | from_ | run | workdir | uns_forever | uns_yet )
+?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
@@ -129,13 +129,15 @@ run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
 run_shell: LINE
 
+shell: "SHELL"i _WS _string_list _NEWLINES
+
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 
 uns_forever: UNS_FOREVER _WS LINE _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
 uns_yet: UNS_YET _WS LINE _NEWLINES
-UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i | "SHELL"i )
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
 
 /// Common ///
 
@@ -468,6 +470,7 @@ class Image:
                # Device or FIFO: Ignore.
                dev_ct += 1
                members.remove(m)
+               continue
             elif (m.issym()):
                # Symlink: Nothing to change, but accept it.
                pass
@@ -484,6 +487,7 @@ class Image:
                m.mode |= 0o600
             else:
                FATAL("unknown member type: %s" % m.name)
+            TarFile.fix_member_uidgid(m)
          if (dev_ct > 0):
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
@@ -866,22 +870,25 @@ class Registry_HTTP:
 
    def authenticate_bearer(self, res, auth_d):
       VERBOSE("authenticating using Bearer")
-      for k in ("realm", "service", "scope"):
+      # Registries vary in what they put in WWW-Authenticate. Specifically,
+      # for everything except NGC, we get back realm, service, and scope. NGC
+      # just gives service and scope. We need realm because it's the URL to
+      # use for a token. scope also seems critical, so check we have that.
+      # Otherwise, just give back all the keys we got.
+      for k in ("realm", "scope"):
          if (k not in auth_d):
             FATAL("WWW-Authenticate missing key: %s" % k)
+      params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
       # First, try for an anonymous auth token. If that fails, try for an
       # authenticated token.
       VERBOSE("requesting anonymous auth token")
-      res = self.request_raw("GET", auth_d["realm"], {200,403},
-                             params={"service": auth_d["service"],
-                                     "scope": auth_d["scope"]})
+      res = self.request_raw("GET", auth_d["realm"], {200,403}, params=params)
       if (res.status_code == 403):
          INFO("anonymous access rejected")
          (username, password) = self.credentials_read()
          auth = requests.auth.HTTPBasicAuth(username, password)
          res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
-                                params={"service": auth_d["service"],
-                                        "scope": auth_d["scope"]})
+                                params=params)
       token = res.json()["token"]
       VERBOSE("received auth token: %s" % (token[:32]))
       self.auth = self.Bearer_Auth(token)
@@ -1030,6 +1037,7 @@ class Registry_HTTP:
          Session must already exist. If auth arg given, use it; otherwise, use
          object's stored authentication if initialized; otherwise, use no
          authentication."""
+      DEBUG("%s: %s" % (method, url))
       if (auth is None):
          auth = self.auth
       try:
@@ -1134,7 +1142,7 @@ class TarFile(tarfile.TarFile):
    # Need new method name because add() is called recursively and we don't
    # want those internal calls to get our special sauce.
    def add_(self, name, **kwargs):
-      kwargs["filter"] = self.fix_new_member
+      kwargs["filter"] = self.fix_member_uidgid
       super().add(name, **kwargs)
 
    def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
@@ -1163,7 +1171,7 @@ class TarFile(tarfile.TarFile):
                   % (stat.S_IFMT(st.st_mode), targetpath))
 
    @staticmethod
-   def fix_new_member(ti):
+   def fix_member_uidgid(ti):
       assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
       if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
          FATAL("invalid file type: %s" % ti.name)
@@ -1172,10 +1180,10 @@ class TarFile(tarfile.TarFile):
       ti.gid = 0
       ti.gname = "root"
       if (ti.mode & stat.S_ISUID):
-         WARNING("stripping unsafe setuid bit: %s" % ti.name)
+         DEBUG("stripping unsafe setuid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISUID
       if (ti.mode & stat.S_ISGID):
-         WARNING("stripping unsafe setgid bit: %s" % ti.name)
+         DEBUG("stripping unsafe setgid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISGID
       return ti
 

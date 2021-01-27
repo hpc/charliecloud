@@ -283,6 +283,10 @@ EOF
     # FIXME: "latest" tags do not work, but they do in Docker (issue #896)
     ch-image pull gcr.io/google-containers/busybox:1.27
 
+    # nVidia NGC: https://ngc.nvidia.com
+    # FIXME: 96 MiB unpacked; also kind of slow
+    ch-image pull nvcr.io/hpc/foldingathome/fah-gpu:7.6.21
+
     # Things not here (yet?):
     #
     # 1. Harbor (issue #899): Has a demo repo (https://demo.goharbor.io) that
@@ -305,9 +309,6 @@ EOF
     #
     # 5. JFrog / Artifactory (https://jfrog.com/container-registry/): Could
     #    not find any public registry.
-    #
-    # 6. nVidia NGC (https://ngc.nvidia.com, issue #897): (1) does not work
-    #    and (2) appears to contain only monster images.
 }
 
 @test 'pull image with metadata' {

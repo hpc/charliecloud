@@ -57,6 +57,11 @@ Miscellaneous notes and gotchas:
 
     [1]: https://github.com/actions/virtual-environments/blob/ubuntu20/20201116.1/images/linux/Ubuntu2004-README.md
 
+  * The default shell (Bash) does not read any init files [1], so you cannot
+    configure it with e.g. .bashrc.
+
+    [1]: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#using-a-specific-shell
+
   * GitHub doesn’t seem to notice our setup if .github is a symlink. :(
 
   * GitHub seems to want us to encapsulate some of the steps that are now just

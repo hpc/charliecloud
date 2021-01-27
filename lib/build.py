@@ -694,8 +694,20 @@ class I_run_shell(Run):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
       cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
-      self.cmd = ["/bin/sh", "-c", cmd]
+      self.cmd = env.shell + [cmd]
 
+class I_shell(Instruction):
+ 
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.shell = [variables_sub(unescape(i), env.env_build)
+                    for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
+  
+   def str_(self):
+      return str(self.shell)
+
+   def execute_(self):
+      env.shell = list(self.shell) #copy
 
 class I_workdir(Instruction):
 
@@ -733,8 +745,7 @@ class I_uns_yet(Instruction):
                         "CMD":         780,
                         "ENTRYPOINT":  780,
                         "LABEL":       781,
-                        "ONBUILD":     788,
-                        "SHELL":       789 }[self.name]
+                        "ONBUILD":     788 }[self.name]
 
    def announce(self):
       self.unsupported_yet_warn("instruction", self.issue_no)
@@ -755,7 +766,7 @@ class Environment:
    """The state we are in: environment variables, working directory, etc. Most
       of this is just passed through from the image metadata."""
 
-   __slots__ = ("arg",)
+   __slots__ = ("arg", "shell")
 
    def __init__(self):
       self.reset()
@@ -791,6 +802,7 @@ class Environment:
 
    def reset(self):
       # This resets only things that aren't part of the image metadata.
+      self.shell   = ["/bin/sh", "-c"]
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
 
 
