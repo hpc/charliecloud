@@ -54,7 +54,7 @@ rm -rf Makefile \
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
     autoreconf --force --install -Wall -Werror
-    if [[ $(which python3) ]]; then
+    if [[ $(command -v  python3) ]]; then
         rm -rf --one-file-system lib/lark*
 	tar xf lib/0.11.1.tar.gz -C lib/
         cd lib/lark-0.11.1/
