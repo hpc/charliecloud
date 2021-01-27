@@ -330,26 +330,6 @@ AS_CASE([$python],
 CH_CHECK_VERSION([PYTHON], [$vmin_python],
                  [--version | head -1 | cut -d' ' -f2])
 
-# Python module "lark-parser"
-vmin_lark=0.7.1
-AS_IF([test -n "$PYTHON"], [
-  AC_MSG_CHECKING([for lark-parser module])
-  cat <<EOF | $PYTHON_SHEBANG
-import sys
-try:
-   import lark   # module present?
-   lark.Visitor  # correct module? (there are two)
-except Exception:
-   sys.exit(1)
-EOF
-  AS_IF([test $? -eq 0],
-    [LARK=$PYTHON; have_lark=yes],
-    [LARK=;        have_lark=no])
-  AC_MSG_RESULT([$have_lark])
-  CH_CHECK_VERSION([LARK], [$vmin_lark],
-    [-c 'import lark; print(lark.__version__)'])
-])
-
 # Python module "requests"
 vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
 AS_IF([test -n "$PYTHON"], [
@@ -472,7 +452,6 @@ AS_IF([   test -n "$BUILDAH"],
 AS_IF([   test $enable_ch_image = yes \
        && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
-       && test -n "$LARK" \
        && test -n "$REQUESTS" \
        && test $have_ch_run = yes],
       [have_ch_image=yes],
@@ -621,7 +600,6 @@ Building images via our wrappers
     enabled ... ${enable_ch_image}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
-    "lark-parser" module ≥ $vmin_lark ... ${LARK_VERSION_NOTE}
     "requests" module ≥ $vmin_requests ... ${REQUESTS_VERSION_NOTE}
     ch-run(1) ... ${have_ch_run}
 
