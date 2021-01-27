@@ -326,7 +326,7 @@ if [ $cray_openmpi ]; then
     # Remove core MPI libraries from image. This works around ParaView
     # dlopen(3)-related errors that we don't understand.
     image_mpilibs=$(  "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -p \
-                    | sed -nr 's|^.* => (/.*/(libmpi\|libopen-rte\|libopen-pal)\.so([0-9.]+)?)$|\1|p')
+                    | sed -nE 's@^.* => (/.*/(libmpi|libopen-rte|libopen-pal)\.so([0-9.]+)?)$@\1@p')
        echo "$image_mpilibs" | grep -q "libmpi" \
     || fatal "can't find libmpi.so* in image"
     for f in $image_mpilibs; do
