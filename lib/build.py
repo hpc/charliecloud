@@ -788,7 +788,10 @@ class Environment:
 
    @property
    def shell(self):
-     return images[image_i].metadata["shell"]
+      if (image_i == -1):
+         return ["/bin/false"]
+      else:
+         return images[image_i].metadata["shell"]
 
    @shell.setter
    def shell(self, x):

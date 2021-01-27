@@ -1181,10 +1181,10 @@ class TarFile(tarfile.TarFile):
       ti.gid = 0
       ti.gname = "root"
       if (ti.mode & stat.S_ISUID):
-         DEBUG("stripping unsafe setuid bit: %s" % ti.name)
+         VERBOSE("stripping unsafe setuid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISUID
       if (ti.mode & stat.S_ISGID):
-         DEBUG("stripping unsafe setgid bit: %s" % ti.name)
+         VERBOSE("stripping unsafe setgid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISGID
       return ti
 
