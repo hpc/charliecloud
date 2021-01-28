@@ -82,6 +82,7 @@ struct args {
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
 void fix_environment(struct args *args);
+void fix_prepend(char *name, char *new_value);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
 char *join_tag(char *cli_tag);
@@ -215,8 +216,27 @@ void fix_environment(struct args *args)
    for (int i = 0; args->env_deltas[i].action != END; i++) {
       char *arg = args->env_deltas[i].arg;
       if (args->env_deltas[i].action == SET_FILE) {
-         FILE *fp;
-         Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
+         FILE *fp = NULL;
+         if (fopen(arg, "r")) {
+            fp = fopen(arg, "r");
+         }
+         else {
+            split(&name, &new_value, arg, '=');
+            Te (name != NULL, "--set-env: no delimiter: %s", arg);
+            Te (strlen(name) != 0, "--set-env: empty name: %s", arg);
+            if (   strlen(new_value) >= 2
+                && new_value[0] == '\''
+                && new_value[strlen(new_value) - 1] == '\'') {
+               new_value[strlen(new_value) - 1] = 0;  // strip trailing quote
+               new_value++;                           // strip leading
+            }
+            if (strchr(new_value, '$') != NULL) {
+               INFO("%s -- %s", name, new_value);
+               fix_prepend(name, new_value);
+               return;
+            }
+         }
+         //Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
          for (int j = 1; true; j++) {
             char *line = NULL;
             size_t len = 0;
@@ -241,42 +261,7 @@ void fix_environment(struct args *args)
                new_value++;                           // strip leading
             }
             if (strchr(new_value, '$') != NULL) { //does input contain '$'
-               if (new_value[0] != '$') { //prepend
-                  char* env_var;
-                  env_var = strrchr(new_value, ':'); //split at last :
-                  int len = env_var - new_value;
-                  char path_new[len];
-                  memset(path_new, '\0', len);
-                  strncpy(path_new, new_value, len); //save new path to path_new
-                  env_var+=2;
-                  DEBUG("new_path:%s, env_var:%s", path_new, env_var);
-                  char *old_env, *new_env;
-                  old_env = getenv(env_var);
-                  if (old_env != NULL) {
-                     T_ (1 <= asprintf(&new_env, "%s:%s", path_new, old_env));
-                  }
-                  else {
-                     T_ (1 <= asprintf(&new_env, "%s", path_new));
-                  }
-                  Z_ (setenv(name, new_env, 1));
-                  INFO("new $%s: %s", name, new_env);
-               }
-               else { //append
-                  char *env_var, *path_new;
-                  split(&env_var, &path_new, new_value, ':'); //split at first :
-                  env_var++;
-                  DEBUG("new_path:%s, env_var:%s", path_new, env_var);
-                  char *old_env, *new_env;
-                  old_env = getenv(env_var);
-                  if (old_env !=  NULL) {
-                     T_ (1 <= asprintf(&new_env, "%s:%s", old_env, path_new));
-                  }
-                  else { 
-                     T_ (1 <= asprintf(&new_env, "%s", path_new));
-                  }
-                  Z_ (setenv(name, new_env, 1));
-                  INFO("new $%s: %s", name, new_env);
-               }
+               fix_prepend(name, new_value);
             }
             else {
                INFO("environment: %s=%s", name, new_value);
@@ -321,6 +306,41 @@ void fix_environment(struct args *args)
 
    // $CH_RUNNING
    Z_ (setenv("CH_RUNNING", "Weird Al Yankovic", 1));
+}
+
+void fix_prepend(char *name, char *new_value)
+{
+   char *env_var, *new_env, *old_env;
+   if (new_value[0] != '$') { //prepend
+      env_var = strrchr(new_value, ':'); //split at last :
+      int len = env_var - new_value;
+      char path_new[len];
+      strncpy(path_new, new_value, len); //save new path to path_new
+      env_var+=2;
+      DEBUG("new_path:%s, env_var:%s", path_new, env_var);
+      old_env = getenv(env_var);
+      if (old_env != NULL) {
+         T_ (1 <= asprintf(&new_env, "%s:%s", path_new, old_env));
+      }
+      else {
+        T_ (1 <= asprintf(&new_env, "%s", path_new));
+      }
+   }
+   else { //append
+      char *path_new;
+      split(&env_var, &path_new, new_value, ':'); //split at first :
+      env_var++;
+      DEBUG("new_path:%s, env_var:%s", path_new, env_var);
+      old_env = getenv(env_var);
+      if (old_env !=  NULL) {
+         T_ (1 <= asprintf(&new_env, "%s:%s", old_env, path_new));
+      }
+      else {
+         T_ (1 <= asprintf(&new_env, "%s", path_new));
+      }
+   }
+   Z_ (setenv(name, new_env, 1));
+   INFO("new $%s: %s", name, new_env);
 }
 
 /* Find the first environment variable in array that is set; put its name in
