@@ -133,8 +133,9 @@ EOF
 ch-image|ch-grow)
 
     echo "exporting"
-    storage=$("${ch_bin}/ch-image" storage-path)
-    ( cd "${storage}/img/${image}" && tar cf - . ) | pv_ > "$tar"
+    storage=$("${ch_bin}/ch-image" storage-path)/img/$(tag_to_path "$image")
+    echo "$storage"
+    ( cd "$storage" && tar cf - . ) | pv_ > "$tar"
 
     ;;
 
