@@ -222,7 +222,7 @@ void fix_environment(struct args *args)
          }
          else {
             split(&name, &new_value, arg, '=');
-            Te (name != NULL, "--set-env: no delimiter: %s", arg);
+            Te (name != NULL, "--set-env: can't open: %s", arg);
             Te (strlen(name) != 0, "--set-env: empty name: %s", arg);
             if (   strlen(new_value) >= 2
                 && new_value[0] == '\''

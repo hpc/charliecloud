@@ -342,7 +342,6 @@ chse_a7=''''
 
 chse_b1="bar"
 chse_b2=bar # baz
-chse_b3=$PATH
  chse_b4=bar
 chse_b5= bar
 
@@ -361,7 +360,6 @@ EOF
 ('chse_a7', "''")
 ('chse_b1', '"bar"')
 ('chse_b2', 'bar # baz')
-('chse_b3', '$PATH')
 ('chse_b5', ' bar')
 ('chse_c1', 'bar')
 EOF
@@ -400,7 +398,6 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"--set-env: can't open:"* ]]
-    [[ $output = *"No such file or directory"* ]]
 
     # Note: I'm not sure how to test an error during reading, i.e., getline(3)
     # rather than fopen(3). Hence no test for "error reading".
