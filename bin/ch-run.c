@@ -312,21 +312,13 @@ void fix_prepend(char *name, char *new_value)
 {
    char *env_var, *new_env, *old_env, *path_new;
    if (new_value[0] != '$') { //prepend
-      const char s[2] = ":";
-      char *token;
-      token = strtok(new_value, s);
-      path_new = token;
-      token = strtok(NULL, s);
-      while (token != NULL) {
-         strcat(path_new, env_var);
-         env_var = token;
-         token = strtok(NULL, s);
-      }
+      split(&path_new, &env_var, new_value, '$'); //split at $
+      path_new[strlen(path_new) - 1]='\0';
    }
    else { //append
       split(&env_var, &path_new, new_value, ':'); //split at first :
+      env_var++;
    }
-   env_var++;
    DEBUG("new_path:%s, env_var:%s", path_new, env_var);
    old_env = getenv(env_var);
    if (old_env != NULL) {
