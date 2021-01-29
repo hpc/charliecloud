@@ -310,34 +310,35 @@ void fix_environment(struct args *args)
 
 void fix_prepend(char *name, char *new_value)
 {
-   char *env_var, *new_env, *old_env;
+   char *env_var, *new_env, *old_env, *path_new;
    if (new_value[0] != '$') { //prepend
-      env_var = strrchr(new_value, ':'); //split at last :
-      int len = env_var - new_value;
-      char path_new[len];
-      strncpy(path_new, new_value, len); //save new path to path_new
-      env_var+=2;
-      DEBUG("new_path:%s, env_var:%s", path_new, env_var);
-      old_env = getenv(env_var);
-      if (old_env != NULL) {
-         T_ (1 <= asprintf(&new_env, "%s:%s", path_new, old_env));
-      }
-      else {
-        T_ (1 <= asprintf(&new_env, "%s", path_new));
+      const char s[2] = ":";
+      char *token;
+      token = strtok(new_value, s);
+      path_new = token;
+      token = strtok(NULL, s);
+      while (token != NULL) {
+         strcat(path_new, env_var);
+         env_var = token;
+         token = strtok(NULL, s);
       }
    }
    else { //append
-      char *path_new;
       split(&env_var, &path_new, new_value, ':'); //split at first :
-      env_var++;
-      DEBUG("new_path:%s, env_var:%s", path_new, env_var);
-      old_env = getenv(env_var);
-      if (old_env !=  NULL) {
-         T_ (1 <= asprintf(&new_env, "%s:%s", old_env, path_new));
+   }
+   env_var++;
+   DEBUG("new_path:%s, env_var:%s", path_new, env_var);
+   old_env = getenv(env_var);
+   if (old_env != NULL) {
+      if (new_value[0] != '$') {
+         T_ (1 <= asprintf(&new_env, "%s:%s", path_new, old_env)); //prepend
       }
       else {
-         T_ (1 <= asprintf(&new_env, "%s", path_new));
+         T_ (1 <= asprintf(&new_env, "%s:%s", old_env, path_new)); //append
       }
+   }
+   else {
+      T_ (1 <= asprintf(&new_env, "%s", path_new));
    }
    Z_ (setenv(name, new_env, 1));
    INFO("new $%s: %s", name, new_env);
