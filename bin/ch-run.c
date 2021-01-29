@@ -333,7 +333,7 @@ void fix_prepend(char *name, char *new_value)
       T_ (1 <= asprintf(&new_env, "%s", path_new));
    }
    Z_ (setenv(name, new_env, 1));
-   INFO("new $%s: %s", name, new_env);
+   INFO("new %s: %s", name, new_env);
 }
 
 /* Find the first environment variable in array that is set; put its name in
