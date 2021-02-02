@@ -430,12 +430,12 @@ class Image:
 
    def unpack_delete (self):
       if (not self.unpack_exist_p()):
-          FATAL("%s image not found" % (self.ref))
+         FATAL("%s image not found" % (self.ref))
       if (unpacked_image_p(self.unpack_path)):
+         INFO("deleting image: %s" % (self.ref))
          rmtree(self.unpack_path)
-         INFO("image deleted: %s" % (self.ref))
       else:
-         FATAL ("storage directory seems broken: %s is not an image" % (self.ref))
+         FATAL("storage directory seems broken: %s is not an image" % (self.ref))
    
    def unpack_exist_p(self):
       if (os.path.exists(self.unpack_path)):
@@ -1369,9 +1369,7 @@ def unlink(path, *args, **kwargs):
    ossafe(os.unlink, "can't unlink: %s" % path, path)
 
 def unpacked_image_p(imgdir):
-   if (    os.path.isdir(imgdir)
+   return (os.path.isdir(imgdir)
        and os.path.isdir(imgdir // 'bin')
        and os.path.isdir(imgdir // 'dev')
-       and os.path.isdir(imgdir // 'opt')):
-      return True
-   return False
+       and os.path.isdir(imgdir // 'opt'))

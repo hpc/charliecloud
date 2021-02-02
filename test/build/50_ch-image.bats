@@ -39,7 +39,7 @@ setup () {
     [[ $output != *"delete/test"* ]]
   
     # Build image. It's called called delete/test to check ref parsing with slash present.
-	 ch-image build -t delete/test -f - . << 'EOF'
+    ch-image build -t delete/test -f - . << 'EOF'
 FROM 00_tiny
 EOF
     run ch-image list
