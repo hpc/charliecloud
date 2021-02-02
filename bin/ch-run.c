@@ -235,6 +235,8 @@ void fix_environment(struct args *args)
                fix_prepend(name, new_value);
                return;
             }
+            else 
+               FATAL("%s invalid input, only for prepend or append", arg);
          }
          for (int j = 1; true; j++) {
             char *line = NULL;
