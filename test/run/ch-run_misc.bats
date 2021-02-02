@@ -417,6 +417,7 @@ EOF
     [[ $output = *"--set-env: empty name: ${f_in}:1"* ]]
 }
 
+# shellcheck disable=SC2016
 @test 'ch-run --set-env prepend/append' {
     scope standard
 

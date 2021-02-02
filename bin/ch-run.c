@@ -220,7 +220,7 @@ void fix_environment(struct args *args)
          if (fopen(arg, "r")) {
             fp = fopen(arg, "r");
          }
-         else {
+         else {  
             split(&name, &new_value, arg, '=');
             Te (name != NULL, "--set-env: can't open: %s", arg);
             Te (strlen(name) != 0, "--set-env: empty name: %s", arg);
@@ -236,7 +236,6 @@ void fix_environment(struct args *args)
                return;
             }
          }
-         //Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
          for (int j = 1; true; j++) {
             char *line = NULL;
             size_t len = 0;
@@ -313,10 +312,12 @@ void fix_prepend(char *name, char *new_value)
    char *env_var, *new_env, *old_env, *path_new;
    if (new_value[0] != '$') { //prepend
       split(&path_new, &env_var, new_value, '$'); //split at $
+      Te (strlen(env_var) != 0, "--set-env: empty environment variable: %s", new_value);
       path_new[strlen(path_new) - 1]='\0';
    }
    else { //append
       split(&env_var, &path_new, new_value, ':'); //split at first :
+      Te (env_var != NULL, "--set-env: no delimiter in append: %s", new_value);
       env_var++;
    }
    DEBUG("new_path:%s, env_var:%s", path_new, env_var);
