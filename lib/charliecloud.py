@@ -414,7 +414,7 @@ class Image:
    def unpack_create_ok(self):
       """Ensure the unpack directory can be created. If the unpack directory
          is already an image, remove it."""
-      if (not os.path.exists(self.unpack_path)):
+      if (not self.unpack_exist_p()):
          DEBUG("creating new image: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
@@ -427,6 +427,19 @@ class Image:
                   % self.unpack_path)
          DEBUG("replacing existing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
+
+   def unpack_delete (self):
+      if (not self.unpack_exist_p()):
+         FATAL("%s image not found" % (self.ref))
+      if (unpacked_image_p(self.unpack_path)):
+         INFO("deleting image: %s" % (self.ref))
+         rmtree(self.unpack_path)
+      else:
+         FATAL("storage directory seems broken: %s is not an image" % (self.ref))
+   
+   def unpack_exist_p(self):
+      if (os.path.exists(self.unpack_path)):
+          return True            
 
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."
@@ -1354,3 +1367,9 @@ def tree_terminals(tree, tname):
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
+
+def unpacked_image_p(imgdir):
+   return (os.path.isdir(imgdir)
+       and os.path.isdir(imgdir // 'bin')
+       and os.path.isdir(imgdir // 'dev')
+       and os.path.isdir(imgdir // 'opt'))
