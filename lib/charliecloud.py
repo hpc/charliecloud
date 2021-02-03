@@ -765,17 +765,30 @@ class Registry_HTTP:
          if (k not in auth_d):
             FATAL("WWW-Authenticate missing key: %s" % k)
       params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
-      # First, try for an anonymous auth token. If that fails, try for an
-      # authenticated token.
-      DEBUG("requesting anonymous auth token")
-      res = self.request_raw("GET", auth_d["realm"], {200,403}, params=params)
-      if (res.status_code == 403):
-         INFO("anonymous access rejected")
+      # Request anonymous auth token first, but only for the “safe” methods.
+      # We assume no registry will accept anonymous pushes. This is because
+      # GitLab registries don't seem to honor the scope argument (issue #975);
+      # e.g., for scope “repository:reidpr/foo/00_tiny:pull,push”, GitLab
+      # 13.6.3-ee will hand out an anonymous token, but that token is rejected
+      # with ‘error="insufficient_scope"’ when the request is re-tried.
+      token = None
+      if (res.request.method not in ("GET", "HEAD")):
+         DEBUG("will not request anonymous token for %s" % res.request.method)
+      else:
+         DEBUG("requesting anonymous auth token")
+         res = self.request_raw("GET", auth_d["realm"], {200,403},
+                                params=params)
+         if (res.status_code == 403):
+            DEBUG("anonymous access rejected")
+         else:
+            token = res.json()["token"]
+      # If that failed or was inappropriate, try for an authenticated token.
+      if (token is None):
          (username, password) = self.credentials_read()
          auth = requests.auth.HTTPBasicAuth(username, password)
          res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
                                 params=params)
-      token = res.json()["token"]
+         token = res.json()["token"]
       DEBUG("received auth token: %s" % (token[:32]))
       self.auth = self.Bearer_Auth(token)
 
