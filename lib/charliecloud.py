@@ -557,6 +557,40 @@ class Image:
             VERBOSE("layer %d/%d: %s: %d whiteouts; %d members ignored"
                     % (i, len(layers), lh[:7], wo_ct, ig_ct))
 
+   def unpack_create_ok(self):
+      """Ensure the unpack directory can be created. If the unpack directory
+         is already an image, remove it."""
+      if (not self.unpack_exist_p()):
+         VERBOSE("creating new image: %s" % self.unpack_path)
+      else:
+         if (not os.path.isdir(self.unpack_path)):
+            FATAL("can't flatten: %s exists but is not a directory"
+                  % self.unpack_path)
+         if (   not os.path.isdir(self.unpack_path // "bin")
+             or not os.path.isdir(self.unpack_path // "dev")
+             or not os.path.isdir(self.unpack_path // "usr")):
+            FATAL("can't flatten: %s exists but does not appear to be an image"
+                  % self.unpack_path)
+         VERBOSE("replacing existing image: %s" % self.unpack_path)
+         rmtree(self.unpack_path)
+
+   def unpack_delete(self):
+      if (not self.unpack_exist_p()):
+         FATAL("%s image not found" % (self.ref))
+      if (unpacked_image_p(self.unpack_path)):
+         INFO("deleting image: %s" % (self.ref))
+         rmtree(self.unpack_path)
+      else:
+         FATAL("storage directory seems broken: not an image: %s" % (self.ref))
+
+   def unpack_exist_p(self):
+      return os.path.exists(self.unpack_path)
+
+   def unpack_create(self):
+      "Ensure the unpack directory exists, replacing or creating if needed."
+      self.unpack_create_ok()
+      mkdirs(self.unpack_path)
+
 
 class Image_Ref:
    """Reference to an image in a remote repository.
@@ -880,17 +914,30 @@ class Registry_HTTP:
          if (k not in auth_d):
             FATAL("WWW-Authenticate missing key: %s" % k)
       params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
-      # First, try for an anonymous auth token. If that fails, try for an
-      # authenticated token.
-      VERBOSE("requesting anonymous auth token")
-      res = self.request_raw("GET", auth_d["realm"], {200,403}, params=params)
-      if (res.status_code == 403):
-         INFO("anonymous access rejected")
+      # Request anonymous auth token first, but only for the “safe” methods.
+      # We assume no registry will accept anonymous pushes. This is because
+      # GitLab registries don't seem to honor the scope argument (issue #975);
+      # e.g., for scope “repository:reidpr/foo/00_tiny:pull,push”, GitLab
+      # 13.6.3-ee will hand out an anonymous token, but that token is rejected
+      # with ‘error="insufficient_scope"’ when the request is re-tried.
+      token = None
+      if (res.request.method not in ("GET", "HEAD")):
+         VERBOSE("won't request anonymous token for %s" % res.request.method)
+      else:
+         VERBOSE("requesting anonymous auth token")
+         res = self.request_raw("GET", auth_d["realm"], {200,403},
+                                params=params)
+         if (res.status_code == 403):
+            VERBOSE("anonymous access rejected")
+         else:
+            token = res.json()["token"]
+      # If that failed or was inappropriate, try for an authenticated token.
+      if (token is None):
          (username, password) = self.credentials_read()
          auth = requests.auth.HTTPBasicAuth(username, password)
          res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
                                 params=params)
-      token = res.json()["token"]
+         token = res.json()["token"]
       VERBOSE("received auth token: %s" % (token[:32]))
       self.auth = self.Bearer_Auth(token)
 
@@ -1505,3 +1552,9 @@ def tree_terminals(tree, tname):
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
+
+def unpacked_image_p(imgdir):
+   return (os.path.isdir(imgdir)
+       and os.path.isdir(imgdir // 'bin')
+       and os.path.isdir(imgdir // 'dev')
+       and os.path.isdir(imgdir // 'opt'))
