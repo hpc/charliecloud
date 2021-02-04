@@ -647,7 +647,7 @@ EOF
         if [[ $CH_BUILDER = docker ]]; then
             # This error message seems wrong. I was expecting something about
             # no context, so COPY not allowed.
-            [[ $output = *'no such file or directory'* ]]
+            [[ $output = *'file does not exist'* ]]
         else
             false  # unimplemented
         fi
@@ -679,7 +679,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_BUILDER = docker ]]; then
-        [[ $output = *'no such file or directory'* ]]
+        [[ $output = *'file does not exist'* ]]
     else
         [[ $output = *'outside'*'context'* ]]
     fi
@@ -725,11 +725,11 @@ COPY doesnotexist .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = ch-image ]]; then
+    if [[ $CH_BUILDER = docker ]]; then
+        [[ $output = *'file does not exist'* ]]
+    else
         # This diagnostic is not fantastic, but it's what we got for now.
         [[ $output = *'no sources found'* ]]
-    else
-        [[ $output = *'doesnotexist:'*'o such file or directory'* ]]
     fi
 }
 
