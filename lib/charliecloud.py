@@ -222,6 +222,8 @@ class Image:
 
    def copy_unpacked(self, other):
       "Copy the unpack directory of Image other to my unpack directory."
+      if (not os.path.exists(other.unpack_path // "/ch/metadata.json")):
+         WARNING("image %s has no metadata; consider re-pulling it" % other)
       self.unpack_clear()
       VERBOSE("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
       copytree(other.unpack_path, self.unpack_path, symlinks=True)
@@ -281,7 +283,7 @@ class Image:
          metadata doesn't exist, warn and use defaults."""
       path = self.metadata_path // "metadata.json"
       if (not path.exists()):
-         WARNING("no metadata for image; using defaults")
+         WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
       fp = open_(path, "rt")
