@@ -178,7 +178,6 @@ def main():
    sp.set_defaults(func=misc.reset)
    add_opts(sp, common_opts, True)
 
-
    # storage-path
    help="print storage directory path"
    sp = sps.add_parser("storage-path", help=help, description=help,

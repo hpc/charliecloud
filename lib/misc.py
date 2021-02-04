@@ -3,7 +3,6 @@
 import argparse
 import os
 import sys
-import shutil
 
 import charliecloud as ch
 import version
@@ -47,7 +46,8 @@ def list_(cli):
       print(ch.Image_Ref(img))
 
 def reset(cli):
-   shutil.rmtree(ch.storage.root)
+   ch.rmtree(ch.storage.download_cache)
+   ch.rmtree(ch.storage.unpack_base)
 
 def storage_path(cli):
    print(ch.storage.root)
