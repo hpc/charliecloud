@@ -101,7 +101,7 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 // First instruction must be ARG or FROM, but that is not a syntax error.
 dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( arg | copy | env | from_ | run | workdir | uns_forever | uns_yet )
+?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
@@ -128,13 +128,15 @@ run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
 run_shell: LINE
 
+shell: "SHELL"i _WS _string_list _NEWLINES
+
 workdir: "WORKDIR"i _WS LINE _NEWLINES
 
 uns_forever: UNS_FOREVER _WS LINE _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
 uns_yet: UNS_YET _WS LINE _NEWLINES
-UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i | "SHELL"i )
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
 
 /// Common ///
 
@@ -323,6 +325,7 @@ class Image:
                # Device or FIFO: Ignore.
                dev_ct += 1
                members.remove(m)
+               continue
             elif (m.issym()):
                # Symlink: Nothing to change, but accept it.
                pass
@@ -339,6 +342,7 @@ class Image:
                m.mode |= 0o600
             else:
                FATAL("unknown member type: %s" % m.name)
+            TarFile.fix_member_uidgid(m)
          if (dev_ct > 0):
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
@@ -410,7 +414,7 @@ class Image:
    def unpack_create_ok(self):
       """Ensure the unpack directory can be created. If the unpack directory
          is already an image, remove it."""
-      if (not os.path.exists(self.unpack_path)):
+      if (not self.unpack_exist_p()):
          DEBUG("creating new image: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
@@ -423,6 +427,19 @@ class Image:
                   % self.unpack_path)
          DEBUG("replacing existing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
+
+   def unpack_delete (self):
+      if (not self.unpack_exist_p()):
+         FATAL("%s image not found" % (self.ref))
+      if (unpacked_image_p(self.unpack_path)):
+         INFO("deleting image: %s" % (self.ref))
+         rmtree(self.unpack_path)
+      else:
+         FATAL("storage directory seems broken: %s is not an image" % (self.ref))
+   
+   def unpack_exist_p(self):
+      if (os.path.exists(self.unpack_path)):
+          return True            
 
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."
@@ -748,17 +765,30 @@ class Registry_HTTP:
          if (k not in auth_d):
             FATAL("WWW-Authenticate missing key: %s" % k)
       params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
-      # First, try for an anonymous auth token. If that fails, try for an
-      # authenticated token.
-      DEBUG("requesting anonymous auth token")
-      res = self.request_raw("GET", auth_d["realm"], {200,403}, params=params)
-      if (res.status_code == 403):
-         INFO("anonymous access rejected")
+      # Request anonymous auth token first, but only for the “safe” methods.
+      # We assume no registry will accept anonymous pushes. This is because
+      # GitLab registries don't seem to honor the scope argument (issue #975);
+      # e.g., for scope “repository:reidpr/foo/00_tiny:pull,push”, GitLab
+      # 13.6.3-ee will hand out an anonymous token, but that token is rejected
+      # with ‘error="insufficient_scope"’ when the request is re-tried.
+      token = None
+      if (res.request.method not in ("GET", "HEAD")):
+         DEBUG("will not request anonymous token for %s" % res.request.method)
+      else:
+         DEBUG("requesting anonymous auth token")
+         res = self.request_raw("GET", auth_d["realm"], {200,403},
+                                params=params)
+         if (res.status_code == 403):
+            DEBUG("anonymous access rejected")
+         else:
+            token = res.json()["token"]
+      # If that failed or was inappropriate, try for an authenticated token.
+      if (token is None):
          (username, password) = self.credentials_read()
          auth = requests.auth.HTTPBasicAuth(username, password)
          res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
                                 params=params)
-      token = res.json()["token"]
+         token = res.json()["token"]
       DEBUG("received auth token: %s" % (token[:32]))
       self.auth = self.Bearer_Auth(token)
 
@@ -1010,7 +1040,7 @@ class TarFile(tarfile.TarFile):
    # Need new method name because add() is called recursively and we don't
    # want those internal calls to get our special sauce.
    def add_(self, name, **kwargs):
-      kwargs["filter"] = self.fix_new_member
+      kwargs["filter"] = self.fix_member_uidgid
       super().add(name, **kwargs)
 
    def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
@@ -1039,7 +1069,7 @@ class TarFile(tarfile.TarFile):
                   % (stat.S_IFMT(st.st_mode), targetpath))
 
    @staticmethod
-   def fix_new_member(ti):
+   def fix_member_uidgid(ti):
       assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
       if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
          FATAL("invalid file type: %s" % ti.name)
@@ -1048,10 +1078,10 @@ class TarFile(tarfile.TarFile):
       ti.gid = 0
       ti.gname = "root"
       if (ti.mode & stat.S_ISUID):
-         WARNING("stripping unsafe setuid bit: %s" % ti.name)
+         DEBUG("stripping unsafe setuid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISUID
       if (ti.mode & stat.S_ISGID):
-         WARNING("stripping unsafe setgid bit: %s" % ti.name)
+         DEBUG("stripping unsafe setgid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISGID
       return ti
 
@@ -1350,3 +1380,9 @@ def tree_terminals(tree, tname):
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
+
+def unpacked_image_p(imgdir):
+   return (os.path.isdir(imgdir)
+       and os.path.isdir(imgdir // 'bin')
+       and os.path.isdir(imgdir // 'dev')
+       and os.path.isdir(imgdir // 'opt'))

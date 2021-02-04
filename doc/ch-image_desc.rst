@@ -4,6 +4,7 @@ Synopsis
 ::
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
+   $ ch-image [...] delete IMAGE_REF
    $ ch-image [...] list
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
@@ -205,6 +206,12 @@ The details are specific to each distribution. :code:`ch-image` analyzes image
 content (e.g., grepping :code:`/etc/debian_version`) to select a
 configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image`
 prints exactly what it is doing.
+
+:code:`delete`
+--------------
+
+Delete the image described by the image reference :code:`IMAGE_REF` from the
+storage directory.
 
 :code:`pull`
 ------------
