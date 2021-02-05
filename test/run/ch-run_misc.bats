@@ -448,6 +448,7 @@ EOF
 
 }
 
+# shellcheck disable=SC2016
 @test 'ch-run --set-env command line errors' {
     scope standard
     
@@ -458,6 +459,7 @@ EOF
     [[ $output = *"PATH=foo invalid input, only for prepend or append"* ]]
 
     # missing '''
+    # shellcheck disable=SC2086
     run ch-run --set-env=PATH=$PATH:foo "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]
