@@ -448,6 +448,28 @@ EOF
 
 }
 
+@test 'ch-run --set-env command line errors' {
+    scope standard
+    
+    # missing '$'
+    run ch-run --set-env=PATH='foo' "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *"PATH=foo invalid input, only for prepend or append"* ]]
+
+    # missing '''
+    run ch-run --set-env=PATH=$PATH:foo "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *"invalid input, only for prepend or append"* ]]
+
+    # missing environment variable
+    run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *"can't open"* ]]
+}
+
 @test 'ch-run --unset-env' {
     scope standard
 
