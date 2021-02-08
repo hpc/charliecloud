@@ -8,6 +8,7 @@ Synopsis
    $ ch-image [...] list
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
+   $ ch-image [...] reset
    $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
@@ -270,6 +271,11 @@ Options:
   :code:`--image DIR`
     Use the unpacked image located at :code:`DIR` rather than an image in the
     storage directory named :code:`IMAGE_REF`.
+
+:code:`reset`
+-------------
+
+Deletes all images and cache from ch-image builder storage.
 
 :code:`storage-path`
 --------------------

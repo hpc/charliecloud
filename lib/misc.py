@@ -46,8 +46,14 @@ def list_(cli):
       print(ch.Image_Ref(img))
 
 def reset(cli):
-   ch.rmtree(ch.storage.download_cache)
-   ch.rmtree(ch.storage.unpack_base)
+   try:
+      ch.rmtree(ch.storage.download_cache)
+   except:
+      ch.ERROR("%s does not exist" % (ch.storage.download_cache))
+   try:
+      ch.rmtree(ch.storage.unpack_base)
+   except:
+      ch.ERROR("%s does not exist" % (ch.storage.unpack_base))
 
 def storage_path(cli):
    print(ch.storage.root)
