@@ -422,29 +422,29 @@ EOF
     scope standard
 
     # prepend in command line
-    export mah=foo
-    run ch-run --set-env=mah='pre:$mah' -v "$ch_timg" -- /bin/true
+    export test=foo
+    run ch-run --set-env=test='pre:$test' -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"new mah: pre:foo"* ]]    
+    [[ $output = *"new test: pre:foo"* ]]    
 
     # append in command line
-    run ch-run --set-env=mah='$mah:app' -v "$ch_timg" -- /bin/true
+    run ch-run --set-env=test='$test:app' -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"new mah: foo:app"* ]]
+    [[ $output = *"new test: foo:app"* ]]
 
     # prepend in file
     # append in file
     f_in=${BATS_TMPDIR}/env_pre.txt
     cat <<'EOF' > "$f_in"
-mah=pre:$mah
-mah=$mah:app
+test=pre:$test
+test=$test:app
 EOF
     run ch-run --set-env="$f_in" -v "$ch_timg" -- bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"new mah: pre:foo:app"* ]]
+    [[ $output = *"new test: pre:foo:app"* ]]
 
 }
 
