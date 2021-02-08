@@ -314,7 +314,7 @@ void fix_prepend(char *name, char *new_value)
       Te (env_var != NULL, "--set-env: no delimiter in append: %s", new_value);
       env_var++;
    }
-   DEBUG("new_path:%s, env_var:%s", path_new, env_var);
+   VERBOSE("new_path:%s, env_var:%s", path_new, env_var);
    old_env = getenv(env_var);
    if (old_env != NULL) {
       if (new_value[0] != '$') {
