@@ -1,0 +1,35 @@
+# This Dockerfile is used to test metadata pulling (issue #651). It includes
+# all the instructions that seemed like they ought to create metadata, even if
+# unsupported by ch-image.
+#
+# Scope is "skip" because we pull the image to test it; see
+# test/build/50_pull.bats.
+#
+# To build and push:
+#
+#   $ VERSION=$(date +%Y-%m-%d)             # or other date as appropriate
+#   $ sudo docker login                     # if needed
+#   $ sudo docker build -t charliecloud/metadata:$VERSION \
+#                       -f Dockerfile.metadata .
+#   $ sudo docker images | fgrep metadata
+#   $ sudo docker push charliecloud/metadata:$VERSION
+#
+# ch-test-scope: skip
+
+FROM 00_tiny
+
+CMD ["bar", "baz"]
+ENTRYPOINT ["/bin/echo","foo"]
+ENV ch_foo=foo-ev ch_bar=bar-ev
+EXPOSE 867 5309/udp
+HEALTHCHECK --interval=60s --timeout=5s CMD ["/bin/true"]
+LABEL ch_foo=foo-label ch_bar=bar-label
+MAINTAINER charlie@example.com
+ONBUILD RUN echo hello
+RUN echo hello
+RUN ["/bin/echo", "world"]
+SHELL ["/bin/ash", "-c"]
+STOPSIGNAL SIGWINCH
+USER charlie:chargrp
+WORKDIR /mnt
+VOLUME /mnt/foo /mnt/bar /mnt/foo

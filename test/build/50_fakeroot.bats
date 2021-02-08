@@ -162,14 +162,14 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-@test "${tag}: CentOS 7: EPEL already enabled" {
+@test "${tag}: CentOS 7: EPEL already installed" {
     scope standard
 
     # 7: install EPEL (no fakeroot)
     run ch-image -v build -t centos7-epel1 -f - . <<'EOF'
 FROM centos:7
 RUN yum install -y epel-release
-RUN yum repolist | egrep '^epel/'
+RUN yum repolist -v | egrep '^Repo-id\s+: epel/'
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
@@ -180,7 +180,7 @@ EOF
     run ch-image -v build --force -t centos7-epel2 -f - . <<'EOF'
 FROM centos7-epel1
 RUN yum install -y openssh
-RUN yum repolist | egrep '^epel/'
+RUN yum repolist -v | egrep '^Repo-id\s+: epel/'
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
