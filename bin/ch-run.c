@@ -217,8 +217,6 @@ void fix_environment(struct args *args)
    for (int i = 0; args->env_deltas[i].action != END; i++) {
       char *arg = args->env_deltas[i].arg;
       if (args->env_deltas[i].action == SET_FILE) {
-         //FILE *fp;
-         //Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
          FILE *fp = NULL;
          if (fopen(arg, "r")) {
             fp = fopen(arg, "r");
