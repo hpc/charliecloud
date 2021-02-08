@@ -93,7 +93,9 @@ Subcommands
 -------------
 
 Build an image from a Dockerfile and put it in the storage directory. Use
-:code:`ch-run(1)` to execute :code:`RUN` instructions.
+:code:`ch-run(1)` to execute :code:`RUN` instructions. Note that :code:`FROM`
+implicitly pulls the base image if needed, so you may want to read about the
+:code:`pull` subcommand below as well.
 
 Required argument:
 
@@ -221,14 +223,6 @@ Pull the image described by the image reference :code:`IMAGE_REF` from a
 repository to the local filesystem. See the FAQ for the gory details on
 specifying image references.
 
-This script does a fair amount of validation and fixing of the layer tarballs
-before flattening in order to support unprivileged use despite image problems
-we frequently see in the wild. For example, device files are ignored, and file
-and directory permissions are increased to a minimum of :code:`rwx------` and
-:code:`rw-------` respectively. Note, however, that symlinks pointing outside
-the image are permitted, because they are not resolved until runtime within a
-container.
-
 Destination:
 
   :code:`IMAGE_DIR`
@@ -245,6 +239,31 @@ Options:
   :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
+
+This script does a fair amount of validation and fixing of the layer tarballs
+before flattening in order to support unprivileged use despite image problems
+we frequently see in the wild. For example, device files are ignored, and file
+and directory permissions are increased to a minimum of :code:`rwx------` and
+:code:`rw-------` respectively. Note, however, that symlinks pointing outside
+the image are permitted, because they are not resolved until runtime within a
+container.
+
+The following metadata in the pulled image is retained; all other metadata is
+currently ignored. (If you have a need for additional metadata, please let us
+know!)
+
+  * Current working directory set with :code:`WORKDIR` is effective in
+    downstream Dockerfiles.
+
+  * Environment variables set with :code:`ENV` are effective in downstream
+    Dockerfiles and also written to :code:`/ch/environment` for use in
+    :code:`ch-run --set-env`.
+
+  * Mount point directories specified with :code:`VOLUME` are created in the
+    image if they don't exist, but no other action is taken.
+
+Note that some images (e.g., those with a "version 1 manifest") do not contain
+metadata. A warning is printed in this case.
 
 :code:`push`
 ------------

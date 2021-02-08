@@ -31,18 +31,18 @@ state = None  # state object
 def main():
    global args, state
    args = args_parse()
-   ch.DEBUG("--- starting ------------------------------------")
-   ch.DEBUG("args: %s" % sys.argv)
-   ch.DEBUG("environment: %s" % { k: v for (k, v) in os.environ.items()
+   ch.VERBOSE("--- starting ------------------------------------")
+   ch.VERBOSE("args: %s" % sys.argv)
+   ch.VERBOSE("environment: %s" % { k: v for (k, v) in os.environ.items()
                                   if k.startswith("CH_RUN_OCI_") })
-   ch.DEBUG("CLI: %s" % args)
+   ch.VERBOSE("CLI: %s" % args)
    if (args.op.__name__ == "op_" + os.getenv("CH_RUN_OCI_HANG", default="")):
-      ch.DEBUG("hanging before %s per CH_RUN_OCI_HANG" % args.op.__name__)
+      ch.VERBOSE("hanging before %s per CH_RUN_OCI_HANG" % args.op.__name__)
       sleep_forever()
       assert False, "unreachable code reached"
    state = state_load()
    args.op()
-   ch.DEBUG("done")
+   ch.VERBOSE("done")
 
 
 def args_parse():
@@ -116,10 +116,10 @@ def bundle_from_cid(cid):
 
 def debug_lines(s):
    for line in s.splitlines():
-      ch.DEBUG(line)
+      ch.VERBOSE(line)
 
 def image_fixup(path):
-   ch.DEBUG("fixing up image: %s" % path)
+   ch.VERBOSE("fixing up image: %s" % path)
    # Metadata directory.
    ch.mkdirs("%s/ch/bin" % path)
    # Mount points.
@@ -167,22 +167,22 @@ def op_create():
       # Note: I looked into changing the process title and this turns out to
       # be remarkably hairy unless you use a 3rd-party module.
       def exit_(sig, frame):
-         ch.DEBUG("dummy supervisor: done")
+         ch.VERBOSE("dummy supervisor: done")
          sys.exit(0)
       signal.signal(signal.SIGTERM, exit_)
-      ch.DEBUG("dummy supervisor: starting")
+      ch.VERBOSE("dummy supervisor: starting")
       sleep_forever()
    else:
       state.pid = pid
       with ch.open_(args.pid_file, "wt") as fp:
          print("%d" % pid, file=fp)
-      ch.DEBUG("dummy supervisor started with pid %d" % pid)
+      ch.VERBOSE("dummy supervisor started with pid %d" % pid)
 
 def op_delete():
-   ch.DEBUG("delete operation is a no-op")
+   ch.VERBOSE("delete operation is a no-op")
 
 def op_kill():
-   ch.DEBUG("kill operation is a no-op")
+   ch.VERBOSE("kill operation is a no-op")
 
 def op_start():
    # Note: Contrary to the implication of its name, the "start" operation
@@ -213,7 +213,7 @@ def op_start():
       for line in (  c["process"]["env"]                  # from Dockerfile
                    + [ "TAR_OPTIONS=--no-same-owner" ]):  # ours
          line = re.sub(r"^(PATH=)", "\\1/ch/bin:", line)
-         ch.DEBUG("env: %s" % line)
+         ch.VERBOSE("env: %s" % line)
          print(line, file=fp)
 
    # Build command line.
@@ -236,11 +236,11 @@ def op_start():
    # Execute user command. We can't execv(2) because we have to do cleanup
    # after it exits.
    ch.file_ensure_exists(args.bundle + "/user_started")
-   ch.DEBUG("user command: %s" % ca)
+   ch.VERBOSE("user command: %s" % ca)
    # Standard output disappears, so send stdout to stderr.
    cp = subprocess.run(ca, stdout=2)
    ch.file_ensure_exists(args.bundle + "/user_done")
-   ch.DEBUG("user command done")
+   ch.VERBOSE("user command done")
 
    # Stop dummy supervisor.
    if (state.pid is None):
@@ -299,10 +299,10 @@ def state_load():
    try:
       fp = open(args.pid_file, "rt")
       st.pid = int(ch.ossafe(fp.read, "can't read: %s" % args.pid_file))
-      ch.DEBUG("found supervisor pid: %d" % st.pid)
+      ch.VERBOSE("found supervisor pid: %d" % st.pid)
    except FileNotFoundError:
       st.pid = None
-      ch.DEBUG("no supervisor pid found")
+      ch.VERBOSE("no supervisor pid found")
 
    st.user_command_started = os.path.isfile(args.bundle + "/user_started")
    st.user_command_done = os.path.isfile(args.bundle + "/user_done")
