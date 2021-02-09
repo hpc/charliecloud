@@ -63,6 +63,30 @@ EOF
     [[ $output = *"00_tiny"* ]]
 }
 
+@test 'ch-image reset' {
+   export CH_IMAGE_STORAGE="$CH_IMAGE_STORAGE"/reset
+   run ch-image pull alpine
+   run ls "$CH_IMAGE_STORAGE"
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"dlcache"* ]]
+   [[ $output = *"img"* ]]   
+
+   run ch-image reset
+   ls "$CH_IMAGE_STORAGE"
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output != *"dlcache"* ]]
+   [[ $output != *"img"* ]]
+
+   run ch-image reset
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"$CH_IMAGE_STORAGE/dlcache does not exist"* ]]
+   [[ $output = *"$CH_IMAGE_STORAGE/img does not exist"* ]]
+   
+}
+
 @test 'ch-image storage-path' {
     run ch-image storage-path
     echo "$output"
