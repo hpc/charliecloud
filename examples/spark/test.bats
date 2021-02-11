@@ -31,13 +31,7 @@ setup () {
     spark_config=$spark_dir
     spark_log=/tmp/sparklog
     if [[ $ch_multinode ]]; then
-        # Use the last non-loopback IP address. This is a barely educated
-        # guess and shouldn't be relied on for real code, but hopefully it
-        # works for testing.
-        master_ip=$(  ip -o -f inet addr show \
-                    | grep -F 'scope global' \
-                    | tail -1 \
-                    | sed -r 's/^.+inet ([0-9.]+).+/\1/')
+        master_host="$(hostname)"
         # Start Spark workers using pdsh. We would really prefer to do this
         # using srun, but that doesn't work; see issue #230.
         command -v pdsh >/dev/null 2>&1 || pedantic_fail "pdsh not in path"
@@ -46,7 +40,7 @@ setup () {
         master_ip=127.0.0.1
         pernode=
     fi
-    master_url="spark://${master_ip}:7077"
+    master_url="spark://${master_host}:7077"
     master_log="${spark_log}/*master.Master*.out"
 }
 
@@ -63,7 +57,8 @@ SPARK_LOCAL_DIRS=/tmp/spark
 SPARK_LOG_DIR=$spark_log
 SPARK_WORKER_DIR=/tmp/spark
 SPARK_LOCAL_IP=127.0.0.1
-SPARK_MASTER_HOST=${master_ip}
+SPARK_MASTER_HOST=${master_host}
+JAVA_HOME=/usr/lib/jvm/default-java/
 EOF
     my_secret=$(cat /dev/urandom | tr -dc '0-9a-f' | head -c 48)
     tee <<EOF > "${spark_config}/spark-defaults.conf"
