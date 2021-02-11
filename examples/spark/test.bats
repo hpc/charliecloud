@@ -37,7 +37,7 @@ setup () {
         command -v pdsh >/dev/null 2>&1 || pedantic_fail "pdsh not in path"
         pernode="pdsh -R ssh -w ${SLURM_NODELIST} -- PATH='${PATH}'"
     else
-        master_ip=127.0.0.1
+        master_host=localhost
         pernode=
     fi
     master_url="spark://${master_host}:7077"
