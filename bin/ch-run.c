@@ -301,32 +301,30 @@ void fix_environment(struct args *args)
 
 void fix_prepend(char *name, char *new_value)
 {
-   char *env_var, *new_env, *old_env, *path_new;
-   if (new_value[0] != '$') { //prepend
-      split(&path_new, &env_var, new_value, '$'); //split at $
-      Te (strlen(env_var) != 0, "--set-env: empty environment variable: %s", new_value);
-      path_new[strlen(path_new) - 1]='\0';
-   }
-   else { //append
-      split(&env_var, &path_new, new_value, ':'); //split at first :
-      Te (env_var != NULL, "--set-env: no delimiter in append: %s", new_value);
-      env_var++;
-   }
-   VERBOSE("new_path:%s, env_var:%s", path_new, env_var);
-   old_env = getenv(env_var);
-   if (old_env != NULL) {
-      if (new_value[0] != '$') {
-         T_ (1 <= asprintf(&new_env, "%s:%s", path_new, old_env)); //prepend
+   char *token;
+   char *new_env = NULL;
+   const char s[2] = ":";
+   token = strtok(new_value, s);
+   while( token != NULL ) {
+      if (new_env == NULL) {
+         if (token[0] != '$') {
+           new_env = token; //first input, not a ENV
+         }
+         else {
+            token++;
+            new_env = getenv(token); //first input, ENV
+         }
       }
-      else {
-         T_ (1 <= asprintf(&new_env, "%s:%s", old_env, path_new)); //append
+      else if (token[0] != '$') {
+          T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
       }
+      else if (token[0] == '$') {
+         token ++;
+         T_ (1 <= asprintf(&new_env, "%s:%s", new_env, getenv(token)));
+      }
+      token = strtok(NULL, s);
    }
-   else {
-      T_ (1 <= asprintf(&new_env, "%s", path_new));
-   }
-   Z_ (setenv(name, new_env, 1));
-   INFO("new %s: %s", name, new_env);
+//   Z_ (setenv(name, new_env, 1));
 }
 
 /* Find the first environment variable in array that is set; put its name in
