@@ -421,55 +421,53 @@ EOF
 @test 'ch-run --set-env prepend/append' {
     scope standard
 
-    # prepend in command line
+    # prepend and append in command line
     export test=foo
-    run ch-run --set-env=test='pre:$test' -v "$ch_timg" -- /bin/true
+    run ch-run --set-env=test='pre:$test:app' -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"new test: pre:foo"* ]]    
+    [[ $output = *"environment: test=pre:foo:app"* ]]    
 
-    # append in command line
-    run ch-run --set-env=test='$test:app' -v "$ch_timg" -- /bin/true
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"new test: foo:app"* ]]
-
-    # prepend in file
-    # append in file
+    # prepend and append in file
     f_in=${BATS_TMPDIR}/env_pre.txt
     cat <<'EOF' > "$f_in"
-test=pre:$test
-test=$test:app
+test=pre:$test:app
 EOF
     run ch-run --set-env="$f_in" -v "$ch_timg" -- bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"new test: pre:foo:app"* ]]
+    [[ $output = *"environment: test=pre:foo:app"* ]]
 
+    # multiple '$'
+    export test2=foo
+    run ch-run --set-env=test='pre:$test:$test2:app' -v "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"environment: test=pre:foo:foo:app"* ]]
+
+    # missing '$'
+    run ch-run --set-env=test='foo' -v "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"environment: test=foo"* ]]
+
+    # missing '''
+    # shellcheck disable=SC2086
+    run ch-run --set-env=test=$test:app -v "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"environment: test=foo:app"* ]]
 }
 
 # shellcheck disable=SC2016
 @test 'ch-run --set-env command line errors' {
     scope standard
-    
-    # missing '$'
-    run ch-run --set-env=PATH='foo' "$ch_timg" -- /bin/true
-    echo "$output"
-    [[ $status -ne 0 ]]
-    [[ $output = *"PATH=foo invalid input, only for prepend or append"* ]]
-
-    # missing '''
-    # shellcheck disable=SC2086
-    run ch-run --set-env=PATH=$PATH:foo "$ch_timg" -- /bin/true
-    echo "$output"
-    [[ $status -ne 0 ]]
-    [[ $output = *"invalid input, only for prepend or append"* ]]
 
     # missing environment variable
     run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -ne 0 ]]
-    [[ $output = *"can't open"* ]]
+    [[ $status -eq 1 ]]
+    [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
 
 @test 'ch-run --unset-env' {
