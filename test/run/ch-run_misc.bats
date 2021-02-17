@@ -421,12 +421,12 @@ EOF
 @test 'ch-run --set-env prepend/append' {
     scope standard
 
-    # prepend and append in command line
+    # append in command line
     export test=foo
-    run ch-run --set-env=test='pre:$test:app' -v "$ch_timg" -- /bin/true
+    run ch-run --set-env=test='$test:app' -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"environment: test=pre:foo:app"* ]]    
+    [[ $output = *"environment: test=foo:app"* ]]    
 
     # prepend and append in file
     f_in=${BATS_TMPDIR}/env_pre.txt
@@ -457,6 +457,12 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"environment: test=foo:app"* ]]
+
+    # no ':'
+    run ch-run --set-env=test=$test -v "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"environment: test=foo"* ]]
 }
 
 # shellcheck disable=SC2016

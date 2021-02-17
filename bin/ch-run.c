@@ -224,7 +224,7 @@ void fix_environment(struct args *args)
          else {  
             split(&name, &new_value, arg, '=');
             parse_clean(name, new_value);
-            return;
+            break;
          }
          for (int j = 1; true; j++) {
             char *line = NULL;
@@ -288,13 +288,13 @@ void fix_environment(struct args *args)
 void fix_prepend(char *name, char *new_value)
 {
    char *token;
-   char *new_env = NULL;
-   const char s[2] = ":";
+   char *new_env = "";
+   const char s[1] = ":";
    token = strtok(new_value, s);
    while( token != NULL ) {
-      if (new_env == NULL) {
+      if (strlen(new_env) == 0) {
          if (token[0] != '$') {
-           new_env = token; //first input, not a ENV
+            new_env = token; //first input, not a ENV
          }
          else {
             token++;
@@ -302,7 +302,7 @@ void fix_prepend(char *name, char *new_value)
          }
       }
       else if (token[0] != '$') {
-          T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
+         T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
       }
       else if (token[0] == '$') {
          token ++;
@@ -384,19 +384,18 @@ end:
 /* Strip trailing quote and string leading quote */
 void parse_clean(char *name, char *new_value)
 {
+   INFO("parse_clean %s    %s", name, new_value);
    if (   strlen(new_value) >= 2
        && (new_value)[0] == '\''
        && (new_value)[strlen(new_value) - 1] == '\'') {
       (new_value)[strlen(new_value) - 1] = 0;  // strip trailing quote
       (new_value)++;                           // strip leading
    }
-   if (strchr(new_value, '$') != NULL) {
-      fix_prepend(name, new_value);
-   }
-   else {
-      INFO("environment: %s=%s", name, new_value);
-      Z_ (setenv(name, new_value, 1));
-   }
+   fix_prepend(name, new_value);
+   //else {
+     // INFO("environment: %s=%s", name, new_value);
+      //Z_ (setenv(name, new_value, 1));
+   //}
 }
 
 /* Parse an integer string arg and return the result. If an error occurs,
