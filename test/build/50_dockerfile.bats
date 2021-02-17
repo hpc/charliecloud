@@ -61,7 +61,6 @@ EOF
     [[ $output = *"can't parse: -:2,1"* ]]
     # internal blabber
     [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
-    [[ $output = *'Expecting: {'* ]]
 
     # Bad long option.
     run ch-image build -t foo -f - . <<'EOF'
