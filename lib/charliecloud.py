@@ -667,7 +667,10 @@ class Image_Ref:
       try:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
-         FATAL("image ref syntax, char %d: %s" % (x.column, s))
+         if (x.column == -1):
+            FATAL("image ref syntax, at end: %s" % s)
+         else:
+            FATAL("image ref syntax, char %d: %s" % (x.column, s))
       except lark.exceptions.UnexpectedEOF as x:
          # We get UnexpectedEOF because of Lark issue #237. This exception
          # doesn't have a column location.
