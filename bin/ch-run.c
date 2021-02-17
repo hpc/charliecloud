@@ -51,6 +51,7 @@ const struct argp_option options[] = {
    { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",      -3, "N",    0, "number of ch-run peers (implies --join)" },
    { "join-tag",     -4, "TAG",  0, "label for peer group (implies --join)" },
+   { "no-expand",   -10, 0,      0, "don't expand $ in --set-env input"},
    { "no-home",      -2, 0,      0, "don't bind-mount your home directory"},
    { "no-passwd",    -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp", 't', 0,      0, "use container-private /tmp" },
@@ -82,11 +83,10 @@ struct args {
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
 void fix_environment(struct args *args);
-void fix_prepend(char *name, char *new_value);
+void fix_prepend(char *name, char *new_value, bool expand);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
 char *join_tag(char *cli_tag);
-void parse_clean(char *name, char *new_value); 
 int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void privs_verify_invoking();
@@ -114,6 +114,7 @@ int main(int argc, char *argv[])
    args = (struct args){ .c = (struct container){ .ch_ssh = false,
                                                   .container_gid = getegid(),
                                                   .container_uid = geteuid(),
+                                                  .expand = true,
                                                   .newroot = NULL,
                                                   .join = false,
                                                   .join_ct = 0,
@@ -223,7 +224,7 @@ void fix_environment(struct args *args)
          }
          else {  
             split(&name, &new_value, arg, '=');
-            parse_clean(name, new_value);
+            fix_prepend(name, new_value, args->c.expand);
             break;
          }
          for (int j = 1; true; j++) {
@@ -243,7 +244,7 @@ void fix_environment(struct args *args)
             split(&name, &new_value, line, '=');
             Te (name != NULL, "--set-env: no delimiter: %s:%d", arg, j);
             Te (strlen(name) != 0, "--set-env: empty name: %s:%d", arg, j);
-            parse_clean(name, new_value);
+            fix_prepend(name, new_value, args->c.expand);
          }
          fclose(fp);
       } else {
@@ -285,32 +286,31 @@ void fix_environment(struct args *args)
    Z_ (setenv("CH_RUNNING", "Weird Al Yankovic", 1));
 }
 
-void fix_prepend(char *name, char *new_value)
+void fix_prepend(char *name, char *new_value, bool expand)
 {
    char *token;
    char *new_env = "";
    const char s[1] = ":";
+   if (   strlen(new_value) >= 2
+       && (new_value)[0] == '\''
+       && (new_value)[strlen(new_value) - 1] == '\'') {
+      (new_value)[strlen(new_value) - 1] = 0;  // strip trailing quote
+      (new_value)++;                           // strip leading
+   }
    token = strtok(new_value, s);
    while( token != NULL ) {
-      if (strlen(new_env) == 0) {
-         if (token[0] != '$') {
-            new_env = token; //first input, not a ENV
-         }
-         else {
-            token++;
-            new_env = getenv(token); //first input, ENV
-         }
-      }
-      else if (token[0] != '$') {
-         T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
-      }
-      else if (token[0] == '$') {
+      if (token[0] == '$' && expand) {
          token ++;
          if(getenv(token) != NULL)
             T_ (1 <= asprintf(&new_env, "%s:%s", new_env, getenv(token)));
       }
+      else {
+         T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
+      }
       token = strtok(NULL, s);
    }
+   if (new_env[0] == ':')
+      new_env++;
    INFO("environment: %s=%s", name, new_env);
    Z_ (setenv(name, new_env, 1));
 }
@@ -381,23 +381,6 @@ end:
    return tag;
 }
 
-/* Strip trailing quote and string leading quote */
-void parse_clean(char *name, char *new_value)
-{
-   INFO("parse_clean %s    %s", name, new_value);
-   if (   strlen(new_value) >= 2
-       && (new_value)[0] == '\''
-       && (new_value)[strlen(new_value) - 1] == '\'') {
-      (new_value)[strlen(new_value) - 1] = 0;  // strip trailing quote
-      (new_value)++;                           // strip leading
-   }
-   fix_prepend(name, new_value);
-   //else {
-     // INFO("environment: %s=%s", name, new_value);
-      //Z_ (setenv(name, new_value, 1));
-   //}
-}
-
 /* Parse an integer string arg and return the result. If an error occurs,
    print a message prefixed by error_tag and exit. If not extra_ok, additional
    characters remaining after the integer are an error. */
@@ -423,6 +406,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    int i;
 
    switch (key) {
+   case -10: // --no-expand
+      args->c.expand = false;
+      INFO("expand: false");
+      break;
    case -2: // --private-home
       args->c.private_home = true;
       break;

@@ -23,6 +23,7 @@ struct container {
    bool ch_ssh;          // bind /usr/bin/ch-ssh?
    gid_t container_gid;  // GID to use in container
    uid_t container_uid;  // UID to use in container
+   bool expand;          // identifier to expands variable
    char *newroot;        // path to new root directory
    bool join;            // is this a synchronized join?
    int join_ct;          // number of peers in a synchronized join
