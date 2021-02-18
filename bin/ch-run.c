@@ -82,8 +82,8 @@ struct args {
 /** Function prototypes **/
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
+void env_parse(char *name, char *new_value, bool expand);
 void fix_environment(struct args *args);
-void fix_prepend(char *name, char *new_value, bool expand);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
 char *join_tag(char *cli_tag);
@@ -187,6 +187,36 @@ void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
    (*ds)[i].arg = arg;
 }
 
+/* Parse and set input from --set-env */
+void env_parse(char *name, char *new_value, bool expand)
+{
+   char *token;
+   char *new_env = "";
+   const char s[1] = ":";
+   if (   strlen(new_value) >= 2
+       && (new_value)[0] == '\''
+       && (new_value)[strlen(new_value) - 1] == '\'') {
+      (new_value)[strlen(new_value) - 1] = 0;  // strip trailing quote
+      (new_value)++;                           // strip leading
+   }
+   token = strtok(new_value, s);
+   while( token != NULL ) {
+      if (token[0] == '$' && expand) {
+         token ++;
+         if(getenv(token) != NULL)
+            T_ (1 <= asprintf(&new_env, "%s:%s", new_env, getenv(token)));
+      }
+      else {
+         T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
+      }
+      token = strtok(NULL, s);
+   }
+   if (new_env[0] == ':')
+      new_env++;
+   INFO("environment: %s=%s", name, new_env);
+   Z_ (setenv(name, new_env, 1));
+}
+
 /* Adjust environment variables. */
 void fix_environment(struct args *args)
 {
@@ -224,7 +254,7 @@ void fix_environment(struct args *args)
          }
          else {  
             split(&name, &new_value, arg, '=');
-            fix_prepend(name, new_value, args->c.expand);
+            env_parse(name, new_value, args->c.expand);
             break;
          }
          for (int j = 1; true; j++) {
@@ -244,7 +274,7 @@ void fix_environment(struct args *args)
             split(&name, &new_value, line, '=');
             Te (name != NULL, "--set-env: no delimiter: %s:%d", arg, j);
             Te (strlen(name) != 0, "--set-env: empty name: %s:%d", arg, j);
-            fix_prepend(name, new_value, args->c.expand);
+            env_parse(name, new_value, args->c.expand);
          }
          fclose(fp);
       } else {
@@ -284,35 +314,6 @@ void fix_environment(struct args *args)
 
    // $CH_RUNNING
    Z_ (setenv("CH_RUNNING", "Weird Al Yankovic", 1));
-}
-
-void fix_prepend(char *name, char *new_value, bool expand)
-{
-   char *token;
-   char *new_env = "";
-   const char s[1] = ":";
-   if (   strlen(new_value) >= 2
-       && (new_value)[0] == '\''
-       && (new_value)[strlen(new_value) - 1] == '\'') {
-      (new_value)[strlen(new_value) - 1] = 0;  // strip trailing quote
-      (new_value)++;                           // strip leading
-   }
-   token = strtok(new_value, s);
-   while( token != NULL ) {
-      if (token[0] == '$' && expand) {
-         token ++;
-         if(getenv(token) != NULL)
-            T_ (1 <= asprintf(&new_env, "%s:%s", new_env, getenv(token)));
-      }
-      else {
-         T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
-      }
-      token = strtok(NULL, s);
-   }
-   if (new_env[0] == ':')
-      new_env++;
-   INFO("environment: %s=%s", name, new_env);
-   Z_ (setenv(name, new_env, 1));
 }
 
 /* Find the first environment variable in array that is set; put its name in

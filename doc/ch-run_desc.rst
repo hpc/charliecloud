@@ -225,7 +225,11 @@ The purpose of :code:`--set-env=FILE` is to set environment variables that
 cannot be inherited from the host shell, e.g. Dockerfile :code:`ENV`
 directives or other build-time configuration. :code:`FILE` is a host path to
 provide the greatest flexibility; guest paths can be specified by prepending
-the image path.
+the image path. 
+
+:code:`--set-env=PATH` is another way to set a path by including one line that 
+would be in :code:`FILE` in the command line. It knows that it is processing 
+one line instead of a :code:`FILE` because it checks for a :code:`=`.
 
 :code:`ch-builder2tar(1)` lists variables specified at build time in
 Dockerfiles in the image in file :code:`/ch/environment`. To set these
@@ -270,6 +274,35 @@ easily produced by other simple mechanisms.) Examples of valid lines:
      - :code:`FOO`
      - :code:`''` (two single quotes)
 
+Operations with expanding variables:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Line
+     - Key
+     - Operation
+   * - :code:`FOO=$PATH`
+     - :code:`FOO`
+     - set
+   * - :code:`FOO=bar:$FOO`
+     - :code:`FOO`
+     - prepend
+   * - :code:`FOO=$FOO:bar`
+     - :code:`FOO`
+     - append
+   * - :code:`FOO=bar:$FOO:baz`
+     - :code:`FOO`
+     - add in middle
+
+:code:`--set-env` used the delimiter to parse the
+environment variable and the added path is a :code:`:`.
+
+Gotchas
+    * If environment variable is NULL, an addition :code:`:` won’t
+      be added like it does in a SHELL.
+
+
 Example invalid lines:
 
 .. list-table::
@@ -303,10 +336,6 @@ Example valid lines that are probably not what you want:
      - :code:`FOO`
      - :code:`bar # baz`
      - comments not supported
-   * - :code:`PATH=$PATH:/opt/bin`
-     - :code:`PATH`
-     - :code:`$PATH:/opt/bin`
-     - variables not expanded
    * - :code:`​ FOO=bar`
      - :code:`​ FOO`
      - :code:`bar`
@@ -315,30 +344,6 @@ Example valid lines that are probably not what you want:
      - :code:`FOO`
      - :code:`​ bar`
      - leading space in value
-
-Appending and prepending variables with :code:`--set-env`
----------------------------------------------------------
-There are two ways to append or prepend to an environment variable. Option 1 
-is adding the information in the file used in :code:`--set-env=FILE`. It needs to 
-be formatted in the way shown below.
-
-    * :code:`PATH=$PATH:foo`
-    * :code:`PATH=foo:$PATH`
-
-Option 2 is adding the line directly in the ch-run command formatted below.
-
-		:code:`ch-run --set-env=PATH=`$PATH:foo``
-
-In both options, it checks to see if there is a :code:`$` to know that it should 
-append/prepend the environment variable. The delimiter to parse the 
-environment variable and the added path is a :code:`:`.
-
-PATH can be exchanged for any environment variable
-
-Gotchas
-    * If environment variable is NULL, an addition :code:`:` won’t 
-      be added like it does in a SHELL. 
-
 
 Removing variables with :code:`--unset-env`
 -------------------------------------------
