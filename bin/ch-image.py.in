@@ -172,7 +172,7 @@ def main():
                    help="destination image reference (default: IMAGE_REF)")
 
    # reset
-   help="resets ch-image builder storage"
+   help="delete everything in ch-image builder storage"
    sp = sps.add_parser("reset", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.reset)

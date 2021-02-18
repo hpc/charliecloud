@@ -64,7 +64,7 @@ EOF
 }
 
 @test 'ch-image reset' {
-   export CH_IMAGE_STORAGE="$CH_IMAGE_STORAGE"/reset
+   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/reset
    run ch-image pull alpine
    run ls "$CH_IMAGE_STORAGE"
    echo "$output"
@@ -73,17 +73,15 @@ EOF
    [[ $output = *"img"* ]]   
 
    run ch-image reset
-   ls "$CH_IMAGE_STORAGE"
+   ls "$BATS_TMPDIR"
    echo "$output"
    [[ $status -eq 0 ]]
-   [[ $output != *"dlcache"* ]]
-   [[ $output != *"img"* ]]
+   [[ $output != *"reset"* ]]
 
    run ch-image reset
    echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output = *"$CH_IMAGE_STORAGE/dlcache does not exist"* ]]
-   [[ $output = *"$CH_IMAGE_STORAGE/img does not exist"* ]]
+   [[ $status -eq 1 ]]
+   [[ $output = *"$CH_IMAGE_STORAGE not a builder storage"* ]]
    
 }
 

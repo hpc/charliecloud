@@ -294,7 +294,7 @@ Options:
 :code:`reset`
 -------------
 
-Deletes all images and cache from ch-image builder storage.
+Delete all images and cache from ch-image builder storage.
 
 :code:`storage-path`
 --------------------

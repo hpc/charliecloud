@@ -46,14 +46,11 @@ def list_(cli):
       print(ch.Image_Ref(img))
 
 def reset(cli):
-   try:
-      ch.rmtree(ch.storage.download_cache)
-   except:
-      ch.ERROR("%s does not exist" % (ch.storage.download_cache))
-   try:
-      ch.rmtree(ch.storage.unpack_base)
-   except:
-      ch.ERROR("%s does not exist" % (ch.storage.unpack_base))
+   if (os.path.isdir(ch.storage.unpack_base) or 
+       os.path.isdir(ch.storage.download_cache)):
+      ch.rmtree(ch.storage.root)
+   else:
+      ch.FATAL("%s not a builder storage" % (ch.storage.root));
 
 def storage_path(cli):
    print(ch.storage.root)
