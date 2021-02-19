@@ -692,8 +692,20 @@ class I_run_shell(Run):
       super().__init__(*args)
       # FIXME: Can't figure out how to remove continuations at parse time.
       cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
-      self.cmd = ["/bin/sh", "-c", cmd]
+      self.cmd = env.shell + [cmd]
 
+class I_shell(Instruction):
+ 
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.shell = [variables_sub(unescape(i), env.env_build)
+                    for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
+  
+   def str_(self):
+      return str(self.shell)
+
+   def execute_(self):
+      env.shell = list(self.shell) #copy
 
 class I_workdir(Instruction):
 
@@ -731,8 +743,7 @@ class I_uns_yet(Instruction):
                         "CMD":         780,
                         "ENTRYPOINT":  780,
                         "LABEL":       781,
-                        "ONBUILD":     788,
-                        "SHELL":       789 }[self.name]
+                        "ONBUILD":     788 }[self.name]
 
    def announce(self):
       self.unsupported_yet_warn("instruction", self.issue_no)
@@ -751,7 +762,8 @@ class I_uns_yet(Instruction):
 
 class Environment:
    "The state we are in: environment variables, working directory, etc."
-
+   __slots__ = ('arg', 'env', 'shell', 'workdir')
+ 
    def __init__(self):
       self.reset()
 
@@ -767,6 +779,7 @@ class Environment:
 
    def reset(self):
       self.workdir = ch.Path("/")
+      self.shell   = ["/bin/sh", "-c"]
       self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
       self.env = { k: v for (k, v) in ENV_DEFAULTS.items() if v is not None }
 
