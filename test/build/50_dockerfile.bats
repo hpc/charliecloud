@@ -61,7 +61,6 @@ EOF
     [[ $output = *"can't parse: -:2,1"* ]]
     # internal blabber
     [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
-    [[ $output = *'Expecting: {'* ]]
 
     # Bad long option.
     run ch-image build -t foo -f - . <<'EOF'
@@ -377,13 +376,13 @@ EOF
    scope standard
    [[ $CH_BUILDER = none ]] && skip 'no builder'
    [[ $CH_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
-  
+
    # test that SHELL command can change executables and parameters
    run ch-build -t foo --no-cache -f - . <<'EOF'
 FROM 00_tiny
 RUN echo default: $0
 SHELL ["/bin/ash", "-c"]
-RUN  echo ash: $0
+RUN echo ash: $0
 SHELL ["/bin/sh", "-v", "-c"]
 RUN echo sh-v: $0
 EOF
@@ -417,7 +416,7 @@ EOF
    [[ status -ne 0 ]] # different builders use different error exit codes
    [[ $output = *"/bin/sh: can't open 'true': No such file or directory"* ]]
 
-   # test that it works with python3 
+   # test that it works with python3
    run ch-build -t foo -f - . <<'EOF'
 FROM centos7
 SHELL ["/usr/bin/python3", "-c"]
@@ -647,7 +646,7 @@ EOF
         if [[ $CH_BUILDER = docker ]]; then
             # This error message seems wrong. I was expecting something about
             # no context, so COPY not allowed.
-            [[ $output = *'no such file or directory'* ]]
+            [[ $output = *'file does not exist'* ]]
         else
             false  # unimplemented
         fi
@@ -679,7 +678,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_BUILDER = docker ]]; then
-        [[ $output = *'no such file or directory'* ]]
+        [[ $output = *'file does not exist'* ]]
     else
         [[ $output = *'outside'*'context'* ]]
     fi
@@ -725,11 +724,11 @@ COPY doesnotexist .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = ch-image ]]; then
+    if [[ $CH_BUILDER = docker ]]; then
+        [[ $output = *'file does not exist'* ]]
+    else
         # This diagnostic is not fantastic, but it's what we got for now.
         [[ $output = *'no sources found'* ]]
-    else
-        [[ $output = *'doesnotexist:'*'o such file or directory'* ]]
     fi
 }
 

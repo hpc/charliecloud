@@ -229,7 +229,7 @@ DEFAULT_CONFIGS = {
 def detect(image, force, no_force_detect):
    f = None
    if (no_force_detect):
-      ch.DEBUG("not detecting --force config, per --no-force-detect")
+      ch.VERBOSE("not detecting --force config, per --no-force-detect")
    else:
       # Try to find a real fakeroot config.
       for (tag, cfg) in DEFAULT_CONFIGS.items():
@@ -244,7 +244,7 @@ def detect(image, force, no_force_detect):
          if (force):
             ch.WARNING(msg)
          else:
-            ch.DEBUG(msg)
+            ch.VERBOSE(msg)
       else:
          if (force):
             adj = "will use"
@@ -289,7 +289,7 @@ class Fakeroot():
                 "inject_p")
 
    def __init__(self, image_path, tag, cfg, inject_p):
-      ch.DEBUG("workarounds: testing config: %s" % tag)
+      ch.VERBOSE("workarounds: testing config: %s" % tag)
       file_path = "%s/%s" % (image_path, cfg["match"][0])
       if (not (    os.path.isfile(file_path)
                and ch.grep_p(file_path, cfg["match"][1]))):
@@ -303,10 +303,10 @@ class Fakeroot():
 
    def init_maybe(self, img_path, args, env):
       if (not self.needs_inject(args)):
-         ch.DEBUG("workarounds: init: instruction doesn't need injection")
+         ch.VERBOSE("workarounds: init: instruction doesn't need injection")
          return
       if (self.init_done):
-         ch.DEBUG("workarounds: init: already initialized")
+         ch.VERBOSE("workarounds: init: already initialized")
          return
       for (i, (test_cmd, init_cmd)) in enumerate(self.init, 1):
          ch.INFO("workarounds: init step %s: checking: $ %s" % (i, test_cmd))
@@ -326,7 +326,7 @@ class Fakeroot():
 
    def inject_run(self, args):
       if (not self.needs_inject(args)):
-         ch.DEBUG("workarounds: RUN: instruction doesn't need injection")
+         ch.VERBOSE("workarounds: RUN: instruction doesn't need injection")
          return args
       assert (self.init_done)
       if (not self.inject_p):
