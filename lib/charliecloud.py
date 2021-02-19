@@ -32,7 +32,7 @@ try:
    # Lark is additionally messy because there are two packages on PyPI that
    # provide a "lark" module.
    import lark   # ImportError if no such module
-   lark.Visitor  # AttributeError if wrong module
+   lark.Visitor # AttributeError if wrong module
 except (ImportError, AttributeError) as x:
    if (isinstance(x, ImportError)):
       depfails.append(("missing", 'Python module "lark-parser"'))
