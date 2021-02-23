@@ -1169,6 +1169,13 @@ class Storage:
    def manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
+   def reset(self):
+      if (os.path.isdir(self.unpack_base) and 
+          os.path.isdir(self.download_cache)):
+         rmtree(self.root)
+      else:
+         FATAL("%s not a builder storage" % (self.root));
+  
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
 

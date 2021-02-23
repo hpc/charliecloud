@@ -82,7 +82,6 @@ EOF
    echo "$output"
    [[ $status -eq 1 ]]
    [[ $output = *"$CH_IMAGE_STORAGE not a builder storage"* ]]
-   
 }
 
 @test 'ch-image storage-path' {
