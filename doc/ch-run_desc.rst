@@ -48,10 +48,9 @@ unpacked image directory located at :code:`NEWROOT`.
     use container-private :code:`/tmp` (by default, :code:`/tmp` is shared with
     the host)
 
-  :code:`--set-env=FILE`, :code:`--set-env=ENV='$ENV:PATH'`
-    set environment variables as specified in host path :code:`FILE`
-    or append or prepend :code:`PATH` to environment variable :code:`ENV` 
-    directly in the command line
+  :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
+    set environment variable(s), either as specified in host path :code:`FILE`,
+    or set variable :code:`VAR` to :code:`VALUE`
 
   :code:`-u`, :code:`--uid=UID`
     run as user :code:`UID` within container
@@ -224,60 +223,54 @@ By default, :code:`ch-run` makes the following environment variable changes:
 Setting variables with :code:`--set-env`
 ----------------------------------------
 
-The purpose of :code:`--set-env=FILE` is to set environment variables that
-cannot be inherited from the host shell, e.g. Dockerfile :code:`ENV`
-directives or other build-time configuration. :code:`FILE` is a host path to
-provide the greatest flexibility; guest paths can be specified by prepending
-the image path. 
+The purpose of :code:`--set-env` is to set environment variables in addition
+to (or instead of) those inherited from the host shell.
 
-:code:`ch-builder2tar(1)` lists variables specified at build time in
-Dockerfiles in the image in file :code:`/ch/environment`. To set these
-variables: :code:`--set-env=$IMG/ch/environment`.
+If the argument contains an equals character, then it is interpreted as a
+variable name and value; otherwise, it is a host path to a file with one
+variable name/value per line (guest paths can be specified by prepending the
+image path). Values given replace any already set (i.e., if a variable is
+repeated, the last value wins). Environment variables in the value are
+expanded unless :code:`--set-env-no-expand` is given, though see below for
+syntax differences from the shell.
 
-Variable values in :code:`FILE` replace any already set. If a variable is
-repeated, the last value wins.
+For example, to prepend :code:`/opt/bin` to the current shell's path (note
+protecting expansion of :code:`$PATH` by the shell, though here the results
+would be equivalent if we let the shell do it)::
 
-The syntax of :code:`FILE` is key-value pairs separated by the first equals
-character (:code:`=`, ASCII 61), one per line, with optional single straight
-quotes (:code:`'`, ASCII 39) around the value. Empty lines are ignored.
-Newlines (ASCII 10) are not permitted in either key or value. No comments, 
-etc. are provided. The value may be empty, but not the key. (This syntax 
-is designed to accept the output of :code:`printenv` and be easily produced 
-by other simple mechanisms.)
+  $ ch-run --set-env='PATH=/opt/bin:$PATH' ...
 
-:code:`--set-env=ENV_SET` is another option to set a variable. The input would
-be one line formatted the same way as it would be seen in :code:`FILE`. 
-:code:`--set-env` knows that it is a file or not by checking is :code:`=` is 
-in the input line,
+To add variables set by Dockerfile :code:`ENV` instructions to the current
+environment::
 
-All input lines are parsed at all :code:`:`. If there is a :code:`$` it will 
-expand the variable and append it to the new variable. Otherwise it will 
-appended to the new variable. The only execption would be if 
-:code:`--no-expand` is included.
+  $ ch-run --set-env=$IMG/ch/environment ...
 
-Path operations:
+To prepend :code:`/opt/bin` to the path set by the Dockerfile (here we really
+can't let the shell expand :code:`$PATH`)::
 
-.. list-table::
-   :header-rows: 1
+  $ ch-run --set-env=$IMG/ch/environment --set-env='PATH=/opt/bin:$PATH' ...
 
-   * - Line
-     - Key
-     - Operation
-   * - :code:`FOO=$PATH`
-     - :code:`FOO`
-     - set
-   * - :code:`FOO=bar:$FOO`
-     - :code:`FOO`
-     - prepend
-   * - :code:`FOO=$FOO:bar`
-     - :code:`FOO`
-     - append
-   * - :code:`FOO=bar:$FOO:baz`
-     - :code:`FOO`
-     - add in middle
+The syntax of the argument is a key-value pair separated by the first equals
+character (:code:`=`, ASCII 61), with optional single straight quotes
+(:code:`'`, ASCII 39) around the value (though recall quotes are also
+interpreted by the shell). Newlines (ASCII 10) are not permitted in either key
+or value. The value may be empty, but not the key.
 
+The value is a sequence of possibly-empty items separated by colon (:code:`:`,
+ASCII 58). If an item begins with dollar sign (:code:`$`, ASCII 36), and
+:code:`--set-env-no-expand` is not given, then the rest of the item is
+interpreted as an environment variable. If the variable is set to a non-empty
+value, that value is substituted for the item; otherwise, the item is omitted.
+(Importantly, if no expansions happen, this paragraph is a no-op.)
 
-Examples of valid set lines:
+If a file is given instead, it is a sequence of such arguments, one per line.
+Empty lines are ignored. No comments are interpreted. (This syntax is designed
+to accept the output of :code:`printenv` and be easily produced by other
+simple mechanisms.)
+
+Examples of valid arguments, assuming that environment variable :code:`$BAR`
+is set to :code:`bar` and :code:`$UNSET` is unset (or set to the empty
+string):
 
 .. list-table::
    :header-rows: 1
@@ -297,20 +290,30 @@ Examples of valid set lines:
    * - :code:`FLAGS='-march=foo -mtune=bar'`
      - :code:`FLAGS`
      - :code:`-march=foo -mtune=bar`
+   * - :code:`FOO=$BAR`
+     - :code:`FOO`
+     - :code:`bar`
+   * - :code:`FOO=$BAR:baz`
+     - :code:`FOO`
+     - :code:`bar:baz`
+   * - :code:`FOO=$UNSET:baz`
+     - :code:`FOO`
+     - :code:`baz`
+   * - :code:`FOO=:bar:baz::`
+     - :code:`FOO`
+     - :code:`:bar:baz::`
    * - :code:`FOO=`
      - :code:`FOO`
-     - (empty string)
+     - empty string
+   * - :code:`FOO=$UNSET`
+     - :code:`FOO`
+     - empty string (not unset!)
    * - :code:`FOO=''`
      - :code:`FOO`
-     - (empty string)
+     - empty string
    * - :code:`FOO=''''`
      - :code:`FOO`
      - :code:`''` (two single quotes)
-
-Gotchas
-    * If environment variable is NULL, an addition :code:`:` won’t
-      be added like it does in a SHELL.
-
 
 Example invalid lines:
 
@@ -345,6 +348,10 @@ Example valid lines that are probably not what you want:
      - :code:`FOO`
      - :code:`bar # baz`
      - comments not supported
+   * - :code:`FOO=bar\tbaz`
+     - :code:`FOO`
+     - :code:`bar\tbaz`
+     - backslashes are not special
    * - :code:`​ FOO=bar`
      - :code:`​ FOO`
      - :code:`bar`
@@ -353,6 +360,14 @@ Example valid lines that are probably not what you want:
      - :code:`FOO`
      - :code:`​ bar`
      - leading space in value
+   * - :code:`$FOO=bar`
+     - :code:`$FOO`
+     - :code:`bar`
+     - variables not expanded in key
+   * - :code:`FOO=$BAR baz:qux`
+     - :code:`FOO`
+     - :code:`qux`
+     - variable :code:`BAR baz` not set
 
 Removing variables with :code:`--unset-env`
 -------------------------------------------
@@ -422,4 +437,5 @@ Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
 
-..  LocalWords:  mtune
+
+..  LocalWords:  mtune NEWROOT IMG tbaz
