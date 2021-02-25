@@ -37,6 +37,9 @@ unpacked image directory located at :code:`NEWROOT`.
     label for :code:`ch-run` peer group (implies :code:`--join`; default: see
     below)
 
+  :code:`--no-expand`
+    do not expand variables when using :code:`--set-env`
+
   :code:`--no-home`
     do not bind-mount your home directory (by default, your home directory is
     mounted at :code:`/home/$USER` in the container)
@@ -227,10 +230,6 @@ directives or other build-time configuration. :code:`FILE` is a host path to
 provide the greatest flexibility; guest paths can be specified by prepending
 the image path. 
 
-:code:`--set-env=PATH` is another way to set a path by including one line that 
-would be in :code:`FILE` in the command line. It knows that it is processing 
-one line instead of a :code:`FILE` because it checks for a :code:`=`.
-
 :code:`ch-builder2tar(1)` lists variables specified at build time in
 Dockerfiles in the image in file :code:`/ch/environment`. To set these
 variables: :code:`--set-env=$IMG/ch/environment`.
@@ -241,10 +240,44 @@ repeated, the last value wins.
 The syntax of :code:`FILE` is key-value pairs separated by the first equals
 character (:code:`=`, ASCII 61), one per line, with optional single straight
 quotes (:code:`'`, ASCII 39) around the value. Empty lines are ignored.
-Newlines (ASCII 10) are not permitted in either key or value. No variable
-expansion, comments, etc. are provided. The value may be empty, but not the
-key. (This syntax is designed to accept the output of :code:`printenv` and be
-easily produced by other simple mechanisms.) Examples of valid lines:
+Newlines (ASCII 10) are not permitted in either key or value. No comments, 
+etc. are provided. The value may be empty, but not the key. (This syntax 
+is designed to accept the output of :code:`printenv` and be easily produced 
+by other simple mechanisms.)
+
+:code:`--set-env=ENV_SET` is another option to set a variable. The input would
+be one line formatted the same way as it would be seen in :code:`FILE`. 
+:code:`--set-env` knows that it is a file or not by checking is :code:`=` is 
+in the input line,
+
+All input lines are parsed at all :code:`:`. If there is a :code:`$` it will 
+expand the variable and append it to the new variable. Otherwise it will 
+appended to the new variable. The only execption would be if 
+:code:`--no-expand` is included.
+
+Path operations:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Line
+     - Key
+     - Operation
+   * - :code:`FOO=$PATH`
+     - :code:`FOO`
+     - set
+   * - :code:`FOO=bar:$FOO`
+     - :code:`FOO`
+     - prepend
+   * - :code:`FOO=$FOO:bar`
+     - :code:`FOO`
+     - append
+   * - :code:`FOO=bar:$FOO:baz`
+     - :code:`FOO`
+     - add in middle
+
+
+Examples of valid set lines:
 
 .. list-table::
    :header-rows: 1
@@ -273,30 +306,6 @@ easily produced by other simple mechanisms.) Examples of valid lines:
    * - :code:`FOO=''''`
      - :code:`FOO`
      - :code:`''` (two single quotes)
-
-Operations with expanding variables:
-
-.. list-table::
-   :header-rows: 1
-
-   * - Line
-     - Key
-     - Operation
-   * - :code:`FOO=$PATH`
-     - :code:`FOO`
-     - set
-   * - :code:`FOO=bar:$FOO`
-     - :code:`FOO`
-     - prepend
-   * - :code:`FOO=$FOO:bar`
-     - :code:`FOO`
-     - append
-   * - :code:`FOO=bar:$FOO:baz`
-     - :code:`FOO`
-     - add in middle
-
-:code:`--set-env` used the delimiter to parse the
-environment variable and the added path is a :code:`:`.
 
 Gotchas
     * If environment variable is NULL, an addition :code:`:` won’t
