@@ -76,10 +76,10 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = *'pushing image:   localhost:5000/foo/bar:weirdal'* ]]
     [[ $output = *"image path:      ${img}"* ]]
-    [[ $output = *'warning: stripping unsafe setgid bit: ./setgid_dir'* ]]
-    [[ $output = *'warning: stripping unsafe setgid bit: ./setgid_file'* ]]
-    [[ $output = *'warning: stripping unsafe setuid bit: ./setuid_dir'* ]]
-    [[ $output = *'warning: stripping unsafe setuid bit: ./setuid_file'* ]]
+    [[ $output = *'stripping unsafe setgid bit: ./setgid_dir'* ]]
+    [[ $output = *'stripping unsafe setgid bit: ./setgid_file'* ]]
+    [[ $output = *'stripping unsafe setuid bit: ./setuid_dir'* ]]
+    [[ $output = *'stripping unsafe setuid bit: ./setuid_file'* ]]
 
     # Pull it back
     run ch-image -v --tls-no-verify pull localhost:5000/foo/bar:weirdal "$img2"

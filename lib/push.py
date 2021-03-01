@@ -22,7 +22,7 @@ def main(cli):
    if (cli.image is not None):
       ch.INFO("image path:      %s" % image.unpack_path)
    else:
-      ch.DEBUG("image path:      %s" % image.unpack_path)
+      ch.VERBOSE("image path:      %s" % image.unpack_path)
    if (cli.dest_ref is not None):
       dst_ref = ch.Image_Ref(cli.dest_ref)
       ch.INFO("destination:     %s" % dst_ref)
@@ -84,7 +84,7 @@ class Image_Pusher:
       ch.INFO("cleaning up")
       # Delete the tarballs since we can't yet cache them.
       for (_, tar_c) in self.layers:
-         ch.DEBUG("deleting tarball: %s" % tar_c)
+         ch.VERBOSE("deleting tarball: %s" % tar_c)
          ch.unlink(tar_c)
 
    def prepare(self):

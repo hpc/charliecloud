@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: true  # if any job fails, cancel the rest immediately
       matrix:
-        builder: [none, docker, ch-image, buildah, buildah-runc, buildah-setuid]
+        builder: [none, docker, ch-image]
         keep_sudo:  # if false, remove self from sudoers after install/setup
           - false
         include:

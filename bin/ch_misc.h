@@ -59,7 +59,7 @@
 #define FATAL(...)   msg(0, __FILE__, __LINE__, 0, __VA_ARGS__);
 #define WARNING(...) msg(1, __FILE__, __LINE__, 0, __VA_ARGS__);
 #define INFO(...)    msg(2, __FILE__, __LINE__, 0, __VA_ARGS__);
-#define DEBUG(...)   msg(3, __FILE__, __LINE__, 0, __VA_ARGS__);
+#define VERBOSE(...) msg(3, __FILE__, __LINE__, 0, __VA_ARGS__);
 
 
 /** External variables **/
