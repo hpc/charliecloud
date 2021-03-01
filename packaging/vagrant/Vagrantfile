@@ -196,7 +196,7 @@ EOF2
   EOF
 
   # Install Buildah.
-  c.vm.provision "buildah", type: "shell", privileged: false,
+  c.vm.provision "buildah", type: "shell", run: "never", privileged: false,
                  inline: <<-EOF
     set -e
     cd /usr/local/src
@@ -328,7 +328,7 @@ EOF2
         user=vagrant
     fi
     sudo -iu $user -- sh -c "ch-test --pedantic yes -b docker all"
-    sudo -iu $user -- sh -c "ch-test --pedantic yes -b buildah all"
+    #sudo -iu $user -- sh -c "ch-test --pedantic yes -b buildah all"
     sudo -iu $user -- sh -c "ch-test --pedantic yes -b ch-image all"
   EOF
 end
