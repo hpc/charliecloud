@@ -7,6 +7,7 @@ import datetime
 import getpass
 import hashlib
 import http.client
+import io
 import json
 import os
 import getpass
@@ -17,6 +18,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import tempfile
 import types
 
 
@@ -184,6 +186,219 @@ class HelpFormatter(argparse.HelpFormatter):
       default = self._get_default_metavar_for_optional(action)
       args_string = self._format_args(action, default)
       return ', '.join(action.option_strings) + ' ' + args_string
+
+class Cache:
+   def __init__(self, cache_ops):
+      self.most_recent_hit = None
+      self.last_lid = None
+      # Are the instructions in the cache? 
+      self.in_cache = True
+      self.cache_path = storage.layer_cache
+      self.image_path = storage.unpack_base
+
+      self.current_image = None
+      self.root_lid = "52494557594c41444f4b4e4143495600"
+      
+      self.git_installed = shutil.which("git") is not None
+
+      CacheOps = collections.namedtuple("CacheOps", ["dl_read", "ly_read",
+           "dl_write", "ly_write"])
+
+      if (cache_ops != None):
+         # Check for read options related to download cache.
+         dl_read_ops = ("dl-all", "dl-read", "read", "all")
+         dl_read = any([OP in cache_ops for OP in dl_read_ops])
+
+         # Check for read options related to layer cache.
+         ly_read_ops = ("ly-all", "ly-read", "read", "all")
+         ly_read = any([OP in cache_ops for OP in ly_read_ops])
+
+         # Check for write options related to download cache.
+         dl_write_ops = ("dl-all", "dl-write", "write", "all")
+         dl_write = any([OP in cache_ops for OP in dl_write_ops])
+
+         # Check for write options related to layer cache.
+         ly_write_ops = ("ly-all", "ly-write", "write", "all")
+         ly_write = any([OP in cache_ops for OP in ly_write_ops])
+
+         self.cache_ops=CacheOps(dl_read=dl_read, ly_read=ly_read, dl_write=dl_write,
+                         ly_write=ly_write)
+
+      else:
+         self.cache_ops=CacheOps(dl_read=False, ly_read=False, dl_write=False,
+                         ly_write=False)
+
+
+   def initialize(self):
+      # Needs to be initialized after this object is initialized
+
+      # If layer cache directory doesn't exist, create it.
+      if (not os.path.exists(self.cache_path)):
+         ossafe(os.mkdir, "can't mkdir: %s" % self.cache_path, self.cache_path)
+
+      # If repository does not exist create it
+      repo_exists = subprocess.run(["git", "rev-parse"], cwd=self.cache_path,
+          stderr=subprocess.DEVNULL).returncode
+
+      if (repo_exists != 0):
+         # Create new bare repo in lycache
+         INFO("Initializing cache")
+         subprocess.run(["git", "init", "--bare"], cwd=self.cache_path, 
+              stdout=subprocess.DEVNULL)
+
+         # Create temporary directory for working git repo
+         # Need to create a repo clone to add first commit to bare git repo
+         working_path = ossafe(tempfile.mkdtemp, "can't write tmp directory")
+
+         # Clone repo as --shared so we limit space required
+         # Need to delete this after
+         subprocess.run(["git", "clone", "--shared",
+             self.cache_path, working_path], stdout=subprocess.DEVNULL,
+             stderr=subprocess.DEVNULL)
+
+         # With the working repo now created make first commit if needed
+         # Commit Root ID
+         subprocess.run(["git", "commit", "--allow-empty", "-m",
+             'Layer-ID: %s' % self.root_lid], cwd=working_path,
+             stdout=subprocess.DEVNULL)
+
+         # Push new commit back to master
+         subprocess.run(["git", "push", "origin", "master"], cwd=working_path,
+                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+         # Remove temporary directory
+         rmtree(working_path)
+
+   # Get a commit from a lid. Return -1 if lid is not found.
+   def lid_to_commit(self, lid):
+      commit_proc = subprocess.run(["git", "log", "--all", "--grep", lid, "--format=%H"],
+              cwd=self.cache_path,
+              stdout=subprocess.PIPE, 
+              stderr=subprocess.PIPE)
+      if (commit_proc.stdout.decode() == ""):
+         commit = -1
+      else:
+         commit = commit_proc.stdout.decode().strip()
+      return commit
+
+   # Compute Layer id and return as hex digits
+   def compute_lid(self, *args):
+       h = hashlib.md5()
+       for element in args:
+          data = repr(element).encode("utf-8")
+          h.update(data)
+       return h.hexdigest()
+
+   def get_image(self, image):
+      #return '%s/%s' % (self.image_path, image)
+      return self.image_path // image
+
+   def get_current_image(self):
+      return self.image_path // self.current_image
+
+   def load_image(self, image):
+      self.current_image = image
+
+   def delete_image(self, image):
+      self.current_image = image
+      subprocess.run(["git", "worktree","remove", "--force",
+          self.get_current_image()],
+          cwd=self.get_current_image())
+
+   # Add new image to the layer cache by creating a new worktree
+   def add_image(self, image, base=None):
+      # Base images will be worktrees spun from root.
+      if (not base):
+         lid = self.root_lid
+      else:
+         lid = self.lid_at_tag(base)
+      self.current_image = image
+      commit = self.lid_to_commit(lid)
+      
+      # If we're ly_read remove current image and start again 
+      if (os.path.isdir(self.get_current_image()) and self.cache_ops.ly_read):
+         INFO("Deleting cached image: %s" % image)
+         self.delete_image(image)
+
+      subprocess.run(["git", "worktree", "add",
+         self.get_current_image(), commit], cwd=self.cache_path, 
+         stdout=subprocess.PIPE)
+
+   # Add hidden file to empty dirs so git will include them
+   def fix_empty_dirs(self, image_path):
+      for dirpath, dirnames, files in os.walk(image_path):
+         if not files:
+            Path(dirpath + "/" + ".ch_keep").touch()
+   
+   def unfix_empty_dirs(self, image_path):
+      for dirpath, dirnames, files in os.walk(image_path):
+         if '.ch_keep' in files:
+            os.remove(os.path.join(dirpath, '.ch_keep'))
+
+   # Adds a new layer to the cache
+   def add_layer(self, lid):
+      # Make sure we get empty directories
+      # TODO might want to delete these in between steps
+      self.fix_empty_dirs(self.get_current_image())
+      subprocess.run(["git", "add", "--all"],
+         cwd=self.get_current_image(), # CWD is image path for worktree
+         stdout=subprocess.DEVNULL)
+
+      subprocess.run(["git", "commit", "--allow-empty",  "-m", "Layer-ID: %s" % lid],
+         cwd=self.get_current_image(),
+         stdout=subprocess.DEVNULL)
+      # Remove .ch_keep files after commit
+      self.unfix_empty_dirs(self.get_current_image())
+
+   #  Replace : with + since : is invalid in git tags and + is
+   #   invalid in docker names.
+   def safe_tag(self, tag):
+      return tag.replace(":", "+")
+
+   # Return lid for tag in image. Returns -1 if it isn't in cache
+   def lid_at_tag(self, tag):
+     tag = self.safe_tag(tag)
+
+     # # Returns tag 
+     commit_proc = subprocess.run(["git", "rev-list", "-n", "1", 
+            tag, "--format=%s"],
+            cwd=self.cache_path,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+
+     if ('unknown' in commit_proc.stderr.decode()):
+        lid = -1
+     else:
+        commit_lst = commit_proc.stdout.decode().split()
+        lid_index = commit_lst.index("Layer-ID:") + 1
+        lid = commit_proc.stdout.decode().split()[lid_index]
+     return lid
+
+   def checkout_recent(self):
+      head_commit = subprocess.run(["git", "rev-parse", "HEAD"],
+          cwd=self.get_current_image(),
+          stdout=subprocess.PIPE).stdout.decode().strip()
+      most_recent_commit = self.lid_to_commit(self.most_recent_hit)
+      if (head_commit == most_recent_commit):
+        pass
+      else:
+         INFO("cache: Checking out LID:%s" % self.most_recent_hit)
+         subprocess.run(["git", "checkout", most_recent_commit], 
+             cwd=self.get_current_image(), 
+             stdout=subprocess.PIPE,
+             stderr=subprocess.DEVNULL)
+
+   # Tag image
+   def tag_image(self, tag):
+      tag = self.safe_tag(tag)
+      subprocess.run(['git', 'tag', tag], cwd=self.get_current_image(), 
+           stderr=subprocess.PIPE)
+
+   # Remove tag
+   def rm_tag(self, tag):
+      subprocess.run(['git', 'tag', '--delete', tag], cwd=self.cache_path,
+           stdout=subprocess.DEVNULL,
+           stderr=subprocess.DEVNULL)
 
 
 class Image:
@@ -415,7 +630,7 @@ class Image:
       """If the unpack directory does not exist, do nothing. If the unpack
          directory is already an image, remove it. Otherwise, error."""
       if (not os.path.exists(self.unpack_path)):
-         VERBOSE("no image found: %s" % self.unpack_path)
+         VERBOSE("unpack directory found: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
@@ -562,6 +777,7 @@ class Image:
    def unpack_create_ok(self):
       """Ensure the unpack directory can be created. If the unpack directory
          is already an image, remove it."""
+      # There will always be an empty directory or directory with just a .git
       if (not self.unpack_exist_p()):
          VERBOSE("creating new image: %s" % self.unpack_path)
       else:
@@ -1132,6 +1348,10 @@ class Storage:
    @property
    def download_cache(self):
       return self.root // "dlcache"
+
+   @property
+   def layer_cache(self):
+      return self.root // "lycache"
 
    @property
    def unpack_base(self):

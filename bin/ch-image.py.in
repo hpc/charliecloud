@@ -79,7 +79,11 @@ def main():
          { "action": misc.Dependencies,
            "help": "print any missing dependencies and exit" }],
        [ ["--no-cache"],
-         { "action": "store_true",
+         { "metavar": "OPS",
+           "nargs": "?",
+           "const": "['read']",
+           # Uses nifty trick based on https://stackoverflow.com/a/24866869
+           "type": lambda s: [item for item in s.split(',')],
            "help": "download everything needed, ignoring the cache" }],
        [ ["-s", "--storage"],
          { "metavar": "DIR",

@@ -22,6 +22,9 @@ cli = None
 # Environment object.
 env = None
 
+# Cache Object
+cache = None
+
 # Fakeroot configuration (initialized during FROM).
 fakeroot_config = None
 
@@ -117,6 +120,9 @@ def main(cli_):
    global env
    env = Environment()
 
+   global cache
+   cache = ch.Cache(cli.no_cache)
+
    # Read input file.
    if (cli.file == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
@@ -167,6 +173,11 @@ def main(cli_):
    else:
       ml.visit(tree)
 
+
+   if (cache.in_cache):
+      cache.checkout_recent()
+   else:
+      cache.tag_image(cli.tag)
    # Check that all build arguments were consumed.
    if (len(cli.build_arg) != 0):
       ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
@@ -174,6 +185,7 @@ def main(cli_):
    # Print summary & we're done.
    if (ml.instruction_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
+   print(f"THERE ARE {ml.instruction_ct} instructions")
    assert (image_i + 1 == image_ct)  # should have errored already if not
    if (cli.force):
       if (fakeroot_config.inject_ct == 0):
@@ -244,7 +256,72 @@ class Instruction(abc.ABC):
 
    def execute(self):
       if (not cli.dry_run):
-         self.execute_()
+         # Compute lid for each instruction type
+         if isinstance(self, I_from_):
+            self.execute_()
+            return
+         elif isinstance(self, I_copy):
+            # Get filename, permissions, type, size, and last modified time of all files
+            # TODO Refactor this disgusting code
+            contents = []
+            for f in self.srcs:
+               f_path = os.path.join(cli.context, f)
+               fd = os.open(f_path, os.O_RDONLY)
+               stats = os.stat(fd)
+               contents.extend((f, stats.st_mode, stats.st_size, 
+                   stats.st_mtime))
+               if (os.path.isdir(f_path)):
+                  for dirpath, dirnames, files in os.walk(f):
+                     for dir in dirnames:
+                        fd = os.open(os.path.join(dirpath, dir), os.O_RDONLY)
+                        stats = os.stat(fd)
+                        contents.extend((dir, stats.st_mode, stats.st_size, 
+                            stats.st_mtime))
+                     for file in files:
+                        fd = os.open(os.path.join(dirpath, file), os.O_RDONLY)
+                        contents.extend((file, stats.st_mode, stats.st_size, 
+                            stats.st_mtime))
+            lid = cache.compute_lid(cache.last_lid, self.str_name(), 
+                    self.options_str, self.str_(), *contents)
+         elif isinstance(self, I_arg_bare):
+            lid = cache.compute_lid(cache.last_lid, self.str_name(), 
+                    self.options_str, self.str_())
+         elif isinstance(self,( I_arg_equals, I_env_equals)):
+            lid = cache.compute_lid(cache.last_lid, self.str_name(), self.options_str, 
+                    self.str_(), self.value)
+         elif isinstance(self, I_env_space):
+            lid = cache.compute_lid(cache.last_lid, self.str_name(), 
+                    self.options_str, self.str_(), self.value)
+         else:
+            lid = cache.compute_lid(cache.last_lid, self.str_name(),
+                    self.options_str, self.str_())
+
+         # Only check the cache if we know the lid might be in there
+         if (cache.in_cache):
+             commit = cache.lid_to_commit(lid)
+         else:
+             commit = -1
+          
+         # Not in cache
+         if (commit == -1 or cache.cache_ops.ly_read):
+            if (cache.in_cache):
+               ch.INFO("cache: Instruction not in cache")
+               cache.in_cache = False
+               if (not cache.cache_ops.ly_write):
+                   cache.rm_tag(cli.tag)
+                   cache.checkout_recent()
+            # Run instruction
+            self.execute_()
+            # Add layer to cache
+            ch.INFO("cache: Adding layer %s" % lid)
+            if (not cache.cache_ops.ly_write):
+                cache.add_layer(lid)
+            cache.last_lid = lid
+         else:
+            ch.INFO("cache: loaded from cache")
+            cache.most_recent_hit = lid
+            cache.last_lid = lid
+
 
    @abc.abstractmethod
    def execute_(self):
@@ -361,6 +438,43 @@ class I_copy(Instruction):
       else:
          assert (ch.tree_child(self.tree, "copy_list") is not None)
          self.unsupported_yet_fatal("list form", 784)
+
+      # Process sources in init. Src info is needed to determine lid at runtime.
+      # Find the context directory.
+      if (self.from_ is None):
+         context = cli.context
+      else:
+         if (self.from_ == image_i or self.from_ == image_alias):
+            ch.FATAL("COPY --from: stage %s is the current stage" % self.from_)
+         if (not self.from_ in images):
+            # FIXME: Would be nice to also report if a named stage is below.
+            if (isinstance(self.from_, int) and self.from_ < image_ct):
+               if (self.from_ < 0):
+                  ch.FATAL("COPY --from: invalid negative stage index %d"
+                           % self.from_)
+               else:
+                  ch.FATAL("COPY --from: stage %d does not exist yet"
+                           % self.from_)
+            else:
+               ch.FATAL("COPY --from: stage %s does not exist" % self.from_)
+         context = images[self.from_].unpack_path
+      context_canon = os.path.realpath(context)
+      ch.VERBOSE("context: %s" % context)
+      # Expand source wildcards.
+      srcs = list()
+      for src in self.srcs:
+         for i in glob.glob("%s/%s" % (context, src)):  # glob can't take Path
+            srcs.append(i)
+            ch.VERBOSE("source: %s" % i)
+      if (len(srcs) == 0):
+         ch.FATAL("can't COPY: no sources found")
+      # Validate sources are within context directory. (Can't convert to
+      # canonical paths yet because we need the source path as given.)
+      for src in srcs:
+         src_canon = os.path.realpath(src)
+         if (not os.path.commonpath([src_canon, context_canon])
+                 .startswith(context_canon)):
+            ch.FATAL("can't COPY from outside context: %s" % src)
 
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
@@ -489,41 +603,6 @@ class I_copy(Instruction):
          self.unsupported_forever_warn("--chown")
       # Any remaining options are invalid.
       self.options_assert_empty()
-      # Find the context directory.
-      if (self.from_ is None):
-         context = cli.context
-      else:
-         if (self.from_ == image_i or self.from_ == image_alias):
-            ch.FATAL("COPY --from: stage %s is the current stage" % self.from_)
-         if (not self.from_ in images):
-            # FIXME: Would be nice to also report if a named stage is below.
-            if (isinstance(self.from_, int) and self.from_ < image_ct):
-               if (self.from_ < 0):
-                  ch.FATAL("COPY --from: invalid negative stage index %d"
-                           % self.from_)
-               else:
-                  ch.FATAL("COPY --from: stage %d does not exist yet"
-                           % self.from_)
-            else:
-               ch.FATAL("COPY --from: stage %s does not exist" % self.from_)
-         context = images[self.from_].unpack_path
-      context_canon = os.path.realpath(context)
-      ch.VERBOSE("context: %s" % context)
-      # Expand source wildcards.
-      srcs = list()
-      for src in self.srcs:
-         for i in glob.glob("%s/%s" % (context, src)):  # glob can't take Path
-            srcs.append(i)
-            ch.VERBOSE("source: %s" % i)
-      if (len(srcs) == 0):
-         ch.FATAL("can't COPY: no sources found")
-      # Validate sources are within context directory. (Can't convert to
-      # canonical paths yet because we need the source path as given.)
-      for src in srcs:
-         src_canon = os.path.realpath(src)
-         if (not os.path.commonpath([src_canon, context_canon])
-                 .startswith(context_canon)):
-            ch.FATAL("can't COPY from outside context: %s" % src)
       # Locate the destination.
       unpack_canon = os.path.realpath(images[image_i].unpack_path)
       if (self.dst.startswith("/")):
@@ -537,13 +616,13 @@ class I_copy(Instruction):
               .startswith(unpack_canon)):
          ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
       # Create the destination directory if needed.
-      if (self.dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
+      if (self.dst.endswith("/") or len(self.srcs) > 1 or os.path.isdir(self.srcs[0])):
          if (not os.path.exists(dst_canon)):
             ch.mkdirs(dst_canon)
          elif (not os.path.isdir(dst_canon)):  # not symlink b/c realpath()
             ch.FATAL("can't COPY: not a directory: %s" % dst_canon)
       # Copy each source.
-      for src in srcs:
+      for src in self.srcs:
          if (os.path.isfile(src)):
             self.copy_src_file(src, dst_canon)
          elif (os.path.isdir(src)):
@@ -636,13 +715,52 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
       self.base_image = ch.Image(self.base_ref)
+      # If base image does not exist pull it
       if (not os.path.isdir(self.base_image.unpack_path)):
          ch.VERBOSE("image not found, pulling: %s"
                     % self.base_image.unpack_path)
          # a young hen, especially one less than one year old.
          pullet = pull.Image_Puller(self.base_image)
-         pullet.pull_to_unpacked()
-      image.copy_unpacked(self.base_image)
+         pullet.pull(cache)
+
+      cache_ops = cache.cache_ops
+      # Cache hit
+      if (os.path.isdir(image.unpack_path) and not cache_ops.ly_read):
+         ch.INFO("Found image %s" % tag)
+         cache.load_image(tag)
+         src_lid = self.base_image.unpack_path // "/ch/layer_id"
+         dest_lid = image.unpack_path // "/ch/layer_id"
+         # TODO Need to account for base images built without git caching
+         with ch.open_(src_lid, 
+                 "rt") as fp:
+             base_lid = ch.ossafe(fp.read, "can't read: %s" % src_lid ).strip()
+
+         with ch.open_(dest_lid, 
+                 "rt") as fp:
+             lid = ch.ossafe(fp.read, "can't read: %s" % dest_lid ).strip()
+         if (base_lid == lid):
+            ch.VERBOSE("Cache: Loading %s from cache" % tag)
+            # Make sure everything is in order. Previous run(s) with no_cache:
+            # ly_read would require us to reset everything
+            cache.most_recent_hit = lid
+            cache.last_lid = lid
+         else:
+            ch.FATAL("cache: Inconsistent cache")
+      elif (cache_ops.ly_write):  
+          image.copy_unpacked(self.base_image)
+      else:
+          ch.INFO("Image not found in cache")
+          # Get lid from base_image
+          src_lid = self.base_image.unpack_path // "/ch/layer_id"
+          with ch.open_(src_lid, 
+                  "rt") as fp:
+              lid = ch.ossafe(fp.read, "can't read: %s" % src_lid ).strip()
+          # Add image to the cache and create worktree
+          ch.INFO("Adding image to cache")
+          cache.add_image(tag, base=str(self.base_ref))
+          cache.last_lid = lid
+          cache.most_recent_hit = lid
+
       image.metadata_load()
       env.reset()
       # Find fakeroot configuration, if any.

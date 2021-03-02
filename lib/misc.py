@@ -34,8 +34,18 @@ class Version(Action_Exit):
 # because caller manages that.
 
 def delete(cli):
+   # If the cache has been initialized, get the cache 
    img_ref = ch.Image_Ref(cli.image_ref)
    img = ch.Image(img_ref, cli.storage)
+
+   if (os.path.isdir(ch.storage.layer_cache)): 
+      image = str(img)
+      cache = ch.Cache(cli.no_cache)
+      # If the image is in the cache
+      if (cache.lid_at_tag(image)):
+         cache.rm_tag(image)
+         cache.delete_image(image)  
+         return
    img.unpack_delete()
 
 def list_(cli):
@@ -47,3 +57,6 @@ def list_(cli):
 
 def storage_path(cli):
    print(ch.storage.root)
+
+def cache_path(cli):
+   print(ch.storage.layer_cache)
