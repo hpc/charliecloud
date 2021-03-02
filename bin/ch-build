@@ -11,7 +11,8 @@ Usage:
 
   $ $(basename "$0") [-b BUILDER] [--builder-info] -t TAG [ARGS ...] CONTEXT
 
-BUILDER is one of: buildah ch-image docker.
+BUILDER is "ch-image" or "docker"
+        (or experimentally: "buildah", "buildah-runc", "buildah-setuid")
 ARGS are passed unchanged to the underlying builder.
 EOF
 )
