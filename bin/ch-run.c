@@ -51,11 +51,11 @@ const struct argp_option options[] = {
    { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",      -3, "N",    0, "number of ch-run peers (implies --join)" },
    { "join-tag",     -4, "TAG",  0, "label for peer group (implies --join)" },
-   { "no-expand",   -10, 0,      0, "don't expand $ in --set-env input"},
    { "no-home",      -2, 0,      0, "don't bind-mount your home directory"},
    { "no-passwd",    -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp", 't', 0,      0, "use container-private /tmp" },
    { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
+   { "set-env-no-expand",-10, 0, 0, "don't expand $ in --set-env input"},
    { "uid",         'u', "UID",  0, "run as UID within container" },
    { "unset-env",    -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
@@ -66,7 +66,7 @@ const struct argp_option options[] = {
 
 /* One possible future here is that fix_environment() ends up in ch_base.c and
    we add other actions such as SET, APPEND_PATH, etc. */
-enum env_action { END = 0, SET_FILE, UNSET_GLOB };
+enum env_action { END = 0, SET_ENV, UNSET_GLOB };
 
 struct env_delta {
    enum env_action action;
@@ -82,7 +82,7 @@ struct args {
 /** Function prototypes **/
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
-void env_parse(char *name, char *new_value, bool expand);
+char *env_expand(char *new_value, bool expand);
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
    args = (struct args){ .c = (struct container){ .ch_ssh = false,
                                                   .container_gid = getegid(),
                                                   .container_uid = geteuid(),
-                                                  .expand = true,
+                                                  .set_env_expand = true,
                                                   .newroot = NULL,
                                                   .join = false,
                                                   .join_ct = 0,
@@ -187,19 +187,23 @@ void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
    (*ds)[i].arg = arg;
 }
 
-/* Parse and set input from --set-env */
-void env_parse(char *name, char *new_value, bool expand)
+/* Parses one line from --set-env. It gets parsed at each ':' and each value
+   is appended to the new environment variable.If there is a '$' and the
+   --set-env-no-expand is included, the value of that variable will be 
+   appended to the  */
+char *env_expand(char *new_value, bool expand)
 {
-   char *token;
-   char *new_env = "";
-   const char s[1] = ":";
+   /* strip leading and trailing single quotes */
    if (   strlen(new_value) >= 2
        && (new_value)[0] == '\''
        && (new_value)[strlen(new_value) - 1] == '\'') {
-      (new_value)[strlen(new_value) - 1] = 0;  // strip trailing quote
-      (new_value)++;                           // strip leading
+      (new_value)[strlen(new_value) - 1] = 0;  
+      (new_value)++;                           
    }
-   token = strtok(new_value, s);
+
+   char *token;
+   char *new_env = "";
+   token = strtok(new_value, ":");
    while( token != NULL ) {
       if (token[0] == '$' && expand) {
          token ++;
@@ -207,14 +211,15 @@ void env_parse(char *name, char *new_value, bool expand)
             T_ (1 <= asprintf(&new_env, "%s:%s", new_env, getenv(token)));
       }
       else {
-         T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
+         new_env=cat(new_env,":");
+         new_env=cat(new_env, token);
+         //T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
       }
-      token = strtok(NULL, s);
+      token = strtok(NULL, ":");
    }
    if (new_env[0] == ':')
       new_env++;
-   INFO("environment: %s=%s", name, new_env);
-   Z_ (setenv(name, new_env, 1));
+   return new_env;
 }
 
 /* Adjust environment variables. */
@@ -247,14 +252,16 @@ void fix_environment(struct args *args)
    // --set-env and --unset-env.
    for (int i = 0; args->env_deltas[i].action != END; i++) {
       char *arg = args->env_deltas[i].arg;
-      if (args->env_deltas[i].action == SET_FILE) {
+      if (args->env_deltas[i].action == SET_ENV) {
          FILE *fp = NULL;
          if (strchr(arg, '=') == NULL) {
             Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
          }
          else {  
             split(&name, &new_value, arg, '=');
-            env_parse(name, new_value, args->c.expand);
+            char *new_env = env_expand(new_value, args->c.set_env_expand);
+            INFO("environment: %s=%s", name, new_env);
+            Z_ (setenv(name, new_env, 1));
             break;
          }
          for (int j = 1; true; j++) {
@@ -274,7 +281,9 @@ void fix_environment(struct args *args)
             split(&name, &new_value, line, '=');
             Te (name != NULL, "--set-env: no delimiter: %s:%d", arg, j);
             Te (strlen(name) != 0, "--set-env: empty name: %s:%d", arg, j);
-            env_parse(name, new_value, args->c.expand);
+            char *new_env = env_expand(new_value, args->c.set_env_expand);
+            INFO("environment: %s=%s", name, new_env);
+            Z_ (setenv(name, new_env, 1));
          }
          fclose(fp);
       } else {
@@ -407,9 +416,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    int i;
 
    switch (key) {
-   case -10: // --no-expand
-      args->c.expand = false;
-      INFO("expand: false");
+   case -10: // --set-env-no-expand
+      args->c.set_env_expand = false;
       break;
    case -2: // --private-home
       args->c.private_home = true;
@@ -426,7 +434,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join_pid = parse_int(arg, false, "--join-pid");
       break;
    case -6: // --set-env
-      env_delta_append(&(args->env_deltas), SET_FILE, arg);
+      env_delta_append(&(args->env_deltas), SET_ENV, arg);
       break;
    case -7: // --unset-env
       Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");

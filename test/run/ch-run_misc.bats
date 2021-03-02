@@ -476,7 +476,7 @@ EOF
     [[ $output = *'$PATH:foo: No such file or directory'* ]]
 
     # --no-expand
-    run ch-run --set-env=test='$test:foo' --no-expand -v "$ch_timg" -- /bin/true
+    run ch-run --set-env=test='$test:foo' --set-env-no-expand -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'environment: test=$test:foo'* ]]

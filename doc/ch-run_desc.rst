@@ -37,8 +37,8 @@ unpacked image directory located at :code:`NEWROOT`.
     label for :code:`ch-run` peer group (implies :code:`--join`; default: see
     below)
 
-  :code:`--no-expand`
-    do not expand variables when using :code:`--set-env`
+  :code:`--set-env-no-expand`
+    don't expand variables when using :code:`--set-env`
 
   :code:`--no-home`
     do not bind-mount your home directory (by default, your home directory is
