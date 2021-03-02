@@ -477,7 +477,7 @@ Dependencies
 ------------
 
   * charliecloud
-  * Python 3.4+
+  * Python 3.6+
   * Either:
 
     * the provided example :code:`centos7` or :code:`centos8` image
