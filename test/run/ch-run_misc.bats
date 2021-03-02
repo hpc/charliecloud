@@ -330,6 +330,7 @@ EOF
     #   []
 
     # Valid inputs. Use Python to print the results to avoid ambiguity.
+    export FOO=foo
     f_in=${BATS_TMPDIR}/env.txt
     cat <<'EOF' > "$f_in"
 chse_a1=bar
@@ -339,18 +340,19 @@ chse_a4='bar'
 chse_a5=
 chse_a6=''
 chse_a7=''''
+chse_a8=pre:$FOO:app
 
 chse_b1="bar"
 chse_b2=bar # baz
- chse_b4=bar
-chse_b5= bar
+ chse_b3=bar
+chse_b4= bar
 
 chse_c1=foo
 chse_c1=bar
 EOF
     cat "$f_in"
     output_expected=$(cat <<'EOF'
-(' chse_b4', 'bar')
+(' chse_b3', 'bar')
 ('chse_a1', 'bar')
 ('chse_a2', 'bar=baz')
 ('chse_a3', 'bar baz')
@@ -358,9 +360,10 @@ EOF
 ('chse_a5', '')
 ('chse_a6', '')
 ('chse_a7', "''")
+('chse_a8', 'pre:foo:app')
 ('chse_b1', '"bar"')
 ('chse_b2', 'bar # baz')
-('chse_b5', ' bar')
+('chse_b4', ' bar')
 ('chse_c1', 'bar')
 EOF
 )
@@ -418,25 +421,15 @@ EOF
 }
 
 # shellcheck disable=SC2016
-@test 'ch-run --set-env prepend/append' {
+@test 'ch-run --set-env command line' {
     scope standard
 
-    # append in command line
+    # append
     export test=foo
     run ch-run --set-env=test='$test:app' -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"environment: test=foo:app"* ]]    
-
-    # prepend and append in file
-    f_in=${BATS_TMPDIR}/env_pre.txt
-    cat <<'EOF' > "$f_in"
-test=pre:$test:app
-EOF
-    run ch-run --set-env="$f_in" -v "$ch_timg" -- bin/true
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"environment: test=pre:foo:app"* ]]
 
     # multiple '$'
     export test2=foo
@@ -463,23 +456,24 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"environment: test=foo"* ]]
-}
 
-# shellcheck disable=SC2016
-@test 'ch-run --set-env command line errors' {
-    scope standard
-
-    # missing environment variable
-    run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
+    # leading ':'
+    run ch-run --set-env=test=:'$test': -v "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'$PATH:foo: No such file or directory'* ]]
+    [[ $status -eq 0 ]]
+    [[ $output = *"environment: test=foo"* ]]
 
     # --no-expand
     run ch-run --set-env=test='$test:foo' --set-env-no-expand -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'environment: test=$test:foo'* ]]
+
+    # missing environment variable
+    run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
 
 @test 'ch-run --unset-env' {
