@@ -31,6 +31,11 @@ setup () {
     spark_config=$spark_dir
     spark_log=/tmp/sparklog
     if [[ $ch_multinode ]]; then
+        # We use hostname to determine the interface to use for this test,
+        # avoiding complicated logic determining which interface is the HSN.
+        # In many environments this likely results in the tests running over
+        # the slower management interface, which is fine for testing, but
+        # should be avoided for large scale runs.
         master_host="$(hostname)"
         # Start Spark workers using pdsh. We would really prefer to do this
         # using srun, but that doesn't work; see issue #230.
@@ -52,6 +57,8 @@ setup () {
     [[ $output = 'u=rwx,g=,o=' ]]
     # create config
     $ch_mpirun_node mkdir -p "$spark_config"
+    # We set JAVA_HOME in the spark environment file as this appears to be the
+    # idiomatic method for ensuring spark finds the java install.
     tee <<EOF > "${spark_config}/spark-env.sh"
 SPARK_LOCAL_DIRS=/tmp/spark
 SPARK_LOG_DIR=$spark_log
