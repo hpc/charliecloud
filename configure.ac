@@ -315,7 +315,7 @@ AS_IF([test -n "$NVIDIA_CLI"],
 AC_MSG_RESULT($have_nvidia_libs)
 
 # Python
-vmin_python=3.4
+vmin_python=3.6
 AC_MSG_CHECKING([if "$PYTHON_SHEBANG" starts with slash])
 AS_CASE([$PYTHON_SHEBANG],
   [/*], [AC_MSG_RESULT([ok])],
