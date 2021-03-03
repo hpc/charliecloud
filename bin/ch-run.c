@@ -55,7 +55,7 @@ const struct argp_option options[] = {
    { "no-passwd",    -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp", 't', 0,      0, "use container-private /tmp" },
    { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
-   { "set-env-no-expand",-10, 0, 0, "don't expand $ in --set-env input"},
+   { "env-no-expand",-10, 0,     0, "don't expand $ in --set-env input"},
    { "uid",         'u', "UID",  0, "run as UID within container" },
    { "unset-env",    -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
@@ -82,7 +82,7 @@ struct args {
 /** Function prototypes **/
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
-char *env_expand(char *new_value, bool expand);
+void env_expand(char* env_set[], int argv, bool expand);
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
@@ -191,35 +191,41 @@ void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
    is appended to the new environment variable.If there is a '$' and the
    --set-env-no-expand is included, the value of that variable will be 
    appended to the  */
-char *env_expand(char *new_value, bool expand)
+void env_expand(char* env_set[], int argv, bool expand)
 {
-   /* strip leading and trailing single quotes */
-   if (   strlen(new_value) >= 2
-       && (new_value)[0] == '\''
-       && (new_value)[strlen(new_value) - 1] == '\'') {
-      (new_value)[strlen(new_value) - 1] = 0;  
-      (new_value)++;                           
-   }
-
-   char *token;
-   char *new_env = "";
-   token = strtok(new_value, ":");
-   while( token != NULL ) {
-      if (token[0] == '$' && expand) {
-         token ++;
-         if(getenv(token) != NULL)
-            T_ (1 <= asprintf(&new_env, "%s:%s", new_env, getenv(token)));
+   int i;
+   char *name, *new_value;
+   for(i = 0; i < argv; i++) {
+      split(&name, &new_value, env_set[i], '=');
+      Te (name != NULL, "--set-env: no delimiter: %s:%d", env_set[i], i+1);
+      Te (strlen(name) != 0, "--set-env: empty name: %s:%d", env_set[i], i+1);
+      /* strip leading and trailing single quotes */
+      if (   strlen(new_value) >= 2
+          && (new_value)[0] == '\''
+          && (new_value)[strlen(new_value) - 1] == '\'') {
+         (new_value)[strlen(new_value) - 1] = 0;  
+         (new_value)++;                           
       }
-      else {
-         new_env=cat(new_env,":");
-         new_env=cat(new_env, token);
-         //T_ (1 <= asprintf(&new_env, "%s:%s", new_env, token));
+   
+      char *token;
+      char *new_env = "";
+      token = strtok(new_value, ":");
+      while( token != NULL ) {
+         if (strcmp(new_env,""))
+            new_env=cat(new_env,":");
+         if (token[0] == '$' && expand) {
+            token ++;
+            if(getenv(token) != NULL)
+               new_env = cat(new_env, getenv(token));
+         }
+         else {
+            new_env=cat(new_env, token);
+         }
+         token = strtok(NULL, ":");
       }
-      token = strtok(NULL, ":");
+      INFO("environment: %s=%s", name, new_env);
+      Z_ (setenv(name, new_env, 1));
    }
-   if (new_env[0] == ':')
-      new_env++;
-   return new_env;
 }
 
 /* Adjust environment variables. */
@@ -250,18 +256,20 @@ void fix_environment(struct args *args)
    }
 
    // --set-env and --unset-env.
+   char* input[50];
+   int size;
    for (int i = 0; args->env_deltas[i].action != END; i++) {
       char *arg = args->env_deltas[i].arg;
       if (args->env_deltas[i].action == SET_ENV) {
+         size = 0;
          FILE *fp = NULL;
          if (strchr(arg, '=') == NULL) {
             Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
          }
          else {  
-            split(&name, &new_value, arg, '=');
-            char *new_env = env_expand(new_value, args->c.set_env_expand);
-            INFO("environment: %s=%s", name, new_env);
-            Z_ (setenv(name, new_env, 1));
+            input[size] = arg;
+            size++;
+            env_expand(input, size, args->c.set_env_expand);
             break;
          }
          for (int j = 1; true; j++) {
@@ -278,13 +286,10 @@ void fix_environment(struct args *args)
                continue;                    // skip empty line
             if (line[strlen(line) - 1] == '\n')
                line[strlen(line) - 1] = 0;  // remove newline
-            split(&name, &new_value, line, '=');
-            Te (name != NULL, "--set-env: no delimiter: %s:%d", arg, j);
-            Te (strlen(name) != 0, "--set-env: empty name: %s:%d", arg, j);
-            char *new_env = env_expand(new_value, args->c.set_env_expand);
-            INFO("environment: %s=%s", name, new_env);
-            Z_ (setenv(name, new_env, 1));
+            input[size] = line;
+            size++;
          }
+         env_expand(input, size, args->c.set_env_expand);
          fclose(fp);
       } else {
          T_ (args->env_deltas[i].action == UNSET_GLOB);

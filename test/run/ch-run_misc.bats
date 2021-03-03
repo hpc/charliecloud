@@ -410,14 +410,14 @@ EOF
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"--set-env: no delimiter: ${f_in}:1"* ]]
+    [[ $output = *"--set-env: no delimiter: FOO bar:1"* ]]
 
     # invalid line: no name
     echo '=bar' > "$f_in"
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"--set-env: empty name: ${f_in}:1"* ]]
+    [[ $output = *"--set-env: empty name: =bar:1"* ]]
 }
 
 # shellcheck disable=SC2016
@@ -464,7 +464,7 @@ EOF
     [[ $output = *"environment: test=foo"* ]]
 
     # --no-expand
-    run ch-run --set-env=test='$test:foo' --set-env-no-expand -v "$ch_timg" -- /bin/true
+    run ch-run --set-env=test='$test:foo' --env-no-expand -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'environment: test=$test:foo'* ]]
