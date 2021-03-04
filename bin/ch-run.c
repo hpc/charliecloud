@@ -256,20 +256,20 @@ void fix_environment(struct args *args)
    }
 
    // --set-env and --unset-env.
-   char* input[50];
-   int size;
+   char* env_set[50];
+   int env_setv;
    for (int i = 0; args->env_deltas[i].action != END; i++) {
       char *arg = args->env_deltas[i].arg;
       if (args->env_deltas[i].action == SET_ENV) {
-         size = 0;
+         env_setv = 0;
          FILE *fp = NULL;
          if (strchr(arg, '=') == NULL) {
             Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
          }
          else {  
-            input[size] = arg;
-            size++;
-            env_expand(input, size, args->c.set_env_expand);
+            env_set[env_setv] = arg;
+            env_setv++;
+            env_expand(env_set, env_setv, args->c.set_env_expand);
             break;
          }
          for (int j = 1; true; j++) {
@@ -286,10 +286,10 @@ void fix_environment(struct args *args)
                continue;                    // skip empty line
             if (line[strlen(line) - 1] == '\n')
                line[strlen(line) - 1] = 0;  // remove newline
-            input[size] = line;
-            size++;
+            env_set[env_setv] = line;
+            env_setv++;
          }
-         env_expand(input, size, args->c.set_env_expand);
+         env_expand(env_set, env_setv, args->c.set_env_expand);
          fclose(fp);
       } else {
          T_ (args->env_deltas[i].action == UNSET_GLOB);
