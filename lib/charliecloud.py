@@ -246,6 +246,12 @@ class Cache:
          subprocess.run(["git", "init", "--bare"], cwd=self.cache_path, 
               stdout=subprocess.DEVNULL)
 
+         subprocess.run(["git", "config", "user.name", 
+             "charliecloud"], cwd=self.cache_path, stdout=subprocess.DEVNULL)
+
+         subprocess.run(["git", "config", "user.email", 
+             "charliecloud@ch"], cwd=self.cache_path, stdout=subprocess.DEVNULL)
+
          # Create temporary directory for working git repo
          # Need to create a repo clone to add first commit to bare git repo
          working_path = ossafe(tempfile.mkdtemp, "can't write tmp directory")
