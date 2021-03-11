@@ -463,7 +463,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"environment: test=foo"* ]]
 
-    # --no-expand
+    # --env-no-expand
     run ch-run --set-env=test='$test:foo' --env-no-expand -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]

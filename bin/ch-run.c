@@ -46,6 +46,7 @@ const struct argp_option options[] = {
      "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
    { "cd",          'c', "DIR",  0, "initial working directory in container"},
    { "ch-ssh",       -8, 0,      0, "bind ch-ssh into image"},
+   { "env-no-expand",-10, 0,     0, "don't expand $ in --set-env input"},
    { "gid",         'g', "GID",  0, "run as GID within container" },
    { "join",        'j', 0,      0, "use same container as peer ch-run" },
    { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
@@ -55,7 +56,6 @@ const struct argp_option options[] = {
    { "no-passwd",    -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp", 't', 0,      0, "use container-private /tmp" },
    { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
-   { "env-no-expand",-10, 0,     0, "don't expand $ in --set-env input"},
    { "uid",         'u', "UID",  0, "run as UID within container" },
    { "unset-env",    -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
    args = (struct args){ .c = (struct container){ .ch_ssh = false,
                                                   .container_gid = getegid(),
                                                   .container_uid = geteuid(),
-                                                  .set_env_expand = true,
+                                                  .env_expand = true,
                                                   .newroot = NULL,
                                                   .join = false,
                                                   .join_ct = 0,
@@ -199,7 +199,8 @@ void env_expand(char* env_set[], int argv, bool expand)
       split(&name, &new_value, env_set[i], '=');
       Te (name != NULL, "--set-env: no delimiter: %s:%d", env_set[i], i+1);
       Te (strlen(name) != 0, "--set-env: empty name: %s:%d", env_set[i], i+1);
-      /* strip leading and trailing single quotes */
+
+      // strip leading and trailing single quotes
       if (   strlen(new_value) >= 2
           && (new_value)[0] == '\''
           && (new_value)[strlen(new_value) - 1] == '\'') {
@@ -269,7 +270,7 @@ void fix_environment(struct args *args)
          else {  
             env_set[env_setv] = arg;
             env_setv++;
-            env_expand(env_set, env_setv, args->c.set_env_expand);
+            env_expand(env_set, env_setv, args->c.env_expand);
             break;
          }
          for (int j = 1; true; j++) {
@@ -289,7 +290,7 @@ void fix_environment(struct args *args)
             env_set[env_setv] = line;
             env_setv++;
          }
-         env_expand(env_set, env_setv, args->c.set_env_expand);
+         env_expand(env_set, env_setv, args->c.env_expand);
          fclose(fp);
       } else {
          T_ (args->env_deltas[i].action == UNSET_GLOB);
@@ -421,8 +422,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    int i;
 
    switch (key) {
-   case -10: // --set-env-no-expand
-      args->c.set_env_expand = false;
+   case -10: // --env-no-expand
+      args->c.env_expand = false;
       break;
    case -2: // --private-home
       args->c.private_home = true;

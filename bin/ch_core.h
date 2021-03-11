@@ -23,6 +23,7 @@ struct container {
    bool ch_ssh;          // bind /usr/bin/ch-ssh?
    gid_t container_gid;  // GID to use in container
    uid_t container_uid;  // UID to use in container
+   bool env_expand;      // identifier to expands variable
    char *newroot;        // path to new root directory
    bool join;            // is this a synchronized join?
    int join_ct;          // number of peers in a synchronized join
@@ -32,7 +33,6 @@ struct container {
    bool private_passwd;  // don't bind custom /etc/{passwd,group}
    bool private_tmp;     // don't bind host's /tmp
    char *old_home;       // host path to user's home directory (i.e. $HOME)
-   bool set_env_expand;  // identifier to expands variable
    bool writable;
 };
 

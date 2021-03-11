@@ -21,6 +21,9 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`--ch-ssh`
     bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`
 
+  :code:`--env-no-expand`
+    don't expand variables when using :code:`--set-env`
+
   :code:`-g`, :code:`--gid=GID`
     run as group :code:`GID` within container
 
@@ -36,9 +39,6 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`--join-tag=TAG`
     label for :code:`ch-run` peer group (implies :code:`--join`; default: see
     below)
-
-  :code:`--set-env-no-expand`
-    don't expand variables when using :code:`--set-env`
 
   :code:`--no-home`
     do not bind-mount your home directory (by default, your home directory is
@@ -231,7 +231,7 @@ variable name and value; otherwise, it is a host path to a file with one
 variable name/value per line (guest paths can be specified by prepending the
 image path). Values given replace any already set (i.e., if a variable is
 repeated, the last value wins). Environment variables in the value are
-expanded unless :code:`--set-env-no-expand` is given, though see below for
+expanded unless :code:`--env-no-expand` is given, though see below for
 syntax differences from the shell.
 
 For example, to prepend :code:`/opt/bin` to the current shell's path (note
@@ -258,7 +258,7 @@ or value. The value may be empty, but not the key.
 
 The value is a sequence of possibly-empty items separated by colon (:code:`:`,
 ASCII 58). If an item begins with dollar sign (:code:`$`, ASCII 36), and
-:code:`--set-env-no-expand` is not given, then the rest of the item is
+:code:`--env-no-expand` is not given, then the rest of the item is
 interpreted as an environment variable. If the variable is set to a non-empty
 value, that value is substituted for the item; otherwise, the item is omitted.
 (Importantly, if no expansions happen, this paragraph is a no-op.)
