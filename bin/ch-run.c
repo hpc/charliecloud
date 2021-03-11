@@ -82,7 +82,8 @@ struct args {
 /** Function prototypes **/
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
-void env_expand(char* env_set[], int argv, bool expand);
+void env_expand(char* env_set[], int argv, bool expand, char* filename);
+void env_expand_error(char* name, char* filename, int line);
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
@@ -187,18 +188,18 @@ void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
    (*ds)[i].arg = arg;
 }
 
-/* Parses one line from --set-env. It gets parsed at each ':' and each value
-   is appended to the new environment variable.If there is a '$' and the
-   --set-env-no-expand is included, the value of that variable will be 
-   appended to the  */
-void env_expand(char* env_set[], int argv, bool expand)
+/* Parse each line from --set-env at ':'. Each value is appended to the new
+   environment variable. '$' indicated that the variable will get expanded
+   except if --env-no-expand option is included. */
+void env_expand(char* env_set[], int argv, bool expand, char* filename)
 {
    int i;
    char *name, *new_value;
    for(i = 0; i < argv; i++) {
+      if (strlen(env_set[i]) == 0 || env_set[i][0] == '\n')
+         continue; 
       split(&name, &new_value, env_set[i], '=');
-      Te (name != NULL, "--set-env: no delimiter: %s:%d", env_set[i], i+1);
-      Te (strlen(name) != 0, "--set-env: empty name: %s:%d", env_set[i], i+1);
+      env_expand_error(name, filename, i+1);
 
       // strip leading and trailing single quotes
       if (   strlen(new_value) >= 2
@@ -226,6 +227,18 @@ void env_expand(char* env_set[], int argv, bool expand)
       }
       INFO("environment: %s=%s", name, new_env);
       Z_ (setenv(name, new_env, 1));
+   }
+}
+
+/* Error checking for env_expand */
+void env_expand_error(char* name, char* filename, int line)
+{
+   if (filename !=NULL) {
+      Te (name != NULL, "--set-env: no delimiter: %s:%d", filename, line);
+      Te (strlen(name) != 0, "--set-env: empty name: %s:%d", filename, line);
+   }
+   else {
+      Te (strlen(name) != 0, "--set-env: empty name: %s", name);
    }
 }
 
@@ -270,7 +283,7 @@ void fix_environment(struct args *args)
          else {  
             env_set[env_setv] = arg;
             env_setv++;
-            env_expand(env_set, env_setv, args->c.env_expand);
+            env_expand(env_set, env_setv, args->c.env_expand, NULL);
             break;
          }
          for (int j = 1; true; j++) {
@@ -283,14 +296,12 @@ void fix_environment(struct args *args)
                else             // error
                   Tf (0, "--set-env: error reading: %s", arg);
             }
-            if (strlen(line) == 0 || line[0] == '\n')
-               continue;                    // skip empty line
             if (line[strlen(line) - 1] == '\n')
                line[strlen(line) - 1] = 0;  // remove newline
             env_set[env_setv] = line;
             env_setv++;
          }
-         env_expand(env_set, env_setv, args->c.env_expand);
+         env_expand(env_set, env_setv, args->c.env_expand, arg);
          fclose(fp);
       } else {
          T_ (args->env_deltas[i].action == UNSET_GLOB);
