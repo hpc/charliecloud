@@ -68,6 +68,7 @@ jobs:
           getconf _NPROCESSORS_ONLN
           free -m
           df -h
+          locale -a
 
       - name: lines of code
         if: ${{ matrix.builder == 'none' }}
@@ -89,21 +90,24 @@ jobs:
           [[ $(command -v bats) == /usr/local/bin/bats ]]
           [[ $(bats --version) == 'Bats 0.4.0' ]]
 
-      - name: install/configure dependencies, all
-        run: |
-          # configure doesn't tell us about these.
-          sudo apt-get install pigz pv
-          # configure does tell us about these.
-          sudo apt-get install squashfs-tools squashfuse
-          # Track newest Sphinx in case it breaks things.
-          sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
-
       - name: install/configure dependencies, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
-          # Use most current Lark rather than the one in Ubuntu b/c new
-          # versions sometimes break things.
-          sudo su -c 'umask 0022 && pip3 install lark-parser'
+          # Install the minimum Python version we support (issue #959). Python
+          # is pretty quick to build, so this only takes a couple of minutes.
+          cd /usr/local/src
+          wget -nv https://www.python.org/ftp/python/3.6.12/Python-3.6.12.tar.xz
+          tar xf Python-3.6.12.tar.xz
+          cd Python-3.6.12
+          ./configure --prefix=/usr/local
+          make $ch_makej
+          sudo sh -c 'umask 0022 && make install'
+          command -v pip3
+          command -v python3
+          [[ $(command -v pip3) == /usr/local/bin/pip3 ]]
+          [[ $(command -v python3) == /usr/local/bin/python3 ]]
+          # Use most current packages b/c new versions sometimes break things.
+          sudo sh -c 'umask 0022 && pip3 install lark-parser requests'
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -127,6 +131,15 @@ jobs:
           sudo usermod --add-subuids 10000-65536 $USER
           sudo usermod --add-subgids 10000-65536 $USER
 
+      - name: install/configure dependencies, all
+        run: |
+          # configure doesn't tell us about these.
+          sudo apt-get install pigz pv
+          # configure does tell us about these.
+          sudo apt-get install squashfs-tools squashfuse
+          # Track newest Sphinx in case it breaks things.
+          sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
+
       - name: build/install from Git
         run: |
           ./autogen.sh
@@ -149,7 +162,12 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
 
-      - name: late setup & validation
+      - name: late setup & validation, ch-image
+        if: ${{ matrix.builder == 'ch-image' }}
+        run: |
+          [[ $(bin/ch-image python-path) = /usr/local/bin/python3 ]]
+
+      - name: late setup & validation, all
         run: |
           bin/ch-test --is-pedantic all
           bin/ch-test --is-sudo all
