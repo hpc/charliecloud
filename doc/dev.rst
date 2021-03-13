@@ -71,11 +71,13 @@ should not be assigned to a person.
 Peer review
 -----------
 
-**Issues and pull requests.** The standard workflow is to introduce a
-change in an issue, get consensus on what to do, and then create a `pull
+**Issues and pull requests.** The standard workflow is to introduce a change
+in an issue, get consensus on what to do, and then create a *draft* `pull
 request <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_
-(PR) for the implementation. The issue, not the PR, should be tagged and
-milestoned so a given change shows up only once in the various views.
+(PR) for the implementation.
+
+The issue, not the PR, should be tagged and milestoned so a given change shows
+up only once in the various views.
 
 If consensus is obtained through other means (e.g., in-person discussion),
 then open a PR directly. In this case, the PR should be tagged and milestoned,
@@ -105,22 +107,24 @@ deal with that. We also want this information in only one place (the commit
 log). Instead, use "addresses", and we'll edit the keywords into the commit
 message(s) at merge time if needed.
 
-**PR review procedure.** When your PR is ready for review — which may or may
-not be when you want it considered for merging — do one or both of:
+**PR review procedure.** When your draft PR is ready for review — which may or
+may not be when you want it considered for merging! — do one or both of:
 
 * Request review from the person(s) you want to look at it. If you think it
   may be ready for merge, that should include the project lead. The purpose of
-  requsting review is so the person is notified you need their help.
+  requesting review is so the person is notified you need their help.
 
 * If you think it may be ready to merge (even if you're not sure), then also
-  tag the PR :code:`ready to merge`. The purpose of this is so the project
-  lead can see which PRs are ready to consider for merging. If the project
-  lead decides it's ready, they will merge; otherwise, they'll untag.
+  mark the PR "ready to review". The purpose of this is so the project lead
+  can see which PRs are ready to consider for merging (green icon) and which
+  are not (gray icon). If the project lead decides it's ready, they will
+  merge; otherwise, they'll change it back to draft.
 
 In both cases, the person from whom you requested review now owns the branch,
 and you should stop work on it unless and until you get it back.
 
-Do not hesitate to pester your reviewer if you haven't heard back promptly.
+Do not hesitate to pester your reviewer if you haven't heard back promptly,
+say within 24 hours.
 
 *Special case 1:* Often, the review consists of code changes, and the reviewer
 will want you to assess those changes. GitHub doesn't let you request review
@@ -279,12 +283,6 @@ For all of these, leave other tags in place, e.g. :code:`bug`.
   Not a Charliecloud issue; close. *Use caution when blaming a problem on user
   error. Often (or usually) there is a documentation or usability bug that
   caused the "user error".*
-
-:code:`ready to merge`
-  PRs only. Adding this tag speculates that the PR is complete and requests it
-  be considered for merging to master. If the project lead requests changes,
-  they'll remove the tag. Re-add it when you're ready to try again. Lead
-  removes tag after merging.
 
 :code:`wontfix`
   We are not going to do this, and we won't merge PRs. Close issue after
