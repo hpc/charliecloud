@@ -33,15 +33,14 @@ dist_bin_SCRIPTS = ch-build \
 
 ## Python scripts - need text processing
 
-bin_SCRIPTS = ch-run-oci          # scripts to build
-EXTRA_SCRIPTS = ch-image ch-grow  # more scripts that *may* be built
+bin_SCRIPTS = ch-run-oci  # scripts to build
+EXTRA_SCRIPTS = ch-image  # more scripts that *may* be built
 if ENABLE_CH_IMAGE
-bin_SCRIPTS += ch-image ch-grow
+bin_SCRIPTS += ch-image
 endif
-EXTRA_DIST = ch-grow.py.in ch-image.py.in ch-run-oci.py.in
+EXTRA_DIST = ch-image.py.in ch-run-oci.py.in
 CLEANFILES = $(bin_SCRIPTS) $(EXTRA_SCRIPTS)
 
-ch-grow: ch-grow.py.in
 ch-image: ch-image.py.in
 ch-run-oci: ch-run-oci.py.in
 
