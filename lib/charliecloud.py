@@ -977,11 +977,19 @@ class Registry_HTTP:
    def blob_exists_p(self, digest):
       """Return true if a blob with digest (hex string) exists in the
          remote repository, false otherwise."""
+      # Gotchas:
+      #
+      # 1. HTTP 401 means both unauthorized *or* not found, I assume to avoid
+      #    information leakage about the presence of stuff one isn't allowed
+      #    to see. By the time it gets here, we should be authenticated, so
+      #    interpret it as not found.
+      #
+      # 2. Sometimes we get 301 Moved Permanently. It doesn't bubble up to
+      #    here because requests.request() follows redirects. However,
+      #    requests.head() does not follow redirects, and it seems like a
+      #    weird status, so I worry there is a gotcha I haven't figured out.
       url = self._url_of("blobs", "sha256:%s" % digest)
-      # FIXME: Sometimes we get 301 Moved Permanently. requests.head() doesn't
-      # follow redirects (but requests.request("HEAD", ...) does), and I
-      # wasn't able to figure out why. So possibly there is some gotcha here.
-      res = self.request("HEAD", url, {200,404})
+      res = self.request("HEAD", url, {200,401,404})
       return (res.status_code == 200)
 
    def blob_to_file(self, digest, path):
@@ -1065,7 +1073,6 @@ class Registry_HTTP:
          Use current session if there is one, or start a new one if not. If
          authentication fails (or isn't initialized), then authenticate and
          re-try the request."""
-      VERBOSE("%s: %s" % (method, url))
       self.session_init_maybe()
       VERBOSE("auth: %s" % self.auth)
       res = self.request_raw(method, url, statuses | {401}, **kwargs)
@@ -1090,7 +1097,7 @@ class Registry_HTTP:
          Session must already exist. If auth arg given, use it; otherwise, use
          object's stored authentication if initialized; otherwise, use no
          authentication."""
-      DEBUG("%s: %s" % (method, url))
+      VERBOSE("%s: %s" % (method, url))
       if (auth is None):
          auth = self.auth
       try:
@@ -1155,16 +1162,13 @@ class Storage:
 
    @staticmethod
    def root_env():
+      if ("CH_GROW_STORAGE" in os.environ):
+         # Avoid surprises if user still has $CH_GROW_STORAGE set (see #906).
+         FATAL("$CH_GROW_STORAGE no longer supported; use $CH_IMAGE_STORAGE")
       try:
          return os.environ["CH_IMAGE_STORAGE"]
       except KeyError:
-         try:
-            p = os.environ["CH_GROW_STORAGE"]
-            WARNING("$CH_GROW_STORAGE is deprecated in favor of $CH_IMAGE_STORAGE")
-            WARNING("the old name will be removed in Charliecloud version 0.23")
-            return p
-         except KeyError:
-            return None
+         return None
 
    def manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
