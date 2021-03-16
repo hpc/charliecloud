@@ -65,18 +65,23 @@ EOF
 
 @test 'ch-image reset' {
    export CH_IMAGE_STORAGE="$BATS_TMPDIR"/reset
-   run ch-image pull alpine
+   ch-image pull alpine
    run ls "$CH_IMAGE_STORAGE"
    echo "$output"
    [[ $status -eq 0 ]]
    [[ $output = *"dlcache"* ]]
    [[ $output = *"img"* ]]   
 
-   run ch-image reset
-   ls "$BATS_TMPDIR"
+   ch-image reset
+   run ls "$BATS_TMPDIR"
    echo "$output"
    [[ $status -eq 0 ]]
    [[ $output != *"reset"* ]]
+
+   run ls "$CH_IMAGE_STORAGE"
+   echo "$output"
+   [[ $status -eq 2 ]]
+   [[ $output = *"'$CH_IMAGE_STORAGE': No such file or directory"* ]]
 
    run ch-image reset
    echo "$output"

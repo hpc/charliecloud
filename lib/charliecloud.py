@@ -1170,12 +1170,15 @@ class Storage:
       except KeyError:
          return None
 
+   def builder_storage_p(self):
+      return (os.path.isdir(self.unpack_base) and 
+              os.path.isdir(self.download_cache))
+
    def manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
    def reset(self):
-      if (os.path.isdir(self.unpack_base) and 
-          os.path.isdir(self.download_cache)):
+      if (self.builder_storage_p()):
          rmtree(self.root)
       else:
          FATAL("%s not a builder storage" % (self.root));
