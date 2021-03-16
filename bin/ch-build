@@ -49,7 +49,7 @@ if [ -n "$builder_info" ]; then
         buildah*)
             buildah --version
             ;;
-        ch-image|ch-grow)
+        ch-image)
             "${ch_bin}/ch-image" --version
             ;;
         docker)
@@ -124,7 +124,7 @@ case $CH_BUILDER in
                     "$@"
         fi
         ;;
-    ch-image|ch-grow)
+    ch-image)
         "${ch_bin}/ch-image" build "$@"
         ;;
     docker)
