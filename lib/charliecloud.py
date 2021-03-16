@@ -151,7 +151,7 @@ WORD: /[^ \t\n=]/+
 
 _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 
-_NEWLINES: _WS? "\n"+
+_NEWLINES: (_WS | "\n")+
 _WS: /[ \t]|\\\n/+
 _LINE_CONTINUE: "\\\n"
 
