@@ -54,18 +54,6 @@ rm -rf Makefile \
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
     autoreconf --force --install -Wall -Werror
-    if [[ $(command -v  python3) ]]; then
-        rm -rf --one-file-system lib/lark*
-	rm -rf --one-file-system lib/requests-2.25.0
-	tar xf lib/0.11.2.tar.gz -C lib/
-	tar xf lib/v2.25.1.tar.gz -C lib/
-        cd lib/lark-0.11.2/
-        python3 setup.py build
-        cp -r build/lib/* ../
-	cd ../requests-2.25.1
-	python3 setup.py build
-	cp -r build/lib/* ../
-    fi
     set +x
     echo
     echo 'Done. Now you can "./configure".'
