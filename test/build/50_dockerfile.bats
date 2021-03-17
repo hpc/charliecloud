@@ -160,15 +160,6 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
 
-    # COPY list form
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
-FROM 00_tiny
-COPY ["fixtures/empty-file", "."]
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #784: COPY list form'* ]]
-
     # FROM --platform
     run ch-image build -t not-yet-supported -f - . <<'EOF'
 FROM --platform=foo 00_tiny
@@ -629,6 +620,20 @@ EOF
     fi
 }
 
+@test 'Dockerfile: COPY list form' {
+    scope standard
+    [[ $CH_BUILDER = none ]] && skip 'no builder'
+    [[ $CH_BUILDER = buildah* ]] && skil 'Buildah untested'
+
+    run ch-image build -t not-yet-supported -f - . <<'EOF'
+FROM 00_tiny
+COPY ["fixtures/empty-file", "."]
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
+    [[ $output = *'grown in 2 instructions: not-yet-supported'* ]]
+}
 
 @test 'Dockerfile: COPY errors' {
     scope standard
@@ -868,3 +873,4 @@ EOF
             ;;
     esac
 }
+

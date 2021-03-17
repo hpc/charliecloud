@@ -360,7 +360,12 @@ class I_copy(Instruction):
          self.dst = paths[-1]
       else:
          assert (ch.tree_child(self.tree, "copy_list") is not None)
-         self.unsupported_yet_fatal("list form", 784)
+         paths = [variables_sub(i, env.env_build)
+                  for i in ch.tree_child_terminals(self.tree, "copy_list",
+                                                   "STRING_QUOTED")]
+         self.srcs = [paths[:-1][0][1:-1]]
+         self.dst = paths[-1][1:-1]
+
 
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
