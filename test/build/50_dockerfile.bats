@@ -30,6 +30,12 @@ EOF
 FROM 00_tiny
 EOF
 
+    # Whitespace on newline
+    run ch-image build -t syntax-quirks -f - . <<'EOF'
+FROM 00_tiny
+  
+EOF
+
     # Whitespace around comment hash.
     run ch-image -v build -t syntax-quirks -f - . <<'EOF'
 FROM 00_tiny
@@ -40,9 +46,21 @@ FROM 00_tiny
   # multiple before
 	# tab before
 EOF
+
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $(echo "$output" | grep -Fc 'comment') -eq 6 ]]
+
+
+    # Whitespace after continuation backslash
+    run ch-image build -t syntax-quirks -f - . <<'EOF'
+FROM 00_tiny
+RUN echo "foo"\ 
+"bar"
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"not found"* ]]
 }
 
 

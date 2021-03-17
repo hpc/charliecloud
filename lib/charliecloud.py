@@ -153,7 +153,7 @@ _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 
 _NEWLINES: _WS? "\n" ( "\n" | _WS )*
 _WS: /[ \t]|\\\n/+
-_LINE_CONTINUE: "\\\n"
+_LINE_CONTINUE: "\\" _WS* "\n"
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
