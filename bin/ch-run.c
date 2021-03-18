@@ -213,7 +213,7 @@ void env_expand(char* env_set[], int argv, bool expand, char* filename)
       char *new_env = "";
       token = strtok(new_value, ":");
       while( token != NULL ) {
-         if (strcmp(new_env,""))
+         if (strcmp(new_env,"") && strcmp(token, "$")) 
             new_env=cat(new_env,":");
          if (token[0] == '$' && expand) {
             token ++;

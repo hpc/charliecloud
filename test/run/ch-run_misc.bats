@@ -355,6 +355,7 @@ chse_d3=bar:$FOO:baz
 chse_d4=bar:$FOO:$FOO:baz
 chse_d5=$FOO
 chse_d6=:$FOO
+chse_d7=bar:$
 EOF
     cat "$f_in"
     output_expected=$(cat <<'EOF'
@@ -376,6 +377,7 @@ EOF
 ('chse_d4', 'bar:foo:foo:baz')
 ('chse_d5', 'foo')
 ('chse_d6', 'foo')
+('chse_d7', 'bar')
 EOF
 )
     run ch-run --set-env="$f_in" "$ch_timg" -- python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'
@@ -432,7 +434,7 @@ EOF
 }
 
 # shellcheck disable=SC2016
-@test 'ch-run -- set-env command line' {
+@test 'ch-run --set-env command line' {
     scope standard
     export test=foo
 
