@@ -590,7 +590,7 @@ class I_env_space(Env):
    def __init__(self, *args):
       super().__init__(*args)
       self.key = ch.tree_terminal(self.tree, "WORD")
-      value = ch.tree_terminal(self.tree, "LINE")
+      value = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
       if (not value.startswith('"')):
          value = '"' + value + '"'
       self.value = unescape(value)
@@ -651,8 +651,8 @@ class I_from_(Instruction):
                                         cli.force, cli.no_force_detect)
 
    def str_(self):
-      alias = "AS %s" % self.alias if self.alias else ""
-      return "%s %s" % (self.base_ref, alias)
+      alias = " AS %s" % self.alias if self.alias else ""
+      return "%s%s" % (self.base_ref, alias)
 
 
 class Run(Instruction):
@@ -690,19 +690,22 @@ class I_run_exec(Run):
 
 class I_run_shell(Run):
 
+   # Note re. line continuations and whitespace: Whitespace before the
+   # backslash is passed verbatim to the shell, while the newline and any
+   # whitespace between the newline and baskslash are deleted.
+
    def __init__(self, *args):
       super().__init__(*args)
-      # FIXME: Can't figure out how to remove continuations at parse time.
-      cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
+      cmd = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
       self.cmd = env.shell + [cmd]
 
 class I_shell(Instruction):
- 
+
    def __init__(self, *args):
       super().__init__(*args)
       self.shell = [variables_sub(unescape(i), env.env_build)
                     for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
-  
+
    def str_(self):
       return str(self.shell)
 
@@ -713,7 +716,7 @@ class I_workdir(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.path = variables_sub(ch.tree_terminal(self.tree, "LINE"),
+      self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
                                 env.env_build)
 
    def str_(self):

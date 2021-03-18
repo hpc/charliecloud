@@ -1,5 +1,6 @@
 load ../common
 
+
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
     # it, so re-use the same one.
@@ -30,12 +31,6 @@ EOF
 FROM 00_tiny
 EOF
 
-    # Whitespace on newline
-    run ch-image build -t syntax-quirks -f - . <<'EOF'
-FROM 00_tiny
-  
-EOF
-
     # Whitespace around comment hash.
     run ch-image -v build -t syntax-quirks -f - . <<'EOF'
 FROM 00_tiny
@@ -51,16 +46,114 @@ EOF
     [[ $status -eq 0 ]]
     [[ $(echo "$output" | grep -Fc 'comment') -eq 6 ]]
 
-
-    # Whitespace after continuation backslash
+    # Whitespace and newlines (turn on whitespace highlighting in your editor):
     run ch-image build -t syntax-quirks -f - . <<'EOF'
 FROM 00_tiny
-RUN echo "foo"\ 
-"bar"
+
+# trailing whitespace: shell sees it verbatim
+RUN true 
+
+# whitespace-only line: ignored
+ 
+# two in a row
+ 
+ 
+
+# line continuation, no whitespace: shell sees one word
+RUN echo test1\
+a
+# two in a row
+RUN echo test1\
+b\
+c
+
+# whitespace before line continuation: shell sees whitespace verbatim
+RUN echo test2  \
+a
+# two in a row
+RUN echo test2  \
+b  \
+c
+
+# whitespace after line continuation: shell sees one word
+RUN echo test3\  
+a
+# two in a row
+RUN echo test3\  
+b\  
+c
+
+# whitespace before & after line continuation: shell sees before only
+RUN echo test4   \  
+a
+# two in a row
+RUN echo test4   \  
+b   \  
+c
+
+# whitespace on continued line: shell sees continued line's whitespace
+RUN echo test5\
+  a
+# two in a row
+RUN echo test5\
+  b\
+  c
+
+# whitespace-only continued line: shell sees whitespace verbatim
+RUN echo test6\
+  \
+a
+# two in a row
+RUN echo test6\
+  \
+  \
+b
+
+# backslash that is not a continuation: shell sees it verbatim
+RUN echo test\ 7\
+a
+# two in a row
+RUN echo test\ 7\ \
+b
 EOF
     echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"not found"* ]]
+    [[ $status -eq 0 ]]
+    output_expected=$(cat <<'EOF'
+warning: not yet supported, ignored: issue #777: .dockerignore file
+  1 FROM 00_tiny
+  4 RUN ['/bin/sh', '-c', 'true ']
+ 13 RUN ['/bin/sh', '-c', 'echo test1a']
+test1a
+ 16 RUN ['/bin/sh', '-c', 'echo test1bc']
+test1bc
+ 21 RUN ['/bin/sh', '-c', 'echo test2  a']
+test2 a
+ 24 RUN ['/bin/sh', '-c', 'echo test2  b  c']
+test2 b c
+ 29 RUN ['/bin/sh', '-c', 'echo test3a']
+test3a
+ 32 RUN ['/bin/sh', '-c', 'echo test3bc']
+test3bc
+ 37 RUN ['/bin/sh', '-c', 'echo test4   a']
+test4 a
+ 40 RUN ['/bin/sh', '-c', 'echo test4   b   c']
+test4 b c
+ 45 RUN ['/bin/sh', '-c', 'echo test5  a']
+test5 a
+ 48 RUN ['/bin/sh', '-c', 'echo test5  b  c']
+test5 b c
+ 53 RUN ['/bin/sh', '-c', 'echo test6  a']
+test6 a
+ 57 RUN ['/bin/sh', '-c', 'echo test6    b']
+test6 b
+ 63 RUN ['/bin/sh', '-c', 'echo test\\ 7a']
+test 7a
+ 66 RUN ['/bin/sh', '-c', 'echo test\\ 7\\ b']
+test 7 b
+grown in 16 instructions: syntax-quirks
+EOF
+)
+    diff -u <(echo "$output_expected") <(echo "$output")
 }
 
 
