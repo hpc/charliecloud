@@ -37,6 +37,12 @@ try:
    # provide a "lark" module.
    import lark   # ImportError if no such module
    lark.Visitor # AttributeError if wrong module
+   lark_path = os.path.abspath(lark.__file__)
+   desired_path = os.path.dirname(os.path.abspath(__file__)) + "/python_modules/lark/__init__.py"
+   if lark_path != desired_path:
+       print(lark_path)
+       print(desired_path)
+       sys.exit("Lark found was not embedded")
 except (ImportError, AttributeError) as x:
    if (isinstance(x, ImportError)):
       depfails.append(("missing", 'Python module "lark-parser"'))
@@ -52,6 +58,10 @@ try:
    import requests
    import requests.auth
    import requests.exceptions
+   requests_path = os.path.abspath(requests.__file__)
+   desired_path = os.path.dirname(os.path.abspath(__file__)) + "/python_modules/requests/__init__.py"
+   if requests_path != desired_path:
+       sys.exit("Requests found was not embedded")
 except ImportError:
    depfails.append(("missing", 'Python module "requests"'))
    # Mock up a requests.auth module so the rest of the file parses.
@@ -60,8 +70,6 @@ except ImportError:
    requests.auth.AuthBase = object
 
 
-print(os.path.abspath(requests.__file__))
-print(os.path.abspath(lark.__file__))
 
 ## Globals ##
 
