@@ -144,8 +144,8 @@ jobs:
 
       - name: late setup & validation
         run: |
-          bin/ch-test --is-pedantic all
-          bin/ch-test --is-sudo all
+          bin/ch-test -b ${{ matrix.builder }} --is-pedantic all
+          bin/ch-test -b ${{ matrix.builder }} --is-sudo all
 
       - name: make filesystem permissions fixtures
         run: |
@@ -219,21 +219,21 @@ jobs:
       - name: run test suite (Git WD, quick, squash)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
-          bin/ch-test --scope=quick --pack-fmt=squash all
+          bin/ch-test -b ${{ matrix.builder }} --scope=quick --pack-fmt=squash all
 
       - name: run test suite (Git WD, standard, squash)
         run: |
-          bin/ch-test --pack-fmt=squash all
+          bin/ch-test -b ${{ matrix.builder }} --pack-fmt=squash all
 
       - name: run test suite (installed from Git WD, standard, squash)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
-          $ch_prefix/from-git/bin/ch-test --pack-fmt=squash all
+          $ch_prefix/from-git/bin/ch-test -b ${{ matrix.builder }} --pack-fmt=squash all
 
       - name: run test suite (installed from tarball, standard, squash)
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
-          $ch_prefix/from-tarball/bin/ch-test --pack-fmt=squash all
+          $ch_prefix/from-tarball/bin/ch-test -b ${{ matrix.builder }} --pack-fmt=squash all
 
       - name: rebuild with most things --disable’d
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
@@ -244,9 +244,7 @@ jobs:
           set -x
           fgrep 'HTML documentation ... no' config.log
           fgrep 'man pages ... no' config.log
-          fgrep 'ch-image(1) ... no' config.log
           fgrep 'with Docker: yes' config.log
-          fgrep 'with ch-image(1): no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: no' config.log
@@ -258,7 +256,7 @@ jobs:
       - name: run test suite (Git WD, standard, squash)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
-          bin/ch-test --pack-fmt=squash all
+          bin/ch-test -b ${{ matrix.builder }} --pack-fmt=squash all
 
       - name: remove non-essential dependencies
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
@@ -275,7 +273,7 @@ jobs:
           ! python3 -c 'import requests'
           ! python3 -c 'import lark'
           test -e bin/ch-image
-          bin/ch-test -f test/build/10_sanity.bats  # issue #806
+          bin/ch-test -b ${{ matrix.builder }} -f test/build/10_sanity.bats  # issue #806
 
       - name: rebuild
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
@@ -285,7 +283,6 @@ jobs:
           set -x
           fgrep 'documentation: no' config.log
           fgrep 'with Docker: yes' config.log
-          fgrep 'with ch-image(1): no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'recommended tests with tarballs: yes' config.log
@@ -298,7 +295,7 @@ jobs:
       - name: run test suite (Git WD, standard, tarballs)
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
-          bin/ch-test --pack-fmt=tar all
+          bin/ch-test -b ${{ matrix.builder }} --pack-fmt=tar all
 
       - name: print ending environment
         if: ${{ always() }}
