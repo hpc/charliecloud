@@ -22,6 +22,9 @@ import types
 
 ## Imports not in standard library ##
 
+sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
+                    + "/python_modules"))
+
 # These are messy because we need --version and --help even if a dependency is
 # missing. Among other things, nothing can depend on non-standard modules at
 # parse time.
@@ -56,6 +59,9 @@ except ImportError:
    requests.auth = types.ModuleType("requests.auth")
    requests.auth.AuthBase = object
 
+
+print(os.path.abspath(requests.__file__))
+print(os.path.abspath(lark.__file__))
 
 ## Globals ##
 
