@@ -45,5 +45,8 @@ def list_(cli):
    for img in sorted(imgs):
       print(ch.Image_Ref(img))
 
+def python_path(cli):
+   print(sys.executable)
+
 def storage_path(cli):
    print(ch.storage.root)
