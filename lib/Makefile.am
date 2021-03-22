@@ -12,7 +12,6 @@ dist_mylib_DATA = base.sh \
                   misc.py \
                   pull.py \
                   push.py \
-<<<<<<< HEAD
                   python_modules/lark-stubs \
                   python_modules/lark-stubs/lexer.pyi \
                   python_modules/lark-stubs/tree.pyi \
@@ -110,10 +109,7 @@ dist_mylib_DATA = base.sh \
                   python_modules/lark/parsers/earley.py \
                   python_modules/lark/parsers/lalr_parser.py \
                   python_modules/lark/indenter.py
-=======
 		  python_modules
-
->>>>>>> e0b19ebc2095927054856a57224a45b2681892f9
 noinst_DATA = charliecloud
 mylib_DATA = contributors.bash \
              version.py \
