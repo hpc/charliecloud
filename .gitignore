@@ -23,8 +23,7 @@ a.out
 /doc/man/*.[17]
 /lib/charliecloud
 /lib/contributors.bash
-/lib/lark*
-/lib/requests*
+/lib/python_modules/*
 /lib/version.py
 /lib/version.sh
 /lib/version.txt

@@ -330,24 +330,24 @@ AS_CASE([$python],
 CH_CHECK_VERSION([PYTHON], [$vmin_python],
                  [--version | head -1 | cut -d' ' -f2])
 
-# # Python module "requests"
-# vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
-# AS_IF([test -n "$PYTHON"], [
-#   AC_MSG_CHECKING([for requests module])
-#   cat <<EOF | $PYTHON_SHEBANG
-# import sys
-# try:
-#    import requests
-# except Exception:
-#    sys.exit(1)
-# EOF
-#   AS_IF([test $? -eq 0],
-#     [REQUESTS=$PYTHON; have_requests=yes],
-#     [REQUESTS=;         have_requests=no])
-#   AC_MSG_RESULT($have_requests)
-#   CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
-#     [-c 'import requests; print(requests.__version__)'])
-# ])
+# Python module "requests"
+vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
+AS_IF([test -n "$PYTHON"], [
+  AC_MSG_CHECKING([for requests module])
+  cat <<EOF | $PYTHON_SHEBANG
+import sys
+try:
+   import requests
+except Exception:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [REQUESTS=$PYTHON; have_requests=yes],
+    [REQUESTS=;         have_requests=no])
+  AC_MSG_RESULT($have_requests)
+  CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
+    [-c 'import requests; print(requests.__version__)'])
+])
 
 # ShellCheck
 vmin_shellcheck=0.6.0

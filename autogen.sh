@@ -54,6 +54,12 @@ rm -rf Makefile \
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
     autoreconf --force --install -Wall -Werror
+    if [[ $(command -v  python3) ]]; then
+	if [[ $(command -v pip3) ]]; then
+	    rm -rf --one-file-system lib/python_modules/lark*
+	    pip3 install -t lib/python_modules lark-parser==0.11.2
+	fi
+    fi
     set +x
     echo
     echo 'Done. Now you can "./configure".'
