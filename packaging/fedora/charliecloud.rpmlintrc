@@ -26,7 +26,7 @@ addFilter(r'doc-file-dependency')
 # The only files under /usr/lib are those placed there by rpmbuild.
 addFilter(r'only-non-binary-in-usr-lib')
 
-# False positive converncin pycache files
+# Ignore a false positive warning concerning pycache files and byte code.
 # https://bugzilla.redhat.com/show_bug.cgi?id=1286382
 addFilter(r'python-bytecode-without-source')
 
