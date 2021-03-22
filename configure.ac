@@ -348,7 +348,6 @@ EOF
   CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
     [-c 'import requests; print(requests.__version__)'])
 ])
-
 # ShellCheck
 vmin_shellcheck=0.6.0
 AC_CHECK_PROG([SHELLCHECK], [shellcheck], [shellcheck])
@@ -452,6 +451,7 @@ AS_IF([   test -n "$BUILDAH"],
 AS_IF([   test $enable_ch_image = yes \
        && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
+       && test -n "$REQUESTS" \
        && test $have_ch_run = yes],
       [have_ch_image=yes],
       [have_ch_image=no])
@@ -599,6 +599,7 @@ Building images via our wrappers
     enabled ... ${enable_ch_image}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
+    "requests" module ≥ $vmin_requests ... ${REQUESTS_VERSION_NOTE}
     ch-run(1) ... ${have_ch_run}
 
   with Docker: ${have_docker}
