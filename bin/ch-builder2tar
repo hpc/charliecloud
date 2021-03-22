@@ -130,7 +130,7 @@ EOF
 
     ;;
 
-ch-image|ch-grow)
+ch-image)
 
     echo "exporting"
     storage=$("${ch_bin}/ch-image" storage-path)/img/$(tag_to_path "$image")

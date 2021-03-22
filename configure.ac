@@ -41,7 +41,7 @@ AS_CASE([$host_os],
 # [3]: https://lists.gnu.org/archive/html/automake/2004-01/msg00013.html
 MKDIR_P=${MKDIR_P:-install -d -m 0755}
 
-AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
+AM_INIT_AUTOMAKE([1.13 -Wall -Werror tar-ustar foreign subdir-objects])
 
 AC_CONFIG_HEADERS([bin/config.h])
 AC_CONFIG_FILES([Makefile
@@ -315,7 +315,7 @@ AS_IF([test -n "$NVIDIA_CLI"],
 AC_MSG_RESULT($have_nvidia_libs)
 
 # Python
-vmin_python=3.4
+vmin_python=3.6
 AC_MSG_CHECKING([if "$PYTHON_SHEBANG" starts with slash])
 AS_CASE([$PYTHON_SHEBANG],
   [/*], [AC_MSG_RESULT([ok])],
@@ -330,25 +330,24 @@ AS_CASE([$python],
 CH_CHECK_VERSION([PYTHON], [$vmin_python],
                  [--version | head -1 | cut -d' ' -f2])
 
-# # Python module "requests"
-# vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
-# AS_IF([test -n "$PYTHON"], [
-#   AC_MSG_CHECKING([for requests module])
-#   cat <<EOF | $PYTHON_SHEBANG
-# import sys
-# try:
-#    import requests
-# except Exception:
-#    sys.exit(1)
-# EOF
-#   AS_IF([test $? -eq 0],
-#     [REQUESTS=$PYTHON; have_requests=yes],
-#     [REQUESTS=;         have_requests=no])
-#   AC_MSG_RESULT($have_requests)
-#   CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
-#     [-c 'import requests; print(requests.__version__)'])
-# ])
-
+# Python module "requests"
+vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
+AS_IF([test -n "$PYTHON"], [
+  AC_MSG_CHECKING([for requests module])
+  cat <<EOF | $PYTHON_SHEBANG
+import sys
+try:
+   import requests
+except Exception:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [REQUESTS=$PYTHON; have_requests=yes],
+    [REQUESTS=;         have_requests=no])
+  AC_MSG_RESULT($have_requests)
+  CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
+    [-c 'import requests; print(requests.__version__)'])
+])
 # ShellCheck
 vmin_shellcheck=0.6.0
 AC_CHECK_PROG([SHELLCHECK], [shellcheck], [shellcheck])
@@ -452,6 +451,7 @@ AS_IF([   test -n "$BUILDAH"],
 AS_IF([   test $enable_ch_image = yes \
        && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
+       && test -n "$REQUESTS" \
        && test $have_ch_run = yes],
       [have_ch_image=yes],
       [have_ch_image=no])
@@ -599,6 +599,7 @@ Building images via our wrappers
     enabled ... ${enable_ch_image}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
+    "requests" module ≥ $vmin_requests ... ${REQUESTS_VERSION_NOTE}
     ch-run(1) ... ${have_ch_run}
 
   with Docker: ${have_docker}

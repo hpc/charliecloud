@@ -35,8 +35,6 @@ ch-dir2squash_desc.rst \
 ch-dir2squash.rst \
 ch-fromhost_desc.rst \
 ch-fromhost.rst \
-ch-grow_desc.rst \
-ch-grow.rst \
 ch-image_desc.rst \
 ch-image.rst \
 ch-mount_desc.rst \
@@ -82,7 +80,6 @@ man/ch-builder2tar.1 \
 man/ch-checkns.1 \
 man/ch-dir2squash.1 \
 man/ch-fromhost.1 \
-man/ch-grow.1 \
 man/ch-image.1 \
 man/ch-mount.1 \
 man/ch-pull2dir.1 \

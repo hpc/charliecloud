@@ -59,6 +59,7 @@ SPARK_LOG_DIR=/tmp/spark/log
 SPARK_WORKER_DIR=/tmp/spark
 SPARK_LOCAL_IP=127.0.0.1
 SPARK_MASTER_HOST=${master_ip}
+JAVA_HOME=/usr/lib/jvm/default-java/
 EOF
 mysecret=$(cat /dev/urandom | tr -dc '0-9a-f' | head -c 48)
 cat <<EOF > "${conf}/spark-defaults.sh"
