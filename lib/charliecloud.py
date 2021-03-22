@@ -58,10 +58,6 @@ try:
    import requests
    import requests.auth
    import requests.exceptions
-   requests_path = os.path.abspath(requests.__file__)
-   desired_path = os.path.dirname(os.path.abspath(__file__)) + "/python_modules/requests/__init__.py"
-   if requests_path != desired_path:
-       sys.exit("Requests found was not embedded")
 except ImportError:
    depfails.append(("missing", 'Python module "requests"'))
    # Mock up a requests.auth module so the rest of the file parses.
