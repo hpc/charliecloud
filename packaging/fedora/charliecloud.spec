@@ -16,11 +16,13 @@ Summary:       Lightweight user-defined software stacks for high-performance com
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires: gcc rsync /usr/bin/python3
+BuildRequires: gcc rsync python3-devel
+BuildRequires: python%{python3_pkgversion}-lark-parser
+BuildRequires: python%{python3_pkgversion}-requests
+Requires:      python%{python3_pkgversion}-lark-parser
+Requires:      python%{python3_pkgversion}-requests
 Patch0:        lib64.patch
-%if 0%{?el7}
 Patch1:        el7-pkgdir.patch
-%endif
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -38,13 +40,8 @@ Summary:       Charliecloud html documentation
 License:       BSD and ASL 2.0
 BuildArch:     noarch
 Obsoletes:     %{name}-doc < %{version}-%{release}
-%if 0%{?el7}
-BuildRequires: python36-sphinx
-BuildRequires: python36-sphinx_rtd_theme
-%else
-BuildRequires: python3-sphinx
-BuildRequires: python3-sphinx_rtd_theme
-%endif
+BuildRequires: %{python3_pkgversion}-sphinx
+BuildRequires: %{python3_pkgversion}-sphinx_rtd_theme
 
 %description doc
 Html and man page documentation for %{name}.
@@ -115,14 +112,22 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %license LICENSE
 %doc README.rst %{?el7:README.EL7}
 %{_mandir}/man1/ch*
-%{_mandir}/man7/charliecloud*
+%{_mandir}/man7/charliecloud.7*
 %{_pkgdocdir}/examples
 
 # Library files.
-%{_libdir}/%{name}/*.py
-%{_libdir}/%{name}/*.sh
+%{_libdir}/%{name}/base.sh
+%{_libdir}/%{name}/build.py
+%{_libdir}/%{name}/charliecloud.py
 %{_libdir}/%{name}/contributors.bash
+%{_libdir}/%{name}/fakeroot.py
+%{_libdir}/%{name}/misc.py
+%{_libdir}/%{name}/pull.py
+%{_libdir}/%{name}/push.py
+%{_libdir}/%{name}/version.py
+%{_libdir}/%{name}/version.sh
 %{_libdir}/%{name}/version.txt
+%{?el7:%{_libdir}/%{name}/__pycache__}
 
 # Binary files.
 %{_bindir}/ch-*
@@ -130,8 +135,9 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 # Exclude test artifacts
 %exclude %{_libexecdir}/%{name}/test
+%exclude %{_pkgdocdir}/html
 
-%files doc
+files doc
 %license LICENSE
 %{_pkgdocdir}/html
 
@@ -140,6 +146,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_libexecdir}/%{name}/test
 %{_bindir}/ch-test
 %{_mandir}/man1/ch-test.1*
+%{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
 %changelog
 * Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@
