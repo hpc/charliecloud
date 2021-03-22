@@ -12,7 +12,6 @@ dist_mylib_DATA = base.sh \
                   misc.py \
                   pull.py \
                   push.py \
-                  python_modules/lark-stubs \
                   python_modules/lark-stubs/lexer.pyi \
                   python_modules/lark-stubs/tree.pyi \
                   python_modules/lark-stubs/__init__.pyi \
@@ -31,10 +30,7 @@ dist_mylib_DATA = base.sh \
                   python_modules/lark_parser-0.11.2.dist-info/top_level.txt \
                   python_modules/lark_parser-0.11.2.dist-info/METADATA \
                   python_modules/lark_parser-0.11.2.dist-info/INSTALLER \
-                  python_modules/packages \
-                  python_modules/lark \
                   python_modules/lark/exceptions.py \
-                  python_modules/lark/__pycache__ \
                   python_modules/lark/__pycache__/common.cpython-38.pyc \
                   python_modules/lark/__pycache__/reconstruct.cpython-38.pyc \
                   python_modules/lark/__pycache__/reconstruct2.cpython-38.pyc \
@@ -53,7 +49,6 @@ dist_mylib_DATA = base.sh \
                   python_modules/lark/__pycache__/grammar.cpython-38.pyc \
                   python_modules/lark/common.py \
                   python_modules/lark/load_grammar.py \
-                  python_modules/lark/tools \
                   python_modules/lark/tools/__pycache__ \
                   python_modules/lark/tools/__pycache__/standalone.cpython-38.pyc \
                   python_modules/lark/tools/__pycache__/__init__.cpython-38.pyc \
@@ -80,14 +75,10 @@ dist_mylib_DATA = base.sh \
                   python_modules/lark/grammars/unicode.lark \
                   python_modules/lark/lexer.py \
                   python_modules/lark/parse_tree_builder.py \
-                  python_modules/lark/__pyinstaller \
-                  python_modules/lark/__pyinstaller/__pycache__ \
                   python_modules/lark/__pyinstaller/__pycache__/__init__.cpython-38.pyc \
                   python_modules/lark/__pyinstaller/__pycache__/hook-lark.cpython-38.pyc \
                   python_modules/lark/__pyinstaller/__init__.py \
                   python_modules/lark/__pyinstaller/hook-lark.py \
-                  python_modules/lark/parsers \
-                  python_modules/lark/parsers/__pycache__ \
                   python_modules/lark/parsers/__pycache__/xearley.cpython-38.pyc \
                   python_modules/lark/parsers/__pycache__/earley.cpython-38.pyc \
                   python_modules/lark/parsers/__pycache__/earley_common.cpython-38.pyc \
@@ -109,7 +100,6 @@ dist_mylib_DATA = base.sh \
                   python_modules/lark/parsers/earley.py \
                   python_modules/lark/parsers/lalr_parser.py \
                   python_modules/lark/indenter.py
-		  python_modules
 noinst_DATA = charliecloud
 mylib_DATA = contributors.bash \
              version.py \
