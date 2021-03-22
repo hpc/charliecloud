@@ -137,7 +137,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %exclude %{_libexecdir}/%{name}/test
 %exclude %{_pkgdocdir}/html
 
-files doc
+%files doc
 %license LICENSE
 %{_pkgdocdir}/html
 
