@@ -114,6 +114,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_mandir}/man1/ch*
 %{_mandir}/man7/charliecloud.7*
 %{_pkgdocdir}/examples
+%{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
 # Library files.
 %{_libdir}/%{name}/base.sh
@@ -146,7 +147,6 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_libexecdir}/%{name}/test
 %{_bindir}/ch-test
 %{_mandir}/man1/ch-test.1*
-%{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
 %changelog
 * Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@
