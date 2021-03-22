@@ -23,7 +23,7 @@ import types
 ## Imports not in standard library ##
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
-                    + "/python_modules"))
+                    + "/packages"))
 
 # These are messy because we need --version and --help even if a dependency is
 # missing. Among other things, nothing can depend on non-standard modules at
@@ -38,7 +38,7 @@ try:
    import lark   # ImportError if no such module
    lark.Visitor # AttributeError if wrong module
    lark_path = os.path.abspath(lark.__file__)
-   desired_path = os.path.dirname(os.path.abspath(__file__)) + "/python_modules/lark/__init__.py"
+   desired_path = os.path.dirname(os.path.abspath(__file__)) + "/packages/lark/__init__.py"
    if lark_path != desired_path:
        print(lark_path)
        print(desired_path)
