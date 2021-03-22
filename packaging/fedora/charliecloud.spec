@@ -40,8 +40,8 @@ Summary:       Charliecloud html documentation
 License:       BSD and ASL 2.0
 BuildArch:     noarch
 Obsoletes:     %{name}-doc < %{version}-%{release}
-BuildRequires: %{python3_pkgversion}-sphinx
-BuildRequires: %{python3_pkgversion}-sphinx_rtd_theme
+BuildRequires: python%{python3_pkgversion}-sphinx
+BuildRequires: python%{python3_pkgversion}-sphinx_rtd_theme
 
 %description doc
 Html and man page documentation for %{name}.
