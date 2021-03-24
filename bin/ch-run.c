@@ -43,7 +43,7 @@ const char args_doc[] = "NEWROOT CMD [ARG...]";
 
 const struct argp_option options[] = {
    { "bind",        'b', "SRC[:DST]", 0,
-     "mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)"},
+     "mount SRC at guest DST (default: same as SRC)"},
    { "cd",          'c', "DIR",  0, "initial working directory in container"},
    { "ch-ssh",       -8, 0,      0, "bind ch-ssh into image"},
    { "gid",         'g', "GID",  0, "run as GID within container" },
@@ -414,7 +414,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       if (arg)
          args->c.binds[i].dst = arg;
       else // arg is NULL => no destination specified
-         T_ (1 <= asprintf(&(args->c.binds[i].dst), "/mnt/%d", i));
+         args->c.binds[i].dst = args->c.binds[i].src;
       Te (args->c.binds[i].src[0] != 0, "--bind: no source provided");
       Te (args->c.binds[i].dst[0] != 0, "--bind: no destination provided");
       break;
