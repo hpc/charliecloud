@@ -73,11 +73,11 @@ EOF
 
 @test 'ch-image build --bind' {
     run ch-image --no-cache build -t build-bind -f - \
-                -b ./fixtures -b ./fixtures:/mnt/9 . <<'EOF'
+                -b ./fixtures -b ./fixtures:/mnt/9 . <<EOF
 FROM 00_tiny
 RUN mount
 RUN ls -lR /mnt
-RUN test -f /mnt/0/empty-file
+RUN test -f ${PWD}/empty-file
 RUN test -f /mnt/9/empty-file
 EOF
     echo "$output"

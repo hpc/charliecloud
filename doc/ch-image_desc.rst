@@ -92,9 +92,10 @@ Subcommands
 -------------
 
 Build an image from a Dockerfile and put it in the storage directory. Use
-:code:`ch-run(1)` to execute :code:`RUN` instructions. Note that :code:`FROM`
-implicitly pulls the base image if needed, so you may want to read about the
-:code:`pull` subcommand below as well.
+:code:`ch-run -w -u0 -g0 --no-home --no-passwd` to execute :code:`RUN`
+instructions. Note that :code:`FROM` implicitly pulls the base image if
+needed, so you may want to read about the :code:`pull` subcommand below as
+well.
 
 Required argument:
 
@@ -105,13 +106,23 @@ Required argument:
 Options:
 
   :code:`-b`, :code:`--bind SRC[:DST]`
-    Bind-mount host directory :code:`SRC` at container directory :code:`DST`
-    during :code:`RUN` instructions. Can be repeated; the default destination
-    if :code:`DST` is omitted is :code:`/mnt/0`, :code:`/mnt/1`, etc.
+    For :code:`RUN` instructions only, bind-mount :code:`SRC` at guest
+    :code:`DST`. The default destination if not specified is to use the same
+    path as the host; i.e., the default is equivalent to
+    :code:`--bind=SRC:SRC`. Can be repeated.
 
-    **Note:** This applies only to :code:`RUN` instructions. Other
-    instructions that modify the image filesystem, e.g. :code:`COPY`, can only
-    access host files from the context directory.
+    If :code:`DST` does not exist, it will be created as an empty directory.
+    **Be wary** of prior bind mounts, including the defaults, because mount
+    points are created regardless of whether they are in the image itself. For
+    example, :code:`--bind /foo:/tmp/foo` will create :code:`/tmp/foo`,
+    because :code:`/tmp` is shared with the host.
+
+    Images do have ten directories :code:`/mnt/[0-9]` already available as
+    mount points.
+
+    **Note:** Other instructions that modify the image filesystem, e.g.
+    :code:`COPY`, can only access host files from the context directory,
+    regardless of this option.
 
   :code:`--build-arg KEY[=VALUE]`
     Set build-time variable :code:`KEY` defined by :code:`ARG` instruction

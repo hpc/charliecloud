@@ -12,62 +12,74 @@ Run command :code:`CMD` in a Charliecloud container using the flattened and
 unpacked image directory located at :code:`NEWROOT`.
 
   :code:`-b`, :code:`--bind=SRC[:DST]`
-    mount :code:`SRC` at guest :code:`DST` (default :code:`/mnt/0`,
-    :code:`/mnt/1`, etc.)
+    Bind-mount :code:`SRC` at guest :code:`DST`. The default destination if
+    not specified is to use the same path as the host; i.e., the default is
+    equivalent to :code:`--bind=SRC:SRC`. Can be repeated.
+
+    If :code:`--write` is given and :code:`DST` does not exist, it will be
+    created as an empty directory. **Be wary** of prior bind mounts, including
+    the defaults, because mount points are created regardless of whether they
+    are in the image itself. For example, :code:`--bind /foo:/tmp/foo` will
+    create :code:`/tmp/foo` on the host unless :code:`--private-tmp` is also
+    given, because by default :code:`/tmp` is shared with the host.
+
+    Most images do have ten directories :code:`/mnt/[0-9]` already available
+    as mount points.
 
   :code:`-c`, :code:`--cd=DIR`
-    initial working directory in container
+    Initial working directory in container.
 
   :code:`--ch-ssh`
-    bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`
+    Bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`.
 
   :code:`-g`, :code:`--gid=GID`
-    run as group :code:`GID` within container
+    Run as group :code:`GID` within container.
 
   :code:`-j`, :code:`--join`
-    use the same container (namespaces) as peer :code:`ch-run` invocations
+    Use the same container (namespaces) as peer :code:`ch-run` invocations.
 
   :code:`--join-pid=PID`
-    join the namespaces of an existing process
+    Join the namespaces of an existing process.
 
   :code:`--join-ct=N`
-    number of :code:`ch-run` peers (implies :code:`--join`; default: see below)
+    Number of :code:`ch-run` peers (implies :code:`--join`; default: see
+    below).
 
   :code:`--join-tag=TAG`
-    label for :code:`ch-run` peer group (implies :code:`--join`; default: see
-    below)
+    Label for :code:`ch-run` peer group (implies :code:`--join`; default: see
+    below).
 
   :code:`--no-home`
-    do not bind-mount your home directory (by default, your home directory is
-    mounted at :code:`/home/$USER` in the container)
+    Do not bind-mount your home directory (by default, your home directory is
+    mounted at :code:`/home/$USER` in the container).
 
   :code:`-t`, :code:`--private-tmp`
-    use container-private :code:`/tmp` (by default, :code:`/tmp` is shared with
-    the host)
+    Use container-private :code:`/tmp` (by default, :code:`/tmp` is shared with
+    the host).
 
   :code:`--set-env=FILE`
-    set environment variables as specified in host path :code:`FILE`
+    Set environment variables as specified in host path :code:`FILE`.
 
   :code:`-u`, :code:`--uid=UID`
-    run as user :code:`UID` within container
+    Run as user :code:`UID` within container.
 
   :code:`--unset-env=GLOB`
-    unset environment variables whose names match :code:`GLOB`
+    Unset environment variables whose names match :code:`GLOB`.
 
   :code:`-v`, :code:`--verbose`
-    be more verbose (debug if repeated)
+    Be more verbose (can be repeated).
 
   :code:`-w`, :code:`--write`
-    mount image read-write (by default, the image is mounted read-only)
+    Mount image read-write (by default, the image is mounted read-only).
 
   :code:`-?`, :code:`--help`
-    print help and exit
+    Print help and exit.
 
   :code:`--usage`
-    print a short usage message and exit
+    Print a short usage message and exit.
 
   :code:`-V`, :code:`--version`
-    print version and exit
+    Print version and exit.
 
 Host files and directories available in container via bind mounts
 =================================================================
@@ -382,4 +394,4 @@ Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
 
-..  LocalWords:  mtune
+..  LocalWords:  mtune NEWROOT

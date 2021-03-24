@@ -191,24 +191,38 @@ EOF
 
 @test 'ch-run --bind' {
     scope quick
-    # one bind, default destination (/mnt/0)
-    ch-run -b "${ch_imgdir}/bind1" "$ch_timg" -- cat /mnt/0/file1
+
+    # set up destinations
+    mkdir -p "${ch_timg}/${ch_imgdir}/bind1"
+    mkdir -p "${ch_timg}/${ch_imgdir}/bind2"
+    rmdir "${ch_timg}/bind3" || true
+    [[ ! -e ${ch_timg}/bind3 ]]
+    rmdir "${ch_timg}/bind4/a" "${ch_timg}/bind4" || true
+    [[ ! -e ${ch_timb}/bind4 ]]
+
+    # one bind, default destination
+    ch-run -b "${ch_imgdir}/bind1" "$ch_timg" -- cat "${ch_imgdir}/bind1/file1"
     # one bind, explicit destination
     ch-run -b "${ch_imgdir}/bind1:/mnt/9" "$ch_timg" -- cat /mnt/9/file1
 
+    # one bind, create destination, one level
+    ch-run -w -b "${ch_imgdir}/bind1:/bind3" -- cat /bind3/file1
+    # one bind, create destination, two levels
+    ch-run -w -b "${ch_imgdir}/bind1:/bind4/a" -- cat /bind4/a/file1
+
     # two binds, default destination
     ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2" "$ch_timg" \
-           -- cat /mnt/0/file1 /mnt/1/file2
+           -- cat "${ch_imgdir}/bind1/file1" "${ch_imgdir}/bind2/file2"
     # two binds, explicit destinations
     ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2:/mnt/9" \
            "$ch_timg" \
            -- cat /mnt/8/file1 /mnt/9/file2
     # two binds, default/explicit
     ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/mnt/9" "$ch_timg" \
-           -- cat /mnt/0/file1 /mnt/9/file2
+           -- cat "${ch_imgdir}/bind1/file1" /mnt/9/file2
     # two binds, explicit/default
     ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2" "$ch_timg" \
-           -- cat /mnt/8/file1 /mnt/1/file2
+           -- cat /mnt/8/file1 "${ch_imgdir}/bind2/file2"
 
     # bind one source at two destinations
     ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind1:/mnt/9" \
@@ -226,29 +240,13 @@ EOF
     # bind to /home without overmount
     ch-run --no-home -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
     # omit default /home, with unrelated --bind
-    ch-run --no-home -b "${ch_imgdir}/bind1" "$ch_timg" -- cat /mnt/0/file1
+    ch-run --no-home -b "${ch_imgdir}/bind1" "$ch_timg" -- \
+           cat "${ch_imgdir}/bind1/file1"
 }
 
 
 @test 'ch-run --bind errors' {
     scope quick
-
-    # more binds (11) than default destinations
-    run ch-run -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               "$ch_timg" -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_timg}/mnt/10"* ]]
 
     # no argument to --bind
     run ch-run "$ch_timg" -b
@@ -278,33 +276,33 @@ EOF
     run ch-run -b "${ch_imgdir}/hoops" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
+    [[ $output = *"can't bind: no source found: ${ch_imgdir}/hoops"* ]]
 
     # destination does not exist
     run ch-run -b "${ch_imgdir}/bind1:/goops" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_timg}/goops"* ]]
+    [[ $output = *"can't bind: can't create destination: ${ch_timg}/goops"* ]]
 
     # neither source nor destination exist
     run ch-run -b "${ch_imgdir}/hoops:/goops" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
+    [[ $output = *"can't bind: no source found: ${ch_imgdir}/hoops"* ]]
 
     # correct bind followed by source does not exist
     run ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/hoops" "$ch_timg" -- \
               true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
+    [[ $output = *"can't bind: no source found: ${ch_imgdir}/hoops"* ]]
 
     # correct bind followed by destination does not exist
     run ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/goops" \
                "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_timg}/goops"* ]]
+    [[ $output = *"can't bind: can't create destination: ${ch_timg}/goops"* ]]
 }
 
 
