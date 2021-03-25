@@ -349,13 +349,33 @@ chse_b4= bar
 chse_c1=foo
 chse_c1=bar
 
-chse_d1=$FOO:bar
-chse_d2=bar:$FOO
-chse_d3=bar:$FOO:baz
-chse_d4=bar:$FOO:$FOO:baz
-chse_d5=$FOO
-chse_d6=:$FOO
-chse_d7=bar:$
+chse_d1=$FOO
+chse_d2=$FOO:$FOO
+chse_d3=bar:$FOO
+chse_d4=bar:baz:$FOO
+chse_d5=$FOO:bar
+chse_d6=$FOO:bar:baz
+chse_d7=bar:$FOO:baz
+chse_d8=bar:baz:$FOO:bar:baz
+
+chse_e1=:$FOO
+chse_e2=::$FOO
+chse_e3=$FOO:
+chse_e4=$FOO::
+chse_e5=bar:$
+chse_e6=bar:$$
+chse_e7=bar$FOO
+chse_e8=bar::$FOO
+
+chse_f1=foo:$BAR
+chse_f2=foo:$BAR:$BAZ
+chse_f3=$BAR:foo
+chse_f4=$BAR:$BAZ:foo
+chse_f5=:$BAR
+chse_f6=::$BAR
+chse_f7=$BAR:
+chse_f8=$BAR::
+
 EOF
     cat "$f_in"
     output_expected=$(cat <<'EOF'
@@ -371,13 +391,30 @@ EOF
 ('chse_b2', 'bar # baz')
 ('chse_b4', ' bar')
 ('chse_c1', 'bar')
-('chse_d1', 'foo:bar')
-('chse_d2', 'bar:foo')
-('chse_d3', 'bar:foo:baz')
-('chse_d4', 'bar:foo:foo:baz')
-('chse_d5', 'foo')
-('chse_d6', 'foo')
-('chse_d7', 'bar')
+('chse_d1', 'foo')
+('chse_d2', 'foo:foo')
+('chse_d3', 'bar:foo')
+('chse_d4', 'bar:baz:foo')
+('chse_d5', 'foo:bar')
+('chse_d6', 'foo:bar:baz')
+('chse_d7', 'bar:foo:baz')
+('chse_d8', 'bar:baz:foo:bar:baz')
+('chse_e1', 'foo')
+('chse_e2', 'foo')
+('chse_e3', 'foo')
+('chse_e4', 'foo')
+('chse_e5', 'bar')
+('chse_e6', 'bar')
+('chse_e7', 'bar$FOO')
+('chse_e8', 'bar:foo')
+('chse_f1', 'foo')
+('chse_f2', 'foo')
+('chse_f3', 'foo')
+('chse_f4', 'foo')
+('chse_f5', '')
+('chse_f6', '')
+('chse_f7', '')
+('chse_f8', '')
 EOF
 )
     run ch-run --set-env="$f_in" "$ch_timg" -- python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'
@@ -436,41 +473,19 @@ EOF
 # shellcheck disable=SC2016
 @test 'ch-run --set-env command line' {
     scope standard
-    export test=foo
-
-    output_expected=$(cat <<'EOF'
-('chse_a1', 'foo:app')
-EOF
-)
 
     # missing '''
     # shellcheck disable=SC2086
-    run ch-run --set-env=chse_a1='$test:app' "$ch_timg" -- python3 -c 'import os; 
-[print((k,v)) for (k,v) in os.environ.items() if "chse_a1" in k]'
+    run ch-run --set-env=foo='$test:app' --env-no-expand -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    diff -u <(echo "$output_expected") <(echo "$output")
+    [[ $output = *'environment: foo=$test:app'* ]]
 
    # missing environment variable
    run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
    echo "$output"
    [[ $status -eq 1 ]]
    [[ $output = *'$PATH:foo: No such file or directory'* ]]
-}
-
-# shellcheck disable=SC2016
-@test 'ch-run --env-no-expand' {
-    scope standard
-   output_expected=$(cat <<'EOF'
-('chse_a1', '$test:foo')
-EOF
-)
-
-   run ch-run --set-env=chse_a1='$test:foo' --env-no-expand "$ch_timg" -- python3 -c 'import os; 
-[print((k,v)) for (k,v) in os.environ.items() if "chse_a1" in k]'
-   echo "$output"
-   [[ $status -eq 0 ]]
-   diff -u <(echo "$output_expected") <(echo "$output")
 }
 
 @test 'ch-run --unset-env' {

@@ -211,19 +211,22 @@ void env_expand(char* env_set[], int argv, bool expand, char* filename)
    
       char *token;
       char *new_env = "";
-      token = strtok(new_value, ":");
-      while( token != NULL ) {
-         if (strcmp(new_env,"") && strcmp(token, "$")) 
-            new_env=cat(new_env,":");
-         if (token[0] == '$' && expand) {
+      token = strtok(new_value, ":"); 
+      while( token != NULL ) {  //parses line at ':'      
+         if (token[0] == '$' && expand) { //if starts with $ and no --env-no-expand 
             token ++;
-            if(getenv(token) != NULL)
+            if (getenv(token) != NULL) { 
+               if (new_env[0] != '\0')  //if new value isn't empty add ':'
+                  new_env = cat(new_env,":");
                new_env = cat(new_env, getenv(token));
+            }
          }
-         else {
+         else { 
+            if (new_env[0] != '\0') //if new value isn't empty add ':'
+               new_env = cat(new_env, ":");
             new_env=cat(new_env, token);
          }
-         token = strtok(NULL, ":");
+         token = strtok(NULL, ":"); 
       }
       INFO("environment: %s=%s", name, new_env);
       Z_ (setenv(name, new_env, 1));
