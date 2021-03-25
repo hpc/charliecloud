@@ -57,7 +57,7 @@ if [[ $1 != --clean ]]; then
     if [[ $(command -v  python3) ]]; then
 	rm -rf --one-file-system lib/python_modules/lark*
 	git submodule init
-	git module update
+	git submodule update
 	cd lib/lark
 	python3 setup.py bdist_egg
 	mv dist/*.egg ../python_modules
