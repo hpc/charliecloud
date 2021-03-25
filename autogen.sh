@@ -60,7 +60,7 @@ if [[ $1 != --clean ]]; then
 	git submodule update
 	cd lib/lark
 	python3 setup.py bdist_egg
-	mv dist/*.egg ../python_modules
+	mv dist/*.egg ../python_modules/
     fi
     set +x
     echo
