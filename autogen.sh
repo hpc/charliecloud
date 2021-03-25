@@ -49,7 +49,7 @@ rm -rf Makefile \
        build-aux \
        config.log \
        config.status \
-       configure \
+       configure
 
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
