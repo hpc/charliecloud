@@ -62,6 +62,8 @@ if [[ $1 != --clean ]]; then
 	cd lib/lark
 	python3 setup.py bdist_egg
 	mv dist/*.egg ../python_modules/
+	cd ..
+	rm -rf --one-file-system lark/*
     fi
     set +x
     echo
