@@ -23,7 +23,7 @@ import types
 ## Imports not in standard library ##
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
-                    + "/python_modules"))
+                    + "/python_modules/lark_parser-0.11.2-py3.8.egg"))
 
 # These are messy because we need --version and --help even if a dependency is
 # missing. Among other things, nothing can depend on non-standard modules at
@@ -38,10 +38,8 @@ try:
    import lark   # ImportError if no such module
    lark.Visitor # AttributeError if wrong module
    lark_path = os.path.abspath(lark.__file__)
-   desired_path = os.path.dirname(os.path.abspath(__file__)) + "/python_modules/lark/__init__.py"
+   desired_path = os.path.dirname(os.path.abspath(__file__)) + "/python_modules/lark_parser-0.11.2-py3.8.egg/lark/__init__.py"
    if lark_path != desired_path:
-       print(lark_path)
-       print(desired_path)
        sys.exit("Lark found was not embedded")
 except (ImportError, AttributeError) as x:
    if (isinstance(x, ImportError)):
@@ -58,14 +56,13 @@ try:
    import requests
    import requests.auth
    import requests.exceptions
-except ImportError:
+except ImportError as e:
+   print(e)
    depfails.append(("missing", 'Python module "requests"'))
    # Mock up a requests.auth module so the rest of the file parses.
    requests = types.ModuleType("requests")
    requests.auth = types.ModuleType("requests.auth")
    requests.auth.AuthBase = object
-
-
 
 ## Globals ##
 

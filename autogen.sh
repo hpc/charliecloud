@@ -55,10 +55,10 @@ rm -rf Makefile \
 if [[ $1 != --clean ]]; then
     autoreconf --force --install -Wall -Werror
     if [[ $(command -v  python3) ]]; then
-	if [[ $(command -v pip3) ]]; then
-	    rm -rf --one-file-system lib/python_modules/lark*
-	    pip3 install -t lib/python_modules lark-parser==0.11.2
-	fi
+	rm -rf --one-file-system lib/python_modules/lark*
+	cd lib/lark
+	python3 setup.py bdist_egg
+	mv dist/*.egg ../python_modules
     fi
     set +x
     echo
