@@ -56,6 +56,7 @@ if [[ $1 != --clean ]]; then
     autoreconf --force --install -Wall -Werror
     if [[ $(command -v  python3) ]]; then
 	rm -rf --one-file-system lib/python_modules/lark*
+	mkdir -p lib/python_modules
 	git submodule init
 	git submodule update
 	cd lib/lark
