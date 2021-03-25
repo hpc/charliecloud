@@ -56,6 +56,8 @@ if [[ $1 != --clean ]]; then
     autoreconf --force --install -Wall -Werror
     if [[ $(command -v  python3) ]]; then
 	rm -rf --one-file-system lib/python_modules/lark*
+	git submodule init
+	git module update
 	cd lib/lark
 	python3 setup.py bdist_egg
 	mv dist/*.egg ../python_modules
