@@ -363,7 +363,9 @@ class I_copy(Instruction):
          paths = [variables_sub(i, env.env_build)
                   for i in ch.tree_child_terminals(self.tree, "copy_list",
                                                    "STRING_QUOTED")]
-         self.srcs = [paths[:-1][0][1:-1]]
+         self.srcs = paths[:-1]
+         for i in range(len(self.srcs)):
+            self.srcs[i] = self.srcs[i][1:-1]
          self.dst = paths[-1][1:-1]
 
 

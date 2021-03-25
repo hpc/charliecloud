@@ -623,16 +623,29 @@ EOF
 @test 'Dockerfile: COPY list form' {
     scope standard
     [[ $CH_BUILDER = none ]] && skip 'no builder'
-    [[ $CH_BUILDER = buildah* ]] && skil 'Buildah untested'
+    [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
 
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY ["fixtures/empty-file", "."]
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
-    [[ $output = *'grown in 2 instructions: not-yet-supported'* ]]
+    [[ $output = *'grown in 2 instructions: foo'* ]]
+
+    # multiple sources
+    run ch-image build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY ["Build.missing", "common.bash", "/etc/fstab/"]
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    if [[ $CH_BUILDER = docker ]]; then
+        [[ $output = *'not a directory'* ]]
+    else
+        [[ $output = *'not a directory'* ]]
+    fi
 }
 
 @test 'Dockerfile: COPY errors' {
