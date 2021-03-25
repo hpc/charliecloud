@@ -50,7 +50,6 @@ rm -rf Makefile \
        config.log \
        config.status \
        configure \
-       lib/lark/*
 
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
@@ -62,7 +61,7 @@ if [[ $1 != --clean ]]; then
 	git submodule update
 	cd lib/lark
 	python3 setup.py bdist_egg
-	mv dist/*.egg ../python_modules/lark_parser.egg
+	mv dist/*.egg ../lark_parser.egg
     fi
     set +x
     echo
