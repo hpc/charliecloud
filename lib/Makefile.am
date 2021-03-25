@@ -12,7 +12,7 @@ dist_mylib_DATA = base.sh \
                   misc.py \
                   pull.py \
                   push.py \
-                  python_modules/lark_parser-0.11.2-py3.8.egg
+                  python_modules/lark_parser.egg
 noinst_DATA = charliecloud
 mylib_DATA = contributors.bash \
              version.py \
