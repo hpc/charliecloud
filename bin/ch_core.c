@@ -36,18 +36,15 @@
 /** Constants **/
 
 /* Default bind-mounts. */
-struct bind BINDS_REQUIRED[] = {
-   { "/dev",             "/dev" },
-   { "/proc",            "/proc" },
-   { "/sys",             "/sys" },
-   { NULL, NULL }
-};
-struct bind BINDS_OPTIONAL[] = {
-   { "/etc/hosts",               "/etc/hosts" },
-   { "/etc/resolv.conf",         "/etc/resolv.conf" },
-   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool" },
-   { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs" },
-   { NULL, NULL }
+struct bind BINDS_DEFAULT[] = {
+   { "/dev",                     "/dev",                     BD_REQUIRED },
+   { "/proc",                    "/proc",                    BD_REQUIRED },
+   { "/sys",                     "/sys",                     BD_REQUIRED },
+   { "/etc/hosts",               "/etc/hosts",               BD_OPTIONAL },
+   { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
+   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
+   { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs",  BD_OPTIONAL },
+   { NULL }
 };
 
 
@@ -68,10 +65,10 @@ struct {
 
 /** Function prototypes (private) **/
 
-void bind_mount(const char *src, const char *dst, const char *newroot,
-                enum bind_dep dep, unsigned long flags);
+void bind_mount(const char *src, const char *dst, enum bind_dep,
+                const char *newroot, unsigned long flags);
 void bind_mounts(const struct bind *binds, const char *newroot,
-                 enum bind_dep dep, unsigned long flags);
+                 unsigned long flags);
 void enter_udss(struct container *c);
 void join_begin(int join_ct, const char *join_tag);
 void join_namespace(pid_t pid, const char *ns);
@@ -86,20 +83,37 @@ void tmpfs_mount(const char *dst, const char *newroot, const char *data);
 /** Functions **/
 
 /* Bind-mount the given path into the container image. */
-void bind_mount(const char *src, const char *dst, const char *newroot,
-                enum bind_dep dep, unsigned long flags)
+void bind_mount(const char *src, const char *dst, enum bind_dep dep,
+                const char *newroot, unsigned long flags)
 {
+   char *dst_fullc, *newrootc;
    char *dst_full = cat(newroot, dst);
 
-   if (!path_exists(src)) {
-      Te (dep == BD_OPTIONAL, "can't bind: not found: %s", src);
+
+   T_(src[0] != 0   && src[0] != 0   && newroot[0] != 0);
+   T_(src[0] == '/' && dst[0] == '/' && newroot[0] == '/');
+
+   if (!path_exists(src, NULL, true)) {
+      Te (dep == BD_OPTIONAL, "can't bind: source not found: %s", src);
       return;
    }
 
-   if (!path_exists(dst_full)) {
-      Te (dep == BD_OPTIONAL, "can't bind: not found: %s", dst_full);
-      return;
-   }
+   if (!path_exists(dst_full, NULL, true))
+      switch (dep) {
+      case BD_REQUIRED:
+         FATAL("can't bind: destination not found: %s", dst_full);
+         break;
+      case BD_OPTIONAL:
+         return;
+      case BD_MAKE_DST:
+         mkdirs(newroot, dst);
+         break;
+      }
+
+   newrootc = realpath_safe(newroot);
+   dst_fullc = realpath_safe(dst_full);
+   Tf (path_subdir_p(newrootc, dst_fullc),
+       "can't bind: %s not subdirectory of %s", dst_fullc, newrootc);
 
    Zf (mount(src, dst_full, NULL, MS_REC|MS_BIND|flags, NULL),
        "can't bind %s to %s", src, dst_full);
@@ -107,10 +121,10 @@ void bind_mount(const char *src, const char *dst, const char *newroot,
 
 /* Bind-mount a null-terminated array of struct bind objects. */
 void bind_mounts(const struct bind *binds, const char *newroot,
-                 enum bind_dep dep, unsigned long flags)
+                 unsigned long flags)
 {
    for (int i = 0; binds[i].src != NULL; i++)
-      bind_mount(binds[i].src, binds[i].dst, newroot, dep, flags);
+      bind_mount(binds[i].src, binds[i].dst, binds[i].dep, newroot, flags);
 }
 
 /* Set up new namespaces or join existing namespaces. */
@@ -147,11 +161,10 @@ void enter_udss(struct container *c)
 
    // Claim new root for this namespace. We do need both calls to avoid
    // pivot_root(2) failing with EBUSY later.
-   bind_mount(c->newroot, c->newroot, "", BD_REQUIRED, MS_PRIVATE);
-   bind_mount(newroot_parent, newroot_parent, "", BD_REQUIRED, MS_PRIVATE);
+   bind_mount(c->newroot, c->newroot, BD_REQUIRED, "/", MS_PRIVATE);
+   bind_mount(newroot_parent, newroot_parent, BD_REQUIRED, "/", MS_PRIVATE);
    // Bind-mount default files and directories.
-   bind_mounts(BINDS_REQUIRED, c->newroot, BD_REQUIRED, MS_RDONLY);
-   bind_mounts(BINDS_OPTIONAL, c->newroot, BD_OPTIONAL, MS_RDONLY);
+   bind_mounts(BINDS_DEFAULT, c->newroot, MS_RDONLY);
    // /etc/passwd and /etc/group.
    if (!c->private_passwd)
       setup_passwd(c);
@@ -159,7 +172,7 @@ void enter_udss(struct container *c)
    if (c->private_tmp) {
       tmpfs_mount("/tmp", c->newroot, NULL);
    } else {
-      bind_mount("/tmp", "/tmp", c->newroot, BD_REQUIRED, 0);
+      bind_mount("/tmp", "/tmp", BD_REQUIRED, c->newroot, 0);
    }
    // Container /home.
    if (!c->private_home) {
@@ -171,28 +184,19 @@ void enter_udss(struct container *c)
       Tf (c->old_home != NULL, "cannot find home directory: is $HOME set?");
       newhome = cat("/home/", getenv("USER"));
       Z_ (mkdir(cat(c->newroot, newhome), 0755));
-      bind_mount(c->old_home, newhome, c->newroot, BD_REQUIRED, 0);
+      bind_mount(c->old_home, newhome, BD_REQUIRED, c->newroot, 0);
    }
    // Container /usr/bin/ch-ssh.
    if (c->ch_ssh) {
       char chrun_file[PATH_CHARS];
       int len = readlink("/proc/self/exe", chrun_file, PATH_CHARS);
       T_ (len >= 0);
-      Te (path_exists(cat(c->newroot, "/usr/bin/ch-ssh")),
+      Te (path_exists(cat(c->newroot, "/usr/bin/ch-ssh"), NULL, true),
           "--ch-ssh: /usr/bin/ch-ssh not in image");
       chrun_file[ len<PATH_CHARS ? len : PATH_CHARS-1 ] = 0; // terminate; #315
       bind_mount(cat(dirname(chrun_file), "/ch-ssh"), "/usr/bin/ch-ssh",
-                 c->newroot, BD_REQUIRED, 0);
+                 BD_REQUIRED, c->newroot, 0);
    }
-   // Bind-mount user-specified directories at guest DST and|or /mnt/i,
-   // which must exist.
-   bind_mounts(c->binds, c->newroot, BD_REQUIRED, 0);
-
-   // Overmount / to avoid EINVAL if it's a rootfs.
-   Z_ (chdir(newroot_parent));
-   Z_ (mount(newroot_parent, "/", NULL, MS_MOVE, NULL));
-   Z_ (chroot("."));
-   c->newroot = cat("/", newroot_base);
 
    // Re-mount new root read-only unless --write or already read-only.
    if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {
@@ -203,6 +207,13 @@ void enter_udss(struct container *c)
       Zf (mount(NULL, c->newroot, NULL, flags, NULL),
           "can't re-mount image read-only (is it on NFS?)");
    }
+   // Bind-mount user-specified directories.
+   bind_mounts(c->binds, c->newroot, 0);
+   // Overmount / to avoid EINVAL if it's a rootfs.
+   Z_ (chdir(newroot_parent));
+   Z_ (mount(newroot_parent, "/", NULL, MS_MOVE, NULL));
+   Z_ (chroot("."));
+   c->newroot = cat("/", newroot_base);
    // Pivot into the new root. Use /dev because it's available even in
    // extremely minimal images.
    Zf (chdir(c->newroot), "can't chdir into new root");
@@ -427,7 +438,7 @@ void setup_passwd(const struct container *c)
       }
    }
    Z_ (close(fd));
-   bind_mount(path, "/etc/passwd", c->newroot, BD_REQUIRED, 0);
+   bind_mount(path, "/etc/passwd", BD_REQUIRED, c->newroot, 0);
    Z_ (unlink(path));
 
    // /etc/group
@@ -450,7 +461,7 @@ void setup_passwd(const struct container *c)
       }
    }
    Z_ (close(fd));
-   bind_mount(path, "/etc/group", c->newroot, BD_REQUIRED, 0);
+   bind_mount(path, "/etc/group", BD_REQUIRED, c->newroot, 0);
    Z_ (unlink(path));
 }
 

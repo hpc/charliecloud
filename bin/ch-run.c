@@ -404,19 +404,27 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case 'c':
       args->initial_dir = arg;
       break;
-   case 'b':
-      for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
-         ;
-      T_ (args->c.binds = realloc(args->c.binds, (i+2) * sizeof(struct bind)));
-      args->c.binds[i+1].src = NULL;                 // terminating zero
-      args->c.binds[i].src = strsep(&arg, ":");
-      T_ (args->c.binds[i].src != NULL);
-      if (arg)
-         args->c.binds[i].dst = arg;
-      else // arg is NULL => no destination specified
-         args->c.binds[i].dst = args->c.binds[i].src;
-      Te (args->c.binds[i].src[0] != 0, "--bind: no source provided");
-      Te (args->c.binds[i].dst[0] != 0, "--bind: no destination provided");
+   case 'b': {
+         char *src, *dst;
+         for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
+            ;
+         T_ (args->c.binds = realloc(args->c.binds,
+                                     (i+2) * sizeof(struct bind)));
+         args->c.binds[i+1].src = NULL;                 // terminating zero
+         args->c.binds[i].dep = BD_MAKE_DST;
+         // source
+         src = strsep(&arg, ":");
+         T_ (src != NULL);
+         Te (src[0] != 0, "--bind: no source provided");
+         args->c.binds[i].src = src;
+         // destination
+         dst = arg ? arg : src;
+         Te (dst[0] != 0, "--bind: no destination provided");
+         INFO("foo: %s, %d", dst, strcmp(dst, "/"))
+         Te (strcmp(dst, "/"), "--bind: destination can't be /");
+         Te (dst[0] == '/', "--bind: destination must be absolute");
+         args->c.binds[i].dst = dst;
+      }
       break;
    case 'g':
       i = parse_int(arg, false, "--gid");
@@ -440,7 +448,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case 'v':
       verbose++;
-      Te(verbose <= 3, "--verbose can be specified at most twice");
+      Te(verbose <= 4, "--verbose can be specified at most thrice");
       break;
    case 'w':
       args->c.writable = true;

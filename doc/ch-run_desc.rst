@@ -26,6 +26,16 @@ unpacked image directory located at :code:`NEWROOT`.
     Most images do have ten directories :code:`/mnt/[0-9]` already available
     as mount points.
 
+    Symlinks in :code:`DST` are followed, and this has a subtle gotcha for
+    absolute links. Bind-mounting happens after namespace setup but before
+    pivoting into the container image, so absolute links use the host root.
+    For example, suppose the image has a symlink :code:`/foo -> /mnt`. Then,
+    :code:`--bind=/bar:/foo` would bind-mount on the *host's* :code:`/mnt`,
+    which is inaccessible on the host because namespaces are already set up
+    and *also* inaccessible in the container because of the subsequent pivot
+    into the image. To avoid directory creation surprises, :code:`ch-run` will
+    refuse to follow absolute symlinks if creating a new :code:`DST`.
+
   :code:`-c`, :code:`--cd=DIR`
     Initial working directory in container.
 
