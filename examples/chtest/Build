@@ -111,10 +111,11 @@ touch img/mnt/dev/dontdeleteme
 touch img/.hiddenfile1 img/..hiddenfile2 img/...hiddenfile3
 
 # Fixtures for bind-mounting
-ln -s ../bind4 mnt/bind4
-ln -s ./doesnotexist mnt/link-b0rken
-ln -s /tmp mnt/link-bad-absolute
-ln -s ../.. mnt/link-bad-relative
+ln -s ../bind4 img/mnt/bind4
+ln -s ./doesnotexist img/mnt/link-b0rken-rel
+ln -s /doesnotexist img/mnt/link-b0rken-abs
+ln -s /tmp img/mnt/link-bad-abs
+ln -s ../.. img/mnt/link-bad-rel
 
 
 ## Tar it up.

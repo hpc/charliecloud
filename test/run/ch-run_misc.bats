@@ -336,31 +336,37 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"can't mkdir: ${ch_timg}/goops: Read-only file system"* ]]
 
-    # destination is broken symlink, directly
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken" "$ch_timg" -- /bin/true
+    # destination is broken symlink, absolute
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken-abs" "$ch_timg" \
+        -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: broken symlink: ${ch_timg}/mnt/link-b0rken"* ]]
+    [[ $output = *"can't mkdir: symlink not relative: ${ch_timg}/mnt/link-b0rken-abs"* ]]
+
+    # destination is broken symlink, relative, directly
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken-rel" "$ch_timg" \
+        -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: broken symlink: ${ch_timg}/mnt/link-b0rken-rel"* ]]
     [[ ! -e ${ch_timg}/mnt/doesnotexist ]]
 
     # destination goes through broken symlink
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken/a" "$ch_timg" \
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken-rel/a" "$ch_timg" \
                -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: broken symlink: ${ch_timg}/mnt/link-b0rken"* ]]
+    [[ $output = *"can't mkdir: broken symlink: ${ch_timg}/mnt/link-b0rken-rel"* ]]
     [[ ! -e ${ch_timg}/mnt/doesnotexist ]]
 
-    # destination is absolute symlink
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-absolute" "$ch_timg" \
-               -- /bin/true
+    # destination is absolute symlink outside image
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-abs" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't bind: /tmp not subdirectory of ${ch_timg}"* ]]
 
     # destination relative symlink outside image
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-absolute" "$ch_timg" \
-               -- /bin/true
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-rel" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't bind: "*" not subdirectory of ${ch_timg}"* ]]
@@ -664,7 +670,7 @@ EOF
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind: not found: .+/${f}"
+        r="can't bind: destination not found: .+/${f}"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
     done
@@ -703,7 +709,7 @@ EOF
         mkdir "${img}/${d}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind: not found: .+/${d}"
+        r="can't bind: destination not found: .+/${d}"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
     done

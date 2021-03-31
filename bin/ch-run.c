@@ -420,7 +420,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
          // destination
          dst = arg ? arg : src;
          Te (dst[0] != 0, "--bind: no destination provided");
-         INFO("foo: %s, %d", dst, strcmp(dst, "/"))
          Te (strcmp(dst, "/"), "--bind: destination can't be /");
          Te (dst[0] == '/', "--bind: destination must be absolute");
          args->c.binds[i].dst = dst;

@@ -90,10 +90,9 @@ void mkdirs(const char *base, const char *path)
    T_ (base[0] != 0   && path[0] != 0);      // no empty paths
    T_ (base[0] == '/' && path[0] == '/');    // absolute paths only
 
-   basec = realpath(base, NULL);
-   Tf (basec != NULL, "can't canonicalize: %s", base);
+   basec = realpath_safe(base);
 
-   DEBUG("mkdirs: base: %s", base);
+   DEBUG("mkdirs: base: %s", basec);
    DEBUG("mkdirs: path: %s", path);
 
    pathw = cat(path, "");  // writeable copy
@@ -234,7 +233,7 @@ void path_split(const char *path, char **dir, char **base)
 
       path_subdir_p("/foo", "/foo/bar")   => true
       path_subdir_p("/foo", "/bar")       => false
-      path_subdir)p("/foo/bar", "/foo/b") => false */
+      path_subdir_p("/foo/bar", "/foo/b") => false */
 bool path_subdir_p(const char *base, const char *path)
 {
    int base_len = strlen(base);
@@ -242,9 +241,11 @@ bool path_subdir_p(const char *base, const char *path)
    if (base_len > strlen(path))
       return false;
 
-   return (   !strcmp(base, "/")  // below logic breaks if base is root
-           || (   !strncmp(base, path, base_len)
-               && (path[base_len] == '/' || path[base_len] == 0)));
+   if (!strcmp(base, "/"))  // below logic breaks if base is root
+      return true;
+
+   return (   !strncmp(base, path, base_len)
+           && (path[base_len] == '/' || path[base_len] == 0));
 }
 
 /* Like realpath(3), but exit with error on failure. */
@@ -253,8 +254,6 @@ char *realpath_safe(const char *path)
    char *pathc;
 
    pathc = realpath(path, NULL);
-   INFO("path %s", path);
-   INFO("pathc %s", pathc);
    Tf (pathc != NULL, "can't canonicalize: %s", path);
    return pathc;
 }
