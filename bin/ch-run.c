@@ -209,25 +209,25 @@ void env_expand(char* env_set[], int argv, bool expand, char* filename)
          (new_value)++;                           
       }
    
-      char *token;
+      char *token, *r;
       char *new_env = "";
-      token = strtok(new_value, ":"); 
-      while( token != NULL ) {  //parses line at ':'      
-         if (token[0] == '$' && expand) { //if starts with $ and no --env-no-expand 
+      r = strdup(new_value);
+      token = strsep(&r, ":"); 
+
+      while(token != NULL) { //walk through tokens split at :
+         if (token[0] == '$' && expand && token[1] != '\0') { //environment variable and no --env-no-expand 
             token ++;
-            if (getenv(token) != NULL) { 
-               if (new_env[0] != '\0')  //if new value isn't empty add ':'
-                  new_env = cat(new_env,":");
+            if(getenv(token) != NULL) //token value isn't unset
                new_env = cat(new_env, getenv(token));
-            }
          }
-         else { 
-            if (new_env[0] != '\0') //if new value isn't empty add ':'
-               new_env = cat(new_env, ":");
+         else if (token[0] !='\0' ){   //token isn't empty 
             new_env=cat(new_env, token);
          }
-         token = strtok(NULL, ":"); 
+         token = strsep(&r, ":");
+         if (token != NULL)   //append : except on last token
+            new_env = cat(new_env, ":"); 
       }
+      free(r); 
       INFO("environment: %s=%s", name, new_env);
       Z_ (setenv(name, new_env, 1));
    }
