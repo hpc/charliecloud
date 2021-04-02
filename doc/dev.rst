@@ -1255,6 +1255,7 @@ the commit you would like to change the lark version to. Go to
 https://github.com/lark-parser/lark/tags and choose a tagged release.
 
 .. code-block:: bash
+  
   git clone https://github.com/hpc/charliecloud.git
   cd charliecloud
   ./autogen.sh
