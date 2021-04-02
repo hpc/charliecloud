@@ -123,6 +123,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_libdir}/%{name}/*.sh
 %{_libdir}/%{name}/contributors.bash
 %{_libdir}/%{name}/version.txt
+%{_libdir}/%{name}/lark_parser.egg
 
 # Binary files.
 %{_bindir}/ch-*
