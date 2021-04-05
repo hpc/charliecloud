@@ -1170,21 +1170,22 @@ class Storage:
       except KeyError:
          return None
 
-   def builder_storage_p(self):
-      return (os.path.isdir(self.unpack_base) and 
-              os.path.isdir(self.download_cache))
-
    def manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
    def reset(self):
-      if (self.builder_storage_p()):
+      if (self.valid_p()):
          rmtree(self.root)
       else:
          FATAL("%s not a builder storage" % (self.root));
-  
+
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
+
+   def valid_p(self):
+      "Return True if storage present and seems valid, False otherwise."
+      return (os.path.isdir(self.unpack_base) and
+              os.path.isdir(self.download_cache))
 
 
 class TarFile(tarfile.TarFile):

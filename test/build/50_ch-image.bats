@@ -65,24 +65,34 @@ EOF
 
 @test 'ch-image reset' {
    export CH_IMAGE_STORAGE="$BATS_TMPDIR"/reset
-   ch-image pull alpine
-   run ls "$CH_IMAGE_STORAGE"
+
+   # Ensure our test storage dir doesn't exist yet.
+   [[ ! -e $CH_IMAGE_STORAGE ]]
+
+   # Put an image innit.
+   ch-image pull alpine:3.9
+   ls "$CH_IMAGE_STORAGE"
+
+   # List images; should be only the one we just pulled.
+   run ch-image list
    echo "$output"
    [[ $status -eq 0 ]]
-   [[ $output = *"dlcache"* ]]
-   [[ $output = *"img"* ]]   
+   [[ $output = "alpine:3.9" ]]
 
+   # Reset.
    ch-image reset
-   run ls "$BATS_TMPDIR"
-   echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output != *"reset"* ]]
 
-   run ls "$CH_IMAGE_STORAGE"
-   echo "$output"
-   [[ $status -eq 2 ]]
-   [[ $output = *"'$CH_IMAGE_STORAGE': No such file or directory"* ]]
+   # Image storage directory should be gone.
+   ls "$CH_IMAGE_STORAGE" || true
+   [[ ! -e $CH_IMAGE_STORAGE ]]
 
+   # List images; should error with not found.
+   run ch-image list
+   echo "$output"
+   [[ $status -eq 1 ]]
+   [[ $output = *"$CH_IMAGE_STORAGE/img: No such file or directory"* ]]
+
+   # Reset again; should error.
    run ch-image reset
    echo "$output"
    [[ $status -eq 1 ]]
