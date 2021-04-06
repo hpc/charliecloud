@@ -89,8 +89,7 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
    char *dst_fullc, *newrootc;
    char *dst_full = cat(newroot, dst);
 
-
-   Te (src[0] != 0 && src[0] != 0 && newroot[0] != 0, "empty string");
+   Te (src[0] != 0 && dst[0] != 0 && newroot[0] != 0, "empty string");
    Te (dst[0] == '/' && newroot[0] == '/', "relative path");
 
    if (!path_exists(src, NULL, true)) {
