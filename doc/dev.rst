@@ -1250,7 +1250,7 @@ Additional sources
 Updating bundled Lark Parser
 ============================
 
-In order to change the version of the blunded lark parser you must first find
+In order to change the version of the bundled lark parser you must first find
 the commit you would like to change the lark version to. Go to
 https://github.com/lark-parser/lark/tags and choose a tagged release.
 
