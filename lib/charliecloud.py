@@ -40,7 +40,7 @@ try:
    lark_path = os.path.abspath(lark.__file__)
    desired_path = os.path.dirname(os.path.abspath(__file__)) + "/lark_parser.egg/lark/__init__.py"
    if lark_path != desired_path:
-       sys.exit("Lark found was not embedded")
+       sys.exit("lark-parser found was not embedded")
 except (ImportError, AttributeError) as x:
    if (isinstance(x, ImportError)):
       depfails.append(("missing", 'Python module "lark-parser"'))
