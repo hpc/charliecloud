@@ -18,6 +18,7 @@ a file in the tarball at :code:`$IMAGE/ch/environment`, in a form suitable for
 See :code:`ch-build(1)` for details on specifying the builder.
 
 Additional arguments:
+
   :code:`-b`, :code:`--builder BUILDER`
     Use specified builder; if not given, use :code:`$CH_BUILDER` or default.
 
