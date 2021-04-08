@@ -4,6 +4,7 @@
    are modest and the program is short-lived. */
 
 #define _GNU_SOURCE
+#define ENV_MAX 50
 #include <argp.h>
 #include <fnmatch.h>
 #include <stdlib.h>
@@ -64,8 +65,6 @@ const struct argp_option options[] = {
    { 0 }
 };
 
-/* One possible future here is that fix_environment() ends up in ch_base.c and
-   we add other actions such as SET, APPEND_PATH, etc. */
 enum env_action { END = 0, SET_ENV, UNSET_GLOB };
 
 struct env_delta {
@@ -188,9 +187,10 @@ void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
    (*ds)[i].arg = arg;
 }
 
-/* Parse each line from --set-env at ':'. Each value is appended to the new
-   environment variable. '$' indicated that the variable will get expanded
-   except if --env-no-expand option is included. */
+/* Read input variable value pairs from --set-env. Split at '=' and tokenize
+   value on ':'. Each tokenize value append to new environment variable value.
+   '$' indicates that the variable will get expanded except if --env-no-expand
+   option is included. */
 void env_expand(char* env_set[], int argv, bool expand, char* filename)
 {
    int i;
@@ -209,10 +209,9 @@ void env_expand(char* env_set[], int argv, bool expand, char* filename)
          (new_value)++;                           
       }
    
-      char *token, *r;
+      char *token; 
       char *new_env = "";
-      r = strdup(new_value);
-      token = strsep(&r, ":"); 
+      token = strsep(&new_value, ":"); 
 
       while(token != NULL) { //walk through tokens split at :
          if (token[0] == '$' && expand && token[1] != '\0') { //environment variable and no --env-no-expand 
@@ -223,11 +222,10 @@ void env_expand(char* env_set[], int argv, bool expand, char* filename)
          else if (token[0] !='\0' ){   //token isn't empty 
             new_env=cat(new_env, token);
          }
-         token = strsep(&r, ":");
+         token = strsep(&new_value, ":");
          if (token != NULL)   //append : except on last token
             new_env = cat(new_env, ":"); 
       }
-      free(r); 
       INFO("environment: %s=%s", name, new_env);
       Z_ (setenv(name, new_env, 1));
    }
@@ -236,7 +234,7 @@ void env_expand(char* env_set[], int argv, bool expand, char* filename)
 /* Error checking for env_expand */
 void env_expand_error(char* name, char* filename, int line)
 {
-   if (filename !=NULL) {
+   if (filename != NULL) {
       Te (name != NULL, "--set-env: no delimiter: %s:%d", filename, line);
       Te (strlen(name) != 0, "--set-env: empty name: %s:%d", filename, line);
    }
@@ -273,7 +271,7 @@ void fix_environment(struct args *args)
    }
 
    // --set-env and --unset-env.
-   char* env_set[50];
+   char* env_set[ENV_MAX];
    int env_setv;
    for (int i = 0; args->env_deltas[i].action != END; i++) {
       char *arg = args->env_deltas[i].arg;
