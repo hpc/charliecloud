@@ -8,6 +8,7 @@ Synopsis
    $ ch-image [...] list
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
+   $ ch-image [...] rename IMAGE_REF NEW_IMAGE_REF
    $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
@@ -46,7 +47,6 @@ Common options placed before the sub-command:
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
-
 
 Storage directory
 =================
@@ -237,7 +237,7 @@ Options:
     :code:`--list-arch IMAGE_REF` for list of valid platform architectures.
 
   :code:`--list-arch`
-    Print a list of valid :code:`--arch` targets for image
+    Print a list of valid :code:`--arch` targets for image tagged
     :code:`IMAGE_REF`.
 
   :code:`--last-layer N`
@@ -249,10 +249,11 @@ Options:
     without talking to the internet or touching the storage directory.
 
 This script tries to target the appropriate architecture when pulling. For
-example, when pulling :code:`centos:7`, first check for the
-existence of a fat manifest. If found, pull the architecture that most closely
-matches :code:`uname -m`; otherwise pull and store arch metadata as
-`arch-undefined`.
+example, when pulling the image tagged :code:`centos:7`, first check for the
+existence of a fat manifest. If found, check for the architecture matching the
+host. If a match is found, pull it; otherwise proceed as if the fat manifest
+does not exist. If a fat manifest does not exist, pull the image without trying
+to guess the appropriate architecture.
 
 This script does a fair amount of validation and fixing of the layer tarballs
 before flattening in order to support unprivileged use despite image problems
@@ -305,11 +306,15 @@ Options:
     Use the unpacked image located at :code:`DIR` rather than an image in the
     storage directory named :code:`IMAGE_REF`.
 
+:code:`rename`
+--------------
+
+Rename image described by reference :code:`IMAGE_REF` to :code:`NEW_IMAGE_REF`.
+
 :code:`storage-path`
 --------------------
 
 Print the storage directory path and exit.
-
 
 Compatibility with other Dockerfile interpreters
 ================================================
@@ -564,12 +569,27 @@ Print list of targetable architecturess for the Debian Buster image.::
    ppc64le
    s390x
 
-Download the arm64 variant of Debian Stretch.::
+Specify the aarch64 version of Debian Stretch using :code:`--arch`.::
 
    $ ch-grow pull --arch=arm64/v8 debian:buster
    pulling image:   debian:buster
    fat manifest: using existing
    architecture: arm64v8 (aarch64)
+   manifest: downloading
+   layer 1/1: 04aacb1: downloading
+   layer 1/1: 04aacb1: listing
+   validating tarball members
+   resolving whiteouts
+   flattening image
+   layer 1/1: 04aacb1: extracting
+   done
+
+Specify the aarch32 version of Debian Stretch using long name.::
+
+   $ ch-grow pull arm/v7/debian:buster
+   pulling image:   arm/v7/debian:buster
+   fat manifest: using existing
+   architecture: armv7 (aarch32)
    manifest: downloading
    layer 1/1: 04aacb1: downloading
    layer 1/1: 04aacb1: listing
@@ -643,5 +663,18 @@ in the remote registry, so we don't upload it again.)
    cleaning up
    done
 
+:code:`list`
+-----------
+
+List images in storage.
+
+::
+
+  $ ch-image list
+  IMAGE REFERENCE            NAME      TAG        ARCH
+  arm64/v8/debian:stretch    debian    stretch    arm64v8 (aarch64)
+  debian:stretch             debian    stretch    amd64 (x86_64)
+  centos:8                   centos    8          ppcle64
+  centos:7                   centos    7          amd64 (x86_64)
 
 ..  LocalWords:  tmpfs'es bigvendor

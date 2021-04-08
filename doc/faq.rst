@@ -650,6 +650,30 @@ see image references like:
 
 See :code:`charliecloud.py` for a specific grammar that implements this.
 
+How can I pull a version of an image with the same architecture as my host?
+---------------------------------------------------------------------------
+
+Charliecloud will try to pull a version of the specified image described by
+:code:`IMAGE_REF` that matches the architecture of the host.
+
+For example, if you're on a ppcle64 (power9) machine and pull the image
+:code:`centos:8`, Charliecloud will check the fat manifest for a ppcle64 version
+and pull it.::
+
+  $ uname -m
+  ppcle64
+  $ ch-image pull centos:8
+  pulling image: centos:8
+  fat manifest: downloading
+  architecture: ppcle64
+  manifest: downloading
+  [...]
+
+Note that not all images have a fat manifest. In this case there is only one
+version of the image described by :code:`IMAGE_REF`, and charliecloud will
+download that regardless of what architecture it is. To see a list of supported
+architectures an image has, see :code:`ch-image list`.
+
 Can I build or pull images using a tool Charliecloud doesn't know about?
 ------------------------------------------------------------------------
 
