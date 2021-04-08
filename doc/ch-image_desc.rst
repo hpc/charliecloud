@@ -231,6 +231,15 @@ Destination:
 
 Options:
 
+  :code:`--arch`
+    Specify architecture :code:`--arch=ARCH[/VARIANT]` for image described by
+    :code:`IMAGE_REF`. If found pull it; otherwise error. Use
+    :code:`--list-arch IMAGE_REF` for list of valid platform architectures.
+
+  :code:`--list-arch`
+    Print a list of valid :code:`--arch` targets for image
+    :code:`IMAGE_REF`.
+
   :code:`--last-layer N`
     Unpack only :code:`N` layers, leaving an incomplete image. This option is
     intended for debugging.
@@ -238,6 +247,12 @@ Options:
   :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
+
+This script tries to target the appropriate architecture when pulling. For
+example, when pulling :code:`centos:7`, first check for the
+existence of a fat manifest. If found, pull the architecture that most closely
+matches :code:`uname -m`; otherwise pull and store arch metadata as
+`arch-undefined`.
 
 This script does a fair amount of validation and fixing of the layer tarballs
 before flattening in order to support unprivileged use despite image problems
@@ -516,7 +531,8 @@ Download the Debian Buster image and place it in the storage directory::
 
   $ ch-image pull debian:buster
   pulling image:   debian:buster
-
+  fat manifest: downloading
+  architecture: amd64 (x86_64)
   manifest: downloading
   layer 1/1: d6ff36c: downloading
   layer 1/1: d6ff36c: listing
@@ -533,6 +549,35 @@ Same, except place the image in :code:`/tmp/buster`::
    $ ls /tmp/buster
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
+
+Print list of targetable architecturess for the Debian Buster image.::
+
+   $ ch-image pull --list-arch debian:buster
+   fat manifest: using existing
+   available platforms:
+   amd64
+   arm/v5
+   arm/v7
+   arm64/v8
+   386
+   mips64le
+   ppc64le
+   s390x
+
+Download the arm64 variant of Debian Stretch.::
+
+   $ ch-grow pull --arch=arm64/v8 debian:buster
+   pulling image:   debian:buster
+   fat manifest: using existing
+   architecture: arm64v8 (aarch64)
+   manifest: downloading
+   layer 1/1: 04aacb1: downloading
+   layer 1/1: 04aacb1: listing
+   validating tarball members
+   resolving whiteouts
+   flattening image
+   layer 1/1: 04aacb1: extracting
+   done
 
 :code:`push`
 ------------
