@@ -48,5 +48,8 @@ def list_(cli):
 def python_path(cli):
    print(sys.executable)
 
+def reset(cli):
+   ch.storage.reset()
+
 def storage_path(cli):
    print(ch.storage.root)
