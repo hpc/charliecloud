@@ -4,7 +4,6 @@
    are modest and the program is short-lived. */
 
 #define _GNU_SOURCE
-#define ENV_MAX 50
 #include <argp.h>
 #include <fnmatch.h>
 #include <stdlib.h>
@@ -17,6 +16,7 @@
 
 
 /** Constants and macros **/
+#define ENV_MAX 50
 
 /* Environment variables used by --join parameters. */
 char *JOIN_CT_ENV[] =  { "OMPI_COMM_WORLD_LOCAL_SIZE",
@@ -187,10 +187,8 @@ void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
    (*ds)[i].arg = arg;
 }
 
-/* Read input variable value pairs from --set-env. Split at '=' and tokenize
-   value on ':'. Each tokenize value append to new environment variable value.
-   '$' indicates that the variable will get expanded except if --env-no-expand
-   option is included. */
+/* Read input variable value pairs from --set-env and set environment variable
+   as stated in documentation */
 void env_expand(char* env_set[], int argv, bool expand, char* filename)
 {
    int i;
@@ -271,7 +269,7 @@ void fix_environment(struct args *args)
    }
 
    // --set-env and --unset-env.
-   char* env_set[ENV_MAX];
+   char *env_set[ENV_MAX];
    int env_setv;
    for (int i = 0; args->env_deltas[i].action != END; i++) {
       char *arg = args->env_deltas[i].arg;
@@ -299,6 +297,7 @@ void fix_environment(struct args *args)
             }
             if (line[strlen(line) - 1] == '\n')
                line[strlen(line) - 1] = 0;  // remove newline
+            Te (env_setv < ENV_MAX, "--set-env: overflow: %s:%d", arg, line);
             env_set[env_setv] = line;
             env_setv++;
          }
