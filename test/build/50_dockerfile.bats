@@ -641,11 +641,7 @@ COPY ["Build.missing", "common.bash", "/etc/fstab/"]
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = docker ]]; then
-        [[ $output = *'not a directory'* ]]
-    else
-        [[ $output = *'not a directory'* ]]
-    fi
+    [[ $output = *'not a directory'* ]]
 }
 
 @test 'Dockerfile: COPY errors' {
