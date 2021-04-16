@@ -128,6 +128,32 @@ EOF
     tar rf "$tar" -b1 -P --xform="s|${temp}|ch/environment|" "$temp"
     rm "$temp"
 
+    echo "adding metadata"
+    temp=$(mktemp --tmpdir ch-builder2tar.XXXXXX)
+    buildah inspect --format='{{print "{\n"}}'\
+'{{printf "  \"arch\": %q,\n" .Docker.Architecture}}'\
+'{{print "  \"cwd\": "}}{{if .Docker.Config.WorkingDir}}'\
+'{{.Docker.Config.WorkingDir}}{{else}}{{print "\"\""}}{{end}}{{print ",\n"}}'\
+'{{print "  \"env\": {\n    "}}{{range $i, $v := .Docker.Config.Env}}'\
+'{{if $i}}{{print ",\n    "}}{{end}}{{printf "%q" $v}}{{end}}'\
+'{{print "\n  }\n"}}{{print "  \"labels\": {"}}'\
+'{{if .Docker.Config.Labels}}{{print "\n"}}'\
+'{{range $key, $v := .Docker.Config.Labels}}'\
+'{{printf "    \"%s\": \"%s\",\n" $key $v}}{{end}}{{print "  }"}}{{else}}'\
+'{{print "}"}}{{end}}{{print ",  \n"}}'\
+'{{print "  \"shell\": [\n    "}}'\
+'{{range $i, $v := .Docker.ContainerConfig.Cmd}}'\
+'{{if $i}}{{printf ",\n    " .}}{{end}}{{printf "%q" $v}}{{end}}'\
+'{{print "\n  ]\n"}}'\
+'{{print "  \"volumes\": "}}{{if .Docker.Config.Volumes}}{{print "["}}'\
+'{{range $key, $v := .Docker.Config.Volumes}}{{printf "\n    %q," $key}}'\
+'{{end}}{{print "\n  ]"}}{{else}}{{print "[]"}}{{end}}'\
+'{{print "\n}\n"}}' "$image" > "$temp"
+    # Fix last comma corner cases for maps with {} and []
+    sed -i ':begin;$!N;s/,\n  }/\n  }/g;tbegin;P;D' "$temp"
+    sed -i ':begin;$!N;s/,\n  ]/\n  ]/g;tbegin;P;D' "$temp"
+    tar rf "$tar" -b1 -P --xform="s|${temp}|ch/metadata.json|" "$temp"
+    rm "$temp"
     ;;
 
 ch-image)
@@ -155,6 +181,28 @@ docker)
     tar rf "$tar" -b1 -P --xform="s|${temp}|ch/environment|" "$temp"
     rm "$temp"
 
+    echo "adding metadata"
+    temp=$(mktemp --tmpdir ch-builder2tar.XXXXXX)
+    docker_ inspect "$image" \
+            --format='{{print "{\n"}}'\
+'{{printf "  \"arch\": %q,\n" .Architecture}}'\
+'{{print "  \"cwd\": "}}{{if .Config.WorkingDir}}'\
+'{{.Config.WorkingDir}}{{else}}{{print "\"\""}}{{end}}{{print ",\n"}}'\
+'{{print "  \"env\": {\n    "}}{{range $i, $v := .Config.Env}}'\
+'{{if $i}}{{print ",\n    "}}{{end}}{{printf "%q" $v}}{{end}}'\
+'{{print "\n  }\n"}}{{print "  \"labels\": {"}}'\
+'{{if .Config.Labels}}{{print "\n"}}'\
+'{{range $key, $v := .Config.Labels}}'\
+'{{printf "    \"%s\": \"%s\",\n" $key $v}}{{end}}{{print "  }"}}{{else}}'\
+'{{print "}"}}{{end}}{{print ",  \n"}}'\
+'{{print "  \"shell\": "}}{{json .ContainerConfig.Cmd}}{{print "\n"}}'\
+'{{print "  \"volumes\": "}}{{if .Config.Volumes}}{{print "["}}'\
+'{{range $key, $v := .Config.Volumes}}{{printf "\n    %q," $key}}'\
+'{{end}}{{print "\n  ]"}}{{else}}{{print "[]"}}{{end}}'\
+'{{print "\n}\n"}}' > "$temp"
+    sed -i ':begin;$!N;s/,\n  }/\n  }/g;tbegin;P;D' "$temp"
+    sed -i ':begin;$!N;s/,\n  ]/\n  ]/g;tbegin;P;D' "$temp"
+    tar rf "$tar" -b1 -P --xform="s|${temp}|ch/metadata.json|" "$temp"
     ;;
 
 none)
