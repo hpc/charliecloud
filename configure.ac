@@ -348,6 +348,7 @@ EOF
   CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
     [-c 'import requests; print(requests.__version__)'])
 ])
+
 # ShellCheck
 vmin_shellcheck=0.6.0
 AC_CHECK_PROG([SHELLCHECK], [shellcheck], [shellcheck])

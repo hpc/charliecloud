@@ -56,8 +56,7 @@ try:
    import requests
    import requests.auth
    import requests.exceptions
-except ImportError as e:
-   print(e)
+except ImportError:
    depfails.append(("missing", 'Python module "requests"'))
    # Mock up a requests.auth module so the rest of the file parses.
    requests = types.ModuleType("requests")
