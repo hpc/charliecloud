@@ -525,10 +525,10 @@ List images in storage.
 ::
 
   $ ch-image list
-  arm64/v8/debian:stretch (aarch64)
-  centos:7 (x86_64)
-  centos:8 (ppcle64)
-  debian:stretch (x86_64)
+  arm64/v8/debian:stretch (arm64/v8)
+  centos:7 (amd64)
+  centos:8 (ppc64le)
+  debian:stretch (amd64)
 
 Print list of targetable architecturess for the Debian Buster image.::
 
@@ -552,7 +552,7 @@ Download the Debian Buster image and place it in the storage directory::
   $ ch-image pull debian:buster
   pulling image:   debian:buster
   fat manifest: downloading
-  architecture: amd64 (x86_64)
+  architecture: amd64
   manifest: downloading
   layer 1/1: d6ff36c: downloading
   layer 1/1: d6ff36c: listing
@@ -575,7 +575,7 @@ Specify the aarch64 version of Debian Stretch using :code:`--arch`.::
    $ ch-image pull --arch=arm64/v8 debian:buster
    pulling image:   debian:buster
    fat manifest: using existing
-   architecture: aarch64
+   architecture: arm64/v8
    manifest: downloading
    layer 1/1: 04aacb1: downloading
    layer 1/1: 04aacb1: listing
@@ -588,7 +588,7 @@ Specify the aarch64 version of Debian Stretch using :code:`--arch`.::
 Specify the ppc64le version of Debian Stretch using long name.::
 
    $ ch-image pull ppc64le/debian:buster
-   pulling image:   arm/v7/debian:buster
+   pulling image:   ppc64le/debian:buster
    fat manifest: using existing
    architecture: ppc64le
    manifest: downloading
