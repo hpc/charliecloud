@@ -223,13 +223,13 @@ DEFAULT_CONFIGS = {
 
    # Fedora notes:
    #
-   # 1. The supported versions were chosed somewhat arbitrarily based on the
+   # 1. The supported versions were chosen somewhat arbitrarily based on the
    #    release versions available for building (what was on Dockerhub). To
    #    extend support to additional versions one need only adjust the match
    #    config.
    #
-   # 2. The fakeroot package is in the base repository set on so enabling EPEL
-   #    is not required.
+   # 2. The fakeroot package is in the base repository set so enabling EPEL is
+   #    not required.
 
    "fedora":
    { "name": "Fedora 24-35,",
