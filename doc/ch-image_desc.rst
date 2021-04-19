@@ -8,7 +8,6 @@ Synopsis
    $ ch-image [...] list
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
-   $ ch-image [...] rename IMAGE_REF NEW_IMAGE_REF
    $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
@@ -34,6 +33,11 @@ Options that print brief information and then exit:
     Print version number and exit successfully.
 
 Common options placed before the sub-command:
+
+   :code:`--arch`
+    Specify architecture :code:`--arch=ARCH` for image described by
+    :code:`IMAGE_REF`. If image exists but not as architecture
+    :code:`ARCH`, fail with error.
 
   :code:`--no-cache`
     Download everything needed, ignoring the cache.
@@ -231,15 +235,6 @@ Destination:
 
 Options:
 
-  :code:`--arch`
-    Specify architecture :code:`--arch=ARCH[/VARIANT]` for image described by
-    :code:`IMAGE_REF`. If found pull it; otherwise error. Use
-    :code:`--list-arch IMAGE_REF` for list of valid platform architectures.
-
-  :code:`--list-arch`
-    Print a list of valid :code:`--arch` targets for image tagged
-    :code:`IMAGE_REF`.
-
   :code:`--last-layer N`
     Unpack only :code:`N` layers, leaving an incomplete image. This option is
     intended for debugging.
@@ -248,12 +243,10 @@ Options:
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
 
-This script tries to target the appropriate architecture when pulling. For
-example, when pulling the image tagged :code:`centos:7`, first check for the
-existence of a fat manifest. If found, check for the architecture matching the
-host. If a match is found, pull it; otherwise proceed as if the fat manifest
-does not exist. If a fat manifest does not exist, pull the image without trying
-to guess the appropriate architecture.
+This script tries to guess the appropriate architecture when pulling images
+via short-name. For example, when pulling :code:`centos:7`, check for the
+variant that matches the host architecture. If a match is found, pull it;
+otherwise proceed to download :code:`centos:7` as is.
 
 This script does a fair amount of validation and fixing of the layer tarballs
 before flattening in order to support unprivileged use despite image problems
@@ -529,6 +522,33 @@ installing into a layer::
    RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround
    RUN ldconfig
 
+:code:`list`
+-----------
+
+List images in storage.
+
+::
+
+  $ ch-image list
+  arm64/v8/debian:stretch (aarch64)
+  centos:7 (x86_64)
+  centos:8 (ppcle64)
+  debian:stretch (x86_64)
+
+Print list of targetable architecturess for the Debian Buster image.::
+
+   $ ch-image list debian:buster
+   listing architectures: debian:buster
+   fat manifest: using existing
+   amd64
+   arm/v5
+   arm/v7
+   arm64/v8
+   386
+   mips64le
+   ppc64le
+   s390x
+
 :code:`pull`
 ------------
 
@@ -555,26 +575,12 @@ Same, except place the image in :code:`/tmp/buster`::
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
 
-Print list of targetable architecturess for the Debian Buster image.::
-
-   $ ch-image pull --list-arch debian:buster
-   fat manifest: using existing
-   available platforms:
-   amd64
-   arm/v5
-   arm/v7
-   arm64/v8
-   386
-   mips64le
-   ppc64le
-   s390x
-
 Specify the aarch64 version of Debian Stretch using :code:`--arch`.::
 
    $ ch-grow pull --arch=arm64/v8 debian:buster
    pulling image:   debian:buster
    fat manifest: using existing
-   architecture: arm64v8 (aarch64)
+   architecture: aarch64
    manifest: downloading
    layer 1/1: 04aacb1: downloading
    layer 1/1: 04aacb1: listing
@@ -584,12 +590,12 @@ Specify the aarch64 version of Debian Stretch using :code:`--arch`.::
    layer 1/1: 04aacb1: extracting
    done
 
-Specify the aarch32 version of Debian Stretch using long name.::
+Specify the ppc64le version of Debian Stretch using long name.::
 
-   $ ch-grow pull arm/v7/debian:buster
+   $ ch-grow pull ppc64le/debian:buster
    pulling image:   arm/v7/debian:buster
    fat manifest: using existing
-   architecture: armv7 (aarch32)
+   architecture: ppc64le
    manifest: downloading
    layer 1/1: 04aacb1: downloading
    layer 1/1: 04aacb1: listing
@@ -662,19 +668,5 @@ in the remote registry, so we don't upload it again.)
    manifest: uploading
    cleaning up
    done
-
-:code:`list`
------------
-
-List images in storage.
-
-::
-
-  $ ch-image list
-  IMAGE REFERENCE            NAME      TAG        ARCH
-  arm64/v8/debian:stretch    debian    stretch    arm64v8 (aarch64)
-  debian:stretch             debian    stretch    amd64 (x86_64)
-  centos:8                   centos    8          ppcle64
-  centos:7                   centos    7          amd64 (x86_64)
 
 ..  LocalWords:  tmpfs'es bigvendor
