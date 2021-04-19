@@ -128,6 +128,10 @@ fi
 # Ensure directories that ch-run needs exist.
 echo 'This directory is a Charliecloud image.' > "${newroot}/${sentinel}"
 mkdir -p "${newroot}/dev" "${newroot}/etc" "${newroot}/proc" "${newroot}/sys"
+# We may have symlinks with targets not present in the root (at least
+# resolv.conf, e.g. from linuxcontainers.org images), so just ensure
+# empty files.
+rm -f "${newroot}/etc/hosts" "${newroot}/etc/resolv.conf"
 touch "${newroot}/etc/hosts" "${newroot}/etc/resolv.conf"
 for i in $(seq 0 9); do mkdir -p "${newroot}/mnt/${i}"; done
 
