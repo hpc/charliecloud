@@ -203,6 +203,7 @@ docker)
     sed -i ':begin;$!N;s/,\n  }/\n  }/g;tbegin;P;D' "$temp"
     sed -i ':begin;$!N;s/,\n  ]/\n  ]/g;tbegin;P;D' "$temp"
     tar rf "$tar" -b1 -P --xform="s|${temp}|ch/metadata.json|" "$temp"
+    rm "$temp"
     ;;
 
 none)
