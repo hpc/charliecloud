@@ -158,6 +158,9 @@ DEFAULT_CONFIGS = {
    # 4. "dnf config-manager" (CentOS 8) requires installing dnf-plugins-core,
    #    which requires fakeroot, which we don't have when initializing
    #    fakeroot. So sed it is. :P
+   #
+   # 5. On CentOS you can just install epel-release", but not on RHEL, so
+   #    install the rpm explicitly.
 
    "rhel7":
    { "name": "CentOS/RHEL 7",
@@ -165,7 +168,7 @@ DEFAULT_CONFIGS = {
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
-                "yum install -y epel-release; "
+                "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm; "
                 "yum-config-manager --disable epel; "
                 "fi; "
                 "yum --enablerepo=epel install -y fakeroot; ") ],
@@ -178,12 +181,23 @@ DEFAULT_CONFIGS = {
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
-                "dnf install -y epel-release; "
+                "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm; "
                 "ls -lh /etc/yum.repos.d; "
                 "sed -Ei 's/enabled=1$/enabled=0/g' /etc/yum.repos.d/epel*.repo; "
                 "fi; "
                 "dnf --enablerepo=epel install -y fakeroot; ") ],
      "cmds": ["dnf", "rpm", "yum"],
+     "each": ["fakeroot"] },
+
+   # On Fedora we can simply install fakeroot as necessary.
+
+   "fedora":
+   { "name": "Fedora",
+     "match":  ("/etc/redhat-release", r"Fedora"),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "set -ex; "
+                "dnf install -y fakeroot; ") ],
+     "cmds": ["dnf", "rpm"],
      "each": ["fakeroot"] },
 
    # Debian/Ubuntu notes:
@@ -209,8 +223,8 @@ DEFAULT_CONFIGS = {
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
    "debderiv":
-   { "name": "Debian (9, 10) or Ubuntu (16, 18, 20)",
-     "match": ("/etc/os-release", r"(stretch|buster|xenial|bionic|focal)"),
+   { "name": "Debian (9, 10, 11) or Ubuntu (16, 18, 20)",
+     "match": ("/etc/os-release", r"(stretch|buster|bullseye|xenial|bionic|focal)"),
      "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
                 " || ! fgrep -q _apt /etc/passwd",
                 "echo 'APT::Sandbox::User \"root\";'"
@@ -221,6 +235,17 @@ DEFAULT_CONFIGS = {
      "cmds": ["apt", "apt-get", "dpkg"],
      "each": ["fakeroot"] },
 
+   # (Open)SUSE varieties should be straightforward, assuming they all
+   # have fakeroot (only verified on OpenSUSE 15.1).
+
+   "suse":
+   { "name": "SUSE",
+     "match":  ("/etc/os-release", r"SUSE"),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "set -ex; "
+                "zypper install -y fakeroot; ") ],
+     "cmds": ["dnf", "zypper"],
+     "each": ["fakeroot"] },
 }
 
 
