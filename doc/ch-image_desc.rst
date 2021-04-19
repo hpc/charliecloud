@@ -299,11 +299,6 @@ Options:
     Use the unpacked image located at :code:`DIR` rather than an image in the
     storage directory named :code:`IMAGE_REF`.
 
-:code:`rename`
---------------
-
-Rename image described by reference :code:`IMAGE_REF` to :code:`NEW_IMAGE_REF`.
-
 :code:`storage-path`
 --------------------
 
@@ -577,7 +572,7 @@ Same, except place the image in :code:`/tmp/buster`::
 
 Specify the aarch64 version of Debian Stretch using :code:`--arch`.::
 
-   $ ch-grow pull --arch=arm64/v8 debian:buster
+   $ ch-image pull --arch=arm64/v8 debian:buster
    pulling image:   debian:buster
    fat manifest: using existing
    architecture: aarch64
@@ -592,7 +587,7 @@ Specify the aarch64 version of Debian Stretch using :code:`--arch`.::
 
 Specify the ppc64le version of Debian Stretch using long name.::
 
-   $ ch-grow pull ppc64le/debian:buster
+   $ ch-image pull ppc64le/debian:buster
    pulling image:   arm/v7/debian:buster
    fat manifest: using existing
    architecture: ppc64le
