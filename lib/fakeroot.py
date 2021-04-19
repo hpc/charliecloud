@@ -165,7 +165,7 @@ DEFAULT_CONFIGS = {
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
-                "yum install -y epel-release; "
+                "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm; "
                 "yum-config-manager --disable epel; "
                 "fi; "
                 "yum --enablerepo=epel install -y fakeroot; ") ],
@@ -178,7 +178,7 @@ DEFAULT_CONFIGS = {
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
-                "dnf install -y epel-release; "
+                "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm; "
                 "ls -lh /etc/yum.repos.d; "
                 "sed -Ei 's/enabled=1$/enabled=0/g' /etc/yum.repos.d/epel*.repo; "
                 "fi; "
@@ -219,6 +219,24 @@ DEFAULT_CONFIGS = {
                  # update b/c base image ships with no package indexes
                  "apt-get update && apt-get install -y pseudo") ],
      "cmds": ["apt", "apt-get", "dpkg"],
+     "each": ["fakeroot"] },
+
+   # Fedora notes:
+   #
+   # 1. The supported versions were chosed somewhat arbitrarily based on the
+   #    release versions available for building (what was on Dockerhub). To
+   #    extend support to additional versions one need only adjust the match
+   #    config.
+   #
+   # 2. The fakeroot package is in the base repository set on so enabling EPEL
+   #    is not required.
+
+   "fedora":
+   { "name": "Fedora 24-35,",
+     "match":  ("/etc/fedora-release", r"release (2[4-9]|3[0-5])"),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "dnf install -y fakeroot") ],
+     "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 
 }
