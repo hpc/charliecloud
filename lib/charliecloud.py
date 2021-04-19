@@ -39,8 +39,8 @@ try:
    lark.Visitor # AttributeError if wrong module
    lark_path = os.path.abspath(lark.__file__)
    desired_path = os.path.dirname(os.path.abspath(__file__)) + "/lark_parser.egg/lark/__init__.py"
-   if lark_path != desired_path:
-       sys.exit("lark-parser found was not embedded")
+   if (lark_path != desired_path):
+      depfails.append("wrong version", 'Python module "lark-parser" not embedded')
 except (ImportError, AttributeError) as x:
    if (isinstance(x, ImportError)):
       depfails.append(("missing", 'Python module "lark-parser"'))
