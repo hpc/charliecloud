@@ -230,6 +230,14 @@ class Image:
    def __str__(self):
       return str(self.ref)
 
+   @staticmethod
+   def unpacked_p(imgdir):
+      "Return True if imgdir looks like an unpacked image, False otherwise."
+      return (    os.path.isdir(imgdir)
+              and os.path.isdir(imgdir // 'bin')
+              and os.path.isdir(imgdir // 'dev')
+              and os.path.isdir(imgdir // 'usr'))
+
    def commit(self):
       "Commit the current unpack directory into the layer cache."
       assert False, "unimplemented"
@@ -406,7 +414,7 @@ class Image:
 
    def unpack_config(self, config_json):
       if (config_json is None):
-         WARNING("image has no config and thus no metadata")
+         INFO("no config found; initializing empty metadata")
       else:
          # Copy pulled config file into the image so we still have it.
          path = self.metadata_path // "config.pulled.json"
@@ -434,10 +442,7 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path // "bin")
-             or not os.path.isdir(self.unpack_path // "dev")
-             or not os.path.isdir(self.unpack_path // "etc")
-             or not os.path.isdir(self.unpack_path // "usr")):
+         if (not self.unpacked_p(self.unpack_path)):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("removing existing image: %s" % self.unpack_path)
@@ -452,7 +457,7 @@ class Image:
       mkdirs(self.unpack_path // "ch")
       file_ensure_exists(self.unpack_path // "ch/environment")
       # Essential top-level directories.
-      for d in ("bin", "dev", "etc", "mnt", "proc", "usr"):
+      for d in ("bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr"):
          mkdirs(self.unpack_path // d)
       # Mount points.
       file_ensure_exists(self.unpack_path // "etc/hosts")
@@ -582,9 +587,7 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path // "bin")
-             or not os.path.isdir(self.unpack_path // "dev")
-             or not os.path.isdir(self.unpack_path // "usr")):
+         if (not self.unpacked_p(self.unpack_path)):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("replacing existing image: %s" % self.unpack_path)
@@ -592,12 +595,12 @@ class Image:
 
    def unpack_delete(self):
       if (not self.unpack_exist_p()):
-         FATAL("%s image not found" % (self.ref))
-      if (unpacked_image_p(self.unpack_path)):
-         INFO("deleting image: %s" % (self.ref))
+         FATAL("%s image not found" % self.ref)
+      if (self.unpacked_p(self.unpack_path)):
+         INFO("deleting image: %s" % self.ref)
          rmtree(self.unpack_path)
       else:
-         FATAL("storage directory seems broken: not an image: %s" % (self.ref))
+         FATAL("storage directory seems broken: not an image: %s" % self.ref)
 
    def unpack_exist_p(self):
       return os.path.exists(self.unpack_path)
@@ -1591,9 +1594,3 @@ def tree_terminals_cat(tree, tname):
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
-
-def unpacked_image_p(imgdir):
-   return (os.path.isdir(imgdir)
-       and os.path.isdir(imgdir // 'bin')
-       and os.path.isdir(imgdir // 'dev')
-       and os.path.isdir(imgdir // 'opt'))

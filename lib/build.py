@@ -636,9 +636,10 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
       self.base_image = ch.Image(self.base_ref)
-      if (not os.path.isdir(self.base_image.unpack_path)):
-         ch.VERBOSE("image not found, pulling: %s"
-                    % self.base_image.unpack_path)
+      if (os.path.isdir(self.base_image.unpack_path)):
+         ch.VERBOSE("base image found: %s" % self.base_image.unpack_path)
+      else:
+         ch.VERBOSE("base image not found, pulling")
          # a young hen, especially one less than one year old.
          pullet = pull.Image_Puller(self.base_image)
          pullet.pull_to_unpacked()
