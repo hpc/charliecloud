@@ -22,7 +22,7 @@ a.out
 /doc/man/*.[17]
 /lib/charliecloud
 /lib/contributors.bash
-/lib/lark_parser.egg
+/lib/lark*
 /lib/version.py
 /lib/version.sh
 /lib/version.txt

@@ -54,14 +54,8 @@ rm -rf Makefile \
 # Create configure and friends.
 if [[ $1 != --clean ]]; then
     autoreconf --force --install -Wall -Werror
-    if [[ $(command -v  python3) ]]; then
-	rm -rf --one-file-system lib/python_modules/lark*
-	mkdir -p lib/python_modules
-	git submodule init
-	git submodule update
-	cd lib/lark
-	python3 setup.py bdist_egg
-	mv dist/*.egg ../lark_parser.egg
+    if [[ $(command -v  pip3) ]]; then
+	pip3 --isolated install --target=lib --ignore-installed --no-compile lark-parser==0.11.2
     fi
     set +x
     echo

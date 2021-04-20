@@ -11,8 +11,7 @@ dist_mylib_DATA = base.sh \
                   fakeroot.py \
                   misc.py \
                   pull.py \
-                  push.py \
-                  lark_parser.egg
+                  push.py 
 noinst_DATA = charliecloud
 mylib_DATA = contributors.bash \
              version.py \
