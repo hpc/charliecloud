@@ -710,12 +710,16 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-@test "${tag}: Fedora 24: unneeded, no --force, build succeeds" {
+# We would prefer to test the lowest supported --force version, 24, but the
+# ancient version of dnf it has doesn't fail the transaction when a package
+# fails so we test with 26 instead.
+
+@test "${tag}: Fedora 26: unneeded, no --force, build succeeds" {
     scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:24
+FROM fedora:26
 RUN true
 EOF
     echo "$output"
@@ -723,11 +727,11 @@ EOF
     [[ $output = *'available --force: fedora'* ]]
 }
 
-@test "${tag}: Fedora 24: unneeded, no --force, build fails" {
+@test "${tag}: Fedora 26: unneeded, no --force, build fails" {
     scope full
     # no commands that may need it, without --force, build fails
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:24
+FROM fedora:26
 RUN false
 EOF
     echo "$output"
@@ -736,11 +740,11 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Fedora 24: unneeded, with --force" {
+@test "${tag}: Fedora 26: unneeded, with --force" {
     scope full
     # no commands that may need it, with --force, warning
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:24
+FROM fedora:26
 RUN true
 EOF
     echo "$output"
@@ -748,11 +752,11 @@ EOF
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
 }
 
-@test "${tag}: Fedora 24: maybe needed but actually not, no --force" {
+@test "${tag}: Fedora 26: maybe needed but actually not, no --force" {
     scope full
     # commands that may need it, but turns out they don’t, without --force
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:24
+FROM fedora:26
 RUN dnf install -y ed
 EOF
     echo "$output"
@@ -761,11 +765,11 @@ EOF
     [[ $output = *'RUN: available here with --force'* ]]
 }
 
-@test "${tag}: Fedora 24: maybe needed but actually not, with --force" {
+@test "${tag}: Fedora 26: maybe needed but actually not, with --force" {
     scope full
     # commands that may need it, but turns out they don’t, with --force
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:24
+FROM fedora:26
 RUN dnf install -y ed
 EOF
     echo "$output"
@@ -774,15 +778,12 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-# The ancient version of dnf in Fedora 24 doesn't return 1 when a package
-# fails to install so we force a return of 1.
-@test "${tag}: Fedora 24: needed but no --force" {
+@test "${tag}: Fedora 26: needed but no --force" {
     scope full
     # commands that may need it, they do, fail & suggest
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:24
-RUN dnf install -y --setopt=install_weak_deps=false openssh \
-  | grep -q "error: unpacking of archive failed" && true
+FROM fedora:26
+RUN dnf install -y --setopt=install_weak_deps=false openssh
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
@@ -792,11 +793,11 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Fedora 24: needed, with --force" {
+@test "${tag}: Fedora 26: needed, with --force" {
     scope standard
     # commands that may need it, they do, --force, success
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:24
+FROM fedora:26
 RUN dnf install -y --setopt=install_weak_deps=false openssh
 EOF
     echo "$output"
