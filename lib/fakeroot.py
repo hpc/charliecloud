@@ -189,7 +189,9 @@ DEFAULT_CONFIGS = {
      "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 
-   # On Fedora we can simply install fakeroot as necessary.
+   # On Fedora we can simply install fakeroot as necessary.  dnf has
+   # been the default package manager since Fedora 22, which seems
+   # ancient enough, but was available a bit before.
 
    "fedora":
    { "name": "Fedora",
