@@ -31,6 +31,12 @@ builder_choose () {
     esac
 }
 
+# Return success if path $1 exists, without dereferencing links, failure
+# otherwise. ("test -e" dereferences.)
+exist_p () {
+    stat "$1" > /dev/null 2>&1
+}
+
 pack_fmt_valid () {
     case $1 in
     squash)
