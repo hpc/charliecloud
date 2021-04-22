@@ -458,7 +458,7 @@ class Image:
       #
       # WARNING: Keep in sync with shell scripts.
       for d in   ["bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr"] \
-               + ["mnt/%d" for i in range(10)]:
+               + ["mnt/%d" % i for i in range(10)]:
          d = self.unpack_path // d
          if (not os.path.lexists(d)):
             mkdirs(d)
