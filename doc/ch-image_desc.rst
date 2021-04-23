@@ -243,10 +243,10 @@ Options:
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
 
-This script tries to guess the appropriate architecture when pulling images
-via short-name. For example, when pulling :code:`centos:7`, check for the
-variant that matches the host architecture. If a match is found, pull it;
-otherwise proceed to download :code:`centos:7` as is.
+This script tries to guess the appropriate architecture when pulling images.
+For example, when pulling :code:`centos:7`, check for the variant that matches
+the host architecture. If a match is found pull it; otherwise proceed to
+download :code:`centos:7` default (:code:`--arch=default`).
 
 This script does a fair amount of validation and fixing of the layer tarballs
 before flattening in order to support unprivileged use despite image problems
@@ -518,7 +518,7 @@ installing into a layer::
    RUN ldconfig
 
 :code:`list`
------------
+------------
 
 List images in storage.
 
@@ -530,9 +530,12 @@ List images in storage.
   centos:8 (ppc64le)
   debian:stretch (amd64)
 
-Print list of targetable architecturess for the Debian Buster image.::
+:code:`list-arch`
+-----------------
 
-   $ ch-image list debian:buster
+Print list of available architecturess for the Debian Buster image.::
+
+   $ ch-image list-arch debian:buster
    listing architectures: debian:buster
    fat manifest: using existing
    amd64
@@ -570,27 +573,12 @@ Same, except place the image in :code:`/tmp/buster`::
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
 
-Specify the aarch64 version of Debian Stretch using :code:`--arch`.::
+Specify the aarch64 version of Debian Stretch using :code:`--arch=arm64/v8`.::
 
    $ ch-image pull --arch=arm64/v8 debian:buster
    pulling image:   debian:buster
    fat manifest: using existing
    architecture: arm64/v8
-   manifest: downloading
-   layer 1/1: 04aacb1: downloading
-   layer 1/1: 04aacb1: listing
-   validating tarball members
-   resolving whiteouts
-   flattening image
-   layer 1/1: 04aacb1: extracting
-   done
-
-Specify the ppc64le version of Debian Stretch using long name.::
-
-   $ ch-image pull ppc64le/debian:buster
-   pulling image:   ppc64le/debian:buster
-   fat manifest: using existing
-   architecture: ppc64le
    manifest: downloading
    layer 1/1: 04aacb1: downloading
    layer 1/1: 04aacb1: listing
