@@ -74,9 +74,9 @@ class Image_Puller:
       # fat manifest
       if (ch.architecture.guess):
          if (os.path.exists(self.manifest_list_path) and use_cache):
-            ch.INFO("fat manifest: using existing file")
+            ch.INFO("manifest list: using existing file")
          else:
-            ch.INFO("fat manifest: downloading")
+            ch.INFO("manifest list: downloading")
             dl.manifest_list_to_file(self.manifest_list_path)
          manifest_ref = self.manifest_ref_from_arch()
          ch.VERBOSE("matching architecture manifest hash: %s" % manifest_ref)

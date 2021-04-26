@@ -221,8 +221,7 @@ class Image:
         unpack_path .. Directory to unpack the image in; if None, infer path
                        in storage dir from ref."""
 
-   __slots__ = ("arch",
-                "metadata",
+   __slots__ = ("metadata",
                 "ref",
                 "unpack_path")
 
@@ -739,10 +738,10 @@ fields:
 
    @property
    def version(self):
-      if (self.digest is not None):
-         return "sha256:" + self.digest
       if (self.tag is not None):
          return self.tag
+      if (self.digest is not None):
+         return "sha256:" + self.digest
       assert False, "version invalid with no tag or digest"
 
    @property

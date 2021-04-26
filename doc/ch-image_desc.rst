@@ -6,6 +6,7 @@ Synopsis
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] delete IMAGE_REF
    $ ch-image [...] list
+   $ ch-image [...] list-arch IMAGE_REF
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] storage-path
@@ -524,11 +525,12 @@ List images in storage.
 
 ::
 
-  $ ch-image list
-  arm64/v8/debian:stretch (arm64/v8)
-  centos:7 (amd64)
-  centos:8 (ppc64le)
-  debian:stretch (amd64)
+   $ ch-image list
+   00_tiny
+   alpine:3.9
+   alpine:latest
+   centos:7
+   debian:buster
 
 :code:`list-arch`
 -----------------
@@ -537,7 +539,7 @@ Print list of available architecturess for the Debian Buster image.::
 
    $ ch-image list-arch debian:buster
    listing architectures: debian:buster
-   fat manifest: using existing
+   manifest list: using existing
    amd64
    arm/v5
    arm/v7
@@ -552,18 +554,19 @@ Print list of available architecturess for the Debian Buster image.::
 
 Download the Debian Buster image and place it in the storage directory::
 
-  $ ch-image pull debian:buster
-  pulling image:   debian:buster
-  fat manifest: downloading
-  architecture: amd64
-  manifest: downloading
-  layer 1/1: d6ff36c: downloading
-  layer 1/1: d6ff36c: listing
-  validating tarball members
-  resolving whiteouts
-  flattening image
-  layer 1/1: d6ff36c: extracting
-  done
+   $ ch-image pull debian:buster
+   pulling image:   debian:buster
+   architecture:    amd64
+   manifest list: downloading
+   manifest: downloading
+   config: downloading
+   layer 1/1: bd8f6a7: downloading
+   flattening image
+   layer 1/1: bd8f6a7: listing
+   validating tarball members
+   resolving whiteouts
+   layer 1/1: bd8f6a7: extracting
+   done
 
 Same, except place the image in :code:`/tmp/buster`::
 
@@ -577,15 +580,16 @@ Specify the aarch64 version of Debian Stretch using :code:`--arch=arm64/v8`.::
 
    $ ch-image pull --arch=arm64/v8 debian:buster
    pulling image:   debian:buster
-   fat manifest: using existing
-   architecture: arm64/v8
+   architecture:    arm64/v8
+   manifest list: using existing file
    manifest: downloading
-   layer 1/1: 04aacb1: downloading
-   layer 1/1: 04aacb1: listing
+   config: downloading
+   layer 1/1: 01cf0f0: downloading
+   flattening image
+   layer 1/1: 01cf0f0: listing
    validating tarball members
    resolving whiteouts
-   flattening image
-   layer 1/1: 04aacb1: extracting
+   layer 1/1: 01cf0f0: extracting
    done
 
 :code:`push`
