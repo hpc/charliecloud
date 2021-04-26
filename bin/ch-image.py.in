@@ -75,7 +75,10 @@ def main():
    # [2]: https://docs.python.org/3/library/argparse.html#parents
    # [3]: https://stackoverflow.com/a/54936198
    common_opts = \
-      [[ ["--dependencies"],
+      [[ ["-a", "--arch"],
+         { "metavar": "DIR",
+           "help": "specify target image architecture"}],
+       [ ["--dependencies"],
          { "action": misc.Dependencies,
            "help": "print any missing dependencies and exit" }],
        [ ["--no-cache"],

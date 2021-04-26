@@ -11,6 +11,7 @@ import json
 import os
 import getpass
 import pathlib
+import platform
 import re
 import shutil
 import stat
@@ -59,6 +60,15 @@ except ImportError:
 
 ## Globals ##
 
+# Naive guesses at maping uname to Docker architecture references.
+ARCH_MAP = {"aarch32": "arm/v7",
+            "aarch64": "arm64/v8",
+            "armv5l":  "arm/v5",
+            "armv6l":  "arm/v6",
+            "armv7l":  "arm/v7",
+            "armv8l":  "arm64/v8",
+            "x86_64":  "amd64"}
+
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
@@ -73,6 +83,7 @@ tls_verify = True
 
 # Content types for some stuff we care about.
 TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+TYPE_MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
 TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
 TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
@@ -210,7 +221,8 @@ class Image:
         unpack_path .. Directory to unpack the image in; if None, infer path
                        in storage dir from ref."""
 
-   __slots__ = ("metadata",
+   __slots__ = ("arch",
+                "metadata",
                 "ref",
                 "unpack_path")
 
@@ -727,10 +739,10 @@ fields:
 
    @property
    def version(self):
-      if (self.tag is not None):
-         return self.tag
       if (self.digest is not None):
          return "sha256:" + self.digest
+      if (self.tag is not None):
+         return self.tag
       assert False, "version invalid with no tag or digest"
 
    @property
@@ -1065,10 +1077,19 @@ class Registry_HTTP:
       self.blob_upload(digest, fp, note)
       ossafe(fp.close, "can't close: %s" % path)
 
-   def manifest_to_file(self, path):
+   def manifest_to_file(self, path, ref=None):
+      "GET the manifest for the image and save it at path."
+      if (ref is None):
+         ref = self.ref.version
+      url = self._url_of("manifests", ref)
+      self.request("GET", url, out=path, headers={ "Accept" : TYPE_MANIFEST})
+
+   def manifest_list_to_file(self, path):
       "GET the manifest for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
-      self.request("GET", url, out=path, headers={ "Accept": TYPE_MANIFEST })
+      self.request("GET", url, out=path,
+                   headers={ "Accept" : TYPE_MANIFEST_LIST})
+
 
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
@@ -1134,6 +1155,47 @@ class Registry_HTTP:
          self.session = requests.Session()
          self.session.verify = tls_verify
 
+class Architecture:
+
+    """Source of truth for architecture related cooking."""
+
+   __slots__ = ("arch_host",
+                "arch_canon",
+                "guess")
+
+   def __init__(self, arch_cli):
+      self.arch_host  = platform.uname().machine
+      self.arch_canon = None
+      self.guess      = True
+      if (arch_cli is None):
+         self.arch_guess()
+      else:
+         self.arch_arg_check(arch_cli)
+
+   @property
+   def arch_canonical(self):
+      if (self.arch_canon is None):
+         return "unknown"
+      return self.arch_canon
+
+   def arch_arg_check(self, arch):
+      if (arch.lower() != "default"):
+         m = re.match("^(/?\w+(/\w+)?)$", arch)
+         if (m is None):
+            FATAL("arch: %s: invalid syntax; see list-arch" % arch)
+         if (arch[0] == '/'):
+            arch = arch[1:]
+         self.arch_canon = arch
+      else:
+         self.guess = False
+
+   def arch_guess(self):
+      if (self.arch_host in ARCH_MAP.keys()):
+         self.arch_canon = ARCH_MAP[self.arch_host]
+         VERBOSE("canonical arch: %s -> %s" % (self.arch_host, self.arch_canon))
+      else:
+         WARNING("host arch: %s: can't guess canonical arch name"
+                 % self.arch_host)
 
 class Storage:
 
@@ -1186,6 +1248,9 @@ class Storage:
 
    def manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
+
+   def manifest_list_for_download(self, image_ref):
+      return self.download_cache // ("%s.manifest.list.json" % image_ref.for_path)
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
@@ -1439,8 +1504,19 @@ def grep_p(path, rx):
    except OSError as x:
       FATAL("error reading %s: %s" % (path, x.strerror))
 
+def hash_from_file(path):
+   fp = open_(path, "rt", encoding="UTF-8")
+   text = ossafe(fp.read, "can't read: %s" % path)
+   ossafe(fp.close, "can't close: %s" % path)
+   hash_ = hashlib.sha256()
+   hash_.update(text.encode("UTF-8"))
+   return hash_.hexdigest()
+
+def hash_from_digest(sha):
+   return sha.split(":")[-1]
+
 def init(cli):
-   global verbose, log_festoon, log_fp, storage, tls_verify
+   global architecture, log_festoon, log_fp, storage, tls_verify, verbose
    # logging
    assert (0 <= cli.verbose <= 2)
    verbose = cli.verbose
@@ -1454,11 +1530,24 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage object
    storage = Storage(cli.storage)
+   # architecture object
+   architecture = Architecture(cli.arch)
    # TLS verification
    if (cli.tls_no_verify):
       tls_verify = False
       rpu = requests.packages.urllib3
       rpu.disable_warnings(rpu.exceptions.InsecureRequestWarning)
+
+def json_from_file(path):
+   fp = open_(path, "rt", encoding="UTF-8")
+   text = ossafe(fp.read, "can't read: %s" % path)
+   ossafe(fp.close, "can't close: %s" % path)
+   try:
+      json_file = json.loads(text)
+   except json.JSONDecodeError as x:
+      ch.FATAL("can't parse json file: %s:%d: %s"
+               % (self.path, x.lineno, x.msg))
+   return json_file
 
 def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):
