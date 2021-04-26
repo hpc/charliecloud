@@ -128,18 +128,20 @@ class Image_Puller:
          ch.INFO("fat manifest: downloading")
          dl.manifest_list_to_file(self.manifest_list_path)
       manifest = ch.json_from_file(self.manifest_list_path)
+      variant = None
       for k in manifest["manifests"]:
          if (k.get('platform').get('os') != 'linux'):
             continue
          try:
             variant = k.get('platform').get('variant')
-            if (variant is not None):
-               variant = "/" + variant
-               print(k.get('platform').get('architecture') + variant)
-            else:
-               print(k.get('platform').get('architecture'))
          except KeyError:
             True
+         if (variant is not None):
+            variant = "/" + variant
+            print(k.get('platform').get('architecture') + variant)
+         else:
+            print(k.get('platform').get('architecture'))
+
 
    def manifest_load(self):
       """Parse the manifest file and set self.config_hash and
