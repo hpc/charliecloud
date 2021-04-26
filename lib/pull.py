@@ -4,6 +4,17 @@ import sys
 
 import charliecloud as ch
 
+## Constants ##
+
+# Internal library of manifests, e.g. for "FROM scratch" (issue #1013).
+manifests_internal = {
+   "scratch": {  # magic empty image
+      "schemaVersion": 2,
+      "config": { "digest": None },
+      "layers": []
+   }
+}
+
 
 ## Main ##
 
@@ -52,7 +63,10 @@ class Image_Puller:
    @property
    def manifest_path(self):
       "Path to the manifest file."
-      return ch.storage.manifest_for_download(self.image.ref)
+      if (str(self.image.ref) in manifests_internal):
+         return "[internal library]"
+      else:
+         return ch.storage.manifest_for_download(self.image.ref)
 
    def download(self, use_cache):
       """Download image metadata and layers and put them in the download
@@ -64,12 +78,7 @@ class Image_Puller:
       ch.VERBOSE("downloading image: %s" % dl.ref)
       ch.mkdirs(ch.storage.download_cache)
       # manifest
-      if (os.path.exists(self.manifest_path) and use_cache):
-         ch.INFO("manifest: using existing file")
-      else:
-         ch.INFO("manifest: downloading")
-         dl.manifest_to_file(self.manifest_path)
-      self.manifest_load()
+      self.manifest_load(self.manifest_read(dl, use_cache))
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
@@ -95,21 +104,11 @@ class Image_Puller:
       "Return the path to tarball for layer layer_hash."
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
-   def manifest_load(self):
+   def manifest_load(self, manifest):
       """Parse the manifest file and set self.config_hash and
          self.layer_hashes."""
       def bad_key(key):
          ch.FATAL("manifest: %s: no key: %s" % (self.manifest_path, key))
-      # read and parse the JSON
-      fp = ch.open_(self.manifest_path, "rt", encoding="UTF-8")
-      text = ch.ossafe(fp.read, "can't read: %s" % self.manifest_path)
-      ch.ossafe(fp.close, "can't close: %s" % self.manifest_path)
-      ch.DEBUG("manifest:\n%s" % text)
-      try:
-         manifest = json.loads(text)
-      except json.JSONDecodeError as x:
-         ch.FATAL("can't parse manifest file: %s:%d: %s"
-                  % (self.manifest_path, x.lineno, x.msg))
       # validate schema version
       try:
          version = manifest['schemaVersion']
@@ -127,7 +126,9 @@ class Image_Puller:
          self.config_hash = None
       else:  # version == 2
          try:
-            self.config_hash = ch.digest_trim(manifest["config"]["digest"])
+            self.config_hash = manifest["config"]["digest"]
+            if (self.config_hash is not None):
+               self.config_hash = ch.digest_trim(self.config_hash)
          except KeyError:
             bad_key("config/digest")
       # load layer hashes
@@ -146,6 +147,31 @@ class Image_Puller:
          self.layer_hashes.append(ch.digest_trim(i[key2]))
       if (version == 1):
          self.layer_hashes.reverse()
+
+   def manifest_read(self, downloader, use_cache):
+      "Obtain and parse the manifest JSON file; return dictionary."
+      try:
+         # internal manifest library, e.g. for "FROM scratch"
+         manifest = manifests_internal[str(self.image.ref)]
+         ch.INFO("manifest: using internal library")
+      except KeyError:
+         # download the file if needed
+         if (os.path.exists(self.manifest_path) and use_cache):
+            ch.INFO("manifest: using existing file")
+         else:
+            ch.INFO("manifest: downloading")
+            downloader.manifest_to_file(self.manifest_path)
+         # read and parse the JSON
+         fp = ch.open_(self.manifest_path, "rt", encoding="UTF-8")
+         text = ch.ossafe(fp.read, "can't read: %s" % self.manifest_path)
+         ch.ossafe(fp.close, "can't close: %s" % self.manifest_path)
+         ch.DEBUG("manifest:\n%s" % text)
+         try:
+            manifest = json.loads(text)
+         except json.JSONDecodeError as x:
+            ch.FATAL("can't parse manifest file: %s:%d: %s"
+                     % (self.manifest_path, x.lineno, x.msg))
+      return manifest
 
    def pull_to_unpacked(self, use_cache=True, last_layer=None):
       "Pull and flatten image."
