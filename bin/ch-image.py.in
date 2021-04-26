@@ -148,6 +148,14 @@ def main():
    sp.set_defaults(func=misc.list_)
    add_opts(sp, common_opts, True)
 
+   # list available architectures to pull
+   help="list architectures available to pull"
+   sp = sps.add_parser("list-arch", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
+   sp.set_defaults(func=misc.list_arch)
+   add_opts(sp, common_opts, True)
+
    # pull
    help="pull image from remote repository to local filesystem"
    sp = sps.add_parser("pull", help=help, description=help,

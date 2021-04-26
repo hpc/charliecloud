@@ -121,6 +121,26 @@ class Image_Puller:
       "Return the path to tarball for layer layer_hash."
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
+   def list_architectures(self, use_cache):
+      if (os.path.exists(self.manifest_list_path) and use_cache):
+         ch.INFO("fat manifest: using existing file")
+      else:
+         ch.INFO("fat manifest: downloading")
+         dl.manifest_list_to_file(self.manifest_list_path)
+      manifest = ch.json_from_file(self.manifest_list_path)
+      for k in manifest["manifests"]:
+         if (k.get('platform').get('os') != 'linux'):
+            continue
+         try:
+            variant = k.get('platform').get('variant')
+            if (variant is not None):
+               variant = "/" + variant
+               print(k.get('platform').get('architecture') + variant)
+            else:
+               print(k.get('platform').get('architecture'))
+         except KeyError:
+            True
+
    def manifest_load(self):
       """Parse the manifest file and set self.config_hash and
          self.layer_hashes."""

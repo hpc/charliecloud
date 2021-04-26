@@ -1157,7 +1157,7 @@ class Registry_HTTP:
 
 class Architecture:
 
-    """Source of truth for architecture related cooking."""
+   """Source of truth for architecture related cooking."""
 
    __slots__ = ("arch_host",
                 "arch_canon",

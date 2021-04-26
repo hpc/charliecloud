@@ -5,6 +5,7 @@ import os
 import sys
 
 import charliecloud as ch
+import pull as pl
 import version
 
 
@@ -44,6 +45,15 @@ def list_(cli):
    imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
    for img in sorted(imgs):
       print(ch.Image_Ref(img))
+
+def list_arch(cli):
+   ch.dependencies_check()
+   ref = ch.Image_Ref(cli.image_ref)
+   image = ch.Image(ref, ch.storage.unpack_base)
+   ch.INFO("listing architectures for:   %s " % ref)
+   pullet = pl.Image_Puller(image)
+   pullet.list_architectures(not cli.no_cache)
+   ch.done_notify()
 
 def python_path(cli):
    print(sys.executable)
