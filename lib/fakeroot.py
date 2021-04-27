@@ -148,7 +148,7 @@ DEFAULT_CONFIGS = {
    #    repos.
    #
    # 2. Unlike on CentOS, RHEL doesn't have the epel-release rpm in the
-   #    standard repos, so install the rpm directly.
+   #    standard repos, so install via rpm for both.
    #
    # 3. Enabling EPEL can have undesirable side effects, e.g. different
    #    version of things in the base repo that breaks other things. Thus,
@@ -226,17 +226,15 @@ DEFAULT_CONFIGS = {
 
    # Fedora notes:
    #
-   # 1. The supported versions were chosen somewhat arbitrarily based on the
-   #    release versions available for building (what was on Dockerhub). To
-   #    extend support to additional versions one need only adjust the match
-   #    config.
+   # 1. The minimum supported version was chosen somewhat arbitrarily based on the
+   #    release versions available for testing (what was on Dockerhub).
    #
    # 2. The fakeroot package is in the base repository set so enabling EPEL is
    #    not required.
 
    "fedora":
-   { "name": "Fedora 24-35,",
-     "match":  ("/etc/fedora-release", r"release (2[4-9]|3[0-5])"),
+   { "name": "Fedora 24+,",
+     "match":  ("/etc/fedora-release", r"release (2[4-9]|[3-9][0-9])"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "dnf install -y fakeroot") ],
      "cmds": ["dnf", "rpm", "yum"],

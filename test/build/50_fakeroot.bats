@@ -710,12 +710,12 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-# We would prefer to test the lowest supported --force version, 24, but the
-# ancient version of dnf it has doesn't fail the transaction when a package
-# fails so we test with 26 instead.
-
 @test "${tag}: Fedora 26: unneeded, no --force, build succeeds" {
     scope standard
+    # We would prefer to test the lowest supported --force version, 24,
+    # but the ancient version of dnf it has doesn't fail the transaction when
+    # a package fails so we test with 26 instead.
+    #
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
@@ -806,12 +806,12 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-@test "${tag}: Fedora 35: unneeded, no --force, build succeeds" {
+@test "${tag}: Fedora latest: unneeded, no --force, build succeeds" {
     scope standard
     # no commands that may need it, without --force, build succeeds
     # also: correct config
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:35
+FROM fedora:latest
 RUN true
 EOF
     echo "$output"
@@ -819,11 +819,11 @@ EOF
     [[ $output = *'available --force: fedora'* ]]
 }
 
-@test "${tag}: Fedora 35: unneeded, no --force, build fails" {
+@test "${tag}: Fedora latest: unneeded, no --force, build fails" {
     scope standard
     # no commands that may need it, without --force, build fails
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:35
+FROM fedora:latest
 RUN false
 EOF
     echo "$output"
@@ -836,7 +836,7 @@ EOF
     scope standard
     # no commands that may need it, with --force, warning
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:35
+FROM fedora:latest
 RUN true
 EOF
     echo "$output"
@@ -844,11 +844,11 @@ EOF
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
 }
 
-@test "${tag}: Fedora 35: maybe needed but actually not, no --force" {
+@test "${tag}: Fedora latest: maybe needed but actually not, no --force" {
     scope standard
     # commands that may need it, but turns out they don’t, without --force
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:35
+FROM fedora:latest
 RUN dnf install -y ed
 EOF
     echo "$output"
@@ -857,11 +857,11 @@ EOF
     [[ $output = *'RUN: available here with --force'* ]]
 }
 
-@test "${tag}: Fedora 35: maybe needed but actually not, with --force" {
+@test "${tag}: Fedora latest: maybe needed but actually not, with --force" {
     scope standard
     # commands that may need it, but turns out they don’t, with --force
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:35
+FROM fedora:latest
 RUN dnf install -y ed
 EOF
     echo "$output"
@@ -870,11 +870,11 @@ EOF
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
 }
 
-@test "${tag}: Fedora 35: needed but no --force" {
+@test "${tag}: Fedora latest: needed but no --force" {
     scope standard
     # commands that may need it, they do, fail & suggest
     run ch-image -v build -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:35
+FROM fedora:latest
 RUN dnf install -y --setopt=install_weak_deps=false openssh
 EOF
     echo "$output"
@@ -885,11 +885,11 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Fedora 35: needed, with --force" {
+@test "${tag}: Fedora latest: needed, with --force" {
     scope standard
     # commands that may need it, they do, --force, success
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
-FROM fedora:35
+FROM fedora:latest
 RUN dnf install -y --setopt=install_weak_deps=false openssh
 EOF
     echo "$output"
