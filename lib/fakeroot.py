@@ -148,7 +148,7 @@ DEFAULT_CONFIGS = {
    #    repos.
    #
    # 2. Unlike on CentOS, RHEL doesn't have the epel-release rpm in the
-   #    standard repos, so install via rpm for both.
+   #    standard repos, install via rpm for both to be consistent.
    #
    # 3. Enabling EPEL can have undesirable side effects, e.g. different
    #    version of things in the base repo that breaks other things. Thus,
