@@ -832,7 +832,7 @@ EOF
     [[ $output = *'build failed: RUN command exited with 1'* ]]
 }
 
-@test "${tag}: Fedora 35: unneeded, with --force" {
+@test "${tag}: Fedora latest: unneeded, with --force" {
     scope standard
     # no commands that may need it, with --force, warning
     run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
