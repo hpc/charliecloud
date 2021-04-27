@@ -71,24 +71,29 @@ class Image_Puller:
       dl = ch.Registry_HTTP(self.image.ref)
       ch.VERBOSE("downloading image: %s" % dl.ref)
       ch.mkdirs(ch.storage.download_cache)
+
       # fat manifest
       if (ch.architecture.guess):
          if (os.path.exists(self.manifest_list_path) and use_cache):
             ch.INFO("manifest list: using existing file")
          else:
-            ch.INFO("manifest list: downloading")
+            ch.VERBOSE("manifest list: downloading")
             dl.manifest_list_to_file(self.manifest_list_path)
-         manifest_ref = self.manifest_ref_from_arch()
-         ch.VERBOSE("matching architecture manifest hash: %s" % manifest_ref)
-         # Guessing the architecture introduces circumstances that can
-         # invalidate the cache. If a manifest exists in storage compare it's
-         # hash to that listed in the fat manifest. If they match, proceed;
-         # otherwise invalidate the cache.
-         if (os.path.exists(self.manifest_path)):
-            storage_hash = ch.hash_from_file(self.manifest_path)
-            if (    use_cache
-                and storage_hash != ch.hash_from_digest(manifest_ref)):
-               use_cache = False
+         # do we actually have a manifest list?
+         manifest_list_json = ch.json_from_file(self.manifest_list_path)
+         if ("manifests" in manifest_list_json.keys()):
+            manifest_ref = self.manifest_ref_from_arch()
+            ch.INFO("architecture manifest hash: %s" % manifest_ref)
+            # invalidate the cache if the architecture manifest hash
+            # doesn't match that in stroage
+            if (os.path.exists(self.manifest_path)):
+               storage_hash = ch.hash_from_file(self.manifest_path)
+               if (    use_cache
+                   and storage_hash != ch.hash_from_digest(manifest_ref)):
+                  use_cache = False
+         else:
+            ch.VERBOSE("manifest list: no optional architectures")
+
       # manifest
       if (os.path.exists(self.manifest_path) and use_cache):
          ch.INFO("manifest: using existing file")
@@ -123,9 +128,9 @@ class Image_Puller:
 
    def list_architectures(self, use_cache):
       if (os.path.exists(self.manifest_list_path) and use_cache):
-         ch.INFO("fat manifest: using existing file")
+         ch.INFO("manifest list: using existing file")
       else:
-         ch.INFO("fat manifest: downloading")
+         ch.INFO("manifest list: downloading")
          dl.manifest_list_to_file(self.manifest_list_path)
       manifest = ch.json_from_file(self.manifest_list_path)
       variant = None
@@ -141,7 +146,6 @@ class Image_Puller:
             print(k.get('platform').get('architecture') + variant)
          else:
             print(k.get('platform').get('architecture'))
-
 
    def manifest_load(self):
       """Parse the manifest file and set self.config_hash and
@@ -208,9 +212,9 @@ class Image_Puller:
                   and variant is None):
                ref = k.get('digest')
       except KeyError:
-         FATAL("bad arch; see list-arch")
+         ch.FATAL("bad arch; see list-arch")
       if ref is None:
-            FATAL("arch: not found in manifest list; see list-arch")
+            ch.FATAL("arch: not found in manifest list; see list-arch")
       return ref
 
    def pull_to_unpacked(self, use_cache=True, last_layer=None):
