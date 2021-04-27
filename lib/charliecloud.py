@@ -456,14 +456,19 @@ class Image:
       # Metadata directory.
       mkdirs(self.unpack_path // "ch")
       file_ensure_exists(self.unpack_path // "ch/environment")
-      # Essential top-level directories.
-      for d in ("bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr"):
-         mkdirs(self.unpack_path // d)
-      # Mount points.
+      # Essential directories & mount points. Do nothing if something already
+      # exists, without dereferencing, in case it's a symlink, which will work
+      # for bind-mount later but won't resolve correctly now outside the
+      # container (e.g. linuxcontainers.org images; issue #1015).
+      #
+      # WARNING: Keep in sync with shell scripts.
+      for d in   ["bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr"] \
+               + ["mnt/%d" % i for i in range(10)]:
+         d = self.unpack_path // d
+         if (not os.path.lexists(d)):
+            mkdirs(d)
       file_ensure_exists(self.unpack_path // "etc/hosts")
       file_ensure_exists(self.unpack_path // "etc/resolv.conf")
-      for i in range(10):
-         mkdirs(self.unpack_path // "mnt" // str(i))
 
    def unpack_layers(self, layer_tars, last_layer):
       layers = self.layers_open(layer_tars)
@@ -1385,8 +1390,11 @@ def done_notify():
       INFO("done")
 
 def file_ensure_exists(path):
-   fp = open_(path, "a")
-   fp.close()
+   """If the final element of path exists (without dereferencing if it's a
+      symlink), do nothing; otherwise, create it as an empty regular file."""
+   if (not os.path.lexists(path)):
+      fp = open_(path, "w")
+      fp.close()
 
 def file_gzip(path, args=[]):
    """Run pigz if it's available, otherwise gzip, on file at path and return
