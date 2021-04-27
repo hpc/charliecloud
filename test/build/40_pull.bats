@@ -289,6 +289,10 @@ EOF
     LC_ALL=en_US.utf-8 \
     ch-image pull nvcr.io/hpc/foldingathome/fah-gpu:7.6.21
 
+    # Redhat Registry: https://catalog.redhat.com/software/containers/
+    # FIXME: 77 MiB unpacked, should find a smaller public image
+    ch-image pull registry.access.redhat.com/ubi7-minimal:latest
+
     # Things not here (yet?):
     #
     # 1. Harbor (issue #899): Has a demo repo (https://demo.goharbor.io) that
