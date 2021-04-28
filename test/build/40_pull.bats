@@ -289,7 +289,7 @@ EOF
     LC_ALL=en_US.utf-8 \
     ch-image pull nvcr.io/hpc/foldingathome/fah-gpu:7.6.21
 
-    # Redhat Registry: https://catalog.redhat.com/software/containers/
+    # Red Hat registry: https://catalog.redhat.com/software/containers/explore
     # FIXME: 77 MiB unpacked, should find a smaller public image
     ch-image pull registry.access.redhat.com/ubi7-minimal:latest
 
