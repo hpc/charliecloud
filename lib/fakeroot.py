@@ -227,7 +227,7 @@ DEFAULT_CONFIGS = {
    # Fedora notes:
    #
    # 1. The minimum supported version was chosen somewhat arbitrarily based on the
-   #    release versions available for testing (what was on Dockerhub).
+   #    release versions available for testing (what was on Docker Hub).
    #
    # 2. The fakeroot package is in the base repository set so enabling EPEL is
    #    not required.
