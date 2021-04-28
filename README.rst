@@ -58,6 +58,7 @@ Contributors:
 * Shane Goff <rgoff@lanl.gov>
 * Michael Jennings <mej@lanl.gov>
 * Christoph Junghans <junghans@lanl.gov>
+* Dave Love <dave.love@manchester.ac.uk>
 * Jordan Ogas <jogas@lanl.gov>
 * Kevin Pelzel <kpelzel@lanl.gov>
 * Megan Phinney <mphinney@lanl.gov>
