@@ -147,15 +147,18 @@ DEFAULT_CONFIGS = {
    # 1. CentOS seems to have only fakeroot, which is in EPEL, not the standard
    #    repos.
    #
-   # 2. Enabling EPEL can have undesirable side effects, e.g. different
+   # 2. Unlike on CentOS, RHEL doesn't have the epel-release rpm in the
+   #    standard repos, install via rpm for both to be consistent.
+   #
+   # 3. Enabling EPEL can have undesirable side effects, e.g. different
    #    version of things in the base repo that breaks other things. Thus,
    #    when we install EPEL, we don't enable it. Existing EPEL installations
    #    are left alone.
    #
-   # 3. "yum repolist" has a lot of side effects, e.g. locking the RPM
+   # 4. "yum repolist" has a lot of side effects, e.g. locking the RPM
    #    database and asking configured repos for something or other.
    #
-   # 4. "dnf config-manager" (CentOS 8) requires installing dnf-plugins-core,
+   # 5. "dnf config-manager" (CentOS 8) requires installing dnf-plugins-core,
    #    which requires fakeroot, which we don't have when initializing
    #    fakeroot. So sed it is. :P
 
@@ -165,7 +168,7 @@ DEFAULT_CONFIGS = {
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
-                "yum install -y epel-release; "
+                "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm; "
                 "yum-config-manager --disable epel; "
                 "fi; "
                 "yum --enablerepo=epel install -y fakeroot; ") ],
@@ -178,7 +181,7 @@ DEFAULT_CONFIGS = {
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
-                "dnf install -y epel-release; "
+                "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm; "
                 "ls -lh /etc/yum.repos.d; "
                 "sed -Ei 's/enabled=1$/enabled=0/g' /etc/yum.repos.d/epel*.repo; "
                 "fi; "
@@ -219,6 +222,22 @@ DEFAULT_CONFIGS = {
                  # update b/c base image ships with no package indexes
                  "apt-get update && apt-get install -y pseudo") ],
      "cmds": ["apt", "apt-get", "dpkg"],
+     "each": ["fakeroot"] },
+
+   # Fedora notes:
+   #
+   # 1. The minimum supported version was chosen somewhat arbitrarily based on the
+   #    release versions available for testing (what was on Docker Hub).
+   #
+   # 2. The fakeroot package is in the base repository set so enabling EPEL is
+   #    not required.
+
+   "fedora":
+   { "name": "Fedora 24+,",
+     "match":  ("/etc/fedora-release", r"release (2[4-9]|[3-9][0-9])"),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "dnf install -y fakeroot") ],
+     "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 
 }
