@@ -80,8 +80,8 @@ void log_ids(const char *func, int line)
 /* Create directories in path under base. Exit with an error if anything goes
    wrong. For example, mkdirs("/foo", "/bar/baz") will create directories
    /foo/bar and /foo/bar/baz if they don't already exist, but /foo must exist
-   already. Symlinks are followed. Path remain remain under base, i.e. you
-   can't use symlinks or ".." to climb out. */
+   already. Symlinks are followed. path must remain under base, i.e. you can't
+   use symlinks or ".." to climb out. */
 void mkdirs(const char *base, const char *path,
             char **denylist, size_t denylist_ct)
 {
