@@ -109,11 +109,11 @@ Options:
     For :code:`RUN` instructions only, bind-mount :code:`SRC` at guest
     :code:`DST`. The default destination if not specified is to use the same
     path as the host; i.e., the default is equivalent to
-    :code:`--bind=SRC:SRC`. If :code:`DST` does not exist, it will be created
-    as an empty directory, though images do have ten directories
+    :code:`--bind=SRC:SRC`. If :code:`DST` does not exist, try to create it as
+    an empty directory, though images do have ten directories
     :code:`/mnt/[0-9]` already available as mount points. Can be repeated.
 
-    **Warning:** See documentation for :code:`ch-run --bind` for important
+    **Note:** See documentation for :code:`ch-run --bind` for important
     caveats and gotchas.
 
     **Note:** Other instructions that modify the image filesystem, e.g.

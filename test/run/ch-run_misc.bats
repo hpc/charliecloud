@@ -370,6 +370,27 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't bind: "*" not subdirectory of ${ch_timg}"* ]]
+
+    # mkdir(2) under existing bind-mount, default, first level
+    run ch-run -b "${ch_imgdir}/bind1:/proc/doesnotexist" "$ch_timg" \
+        -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: ${ch_timg}/proc/doesnotexist under existing bind-mount ${ch_timg}/proc "* ]]
+
+    # mkdir(2) under existing bind-mount, user-supplied, first level
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/0" \
+               -b "${ch_imgdir}/bind2:/mnt/0/foo" "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: ${ch_timg}/mnt/0/foo under existing bind-mount ${ch_timg}/mnt/0 "* ]]
+
+    # mkdir(2) under existing bind-mount, default, 2nd level
+    run ch-run -b "${ch_imgdir}/bind1:/proc/sys/doesnotexist" "$ch_timg" \
+        -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: ${ch_timg}/proc/sys/doesnotexist under existing bind-mount ${ch_timg}/proc "* ]]
 }
 
 
