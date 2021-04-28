@@ -16,7 +16,8 @@ def main(cli):
       sys.exit(0)
    image = ch.Image(ref, cli.image_dir)
    ch.INFO("pulling image:   %s" % ref)
-   ch.INFO("architecture:    %s" % ch.architecture.arch_canon)
+   if (ch.ARCH is not None):
+      ch.INFO("architecture:    %s (%s)" % (ch.ARCH, ch.ARCH_SRC))
    if (cli.image_dir is not None):
       ch.INFO( "destination:     %s" % image.unpack_path)
    else:
@@ -24,7 +25,7 @@ def main(cli):
    ch.VERBOSE("use cache:       %s" % (not cli.no_cache))
    ch.VERBOSE("download cache:  %s" % ch.storage.download_cache)
    pullet = Image_Puller(image)
-   ch.VERBOSE("manifest list:   %s" % pullet.manifest_list_path)
+   ch.VERBOSE("manifest list:   %s" % pullet.fat_manifest_path)
    ch.VERBOSE("manifest:        %s" % pullet.manifest_path)
    pullet.pull_to_unpacked(use_cache=(not cli.no_cache),
                            last_layer=cli.last_layer)
@@ -57,49 +58,47 @@ class Image_Puller:
       return ch.storage.manifest_for_download(self.image.ref)
 
    @property
-   def manifest_list_path(self):
+   def fat_manifest_path(self):
       "Path to the fat manifest file."
-      return ch.storage.manifest_list_for_download(self.image.ref)
+      return ch.storage.fat_manifest_for_download(self.image.ref)
 
    def download(self, use_cache):
       """Download image metadata and layers and put them in the download
          cache. If use_cache is True (the default), anything already in the
          cache is skipped, otherwise download it anyway, overwriting what's in
          the cache."""
-      manifest_ref = None
+      manifest_digest = None
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       dl = ch.Registry_HTTP(self.image.ref)
       ch.VERBOSE("downloading image: %s" % dl.ref)
       ch.mkdirs(ch.storage.download_cache)
-
       # fat manifest
-      if (ch.architecture.guess):
-         if (os.path.exists(self.manifest_list_path) and use_cache):
-            ch.INFO("manifest list: using existing file")
+      if (ch.ARCH is not None):
+         if (os.path.exists(self.fat_manifest_path) and use_cache):
+            ch.INFO("list of manifests: using existing file")
          else:
-            ch.VERBOSE("manifest list: downloading")
-            dl.manifest_list_to_file(self.manifest_list_path)
+            ch.INFO("list of manifests: downloading")
+            dl.fat_manifest_to_file(self.fat_manifest_path)
          # do we actually have a manifest list?
-         manifest_list_json = ch.json_from_file(self.manifest_list_path)
-         if ("manifests" in manifest_list_json.keys()):
-            manifest_ref = self.manifest_ref_from_arch()
-            ch.INFO("architecture manifest hash: %s" % manifest_ref)
-            # invalidate the cache if the architecture manifest hash
-            # doesn't match that in stroage
+         fat_manifest_json = ch.json_from_file(self.fat_manifest_path)
+         if ("manifests" in fat_manifest_json.keys()):
+            manifest_digest = self.manifest_digest_by_arch()
+            ch.VERBOSE("architecture manifest hash: %s" % manifest_digest)
+            # invalidate the cache if the target architecture manifest hash
+            # doesn't match that in storage
             if (os.path.exists(self.manifest_path)):
-               storage_hash = ch.hash_from_file(self.manifest_path)
+               storage_hash = ch.file_hash(self.manifest_path)
                if (    use_cache
-                   and storage_hash != ch.hash_from_digest(manifest_ref)):
+                   and storage_hash != ch.digest_trim(manifest_digest)):
                   use_cache = False
          else:
-            ch.VERBOSE("manifest list: no optional architectures")
-
+            ch.VERBOSE("list of manifests: no other manifests")
       # manifest
       if (os.path.exists(self.manifest_path) and use_cache):
          ch.INFO("manifest: using existing file")
       else:
          ch.INFO("manifest: downloading")
-         dl.manifest_to_file(self.manifest_path, manifest_ref)
+         dl.manifest_to_file(self.manifest_path, manifest_digest)
       self.manifest_load()
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
@@ -109,6 +108,20 @@ class Image_Puller:
          else:
             ch.INFO("config: downloading")
             dl.blob_to_file(self.config_hash, self.config_path)
+      # if matching architecture in the fat manifest isn't found, check if
+      # the config provided by the default manifest has a matching arch
+      if (    ch.ARCH_ARG == "host"
+          and ch.ARCH_FOUND is None
+          and self.config_path is not None):
+          config_json = ch.json_from_file(self.config_path)
+          try:
+             if (config_json["architecture"] == ch.ARCH):
+                ch.VERBOSE("config: host arch matches config architecture")
+             else:
+                FATAL("arch: %s %s: does not match architecture in config"
+                       % (ch.ARCH, ch.ARCH_SRC))
+          except KeyError:
+             ch.WARNING("image architecture: unkown")
       # layers
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          path = self.layer_path(lh)
@@ -127,13 +140,14 @@ class Image_Puller:
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
    def list_architectures(self, use_cache):
-      if (os.path.exists(self.manifest_list_path) and use_cache):
+      if (os.path.exists(self.fat_manifest_path) and use_cache):
          ch.INFO("manifest list: using existing file")
       else:
          ch.INFO("manifest list: downloading")
-         dl.manifest_list_to_file(self.manifest_list_path)
-      manifest = ch.json_from_file(self.manifest_list_path)
+         dl.fat_manifest_to_file(self.fat_manifest_path)
+      manifest = ch.json_from_file(self.fat_manifest_path)
       variant = None
+      list_ = []
       for k in manifest["manifests"]:
          if (k.get('platform').get('os') != 'linux'):
             continue
@@ -143,9 +157,10 @@ class Image_Puller:
             True
          if (variant is not None):
             variant = "/" + variant
-            print(k.get('platform').get('architecture') + variant)
+            list_.append(k.get('platform').get('architecture') + variant)
          else:
-            print(k.get('platform').get('architecture'))
+            list_.append(k.get('platform').get('architecture'))
+      return list_
 
    def manifest_load(self):
       """Parse the manifest file and set self.config_hash and
@@ -191,15 +206,18 @@ class Image_Puller:
       if (version == 1):
          self.layer_hashes.reverse()
 
-   def manifest_ref_from_arch(self):
-      """Parse the fat manifest file for a digest that matches host
-         architecture."""
-      manifest = ch.json_from_file(self.manifest_list_path)
-      arch = variant = ref = None
+   def manifest_digest_by_arch(self):
+      """Return the manifest reference (digest) of target architecture in the
+         fat manifest if the reference exists; otherwise error if specified
+         arch is not 'host'."""
+      manifest = ch.json_from_file(self.fat_manifest_path)
+      arch     = None
+      ref      = None
+      variant  = None
       try:
-         arch, variant = ch.architecture.arch_canon.split("/")
+         arch, variant = ch.ARCH.split("/", maxsplit=1)
       except ValueError:
-         arch = ch.architecture.arch_canon
+         arch = ch.ARCH
       try:
          for k in manifest["manifests"]:
             if (k.get('platform').get('os') != 'linux'):
@@ -211,10 +229,12 @@ class Image_Puller:
             elif (    k.get('platform').get('architecture') == arch
                   and variant is None):
                ref = k.get('digest')
+               ARCH_FOUND = 'yas queen'
       except KeyError:
-         ch.FATAL("bad arch; see list-arch")
-      if ref is None:
-            ch.FATAL("arch: not found in manifest list; see list-arch")
+         ch.FATAL("arch: %s: bad argument; see list --help" % arch)
+      if (ref is None and arch != "host"):
+            ch.FATAL("arch: %s: not found in manifest list; see list --help"
+                     % arch)
       return ref
 
    def pull_to_unpacked(self, use_cache=True, last_layer=None):

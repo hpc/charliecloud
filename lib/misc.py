@@ -42,21 +42,25 @@ def delete(cli):
 def list_(cli):
    ch.dependencies_check()
    imgdir = ch.storage.unpack_base
-   imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
-   for img in sorted(imgs):
-      print(ch.Image_Ref(img))
-
-def list_arch(cli):
-   ch.dependencies_check()
-   ref = ch.Image_Ref(cli.image_ref)
-   image = ch.Image(ref, ch.storage.unpack_base)
-   ch.INFO("listing architectures for:   %s " % ref)
-   pullet = pl.Image_Puller(image)
-   pullet.list_architectures(not cli.no_cache)
-   ch.done_notify()
+   if (cli.image_ref):
+      ref = ch.Image_Ref(cli.image_ref)
+      image = ch.Image(ref, imgdir)
+      ch.INFO("listing architectures for:   %s " % ref)
+      pullet = pl.Image_Puller(image)
+      list_ = pullet.list_architectures(not cli.no_cache)
+      for arch in list_:
+         print(arch)
+      ch.done_notify()
+   else:
+      imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
+      for img in sorted(imgs):
+         print(ch.Image_Ref(img))
 
 def python_path(cli):
    print(sys.executable)
 
 def storage_path(cli):
    print(ch.storage.root)
+
+def architecture_set(cli):
+    print(cli)

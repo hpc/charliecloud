@@ -60,7 +60,11 @@ except ImportError:
 
 ## Globals ##
 
-# Naive guesses at maping uname to Docker architecture references.
+# Image architecture handling
+ARCH = None
+ARCH_ARG = None
+ARCH_SRC = None
+ARCH_FOUND = None
 ARCH_MAP = {"aarch32": "arm/v7",
             "aarch64": "arm64/v8",
             "armv5l":  "arm/v5",
@@ -1077,13 +1081,14 @@ class Registry_HTTP:
       ossafe(fp.close, "can't close: %s" % path)
 
    def manifest_to_file(self, path, ref=None):
-      "GET the manifest for the image and save it at path."
+      """GET the manifest for the image via tag or digest reference (ref)
+         and save it at path."""
       if (ref is None):
          ref = self.ref.version
       url = self._url_of("manifests", ref)
       self.request("GET", url, out=path, headers={ "Accept" : TYPE_MANIFEST})
 
-   def manifest_list_to_file(self, path):
+   def fat_manifest_to_file(self, path):
       "GET the manifest for the image and save it at path."
       url = self._url_of("manifests", self.ref.version)
       self.request("GET", url, out=path,
@@ -1154,47 +1159,6 @@ class Registry_HTTP:
          self.session = requests.Session()
          self.session.verify = tls_verify
 
-class Architecture:
-
-   """Source of truth for architecture related cooking."""
-
-   __slots__ = ("arch_host",
-                "arch_canon",
-                "guess")
-
-   def __init__(self, arch_cli):
-      self.arch_host  = platform.uname().machine
-      self.arch_canon = None
-      self.guess      = True
-      if (arch_cli is None):
-         self.arch_guess()
-      else:
-         self.arch_arg_check(arch_cli)
-
-   @property
-   def arch_canonical(self):
-      if (self.arch_canon is None):
-         return "unknown"
-      return self.arch_canon
-
-   def arch_arg_check(self, arch):
-      if (arch.lower() != "default"):
-         m = re.match("^(/?\w+(/\w+)?)$", arch)
-         if (m is None):
-            FATAL("arch: %s: invalid syntax; see list-arch" % arch)
-         if (arch[0] == '/'):
-            arch = arch[1:]
-         self.arch_canon = arch
-      else:
-         self.guess = False
-
-   def arch_guess(self):
-      if (self.arch_host in ARCH_MAP.keys()):
-         self.arch_canon = ARCH_MAP[self.arch_host]
-         VERBOSE("canonical arch: %s -> %s" % (self.arch_host, self.arch_canon))
-      else:
-         WARNING("host arch: %s: can't guess canonical arch name"
-                 % self.arch_host)
 
 class Storage:
 
@@ -1248,7 +1212,7 @@ class Storage:
    def manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
-   def manifest_list_for_download(self, image_ref):
+   def fat_manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.list.json" % image_ref.for_path)
 
    def unpack(self, image_ref):
@@ -1366,6 +1330,25 @@ def VERBOSE(*args, **kwargs):
 
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)  # red
+
+def arch_init(arch):
+   global ARCH, ARCH_ARG, ARCH_SRC
+   ARCH_ARG = arch
+   if (arch == "none" or arch is None):
+      VERBOSE("arch map: none")
+   elif (arch == "host"):
+      host = platform.machine()
+      if (host in ARCH_MAP.keys()):
+         ARCH = ARCH_MAP[host]
+         ARCH_SRC = "mapped"
+         VERBOSE("arch map: %s -> %s" % (host, ARCH))
+      else:
+         FATAL("host arch: %s: not mapped; report to github.com/hpc/charliecloud"
+               % host)
+   else:
+      ARCH = arch
+      ARCH_SRC = "argument"
+      VERBOSE("arch map: %s" % ARCH)
 
 def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
@@ -1503,19 +1486,8 @@ def grep_p(path, rx):
    except OSError as x:
       FATAL("error reading %s: %s" % (path, x.strerror))
 
-def hash_from_file(path):
-   fp = open_(path, "rt", encoding="UTF-8")
-   text = ossafe(fp.read, "can't read: %s" % path)
-   ossafe(fp.close, "can't close: %s" % path)
-   hash_ = hashlib.sha256()
-   hash_.update(text.encode("UTF-8"))
-   return hash_.hexdigest()
-
-def hash_from_digest(sha):
-   return sha.split(":")[-1]
-
 def init(cli):
-   global architecture, log_festoon, log_fp, storage, tls_verify, verbose
+   global log_festoon, log_fp, storage, tls_verify, verbose
    # logging
    assert (0 <= cli.verbose <= 2)
    verbose = cli.verbose
@@ -1529,8 +1501,8 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage object
    storage = Storage(cli.storage)
-   # architecture object
-   architecture = Architecture(cli.arch)
+   # configure arch settings
+   arch_init(cli.arch)
    # TLS verification
    if (cli.tls_no_verify):
       tls_verify = False

@@ -5,8 +5,7 @@ Synopsis
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] delete IMAGE_REF
-   $ ch-image [...] list
-   $ ch-image [...] list-arch IMAGE_REF
+   $ ch-image [...] list [IMAGE_REF]
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] storage-path
@@ -35,10 +34,11 @@ Options that print brief information and then exit:
 
 Common options placed before the sub-command:
 
-   :code:`--arch`
-    Specify architecture :code:`--arch=ARCH` for image described by
-    :code:`IMAGE_REF`. If image exists but not as architecture
-    :code:`ARCH`, fail with error.
+   :code:`-a, `--arch OPTION`
+     Specify target architecture for image operations described by
+     :code:`IMAGE_REF`. Options: 1) :code:`host`: try to match architecture
+     based on host; 3) :code:`none`: do not try to match architecture (default);
+     3) :code:`DOCKER_ARCH`: try to match achietecture with :code:`DOCKER_ARCH`.
 
   :code:`--no-cache`
     Download everything needed, ignoring the cache.
@@ -243,11 +243,6 @@ Options:
   :code:`--parse-only`
     Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
     without talking to the internet or touching the storage directory.
-
-This script tries to guess the appropriate architecture when pulling images.
-For example, when pulling :code:`centos:7`, check for the variant that matches
-the host architecture. If a match is found pull it; otherwise proceed to
-download :code:`centos:7` default (:code:`--arch=default`).
 
 This script does a fair amount of validation and fixing of the layer tarballs
 before flattening in order to support unprivileged use despite image problems
@@ -526,28 +521,19 @@ List images in storage.
 ::
 
    $ ch-image list
-   00_tiny
-   alpine:3.9
-   alpine:latest
-   centos:7
-   debian:buster
+   alpine:3.9 (amd64)
+   alpine:latest (amd64)
+   debian:buster (amd64)
 
-:code:`list-arch`
------------------
+Print list of available architecturess for the Debian Buster image::
 
-Print list of available architecturess for the Debian Buster image.::
-
-   $ ch-image list-arch debian:buster
+   $ ch-image list debian:buster
    listing architectures: debian:buster
-   manifest list: using existing
+   list of manifests: using existing
    amd64
    arm/v5
    arm/v7
-   arm64/v8
-   386
-   mips64le
-   ppc64le
-   s390x
+   [...]
 
 :code:`pull`
 ------------
@@ -556,8 +542,6 @@ Download the Debian Buster image and place it in the storage directory::
 
    $ ch-image pull debian:buster
    pulling image:   debian:buster
-   architecture:    amd64
-   manifest list: downloading
    manifest: downloading
    config: downloading
    layer 1/1: bd8f6a7: downloading
@@ -576,11 +560,30 @@ Same, except place the image in :code:`/tmp/buster`::
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
 
-Specify the aarch64 version of Debian Stretch using :code:`--arch=arm64/v8`.::
+Same, except specify architecture based on the host::
+
+   $ uname -m
+   ppc64le
+   $ ch-image --arch=host pull debian:buster
+   pulling image:   debian:buster
+   architecture:    ppc64le (mapped)
+   list of manifests: downloading
+   manifest: downloading
+   config: downloading
+   layer 1/1: d018a28: downloading
+   flattening image
+   layer 1/1: d018a28: listing
+   validating tarball members
+   resolving whiteouts
+   layer 1/1: d018a28: extracting
+   done
+
+Specify the aarch64 version of Debian Stretch using the docker architecture
+and variant argument :code:`--arch=arm64/v8`.::
 
    $ ch-image pull --arch=arm64/v8 debian:buster
    pulling image:   debian:buster
-   architecture:    arm64/v8
+   architecture:    arm64/v8 (argument)
    manifest list: using existing file
    manifest: downloading
    config: downloading
