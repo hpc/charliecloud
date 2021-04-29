@@ -365,7 +365,7 @@ class I_copy(Instruction):
                                                    "STRING_QUOTED")]
          self.srcs = paths[:-1]
          for i in range(len(self.srcs)):
-            self.srcs[i] = self.srcs[i][1:-1]
+            self.srcs[i] = self.srcs[i][1:-1] #strip quotes
          self.dst = paths[-1][1:-1]
 
 

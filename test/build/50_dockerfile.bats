@@ -633,15 +633,29 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
     [[ $output = *'grown in 2 instructions: foo'* ]]
+    
+    run ls ./fixtures
+    echo "$output"
+    [[ $output = *'empty-file'* ]]
 
     # multiple sources
+
     run ch-image build -t foo -f - . <<'EOF'
 FROM 00_tiny
-COPY ["Build.missing", "common.bash", "/etc/fstab/"]
+COPY ["fixtures/empty-file", "common.bash", "."]
 EOF
     echo "$output"
-    [[ $status -ne 0 ]]
-    [[ $output = *'not a directory'* ]]
+    [[ $status -eq 0 ]]
+    [[ $output = *"COPY ['fixtures/empty-file', 'common.bash'] -> '.'"* ]]
+    [[ $output = *'grown in 2 instructions: foo'* ]]
+
+    run ls ./fixtures
+    echo "$output"
+    [[ $output = *'empty-file'* ]]
+
+    run ls .
+    echo "$output"
+    [[ $output = *'common.bas'* ]]
 }
 
 @test 'Dockerfile: COPY errors' {
