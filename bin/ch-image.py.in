@@ -75,9 +75,11 @@ def main():
    # [2]: https://docs.python.org/3/library/argparse.html#parents
    # [3]: https://stackoverflow.com/a/54936198
    common_opts = \
-      [[ ["--arch"],
-         { "metavar": "OPTION",
-           "help": "specify target image architecture"}],
+      [[ ["-a", "--arch"],
+         { "metavar": "ARCH",
+           "default": "host",
+           "type": ch.arch_internal,
+           "help": "architecture for image registries (default: host)"}],
        [ ["--dependencies"],
          { "action": misc.Dependencies,
            "help": "print any missing dependencies and exit" }],
@@ -142,11 +144,11 @@ def main():
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
 
    # list
-   help="list images in storage"
+   help="print information about image(s)"
    sp = sps.add_parser("list", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
    sp.add_argument("image_ref", metavar="IMAGE_REF",
-                   help="list architectures for image reference")
+                   help="print details of this image only")
    sp.set_defaults(func=misc.list_)
    add_opts(sp, common_opts, True)
 

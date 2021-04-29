@@ -60,18 +60,28 @@ except ImportError:
 
 ## Globals ##
 
-# Image architecture handling
-ARCH = None
-ARCH_ARG = None
-ARCH_SRC = None
-ARCH_FOUND = None
-ARCH_MAP = {"aarch32": "arm/v7",
-            "aarch64": "arm64/v8",
-            "armv5l":  "arm/v5",
-            "armv6l":  "arm/v6",
-            "armv7l":  "arm/v7",
-            "armv8l":  "arm64/v8",
-            "x86_64":  "amd64"}
+# Architectures. This maps the "machine" field returned by uname(2), also
+# available as "uname -m" and platform.machine(), into architecture names that
+# image registries use. It is incomplete (see e.g. [1], which is itself
+# incomplete) but hopefully includes most architectures encountered in
+# practice [e.g. 2]. Registry architecture and variant are separated by a
+# slash. Note it is *not* 1-to-1: multiple uname(2) architectures map to the
+# same registry architecture.
+#
+# [1]: https://stackoverflow.com/a/45125525
+# [2]: https://github.com/docker-library/bashbrew/blob/v0.1.0/vendor/github.com/docker-library/go-dockerlibrary/architecture/oci-platform.go
+ARCH_MAP = { "x86_64":    "amd64",
+             "armv5l":    "arm/v5",
+             "armv6l":    "arm/v6",
+             "aarch32":   "arm/v7",
+             "armv7l":    "arm/v7",
+             "aarch64":   "arm64/v8",
+             "armv8l":    "arm64/v8",
+             "i386":      "386",
+             "i686":      "386",
+             "mips64le":  "mips64le",
+             "ppc64le":   "ppc64le",
+             "s390x":     "s390x" }  # a.k.a. IBM Z
 
 # FIXME: currently set in ch-image :P
 CH_BIN = None
@@ -1331,24 +1341,23 @@ def VERBOSE(*args, **kwargs):
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)  # red
 
-def arch_init(arch):
-   global ARCH, ARCH_ARG, ARCH_SRC
-   ARCH_ARG = arch
-   if (arch == "none" or arch is None):
-      VERBOSE("arch map: none")
-   elif (arch == "host"):
-      host = platform.machine()
-      if (host in ARCH_MAP.keys()):
-         ARCH = ARCH_MAP[host]
-         ARCH_SRC = "mapped"
-         VERBOSE("arch map: %s -> %s" % (host, ARCH))
-      else:
-         FATAL("host arch: %s: not mapped; report to github.com/hpc/charliecloud"
-               % host)
+def arch_internal(arch):
+   """Convert arch from user-facing to internal command line semantics and
+      return the result."""
+   assert (arch is not None)  # default set in argparse configuration
+   if (arch == "host"):
+      arch_uname = platform.machine()
+      VERBOSE("host architecture from uname: %s" % arch_uname)
+      try:
+         arch_registry = ARCH_MAP[arch_uname]
+      except KeyError:
+         # FIXME: didn't try raising ValueError, which argparse docs claim
+         # will produce "a nicely formatted error message".
+         FATAL("unknown host architecture: %s" % arch_uname)
+      VERBOSE("host architecture for registry: %s" % arch_registry)
+      return arch_registry
    else:
-      ARCH = arch
-      ARCH_SRC = "argument"
-      VERBOSE("arch map: %s" % ARCH)
+      return arch
 
 def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
@@ -1501,8 +1510,6 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage object
    storage = Storage(cli.storage)
-   # configure arch settings
-   arch_init(cli.arch)
    # TLS verification
    if (cli.tls_no_verify):
       tls_verify = False
