@@ -55,10 +55,8 @@ def import_(cli):
    ch.INFO("destination:  %s" % dst)
    if (os.path.isdir(cli.path)):
       dst.copy_unpacked(cli.path)
-   elif (os.path.isfile(cli.path)):
+   else:  # tarball, hopefully
       dst.unpack([cli.path])
-   else:
-      ch.FATAL("can't copy: invalid file type: %s" % cli.path)
    # initialize metadata if needed
    dst.metadata_load()
    dst.metadata_save()

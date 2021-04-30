@@ -56,6 +56,138 @@ EOF
     [[ $output != *"delete/test"* ]]
 }
 
+@test 'ch-image import' {
+    ## Test image (not runnable)
+    fixtures=${BATS_TMPDIR}/import
+    rm -Rfv --one-file-system "$fixtures"
+    mkdir "$fixtures" \
+          "${fixtures}/empty" \
+          "${fixtures}/nonempty" \
+          "${fixtures}/nonempty/ch" \
+          "${fixtures}/nonempty/bin"
+    (cd "$fixtures" && ln -s nonempty nelink)
+    touch "${fixtures}/nonempty/bin/foo"
+    cat <<'EOF' > "${fixtures}/nonempty/ch/metadata.json"
+{ "arch": "corn",
+  "cwd": "/",
+  "env": {},
+  "labels": {},
+  "shell": [
+    "/bin/sh",
+    "-c"
+  ],
+  "volumes": [] }
+EOF
+    ls -lhR "$fixtures"
+
+    ## Tarballs
+
+    # tarbomb
+    (cd "${fixtures}/nonempty" && tar czvf ../bomb.tar.gz .)
+    run ch-image import -v "${fixtures}/bomb.tar.gz" imptest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"importing:    ${fixtures}/bomb.tar.gz"* ]]
+    [[ $output != *'layers: single enclosing directory, using its contents'* ]]
+    [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
+    grep -F '"arch": "corn"' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
+    ch-image delete imptest
+
+    # non-tarbomb
+    (cd "$fixtures" && tar czvf standard.tar.gz nonempty)
+    run ch-image import -v "${fixtures}/standard.tar.gz" imptest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"importing:    ${fixtures}/standard.tar.gz"* ]]
+    [[ $output = *'layers: single enclosing directory, using its contents'* ]]
+    [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
+    grep -F '"arch": "corn"' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
+    ch-image delete imptest
+
+    # non-tarbomb, but enclosing directory is a standard dir
+    (cd "${fixtures}/nonempty" && tar czvf ../tricky.tar.gz bin)
+    run ch-image import -v "${fixtures}/tricky.tar.gz" imptest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"importing:    ${fixtures}/tricky.tar.gz"* ]]
+    [[ $output != *'layers: single enclosing directory, using its contents'* ]]
+    [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
+    grep -F '"arch": null' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
+    ch-image delete imptest
+
+    # empty, uncompressed tarfile
+    (cd "${fixtures}" && tar cvf empty.tar empty)
+    run ch-image import -v "${fixtures}/empty.tar" imptest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"importing:    ${fixtures}/empty.tar"* ]]
+    [[ $output = *'layers: single enclosing directory, using its contents'* ]]
+    [[ $output = *'warning: no metadata to load; using defaults'* ]]
+    grep -F '"arch": null' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
+    ch-image delete imptest
+
+    ## Directories
+
+    # non-empty directory
+    run ch-image import -v "${fixtures}/nonempty" imptest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"importing:    ${fixtures}/nonempty"* ]]
+    [[ $output = *"copying image: ${fixtures}/nonempty -> ${CH_IMAGE_STORAGE}/img/imptest"* ]]
+    [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
+    grep -F '"arch": "corn"' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
+    ch-image delete imptest
+
+    # empty directory
+    run ch-image import -v "${fixtures}/empty" imptest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"importing:    ${fixtures}/empty"* ]]
+    [[ $output = *"copying image: ${fixtures}/empty -> ${CH_IMAGE_STORAGE}/img/imptest"* ]]
+    [[ $output = *'warning: no metadata to load; using defaults'* ]]
+    grep -F '"arch": null' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
+    ch-image delete imptest
+
+    # symlink to directory
+    run ch-image import -v "${fixtures}/nelink" imptest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"importing:    ${fixtures}/nelink"* ]]
+    [[ $output = *"copying image: ${fixtures}/nelink -> ${CH_IMAGE_STORAGE}/img/imptest"* ]]
+    [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
+    grep -F '"arch": "corn"' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
+    ch-image delete imptest
+
+    # actual image; try to run it
+    ch-image import "$ch_timg" imptest
+    ch-run "${CH_IMAGE_STORAGE}/img/imptest" -- /bin/true
+    ch-image delete imptest
+
+    ## Errors
+
+    # input does not exist
+    run ch-image import -v /doesnotexist imptest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: can't copy: not found: /doesnotexist"* ]]
+
+    # invalid destination reference
+    run ch-image import -v "${fixtures}/empty" 'badchar*'
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: image ref syntax, char 8: badchar*'* ]]
+
+    # non-empty file that's not a tarball
+    run ch-image import -v "${fixtures}/nonempty/ch/metadata.json" imptest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: cannot open: ${fixtures}/nonempty/ch/metadata.json"* ]]
+
+    ## Clean up
+    [[ ! -e "${CH_IMAGE_STORAGE}/img/imptest" ]]
+    rm -Rfv --one-file-system "$fixtures"
+}
+
 @test 'ch-image list' {
     run ch-image list
     echo "$output"

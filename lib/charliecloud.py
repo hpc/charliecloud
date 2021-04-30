@@ -500,7 +500,7 @@ class Image:
       # image containing just "/bin/fooprog" won't be raised). This supports
       # "ch-image import", which may be used on manually-created tarballs
       # where best practice is not to do a tarbomb.
-      top_dirs.remove(None)  # some tarballs contain entry for "."; ignore
+      top_dirs -= { None }  # some tarballs contain entry for "."; ignore
       top_dir = top_dirs.pop()
       if (    len(top_dirs) == 0
           and (self.unpack_path // top_dir).is_dir()
