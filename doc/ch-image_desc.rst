@@ -1,10 +1,13 @@
 Synopsis
 ========
 
+.. Note: Keep these consistent with the synopses in each subcommand.
+
 ::
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] delete IMAGE_REF
+   $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
@@ -91,6 +94,10 @@ Subcommands
 
 :code:`build`
 -------------
+
+::
+
+   $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
 
 Build an image from a Dockerfile and put it in the storage directory. Use
 :code:`ch-run(1)` to execute :code:`RUN` instructions. Note that :code:`FROM`
@@ -213,11 +220,37 @@ prints exactly what it is doing.
 :code:`delete`
 --------------
 
+::
+
+   $ ch-image [...] delete IMAGE_REF
+
 Delete the image described by the image reference :code:`IMAGE_REF` from the
 storage directory.
 
+:code:`import`
+--------------
+
+::
+
+   $ ch-image [...] import PATH IMAGE_REF
+
+Copy the image at :code:`PATH` into builder storage with name
+:code:`IMAGE_REF`. :code:`PATH` can be:
+
+* an image directory
+* a tarball with no top-level directory (a.k.a. a "`tarbomb <https://en.wikipedia.org/wiki/Tar_(computing)#Tarbomb>`_")
+* a standard tarball with one top-level directory
+
+If the imported image contains Charliecloud metadata, that will be imported
+unchanged, i.e., images exported from :code:`ch-image` builder storage will be
+functionally identical when re-imported.
+
 :code:`pull`
 ------------
+
+::
+
+   $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
 
 Pull the image described by the image reference :code:`IMAGE_REF` from a
 repository to the local filesystem. See the FAQ for the gory details on
@@ -268,6 +301,10 @@ metadata. A warning is printed in this case.
 :code:`push`
 ------------
 
+::
+
+   $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
+
 Push the image described by the image reference :code:`IMAGE_REF` from the
 local filesystem to a repository. See the FAQ for the gory details on
 specifying image references.
@@ -294,10 +331,18 @@ Options:
 :code:`reset`
 -------------
 
+::
+
+   $ ch-image [...] reset
+
 Delete all images and cache from ch-image builder storage.
 
 :code:`storage-path`
 --------------------
+
+::
+
+   $ ch-image [...] storage-path
 
 Print the storage directory path and exit.
 
