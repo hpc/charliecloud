@@ -57,6 +57,10 @@ EOF
 }
 
 @test 'ch-image import' {
+    # Note: We don't test importing a real image because (1) when this is run
+    # during the build phase there aren't any unpacked images and (2) I can't
+    # think of a way import could fail that would be real image-specific.
+
     ## Test image (not runnable)
     fixtures=${BATS_TMPDIR}/import
     rm -Rfv --one-file-system "$fixtures"
@@ -156,11 +160,6 @@ EOF
     [[ $output = *"copying image: ${fixtures}/nelink -> ${CH_IMAGE_STORAGE}/img/imptest"* ]]
     [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
     grep -F '"arch": "corn"' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
-    ch-image delete imptest
-
-    # actual image; try to run it
-    ch-image import "$ch_timg" imptest
-    ch-run "${CH_IMAGE_STORAGE}/img/imptest" -- /bin/true
     ch-image delete imptest
 
     ## Errors

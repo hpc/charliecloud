@@ -501,18 +501,18 @@ class Image:
       # "ch-image import", which may be used on manually-created tarballs
       # where best practice is not to do a tarbomb.
       top_dirs -= { None }  # some tarballs contain entry for "."; ignore
-      top_dir = top_dirs.pop()
-      if (    len(top_dirs) == 0
-          and (self.unpack_path // top_dir).is_dir()
-          and str(top_dir) not in STANDARD_DIRS):
-         top_dir = self.unpack_path // top_dir  # make absolute
-         INFO("layers: single enclosing directory, using its contents")
-         for src in list(top_dir.iterdir()):
-            dst = self.unpack_path // src.parts[-1]
-            DEBUG("moving: %s -> %s" % (src, dst))
-            ossafe(src.rename, "can't move: %s -> %s" % (src, dst), dst)
-         DEBUG("removing empty directory: %s" % top_dir)
-         ossafe(top_dir.rmdir, "can't rmdir: %s" % top_dir)
+      if (len(top_dirs) == 1):
+         top_dir = top_dirs.pop()
+         if (    (self.unpack_path // top_dir).is_dir()
+             and str(top_dir) not in STANDARD_DIRS):
+            top_dir = self.unpack_path // top_dir  # make absolute
+            INFO("layers: single enclosing directory, using its contents")
+            for src in list(top_dir.iterdir()):
+               dst = self.unpack_path // src.parts[-1]
+               DEBUG("moving: %s -> %s" % (src, dst))
+               ossafe(src.rename, "can't move: %s -> %s" % (src, dst), dst)
+            DEBUG("removing empty directory: %s" % top_dir)
+            ossafe(top_dir.rmdir, "can't rmdir: %s" % top_dir)
 
    def validate_members(self, layers):
       INFO("validating tarball members")
