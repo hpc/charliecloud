@@ -85,10 +85,7 @@ void log_ids(const char *func, int line)
 void mkdirs(const char *base, const char *path,
             char **denylist, size_t denylist_ct)
 {
-   char *basec, *component, *next, *nextc, *pathw,
-     /* The initialization avoids a warning (under -Werror), at least
-	with gcc 8.4.0 on ppc64le.  */
-     *saveptr=NULL;
+   char *basec, *component, *next, *nextc, *pathw, *saveptr;
    struct stat sb;
 
    T_ (base[0] != 0   && path[0] != 0);      // no empty paths
@@ -102,6 +99,7 @@ void mkdirs(const char *base, const char *path,
       DEBUG("mkdirs: deny: %s", denylist[i]);
 
    pathw = cat(path, "");  // writeable copy
+   saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
    component = strtok_r(pathw, "/", &saveptr);
    nextc = basec;
    while (component != NULL) {
