@@ -108,17 +108,15 @@ class Image_Puller:
             ch.INFO("config: downloading")
             dl.blob_to_file(self.config_hash, self.config_path)
       if (ch.arch != "yolo" and self.config_path is not None):
-          config_arch = False
           config_json = ch.json_from_file(self.config_path)
           try:
-             if (   config_json["architecture"] == ch.arch
-                 or config_json["arch"] == ch.arch):
+             if (config_json["architecture"] == ch.arch):
                 ch.VERBOSE("config: architecture match")
              else:
                 FATAL("arch: %s: does not match architecture in config"
                       % ch.arch)
           except KeyError:
-             ch.WARNING("config: missing architecture key")
+             ch.WARNING("config: missing 'arch' key; cannot confirm host match")
 
       # layers
       for (i, lh) in enumerate(self.layer_hashes, start=1):
