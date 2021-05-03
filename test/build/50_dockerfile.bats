@@ -622,8 +622,7 @@ EOF
 
 @test 'Dockerfile: COPY list form' {
     scope standard
-    [[ $CH_BUILDER = none ]] && skip 'no builder'
-    [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
+    [[ $CH_BUILDER == ch-image ]] || skip 'ch-image only'
 
     run ch-image build -t foo -f - . <<'EOF'
 FROM 00_tiny
@@ -632,30 +631,25 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
-    [[ $output = *'grown in 2 instructions: foo'* ]]
     
-    run ls ./fixtures
+    run ls "$CH_IMAGE_STORAGE"/img/foo
     echo "$output"
     [[ $output = *'empty-file'* ]]
 
-    # multiple sources
-
+    # multiple source
     run ch-image build -t foo -f - . <<'EOF'
 FROM 00_tiny
-COPY ["fixtures/empty-file", "common.bash", "."]
+COPY ["fixtures/empty-file", "fixtures/README", "."]
 EOF
+
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"COPY ['fixtures/empty-file', 'common.bash'] -> '.'"* ]]
-    [[ $output = *'grown in 2 instructions: foo'* ]]
+    [[ $output = *"COPY ['fixtures/empty-file', 'fixtures/README'] -> '.'"* ]]
 
-    run ls ./fixtures
+    run ls "$CH_IMAGE_STORAGE"/img/foo
     echo "$output"
     [[ $output = *'empty-file'* ]]
-
-    run ls .
-    echo "$output"
-    [[ $output = *'common.bash'* ]]
+    [[ $output = *'README'* ]]
 }
 
 @test 'Dockerfile: COPY errors' {
