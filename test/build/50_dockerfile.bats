@@ -655,7 +655,7 @@ EOF
 
     run ls .
     echo "$output"
-    [[ $output = *'common.bas'* ]]
+    [[ $output = *'common.bash'* ]]
 }
 
 @test 'Dockerfile: COPY errors' {
