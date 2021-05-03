@@ -1220,7 +1220,10 @@ class Storage:
          return None
 
    def manifest_for_download(self, image_ref):
-      return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
+      if (isinstance(image_ref, str)):
+         return self.download_cache // ("%s.manifest.json" % image_ref)
+      else:
+         return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
    def fat_manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.list.json" % image_ref.for_path)
@@ -1496,7 +1499,7 @@ def grep_p(path, rx):
       FATAL("error reading %s: %s" % (path, x.strerror))
 
 def init(cli):
-   global log_festoon, log_fp, storage, tls_verify, verbose
+   global arch, log_festoon, log_fp, storage, tls_verify, verbose
    # logging
    assert (0 <= cli.verbose <= 2)
    verbose = cli.verbose
@@ -1510,6 +1513,8 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage object
    storage = Storage(cli.storage)
+   # internal arch
+   arch = arch_internal(cli.arch)
    # TLS verification
    if (cli.tls_no_verify):
       tls_verify = False

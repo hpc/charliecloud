@@ -16,8 +16,8 @@ def main(cli):
       sys.exit(0)
    image = ch.Image(ref, cli.image_dir)
    ch.INFO("pulling image:   %s" % ref)
-   if (ch.ARCH is not None):
-      ch.INFO("architecture:    %s (%s)" % (ch.ARCH, ch.ARCH_SRC))
+   if (ch.arch is not None and ch.arch != "yolo"):
+      ch.INFO("architecture:    %s" % ch.arch)
    if (cli.image_dir is not None):
       ch.INFO( "destination:     %s" % image.unpack_path)
    else:
@@ -53,14 +53,15 @@ class Image_Puller:
          return ch.storage.download_cache // (self.config_hash + ".json")
 
    @property
-   def manifest_path(self):
-      "Path to the manifest file."
-      return ch.storage.manifest_for_download(self.image.ref)
-
-   @property
    def fat_manifest_path(self):
       "Path to the fat manifest file."
       return ch.storage.fat_manifest_for_download(self.image.ref)
+
+   def manifest_path(self, hash_=None):
+      if (hash_ is None):
+         return ch.storage.manifest_for_download(self.image.ref)
+      else:
+         return ch.storage.manifest_for_download(hash_)
 
    def download(self, use_cache):
       """Download image metadata and layers and put them in the download
@@ -68,12 +69,13 @@ class Image_Puller:
          cache is skipped, otherwise download it anyway, overwriting what's in
          the cache."""
       manifest_digest = None
+      manifest_hash = None
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       dl = ch.Registry_HTTP(self.image.ref)
       ch.VERBOSE("downloading image: %s" % dl.ref)
       ch.mkdirs(ch.storage.download_cache)
       # fat manifest
-      if (ch.ARCH is not None):
+      if (ch.arch != "yolo"):
          if (os.path.exists(self.fat_manifest_path) and use_cache):
             ch.INFO("list of manifests: using existing file")
          else:
@@ -83,23 +85,20 @@ class Image_Puller:
          fat_manifest_json = ch.json_from_file(self.fat_manifest_path)
          if ("manifests" in fat_manifest_json.keys()):
             manifest_digest = self.manifest_digest_by_arch()
+            manifest_hash = ch.digest_trim(manifest_digest)
             ch.VERBOSE("architecture manifest hash: %s" % manifest_digest)
-            # invalidate the cache if the target architecture manifest hash
-            # doesn't match that in storage
-            if (os.path.exists(self.manifest_path)):
-               storage_hash = ch.file_hash(self.manifest_path)
-               if (    use_cache
-                   and storage_hash != ch.digest_trim(manifest_digest)):
-                  use_cache = False
+            ch.DEBUG("canonical manifest path: %s "
+                     % self.manifest_path(manifest_hash))
          else:
             ch.VERBOSE("list of manifests: no other manifests")
+      manifest_path = self.manifest_path(manifest_hash)
       # manifest
-      if (os.path.exists(self.manifest_path) and use_cache):
+      if (os.path.exists(manifest_path) and use_cache):
          ch.INFO("manifest: using existing file")
       else:
          ch.INFO("manifest: downloading")
-         dl.manifest_to_file(self.manifest_path, manifest_digest)
-      self.manifest_load()
+         dl.manifest_to_file(manifest_path, manifest_digest)
+      self.manifest_load(manifest_path)
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
@@ -108,20 +107,19 @@ class Image_Puller:
          else:
             ch.INFO("config: downloading")
             dl.blob_to_file(self.config_hash, self.config_path)
-      # if matching architecture in the fat manifest isn't found, check if
-      # the config provided by the default manifest has a matching arch
-      if (    ch.ARCH_ARG == "host"
-          and ch.ARCH_FOUND is None
-          and self.config_path is not None):
+      if (ch.arch != "yolo" and self.config_path is not None):
+          config_arch = False
           config_json = ch.json_from_file(self.config_path)
           try:
-             if (config_json["architecture"] == ch.ARCH):
-                ch.VERBOSE("config: host arch matches config architecture")
+             if (   config_json["architecture"] == ch.arch
+                 or config_json["arch"] == ch.arch):
+                ch.VERBOSE("config: architecture match")
              else:
-                FATAL("arch: %s %s: does not match architecture in config"
-                       % (ch.ARCH, ch.ARCH_SRC))
+                FATAL("arch: %s: does not match architecture in config"
+                      % ch.arch)
           except KeyError:
-             ch.WARNING("image architecture: unkown")
+             ch.WARNING("config: missing architecture key")
+
       # layers
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          path = self.layer_path(lh)
@@ -162,13 +160,13 @@ class Image_Puller:
             list_.append(k.get('platform').get('architecture'))
       return list_
 
-   def manifest_load(self):
+   def manifest_load(self, manifest_path):
       """Parse the manifest file and set self.config_hash and
          self.layer_hashes."""
       def bad_key(key):
-         ch.FATAL("manifest: %s: no key: %s" % (self.manifest_path, key))
+         ch.FATAL("manifest: %s: no key: %s" % (manifest_path, key))
       # read and parse the JSON
-      manifest = ch.json_from_file(self.manifest_path)
+      manifest = ch.json_from_file(manifest_path)
       # validate schema version
       try:
          version = manifest['schemaVersion']
@@ -215,9 +213,9 @@ class Image_Puller:
       ref      = None
       variant  = None
       try:
-         arch, variant = ch.ARCH.split("/", maxsplit=1)
+         arch, variant = ch.arch.split("/", maxsplit=1)
       except ValueError:
-         arch = ch.ARCH
+         arch = ch.arch
       try:
          for k in manifest["manifests"]:
             if (k.get('platform').get('os') != 'linux'):
