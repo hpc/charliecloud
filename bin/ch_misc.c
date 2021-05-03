@@ -85,7 +85,10 @@ void log_ids(const char *func, int line)
 void mkdirs(const char *base, const char *path,
             char **denylist, size_t denylist_ct)
 {
-   char *basec, *component, *next, *nextc, *pathw, *saveptr;
+   char *basec, *component, *next, *nextc, *pathw,
+     /* The initialization avoids a warning (under -Werror), at least
+	with gcc 8.4.0 on ppc64le.  */
+     *saveptr=NULL;
    struct stat sb;
 
    T_ (base[0] != 0   && path[0] != 0);      // no empty paths
