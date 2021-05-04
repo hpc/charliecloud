@@ -2,11 +2,26 @@
 
 set -e
 
-if [[ $1 = --help ]]; then
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --clean)
+            clean=yes
+            ;;
+        --lark)
+            lark_shovel=yes
+            ;;
+        *)
+            help=yes
+            ;;
+    esac
+    shift
+done
+
+if [[ $help ]]; then
     cat <<EOF
 Usage:
 
-  $ ./autogen.sh [--clean]
+  $ ./autogen.sh [OPTIONS]
 
 Remove and rebuild Autotools files (./configure and friends). This script is
 intended for developers; end users typically do not need it.
@@ -14,6 +29,8 @@ intended for developers; end users typically do not need it.
 Options:
 
   --clean  remove only; do not rebuild
+  --help   print this help and exit
+  --lark   delete Lark (and then reinstall if not --clean)
 
 EOF
     exit 0
@@ -32,6 +49,7 @@ See the install instructions for details on both.
 
 EOF
 
+cd "$(dirname "$0")"
 set -x
 
 # Remove existing Autotools stuff, if present. Coordinate with .gitignore.
@@ -51,11 +69,26 @@ rm -rf Makefile \
        config.status \
        configure
 
+if [[ $lark_shovel ]]; then
+    rm -Rfv lib/lark lib/lark-stubs lib/lark*.dist-info
+fi
+
 # Create configure and friends.
-if [[ $1 != --clean ]]; then
+if [[ -z $clean ]]; then
     autoreconf --force --install -Wall -Werror
-    if [[ $(command -v  pip3) ]]; then
-	pip3 --isolated install --target=lib --ignore-installed --no-compile lark-parser==0.11.2
+    if [[ ! -e lib/lark ]]; then
+        # Install Lark only if its directory doesn't exist, to avoid excess
+        # re-downloads.
+        pip3 --isolated install \
+             --target=lib --ignore-installed lark==0.11.3
+        # Lark doesn't honor --no-compile, so remove the .pyc files manually.
+        rm lib/lark/__pycache__/*.pyc
+        rmdir lib/lark/__pycache__
+        rm lib/lark/*/__pycache__/*.pyc
+        rmdir lib/lark/*/__pycache__
+        # Also remove Lark's installer stuff.
+        rm lib/lark/__pyinstaller/*.py
+        rmdir lib/lark/__pyinstaller
     fi
     set +x
     echo
