@@ -8,6 +8,7 @@ Synopsis
    $ ch-image [...] list
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
+   $ ch-image [...] reset
    $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
@@ -92,9 +93,10 @@ Subcommands
 -------------
 
 Build an image from a Dockerfile and put it in the storage directory. Use
-:code:`ch-run(1)` to execute :code:`RUN` instructions. Note that :code:`FROM`
-implicitly pulls the base image if needed, so you may want to read about the
-:code:`pull` subcommand below as well.
+:code:`ch-run -w -u0 -g0 --no-home --no-passwd` to execute :code:`RUN`
+instructions. Note that :code:`FROM` implicitly pulls the base image if
+needed, so you may want to read about the :code:`pull` subcommand below as
+well.
 
 Required argument:
 
@@ -105,13 +107,19 @@ Required argument:
 Options:
 
   :code:`-b`, :code:`--bind SRC[:DST]`
-    Bind-mount host directory :code:`SRC` at container directory :code:`DST`
-    during :code:`RUN` instructions. Can be repeated; the default destination
-    if :code:`DST` is omitted is :code:`/mnt/0`, :code:`/mnt/1`, etc.
+    For :code:`RUN` instructions only, bind-mount :code:`SRC` at guest
+    :code:`DST`. The default destination if not specified is to use the same
+    path as the host; i.e., the default is equivalent to
+    :code:`--bind=SRC:SRC`. If :code:`DST` does not exist, try to create it as
+    an empty directory, though images do have ten directories
+    :code:`/mnt/[0-9]` already available as mount points. Can be repeated.
 
-    **Note:** This applies only to :code:`RUN` instructions. Other
-    instructions that modify the image filesystem, e.g. :code:`COPY`, can only
-    access host files from the context directory.
+    **Note:** See documentation for :code:`ch-run --bind` for important
+    caveats and gotchas.
+
+    **Note:** Other instructions that modify the image filesystem, e.g.
+    :code:`COPY`, can only access host files from the context directory,
+    regardless of this option.
 
   :code:`--build-arg KEY[=VALUE]`
     Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
@@ -289,6 +297,11 @@ Options:
   :code:`--image DIR`
     Use the unpacked image located at :code:`DIR` rather than an image in the
     storage directory named :code:`IMAGE_REF`.
+
+:code:`reset`
+-------------
+
+Delete all images and cache from ch-image builder storage.
 
 :code:`storage-path`
 --------------------

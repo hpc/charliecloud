@@ -63,6 +63,42 @@ EOF
     [[ $output = *"00_tiny"* ]]
 }
 
+@test 'ch-image reset' {
+   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/reset
+
+   # Ensure our test storage dir doesn't exist yet.
+   [[ ! -e $CH_IMAGE_STORAGE ]]
+
+   # Put an image innit.
+   ch-image pull alpine:3.9
+   ls "$CH_IMAGE_STORAGE"
+
+   # List images; should be only the one we just pulled.
+   run ch-image list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = "alpine:3.9" ]]
+
+   # Reset.
+   ch-image reset
+
+   # Image storage directory should be gone.
+   ls "$CH_IMAGE_STORAGE" || true
+   [[ ! -e $CH_IMAGE_STORAGE ]]
+
+   # List images; should error with not found.
+   run ch-image list
+   echo "$output"
+   [[ $status -eq 1 ]]
+   [[ $output = *"$CH_IMAGE_STORAGE/img: No such file or directory"* ]]
+
+   # Reset again; should error.
+   run ch-image reset
+   echo "$output"
+   [[ $status -eq 1 ]]
+   [[ $output = *"$CH_IMAGE_STORAGE not a builder storage"* ]]
+}
+
 @test 'ch-image storage-path' {
     run ch-image storage-path
     echo "$output"
@@ -73,12 +109,13 @@ EOF
 
 @test 'ch-image build --bind' {
     run ch-image --no-cache build -t build-bind -f - \
-                -b ./fixtures -b ./fixtures:/mnt/9 . <<'EOF'
+                -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
 FROM 00_tiny
 RUN mount
-RUN ls -lR /mnt
+RUN ls -lR '${PWD}/fixtures'
+RUN test -f '${PWD}/fixtures/empty-file'
+RUN ls -lR /mnt/0
 RUN test -f /mnt/0/empty-file
-RUN test -f /mnt/9/empty-file
 EOF
     echo "$output"
     [[ $status -eq 0 ]]

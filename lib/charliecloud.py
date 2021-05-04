@@ -104,7 +104,7 @@ dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
 ?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
 
-directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
+directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" _line _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
 comment: _WS? _COMMENT_BODY _NEWLINES
 _COMMENT_BODY: /#[^\n]*/
@@ -118,7 +118,7 @@ arg_bare: WORD
 arg_equals: WORD "=" ( WORD | STRING_QUOTED )
 
 env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
-env_space: WORD _WS LINE
+env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
@@ -127,16 +127,16 @@ from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
-run_shell: LINE
+run_shell: _line
 
 shell: "SHELL"i _WS _string_list _NEWLINES
 
-workdir: "WORKDIR"i _WS LINE _NEWLINES
+workdir: "WORKDIR"i _WS _line _NEWLINES
 
-uns_forever: UNS_FOREVER _WS LINE _NEWLINES
+uns_forever: UNS_FOREVER _WS _line _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
-uns_yet: UNS_YET _WS LINE _NEWLINES
+uns_yet: UNS_YET _WS _line _NEWLINES
 UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
 
 /// Common ///
@@ -145,15 +145,29 @@ option: "--" OPTION_KEY "=" OPTION_VALUE
 OPTION_KEY: /[a-z]+/
 OPTION_VALUE: /[^ \t\n]+/
 
+// Matching lines in the face of continuations is surprisingly hairy. Notes:
+//
+//   1. The underscore prefix means the rule is always inlined (i.e., removed
+//      and children become children of its parent).
+//
+//   2. LINE_CHUNK must not match any characters that _LINE_CONTINUE does.
+//
+//   3. This is very sensitive to the location of repetition. Moving the plus
+//      either to the entire regex (i.e., “/(...)+/”) or outside the regex
+//      (i.e., ”/.../+”) gave parse errors.
+//
+_line: ( _LINE_CONTINUE | LINE_CHUNK )+
+LINE_CHUNK: /[^\\\n]+|(\\(?![ \t]+\n))+/
+
 HEX_STRING: /[0-9A-Fa-f]+/
-LINE: ( _LINE_CONTINUE | /[^\n]/ )+
 WORD: /[^ \t\n=]/+
 
 _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 
-_NEWLINES: _WS? "\n"+
-_WS: /[ \t]|\\\n/+
-_LINE_CONTINUE: "\\\n"
+_WSH: /[ \t]/+                   // sequence of horizontal whitespace
+_LINE_CONTINUE: "\\" _WSH? "\n"  // line continuation
+_WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
+_NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
@@ -215,6 +229,14 @@ class Image:
 
    def __str__(self):
       return str(self.ref)
+
+   @staticmethod
+   def unpacked_p(imgdir):
+      "Return True if imgdir looks like an unpacked image, False otherwise."
+      return (    os.path.isdir(imgdir)
+              and os.path.isdir(imgdir // 'bin')
+              and os.path.isdir(imgdir // 'dev')
+              and os.path.isdir(imgdir // 'usr'))
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -392,7 +414,7 @@ class Image:
 
    def unpack_config(self, config_json):
       if (config_json is None):
-         WARNING("image has no config and thus no metadata")
+         INFO("no config found; initializing empty metadata")
       else:
          # Copy pulled config file into the image so we still have it.
          path = self.metadata_path // "config.pulled.json"
@@ -420,10 +442,7 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path // "bin")
-             or not os.path.isdir(self.unpack_path // "dev")
-             or not os.path.isdir(self.unpack_path // "etc")
-             or not os.path.isdir(self.unpack_path // "usr")):
+         if (not self.unpacked_p(self.unpack_path)):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("removing existing image: %s" % self.unpack_path)
@@ -437,14 +456,19 @@ class Image:
       # Metadata directory.
       mkdirs(self.unpack_path // "ch")
       file_ensure_exists(self.unpack_path // "ch/environment")
-      # Essential top-level directories.
-      for d in ("bin", "dev", "etc", "mnt", "proc", "usr"):
-         mkdirs(self.unpack_path // d)
-      # Mount points.
+      # Essential directories & mount points. Do nothing if something already
+      # exists, without dereferencing, in case it's a symlink, which will work
+      # for bind-mount later but won't resolve correctly now outside the
+      # container (e.g. linuxcontainers.org images; issue #1015).
+      #
+      # WARNING: Keep in sync with shell scripts.
+      for d in   ["bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr"] \
+               + ["mnt/%d" % i for i in range(10)]:
+         d = self.unpack_path // d
+         if (not os.path.lexists(d)):
+            mkdirs(d)
       file_ensure_exists(self.unpack_path // "etc/hosts")
       file_ensure_exists(self.unpack_path // "etc/resolv.conf")
-      for i in range(10):
-         mkdirs(self.unpack_path // "mnt" // str(i))
 
    def unpack_layers(self, layer_tars, last_layer):
       layers = self.layers_open(layer_tars)
@@ -568,9 +592,7 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path // "bin")
-             or not os.path.isdir(self.unpack_path // "dev")
-             or not os.path.isdir(self.unpack_path // "usr")):
+         if (not self.unpacked_p(self.unpack_path)):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("replacing existing image: %s" % self.unpack_path)
@@ -578,12 +600,12 @@ class Image:
 
    def unpack_delete(self):
       if (not self.unpack_exist_p()):
-         FATAL("%s image not found" % (self.ref))
-      if (unpacked_image_p(self.unpack_path)):
-         INFO("deleting image: %s" % (self.ref))
+         FATAL("%s image not found" % self.ref)
+      if (self.unpacked_p(self.unpack_path)):
+         INFO("deleting image: %s" % self.ref)
          rmtree(self.unpack_path)
       else:
-         FATAL("storage directory seems broken: not an image: %s" % (self.ref))
+         FATAL("storage directory seems broken: not an image: %s" % self.ref)
 
    def unpack_exist_p(self):
       return os.path.exists(self.unpack_path)
@@ -1173,8 +1195,19 @@ class Storage:
    def manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
+   def reset(self):
+      if (self.valid_p()):
+         rmtree(self.root)
+      else:
+         FATAL("%s not a builder storage" % (self.root));
+
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
+
+   def valid_p(self):
+      "Return True if storage present and seems valid, False otherwise."
+      return (os.path.isdir(self.unpack_base) and
+              os.path.isdir(self.download_cache))
 
 
 class TarFile(tarfile.TarFile):
@@ -1296,6 +1329,7 @@ def bytes_hash(data):
    return h.hexdigest()
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
+   # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
            + sum([["-b", i] for i in binds], [])
@@ -1357,8 +1391,11 @@ def done_notify():
       INFO("done")
 
 def file_ensure_exists(path):
-   fp = open_(path, "a")
-   fp.close()
+   """If the final element of path exists (without dereferencing if it's a
+      symlink), do nothing; otherwise, create it as an empty regular file."""
+   if (not os.path.lexists(path)):
+      fp = open_(path, "w")
+      fp.close()
 
 def file_gzip(path, args=[]):
    """Run pigz if it's available, otherwise gzip, on file at path and return
@@ -1552,18 +1589,17 @@ def tree_terminal(tree, tname, i=0):
    return None
 
 def tree_terminals(tree, tname):
-   """Yield values of all child terminals of type type_, or empty list if none
+   """Yield values of all child terminals named tname, or empty list if none
       found."""
    for j in tree.children:
       if (isinstance(j, lark.lexer.Token) and j.type == tname):
          yield j.value
 
+def tree_terminals_cat(tree, tname):
+   """Return the concatenated values of all child terminals named tname as a
+      string, with no delimiters. If none, return the empty string."""
+   return "".join(tree_terminals(tree, tname))
+
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
-
-def unpacked_image_p(imgdir):
-   return (os.path.isdir(imgdir)
-       and os.path.isdir(imgdir // 'bin')
-       and os.path.isdir(imgdir // 'dev')
-       and os.path.isdir(imgdir // 'opt'))
