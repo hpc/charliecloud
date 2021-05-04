@@ -25,7 +25,11 @@
 /** Constants **/
 
 /* Names of verbosity levels. */
-const char *VERBOSE_LEVELS[] = { "error", "warning", "info", "debug" };
+const char *VERBOSE_LEVELS[] = { "error",
+                                 "warning",
+                                 "info",
+                                 "verbose",
+                                 "debug" };
 
 
 /** External variables **/
