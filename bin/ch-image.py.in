@@ -145,6 +145,17 @@ def main():
    sp.set_defaults(func=misc.list_)
    add_opts(sp, common_opts, True)
 
+   # import
+   help="copy external image into storage"
+   sp = sps.add_parser("import", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=misc.import_)
+   add_opts(sp, common_opts, True)
+   sp.add_argument("path", metavar="PATH",
+                   help="directory or tarball to import")
+   sp.add_argument("image_ref", metavar="IMAGE_REF",
+                   help="destination image name")
+
    # pull
    help="pull image from remote repository to local filesystem"
    sp = sps.add_parser("pull", help=help, description=help,
