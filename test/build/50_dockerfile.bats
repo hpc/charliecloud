@@ -735,6 +735,7 @@ EOF
     scope standard
     [[ $CH_BUILDER == ch-image ]] || skip 'ch-image only'
 
+    # single source
     run ch-image build -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY ["fixtures/empty-file", "."]
@@ -743,9 +744,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
     
-    run ls "$CH_IMAGE_STORAGE"/img/foo
-    echo "$output"
-    [[ $output = *'empty-file'* ]]
+    test -f "$CH_IMAGE_STORAGE"/img/foo/empty-file
 
     # multiple source
     run ch-image build -t foo -f - . <<'EOF'
@@ -757,10 +756,10 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"COPY ['fixtures/empty-file', 'fixtures/README'] -> '.'"* ]]
 
-    run ls "$CH_IMAGE_STORAGE"/img/foo
-    echo "$output"
-    [[ $output = *'empty-file'* ]]
-    [[ $output = *'README'* ]]
+    test -f "$CH_IMAGE_STORAGE"/img/foo/empty-file
+    test -f "$CH_IMAGE_STORAGE"/img/foo/README 
+    
+    run ch-image delete foo
 }
 
 @test 'Dockerfile: COPY errors' {
