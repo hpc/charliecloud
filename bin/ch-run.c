@@ -16,7 +16,6 @@
 
 
 /** Constants and macros **/
-#define ENV_MAX 50
 
 /* Environment variables used by --join parameters. */
 char *JOIN_CT_ENV[] =  { "OMPI_COMM_WORLD_LOCAL_SIZE",
@@ -43,29 +42,29 @@ You cannot use this program to actually change your UID.\n";
 const char args_doc[] = "NEWROOT CMD [ARG...]";
 
 const struct argp_option options[] = {
-   { "bind",        'b', "SRC[:DST]", 0,
+   { "bind",          'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default: same as SRC)"},
-   { "cd",          'c', "DIR",  0, "initial working directory in container"},
-   { "ch-ssh",       -8, 0,      0, "bind ch-ssh into image"},
-   { "env-no-expand",-10, 0,     0, "don't expand $ in --set-env input"},
-   { "gid",         'g', "GID",  0, "run as GID within container" },
-   { "join",        'j', 0,      0, "use same container as peer ch-run" },
-   { "join-pid",     -5, "PID",  0, "join a namespace using a PID" },
-   { "join-ct",      -3, "N",    0, "number of ch-run peers (implies --join)" },
-   { "join-tag",     -4, "TAG",  0, "label for peer group (implies --join)" },
-   { "no-home",      -2, 0,      0, "don't bind-mount your home directory"},
-   { "no-passwd",    -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
-   { "private-tmp", 't', 0,      0, "use container-private /tmp" },
-   { "set-env",      -6, "FILE", 0, "set environment variables in FILE"},
-   { "uid",         'u', "UID",  0, "run as UID within container" },
-   { "unset-env",    -7, "GLOB", 0, "unset environment variable(s)" },
-   { "verbose",     'v', 0,      0, "be more verbose (debug if repeated)" },
-   { "version",     'V', 0,      0, "print version and exit" },
-   { "write",       'w', 0,      0, "mount image read-write"},
+   { "cd",            'c', "DIR",  0, "initial working directory in container"},
+   { "ch-ssh",         -8, 0,      0, "bind ch-ssh into image"},
+   { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
+   { "gid",           'g', "GID",  0, "run as GID within container" },
+   { "join",          'j', 0,      0, "use same container as peer ch-run" },
+   { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
+   { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
+   { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
+   { "no-home",        -2, 0,      0, "don't bind-mount your home directory"},
+   { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
+   { "private-tmp",   't', 0,      0, "use container-private /tmp" },
+   { "set-env",        -6, "FILE", 0, "set environment variables in FILE"},
+   { "uid",           'u', "UID",  0, "run as UID within container" },
+   { "unset-env",      -7, "GLOB", 0, "unset environment variable(s)" },
+   { "verbose",       'v', 0,      0, "be more verbose (debug if repeated)" },
+   { "version",       'V', 0,      0, "print version and exit" },
+   { "write",         'w', 0,      0, "mount image read-write"},
    { 0 }
 };
 
-enum env_action { END = 0, SET_ENV, UNSET_GLOB };
+enum env_action { ENV_END = 0, ENV_SET, ENV_UNSET };
 
 struct env_delta {
    enum env_action action;
@@ -81,8 +80,8 @@ struct args {
 /** Function prototypes **/
 
 void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
-void env_expand(char* env_set[], int argv, bool expand, char* filename);
-void env_expand_error(char* name, char* filename, int line);
+void envs_set(char **lines, const int line_ct, const char *filename,
+              const bool expand);
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
@@ -179,65 +178,71 @@ void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
 {
    int i;
 
-   for (i = 0; (*ds)[i].action != END; i++) // count existing
+   for (i = 0; (*ds)[i].action != ENV_END; i++) // count existing
          ;
    T_ (*ds = realloc(*ds, (i+2) * sizeof(struct env_delta)));
-   (*ds)[i+1].action = END;
+   (*ds)[i+1].action = ENV_END;
    (*ds)[i].action = act;
    (*ds)[i].arg = arg;
 }
 
-/* Read input variable value pairs from --set-env and set environment variable
-   as stated in documentation */
-void env_expand(char* env_set[], int argv, bool expand, char* filename)
+/* Set environment variables as specified in the array lines, which has length
+   line_ct. filename is the source filename, or NULL if source was not a file;
+   in that case, omit line number from any error messages. If expand, then
+   expand variable notation as described in the man page. */
+void envs_set(char **lines, const int line_ct, const char *filename,
+              const bool expand)
 {
-   int i;
-   char *name, *new_value;
-   for(i = 0; i < argv; i++) {
-      if (strlen(env_set[i]) == 0 || env_set[i][0] == '\n')
-         continue; 
-      split(&name, &new_value, env_set[i], '=');
-      env_expand_error(name, filename, i+1);
+   char *name, *value_old, *value_new, *lineno_str, *item;
 
-      // strip leading and trailing single quotes
-      if (   strlen(new_value) >= 2
-          && (new_value)[0] == '\''
-          && (new_value)[strlen(new_value) - 1] == '\'') {
-         (new_value)[strlen(new_value) - 1] = 0;  
-         (new_value)++;                           
+   for (int i = 0; i < line_ct; i++) {
+      bool first_written;
+
+      // Skip blank lines.
+      if (lines[i][0] == 0 || lines[i][0] == '\n')
+         continue;
+
+      // Split line into variable name and value.
+      split(&name, &value_old, lines[i], '=');
+      if (filename == NULL)
+         lineno_str = "";
+      else
+         T_ (1 <= asprintf(&lineno_str, ":%d", i+1));
+      Te (name != NULL, "--set-env: no delimiter: %s%s", filename, lineno_str);
+      Te (name[0] != 0, "--set-env: empty name: %s%s", filename, lineno_str);
+
+      // Strip leading and trailing single quotes from value, if both present.
+      if (   strlen(value_old) >= 2
+          && value_old[0] == '\''
+          && value_old[strlen(value_old) - 1] == '\'') {
+         value_old[strlen(value_old) - 1] = 0;
+         value_old++;
       }
-   
-      char *token; 
-      char *new_env = "";
-      token = strsep(&new_value, ":"); 
 
-      while(token != NULL) { //walk through tokens split at :
-         if (token[0] == '$' && expand && token[1] != '\0') { //environment variable and no --env-no-expand 
-            token ++;
-            if(getenv(token) != NULL) //token value isn't unset
-               new_env = cat(new_env, getenv(token));
+      // Walk through value fragments separated by colon and expand variables
+      // per documentation.
+      value_new = "";
+      first_written = false;
+      item = strsep(&value_old, ":");              // cannot be NULL
+      while (item != NULL) {                       // loop executes ≥ once
+         if (   expand                             // expansion requested
+             && item[0] == '$' && item[1] != 0) {  // ≥1 char in variable name
+            item = getenv(++item);                 // NULL if unset
+            if (item != NULL && item[0] == 0)
+               item = NULL;                        // convert empty to unset
          }
-         else if (token[0] !='\0' ){   //token isn't empty 
-            new_env=cat(new_env, token);
+         if (item != NULL) {                       // NULL -> omit from output
+            if (first_written)
+               value_new = cat(value_new, ":");
+            value_new = cat(value_new, item);
+            first_written = true;
          }
-         token = strsep(&new_value, ":");
-         if (token != NULL)   //append : except on last token
-            new_env = cat(new_env, ":"); 
+         item = strsep(&value_old, ":");           // NULL -> no more items
       }
-      INFO("environment: %s=%s", name, new_env);
-      Z_ (setenv(name, new_env, 1));
-   }
-}
 
-/* Error checking for env_expand */
-void env_expand_error(char* name, char* filename, int line)
-{
-   if (filename != NULL) {
-      Te (name != NULL, "--set-env: no delimiter: %s:%d", filename, line);
-      Te (strlen(name) != 0, "--set-env: empty name: %s:%d", filename, line);
-   }
-   else {
-      Te (strlen(name) != 0, "--set-env: empty name: %s", name);
+      // Save results.
+      INFO("environment: %s=%s", name, value_new);
+      Z_ (setenv(name, value_new, 1));
    }
 }
 
@@ -269,42 +274,38 @@ void fix_environment(struct args *args)
    }
 
    // --set-env and --unset-env.
-   char *env_set[ENV_MAX];
-   int env_setv;
-   for (int i = 0; args->env_deltas[i].action != END; i++) {
+   for (int i = 0; args->env_deltas[i].action != ENV_END; i++) {
       char *arg = args->env_deltas[i].arg;
-      if (args->env_deltas[i].action == SET_ENV) {
-         env_setv = 0;
-         FILE *fp = NULL;
-         if (strchr(arg, '=') == NULL) {
+      if (args->env_deltas[i].action == ENV_SET) {  // --set-env
+         if (strchr(arg, '=') != NULL) {
+            // argument is variable name & value
+            envs_set((char *[]){ arg }, 1, NULL, args->c.env_expand);
+         } else {
+            // argument is filename
+            char **lines = NULL;
+            int line_ct = 0;
+            FILE *fp;
             Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
-         }
-         else {  
-            env_set[env_setv] = arg;
-            env_setv++;
-            env_expand(env_set, env_setv, args->c.env_expand, NULL);
-            break;
-         }
-         for (int j = 1; true; j++) {
-            char *line = NULL;
-            size_t len = 0;
-            errno = 0;
-            if (-1 == getline(&line, &len, fp)) {
-               if (errno == 0)  // EOF
-                  break;
-               else             // error
-                  Tf (0, "--set-env: error reading: %s", arg);
+            for (line_ct = 0; true; line_ct++) {
+               char *line;
+               size_t line_len = 0;  // don't care but getline(3) must write
+               errno = 0;
+               if (-1 == getline(&line, &line_len, fp)) {
+                  if (errno == 0)  // EOF
+                     break;        // note: line_ct not incremented
+                  else
+                     Tf (0, "--set-env: can't read: %s", arg);
+               }
+               if (line[strlen(line) - 1] == '\n')  // rm newline if present
+                  line[strlen(line) - 1] = 0;
+               T_ (lines = realloc(lines, (line_ct + 1) * sizeof(char *)));
+               lines[line_ct] = line;
             }
-            if (line[strlen(line) - 1] == '\n')
-               line[strlen(line) - 1] = 0;  // remove newline
-            Te (env_setv < ENV_MAX, "--set-env: overflow: %s:%d", arg, line);
-            env_set[env_setv] = line;
-            env_setv++;
+            Zf (fclose(fp), "--set-env: can't close: %s", arg);
+            envs_set(lines, line_ct, arg, args->c.env_expand);
          }
-         env_expand(env_set, env_setv, args->c.env_expand, arg);
-         fclose(fp);
-      } else {
-         T_ (args->env_deltas[i].action == UNSET_GLOB);
+      } else {  // --unset-env
+         T_ (args->env_deltas[i].action == ENV_UNSET);
          /* Removing variables from the environment is tricky, because there
             is no standard library function to iterate through the
             environment, and the environ global array can be re-ordered after
@@ -451,11 +452,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join_pid = parse_int(arg, false, "--join-pid");
       break;
    case -6: // --set-env
-      env_delta_append(&(args->env_deltas), SET_ENV, arg);
+      env_delta_append(&(args->env_deltas), ENV_SET, arg);
       break;
    case -7: // --unset-env
       Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
-      env_delta_append(&(args->env_deltas), UNSET_GLOB, arg);
+      env_delta_append(&(args->env_deltas), ENV_UNSET, arg);
       break;;
    case -8: // --ch-ssh
       args->c.ch_ssh = true;

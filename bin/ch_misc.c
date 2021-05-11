@@ -50,7 +50,7 @@ char *cat(const char *a, const char *b)
 {
    char *ret;
 
-   T_ (1 <= asprintf(&ret, "%s%s", a, b));
+   T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
 }
 

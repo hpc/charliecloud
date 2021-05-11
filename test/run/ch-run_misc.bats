@@ -436,14 +436,18 @@ chse_b4= bar
 chse_c1=foo
 chse_c1=bar
 
-chse_d1=$SET
-chse_d2=$SET:$SET2
-chse_d3=bar:$SET
-chse_d4=bar:baz:$SET
-chse_d5=$SET:bar
-chse_d6=$SET:bar:baz
-chse_d7=bar:$SET:baz
-chse_d8=bar:baz:$SET:bar:baz
+chse_d1=foo:
+chse_d2=:foo
+chse_d3=:
+chse_d4=::
+chse_d5=$SET
+chse_d6=$SET:$SET2
+chse_d7=bar:$SET
+chse_d8=bar:baz:$SET
+chse_d9=$SET:bar
+chse_dA=$SET:bar:baz
+chse_dB=bar:$SET:baz
+chse_dC=bar:baz:$SET:bar:baz
 
 chse_e1=:$SET
 chse_e2=::$SET
@@ -454,14 +458,21 @@ chse_e6=bar:*
 chse_e7=bar$SET
 chse_e8=bar::$SET
 
-chse_f1=foo:$UNSET
-chse_f2=foo:$UNSET:$UNSET2
-chse_f3=$UNSET:foo
-chse_f4=$UNSET:$UNSET2:foo
-chse_f5=:$UNSET
-chse_f6=::$UNSET
-chse_f7=$UNSET:
-chse_f8=$UNSET::
+chse_f1=$UNSET
+chse_f2=foo:$UNSET
+chse_f3=foo:$UNSET:
+chse_f4=$UNSET:foo
+chse_f5=:$UNSET:foo
+chse_f6=foo:$UNSET:$UNSET2
+chse_f7=foo:$UNSET:$UNSET2:
+chse_f8=$UNSET:$UNSET2:foo
+chse_f9=:$UNSET:$UNSET2:foo
+chse_fA=foo:$UNSET:bar
+chse_fB=foo:$UNSET:$UNSET2:bar
+chse_fC=:$UNSET
+chse_fD=::$UNSET
+chse_fE=$UNSET:
+chse_fF=$UNSET::
 
 EOF
     cat "$f_in"
@@ -478,14 +489,18 @@ EOF
 ('chse_b2', 'bar # baz')
 ('chse_b4', ' bar')
 ('chse_c1', 'bar')
-('chse_d1', 'foo')
-('chse_d2', 'foo:boo')
-('chse_d3', 'bar:foo')
-('chse_d4', 'bar:baz:foo')
-('chse_d5', 'foo:bar')
-('chse_d6', 'foo:bar:baz')
-('chse_d7', 'bar:foo:baz')
-('chse_d8', 'bar:baz:foo:bar:baz')
+('chse_d1', 'foo:')
+('chse_d2', ':foo')
+('chse_d3', ':')
+('chse_d4', '::')
+('chse_d5', 'foo')
+('chse_d6', 'foo:boo')
+('chse_d7', 'bar:foo')
+('chse_d8', 'bar:baz:foo')
+('chse_d9', 'foo:bar')
+('chse_dA', 'foo:bar:baz')
+('chse_dB', 'bar:foo:baz')
+('chse_dC', 'bar:baz:foo:bar:baz')
 ('chse_e1', ':foo')
 ('chse_e2', '::foo')
 ('chse_e3', 'foo:')
@@ -494,14 +509,21 @@ EOF
 ('chse_e6', 'bar:*')
 ('chse_e7', 'bar$SET')
 ('chse_e8', 'bar::foo')
-('chse_f1', 'foo:')
-('chse_f2', 'foo::')
-('chse_f3', ':foo')
-('chse_f4', '::foo')
-('chse_f5', ':')
-('chse_f6', '::')
-('chse_f7', ':')
-('chse_f8', '::')
+('chse_f1', '')
+('chse_f2', 'foo')
+('chse_f3', 'foo:')
+('chse_f4', 'foo')
+('chse_f5', ':foo')
+('chse_f6', 'foo')
+('chse_f7', 'foo:')
+('chse_f8', 'foo')
+('chse_f9', ':foo')
+('chse_fA', 'foo:bar')
+('chse_fB', 'foo:bar')
+('chse_fC', '')
+('chse_fD', ':')
+('chse_fE', '')
+('chse_fF', ':')
 EOF
 )
     run ch-run --set-env="$f_in" "$ch_timg" -- python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'

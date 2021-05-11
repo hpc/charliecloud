@@ -275,16 +275,21 @@ can't let the shell expand :code:`$PATH`)::
 
 The syntax of the argument is a key-value pair separated by the first equals
 character (:code:`=`, ASCII 61), with optional single straight quotes
-(:code:`'`, ASCII 39) around the value (though recall quotes are also
-interpreted by the shell). Newlines (ASCII 10) are not permitted in either key
+(:code:`'`, ASCII 39) around the value, though be aware that quotes are also
+interpreted by the shell. Newlines (ASCII 10) are not permitted in either key
 or value. The value may be empty, but not the key.
 
-The value is a sequence of possibly-empty items separated by colon (:code:`:`,
-ASCII 58). If an item begins with dollar sign (:code:`$`, ASCII 36), and
-:code:`--env-no-expand` is not given, then the rest of the item is
-interpreted as an environment variable. If the variable is set to a non-empty
-value, that value is substituted for the item; otherwise, the item is omitted.
-(Importantly, if no expansions happen, this paragraph is a no-op.)
+Environment variables in the value are expanded unless :code:`--env-no-expand`
+is given. In this case, the value is a sequence of possibly-empty items
+separated by colon (:code:`:`, ASCII 58). If an item begins with dollar sign
+(:code:`$`, ASCII 36), then the rest of the item the name of an environment
+variable. If this variable is set to a non-empty value, that value is
+substituted for the item; otherwise (i.e., the variable is unset or the empty
+string), the item is deleted, including a delimiter colon. The purpose of
+omitting empty expansions is to avoid surprising behavior such as an empty
+element in :code:`$PATH` meaning `the current directory
+<https://devdocs.io/bash/bourne-shell-variables#PATH>`_. If no expansions
+happen, this paragraph is a no-op.
 
 If a file is given instead, it is a sequence of such arguments, one per line.
 Empty lines are ignored. No comments are interpreted. (This syntax is designed
@@ -319,21 +324,21 @@ string):
    * - :code:`FOO=$BAR:baz`
      - :code:`FOO`
      - :code:`bar:baz`
-   * - :code:`FOO=$UNSET:baz`
+   * - :code:`FOO=`
      - :code:`FOO`
-     - :code:`baz`
+     - empty string (not unset)
+   * - :code:`FOO=$UNSET`
+     - :code:`FOO`
+     - empty string (not unset or :code:`$UNSET`)
+   * - :code:`FOO=baz:$UNSET:qux`
+     - :code:`FOO`
+     - :code:`baz:qux` (not :code:`baz::qux`)
    * - :code:`FOO=:bar:baz::`
      - :code:`FOO`
      - :code:`:bar:baz::`
-   * - :code:`FOO=`
-     - :code:`FOO`
-     - empty string
-   * - :code:`FOO=$UNSET`
-     - :code:`FOO`
-     - empty string (not unset!)
    * - :code:`FOO=''`
      - :code:`FOO`
-     - empty string
+     - empty string (not unset)
    * - :code:`FOO=''''`
      - :code:`FOO`
      - :code:`''` (two single quotes)
