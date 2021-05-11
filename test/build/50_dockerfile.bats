@@ -154,6 +154,8 @@ grown in 16 instructions: syntax-quirks
 EOF
 )
     diff -u <(echo "$output_expected") <(echo "$output")
+
+    run ch-image delete syntax-quirks
 }
 
 
@@ -221,6 +223,8 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'first instruction must be ARG or FROM'* ]]
+
+    run ch-image delete foo
 }
 
 
@@ -253,6 +257,8 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'FROM: invalid option --foo'* ]]
+
+    run ch-image delete foo
 }
 
 
@@ -349,6 +355,8 @@ EOF
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
     [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
+
+    run ch-image delete not-yet-supported
 }
 
 
@@ -402,6 +410,8 @@ EOF
     [[ $output = *'warning: not supported, ignored: STOPSIGNAL instruction'* ]]
     [[ $output = *'warning: not supported, ignored: USER instruction'* ]]
     [[ $output = *'warning: not supported, ignored: VOLUME instruction'* ]]
+
+    run ch-image delete unsupported
 }
 
 
@@ -480,6 +490,8 @@ EOF
   echo "$output"
   [[ $status -eq 0 ]]
   diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
+
+  run ch-image delete env-syntax
 }
 
 
@@ -540,6 +552,8 @@ EOF
    else
       [[ $output = *"Successfully built"* ]]
    fi
+
+   run ch-image delete foo
 }
 
 
@@ -738,6 +752,8 @@ EOF
     else
         [[ $status -eq 0 ]]
     fi
+
+    run ch-image delete argenv
 }
 
 
@@ -841,6 +857,8 @@ EOF
         # This diagnostic is not fantastic, but it's what we got for now.
         [[ $output = *'no sources found'* ]]
     fi
+
+    run ch-image delete foo
 }
 
 
@@ -979,6 +997,8 @@ EOF
             false
             ;;
     esac
+
+    run ch-image delete foo
 }
 
 

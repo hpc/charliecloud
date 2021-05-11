@@ -25,6 +25,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'--force not available (no suitable config found)'* ]]
+
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: --no-force-detect" {
@@ -37,6 +39,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'not detecting --force config, per --no-force-detect'* ]]
 
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: misc errors" {
@@ -67,6 +70,8 @@ EOF
     [[ $output = *'init: already initialized'* ]]
     [[ $output = *'--force: init OK & modified 2 RUN instructions'* ]]
     [[ $output = *'grown in 4 instructions: fakeroot-temp'* ]]
+
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: CentOS 7: unneeded, no --force, build succeeds" {
@@ -81,6 +86,8 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'available --force: rhel7'* ]]
     [[ $output = *$'testing config: rhel7\navailable --force'* ]]
+
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: CentOS 7: unneeded, no --force, build fails" {
@@ -94,6 +101,8 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"build failed: current version of --force wouldn't help"* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: CentOS 7: unneeded, with --force" {
@@ -106,6 +115,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warning: --force specified, but nothing to do'* ]]
+
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: CentOS 7: maybe needed but actually not, no --force" {
@@ -119,6 +130,8 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'available --force'* ]]
     [[ $output = *'RUN: available here with --force'* ]]
+
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: CentOS 7: maybe needed but actually not, with --force" {
@@ -132,6 +145,8 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: CentOS 7: needed but no --force" {
@@ -147,6 +162,8 @@ EOF
     [[ $output = *'RUN: available here with --force'* ]]
     [[ $output = *'build failed: --force may fix it'* ]]
     [[ $output = *'build failed: RUN command exited with 1'* ]]
+
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: CentOS 7: needed, with --force" {
@@ -160,6 +177,8 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+
+    run ch-image delete fakeroot-temp
 }
 
 @test "${tag}: CentOS 7: EPEL already installed" {
@@ -187,6 +206,8 @@ EOF
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 2 RUN instructions'* ]]
     ! ( echo "$output" | grep -E '(Updating|Installing).+: epel-release' )
+
+    run ch-image delete centos7-epel1
 }
 
 @test "${tag}: CentOS 8: unneeded, no --force, build succeeds" {
@@ -896,4 +917,6 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+
+    run ch-image delete fakeroot-temp
 }
