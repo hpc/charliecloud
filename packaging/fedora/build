@@ -94,13 +94,13 @@ rpmbuild root:      %(rpmbuild)s
 
    # Build tarball.
    print("# building source tarball")
-   cmd(CH_RUN, "-b", "%s" % git_tmp, "-c", "/mnt/0", args.image,
+   cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "./autogen.sh")
-   cmd(CH_RUN, "-b", "%s" % git_tmp, "-c", "/mnt/0", args.image,
+   cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "./configure")
-   cmd(CH_RUN, "-b", "%s" % git_tmp, "-c", "/mnt/0", args.image,
+   cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "make")
-   cmd(CH_RUN, "-b", "%s" % git_tmp, "-c", "/mnt/0", args.image,
+   cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "make", "dist")
    ch_version = open(git_tmp + "/lib/version.txt").read()[:-1]
    ch_tarball = "charliecloud-%s.tar.gz" % ch_version

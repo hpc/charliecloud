@@ -6,6 +6,7 @@
 
 #define _GNU_SOURCE
 #include <errno.h>
+#include <sys/stat.h>
 #include <stdbool.h>
 
 
@@ -60,6 +61,7 @@
 #define WARNING(...) msg(1, __FILE__, __LINE__, 0, __VA_ARGS__);
 #define INFO(...)    msg(2, __FILE__, __LINE__, 0, __VA_ARGS__);
 #define VERBOSE(...) msg(3, __FILE__, __LINE__, 0, __VA_ARGS__);
+#define DEBUG(...)   msg(4, __FILE__, __LINE__, 0, __VA_ARGS__);
 
 
 /** External variables **/
@@ -70,10 +72,14 @@ extern int verbose;
 
 char *cat(const char *a, const char *b);
 void log_ids(const char *func, int line);
+void mkdirs(const char *base, const char *path,
+            char **denylist, size_t denylist_ct);
 void msg(int level, const char *file, int line, int errno_,
          const char *fmt, ...);
-bool path_exists(const char *path);
+bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink);
 unsigned long path_mount_flags(const char *path);
 void path_split(const char *path, char **dir, char **base);
+bool path_subdir_p(const char *base, const char *path);
+char *realpath_safe(const char *path);
 void split(char **a, char **b, const char *str, char del);
 void version(void);
