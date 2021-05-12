@@ -8,14 +8,16 @@
 
 /** Types **/
 
+enum bind_dep {
+   BD_REQUIRED,  // both source and destination must exist
+   BD_OPTIONAL,  // if either source or destination missing, do nothing
+   BD_MAKE_DST,  // source must exist, try to create destination if it doesn't
+};
+
 struct bind {
    char *src;
    char *dst;
-};
-
-enum bind_dep {
-   BD_REQUIRED,  // both source and destination must exist
-   BD_OPTIONAL   // if either source or destination missing, do nothing
+   enum bind_dep dep;
 };
 
 struct container {

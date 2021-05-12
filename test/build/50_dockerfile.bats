@@ -170,8 +170,8 @@ EOF
     [[ $status -eq 1 ]]
     # error message
     [[ $output = *"can't parse: -:2,1"* ]]
-    # internal blabber
-    [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
+    # internal blabber (varies by version)
+    [[ $output = *'No terminal'*"'W'"*'at line 2 col 1'* ]]
 
     # Bad long option.
     run ch-image build -t foo -f - . <<'EOF'
@@ -843,6 +843,7 @@ EOF
     fi
 }
 
+
 @test 'Dockerfile: COPY --from errors' {
     scope standard
     [[ $CH_BUILDER = none ]] && skip 'no builder'
@@ -978,4 +979,42 @@ EOF
             false
             ;;
     esac
+}
+
+
+@test 'Dockerfile: FROM scratch' {
+    scope standard
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    # pull it; validate special handling
+    run ch-image pull -v scratch
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'manifest: using internal library'* ]]
+    [[ $output = *'no config found; initializing empty metadata'* ]]
+    [[ $output != *'layer 1'* ]]  # no layers
+
+    # remove
+    ch-image delete scratch
+
+    # build 1; validate pulled with special handling
+    run ch-image build -v -t foo -f - . <<'EOF'
+FROM scratch
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'base image not found, pulling'* ]]
+    [[ $output = *'manifest: using internal library'* ]]
+    [[ $output = *'no config found; initializing empty metadata'* ]]
+    [[ $output != *'layer 1'* ]]  # no layers
+    ls -lha "${CH_IMAGE_STORAGE}/img/foo/usr"
+    [[ $(find /tmp/foo -mindepth 1 "${CH_IMAGE_STORAGE}/img/foo/usr") = '' ]]
+
+    # build 2; validate not pulled
+    run ch-image build -v -t foo -f - . <<'EOF'
+FROM scratch
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"base image found: ${CH_IMAGE_STORAGE}/img/scratch"* ]]
 }

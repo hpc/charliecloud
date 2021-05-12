@@ -116,7 +116,7 @@ def main():
    add_opts(sp, common_opts, True)
    sp.add_argument("-b", "--bind", metavar="SRC[:DST]",
                    action="append", default=[],
-                   help="mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)")
+                   help="mount SRC at guest DST (default: same as SRC)")
    sp.add_argument("--build-arg", metavar="ARG[=VAL]",
                    action="append", default=[],
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
@@ -152,6 +152,17 @@ def main():
    sp.set_defaults(func=misc.list_)
    add_opts(sp, common_opts, True)
 
+   # import
+   help="copy external image into storage"
+   sp = sps.add_parser("import", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=misc.import_)
+   add_opts(sp, common_opts, True)
+   sp.add_argument("path", metavar="PATH",
+                   help="directory or tarball to import")
+   sp.add_argument("image_ref", metavar="IMAGE_REF",
+                   help="destination image name")
+
    # pull
    help="pull image from remote repository to local filesystem"
    sp = sps.add_parser("pull", help=help, description=help,
@@ -183,6 +194,12 @@ def main():
    sp = sps.add_parser("python-path", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
    sp.set_defaults(func=misc.python_path)
+
+   # reset
+   help="delete everything in ch-image builder storage"
+   sp = sps.add_parser("reset", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=misc.reset)
    add_opts(sp, common_opts, True)
 
    # storage-path

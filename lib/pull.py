@@ -4,6 +4,17 @@ import sys
 
 import charliecloud as ch
 
+## Constants ##
+
+# Internal library of manifests, e.g. for "FROM scratch" (issue #1013).
+manifests_internal = {
+   "scratch": {  # magic empty image
+      "schemaVersion": 2,
+      "config": { "digest": None },
+      "layers": []
+   }
+}
+
 
 ## Main ##
 
@@ -58,7 +69,9 @@ class Image_Puller:
       return ch.storage.fat_manifest_for_download(self.image.ref)
 
    def manifest_path(self, hash_=None):
-      if (hash_ is None):
+      if (str(self.image.ref) in manifests_internal):
+         return "[internal library]"
+      elif (hash_ is None):
          return ch.storage.manifest_for_download(self.image.ref)
       else:
          return ch.storage.manifest_for_download(hash_)
@@ -93,12 +106,7 @@ class Image_Puller:
             ch.VERBOSE("list of manifests: no other manifests")
       manifest_path = self.manifest_path(manifest_hash)
       # manifest
-      if (os.path.exists(manifest_path) and use_cache):
-         ch.INFO("manifest: using existing file")
-      else:
-         ch.INFO("manifest: downloading")
-         dl.manifest_to_file(manifest_path, manifest_digest)
-      self.manifest_load(manifest_path)
+      self.manifest_load(self.manifest_read(dl, use_cache))
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
@@ -158,13 +166,11 @@ class Image_Puller:
             list_.append(k.get('platform').get('architecture'))
       return list_
 
-   def manifest_load(self, manifest_path):
+   def manifest_load(self, manifest):
       """Parse the manifest file and set self.config_hash and
          self.layer_hashes."""
       def bad_key(key):
-         ch.FATAL("manifest: %s: no key: %s" % (manifest_path, key))
-      # read and parse the JSON
-      manifest = ch.json_from_file(manifest_path)
+         ch.FATAL("manifest: %s: no key: %s" % (self.manifest_path, key))
       # validate schema version
       try:
          version = manifest['schemaVersion']
@@ -182,7 +188,9 @@ class Image_Puller:
          self.config_hash = None
       else:  # version == 2
          try:
-            self.config_hash = ch.digest_trim(manifest["config"]["digest"])
+            self.config_hash = manifest["config"]["digest"]
+            if (self.config_hash is not None):
+               self.config_hash = ch.digest_trim(self.config_hash)
          except KeyError:
             bad_key("config/digest")
       # load layer hashes
@@ -233,8 +241,34 @@ class Image_Puller:
                      % arch)
       return ref
 
+   def manifest_read(self, downloader, use_cache):
+      "Obtain and parse the manifest JSON file; return dictionary."
+      try:
+         # internal manifest library, e.g. for "FROM scratch"
+         manifest = manifests_internal[str(self.image.ref)]
+         ch.INFO("manifest: using internal library")
+      except KeyError:
+         # download the file if needed
+         if (os.path.exists(self.manifest_path) and use_cache):
+            ch.INFO("manifest: using existing file")
+         else:
+            ch.INFO("manifest: downloading")
+            downloader.manifest_to_file(self.manifest_path)
+         # read and parse the JSON
+         fp = ch.open_(self.manifest_path, "rt", encoding="UTF-8")
+         text = ch.ossafe(fp.read, "can't read: %s" % self.manifest_path)
+         ch.ossafe(fp.close, "can't close: %s" % self.manifest_path)
+         ch.DEBUG("manifest:\n%s" % text)
+         try:
+            manifest = json.loads(text)
+         except json.JSONDecodeError as x:
+            ch.FATAL("can't parse manifest file: %s:%d: %s"
+                     % (self.manifest_path, x.lineno, x.msg))
+      return manifest
+
    def pull_to_unpacked(self, use_cache=True, last_layer=None):
       "Pull and flatten image."
       self.download(use_cache)
       layer_paths = [self.layer_path(h) for h in self.layer_hashes]
-      self.image.unpack(self.config_path, layer_paths, last_layer)
+      self.image.unpack(layer_paths, last_layer)
+      self.image.metadata_replace(self.config_path)

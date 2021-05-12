@@ -110,6 +110,17 @@ touch img/mnt/dev/dontdeleteme
 # Fixture to make sure we raise hidden files in non-tarbombs.
 touch img/.hiddenfile1 img/..hiddenfile2 img/...hiddenfile3
 
+# Fixtures for bind-mounting
+ln -s ../bind4 img/mnt/bind4
+ln -s ./doesnotexist img/mnt/link-b0rken-rel
+ln -s /doesnotexist img/mnt/link-b0rken-abs
+ln -s /tmp img/mnt/link-bad-abs
+ln -s ../.. img/mnt/link-bad-rel
+
+# Fixture to test resolv.conf as symlink (issue #1015).
+mv img/etc/resolv.conf img/etc/resolv.conf.real
+ln -s /etc/resolv.conf.real img/etc/resolv.conf
+
 
 ## Tar it up.
 
