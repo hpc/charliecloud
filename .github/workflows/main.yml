@@ -142,6 +142,7 @@ jobs:
 
       - name: build/install from Git
         run: |
+          ./autogen.sh --clean --lark
           ./autogen.sh
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
