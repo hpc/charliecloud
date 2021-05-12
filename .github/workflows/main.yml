@@ -107,6 +107,7 @@ jobs:
           [[ $(command -v pip3) == /usr/local/bin/pip3 ]]
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
+          sudo sh -c 'umask 0022 && pip3 install --upgrade pip'
           sudo sh -c 'umask 0022 && pip3 install requests'
 
       - name: install/configure dependencies, all Buildah
