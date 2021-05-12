@@ -136,11 +136,11 @@ AC_ARG_ENABLE([bundle-lark],
     [--disable-bundle-lark],
     [disable bundled lark]),
   [AS_CASE([$enableval],
-    [yes], [use_bundled_lark=yes],
-    [no],  [use_bundled_lark=no],
+    [yes], [disable_bundled_lark=no],
+    [no],  [disable_bundled_lark=yes],
     [*],   [AC_MSG_ERROR([--disable-bundle-lark: bad argument: $enableval])]
   )],
-  [use_bundled_lark=yes])
+  [disable_bundled_lark=no])
 
 ## Feature test macros
 
@@ -461,7 +461,7 @@ AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
 AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
-AM_CONDITIONAL([ENABLE_LARK], [test $use_bundled_lark = yes])
+AM_CONDITIONAL([ENABLE_LARK], [test $disable_bundled_lark = no])
 
 
 ## Prepare report.
@@ -628,7 +628,7 @@ Building images via our wrappers
     Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
   with bundled lark:
-    enabled ... ${use_bundled_lark}
+    disabled ... ${disable_bundled_lark}
 
   with ch-image(1): ${have_ch_image}
     enabled ... ${enable_ch_image}
