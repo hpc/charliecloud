@@ -26,6 +26,7 @@ mylib_DATA = contributors.bash \
 #
 # Then, copy-n-paste & remove the last backslash. PROOFREAD YOUR DIFF!!!
 
+if ENABLE_LARK
 LARK = \
 lark-0.11.3.dist-info/INSTALLER \
 lark-0.11.3.dist-info/LICENSE \
@@ -82,7 +83,7 @@ lark/utils.py \
 lark/visitors.py
 
 nobase_dist_mylib_DATA = $(LARK)
-
+endif
 
 CLEANFILES = $(mylib_DATA) $(noinst_DATA)
 

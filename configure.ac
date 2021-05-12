@@ -131,6 +131,10 @@ AC_ARG_ENABLE([ch-image],
                  [ch-image unprivileged builder & image manager]),
   [], [enable_ch_image=yes])
 
+AC_ARG_ENABLE([bundle-lark],
+  AS_HELP_STRING([--disable-bundle-lark], [Bundled lark parser]),
+  [], [enable_bundled_lark=yes])
+
 
 ## Feature test macros
 
@@ -330,6 +334,26 @@ AS_CASE([$python],
 CH_CHECK_VERSION([PYTHON], [$vmin_python],
                  [--version | head -1 | cut -d' ' -f2])
 
+# Python module "lark-parser"
+vmin_lark=0.7.1
+AS_IF([test -n "$PYTHON"], [
+  AC_MSG_CHECKING([for lark-parser module])
+  cat <<EOF | $PYTHON_SHEBANG
+import sys
+try:
+   import lark   # module present?
+   lark.Visitor  # correct module? (there are two)
+except Exception:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [LARK=$PYTHON; have_lark=yes],
+    [LARK=;        have_lark=no])
+  AC_MSG_RESULT([$have_lark])
+  CH_CHECK_VERSION([LARK], [$vmin_lark],
+    [-c 'import lark; print(lark.__version__)'])
+])
+
 # Python module "requests"
 vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
 AS_IF([test -n "$PYTHON"], [
@@ -431,6 +455,8 @@ AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
 AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
+
+AM_CONDITIONAL([ENABLE_LARK], [test $enable_bundled_lark = yes])
 
 
 ## Prepare report.
