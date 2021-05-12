@@ -1493,7 +1493,7 @@ def grep_p(path, rx):
 def init(cli):
    global verbose, log_festoon, log_fp, storage, tls_verify
    # logging
-   assert (0 <= cli.verbose <= 2)
+   assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
