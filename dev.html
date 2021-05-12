@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5. Contributor’s guide &mdash; Charliecloud 0.23~pre+ed1cab8 documentation</title>
+  <title>5. Contributor’s guide &mdash; Charliecloud 0.24~pre+1061updatecopyright.4b55233 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.23~pre+ed1cab8
+                0.24~pre+1061updatecopyright.4b55233
               </div>
             
           
@@ -340,11 +340,12 @@ should not be assigned to a person.</p>
 </div>
 <div class="section" id="peer-review">
 <h3><a class="toc-backref" href="#id4"><span class="section-number">5.1.2. </span>Peer review</a><a class="headerlink" href="#peer-review" title="Permalink to this headline">¶</a></h3>
-<p><strong>Issues and pull requests.</strong> The standard workflow is to introduce a
-change in an issue, get consensus on what to do, and then create a <a class="reference external" href="https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project">pull
+<p><strong>Issues and pull requests.</strong> The standard workflow is to introduce a change
+in an issue, get consensus on what to do, and then create a <em>draft</em> <a class="reference external" href="https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project">pull
 request</a>
-(PR) for the implementation. The issue, not the PR, should be tagged and
-milestoned so a given change shows up only once in the various views.</p>
+(PR) for the implementation.</p>
+<p>The issue, not the PR, should be tagged and milestoned so a given change shows
+up only once in the various views.</p>
 <p>If consensus is obtained through other means (e.g., in-person discussion),
 then open a PR directly. In this case, the PR should be tagged and milestoned,
 since there is no issue.</p>
@@ -367,20 +368,22 @@ closes change over time, and we don’t want to have to edit the description to
 deal with that. We also want this information in only one place (the commit
 log). Instead, use “addresses”, and we’ll edit the keywords into the commit
 message(s) at merge time if needed.</p>
-<p><strong>PR review procedure.</strong> When your PR is ready for review — which may or may
-not be when you want it considered for merging — do one or both of:</p>
+<p><strong>PR review procedure.</strong> When your draft PR is ready for review — which may or
+may not be when you want it considered for merging! — do one or both of:</p>
 <ul class="simple">
 <li><p>Request review from the person(s) you want to look at it. If you think it
 may be ready for merge, that should include the project lead. The purpose of
-requsting review is so the person is notified you need their help.</p></li>
+requesting review is so the person is notified you need their help.</p></li>
 <li><p>If you think it may be ready to merge (even if you’re not sure), then also
-tag the PR <code class="code docutils literal notranslate"><span class="pre">ready</span> <span class="pre">to</span> <span class="pre">merge</span></code>. The purpose of this is so the project
-lead can see which PRs are ready to consider for merging. If the project
-lead decides it’s ready, they will merge; otherwise, they’ll untag.</p></li>
+mark the PR “ready to review”. The purpose of this is so the project lead
+can see which PRs are ready to consider for merging (green icon) and which
+are not (gray icon). If the project lead decides it’s ready, they will
+merge; otherwise, they’ll change it back to draft.</p></li>
 </ul>
 <p>In both cases, the person from whom you requested review now owns the branch,
 and you should stop work on it unless and until you get it back.</p>
-<p>Do not hesitate to pester your reviewer if you haven’t heard back promptly.</p>
+<p>Do not hesitate to pester your reviewer if you haven’t heard back promptly,
+say within 24 hours.</p>
 <p><em>Special case 1:</em> Often, the review consists of code changes, and the reviewer
 will want you to assess those changes. GitHub doesn’t let you request review
 from the PR submitter, so this must be done with a comment, either online or
@@ -510,11 +513,6 @@ duplicates should refer to the other issue and be closed.</p>
 <dt><code class="code docutils literal notranslate"><span class="pre">erroneous</span></code></dt><dd><p>Not a Charliecloud issue; close. <em>Use caution when blaming a problem on user
 error. Often (or usually) there is a documentation or usability bug that
 caused the “user error”.</em></p>
-</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">ready</span> <span class="pre">to</span> <span class="pre">merge</span></code></dt><dd><p>PRs only. Adding this tag speculates that the PR is complete and requests it
-be considered for merging to master. If the project lead requests changes,
-they’ll remove the tag. Re-add it when you’re ready to try again. Lead
-removes tag after merging.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">wontfix</span></code></dt><dd><p>We are not going to do this, and we won’t merge PRs. Close issue after
 tagging, though sometimes you’ll want to leave a few days to allow for
@@ -693,7 +691,7 @@ abstracted away.</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>charliecloud</p></li>
-<li><p>Python 3.4+</p></li>
+<li><p>Python 3.6+</p></li>
 <li><p>Either:</p>
 <ul>
 <li><p>the provided example <code class="code docutils literal notranslate"><span class="pre">centos7</span></code> or <code class="code docutils literal notranslate"><span class="pre">centos8</span></code> image</p></li>
@@ -1405,7 +1403,7 @@ essentially a no-op, and annotations are not supported, so the
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2014–2020, Triad National Security, LLC
+        &copy; Copyright 2014–2021, Triad National Security, LLC
 
     </p>
   </div> 

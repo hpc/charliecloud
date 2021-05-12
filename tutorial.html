@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.23~pre+ed1cab8 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.24~pre+1061updatecopyright.4b55233 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.23~pre+ed1cab8
+                0.24~pre+1061updatecopyright.4b55233
               </div>
             
           
@@ -313,7 +313,7 @@ this. Note that run-time functionality such as <code class="code docutils litera
 supported.</p>
 <p>We will use the following very simple Dockerfile:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: standard</span>
-<span class="k">FROM</span> <span class="s">centos:8</span>
+<span class="k">FROM</span><span class="s"> centos:8</span>
 
 <span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> openssh-clients <span class="se">\</span>
  <span class="o">&amp;&amp;</span> dnf clean all
@@ -790,7 +790,7 @@ image, unless you add an HTTP cache, which is out of scope of this tutorial.</p>
 using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic CentOS image
 (<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.centos8</span></code>):</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">centos:8</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> centos:8</span>
 
 <span class="c"># This image has two purposes: (1) demonstrate we can build a CentOS 8 image</span>
 <span class="c"># and (2) provide avbuild environment for Charliecloud EPEL 8 RPMs.</span>
@@ -839,7 +839,7 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 Dockerfile that compiles several dependencies in addition to OpenMPI. For the
 purposes of this tutorial, you can skip most of it, but we felt it would be
 useful to show a real example.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">centos8</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> centos8</span>
 
 <span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
 <span class="c"># OpenMPI for use inside a container.</span>
@@ -1012,7 +1012,7 @@ source, but you use the <code class="code docutils literal notranslate"><span cl
 host filesystem (rather than the network via HTTP) to the image. For example,
 <code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello/Dockerfile.openmpi</span></code> uses this approach:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: full</span>
-<span class="k">FROM</span> <span class="s">openmpi</span>
+<span class="k">FROM</span><span class="s"> openmpi</span>
 
 <span class="c"># This example</span>
 <span class="k">COPY</span> . /hello
@@ -1406,7 +1406,7 @@ on each compute node. For example (note single quotes):</p>
 <span class="gp">... </span>   <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">x</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span>
 <span class="gp">...</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">SAMPLE_CT</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">2e8</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ct</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="n">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SAMPLE_CT</span><span class="p">))</span> \
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ct</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="nb">xrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SAMPLE_CT</span><span class="p">))</span> \
 <span class="gp">... </span>       <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span> \
 <span class="gp">... </span>       <span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="mf">4.0</span><span class="o">*</span><span class="n">ct</span><span class="o">/</span><span class="n">SAMPLE_CT</span>
@@ -1471,7 +1471,7 @@ your site administrators for the latter.</p>
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2014–2020, Triad National Security, LLC
+        &copy; Copyright 2014–2021, Triad National Security, LLC
 
     </p>
   </div> 
