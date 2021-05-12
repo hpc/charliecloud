@@ -434,7 +434,7 @@ AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
 AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
-AM_CONDITIONAL([ENABLE_LARK], [test $enable_bundled_lark = no])
+AM_CONDITIONAL([ENABLE_LARK], [test $enable_bundled_lark = yes])
 
 
 ## Prepare report.
