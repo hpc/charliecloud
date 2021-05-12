@@ -953,7 +953,7 @@ class Registry_HTTP:
 
    def authenticate_basic(self, res, auth_d):
       VERBOSE("authenticating using Basic")
-      if ("realm" not in auth_d):
+      if ("Basic realm" not in auth_d):
          FATAL("WWW-Authenticate missing realm")
       (username, password) = self.credentials_read()
       self.auth = requests.auth.HTTPBasicAuth(username, password)
@@ -965,10 +965,10 @@ class Registry_HTTP:
       # just gives service and scope. We need realm because it's the URL to
       # use for a token. scope also seems critical, so check we have that.
       # Otherwise, just give back all the keys we got.
-      for k in ("realm", "scope"):
+      for k in ("Bearer realm", "scope"):
          if (k not in auth_d):
             FATAL("WWW-Authenticate missing key: %s" % k)
-      params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
+      params = { (k,v) for (k,v) in auth_d.items() if k != "Bearer realm" }
       # Request anonymous auth token first, but only for the “safe” methods.
       # We assume no registry will accept anonymous pushes. This is because
       # GitLab registries don't seem to honor the scope argument (issue #975);
@@ -980,7 +980,7 @@ class Registry_HTTP:
          VERBOSE("won't request anonymous token for %s" % res.request.method)
       else:
          VERBOSE("requesting anonymous auth token")
-         res = self.request_raw("GET", auth_d["realm"], {200,403},
+         res = self.request_raw("GET", auth_d["Bearer realm"], {200,403},
                                 params=params)
          if (res.status_code == 403):
             VERBOSE("anonymous access rejected")
@@ -990,7 +990,7 @@ class Registry_HTTP:
       if (token is None):
          (username, password) = self.credentials_read()
          auth = requests.auth.HTTPBasicAuth(username, password)
-         res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
+         res = self.request_raw("GET", auth_d["Bearer realm"], {200}, auth=auth,
                                 params=params)
          token = res.json()["token"]
       VERBOSE("received auth token: %s" % (token[:32]))
@@ -1005,16 +1005,16 @@ class Registry_HTTP:
          FATAL("WWW-Authenticate header not found")
       auth_h = res.headers["WWW-Authenticate"]
       VERBOSE("WWW-Authenticate raw: %s" % auth_h)
-      # Parse the WWW-Authenticate header. Apparently doing this correctly is
-      # pretty hard. We use a non-compliant regex kludge [1,2]. Alternatives
-      # include putting the grammar into Lark (this can be gotten by reading
-      # the RFCs enough) or using the www-authenticate library [3].
-      #
-      # [1]: https://stackoverflow.com/a/1349528
-      # [2]: https://stackoverflow.com/a/1547940
-      # [3]: https://pypi.org/project/www-authenticate
       auth_type = auth_h.split()[0]
-      auth_d = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth_h))
+      auth_contents = auth_h.split(',')
+      auth_d = {}
+      for part in auth_contents:
+         try:
+            key, value = part.split('=', 1)
+         except ValueError:
+            FATAL("malformed response header segment: %s" % part)
+         value = value.strip('"')
+         auth_d[key] = value
       VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
       # Dispatch to proper method.
       if   (auth_type == "Bearer"):
