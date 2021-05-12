@@ -42,7 +42,8 @@ def delete(cli):
 def list_(cli):
    ch.dependencies_check()
    imgdir = ch.storage.unpack_base
-   imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
+   imgs = ch.ossafe(os.listdir, "not a storage directory: %s" 
+        % ch.storage.root, imgdir)
    for img in sorted(imgs):
       print(ch.Image_Ref(img))
 
