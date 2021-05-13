@@ -1250,19 +1250,6 @@ Additional sources
 Updating bundled Lark Parser
 ============================
 
-In order to change the version of the bundled lark parser you must first find
-the commit you would like to change the lark version to. Go to
-https://github.com/lark-parser/lark/tags and choose a tagged release.
-
-.. code-block:: bash
-  
-  git clone https://github.com/hpc/charliecloud.git
-  cd charliecloud
-  ./autogen.sh
-  cd lib/lark
-  git checkout $NEW_COMMIT
-  git pull
-  cd -
-  git add lib/lark
-  git commit -m "updating lark version"
-  git push
+In order to change the version of the bundled lark parser you must modify two files.
+In autogen.sh you have to change the version in pip install. In lib/Makefile.am you can
+follow the comment at the top of the list of lark files to update them.
