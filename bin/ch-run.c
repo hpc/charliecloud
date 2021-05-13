@@ -223,8 +223,10 @@ void envs_set(char **lines, const int line_ct, const char *filename,
       // per documentation.
       value_new = "";
       first_written = false;
-      item = strsep(&value_old, ":");              // cannot be NULL
-      while (item != NULL) {                       // loop executes ≥ once
+      while (1) {                                  // loop executes ≥ once
+         item = strsep(&value_old, ":");           // NULL -> no more items
+         if (item == NULL)
+            break;
          if (   expand                             // expansion requested
              && item[0] == '$' && item[1] != 0) {  // ≥1 char in variable name
             item = getenv(++item);                 // NULL if unset
@@ -237,7 +239,6 @@ void envs_set(char **lines, const int line_ct, const char *filename,
             value_new = cat(value_new, item);
             first_written = true;
          }
-         item = strsep(&value_old, ":");           // NULL -> no more items
       }
 
       // Save results.
