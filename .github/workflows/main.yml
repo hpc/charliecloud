@@ -108,7 +108,7 @@ jobs:
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install --upgrade pip'
-          sudo sh -c 'umask 0022 && pip3 install requests'
+          sudo sh -c 'umask 0022 && pip3 install requests wheel'
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
