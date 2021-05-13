@@ -47,14 +47,20 @@ def main(cli):
 
 class Image_Puller:
 
-   __slots__ = ("config_hash",
+   __slots__ = ("architectures",  # key: architecture, value: manifest digest
+                "config_hash",
                 "image",
-                "layer_hashes")
+                "layer_hashes",
+                "registry",
+                "use_cache")
 
-   def __init__(self, image):
-      self.config_hash = None
+   def __init__(self, image, use_cache):
+      self.architectures = None
       self.image = image
+      self.registry = ch.Registry_HTTP(image.ref)
+      self.config_hash = None
       self.layer_hashes = None
+      self.use_cache = use_cache
 
    @property
    def config_path(self):
@@ -64,17 +70,17 @@ class Image_Puller:
          return ch.storage.download_cache // (self.config_hash + ".json")
 
    @property
-   def fat_manifest_path(self):
-      "Path to the fat manifest file."
-      return ch.storage.fat_manifest_for_download(self.image.ref)
+   def fatman_path(self):
+      return ch.storage.fatman_for_download(self.image.ref)
 
-   def manifest_path(self, hash_=None):
+   @property
+   def manifest_path(self):
       if (str(self.image.ref) in manifests_internal):
          return "[internal library]"
-      elif (hash_ is None):
-         return ch.storage.manifest_for_download(self.image.ref)
       else:
-         return ch.storage.manifest_for_download(hash_)
+         return ch.storage.manifest_for_download(self.image.ref)
+#      else:
+#         return ch.storage.manifest_for_download(hash_)
 
    def download(self, use_cache):
       """Download image metadata and layers and put them in the download
@@ -84,7 +90,6 @@ class Image_Puller:
       manifest_digest = None
       manifest_hash = None
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
-      dl = ch.Registry_HTTP(self.image.ref)
       ch.VERBOSE("downloading image: %s" % dl.ref)
       ch.mkdirs(ch.storage.download_cache)
       # fat manifest
@@ -139,38 +144,104 @@ class Image_Puller:
             dl.blob_to_file(lh, path)
       dl.close()
 
+   def error_decode(self, data):
+      """Decode first error message in registry error blob and return a tuple
+         (code, message)."""
+      try:
+         code = data["errors"][0]["code"]
+         msg = data["errors"][0]["message"]
+      except (IndexError, KeyError):
+         ch.FATAL("malformed error data (yes this is ironic)")
+      return (code, msg)
+
+   def fatman_load(self, continue_404=False):
+      """Load the fat manifest JSON file, downloading it first if needed.
+         After calling this, self.architectures will be populated. If there is
+         no fat manifest, self.architectures is set to None; if there are no
+         valide architectures found, warn and set it to an empty dictionary.
+
+         No fat manifest is not an error condition if the image is
+         arch-unaware. By default, if the image does not exist, exit with
+         error; if continue_404, then log the condition but do not exit."""
+      self.architectures = None
+      if (str(self.image.ref) in manifests_internal):
+         return  # no fat manifests for internal library
+      if (os.path.exists(self.fatman_path) and self.use_cache):
+         ch.INFO("manifest list: using existing file")
+      else:
+         ch.INFO("manifest list: downloading")
+         self.registry.fatman_to_file(self.fatman_path, continue_404)
+      if (not os.path.exists(self.fatman_path)):
+         # Response was 404.
+         ch.INFO("manifest list: no list found")
+         return
+      fm = ch.json_from_file(self.fatman_path, "fat manifest")
+      if ("layers" in fm or "fsLayers" in fm):
+         # If there is no fat manifest but the image exists, we get a skinny
+         # manifest instead. We can't use it, however, because it might be a
+         # v1 manifest when a v2 is available. ¯\_(ツ)_/¯
+         ch.INFO("manifest list: no valid list found")
+         return
+      if ("errors" in fm):
+         # fm is an error blob.
+         (code, msg) = self.error_decode(fm)
+         if (code == "MANIFEST_UNKNOWN"):
+            if (continue_404):
+               return
+            else:
+               ch.FATAL("manifest list: no such image")
+         else:
+            ch.FATAL("manifest list: error: %s" % msg)
+      self.architectures = dict()
+      if ("manifests" not in fm):
+         ch.FATAL("manifest list has no key 'manifests'")
+      for m in fm["manifests"]:
+         try:
+            if (m["platform"]["os"] != "linux"):
+               continue
+            arch = m["platform"]["architecture"]
+            if ("variant" in m["platform"]):
+               arch = "%s/%s" % (arch, m["platform"]["variant"])
+            digest = m["digest"]
+         except KeyError:
+            ch.FATAL("manifest lists missing a required key")
+         if (arch in self.architectures):
+            ch.FATAL("manifest list: duplicate architecture: %s" % arch)
+         self.architectures[arch] = ch.digest_trim(digest)
+      if (len(self.architectures) == 0):
+         ch.WARNING("no valid architectures found")
+
    def layer_path(self, layer_hash):
       "Return the path to tarball for layer layer_hash."
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
-   def list_architectures(self, use_cache):
-      if (os.path.exists(self.fat_manifest_path) and use_cache):
-         ch.INFO("manifest list: using existing file")
-      else:
-         ch.INFO("manifest list: downloading")
-         dl.fat_manifest_to_file(self.fat_manifest_path)
-      manifest = ch.json_from_file(self.fat_manifest_path)
-      variant = None
-      list_ = []
-      for k in manifest["manifests"]:
-         if (k.get('platform').get('os') != 'linux'):
-            continue
-         try:
-            variant = k.get('platform').get('variant')
-         except KeyError:
-            True
-         if (variant is not None):
-            variant = "/" + variant
-            list_.append(k.get('platform').get('architecture') + variant)
-         else:
-            list_.append(k.get('platform').get('architecture'))
-      return list_
-
-   def manifest_load(self, manifest):
-      """Parse the manifest file and set self.config_hash and
-         self.layer_hashes."""
+   def manifest_load(self, continue_404=False):
+      """Download the manifest file if needed, parse it, and set
+         self.config_hash and self.layer_hashes. By default, if the image does
+         not exist, exit with error; if continue_404, then log the condition
+         but do not exit. In this case, self.config_hash and self.layer_hashes
+         will both be None."""
       def bad_key(key):
          ch.FATAL("manifest: %s: no key: %s" % (self.manifest_path, key))
+      self.config_hash = None
+      self.layer_hashes = None
+      # obtain the manifest
+      try:
+         # internal manifest library, e.g. for "FROM scratch"
+         manifest = manifests_internal[str(self.image.ref)]
+         ch.INFO("manifest: using internal library")
+      except KeyError:
+         # download the file if needed, then parse it
+         if (os.path.exists(self.manifest_path) and self.use_cache):
+            ch.INFO("manifest: using existing file")
+         else:
+            ch.INFO("manifest: downloading")
+            self.registry.manifest_to_file(self.manifest_path, continue_404)
+         if (not os.path.exists(self.manifest_path)):
+            # response was 404
+            ch.INFO("manifest: none found")
+            return
+         manifest = ch.json_from_file(self.manifest_path, "manifest")
       # validate schema version
       try:
          version = manifest['schemaVersion']
@@ -184,7 +255,7 @@ class Image_Puller:
       # things (plural) that look like a config at history/v1Compatibility as
       # an embedded JSON string :P but I haven't dug into it.
       if (version == 1):
-         ch.WARNING("no config; manifest schema version 1")
+         ch.VERBOSE("no config; manifest schema version 1")
          self.config_hash = None
       else:  # version == 2
          try:
@@ -240,31 +311,6 @@ class Image_Puller:
             ch.FATAL("arch: %s: not found in manifest list; see list --help"
                      % arch)
       return ref
-
-   def manifest_read(self, downloader, use_cache):
-      "Obtain and parse the manifest JSON file; return dictionary."
-      try:
-         # internal manifest library, e.g. for "FROM scratch"
-         manifest = manifests_internal[str(self.image.ref)]
-         ch.INFO("manifest: using internal library")
-      except KeyError:
-         # download the file if needed
-         if (os.path.exists(self.manifest_path) and use_cache):
-            ch.INFO("manifest: using existing file")
-         else:
-            ch.INFO("manifest: downloading")
-            downloader.manifest_to_file(self.manifest_path)
-         # read and parse the JSON
-         fp = ch.open_(self.manifest_path, "rt", encoding="UTF-8")
-         text = ch.ossafe(fp.read, "can't read: %s" % self.manifest_path)
-         ch.ossafe(fp.close, "can't close: %s" % self.manifest_path)
-         ch.DEBUG("manifest:\n%s" % text)
-         try:
-            manifest = json.loads(text)
-         except json.JSONDecodeError as x:
-            ch.FATAL("can't parse manifest file: %s:%d: %s"
-                     % (self.manifest_path, x.lineno, x.msg))
-      return manifest
 
    def pull_to_unpacked(self, use_cache=True, last_layer=None):
       "Pull and flatten image."

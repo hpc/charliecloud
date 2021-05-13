@@ -12,6 +12,7 @@ import os
 import getpass
 import pathlib
 import platform
+import pprint
 import re
 import shutil
 import stat
@@ -254,6 +255,10 @@ class Image:
    @property
    def metadata_path(self):
       return self.unpack_path // "ch"
+
+   @property
+   def unpack_exist_p(self):
+      return os.path.exists(self.unpack_path)
 
    def __str__(self):
       return str(self.ref)
@@ -639,7 +644,7 @@ class Image:
    def unpack_create_ok(self):
       """Ensure the unpack directory can be created. If the unpack directory
          is already an image, remove it."""
-      if (not self.unpack_exist_p()):
+      if (not self.unpack_exist_p):
          VERBOSE("creating new image: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
@@ -652,16 +657,13 @@ class Image:
          rmtree(self.unpack_path)
 
    def unpack_delete(self):
-      if (not self.unpack_exist_p()):
+      if (not self.unpack_exist_p):
          FATAL("%s image not found" % self.ref)
       if (self.unpacked_p(self.unpack_path)):
          INFO("deleting image: %s" % self.ref)
          rmtree(self.unpack_path)
       else:
          FATAL("storage directory seems broken: not an image: %s" % self.ref)
-
-   def unpack_exist_p(self):
-      return os.path.exists(self.unpack_path)
 
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."
@@ -775,6 +777,13 @@ fields:
                                 self.name, self.tag, self.digest)])
 
    @property
+   def canonical(self):
+      "Copy of self with all the defaults filled in."
+      ref = self.copy()
+      ref.defaults_add()
+      return ref
+
+   @property
    def for_path(self):
       return str(self).replace("/", "%")
 
@@ -793,11 +802,6 @@ fields:
       if (self.digest is not None):
          return "sha256:" + self.digest
       assert False, "version invalid with no tag or digest"
-
-   @property
-   def url(self):
-      out = ""
-      return out
 
    def copy(self):
       "Return an independent copy of myself."
@@ -960,8 +964,7 @@ class Registry_HTTP:
 
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
-      self.ref = ref.copy()
-      self.ref.defaults_add()
+      self.ref = ref.canonical
       self.auth = self.Null_Auth()
       self.session = None
       # This is commented out because it prints full request and response
@@ -1118,6 +1121,15 @@ class Registry_HTTP:
          password = getpass.getpass("Password: ")
       return (username, password)
 
+   def fatman_to_file(self, path, continue_404):
+      "GET the manifest for self.image and save it at path."
+      url = self._url_of("manifests", self.ref.version)
+      statuses = {200}
+      if (continue_404):
+         statuses |= {401, 404}
+      self.request("GET", url, out=path, statuses=statuses,
+                   headers={ "Accept" : TYPE_MANIFEST_LIST })
+
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
       # NOTE: We don't verify the digest b/c that means reading the whole file.
@@ -1126,20 +1138,18 @@ class Registry_HTTP:
       self.blob_upload(digest, fp, note)
       ossafe(fp.close, "can't close: %s" % path)
 
-   def manifest_to_file(self, path, ref=None):
-      """GET the manifest for the image via tag or digest reference (ref)
-         and save it at path."""
-      if (ref is None):
-         ref = self.ref.version
+   def manifest_to_file(self, path, digest=None, continue_404=False):
+      """GET manifest for the image and save it at path. If digest is given,
+         use that to fetch the appropriate architecture; otherwise, fetch the
+         default manifest using the exising image reference."""
+      if (digest is None):
+         digest = self.ref.version
       url = self._url_of("manifests", ref)
-      self.request("GET", url, out=path, headers={ "Accept" : TYPE_MANIFEST})
-
-   def fat_manifest_to_file(self, path):
-      "GET the manifest for the image and save it at path."
-      url = self._url_of("manifests", self.ref.version)
-      self.request("GET", url, out=path,
-                   headers={ "Accept" : TYPE_MANIFEST_LIST})
-
+      statuses = {200}
+      if (continue_404):
+         statuses |= {401, 404}
+      self.request("GET", url, out=path, statuses=statuses,
+                   headers={ "Accept" : TYPE_MANIFEST })
 
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
@@ -1151,9 +1161,10 @@ class Registry_HTTP:
    def request(self, method, url, statuses={200}, out=None, **kwargs):
       """Request url using method and return the response object. If statuses
          is given, it is set of acceptable response status codes, defaulting
-         to {200}; any other response is a fatal error. If out is given,
-         response content must be non-zero length and will be written to file
-         at this path.
+         to {200}; any other response is a fatal error.
+
+         If out is given and response status is 200, response content must be
+         non-zero length and will be written to file at this path.
 
          Use current session if there is one, or start a new one if not. If
          authentication fails (or isn't initialized), then authenticate and
@@ -1166,7 +1177,7 @@ class Registry_HTTP:
          self.authorize(res)
          VERBOSE("retrying with auth: %s" % self.auth)
          res = self.request_raw(method, url, statuses, **kwargs)
-      if (out is not None):
+      if (out is not None and res.status_code == 200):
          if (len(res.content) == 0):
             FATAL("no response body: %s %s" % (method, url))
          fp = open_(out, "wb")
@@ -1187,6 +1198,7 @@ class Registry_HTTP:
          auth = self.auth
       try:
          res = self.session.request(method, url, auth=auth, **kwargs)
+         VERBOSE("response status: %d" % res.status_code)
          if (res.status_code not in statuses):
             FATAL("%s failed; expected status %s but got %d: %s"
                   % (method, statuses, res.status_code, res.reason))
@@ -1261,8 +1273,8 @@ class Storage:
       else:
          return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
-   def fat_manifest_for_download(self, image_ref):
-      return self.download_cache // ("%s.manifest.list.json" % image_ref.for_path)
+   def fatman_for_download(self, image_ref):
+      return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
    def reset(self):
       if (self.valid_p()):
@@ -1378,7 +1390,7 @@ def FATAL(*args, **kwargs):
    sys.exit(1)
 
 def INFO(*args, **kwargs):
-   log(*args, **kwargs)
+   log(color="33m", *args, **kwargs)  # yellow
 
 def TRACE(*args, **kwargs):
    if (verbose >= 3):
@@ -1572,16 +1584,18 @@ def init(cli):
       rpu = requests.packages.urllib3
       rpu.disable_warnings(rpu.exceptions.InsecureRequestWarning)
 
-def json_from_file(path):
+def json_from_file(path, msg):
+   DEBUG("loading JSON: %s: %s" % (msg, path))
    fp = open_(path, "rt", encoding="UTF-8")
    text = ossafe(fp.read, "can't read: %s" % path)
    ossafe(fp.close, "can't close: %s" % path)
+   TRACE("text:\n%s" % text)
    try:
-      json_file = json.loads(text)
+      data = json.loads(text)
+      DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
    except json.JSONDecodeError as x:
-      ch.FATAL("can't parse json file: %s:%d: %s"
-               % (self.path, x.lineno, x.msg))
-   return json_file
+      FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
+   return data
 
 def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):

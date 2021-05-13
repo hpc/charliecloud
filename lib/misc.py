@@ -5,7 +5,7 @@ import os
 import sys
 
 import charliecloud as ch
-import pull as pl
+import pull
 import version
 
 
@@ -44,18 +44,41 @@ def list_(cli):
    ch.dependencies_check()
    imgdir = ch.storage.unpack_base
    if (cli.image_ref):
-      ref = ch.Image_Ref(cli.image_ref)
-      image = ch.Image(ref, imgdir)
-      ch.INFO("listing architectures for:   %s " % ref)
-      pullet = pl.Image_Puller(image)
-      list_ = pullet.list_architectures(not cli.no_cache)
-      for arch in list_:
-         print(arch)
-      ch.done_notify()
+      # image
+      img = ch.Image(ch.Image_Ref(cli.image_ref))
+      print("details of image:    %s" % img.ref)
+      # present locally?
+      if (not img.unpack_exist_p):
+         stored = "no"
+      else:
+         img.metadata_load()
+         stored = "yes (%s)" % img.metadata["arch"]
+      print("in local storage:    %s" % stored)
+      # present remotely?
+      print("full remote ref:     %s" % img.ref.canonical)
+      pullet = pull.Image_Puller(img, not cli.no_cache)
+      pullet.fatman_load(True)
+      if (pullet.architectures is not None):
+         remote = "yes"
+         arch_aware = "yes"
+         arch_avail = " ".join(sorted(pullet.architectures.keys()))
+      else:
+         pullet.manifest_load(True)
+         if (pullet.layer_hashes is not None):
+            remote = "yes"
+            arch_aware = "no"
+            arch_avail = "unknown"
+         else:
+            remote = "no"
+            arch_aware = "n/a"
+            arch_avail = "n/a"
+      print("available remotely:  %s" % remote)
+      print("remote arch-aware:   %s" % arch_aware)
+      print("archs available:     %s" % arch_avail)
    else:
-      imgs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
-      for img in sorted(imgs):
-         print(ch.Image_Ref(img))
+      dirs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
+      for d in sorted(dirs):
+         print(ch.Image_Ref(d))
 
 def import_(cli):
    ch.dependencies_check()
@@ -82,6 +105,3 @@ def reset(cli):
 
 def storage_path(cli):
    print(ch.storage.root)
-
-def architecture_set(cli):
-    print(cli)

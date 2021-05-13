@@ -147,7 +147,7 @@ def main():
    help="print information about image(s)"
    sp = sps.add_parser("list", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.add_argument("image_ref", metavar="IMAGE_REF",
+   sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
    sp.set_defaults(func=misc.list_)
    add_opts(sp, common_opts, True)
