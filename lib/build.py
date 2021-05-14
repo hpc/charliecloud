@@ -641,8 +641,9 @@ class I_from_(Instruction):
       else:
          ch.VERBOSE("base image not found, pulling")
          # a young hen, especially one less than one year old.
-         pullet = pull.Image_Puller(self.base_image)
+         pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
          pullet.pull_to_unpacked()
+         pullet.done()
       image.copy_unpacked(self.base_image)
       image.metadata_load()
       env.reset()

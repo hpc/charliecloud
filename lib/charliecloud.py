@@ -351,7 +351,7 @@ class Image:
          WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
-      self.metadata = ch.json_from_file(path, "metadata")
+      self.metadata = json_from_file(path, "metadata")
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
@@ -1434,9 +1434,7 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
 def cmd(args, env=None, fail_ok=False):
    VERBOSE("environment: %s" % env)
    VERBOSE("executing: %s" % args)
-   color_set("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
-   color_reset(sys.stdout)
    if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
