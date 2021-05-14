@@ -78,7 +78,6 @@ def main():
       [[ ["-a", "--arch"],
          { "metavar": "ARCH",
            "default": "host",
-           "type": ch.arch_internal,
            "help": "architecture for image registries (default: host)"}],
        [ ["--dependencies"],
          { "action": misc.Dependencies,

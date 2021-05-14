@@ -23,23 +23,18 @@ def main(cli):
    # Set things up.
    ref = ch.Image_Ref(cli.image_ref)
    if (cli.parse_only):
-      ch.INFO(ref.as_verbose_str)
+      print(ref.as_verbose_str)
       sys.exit(0)
    image = ch.Image(ref, cli.image_dir)
-   ch.INFO("pulling image:   %s" % ref)
-   if (ch.arch is not None and ch.arch != "yolo"):
-      ch.INFO("architecture:    %s" % ch.arch)
+   ch.INFO("pulling image:    %s" % ref)
+   ch.INFO("requesting arch:  %s" % ch.arch)
    if (cli.image_dir is not None):
-      ch.INFO( "destination:     %s" % image.unpack_path)
+      ch.INFO("destination:      %s" % image.unpack_path)
    else:
-      ch.VERBOSE("destination:     %s" % image.unpack_path)
-   ch.VERBOSE("use cache:       %s" % (not cli.no_cache))
-   ch.VERBOSE("download cache:  %s" % ch.storage.download_cache)
-   pullet = Image_Puller(image)
-   ch.VERBOSE("manifest list:   %s" % pullet.fat_manifest_path)
-   ch.VERBOSE("manifest:        %s" % pullet.manifest_path)
-   pullet.pull_to_unpacked(use_cache=(not cli.no_cache),
-                           last_layer=cli.last_layer)
+      ch.VERBOSE("destination:      %s" % image.unpack_path)
+   pullet = Image_Puller(image, not cli.no_cache)
+   pullet.pull_to_unpacked(cli.last_layer)
+   pullet.done()
    ch.done_notify()
 
 
@@ -78,71 +73,57 @@ class Image_Puller:
       if (str(self.image.ref) in manifests_internal):
          return "[internal library]"
       else:
-         return ch.storage.manifest_for_download(self.image.ref)
-#      else:
-#         return ch.storage.manifest_for_download(hash_)
+         if (ch.arch == "yolo"):
+            digest = None
+         else:
+            digest = self.architectures[ch.arch]
+         return ch.storage.manifest_for_download(self.image.ref, digest)
 
-   def download(self, use_cache):
-      """Download image metadata and layers and put them in the download
-         cache. If use_cache is True (the default), anything already in the
-         cache is skipped, otherwise download it anyway, overwriting what's in
-         the cache."""
-      manifest_digest = None
-      manifest_hash = None
+   def done(self):
+      self.registry.close()
+
+   def download(self):
+      "Download image metadata and layers and put them in the download cache."
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
-      ch.VERBOSE("downloading image: %s" % dl.ref)
+      ch.VERBOSE("downloading image: %s" % self.image)
       ch.mkdirs(ch.storage.download_cache)
       # fat manifest
       if (ch.arch != "yolo"):
-         if (os.path.exists(self.fat_manifest_path) and use_cache):
-            ch.INFO("list of manifests: using existing file")
+         self.fatman_load()
+         if (self.architectures is not None):
+            if (ch.arch not in self.architectures):
+               ch.FATAL("requested arch unavailable: %s not one of: %s"
+                        % (ch.arch,
+                           " ".join(sorted(self.architectures.keys()))))
+         elif (ch.arch == "amd64"):
+            # We're guessing that enough arch-unaware images are amd64 to
+            # barge ahead if requested architecture is amd64.
+            ch.arch = "yolo"
+            ch.WARNING("image is architecture-unaware")
+            ch.WARNING("requested arch is amd64; switching to --arch=yolo")
          else:
-            ch.INFO("list of manifests: downloading")
-            dl.fat_manifest_to_file(self.fat_manifest_path)
-         # do we actually have a manifest list?
-         fat_manifest_json = ch.json_from_file(self.fat_manifest_path)
-         if ("manifests" in fat_manifest_json.keys()):
-            manifest_digest = self.manifest_digest_by_arch()
-            manifest_hash = ch.digest_trim(manifest_digest)
-            ch.VERBOSE("architecture manifest hash: %s" % manifest_digest)
-            ch.DEBUG("canonical manifest path: %s "
-                     % self.manifest_path(manifest_hash))
-         else:
-            ch.VERBOSE("list of manifests: no other manifests")
-      manifest_path = self.manifest_path(manifest_hash)
+            ch.FATAL("image is architecture-unaware; try --arch=yolo?")
       # manifest
-      self.manifest_load(self.manifest_read(dl, use_cache))
+      self.manifest_load()
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
-         if (os.path.exists(self.config_path) and use_cache):
+         if (os.path.exists(self.config_path) and self.use_cache):
             ch.INFO("config: using existing file")
          else:
             ch.INFO("config: downloading")
-            dl.blob_to_file(self.config_hash, self.config_path)
-      if (ch.arch != "yolo" and self.config_path is not None):
-          config_json = ch.json_from_file(self.config_path)
-          try:
-             if (config_json["architecture"] == ch.arch):
-                ch.VERBOSE("config: architecture match")
-             else:
-                FATAL("arch: %s: does not match architecture in config"
-                      % ch.arch)
-          except KeyError:
-             ch.WARNING("config: missing 'arch' key; cannot confirm host match")
-
+            self.registry.blob_to_file(self.config_hash, self.config_path)
       # layers
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          path = self.layer_path(lh)
          ch.VERBOSE("layer path: %s" % path)
          ch.INFO("layer %d/%d: %s: "% (i, len(self.layer_hashes), lh[:7]),
                  end="")
-         if (os.path.exists(path) and use_cache):
+         if (os.path.exists(path) and self.use_cache):
             ch.INFO("using existing file")
          else:
             ch.INFO("downloading")
-            dl.blob_to_file(lh, path)
-      dl.close()
+            self.registry.blob_to_file(lh, path)
 
    def error_decode(self, data):
       """Decode first error message in registry error blob and return a tuple
@@ -154,15 +135,14 @@ class Image_Puller:
          ch.FATAL("malformed error data (yes this is ironic)")
       return (code, msg)
 
-   def fatman_load(self, continue_404=False):
-      """Load the fat manifest JSON file, downloading it first if needed.
-         After calling this, self.architectures will be populated. If there is
-         no fat manifest, self.architectures is set to None; if there are no
-         valide architectures found, warn and set it to an empty dictionary.
+   def fatman_load(self):
+      """Load the fat manifest JSON file, downloading it first if needed. If
+         the image has a fat manifest, populate self.architectures; this may
+         be an empty dictionary if no valid architectures were found.
 
-         No fat manifest is not an error condition if the image is
-         arch-unaware. By default, if the image does not exist, exit with
-         error; if continue_404, then log the condition but do not exit."""
+         It is not an error if the image has no fat manifest or the registry
+         reports no such image. In this architecture-unaware condition, set
+         self.architectures to None."""
       self.architectures = None
       if (str(self.image.ref) in manifests_internal):
          return  # no fat manifests for internal library
@@ -170,7 +150,7 @@ class Image_Puller:
          ch.INFO("manifest list: using existing file")
       else:
          ch.INFO("manifest list: downloading")
-         self.registry.fatman_to_file(self.fatman_path, continue_404)
+         self.registry.fatman_to_file(self.fatman_path, True)
       if (not os.path.exists(self.fatman_path)):
          # Response was 404.
          ch.INFO("manifest list: no list found")
@@ -186,10 +166,8 @@ class Image_Puller:
          # fm is an error blob.
          (code, msg) = self.error_decode(fm)
          if (code == "MANIFEST_UNKNOWN"):
-            if (continue_404):
-               return
-            else:
-               ch.FATAL("manifest list: no such image")
+            ch.INFO("manifest list: no such image")
+            return
          else:
             ch.FATAL("manifest list: error: %s" % msg)
       self.architectures = dict()
@@ -232,11 +210,17 @@ class Image_Puller:
          ch.INFO("manifest: using internal library")
       except KeyError:
          # download the file if needed, then parse it
+         if (ch.arch == "yolo"):
+            digest = None
+         else:
+            digest = self.architectures[ch.arch]
+         ch.DEBUG("manifest digest: %s" % digest)
          if (os.path.exists(self.manifest_path) and self.use_cache):
             ch.INFO("manifest: using existing file")
          else:
             ch.INFO("manifest: downloading")
-            self.registry.manifest_to_file(self.manifest_path, continue_404)
+            self.registry.manifest_to_file(self.manifest_path, digest=digest,
+                                           continue_404=continue_404)
          if (not os.path.exists(self.manifest_path)):
             # response was 404
             ch.INFO("manifest: none found")
@@ -312,9 +296,22 @@ class Image_Puller:
                      % arch)
       return ref
 
-   def pull_to_unpacked(self, use_cache=True, last_layer=None):
+   def pull_to_unpacked(self, last_layer=None):
       "Pull and flatten image."
-      self.download(use_cache)
+      self.download()
       layer_paths = [self.layer_path(h) for h in self.layer_hashes]
       self.image.unpack(layer_paths, last_layer)
       self.image.metadata_replace(self.config_path)
+      # Check architecture we got. This is limited because image metadata does
+      # not store the variant. Move fast and break things, I guess.
+      arch_image = self.image.metadata["arch"] or "unknown"
+      arch_short = ch.arch.split("/")[0]
+      arch_host_short = ch.arch_host.split("/")[0]
+      if (arch_image != "unknown" and arch_image != arch_host_short):
+         host_mismatch = " (does not match host %s)" % ch.arch_host
+      else:
+         host_mismatch = ""
+      ch.INFO("image arch:       %s%s" % (arch_image, host_mismatch))
+      if (ch.arch != "yolo" and arch_short != arch_image):
+         ch.WARNING("image architecture does not match requested: %s ≠ %s"
+                    % (ch.arch, image_arch))

@@ -84,6 +84,10 @@ ARCH_MAP = { "x86_64":    "amd64",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
 
+# Active architecture (both using registry vocabulary)
+arch = None       # requested by user
+arch_host = None  # of host
+
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
@@ -347,10 +351,7 @@ class Image:
          WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
-      fp = open_(path, "rt")
-      text = ossafe(fp.read, "can't read: %s" % path)
-      ossafe(fp.close, "can't close: %s" % path)
-      self.metadata = json.loads(text)  # we made this, so just crash if broken
+      self.metadata = ch.json_from_file(path, "metadata")
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
@@ -359,7 +360,6 @@ class Image:
       def get(*keys):
          d = config
          keys = list(keys)
-         VERBOSE(str(keys))
          while (len(keys) > 1):
             try:
                d = d[keys.pop(0)]
@@ -1144,7 +1144,9 @@ class Registry_HTTP:
          default manifest using the exising image reference."""
       if (digest is None):
          digest = self.ref.version
-      url = self._url_of("manifests", ref)
+      else:
+         digest = "sha256:" + digest
+      url = self._url_of("manifests", digest)
       statuses = {200}
       if (continue_404):
          statuses |= {401, 404}
@@ -1267,11 +1269,11 @@ class Storage:
       except KeyError:
          return None
 
-   def manifest_for_download(self, image_ref):
-      if (isinstance(image_ref, str)):
-         return self.download_cache // ("%s.manifest.json" % image_ref)
-      else:
-         return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
+   def manifest_for_download(self, image_ref, digest):
+      if (digest is None):
+         digest = "skinny"
+      return (   self.download_cache
+              // ("%s%%%s.manifest.json" % (image_ref.for_path, digest)))
 
    def fatman_for_download(self, image_ref):
       return self.download_cache // ("%s.fat.json" % image_ref.for_path)
@@ -1390,6 +1392,7 @@ def FATAL(*args, **kwargs):
    sys.exit(1)
 
 def INFO(*args, **kwargs):
+   "Note: Use print() for output; this function is for logging."
    log(color="33m", *args, **kwargs)  # yellow
 
 def TRACE(*args, **kwargs):
@@ -1403,23 +1406,16 @@ def VERBOSE(*args, **kwargs):
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)  # red
 
-def arch_internal(arch):
-   """Convert arch from user-facing to internal command line semantics and
-      return the result."""
-   assert (arch is not None)  # default set in argparse configuration
-   if (arch == "host"):
-      arch_uname = platform.machine()
-      VERBOSE("host architecture from uname: %s" % arch_uname)
-      try:
-         arch_registry = ARCH_MAP[arch_uname]
-      except KeyError:
-         # FIXME: didn't try raising ValueError, which argparse docs claim
-         # will produce "a nicely formatted error message".
-         FATAL("unknown host architecture: %s" % arch_uname)
-      VERBOSE("host architecture for registry: %s" % arch_registry)
-      return arch_registry
-   else:
-      return arch
+def arch_host_get():
+   "Return the registry architecture of the host."
+   arch_uname = platform.machine()
+   VERBOSE("host architecture from uname: %s" % arch_uname)
+   try:
+      arch_registry = ARCH_MAP[arch_uname]
+   except KeyError:
+      FATAL("unknown host architecture: %s" % arch_uname)
+   VERBOSE("host architecture for registry: %s" % arch_registry)
+   return arch_registry
 
 def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
@@ -1562,7 +1558,7 @@ def grep_p(path, rx):
       FATAL("error reading %s: %s" % (path, x.strerror))
 
 def init(cli):
-   global arch, log_festoon, log_fp, storage, tls_verify, verbose
+   global arch, arch_host, log_festoon, log_fp, storage, tls_verify, verbose
    # logging
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
@@ -1576,8 +1572,13 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage object
    storage = Storage(cli.storage)
-   # internal arch
-   arch = arch_internal(cli.arch)
+   # architecture
+   assert (cli.arch is not None)
+   arch_host = arch_host_get()
+   if (cli.arch == "host"):
+      arch = arch_host
+   else:
+      arch = cli.arch
    # TLS verification
    if (cli.tls_no_verify):
       tls_verify = False

@@ -57,7 +57,7 @@ def list_(cli):
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
       pullet = pull.Image_Puller(img, not cli.no_cache)
-      pullet.fatman_load(True)
+      pullet.fatman_load()
       if (pullet.architectures is not None):
          remote = "yes"
          arch_aware = "yes"
@@ -72,8 +72,10 @@ def list_(cli):
             remote = "no"
             arch_aware = "n/a"
             arch_avail = "n/a"
+      pullet.done()
       print("available remotely:  %s" % remote)
       print("remote arch-aware:   %s" % arch_aware)
+      print("host architecture:   %s" % ch.arch_host)
       print("archs available:     %s" % arch_avail)
    else:
       dirs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
