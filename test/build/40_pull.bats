@@ -294,8 +294,9 @@ EOF
     ch-image pull registry.access.redhat.com/ubi7-minimal:latest
 
     # Microsoft Container Registry:
-    # MCR doesn't have a catalog, Docker Hub is the way to browse images
     # https://hub.docker.com/publishers/microsoftowner
+    # MCR doesn't have a catalog with a UI, Docker Hub is the official way to
+    # browse images.
     ch-image pull mcr.microsoft.com/mcr/hello-world:latest
 
     # Things not here (yet?):
