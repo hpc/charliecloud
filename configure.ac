@@ -41,7 +41,7 @@ AS_CASE([$host_os],
 # [3]: https://lists.gnu.org/archive/html/automake/2004-01/msg00013.html
 MKDIR_P=${MKDIR_P:-install -d -m 0755}
 
-AM_INIT_AUTOMAKE([1.13 -Wall -Werror tar-ustar foreign subdir-objects])
+AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
 
 AC_CONFIG_HEADERS([bin/config.h])
 AC_CONFIG_FILES([Makefile

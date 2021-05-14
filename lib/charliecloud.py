@@ -22,8 +22,6 @@ import types
 
 ## Imports not in standard library ##
 
-sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))))
-
 # List of dependency problems.
 depfails = []
 
