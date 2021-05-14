@@ -1398,8 +1398,8 @@ def dependencies_check():
       (e.g., lark module checked at import time), then complain and exit."""
    vsys_py = sys.version_info[:2]
    if vsys_py < vmin_py:
-      depfails.append(("bad", "found Python %s.%s; Needs 3.6 minimum\n"
-                       "       executable: %s" % (*vsys_py, sys.executable)))
+      depfails.append(("bad", """found Python %s.%s; Needs 3.6 minimum
+       executable: %s""" % (*vsys_py, sys.executable)))
 
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
