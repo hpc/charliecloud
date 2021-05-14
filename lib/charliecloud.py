@@ -59,6 +59,9 @@ except ImportError:
 
 ## Globals ##
 
+# Minimum version of Python to enforce
+vmin_py = (3, 6)
+
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
@@ -1393,6 +1396,11 @@ def copytree(*args, **kwargs):
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
       (e.g., lark module checked at import time), then complain and exit."""
+   vsys_py = sys.version_info[:2]
+   if vsys_py < vmin_py:
+      depfails.append(("bad", "found Python %s.%s; Needs 3.6 minimum\n"
+                       "       executable: %s" % (*vsys_py, sys.executable)))
+
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
    if (len(depfails) > 0):
