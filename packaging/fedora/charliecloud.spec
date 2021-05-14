@@ -124,7 +124,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_libdir}/%{name}/*.sh
 %{_libdir}/%{name}/contributors.bash
 %{_libdir}/%{name}/version.txt
-%exclude ${_libdir}/lark*
+%{_libdir}/lark*
 
 # Binary files.
 %{_bindir}/ch-*
