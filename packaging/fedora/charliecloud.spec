@@ -124,7 +124,18 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_libdir}/%{name}/*.sh
 %{_libdir}/%{name}/contributors.bash
 %{_libdir}/%{name}/version.txt
-%{_libdir}/lark*
+%{_libdir}/%{name}/lark/*.py
+%{_libdir}/%{name}/lark/parsers/*.py
+%{_libdir}/%{name}/lark/grammars/*.lark
+%{_libdir}/%{name}/lark/tools/*.py
+%{_libdir}/%{name}/lark-stubs/*.pyi
+%{_libdir}/%{name}/lark-*.dist-info/INSTALLER
+%{_libdir}/%{name}/lark-*.dist-info/LICENSE
+%{_libdir}/%{name}/lark-*.dist-info/METADATA
+%{_libdir}/%{name}/lark-*.dist-info/RECORD
+%{_libdir}/%{name}/lark-*.dist-info/WHEEL
+%{_libdir}/%{name}/lark-*.dist-info/entry_points.txt
+%{_libdir}/%{name}/lark-*.dist-info/top_level.txt
 
 # Binary files.
 %{_bindir}/ch-*

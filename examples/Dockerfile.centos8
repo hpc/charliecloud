@@ -36,7 +36,7 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 rsync \
                 wget \
  && dnf clean all
-
+RUN pip3 install wheel
 # CentOS's linker doesn't search these paths by default; add them because we
 # will install stuff later into /usr/local.
 RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \

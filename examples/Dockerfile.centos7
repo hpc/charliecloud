@@ -23,3 +23,4 @@ RUN yum install -y epel-release \
                 rsync \
                 wget \
  && yum clean all
+RUN pip3 install wheel

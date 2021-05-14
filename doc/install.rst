@@ -46,6 +46,7 @@ common distributions should be sufficient.
 
   * Automake
   * Autoconf
+  * python3-pip
 
 Create :code:`configure` with::
 
