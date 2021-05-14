@@ -254,7 +254,7 @@ EOF
                   --no-cache \
                   "$img"
     [[ $status -eq 0 ]]
-    grep -F '"schemaVersion": 1' "${cache}/${img}.manifest.json"
+    grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
 }
 
 @test 'pull from public repos' {
