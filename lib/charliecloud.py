@@ -1396,7 +1396,7 @@ def dependencies_check():
    # Minimum version of Python to enforce
    vmin_py = (3, 6)
    vsys_py = sys.version_info[:2]
-   if vsys_py < vmin_py:
+   if (vsys_py < vmin_py):
       depfails.append(("outdated", """found Python %s.%s; Needs 3.6 minimum
        executable: %s""" % (*vsys_py, sys.executable)))
 
