@@ -154,9 +154,11 @@ jobs:
           sudo apt-get remove autoconf automake
           # Configure and verify output.
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
-          run: ./configure --prefix=$ch_prefix/from-git
+          run: |
+            ./configure --prefix=$ch_prefix/from-git
         if: ${{ matrix.builder == 'ch-image' && ! matrix.bundled_lark }}
-          run: /configure --prefix=$ch_prefix/from-git --disable-bundle-lark
+          run: |
+            /configure --prefix=$ch_prefix/from-git --disable-bundle-lark
         run: |
           set -x
           fgrep 'documentation: yes' config.log
