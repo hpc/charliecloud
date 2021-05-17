@@ -20,6 +20,11 @@ jobs:
         include:
           - builder: docker
             keep_sudo: true
+        bundle_lark:
+          - false
+        include:
+          - builder: ch-image
+            bundle_lark: true
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
@@ -148,7 +153,11 @@ jobs:
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
           # Configure and verify output.
-          ./configure --prefix=$ch_prefix/from-git
+        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
+          run: ./configure --prefix=$ch_prefix/from-git
+        if: ${{ matrix.builder == 'ch-image' && ! matrix.bundled_lark }}
+          run: /configure --prefix=$ch_prefix/from-git --disable-bundle-lark
+        run: |
           set -x
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
@@ -164,6 +173,12 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
 
+      - name: bundled-lark validation, git install
+        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
+          run: |
+            fgrep 'with bundled lark: yes' config.log
+            [[ -d $ch_prefix/from-git/lib/lark ]]
+            [ "$(ls -A $ch_prefix/from-git/lib/lark)" ]
       - name: late setup & validation, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |

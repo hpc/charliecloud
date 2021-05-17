@@ -600,8 +600,7 @@ Building images via our wrappers
   with Buildah: ${have_buildah}
     Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
-  with bundled lark:
-    enabled ... ${enable_bundled_lark}
+  with bundled lark: ${enable_bundled_lark}
 
   with ch-image(1): ${have_ch_image}
     enabled ... ${enable_ch_image}
