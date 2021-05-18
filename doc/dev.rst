@@ -233,11 +233,21 @@ images. The former is generally preferred, as it lets you update only those
 base images that have actually changed (the ones that haven't will be
 re-tagged).
 
-GitHub tags
------------
+Issue labeling
+--------------
 
-What kind of issue is it?
-~~~~~~~~~~~~~~~~~~~~~~~~~
+We use the following labels (a.k.a. tags) to organize issues. Each issue
+should have appropriate label(s) from each category.
+
+.. note::
+
+   This scheme is designed to organize open issues only. There have been
+   previous schemes, and we have not re-labeled closed issues.
+
+What kind of change is it?
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Choose *one type* from:
 
 :code:`bug`
   Problem of some kind that needs to be fixed; i.e., something doesn't work.
@@ -249,22 +259,28 @@ What kind of issue is it?
   a new feature proposal or refactoring. Should have steps to reproduce with
   desired and actual behavior.
 
-:code:`help wanted`
-  The core team does not plan to address this issue, perhaps because we don't
-  know how, but we think it would be good to address it. We hope someone from
-  the community will volunteer.
+:code:`refactor`
+  Change that will improve Charliecloud but does not materially affect the
+  documented behavior. However, user-visible behavior may change if
+  undocumented or unspecified, e.g. the text of error messages.
 
-:code:`key issue`
-  A particularly important or notable issue.
+How important/urgent is it?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:code:`question`
-  Support request that does not report a problem or ask for a change. Close
-  these after the question is answered or several days with no activity.
+Choose *one priority* from:
 
-What do we plan to do about it?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:code:`high`
+  High priority. If an issue is blocking someone's work it very likely belongs
+  here.
 
-For all of these, leave other tags in place, e.g. :code:`bug`.
+:code:`medium`
+  Medium priority.
+
+:code:`low`
+  Low priority. Note, unfortunately due to resource limitations, that complex
+  issues here are likely to wait a long time, perhaps forever. If that makes
+  you particularly sad on a particular issue, please comment to say why. Maybe
+  it's mis-prioritized.
 
 :code:`deferred`
   No plans to do this, but not rejected. These issues stay open, because we do
@@ -272,26 +288,106 @@ For all of these, leave other tags in place, e.g. :code:`bug`.
   risky; you probably want to argue successfully that it should be done before
   starting work on it.
 
+Note that (1) the priority levels are indeed fuzzy, and we have current plans
+to make them more precise; (2) issues are not a priority queue, partly for
+this reason, i.e., we do work on lower-priority issues while higher-priority
+ones are still open; and (3) issues often move between priority levels. In
+particular, if you think we picked the wrong priority level, please say so.
+
+What part of Charliecloud is affected?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Choose *one or more components* from:
+
+:code:`runtime`
+  The container runtime itself; largely :code:`ch-run`.
+
+:code:`build/mgmt`
+  Image building and interaction with image registries; largely
+  :code:`ch-image`. Not to be confused with image management tasks done by
+  glue code.
+
+:code:`glue`
+  Largely shell scripts in :code:`bin`.
+
+:code:`doc`
+  Documentation.
+
+:code:`test`
+  Test suite.
+
+:code:`misc`
+  Everything else. Do not combine with another component.
+
+Special considerations
+~~~~~~~~~~~~~~~~~~~~~~
+
+Choose *one or more extras* from:
+
+:code:`usability`
+  Affects usability of any part of Charliecloud, including documentation and
+  project organization.
+
+:code:`hpc`
+  Related specifically to HPC and HPC scaling considerations; e.g.,
+  interactions with job schedulers.
+
+:code:`uncertain`
+  Course of action is unclear. For example: is the feature a good idea,
+  what is a good approach to solve the bug, what additional information is
+  needed.
+
+Why was it closed?
+~~~~~~~~~~~~~~~~~~
+
+If the issue was resolved (i.e., bug fixed or enhancement implemented), there
+is no disposition tag. Otherwise, to explain why not, choose *one disposition*
+from:
+
+:code:`discussion`
+  Converted to a discussion. The most common use is when someone asks a
+  question rather than making a request for some change.
+
 :code:`duplicate`
   Same as some other previously reported issue. In addition to this tag,
-  duplicates should refer to the other issue and be closed.
+  duplicates should refer to the other issue in a comment.
 
-:code:`obsolete`
-  No longer relevant, moot, etc. Close.
+:code:`jurisdiction`
+  The issue is not something we can resolve. Typically problems with other
+  software or problems with containers in general that we can't work around.
+  *Use caution when blaming a problem on user error. Often (or usually) there
+  is a documentation or usability bug that caused the "user error".*
 
-:code:`erroneous`
-  Not a Charliecloud issue; close. *Use caution when blaming a problem on user
-  error. Often (or usually) there is a documentation or usability bug that
-  caused the "user error".*
+:code:`moot`
+  No longer relevant. Examples: withdrawn by reporter, fixed in current
+  version (use :code:`duplicate` instead if it applies though), obsoleted by
+  change in plans.
 
 :code:`wontfix`
-  We are not going to do this, and we won't merge PRs. Close issue after
-  tagging, though sometimes you'll want to leave a few days to allow for
-  further discussion to catch mistaken tags.
+  We are not going to do this, and we won't merge PRs. Sometimes you'll want
+  to tag and then wait a few days before closing, to allow for further
+  discussion to catch mistaken tags.
 
 :code:`worksforme`
-  We cannot reproduce the issue. Typical workflow is to tag, then wait a few
-  days for clarification before closing.
+  We cannot reproduce a bug, and it seems unlikely this will change given
+  available information. Typically you'll want to tag, then wait a few days
+  for clarification before closing. Bugs closed with this tag that do gain a
+  reproducer later should definitely be re-opened. For some bugs, it really
+  feels like they should be reproducible but we're missing it somehow; such
+  bugs should be left open in hopes of new insight arising.
+
+Deprecated labels
+~~~~~~~~~~~~~~~~~
+
+You might see these on old issues, but they are no longer in use.
+
+* :code:`help wanted`: This tended to get stale and wasn't generating any
+  leads.
+
+* :code:`key issue`: Replaced by priority labels.
+
+* :code:`question`: Replaced by Discussions. (If you report a bug that seems
+  to be a discussion, we'll be happy to convert it to you.)
 
 
 Test suite
