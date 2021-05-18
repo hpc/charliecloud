@@ -236,8 +236,9 @@ re-tagged).
 Issue labeling
 --------------
 
-We use the following labels (a.k.a. tags) to organize issues. Each issue
-should have appropriate label(s) from each category.
+We use the following labels (a.k.a. tags) to organize issues. Each issue (or
+stand-alone PR) should have label(s) from every category, with the exception
+of disposition which only applies to closed issues.
 
 .. note::
 
@@ -260,9 +261,8 @@ Choose *one type* from:
   desired and actual behavior.
 
 :code:`refactor`
-  Change that will improve Charliecloud but does not materially affect the
-  documented behavior. However, user-visible behavior may change if
-  undocumented or unspecified, e.g. the text of error messages.
+  Change that will improve Charliecloud but does not materially affect
+  user-visible behavior.
 
 How important/urgent is it?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -277,7 +277,7 @@ Choose *one priority* from:
   Medium priority.
 
 :code:`low`
-  Low priority. Note, unfortunately due to resource limitations, that complex
+  Low priority. Note: Unfortunately, due to resource limitations, complex
   issues here are likely to wait a long time, perhaps forever. If that makes
   you particularly sad on a particular issue, please comment to say why. Maybe
   it's mis-prioritized.
@@ -288,10 +288,10 @@ Choose *one priority* from:
   risky; you probably want to argue successfully that it should be done before
   starting work on it.
 
-Note that (1) the priority levels are indeed fuzzy, and we have current plans
-to make them more precise; (2) issues are not a priority queue, partly for
-this reason, i.e., we do work on lower-priority issues while higher-priority
-ones are still open; and (3) issues often move between priority levels. In
+Note that (1) the priority levels are indeed fuzzy, and we have no plans to
+make them more precise; (2) issues are not a priority queue, partly for this
+reason, i.e., we do work on lower-priority issues while higher-priority ones
+are still open; and (3) issues often move between priority levels. In
 particular, if you think we picked the wrong priority level, please say so.
 
 What part of Charliecloud is affected?
@@ -302,13 +302,16 @@ Choose *one or more components* from:
 :code:`runtime`
   The container runtime itself; largely :code:`ch-run`.
 
-:code:`build/mgmt`
+:code:`image`
   Image building and interaction with image registries; largely
-  :code:`ch-image`. Not to be confused with image management tasks done by
-  glue code.
+  :code:`ch-image`. (Not to be confused with image management tasks done by
+  glue code.)
 
 :code:`glue`
   Largely shell scripts in :code:`bin`.
+
+:code:`build`
+  Build system and packaging. (Not to be confused with image building.)
 
 :code:`doc`
   Documentation.
@@ -340,17 +343,19 @@ Choose *one or more extras* from:
 Why was it closed?
 ~~~~~~~~~~~~~~~~~~
 
-If the issue was resolved (i.e., bug fixed or enhancement implemented), there
-is no disposition tag. Otherwise, to explain why not, choose *one disposition*
-from:
+If the issue was resolved (i.e., bug fixed or enhancement/refactoring
+implemented), there is no disposition tag. Otherwise, to explain why not,
+choose *one disposition* from:
 
 :code:`discussion`
   Converted to a discussion. The most common use is when someone asks a
   question rather than making a request for some change.
 
 :code:`duplicate`
-  Same as some other previously reported issue. In addition to this tag,
-  duplicates should refer to the other issue in a comment.
+  Same as some other issue. In addition to this tag, duplicates should refer
+  to the other issue in a comment. Of the duplicates, the better one should
+  stay open (e.g., clearer reproduction steps); if they are roughly equal in
+  quality, the older one should stay open.
 
 :code:`jurisdiction`
   The issue is not something we can resolve. Typically problems with other
@@ -1341,4 +1346,4 @@ Additional sources
 * :code:`runc create` man page: https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md
 * https://github.com/opencontainers/runtime-spec/blob/master/runtime.md
 
-..  LocalWords:  milestoned gh nv cht Chacon's scottchacon
+..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis
