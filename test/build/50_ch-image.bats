@@ -221,7 +221,7 @@ EOF
    run ch-image list
    echo "$output"
    [[ $status -eq 1 ]]
-   [[ $output = *"$CH_IMAGE_STORAGE: No such file or directory"* ]]
+   [[ $output = *"does not exist: $CH_IMAGE_STORAGE"* ]]
 
    # Reset again; should error.
    run ch-image reset
