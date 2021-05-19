@@ -177,4 +177,5 @@ class Image_Puller:
       "Pull and flatten image."
       self.download(use_cache)
       layer_paths = [self.layer_path(h) for h in self.layer_hashes]
-      self.image.unpack(self.config_path, layer_paths, last_layer)
+      self.image.unpack(layer_paths, last_layer)
+      self.image.metadata_replace(self.config_path)
