@@ -240,6 +240,11 @@ We use the following labels (a.k.a. tags) to organize issues. Each issue (or
 stand-alone PR) should have label(s) from every category, with the exception
 of disposition which only applies to closed issues.
 
+Charliecloud team members should label their own issues. Members of the
+general public are more than welcome to label their issues if they like, but
+in practice this is rare, which is fine. Whoever triages the incoming issue
+should add or adjust labels as needed.
+
 .. note::
 
    This scheme is designed to organize open issues only. There have been
@@ -251,14 +256,15 @@ What kind of change is it?
 Choose *one type* from:
 
 :code:`bug`
-  Problem of some kind that needs to be fixed; i.e., something doesn't work.
-  This includes usability and documentation problems. Should have steps to
-  reproduce with expected and actual behavior.
+  Something doesn't work; e.g., it doesn't work as intended or it was
+  mis-designed. This includes usability and documentation problems. Steps to
+  reproduce with expected and actual behavior are almost always very helpful.
 
 :code:`enhancement`
   Things work, but it would be better if something was different. For example,
-  a new feature proposal or refactoring. Should have steps to reproduce with
-  desired and actual behavior.
+  a new feature proposal, an improvement in how a feature works, or clarifying
+  an error message. Steps to reproduce with desired and current behavior are
+  often helpful.
 
 :code:`refactor`
   Change that will improve Charliecloud but does not materially affect
@@ -270,8 +276,7 @@ How important/urgent is it?
 Choose *one priority* from:
 
 :code:`high`
-  High priority. If an issue is blocking someone's work it very likely belongs
-  here.
+  High priority.
 
 :code:`medium`
   Medium priority.
@@ -288,10 +293,19 @@ Choose *one priority* from:
   risky; you probably want to argue successfully that it should be done before
   starting work on it.
 
-Note that (1) the priority levels are indeed fuzzy, and we have no plans to
-make them more precise; (2) issues are not a priority queue, partly for this
-reason, i.e., we do work on lower-priority issues while higher-priority ones
-are still open; and (3) issues often move between priority levels. In
+Priority is indeed required, though it can be tricky because the levels are
+fuzzy. Do not hesitate to ask for advice. Considerations include: is customer
+or development work blocked by the issue; how valuable is the issue for
+customers; does the issue affect key customers; how many customers are
+affected; how much of Charliecloud is affected. Difficulty of the issue is not
+a factor in priority, i.e., here we are trying to express benefit, not
+cost/benefit ratio. Perhaps the `Debian bug severity levels
+<https://www.debian.org/Bugs/Developer#severities>`_ provide inspiration. The
+number of :code:`high` priority issues should be relatively low.
+
+In part because priority is quite imprecise, issues are not a priority queue,
+i.e., we do work on lower-priority issues while higher-priority ones are still
+open. Related to this, issues do often move between priority levels. In
 particular, if you think we picked the wrong priority level, please say so.
 
 What part of Charliecloud is affected?
@@ -310,8 +324,9 @@ Choose *one or more components* from:
 :code:`glue`
   Largely shell scripts in :code:`bin`.
 
-:code:`build`
-  Build system and packaging. (Not to be confused with image building.)
+:code:`install`
+  Charliecloud build & install system, packaging, etc. (Not to be confused
+  with image building.)
 
 :code:`doc`
   Documentation.
@@ -353,15 +368,16 @@ choose *one disposition* from:
 
 :code:`duplicate`
   Same as some other issue. In addition to this tag, duplicates should refer
-  to the other issue in a comment. Of the duplicates, the better one should
-  stay open (e.g., clearer reproduction steps); if they are roughly equal in
-  quality, the older one should stay open.
+  to the other issue in a comment to record the link. Of the duplicates, the
+  better one should stay open (e.g., clearer reproduction steps); if they are
+  roughly equal in quality, the older one should stay open.
 
 :code:`jurisdiction`
   The issue is not something we can resolve. Typically problems with other
-  software or problems with containers in general that we can't work around.
-  *Use caution when blaming a problem on user error. Often (or usually) there
-  is a documentation or usability bug that caused the "user error".*
+  software, problems with containers in general that we can't work around, or
+  not actionable due to clarity or other reasons. *Use caution when blaming a
+  problem on user error. Often (or usually) there is a documentation or
+  usability bug that caused the "user error".*
 
 :code:`moot`
   No longer relevant. Examples: withdrawn by reporter, fixed in current
