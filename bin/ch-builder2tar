@@ -144,12 +144,13 @@ EOF
 '{{print "  \"shell\": [\n    "}}'\
 '{{range $i, $v := .Docker.ContainerConfig.Cmd}}'\
 '{{if $i}}{{printf ",\n    " .}}{{end}}{{printf "%q" $v}}{{end}}'\
-'{{print "\n  ]\n"}}'\
+'{{print "\n  ],\n"}}'\
 '{{print "  \"volumes\": "}}{{if .Docker.Config.Volumes}}{{print "["}}'\
 '{{range $key, $v := .Docker.Config.Volumes}}{{printf "\n    %q," $key}}'\
 '{{end}}{{print "\n  ]"}}{{else}}{{print "[]"}}{{end}}'\
-'{{print "\n}\n"}}' "$image" > "$temp"
-    # Fix last comma corner cases for maps with {} and []
+'{{print "\n}"}}' "$image" > "$temp"
+    # Fixes corner cases for maps with {} and []
+    # Removes last comma in the list
     sed -i ':begin;$!N;s/,\n  }/\n  }/g;tbegin;P;D' "$temp"
     sed -i ':begin;$!N;s/,\n  ]/\n  ]/g;tbegin;P;D' "$temp"
     tar rf "$tar" -b1 -P --xform="s|${temp}|ch/metadata.json|" "$temp"
@@ -190,18 +191,18 @@ docker)
 '{{.Config.WorkingDir}}{{else}}{{print "\"\""}}{{end}}{{print ",\n"}}'\
 '{{print "  \"env\": {\n    "}}{{range $i, $v := .Config.Env}}'\
 '{{if $i}}{{print ",\n    "}}{{end}}{{printf "%q" $v}}{{end}}'\
-'{{print "\n  }\n"}}{{print "  \"labels\": {"}}'\
+'{{print "\n  },\n"}}{{print "  \"labels\": {"}}'\
 '{{if .Config.Labels}}{{print "\n"}}'\
 '{{range $key, $v := .Config.Labels}}'\
 '{{printf "    \"%s\": \"%s\",\n" $key $v}}{{end}}{{print "  }"}}{{else}}'\
 '{{print "}"}}{{end}}{{print ",  \n"}}'\
-'{{print "  \"shell\": "}}{{json .ContainerConfig.Cmd}}{{print "\n"}}'\
+'{{print "  \"shell\": "}}{{json .ContainerConfig.Cmd}}{{print ",\n"}}'\
 '{{print "  \"volumes\": "}}{{if .Config.Volumes}}{{print "["}}'\
 '{{range $key, $v := .Config.Volumes}}{{printf "\n    %q," $key}}'\
 '{{end}}{{print "\n  ]"}}{{else}}{{print "[]"}}{{end}}'\
-'{{print "\n}\n"}}' > "$temp"
-    sed -i ':begin;$!N;s/,\n  }/\n  }/g;tbegin;P;D' "$temp"
-    sed -i ':begin;$!N;s/,\n  ]/\n  ]/g;tbegin;P;D' "$temp"
+'{{print "\n}"}}' > "$temp"
+    sed -Ei ':begin;$!N;s/,\n  }/\n  }/g;tbegin;P;D' "$temp"
+    sed -Ei ':begin;$!N;s/,\n  ]/\n  ]/g;tbegin;P;D' "$temp"
     tar rf "$tar" -b1 -P --xform="s|${temp}|ch/metadata.json|" "$temp"
     rm "$temp"
     ;;
