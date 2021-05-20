@@ -322,7 +322,8 @@ Choose *one or more components* from:
   glue code.)
 
 :code:`glue`
-  Largely shell scripts in :code:`bin`.
+  The “glue” that ties the runtime and image management (:code:`ch-image` or
+  another builder) together. Largely shell scripts in :code:`bin`.
 
 :code:`install`
   Charliecloud build & install system, packaging, etc. (Not to be confused
@@ -362,6 +363,13 @@ If the issue was resolved (i.e., bug fixed or enhancement/refactoring
 implemented), there is no disposition tag. Otherwise, to explain why not,
 choose *one disposition* from:
 
+:code:`cantfix`
+  The issue is not something we can resolve. Typically problems with other
+  software, problems with containers in general that we can't work around, or
+  not actionable due to clarity or other reasons. *Use caution when blaming a
+  problem on user error. Often (or usually) there is a documentation or
+  usability bug that caused the "user error".*
+
 :code:`discussion`
   Converted to a discussion. The most common use is when someone asks a
   question rather than making a request for some change.
@@ -371,13 +379,6 @@ choose *one disposition* from:
   to the other issue in a comment to record the link. Of the duplicates, the
   better one should stay open (e.g., clearer reproduction steps); if they are
   roughly equal in quality, the older one should stay open.
-
-:code:`jurisdiction`
-  The issue is not something we can resolve. Typically problems with other
-  software, problems with containers in general that we can't work around, or
-  not actionable due to clarity or other reasons. *Use caution when blaming a
-  problem on user error. Often (or usually) there is a documentation or
-  usability bug that caused the "user error".*
 
 :code:`moot`
   No longer relevant. Examples: withdrawn by reporter, fixed in current
@@ -1362,4 +1363,4 @@ Additional sources
 * :code:`runc create` man page: https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md
 * https://github.com/opencontainers/runtime-spec/blob/master/runtime.md
 
-..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis
+..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix
