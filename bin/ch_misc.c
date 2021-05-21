@@ -49,10 +49,14 @@ int verbose;
 char *cat(const char *a, const char *b)
 {
    char *ret;
-   if (a[0] == '\0' && b[0] == '\0') { // a & b are empty strings
-       ret = ""; 
-   } else {   
-   T_ ( 1 <= asprintf(&ret, "%s%s", a, b));
+   if (a == NULL)
+      a = "";
+   if (b == NULL)
+       b = "";
+   if (a[0] == '\0' && b[0] == '\0') {
+      ret = "";
+   } else {
+      T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    }
    return ret;
 }
