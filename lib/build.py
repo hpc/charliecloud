@@ -356,18 +356,18 @@ class I_copy(Instruction):
          paths = [variables_sub(i, env.env_build)
                   for i in ch.tree_child_terminals(self.tree, "copy_shell",
                                                    "WORD")]
-         self.srcs = paths[:-1]
-         self.dst = paths[-1]
-      else:
-         assert (ch.tree_child(self.tree, "copy_list") is not None)
+      elif (ch.tree_child(self.tree, "copy_list") is not None):
          paths = [variables_sub(i, env.env_build)
                   for i in ch.tree_child_terminals(self.tree, "copy_list",
                                                    "STRING_QUOTED")]
-         self.srcs = paths[:-1]
-         for i in range(len(self.srcs)):
-            self.srcs[i] = self.srcs[i][1:-1] #strip quotes
-         self.dst = paths[-1][1:-1]
+      self.srcs = paths[:-1]
+      self.dst = paths[-1]
 
+      # strip quotes for copy_list
+      if (ch.tree_child(self.tree, "copy_list") is not None):
+         for i in range(len(self.srcs)):
+            self.srcs[i] = self.srcs[i][1:-1]
+         self.dst = self.dst[1:-1]
 
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
