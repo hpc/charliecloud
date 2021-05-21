@@ -53,11 +53,7 @@ char *cat(const char *a, const char *b)
       a = "";
    if (b == NULL)
        b = "";
-   if (a[0] == '\0' && b[0] == '\0') {
-      ret = "";
-   } else {
-      T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
-   }
+   T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
 }
 
