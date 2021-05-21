@@ -268,7 +268,9 @@ Choose *one type* from:
 
 :code:`refactor`
   Change that will improve Charliecloud but does not materially affect
-  user-visible behavior.
+  user-visible behavior. Note this doesn't mean "invisible to the user"; even
+  user-facing documentation or logging changes could feasibly be this, if they
+  are more cleanup-oriented.
 
 How important/urgent is it?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -297,11 +299,12 @@ Priority is indeed required, though it can be tricky because the levels are
 fuzzy. Do not hesitate to ask for advice. Considerations include: is customer
 or development work blocked by the issue; how valuable is the issue for
 customers; does the issue affect key customers; how many customers are
-affected; how much of Charliecloud is affected. Difficulty of the issue is not
-a factor in priority, i.e., here we are trying to express benefit, not
-cost/benefit ratio. Perhaps the `Debian bug severity levels
-<https://www.debian.org/Bugs/Developer#severities>`_ provide inspiration. The
-number of :code:`high` priority issues should be relatively low.
+affected; how much of Charliecloud is affected; what is the workaround like,
+if any. Difficulty of the issue is not a factor in priority, i.e., here we are
+trying to express benefit, not cost/benefit ratio. Perhaps the `Debian bug
+severity levels <https://www.debian.org/Bugs/Developer#severities>`_ provide
+inspiration. The number of :code:`high` priority issues should be relatively
+low.
 
 In part because priority is quite imprecise, issues are not a priority queue,
 i.e., we do work on lower-priority issues while higher-priority ones are still
@@ -333,7 +336,7 @@ Choose *one or more components* from:
   Documentation.
 
 :code:`test`
-  Test suite.
+  Test suite and examples.
 
 :code:`misc`
   Everything else. Do not combine with another component.
@@ -343,9 +346,9 @@ Special considerations
 
 Choose *one or more extras* from:
 
-:code:`usability`
-  Affects usability of any part of Charliecloud, including documentation and
-  project organization.
+:code:`blocked`
+  We can't do this yet because something else needs to happen first. If that
+  something is another issue, mention it in a comment.
 
 :code:`hpc`
   Related specifically to HPC and HPC scaling considerations; e.g.,
@@ -355,6 +358,10 @@ Choose *one or more extras* from:
   Course of action is unclear. For example: is the feature a good idea,
   what is a good approach to solve the bug, what additional information is
   needed.
+
+:code:`usability`
+  Affects usability of any part of Charliecloud, including documentation and
+  project organization.
 
 Why was it closed?
 ~~~~~~~~~~~~~~~~~~
