@@ -130,6 +130,7 @@ EOF
 
     echo "adding metadata"
     temp=$(mktemp --tmpdir ch-builder2tar.XXXXXX)
+    # shellcheck disable=SC2016
     buildah inspect --format='{{print "{\n"}}'\
 '{{printf "  \"arch\": %q,\n" .Docker.Architecture}}'\
 '{{print "  \"cwd\": "}}{{if .Docker.Config.WorkingDir}}'\
@@ -184,6 +185,7 @@ docker)
 
     echo "adding metadata"
     temp=$(mktemp --tmpdir ch-builder2tar.XXXXXX)
+    # shellcheck disable=SC2016
     docker_ inspect "$image" \
             --format='{{print "{\n"}}'\
 '{{printf "  \"arch\": %q,\n" .Architecture}}'\
