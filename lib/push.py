@@ -29,7 +29,10 @@ def main(cli):
    else:
       dst_ref = ch.Image_Ref(cli.source_ref)
    up = Image_Pusher(image, dst_ref)
-   up.push()
+   if (cli.hash_only):
+      up.hash_only()
+   else:
+      up.push()
    ch.done_notify()
 
 
@@ -86,6 +89,11 @@ class Image_Pusher:
       for (_, tar_c) in self.layers:
          ch.VERBOSE("deleting tarball: %s" % tar_c)
          ch.unlink(tar_c)
+
+   def hash_only(self):
+      self.prepare()
+      for (i, (digest, tarball)) in enumerate(self.layers, start=1):
+         ch.INFO("layer %d/%d: %s" % (i, len(self.layers), digest[0:7]))
 
    def prepare(self):
       """Prepare self.image for pushing to self.dst_ref. Return tuple: (list

@@ -329,3 +329,13 @@ EOF
 }
 EOF
 }
+
+@test 'ch-image push: consitent layer hash' {
+ run ch-image push --hash-only 00_tiny
+ [[ $status -eq 0 ]]
+ echo $output
+ [[ $output = *'gathering'*'preparing'*'metadata'*'layer 1/1'* ]]
+ out=$(ch-image push --hash-only 00_tiny)
+ out2=$(ch-image push --hash-only 00_tiny)
+ [[ $out = "$out2" ]]
+}

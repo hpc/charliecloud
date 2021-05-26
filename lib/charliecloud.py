@@ -1386,7 +1386,6 @@ def cmd_out(args, env=None, fail_ok=False, stderr=False):
       out = cp.stderr.read().decode('utf-8')
    else:
       out = cp.stdout.read().decode('utf-8')
-   data = cp.communicate()[0]
    if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return out
@@ -1462,10 +1461,10 @@ def file_gzip(path, args=[]):
       if (shutil.which("pigz") is not None):
          file_gzip.gzip = "pigz"
          # pigz version 2.4.x and lower use --no-time
-         vpigz = cmd_out([file_gzip.gzip, "--version"], stderr=True).split(' ')[-1][0:3]
-         print(vpigz)
-         vmajor, vminor = vpigz.split('.')
-         if (vmajor == '2' and vminor < '4'):
+         vpigz = cmd_out([file_gzip.gzip, "--version"],
+                         stderr=True).split(' ')[-1][0:3]
+         major, minor = vpigz.split('.')
+         if (major < '2' or (major == '2' and minor < '4')):
              args.append('--no-time')
       elif (shutil.which("gzip") is not None):
          file_gzip.gzip = "gzip"
