@@ -220,7 +220,7 @@ EOF
    # List images; should error with not found.
    run ch-image list
    echo "$output"
-   [[ $status -eq 1 ]]
+   [[ $status -eq 0 ]]
    [[ $output = *"does not exist: $CH_IMAGE_STORAGE"* ]]
 
    # Reset again; should error.
