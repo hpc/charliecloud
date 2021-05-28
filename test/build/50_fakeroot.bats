@@ -279,9 +279,8 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
-    # validate EPEL is installed but not enabled
-    ls -lh "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
-    ! grep -Eq 'enabled=1' "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+    # validate EPEL has been removed
+    ! ls -lh "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
 }
 
 @test "${tag}: CentOS 8: EPEL already installed" {
@@ -325,9 +324,8 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
-    # validate EPEL is installed but not enabled
-    ls -lh "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
-    ! grep -Eq 'enabled=1' "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+    # validate EPEL has been removed
+    ! ls -lh "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
 }
 
 @test "${tag}: Debian Stretch: unneeded, no --force, build succeeds" {

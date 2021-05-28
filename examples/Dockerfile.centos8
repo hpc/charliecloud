@@ -18,7 +18,6 @@ FROM centos:8
 RUN dnf install -y --setopt=install_weak_deps=false \
                 epel-release \
                 'dnf-command(config-manager)' \
- && dnf config-manager --enable epel \
  && dnf config-manager --enable powertools \
  && dnf install -y --setopt=install_weak_deps=false \
                    --enablerepo=epel-playground \
