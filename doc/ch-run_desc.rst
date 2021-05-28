@@ -43,6 +43,9 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`--ch-ssh`
     Bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`.
 
+  :code:`--env-no-expand`
+    don't expand variables when using :code:`--set-env`
+
   :code:`-g`, :code:`--gid=GID`
     Run as group :code:`GID` within container.
 
@@ -68,8 +71,9 @@ unpacked image directory located at :code:`NEWROOT`.
     Use container-private :code:`/tmp` (by default, :code:`/tmp` is shared with
     the host).
 
-  :code:`--set-env=FILE`
-    Set environment variables as specified in host path :code:`FILE`.
+  :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
+    set environment variable(s), either as specified in host path :code:`FILE`,
+    or set variable :code:`VAR` to :code:`VALUE`
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
@@ -242,26 +246,59 @@ By default, :code:`ch-run` makes the following environment variable changes:
 Setting variables with :code:`--set-env`
 ----------------------------------------
 
-The purpose of :code:`--set-env=FILE` is to set environment variables that
-cannot be inherited from the host shell, e.g. Dockerfile :code:`ENV`
-directives or other build-time configuration. :code:`FILE` is a host path to
-provide the greatest flexibility; guest paths can be specified by prepending
-the image path.
+The purpose of :code:`--set-env` is to set environment variables in addition
+to (or instead of) those inherited from the host shell.
 
-:code:`ch-builder2tar(1)` lists variables specified at build time in
-Dockerfiles in the image in file :code:`/ch/environment`. To set these
-variables: :code:`--set-env=$IMG/ch/environment`.
+If the argument contains an equals character, then it is interpreted as a
+variable name and value; otherwise, it is a host path to a file with one
+variable name/value per line (guest paths can be specified by prepending the
+image path). Values given replace any already set (i.e., if a variable is
+repeated, the last value wins). Environment variables in the value are
+expanded unless :code:`--env-no-expand` is given, though see below for
+syntax differences from the shell.
 
-Variable values in :code:`FILE` replace any already set. If a variable is
-repeated, the last value wins.
+For example, to prepend :code:`/opt/bin` to the current shell's path (note
+protecting expansion of :code:`$PATH` by the shell, though here the results
+would be equivalent if we let the shell do it)::
 
-The syntax of :code:`FILE` is key-value pairs separated by the first equals
-character (:code:`=`, ASCII 61), one per line, with optional single straight
-quotes (:code:`'`, ASCII 39) around the value. Empty lines are ignored.
-Newlines (ASCII 10) are not permitted in either key or value. No variable
-expansion, comments, etc. are provided. The value may be empty, but not the
-key. (This syntax is designed to accept the output of :code:`printenv` and be
-easily produced by other simple mechanisms.) Examples of valid lines:
+  $ ch-run --set-env='PATH=/opt/bin:$PATH' ...
+
+To add variables set by Dockerfile :code:`ENV` instructions to the current
+environment::
+
+  $ ch-run --set-env=$IMG/ch/environment ...
+
+To prepend :code:`/opt/bin` to the path set by the Dockerfile (here we really
+can't let the shell expand :code:`$PATH`)::
+
+  $ ch-run --set-env=$IMG/ch/environment --set-env='PATH=/opt/bin:$PATH' ...
+
+The syntax of the argument is a key-value pair separated by the first equals
+character (:code:`=`, ASCII 61), with optional single straight quotes
+(:code:`'`, ASCII 39) around the value, though be aware that quotes are also
+interpreted by the shell. Newlines (ASCII 10) are not permitted in either key
+or value. The value may be empty, but not the key.
+
+Environment variables in the value are expanded unless :code:`--env-no-expand`
+is given. In this case, the value is a sequence of possibly-empty items
+separated by colon (:code:`:`, ASCII 58). If an item begins with dollar sign
+(:code:`$`, ASCII 36), then the rest of the item the name of an environment
+variable. If this variable is set to a non-empty value, that value is
+substituted for the item; otherwise (i.e., the variable is unset or the empty
+string), the item is deleted, including a delimiter colon. The purpose of
+omitting empty expansions is to avoid surprising behavior such as an empty
+element in :code:`$PATH` meaning `the current directory
+<https://devdocs.io/bash/bourne-shell-variables#PATH>`_. If no expansions
+happen, this paragraph is a no-op.
+
+If a file is given instead, it is a sequence of such arguments, one per line.
+Empty lines are ignored. No comments are interpreted. (This syntax is designed
+to accept the output of :code:`printenv` and be easily produced by other
+simple mechanisms.)
+
+Examples of valid arguments, assuming that environment variable :code:`$BAR`
+is set to :code:`bar` and :code:`$UNSET` is unset (or set to the empty
+string):
 
 .. list-table::
    :header-rows: 1
@@ -281,12 +318,27 @@ easily produced by other simple mechanisms.) Examples of valid lines:
    * - :code:`FLAGS='-march=foo -mtune=bar'`
      - :code:`FLAGS`
      - :code:`-march=foo -mtune=bar`
+   * - :code:`FOO=$BAR`
+     - :code:`FOO`
+     - :code:`bar`
+   * - :code:`FOO=$BAR:baz`
+     - :code:`FOO`
+     - :code:`bar:baz`
    * - :code:`FOO=`
      - :code:`FOO`
-     - (empty string)
+     - empty string (not unset)
+   * - :code:`FOO=$UNSET`
+     - :code:`FOO`
+     - empty string (not unset or :code:`$UNSET`)
+   * - :code:`FOO=baz:$UNSET:qux`
+     - :code:`FOO`
+     - :code:`baz:qux` (not :code:`baz::qux`)
+   * - :code:`FOO=:bar:baz::`
+     - :code:`FOO`
+     - :code:`:bar:baz::`
    * - :code:`FOO=''`
      - :code:`FOO`
-     - (empty string)
+     - empty string (not unset)
    * - :code:`FOO=''''`
      - :code:`FOO`
      - :code:`''` (two single quotes)
@@ -324,10 +376,10 @@ Example valid lines that are probably not what you want:
      - :code:`FOO`
      - :code:`bar # baz`
      - comments not supported
-   * - :code:`PATH=$PATH:/opt/bin`
-     - :code:`PATH`
-     - :code:`$PATH:/opt/bin`
-     - variables not expanded
+   * - :code:`FOO=bar\tbaz`
+     - :code:`FOO`
+     - :code:`bar\tbaz`
+     - backslashes are not special
    * - :code:`​ FOO=bar`
      - :code:`​ FOO`
      - :code:`bar`
@@ -336,6 +388,14 @@ Example valid lines that are probably not what you want:
      - :code:`FOO`
      - :code:`​ bar`
      - leading space in value
+   * - :code:`$FOO=bar`
+     - :code:`$FOO`
+     - :code:`bar`
+     - variables not expanded in key
+   * - :code:`FOO=$BAR baz:qux`
+     - :code:`FOO`
+     - :code:`qux`
+     - variable :code:`BAR baz` not set
 
 Removing variables with :code:`--unset-env`
 -------------------------------------------

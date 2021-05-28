@@ -49,8 +49,11 @@ int verbose;
 char *cat(const char *a, const char *b)
 {
    char *ret;
-
-   T_ (1 <= asprintf(&ret, "%s%s", a, b));
+   if (a == NULL)
+      a = "";
+   if (b == NULL)
+       b = "";
+   T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
 }
 
