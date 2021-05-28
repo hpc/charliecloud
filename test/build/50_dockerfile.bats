@@ -170,8 +170,8 @@ EOF
     [[ $status -eq 1 ]]
     # error message
     [[ $output = *"can't parse: -:2,1"* ]]
-    # internal blabber
-    [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
+    # internal blabber (varies by version)
+    [[ $output = *'No terminal'*"'W'"*'at line 2 col 1'* ]]
 
     # Bad long option.
     run ch-image build -t foo -f - . <<'EOF'

@@ -25,7 +25,11 @@
 /** Constants **/
 
 /* Names of verbosity levels. */
-const char *VERBOSE_LEVELS[] = { "error", "warning", "info", "debug" };
+const char *VERBOSE_LEVELS[] = { "error",
+                                 "warning",
+                                 "info",
+                                 "verbose",
+                                 "debug" };
 
 
 /** External variables **/
@@ -99,6 +103,7 @@ void mkdirs(const char *base, const char *path,
       DEBUG("mkdirs: deny: %s", denylist[i]);
 
    pathw = cat(path, "");  // writeable copy
+   saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
    component = strtok_r(pathw, "/", &saveptr);
    nextc = basec;
    while (component != NULL) {

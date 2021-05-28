@@ -68,6 +68,9 @@ verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 
+# Minimum Python version. NOTE: Keep in sync with configure.ac.
+PYTHON_MIN = (3,6)
+
 # Verify TLS certificates? Passed to requests.
 tls_verify = True
 
@@ -75,6 +78,9 @@ tls_verify = True
 TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
 TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
 TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
+
+# Top-level directories we create if not present.
+STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -243,12 +249,18 @@ class Image:
       assert False, "unimplemented"
 
    def copy_unpacked(self, other):
-      "Copy the unpack directory of Image other to my unpack directory."
-      if (not os.path.exists(other.unpack_path // "/ch/metadata.json")):
-         WARNING("image %s has no metadata; consider re-pulling it" % other)
+      """Copy image other to my unpack directory. other can be either a path
+         (string or Path object) or an Image object; in the latter case
+         other.unpack_pach is used. other need not be a valid image; the
+         essentials will be created if needed."""
+      if (isinstance(other, str) or isinstance(other, Path)):
+         src_path = other
+      else:
+         src_path = other.unpack_path
       self.unpack_clear()
-      VERBOSE("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
-      copytree(other.unpack_path, self.unpack_path, symlinks=True)
+      VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
+      copytree(src_path, self.unpack_path, symlinks=True)
+      self.unpack_init()
 
    def layers_open(self, layer_tars):
       """Open the layer tarballs and read some metadata (which unfortunately
@@ -357,6 +369,28 @@ class Image:
          for k in config["config"]["Volumes"].keys():
             self.metadata["volumes"].append(k)
 
+   def metadata_replace(self, config_json):
+      self.metadata_init()
+      if (config_json is None):
+         INFO("no config found; initializing empty metadata")
+      else:
+         # Copy pulled config file into the image so we still have it.
+         path = self.metadata_path // "config.pulled.json"
+         copy2(config_json, path)
+         VERBOSE("pulled config path: %s" % path)
+         # Open and parse JSON.
+         fp = open_(config_json, "rt", encoding="UTF-8")
+         text = ossafe(fp.read, "can't read: %s" % config_json)
+         ossafe(fp.close, "can't close: %s" % config_json)
+         try:
+            config = json.loads(text)
+         except json.JSONDecodeError as x:
+            FATAL("can't parse config file: %s:%d: %s"
+                  % (config_json, x.lineno, x.msg))
+         DEBUG("pulled config:\n%s" % json.dumps(config, indent=2))
+         self.metadata_merge_from_config(config)
+      self.metadata_save()
+
    def metadata_save(self):
       """Dump image's metadata to disk, including the main data structure but
          also all auxiliary files, e.g. ch/environment."""
@@ -399,7 +433,7 @@ class Image:
          FATAL("can't write tarball: %s" % x.strerror)
       return [base]
 
-   def unpack(self, config_json, layer_tars, last_layer=None):
+   def unpack(self, layer_tars, last_layer=None):
       """Unpack config_json (path to JSON config file) and layer_tars
          (sequence of paths to tarballs, with lowest layer first) into the
          unpack directory, validating layer contents and dealing with
@@ -408,30 +442,9 @@ class Image:
       if (last_layer is None):
          last_layer = sys.maxsize
       INFO("flattening image")
-      self.unpack_init()
-      self.unpack_config(config_json)
+      self.unpack_clear()
       self.unpack_layers(layer_tars, last_layer)
-
-   def unpack_config(self, config_json):
-      if (config_json is None):
-         INFO("no config found; initializing empty metadata")
-      else:
-         # Copy pulled config file into the image so we still have it.
-         path = self.metadata_path // "config.pulled.json"
-         copy2(config_json, path)
-         VERBOSE("pulled config path: %s" % path)
-         # Open and parse JSON.
-         fp = open_(config_json, "rt", encoding="UTF-8")
-         text = ossafe(fp.read, "can't read: %s" % config_json)
-         ossafe(fp.close, "can't close: %s" % config_json)
-         try:
-            config = json.loads(text)
-         except json.JSONDecodeError as x:
-            FATAL("can't parse config file: %s:%d: %s"
-                  % (config_json, x.lineno, x.msg))
-         DEBUG("pulled config:\n%s" % json.dumps(config, indent=2))
-         self.metadata_merge_from_config(config)
-      self.metadata_save()
+      self.unpack_init()
 
    def unpack_clear(self):
       """If the unpack directory does not exist, do nothing. If the unpack
@@ -449,10 +462,9 @@ class Image:
          rmtree(self.unpack_path)
 
    def unpack_init(self):
-      """Initialize the unpack directory, replacing or creating if needed.
-         After calling this, self.unpack_path is a valid Charliecloud image
-         directory."""
-      self.unpack_clear()
+      """Initialize the unpack directory, which must exist. Any setup already
+         present will be left unchanged. After this, self.unpack_path is a
+         valid Charliecloud image directory."""
       # Metadata directory.
       mkdirs(self.unpack_path // "ch")
       file_ensure_exists(self.unpack_path // "ch/environment")
@@ -462,8 +474,7 @@ class Image:
       # container (e.g. linuxcontainers.org images; issue #1015).
       #
       # WARNING: Keep in sync with shell scripts.
-      for d in   ["bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr"] \
-               + ["mnt/%d" % i for i in range(10)]:
+      for d in list(STANDARD_DIRS) + ["mnt/%d" % i for i in range(10)]:
          d = self.unpack_path // d
          if (not os.path.lexists(d)):
             mkdirs(d)
@@ -474,6 +485,7 @@ class Image:
       layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
+      top_dirs = set()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
          if (i > last_layer):
@@ -485,6 +497,25 @@ class Image:
                fp.extractall(path=self.unpack_path, members=members)
             except OSError as x:
                FATAL("can't extract layer %d: %s" % (i, x.strerror))
+            top_dirs.update(path_first(i.name) for i in members)
+      # If standard tarball with enclosing directory, raise everything out of
+      # that directory, unless it's one of the standard directories (e.g., an
+      # image containing just "/bin/fooprog" won't be raised). This supports
+      # "ch-image import", which may be used on manually-created tarballs
+      # where best practice is not to do a tarbomb.
+      top_dirs -= { None }  # some tarballs contain entry for "."; ignore
+      if (len(top_dirs) == 1):
+         top_dir = top_dirs.pop()
+         if (    (self.unpack_path // top_dir).is_dir()
+             and str(top_dir) not in STANDARD_DIRS):
+            top_dir = self.unpack_path // top_dir  # make absolute
+            INFO("layers: single enclosing directory, using its contents")
+            for src in list(top_dir.iterdir()):
+               dst = self.unpack_path // src.parts[-1]
+               DEBUG("moving: %s -> %s" % (src, dst))
+               ossafe(src.rename, "can't move: %s -> %s" % (src, dst), dst)
+            DEBUG("removing empty directory: %s" % top_dir)
+            ossafe(top_dir.rmdir, "can't rmdir: %s" % top_dir)
 
    def validate_members(self, layers):
       INFO("validating tarball members")
@@ -1365,6 +1396,14 @@ def copytree(*args, **kwargs):
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
       (e.g., lark module checked at import time), then complain and exit."""
+   # enforce Python minimum version
+   vsys_py = sys.version_info[:3]  # 4th element is a string
+   if (vsys_py < PYTHON_MIN):
+      vmin_py_str = ".".join(("%d" % i) for i in PYTHON_MIN)
+      vsys_py_str = ".".join(("%d" % i) for i in vsys_py)
+      depfails.append(("bad", ("need Python %s but running under %s: %s"
+                               % (vmin_py_str, vsys_py_str, sys.executable))))
+   # report problems & exit
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
    if (len(depfails) > 0):
@@ -1465,7 +1504,7 @@ def grep_p(path, rx):
 def init(cli):
    global verbose, log_festoon, log_fp, storage, tls_verify
    # logging
-   assert (0 <= cli.verbose <= 2)
+   assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
@@ -1519,6 +1558,15 @@ def ossafe(f, msg, *args, **kwargs):
       return f(*args, **kwargs)
    except OSError as x:
       FATAL("%s: %s" % (msg, x.strerror))
+
+def path_first(path):
+   """Return first component of path, skipping no-op dot components. If path
+      contains *only* no-ops, return None. (Note: In my testing, parsing a
+      string into a Path object took about 2.5µs, so this is plenty fast.)"""
+   try:
+      return Path(path).parts[0]
+   except IndexError:
+      return None
 
 def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.
