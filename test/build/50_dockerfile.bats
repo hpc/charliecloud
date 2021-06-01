@@ -743,7 +743,6 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
-    
     test -f "$CH_IMAGE_STORAGE"/img/foo/empty-file
 
     # multiple source
@@ -751,14 +750,12 @@ EOF
 FROM 00_tiny
 COPY ["fixtures/empty-file", "fixtures/README", "."]
 EOF
-
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"COPY ['fixtures/empty-file', 'fixtures/README'] -> '.'"* ]]
-
     test -f "$CH_IMAGE_STORAGE"/img/foo/empty-file
-    test -f "$CH_IMAGE_STORAGE"/img/foo/README 
-    
+    test -f "$CH_IMAGE_STORAGE"/img/foo/README
+
     run ch-image delete foo
 }
 
