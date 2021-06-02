@@ -223,10 +223,7 @@ class Image:
    def __init__(self, ref, unpack_path=None):
       assert isinstance(ref, Image_Ref)
       self.ref = ref
-      if (unpack_path is not None):
-         self.unpack_path = Path(unpack_path)
-      else:
-         self.unpack_path = storage.unpack(self.ref)
+      self.unpack_path = storage.unpack(self.ref)
       self.metadata_init()
 
    @property
