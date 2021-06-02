@@ -363,7 +363,7 @@ class I_copy(Instruction):
          for i in range(len(paths)):
             paths[i] = paths[i][1:-1] #strip quotes
       else:
-         ch.FATAL("not valid form of COPY")
+         assert (False, "unreachable code reached")
 
       self.srcs = paths[:-1]
       self.dst = paths[-1]
