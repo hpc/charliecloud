@@ -41,9 +41,10 @@ struct bind BINDS_DEFAULT[] = {
    { "/proc",                    "/proc",                    BD_REQUIRED },
    { "/sys",                     "/sys",                     BD_REQUIRED },
    { "/etc/hosts",               "/etc/hosts",               BD_OPTIONAL },
+   { "/etc/machine-id",          "/etc/machine-id",          BD_OPTIONAL },
    { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
-   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
    { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs",  BD_OPTIONAL },
+   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
    { NULL }
 };
 

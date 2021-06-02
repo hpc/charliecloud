@@ -64,12 +64,21 @@ unpacked image directory located at :code:`NEWROOT`.
     below).
 
   :code:`--no-home`
-    Do not bind-mount your home directory (by default, your home directory is
-    mounted at :code:`/home/$USER` in the container).
+    By default, your host home directory (i.e., :code:`$HOME`) is bind-mounted
+    at guest :code:`/home/$USER`. This is accomplished by mounting a new
+    :code:`tmpfs` at :code:`/home`, which hides any image content under that
+    path. If this is specified, neither of these things happens and the
+    image's :code:`/home` is exposed unaltered.
+
+  :code:`--no-passwd`
+    By default, temporary :code:`/etc/passwd` and :code:`/etc/group` files are
+    created according to the UID and GID maps for the container and
+    bind-mounted into it. If this is specified, no such temporary files are
+    created and the image's files are exposed.
 
   :code:`-t`, :code:`--private-tmp`
-    Use container-private :code:`/tmp` (by default, :code:`/tmp` is shared with
-    the host).
+    By default, :code:`/tmp` is shared with the host. If this is specified, a
+    new :code:`tmpfs` is mounted on the container's :code:`/tmp` instead.
 
   :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
     set environment variable(s), either as specified in host path :code:`FILE`,
@@ -104,31 +113,30 @@ In addition to any directories specified by the user with :code:`--bind`,
 in as well.
 
 The following host files and directories are bind-mounted at the same location
-in the container. These cannot be disabled.
+in the container. These cannot be disabled. Required (must exist both on host
+and within the image):
 
   * :code:`/dev`
-  * :code:`/etc/passwd`
-  * :code:`/etc/group`
-  * :code:`/etc/hosts`
-  * :code:`/etc/resolv.conf`
   * :code:`/proc`
   * :code:`/sys`
 
-Three additional bind mounts can be disabled by the user:
+Optional (only if path exists on both host and within the image; no error or
+warning if not):
 
-  * Your home directory (i.e., :code:`$HOME`) is mounted at guest
-    :code:`/home/$USER` by default. This is accomplished by mounting a new
-    :code:`tmpfs` at :code:`/home`, which hides any image content under that
-    path. If :code:`--no-home` is specified, neither of these things happens
-    and the image's :code:`/home` is exposed unaltered.
+  * :code:`/etc/hosts`
+  * :code:`/etc/machine-id`
+  * :code:`/etc/resolv.conf`
+  * :code:`/var/lib/hugetlbfs` at guest :code:`/var/opt/cray/hugetlbfs`
+  * :code:`/var/opt/cray/alps/spool`
+  * :code:`$PREFIX/bin/ch-ssh` at guest :code:`/usr/bin/ch-ssh`
 
-  * :code:`/tmp` is shared with the host by default. If :code:`--private-tmp`
-    is specified, a new :code:`tmpfs` is mounted on the guest's :code:`/tmp`
-    instead.
+Additional bind mounts done by default but can be disabled; see the options
+above:
 
-  * If file :code:`/usr/bin/ch-ssh` is present in the image, it is
-    over-mounted with the :code:`ch-ssh` binary in the same directory as
-    :code:`ch-run`.
+  * :code:`$HOME` at :code:`/home/$USER` (and image :code:`/home` is hidden)
+  * :code:`/tmp`
+  * temporary file at :code:`/etc/passwd`
+  * temporary file at :code:`/etc/group`
 
 Multiple processes in the same container with :code:`--join`
 =============================================================
@@ -465,4 +473,4 @@ Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
 
-..  LocalWords:  mtune NEWROOT
+..  LocalWords:  mtune NEWROOT hugetlbfs
