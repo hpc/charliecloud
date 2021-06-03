@@ -7,6 +7,7 @@ import datetime
 import getpass
 import hashlib
 import http.client
+import io
 import json
 import os
 import getpass
@@ -929,6 +930,7 @@ class Progress:
                 "msg",
                 "length",
                 "unit",
+                "overwrite_p",
                 "precision",
                 "progress")
 
@@ -937,6 +939,10 @@ class Progress:
       self.unit = unit
       self.divisor = divisor
       self.length = length
+      if (not os.isatty(log_fp.fileno()) or log_festoon):
+         self.overwrite_p = False
+      else:
+         self.overwrite_p = True
       self.precision = 1 if self.divisor >= 1000 else 0
       self.progress = 0
       self.display_last = float("-inf")
@@ -951,16 +957,60 @@ class Progress:
                  self.precision, self.progress / self.divisor,
                  self.precision, self.length / self.divisor,
                  self.unit, 100 * self.progress / self.length))
-         if (log_festoon):
-            s += "\n"  # move to next line like usual
-         else:
+         if (self.overwrite_p):
             s += "\r"  # CR so next INFO overwrites
+         else:
+            s += "\n"  # move to next line like usual
          INFO(s, end="")
          self.display_last = now
 
    def done(self):
-      if (not log_festoon):
+      if (self.overwrite_p):
          INFO("")  # newline to release display line
+
+
+class Progress_Reader:
+
+   """Wrapper around a binary file object to maintain a progress meter while
+      reading."""
+
+   __slots__ = ("fp",
+                "msg",
+                "progress")
+
+   def __init__(self, fp, msg):
+      self.fp = fp
+      self.msg = msg
+
+   def __iter__(self):
+      return self
+
+   def __next__(self):
+      data = self.read(HTTP_CHUNK_SIZE)
+      if (len(data) == 0):
+         raise StopIteration
+      return data
+
+   def close(self):
+      self.progress.done()
+      ossafe(self.fp.close, "can't close: %s" % self.fp.name)
+
+   def read(self, size=-1):
+     data = self.fp.read(size)
+     self.progress.update(len(data))
+     return data
+
+   def seek(self, *args):
+      raise io.UnsupportedOperation
+
+   def start(self):
+      # Get file size. This seems awkward, but I wasn't able to find anything
+      # better. See: https://stackoverflow.com/questions/283707
+      old_pos = self.fp.tell()
+      assert (old_pos == 0)  # math will be wrong if this isn't true
+      length = self.fp.seek(0, os.SEEK_END)
+      self.fp.seek(old_pos)
+      self.progress = Progress(self.msg, "MiB", 2**20, length)
 
 
 class Progress_Writer:
@@ -1139,14 +1189,20 @@ class Registry_HTTP:
 
    def blob_upload(self, digest, data, note=""):
       """Upload blob with hash digest to url. data is the data to upload, and
-         can be anything requests can handle, including an open file. note is
-         a string to prepend to the log messages; default empty string."""
+         can be anything requests can handle; if it's an open file, then it's
+         wrapped in a Progress_Reader object. note is a string to prepend to
+         the log messages; default empty string."""
       INFO("%s%s: checking if already in repository" % (note, digest[:7]))
       # 1. Check if blob already exists. If so, stop.
       if (self.blob_exists_p(digest)):
          INFO("%s%s: already present" % (note, digest[:7]))
          return
-      INFO("%s%s: not present, uploading" % (note, digest[:7]))
+      msg = "%s%s: not present, uploading" % (note, digest[:7])
+      if (isinstance(data, io.IOBase)):
+         data = Progress_Reader(data, msg)
+         data.start()
+      else:
+         INFO(msg)
       # 2. Get upload URL for blob.
       url = self._url_of("blobs", "uploads/")
       res = self.request("POST", url, {202})
@@ -1157,6 +1213,8 @@ class Registry_HTTP:
       url = res.headers["Location"]
       res = self.request("PUT", url, {201}, data=data,
                          params={ "digest": "sha256:%s" % digest })
+      if (isinstance(data, Progress_Reader)):
+         data.close()
       # 4. Verify blob now exists.
       if (not self.blob_exists_p(digest)):
          FATAL("blob just uploaded does not exist: %s" % digest[:7])
