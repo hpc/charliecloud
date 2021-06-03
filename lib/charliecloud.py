@@ -914,7 +914,9 @@ class Path(pathlib.PosixPath):
 
 class Progress:
    """Simple progress meter for countable things that updates at most once per
-      second. Writes first update upon creation.
+      second. Writes first update upon creation. If length is None, then just
+      count up (this is for registries like Red Hat that sometimes don't
+      provide a Content-Length header for blobs).
 
       The purpose of the divisor is to allow counting things that are much
       more numerous than what we want to display; for example, to count bytes
@@ -948,23 +950,30 @@ class Progress:
       self.display_last = float("-inf")
       self.update(0)
 
-   def update(self, increment):
+   def update(self, increment, last=False):
       now = time.monotonic()
       self.progress += increment
-      if (now - self.display_last > 1 or self.progress >= self.length):
-         s = ("%s: %.*f/%.*f %s (%d%%)"
-              % (self.msg,
-                 self.precision, self.progress / self.divisor,
-                 self.precision, self.length / self.divisor,
-                 self.unit, 100 * self.progress / self.length))
-         if (self.overwrite_p):
-            s += "\r"  # CR so next INFO overwrites
+      if (last or now - self.display_last > 1):
+         if (self.length is None):
+            line = ("%s: %.*f/unknown %s"
+                    % (self.msg,
+                       self.precision, self.progress / self.divisor,
+                       self.unit))
          else:
-            s += "\n"  # move to next line like usual
-         INFO(s, end="")
+            line = ("%s: %.*f/%.*f %s (%d%%)"
+                    % (self.msg,
+                       self.precision, self.progress / self.divisor,
+                       self.precision, self.length / self.divisor,
+                       self.unit, 100 * self.progress / self.length))
+         if (self.overwrite_p):
+            line += "\r"  # CR so next INFO overwrites
+         else:
+            line += "\n"  # move to next line like usual
+         INFO(line, end="")
          self.display_last = now
 
    def done(self):
+      self.update(0, True)
       if (self.overwrite_p):
          INFO("")  # newline to release display line
 
@@ -1264,10 +1273,7 @@ class Registry_HTTP:
                    headers={ "Content-Type": TYPE_MANIFEST })
 
    def request(self, method, url, statuses={200}, out=None, **kwargs):
-      """
-
-
-         Request url using method and return the response object. If statuses
+      """Request url using method and return the response object. If statuses
          is given, it is set of acceptable response status codes, defaulting
          to {200}; any other response is a fatal error. If out is given,
          response content will be streamed to this Progress_Writer object and
@@ -1290,7 +1296,7 @@ class Registry_HTTP:
          try:
             length = int(res.headers["Content-Length"])
          except KeyError:
-            FATAL("no Content-Length in response")
+            length = None
          except ValueError:
             FATAL("invalid Content-Length in response")
          out.start(length)
