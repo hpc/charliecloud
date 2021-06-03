@@ -979,7 +979,6 @@ class Progress:
 
 
 class Progress_Reader:
-
    """Wrapper around a binary file object to maintain a progress meter while
       reading."""
 
@@ -1277,7 +1276,7 @@ class Registry_HTTP:
          is given, it is set of acceptable response status codes, defaulting
          to {200}; any other response is a fatal error. If out is given,
          response content will be streamed to this Progress_Writer object and
-         must be non-zero length with valid Content-Length header.
+         must be non-zero length.
 
          Use current session if there is one, or start a new one if not. If
          authentication fails (or isn't initialized), then authenticate and
