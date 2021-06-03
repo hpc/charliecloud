@@ -920,10 +920,10 @@ class Progress:
       more numerous than what we want to display; for example, to count bytes
       but report MiB, use a divisor of 1048576.
 
-      Unless global log_festoon is set, moves to a new line at first update,
-      then assumes exclusive control of this line in the terminal, rewriting
-      the line as needed. If log_festoon is set, each update is one log entry
-      with no overwriting."""
+      By default, moves to a new line at first update, then assumes exclusive
+      control of this line in the terminal, rewriting the line as needed. If
+      output is not a TTY or global log_festoon is set, each update is one log
+      entry with no overwriting."""
 
    __slots__ = ("display_last",
                 "divisor",
