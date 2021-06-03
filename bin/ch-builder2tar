@@ -132,7 +132,6 @@ EOF
 
 ch-image)
     storage=$("${ch_bin}/ch-image" storage-path)/img/$(tag_to_path "$image")
-    echo "${storage}"
     if [ ! -d "$storage" ]; then
         echo "$image not found in builder storage" 1>&2
         exit 1
