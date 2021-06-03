@@ -85,19 +85,17 @@ class Image_Puller:
          if (os.path.exists(self.config_path) and use_cache):
             ch.INFO("config: using existing file")
          else:
-            ch.INFO("config: downloading")
-            dl.blob_to_file(self.config_hash, self.config_path)
+            dl.blob_to_file(self.config_hash, self.config_path,
+                            "config: downloading")
       # layers
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          path = self.layer_path(lh)
          ch.VERBOSE("layer path: %s" % path)
-         ch.INFO("layer %d/%d: %s: "% (i, len(self.layer_hashes), lh[:7]),
-                 end="")
+         msg = "layer %d/%d: %s" % (i, len(self.layer_hashes), lh[:7])
          if (os.path.exists(path) and use_cache):
-            ch.INFO("using existing file")
+            ch.INFO("%s: using existing file" % msg)
          else:
-            ch.INFO("downloading")
-            dl.blob_to_file(lh, path)
+            dl.blob_to_file(lh, path, "%s: downloading" % msg)
       dl.close()
 
    def layer_path(self, layer_hash):
@@ -159,8 +157,8 @@ class Image_Puller:
          if (os.path.exists(self.manifest_path) and use_cache):
             ch.INFO("manifest: using existing file")
          else:
-            ch.INFO("manifest: downloading")
-            downloader.manifest_to_file(self.manifest_path)
+            downloader.manifest_to_file(self.manifest_path,
+                                        "manifest: downloading")
          # read and parse the JSON
          fp = ch.open_(self.manifest_path, "rt", encoding="UTF-8")
          text = ch.ossafe(fp.read, "can't read: %s" % self.manifest_path)
