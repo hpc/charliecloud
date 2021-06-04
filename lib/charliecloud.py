@@ -223,7 +223,10 @@ class Image:
    def __init__(self, ref, unpack_path=None):
       assert isinstance(ref, Image_Ref)
       self.ref = ref
-      self.unpack_path = storage.unpack(self.ref)
+      if (unpack_path is not None):
+         self.unpack_path = Path(unpack_path)
+      else:
+         self.unpack_path = storage.unpack(self.ref)
       self.metadata_init()
 
    @property
@@ -629,6 +632,7 @@ class Image:
    def unpack_delete(self):
       if (not self.unpack_exist_p()):
          FATAL("%s image not found" % self.ref)
+      VERBOSE("image path: %s" % self.unpack_path)
       if (self.unpacked_p(self.unpack_path)):
          INFO("deleting image: %s" % self.ref)
          rmtree(self.unpack_path)
