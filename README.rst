@@ -83,10 +83,21 @@ list above.
 
 We are friendly and welcoming of diversity on all dimensions.
 
+How do I cite Charliecloud?
+---------------------------
+
+If Charliecloud helped your research, or it was useful to you in any other
+context where bibliographic citations are appropriate, please cite the
+following open-access paper:
+
+  Reid Priedhorsky and Tim Randles. "Charliecloud: Unprivileged containers for
+  user-defined software stacks in HPC", 2017. In *Proc. Supercomputing*.
+  DOI: `10.1145/3126908.3126925 <https://doi.org/10.1145/3126908.3126925>`_.
+
 Copyright and license
 ---------------------
 
-Charliecloud is copyright © 2014–2020 Triad National Security, LLC.
+Charliecloud is copyright © 2014–2021 Triad National Security, LLC.
 
 This software was produced under U.S. Government contract 89233218CNA000001
 for Los Alamos National Laboratory (LANL), which is operated by Triad National

@@ -41,9 +41,10 @@ struct bind BINDS_DEFAULT[] = {
    { "/proc",                    "/proc",                    BD_REQUIRED },
    { "/sys",                     "/sys",                     BD_REQUIRED },
    { "/etc/hosts",               "/etc/hosts",               BD_OPTIONAL },
+   { "/etc/machine-id",          "/etc/machine-id",          BD_OPTIONAL },
    { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
-   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
    { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs",  BD_OPTIONAL },
+   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
    { NULL }
 };
 
@@ -192,7 +193,9 @@ void enter_udss(struct container *c)
       // dotfiles.
       Tf (c->old_home != NULL, "cannot find home directory: is $HOME set?");
       newhome = cat("/home/", getenv("USER"));
-      Z_ (mkdir(cat(c->newroot, newhome), 0755));
+      if(getenv("USER") != NULL) {
+         Z_ (mkdir(cat(c->newroot, newhome), 0755));
+      }
       bind_mount(c->old_home, newhome, BD_REQUIRED, c->newroot, 0);
    }
    // Container /usr/bin/ch-ssh.

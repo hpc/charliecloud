@@ -78,9 +78,15 @@ def list_(cli):
       print("host architecture:   %s" % ch.arch_host)
       print("archs available:     %s" % arch_avail)
    else:
-      dirs = ch.ossafe(os.listdir, "can't list directory: %s" % imgdir, imgdir)
-      for d in sorted(dirs):
-         print(ch.Image_Ref(d))
+      if (not os.path.isdir(ch.storage.root)):
+         ch.INFO("does not exist: %s" % ch.storage.root)
+         return;
+      if (not ch.storage.valid_p()):
+          ch.INFO("not a storage directory: %s" % ch.storage.root)
+          return;
+      imgs = ch.ossafe(os.listdir, "can't list directory: %s" % ch.storage.root, imgdir)
+      for img in sorted(imgs):
+         print(ch.Image_Ref(img))
 
 def import_(cli):
    ch.dependencies_check()

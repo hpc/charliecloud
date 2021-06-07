@@ -271,15 +271,6 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
 
-    # COPY list form
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
-FROM 00_tiny
-COPY ["fixtures/empty-file", "."]
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #784: COPY list form'* ]]
-
     # FROM --platform
     run ch-image build -t not-yet-supported -f - . <<'EOF'
 FROM --platform=foo 00_tiny
@@ -740,6 +731,33 @@ EOF
     fi
 }
 
+@test 'Dockerfile: COPY list form' {
+    scope standard
+    [[ $CH_BUILDER == ch-image ]] || skip 'ch-image only'
+
+    # single source
+    run ch-image build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY ["fixtures/empty-file", "."]
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
+    test -f "$CH_IMAGE_STORAGE"/img/foo/empty-file
+
+    # multiple source
+    run ch-image build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY ["fixtures/empty-file", "fixtures/README", "."]
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"COPY ['fixtures/empty-file', 'fixtures/README'] -> '.'"* ]]
+    test -f "$CH_IMAGE_STORAGE"/img/foo/empty-file
+    test -f "$CH_IMAGE_STORAGE"/img/foo/README
+
+    run ch-image delete foo
+}
 
 @test 'Dockerfile: COPY errors' {
     scope standard

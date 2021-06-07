@@ -97,6 +97,9 @@ verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 
+# Minimum Python version. NOTE: Keep in sync with configure.ac.
+PYTHON_MIN = (3,6)
+
 # Verify TLS certificates? Passed to requests.
 tls_verify = True
 
@@ -1458,6 +1461,14 @@ def copytree(*args, **kwargs):
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
       (e.g., lark module checked at import time), then complain and exit."""
+   # enforce Python minimum version
+   vsys_py = sys.version_info[:3]  # 4th element is a string
+   if (vsys_py < PYTHON_MIN):
+      vmin_py_str = ".".join(("%d" % i) for i in PYTHON_MIN)
+      vsys_py_str = ".".join(("%d" % i) for i in vsys_py)
+      depfails.append(("bad", ("need Python %s but running under %s: %s"
+                               % (vmin_py_str, vsys_py_str, sys.executable))))
+   # report problems & exit
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
    if (len(depfails) > 0):
