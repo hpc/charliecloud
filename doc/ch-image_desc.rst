@@ -627,9 +627,14 @@ List images in builder storage::
 Print details about Debian Buster image::
 
    $ ch-image list debian:buster
-   in builder storage: yes (amd64, 125MiB uncompressed)
-   found remotely as: registry-1.docker.io:443/library/debian:buster
-   architectures available: amd64 arm/v5 arm/v7
+   details of image:    debian:buster
+   in local storage:    no
+   full remote ref:     registry-1.docker.io:443/library/debian:buster
+   manifest list: downloading
+   available remotely:  yes
+   remote arch-aware:   yes
+   host architecture:   amd64
+   archs available:     386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x
 
 :code:`pull`
 ------------
