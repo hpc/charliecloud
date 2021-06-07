@@ -76,7 +76,10 @@ class Image_Puller:
          if (ch.arch == "yolo"):
             digest = None
          else:
-            digest = self.architectures[ch.arch]
+            try:
+               digest = self.architectures[ch.arch]
+            except TypeError:
+               digest = None
          return ch.storage.manifest_for_download(self.image.ref, digest)
 
    def done(self):
@@ -213,7 +216,10 @@ class Image_Puller:
          if (ch.arch == "yolo"):
             digest = None
          else:
-            digest = self.architectures[ch.arch]
+            try:
+               digest = self.architectures[ch.arch]
+            except TypeError:
+               digest = None
          ch.DEBUG("manifest digest: %s" % digest)
          if (os.path.exists(self.manifest_path) and self.use_cache):
             ch.INFO("manifest: using existing file")
