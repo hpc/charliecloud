@@ -1126,7 +1126,7 @@ class Registry_HTTP:
       url = self._url_of("manifests", self.ref.version)
       statuses = {200}
       if (continue_404):
-         statuses |= {401, 404}
+         statuses |= {400, 401, 404}
       self.request("GET", url, out=path, statuses=statuses,
                    headers={ "Accept" : TYPE_MANIFEST_LIST })
 

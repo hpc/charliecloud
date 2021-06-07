@@ -155,7 +155,7 @@ class Image_Puller:
          ch.INFO("manifest list: downloading")
          self.registry.fatman_to_file(self.fatman_path, True)
       if (not os.path.exists(self.fatman_path)):
-         # Response was 404.
+         # Response was 400 or 404.
          ch.INFO("manifest list: no list found")
          return
       fm = ch.json_from_file(self.fatman_path, "fat manifest")
@@ -314,7 +314,7 @@ class Image_Puller:
       arch_short = ch.arch.split("/")[0]
       arch_host_short = ch.arch_host.split("/")[0]
       if (arch_image != "unknown" and arch_image != arch_host_short):
-         host_mismatch = " (does not match host %s)" % ch.arch_host
+         host_mismatch = " (may not match host %s)" % ch.arch_host
       else:
          host_mismatch = ""
       ch.INFO("image arch: %s%s" % (arch_image, host_mismatch))
