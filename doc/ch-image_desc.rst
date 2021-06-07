@@ -644,27 +644,35 @@ in the storage directory::
 
    $ uname -m
    aarch32
-   $ ch-image pull debian:buster
-   pulling image:   debian:buster (arm/v7)
-   list of manifests: downloading
+   pulling image:    debian:buster
+   requesting arch:  arm64/v8
+   manifest list: downloading
    manifest: downloading
    config: downloading
-   layer 1/1: d018a28: downloading
+   layer 1/1: c54d940: downloading
    flattening image
-   layer 1/1: d018a28: listing
+   layer 1/1: c54d940: listing
    validating tarball members
    resolving whiteouts
-   layer 1/1: d018a28: extracting
-   image architecture: arm/v7
+   layer 1/1: c54d940: extracting
+   image arch: arm64
    done
 
 Same, specifying the architecture explicitly::
 
    $ ch-image --arch=arm/v7 pull debian:buster
-   pulling image:   debian:buster (arm/v7)
-   [...]
-   image architecture: arm/v7
-   done
+   pulling image:    debian:buster
+   requesting arch:  arm/v7
+   manifest list: downloading
+   manifest: downloading
+   config: downloading
+   layer 1/1: 8947560: downloading
+   flattening image
+   layer 1/1: 8947560: listing
+   validating tarball members
+   resolving whiteouts
+   layer 1/1: 8947560: extracting
+   image arch: arm (does not match host arm64/v8)
 
 Download the same image and place it in :code:`/tmp/buster`::
 

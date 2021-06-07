@@ -317,7 +317,7 @@ class Image_Puller:
          host_mismatch = " (does not match host %s)" % ch.arch_host
       else:
          host_mismatch = ""
-      ch.INFO("image arch:       %s%s" % (arch_image, host_mismatch))
+      ch.INFO("image arch: %s%s" % (arch_image, host_mismatch))
       if (ch.arch != "yolo" and arch_short != arch_image):
          ch.WARNING("image architecture does not match requested: %s ≠ %s"
                     % (ch.arch, image_arch))
