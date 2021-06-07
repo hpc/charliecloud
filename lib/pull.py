@@ -105,7 +105,7 @@ class Image_Puller:
             ch.WARNING("image is architecture-unaware")
             ch.WARNING("requested arch is amd64; switching to --arch=yolo")
          else:
-            ch.FATAL("image is architecture-unaware; try --arch=yolo?")
+            ch.FATAL("image is architecture-unaware; try --arch=yolo (?)")
       # manifest
       self.manifest_load()
       # config
