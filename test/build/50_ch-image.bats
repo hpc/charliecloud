@@ -259,7 +259,7 @@ EOF
     fi
 
     # requested arch does not exist
-    run ch-image --arch=yolo/swag --no-cache pull charliecloud/centos:8
+    run ch-image --arch=yolo/swag --no-cache pull centos:8
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'error'* ]]
