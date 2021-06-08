@@ -209,15 +209,6 @@ EOF
     [[ $output = *'in local storage:    yes'* ]]
     [[ $output = *'{200, 403} but got 400: Bad Request'* ]]
 
-    # in storage, exists remotely, fat manifest exists
-    run ch-image list alpine:latest
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'in local storage:    yes'* ]]
-    [[ $output = *'available remotely:  yes'* ]]
-    [[ $output = *'archs available:'* ]]
-    [[ $output = *'386 amd64 arm/v6 arm/v7 arm64/v8 ppc64le s390x'* ]]
-
     # exists remotely, fat manifest exists
     run ch-image list debian:buster
     echo "$output"
