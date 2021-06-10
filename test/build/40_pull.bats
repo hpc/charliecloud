@@ -296,6 +296,10 @@ EOF
     # FIXME: 77 MiB unpacked, should find a smaller public image
     ch-image pull registry.access.redhat.com/ubi7-minimal:latest
 
+    # Microsoft Container Registry:
+    # https://github.com/microsoft/containerregistry
+    ch-image pull mcr.microsoft.com/mcr/hello-world:latest
+
     # Things not here (yet?):
     #
     # 1. Harbor (issue #899): Has a demo repo (https://demo.goharbor.io) that
