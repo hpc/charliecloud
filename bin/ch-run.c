@@ -13,7 +13,7 @@
 #include "config.h"
 #include "ch_misc.h"
 #include "ch_core.h"
-
+#include "ch_fuse.h"
 
 /** Constants and macros **/
 
@@ -56,6 +56,7 @@ const struct argp_option options[] = {
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
    { "set-env",        -6, "FILE", 0, "set environment variables in FILE"},
+   { "squashmt",      's', "DIR",  0, "mount and run sqfs"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
    { "unset-env",      -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",       'v', 0,      0, "be more verbose (debug if repeated)" },
@@ -95,7 +96,7 @@ void privs_verify_invoking();
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
-
+char *sqfs_unpack = "/var/tmp";
 
 /** Main **/
 
@@ -140,6 +141,10 @@ int main(int argc, char *argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
+   if(0) {
+      argv[arg_next] = sqfs_mount(sqfs_unpack, argv[arg_next]);
+      DEBUG("new argv: %s", argv[arg_next]);
+   }
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.newroot = realpath(argv[arg_next], NULL);
@@ -496,6 +501,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case 'j':
       args->c.join = true;
+      break;
+   case 's':
+      sqfs_unpack = arg;
       break;
    case 't':
       args->c.private_tmp = true;
