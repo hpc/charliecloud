@@ -39,6 +39,27 @@ void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops);
 
 /** Functions **/
 
+bool sqfs_ll_check(const char *path, size_t offset)
+{
+   sqfs_ll *ll;
+   sqfs_fd_t fd;
+
+   ll = malloc(sizeof(*ll));
+   if (!ll) {
+      FATAL("Can't allocate memory");
+   } else {
+      memset(ll, 0 , sizeof(*ll));
+      fd = open(path, O_RDONLY);
+      if(fd != -1) {
+         if(sqfs_init(&ll->fs, fd, offset) == SQFS_OK)
+            return true;
+      }
+      sqfs_destroy(&ll->fs);
+      free(ll);
+   }
+   return false;
+}
+
 void sqfs_run_user_command(char *argv[], const char *inital_dir)
 {
 

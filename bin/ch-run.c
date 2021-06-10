@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
-   if(0) {
+   if(sqfs_ll_check(argv[arg_next], 0)) {
       argv[arg_next] = sqfs_mount(sqfs_unpack, argv[arg_next]);
       DEBUG("new argv: %s", argv[arg_next]);
    }
