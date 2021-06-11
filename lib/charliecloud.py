@@ -660,6 +660,7 @@ class Image:
          rmtree(self.unpack_path)
 
    def unpack_delete(self):
+      VERBOSE("unpack path: %s" % self.unpack_path)
       if (not self.unpack_exist_p):
          FATAL("%s image not found" % self.ref)
       if (self.unpacked_p(self.unpack_path)):
