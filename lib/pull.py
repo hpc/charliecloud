@@ -73,13 +73,10 @@ class Image_Puller:
       if (str(self.image.ref) in manifests_internal):
          return "[internal library]"
       else:
-         if (ch.arch == "yolo"):
+         if (ch.arch == "yolo" or self.architectures is None):
             digest = None
          else:
-            try:
-               digest = self.architectures[ch.arch]
-            except TypeError:
-               digest = None
+            digest = self.architectures[ch.arch]
          return ch.storage.manifest_for_download(self.image.ref, digest)
 
    def done(self):
@@ -155,7 +152,7 @@ class Image_Puller:
          ch.INFO("manifest list: downloading")
          self.registry.fatman_to_file(self.fatman_path, True)
       if (not os.path.exists(self.fatman_path)):
-         # Response was 400 or 404.
+         # Response was 404 (or equivalent).
          ch.INFO("manifest list: no list found")
          return
       fm = ch.json_from_file(self.fatman_path, "fat manifest")
@@ -213,13 +210,10 @@ class Image_Puller:
          ch.INFO("manifest: using internal library")
       except KeyError:
          # download the file if needed, then parse it
-         if (ch.arch == "yolo"):
+         if (ch.arch == "yolo" or self.architectures is None):
             digest = None
          else:
-            try:
-               digest = self.architectures[ch.arch]
-            except TypeError:
-               digest = None
+            digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
          if (os.path.exists(self.manifest_path) and self.use_cache):
             ch.INFO("manifest: using existing file")
@@ -228,7 +222,7 @@ class Image_Puller:
             self.registry.manifest_to_file(self.manifest_path, digest=digest,
                                            continue_404=continue_404)
          if (not os.path.exists(self.manifest_path)):
-            # response was 404
+            # response was 404 (or equivalent)
             ch.INFO("manifest: none found")
             return
          manifest = ch.json_from_file(self.manifest_path, "manifest")
@@ -272,35 +266,27 @@ class Image_Puller:
          self.layer_hashes.reverse()
 
    def manifest_digest_by_arch(self):
-      """Return the manifest reference (digest) of target architecture in the
-         fat manifest if the reference exists; otherwise error if specified
-         arch is not 'host'."""
-      manifest = ch.json_from_file(self.fat_manifest_path)
-      arch     = None
-      ref      = None
-      variant  = None
+      "Return skinny manifest digest for target architecture."
+      fatman  = ch.json_from_file(self.fat_manifest_path)
+      arch    = None
+      digest  = None
+      variant = None
       try:
          arch, variant = ch.arch.split("/", maxsplit=1)
       except ValueError:
          arch = ch.arch
-      try:
-         for k in manifest["manifests"]:
-            if (k.get('platform').get('os') != 'linux'):
-               continue
-            if (    k.get('platform').get('architecture') == arch
-                and variant is not None
-                and k.get('platform').get('variant') == variant):
-               ref = k.get('digest')
-            elif (    k.get('platform').get('architecture') == arch
-                  and variant is None):
-               ref = k.get('digest')
-               ARCH_FOUND = 'yas queen'
-      except KeyError:
-         ch.FATAL("arch: %s: bad argument; see list --help" % arch)
-      if (ref is None and arch != "host"):
-            ch.FATAL("arch: %s: not found in manifest list; see list --help"
-                     % arch)
-      return ref
+      if ("manifests" not in fatman):
+         ch.FATAL("manifest list has no manifests")
+      for k in fatman["manifests"]:
+         if (k.get('platform').get('os') != 'linux'):
+            continue
+         elif (    k.get('platform').get('architecture') == arch
+               and (   variant is None
+                    or k.get('platform').get('variant') == variant)):
+            digest = k.get('digest')
+      if (digest is None):
+         ch.FATAL('arch not found for image: %s; try "ch-image list"?' % arch)
+      return digest
 
    def pull_to_unpacked(self, last_layer=None):
       "Pull and flatten image."

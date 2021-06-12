@@ -1130,7 +1130,7 @@ class Registry_HTTP:
       url = self._url_of("manifests", self.ref.version)
       statuses = {200}
       if (continue_404):
-         statuses |= {400, 401, 404}
+         statuses |= {400, 401, 404}  # Docker Hub gives 400 if no fat manifest
       self.request("GET", url, out=path, statuses=statuses,
                    headers={ "Accept" : TYPE_MANIFEST_LIST })
 

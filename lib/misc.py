@@ -43,8 +43,19 @@ def delete(cli):
 def list_(cli):
    ch.dependencies_check()
    imgdir = ch.storage.unpack_base
-   if (cli.image_ref):
-      # image
+   if (cli.image_ref is None):
+      # list all images
+      if (not os.path.isdir(ch.storage.root)):
+         ch.INFO("does not exist: %s" % ch.storage.root)
+         return;
+      if (not ch.storage.valid_p()):
+          ch.INFO("not a storage directory: %s" % ch.storage.root)
+          return;
+      imgs = ch.ossafe(os.listdir, "can't list directory: %s" % ch.storage.root, imgdir)
+      for img in sorted(imgs):
+         print(ch.Image_Ref(img))
+   else:
+      # list specified image
       img = ch.Image(ch.Image_Ref(cli.image_ref))
       print("details of image:    %s" % img.ref)
       # present locally?
@@ -77,16 +88,6 @@ def list_(cli):
       print("remote arch-aware:   %s" % arch_aware)
       print("host architecture:   %s" % ch.arch_host)
       print("archs available:     %s" % arch_avail)
-   else:
-      if (not os.path.isdir(ch.storage.root)):
-         ch.INFO("does not exist: %s" % ch.storage.root)
-         return;
-      if (not ch.storage.valid_p()):
-          ch.INFO("not a storage directory: %s" % ch.storage.root)
-          return;
-      imgs = ch.ossafe(os.listdir, "can't list directory: %s" % ch.storage.root, imgdir)
-      for img in sorted(imgs):
-         print(ch.Image_Ref(img))
 
 def import_(cli):
    ch.dependencies_check()

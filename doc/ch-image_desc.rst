@@ -630,7 +630,6 @@ Print details about Debian Buster image::
    details of image:    debian:buster
    in local storage:    no
    full remote ref:     registry-1.docker.io:443/library/debian:buster
-   manifest list: downloading
    available remotely:  yes
    remote arch-aware:   yes
    host architecture:   amd64
@@ -672,7 +671,7 @@ Same, specifying the architecture explicitly::
    validating tarball members
    resolving whiteouts
    layer 1/1: 8947560: extracting
-   image arch: arm (does not match host arm64/v8)
+   image arch: arm (may not match host arm64/v8)
 
 Download the same image and place it in :code:`/tmp/buster`::
 

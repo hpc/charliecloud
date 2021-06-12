@@ -188,83 +188,52 @@ EOF
 }
 
 @test 'ch-image list' {
+
+    # list all images
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"00_tiny"* ]]
 
-    ### IMAGE_REF ###
-
     # does not exist remotely
-    run ch-image list foo:bar
+    run ch-image list doesnotexist:latest
+    echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'error'* ]]
-    [[ $output = *'GET failed'* ]]
-    [[ $output = *'expected status {200, 403} but got 400: Bad Request'* ]]
+    [[ $output = *'GET failed; expected status {200, 403} but got 400'* ]]
 
-    # in storage, does not exist remotely, no fat manifest
+    # in storage, does not exist remotely
     run ch-image list 00_tiny
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'in local storage:    yes'* ]]
-    [[ $output = *'{200, 403} but got 400: Bad Request'* ]]
+    [[ $output = *'in local storage:'*'yes'* ]]
+    [[ $output = *'GET failed; expected status {200, 403} but got 400'* ]]
 
-    # exists remotely, fat manifest exists
-    run ch-image list debian:buster
+    # not in storage, exists remotely, fat manifest exists
+    run ch-image list debian:buster-slim
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available remotely:  yes'* ]]
-    [[ $output = *'in local storage:    no'* ]]
-    [[ $output = *'remote arch-aware:   yes'* ]]
-    [[ $output = *'archs available:'* ]]
-    [[ $output = *'386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x'* ]]
+    [[ $output = *'available remotely:'*'yes'* ]]
+    [[ $output = *'in local storage:'*'no'* ]]
+    [[ $output = *'remote arch-aware:'*'yes'* ]]
+    [[ $output = *'archs available:'*'386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x'* ]]
 
-    # exists remotely, no fat manifest
-    run ch-image list charliecloud/metadata:2021-01-15 --no-cache
+    # in storage, exists remotely, no fat manifest
+    run ch-image list charliecloud/metadata:2021-01-15
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available remotely:  yes'* ]]
-    [[ $output = *'remote arch-aware:   no'* ]]
-    [[ $output = *'archs available:     unknown'* ]]
+    [[ $output = *'in local storage:'*'yes'* ]]
+    [[ $output = *'available remotely:'*'yes'* ]]
+    [[ $output = *'remote arch-aware:'*'no'* ]]
+    [[ $output = *'archs available:'*'unknown'* ]]
 
     # exists remotely, fat manifest exists, no Linux architectures
     run ch-image list mcr.microsoft.com/windows:20H2
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'in local storage:    no'* ]]
-    [[ $output = *'available remotely:  yes'* ]]
-    [[ $output = *'remote arch-aware:   yes'* ]]
+    [[ $output = *'in local storage:'*'no'* ]]
     [[ $output = *'warning: no valid architectures found'* ]]
-}
-
-@test 'ch-image pull yolo arch' {
-    # has fat manifest
-    ch-image --arch=yolo     --no-cache pull alpine:latest
-    ch-image --arch=host     --no-cache pull alpine:latest
-    ch-image --arch=amd64    --no-cache pull alpine:latest
-    ch-image --arch=arm64/v8 --no-cache pull alpine:latest
-
-    # no fat manifest
-    ch-image --arch=yolo  --no-cache pull charliecloud/metadata:2021-01-15
-    ch-image --arch=amd64 --no-cache pull charliecloud/metadata:2021-01-15
-    if [[ $(uname -m) == 'x86_64' ]]; then
-        ch-image --arch=host --no-cache pull charliecloud/metadata:2021-01-15
-        run ch-image --arch=arm64/v8 --no-cache pull charliecloud/metadata:2021-01-15
-        echo "$output"
-        [[ $status -eq 1 ]]
-        [[ $output = *'error'* ]]
-        [[ $output = *'image is architecture-unaware; try --arch=yolo (?)' ]]
-    else
-        skip 'host is not amd64'
-    fi
-
-    # requested arch does not exist
-    run ch-image --arch=yolo/swag --no-cache pull centos:8
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error'* ]]
-    [[ $output = *'requested arch unavailable:'* ]]
-    [[ $output = *'yolo/swag not one of: amd64 arm64/v8 ppc64le'* ]]
+    [[ $output = *'available remotely:'*'yes'* ]]
+    [[ $output = *'remote arch-aware:'*'yes'* ]]
 }
 
 @test 'ch-image reset' {
