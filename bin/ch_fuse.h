@@ -5,14 +5,13 @@
 #include <stdbool.h>
 
  /** Types **/
-struct squash {
-   char *filepath;        // path of sqfs file
-   char *mountdir;        //location where squashfs is mounted
-   pid_t pid;             // process id of the fuse loop
-   struct fuse_chan *ch;  //fuse channel associated with squash fuse session
-   struct fuse *fuse;     //fuse struct associated with squash fuse session
-   char *parentdir;       //location of mountpoint parent directory
-};
+/*struct squash {
+   char *filepath;             // path of sqfs file
+   char *mountdir;             // location where squashfs is mounted
+   pid_t pid;                  // process id of the fuse loop
+   struct sqfs_ll_chan *chan;  // fuse channel associated with squash fuse session
+   sqfs_ll *ll;                // sqfs_ll data
+};*/
 
 /** Function prototypes **/
 

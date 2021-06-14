@@ -29,6 +29,14 @@
 
 /** Macros **/
 
+/** Types **/
+struct squash {
+   char *mountdir;      // mount location of sqfs
+   pid_t pid;           // ID of fuse loop
+   sqfs_ll_chan chan;   //fuse channel associated with squash fuse session
+   sqfs_ll *ll;         // tbh no idea
+};
+
 /** Constants **/
 
 /** Global variables **/
@@ -36,8 +44,16 @@ struct squash sq;
 
 /** Function prototypes (private) **/
 void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops);
+void sqfs_ll_clean();
 
 /** Functions **/
+
+void sqfs_ll_clean()
+{
+   fuse_remove_signal_handlers(sq.chan.session);
+   sqfs_ll_destroy(sq.ll);
+   sqfs_ll_unmount(&sq.chan, sq.mountdir);
+}
 
 bool sqfs_ll_check(const char *path, size_t offset)
 {
@@ -67,10 +83,6 @@ void sqfs_run_user_command(char *argv[], const char *inital_dir)
 
 char *sqfs_mount(char *mountdir, char *filepath)
 {
-
-   //set filepath to filepath
-   sq.filepath = filepath;
-
    //set mountdir to "mountdir/filepath"
    char *filename, *buffer;
    path_split(filepath, &buffer, &filename); //get file name
@@ -79,27 +91,25 @@ char *sqfs_mount(char *mountdir, char *filepath)
    DEBUG("mount path: %s", sq.mountdir);
 
    //init fuse,etc.
-   sqfs_ll_chan chan;
    struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
    args.argc = 1;
    args.argv = &filepath;
    args.allocated = 0;
    struct fuse_lowlevel_ops sqfs_ll_ops;
    get_fuse_ops(&sqfs_ll_ops);
-   sqfs_ll *ll;
 
    // mount sqfs
-   ll = sqfs_ll_open(sq.filepath, 0);
-   Te(ll, "%s does not exist", sq.filepath);
+   sq.ll = sqfs_ll_open(filepath, 0);
+   Te(sq.ll, "%s does not exist", filepath);
    Ze(opendir(sq.mountdir), "%s already exists", sq.mountdir);
    Ze(mkdir(sq.mountdir, 0777), "failed to create: %s", sq.mountdir);
-   Te(SQFS_OK == sqfs_ll_mount(&chan, sq.mountdir, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), ll), "failed to mount");
-   Ze((chan.session == NULL), "failed to create fuse session");
+   Te(SQFS_OK == sqfs_ll_mount(&sq.chan, sq.mountdir, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), sq.ll), "failed to mount");
+   Ze((sq.chan.session == NULL), "failed to create fuse session");
 
    // init fuse loop
    Ze((sqfs_ll_daemonize(1) == -1), "failed to daemonize sqfs_ll");
-   Ze((fuse_set_signal_handlers(chan.session) == -1), "failed to set signal handlers");
-   Ze((fuse_session_loop(chan.session) == -1), "failed to create fuse loop");
+   Ze((fuse_set_signal_handlers(sq.chan.session) == -1), "failed to set signal handlers");
+   Ze((fuse_session_loop(sq.chan.session) == -1), "failed to create fuse loop");
    return sq.mountdir;
 }
 
