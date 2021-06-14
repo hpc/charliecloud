@@ -255,9 +255,8 @@ EOF
                   "$img"
     [[ $status -eq 0 ]]
     grep -F '"schemaVersion": 1' "${cache}/${img}.manifest.json"
-  
-    export CH_IMAGE_STORAGE="$unpack" 
-    run ch-image delete 'debian:squeeze' 
+
+    run ch-image --storage="$unpack" delete 'debian:squeeze'
 }
 
 @test 'pull from public repos' {
