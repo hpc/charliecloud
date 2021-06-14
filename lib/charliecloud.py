@@ -1377,19 +1377,6 @@ def cmd(args, env=None, fail_ok=False):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
 
-def cmd_out(args, env=None, fail_ok=False, stderr=False):
-   VERBOSE("environment: %s" % env)
-   VERBOSE("executing: %s" % args)
-   cp = subprocess.Popen(args, env=env, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-   if (stderr):
-      out = cp.stderr.read().decode('utf-8')
-   else:
-      out = cp.stdout.read().decode('utf-8')
-   if (not fail_ok and cp.returncode):
-      FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
-   return out
-
 def color_reset(*fps):
    for fp in fps:
       color_set("0m", fp)
@@ -1460,12 +1447,6 @@ def file_gzip(path, args=[]):
    if (not hasattr(file_gzip, "gzip")):
       if (shutil.which("pigz") is not None):
          file_gzip.gzip = "pigz"
-         # pigz version 2.4.x and lower use --no-time
-         vpigz = cmd_out([file_gzip.gzip, "--version"],
-                         stderr=True).split(' ')[-1][0:3]
-         major, minor = vpigz.split('.')
-         if (major < '2' or (major == '2' and minor < '4')):
-             args.append('--no-time')
       elif (shutil.which("gzip") is not None):
          file_gzip.gzip = "gzip"
       else:
@@ -1477,6 +1458,12 @@ def file_gzip(path, args=[]):
       unlink(path_c)
    # Compress.
    cmd([file_gzip.gzip] + args + [str(path)])
+   # Zero out GZIP header timestamp data.
+   zeds = bytes.fromhex('00 00 00 00')
+   fp = open_(path_c, "r+b")
+   fp.seek(4) # timestamp offset
+   fp.write(zeds)
+   fp.close()
    return path_c
 
 def file_hash(path):

@@ -177,8 +177,8 @@ def main():
    sp.set_defaults(func=push.main)
    add_opts(sp, common_opts, True)
    sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
-   sp.add_argument("--hash-only", action="store_true",
-                   help="stop after obtaining compressed layer hash")
+   sp.add_argument("--prepare-only", action="store_true",
+                   help="stop after preparing; do not upload")
    sp.add_argument("--image", metavar="DIR",
                    help="path to unpacked image (default: opaque path in storage dir)")
    sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",

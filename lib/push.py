@@ -29,10 +29,9 @@ def main(cli):
    else:
       dst_ref = ch.Image_Ref(cli.source_ref)
    up = Image_Pusher(image, dst_ref)
-   if (cli.hash_only):
-      up.hash_only()
-   else:
-      up.push()
+   if (cli.prepare_only):
+      prepare_only = True
+   up.push(prepare_only)
    ch.done_notify()
 
 
@@ -90,11 +89,6 @@ class Image_Pusher:
          ch.VERBOSE("deleting tarball: %s" % tar_c)
          ch.unlink(tar_c)
 
-   def hash_only(self):
-      self.prepare()
-      for (i, (digest, tarball)) in enumerate(self.layers, start=1):
-         ch.INFO("layer %d/%d: %s" % (i, len(self.layers), digest[0:7]))
-
    def prepare(self):
       """Prepare self.image for pushing to self.dst_ref. Return tuple: (list
          of gzipped layer tarball paths, config as a sequence of bytes,
@@ -137,9 +131,13 @@ class Image_Pusher:
       self.config = config_bytes
       self.manifest = manifest_bytes
 
-   def push(self):
+   def push(self, prepare_only=False):
       self.prepare()
-      self.upload()
+      if (prepare_only):
+         for (i, (digest, tarball)) in enumerate(self.layers, start=1):
+            ch.INFO("layer %d/%d: %s" % (i, len(self.layers), digest[0:7]))
+      else:
+         self.upload()
       self.cleanup()
 
    def upload(self):
