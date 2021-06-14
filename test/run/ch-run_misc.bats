@@ -739,3 +739,21 @@ EOF
     [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 }
+
+@test 'docker metadata' {
+    scope standard
+    [[ $CH_BUILDER = docker ]] || skip 'We only test docker metadata'
+    image="00_tiny"
+    diff -u - "$ch_imgdir/$image/ch/metadata.json" <<'EOF'
+{
+  "arch": "amd64",
+  "cwd": "",
+  "env": {
+    "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  },
+  "labels": {},  
+  "shell": ["/bin/sh","-c","#(nop) ","CMD [\"true\"]"],
+  "volumes": []
+}
+EOF
+}
