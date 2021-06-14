@@ -104,7 +104,7 @@ dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
 ?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
 
-directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
+directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" _line _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
 comment: _WS? _COMMENT_BODY _NEWLINES
 _COMMENT_BODY: /#[^\n]*/
@@ -118,7 +118,7 @@ arg_bare: WORD
 arg_equals: WORD "=" ( WORD | STRING_QUOTED )
 
 env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
-env_space: WORD _WS LINE
+env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
@@ -127,16 +127,16 @@ from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
-run_shell: LINE
+run_shell: _line
 
 shell: "SHELL"i _WS _string_list _NEWLINES
 
-workdir: "WORKDIR"i _WS LINE _NEWLINES
+workdir: "WORKDIR"i _WS _line _NEWLINES
 
-uns_forever: UNS_FOREVER _WS LINE _NEWLINES
+uns_forever: UNS_FOREVER _WS _line _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
-uns_yet: UNS_YET _WS LINE _NEWLINES
+uns_yet: UNS_YET _WS _line _NEWLINES
 UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
 
 /// Common ///
@@ -145,15 +145,29 @@ option: "--" OPTION_KEY "=" OPTION_VALUE
 OPTION_KEY: /[a-z]+/
 OPTION_VALUE: /[^ \t\n]+/
 
+// Matching lines in the face of continuations is surprisingly hairy. Notes:
+//
+//   1. The underscore prefix means the rule is always inlined (i.e., removed
+//      and children become children of its parent).
+//
+//   2. LINE_CHUNK must not match any characters that _LINE_CONTINUE does.
+//
+//   3. This is very sensitive to the location of repetition. Moving the plus
+//      either to the entire regex (i.e., “/(...)+/”) or outside the regex
+//      (i.e., ”/.../+”) gave parse errors.
+//
+_line: ( _LINE_CONTINUE | LINE_CHUNK )+
+LINE_CHUNK: /[^\\\n]+|(\\(?![ \t]+\n))+/
+
 HEX_STRING: /[0-9A-Fa-f]+/
-LINE: ( _LINE_CONTINUE | /[^\n]/ )+
 WORD: /[^ \t\n=]/+
 
 _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 
-_NEWLINES: _WS? "\n"+
-_WS: /[ \t]|\\\n/+
-_LINE_CONTINUE: "\\\n"
+_WSH: /[ \t]/+                   // sequence of horizontal whitespace
+_LINE_CONTINUE: "\\" _WSH? "\n"  // line continuation
+_WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
+_NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
@@ -1173,8 +1187,19 @@ class Storage:
    def manifest_for_download(self, image_ref):
       return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
 
+   def reset(self):
+      if (self.valid_p()):
+         rmtree(self.root)
+      else:
+         FATAL("%s not a builder storage" % (self.root));
+
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
+
+   def valid_p(self):
+      "Return True if storage present and seems valid, False otherwise."
+      return (os.path.isdir(self.unpack_base) and
+              os.path.isdir(self.download_cache))
 
 
 class TarFile(tarfile.TarFile):
@@ -1552,11 +1577,16 @@ def tree_terminal(tree, tname, i=0):
    return None
 
 def tree_terminals(tree, tname):
-   """Yield values of all child terminals of type type_, or empty list if none
+   """Yield values of all child terminals named tname, or empty list if none
       found."""
    for j in tree.children:
       if (isinstance(j, lark.lexer.Token) and j.type == tname):
          yield j.value
+
+def tree_terminals_cat(tree, tname):
+   """Return the concatenated values of all child terminals named tname as a
+      string, with no delimiters. If none, return the empty string."""
+   return "".join(tree_terminals(tree, tname))
 
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
