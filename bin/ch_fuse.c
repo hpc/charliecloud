@@ -88,30 +88,18 @@ char *sqfs_mount(char *mountdir, char *filepath)
    get_fuse_ops(&sqfs_ll_ops);
    sqfs_ll *ll;
 
-   // idk, ll_main says it needed to daemonize
-   while(true) {
-      int fd = open("/dev/null", O_RDONLY);
-      if (fd == -1)
-         break;
-      if (fd > 2) {
-         close(fd);
-         break;
-      }
-
-   }
-
    // mount sqfs
    ll = sqfs_ll_open(sq.filepath, 0);
    Te(ll, "%s does not exist", sq.filepath);
    Ze(opendir(sq.mountdir), "%s already exists", sq.mountdir);
    Ze(mkdir(sq.mountdir, 0777), "failed to create: %s", sq.mountdir);
-   sqfs_ll_mount(&chan, sq.mountdir, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), ll);
+   Te(SQFS_OK == sqfs_ll_mount(&chan, sq.mountdir, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), ll), "failed to mount");
+   Ze((chan.session == NULL), "failed to create fuse session");
 
    // init fuse loop
-   if (sqfs_ll_daemonize(1) != -1) {
-      if (fuse_set_signal_handlers(chan.session) != -1) {
-      }
-   }
+   Ze((sqfs_ll_daemonize(1) == -1), "failed to daemonize sqfs_ll");
+   Ze((fuse_set_signal_handlers(chan.session) == -1), "failed to set signal handlers");
+   Ze((fuse_session_loop(chan.session) == -1), "failed to create fuse loop");
    return sq.mountdir;
 }
 
