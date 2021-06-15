@@ -29,9 +29,7 @@ def main(cli):
    else:
       dst_ref = ch.Image_Ref(cli.source_ref)
    up = Image_Pusher(image, dst_ref)
-   if (cli.prepare_only):
-      prepare_only = True
-   up.push(prepare_only)
+   up.push(cli.prepare_only)
    ch.done_notify()
 
 
