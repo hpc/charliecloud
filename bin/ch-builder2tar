@@ -152,8 +152,8 @@ EOF
 '{{print "\n}"}}' "$image" > "$temp"
     # Fixes corner cases for maps with {} and []
     # Removes last comma in the list
-    sed -i ':begin;$!N;s/,\n  }/\n  }/g;tbegin;P;D' "$temp"
-    sed -i ':begin;$!N;s/,\n  ]/\n  ]/g;tbegin;P;D' "$temp"
+    sed -Ei ':begin;$!N;s/,\n  }/\n  }/g;tbegin;P;D' "$temp"
+    sed -Ei ':begin;$!N;s/,\n  ]/\n  ]/g;tbegin;P;D' "$temp"
     tar rf "$tar" -b1 -P --xform="s|${temp}|ch/metadata.json|" "$temp"
     rm "$temp"
     ;;
@@ -203,6 +203,7 @@ docker)
 '{{range $key, $v := .Config.Volumes}}{{printf "\n    %q," $key}}'\
 '{{end}}{{print "\n  ]"}}{{else}}{{print "[]"}}{{end}}'\
 '{{print "\n}"}}' > "$temp"
+    # Refer to comment on line 153
     sed -Ei ':begin;$!N;s/,\n  }/\n  }/g;tbegin;P;D' "$temp"
     sed -Ei ':begin;$!N;s/,\n  ]/\n  ]/g;tbegin;P;D' "$temp"
     tar rf "$tar" -b1 -P --xform="s|${temp}|ch/metadata.json|" "$temp"
