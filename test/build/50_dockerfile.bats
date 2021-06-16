@@ -155,7 +155,7 @@ EOF
 )
     diff -u <(echo "$output_expected") <(echo "$output")
 
-    run ch-image delete syntax-quirks
+    ch-image delete syntax-quirks
 }
 
 
@@ -224,7 +224,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'first instruction must be ARG or FROM'* ]]
 
-    run ch-image delete foo
+    ch-image delete foo
 }
 
 
@@ -258,7 +258,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'FROM: invalid option --foo'* ]]
 
-    run ch-image delete foo
+    ch-image delete foo
 }
 
 
@@ -347,7 +347,7 @@ EOF
     # shellcheck disable=SC2016
     [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
 
-    run ch-image delete not-yet-supported
+    ch-image delete not-yet-supported
 }
 
 
@@ -482,7 +482,7 @@ EOF
   [[ $status -eq 0 ]]
   diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
 
-  run ch-image delete env-syntax
+  ch-image delete env-syntax
 }
 
 
@@ -544,7 +544,7 @@ EOF
       [[ $output = *"Successfully built"* ]]
    fi
 
-   run ch-image delete foo
+   ch-image delete foo
 }
 
 
@@ -744,7 +744,7 @@ EOF
         [[ $status -eq 0 ]]
     fi
 
-    run ch-image delete argenv
+    ch-image delete argenv
 }
 
 @test 'Dockerfile: COPY list form' {
@@ -1016,7 +1016,7 @@ EOF
             ;;
     esac
 
-    run ch-image delete foo
+    ch-image delete foo
 }
 
 

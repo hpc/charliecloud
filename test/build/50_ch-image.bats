@@ -251,7 +251,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
 
-    run ch-image delete build-bind
+    ch-image delete build-bind
 }
 
 @test 'ch-image build: metadata carry-forward' {
@@ -330,5 +330,5 @@ EOF
   ]
 }
 EOF
-    run ch-image delete build-metadata
+    ch-image delete build-metadata
 }
