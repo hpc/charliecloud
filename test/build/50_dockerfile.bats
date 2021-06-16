@@ -482,7 +482,9 @@ EOF
   [[ $status -eq 0 ]]
   diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
 
-  ch-image delete env-syntax
+  if [[ $CH_BUILDER = ch-image ]]; then
+    ch-image delete env-syntax
+  fi
 }
 
 
@@ -540,11 +542,10 @@ EOF
    [[ status -eq 0 ]]
    if [[ $CH_BUILDER = ch-image ]]; then
       [[ $output = *"grown in 3 instructions: foo"* ]]
+      ch-image delete foo
    else
       [[ $output = *"Successfully built"* ]]
    fi
-
-   ch-image delete foo
 }
 
 
@@ -1007,6 +1008,7 @@ EOF
     case $CH_BUILDER in
         ch-image)
             [[ $output = *'invalid negative stage index'* ]]
+            ch-image delete foo
             ;;
         docker)
             [[ $output = *'index out of bounds'* ]]
@@ -1015,8 +1017,6 @@ EOF
             false
             ;;
     esac
-
-    ch-image delete foo
 }
 
 
