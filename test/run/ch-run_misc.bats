@@ -740,9 +740,9 @@ EOF
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 }
 
-@test 'docker metadata' {
+@test 'Docker metadata' {
     scope standard
-    [[ $CH_BUILDER = docker ]] || skip 'We only test docker metadata'
+    [[ $CH_BUILDER = docker ]] || skip 'Docker only'
     image="00_tiny"
     diff -u - "$ch_imgdir/$image/ch/metadata.json" <<'EOF'
 {
@@ -751,8 +751,8 @@ EOF
   "env": {
     "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   },
-  "labels": {},  
-  "shell": ["/bin/sh","-c","#(nop) ","CMD [\"true\"]"],
+  "labels": {},
+  "shell": ["/bin/sh","-c"],
   "volumes": []
 }
 EOF
