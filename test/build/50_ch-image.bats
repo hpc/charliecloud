@@ -205,16 +205,16 @@ EOF
     run ch-image list 00_tiny
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'in local storage:'*'yes'* ]]
+    [[ $output = *'in local storage:    yes'* ]]
     [[ $output = *'GET failed; expected status {200, 403} but got 400'* ]]
 
     # not in storage, exists remotely, fat manifest exists
     run ch-image list debian:buster-slim
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available remotely:'*'yes'* ]]
-    [[ $output = *'in local storage:'*'no'* ]]
-    [[ $output = *'remote arch-aware:'*'yes'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'remote arch-aware:   yes'* ]]
     [[ $output = *'archs available:'*'386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x'* ]]
 
     # in storage, exists remotely, no fat manifest
