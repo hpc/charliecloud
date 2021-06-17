@@ -223,8 +223,6 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'first instruction must be ARG or FROM'* ]]
-
-    ch-image delete foo
 }
 
 
