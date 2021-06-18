@@ -10,7 +10,7 @@ ch_checkns_SOURCES = ch-checkns.c ch_misc.h ch_misc.c
 
 ch_run_SOURCES = ch-run.c ch_core.h ch_core.c ch_misc.h ch_misc.c ch_fuse.h ch_fuse.c
 ch_run_CFLAGS = -I/home/vm-user/squashfuse -L/home/vm-user/squashfuse/.libs $(CFLAGS) $(PTHREAD_CFLAGS)
-ch_run_LDADD = $(LIBRT) -lfuse -lsquashfuse_ll
+ch_run_LDADD = $(LIBRT) -lfuse3 -lsquashfuse_ll
 
 ch_ssh_SOURCES = ch-ssh.c ch_misc.h ch_misc.c
 

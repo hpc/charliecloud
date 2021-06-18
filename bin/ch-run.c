@@ -97,6 +97,7 @@ void privs_verify_invoking();
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
 char *sqfs_unpack = "/var/tmp";
+bool sqfs_p = false;
 
 /** Main **/
 
@@ -108,6 +109,7 @@ int main(int argc, char *argv[])
    int c_argc;
    char ** c_argv;
 
+   atexit(sqfs_ll_clean);
    privs_verify_invoking();
 
    verbose = 1;  // in charliecloud.h
@@ -143,6 +145,7 @@ int main(int argc, char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
    if(sqfs_ll_check(argv[arg_next], 0)) {
       argv[arg_next] = sqfs_mount(sqfs_unpack, argv[arg_next]);
+      sqfs_p = true;
       DEBUG("new argv: %s", argv[arg_next]);
    }
 
@@ -170,6 +173,8 @@ int main(int argc, char *argv[])
    INFO("private /tmp: %d", args.c.private_tmp);
 
    fix_environment(&args);
+   if (sqfs_p)
+      sqfs_run_user_command(c_argv, args.initial_dir);
    containerize(&args.c);
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);

@@ -44,12 +44,14 @@ struct squash sq;
 
 /** Function prototypes (private) **/
 void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops);
-void sqfs_ll_clean();
+
+
 
 /** Functions **/
 
 void sqfs_ll_clean()
 {
+   kill(sq.pid, SIGINT);
    fuse_remove_signal_handlers(sq.chan.session);
    sqfs_ll_destroy(sq.ll);
    sqfs_ll_unmount(&sq.chan, sq.mountdir);
@@ -76,8 +78,26 @@ bool sqfs_ll_check(const char *path, size_t offset)
    return false;
 }
 
-void sqfs_run_user_command(char *argv[], const char *inital_dir)
+void sqfs_run_user_command(char *argv[], const char *initial_dir)
 {
+   if (initial_dir != NULL)
+      Zf (chdir(initial_dir), "can't cd to %s", initial_dir);
+
+   if (verbose >= 3) {
+      fprintf(stderr, "argv:");
+      for (int i = 0; argv[i] != NULL; i++)
+         fprintf(stderr, " \"%s\"", argv[i]);
+      fprintf(stderr, "\n");
+   }
+
+   Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
+   int status;
+   if (fork() == 0) {
+      execvp(argv[0], argv);  // only returns if error
+      Tf (0, "can't execve(2): %s", argv[0]);
+   }
+   wait(&status);
+   sqfs_ll_clean();
 
 }
 
@@ -107,9 +127,12 @@ char *sqfs_mount(char *mountdir, char *filepath)
    Ze((sq.chan.session == NULL), "failed to create fuse session");
 
    // init fuse loop
-   Ze((sqfs_ll_daemonize(1) == -1), "failed to daemonize sqfs_ll");
    Ze((fuse_set_signal_handlers(sq.chan.session) == -1), "failed to set signal handlers");
-   Ze((fuse_session_loop(sq.chan.session) == -1), "failed to create fuse loop");
+   if ((sq.pid= fork()) == 0) {
+      Ze((fuse_session_loop(sq.chan.session) == -1), "failed to create fuse loop");
+      INFO("exited fuse_session");
+      exit(0);
+   }
    return sq.mountdir;
 }
 
