@@ -45,16 +45,17 @@ struct squash sq;
 /** Function prototypes (private) **/
 void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops);
 
-
-
 /** Functions **/
 
 void sqfs_ll_clean()
 {
-   kill(sq.pid, SIGINT);
-   fuse_remove_signal_handlers(sq.chan.session);
-   sqfs_ll_destroy(sq.ll);
-   sqfs_ll_unmount(&sq.chan, sq.mountdir);
+   if(sq.mountdir != NULL) {
+      fuse_remove_signal_handlers(sq.chan.session);
+      sqfs_ll_destroy(sq.ll);
+      DEBUG("unmounting: %s", sq.mountdir);
+      sqfs_ll_unmount(&sq.chan, sq.mountdir);
+      Ze(rmdir(sq.mountdir) == -1, "unable to remove directory");
+   }
 }
 
 bool sqfs_ll_check(const char *path, size_t offset)
@@ -97,7 +98,8 @@ void sqfs_run_user_command(char *argv[], const char *initial_dir)
       Tf (0, "can't execve(2): %s", argv[0]);
    }
    wait(&status);
-   sqfs_ll_clean();
+   kill(sq.pid, SIGINT);
+   _Exit(0);
 
 }
 
