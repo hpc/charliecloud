@@ -743,7 +743,7 @@ EOF
 @test 'docker metadata' {
     scope standard
     [[ $CH_BUILDER = docker ]] || skip 'We only test docker metadata'
-    image="00_tiny"
+    image="debian9"
     diff -u - "$ch_imgdir/$image/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
@@ -752,7 +752,7 @@ EOF
     "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   },
   "labels": {},  
-  "shell": ["/bin/sh","-c","#(nop) ","CMD [\"true\"]"],
+  "shell": ["|1","DEBIAN_FRONTEND=noninteractive","/bin/sh","-c","apt-get update  && apt-get install -y --no-install-recommends apt-utils  && rm -rf /var/lib/apt/lists/*"],
   "volumes": []
 }
 EOF
