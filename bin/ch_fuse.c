@@ -49,13 +49,11 @@ void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops);
 
 void sqfs_ll_clean()
 {
-   if(sq.mountdir != NULL) {
-      fuse_remove_signal_handlers(sq.chan.session);
-      sqfs_ll_destroy(sq.ll);
-      DEBUG("unmounting: %s", sq.mountdir);
-      sqfs_ll_unmount(&sq.chan, sq.mountdir);
-      Ze(rmdir(sq.mountdir) == -1, "unable to remove directory");
-   }
+   fuse_remove_signal_handlers(sq.chan.session);
+   sqfs_ll_destroy(sq.ll);
+   DEBUG("unmounting: %s", sq.mountdir);
+   sqfs_ll_unmount(&sq.chan, sq.mountdir);
+   Ze(rmdir(sq.mountdir) == -1, "unable to remove directory");
 }
 
 bool sqfs_ll_check(const char *path, size_t offset)

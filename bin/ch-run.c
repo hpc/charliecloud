@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
    int c_argc;
    char ** c_argv;
 
-   atexit(sqfs_ll_clean);
+   //atexit(sqfs_ll_clean);
    privs_verify_invoking();
 
    verbose = 1;  // in charliecloud.h
@@ -144,6 +144,7 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
    if(sqfs_ll_check(argv[arg_next], 0)) {
+      Ze (atexit(sqfs_ll_clean), "exit handler set up failed");
       argv[arg_next] = sqfs_mount(sqfs_unpack, argv[arg_next]);
       sqfs_p = true;
       DEBUG("new argv: %s", argv[arg_next]);
