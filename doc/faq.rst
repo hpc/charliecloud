@@ -112,6 +112,35 @@ two solutions:
    processes and one writes a file in the image that another is reading or
    writing).
 
+:code:`ch-image pull` fails with "certificate verify failed"
+------------------------------------------------------------
+
+When :code:`ch-image` interacts with a remote registry (e.g., via :code:`push`
+or :code:`pull` subcommands), Charliecloud will verify the certificate of the
+registry. This operation is implicitly performed by the Python Requests
+library. If the remote registry's certificate fails to verify, an
+:code:`SSL: CERTIFICATE_VERIFY_FAILED` exception will be thrown with the
+message "certificate verify failed: unable to get local issuer certificate."
+
+This situation may arise (e.g., with self-signed certificates) because, on
+many platforms, Requests `includes its own CA certificates bundle
+<https://docs.python-requests.org/en/master/user/advanced/#ca-certificates>`_,
+which may differ from that installed on the host system. Requests can be
+directed to use an alternate bundle of trusted CAs by setting the environment
+variable :code:`REQUESTS_CA_BUNDLE` to the path to the CA bundle. (See
+`Requests: SSL Cert Verification
+<https://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification>`_
+for more details.)
+
+For example::
+
+  $ export REQUESTS_CA_BUNDLE=/usr/local/share/ca-certificates/registry.crt
+  $ ch-image pull registry.example.com/image:tag
+
+Alternatively, verification of the remote registry's certificate can be
+disabled via the :code:`--tls-no-verify` flag. However, users should
+enable this option with caution.
+
 
 Unexpected behavior
 ===================
