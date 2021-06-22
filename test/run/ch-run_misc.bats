@@ -743,7 +743,7 @@ EOF
 @test 'Docker metadata' {
     scope standard
     [[ $CH_BUILDER = docker ]] || skip 'Docker only'
-    image="00_tiny"
+    image="centos7"
     diff -u - "$ch_imgdir/$image/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
@@ -751,8 +751,14 @@ EOF
   "env": {
     "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   },
-  "labels": {},
-  "shell": ["/bin/sh","-c"],
+  "labels": {
+    "org.label-schema.build-date": "20191001",
+    "org.label-schema.license": "GPLv2",
+    "org.label-schema.name": "CentOS Base Image",
+    "org.label-schema.schema-version": "1.0",
+    "org.label-schema.vendor": "CentOS"
+  },
+  "shell": ["|0","/bin/sh","-c","yum install -y epel-release  && yum-config-manager --enable epel  && yum install -y --setopt=skip_missing_names_on_install=0                 autoconf                 automake                 bats                 fakeroot                 gcc                 git                 make                 python36                 python36-sphinx                 python36-sphinx_rtd_theme                 rpm-build                 rpmlint                 rsync                 wget  && yum clean all"], 
   "volumes": []
 }
 EOF
