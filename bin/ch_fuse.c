@@ -33,8 +33,8 @@
 struct squash {
    char *mountdir;      // mount location of sqfs
    pid_t pid;           // ID of fuse loop
-   sqfs_ll_chan chan;   //fuse channel associated with squash fuse session
-   sqfs_ll *ll;         // tbh no idea
+   sqfs_ll_chan chan;   // fuse channel associated with squash fuse session
+   sqfs_ll *ll;         // squashfs image
 };
 
 /** Constants **/
@@ -47,6 +47,7 @@ void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops);
 
 /** Functions **/
 
+/* Exit handler for sqfs */
 void sqfs_ll_clean()
 {
    fuse_remove_signal_handlers(sq.chan.session);
@@ -56,51 +57,36 @@ void sqfs_ll_clean()
    Ze(rmdir(sq.mountdir) == -1, "unable to remove directory");
 }
 
-bool sqfs_ll_check(const char *path, size_t offset)
+/* Path is a sqfs*/
+bool sqfs_ll_check(const char *path)
 {
    sqfs_ll *ll;
    sqfs_fd_t fd;
 
    ll = malloc(sizeof(*ll));
-   if (!ll) {
-      FATAL("Can't allocate memory");
-   } else {
-      memset(ll, 0 , sizeof(*ll));
-      fd = open(path, O_RDONLY);
-      if(fd != -1) {
-         if(sqfs_init(&ll->fs, fd, offset) == SQFS_OK)
-            return true;
-      }
-      sqfs_destroy(&ll->fs);
-      free(ll);
-   }
+   Tf (ll, "can't allocate memory");
+   memset(ll, 0 , sizeof(*ll));
+   fd = open(path, O_RDONLY);
+   if(fd != -1 && sqfs_init(&ll->fs, fd, 0) == SQFS_OK)
+      return true;
+   sqfs_destroy(&ll->fs);
+   free(ll);
    return false;
 }
 
+/* Run user command with an extra process for sqfs */
 void sqfs_run_user_command(char *argv[], const char *initial_dir)
 {
-   if (initial_dir != NULL)
-      Zf (chdir(initial_dir), "can't cd to %s", initial_dir);
-
-   if (verbose >= 3) {
-      fprintf(stderr, "argv:");
-      for (int i = 0; argv[i] != NULL; i++)
-         fprintf(stderr, " \"%s\"", argv[i]);
-      fprintf(stderr, "\n");
-   }
-
-   Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    int status;
-   if (fork() == 0) {
-      execvp(argv[0], argv);  // only returns if error
-      Tf (0, "can't execve(2): %s", argv[0]);
-   }
+   if (fork() == 0)
+      run_user_command(argv, initial_dir);
    wait(&status);
    kill(sq.pid, SIGINT);
    _Exit(0);
 
 }
 
+/* mounts sqfs image */
 char *sqfs_mount(char *mountdir, char *filepath)
 {
    //set mountdir to "mountdir/filepath"
@@ -111,11 +97,11 @@ char *sqfs_mount(char *mountdir, char *filepath)
    DEBUG("mount path: %s", sq.mountdir);
 
    //init fuse,etc.
-   struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
+   struct fuse_args args;
+   struct fuse_lowlevel_ops sqfs_ll_ops;
    args.argc = 1;
    args.argv = &filepath;
    args.allocated = 0;
-   struct fuse_lowlevel_ops sqfs_ll_ops;
    get_fuse_ops(&sqfs_ll_ops);
 
    // mount sqfs
@@ -136,6 +122,7 @@ char *sqfs_mount(char *mountdir, char *filepath)
    return sq.mountdir;
 }
 
+/* Assign ops to fuse_lowlevel_ops*/
 void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops) {
    memset(sqfs_ll_ops, 0, sizeof(*sqfs_ll_ops));
    (*sqfs_ll_ops).getattr    = &sqfs_ll_op_getattr;
