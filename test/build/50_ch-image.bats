@@ -212,28 +212,28 @@ EOF
     run ch-image list debian:buster-slim
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'available remotely:  yes'* ]]
     [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
     [[ $output = *'remote arch-aware:   yes'* ]]
-    [[ $output = *'archs available:'*'386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x'* ]]
+    [[ $output = *'archs available:     386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x'* ]]
 
     # in storage, exists remotely, no fat manifest
     run ch-image list charliecloud/metadata:2021-01-15
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'in local storage:'*'yes'* ]]
-    [[ $output = *'available remotely:'*'yes'* ]]
-    [[ $output = *'remote arch-aware:'*'no'* ]]
-    [[ $output = *'archs available:'*'unknown'* ]]
+    [[ $output = *'in local storage:    yes'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   no'* ]]
+    [[ $output = *'archs available:     unknown'* ]]
 
     # exists remotely, fat manifest exists, no Linux architectures
     run ch-image list mcr.microsoft.com/windows:20H2
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'in local storage:'*'no'* ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   yes'* ]]
     [[ $output = *'warning: no valid architectures found'* ]]
-    [[ $output = *'available remotely:'*'yes'* ]]
-    [[ $output = *'remote arch-aware:'*'yes'* ]]
 }
 
 @test 'ch-image reset' {
