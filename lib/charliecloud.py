@@ -12,6 +12,8 @@ import json
 import os
 import getpass
 import pathlib
+import platform
+import pprint
 import re
 import shutil
 import stat
@@ -61,6 +63,33 @@ except ImportError:
 
 ## Globals ##
 
+# Architectures. This maps the "machine" field returned by uname(2), also
+# available as "uname -m" and platform.machine(), into architecture names that
+# image registries use. It is incomplete (see e.g. [1], which is itself
+# incomplete) but hopefully includes most architectures encountered in
+# practice [e.g. 2]. Registry architecture and variant are separated by a
+# slash. Note it is *not* 1-to-1: multiple uname(2) architectures map to the
+# same registry architecture.
+#
+# [1]: https://stackoverflow.com/a/45125525
+# [2]: https://github.com/docker-library/bashbrew/blob/v0.1.0/vendor/github.com/docker-library/go-dockerlibrary/architecture/oci-platform.go
+ARCH_MAP = { "x86_64":    "amd64",
+             "armv5l":    "arm/v5",
+             "armv6l":    "arm/v6",
+             "aarch32":   "arm/v7",
+             "armv7l":    "arm/v7",
+             "aarch64":   "arm64/v8",
+             "armv8l":    "arm64/v8",
+             "i386":      "386",
+             "i686":      "386",
+             "mips64le":  "mips64le",
+             "ppc64le":   "ppc64le",
+             "s390x":     "s390x" }  # a.k.a. IBM Z
+
+# Active architecture (both using registry vocabulary)
+arch = None       # requested by user
+arch_host = None  # of host
+
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
@@ -84,6 +113,7 @@ HTTP_CHUNK_SIZE = 256 * 1024
 
 # Content types for some stuff we care about.
 TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+TYPE_MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
 TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
 TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
@@ -241,6 +271,10 @@ class Image:
    def metadata_path(self):
       return self.unpack_path // "ch"
 
+   @property
+   def unpack_exist_p(self):
+      return os.path.exists(self.unpack_path)
+
    def __str__(self):
       return str(self.ref)
 
@@ -328,10 +362,7 @@ class Image:
          WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
-      fp = open_(path, "rt")
-      text = ossafe(fp.read, "can't read: %s" % path)
-      ossafe(fp.close, "can't close: %s" % path)
-      self.metadata = json.loads(text)  # we made this, so just crash if broken
+      self.metadata = json_from_file(path, "metadata")
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
@@ -624,7 +655,7 @@ class Image:
    def unpack_create_ok(self):
       """Ensure the unpack directory can be created. If the unpack directory
          is already an image, remove it."""
-      if (not self.unpack_exist_p()):
+      if (not self.unpack_exist_p):
          VERBOSE("creating new image: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
@@ -637,16 +668,14 @@ class Image:
          rmtree(self.unpack_path)
 
    def unpack_delete(self):
-      if (not self.unpack_exist_p()):
+      VERBOSE("unpack path: %s" % self.unpack_path)
+      if (not self.unpack_exist_p):
          FATAL("%s image not found" % self.ref)
       if (self.unpacked_p(self.unpack_path)):
          INFO("deleting image: %s" % self.ref)
          rmtree(self.unpack_path)
       else:
          FATAL("storage directory seems broken: not an image: %s" % self.ref)
-
-   def unpack_exist_p(self):
-      return os.path.exists(self.unpack_path)
 
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."
@@ -760,6 +789,13 @@ fields:
                                 self.name, self.tag, self.digest)])
 
    @property
+   def canonical(self):
+      "Copy of self with all the defaults filled in."
+      ref = self.copy()
+      ref.defaults_add()
+      return ref
+
+   @property
    def for_path(self):
       return str(self).replace("/", "%")
 
@@ -778,11 +814,6 @@ fields:
       if (self.digest is not None):
          return "sha256:" + self.digest
       assert False, "version invalid with no tag or digest"
-
-   @property
-   def url(self):
-      out = ""
-      return out
 
    def copy(self):
       "Return an independent copy of myself."
@@ -1080,8 +1111,7 @@ class Registry_HTTP:
 
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
-      self.ref = ref.copy()
-      self.ref.defaults_add()
+      self.ref = ref.canonical
       self.auth = self.Null_Auth()
       self.session = None
       # This is commented out because it prints full request and response
@@ -1248,6 +1278,17 @@ class Registry_HTTP:
          password = getpass.getpass("Password: ")
       return (username, password)
 
+   def fatman_to_file(self, path, msg, continue_404):
+      "GET the manifest for self.image and save it at path."
+      url = self._url_of("manifests", self.ref.version)
+      pw = Progress_Writer(path, msg)
+      statuses = {200}
+      if (continue_404):
+         statuses |= {400, 401, 404}  # Docker Hub gives 400 if no fat manifest
+      self.request("GET", url, out=pw, statuses=statuses,
+                   headers={ "Accept" : TYPE_MANIFEST_LIST })
+      pw.close()
+
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
       # NOTE: We don't verify the digest b/c that means reading the whole file.
@@ -1256,13 +1297,22 @@ class Registry_HTTP:
       self.blob_upload(digest, fp, note)
       ossafe(fp.close, "can't close: %s" % path)
 
-   def manifest_to_file(self, path, msg):
-      "GET the manifest for the image and save it at path."
-      url = self._url_of("manifests", self.ref.version)
-      sw = Progress_Writer(path, msg)
-      res = self.request("GET", url, out=sw,
-                         headers={ "Accept": TYPE_MANIFEST })
-      sw.close()
+   def manifest_to_file(self, path, msg, digest=None, continue_404=False):
+      """GET manifest for the image and save it at path. If digest is given,
+         use that to fetch the appropriate architecture; otherwise, fetch the
+         default manifest using the exising image reference."""
+      if (digest is None):
+         digest = self.ref.version
+      else:
+         digest = "sha256:" + digest
+      url = self._url_of("manifests", digest)
+      pw = Progress_Writer(path, msg)
+      statuses = {200}
+      if (continue_404):
+         statuses |= {401, 404}
+      self.request("GET", url, out=pw, statuses=statuses,
+                   headers={ "Accept" : TYPE_MANIFEST })
+      pw.close()
 
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
@@ -1291,7 +1341,7 @@ class Registry_HTTP:
          self.authorize(res)
          VERBOSE("retrying with auth: %s" % self.auth)
          res = self.request_raw(method, url, statuses, **kwargs)
-      if (out is not None):
+      if (out is not None and res.status_code == 200):
          try:
             length = int(res.headers["Content-Length"])
          except KeyError:
@@ -1316,6 +1366,7 @@ class Registry_HTTP:
          auth = self.auth
       try:
          res = self.session.request(method, url, auth=auth, **kwargs)
+         VERBOSE("response status: %d" % res.status_code)
          if (res.status_code not in statuses):
             FATAL("%s failed; expected status %s but got %d: %s"
                   % (method, statuses, res.status_code, res.reason))
@@ -1384,8 +1435,14 @@ class Storage:
       except KeyError:
          return None
 
-   def manifest_for_download(self, image_ref):
-      return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
+   def manifest_for_download(self, image_ref, digest):
+      if (digest is None):
+         digest = "skinny"
+      return (   self.download_cache
+              // ("%s%%%s.manifest.json" % (image_ref.for_path, digest)))
+
+   def fatman_for_download(self, image_ref):
+      return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
    def reset(self):
       if (self.valid_p()):
@@ -1501,7 +1558,8 @@ def FATAL(*args, **kwargs):
    sys.exit(1)
 
 def INFO(*args, **kwargs):
-   log(*args, **kwargs)
+   "Note: Use print() for output; this function is for logging."
+   log(color="33m", *args, **kwargs)  # yellow
 
 def TRACE(*args, **kwargs):
    if (verbose >= 3):
@@ -1513,6 +1571,17 @@ def VERBOSE(*args, **kwargs):
 
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)  # red
+
+def arch_host_get():
+   "Return the registry architecture of the host."
+   arch_uname = platform.machine()
+   VERBOSE("host architecture from uname: %s" % arch_uname)
+   try:
+      arch_registry = ARCH_MAP[arch_uname]
+   except KeyError:
+      FATAL("unknown host architecture: %s" % arch_uname)
+   VERBOSE("host architecture for registry: %s" % arch_registry)
+   return arch_registry
 
 def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
@@ -1531,9 +1600,7 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
 def cmd(args, env=None, fail_ok=False):
    VERBOSE("environment: %s" % env)
    VERBOSE("executing: %s" % args)
-   color_set("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
-   color_reset(sys.stdout)
    if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
@@ -1663,7 +1730,7 @@ def grep_p(path, rx):
       FATAL("error reading %s: %s" % (path, x.strerror))
 
 def init(cli):
-   global verbose, log_festoon, log_fp, storage, tls_verify
+   global arch, arch_host, log_festoon, log_fp, storage, tls_verify, verbose
    # logging
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
@@ -1677,11 +1744,31 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage object
    storage = Storage(cli.storage)
+   # architecture
+   assert (cli.arch is not None)
+   arch_host = arch_host_get()
+   if (cli.arch == "host"):
+      arch = arch_host
+   else:
+      arch = cli.arch
    # TLS verification
    if (cli.tls_no_verify):
       tls_verify = False
       rpu = requests.packages.urllib3
       rpu.disable_warnings(rpu.exceptions.InsecureRequestWarning)
+
+def json_from_file(path, msg):
+   DEBUG("loading JSON: %s: %s" % (msg, path))
+   fp = open_(path, "rt", encoding="UTF-8")
+   text = ossafe(fp.read, "can't read: %s" % path)
+   ossafe(fp.close, "can't close: %s" % path)
+   TRACE("text:\n%s" % text)
+   try:
+      data = json.loads(text)
+      DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
+   except json.JSONDecodeError as x:
+      FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
+   return data
 
 def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):

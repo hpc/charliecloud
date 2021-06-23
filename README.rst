@@ -83,6 +83,17 @@ list above.
 
 We are friendly and welcoming of diversity on all dimensions.
 
+How do I cite Charliecloud?
+---------------------------
+
+If Charliecloud helped your research, or it was useful to you in any other
+context where bibliographic citations are appropriate, please cite the
+following open-access paper:
+
+  Reid Priedhorsky and Tim Randles. "Charliecloud: Unprivileged containers for
+  user-defined software stacks in HPC", 2017. In *Proc. Supercomputing*.
+  DOI: `10.1145/3126908.3126925 <https://doi.org/10.1145/3126908.3126925>`_.
+
 Copyright and license
 ---------------------
 
