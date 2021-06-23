@@ -288,7 +288,6 @@ EOF
 
 @test "${tag}: CentOS 8: EPEL already installed" {
     scope standard
-
     # install EPEL, no --force
     run ch-image -v build -t epel1 -f - . <<'EOF'
 FROM centos:8
@@ -314,6 +313,23 @@ EOF
     # validate EPEL is still installed *and* enabled
     ls -lh "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
     grep -Eq 'enabled=1' "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+}
+
+@test "${tag}: CentOS 8 Stream: needed, with --force" {
+    scope standard
+    # commands that may need it, they do, --force, success
+    # pulling from quay.io per the CentOS wiki
+    # https://wiki.centos.org/FAQ/CentOSStream#What_artifacts_are_built.3F
+    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
+FROM quay.io/centos/centos:stream8
+RUN dnf install -y --setopt=install_weak_deps=false openssh
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'will use --force'* ]]
+    [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
+    # validate EPEL has been removed
+    ! ls -lh "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
 }
 
 @test "${tag}: RHEL UBI 8: needed, with --force" {
