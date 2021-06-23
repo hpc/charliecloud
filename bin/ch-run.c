@@ -174,9 +174,8 @@ int main(int argc, char *argv[])
    INFO("private /tmp: %d", args.c.private_tmp);
 
    fix_environment(&args);
-   if (sqfs_p)
-      sqfs_run_user_command(c_argv, args.initial_dir);
-   containerize(&args.c);
+   if (!sqfs_p)
+      containerize(&args.c);
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }

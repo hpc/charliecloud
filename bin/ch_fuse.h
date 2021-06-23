@@ -8,6 +8,7 @@
 
 /** Function prototypes **/
 
+void fuse_loop_init();
 bool sqfs_ll_check(const char *path);
 void sqfs_ll_clean();
 void sqfs_run_user_command(char *argv[], const char *inital_dir);
