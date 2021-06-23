@@ -254,7 +254,7 @@ EOF
                   --no-cache \
                   "$img"
     [[ $status -eq 0 ]]
-    grep -F '"schemaVersion": 1' "${cache}/${img}.manifest.json"
+    grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
 }
 
 @test 'pull from public repos' {
@@ -371,4 +371,34 @@ EOF
   ]
 }
 EOF
+}
+
+
+@test 'ch-image pull by arch' {
+    # Has fat manifest; requested arch exists. There's not much simple to look
+    # for in the output, so just see if it works.
+    ch-image --arch=yolo pull alpine:latest
+    ch-image --arch=host pull alpine:latest
+    ch-image --arch=amd64 pull alpine:latest
+    ch-image --arch=arm64/v8 pull alpine:latest
+
+    # Has fat manifest, but requested arch does not exist.
+    run ch-image --arch=doesnotexist pull alpine:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'requested arch unavailable:'*'not one of:'* ]]
+
+    # Delete it so we don't try to use a non-matching arch for other testing.
+    ch-image delete alpine:latest
+
+    # No fat manifest.
+    ch-image --arch=yolo pull charliecloud/metadata:2021-01-15
+    ch-image --arch=amd64 pull charliecloud/metadata:2021-01-15
+    if [[ $(uname -m) == 'x86_64' ]]; then
+        ch-image --arch=host pull charliecloud/metadata:2021-01-15
+        run ch-image --arch=arm64/v8 pull charliecloud/metadata:2021-01-15
+        echo "$output"
+        [[ $status -eq 1 ]]
+        [[ $output = *'image is architecture-unaware; try --arch=yolo (?)' ]]
+    fi
 }
