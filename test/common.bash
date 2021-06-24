@@ -198,6 +198,9 @@ mkdir -p "$btnew"
 chmod 700 "$btnew"
 export BATS_TMPDIR=$btnew
 [[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
+# all temporary images all tagged TMPIMG so there is only 1 extra image at end
+# test case.
+export TMPIMG="foo"
 
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
