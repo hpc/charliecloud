@@ -740,10 +740,10 @@ EOF
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 }
 
-@test 'docker metadata' {
+@test 'Docker metadata' {
     scope standard
     [[ $CH_BUILDER = docker ]] || skip 'We only test docker metadata'
-    image="debian9"
+    image="centos7"
     diff -u - "$ch_imgdir/$image/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
@@ -751,8 +751,14 @@ EOF
   "env": {
     "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   },
-  "labels": {},  
-  "shell": ["|1","DEBIAN_FRONTEND=noninteractive","/bin/sh","-c","apt-get update  && apt-get install -y --no-install-recommends apt-utils  && rm -rf /var/lib/apt/lists/*"],
+  "labels": {
+    "org.label-schema.build-date": "20191001",
+    "org.label-schema.license": "GPLv2",
+    "org.label-schema.name": "CentOS Base Image",
+    "org.label-schema.schema-version": "1.0",
+    "org.label-schema.vendor": "CentOS"
+  },
+  "shell": ["/bin/bash"],
   "volumes": []
 }
 EOF
