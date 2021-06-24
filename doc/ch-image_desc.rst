@@ -8,7 +8,7 @@ Synopsis
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] delete IMAGE_REF
    $ ch-image [...] import PATH IMAGE_REF
-   $ ch-image [...] list
+   $ ch-image [...] list [IMAGE_REF]
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
@@ -38,6 +38,43 @@ Options that print brief information and then exit:
 
 Common options placed before the sub-command:
 
+  :code:`-a`, :code:`--arch ARCH`
+     Use :code:`ARCH` for architecture-aware registry operations, currently
+     :code:`pull` and pulls done within :code:`build`. :code:`ARCH` can be:
+     (1) :code:`yolo`, to bypass architecture-aware code and use the
+     registry's default architecture; (2) :code:`host`, to use the host's
+     architecture, obtained with the equivalent of :code:`uname -m` (default
+     if :code:`--arch` not specified); or (3) an architecture name. If the
+     specified architecture is not available, the error message will list
+     which ones are.
+
+     **Notes:**
+
+     1. :code:`ch-image` is limited to one image per image reference in
+        builder storage at a time, regardless of architecture. For example, if
+        you say :code:`ch-image pull --arch=foo baz` and then :code:`ch-image
+        pull --arch=bar baz`, builder storage will contain one image called
+        "baz", with architecture "bar".
+
+     2. Images' default architecture is usually :code:`amd64`, so this is
+        usually what you get with :code:`--arch=yolo`. Similarly, if a
+        registry image is architecture-unaware, it will still be pulled with
+        :code:`--arch=amd64` and :code:`--arch=host` on x86-64 hosts (other
+        host architectures must specify :code:`--arch=yolo` to pull
+        architecture-unaware images).
+
+     3. :code:`uname -m` and image registries often use different names for
+        the same architecture. For example, what :code:`uname -m` reports as
+        "x86_64" is known to registries as "amd64". :code:`--arch=host` should
+        translate if needed, but it's useful to know this is happening.
+        Directly specified architecture names are passed to the registry
+        without translation.
+
+     4. Registries treat architecture as a pair of items, architecture and
+        sometimes variant (e.g., "arm" and "v7"). Charliecloud treats
+        architecture as a simple string and converts to/from the registry view
+        transparently.
+
   :code:`--no-cache`
     Download everything needed, ignoring the cache.
 
@@ -50,7 +87,6 @@ Common options placed before the sub-command:
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
-
 
 Storage directory
 =================
@@ -234,6 +270,18 @@ prints exactly what it is doing.
 Delete the image described by the image reference :code:`IMAGE_REF` from the
 storage directory.
 
+:code:`list`
+------------
+
+Print information about images. If no argument given, list the images in
+builder storage.
+
+Optional argument:
+
+  :code:`IMAGE_REF`
+    Print details of what's known about :code:`IMAGE_REF`, both locally in the
+    remote registry, if any.
+
 :code:`import`
 --------------
 
@@ -352,7 +400,6 @@ Delete all images and cache from ch-image builder storage.
    $ ch-image [...] storage-path
 
 Print the storage directory path and exit.
-
 
 Compatibility with other Dockerfile interpreters
 ================================================
@@ -567,24 +614,66 @@ installing into a layer::
    RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround
    RUN ldconfig
 
+:code:`list`
+------------
+
+List images in builder storage::
+
+   $ ch-image list
+   alpine:3.9 (amd64)
+   alpine:latest (amd64)
+   debian:buster (amd64)
+
+Print details about Debian Buster image::
+
+   $ ch-image list debian:buster
+   details of image:    debian:buster
+   in local storage:    no
+   full remote ref:     registry-1.docker.io:443/library/debian:buster
+   available remotely:  yes
+   remote arch-aware:   yes
+   host architecture:   amd64
+   archs available:     386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x
+
 :code:`pull`
 ------------
 
-Download the Debian Buster image and place it in the storage directory::
+Download the Debian Buster image matching the host's architecture and place it
+in the storage directory::
 
-  $ ch-image pull debian:buster
-  pulling image:   debian:buster
+   $ uname -m
+   aarch32
+   pulling image:    debian:buster
+   requesting arch:  arm64/v8
+   manifest list: downloading
+   manifest: downloading
+   config: downloading
+   layer 1/1: c54d940: downloading
+   flattening image
+   layer 1/1: c54d940: listing
+   validating tarball members
+   resolving whiteouts
+   layer 1/1: c54d940: extracting
+   image arch: arm64
+   done
 
-  manifest: downloading
-  layer 1/1: d6ff36c: downloading
-  layer 1/1: d6ff36c: listing
-  validating tarball members
-  resolving whiteouts
-  flattening image
-  layer 1/1: d6ff36c: extracting
-  done
+Same, specifying the architecture explicitly::
 
-Same, except place the image in :code:`/tmp/buster`::
+   $ ch-image --arch=arm/v7 pull debian:buster
+   pulling image:    debian:buster
+   requesting arch:  arm/v7
+   manifest list: downloading
+   manifest: downloading
+   config: downloading
+   layer 1/1: 8947560: downloading
+   flattening image
+   layer 1/1: 8947560: listing
+   validating tarball members
+   resolving whiteouts
+   layer 1/1: 8947560: extracting
+   image arch: arm (may not match host arm64/v8)
+
+Download the same image and place it in :code:`/tmp/buster`::
 
    $ ch-image pull debian:buster /tmp/buster
    [...]
@@ -655,6 +744,5 @@ in the remote registry, so we don't upload it again.)
    manifest: uploading
    cleaning up
    done
-
 
 ..  LocalWords:  tmpfs'es bigvendor

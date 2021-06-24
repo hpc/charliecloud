@@ -5,6 +5,7 @@ import os
 import sys
 
 import charliecloud as ch
+import pull
 import version
 
 
@@ -42,15 +43,51 @@ def delete(cli):
 def list_(cli):
    ch.dependencies_check()
    imgdir = ch.storage.unpack_base
-   if (not os.path.isdir(ch.storage.root)):
-      ch.INFO("does not exist: %s" % ch.storage.root)
-      return;
-   if (not ch.storage.valid_p()):
-       ch.INFO("not a storage directory: %s" % ch.storage.root)
-       return;
-   imgs = ch.ossafe(os.listdir, "can't list directory: %s" % ch.storage.root, imgdir)
-   for img in sorted(imgs):
-      print(ch.Image_Ref(img))
+   if (cli.image_ref is None):
+      # list all images
+      if (not os.path.isdir(ch.storage.root)):
+         ch.INFO("does not exist: %s" % ch.storage.root)
+         return;
+      if (not ch.storage.valid_p()):
+          ch.INFO("not a storage directory: %s" % ch.storage.root)
+          return;
+      imgs = ch.ossafe(os.listdir, "can't list directory: %s" % ch.storage.root, imgdir)
+      for img in sorted(imgs):
+         print(ch.Image_Ref(img))
+   else:
+      # list specified image
+      img = ch.Image(ch.Image_Ref(cli.image_ref))
+      print("details of image:    %s" % img.ref)
+      # present locally?
+      if (not img.unpack_exist_p):
+         stored = "no"
+      else:
+         img.metadata_load()
+         stored = "yes (%s)" % img.metadata["arch"]
+      print("in local storage:    %s" % stored)
+      # present remotely?
+      print("full remote ref:     %s" % img.ref.canonical)
+      pullet = pull.Image_Puller(img, not cli.no_cache)
+      pullet.fatman_load()
+      if (pullet.architectures is not None):
+         remote = "yes"
+         arch_aware = "yes"
+         arch_avail = " ".join(sorted(pullet.architectures.keys()))
+      else:
+         pullet.manifest_load(True)
+         if (pullet.layer_hashes is not None):
+            remote = "yes"
+            arch_aware = "no"
+            arch_avail = "unknown"
+         else:
+            remote = "no"
+            arch_aware = "n/a"
+            arch_avail = "n/a"
+      pullet.done()
+      print("available remotely:  %s" % remote)
+      print("remote arch-aware:   %s" % arch_aware)
+      print("host architecture:   %s" % ch.arch_host)
+      print("archs available:     %s" % arch_avail)
 
 def import_(cli):
    ch.dependencies_check()

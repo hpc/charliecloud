@@ -188,10 +188,52 @@ EOF
 }
 
 @test 'ch-image list' {
+
+    # list all images
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"00_tiny"* ]]
+
+    # does not exist remotely
+    run ch-image list doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'GET failed; expected status {200, 403} but got 400'* ]]
+
+    # in storage, does not exist remotely
+    run ch-image list 00_tiny
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'in local storage:    yes'* ]]
+    [[ $output = *'GET failed; expected status {200, 403} but got 400'* ]]
+
+    # not in storage, exists remotely, fat manifest exists
+    run ch-image list debian:buster-slim
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   yes'* ]]
+    [[ $output = *'archs available:     386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x'* ]]
+
+    # in storage, exists remotely, no fat manifest
+    run ch-image list charliecloud/metadata:2021-01-15
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    yes'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   no'* ]]
+    [[ $output = *'archs available:     unknown'* ]]
+
+    # exists remotely, fat manifest exists, no Linux architectures
+    run ch-image list mcr.microsoft.com/windows:20H2
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   yes'* ]]
+    [[ $output = *'warning: no valid architectures found'* ]]
 }
 
 @test 'ch-image reset' {

@@ -176,7 +176,7 @@ DEFAULT_CONFIGS = {
 
    "rhel8":
    { "name": "CentOS/RHEL 8",
-     "match":  ("/etc/redhat-release", r"release 8\."),
+     "match":  ("/etc/redhat-release", r"release 8"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
