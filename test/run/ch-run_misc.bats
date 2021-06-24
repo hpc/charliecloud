@@ -742,7 +742,7 @@ EOF
 
 @test 'Docker metadata' {
     scope standard
-    [[ $CH_BUILDER = docker ]] || skip 'We only test docker metadata'
+    [[ $CH_BUILDER = docker ]] || skip 'Docker only'
     image="centos7"
     diff -u - "$ch_imgdir/$image/ch/metadata.json" <<'EOF'
 {
