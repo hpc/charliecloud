@@ -986,16 +986,19 @@ class Progress:
       self.progress += increment
       if (last or now - self.display_last > 1):
          if (self.length is None):
-            line = ("%s: %.*f/unknown %s"
+            line = ("%s: %.*f %s"
                     % (self.msg,
                        self.precision, self.progress / self.divisor,
                        self.unit))
          else:
-            line = ("%s: %.*f/%.*f %s (%d%%)"
-                    % (self.msg,
-                       self.precision, self.progress / self.divisor,
-                       self.precision, self.length / self.divisor,
-                       self.unit, 100 * self.progress / self.length))
+            ct = "%.*f/%.*f" % (self.precision, self.progress / self.divisor,
+                                self.precision, self.length / self.divisor)
+            pct = "%d%%" % (100 * self.progress / self.length)
+            if (ct == "0.0/0.0"):
+               # too small, don't print count
+               line = "%s: %s" % (self.msg, pct)
+            else:
+               line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
          if (self.overwrite_p):
             line += "\r"  # CR so next INFO overwrites
          else:
@@ -1020,6 +1023,7 @@ class Progress_Reader:
    def __init__(self, fp, msg):
       self.fp = fp
       self.msg = msg
+      self.progress = None
 
    def __iter__(self):
       return self
@@ -1031,8 +1035,9 @@ class Progress_Reader:
       return data
 
    def close(self):
-      self.progress.done()
-      ossafe(self.fp.close, "can't close: %s" % self.fp.name)
+      if (self.progress is not None):
+         self.progress.done()
+         ossafe(self.fp.close, "can't close: %s" % self.fp.name)
 
    def read(self, size=-1):
      data = self.fp.read(size)
@@ -1062,16 +1067,18 @@ class Progress_Writer:
                 "progress")
 
    def __init__(self, path, msg):
-      self.path = path
-      self.fp = open_(self.path, "wb")
       self.msg = msg
+      self.path = path
+      self.progress = None
 
    def close(self):
-      self.progress.done()
-      ossafe(self.fp.close, "can't close: %s" % self.path)
+      if (self.progress is not None):
+         self.progress.done()
+         ossafe(self.fp.close, "can't close: %s" % self.path)
 
    def start(self, length):
       self.progress = Progress(self.msg, "MiB", 2**20, length)
+      self.fp = open_(self.path, "wb")
 
    def write(self, data):
       self.progress.update(len(data))
