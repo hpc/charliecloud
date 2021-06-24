@@ -68,21 +68,19 @@ def list_(cli):
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
       pullet = pull.Image_Puller(img, not cli.no_cache)
-      pullet.fatman_load()
-      if (pullet.architectures is not None):
+      try:
+         pullet.fatman_load()
          remote = "yes"
          arch_aware = "yes"
          arch_avail = " ".join(sorted(pullet.architectures.keys()))
-      else:
-         pullet.manifest_load(True)
-         if (pullet.layer_hashes is not None):
-            remote = "yes"
-            arch_aware = "no"
-            arch_avail = "unknown"
-         else:
-            remote = "no"
-            arch_aware = "n/a"
-            arch_avail = "n/a"
+      except ch.Not_In_Registry_Error:
+         remote = "no"
+         arch_aware = "n/a"
+         arch_avail = "n/a"
+      except ch.No_Fatman_Error:
+         remote = "yes"
+         arch_aware = "no"
+         arch_avail = "unknown"
       pullet.done()
       print("available remotely:  %s" % remote)
       print("remote arch-aware:   %s" % arch_aware)

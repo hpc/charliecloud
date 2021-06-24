@@ -217,6 +217,12 @@ _NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 """
 
 
+## Exceptions ##
+
+class No_Fatman_Error(Exception): pass
+class Not_In_Registry_Error(Exception): pass
+
+
 ## Classes ##
 
 class HelpFormatter(argparse.HelpFormatter):
@@ -1285,16 +1291,29 @@ class Registry_HTTP:
          password = getpass.getpass("Password: ")
       return (username, password)
 
-   def fatman_to_file(self, path, msg, continue_404):
-      "GET the manifest for self.image and save it at path."
+   def fatman_to_file(self, path, msg):
+      """GET the manifest for self.image and save it at path. This seems to
+         have three possible results:
+
+            1. HTTP 200, and body is a fat manifest: image exists and is
+               architecture-aware.
+
+            2. HTTP 200, but body is *not* a fat manifest (we get a v1 skinny
+               manifest): image exists but is not architecture-aware.
+
+            3. HTTP 400/401/404: image does not exist. (400 seems wrong but
+               that's how Docker Hub responds.)
+
+         This method raises Not_In_Registry_Error in case 3. The caller is
+         responsible for distinguishing cases 1 and 2."""
       url = self._url_of("manifests", self.ref.version)
       pw = Progress_Writer(path, msg)
-      statuses = {200}
-      if (continue_404):
-         statuses |= {400, 401, 404}  # Docker Hub gives 400 if no fat manifest
-      self.request("GET", url, out=pw, statuses=statuses,
-                   headers={ "Accept" : TYPE_MANIFEST_LIST })
+      statuses = {200, 400, 401, 404}
+      res = self.request("GET", url, out=pw, statuses=statuses,
+                         headers={ "Accept" : TYPE_MANIFEST_LIST })
       pw.close()
+      if (res.status_code != 200):
+         raise Not_In_Registry_Error()
 
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
@@ -1304,7 +1323,7 @@ class Registry_HTTP:
       self.blob_upload(digest, fp, note)
       ossafe(fp.close, "can't close: %s" % path)
 
-   def manifest_to_file(self, path, msg, digest=None, continue_404=False):
+   def manifest_to_file(self, path, msg, digest=None):
       """GET manifest for the image and save it at path. If digest is given,
          use that to fetch the appropriate architecture; otherwise, fetch the
          default manifest using the exising image reference."""
@@ -1314,12 +1333,11 @@ class Registry_HTTP:
          digest = "sha256:" + digest
       url = self._url_of("manifests", digest)
       pw = Progress_Writer(path, msg)
-      statuses = {200}
-      if (continue_404):
-         statuses |= {401, 404}
-      self.request("GET", url, out=pw, statuses=statuses,
-                   headers={ "Accept" : TYPE_MANIFEST })
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404},
+                         headers={ "Accept" : TYPE_MANIFEST })
       pw.close()
+      if (res.status_code != 200):
+         raise Not_In_Registry_Error()
 
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."

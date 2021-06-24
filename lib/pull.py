@@ -87,24 +87,28 @@ class Image_Puller:
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       ch.VERBOSE("downloading image: %s" % self.image)
       ch.mkdirs(ch.storage.download_cache)
-      # fat manifest
-      if (ch.arch != "yolo"):
-         self.fatman_load()
-         if (self.architectures is not None):
-            if (ch.arch not in self.architectures):
-               ch.FATAL("requested arch unavailable: %s not one of: %s"
-                        % (ch.arch,
-                           " ".join(sorted(self.architectures.keys()))))
-         elif (ch.arch == "amd64"):
-            # We're guessing that enough arch-unaware images are amd64 to
-            # barge ahead if requested architecture is amd64.
-            ch.arch = "yolo"
-            ch.WARNING("image is architecture-unaware")
-            ch.WARNING("requested arch is amd64; switching to --arch=yolo")
-         else:
-            ch.FATAL("image is architecture-unaware; try --arch=yolo (?)")
-      # manifest
-      self.manifest_load()
+      try:
+         # fat manifest
+         if (ch.arch != "yolo"):
+            try:
+               self.fatman_load()
+               if (ch.arch not in self.architectures):
+                  ch.FATAL("requested arch unavailable: %s not one of: %s"
+                           % (ch.arch,
+                              " ".join(sorted(self.architectures.keys()))))
+            except ch.No_Fatman_Error:
+               if (ch.arch == "amd64"):
+                  # We're guessing that enough arch-unaware images are amd64 to
+                  # barge ahead if requested architecture is amd64.
+                  ch.arch = "yolo"
+                  ch.WARNING("image is architecture-unaware")
+                  ch.WARNING("requested arch is amd64; using --arch=yolo")
+               else:
+                  ch.FATAL("image is architecture-unaware; try --arch=yolo?")
+         # manifest
+         self.manifest_load()
+      except ch.Not_In_Registry_Error:
+         ch.FATAL("not in registry: %s" % self.registry.ref)
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
@@ -140,29 +144,28 @@ class Image_Puller:
          the image has a fat manifest, populate self.architectures; this may
          be an empty dictionary if no valid architectures were found.
 
-         It is not an error if the image has no fat manifest or the registry
-         reports no such image. In this architecture-unaware condition, set
-         self.architectures to None."""
+         Raises:
+
+           * Not_In_Registry_Error if the image does not exist.
+
+           * No_Fatman_Error if the image exists but has no fat manifest,
+             i.e., is architecture-unaware. In this case self.architectures is
+             set to None."""
       self.architectures = None
       if (str(self.image.ref) in manifests_internal):
-         return  # no fat manifests for internal library
+         raise ch.No_Fatman_Error()  # no fat manifests for internal library
       if (os.path.exists(self.fatman_path) and self.use_cache):
          ch.INFO("manifest list: using existing file")
       else:
+         # raises Not_In_Registry_Error if needed
          self.registry.fatman_to_file(self.fatman_path,
-                                      "manifest list: downloading",
-                                      continue_404=True)
-      if (not os.path.exists(self.fatman_path)):
-         # Response was 404 (or equivalent).
-         ch.INFO("manifest list: no list found")
-         return
+                                      "manifest list: downloading")
       fm = ch.json_from_file(self.fatman_path, "fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
          # If there is no fat manifest but the image exists, we get a skinny
          # manifest instead. We can't use it, however, because it might be a
          # v1 manifest when a v2 is available. ¯\_(ツ)_/¯
-         ch.INFO("manifest list: no valid list found")
-         return
+         raise ch.No_Fatman_Error()
       if ("errors" in fm):
          # fm is an error blob.
          (code, msg) = self.error_decode(fm)
@@ -194,12 +197,10 @@ class Image_Puller:
       "Return the path to tarball for layer layer_hash."
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
-   def manifest_load(self, continue_404=False):
+   def manifest_load(self):
       """Download the manifest file if needed, parse it, and set
-         self.config_hash and self.layer_hashes. By default, if the image does
-         not exist, exit with error; if continue_404, then log the condition
-         but do not exit. In this case, self.config_hash and self.layer_hashes
-         will both be None."""
+         self.config_hash and self.layer_hashes. If the image does not exist,
+         exit with error."""
       def bad_key(key):
          ch.FATAL("manifest: %s: no key: %s" % (self.manifest_path, key))
       self.config_hash = None
@@ -221,12 +222,7 @@ class Image_Puller:
          else:
             self.registry.manifest_to_file(self.manifest_path,
                                            "manifest: downloading",
-                                           digest=digest,
-                                           continue_404=continue_404)
-         if (not os.path.exists(self.manifest_path)):
-            # response was 404 (or equivalent)
-            ch.INFO("manifest: none found")
-            return
+                                           digest=digest)
          manifest = ch.json_from_file(self.manifest_path, "manifest")
       # validate schema version
       try:
