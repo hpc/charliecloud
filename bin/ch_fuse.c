@@ -144,6 +144,7 @@ void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops) {
    (*sqfs_ll_ops).opendir    = &sqfs_ll_op_opendir;
    (*sqfs_ll_ops).releasedir = &sqfs_ll_op_releasedir;
    (*sqfs_ll_ops).readdir    = &sqfs_ll_op_readdir;
+   (*sqfs_ll_ops).lookup     = &sqfs_ll_op_lookup;
    (*sqfs_ll_ops).open       = &sqfs_ll_op_open;
    (*sqfs_ll_ops).create     = &sqfs_ll_op_create;
    (*sqfs_ll_ops).release    = &sqfs_ll_op_release;
