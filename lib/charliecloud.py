@@ -1301,20 +1301,18 @@ class Registry_HTTP:
             2. HTTP 200, but body is a skinny manifest: image exists but is
                not architecture-aware.
 
-            3. HTTP 400/401/404: image does not exist. (400 seems wrong but
-               that's how Docker Hub responds.)
+            3. HTTP 401/404: image does not exist.
 
          This method raises Not_In_Registry_Error in case 3. The caller is
          responsible for distinguishing cases 1 and 2."""
       url = self._url_of("manifests", self.ref.version)
       pw = Progress_Writer(path, msg)
-      statuses = {200, 400, 401, 404}
       # Including TYPE_MANIFEST avoids the server trying to convert its v2
       # manifest to a v1 manifest, which currently fails for images
       # Charliecloud pushes. The error in the test registry is “empty history
       # when trying to create schema1 manifest”.
       accept = "%s, %s;q=0.5" % (TYPE_MANIFEST_LIST, TYPE_MANIFEST)
-      res = self.request("GET", url, out=pw, statuses=statuses,
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404},
                          headers={ "Accept" : accept })
       pw.close()
       if (res.status_code != 200):
