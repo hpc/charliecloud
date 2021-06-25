@@ -405,7 +405,6 @@ EOF
 }
 
 @test 'pull images that do not exist' {
-
     # name does not exist remotely, in library
     run ch-image pull doesnotexist:latest
     echo "$output"
