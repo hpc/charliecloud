@@ -162,9 +162,9 @@ class Image_Puller:
                                       "manifest list: downloading")
       fm = ch.json_from_file(self.fatman_path, "fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
-         # If there is no fat manifest but the image exists, we get a skinny
-         # manifest instead. We can't use it, however, because it might be a
-         # v1 manifest when a v2 is available. ¯\_(ツ)_/¯
+         # FIXME (issue #1101): If it's a v2 manifest we could use it instead
+         # of re-requesting later. Maybe we could here move/copy it over to
+         # the skinny manifest path.
          raise ch.No_Fatman_Error()
       if ("errors" in fm):
          # fm is an error blob.
