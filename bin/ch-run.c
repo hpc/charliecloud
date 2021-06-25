@@ -97,7 +97,6 @@ void privs_verify_invoking();
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
 char *sqfs_unpack = "/var/tmp";
-bool sqfs_p = false;
 
 /** Main **/
 
@@ -146,8 +145,7 @@ int main(int argc, char *argv[])
    if(sqfs_ll_check(argv[arg_next])) {
       Ze (atexit(sqfs_ll_clean), "exit handler set up failed");
       argv[arg_next] = sqfs_mount(sqfs_unpack, argv[arg_next]);
-      sqfs_p = true;
-      DEBUG("new argv: %s", argv[arg_next]);
+      DEBUG("new run DIR: %s", argv[arg_next]);
    }
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");

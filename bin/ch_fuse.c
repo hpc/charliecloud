@@ -45,8 +45,10 @@ struct squash sq;
 /** Function prototypes (private) **/
 void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops);
 void kill_fuse();
+
 /** Functions **/
 
+/* Initalize fuse loop */
 void fuse_loop_init()
 {
    Ze((fuse_set_signal_handlers(sq.chan.session) == -1), "failed to set signal handlers");
@@ -55,16 +57,14 @@ void fuse_loop_init()
       Ze((fuse_session_loop(sq.chan.session) == -1), "failed to create fuse loop");
       exit(0);
    }
-
 }
 
+/* Function called to start sqfs_ll_clean */
 void kill_fuse()
 {
    DEBUG("end fuse loop: %d", sq.pid);
    exit(0);
 }
-
-
 
 /* Exit handler for sqfs */
 void sqfs_ll_clean()
@@ -131,8 +131,7 @@ char *sqfs_mount(char *mountdir, char *filepath)
    Te(SQFS_OK == sqfs_ll_mount(&sq.chan, sq.mountdir, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), sq.ll), "failed to mount");
    Ze((sq.chan.session == NULL), "failed to create fuse session");
 
-   // init fuse loop
-   signal(SIGCHLD, kill_fuse);
+   signal(SIGCHLD, kill_fuse); //kill fuse loop when ch-run is done
    fuse_loop_init();
    return sq.mountdir;
 }
@@ -156,4 +155,3 @@ void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops) {
    (*sqfs_ll_ops).statfs     = &stfs_ll_op_statfs;
 
 }
-
