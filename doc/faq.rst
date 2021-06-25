@@ -112,34 +112,33 @@ two solutions:
    processes and one writes a file in the image that another is reading or
    writing).
 
-:code:`ch-image pull` fails with "certificate verify failed"
-------------------------------------------------------------
+:code:`ch-image` fails with "certificate verify failed"
+-------------------------------------------------------
 
 When :code:`ch-image` interacts with a remote registry (e.g., via :code:`push`
-or :code:`pull` subcommands), Charliecloud will verify the certificate of the
-registry. This operation is implicitly performed by the Python Requests
-library. If the remote registry's certificate fails to verify, an
-:code:`SSL: CERTIFICATE_VERIFY_FAILED` exception will be thrown with the
-message "certificate verify failed: unable to get local issuer certificate."
+or :code:`pull` subcommands), it will verify the registry's HTTPS certificate.
+If this fails, :code:`ch-image` will exit with the error "certificate verify
+failed".
 
-This situation may arise (e.g., with self-signed certificates) because, on
-many platforms, Requests `includes its own CA certificates bundle
+This situation tends to arise with self-signed or institutionally-signed
+certificates, even if the OS is configured to trust them, because on many
+platforms, Requests, the Python HTTP library we use, `includes its own CA
+certificates bundle
 <https://docs.python-requests.org/en/master/user/advanced/#ca-certificates>`_,
-which may differ from that installed on the host system. Requests can be
-directed to use an alternate bundle of trusted CAs by setting the environment
-variable :code:`REQUESTS_CA_BUNDLE` to the path to the CA bundle. (See
-`Requests: SSL Cert Verification
-<https://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification>`_
-for more details.)
+which may differ from that installed on the host system.
 
-For example::
+Requests can be directed to use an alternate bundle of trusted CAs by setting
+environment variable :code:`REQUESTS_CA_BUNDLE` to the bundle path. (See `the
+Requests documentation
+<https://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification>`_
+for details.) For example::
 
   $ export REQUESTS_CA_BUNDLE=/usr/local/share/ca-certificates/registry.crt
   $ ch-image pull registry.example.com/image:tag
 
-Alternatively, verification of the remote registry's certificate can be
-disabled via the :code:`--tls-no-verify` flag. However, users should
-enable this option with caution.
+Alternatively, certificate verification can be disabled entirely with the
+:code:`--tls-no-verify` flag. However, users should enable this option only if
+they have other means to be confident in the registry's identity.
 
 
 Unexpected behavior
@@ -707,3 +706,5 @@ Alpine 3.9 image pulled from Docker hub::
   dev  home  media  opt  root  sbin  sys  usr
   $ ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
   3.9.5
+
+..  LocalWords:  CAs
