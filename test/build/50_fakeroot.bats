@@ -319,7 +319,7 @@ EOF
     # commands that may need it, they do, --force, success
     # pulling from quay.io per the CentOS wiki
     # https://wiki.centos.org/FAQ/CentOSStream#What_artifacts_are_built.3F
-    run ch-image -v build --force -t fakeroot-temp -f - . <<'EOF'
+    run ch-image -v build --force -t "$TMPIMG" -f - . <<'EOF'
 FROM quay.io/centos/centos:stream8
 RUN dnf install -y --setopt=install_weak_deps=false openssh
 EOF
@@ -328,7 +328,7 @@ EOF
     [[ $output = *'will use --force'* ]]
     [[ $output = *'--force: init OK & modified 1 RUN instructions'* ]]
     # validate EPEL has been removed
-    ! ls -lh "$CH_IMAGE_STORAGE"/img/fakeroot-temp/etc/yum.repos.d/epel*.repo
+    ! ls -lh "$CH_IMAGE_STORAGE"/img/"$TMPIMG"/etc/yum.repos.d/epel*.repo
 }
 
 @test "${tag}: RHEL UBI 8: needed, with --force" {
