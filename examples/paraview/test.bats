@@ -9,6 +9,8 @@ setup () {
     prerequisites_ok paraview
     indir=${CHTEST_EXAMPLES_DIR}/paraview
     outdir=$BATS_TMPDIR
+    inbind=${indir}:/mnt/0
+    outbind=${outdir}:/mnt/1
     if [[ $ch_multinode ]]; then
         # Bats only creates $BATS_TMPDIR on the first node.
         # shellcheck disable=SC2086
@@ -38,7 +40,7 @@ setup () {
 
 @test "${ch_tag}/cone serial" {
     # shellcheck disable=SC2086
-    ch-run $ch_unslurm -b "${indir}:/mnt/0" -b "${outdir}:/mnt/1" "$ch_img" -- \
+    ch-run $ch_unslurm -b "$inbind" -b "$outbind" "$ch_img" -- \
            pvbatch /mnt/0/cone.py /mnt/1
     ls -l "$outdir"/cone*
     diff -u "${indir}/cone.serial.vtk" "${outdir}/cone.vtk"
@@ -48,7 +50,7 @@ setup () {
 @test "${ch_tag}/cone ranks=2" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    $ch_mpirun_2 ch-run --join -b "${indir}:/mnt/0" -b "${outdir}:/mnt/1" "$ch_img" -- \
+    $ch_mpirun_2 ch-run --join -b "$inbind" -b "$outbind" "$ch_img" -- \
               pvbatch /mnt/0/cone.py /mnt/1
     ls -l "$outdir"/cone*
     diff -u "${indir}/cone.2ranks.vtk" "${outdir}/cone.vtk"
@@ -58,7 +60,7 @@ setup () {
 @test "${ch_tag}/cone ranks=N" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    $ch_mpirun_core ch-run --join -b "${indir}:/mnt/0" -b "${outdir}:/mnt/1" "$ch_img" -- \
+    $ch_mpirun_core ch-run --join -b "$inbind" -b "$outbind" "$ch_img" -- \
                  pvbatch /mnt/0/cone.py /mnt/1
     ls -l "$outdir"/cone*
     diff -u "${indir}/cone.nranks.vtk" "${outdir}/cone.vtk"
