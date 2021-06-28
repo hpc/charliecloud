@@ -986,7 +986,7 @@ class Registry_HTTP:
          VERBOSE("requesting anonymous auth token")
          res = self.request_raw("GET", auth_d["realm"], {200,401,403},
                                 params=params)
-         if (res.status_code in {401,403}):
+         if (res.status_code != 200):
             VERBOSE("anonymous access rejected")
          else:
             token = res.json()["token"]
