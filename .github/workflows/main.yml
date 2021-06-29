@@ -21,7 +21,7 @@ jobs:
           - builder: docker
             keep_sudo: true
         bundle_lark_parser:
-            bundle_lark: true
+          - bundle_lark: true
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
