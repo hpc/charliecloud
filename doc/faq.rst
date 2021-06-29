@@ -121,11 +121,11 @@ If this fails, :code:`ch-image` will exit with the error "certificate verify
 failed".
 
 This situation tends to arise with self-signed or institutionally-signed
-certificates, even if the OS is configured to trust them, because on many
-platforms, Requests, the Python HTTP library we use, `includes its own CA
+certificates, even if the OS is configured to trust them. We use the Python
+HTTP library Requests, which on many platforms `includes its own CA
 certificates bundle
 <https://docs.python-requests.org/en/master/user/advanced/#ca-certificates>`_,
-which may differ from that installed on the host system.
+ignoring the bundle installed by the OS.
 
 Requests can be directed to use an alternate bundle of trusted CAs by setting
 environment variable :code:`REQUESTS_CA_BUNDLE` to the bundle path. (See `the
