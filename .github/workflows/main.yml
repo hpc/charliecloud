@@ -167,6 +167,10 @@ jobs:
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
           set +x
+          make $ch_makej
+          sudo make $ch_makej install
+          bin/ch-run --version
+          $ch_prefix/from-git/bin/ch-run --version
       - name: configure without bundled lark
         if: ${{ ! matrix.bundled_lark }}
         run: |
@@ -180,21 +184,18 @@ jobs:
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
           set +x
-
-      - name: make and install from git
-        run: |
           make $ch_makej
           sudo make $ch_makej install
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
           
 
-      - name: bundled-lark validation, git install
-        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
-        run: |
-          fgrep 'with bundled lark: yes' config.log
-          [[ -d $ch_prefix/from-git/lib/lark ]]
-          [ "$(ls -A $ch_prefix/from-git/lib/lark)" ]
+      # - name: bundled-lark validation, git install
+      #   if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
+      #   run: |
+      #     fgrep 'with bundled lark: yes' config.log
+      #     [[ -d $ch_prefix/from-git/lib/lark ]]
+      #     [ "$(ls -A $ch_prefix/from-git/lib/lark)" ]
       - name: late setup & validation, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
