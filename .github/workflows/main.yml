@@ -144,14 +144,14 @@ jobs:
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
 
-      - name: build/install from Git - autogen step
+      - name: build/install from Git - autogen
         run: |
           ./autogen.sh --clean --lark
           ./autogen.sh
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
           # Configure and verify output
-
+      # split out configure step
       - name: configure with bundled lark
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark == true }}
         run: |
