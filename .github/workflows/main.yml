@@ -21,7 +21,6 @@ jobs:
           - builder: docker
             keep_sudo: true
         bundle_lark_parser:
-          - builder: ch-image
             bundle_lark: true
     env:
       CH_BUILDER: ${{ matrix.builder }}
