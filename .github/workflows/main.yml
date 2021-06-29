@@ -159,7 +159,7 @@ jobs:
       - name: configure without bundled lark
         if: ${{ ! matrix.bundled_lark }}
         run: |
-          /configure --prefix=$ch_prefix/from-git --disable-bundle-lark
+          ./configure --prefix=$ch_prefix/from-git --disable-bundle-lark
 
       - name: validate configure output
         run: |
