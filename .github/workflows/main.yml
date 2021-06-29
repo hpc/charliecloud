@@ -177,16 +177,6 @@ jobs:
           bin/ch-test --is-pedantic all
           bin/ch-test --is-sudo all
 
-      - name: verify no bundled lark works
-        if: ${{ matrix.builder == 'ch-image' && ! matrix.bundled_lark }}
-        run : |
-          ./autogen.sh --clean --lark
-          ./autogen.sh
-          ./configure --disable-bundled-lark
-          fgrep 'with bundled lark: no' config.log
-          make $ch_makej
-          bin/ch-test --scope=quick --pack-fmt=squash build
-
       - name: make filesystem permissions fixtures
         run: |
           bin/ch-test mk-perm-dirs
