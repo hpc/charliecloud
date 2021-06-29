@@ -363,7 +363,7 @@ class I_copy(Instruction):
          for i in range(len(paths)):
             paths[i] = paths[i][1:-1] #strip quotes
       else:
-         assert (False, "unreachable code reached")
+         assert False, "unreachable code reached"
 
       self.srcs = paths[:-1]
       self.dst = paths[-1]
