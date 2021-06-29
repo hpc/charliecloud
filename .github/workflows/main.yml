@@ -17,13 +17,13 @@ jobs:
         builder: [none, docker, ch-image]
         keep_sudo:  # if false, remove self from sudoers after install/setup
           - false
-        bundle_lark:
+        bundled_lark:
           - true
         include:
           - builder: docker
             keep_sudo: true
           - builder: ch-image
-            bundle_lark: [true, false]
+            bundled_lark: [true, false]
 
     env:
       CH_BUILDER: ${{ matrix.builder }}
@@ -153,7 +153,7 @@ jobs:
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
           # Configure and verify output
-      # cofigure
+      
       - name: configure with bundled lark
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark == true }}
         run: |
@@ -273,6 +273,7 @@ jobs:
           bin/ch-test --scope=quick --pack-fmt=squash all
 
       - name: run test suite (Git WD, standard, squash)
+        if: ${{ matrix.bundled_lark }}
         run: |
           bin/ch-test --pack-fmt=squash all
 
@@ -346,9 +347,14 @@ jobs:
           bin/ch-run --version
 
       - name: run test suite (Git WD, standard, tarballs)
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.bundled_lark}}
         run: |
           bin/ch-test --pack-fmt=tar all
+      
+      - name: verify no bundled lark works
+        if: ${{ matrix.builder == 'ch-image' && ! matrix.bundled_lark }}
+        run : |
+          bin/ch-test --scope=quick --pack-fmt=squash all
 
       - name: print ending environment
         if: ${{ always() }}
@@ -357,3 +363,5 @@ jobs:
           df -h
           du -sch $CH_TEST_TARDIR/* || true
           du -sch $CH_TEST_IMGDIR/* || true
+
+      
