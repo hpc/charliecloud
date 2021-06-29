@@ -169,28 +169,28 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
 
-      - name: configure without bundled lark
-        if: ${{ ! matrix.bundled_lark }}
-        run: |
-          ./autogen.sh --clean --lark
-          ./autogen.sh
-          # Remove Autotools to make sure everything works without them.
-          sudo apt-get remove autoconf automake
-          # Configure and verify output
-          ./configure --prefix=$ch_prefix/from-git  --disable-bundle-lark
-          set -x
-          fgrep 'documentation: yes' config.log
-          [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
-          fgrep 'at least one builder ... yes' config.log
-          fgrep 'ch-run(1): yes' config.log
-          fgrep 'complete test suite: yes' config.log
-          set +x
-          make $ch_makej
-          sudo make $ch_makej install
-          bin/ch-run --version
-          $ch_prefix/from-git/bin/ch-run --version
+      # - name: configure without bundled lark
+      #   if: ${{ ! matrix.bundled_lark }}
+      #   run: |
+      #     ./autogen.sh --clean --lark
+      #     ./autogen.sh
+      #     # Remove Autotools to make sure everything works without them.
+      #     sudo apt-get remove autoconf automake
+      #     # Configure and verify output
+      #     ./configure --prefix=$ch_prefix/from-git  --disable-bundle-lark
+      #     set -x
+      #     fgrep 'documentation: yes' config.log
+      #     [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
+      #     [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+      #     [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
+      #     fgrep 'at least one builder ... yes' config.log
+      #     fgrep 'ch-run(1): yes' config.log
+      #     fgrep 'complete test suite: yes' config.log
+      #     set +x
+      #     make $ch_makej
+      #     sudo make $ch_makej install
+      #     bin/ch-run --version
+      #     $ch_prefix/from-git/bin/ch-run --version
       # - name: bundled-lark validation, git install
       #   if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
       #   run: |
