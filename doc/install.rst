@@ -47,6 +47,7 @@ common distributions should be sufficient.
   * Automake
   * Autoconf
   * python3-pip
+  * The python wheel package
 
 Create :code:`configure` with::
 
@@ -420,12 +421,16 @@ Options include:
   * Filesystem directory, for builders that support this (e.g.,
     :code:`ch-image`).
 
-"lark-parser" Python package
+"lark" Python package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-PyPI has two incompatible packages that provide the module :code:`lark`,
-"`lark-parser <https://pypi.org/project/lark-parser/>`_" and "lark". You want
-"lark-parser".
+The python module "lark" is bundled with Charliecloud. You can disable the bundled
+lark in the configure step at your own risk. You will have to install lark
+using python-pip. Not using the bundled lark is currently not reccomended, and
+only minimally supported. If you are a package maintiner please feel free to
+reach out to us if you have questions or need help.
+
+Disable bundled lark with :code:`./configure --disable-bundle-lark`
 
 Python
 ~~~~~~
