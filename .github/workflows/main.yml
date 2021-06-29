@@ -20,8 +20,6 @@ jobs:
         include:
           - builder: docker
             keep_sudo: true
-        bundle_lark:
-          - false
         include:
           - builder: ch-image
             bundle_lark: true
@@ -175,6 +173,15 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
 
+      - name: configure with bundled lark
+        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
+          run: |
+            ./configure --prefix=$ch_prefix/from-git
+      - name: configure without bundled lark
+        if: ${{ ! matrix.bundled_lark }}
+          run: |
+            /configure --prefix=$ch_prefix/from-git --disable-bundle-lark
+
       - name: bundled-lark validation, git install
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
           run: |
@@ -269,7 +276,7 @@ jobs:
           bin/ch-test --pack-fmt=squash all
 
       - name: run test suite (installed from Git WD, standard, squash)
-        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' &&  ! matrix.keep_sudo }}
         run: |
           $ch_prefix/from-git/bin/ch-test --pack-fmt=squash all
 
