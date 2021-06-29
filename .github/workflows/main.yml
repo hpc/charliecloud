@@ -17,13 +17,13 @@ jobs:
         builder: [none, docker, ch-image]
         keep_sudo:  # if false, remove self from sudoers after install/setup
           - false
-        # bundled_lark:
-        #   - true
+        bundled_lark:
+          - true
         include:
           - builder: docker
             keep_sudo: true
           - builder: ch-image
-            bundled_lark: [true, false]
+            bundled_lark: false
 
     env:
       CH_BUILDER: ${{ matrix.builder }}
