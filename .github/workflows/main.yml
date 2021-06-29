@@ -158,10 +158,28 @@ jobs:
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark == true }}
         run: |
           ./configure --prefix=$ch_prefix/from-git
+          set -x
+          fgrep 'documentation: yes' config.log
+          [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
+          [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
+          fgrep 'at least one builder ... yes' config.log
+          fgrep 'ch-run(1): yes' config.log
+          fgrep 'complete test suite: yes' config.log
+          set +x
       - name: configure without bundled lark
         if: ${{ ! matrix.bundled_lark }}
         run: |
           ./configure --prefix=$ch_prefix/from-git --disable-bundle-lark
+          set -x
+          fgrep 'documentation: yes' config.log
+          [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
+          [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
+          fgrep 'at least one builder ... yes' config.log
+          fgrep 'ch-run(1): yes' config.log
+          fgrep 'complete test suite: yes' config.log
+          set +x
 
       - name: validate configure output
         run: |
@@ -174,14 +192,15 @@ jobs:
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
           set +x
-
-      - name: make and install from git
-        run: |
           # Build and install.
           make $ch_makej
           sudo make $ch_makej install
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
+
+      - name: make and install from git
+        run: |
+          
 
       - name: bundled-lark validation, git install
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
