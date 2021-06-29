@@ -157,7 +157,7 @@ jobs:
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
           [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log && fgrep 'with bundled lark: yes' config.log
+          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
@@ -168,13 +168,6 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
 
-    
-      - name: bundled-lark validation, git install
-        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
-        run: |
-          fgrep 'with bundled lark: yes' config.log
-          [[ -d $ch_prefix/from-git/lib/lark ]]
-          [ "$(ls -A $ch_prefix/from-git/lib/lark)" ]
       - name: late setup & validation, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
@@ -338,9 +331,14 @@ jobs:
           bin/ch-test --pack-fmt=tar all
       
       - name: verify no bundled lark works
+       # this doesn't actually do anything. Because there is no setup for no bundled lark.
         if: ${{ matrix.builder == 'ch-image' && ! matrix.bundled_lark }}
         run : |
-          bin/ch-test --scope=quick --pack-fmt=squash all
+          ./autogen.sh --clean --lark
+          ./autogen.sh
+          ./configure --disable-bundled-lark
+          make $ch_makej
+          bin/ch-test --scope=quick --pack-fmt=squash build
 
       - name: print ending environment
         if: ${{ always() }}
