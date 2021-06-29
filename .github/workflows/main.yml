@@ -144,7 +144,7 @@ jobs:
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
 
-      - name: build/install from Git - autogen
+      - name: build/install from Git - autogen step
         run: |
           ./autogen.sh --clean --lark
           ./autogen.sh
