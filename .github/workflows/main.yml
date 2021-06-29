@@ -150,7 +150,7 @@ jobs:
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
           # Configure and verify output
-      
+      # cofigure
       - name: configure with bundled lark
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark == true }}
         run: |
