@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5. Contributor’s guide &mdash; Charliecloud 0.24~pre+1061updatecopyright.4b55233 documentation</title>
+  <title>5. Contributor’s guide &mdash; Charliecloud 0.24 documentation</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.24~pre+1061updatecopyright.4b55233
+                0.24
               </div>
             
           
@@ -101,9 +101,13 @@
 <li class="toctree-l3"><a class="reference internal" href="#branching-and-merging">5.1.3. Branching and merging</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#miscellaneous-issue-and-pull-request-notes">5.1.4. Miscellaneous issue and pull request notes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#continuous-integration-testing">5.1.5. Continuous integration testing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#github-tags">5.1.6. GitHub tags</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#what-kind-of-issue-is-it">5.1.6.1. What kind of issue is it?</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#what-do-we-plan-to-do-about-it">5.1.6.2. What do we plan to do about it?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#issue-labeling">5.1.6. Issue labeling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#what-kind-of-change-is-it">5.1.6.1. What kind of change is it?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-important-urgent-is-it">5.1.6.2. How important/urgent is it?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#what-part-of-charliecloud-is-affected">5.1.6.3. What part of Charliecloud is affected?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#special-considerations">5.1.6.4. Special considerations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#why-was-it-closed">5.1.6.5. Why was it closed?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deprecated-labels">5.1.6.6. Deprecated labels</a></li>
 </ul>
 </li>
 </ul>
@@ -246,7 +250,7 @@ consult the internal documentation and other resources.</p>
 <li><p><a class="reference internal" href="#branching-and-merging" id="id5">Branching and merging</a></p></li>
 <li><p><a class="reference internal" href="#miscellaneous-issue-and-pull-request-notes" id="id6">Miscellaneous issue and pull request notes</a></p></li>
 <li><p><a class="reference internal" href="#continuous-integration-testing" id="id7">Continuous integration testing</a></p></li>
-<li><p><a class="reference internal" href="#github-tags" id="id8">GitHub tags</a></p></li>
+<li><p><a class="reference internal" href="#issue-labeling" id="id8">Issue labeling</a></p></li>
 </ul>
 </li>
 <li><p><a class="reference internal" href="#test-suite" id="id9">Test suite</a></p>
@@ -472,56 +476,164 @@ images. The former is generally preferred, as it lets you update only those
 base images that have actually changed (the ones that haven’t will be
 re-tagged).</p>
 </div>
-<div class="section" id="github-tags">
-<h3><a class="toc-backref" href="#id8"><span class="section-number">5.1.6. </span>GitHub tags</a><a class="headerlink" href="#github-tags" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="what-kind-of-issue-is-it">
-<h4><span class="section-number">5.1.6.1. </span>What kind of issue is it?<a class="headerlink" href="#what-kind-of-issue-is-it" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="issue-labeling">
+<h3><a class="toc-backref" href="#id8"><span class="section-number">5.1.6. </span>Issue labeling</a><a class="headerlink" href="#issue-labeling" title="Permalink to this headline">¶</a></h3>
+<p>We use the following labels (a.k.a. tags) to organize issues. Each issue (or
+stand-alone PR) should have label(s) from every category, with the exception
+of disposition which only applies to closed issues.</p>
+<p>Charliecloud team members should label their own issues. Members of the
+general public are more than welcome to label their issues if they like, but
+in practice this is rare, which is fine. Whoever triages the incoming issue
+should add or adjust labels as needed.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This scheme is designed to organize open issues only. There have been
+previous schemes, and we have not re-labeled closed issues.</p>
+</div>
+<div class="section" id="what-kind-of-change-is-it">
+<h4><span class="section-number">5.1.6.1. </span>What kind of change is it?<a class="headerlink" href="#what-kind-of-change-is-it" title="Permalink to this headline">¶</a></h4>
+<p>Choose <em>one type</em> from:</p>
 <dl class="simple">
-<dt><code class="code docutils literal notranslate"><span class="pre">bug</span></code></dt><dd><p>Problem of some kind that needs to be fixed; i.e., something doesn’t work.
-This includes usability and documentation problems. Should have steps to
-reproduce with expected and actual behavior.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">bug</span></code></dt><dd><p>Something doesn’t work; e.g., it doesn’t work as intended or it was
+mis-designed. This includes usability and documentation problems. Steps to
+reproduce with expected and actual behavior are almost always very helpful.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">enhancement</span></code></dt><dd><p>Things work, but it would be better if something was different. For example,
-a new feature proposal or refactoring. Should have steps to reproduce with
-desired and actual behavior.</p>
+a new feature proposal, an improvement in how a feature works, or clarifying
+an error message. Steps to reproduce with desired and current behavior are
+often helpful.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">help</span> <span class="pre">wanted</span></code></dt><dd><p>The core team does not plan to address this issue, perhaps because we don’t
-know how, but we think it would be good to address it. We hope someone from
-the community will volunteer.</p>
-</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">key</span> <span class="pre">issue</span></code></dt><dd><p>A particularly important or notable issue.</p>
-</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">question</span></code></dt><dd><p>Support request that does not report a problem or ask for a change. Close
-these after the question is answered or several days with no activity.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">refactor</span></code></dt><dd><p>Change that will improve Charliecloud but does not materially affect
+user-visible behavior. Note this doesn’t mean “invisible to the user”; even
+user-facing documentation or logging changes could feasibly be this, if they
+are more cleanup-oriented.</p>
 </dd>
 </dl>
 </div>
-<div class="section" id="what-do-we-plan-to-do-about-it">
-<h4><span class="section-number">5.1.6.2. </span>What do we plan to do about it?<a class="headerlink" href="#what-do-we-plan-to-do-about-it" title="Permalink to this headline">¶</a></h4>
-<p>For all of these, leave other tags in place, e.g. <code class="code docutils literal notranslate"><span class="pre">bug</span></code>.</p>
+<div class="section" id="how-important-urgent-is-it">
+<h4><span class="section-number">5.1.6.2. </span>How important/urgent is it?<a class="headerlink" href="#how-important-urgent-is-it" title="Permalink to this headline">¶</a></h4>
+<p>Choose <em>one priority</em> from:</p>
 <dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">high</span></code></dt><dd><p>High priority.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">medium</span></code></dt><dd><p>Medium priority.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">low</span></code></dt><dd><p>Low priority. Note: Unfortunately, due to resource limitations, complex
+issues here are likely to wait a long time, perhaps forever. If that makes
+you particularly sad on a particular issue, please comment to say why. Maybe
+it’s mis-prioritized.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">deferred</span></code></dt><dd><p>No plans to do this, but not rejected. These issues stay open, because we do
 not consider the deferred state resolved. Submitting PRs on these issues is
 risky; you probably want to argue successfully that it should be done before
 starting work on it.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">duplicate</span></code></dt><dd><p>Same as some other previously reported issue. In addition to this tag,
-duplicates should refer to the other issue and be closed.</p>
+</dl>
+<p>Priority is indeed required, though it can be tricky because the levels are
+fuzzy. Do not hesitate to ask for advice. Considerations include: is customer
+or development work blocked by the issue; how valuable is the issue for
+customers; does the issue affect key customers; how many customers are
+affected; how much of Charliecloud is affected; what is the workaround like,
+if any. Difficulty of the issue is not a factor in priority, i.e., here we are
+trying to express benefit, not cost/benefit ratio. Perhaps the <a class="reference external" href="https://www.debian.org/Bugs/Developer#severities">Debian bug
+severity levels</a> provide
+inspiration. The number of <code class="code docutils literal notranslate"><span class="pre">high</span></code> priority issues should be relatively
+low.</p>
+<p>In part because priority is quite imprecise, issues are not a priority queue,
+i.e., we do work on lower-priority issues while higher-priority ones are still
+open. Related to this, issues do often move between priority levels. In
+particular, if you think we picked the wrong priority level, please say so.</p>
+</div>
+<div class="section" id="what-part-of-charliecloud-is-affected">
+<h4><span class="section-number">5.1.6.3. </span>What part of Charliecloud is affected?<a class="headerlink" href="#what-part-of-charliecloud-is-affected" title="Permalink to this headline">¶</a></h4>
+<p>Choose <em>one or more components</em> from:</p>
+<dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">runtime</span></code></dt><dd><p>The container runtime itself; largely <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">obsolete</span></code></dt><dd><p>No longer relevant, moot, etc. Close.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">image</span></code></dt><dd><p>Image building and interaction with image registries; largely
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>. (Not to be confused with image management tasks done by
+glue code.)</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">erroneous</span></code></dt><dd><p>Not a Charliecloud issue; close. <em>Use caution when blaming a problem on user
-error. Often (or usually) there is a documentation or usability bug that
-caused the “user error”.</em></p>
+<dt><code class="code docutils literal notranslate"><span class="pre">glue</span></code></dt><dd><p>The “glue” that ties the runtime and image management (<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> or
+another builder) together. Largely shell scripts in <code class="code docutils literal notranslate"><span class="pre">bin</span></code>.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">wontfix</span></code></dt><dd><p>We are not going to do this, and we won’t merge PRs. Close issue after
-tagging, though sometimes you’ll want to leave a few days to allow for
-further discussion to catch mistaken tags.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">install</span></code></dt><dd><p>Charliecloud build &amp; install system, packaging, etc. (Not to be confused
+with image building.)</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">worksforme</span></code></dt><dd><p>We cannot reproduce the issue. Typical workflow is to tag, then wait a few
-days for clarification before closing.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">doc</span></code></dt><dd><p>Documentation.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">test</span></code></dt><dd><p>Test suite and examples.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">misc</span></code></dt><dd><p>Everything else. Do not combine with another component.</p>
 </dd>
 </dl>
+</div>
+<div class="section" id="special-considerations">
+<h4><span class="section-number">5.1.6.4. </span>Special considerations<a class="headerlink" href="#special-considerations" title="Permalink to this headline">¶</a></h4>
+<p>Choose <em>one or more extras</em> from:</p>
+<dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">blocked</span></code></dt><dd><p>We can’t do this yet because something else needs to happen first. If that
+something is another issue, mention it in a comment.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">hpc</span></code></dt><dd><p>Related specifically to HPC and HPC scaling considerations; e.g.,
+interactions with job schedulers.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">uncertain</span></code></dt><dd><p>Course of action is unclear. For example: is the feature a good idea,
+what is a good approach to solve the bug, what additional information is
+needed.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">usability</span></code></dt><dd><p>Affects usability of any part of Charliecloud, including documentation and
+project organization.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="why-was-it-closed">
+<h4><span class="section-number">5.1.6.5. </span>Why was it closed?<a class="headerlink" href="#why-was-it-closed" title="Permalink to this headline">¶</a></h4>
+<p>If the issue was resolved (i.e., bug fixed or enhancement/refactoring
+implemented), there is no disposition tag. Otherwise, to explain why not,
+choose <em>one disposition</em> from:</p>
+<dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">cantfix</span></code></dt><dd><p>The issue is not something we can resolve. Typically problems with other
+software, problems with containers in general that we can’t work around, or
+not actionable due to clarity or other reasons. <em>Use caution when blaming a
+problem on user error. Often (or usually) there is a documentation or
+usability bug that caused the “user error”.</em></p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">discussion</span></code></dt><dd><p>Converted to a discussion. The most common use is when someone asks a
+question rather than making a request for some change.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">duplicate</span></code></dt><dd><p>Same as some other issue. In addition to this tag, duplicates should refer
+to the other issue in a comment to record the link. Of the duplicates, the
+better one should stay open (e.g., clearer reproduction steps); if they are
+roughly equal in quality, the older one should stay open.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">moot</span></code></dt><dd><p>No longer relevant. Examples: withdrawn by reporter, fixed in current
+version (use <code class="code docutils literal notranslate"><span class="pre">duplicate</span></code> instead if it applies though), obsoleted by
+change in plans.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">wontfix</span></code></dt><dd><p>We are not going to do this, and we won’t merge PRs. Sometimes you’ll want
+to tag and then wait a few days before closing, to allow for further
+discussion to catch mistaken tags.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">worksforme</span></code></dt><dd><p>We cannot reproduce a bug, and it seems unlikely this will change given
+available information. Typically you’ll want to tag, then wait a few days
+for clarification before closing. Bugs closed with this tag that do gain a
+reproducer later should definitely be re-opened. For some bugs, it really
+feels like they should be reproducible but we’re missing it somehow; such
+bugs should be left open in hopes of new insight arising.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="deprecated-labels">
+<h4><span class="section-number">5.1.6.6. </span>Deprecated labels<a class="headerlink" href="#deprecated-labels" title="Permalink to this headline">¶</a></h4>
+<p>You might see these on old issues, but they are no longer in use.</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">help</span> <span class="pre">wanted</span></code>: This tended to get stale and wasn’t generating any
+leads.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">key</span> <span class="pre">issue</span></code>: Replaced by priority labels.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">question</span></code>: Replaced by Discussions. (If you report a bug that seems
+to be a discussion, we’ll be happy to convert it to you.)</p></li>
+</ul>
 </div>
 </div>
 </div>

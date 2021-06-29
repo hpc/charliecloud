@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4. Frequently asked questions (FAQ) &mdash; Charliecloud 0.24~pre+1061updatecopyright.4b55233 documentation</title>
+  <title>4. Frequently asked questions (FAQ) &mdash; Charliecloud 0.24 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.24~pre+1061updatecopyright.4b55233
+                0.24
               </div>
             
           
@@ -697,7 +697,7 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 <div class="section" id="how-do-i-run-x11-apps">
 <h3><a class="toc-backref" href="#id23"><span class="section-number">4.4.4. </span>How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
 <p>X11 applications should “just work”. For example, try this Dockerfile:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="s"> debian:stretch</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">debian:stretch</span>
 <span class="k">RUN</span>    apt-get update <span class="se">\</span>
     <span class="o">&amp;&amp;</span> apt-get install -y xterm
 </pre></div>
