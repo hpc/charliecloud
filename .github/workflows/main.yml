@@ -20,10 +20,11 @@ jobs:
         include:
           - builder: docker
             keep_sudo: true
-        bundle_lark_parser: [true, false]
-        # extra:
-        #   - builder: ch-image
-        #     bundle_lark: false
+        bundle_lark_parser:
+          - true
+        extra:
+          - builder: ch-image
+            bundle_lark: false
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
