@@ -177,7 +177,7 @@ jobs:
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
           # Configure and verify output
-          ./configure --prefix=$ch_prefix/from-git --disable-bundle-lark
+          ./configure --prefix=$ch_prefix/from-git  --disable-bundle-lark
           set -x
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
@@ -191,8 +191,6 @@ jobs:
           sudo make $ch_makej install
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
-          
-
       # - name: bundled-lark validation, git install
       #   if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
       #   run: |
