@@ -144,19 +144,24 @@ jobs:
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
 
-      - name: build/install from Git
+      - name: build/install from Git - autogen
         run: |
           ./autogen.sh --clean --lark
           ./autogen.sh
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
-          # Configure and verify output.
+          # Configure and verify output
+
+      - name: configure with bundled lark
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
           run: |
             ./configure --prefix=$ch_prefix/from-git
-        if: ${{ matrix.builder == 'ch-image' && ! matrix.bundled_lark }}
+      - name: configure without bundled lark
+        if: ${{ ! matrix.bundled_lark }}
           run: |
             /configure --prefix=$ch_prefix/from-git --disable-bundle-lark
+
+      - name: validate configure output
         run: |
           set -x
           fgrep 'documentation: yes' config.log
@@ -167,20 +172,14 @@ jobs:
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
           set +x
+
+      - name: make and install from git
+        run: |
           # Build and install.
           make $ch_makej
           sudo make $ch_makej install
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
-
-      - name: configure with bundled lark
-        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
-          run: |
-            ./configure --prefix=$ch_prefix/from-git
-      - name: configure without bundled lark
-        if: ${{ ! matrix.bundled_lark }}
-          run: |
-            /configure --prefix=$ch_prefix/from-git --disable-bundle-lark
 
       - name: bundled-lark validation, git install
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
