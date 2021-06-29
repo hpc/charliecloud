@@ -8,14 +8,16 @@
 
 /** Types **/
 
+enum bind_dep {
+   BD_REQUIRED,  // both source and destination must exist
+   BD_OPTIONAL,  // if either source or destination missing, do nothing
+   BD_MAKE_DST,  // source must exist, try to create destination if it doesn't
+};
+
 struct bind {
    char *src;
    char *dst;
-};
-
-enum bind_dep {
-   BD_REQUIRED,  // both source and destination must exist
-   BD_OPTIONAL   // if either source or destination missing, do nothing
+   enum bind_dep dep;
 };
 
 struct container {
@@ -23,6 +25,7 @@ struct container {
    bool ch_ssh;          // bind /usr/bin/ch-ssh?
    gid_t container_gid;  // GID to use in container
    uid_t container_uid;  // UID to use in container
+   bool env_expand;      // identifier to expands variable
    char *newroot;        // path to new root directory
    bool join;            // is this a synchronized join?
    int join_ct;          // number of peers in a synchronized join

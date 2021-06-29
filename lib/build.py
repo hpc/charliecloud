@@ -356,11 +356,17 @@ class I_copy(Instruction):
          paths = [variables_sub(i, env.env_build)
                   for i in ch.tree_child_terminals(self.tree, "copy_shell",
                                                    "WORD")]
-         self.srcs = paths[:-1]
-         self.dst = paths[-1]
+      elif (ch.tree_child(self.tree, "copy_list") is not None):
+         paths = [variables_sub(i, env.env_build)
+                  for i in ch.tree_child_terminals(self.tree, "copy_list",
+                                                   "STRING_QUOTED")]
+         for i in range(len(paths)):
+            paths[i] = paths[i][1:-1] #strip quotes
       else:
-         assert (ch.tree_child(self.tree, "copy_list") is not None)
-         self.unsupported_yet_fatal("list form", 784)
+         assert (False, "unreachable code reached")
+
+      self.srcs = paths[:-1]
+      self.dst = paths[-1]
 
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
@@ -590,7 +596,7 @@ class I_env_space(Env):
    def __init__(self, *args):
       super().__init__(*args)
       self.key = ch.tree_terminal(self.tree, "WORD")
-      value = ch.tree_terminal(self.tree, "LINE")
+      value = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
       if (not value.startswith('"')):
          value = '"' + value + '"'
       self.value = unescape(value)
@@ -636,12 +642,14 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
       self.base_image = ch.Image(self.base_ref)
-      if (not os.path.isdir(self.base_image.unpack_path)):
-         ch.VERBOSE("image not found, pulling: %s"
-                    % self.base_image.unpack_path)
+      if (os.path.isdir(self.base_image.unpack_path)):
+         ch.VERBOSE("base image found: %s" % self.base_image.unpack_path)
+      else:
+         ch.VERBOSE("base image not found, pulling")
          # a young hen, especially one less than one year old.
-         pullet = pull.Image_Puller(self.base_image)
+         pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
          pullet.pull_to_unpacked()
+         pullet.done()
       image.copy_unpacked(self.base_image)
       image.metadata_load()
       env.reset()
@@ -651,8 +659,8 @@ class I_from_(Instruction):
                                         cli.force, cli.no_force_detect)
 
    def str_(self):
-      alias = "AS %s" % self.alias if self.alias else ""
-      return "%s %s" % (self.base_ref, alias)
+      alias = " AS %s" % self.alias if self.alias else ""
+      return "%s%s" % (self.base_ref, alias)
 
 
 class Run(Instruction):
@@ -690,19 +698,22 @@ class I_run_exec(Run):
 
 class I_run_shell(Run):
 
+   # Note re. line continuations and whitespace: Whitespace before the
+   # backslash is passed verbatim to the shell, while the newline and any
+   # whitespace between the newline and baskslash are deleted.
+
    def __init__(self, *args):
       super().__init__(*args)
-      # FIXME: Can't figure out how to remove continuations at parse time.
-      cmd = ch.tree_terminal(self.tree, "LINE").replace("\\\n", "")
+      cmd = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
       self.cmd = env.shell + [cmd]
 
 class I_shell(Instruction):
- 
+
    def __init__(self, *args):
       super().__init__(*args)
       self.shell = [variables_sub(unescape(i), env.env_build)
                     for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
-  
+
    def str_(self):
       return str(self.shell)
 
@@ -713,7 +724,7 @@ class I_workdir(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.path = variables_sub(ch.tree_terminal(self.tree, "LINE"),
+      self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
                                 env.env_build)
 
    def str_(self):

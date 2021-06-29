@@ -1,5 +1,6 @@
 load ../common
 
+
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
     # it, so re-use the same one.
@@ -40,9 +41,119 @@ FROM 00_tiny
   # multiple before
 	# tab before
 EOF
+
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $(echo "$output" | grep -Fc 'comment') -eq 6 ]]
+
+    # Whitespace and newlines (turn on whitespace highlighting in your editor):
+    run ch-image build -t syntax-quirks -f - . <<'EOF'
+FROM 00_tiny
+
+# trailing whitespace: shell sees it verbatim
+RUN true 
+
+# whitespace-only line: ignored
+ 
+# two in a row
+ 
+ 
+
+# line continuation, no whitespace: shell sees one word
+RUN echo test1\
+a
+# two in a row
+RUN echo test1\
+b\
+c
+
+# whitespace before line continuation: shell sees whitespace verbatim
+RUN echo test2  \
+a
+# two in a row
+RUN echo test2  \
+b  \
+c
+
+# whitespace after line continuation: shell sees one word
+RUN echo test3\  
+a
+# two in a row
+RUN echo test3\  
+b\  
+c
+
+# whitespace before & after line continuation: shell sees before only
+RUN echo test4   \  
+a
+# two in a row
+RUN echo test4   \  
+b   \  
+c
+
+# whitespace on continued line: shell sees continued line's whitespace
+RUN echo test5\
+  a
+# two in a row
+RUN echo test5\
+  b\
+  c
+
+# whitespace-only continued line: shell sees whitespace verbatim
+RUN echo test6\
+  \
+a
+# two in a row
+RUN echo test6\
+  \
+  \
+b
+
+# backslash that is not a continuation: shell sees it verbatim
+RUN echo test\ 7\
+a
+# two in a row
+RUN echo test\ 7\ \
+b
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    output_expected=$(cat <<'EOF'
+warning: not yet supported, ignored: issue #777: .dockerignore file
+  1 FROM 00_tiny
+  4 RUN ['/bin/sh', '-c', 'true ']
+ 13 RUN ['/bin/sh', '-c', 'echo test1a']
+test1a
+ 16 RUN ['/bin/sh', '-c', 'echo test1bc']
+test1bc
+ 21 RUN ['/bin/sh', '-c', 'echo test2  a']
+test2 a
+ 24 RUN ['/bin/sh', '-c', 'echo test2  b  c']
+test2 b c
+ 29 RUN ['/bin/sh', '-c', 'echo test3a']
+test3a
+ 32 RUN ['/bin/sh', '-c', 'echo test3bc']
+test3bc
+ 37 RUN ['/bin/sh', '-c', 'echo test4   a']
+test4 a
+ 40 RUN ['/bin/sh', '-c', 'echo test4   b   c']
+test4 b c
+ 45 RUN ['/bin/sh', '-c', 'echo test5  a']
+test5 a
+ 48 RUN ['/bin/sh', '-c', 'echo test5  b  c']
+test5 b c
+ 53 RUN ['/bin/sh', '-c', 'echo test6  a']
+test6 a
+ 57 RUN ['/bin/sh', '-c', 'echo test6    b']
+test6 b
+ 63 RUN ['/bin/sh', '-c', 'echo test\\ 7a']
+test 7a
+ 66 RUN ['/bin/sh', '-c', 'echo test\\ 7\\ b']
+test 7 b
+grown in 16 instructions: syntax-quirks
+EOF
+)
+    diff -u <(echo "$output_expected") <(echo "$output")
 }
 
 
@@ -59,8 +170,8 @@ EOF
     [[ $status -eq 1 ]]
     # error message
     [[ $output = *"can't parse: -:2,1"* ]]
-    # internal blabber
-    [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
+    # internal blabber (varies by version)
+    [[ $output = *'No terminal'*"'W'"*'at line 2 col 1'* ]]
 
     # Bad long option.
     run ch-image build -t foo -f - . <<'EOF'
@@ -159,15 +270,6 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
-
-    # COPY list form
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
-FROM 00_tiny
-COPY ["fixtures/empty-file", "."]
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #784: COPY list form'* ]]
 
     # FROM --platform
     run ch-image build -t not-yet-supported -f - . <<'EOF'
@@ -629,6 +731,33 @@ EOF
     fi
 }
 
+@test 'Dockerfile: COPY list form' {
+    scope standard
+    [[ $CH_BUILDER == ch-image ]] || skip 'ch-image only'
+
+    # single source
+    run ch-image build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY ["fixtures/empty-file", "."]
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
+    test -f "$CH_IMAGE_STORAGE"/img/foo/empty-file
+
+    # multiple source
+    run ch-image build -t foo -f - . <<'EOF'
+FROM 00_tiny
+COPY ["fixtures/empty-file", "fixtures/README", "."]
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"COPY ['fixtures/empty-file', 'fixtures/README'] -> '.'"* ]]
+    test -f "$CH_IMAGE_STORAGE"/img/foo/empty-file
+    test -f "$CH_IMAGE_STORAGE"/img/foo/README
+
+    run ch-image delete foo
+}
 
 @test 'Dockerfile: COPY errors' {
     scope standard
@@ -731,6 +860,7 @@ EOF
         [[ $output = *'no sources found'* ]]
     fi
 }
+
 
 @test 'Dockerfile: COPY --from errors' {
     scope standard
@@ -867,4 +997,42 @@ EOF
             false
             ;;
     esac
+}
+
+
+@test 'Dockerfile: FROM scratch' {
+    scope standard
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    # pull it; validate special handling
+    run ch-image pull -v scratch
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'manifest: using internal library'* ]]
+    [[ $output = *'no config found; initializing empty metadata'* ]]
+    [[ $output != *'layer 1'* ]]  # no layers
+
+    # remove
+    ch-image delete scratch
+
+    # build 1; validate pulled with special handling
+    run ch-image build -v -t foo -f - . <<'EOF'
+FROM scratch
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'base image not found, pulling'* ]]
+    [[ $output = *'manifest: using internal library'* ]]
+    [[ $output = *'no config found; initializing empty metadata'* ]]
+    [[ $output != *'layer 1'* ]]  # no layers
+    ls -lha "${CH_IMAGE_STORAGE}/img/foo/usr"
+    [[ $(find /tmp/foo -mindepth 1 "${CH_IMAGE_STORAGE}/img/foo/usr") = '' ]]
+
+    # build 2; validate not pulled
+    run ch-image build -v -t foo -f - . <<'EOF'
+FROM scratch
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"base image found: ${CH_IMAGE_STORAGE}/img/scratch"* ]]
 }

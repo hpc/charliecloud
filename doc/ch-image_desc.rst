@@ -1,13 +1,17 @@
 Synopsis
 ========
 
+.. Note: Keep these consistent with the synopses in each subcommand.
+
 ::
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] delete IMAGE_REF
-   $ ch-image [...] list
+   $ ch-image [...] import PATH IMAGE_REF
+   $ ch-image [...] list [IMAGE_REF]
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
+   $ ch-image [...] reset
    $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
@@ -34,6 +38,43 @@ Options that print brief information and then exit:
 
 Common options placed before the sub-command:
 
+  :code:`-a`, :code:`--arch ARCH`
+     Use :code:`ARCH` for architecture-aware registry operations, currently
+     :code:`pull` and pulls done within :code:`build`. :code:`ARCH` can be:
+     (1) :code:`yolo`, to bypass architecture-aware code and use the
+     registry's default architecture; (2) :code:`host`, to use the host's
+     architecture, obtained with the equivalent of :code:`uname -m` (default
+     if :code:`--arch` not specified); or (3) an architecture name. If the
+     specified architecture is not available, the error message will list
+     which ones are.
+
+     **Notes:**
+
+     1. :code:`ch-image` is limited to one image per image reference in
+        builder storage at a time, regardless of architecture. For example, if
+        you say :code:`ch-image pull --arch=foo baz` and then :code:`ch-image
+        pull --arch=bar baz`, builder storage will contain one image called
+        "baz", with architecture "bar".
+
+     2. Images' default architecture is usually :code:`amd64`, so this is
+        usually what you get with :code:`--arch=yolo`. Similarly, if a
+        registry image is architecture-unaware, it will still be pulled with
+        :code:`--arch=amd64` and :code:`--arch=host` on x86-64 hosts (other
+        host architectures must specify :code:`--arch=yolo` to pull
+        architecture-unaware images).
+
+     3. :code:`uname -m` and image registries often use different names for
+        the same architecture. For example, what :code:`uname -m` reports as
+        "x86_64" is known to registries as "amd64". :code:`--arch=host` should
+        translate if needed, but it's useful to know this is happening.
+        Directly specified architecture names are passed to the registry
+        without translation.
+
+     4. Registries treat architecture as a pair of items, architecture and
+        sometimes variant (e.g., "arm" and "v7"). Charliecloud treats
+        architecture as a simple string and converts to/from the registry view
+        transparently.
+
   :code:`--no-cache`
     Download everything needed, ignoring the cache.
 
@@ -46,7 +87,6 @@ Common options placed before the sub-command:
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
-
 
 Storage directory
 =================
@@ -91,10 +131,15 @@ Subcommands
 :code:`build`
 -------------
 
+::
+
+   $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
+
 Build an image from a Dockerfile and put it in the storage directory. Use
-:code:`ch-run(1)` to execute :code:`RUN` instructions. Note that :code:`FROM`
-implicitly pulls the base image if needed, so you may want to read about the
-:code:`pull` subcommand below as well.
+:code:`ch-run -w -u0 -g0 --no-home --no-passwd` to execute :code:`RUN`
+instructions. Note that :code:`FROM` implicitly pulls the base image if
+needed, so you may want to read about the :code:`pull` subcommand below as
+well.
 
 Required argument:
 
@@ -105,13 +150,19 @@ Required argument:
 Options:
 
   :code:`-b`, :code:`--bind SRC[:DST]`
-    Bind-mount host directory :code:`SRC` at container directory :code:`DST`
-    during :code:`RUN` instructions. Can be repeated; the default destination
-    if :code:`DST` is omitted is :code:`/mnt/0`, :code:`/mnt/1`, etc.
+    For :code:`RUN` instructions only, bind-mount :code:`SRC` at guest
+    :code:`DST`. The default destination if not specified is to use the same
+    path as the host; i.e., the default is equivalent to
+    :code:`--bind=SRC:SRC`. If :code:`DST` does not exist, try to create it as
+    an empty directory, though images do have ten directories
+    :code:`/mnt/[0-9]` already available as mount points. Can be repeated.
 
-    **Note:** This applies only to :code:`RUN` instructions. Other
-    instructions that modify the image filesystem, e.g. :code:`COPY`, can only
-    access host files from the context directory.
+    **Note:** See documentation for :code:`ch-run --bind` for important
+    caveats and gotchas.
+
+    **Note:** Other instructions that modify the image filesystem, e.g.
+    :code:`COPY`, can only access host files from the context directory,
+    regardless of this option.
 
   :code:`--build-arg KEY[=VALUE]`
     Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
@@ -212,11 +263,49 @@ prints exactly what it is doing.
 :code:`delete`
 --------------
 
+::
+
+   $ ch-image [...] delete IMAGE_REF
+
 Delete the image described by the image reference :code:`IMAGE_REF` from the
 storage directory.
 
+:code:`list`
+------------
+
+Print information about images. If no argument given, list the images in
+builder storage.
+
+Optional argument:
+
+  :code:`IMAGE_REF`
+    Print details of what's known about :code:`IMAGE_REF`, both locally in the
+    remote registry, if any.
+
+:code:`import`
+--------------
+
+::
+
+   $ ch-image [...] import PATH IMAGE_REF
+
+Copy the image at :code:`PATH` into builder storage with name
+:code:`IMAGE_REF`. :code:`PATH` can be:
+
+* an image directory
+* a tarball with no top-level directory (a.k.a. a "`tarbomb <https://en.wikipedia.org/wiki/Tar_(computing)#Tarbomb>`_")
+* a standard tarball with one top-level directory
+
+If the imported image contains Charliecloud metadata, that will be imported
+unchanged, i.e., images exported from :code:`ch-image` builder storage will be
+functionally identical when re-imported.
+
 :code:`pull`
 ------------
+
+::
+
+   $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
 
 Pull the image described by the image reference :code:`IMAGE_REF` from a
 repository to the local filesystem. See the FAQ for the gory details on
@@ -267,6 +356,10 @@ metadata. A warning is printed in this case.
 :code:`push`
 ------------
 
+::
+
+   $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
+
 Push the image described by the image reference :code:`IMAGE_REF` from the
 local filesystem to a repository. See the FAQ for the gory details on
 specifying image references.
@@ -290,11 +383,23 @@ Options:
     Use the unpacked image located at :code:`DIR` rather than an image in the
     storage directory named :code:`IMAGE_REF`.
 
+:code:`reset`
+-------------
+
+::
+
+   $ ch-image [...] reset
+
+Delete all images and cache from ch-image builder storage.
+
 :code:`storage-path`
 --------------------
 
-Print the storage directory path and exit.
+::
 
+   $ ch-image [...] storage-path
+
+Print the storage directory path and exit.
 
 Compatibility with other Dockerfile interpreters
 ================================================
@@ -509,24 +614,66 @@ installing into a layer::
    RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround
    RUN ldconfig
 
+:code:`list`
+------------
+
+List images in builder storage::
+
+   $ ch-image list
+   alpine:3.9 (amd64)
+   alpine:latest (amd64)
+   debian:buster (amd64)
+
+Print details about Debian Buster image::
+
+   $ ch-image list debian:buster
+   details of image:    debian:buster
+   in local storage:    no
+   full remote ref:     registry-1.docker.io:443/library/debian:buster
+   available remotely:  yes
+   remote arch-aware:   yes
+   host architecture:   amd64
+   archs available:     386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x
+
 :code:`pull`
 ------------
 
-Download the Debian Buster image and place it in the storage directory::
+Download the Debian Buster image matching the host's architecture and place it
+in the storage directory::
 
-  $ ch-image pull debian:buster
-  pulling image:   debian:buster
+   $ uname -m
+   aarch32
+   pulling image:    debian:buster
+   requesting arch:  arm64/v8
+   manifest list: downloading
+   manifest: downloading
+   config: downloading
+   layer 1/1: c54d940: downloading
+   flattening image
+   layer 1/1: c54d940: listing
+   validating tarball members
+   resolving whiteouts
+   layer 1/1: c54d940: extracting
+   image arch: arm64
+   done
 
-  manifest: downloading
-  layer 1/1: d6ff36c: downloading
-  layer 1/1: d6ff36c: listing
-  validating tarball members
-  resolving whiteouts
-  flattening image
-  layer 1/1: d6ff36c: extracting
-  done
+Same, specifying the architecture explicitly::
 
-Same, except place the image in :code:`/tmp/buster`::
+   $ ch-image --arch=arm/v7 pull debian:buster
+   pulling image:    debian:buster
+   requesting arch:  arm/v7
+   manifest list: downloading
+   manifest: downloading
+   config: downloading
+   layer 1/1: 8947560: downloading
+   flattening image
+   layer 1/1: 8947560: listing
+   validating tarball members
+   resolving whiteouts
+   layer 1/1: 8947560: extracting
+   image arch: arm (may not match host arm64/v8)
+
+Download the same image and place it in :code:`/tmp/buster`::
 
    $ ch-image pull debian:buster /tmp/buster
    [...]
@@ -597,6 +744,5 @@ in the remote registry, so we don't upload it again.)
    manifest: uploading
    cleaning up
    done
-
 
 ..  LocalWords:  tmpfs'es bigvendor
