@@ -146,6 +146,16 @@ jobs:
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
       
+      - name: verify no bundled lark works
+        if: ${{ matrix.builder == 'ch-image' && ! matrix.bundled_lark }}
+        run : |
+          ./autogen.sh --clean --lark
+          ./autogen.sh
+          ./configure --disable-bundled-lark
+          fgrep 'with bundled lark: no' config.log
+          make $ch_makej
+          bin/ch-test --scope=quick --pack-fmt=squash build
+
       - name: build/install from Git
         run: |
           ./autogen.sh
