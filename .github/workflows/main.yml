@@ -337,6 +337,7 @@ jobs:
           ./autogen.sh --clean --lark
           ./autogen.sh
           ./configure --disable-bundled-lark
+          fgrep 'with bundled lark: no' config.log
           make $ch_makej
           bin/ch-test --scope=quick --pack-fmt=squash build
 
