@@ -20,7 +20,7 @@ jobs:
         include:
           - builder: docker
             keep_sudo: true
-        include:
+        bundle_lark_parser:
           - builder: ch-image
             bundle_lark: true
     env:
@@ -153,13 +153,13 @@ jobs:
           # Configure and verify output
 
       - name: configure with bundled lark
-        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
-          run: |
-            ./configure --prefix=$ch_prefix/from-git
+        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark == true }}
+        run: |
+          ./configure --prefix=$ch_prefix/from-git
       - name: configure without bundled lark
         if: ${{ ! matrix.bundled_lark }}
-          run: |
-            /configure --prefix=$ch_prefix/from-git --disable-bundle-lark
+        run: |
+          /configure --prefix=$ch_prefix/from-git --disable-bundle-lark
 
       - name: validate configure output
         run: |
@@ -183,10 +183,10 @@ jobs:
 
       - name: bundled-lark validation, git install
         if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark }}
-          run: |
-            fgrep 'with bundled lark: yes' config.log
-            [[ -d $ch_prefix/from-git/lib/lark ]]
-            [ "$(ls -A $ch_prefix/from-git/lib/lark)" ]
+        run: |
+          fgrep 'with bundled lark: yes' config.log
+          [[ -d $ch_prefix/from-git/lib/lark ]]
+          [ "$(ls -A $ch_prefix/from-git/lib/lark)" ]
       - name: late setup & validation, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
