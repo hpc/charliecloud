@@ -17,12 +17,11 @@ jobs:
         builder: [none, docker, ch-image]
         keep_sudo:  # if false, remove self from sudoers after install/setup
           - false
+        bundle_lark:
+          - true
         include:
           - builder: docker
             keep_sudo: true
-        bundle_lark_parser:
-          - true
-        extra:
           - builder: ch-image
             bundle_lark: false
     env:
