@@ -145,18 +145,15 @@ jobs:
           sudo apt-get install squashfs-tools squashfuse
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
-
-      - name: build/install from Git - autogen
+      
+      - name: configure with bundled lark
+        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark == true }}
         run: |
           ./autogen.sh --clean --lark
           ./autogen.sh
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
           # Configure and verify output
-      
-      - name: configure with bundled lark
-        if: ${{ matrix.builder == 'ch-image' && matrix.bundled_lark == true }}
-        run: |
           ./configure --prefix=$ch_prefix/from-git
           set -x
           fgrep 'documentation: yes' config.log
@@ -171,9 +168,15 @@ jobs:
           sudo make $ch_makej install
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
+
       - name: configure without bundled lark
         if: ${{ ! matrix.bundled_lark }}
         run: |
+          ./autogen.sh --clean --lark
+          ./autogen.sh
+          # Remove Autotools to make sure everything works without them.
+          sudo apt-get remove autoconf automake
+          # Configure and verify output
           ./configure --prefix=$ch_prefix/from-git --disable-bundle-lark
           set -x
           fgrep 'documentation: yes' config.log
