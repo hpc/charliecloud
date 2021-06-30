@@ -380,7 +380,7 @@ CH_CHECK_VERSION([SHELLCHECK], [$vmin_shellcheck],
 vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
 AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
 CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
-                 [--help |& head -1 | cut -d' ' -f2])
+                 [--help 2>&1 | head -1 | cut -d' ' -f2])
 
 # sudo, generic
 # Avoids prompting for password; see https://superuser.com/a/1183480.
