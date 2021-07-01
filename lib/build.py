@@ -847,7 +847,6 @@ def unescape(sl):
    # guessing it's the Go rules. You will note that we are using Python rules.
    # This is wrong but close enough for now (see also gripe in previous
    # paragraph).
-   ch.INFO("sl: <%s>" % sl)
    if (    not sl.startswith('"')                          # no start quote
        and (not sl.endswith('"') or sl.endswith('\\"'))):  # no end quote
       sl = '"%s"' % sl
