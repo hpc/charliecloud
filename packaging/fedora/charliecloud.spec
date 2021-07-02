@@ -72,7 +72,7 @@ Test fixtures for %{name}.
 CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
 %configure --docdir=%{_pkgdocdir} \
            --with-python=/usr/bin/python3 \
-           --disable-bundke-lark \
+           --disable-bundled-lark \
 %if 0%{?el7}
             --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
@@ -124,16 +124,18 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_libdir}/%{name}/*.sh
 %{_libdir}/%{name}/contributors.bash
 %{_libdir}/%{name}/version.txt
-%{_libdir}/%{name}/lark/*
-%{_libdir}/%{name}/lark-stubs/*
-%{_libdir}/%{name}/lark-*.dist-info/*
 
 # Binary files.
 %{_bindir}/ch-*
 %exclude %{_bindir}/ch-test
 
-# Exclude test artifacts
+# Exclude test artifacts.
 %exclude %{_libexecdir}/%{name}/test
+# Exclude bundled Lark.
+%exclude %{_libdir}/%{name}/lark/*
+%exclude %{_libdir}/%{name}/lark-stubs/*
+%exclude %{_libdir}/%{name}/lark-*.dist-info/*
+
 
 %files doc
 %license LICENSE

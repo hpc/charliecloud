@@ -97,6 +97,7 @@ AC_SUBST([LIBRT])
 
 ## Options
 
+# Note: Variables must match option, e.g. --disable-foo-bar => enable_foo_bar.
 # Note: --with-sphinx-build provided by AX_WITH_PROG() below.
 
 AC_ARG_WITH([python],
@@ -131,9 +132,10 @@ AC_ARG_ENABLE([ch-image],
                  [ch-image unprivileged builder & image manager]),
   [], [enable_ch_image=yes])
 
-AC_ARG_ENABLE([bundle-lark],
-  AS_HELP_STRING([--disable-bundle-lark], [LERK PERSER]),
-  [enable_bundled_lark=no], [enable_bundled_lark=yes])
+AC_ARG_ENABLE([bundled-lark],
+  AS_HELP_STRING([--disable-bundled-lark],
+                 [use system Lark (not recommended; see docs!)]),
+  [], [enable_bundled_lark=yes])
 
 ## Feature test macros
 
@@ -428,6 +430,14 @@ AS_IF([   test $enable_man = yes && test $have_docs = no],
       [AC_MSG_WARN([forcing --disable-man: no suitable sphinx-build])
        enable_man=no])
 
+# Check if bundled Lark is installed in the source directory. Currently we
+# don't do anything other than report.
+#
+# Note this assumes that $PWD is the top of the source tree. I don't believe
+# anything else is supported (e.g., see issue #820), but it's brittle.
+AS_IF([   test -f ./lib/lark/lark.py],
+      [lark_installed=yes], [lark_installed=no])
+
 ## Set up Makefile conditionals.
 
 AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
@@ -588,6 +598,9 @@ Building Charliecloud
   required:
     C99 compiler ... ${CC} ${CC_VERSION}
 
+  bundled Lark: ${enable_bundled_lark}
+    lark.py under source dir ... ${lark_installed}
+
   documentation: ${have_docs}
     sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
     sphinx-build(1) Python ... ${sphinx_python:-n/a}
@@ -599,8 +612,6 @@ Building images via our wrappers
 
   with Buildah: ${have_buildah}
     Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
-
-  with bundled lark: ${enable_bundled_lark}
 
   with ch-image(1): ${have_ch_image}
     enabled ... ${enable_ch_image}

@@ -17,14 +17,9 @@ jobs:
         builder: [none, docker, ch-image]
         keep_sudo:  # if false, remove self from sudoers after install/setup
           - false
-        bundled_lark:
-          - true
         include:
           - builder: docker
             keep_sudo: true
-          - builder: ch-image
-            bundled_lark: false
-
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
@@ -112,8 +107,7 @@ jobs:
           [[ $(command -v pip3) == /usr/local/bin/pip3 ]]
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
-          sudo sh -c 'umask 0022 && pip3 install --upgrade pip'
-          sudo sh -c 'umask 0022 && pip3 install requests wheel'
+          sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -145,16 +139,35 @@ jobs:
           sudo apt-get install squashfs-tools squashfuse
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
-      
-      - name: verify no bundled lark works
-        if: ${{ matrix.builder == 'ch-image' && ! matrix.bundled_lark }}
-        run : |
-          ./autogen.sh --clean --lark
-          ./autogen.sh
-          ./configure --disable-bundle-lark
-          fgrep 'with bundled lark: no' config.log
+
+      - name: disable bundled lark, ch-image
+        if: ${{ matrix.builder == 'ch-image' }}
+        run: |
+          set -x
+          # no install, disable
+          ./autogen.sh --no-lark
+          ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
+          fgrep 'bundled Lark: no' config.log
+          fgrep 'lark.py under source dir ... no' config.log
+          ! test -f ./lib/lark/lark.py
           make $ch_makej
-          bin/ch-test --scope=quick --pack-fmt=squash build
+          sudo make $ch_makej install
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          make clean
+          # install, disable
+          ./autogen.sh
+          ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
+          fgrep 'bundled Lark: no' config.log
+          fgrep 'lark.py under source dir ... yes' config.log
+          test -f ./lib/lark/lark.py
+          make $ch_makej
+          sudo make $ch_makej install
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          make clean
+          # no install, enable: build fails, untested
+          # install, enable: normal configuration, remainder of CI
 
       - name: build/install from Git
         run: |
@@ -167,7 +180,12 @@ jobs:
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
           [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
+          if [[ $CH_BUILDER = ch-image ]]; then
+              fgrep 'with ch-image(1): yes' config.log
+              fgrep 'bundled Lark: yes' config.log
+              fgrep 'lark.py under source dir ... yes' config.log
+              test -f ./lib/lark/lark.py
+          fi
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
@@ -177,11 +195,19 @@ jobs:
           sudo make $ch_makej install
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
+          # Ensure bundled Lark in tarball.
+          make $ch_makej dist
+          tar tf charliecloud-*.tar.gz | fgrep /lib/lark/lark.py
 
       - name: late setup & validation, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
+          set -x
           [[ $(bin/ch-image python-path) = /usr/local/bin/python3 ]]
+          [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py" ]]
+          [[ $($ch_prefix/from-git/bin/ch-image python-path) = /usr/local/bin/python3 ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git/lib/charliecloud/lark/__init__.py" ]]
+
       - name: late setup & validation, all
         run: |
           bin/ch-test --is-pedantic all
@@ -262,12 +288,11 @@ jobs:
           bin/ch-test --scope=quick --pack-fmt=squash all
 
       - name: run test suite (Git WD, standard, squash)
-        if: ${{ matrix.bundled_lark }}
         run: |
           bin/ch-test --pack-fmt=squash all
 
       - name: run test suite (installed from Git WD, standard, squash)
-        if: ${{ matrix.builder == 'docker' &&  ! matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
           $ch_prefix/from-git/bin/ch-test --pack-fmt=squash all
 
@@ -336,7 +361,7 @@ jobs:
           bin/ch-run --version
 
       - name: run test suite (Git WD, standard, tarballs)
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.bundled_lark}}
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
           bin/ch-test --pack-fmt=tar all
 
@@ -347,5 +372,3 @@ jobs:
           df -h
           du -sch $CH_TEST_TARDIR/* || true
           du -sch $CH_TEST_IMGDIR/* || true
-
-      

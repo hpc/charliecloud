@@ -18,9 +18,10 @@ mylib_DATA = contributors.bash \
              version.sh \
              version.txt
 
-# Bundled Lark. Automake does not support wildcards [1], so list the files.
-# Note it's version-specific. Hopefully if a new version of Lark adds a file
-# and we omit it here by mistake, the tests will catch it. To get this list:
+# Bundled Lark (currently version 0.11.3); Automake does not support wildcards
+# [1], so list the files. Note it's version-specific. Hopefully if a new
+# version of Lark adds a file and we omit it here by mistake, the tests will
+# catch it. To get this list:
 #
 # $ (cd lib && find lark lark-stubs lark-*.dist-info -xtype f) | LC_ALL=C sort | sed -E 's/$/ \\/'
 #
@@ -82,9 +83,7 @@ lark/utils.py \
 lark/visitors.py
 if ENABLE_LARK
 nobase_dist_mylib_DATA = $(LARK)
-else !ENABLE_LARK
-dist_noinst_DATA = $(LARK) 
-endif !ENABLE_LARK
+endif
 
 CLEANFILES = $(mylib_DATA) $(noinst_DATA)
 

@@ -1370,10 +1370,21 @@ Additional sources
 * :code:`runc create` man page: https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md
 * https://github.com/opencontainers/runtime-spec/blob/master/runtime.md
 
-Updating bundled Lark Parser
-============================
 
-In order to change the version of the bundled lark parser you must modify two files.
-In autogen.sh you have to change the version in pip install. In lib/Makefile.am you can
-follow the comment at the top of the list of lark files to update them.
-=======
+Miscellaneous notes
+===================
+
+Updating bundled Lark parser
+----------------------------
+
+In order to change the version of the bundled lark parser you must modify
+multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
+catch both dot notation and tuples, but not the list of filenames in
+:code:`lib/Makefile.am`)::
+
+  $ misc/grep -E '0(\.|, )11(\.|, )3($|\s|\))'
+
+What to do in each location should either be obvious or commented.
+
+
+..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix

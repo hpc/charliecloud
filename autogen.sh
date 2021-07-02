@@ -7,7 +7,10 @@ while [[ "$#" -gt 0 ]]; do
         --clean)
             clean=yes
             ;;
-        --lark)
+        --no-lark)
+            lark_no_install=yes
+            ;;
+        --rm-lark)
             lark_shovel=yes
             ;;
         *)
@@ -28,9 +31,10 @@ intended for developers; end users typically do not need it.
 
 Options:
 
-  --clean  remove only; do not rebuild
-  --help   print this help and exit
-  --lark   delete Lark (and then reinstall if not --clean)
+  --clean    remove only; do not rebuild
+  --help     print this help and exit
+  --no-lark  don't install bundled Lark (minimal support; see docs)
+  --rm-lark  delete Lark (and then reinstall if not --clean or --no-lark)
 
 EOF
     exit 0
@@ -76,7 +80,7 @@ fi
 # Create configure and friends.
 if [[ -z $clean ]]; then
     autoreconf --force --install -Wall -Werror
-    if [[ ! -e lib/lark ]]; then
+    if [[ ! -e lib/lark && ! $lark_no_install ]]; then
         # Install Lark only if its directory doesn't exist, to avoid excess
         # re-downloads.
         pip3 --isolated install \
