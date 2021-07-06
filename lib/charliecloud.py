@@ -26,29 +26,23 @@ import types
 
 ## Imports not in standard library ##
 
-# These are messy because we need --version and --help even if a dependency is
-# missing. Among other things, nothing can depend on non-standard modules at
-# parse time.
-
 # List of dependency problems.
 depfails = []
 
-try:
-   # Lark is additionally messy because there are two packages on PyPI that
-   # provide a "lark" module.
-   import lark   # ImportError if no such module
-   lark.Visitor  # AttributeError if wrong module
-except (ImportError, AttributeError) as x:
-   if (isinstance(x, ImportError)):
-      depfails.append(("missing", 'Python module "lark-parser"'))
-   elif (isinstance(x, AttributeError)):
-      depfails.append(("bad", 'found Python module "lark"; need "lark-parser"'))
-   else:
-      assert False
-   # Mock up a lark module so the rest of the file parses.
-   lark = types.ModuleType("lark")
-   lark.Visitor = object
+# Lark is bundled or provided by package dependencies, so assume it's always
+# importable. There used to be a conflicting package on PyPI called "lark",
+# but it's gone now [1]. However, verify the version we got.
+#
+# [1]: https://github.com/lark-parser/lark/issues/505
+import lark
+LARK_MIN = (0,  7, 1)
+LARK_MAX = (0, 11, 3)
+lark_version = tuple(int(i) for i in lark.__version__.split("."))
+if (not LARK_MIN <= lark_version <= LARK_MAX):
+   depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
 
+# Requests is not bundled, so this noise makes the file parse and
+# --version/--help work even if it's not installed.
 try:
    import requests
    import requests.auth
