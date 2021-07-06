@@ -10,10 +10,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "config.h"
-#include "ch_misc.h"
 #include "ch_core.h"
 #include "ch_fuse.h"
+#include "ch_misc.h"
+#include "config.h"
 
 /** Constants and macros **/
 
@@ -96,7 +96,7 @@ void privs_verify_invoking();
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
-char *sqfs_unpack = "/var/tmp";
+char *sqfs_unpack = "/var/tmp/sqfs"; //tmp default mountpoint
 
 /** Main **/
 
@@ -108,7 +108,6 @@ int main(int argc, char *argv[])
    int c_argc;
    char ** c_argv;
 
-   //atexit(sqfs_ll_clean);
    privs_verify_invoking();
 
    verbose = 1;  // in charliecloud.h
@@ -142,8 +141,9 @@ int main(int argc, char *argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
-   if(sqfs_ll_check(argv[arg_next])) {
-      Ze (atexit(sqfs_ll_clean), "exit handler set up failed");
+   if(sqfs_p(argv[arg_next])) { //is img a sqfs?
+      Ze (atexit(sqfs_clean), "exit handler set up failed");
+      //overwrite user input to store mount point not sqfs location
       argv[arg_next] = sqfs_mount(sqfs_unpack, argv[arg_next]);
       DEBUG("new run DIR: %s", argv[arg_next]);
    }
