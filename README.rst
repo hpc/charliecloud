@@ -40,6 +40,8 @@ How do I learn more?
 
 * GitHub repository: https://github.com/hpc/charliecloud
 
+* Low-traffic mailing list for announcements: https://groups.io/g/charliecloud
+
 * We wrote an article for USENIX's magazine *;login:* that explains in more
   detail the motivation for Charliecloud and the technology upon which it is
   based: https://www.usenix.org/publications/login/fall2017/priedhorsky
@@ -71,11 +73,14 @@ Contributors:
 How can I participate?
 ----------------------
 
-Questions, comments, feature requests, bug reports, etc. can be directed to:
+Use our GitHub page: https://hpc.github.io/charliecloud
 
-* our mailing list: *charliecloud@groups.io* or https://groups.io/g/charliecloud
+Bug reports and feature requests should be filed as "Issues". Questions,
+comments, support requests, and everything else should use our "Discussions".
+Don't worry if you put something in the wrong place; we'll be more than happy
+to help regardless.
 
-* issues on GitHub
+We also have a mailing list for announcements: https://groups.io/g/charliecloud
 
 Patches are much appreciated on the software itself as well as documentation.
 Optionally, please include in your first patch a credit for yourself in the
@@ -120,3 +125,5 @@ express or implied, or assumes any liability for use of this software.
 If software is modified to produce derivative works, such derivative works
 should be clearly marked, so as not to confuse it with the version available
 from LANL.
+
+..  LocalWords:  USENIX's

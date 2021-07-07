@@ -404,9 +404,10 @@ EOF
 ('chse_0a', 'value 0a')
 ('chse_0b', 'value 0b')
 ('chse_1b', 'value 1b ')
-('chse_2', 'value2')
-('chse_2a', 'chse2: value2')
-('chse_2b', 'chse2: value2')
+('chse_2a', 'value2a')
+('chse_2b', 'value2b')
+('chse_2c', 'chse2: value2a')
+('chse_2d', 'chse2: value2a')
 ('chse_3a', '"value3a"')
 ('chse_4a', 'value4a')
 ('chse_4b', 'value4b')
@@ -436,13 +437,14 @@ ENV chse_1b="value 1b "
 #ENV chse_1c=value\ 1c\ 
 
 # Value surrounded by double quotes, which are not part of the value.
-ENV chse_2 "value2"
+ENV chse_2a "value2a"
+ENV chse_2b="value2b"
 
 # Substitute previous value, space-separated, without quotes.
-ENV chse_2a chse2: ${chse_2}
+ENV chse_2c chse2: ${chse_2a}
 
 # Substitute a previous value, equals-separated, with quotes.
-ENV chse_2b="chse2: ${chse_2}"
+ENV chse_2d="chse2: ${chse_2a}"
 
 # Backslashed quotes are included in value.
 ENV chse_3a \"value3a\"

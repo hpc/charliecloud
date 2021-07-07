@@ -195,18 +195,50 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"00_tiny"* ]]
 
-    # does not exist remotely
+    # name does not exist remotely, in library
     run ch-image list doesnotexist:latest
     echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'GET failed; expected status {200, 403} but got 400'* ]]
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
+
+    # tag does not exist remotely, in library
+    run ch-image list alpine:doesnotexist
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
+
+    # name does not exist remotely, not in library
+    run ch-image list charliecloud/doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
+
+    # tag does not exist remotely, not in library
+    run ch-image list charliecloud/metadata:doesnotexist
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
 
     # in storage, does not exist remotely
     run ch-image list 00_tiny
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 0 ]]
     [[ $output = *'in local storage:    yes'* ]]
-    [[ $output = *'GET failed; expected status {200, 403} but got 400'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
 
     # not in storage, exists remotely, fat manifest exists
     run ch-image list debian:buster-slim
@@ -234,6 +266,16 @@ EOF
     [[ $output = *'available remotely:  yes'* ]]
     [[ $output = *'remote arch-aware:   yes'* ]]
     [[ $output = *'warning: no valid architectures found'* ]]
+
+    # scratch is weird and tells lies
+    run ch-image list scratch
+    echo "$output"
+    [[ $status -eq 0 ]]
+    #[[ $output = *'in local storage:    yes'* ]]  # varies
+    [[ $output = *'full remote ref:     registry-1.docker.io:443/library/scratch:latest'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   no'* ]]
+    [[ $output = *'archs available:     unknown'* ]]
 }
 
 @test 'ch-image reset' {

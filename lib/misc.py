@@ -1,7 +1,9 @@
 # Subcommands not exciting enough for their own module.
 
 import argparse
+import inspect
 import os
+import os.path
 import sys
 
 import charliecloud as ch
@@ -18,8 +20,11 @@ class Action_Exit(argparse.Action):
 
 class Dependencies(Action_Exit):
 
-   def __call__(self, *args, **kwargs):
+   def __call__(self, ap, cli, *args, **kwargs):
+      # ch.init() not yet called, so must get verbosity from arguments.
       ch.dependencies_check()
+      if (cli.verbose >= 1):
+         print("lark path: %s" % os.path.normpath(inspect.getfile(ch.lark)))
       sys.exit(0)
 
 class Version(Action_Exit):
@@ -68,21 +73,19 @@ def list_(cli):
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
       pullet = pull.Image_Puller(img, not cli.no_cache)
-      pullet.fatman_load()
-      if (pullet.architectures is not None):
+      try:
+         pullet.fatman_load()
          remote = "yes"
          arch_aware = "yes"
          arch_avail = " ".join(sorted(pullet.architectures.keys()))
-      else:
-         pullet.manifest_load(True)
-         if (pullet.layer_hashes is not None):
-            remote = "yes"
-            arch_aware = "no"
-            arch_avail = "unknown"
-         else:
-            remote = "no"
-            arch_aware = "n/a"
-            arch_avail = "n/a"
+      except ch.Not_In_Registry_Error:
+         remote = "no"
+         arch_aware = "n/a"
+         arch_avail = "n/a"
+      except ch.No_Fatman_Error:
+         remote = "yes"
+         arch_aware = "no"
+         arch_avail = "unknown"
       pullet.done()
       print("available remotely:  %s" % remote)
       print("remote arch-aware:   %s" % arch_aware)

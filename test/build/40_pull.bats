@@ -283,7 +283,8 @@ EOF
     # Google Container Registry:
     # https://console.cloud.google.com/gcr/images/google-containers/GLOBAL
     # FIXME: "latest" tags do not work, but they do in Docker (issue #896)
-    ch-image pull gcr.io/google-containers/busybox:1.27
+    # FIXME: arch-aware pull does not work either (issue #1100)
+    ch-image pull --arch=yolo gcr.io/google-containers/busybox:1.27
 
     # nVidia NGC: https://ngc.nvidia.com
     # FIXME: 96 MiB unpacked; also kind of slow
@@ -376,7 +377,7 @@ EOF
 }
 
 
-@test 'ch-image pull by arch' {
+@test 'pull by arch' {
     # Has fat manifest; requested arch exists. There's not much simple to look
     # for in the output, so just see if it works.
     ch-image --arch=yolo pull alpine:latest
@@ -401,6 +402,32 @@ EOF
         run ch-image --arch=arm64/v8 pull charliecloud/metadata:2021-01-15
         echo "$output"
         [[ $status -eq 1 ]]
-        [[ $output = *'image is architecture-unaware; try --arch=yolo (?)' ]]
+        [[ $output = *'image is architecture-unaware; try --arch=yolo?' ]]
     fi
+}
+
+@test 'pull images that do not exist' {
+    # name does not exist remotely, in library
+    run ch-image pull doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/library/doesnotexist:latest'* ]]
+
+    # tag does not exist remotely, in library
+    run ch-image pull alpine:doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/library/alpine:doesnotexist'* ]]
+
+    # name does not exist remotely, not in library
+    run ch-image pull charliecloud/doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/charliecloud/doesnotexist:latest'* ]]
+
+    # tag does not exist remotely, not in library
+    run ch-image pull charliecloud/metadata:doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/charliecloud/metadata:doesnotexist'* ]]
 }

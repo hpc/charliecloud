@@ -7,6 +7,7 @@ import datetime
 import getpass
 import hashlib
 import http.client
+import io
 import json
 import os
 import getpass
@@ -19,34 +20,29 @@ import stat
 import subprocess
 import sys
 import tarfile
+import time
 import types
 
 
 ## Imports not in standard library ##
 
-# These are messy because we need --version and --help even if a dependency is
-# missing. Among other things, nothing can depend on non-standard modules at
-# parse time.
-
 # List of dependency problems.
 depfails = []
 
-try:
-   # Lark is additionally messy because there are two packages on PyPI that
-   # provide a "lark" module.
-   import lark   # ImportError if no such module
-   lark.Visitor  # AttributeError if wrong module
-except (ImportError, AttributeError) as x:
-   if (isinstance(x, ImportError)):
-      depfails.append(("missing", 'Python module "lark-parser"'))
-   elif (isinstance(x, AttributeError)):
-      depfails.append(("bad", 'found Python module "lark"; need "lark-parser"'))
-   else:
-      assert False
-   # Mock up a lark module so the rest of the file parses.
-   lark = types.ModuleType("lark")
-   lark.Visitor = object
+# Lark is bundled or provided by package dependencies, so assume it's always
+# importable. There used to be a conflicting package on PyPI called "lark",
+# but it's gone now [1]. However, verify the version we got.
+#
+# [1]: https://github.com/lark-parser/lark/issues/505
+import lark
+LARK_MIN = (0,  7, 1)
+LARK_MAX = (0, 11, 3)
+lark_version = tuple(int(i) for i in lark.__version__.split("."))
+if (not LARK_MIN <= lark_version <= LARK_MAX):
+   depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
 
+# Requests is not bundled, so this noise makes the file parse and
+# --version/--help work even if it's not installed.
 try:
    import requests
    import requests.auth
@@ -102,6 +98,12 @@ PYTHON_MIN = (3,6)
 
 # Verify TLS certificates? Passed to requests.
 tls_verify = True
+
+# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
+# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
+# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
+# takes over.
+HTTP_CHUNK_SIZE = 256 * 1024
 
 # Content types for some stuff we care about.
 TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
@@ -207,6 +209,12 @@ _NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
+
+
+## Exceptions ##
+
+class No_Fatman_Error(Exception): pass
+class Not_In_Registry_Error(Exception): pass
 
 
 ## Classes ##
@@ -935,6 +943,148 @@ class Path(pathlib.PosixPath):
       return self.joinpath(*others2)
 
 
+class Progress:
+   """Simple progress meter for countable things that updates at most once per
+      second. Writes first update upon creation. If length is None, then just
+      count up (this is for registries like Red Hat that sometimes don't
+      provide a Content-Length header for blobs).
+
+      The purpose of the divisor is to allow counting things that are much
+      more numerous than what we want to display; for example, to count bytes
+      but report MiB, use a divisor of 1048576.
+
+      By default, moves to a new line at first update, then assumes exclusive
+      control of this line in the terminal, rewriting the line as needed. If
+      output is not a TTY or global log_festoon is set, each update is one log
+      entry with no overwriting."""
+
+   __slots__ = ("display_last",
+                "divisor",
+                "msg",
+                "length",
+                "unit",
+                "overwrite_p",
+                "precision",
+                "progress")
+
+   def __init__(self, msg, unit, divisor, length):
+      self.msg = msg
+      self.unit = unit
+      self.divisor = divisor
+      self.length = length
+      if (not os.isatty(log_fp.fileno()) or log_festoon):
+         self.overwrite_p = False
+      else:
+         self.overwrite_p = True
+      self.precision = 1 if self.divisor >= 1000 else 0
+      self.progress = 0
+      self.display_last = float("-inf")
+      self.update(0)
+
+   def update(self, increment, last=False):
+      now = time.monotonic()
+      self.progress += increment
+      if (last or now - self.display_last > 1):
+         if (self.length is None):
+            line = ("%s: %.*f %s"
+                    % (self.msg,
+                       self.precision, self.progress / self.divisor,
+                       self.unit))
+         else:
+            ct = "%.*f/%.*f" % (self.precision, self.progress / self.divisor,
+                                self.precision, self.length / self.divisor)
+            pct = "%d%%" % (100 * self.progress / self.length)
+            if (ct == "0.0/0.0"):
+               # too small, don't print count
+               line = "%s: %s" % (self.msg, pct)
+            else:
+               line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
+         if (self.overwrite_p):
+            line += "\r"  # CR so next INFO overwrites
+         else:
+            line += "\n"  # move to next line like usual
+         INFO(line, end="")
+         self.display_last = now
+
+   def done(self):
+      self.update(0, True)
+      if (self.overwrite_p):
+         INFO("")  # newline to release display line
+
+
+class Progress_Reader:
+   """Wrapper around a binary file object to maintain a progress meter while
+      reading."""
+
+   __slots__ = ("fp",
+                "msg",
+                "progress")
+
+   def __init__(self, fp, msg):
+      self.fp = fp
+      self.msg = msg
+      self.progress = None
+
+   def __iter__(self):
+      return self
+
+   def __next__(self):
+      data = self.read(HTTP_CHUNK_SIZE)
+      if (len(data) == 0):
+         raise StopIteration
+      return data
+
+   def close(self):
+      if (self.progress is not None):
+         self.progress.done()
+         ossafe(self.fp.close, "can't close: %s" % self.fp.name)
+
+   def read(self, size=-1):
+     data = self.fp.read(size)
+     self.progress.update(len(data))
+     return data
+
+   def seek(self, *args):
+      raise io.UnsupportedOperation
+
+   def start(self):
+      # Get file size. This seems awkward, but I wasn't able to find anything
+      # better. See: https://stackoverflow.com/questions/283707
+      old_pos = self.fp.tell()
+      assert (old_pos == 0)  # math will be wrong if this isn't true
+      length = self.fp.seek(0, os.SEEK_END)
+      self.fp.seek(old_pos)
+      self.progress = Progress(self.msg, "MiB", 2**20, length)
+
+
+class Progress_Writer:
+   """Wrapper around a binary file object to maintain a progress meter while
+      data are written."""
+
+   __slots__ = ("fp",
+                "msg",
+                "path",
+                "progress")
+
+   def __init__(self, path, msg):
+      self.msg = msg
+      self.path = path
+      self.progress = None
+
+   def close(self):
+      if (self.progress is not None):
+         self.progress.done()
+         ossafe(self.fp.close, "can't close: %s" % self.path)
+
+   def start(self, length):
+      self.progress = Progress(self.msg, "MiB", 2**20, length)
+      self.fp = open_(self.path, "wb")
+
+   def write(self, data):
+      self.progress.update(len(data))
+      ossafe(self.fp.write, "can't write: %s" % self.path, data)
+
+
 class Registry_HTTP:
    """Transfers image data to and from a remote image repository via HTTPS.
 
@@ -1012,9 +1162,9 @@ class Registry_HTTP:
          VERBOSE("won't request anonymous token for %s" % res.request.method)
       else:
          VERBOSE("requesting anonymous auth token")
-         res = self.request_raw("GET", auth_d["realm"], {200,403},
+         res = self.request_raw("GET", auth_d["realm"], {200,401,403},
                                 params=params)
-         if (res.status_code == 403):
+         if (res.status_code != 200):
             VERBOSE("anonymous access rejected")
          else:
             token = res.json()["token"]
@@ -1074,22 +1224,30 @@ class Registry_HTTP:
       res = self.request("HEAD", url, {200,401,404})
       return (res.status_code == 200)
 
-   def blob_to_file(self, digest, path):
+   def blob_to_file(self, digest, path, msg):
       "GET the blob with hash digest and save it at path."
       # /v2/library/hello-world/blobs/<layer-hash>
       url = self._url_of("blobs", "sha256:" + digest)
-      self.request("GET", url, out=path)
+      sw = Progress_Writer(path, msg)
+      self.request("GET", url, out=sw)
+      sw.close()
 
    def blob_upload(self, digest, data, note=""):
       """Upload blob with hash digest to url. data is the data to upload, and
-         can be anything requests can handle, including an open file. note is
-         a string to prepend to the log messages; default empty string."""
+         can be anything requests can handle; if it's an open file, then it's
+         wrapped in a Progress_Reader object. note is a string to prepend to
+         the log messages; default empty string."""
       INFO("%s%s: checking if already in repository" % (note, digest[:7]))
       # 1. Check if blob already exists. If so, stop.
       if (self.blob_exists_p(digest)):
          INFO("%s%s: already present" % (note, digest[:7]))
          return
-      INFO("%s%s: not present, uploading" % (note, digest[:7]))
+      msg = "%s%s: not present, uploading" % (note, digest[:7])
+      if (isinstance(data, io.IOBase)):
+         data = Progress_Reader(data, msg)
+         data.start()
+      else:
+         INFO(msg)
       # 2. Get upload URL for blob.
       url = self._url_of("blobs", "uploads/")
       res = self.request("POST", url, {202})
@@ -1100,6 +1258,8 @@ class Registry_HTTP:
       url = res.headers["Location"]
       res = self.request("PUT", url, {201}, data=data,
                          params={ "digest": "sha256:%s" % digest })
+      if (isinstance(data, Progress_Reader)):
+         data.close()
       # 4. Verify blob now exists.
       if (not self.blob_exists_p(digest)):
          FATAL("blob just uploaded does not exist: %s" % digest[:7])
@@ -1125,14 +1285,33 @@ class Registry_HTTP:
          password = getpass.getpass("Password: ")
       return (username, password)
 
-   def fatman_to_file(self, path, continue_404):
-      "GET the manifest for self.image and save it at path."
+   def fatman_to_file(self, path, msg):
+      """GET the manifest for self.image and save it at path. This seems to
+         have three possible results:
+
+            1. HTTP 200, and body is a fat manifest: image exists and is
+               architecture-aware.
+
+            2. HTTP 200, but body is a skinny manifest: image exists but is
+               not architecture-aware.
+
+            3. HTTP 401/404: image does not exist.
+
+         This method raises Not_In_Registry_Error in case 3. The caller is
+         responsible for distinguishing cases 1 and 2."""
       url = self._url_of("manifests", self.ref.version)
-      statuses = {200}
-      if (continue_404):
-         statuses |= {400, 401, 404}  # Docker Hub gives 400 if no fat manifest
-      self.request("GET", url, out=path, statuses=statuses,
-                   headers={ "Accept" : TYPE_MANIFEST_LIST })
+      pw = Progress_Writer(path, msg)
+      # Including TYPE_MANIFEST avoids the server trying to convert its v2
+      # manifest to a v1 manifest, which currently fails for images
+      # Charliecloud pushes. The error in the test registry is “empty history
+      # when trying to create schema1 manifest”.
+      accept = "%s, %s;q=0.5" % (TYPE_MANIFEST_LIST, TYPE_MANIFEST)
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404},
+                         headers={ "Accept" : accept })
+      pw.close()
+      if (res.status_code != 200):
+         DEBUG(res.content)
+         raise Not_In_Registry_Error()
 
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
@@ -1142,7 +1321,7 @@ class Registry_HTTP:
       self.blob_upload(digest, fp, note)
       ossafe(fp.close, "can't close: %s" % path)
 
-   def manifest_to_file(self, path, digest=None, continue_404=False):
+   def manifest_to_file(self, path, msg, digest=None):
       """GET manifest for the image and save it at path. If digest is given,
          use that to fetch the appropriate architecture; otherwise, fetch the
          default manifest using the exising image reference."""
@@ -1151,11 +1330,13 @@ class Registry_HTTP:
       else:
          digest = "sha256:" + digest
       url = self._url_of("manifests", digest)
-      statuses = {200}
-      if (continue_404):
-         statuses |= {401, 404}
-      self.request("GET", url, out=path, statuses=statuses,
-                   headers={ "Accept" : TYPE_MANIFEST })
+      pw = Progress_Writer(path, msg)
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404},
+                         headers={ "Accept" : TYPE_MANIFEST })
+      pw.close()
+      if (res.status_code != 200):
+         DEBUG(res.content)
+         raise Not_In_Registry_Error()
 
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
@@ -1167,16 +1348,17 @@ class Registry_HTTP:
    def request(self, method, url, statuses={200}, out=None, **kwargs):
       """Request url using method and return the response object. If statuses
          is given, it is set of acceptable response status codes, defaulting
-         to {200}; any other response is a fatal error.
-
-         If out is given and response status is 200, response content must be
-         non-zero length and will be written to file at this path.
+         to {200}; any other response is a fatal error. If out is given,
+         response content will be streamed to this Progress_Writer object and
+         must be non-zero length.
 
          Use current session if there is one, or start a new one if not. If
          authentication fails (or isn't initialized), then authenticate and
          re-try the request."""
       self.session_init_maybe()
       VERBOSE("auth: %s" % self.auth)
+      if (out is not None):
+         kwargs["stream"] = True
       res = self.request_raw(method, url, statuses | {401}, **kwargs)
       if (res.status_code == 401):
          VERBOSE("HTTP 401 unauthorized")
@@ -1184,11 +1366,15 @@ class Registry_HTTP:
          VERBOSE("retrying with auth: %s" % self.auth)
          res = self.request_raw(method, url, statuses, **kwargs)
       if (out is not None and res.status_code == 200):
-         if (len(res.content) == 0):
-            FATAL("no response body: %s %s" % (method, url))
-         fp = open_(out, "wb")
-         ossafe(fp.write, "can't write: %s" % out, res.content)
-         ossafe(fp.close, "can't close: %s" % out)
+         try:
+            length = int(res.headers["Content-Length"])
+         except KeyError:
+            length = None
+         except ValueError:
+            FATAL("invalid Content-Length in response")
+         out.start(length)
+         for chunk in res.iter_content(HTTP_CHUNK_SIZE):
+            out.write(chunk)
       return res
 
    def request_raw(self, method, url, statuses, auth=None, **kwargs):

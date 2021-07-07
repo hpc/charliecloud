@@ -363,7 +363,7 @@ class I_copy(Instruction):
          for i in range(len(paths)):
             paths[i] = paths[i][1:-1] #strip quotes
       else:
-         assert (False, "unreachable code reached")
+         assert False, "unreachable code reached"
 
       self.srcs = paths[:-1]
       self.dst = paths[-1]
@@ -585,10 +585,10 @@ class I_env_equals(Env):
    def __init__(self, *args):
       super().__init__(*args)
       self.key = ch.tree_terminal(self.tree, "WORD", 0)
-      self.value = ch.tree_terminal(self.tree, "WORD", 1)
-      if (self.value is None):
-         self.value = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
-      self.value = variables_sub(self.value, env.env_build)
+      v = ch.tree_terminal(self.tree, "WORD", 1)
+      if (v is None):
+         v = ch.tree_terminal(self.tree, "STRING_QUOTED")
+      self.value = variables_sub(unescape(v), env.env_build)
 
 
 class I_env_space(Env):
@@ -596,11 +596,8 @@ class I_env_space(Env):
    def __init__(self, *args):
       super().__init__(*args)
       self.key = ch.tree_terminal(self.tree, "WORD")
-      value = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
-      if (not value.startswith('"')):
-         value = '"' + value + '"'
-      self.value = unescape(value)
-      self.value = variables_sub(self.value, env.env_build)
+      v = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
+      self.value = variables_sub(unescape(v), env.env_build)
 
 
 class I_from_(Instruction):
@@ -850,6 +847,8 @@ def unescape(sl):
    # guessing it's the Go rules. You will note that we are using Python rules.
    # This is wrong but close enough for now (see also gripe in previous
    # paragraph).
-   if (not (sl.startswith('"') and sl.endswith('"'))):
-      ch.FATAL("string literal not quoted")
+   if (    not sl.startswith('"')                          # no start quote
+       and (not sl.endswith('"') or sl.endswith('\\"'))):  # no end quote
+      sl = '"%s"' % sl
+   assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
    return ast.literal_eval(sl)

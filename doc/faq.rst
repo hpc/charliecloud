@@ -112,6 +112,34 @@ two solutions:
    processes and one writes a file in the image that another is reading or
    writing).
 
+:code:`ch-image` fails with "certificate verify failed"
+-------------------------------------------------------
+
+When :code:`ch-image` interacts with a remote registry (e.g., via :code:`push`
+or :code:`pull` subcommands), it will verify the registry's HTTPS certificate.
+If this fails, :code:`ch-image` will exit with the error "certificate verify
+failed".
+
+This situation tends to arise with self-signed or institutionally-signed
+certificates, even if the OS is configured to trust them. We use the Python
+HTTP library Requests, which on many platforms `includes its own CA
+certificates bundle
+<https://docs.python-requests.org/en/master/user/advanced/#ca-certificates>`_,
+ignoring the bundle installed by the OS.
+
+Requests can be directed to use an alternate bundle of trusted CAs by setting
+environment variable :code:`REQUESTS_CA_BUNDLE` to the bundle path. (See `the
+Requests documentation
+<https://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification>`_
+for details.) For example::
+
+  $ export REQUESTS_CA_BUNDLE=/usr/local/share/ca-certificates/registry.crt
+  $ ch-image pull registry.example.com/image:tag
+
+Alternatively, certificate verification can be disabled entirely with the
+:code:`--tls-no-verify` flag. However, users should enable this option only if
+they have other means to be confident in the registry's identity.
+
 
 Unexpected behavior
 ===================
@@ -678,3 +706,5 @@ Alpine 3.9 image pulled from Docker hub::
   dev  home  media  opt  root  sbin  sys  usr
   $ ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
   3.9.5
+
+..  LocalWords:  CAs
