@@ -457,10 +457,12 @@ in the Dockerfile reference.
 with Docker where these variables miss upon *use*, except for certain
 cache-excluded variables that never cause misses, listed below.
 
-Like Docker, :code:`ch-image` pre-defines the following proxy variables, which
-do not require an :code:`ARG` instruction. However, they are available if the
-same-named environment variable is defined; :code:`--build-arg` is not
-required. Changes to these variables do not cause a cache miss.
+:code:`ch-image` passes the following proxy environment variables in to the
+build. Changes to these variables do not cause a cache miss. They do not
+require an :code:`ARG` instruction, as `documented
+<https://docs.docker.com/engine/reference/builder/#predefined-args>`_ in the
+Dockerfile reference. Unlike Docker, they are available if the same-named
+environment variable is defined; :code:`--build-arg` is not required.
 
 .. code-block:: sh
 
@@ -473,7 +475,15 @@ required. Changes to these variables do not cause a cache miss.
    NO_PROXY
    no_proxy
 
-The following variables are also pre-defined:
+In addition to those listed in the Dockerfile reference, these environment
+variables are passed through in the same way:
+
+.. code-block:: sh
+
+   SSH_AUTH_SOCK
+
+Finally, these variables are also pre-defined but are unrelated to the host
+environment:
 
 .. code-block:: sh
 
@@ -745,4 +755,4 @@ in the remote registry, so we don't upload it again.)
    cleaning up
    done
 
-..  LocalWords:  tmpfs'es bigvendor
+..  LocalWords:  tmpfs'es bigvendor AUTH

@@ -378,6 +378,100 @@ password fields give no feedback, not even whether a character has been typed.
 Try using the number row instead, toggling Num Lock key, or SSHing into the
 virtual machine.
 
+SSH stops :code:`ch-image` build with interactive queries
+---------------------------------------------------------
+
+This often occurs during an SSH-based Git clone. For example::
+
+  $ cat ./Dockerfile
+  FROM alpine:latest
+  RUN apk add git openssh
+  RUN git clone git@github.com:hpc/charliecloud.git
+  $ ch-image build -t foo -f ./Dockerfile .
+  [...]
+  3 RUN ['/bin/sh', '-c', 'git clone git@github.com:hpc/charliecloud.git']
+  Cloning into 'charliecloud'...
+  The authenticity of host 'github.com (140.82.113.3)' can't be established.
+  RSA key fingerprint is SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8.
+  Are you sure you want to continue connecting (yes/no/[fingerprint])?
+
+At this point, the build stops while SSH waits for input.
+
+This happens even if you have :code:`github.com` in your
+:code:`~/.ssh/known_hosts`. This file is not available to the build because
+:code:`ch-image` runs :code:`ch-run` with :code:`--no-home`, so :code:`RUN`
+instructions can't see anything in your home directory.
+
+Solutions include:
+
+  1. Approve the connection interactively by typing :code:`y`. Note this will
+     record details of the connection within the image, including IP address
+     and the fingerprint.
+
+  2. Turn off host key checking in the image's system `SSH config
+     <https://man.openbsd.org/ssh_config>`_. There are multiple ways to do
+     this, but one is::
+
+       $ cat ./Dockerfile
+       FROM alpine:latest
+       RUN apk add git openssh
+       RUN printf 'StrictHostKeyChecking=no\nUserKnownHostsFile=/dev/null\n' \
+           >> /etc/ssh/ssh_config
+       RUN git clone git@github.com:hpc/charliecloud.git
+       $ ch-image build -t foo -f ./Dockerfile .
+       [...]
+         5 RUN ['/bin/sh', '-c', 'git clone git@github.com:hpc/charliecloud.git']
+       Cloning into 'charliecloud'...
+       Warning: Permanently added 'github.com' (RSA) to the list of known hosts.
+       remote: Enumerating objects: 10337, done.
+       remote: Counting objects: 100% (601/601), done.
+       remote: Compressing objects: 100% (299/299), done.
+       remote: Total 10337 (delta 400), reused 441 (delta 297), pack-reused 9736
+       Receiving objects: 100% (10337/10337), 12.77 MiB | 22.31 MiB/s, done.
+       Resolving deltas: 100% (7061/7061), done.
+       grown in 4 instructions: foo
+
+     Check your institutional policy on whether this is permissible, though
+     it's worth noting that users `almost never
+     <https://www.usenix.org/system/files/login/articles/105484-Gutmann.pdf>`_
+     verify the host fingerprints anyway.
+
+     This will not record details of the connection in the image.
+
+     More complex edit commands will be needed if either of these directives
+     already appears in :code:`/etc/ssh/ssh_config`, because SSH config uses
+     the first instance of a directive it encounters.
+
+  3. Add the remote host to the system known hosts file, e.g.::
+
+       $ cat ./Dockerfile
+       FROM alpine:latest
+       RUN apk add git openssh
+       RUN echo 'github.com,140.82.112.4 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==' >> /etc/ssh/ssh_known_hosts
+       RUN git clone git@github.com:hpc/charliecloud.git
+       $ ch-image build -t foo -f ./Dockerfile .
+       [...]
+         4 RUN ['/bin/sh', '-c', 'git clone git@github.com:hpc/charliecloud.git']
+       Cloning into 'charliecloud'...
+       remote: Enumerating objects: 10337, done.
+       remote: Counting objects: 100% (601/601), done.
+       remote: Compressing objects: 100% (299/299), done.
+       remote: Total 10337 (delta 400), reused 441 (delta 297), pack-reused 9736
+       Receiving objects: 100% (10337/10337), 12.77 MiB | 24.57 MiB/s, done.
+       Resolving deltas: 100% (7061/7061), done.
+       grown in 4 instructions: foo
+
+     This records connection details in both the Dockerfile and the image.
+
+.. note:: This FAQ does not cover the related issue of SSH authentication. One
+          approach is to simply run the SSH agent on the host.
+          :code:`ch-image` passes environment variable :code:`SSH_AUTH_SOCK`
+          into the build and bind-mounts host :code:`/tmp` to guest
+          :code:`/tmp`, which is where the SSH agent's listening socket
+          usually resides. Thus, SSH within the container will use this
+          existing SSH agent on the host to authenticate without further
+          intervention.
+
 
 How do I ...
 ============
@@ -707,4 +801,5 @@ Alpine 3.9 image pulled from Docker hub::
   $ ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
   3.9.5
 
-..  LocalWords:  CAs
+
+..  LocalWords:  CAs SY Gutmann AUTH
