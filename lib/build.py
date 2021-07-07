@@ -53,6 +53,7 @@ ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "https_proxy": os.environ.get("https_proxy"),
                  "ftp_proxy": os.environ.get("ftp_proxy"),
                  "no_proxy": os.environ.get("no_proxy"),
+                 "SSH_AUTH_SOCK": os.environ.get("SSH_AUTH_SOCK"),
                  "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                  # GNU tar, when it thinks it's running as root, tries to
                  # chown(2) and chgrp(2) files to whatever's in the tarball.
