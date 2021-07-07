@@ -448,8 +448,8 @@ Charliecloud is small enough to just rebuild everything with::
 Special images
 --------------
 
-For images that are not needed after the completion of the test are tagged
-:code:`tmpimg`. So there is only 1 extra image at the end of the test suite.
+For images not needed after completion of a test, tag them :code:`tmpimg`.
+This leaves only one extra image at the end of the test suite.
 
 Writing a test image using the standard workflow
 ------------------------------------------------
@@ -1375,4 +1375,5 @@ Additional sources
 * :code:`runc create` man page: https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md
 * https://github.com/opencontainers/runtime-spec/blob/master/runtime.md
 
-..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix
+
+..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg
