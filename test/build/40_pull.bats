@@ -255,6 +255,7 @@ EOF
     [[ $status -eq 0 ]]
 
     grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
+
     rm -Rf "$unpack"
 }
 

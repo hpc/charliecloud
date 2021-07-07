@@ -445,6 +445,11 @@ Charliecloud is small enough to just rebuild everything with::
 
   $ ./autogen.sh && ./configure && make clean && make
 
+Special images
+--------------
+
+For images that are not needed after the completion of the test are tagged
+:code:`tmpimg`. So there is only 1 extra image at the end of the test suite.
 
 Writing a test image using the standard workflow
 ------------------------------------------------
