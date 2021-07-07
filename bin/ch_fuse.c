@@ -62,7 +62,7 @@ void sqfs_clean()
    sqfs_ll_unmount(&sq.chan, sq.mountdir);
 }
 
-/* Returns true if img is a sqfs */
+/* Returns true if path is a sqfs */
 bool sqfs_p(const char *path)
 {
    sqfs_ll *ll;
@@ -77,16 +77,6 @@ bool sqfs_p(const char *path)
    sqfs_destroy(&ll->fs);
    free(ll);
    return false;
-}
-
-/* Run user command with an extra process for sqfs */
-void sqfs_run_user_command(char *argv[], const char *initial_dir)
-{
-   int status;
-   if (fork() == 0)
-      run_user_command(argv, initial_dir);
-   wait(&status);
-   kill(sq.pid, SIGTERM);
 }
 
 /* Mounts sqfs image. Returns mount point */

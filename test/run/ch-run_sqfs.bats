@@ -5,17 +5,17 @@ load ../common
 @test 'ch-run: squash' {
     scope standard
 
-    ch_sqfs="${CH_TEST_TARDIR}/00_tiny.sqfs" #update interms of batsTmp
+    ch_sqfs="${CH_TEST_TARDIR}/00_tiny.sqfs"
+    ch_mnt="/var/tmp/${USER}.ch/mnt"
 
     run ch-run -vvv "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"mount path: /var/tmp/sqfs"* ]]
+    [[ $output = *"mount path: ${ch_mnt}"* ]]
     # did it mount, run??
 
-    # did it clean up?
-    [[ -e "/var/tmp/sqfs" ]]
-    rm -r /var/tmp/sqfs
+    [[ -e ${ch_mnt} ]]
+    rm -r "${ch_mnt}"
 }
 
 @test 'ch-run: squash -s' {

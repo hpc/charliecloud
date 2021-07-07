@@ -96,7 +96,7 @@ void privs_verify_invoking();
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
-char *sqfs_unpack = "/var/tmp/sqfs"; //tmp default mountpoint
+char *sqfs_unpack;
 
 /** Main **/
 
@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
    int arg_next;
    int c_argc;
    char ** c_argv;
+   sqfs_unpack = cat("/var/tmp/", cat(getenv("USER"), ".ch/mnt"));
 
    privs_verify_invoking();
 

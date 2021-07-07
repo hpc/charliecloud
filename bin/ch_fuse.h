@@ -1,5 +1,4 @@
-/* Copyright © Triad National Security, LLC, and others.
-   This interface contains Charliecloud's core containerization features. */
+/* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
 #include <stdbool.h>
@@ -11,5 +10,4 @@
 void fuse_loop_init();
 bool sqfs_p(const char *path);
 void sqfs_clean();
-void sqfs_run_user_command(char *argv[], const char *inital_dir);
 char *sqfs_mount(char *mountdir, char *filepath);
