@@ -123,6 +123,7 @@ int main(int argc, char *argv[])
                                                   .private_passwd = false,
                                                   .private_tmp = false,
                                                   .old_home = getenv("HOME"),
+                                                  .ch_tmp = getenv("CH_TMP"),
                                                   .writable = false },
                          .initial_dir = NULL };
    // These need to be on the heap because we realloc(3) them later.

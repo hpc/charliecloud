@@ -423,11 +423,21 @@ void setup_passwd(const struct container *c)
 {
    int fd;
    char *path;
+   static char tfsuffix[] = "/ch-run_passwd.XXXXXX";
    struct group *g;
    struct passwd *p;
 
    // /etc/passwd
    T_ (path = strdup("/tmp/ch-run_passwd.XXXXXX"));
+   if ( c->ch_tmp != NULL )
+   {
+      printf ("sc13 CH_TMP is set\n");
+      free (path);
+      path = (char*) calloc (PATH_CHARS, sizeof(char *));
+      strncpy( path, c->ch_tmp, PATH_CHARS-strlen(tfsuffix)-1);
+      path[PATH_CHARS-strlen(tfsuffix)-1] = '\0';
+      strcat (path,tfsuffix);
+   }
    T_ (-1 != (fd = mkstemp(path)));  // mkstemp(3) writes path
    if (c->container_uid != 0)
       T_ (1 <= dprintf(fd, "root:x:0:0:root:/root:/bin/sh\n"));
