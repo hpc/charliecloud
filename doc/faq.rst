@@ -404,13 +404,26 @@ instructions can't see anything in your home directory.
 
 Solutions include:
 
-  1. Approve the connection interactively by typing :code:`y`. Note this will
-     record details of the connection within the image, including IP address
-     and the fingerprint.
+  1. Change to anonymous HTTPS clone, if available. Most public repositories
+     will support this. For example::
 
-  2. Turn off host key checking in the image's system `SSH config
-     <https://man.openbsd.org/ssh_config>`_. There are multiple ways to do
-     this, but one is::
+       $ cat ./Dockerfile
+       FROM alpine:latest
+       RUN apk add git
+       RUN git clone https://github.com/hpc/charliecloud.git
+       $ ch-image build -t foo -f ./Dockerfile .
+       [...]
+       grown in 3 instructions: foo
+
+  2. Approve the connection interactively by typing :code:`y`. Note this will
+     record details of the connection within the image, including IP address
+     and the fingerprint. It also doesn't make the build non-interactive.
+
+  3. Edit the image's system `SSH config
+     <https://man.openbsd.org/ssh_config>`_ to turn off host key checking.
+     Note this can be rather hairy, because the SSH config language is quite
+     flexible and the first instance of a directive is the one used. However,
+     often the changes can be simply appended::
 
        $ cat ./Dockerfile
        FROM alpine:latest
@@ -423,12 +436,7 @@ Solutions include:
          5 RUN ['/bin/sh', '-c', 'git clone git@github.com:hpc/charliecloud.git']
        Cloning into 'charliecloud'...
        Warning: Permanently added 'github.com' (RSA) to the list of known hosts.
-       remote: Enumerating objects: 10337, done.
-       remote: Counting objects: 100% (601/601), done.
-       remote: Compressing objects: 100% (299/299), done.
-       remote: Total 10337 (delta 400), reused 441 (delta 297), pack-reused 9736
-       Receiving objects: 100% (10337/10337), 12.77 MiB | 22.31 MiB/s, done.
-       Resolving deltas: 100% (7061/7061), done.
+       [...]
        grown in 4 instructions: foo
 
      Check your institutional policy on whether this is permissible, though
@@ -438,11 +446,33 @@ Solutions include:
 
      This will not record details of the connection in the image.
 
-     More complex edit commands will be needed if either of these directives
-     already appears in :code:`/etc/ssh/ssh_config`, because SSH config uses
-     the first instance of a directive it encounters.
+  4. Turn off host key checking on the SSH command line. (See caveats in the
+     previous item.) If SSH is used directly::
 
-  3. Add the remote host to the system known hosts file, e.g.::
+       $ cat ./Dockerfile
+       FROM alpine:latest
+       RUN apk add openssh
+       RUN ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null git@github.com
+       $ ch-image build -t foo -f ./Dockerfile .
+       [...]
+         3 RUN ['/bin/sh', '-c', 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null git@github.com']
+       Pseudo-terminal will not be allocated because stdin is not a terminal.
+       Warning: Permanently added 'github.com' (RSA) to the list of known hosts.
+       Hi reidpr! You've successfully authenticated, but GitHub does not provide shell access.
+
+     If a tool is running SSH under the hood, there is probably a way to
+     configure the call. For example, for Git::
+
+       $ cat ./Dockerfile
+       FROM alpine:latest
+       RUN apk add git openssh
+       ARG GIT_SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+       RUN git clone https://github.com/hpc/charliecloud.git
+       $ ch-image build -t foo -f ./Dockerfile .
+       [...]
+       grown in 4 instructions: foo
+
+  5. Add the remote host to the system known hosts file, e.g.::
 
        $ cat ./Dockerfile
        FROM alpine:latest
@@ -453,12 +483,7 @@ Solutions include:
        [...]
          4 RUN ['/bin/sh', '-c', 'git clone git@github.com:hpc/charliecloud.git']
        Cloning into 'charliecloud'...
-       remote: Enumerating objects: 10337, done.
-       remote: Counting objects: 100% (601/601), done.
-       remote: Compressing objects: 100% (299/299), done.
-       remote: Total 10337 (delta 400), reused 441 (delta 297), pack-reused 9736
-       Receiving objects: 100% (10337/10337), 12.77 MiB | 24.57 MiB/s, done.
-       Resolving deltas: 100% (7061/7061), done.
+       [...]
        grown in 4 instructions: foo
 
      This records connection details in both the Dockerfile and the image.
