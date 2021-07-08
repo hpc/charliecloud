@@ -763,7 +763,7 @@ This often occurs during an SSH-based Git clone. For example:
   RUN apk add git openssh
   RUN git clone git@github.com:hpc/charliecloud.git
 
-.. code-block::
+.. code-block:: console
 
   $ ch-image build -t foo -f ./Dockerfile .
   [...]
