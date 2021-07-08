@@ -65,17 +65,13 @@ void sqfs_clean()
 /* Returns true if path is a sqfs */
 bool sqfs_p(const char *path)
 {
-   sqfs_ll *ll;
    sqfs_fd_t fd;
+   sqfs fs;
 
-   ll = malloc(sizeof(*ll));
-   Tf (ll, "can't allocate memory");
-   memset(ll, 0 , sizeof(*ll));
    fd = open(path, O_RDONLY);
-   if(fd != -1 && sqfs_init(&ll->fs, fd, 0) == SQFS_OK)
+   if(fd != -1 && sqfs_init(&fs, fd, 0) == SQFS_OK)
       return true;
-   sqfs_destroy(&ll->fs);
-   free(ll);
+   sqfs_destroy(&fs);
    return false;
 }
 
@@ -96,8 +92,8 @@ char *sqfs_mount(char *mountdir, char *filepath)
    // mount sqfs
    sq.ll = sqfs_ll_open(filepath, 0);
    Te (sq.ll, "%s does not exist", filepath);
-   Ze (opendir(sq.mountdir), "%s already exists", sq.mountdir);
-   Ze (mkdir(sq.mountdir, 0777), "failed to create: %s", sq.mountdir);
+   if (!opendir(sq.mountdir)) //if directory doesn't exist, create it
+      Ze (mkdir(sq.mountdir, 0777), "failed to create: %s", sq.mountdir);
    Te (SQFS_OK == sqfs_ll_mount(&sq.chan, sq.mountdir, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), sq.ll), "failed to mount");
    Ze ((sq.chan.session == NULL), "failed to create fuse session");
 
