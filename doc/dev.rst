@@ -445,6 +445,11 @@ Charliecloud is small enough to just rebuild everything with::
 
   $ ./autogen.sh && ./configure && make clean && make
 
+Special images
+--------------
+
+For images not needed after completion of a test, tag them :code:`tmpimg`.
+This leaves only one extra image at the end of the test suite.
 
 Writing a test image using the standard workflow
 ------------------------------------------------
@@ -1387,4 +1392,4 @@ catch both dot notation and tuples, but not the list of filenames in
 What to do in each location should either be obvious or commented.
 
 
-..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix
+..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg

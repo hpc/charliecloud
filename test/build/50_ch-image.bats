@@ -323,7 +323,7 @@ EOF
 }
 
 @test 'ch-image build --bind' {
-    run ch-image --no-cache build -t build-bind -f - \
+    run ch-image --no-cache build -t tmpimg -f - \
                 -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
 FROM 00_tiny
 RUN mount
@@ -337,10 +337,10 @@ EOF
 }
 
 @test 'ch-image build: metadata carry-forward' {
-    img=$CH_IMAGE_STORAGE/img/build-metadata
+    img=$CH_IMAGE_STORAGE/img/tmpimg
 
     # Print out current metadata, then update it.
-    run ch-image build --no-cache -t build-metadata -f - . <<'EOF'
+    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
 FROM charliecloud/metadata:2021-01-15
 RUN echo "cwd1: $PWD"
 WORKDIR /usr
