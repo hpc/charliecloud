@@ -179,13 +179,13 @@ void enter_udss(struct container *c)
    if (!c->private_passwd)
       setup_passwd(c);
    // Container /tmp.
-   if ( c->ch_tmp == NULL )
+   if ( c->tmp == NULL )
    {
       T_ ( host_tmp = strdup("/tmp") );
    }
    else
    {
-      T_ ( host_tmp = strdup(c->ch_tmp) );
+      T_ ( host_tmp = strdup(c->tmp) );
    }
    if (c->private_tmp) {
       tmpfs_mount("/tmp", c->newroot, NULL);
@@ -438,14 +438,14 @@ void setup_passwd(const struct container *c)
    struct passwd *p;
 
    // /etc/passwd
-   if ( c->ch_tmp == NULL )
+   if ( c->tmp == NULL )
    {
        T_ (path = strdup("/tmp/ch-run_passwd.XXXXXX"));
    }
    else
    {
       path = (char*) calloc (PATH_CHARS, sizeof(char *));
-      strncpy( path, c->ch_tmp, PATH_CHARS-strlen(tfsuffix_p)-1);
+      strncpy( path, c->tmp, PATH_CHARS-strlen(tfsuffix_p)-1);
       path[PATH_CHARS-strlen(tfsuffix_p)-1] = '\0';
       strcat (path,tfsuffix_p);
    }
@@ -475,14 +475,14 @@ void setup_passwd(const struct container *c)
    Z_ (unlink(path));
    free (path);
    // /etc/group
-   if ( c->ch_tmp == NULL )
+   if ( c->tmp == NULL )
    {
       T_ (path = strdup("/tmp/ch-run_group.XXXXXX"));
    }
    else
    {
       path = (char*) calloc (PATH_CHARS, sizeof(char *));
-      strncpy( path, c->ch_tmp, PATH_CHARS-strlen(tfsuffix_g)-1);
+      strncpy( path, c->tmp, PATH_CHARS-strlen(tfsuffix_g)-1);
       path[PATH_CHARS-strlen(tfsuffix_g)-1] = '\0';
       strcat (path,tfsuffix_g);
    }
