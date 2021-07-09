@@ -757,13 +757,16 @@ class Image_Ref:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
          if (x.column == -1):
-            FATAL("image ref syntax, at end: %s" % s)
+            FATAL("image ref syntax, at end: %s" % s,
+                 hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference");
          else:
-            FATAL("image ref syntax, char %d: %s" % (x.column, s))
+            FATAL("image ref syntax, char %d: %s" % (x.column, s),
+                 hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference");
       except lark.exceptions.UnexpectedEOF as x:
          # We get UnexpectedEOF because of Lark issue #237. This exception
          # doesn't have a column location.
-         FATAL("image ref syntax, at end: %s" % s)
+         FATAL("image ref syntax, at end: %s" % s,
+              hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference");
       DEBUG(tree.pretty())
       return tree
 
@@ -1803,7 +1806,10 @@ def log(*args, color=None, prefix="", **kwargs):
                    datetime.datetime.now().isoformat(timespec="milliseconds"),
                    prefix))
    print(prefix, file=log_fp, end="")
-   print(flush=True, file=log_fp, *args, **kwargs)
+   print(flush=True, file=log_fp, *args)
+   hint = kwargs.get('hint', None)
+   if (hint is not None):
+      print("hint: ", hint, file=log_fp)
    if (color is not None):
       color_reset(log_fp)
 
