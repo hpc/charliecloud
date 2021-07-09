@@ -188,9 +188,9 @@ void enter_udss(struct container *c)
       T_ ( host_tmp = strdup(c->tmp) );
    }
    if (c->private_tmp) {
-      tmpfs_mount("/tmp", c->newroot, NULL);
+      tmpfs_mount(host_tmp, c->newroot, NULL);
    } else {
-      bind_mount("/tmp", "/tmp", BD_REQUIRED, c->newroot, 0);
+      bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0);
    }
    free (host_tmp);
    // Container /home.
