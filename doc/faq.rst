@@ -824,8 +824,8 @@ Solutions include:
 
        FROM alpine:latest
        RUN apk add git openssh
-       ARG GIT_SSH="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-       RUN git clone https://github.com/hpc/charliecloud.git
+       ARG GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+       RUN git clone git@github.com:hpc/charliecloud.git
 
   5. Add the remote host to the system known hosts file, e.g.:
 
