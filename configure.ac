@@ -313,7 +313,7 @@ CH_CHECK_VERSION([NVIDIA_CLI], [$vmin_nvidia_CLI],
                  [-V | head -1 | cut -d' ' -f2])
 AC_MSG_CHECKING([for nVidia libraries & executables])
 AS_IF([test -n "$NVIDIA_CLI"],
-  [AS_IF([nvidia-container-cli list | grep -Fq libnvidia-glcore.so],
+  [AS_IF([nvidia-container-cli list | grep -q libnvidia],
         [have_nvidia_libs=yes],
         [have_nvidia_libs=no])],
   [have_nvidia_libs=no])
