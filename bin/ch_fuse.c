@@ -34,18 +34,6 @@ void fuse_end();
 
 /** Functions **/
 
-/* Initalize fuse loop */
-void fuse_loop_init()
-{
-   // tries to set signal handlers, returns -1 if failed
-   Te((fuse_set_signal_handlers(sq.chan.session) >= 0), "can't set signal handlers");
-   if ((fork()) != 0) { //parent process
-      sq.pid = getpid();
-      // tries to create fuse loop, returns -1 if failed
-      Te((fuse_session_loop(sq.chan.session) >= 0), "failed to create fuse loop");
-   }
-}
-
 /* Starts sqfs_ll_clean by exiting out of final process */
 void fuse_end()
 {
@@ -94,11 +82,21 @@ char *sqfs_mount(char *mountdir, char *filepath)
    Te (sq.ll, "%s does not exist", filepath);
    if (!opendir(sq.mountdir)) //if directory doesn't exist, create it
       Ze (mkdir(sq.mountdir, 0777), "failed to create: %s", sq.mountdir);
-   Te (SQFS_OK == sqfs_ll_mount(&sq.chan, sq.mountdir, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), sq.ll), "failed to mount");
-   Ze ((sq.chan.session == NULL), "failed to create fuse session");
 
+   /* two 'sources' of error 1. can't create fuse session, 2. can't mount */
+   if (SQFS_OK != sqfs_ll_mount(&sq.chan, sq.mountdir, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), sq.ll)) {
+      Te ((sq.chan.session), "failed to create fuse session");
+      FATAL("failed to mount");
+   }
    signal(SIGCHLD, fuse_end); //end fuse loop when ch-run is done
-   fuse_loop_init();
+
+   // tries to set signal handlers, returns -1 if failed
+   Te((fuse_set_signal_handlers(sq.chan.session) >= 0), "can't set signal handlers");
+   if ((fork()) != 0) { //parent process
+      sq.pid = getpid();
+      // tries to create fuse loop, returns -1 if failed
+      Te((fuse_session_loop(sq.chan.session) >= 0), "failed to create fuse loop");
+   }
    return sq.mountdir;
 }
 

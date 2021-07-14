@@ -146,7 +146,6 @@ int main(int argc, char *argv[])
       Ze (atexit(sqfs_clean), "exit handler set up failed");
       //overwrite user input to store mount point not sqfs location
       argv[arg_next] = sqfs_mount(sqfs_unpack, argv[arg_next]);
-      DEBUG("new run DIR: %s", argv[arg_next]);
    }
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
