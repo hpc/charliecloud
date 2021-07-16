@@ -71,13 +71,25 @@ void sq_clean()
 /* Returns true if path is a sqfs */
 bool imgdir_p(const char *path)
 {
-   sqfs_fd_t fd;
-   sqfs fs;
+   struct stat buffer;
+   FILE *file;
+   int magic[4], i;
 
-   fd = open(path, O_RDONLY);
-   if(fd != -1 && sqfs_init(&fs, fd, 0) == SQFS_OK)
+   Te (stat(path, &buffer) == 0, "failed to stat");
+   if (!S_ISREG(buffer.st_mode)) //is a file?
+      return false;
+
+   file = fopen(path, "rb");
+   for(i = 3; i >=0; i --) {
+      magic[i] = fgetc(file);
+   }
+
+   //sqfs magic number: 0x73717368
+   DEBUG("Magic Number: %x%x%x%x", magic[0], magic[1], magic[2], magic[3]);
+   if(magic[0] == 0x73 && magic[1] == 0x71 && magic[2] == 0x73 && magic[3] == 0x68)
       return true;
-   sqfs_destroy(&fs);
+
+   FATAL("%s invalid input type"); //errors when file but not a sqfs
    return false;
 }
 
