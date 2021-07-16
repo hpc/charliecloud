@@ -7,7 +7,6 @@
 
 /** Function prototypes **/
 
-void fuse_loop_init();
-bool sqfs_p(const char *path);
-void sqfs_clean();
-char *sqfs_mount(char *mountdir, char *filepath);
+bool imgdir_p(const char *path);
+void sq_clean();
+char *sq_mount(char *mountdir, char *filepath);

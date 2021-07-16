@@ -14,12 +14,29 @@
 #include "ch_core.h"
 #include "ch_misc.h"
 
-/** Macros **/
+/** Constants **/
+
+/* holds fuse low level operations */
+struct fuse_lowlevel_ops sqfs_ll_ops = {
+    .getattr    = &sqfs_ll_op_getattr,
+    .opendir    = &sqfs_ll_op_opendir,
+    .releasedir = &sqfs_ll_op_releasedir,
+    .readdir    = &sqfs_ll_op_readdir,
+    .lookup     = &sqfs_ll_op_lookup,
+    .open       = &sqfs_ll_op_open,
+    .create     = &sqfs_ll_op_create,
+    .release    = &sqfs_ll_op_release,
+    .read       = &sqfs_ll_op_read,
+    .readlink   = &sqfs_ll_op_readlink,
+    .listxattr  = &sqfs_ll_op_listxattr,
+    .getxattr   = &sqfs_ll_op_getxattr,
+    .forget     = &sqfs_ll_op_forget,
+    .statfs     = &stfs_ll_op_statfs
+};
 
 /** Types **/
 struct squash {
    char *mountdir;      // mount point of sqfs
-   pid_t pid;           // PID of fuse loop
    sqfs_ll_chan chan;   // fuse channel associated with squash fuse session
    sqfs_ll *ll;         // squashfs image
 };
@@ -29,20 +46,21 @@ struct squash {
 struct squash sq;
 
 /** Function prototypes (private) **/
-void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops);
-void fuse_end();
+void sq_end();
 
 /** Functions **/
 
-/* Starts sqfs_ll_clean by exiting out of final process */
-void fuse_end()
+/* Assigned to SIGCHLD. When child process (ch-run) is done running it sends a
+   SIGCHLD which triggers this method that ends the parent process */
+void sq_end()
 {
-   DEBUG("end fuse loop: %d", sq.pid);
+   DEBUG("end fuse loop");
    exit(0);
 }
 
-/* Ends fuse loop and unmounts sqfs */
-void sqfs_clean()
+/* Assigned as exit handler. When parent process (fuse loop) ends in sq_end,
+   it triggers this method that unmounts and cleans up the sqfs */
+void sq_clean()
 {
    fuse_remove_signal_handlers(sq.chan.session);
    sqfs_ll_destroy(sq.ll);
@@ -51,7 +69,7 @@ void sqfs_clean()
 }
 
 /* Returns true if path is a sqfs */
-bool sqfs_p(const char *path)
+bool imgdir_p(const char *path)
 {
    sqfs_fd_t fd;
    sqfs fs;
@@ -64,22 +82,24 @@ bool sqfs_p(const char *path)
 }
 
 /* Mounts sqfs image. Returns mount point */
-char *sqfs_mount(char *mountdir, char *filepath)
+char *sq_mount(char *mountdir, char *filepath)
 {
+   Te (mountdir, "mount dir can't be empty");
+   Te (filepath, "filepath can't be empty");
+   Te (filepath[0] == '/', "%s must be absolute path", filepath);
+
    sq.mountdir = mountdir;
    DEBUG("mount path: %s", sq.mountdir);
 
    //init fuse,etc.
-   struct fuse_args args;
-   struct fuse_lowlevel_ops sqfs_ll_ops;
+   struct fuse_args args; //arguments passed to fuse used for mount
    args.argc = 1;
    args.argv = &filepath;
    args.allocated = 0;
-   get_fuse_ops(&sqfs_ll_ops);
 
    // mount sqfs
    sq.ll = sqfs_ll_open(filepath, 0);
-   Te (sq.ll, "%s does not exist", filepath);
+   Te (sq.ll, "%s does not exist", filepath); //don't think we'll actually ever hit this error ??..
    if (!opendir(sq.mountdir)) //if directory doesn't exist, create it
       Ze (mkdir(sq.mountdir, 0777), "failed to create: %s", sq.mountdir);
 
@@ -88,34 +108,18 @@ char *sqfs_mount(char *mountdir, char *filepath)
       Te ((sq.chan.session), "failed to create fuse session");
       FATAL("failed to mount");
    }
-   signal(SIGCHLD, fuse_end); //end fuse loop when ch-run is done
+   signal(SIGCHLD, sq_end); //end fuse loop when ch-run is done
 
    // tries to set signal handlers, returns -1 if failed
-   Te((fuse_set_signal_handlers(sq.chan.session) >= 0), "can't set signal handlers");
-   if ((fork()) != 0) { //parent process
-      sq.pid = getpid();
+   Te ((fuse_set_signal_handlers(sq.chan.session) >= 0), "can't set signal handlers");
+
+   // child process should never return
+   // parent process runs fuse loop until child process ends and sends a SIGCHLD
+   int status = fork();
+   Te (status >=0, "failed to fork process");
+   if (status > 0) { //parent process
       // tries to create fuse loop, returns -1 if failed
-      Te((fuse_session_loop(sq.chan.session) >= 0), "failed to create fuse loop");
+      Te ((fuse_session_loop(sq.chan.session) >= 0), "failed to create fuse loop");
    }
    return sq.mountdir;
-}
-
-/* Assign ops to fuse_lowlevel_ops */
-void get_fuse_ops(struct fuse_lowlevel_ops *sqfs_ll_ops) {
-   memset(sqfs_ll_ops, 0, sizeof(*sqfs_ll_ops));
-   (*sqfs_ll_ops).getattr    = &sqfs_ll_op_getattr;
-   (*sqfs_ll_ops).opendir    = &sqfs_ll_op_opendir;
-   (*sqfs_ll_ops).releasedir = &sqfs_ll_op_releasedir;
-   (*sqfs_ll_ops).readdir    = &sqfs_ll_op_readdir;
-   (*sqfs_ll_ops).lookup     = &sqfs_ll_op_lookup;
-   (*sqfs_ll_ops).open       = &sqfs_ll_op_open;
-   (*sqfs_ll_ops).create     = &sqfs_ll_op_create;
-   (*sqfs_ll_ops).release    = &sqfs_ll_op_release;
-   (*sqfs_ll_ops).read       = &sqfs_ll_op_read;
-   (*sqfs_ll_ops).readlink   = &sqfs_ll_op_readlink;
-   (*sqfs_ll_ops).listxattr  = &sqfs_ll_op_listxattr;
-   (*sqfs_ll_ops).getxattr   = &sqfs_ll_op_getxattr;
-   (*sqfs_ll_ops).forget     = &sqfs_ll_op_forget;
-   (*sqfs_ll_ops).statfs     = &stfs_ll_op_statfs;
-
 }

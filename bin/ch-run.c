@@ -96,7 +96,7 @@ void privs_verify_invoking();
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
-char *sqfs_unpack;
+char *sq_mountpt;
 
 /** Main **/
 
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
    int arg_next;
    int c_argc;
    char ** c_argv;
-   sqfs_unpack = cat("/var/tmp/", cat(getenv("USER"), ".ch/mnt"));
+   Te ((asprintf(&sq_mountpt, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
 
    privs_verify_invoking();
 
@@ -142,16 +142,22 @@ int main(int argc, char *argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
-   if(sqfs_p(argv[arg_next])) { //is img a sqfs?
-      Ze (atexit(sqfs_clean), "exit handler set up failed");
-      //overwrite user input to store mount point not sqfs location
-      argv[arg_next] = sqfs_mount(sqfs_unpack, argv[arg_next]);
+   if(imgdir_p(argv[arg_next])) { //is img a sqfs?
+      Ze (atexit(sq_clean), "exit handler set up failed");
+      //overwrite user input to store directory mount location
+      argv[arg_next] = sq_mount(sq_mountpt, argv[arg_next]);
    }
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.newroot = realpath(argv[arg_next], NULL);
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
    arg_next++;
+
+//   if(imgdir_p(argv[arg_next])) { //is img a sqfs?
+//      Ze (atexit(sq_clean), "exit handler set up failed");
+      //overwrite user input to store directory mount location
+//      argv[arg_next] = sq_mount(sq_mountpt, argv[arg_next]);
+//   }
 
    if (args.c.join) {
       args.c.join_ct = join_ct(args.c.join_ct);
@@ -505,7 +511,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join = true;
       break;
    case 's':
-      sqfs_unpack = arg;
+      sq_mountpt = arg;
       break;
    case 't':
       args->c.private_tmp = true;
