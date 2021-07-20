@@ -96,7 +96,7 @@ void privs_verify_invoking();
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
-char *sq_mountpt;
+char *sq_mountpt = NULL;
 
 /** Main **/
 
@@ -107,7 +107,6 @@ int main(int argc, char *argv[])
    int arg_next;
    int c_argc;
    char ** c_argv;
-   Te ((asprintf(&sq_mountpt, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
 
    privs_verify_invoking();
 
@@ -143,21 +142,20 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
    if(imgdir_p(argv[arg_next])) { //is img a sqfs?
+      if(sq_mountpt == NULL)
+         Te ((asprintf(&sq_mountpt, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
       Ze (atexit(sq_clean), "exit handler set up failed");
       //overwrite user input to store directory mount location
       argv[arg_next] = sq_mount(sq_mountpt, argv[arg_next]);
+   } else {
+      if(sq_mountpt != NULL)
+         WARNING("WARNING: invalid option -s, --squashmnt");
    }
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.newroot = realpath(argv[arg_next], NULL);
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
    arg_next++;
-
-//   if(imgdir_p(argv[arg_next])) { //is img a sqfs?
-//      Ze (atexit(sq_clean), "exit handler set up failed");
-      //overwrite user input to store directory mount location
-//      argv[arg_next] = sq_mount(sq_mountpt, argv[arg_next]);
-//   }
 
    if (args.c.join) {
       args.c.join_ct = join_ct(args.c.join_ct);

@@ -36,7 +36,7 @@ struct fuse_lowlevel_ops sqfs_ll_ops = {
 
 /** Types **/
 struct squash {
-   char *mountdir;      // mount point of sqfs
+   char *mountpt;      // mount point of sqfs
    sqfs_ll_chan chan;   // fuse channel associated with squash fuse session
    sqfs_ll *ll;         // squashfs image
 };
@@ -64,8 +64,8 @@ void sq_clean()
 {
    fuse_remove_signal_handlers(sq.chan.session);
    sqfs_ll_destroy(sq.ll);
-   DEBUG("unmounting: %s", sq.mountdir);
-   sqfs_ll_unmount(&sq.chan, sq.mountdir);
+   DEBUG("unmounting: %s", sq.mountpt);
+   sqfs_ll_unmount(&sq.chan, sq.mountpt);
 }
 
 /* Returns true if path is a sqfs */
@@ -86,37 +86,34 @@ bool imgdir_p(const char *path)
 
    //sqfs magic number: 0x73717368
    DEBUG("Magic Number: %x%x%x%x", magic[0], magic[1], magic[2], magic[3]);
-   if(magic[0] == 0x73 && magic[1] == 0x71 && magic[2] == 0x73 && magic[3] == 0x68)
-      return true;
-
-   FATAL("%s invalid input type"); //errors when file but not a sqfs
-   return false;
+   Te ((magic[0] == 0x73 && magic[1] == 0x71 && magic[2] == 0x73 && magic[3] == 0x68), "invalid input type" );
+   return true;
 }
 
 /* Mounts sqfs image. Returns mount point */
 char *sq_mount(char *mountdir, char *filepath)
 {
-   Te (mountdir, "mount dir can't be empty");
+   Te (mountdir, "mount point can't be empty");
    Te (filepath, "filepath can't be empty");
-   Te (filepath[0] == '/', "%s must be absolute path", filepath);
 
-   sq.mountdir = mountdir;
-   DEBUG("mount path: %s", sq.mountdir);
+   sq.mountpt = mountdir;
+   INFO("mount point: %s", sq.mountpt);
 
    //init fuse,etc.
-   struct fuse_args args; //arguments passed to fuse used for mount
-   args.argc = 1;
-   args.argv = &filepath;
-   args.allocated = 0;
+   char* argv[] = {filepath, "-d"};
+   int v = 1;
+   if (verbose > 2) //fuse debug turned on at -vv, DEBUG level
+      v=2;
+   struct fuse_args args = FUSE_ARGS_INIT(v, argv); //arguments passed to fuse for mount
 
    // mount sqfs
    sq.ll = sqfs_ll_open(filepath, 0);
-   Te (sq.ll, "%s does not exist", filepath); //don't think we'll actually ever hit this error ??..
-   if (!opendir(sq.mountdir)) //if directory doesn't exist, create it
-      Ze (mkdir(sq.mountdir, 0777), "failed to create: %s", sq.mountdir);
+   Te (sq.ll, "failed to open %s", filepath);
+   if (!opendir(sq.mountpt)) //if directory doesn't exist, create it
+      Ze (mkdir(sq.mountpt, 0777), "failed to create: %s", sq.mountpt);
 
-   /* two 'sources' of error 1. can't create fuse session, 2. can't mount */
-   if (SQFS_OK != sqfs_ll_mount(&sq.chan, sq.mountdir, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), sq.ll)) {
+   // two 'sources' of error 1. can't create fuse session, 2. can't mount
+   if (SQFS_OK != sqfs_ll_mount(&sq.chan, sq.mountpt, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), sq.ll)) {
       Te ((sq.chan.session), "failed to create fuse session");
       FATAL("failed to mount");
    }
@@ -133,5 +130,5 @@ char *sq_mount(char *mountdir, char *filepath)
       // tries to create fuse loop, returns -1 if failed
       Te ((fuse_session_loop(sq.chan.session) >= 0), "failed to create fuse loop");
    }
-   return sq.mountdir;
+   return sq.mountpt;
 }
