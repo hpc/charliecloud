@@ -1006,7 +1006,7 @@ class Progress:
             line += "\r"  # CR so next INFO overwrites
          else:
             line += "\n"  # move to next line like usual
-         INFO(line, end="")
+         INFO(line)
          self.display_last = now
 
    def done(self):
@@ -1573,31 +1573,31 @@ class TarFile(tarfile.TarFile):
 
 ## Supporting functions ##
 
-def DEBUG(*args, **kwargs):
+def DEBUG(msg, hint=None):
    if (verbose >= 2):
-      log(color="38;5;6m", *args, **kwargs)  # dark cyan (same as 36m)
+      log(msg, hint=hint, color="38;5;6m")  # dark cyan (same as 36m)
 
-def ERROR(*args, **kwargs):
-   log(color="1;31m", prefix="error: ", *args, **kwargs)  # bold red
+def ERROR(msg, hint=None):
+   log(msg, hint=hint, color="1;31m", prefix="error: ")  # bold red
 
-def FATAL(*args, **kwargs):
-   ERROR(*args, **kwargs)
+def FATAL(msg, hint=None):
+   ERROR(msg, hint=hint)
    sys.exit(1)
 
-def INFO(*args, **kwargs):
+def INFO(msg, hint=None):
    "Note: Use print() for output; this function is for logging."
-   log(color="33m", *args, **kwargs)  # yellow
+   log(msg, hint=hint, color="33m")  # yellow
 
-def TRACE(*args, **kwargs):
+def TRACE(msg, hint=None):
    if (verbose >= 3):
-      log(color="38;5;6m", *args, **kwargs)  # dark cyan (same as 36m)
+      log(msg, hint=hint, color="38;5;6m")  # dark cyan (same as 36m)
 
-def VERBOSE(*args, **kwargs):
+def VERBOSE(msg, hint=None):
    if (verbose >= 1):
-      log(color="38;5;14m", *args, **kwargs)  # light cyan (1;36m but not bold)
+      log(msg, hint=hint, color="38;5;14m")  # light cyan (1;36m but not bold)
 
-def WARNING(*args, **kwargs):
-   log(color="31m", prefix="warning: ", *args, **kwargs)  # red
+def WARNING(msg, hint=None):
+   log(msg, hint=hint, color="31m", prefix="warning: ")  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -1797,7 +1797,7 @@ def json_from_file(path, msg):
       FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
    return data
 
-def log(*args, color=None, prefix="", **kwargs):
+def log(msg, hint=None, color=None, prefix=""):
    if (color is not None):
       color_set(color, log_fp)
    if (log_festoon):
@@ -1806,10 +1806,9 @@ def log(*args, color=None, prefix="", **kwargs):
                    datetime.datetime.now().isoformat(timespec="milliseconds"),
                    prefix))
    print(prefix, file=log_fp, end="")
-   print(flush=True, file=log_fp, *args)
-   hint = kwargs.get('hint', None)
+   print(msg, flush=True, file=log_fp)
    if (hint is not None):
-      print("hint: ", hint, file=log_fp)
+      print("hint:", hint, flush=True, file=log_fp, end="")
    if (color is not None):
       color_reset(log_fp)
 
