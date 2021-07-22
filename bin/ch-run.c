@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
                                                   .private_passwd = false,
                                                   .private_tmp = false,
                                                   .old_home = getenv("HOME"),
-                                                  .sq_mountpt = NULL,
+                                                  .sq_filepath = NULL,
                                                   .writable = false },
                          .initial_dir = NULL };
    // These need to be on the heap because we realloc(3) them later.
@@ -142,19 +142,18 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
-   if(imgdir_p(argv[arg_next])) { //is img a sqfs?
-      if(args.c.sq_mountpt == NULL)
-         Te ((asprintf(&args.c.sq_mountpt, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
-      Ze (atexit(sq_clean), "exit handler set up failed");
-      //overwrite user input to store directory mount location
-      argv[arg_next] = sq_mount(args.c.sq_mountpt, argv[arg_next]);
-   } else {
-      if(args.c.sq_mountpt != NULL)
-         WARNING("WARNING: invalid option -s, --squashmnt");
-   }
-
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   args.c.newroot = realpath(argv[arg_next], NULL);
+   if(imgdir_p(argv[arg_next])) {
+      // img is a sqfs
+      if(args.c.newroot == NULL) // set mount point to default
+         Te ((asprintf(&args.c.newroot, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
+      args.c.sq_filepath = argv[arg_next];
+   } else{
+      // img is a dir
+      if(args.c.newroot != NULL) // --squashmnt was set
+         WARNING("WARNING: invalid option -s, --squashmnt");
+      args.c.newroot = realpath(argv[arg_next], NULL);
+   }
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
    arg_next++;
 
@@ -177,6 +176,11 @@ int main(int argc, char *argv[])
    INFO("private /tmp: %d", args.c.private_tmp);
 
    fix_environment(&args);
+   if (args.c.sq_filepath != NULL) {
+      // img is a sqfs
+      Ze (atexit(sq_clean), "can't set up exit handler");
+      sq_mount(args.c.newroot, args.c.sq_filepath);
+   }
    containerize(&args.c);
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
@@ -510,7 +514,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join = true;
       break;
    case 's':
-      args->c.sq_mountpt = arg;
+      args->c.newroot = arg;
       break;
    case 't':
       args->c.private_tmp = true;

@@ -35,7 +35,7 @@ struct container {
    bool private_passwd;  // don't bind custom /etc/{passwd,group}
    bool private_tmp;     // don't bind host's /tmp
    char *old_home;       // host path to user's home directory (i.e. $HOME)
-   char *sq_mountpt;     // mount point for squashfs image
+   char *sq_filepath;    // filepath for squashfs image
    bool writable;
 };
 
