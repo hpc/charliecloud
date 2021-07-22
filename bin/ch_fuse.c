@@ -1,5 +1,9 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
+/* There are different prefixs depending on where the function is from.
+   squashFUSE uses the prefix sqfs_ll for lowlevel functionality. Charliecloud
+   used the prefix sq. */
+
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
@@ -67,26 +71,30 @@ void sq_clean()
    sqfs_ll_unmount(&sq.chan, sq.mountpt);
 }
 
-/* Returns true if path is a sqfs */
-bool imgdir_p(const char *path)
+/* Returns 1 if a sqfs, 0 if dir, -1 if other */
+int imgdir_p(const char *path)
 {
-   struct stat buffer;
+   struct stat read;
    FILE *file;
-   int magic[4], i;
+   char magic[4];
 
-   Te (stat(path, &buffer) == 0, "failed to stat");
-   if (!S_ISREG(buffer.st_mode)) //is a file?
-      return false;
+   Te (stat(path, &read) == 0, "can't stat %s", path);
+   if (S_ISDIR(read.st_mode)) // is a dir?
+      return 0;
+
+   if (!S_ISREG(read.st_mode)) // not a file?
+      return -1;
 
    file = fopen(path, "rb");
-   for(i = 3; i >=0; i --) {
-      magic[i] = fgetc(file);
-   }
+   Te ((file != NULL), "can't open %s", path);
+   Te ((fread(magic, 4, 1, file) == 1), "can't read %s", path);
 
-   //sqfs magic number: 0x73717368
-   DEBUG("Magic Number: %x%x%x%x", magic[0], magic[1], magic[2], magic[3]);
-   Te ((magic[0] == 0x73 && magic[1] == 0x71 && magic[2] == 0x73 && magic[3] == 0x68), "invalid input type" );
-   return true;
+   // sqfs magic number: 0x73717368
+   // see: https://dr-emann.github.io/squashfs/
+   DEBUG("Magic Number: %x%x%x%x", magic[3], magic[2], magic[1], magic[0]);
+   if(strcmp(magic, "hsqs") == 0) // is a sqfs?
+      return 1;
+   return -1;
 }
 
 /* Mounts sqfs image. Returns mount point */

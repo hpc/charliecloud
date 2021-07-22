@@ -143,16 +143,19 @@ int main(int argc, char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   if(imgdir_p(argv[arg_next])) {
+   int img = imgdir_p(argv[arg_next]);
+   if(img > 0) { //returns 1
       // img is a sqfs
       if(args.c.newroot == NULL) // set mount point to default
          Te ((asprintf(&args.c.newroot, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
       args.c.sq_filepath = argv[arg_next];
-   } else{
+   } else if(!img) {
       // img is a dir
       if(args.c.newroot != NULL) // --squashmnt was set
          WARNING("WARNING: invalid option -s, --squashmnt");
       args.c.newroot = realpath(argv[arg_next], NULL);
+   } else {
+      FATAL("img not dir or sqfs");
    }
    Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
    arg_next++;

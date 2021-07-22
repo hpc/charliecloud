@@ -7,6 +7,6 @@
 
 /** Function prototypes **/
 
-bool imgdir_p(const char *path);
+int imgdir_p(const char *path);
 void sq_clean();
 char *sq_mount(char *mountdir, char *filepath);

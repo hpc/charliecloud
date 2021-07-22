@@ -62,7 +62,7 @@ load ../common
     run ch-run -v Build.missing -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"invalid input type"* ]]
+    [[ $output = *"invalid image type"* ]]
 
     # input has same magic number but is broken
     sq_tmp="${CH_TEST_TARDIR}"/tmp.sqfs
