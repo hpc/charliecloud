@@ -96,7 +96,6 @@ void privs_verify_invoking();
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
-char *sq_mountpt = NULL;
 
 /** Main **/
 
@@ -124,6 +123,7 @@ int main(int argc, char *argv[])
                                                   .private_passwd = false,
                                                   .private_tmp = false,
                                                   .old_home = getenv("HOME"),
+                                                  .sq_mountpt = NULL,
                                                   .writable = false },
                          .initial_dir = NULL };
    // These need to be on the heap because we realloc(3) them later.
@@ -141,14 +141,15 @@ int main(int argc, char *argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
+
    if(imgdir_p(argv[arg_next])) { //is img a sqfs?
-      if(sq_mountpt == NULL)
-         Te ((asprintf(&sq_mountpt, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
+      if(args.c.sq_mountpt == NULL)
+         Te ((asprintf(&args.c.sq_mountpt, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
       Ze (atexit(sq_clean), "exit handler set up failed");
       //overwrite user input to store directory mount location
-      argv[arg_next] = sq_mount(sq_mountpt, argv[arg_next]);
+      argv[arg_next] = sq_mount(args.c.sq_mountpt, argv[arg_next]);
    } else {
-      if(sq_mountpt != NULL)
+      if(args.c.sq_mountpt != NULL)
          WARNING("WARNING: invalid option -s, --squashmnt");
    }
 
@@ -509,7 +510,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join = true;
       break;
    case 's':
-      sq_mountpt = arg;
+      args->c.sq_mountpt = arg;
       break;
    case 't':
       args->c.private_tmp = true;

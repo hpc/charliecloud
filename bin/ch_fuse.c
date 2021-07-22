@@ -36,11 +36,10 @@ struct fuse_lowlevel_ops sqfs_ll_ops = {
 
 /** Types **/
 struct squash {
-   char *mountpt;      // mount point of sqfs
+   char *mountpt;       // mount point of sqfs
    sqfs_ll_chan chan;   // fuse channel associated with squash fuse session
    sqfs_ll *ll;         // squashfs image
 };
-
 
 /** Global variables **/
 struct squash sq;
@@ -93,9 +92,7 @@ bool imgdir_p(const char *path)
 /* Mounts sqfs image. Returns mount point */
 char *sq_mount(char *mountdir, char *filepath)
 {
-   Te (mountdir, "mount point can't be empty");
-   Te (filepath, "filepath can't be empty");
-
+   Ze (mountdir[0] == '\0', "mount point can't be empty");
    sq.mountpt = mountdir;
    INFO("mount point: %s", sq.mountpt);
 
