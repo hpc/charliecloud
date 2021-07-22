@@ -219,6 +219,37 @@ class Not_In_Registry_Error(Exception): pass
 
 ## Classes ##
 
+class Credentials:
+
+   __slots__ = ("password",
+                "username")
+
+   def __init__(self):
+      self.username = None
+      self.password = None
+
+   def get(self):
+      # If stored, return those.
+      if (self.username is not None):
+         username = self.username
+         password = self.password
+      else:
+         try:
+            # Otherwise, use environment variables.
+            username = os.environ["CH_IMAGE_USERNAME"]
+            password = os.environ["CH_IMAGE_PASSWORD"]
+         except KeyError:
+            # Finally, prompt the user.
+            # FIXME: This hangs in Bats despite sys.stdin.isatty() == True.
+            username = input("\nUsername: ")
+            password = getpass.getpass("Password: ")
+         if (not password_once):
+            # Remember the credentials.
+            self.username = username
+            self.password = password
+      return (username, password)
+
+
 class HelpFormatter(argparse.HelpFormatter):
 
    def __init__(self, *args, **kwargs):
@@ -1096,6 +1127,7 @@ class Registry_HTTP:
    # authentication token anonymously.
 
    __slots__ = ("auth",
+                "creds",
                 "ref",
                 "session")
 
@@ -1120,6 +1152,7 @@ class Registry_HTTP:
       # Need an image ref with all the defaults filled in.
       self.ref = ref.canonical
       self.auth = self.Null_Auth()
+      self.creds = Credentials()
       self.session = None
       # This is commented out because it prints full request and response
       # bodies to standard output (not stderr), which overwhelms the terminal.
@@ -1137,7 +1170,7 @@ class Registry_HTTP:
       VERBOSE("authenticating using Basic")
       if ("realm" not in auth_d):
          FATAL("WWW-Authenticate missing realm")
-      (username, password) = self.credentials_read()
+      (username, password) = self.creds.get()
       self.auth = requests.auth.HTTPBasicAuth(username, password)
 
    def authenticate_bearer(self, res, auth_d):
@@ -1170,7 +1203,7 @@ class Registry_HTTP:
             token = res.json()["token"]
       # If that failed or was inappropriate, try for an authenticated token.
       if (token is None):
-         (username, password) = self.credentials_read()
+         (username, password) = self.creds.get()
          auth = requests.auth.HTTPBasicAuth(username, password)
          res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
                                 params=params)
@@ -1271,19 +1304,6 @@ class Registry_HTTP:
    def config_upload(self, config):
       "Upload config (sequence of bytes)."
       self.blob_upload(bytes_hash(config), config, "config: ")
-
-   def credentials_read(self):
-      try:
-         # FIXME: We use these environment variables in the test suite, but
-         # they are currently undocumented while we think more carefully about
-         # how to do non-interactive authentication (issue #849).
-         username = os.environ["CH_IMAGE_USERNAME"]
-         password = os.environ["CH_IMAGE_PASSWORD"]
-      except KeyError:
-         # FIXME: This hangs in Bats; sys.stdin.isatty() was still True though.
-         username = input("\nUsername: ")
-         password = getpass.getpass("Password: ")
-      return (username, password)
 
    def fatman_to_file(self, path, msg):
       """GET the manifest for self.image and save it at path. This seems to
@@ -1754,8 +1774,8 @@ def grep_p(path, rx):
       FATAL("error reading %s: %s" % (path, x.strerror))
 
 def init(cli):
-   global arch, arch_host, log_festoon, log_fp, storage, tls_verify, verbose
    # logging
+   global log_festoon, log_fp, verbose
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    if ("CH_LOG_FESTOON" in os.environ):
@@ -1767,15 +1787,19 @@ def init(cli):
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
    # storage object
+   global storage
    storage = Storage(cli.storage)
    # architecture
+   global arch, arch_host
    assert (cli.arch is not None)
    arch_host = arch_host_get()
    if (cli.arch == "host"):
       arch = arch_host
    else:
       arch = cli.arch
-   # TLS verification
+   # misc
+   global password_once, tls_verify
+   password_once = cli.password_once
    if (cli.tls_no_verify):
       tls_verify = False
       rpu = requests.packages.urllib3
