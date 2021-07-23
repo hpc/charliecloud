@@ -16,13 +16,14 @@ Summary:       Lightweight user-defined software stacks for high-performance com
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires: gcc rsync python3-devel
-BuildRequires: python%{python3_pkgversion}-lark-parser
-BuildRequires: python%{python3_pkgversion}-requests
-Requires:      python%{python3_pkgversion}-lark-parser
-Requires:      python%{python3_pkgversion}-requests
-Patch0:        lib64.patch
+BuildRequires: gcc rsync bash
+Requires:      squashfuse squashfs-tools
 Patch1:        el7-pkgdir.patch
+# Suggests:    name-builder docker buildah
+Provides:      %{name}-runtime
+Obsoletes:     %{name}-runtime < 0.24-9
+Provides:      %{name}-common
+Obsoletes:     %{name}-common  < 0.24-9
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -31,9 +32,24 @@ This simple approach avoids most security risks while maintaining access to
 the performance and functionality already on offer.
 
 Container images can be built using Docker or anything else that can generate
-a standard Linux filesystem tree.
+a standard Linux filesystem tree.\
 
-For more information: https://hpc.github.io/charliecloud/
+For more information: https://hpc.github.io/charliecloud
+
+%package builder
+Summary:       Charliecloud container image building tools
+BuildRequires: python3-devel
+BuildRequires: python%{python3_pkgversion}-lark-parser
+BuildRequires: python%{python3_pkgversion}-requests
+Requires:      %{name}
+Requires:      python3
+Requires:      python%{python3_pkgversion}-lark-parser
+Requires:      python%{python3_pkgversion}-requests
+Provides:      %{name}-builders
+Obsoletes:     %{name}-builders
+
+%description builder
+This package provides tools to build Charliecloud container images.
 
 %package       doc
 Summary:       Charliecloud html documentation
@@ -42,6 +58,7 @@ BuildArch:     noarch
 Obsoletes:     %{name}-doc < %{version}-%{release}
 BuildRequires: python%{python3_pkgversion}-sphinx
 BuildRequires: python%{python3_pkgversion}-sphinx_rtd_theme
+Requires:      python%{python3_pkgversion}-sphinx_rtd_theme
 
 %description doc
 Html and man page documentation for %{name}.
@@ -49,8 +66,8 @@ Html and man page documentation for %{name}.
 %package   test
 Summary:   Charliecloud test suite
 License:   ASL 2.0
+Requires:  %{name} %{name}-builder /usr/bin/bats
 Obsoletes: %{name}-test < %{version}-%{release}
-Requires:  %{name} bash /usr/bin/bats /usr/bin/python3
 
 %description test
 Test fixtures for %{name}.
@@ -58,7 +75,6 @@ Test fixtures for %{name}.
 %prep
 %setup -q
 
-%patch0 -p1
 %if 0%{?el7}
 %patch1 -p1
 %endif
@@ -68,12 +84,13 @@ Test fixtures for %{name}.
 # https://github.com/hpc/charliecloud/issues/735
 CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
 %configure --docdir=%{_pkgdocdir} \
+           --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
            --disable-bundled-lark \
 %if 0%{?el7}
-            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
+           --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
-            --with-sphinx-build=%{_bindir}/sphinx-build
+           --with-sphinx-build=%{_bindir}/sphinx-build
 %endif
 
 %install
@@ -112,47 +129,64 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %files
 %license LICENSE
 %doc README.rst %{?el7:README.EL7}
-%{_mandir}/man1/ch*
+%{_bindir}/ch-build
+%{_bindir}/ch-build2dir
+%{_bindir}/ch-builder2squash
+%{_bindir}/ch-builder2tar
+%{_bindir}/ch-checkns
+%{_bindir}/ch-dir2squash
+%{_bindir}/ch-fromhost
+%{_bindir}/ch-mount
+%{_bindir}/ch-pull2dir
+%{_bindir}/ch-pull2tar
+%{_bindir}/ch-run
+%{_bindir}/ch-run-oci
+%{_bindir}/ch-ssh
+%{_bindir}/ch-umount
+%{_bindir}/ch-tar2dir
+%{_mandir}/man1/ch-build.1*
+%{_mandir}/man1/ch-build2dir.1*
+%{_mandir}/man1/ch-builder2squash.1*
+%{_mandir}/man1/ch-builder2tar.1*
+%{_mandir}/man1/ch-checkns.1*
+%{_mandir}/man1/ch-dir2squash.1*
+%{_mandir}/man1/ch-fromhost.1*
+%{_mandir}/man1/ch-mount.1*
+%{_mandir}/man1/ch-pull2dir.1*
+%{_mandir}/man1/ch-pull2tar.1*
+%{_mandir}/man1/ch-run.1*
+%{_mandir}/man1/ch-run-oci.1*
+%{_mandir}/man1/ch-ssh.1*
+%{_mandir}/man1/ch-tar2dir.1*
+%{_mandir}/man1/ch-umount.1*
 %{_mandir}/man7/charliecloud.7*
-%{_pkgdocdir}/examples
-%{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
+%{_prefix}/lib/%{name}/base.sh
+%{_prefix}/lib/%{name}/contributors.bash
+%{_prefix}/lib/%{name}/version.sh
+%{_prefix}/lib/%{name}/version.txt
 
-# Library files.
-%{_libdir}/%{name}/base.sh
-%{_libdir}/%{name}/build.py
-%{_libdir}/%{name}/charliecloud.py
-%{_libdir}/%{name}/contributors.bash
-%{_libdir}/%{name}/fakeroot.py
-%{_libdir}/%{name}/misc.py
-%{_libdir}/%{name}/pull.py
-%{_libdir}/%{name}/push.py
-%{_libdir}/%{name}/version.py
-%{_libdir}/%{name}/version.sh
-%{_libdir}/%{name}/version.txt
-%{?el7:%{_libdir}/%{name}/__pycache__}
-
-# Binary files.
-%{_bindir}/ch-*
-%exclude %{_bindir}/ch-test
-
-# Exclude test artifacts.
-%exclude %{_libexecdir}/%{name}/test
-%exclude %{_pkgdocdir}/html
-
-# Exclude bundled Lark.
-%exclude %{_libdir}/%{name}/lark/*
-%exclude %{_libdir}/%{name}/lark-stubs/*
-%exclude %{_libdir}/%{name}/lark-*.dist-info/*
+%files builder
+%{_bindir}/ch-image
+%{_mandir}/man1/ch-image.1*
+%{_prefix}/lib/%{name}/build.py
+%{_prefix}/lib/%{name}/charliecloud.py
+%{_prefix}/lib/%{name}/fakeroot.py
+%{_prefix}/lib/%{name}/misc.py
+%{_prefix}/lib/%{name}/pull.py
+%{_prefix}/lib/%{name}/push.py
+%{_prefix}/lib/%{name}/version.py
+%{?el7:%{_prefix}/lib/%{name}/__pycache__}
 
 %files doc
 %license LICENSE
 %{_pkgdocdir}/html
 
 %files test
-%license LICENSE
-%{_libexecdir}/%{name}/test
 %{_bindir}/ch-test
+%{_libexecdir}/%{name}/test
 %{_mandir}/man1/ch-test.1*
+%{_pkgdocdir}/examples
+%{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
 %changelog
 * Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@

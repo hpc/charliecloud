@@ -28,6 +28,7 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
+    [[ $output = *'charliecloud-builder'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
     [[ $output = *'charliecloud-doc'* ]]
     [[ $output = *'charliecloud-test-'* ]]
@@ -35,9 +36,16 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/bin/ch-run'* ]]
-    [[ $output = *'/usr/lib64/charliecloud/base.sh'* ]]
+    [[ $output = *'/usr/lib/charliecloud/base.sh'* ]]
     [[ $output = *'/usr/share/doc/charliecloud-'*'/examples/lammps/Dockerfile'* ]]
     [[ $output = *'/usr/share/man/man7/charliecloud.7.gz'* ]]
+    run ch-run "$img" -- rpm -ql "charliecloud-builder"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'/usr/bin/ch-image'* ]]
+    [[ $output = *'/usr/lib/charliecloud/charliecloud.py'* ]]
+    [[ $output = *'/usr/lib/charliecloud/pull.py'* ]]
+    [[ $output = *'/usr/lib/charliecloud/push.py'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud-debuginfo"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -61,6 +69,7 @@ setup () {
     run ch-run -w "$img" -- rpm -v --erase charliecloud-test \
                                            charliecloud-debuginfo \
                                            charliecloud-doc \
+                                           charliecloud-builder \
                                            charliecloud
     echo "$output"
     [[ $status -eq 0 ]]
@@ -95,15 +104,23 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
+    [[ $output = *'charliecloud-builder'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
     [[ $output = *'charliecloud-doc'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/bin/ch-run'* ]]
-    [[ $output = *'/usr/lib64/charliecloud/base.sh'* ]]
-    [[ $output = *'/usr/share/doc/charliecloud/examples/lammps/Dockerfile'* ]]
+    [[ $output = *'/usr/lib/charliecloud/base.sh'* ]]
+    [[ $output = *'/usr/share/doc/charliecloud-'*'/examples/lammps/Dockerfile'* ]]
     [[ $output = *'/usr/share/man/man7/charliecloud.7.gz'* ]]
+    run ch-run "$img" -- rpm -ql "charliecloud-builder"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'/usr/bin/ch-image'* ]]
+    [[ $output = *'/usr/lib/charliecloud/charliecloud.py'* ]]
+    [[ $output = *'/usr/lib/charliecloud/pull.py'* ]]
+    [[ $output = *'/usr/lib/charliecloud/push.py'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud-debuginfo"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -119,6 +136,7 @@ setup () {
     # Uninstall to avoid interfering with the rest of the test suite.
     run ch-run -w "$img" -- rpm -v --erase charliecloud-debuginfo \
                                            charliecloud-doc \
+                                           charliecloud-builder \
                                            charliecloud
     echo "$output"
     [[ $status -eq 0 ]]

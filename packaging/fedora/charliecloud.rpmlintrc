@@ -13,6 +13,11 @@ addFilter(r'invalid-url')
 
 # charliecloud
 
+# We don't have architecture specific libraries, thus we can put files in /lib.
+# The rpm macro, _lib, expands to lib64, which is not what we want. Rather than
+# patch our install to an incorrect library path we ignore the lint error.
+addFilter(r'hardcoded-library-path')
+
 # Charliecloud uses pivot_root(2), not chroot(2), for containerization. The
 # calls to chroot(2) are part of the pivot_root(2) dance and not relevant to
 # Charliecloud's security posture.

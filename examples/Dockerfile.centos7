@@ -23,6 +23,8 @@ RUN yum install -y epel-release \
                 rpm-build \
                 rpmlint \
                 rsync \
+                squashfs-tools \
+                squashfuse \
                 wget \
  && yum clean all
 
