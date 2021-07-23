@@ -1,5 +1,6 @@
 load ../common
 
+
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
     # it, so re-use the same one.
@@ -19,19 +20,19 @@ RUN echo hello
 EOF
 
     # Comment before FROM.
-    ch-image build -t syntax-quirks -f - . <<'EOF'
+    ch-image build -t tmpimg -f - . <<'EOF'
 # foo
 FROM 00_tiny
 RUN echo hello
 EOF
 
     # Single instruction.
-    ch-image build -t syntax-quirks -f - . <<'EOF'
+    ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 EOF
 
     # Whitespace around comment hash.
-    run ch-image -v build -t syntax-quirks -f - . <<'EOF'
+    run ch-image -v build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 #no whitespace
  #before only
@@ -40,9 +41,119 @@ FROM 00_tiny
   # multiple before
 	# tab before
 EOF
+
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $(echo "$output" | grep -Fc 'comment') -eq 6 ]]
+
+    # Whitespace and newlines (turn on whitespace highlighting in your editor):
+    run ch-image build -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+
+# trailing whitespace: shell sees it verbatim
+RUN true 
+
+# whitespace-only line: ignored
+ 
+# two in a row
+ 
+ 
+
+# line continuation, no whitespace: shell sees one word
+RUN echo test1\
+a
+# two in a row
+RUN echo test1\
+b\
+c
+
+# whitespace before line continuation: shell sees whitespace verbatim
+RUN echo test2  \
+a
+# two in a row
+RUN echo test2  \
+b  \
+c
+
+# whitespace after line continuation: shell sees one word
+RUN echo test3\  
+a
+# two in a row
+RUN echo test3\  
+b\  
+c
+
+# whitespace before & after line continuation: shell sees before only
+RUN echo test4   \  
+a
+# two in a row
+RUN echo test4   \  
+b   \  
+c
+
+# whitespace on continued line: shell sees continued line's whitespace
+RUN echo test5\
+  a
+# two in a row
+RUN echo test5\
+  b\
+  c
+
+# whitespace-only continued line: shell sees whitespace verbatim
+RUN echo test6\
+  \
+a
+# two in a row
+RUN echo test6\
+  \
+  \
+b
+
+# backslash that is not a continuation: shell sees it verbatim
+RUN echo test\ 7\
+a
+# two in a row
+RUN echo test\ 7\ \
+b
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    output_expected=$(cat <<'EOF'
+warning: not yet supported, ignored: issue #777: .dockerignore file
+  1 FROM 00_tiny
+  4 RUN ['/bin/sh', '-c', 'true ']
+ 13 RUN ['/bin/sh', '-c', 'echo test1a']
+test1a
+ 16 RUN ['/bin/sh', '-c', 'echo test1bc']
+test1bc
+ 21 RUN ['/bin/sh', '-c', 'echo test2  a']
+test2 a
+ 24 RUN ['/bin/sh', '-c', 'echo test2  b  c']
+test2 b c
+ 29 RUN ['/bin/sh', '-c', 'echo test3a']
+test3a
+ 32 RUN ['/bin/sh', '-c', 'echo test3bc']
+test3bc
+ 37 RUN ['/bin/sh', '-c', 'echo test4   a']
+test4 a
+ 40 RUN ['/bin/sh', '-c', 'echo test4   b   c']
+test4 b c
+ 45 RUN ['/bin/sh', '-c', 'echo test5  a']
+test5 a
+ 48 RUN ['/bin/sh', '-c', 'echo test5  b  c']
+test5 b c
+ 53 RUN ['/bin/sh', '-c', 'echo test6  a']
+test6 a
+ 57 RUN ['/bin/sh', '-c', 'echo test6    b']
+test6 b
+ 63 RUN ['/bin/sh', '-c', 'echo test\\ 7a']
+test 7a
+ 66 RUN ['/bin/sh', '-c', 'echo test\\ 7\\ b']
+test 7 b
+grown in 16 instructions: tmpimg
+EOF
+)
+    diff -u <(echo "$output_expected") <(echo "$output")
 }
 
 
@@ -51,7 +162,7 @@ EOF
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # Bad instruction. Also, -v should give interal blabber about the grammar.
-    run ch-image -v build -t foo -f - . <<'EOF'
+    run ch-image -v build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 WEIRDAL
 EOF
@@ -59,11 +170,11 @@ EOF
     [[ $status -eq 1 ]]
     # error message
     [[ $output = *"can't parse: -:2,1"* ]]
-    # internal blabber
-    [[ $output = *"No terminal defined for 'W' at line 2 col 1"* ]]
+    # internal blabber (varies by version)
+    [[ $output = *'No terminal'*"'W'"*'at line 2 col 1'* ]]
 
     # Bad long option.
-    run ch-image build -t foo -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown= foo bar
 EOF
@@ -72,13 +183,13 @@ EOF
     [[ $output = *"can't parse: -:2,14"* ]]
 
     # Empty input.
-    run ch-image build -t foo -f /dev/null .
+    run ch-image build -t tmpimg -f /dev/null .
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'no instructions found: /dev/null'* ]]
 
     # Newline only.
-    run ch-image build -t foo -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 
 EOF
     echo "$output"
@@ -86,7 +197,7 @@ EOF
     [[ $output = *'no instructions found: -'* ]]
 
     # Comment only.
-    run ch-image build -t foo -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 # foo
 EOF
     echo "$output"
@@ -94,7 +205,7 @@ EOF
     [[ $output = *'no instructions found: -'* ]]
 
     # Only newline, then comment.
-    run ch-image build -t foo -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 
 # foo
 EOF
@@ -103,7 +214,7 @@ EOF
     [[ $output = *'no instructions found: -'* ]]
 
     # Non-ARG instruction before FROM
-    run ch-image build -t foo -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 RUN echo uh oh
 FROM 00_tiny
 EOF
@@ -118,7 +229,7 @@ EOF
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # Repeated instruction option.
-    run ch-image build -t foo -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown=foo --chown=bar fixtures/empty-file .
 EOF
@@ -127,7 +238,7 @@ EOF
     [[ $output = *'  2 COPY: repeated option --chown'* ]]
 
     # COPY invalid option.
-    run ch-image build -t foo -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --foo=foo fixtures/empty-file .
 EOF
@@ -136,7 +247,7 @@ EOF
     [[ $output = *'COPY: invalid option --foo'* ]]
 
     # FROM invalid option.
-    run ch-image build -t foo -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM --foo=bar 00_tiny
 EOF
     echo "$output"
@@ -152,7 +263,7 @@ EOF
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # ARG before FROM
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 ARG foo=bar
 FROM 00_tiny
 EOF
@@ -160,17 +271,8 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
 
-    # COPY list form
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
-FROM 00_tiny
-COPY ["fixtures/empty-file", "."]
-EOF
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: not yet supported: issue #784: COPY list form'* ]]
-
     # FROM --platform
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM --platform=foo 00_tiny
 EOF
     echo "$output"
@@ -178,7 +280,7 @@ EOF
     [[ $output = *'error: not yet supported: issue #778: FROM --platform'* ]]
 
     # other instructions
-    run ch-image build -t unsupported -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 ADD foo
 CMD foo
@@ -196,7 +298,7 @@ EOF
     [[ $output = *'warning: not yet supported, ignored: issue #788: ONBUILD instruction'* ]]
 
     # .dockerignore files
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 EOF
     echo "$output"
@@ -211,7 +313,7 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
-    run ch-image build -t not-yet-supported -f - \
+    run ch-image build -t tmpimg -f - \
         https://github.com/hpc/charliecloud.git <<'EOF'
 FROM 00_tiny
 EOF
@@ -220,7 +322,7 @@ EOF
     [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
 
     # variable expansion modifiers
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 ARG foo=README
 COPY fixtures/${foo:+bar} .
@@ -229,7 +331,7 @@ EOF
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
     [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
-    run ch-image build -t not-yet-supported -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 ARG foo=README
 COPY fixtures/${foo:-bar} .
@@ -248,7 +350,7 @@ EOF
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # parser directives
-    run ch-image build -t unsupported -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 # escape=foo
 # syntax=foo
 #syntax=foo
@@ -264,7 +366,7 @@ EOF
     [[ $(echo "$output" | grep -Fc 'parser directives') -eq 5 ]]
 
     # COPY --from
-    run ch-image build -t unsupported -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --chown=foo fixtures/empty-file .
 EOF
@@ -273,7 +375,7 @@ EOF
     [[ $output = *'warning: not supported, ignored: COPY --chown'* ]]
 
     # Unsupported instructions
-    run ch-image build -t unsupported -f - . <<'EOF'
+    run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 EXPOSE foo
 HEALTHCHECK foo
@@ -302,9 +404,10 @@ EOF
 ('chse_0a', 'value 0a')
 ('chse_0b', 'value 0b')
 ('chse_1b', 'value 1b ')
-('chse_2', 'value2')
-('chse_2a', 'chse2: value2')
-('chse_2b', 'chse2: value2')
+('chse_2a', 'value2a')
+('chse_2b', 'value2b')
+('chse_2c', 'chse2: value2a')
+('chse_2d', 'chse2: value2a')
 ('chse_3a', '"value3a"')
 ('chse_4a', 'value4a')
 ('chse_4b', 'value4b')
@@ -314,7 +417,7 @@ EOF
 ('chse_6b', 'value6b')
 EOF
 )
-    run ch-build --no-cache -t env-syntax -f - . <<'EOF'
+    run ch-build --no-cache -t tmpimg -f - . <<'EOF'
 FROM centos8
 
 # FIXME: make this more comprehensive, e.g. space-separate vs.
@@ -334,13 +437,14 @@ ENV chse_1b="value 1b "
 #ENV chse_1c=value\ 1c\ 
 
 # Value surrounded by double quotes, which are not part of the value.
-ENV chse_2 "value2"
+ENV chse_2a "value2a"
+ENV chse_2b="value2b"
 
 # Substitute previous value, space-separated, without quotes.
-ENV chse_2a chse2: ${chse_2}
+ENV chse_2c chse2: ${chse_2a}
 
 # Substitute a previous value, equals-separated, with quotes.
-ENV chse_2b="chse2: ${chse_2}"
+ENV chse_2d="chse2: ${chse_2a}"
 
 # Backslashed quotes are included in value.
 ENV chse_3a \"value3a\"
@@ -378,7 +482,7 @@ EOF
    [[ $CH_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
 
    # test that SHELL command can change executables and parameters
-   run ch-build -t foo --no-cache -f - . <<'EOF'
+   run ch-build -t tmpimg --no-cache -f - . <<'EOF'
 FROM 00_tiny
 RUN echo default: $0
 SHELL ["/bin/ash", "-c"]
@@ -393,7 +497,7 @@ EOF
    [[ $output = *"sh-v: /bin/sh"* ]]
 
    # test that it fails if shell doesn't exist
-   run ch-build -t foo -f - . <<'EOF'
+   run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 SHELL ["/doesnotexist", "-c"]
 RUN print("hello")
@@ -407,7 +511,7 @@ EOF
    fi
 
    # test that it fails if no paramaters
-   run ch-build -t foo -f - . <<'EOF'
+   run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 SHELL ["/bin/sh"]
 RUN true
@@ -417,7 +521,7 @@ EOF
    [[ $output = *"/bin/sh: can't open 'true': No such file or directory"* ]]
 
    # test that it works with python3
-   run ch-build -t foo -f - . <<'EOF'
+   run ch-build -t tmpimg -f - . <<'EOF'
 FROM centos7
 SHELL ["/usr/bin/python3", "-c"]
 RUN print ("hello")
@@ -425,7 +529,7 @@ EOF
    echo "$output"
    [[ status -eq 0 ]]
    if [[ $CH_BUILDER = ch-image ]]; then
-      [[ $output = *"grown in 3 instructions: foo"* ]]
+      [[ $output = *"grown in 3 instructions: tmpimg"* ]]
    else
       [[ $output = *"Successfully built"* ]]
    fi
@@ -458,7 +562,7 @@ chse_env1_df=env1
 chse_env2_df=env2 env1
 EOF
 )
-    run ch-build --no-cache -t argenv -f ./Dockerfile.argenv .
+    run ch-build --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -474,7 +578,7 @@ chse_env2_df=env2 env1
 EOF
 )
     run ch-build --build-arg chse_arg1_df=foo1 \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
+                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -489,7 +593,7 @@ chse_env2_df=env2 env1
 EOF
 )
     run ch-build --build-arg chse_arg2_df=foo2 \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
+                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -520,7 +624,7 @@ EOF
     fi
     chse_arg1_df=foo1 \
     run ch-build --build-arg chse_arg1_df \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
+                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -537,7 +641,7 @@ EOF
 )
     chse_arg1_df=foo1 \
     run ch-build --build-arg chse_arg1_df= \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
+                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -553,7 +657,7 @@ EOF
 )
     run ch-build --build-arg chse_arg2_df=bar2 \
                  --build-arg chse_arg3_df=bar3 \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
+                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -569,7 +673,7 @@ EOF
 )
     run ch-build --build-arg chse_arg2_df=FOO \
                  --build-arg chse_arg2_df=bar2 \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
+                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -597,7 +701,7 @@ EOF
     # shellcheck disable=SC2016
     run ch-build --build-arg chse_arg2_df=bar2 \
                  --build-arg chse_arg3_df='bar3 ${chse_arg2_df}' \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
+                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -607,7 +711,7 @@ EOF
     # Note: We don't test it, but for Buildah, the variable does show up in
     # the build environment.
     run ch-build --build-arg chse_doesnotexist=foo \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
+                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     if [[ $CH_BUILDER = ch-image ]]; then
         [[ $status -eq 1 ]]
@@ -619,7 +723,7 @@ EOF
 
     echo '*** ARG not in environment'
     run ch-build --build-arg chse_arg1_df \
-                 --no-cache -t argenv -f ./Dockerfile.argenv .
+                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     if [[ $CH_BUILDER = ch-image ]]; then
         [[ $status -eq 1 ]]
@@ -629,6 +733,31 @@ EOF
     fi
 }
 
+@test 'Dockerfile: COPY list form' {
+    scope standard
+    [[ $CH_BUILDER == ch-image ]] || skip 'ch-image only'
+
+    # single source
+    run ch-image build -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+COPY ["fixtures/empty-file", "."]
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
+    test -f "$CH_IMAGE_STORAGE"/img/tmpimg/empty-file
+
+    # multiple source
+    run ch-image build -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+COPY ["fixtures/empty-file", "fixtures/README", "."]
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"COPY ['fixtures/empty-file', 'fixtures/README'] -> '.'"* ]]
+    test -f "$CH_IMAGE_STORAGE"/img/tmpimg/empty-file
+    test -f "$CH_IMAGE_STORAGE"/img/tmpimg/README
+}
 
 @test 'Dockerfile: COPY errors' {
     scope standard
@@ -637,7 +766,7 @@ EOF
 
     # Dockerfile on stdin, so no context directory.
     if [[ $CH_BUILDER != ch-image ]]; then  # ch-image doesn't support this yet
-        run ch-build -t foo - <<'EOF'
+        run ch-build -t tmpimg - <<'EOF'
 FROM 00_tiny
 COPY doesnotexist .
 EOF
@@ -655,7 +784,7 @@ EOF
     # SRC not inside context directory.
     #
     # Case 1: leading "..".
-    run ch-build -t foo -f - sotest <<'EOF'
+    run ch-build -t tmpimg -f - sotest <<'EOF'
 FROM 00_tiny
 COPY ../common.bash .
 EOF
@@ -663,7 +792,7 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
     # Case 2: ".." inside path.
-    run ch-build -t foo -f - sotest <<'EOF'
+    run ch-build -t tmpimg -f - sotest <<'EOF'
 FROM 00_tiny
 COPY lib/../../common.bash .
 EOF
@@ -671,7 +800,7 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
     # Case 3: symlink leading outside context directory.
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY fixtures/symlink-to-tmp .
 EOF
@@ -684,7 +813,7 @@ EOF
     fi
 
     # Multiple sources and non-directory destination.
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY Build.missing common.bash /etc/fstab/
 EOF
@@ -702,14 +831,14 @@ EOF
     else
         [[ $output = *'not a directory'* ]]
     fi
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY run /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY run /etc/fstab
 EOF
@@ -718,7 +847,7 @@ EOF
     [[ $output = *'not a directory'* ]]
 
     # File not found.
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY doesnotexist .
 EOF
@@ -732,6 +861,7 @@ EOF
     fi
 }
 
+
 @test 'Dockerfile: COPY --from errors' {
     scope standard
     [[ $CH_BUILDER = none ]] && skip 'no builder'
@@ -742,7 +872,7 @@ EOF
     # we use the random name "uhigtsbjmfps" (https://www.random.org/strings/).
 
     # current index
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=0 /etc/fstab /
 EOF
@@ -751,7 +881,7 @@ EOF
     [[ $output = *'current'*'stage'* ]]
 
     # current name
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny AS uhigtsbjmfps
 COPY --from=uhigtsbjmfps /etc/fstab /
 EOF
@@ -770,7 +900,7 @@ EOF
     esac
 
     # index does not exist
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=1 /etc/fstab /
 EOF
@@ -789,7 +919,7 @@ EOF
     esac
 
     # name does not exist
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=uhigtsbjmfps /etc/fstab /
 EOF
@@ -808,7 +938,7 @@ EOF
     esac
 
     # index exists, but is later
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=1 /etc/fstab /
 FROM 00_tiny
@@ -828,7 +958,7 @@ EOF
     esac
 
     # name is later
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=uhigtsbjmfps /etc/fstab /
 FROM 00_tiny AS uhigtsbjmfps
@@ -849,7 +979,7 @@ EOF
     esac
 
     # negative index
-    run ch-build -t foo -f - . <<'EOF'
+    run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=-1 /etc/fstab /
 FROM 00_tiny
@@ -867,4 +997,42 @@ EOF
             false
             ;;
     esac
+}
+
+
+@test 'Dockerfile: FROM scratch' {
+    scope standard
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    # pull it; validate special handling
+    run ch-image pull -v scratch
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'manifest: using internal library'* ]]
+    [[ $output = *'no config found; initializing empty metadata'* ]]
+    [[ $output != *'layer 1'* ]]  # no layers
+
+    # remove
+    ch-image delete scratch
+
+    # build 1; validate pulled with special handling
+    run ch-image build -v -t foo -f - . <<'EOF'
+FROM scratch
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'base image not found, pulling'* ]]
+    [[ $output = *'manifest: using internal library'* ]]
+    [[ $output = *'no config found; initializing empty metadata'* ]]
+    [[ $output != *'layer 1'* ]]  # no layers
+    ls -lha "${CH_IMAGE_STORAGE}/img/foo/usr"
+    [[ $(find /tmp/foo -mindepth 1 "${CH_IMAGE_STORAGE}/img/foo/usr") = '' ]]
+
+    # build 2; validate not pulled
+    run ch-image build -v -t tmpimg -f - . <<'EOF'
+FROM scratch
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"base image found: ${CH_IMAGE_STORAGE}/img/scratch"* ]]
 }

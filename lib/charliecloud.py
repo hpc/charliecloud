@@ -7,44 +7,42 @@ import datetime
 import getpass
 import hashlib
 import http.client
+import io
 import json
 import os
 import getpass
 import pathlib
+import platform
+import pprint
 import re
 import shutil
 import stat
 import subprocess
 import sys
 import tarfile
+import time
 import types
 
 
 ## Imports not in standard library ##
 
-# These are messy because we need --version and --help even if a dependency is
-# missing. Among other things, nothing can depend on non-standard modules at
-# parse time.
-
 # List of dependency problems.
 depfails = []
 
-try:
-   # Lark is additionally messy because there are two packages on PyPI that
-   # provide a "lark" module.
-   import lark   # ImportError if no such module
-   lark.Visitor  # AttributeError if wrong module
-except (ImportError, AttributeError) as x:
-   if (isinstance(x, ImportError)):
-      depfails.append(("missing", 'Python module "lark-parser"'))
-   elif (isinstance(x, AttributeError)):
-      depfails.append(("bad", 'found Python module "lark"; need "lark-parser"'))
-   else:
-      assert False
-   # Mock up a lark module so the rest of the file parses.
-   lark = types.ModuleType("lark")
-   lark.Visitor = object
+# Lark is bundled or provided by package dependencies, so assume it's always
+# importable. There used to be a conflicting package on PyPI called "lark",
+# but it's gone now [1]. However, verify the version we got.
+#
+# [1]: https://github.com/lark-parser/lark/issues/505
+import lark
+LARK_MIN = (0,  7, 1)
+LARK_MAX = (0, 11, 3)
+lark_version = tuple(int(i) for i in lark.__version__.split("."))
+if (not LARK_MIN <= lark_version <= LARK_MAX):
+   depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
 
+# Requests is not bundled, so this noise makes the file parse and
+# --version/--help work even if it's not installed.
 try:
    import requests
    import requests.auth
@@ -59,6 +57,33 @@ except ImportError:
 
 ## Globals ##
 
+# Architectures. This maps the "machine" field returned by uname(2), also
+# available as "uname -m" and platform.machine(), into architecture names that
+# image registries use. It is incomplete (see e.g. [1], which is itself
+# incomplete) but hopefully includes most architectures encountered in
+# practice [e.g. 2]. Registry architecture and variant are separated by a
+# slash. Note it is *not* 1-to-1: multiple uname(2) architectures map to the
+# same registry architecture.
+#
+# [1]: https://stackoverflow.com/a/45125525
+# [2]: https://github.com/docker-library/bashbrew/blob/v0.1.0/vendor/github.com/docker-library/go-dockerlibrary/architecture/oci-platform.go
+ARCH_MAP = { "x86_64":    "amd64",
+             "armv5l":    "arm/v5",
+             "armv6l":    "arm/v6",
+             "aarch32":   "arm/v7",
+             "armv7l":    "arm/v7",
+             "aarch64":   "arm64/v8",
+             "armv8l":    "arm64/v8",
+             "i386":      "386",
+             "i686":      "386",
+             "mips64le":  "mips64le",
+             "ppc64le":   "ppc64le",
+             "s390x":     "s390x" }  # a.k.a. IBM Z
+
+# Active architecture (both using registry vocabulary)
+arch = None       # requested by user
+arch_host = None  # of host
+
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
@@ -68,13 +93,26 @@ verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 
+# Minimum Python version. NOTE: Keep in sync with configure.ac.
+PYTHON_MIN = (3,6)
+
 # Verify TLS certificates? Passed to requests.
 tls_verify = True
 
+# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
+# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
+# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
+# takes over.
+HTTP_CHUNK_SIZE = 256 * 1024
+
 # Content types for some stuff we care about.
 TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+TYPE_MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
 TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
 TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
+
+# Top-level directories we create if not present.
+STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -104,7 +142,7 @@ dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
 
 ?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
 
-directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" LINE _NEWLINES
+directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" _line _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
 comment: _WS? _COMMENT_BODY _NEWLINES
 _COMMENT_BODY: /#[^\n]*/
@@ -118,7 +156,7 @@ arg_bare: WORD
 arg_equals: WORD "=" ( WORD | STRING_QUOTED )
 
 env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
-env_space: WORD _WS LINE
+env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
@@ -127,16 +165,16 @@ from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
-run_shell: LINE
+run_shell: _line
 
 shell: "SHELL"i _WS _string_list _NEWLINES
 
-workdir: "WORKDIR"i _WS LINE _NEWLINES
+workdir: "WORKDIR"i _WS _line _NEWLINES
 
-uns_forever: UNS_FOREVER _WS LINE _NEWLINES
+uns_forever: UNS_FOREVER _WS _line _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
-uns_yet: UNS_YET _WS LINE _NEWLINES
+uns_yet: UNS_YET _WS _line _NEWLINES
 UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
 
 /// Common ///
@@ -145,18 +183,38 @@ option: "--" OPTION_KEY "=" OPTION_VALUE
 OPTION_KEY: /[a-z]+/
 OPTION_VALUE: /[^ \t\n]+/
 
+// Matching lines in the face of continuations is surprisingly hairy. Notes:
+//
+//   1. The underscore prefix means the rule is always inlined (i.e., removed
+//      and children become children of its parent).
+//
+//   2. LINE_CHUNK must not match any characters that _LINE_CONTINUE does.
+//
+//   3. This is very sensitive to the location of repetition. Moving the plus
+//      either to the entire regex (i.e., “/(...)+/”) or outside the regex
+//      (i.e., ”/.../+”) gave parse errors.
+//
+_line: ( _LINE_CONTINUE | LINE_CHUNK )+
+LINE_CHUNK: /[^\\\n]+|(\\(?![ \t]+\n))+/
+
 HEX_STRING: /[0-9A-Fa-f]+/
-LINE: ( _LINE_CONTINUE | /[^\n]/ )+
 WORD: /[^ \t\n=]/+
 
 _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 
-_NEWLINES: _WS? "\n"+
-_WS: /[ \t]|\\\n/+
-_LINE_CONTINUE: "\\\n"
+_WSH: /[ \t]/+                   // sequence of horizontal whitespace
+_LINE_CONTINUE: "\\" _WSH? "\n"  // line continuation
+_WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
+_NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
+
+
+## Exceptions ##
+
+class No_Fatman_Error(Exception): pass
+class Not_In_Registry_Error(Exception): pass
 
 
 ## Classes ##
@@ -213,20 +271,38 @@ class Image:
    def metadata_path(self):
       return self.unpack_path // "ch"
 
+   @property
+   def unpack_exist_p(self):
+      return os.path.exists(self.unpack_path)
+
    def __str__(self):
       return str(self.ref)
+
+   @staticmethod
+   def unpacked_p(imgdir):
+      "Return True if imgdir looks like an unpacked image, False otherwise."
+      return (    os.path.isdir(imgdir)
+              and os.path.isdir(imgdir // 'bin')
+              and os.path.isdir(imgdir // 'dev')
+              and os.path.isdir(imgdir // 'usr'))
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
       assert False, "unimplemented"
 
    def copy_unpacked(self, other):
-      "Copy the unpack directory of Image other to my unpack directory."
-      if (not os.path.exists(other.unpack_path // "/ch/metadata.json")):
-         WARNING("image %s has no metadata; consider re-pulling it" % other)
+      """Copy image other to my unpack directory. other can be either a path
+         (string or Path object) or an Image object; in the latter case
+         other.unpack_pach is used. other need not be a valid image; the
+         essentials will be created if needed."""
+      if (isinstance(other, str) or isinstance(other, Path)):
+         src_path = other
+      else:
+         src_path = other.unpack_path
       self.unpack_clear()
-      VERBOSE("copying image: %s -> %s" % (other.unpack_path, self.unpack_path))
-      copytree(other.unpack_path, self.unpack_path, symlinks=True)
+      VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
+      copytree(src_path, self.unpack_path, symlinks=True)
+      self.unpack_init()
 
    def layers_open(self, layer_tars):
       """Open the layer tarballs and read some metadata (which unfortunately
@@ -286,10 +362,7 @@ class Image:
          WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
-      fp = open_(path, "rt")
-      text = ossafe(fp.read, "can't read: %s" % path)
-      ossafe(fp.close, "can't close: %s" % path)
-      self.metadata = json.loads(text)  # we made this, so just crash if broken
+      self.metadata = json_from_file(path, "metadata")
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
@@ -298,7 +371,6 @@ class Image:
       def get(*keys):
          d = config
          keys = list(keys)
-         VERBOSE(str(keys))
          while (len(keys) > 1):
             try:
                d = d[keys.pop(0)]
@@ -334,6 +406,28 @@ class Image:
       if (vols is not None):
          for k in config["config"]["Volumes"].keys():
             self.metadata["volumes"].append(k)
+
+   def metadata_replace(self, config_json):
+      self.metadata_init()
+      if (config_json is None):
+         INFO("no config found; initializing empty metadata")
+      else:
+         # Copy pulled config file into the image so we still have it.
+         path = self.metadata_path // "config.pulled.json"
+         copy2(config_json, path)
+         VERBOSE("pulled config path: %s" % path)
+         # Open and parse JSON.
+         fp = open_(config_json, "rt", encoding="UTF-8")
+         text = ossafe(fp.read, "can't read: %s" % config_json)
+         ossafe(fp.close, "can't close: %s" % config_json)
+         try:
+            config = json.loads(text)
+         except json.JSONDecodeError as x:
+            FATAL("can't parse config file: %s:%d: %s"
+                  % (config_json, x.lineno, x.msg))
+         DEBUG("pulled config:\n%s" % json.dumps(config, indent=2))
+         self.metadata_merge_from_config(config)
+      self.metadata_save()
 
    def metadata_save(self):
       """Dump image's metadata to disk, including the main data structure but
@@ -377,7 +471,7 @@ class Image:
          FATAL("can't write tarball: %s" % x.strerror)
       return [base]
 
-   def unpack(self, config_json, layer_tars, last_layer=None):
+   def unpack(self, layer_tars, last_layer=None):
       """Unpack config_json (path to JSON config file) and layer_tars
          (sequence of paths to tarballs, with lowest layer first) into the
          unpack directory, validating layer contents and dealing with
@@ -386,30 +480,9 @@ class Image:
       if (last_layer is None):
          last_layer = sys.maxsize
       INFO("flattening image")
-      self.unpack_init()
-      self.unpack_config(config_json)
+      self.unpack_clear()
       self.unpack_layers(layer_tars, last_layer)
-
-   def unpack_config(self, config_json):
-      if (config_json is None):
-         WARNING("image has no config and thus no metadata")
-      else:
-         # Copy pulled config file into the image so we still have it.
-         path = self.metadata_path // "config.pulled.json"
-         copy2(config_json, path)
-         VERBOSE("pulled config path: %s" % path)
-         # Open and parse JSON.
-         fp = open_(config_json, "rt", encoding="UTF-8")
-         text = ossafe(fp.read, "can't read: %s" % config_json)
-         ossafe(fp.close, "can't close: %s" % config_json)
-         try:
-            config = json.loads(text)
-         except json.JSONDecodeError as x:
-            FATAL("can't parse config file: %s:%d: %s"
-                  % (config_json, x.lineno, x.msg))
-         DEBUG("pulled config:\n%s" % json.dumps(config, indent=2))
-         self.metadata_merge_from_config(config)
-      self.metadata_save()
+      self.unpack_init()
 
    def unpack_clear(self):
       """If the unpack directory does not exist, do nothing. If the unpack
@@ -420,36 +493,37 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path // "bin")
-             or not os.path.isdir(self.unpack_path // "dev")
-             or not os.path.isdir(self.unpack_path // "etc")
-             or not os.path.isdir(self.unpack_path // "usr")):
+         if (not self.unpacked_p(self.unpack_path)):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("removing existing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
 
    def unpack_init(self):
-      """Initialize the unpack directory, replacing or creating if needed.
-         After calling this, self.unpack_path is a valid Charliecloud image
-         directory."""
-      self.unpack_clear()
+      """Initialize the unpack directory, which must exist. Any setup already
+         present will be left unchanged. After this, self.unpack_path is a
+         valid Charliecloud image directory."""
       # Metadata directory.
       mkdirs(self.unpack_path // "ch")
       file_ensure_exists(self.unpack_path // "ch/environment")
-      # Essential top-level directories.
-      for d in ("bin", "dev", "etc", "mnt", "proc", "usr"):
-         mkdirs(self.unpack_path // d)
-      # Mount points.
+      # Essential directories & mount points. Do nothing if something already
+      # exists, without dereferencing, in case it's a symlink, which will work
+      # for bind-mount later but won't resolve correctly now outside the
+      # container (e.g. linuxcontainers.org images; issue #1015).
+      #
+      # WARNING: Keep in sync with shell scripts.
+      for d in list(STANDARD_DIRS) + ["mnt/%d" % i for i in range(10)]:
+         d = self.unpack_path // d
+         if (not os.path.lexists(d)):
+            mkdirs(d)
       file_ensure_exists(self.unpack_path // "etc/hosts")
       file_ensure_exists(self.unpack_path // "etc/resolv.conf")
-      for i in range(10):
-         mkdirs(self.unpack_path // "mnt" // str(i))
 
    def unpack_layers(self, layer_tars, last_layer):
       layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
+      top_dirs = set()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
          if (i > last_layer):
@@ -461,6 +535,25 @@ class Image:
                fp.extractall(path=self.unpack_path, members=members)
             except OSError as x:
                FATAL("can't extract layer %d: %s" % (i, x.strerror))
+            top_dirs.update(path_first(i.name) for i in members)
+      # If standard tarball with enclosing directory, raise everything out of
+      # that directory, unless it's one of the standard directories (e.g., an
+      # image containing just "/bin/fooprog" won't be raised). This supports
+      # "ch-image import", which may be used on manually-created tarballs
+      # where best practice is not to do a tarbomb.
+      top_dirs -= { None }  # some tarballs contain entry for "."; ignore
+      if (len(top_dirs) == 1):
+         top_dir = top_dirs.pop()
+         if (    (self.unpack_path // top_dir).is_dir()
+             and str(top_dir) not in STANDARD_DIRS):
+            top_dir = self.unpack_path // top_dir  # make absolute
+            INFO("layers: single enclosing directory, using its contents")
+            for src in list(top_dir.iterdir()):
+               dst = self.unpack_path // src.parts[-1]
+               DEBUG("moving: %s -> %s" % (src, dst))
+               ossafe(src.rename, "can't move: %s -> %s" % (src, dst), dst)
+            DEBUG("removing empty directory: %s" % top_dir)
+            ossafe(top_dir.rmdir, "can't rmdir: %s" % top_dir)
 
    def validate_members(self, layers):
       INFO("validating tarball members")
@@ -562,31 +655,27 @@ class Image:
    def unpack_create_ok(self):
       """Ensure the unpack directory can be created. If the unpack directory
          is already an image, remove it."""
-      if (not self.unpack_exist_p()):
+      if (not self.unpack_exist_p):
          VERBOSE("creating new image: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (   not os.path.isdir(self.unpack_path // "bin")
-             or not os.path.isdir(self.unpack_path // "dev")
-             or not os.path.isdir(self.unpack_path // "usr")):
+         if (not self.unpacked_p(self.unpack_path)):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("replacing existing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
 
    def unpack_delete(self):
-      if (not self.unpack_exist_p()):
-         FATAL("%s image not found" % (self.ref))
-      if (unpacked_image_p(self.unpack_path)):
-         INFO("deleting image: %s" % (self.ref))
+      VERBOSE("unpack path: %s" % self.unpack_path)
+      if (not self.unpack_exist_p):
+         FATAL("%s image not found" % self.ref)
+      if (self.unpacked_p(self.unpack_path)):
+         INFO("deleting image: %s" % self.ref)
          rmtree(self.unpack_path)
       else:
-         FATAL("storage directory seems broken: not an image: %s" % (self.ref))
-
-   def unpack_exist_p(self):
-      return os.path.exists(self.unpack_path)
+         FATAL("storage directory seems broken: not an image: %s" % self.ref)
 
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."
@@ -700,6 +789,13 @@ fields:
                                 self.name, self.tag, self.digest)])
 
    @property
+   def canonical(self):
+      "Copy of self with all the defaults filled in."
+      ref = self.copy()
+      ref.defaults_add()
+      return ref
+
+   @property
    def for_path(self):
       return str(self).replace("/", "%")
 
@@ -718,11 +814,6 @@ fields:
       if (self.digest is not None):
          return "sha256:" + self.digest
       assert False, "version invalid with no tag or digest"
-
-   @property
-   def url(self):
-      out = ""
-      return out
 
    def copy(self):
       "Return an independent copy of myself."
@@ -852,6 +943,148 @@ class Path(pathlib.PosixPath):
       return self.joinpath(*others2)
 
 
+class Progress:
+   """Simple progress meter for countable things that updates at most once per
+      second. Writes first update upon creation. If length is None, then just
+      count up (this is for registries like Red Hat that sometimes don't
+      provide a Content-Length header for blobs).
+
+      The purpose of the divisor is to allow counting things that are much
+      more numerous than what we want to display; for example, to count bytes
+      but report MiB, use a divisor of 1048576.
+
+      By default, moves to a new line at first update, then assumes exclusive
+      control of this line in the terminal, rewriting the line as needed. If
+      output is not a TTY or global log_festoon is set, each update is one log
+      entry with no overwriting."""
+
+   __slots__ = ("display_last",
+                "divisor",
+                "msg",
+                "length",
+                "unit",
+                "overwrite_p",
+                "precision",
+                "progress")
+
+   def __init__(self, msg, unit, divisor, length):
+      self.msg = msg
+      self.unit = unit
+      self.divisor = divisor
+      self.length = length
+      if (not os.isatty(log_fp.fileno()) or log_festoon):
+         self.overwrite_p = False
+      else:
+         self.overwrite_p = True
+      self.precision = 1 if self.divisor >= 1000 else 0
+      self.progress = 0
+      self.display_last = float("-inf")
+      self.update(0)
+
+   def update(self, increment, last=False):
+      now = time.monotonic()
+      self.progress += increment
+      if (last or now - self.display_last > 1):
+         if (self.length is None):
+            line = ("%s: %.*f %s"
+                    % (self.msg,
+                       self.precision, self.progress / self.divisor,
+                       self.unit))
+         else:
+            ct = "%.*f/%.*f" % (self.precision, self.progress / self.divisor,
+                                self.precision, self.length / self.divisor)
+            pct = "%d%%" % (100 * self.progress / self.length)
+            if (ct == "0.0/0.0"):
+               # too small, don't print count
+               line = "%s: %s" % (self.msg, pct)
+            else:
+               line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
+         if (self.overwrite_p):
+            line += "\r"  # CR so next INFO overwrites
+         else:
+            line += "\n"  # move to next line like usual
+         INFO(line, end="")
+         self.display_last = now
+
+   def done(self):
+      self.update(0, True)
+      if (self.overwrite_p):
+         INFO("")  # newline to release display line
+
+
+class Progress_Reader:
+   """Wrapper around a binary file object to maintain a progress meter while
+      reading."""
+
+   __slots__ = ("fp",
+                "msg",
+                "progress")
+
+   def __init__(self, fp, msg):
+      self.fp = fp
+      self.msg = msg
+      self.progress = None
+
+   def __iter__(self):
+      return self
+
+   def __next__(self):
+      data = self.read(HTTP_CHUNK_SIZE)
+      if (len(data) == 0):
+         raise StopIteration
+      return data
+
+   def close(self):
+      if (self.progress is not None):
+         self.progress.done()
+         ossafe(self.fp.close, "can't close: %s" % self.fp.name)
+
+   def read(self, size=-1):
+     data = self.fp.read(size)
+     self.progress.update(len(data))
+     return data
+
+   def seek(self, *args):
+      raise io.UnsupportedOperation
+
+   def start(self):
+      # Get file size. This seems awkward, but I wasn't able to find anything
+      # better. See: https://stackoverflow.com/questions/283707
+      old_pos = self.fp.tell()
+      assert (old_pos == 0)  # math will be wrong if this isn't true
+      length = self.fp.seek(0, os.SEEK_END)
+      self.fp.seek(old_pos)
+      self.progress = Progress(self.msg, "MiB", 2**20, length)
+
+
+class Progress_Writer:
+   """Wrapper around a binary file object to maintain a progress meter while
+      data are written."""
+
+   __slots__ = ("fp",
+                "msg",
+                "path",
+                "progress")
+
+   def __init__(self, path, msg):
+      self.msg = msg
+      self.path = path
+      self.progress = None
+
+   def close(self):
+      if (self.progress is not None):
+         self.progress.done()
+         ossafe(self.fp.close, "can't close: %s" % self.path)
+
+   def start(self, length):
+      self.progress = Progress(self.msg, "MiB", 2**20, length)
+      self.fp = open_(self.path, "wb")
+
+   def write(self, data):
+      self.progress.update(len(data))
+      ossafe(self.fp.write, "can't write: %s" % self.path, data)
+
+
 class Registry_HTTP:
    """Transfers image data to and from a remote image repository via HTTPS.
 
@@ -885,8 +1118,7 @@ class Registry_HTTP:
 
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
-      self.ref = ref.copy()
-      self.ref.defaults_add()
+      self.ref = ref.canonical
       self.auth = self.Null_Auth()
       self.session = None
       # This is commented out because it prints full request and response
@@ -930,9 +1162,9 @@ class Registry_HTTP:
          VERBOSE("won't request anonymous token for %s" % res.request.method)
       else:
          VERBOSE("requesting anonymous auth token")
-         res = self.request_raw("GET", auth_d["realm"], {200,403},
+         res = self.request_raw("GET", auth_d["realm"], {200,401,403},
                                 params=params)
-         if (res.status_code == 403):
+         if (res.status_code != 200):
             VERBOSE("anonymous access rejected")
          else:
             token = res.json()["token"]
@@ -992,22 +1224,30 @@ class Registry_HTTP:
       res = self.request("HEAD", url, {200,401,404})
       return (res.status_code == 200)
 
-   def blob_to_file(self, digest, path):
+   def blob_to_file(self, digest, path, msg):
       "GET the blob with hash digest and save it at path."
       # /v2/library/hello-world/blobs/<layer-hash>
       url = self._url_of("blobs", "sha256:" + digest)
-      self.request("GET", url, out=path)
+      sw = Progress_Writer(path, msg)
+      self.request("GET", url, out=sw)
+      sw.close()
 
    def blob_upload(self, digest, data, note=""):
       """Upload blob with hash digest to url. data is the data to upload, and
-         can be anything requests can handle, including an open file. note is
-         a string to prepend to the log messages; default empty string."""
+         can be anything requests can handle; if it's an open file, then it's
+         wrapped in a Progress_Reader object. note is a string to prepend to
+         the log messages; default empty string."""
       INFO("%s%s: checking if already in repository" % (note, digest[:7]))
       # 1. Check if blob already exists. If so, stop.
       if (self.blob_exists_p(digest)):
          INFO("%s%s: already present" % (note, digest[:7]))
          return
-      INFO("%s%s: not present, uploading" % (note, digest[:7]))
+      msg = "%s%s: not present, uploading" % (note, digest[:7])
+      if (isinstance(data, io.IOBase)):
+         data = Progress_Reader(data, msg)
+         data.start()
+      else:
+         INFO(msg)
       # 2. Get upload URL for blob.
       url = self._url_of("blobs", "uploads/")
       res = self.request("POST", url, {202})
@@ -1018,6 +1258,8 @@ class Registry_HTTP:
       url = res.headers["Location"]
       res = self.request("PUT", url, {201}, data=data,
                          params={ "digest": "sha256:%s" % digest })
+      if (isinstance(data, Progress_Reader)):
+         data.close()
       # 4. Verify blob now exists.
       if (not self.blob_exists_p(digest)):
          FATAL("blob just uploaded does not exist: %s" % digest[:7])
@@ -1043,6 +1285,34 @@ class Registry_HTTP:
          password = getpass.getpass("Password: ")
       return (username, password)
 
+   def fatman_to_file(self, path, msg):
+      """GET the manifest for self.image and save it at path. This seems to
+         have three possible results:
+
+            1. HTTP 200, and body is a fat manifest: image exists and is
+               architecture-aware.
+
+            2. HTTP 200, but body is a skinny manifest: image exists but is
+               not architecture-aware.
+
+            3. HTTP 401/404: image does not exist.
+
+         This method raises Not_In_Registry_Error in case 3. The caller is
+         responsible for distinguishing cases 1 and 2."""
+      url = self._url_of("manifests", self.ref.version)
+      pw = Progress_Writer(path, msg)
+      # Including TYPE_MANIFEST avoids the server trying to convert its v2
+      # manifest to a v1 manifest, which currently fails for images
+      # Charliecloud pushes. The error in the test registry is “empty history
+      # when trying to create schema1 manifest”.
+      accept = "%s, %s;q=0.5" % (TYPE_MANIFEST_LIST, TYPE_MANIFEST)
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404},
+                         headers={ "Accept" : accept })
+      pw.close()
+      if (res.status_code != 200):
+         DEBUG(res.content)
+         raise Not_In_Registry_Error()
+
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
       # NOTE: We don't verify the digest b/c that means reading the whole file.
@@ -1051,10 +1321,22 @@ class Registry_HTTP:
       self.blob_upload(digest, fp, note)
       ossafe(fp.close, "can't close: %s" % path)
 
-   def manifest_to_file(self, path):
-      "GET the manifest for the image and save it at path."
-      url = self._url_of("manifests", self.ref.version)
-      self.request("GET", url, out=path, headers={ "Accept": TYPE_MANIFEST })
+   def manifest_to_file(self, path, msg, digest=None):
+      """GET manifest for the image and save it at path. If digest is given,
+         use that to fetch the appropriate architecture; otherwise, fetch the
+         default manifest using the exising image reference."""
+      if (digest is None):
+         digest = self.ref.version
+      else:
+         digest = "sha256:" + digest
+      url = self._url_of("manifests", digest)
+      pw = Progress_Writer(path, msg)
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404},
+                         headers={ "Accept" : TYPE_MANIFEST })
+      pw.close()
+      if (res.status_code != 200):
+         DEBUG(res.content)
+         raise Not_In_Registry_Error()
 
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
@@ -1067,26 +1349,32 @@ class Registry_HTTP:
       """Request url using method and return the response object. If statuses
          is given, it is set of acceptable response status codes, defaulting
          to {200}; any other response is a fatal error. If out is given,
-         response content must be non-zero length and will be written to file
-         at this path.
+         response content will be streamed to this Progress_Writer object and
+         must be non-zero length.
 
          Use current session if there is one, or start a new one if not. If
          authentication fails (or isn't initialized), then authenticate and
          re-try the request."""
       self.session_init_maybe()
       VERBOSE("auth: %s" % self.auth)
+      if (out is not None):
+         kwargs["stream"] = True
       res = self.request_raw(method, url, statuses | {401}, **kwargs)
       if (res.status_code == 401):
          VERBOSE("HTTP 401 unauthorized")
          self.authorize(res)
          VERBOSE("retrying with auth: %s" % self.auth)
          res = self.request_raw(method, url, statuses, **kwargs)
-      if (out is not None):
-         if (len(res.content) == 0):
-            FATAL("no response body: %s %s" % (method, url))
-         fp = open_(out, "wb")
-         ossafe(fp.write, "can't write: %s" % out, res.content)
-         ossafe(fp.close, "can't close: %s" % out)
+      if (out is not None and res.status_code == 200):
+         try:
+            length = int(res.headers["Content-Length"])
+         except KeyError:
+            length = None
+         except ValueError:
+            FATAL("invalid Content-Length in response")
+         out.start(length)
+         for chunk in res.iter_content(HTTP_CHUNK_SIZE):
+            out.write(chunk)
       return res
 
    def request_raw(self, method, url, statuses, auth=None, **kwargs):
@@ -1102,6 +1390,7 @@ class Registry_HTTP:
          auth = self.auth
       try:
          res = self.session.request(method, url, auth=auth, **kwargs)
+         VERBOSE("response status: %d" % res.status_code)
          if (res.status_code not in statuses):
             FATAL("%s failed; expected status %s but got %d: %s"
                   % (method, statuses, res.status_code, res.reason))
@@ -1170,11 +1459,28 @@ class Storage:
       except KeyError:
          return None
 
-   def manifest_for_download(self, image_ref):
-      return self.download_cache // ("%s.manifest.json" % image_ref.for_path)
+   def manifest_for_download(self, image_ref, digest):
+      if (digest is None):
+         digest = "skinny"
+      return (   self.download_cache
+              // ("%s%%%s.manifest.json" % (image_ref.for_path, digest)))
+
+   def fatman_for_download(self, image_ref):
+      return self.download_cache // ("%s.fat.json" % image_ref.for_path)
+
+   def reset(self):
+      if (self.valid_p()):
+         rmtree(self.root)
+      else:
+         FATAL("%s not a builder storage" % (self.root));
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
+
+   def valid_p(self):
+      "Return True if storage present and seems valid, False otherwise."
+      return (os.path.isdir(self.unpack_base) and
+              os.path.isdir(self.download_cache))
 
 
 class TarFile(tarfile.TarFile):
@@ -1276,7 +1582,8 @@ def FATAL(*args, **kwargs):
    sys.exit(1)
 
 def INFO(*args, **kwargs):
-   log(*args, **kwargs)
+   "Note: Use print() for output; this function is for logging."
+   log(color="33m", *args, **kwargs)  # yellow
 
 def TRACE(*args, **kwargs):
    if (verbose >= 3):
@@ -1289,6 +1596,17 @@ def VERBOSE(*args, **kwargs):
 def WARNING(*args, **kwargs):
    log(color="31m", prefix="warning: ", *args, **kwargs)  # red
 
+def arch_host_get():
+   "Return the registry architecture of the host."
+   arch_uname = platform.machine()
+   VERBOSE("host architecture from uname: %s" % arch_uname)
+   try:
+      arch_registry = ARCH_MAP[arch_uname]
+   except KeyError:
+      FATAL("unknown host architecture: %s" % arch_uname)
+   VERBOSE("host architecture for registry: %s" % arch_registry)
+   return arch_registry
+
 def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
    h = hashlib.sha256()
@@ -1296,6 +1614,7 @@ def bytes_hash(data):
    return h.hexdigest()
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
+   # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
            + sum([["-b", i] for i in binds], [])
@@ -1305,9 +1624,7 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
 def cmd(args, env=None, fail_ok=False):
    VERBOSE("environment: %s" % env)
    VERBOSE("executing: %s" % args)
-   color_set("33m", sys.stdout)
    cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
-   color_reset(sys.stdout)
    if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
@@ -1331,6 +1648,14 @@ def copytree(*args, **kwargs):
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
       (e.g., lark module checked at import time), then complain and exit."""
+   # enforce Python minimum version
+   vsys_py = sys.version_info[:3]  # 4th element is a string
+   if (vsys_py < PYTHON_MIN):
+      vmin_py_str = ".".join(("%d" % i) for i in PYTHON_MIN)
+      vsys_py_str = ".".join(("%d" % i) for i in vsys_py)
+      depfails.append(("bad", ("need Python %s but running under %s: %s"
+                               % (vmin_py_str, vsys_py_str, sys.executable))))
+   # report problems & exit
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
    if (len(depfails) > 0):
@@ -1357,8 +1682,11 @@ def done_notify():
       INFO("done")
 
 def file_ensure_exists(path):
-   fp = open_(path, "a")
-   fp.close()
+   """If the final element of path exists (without dereferencing if it's a
+      symlink), do nothing; otherwise, create it as an empty regular file."""
+   if (not os.path.lexists(path)):
+      fp = open_(path, "w")
+      fp.close()
 
 def file_gzip(path, args=[]):
    """Run pigz if it's available, otherwise gzip, on file at path and return
@@ -1426,9 +1754,9 @@ def grep_p(path, rx):
       FATAL("error reading %s: %s" % (path, x.strerror))
 
 def init(cli):
-   global verbose, log_festoon, log_fp, storage, tls_verify
+   global arch, arch_host, log_festoon, log_fp, storage, tls_verify, verbose
    # logging
-   assert (0 <= cli.verbose <= 2)
+   assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
@@ -1440,11 +1768,31 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage object
    storage = Storage(cli.storage)
+   # architecture
+   assert (cli.arch is not None)
+   arch_host = arch_host_get()
+   if (cli.arch == "host"):
+      arch = arch_host
+   else:
+      arch = cli.arch
    # TLS verification
    if (cli.tls_no_verify):
       tls_verify = False
       rpu = requests.packages.urllib3
       rpu.disable_warnings(rpu.exceptions.InsecureRequestWarning)
+
+def json_from_file(path, msg):
+   DEBUG("loading JSON: %s: %s" % (msg, path))
+   fp = open_(path, "rt", encoding="UTF-8")
+   text = ossafe(fp.read, "can't read: %s" % path)
+   ossafe(fp.close, "can't close: %s" % path)
+   TRACE("text:\n%s" % text)
+   try:
+      data = json.loads(text)
+      DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
+   except json.JSONDecodeError as x:
+      FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
+   return data
 
 def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):
@@ -1482,6 +1830,15 @@ def ossafe(f, msg, *args, **kwargs):
       return f(*args, **kwargs)
    except OSError as x:
       FATAL("%s: %s" % (msg, x.strerror))
+
+def path_first(path):
+   """Return first component of path, skipping no-op dot components. If path
+      contains *only* no-ops, return None. (Note: In my testing, parsing a
+      string into a Path object took about 2.5µs, so this is plenty fast.)"""
+   try:
+      return Path(path).parts[0]
+   except IndexError:
+      return None
 
 def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.
@@ -1552,18 +1909,17 @@ def tree_terminal(tree, tname, i=0):
    return None
 
 def tree_terminals(tree, tname):
-   """Yield values of all child terminals of type type_, or empty list if none
+   """Yield values of all child terminals named tname, or empty list if none
       found."""
    for j in tree.children:
       if (isinstance(j, lark.lexer.Token) and j.type == tname):
          yield j.value
 
+def tree_terminals_cat(tree, tname):
+   """Return the concatenated values of all child terminals named tname as a
+      string, with no delimiters. If none, return the empty string."""
+   return "".join(tree_terminals(tree, tname))
+
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
-
-def unpacked_image_p(imgdir):
-   return (os.path.isdir(imgdir)
-       and os.path.isdir(imgdir // 'bin')
-       and os.path.isdir(imgdir // 'dev')
-       and os.path.isdir(imgdir // 'opt'))

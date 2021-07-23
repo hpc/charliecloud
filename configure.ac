@@ -97,6 +97,7 @@ AC_SUBST([LIBRT])
 
 ## Options
 
+# Note: Variables must match option, e.g. --disable-foo-bar => enable_foo_bar.
 # Note: --with-sphinx-build provided by AX_WITH_PROG() below.
 
 AC_ARG_WITH([python],
@@ -131,6 +132,10 @@ AC_ARG_ENABLE([ch-image],
                  [ch-image unprivileged builder & image manager]),
   [], [enable_ch_image=yes])
 
+AC_ARG_ENABLE([bundled-lark],
+  AS_HELP_STRING([--disable-bundled-lark],
+                 [use system Lark (not recommended; see docs!)]),
+  [], [enable_bundled_lark=yes])
 
 ## Feature test macros
 
@@ -315,7 +320,7 @@ AS_IF([test -n "$NVIDIA_CLI"],
 AC_MSG_RESULT($have_nvidia_libs)
 
 # Python
-vmin_python=3.6
+vmin_python=3.6  # NOTE: Keep in sync with lib/charliecloud.py
 AC_MSG_CHECKING([if "$PYTHON_SHEBANG" starts with slash])
 AS_CASE([$PYTHON_SHEBANG],
   [/*], [AC_MSG_RESULT([ok])],
@@ -329,26 +334,6 @@ AS_CASE([$python],
 )
 CH_CHECK_VERSION([PYTHON], [$vmin_python],
                  [--version | head -1 | cut -d' ' -f2])
-
-# Python module "lark-parser"
-vmin_lark=0.7.1
-AS_IF([test -n "$PYTHON"], [
-  AC_MSG_CHECKING([for lark-parser module])
-  cat <<EOF | $PYTHON_SHEBANG
-import sys
-try:
-   import lark   # module present?
-   lark.Visitor  # correct module? (there are two)
-except Exception:
-   sys.exit(1)
-EOF
-  AS_IF([test $? -eq 0],
-    [LARK=$PYTHON; have_lark=yes],
-    [LARK=;        have_lark=no])
-  AC_MSG_RESULT([$have_lark])
-  CH_CHECK_VERSION([LARK], [$vmin_lark],
-    [-c 'import lark; print(lark.__version__)'])
-])
 
 # Python module "requests"
 vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
@@ -380,7 +365,7 @@ CH_CHECK_VERSION([SHELLCHECK], [$vmin_shellcheck],
 vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
 AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
 CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
-                 [--help |& head -1 | cut -d' ' -f2])
+                 [--help 2>&1 | head -1 | cut -d' ' -f2])
 
 # sudo, generic
 # Avoids prompting for password; see https://superuser.com/a/1183480.
@@ -445,12 +430,21 @@ AS_IF([   test $enable_man = yes && test $have_docs = no],
       [AC_MSG_WARN([forcing --disable-man: no suitable sphinx-build])
        enable_man=no])
 
+# Check if bundled Lark is installed in the source directory. Currently we
+# don't do anything other than report.
+#
+# Note this assumes that $PWD is the top of the source tree. I don't believe
+# anything else is supported (e.g., see issue #820), but it's brittle.
+AS_IF([   test -f ./lib/lark/lark.py],
+      [lark_installed=yes], [lark_installed=no])
+
 ## Set up Makefile conditionals.
 
 AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
 AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
+AM_CONDITIONAL([ENABLE_LARK], [test $enable_bundled_lark = yes])
 
 
 ## Prepare report.
@@ -472,7 +466,6 @@ AS_IF([   test -n "$BUILDAH"],
 AS_IF([   test $enable_ch_image = yes \
        && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
-       && test -n "$LARK" \
        && test -n "$REQUESTS" \
        && test $have_ch_run = yes],
       [have_ch_image=yes],
@@ -605,6 +598,9 @@ Building Charliecloud
   required:
     C99 compiler ... ${CC} ${CC_VERSION}
 
+  bundled Lark: ${enable_bundled_lark}
+    lark.py under source dir ... ${lark_installed}
+
   documentation: ${have_docs}
     sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
     sphinx-build(1) Python ... ${sphinx_python:-n/a}
@@ -621,7 +617,6 @@ Building images via our wrappers
     enabled ... ${enable_ch_image}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
-    "lark-parser" module ≥ $vmin_lark ... ${LARK_VERSION_NOTE}
     "requests" module ≥ $vmin_requests ... ${REQUESTS_VERSION_NOTE}
     ch-run(1) ... ${have_ch_run}
 

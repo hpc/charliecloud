@@ -233,38 +233,61 @@ images. The former is generally preferred, as it lets you update only those
 base images that have actually changed (the ones that haven't will be
 re-tagged).
 
-GitHub tags
------------
+Issue labeling
+--------------
 
-What kind of issue is it?
-~~~~~~~~~~~~~~~~~~~~~~~~~
+We use the following labels (a.k.a. tags) to organize issues. Each issue (or
+stand-alone PR) should have label(s) from every category, with the exception
+of disposition which only applies to closed issues.
+
+Charliecloud team members should label their own issues. Members of the
+general public are more than welcome to label their issues if they like, but
+in practice this is rare, which is fine. Whoever triages the incoming issue
+should add or adjust labels as needed.
+
+.. note::
+
+   This scheme is designed to organize open issues only. There have been
+   previous schemes, and we have not re-labeled closed issues.
+
+What kind of change is it?
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Choose *one type* from:
 
 :code:`bug`
-  Problem of some kind that needs to be fixed; i.e., something doesn't work.
-  This includes usability and documentation problems. Should have steps to
-  reproduce with expected and actual behavior.
+  Something doesn't work; e.g., it doesn't work as intended or it was
+  mis-designed. This includes usability and documentation problems. Steps to
+  reproduce with expected and actual behavior are almost always very helpful.
 
 :code:`enhancement`
   Things work, but it would be better if something was different. For example,
-  a new feature proposal or refactoring. Should have steps to reproduce with
-  desired and actual behavior.
+  a new feature proposal, an improvement in how a feature works, or clarifying
+  an error message. Steps to reproduce with desired and current behavior are
+  often helpful.
 
-:code:`help wanted`
-  The core team does not plan to address this issue, perhaps because we don't
-  know how, but we think it would be good to address it. We hope someone from
-  the community will volunteer.
+:code:`refactor`
+  Change that will improve Charliecloud but does not materially affect
+  user-visible behavior. Note this doesn't mean "invisible to the user"; even
+  user-facing documentation or logging changes could feasibly be this, if they
+  are more cleanup-oriented.
 
-:code:`key issue`
-  A particularly important or notable issue.
+How important/urgent is it?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:code:`question`
-  Support request that does not report a problem or ask for a change. Close
-  these after the question is answered or several days with no activity.
+Choose *one priority* from:
 
-What do we plan to do about it?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:code:`high`
+  High priority.
 
-For all of these, leave other tags in place, e.g. :code:`bug`.
+:code:`medium`
+  Medium priority.
+
+:code:`low`
+  Low priority. Note: Unfortunately, due to resource limitations, complex
+  issues here are likely to wait a long time, perhaps forever. If that makes
+  you particularly sad on a particular issue, please comment to say why. Maybe
+  it's mis-prioritized.
 
 :code:`deferred`
   No plans to do this, but not rejected. These issues stay open, because we do
@@ -272,26 +295,128 @@ For all of these, leave other tags in place, e.g. :code:`bug`.
   risky; you probably want to argue successfully that it should be done before
   starting work on it.
 
+Priority is indeed required, though it can be tricky because the levels are
+fuzzy. Do not hesitate to ask for advice. Considerations include: is customer
+or development work blocked by the issue; how valuable is the issue for
+customers; does the issue affect key customers; how many customers are
+affected; how much of Charliecloud is affected; what is the workaround like,
+if any. Difficulty of the issue is not a factor in priority, i.e., here we are
+trying to express benefit, not cost/benefit ratio. Perhaps the `Debian bug
+severity levels <https://www.debian.org/Bugs/Developer#severities>`_ provide
+inspiration. The number of :code:`high` priority issues should be relatively
+low.
+
+In part because priority is quite imprecise, issues are not a priority queue,
+i.e., we do work on lower-priority issues while higher-priority ones are still
+open. Related to this, issues do often move between priority levels. In
+particular, if you think we picked the wrong priority level, please say so.
+
+What part of Charliecloud is affected?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Choose *one or more components* from:
+
+:code:`runtime`
+  The container runtime itself; largely :code:`ch-run`.
+
+:code:`image`
+  Image building and interaction with image registries; largely
+  :code:`ch-image`. (Not to be confused with image management tasks done by
+  glue code.)
+
+:code:`glue`
+  The “glue” that ties the runtime and image management (:code:`ch-image` or
+  another builder) together. Largely shell scripts in :code:`bin`.
+
+:code:`install`
+  Charliecloud build & install system, packaging, etc. (Not to be confused
+  with image building.)
+
+:code:`doc`
+  Documentation.
+
+:code:`test`
+  Test suite and examples.
+
+:code:`misc`
+  Everything else. Do not combine with another component.
+
+Special considerations
+~~~~~~~~~~~~~~~~~~~~~~
+
+Choose *one or more extras* from:
+
+:code:`blocked`
+  We can't do this yet because something else needs to happen first. If that
+  something is another issue, mention it in a comment.
+
+:code:`hpc`
+  Related specifically to HPC and HPC scaling considerations; e.g.,
+  interactions with job schedulers.
+
+:code:`uncertain`
+  Course of action is unclear. For example: is the feature a good idea,
+  what is a good approach to solve the bug, what additional information is
+  needed.
+
+:code:`usability`
+  Affects usability of any part of Charliecloud, including documentation and
+  project organization.
+
+Why was it closed?
+~~~~~~~~~~~~~~~~~~
+
+If the issue was resolved (i.e., bug fixed or enhancement/refactoring
+implemented), there is no disposition tag. Otherwise, to explain why not,
+choose *one disposition* from:
+
+:code:`cantfix`
+  The issue is not something we can resolve. Typically problems with other
+  software, problems with containers in general that we can't work around, or
+  not actionable due to clarity or other reasons. *Use caution when blaming a
+  problem on user error. Often (or usually) there is a documentation or
+  usability bug that caused the "user error".*
+
+:code:`discussion`
+  Converted to a discussion. The most common use is when someone asks a
+  question rather than making a request for some change.
+
 :code:`duplicate`
-  Same as some other previously reported issue. In addition to this tag,
-  duplicates should refer to the other issue and be closed.
+  Same as some other issue. In addition to this tag, duplicates should refer
+  to the other issue in a comment to record the link. Of the duplicates, the
+  better one should stay open (e.g., clearer reproduction steps); if they are
+  roughly equal in quality, the older one should stay open.
 
-:code:`obsolete`
-  No longer relevant, moot, etc. Close.
-
-:code:`erroneous`
-  Not a Charliecloud issue; close. *Use caution when blaming a problem on user
-  error. Often (or usually) there is a documentation or usability bug that
-  caused the "user error".*
+:code:`moot`
+  No longer relevant. Examples: withdrawn by reporter, fixed in current
+  version (use :code:`duplicate` instead if it applies though), obsoleted by
+  change in plans.
 
 :code:`wontfix`
-  We are not going to do this, and we won't merge PRs. Close issue after
-  tagging, though sometimes you'll want to leave a few days to allow for
-  further discussion to catch mistaken tags.
+  We are not going to do this, and we won't merge PRs. Sometimes you'll want
+  to tag and then wait a few days before closing, to allow for further
+  discussion to catch mistaken tags.
 
 :code:`worksforme`
-  We cannot reproduce the issue. Typical workflow is to tag, then wait a few
-  days for clarification before closing.
+  We cannot reproduce a bug, and it seems unlikely this will change given
+  available information. Typically you'll want to tag, then wait a few days
+  for clarification before closing. Bugs closed with this tag that do gain a
+  reproducer later should definitely be re-opened. For some bugs, it really
+  feels like they should be reproducible but we're missing it somehow; such
+  bugs should be left open in hopes of new insight arising.
+
+Deprecated labels
+~~~~~~~~~~~~~~~~~
+
+You might see these on old issues, but they are no longer in use.
+
+* :code:`help wanted`: This tended to get stale and wasn't generating any
+  leads.
+
+* :code:`key issue`: Replaced by priority labels.
+
+* :code:`question`: Replaced by Discussions. (If you report a bug that seems
+  to be a discussion, we'll be happy to convert it to you.)
 
 
 Test suite
@@ -320,6 +445,11 @@ Charliecloud is small enough to just rebuild everything with::
 
   $ ./autogen.sh && ./configure && make clean && make
 
+Special images
+--------------
+
+For images not needed after completion of a test, tag them :code:`tmpimg`.
+This leaves only one extra image at the end of the test suite.
 
 Writing a test image using the standard workflow
 ------------------------------------------------
@@ -1245,4 +1375,21 @@ Additional sources
 * :code:`runc create` man page: https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md
 * https://github.com/opencontainers/runtime-spec/blob/master/runtime.md
 
-..  LocalWords:  milestoned gh nv cht Chacon's scottchacon
+
+Miscellaneous notes
+===================
+
+Updating bundled Lark parser
+----------------------------
+
+In order to change the version of the bundled lark parser you must modify
+multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
+catch both dot notation and tuples, but not the list of filenames in
+:code:`lib/Makefile.am`)::
+
+  $ misc/grep -E '0(\.|, )11(\.|, )3($|\s|\))'
+
+What to do in each location should either be obvious or commented.
+
+
+..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg

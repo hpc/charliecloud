@@ -42,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Charliecloud'
-copyright = u'2014–2020, Triad National Security, LLC'
+copyright = u'2014–2021, Triad National Security, LLC'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -237,6 +237,10 @@ latex_documents = [
 
 
 # -- Options for manual page output --------------------------------------------
+
+# Put all man pages in one directory regardless of section. Default changes to
+# True in Sphinx 4.0, which broke our builds (#1060).
+man_make_section_directory = False
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).

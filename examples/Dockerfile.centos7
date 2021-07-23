@@ -6,7 +6,6 @@ FROM centos:7
 
 # Install our dependencies, ensuring we fail out if any are missing.
 RUN yum install -y epel-release \
- && yum-config-manager --enable epel \
  && yum install -y --setopt=skip_missing_names_on_install=0 \
                 autoconf \
                 automake \
@@ -31,3 +30,6 @@ RUN yum install -y epel-release \
 # python package version for our spec file macros.
 # https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/K4EH7V3OUFJFVL6A72IILJUA6JFX2HZW/
 RUN yum install -y epel-rpm-macros
+
+# Need wheel to install bundled Lark, and the RPM version doesn't work.
+RUN pip3 install wheel
