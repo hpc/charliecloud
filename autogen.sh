@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+lark_version=0.11.3
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -84,7 +85,7 @@ if [[ -z $clean ]]; then
         # Install Lark only if its directory doesn't exist, to avoid excess
         # re-downloads.
         pip3 --isolated install \
-             --target=lib --ignore-installed lark==0.11.3
+             --target=lib --ignore-installed "lark==${lark_version}"
         # Lark doesn't honor --no-compile, so remove the .pyc files manually.
         rm lib/lark/__pycache__/*.pyc
         rmdir lib/lark/__pycache__
@@ -93,6 +94,13 @@ if [[ -z $clean ]]; then
         # Also remove Lark's installer stuff.
         rm lib/lark/__pyinstaller/*.py
         rmdir lib/lark/__pyinstaller
+    fi
+    if [[    -e lib/lark \
+          && ! -e lib/lark-${lark_version}.dist-info/INSTALLER ]]; then
+        set +x
+        echo 'error: Embedded Lark is broken.' 2>&1
+        echo 'hint: Install "wheel" and then re-run with "--rm-lark"?' 2>&1
+        exit 1
     fi
     set +x
     echo
