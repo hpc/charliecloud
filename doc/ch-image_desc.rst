@@ -78,7 +78,7 @@ Common options placed before the sub-command:
   :code:`--no-cache`
     Download everything needed, ignoring the cache.
 
-  :code:`--password-once`
+  :code:`--password-many`
     Re-prompt the user every time a registry password is needed.
 
   :code:`-s`, :code:`--storage DIR`
@@ -105,7 +105,7 @@ a private registry: many registries will first offer a read-only token when
 :code:`ch-image` checks if something exists, then re-authenticate when
 upgrading the token to read-write for upload. If your site uses one-time
 passwords such as provided by a security device, you can specify
-:code:`--password-once` to provide a new secret each time.
+:code:`--password-many` to provide a new secret each time.
 
 These values are not saved persistently, e.g. in a file. Note that we do use
 normal Python variables for this information, without pinning them into

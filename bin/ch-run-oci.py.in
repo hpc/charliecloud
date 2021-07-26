@@ -81,7 +81,7 @@ def args_parse():
 
    args_ = ap.parse_args()
    args_.arch = "yolo"
-   args_.password_once = False
+   args_.password_many = False
    args_.storage = None
    args_.tls_no_verify = False
    ch.init(args_)

@@ -243,7 +243,7 @@ class Credentials:
             # FIXME: This hangs in Bats despite sys.stdin.isatty() == True.
             username = input("\nUsername: ")
             password = getpass.getpass("Password: ")
-         if (not password_once):
+         if (not password_many):
             # Remember the credentials.
             self.username = username
             self.password = password
@@ -1798,8 +1798,8 @@ def init(cli):
    else:
       arch = cli.arch
    # misc
-   global password_once, tls_verify
-   password_once = cli.password_once
+   global password_many, tls_verify
+   password_many = cli.password_many
    if (cli.tls_no_verify):
       tls_verify = False
       rpu = requests.packages.urllib3
