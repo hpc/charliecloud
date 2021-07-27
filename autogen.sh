@@ -75,7 +75,7 @@ rm -rf Makefile \
        configure
 
 if [[ $lark_shovel ]]; then
-    rm -Rfv lib/lark lib/lark-stubs lib/lark*.dist-info
+    rm -Rfv lib/lark lib/lark-stubs lib/lark*.dist-info lib/lark*.egg-info
 fi
 
 # Create configure and friends.
