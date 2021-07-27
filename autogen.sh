@@ -64,7 +64,7 @@ set -x
 #
 # [1]: https://www.gnu.org/prep/standards/html_node/Standard-Targets.html
 rm -Rf Makefile.in \
-       */Makefile.in \
+       ./*/Makefile.in \
        aclocal.m4 \
        bin/config.h.in \
        build-aux \
