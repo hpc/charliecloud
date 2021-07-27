@@ -1726,10 +1726,10 @@ def file_gzip(path, args=[]):
       unlink(path_c)
    # Compress.
    cmd([file_gzip.gzip] + args + [str(path)])
-   # Zero out GZIP header timestamp data to ensure layer hash is always
-   # consistent. https://github.com/hpc/charliecloud/issues/1080
+   # Zero out GZIP header timestamp bytes to ensure layer hash is always
+   # consistent. See. https://github.com/hpc/charliecloud/issues/1080
    fp = open_(path_c, "r+b")
-   # Timestampe offset.https://commandlinefanatic.com/cgi-bin/showarticle.cgi?article=art053
+   # Timestamp offset. See https://commandlinefanatic.com/cgi-bin/showarticle.cgi?article=art053
    ossafe(fp.seek, "can't seek timestamp offset: %s" % fp, 4)
    ossafe(fp.write, "can't write file: %s" % fp, b'\x00\x00\x00\x00')
    ossafe(fp.close, "can't close file: %s" % fp)
