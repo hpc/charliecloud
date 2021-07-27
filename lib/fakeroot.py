@@ -152,15 +152,12 @@ DEFAULT_CONFIGS = {
    #
    # 3. Enabling EPEL can have undesirable side effects, e.g. different
    #    version of things in the base repo that breaks other things. Thus,
-   #    when we install EPEL, we don't enable it. Existing EPEL installations
-   #    are left alone.
+   #    when we are done with EPEL, we uninstall it. Existing EPEL
+   #    installations are left alone.
    #
    # 4. "yum repolist" has a lot of side effects, e.g. locking the RPM
    #    database and asking configured repos for something or other.
-   #
-   # 5. "dnf config-manager" (CentOS 8) requires installing dnf-plugins-core,
-   #    which requires fakeroot, which we don't have when initializing
-   #    fakeroot. So sed it is. :P
+
 
    "rhel7":
    { "name": "CentOS/RHEL 7",
@@ -169,23 +166,27 @@ DEFAULT_CONFIGS = {
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
                 "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm; "
-                "yum-config-manager --disable epel; "
-                "fi; "
-                "yum --enablerepo=epel install -y fakeroot; ") ],
+                "yum install -y fakeroot; "
+                "yum remove -y epel-release; "
+                "else "
+                "yum install -y fakeroot; "
+                "fi; ") ],
      "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 
    "rhel8":
    { "name": "CentOS/RHEL 8",
-     "match":  ("/etc/redhat-release", r"release 8\."),
+     "match":  ("/etc/redhat-release", r"release 8"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
                 "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm; "
                 "ls -lh /etc/yum.repos.d; "
-                "sed -Ei 's/enabled=1$/enabled=0/g' /etc/yum.repos.d/epel*.repo; "
-                "fi; "
-                "dnf --enablerepo=epel install -y fakeroot; ") ],
+                "dnf install -y fakeroot; "
+                "dnf remove -y epel-release; "
+                "else "
+                "dnf install -y fakeroot; "
+                "fi; ") ],
      "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 

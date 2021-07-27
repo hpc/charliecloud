@@ -1,6 +1,5 @@
 import json
 import os.path
-import platform
 
 import charliecloud as ch
 import version
@@ -58,7 +57,7 @@ class Image_Pusher:
       "Return an empty config, ready to be filled in."
       # FIXME: URL of relevant docs?
       # FIXME: tidy blank/empty fields?
-      return { "architecture": platform.machine(),
+      return { "architecture": ch.arch_host_get(),
                "charliecloud_version": version.VERSION,
                "comment": "pushed with Charliecloud",
                "config": {},

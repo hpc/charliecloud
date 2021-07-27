@@ -6,7 +6,6 @@ FROM centos:7
 
 # Install our dependencies, ensuring we fail out if any are missing.
 RUN yum install -y epel-release \
- && yum-config-manager --enable epel \
  && yum install -y --setopt=skip_missing_names_on_install=0 \
                 autoconf \
                 automake \
@@ -23,3 +22,6 @@ RUN yum install -y epel-release \
                 rsync \
                 wget \
  && yum clean all
+
+# Need wheel to install bundled Lark, and the RPM version doesn't work.
+RUN pip3 install wheel

@@ -188,10 +188,94 @@ EOF
 }
 
 @test 'ch-image list' {
+
+    # list all images
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"00_tiny"* ]]
+
+    # name does not exist remotely, in library
+    run ch-image list doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
+
+    # tag does not exist remotely, in library
+    run ch-image list alpine:doesnotexist
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
+
+    # name does not exist remotely, not in library
+    run ch-image list charliecloud/doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
+
+    # tag does not exist remotely, not in library
+    run ch-image list charliecloud/metadata:doesnotexist
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
+
+    # in storage, does not exist remotely
+    run ch-image list 00_tiny
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    yes'* ]]
+    [[ $output = *'available remotely:  no'* ]]
+    [[ $output = *'remote arch-aware:   n/a'* ]]
+    [[ $output = *'archs available:     n/a'* ]]
+
+    # not in storage, exists remotely, fat manifest exists
+    run ch-image list debian:buster-slim
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   yes'* ]]
+    [[ $output = *'archs available:     386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x'* ]]
+
+    # in storage, exists remotely, no fat manifest
+    run ch-image list charliecloud/metadata:2021-01-15
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    yes'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   no'* ]]
+    [[ $output = *'archs available:     unknown'* ]]
+
+    # exists remotely, fat manifest exists, no Linux architectures
+    run ch-image list mcr.microsoft.com/windows:20H2
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'in local storage:    no'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   yes'* ]]
+    [[ $output = *'warning: no valid architectures found'* ]]
+
+    # scratch is weird and tells lies
+    run ch-image list scratch
+    echo "$output"
+    [[ $status -eq 0 ]]
+    #[[ $output = *'in local storage:    yes'* ]]  # varies
+    [[ $output = *'full remote ref:     registry-1.docker.io:443/library/scratch:latest'* ]]
+    [[ $output = *'available remotely:  yes'* ]]
+    [[ $output = *'remote arch-aware:   no'* ]]
+    [[ $output = *'archs available:     unknown'* ]]
 }
 
 @test 'ch-image reset' {
@@ -220,8 +304,8 @@ EOF
    # List images; should error with not found.
    run ch-image list
    echo "$output"
-   [[ $status -eq 1 ]]
-   [[ $output = *"$CH_IMAGE_STORAGE/img: No such file or directory"* ]]
+   [[ $status -eq 0 ]]
+   [[ $output = *"does not exist: $CH_IMAGE_STORAGE"* ]]
 
    # Reset again; should error.
    run ch-image reset
@@ -239,7 +323,7 @@ EOF
 }
 
 @test 'ch-image build --bind' {
-    run ch-image --no-cache build -t build-bind -f - \
+    run ch-image --no-cache build -t tmpimg -f - \
                 -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
 FROM 00_tiny
 RUN mount
@@ -253,10 +337,10 @@ EOF
 }
 
 @test 'ch-image build: metadata carry-forward' {
-    img=$CH_IMAGE_STORAGE/img/build-metadata
+    img=$CH_IMAGE_STORAGE/img/tmpimg
 
     # Print out current metadata, then update it.
-    run ch-image build --no-cache -t build-metadata -f - . <<'EOF'
+    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
 FROM charliecloud/metadata:2021-01-15
 RUN echo "cwd1: $PWD"
 WORKDIR /usr

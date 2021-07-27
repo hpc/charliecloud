@@ -15,10 +15,11 @@ FROM centos:8
 #
 #   3. Install packages needed to build el8 rpms.
 #
+#   4. Issue #1103: Install libarchive to resolve cmake bug
+#
 RUN dnf install -y --setopt=install_weak_deps=false \
                 epel-release \
                 'dnf-command(config-manager)' \
- && dnf config-manager --enable epel \
  && dnf config-manager --enable powertools \
  && dnf install -y --setopt=install_weak_deps=false \
                    --enablerepo=epel-playground \
@@ -27,6 +28,7 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 automake \
                 gcc \
                 git \
+                libarchive \
                 make \
                 python3 \
                 python3-sphinx \
@@ -36,6 +38,9 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 rsync \
                 wget \
  && dnf clean all
+
+# Need wheel to install bundled Lark, and the RPM version doesn't work.
+RUN pip3 install wheel
 
 # CentOS's linker doesn't search these paths by default; add them because we
 # will install stuff later into /usr/local.
