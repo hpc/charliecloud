@@ -93,6 +93,9 @@ verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 
+# Bail out variables
+prepare_only = False # If true, bail out of push
+
 # Minimum Python version. NOTE: Keep in sync with configure.ac.
 PYTHON_MIN = (3,6)
 
@@ -1237,6 +1240,10 @@ class Registry_HTTP:
          can be anything requests can handle; if it's an open file, then it's
          wrapped in a Progress_Reader object. note is a string to prepend to
          the log messages; default empty string."""
+      global prepare_only
+      if (prepare_only):
+         INFO("prepare only; %s%s" % (note, digest[:7]))
+         return
       INFO("%s%s: checking if already in repository" % (note, digest[:7]))
       # 1. Check if blob already exists. If so, stop.
       if (self.blob_exists_p(digest)):
@@ -1270,6 +1277,10 @@ class Registry_HTTP:
 
    def config_upload(self, config):
       "Upload config (sequence of bytes)."
+      global prepare_only
+      if (prepare_only):
+        INFO("prepare only; skipping config upload")
+        return
       self.blob_upload(bytes_hash(config), config, "config: ")
 
    def credentials_read(self):
@@ -1341,6 +1352,11 @@ class Registry_HTTP:
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
       # Note: The manifest is *not* uploaded as a blob. We just do one PUT.
+      global prepare_only
+      if (prepare_only):
+         INFO("prepare only; skipping manifest upload")
+         return
+      INFO("manifest: uploading")
       url = self._url_of("manifests", self.ref.tag)
       self.request("PUT", url, {201}, data=manifest,
                    headers={ "Content-Type": TYPE_MANIFEST })

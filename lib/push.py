@@ -28,7 +28,9 @@ def main(cli):
    else:
       dst_ref = ch.Image_Ref(cli.source_ref)
    up = Image_Pusher(image, dst_ref)
-   up.push(cli.prepare_only)
+   if (cli.prepare_only):
+     ch.prepare_only = True
+   up.push()
    ch.done_notify()
 
 
@@ -128,13 +130,9 @@ class Image_Pusher:
       self.config = config_bytes
       self.manifest = manifest_bytes
 
-   def push(self, prepare_only=False):
+   def push(self):
       self.prepare()
-      if (prepare_only):
-         for (i, (digest, tarball)) in enumerate(self.layers, start=1):
-            ch.INFO("layer %d/%d: %s" % (i, len(self.layers), digest[0:7]))
-      else:
-         self.upload()
+      self.upload()
       self.cleanup()
 
    def upload(self):
@@ -144,6 +142,5 @@ class Image_Pusher:
          ul.layer_from_file(digest, tarball,
                             "layer %d/%d: " % (i, len(self.layers)))
       ul.config_upload(self.config)
-      ch.INFO("manifest: uploading")
       ul.manifest_upload(self.manifest)
       ul.close()
