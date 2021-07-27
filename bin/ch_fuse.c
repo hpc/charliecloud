@@ -20,7 +20,7 @@
 
 /** Constants **/
 
-/* holds fuse low level operations */
+/* Holds fuse low level operations */
 struct fuse_lowlevel_ops sqfs_ll_ops = {
     .getattr    = &sqfs_ll_op_getattr,
     .opendir    = &sqfs_ll_op_opendir,
@@ -71,8 +71,8 @@ void sq_clean()
    sqfs_ll_unmount(&sq.chan, sq.mountpt);
 }
 
-/* Returns 1 if a sqfs, 0 if dir, -1 if other */
-int imgdir_p(const char *path)
+/* Returns if image a directory, sqfs or others */
+enum img img_type(const char *path)
 {
    struct stat read;
    FILE *file;
@@ -80,10 +80,10 @@ int imgdir_p(const char *path)
 
    Te (stat(path, &read) == 0, "can't stat %s", path);
    if (S_ISDIR(read.st_mode)) // is a dir?
-      return 0;
+      return DIRECTORY;
 
    if (!S_ISREG(read.st_mode)) // not a file?
-      return -1;
+      return OTHER;
 
    file = fopen(path, "rb");
    Te ((file != NULL), "can't open %s", path);
@@ -93,33 +93,32 @@ int imgdir_p(const char *path)
    // see: https://dr-emann.github.io/squashfs/
    DEBUG("Magic Number: %x%x%x%x", magic[3], magic[2], magic[1], magic[0]);
    if(strcmp(magic, "hsqs") == 0) // is a sqfs?
-      return 1;
-   return -1;
+      return SQFS;
+   return OTHER;
 }
 
 /* Mounts sqfs image. Returns mount point */
-char *sq_mount(char *mountdir, char *filepath)
+void sq_mount(char *mountdir, char *filepath)
 {
-   Ze (mountdir[0] == '\0', "mount point can't be empty");
+   // argc set at 2 when verbose set to 3+ which sets debug argument for FUSE
+   char *argv[] = {filepath, "-d"};
+   int argc = (verbose > 2) ? 2 : 1;
+   struct fuse_args args = FUSE_ARGS_INIT(argc, argv); //arguments for FUSE
+
    sq.mountpt = mountdir;
    INFO("mount point: %s", sq.mountpt);
-
-   //init fuse,etc.
-   char* argv[] = {filepath, "-d"};
-   int v = 1;
-   if (verbose > 2) //fuse debug turned on at -vv, DEBUG level
-      v=2;
-   struct fuse_args args = FUSE_ARGS_INIT(v, argv); //arguments passed to fuse for mount
 
    // mount sqfs
    sq.ll = sqfs_ll_open(filepath, 0);
    Te (sq.ll, "failed to open %s", filepath);
-   if (!opendir(sq.mountpt)) //if directory doesn't exist, create it
-      Ze (mkdir(sq.mountpt, 0777), "failed to create: %s", sq.mountpt);
+   if(!opendir(sq.mountpt)) {
+      Tf ((ENOENT == errno), "can't make %s", sq.mountpt); //errno not dir doesn't exist
+      Ze (mkdir(sq.mountpt, 0777), "failed to make: %s", sq.mountpt);
+   }
 
    // two 'sources' of error 1. can't create fuse session, 2. can't mount
    if (SQFS_OK != sqfs_ll_mount(&sq.chan, sq.mountpt, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), sq.ll)) {
-      Te ((sq.chan.session), "failed to create fuse session");
+      Te ((sq.chan.session), "failed to make fuse session");
       FATAL("failed to mount");
    }
    signal(SIGCHLD, sq_end); //end fuse loop when ch-run is done
@@ -127,13 +126,12 @@ char *sq_mount(char *mountdir, char *filepath)
    // tries to set signal handlers, returns -1 if failed
    Te ((fuse_set_signal_handlers(sq.chan.session) >= 0), "can't set signal handlers");
 
-   // child process should never return
+   // child process never returns when successful
    // parent process runs fuse loop until child process ends and sends a SIGCHLD
    int status = fork();
    Te (status >=0, "failed to fork process");
    if (status > 0) { //parent process
       // tries to create fuse loop, returns -1 if failed
-      Te ((fuse_session_loop(sq.chan.session) >= 0), "failed to create fuse loop");
+      Te ((fuse_session_loop(sq.chan.session) >= 0), "failed to make fuse loop");
    }
-   return sq.mountpt;
 }

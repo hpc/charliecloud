@@ -17,27 +17,36 @@ load ../common
     rmdir "${ch_mnt}"
 
     # -s option
-    run ch-run -s /var/tmp/tmp -v "$ch_sqfs" -- /bin/true
+    unpack="${BATS_TMPDIR}/tmp"
+    run ch-run -s "$unpack" -v "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"newroot: /var/tmp/tmp"* ]]
-    [[ -d "/var/tmp/tmp" ]]
-    rmdir /var/tmp/tmp
+    [[ $output = *"newroot: ${unpack}"* ]]
+    [[ -d "$unpack" ]]
+    rmdir "$unpack"
 
     # -s with non-sqfs img
-    run ch-run -s /var/tmp/tmp -v "$ch_timg" -- /bin/true
+    run ch-run -s "$unpack" -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"WARNING: invalid option -s, --squashmnt"* ]]
     [[ $output = *"newroot: ${ch_timg}"* ]]
 
     # only create 1 directory
-    run ch-run -s /var/tmp/sq -v "$ch_sqfs" -- /bin/true
+    run ch-run -s "$unpack" -v "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"newroot: /var/tmp/sq"* ]]
-    [[ -d "/var/tmp/sq" ]]
-    rmdir /var/tmp/sq
+    [[ $output = *"newroot: ${unpack}"* ]]
+    [[ -d "$unpack" ]]
+    rmdir "$unpack"
+
+   # create multiple directory w/ default
+   # **** tmp test ************
+   rm -r /var/tmp/vm-user.ch
+   run ch-run "$ch_sqfs" -- /bin/true
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ -d "$ch_mnt" ]]
 }
 
 @test 'ch-run: squash errors' {
@@ -46,23 +55,30 @@ load ../common
     ch_sqfs="${CH_TEST_TARDIR}"/00_tiny.sqfs
 
     # empty mount point
-    run ch-run --squashmt= -v "$ch_sqfs" -- /bin/true
+    run ch-run --squashmt= "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]] # exits with status of 139
     [[ $output = *"mount point can't be empty"* ]]
 
     # parent dir doesn't exist
-    run ch-run -s /var/tmp/sq/mnt -v "$ch_sqfs" -- /bin/true
+    unpack="${BATS_TMPDIR}/sq/mnt"
+    run ch-run -s "$unpack" "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]] # exits with status of 139
-    [[ $output = *"failed to create: /var/tmp/sq/mnt"* ]]
-    [[ ! -e "/var/tmp/sq/mnt" ]]
+    [[ $output = *"failed to make: ${unpack}"* ]]
+    [[ ! -e "$unpack" ]]
+
+    # mount point contains a file, can't opendir but shouldn't make it
+    run ch-run -s /var/tmp/file "$ch_sqfs" -- /bin/true
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *"can't make /var/tmp/file: Not a directory"* ]]
 
     # input is file but not sqfs
-    run ch-run -v Build.missing -- /bin/true
+    run ch-run Build.missing -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"invalid image type"* ]]
+    [[ $output = *"image not dir or sqfs"* ]]
 
     # input has same magic number but is broken
     sq_tmp="${CH_TEST_TARDIR}"/tmp.sqfs

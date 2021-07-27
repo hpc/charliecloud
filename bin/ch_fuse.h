@@ -4,9 +4,9 @@
 #include <stdbool.h>
 
 /** Types **/
-
+enum img {DIRECTORY, SQFS, OTHER};
 /** Function prototypes **/
 
-int imgdir_p(const char *path);
+enum img img_type(const char *path);
 void sq_clean();
-char *sq_mount(char *mountdir, char *filepath);
+void sq_mount(char *mountdir, char *filepath);
