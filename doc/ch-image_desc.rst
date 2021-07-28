@@ -78,6 +78,9 @@ Common options placed before the sub-command:
   :code:`--no-cache`
     Download everything needed, ignoring the cache.
 
+  :code:`--password-many`
+    Re-prompt the user every time a registry password is needed.
+
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory (see below for important details).
 
@@ -87,6 +90,34 @@ Common options placed before the sub-command:
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
+
+Authentication
+==============
+
+If the remote repository needs authentication, Charliecloud will prompt you
+for a username and password. Note that some repositories call the secret
+something other than "password"; e.g., GitLab calls it a "personal access
+token (PAT)".
+
+These values are remembered for the life of the process and silently
+re-offered to the registry if needed. One case when this happens is on push to
+a private registry: many registries will first offer a read-only token when
+:code:`ch-image` checks if something exists, then re-authenticate when
+upgrading the token to read-write for upload. If your site uses one-time
+passwords such as provided by a security device, you can specify
+:code:`--password-many` to provide a new secret each time.
+
+These values are not saved persistently, e.g. in a file. Note that we do use
+normal Python variables for this information, without pinning them into
+physical RAM with `mlock(2)
+<https://man7.org/linux/man-pages/man2/mlock.2.html>`_ or any other special
+treatment, so we cannot guarantee they will never reach non-volatile storage.
+
+There is no separate :code:`login` subcommand like Docker. For non-interactive
+authentication, you can use environment variables :code:`CH_IMAGE_USERNAME`
+and :code:`CH_IMAGE_PASSWORD`. Only do this if you fully understand the
+implications for your specific use case, because it is difficult to securely
+store secrets in environment variables.
 
 Storage directory
 =================
@@ -440,13 +471,6 @@ Docker. Thus, the size of the context is immaterial, and the build reads
 directly from storage like any other local process would. However, you still
 can't access anything outside the context directory.
 
-Authentication
---------------
-
-:code:`ch-image` can authenticate using one-time passwords, e.g. those
-provided by a security token. Unlike :code:`docker login`, it does not assume
-passwords are persistent.
-
 Environment variables
 ---------------------
 
@@ -588,6 +612,10 @@ Features we do not plan to support
 
 Environment variables
 =====================
+
+:code:`CH_IMAGE_USERNAME`, :code:`CH_IMAGE_PASSWORD`
+  Username and password for registry authentication. **See important caveats
+  in section "Authentication" above.**
 
 .. include:: py_env.rst
 

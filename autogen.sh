@@ -57,23 +57,20 @@ EOF
 cd "$(dirname "$0")"
 set -x
 
-# Remove existing Autotools stuff, if present. Coordinate with .gitignore.
-# We don't run "make clean" because that runs configure again.
-rm -rf Makefile \
-       Makefile.in \
-       ./*/Makefile \
+# Remove all derived files if we can. Note that if you enabled maintainer mode
+# in configure, this will run configure before cleaning.
+[[ -f Makefile ]] && make maintainer-clean
+# "maintainer-clean" target doesn't remove configure and its dependencies,
+# apparently by design [1], so delete those manually.
+#
+# [1]: https://www.gnu.org/prep/standards/html_node/Standard-Targets.html
+rm -Rf Makefile.in \
        ./*/Makefile.in \
        aclocal.m4 \
-       autom4te.cache \
-       bin/.deps \
-       bin/config.h \
        bin/config.h.in \
-       bin/stamp-h1 \
        build-aux \
-       config.log \
-       config.status \
        configure
-
+# Remove Lark, but only if requested.
 if [[ $lark_shovel ]]; then
     rm -Rfv lib/lark lib/lark-stubs lib/lark*.dist-info lib/lark*.egg-info
 fi
