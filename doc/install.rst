@@ -54,6 +54,12 @@ Create :code:`configure` with::
 
 This script has a few options; see its :code:`--help`.
 
+Note that Charliecloud disables Automake's "maintainer mode" by default, so
+the build system (Makefiles, :code:`configure`, etc.) will never automatically
+be rebuilt. You must run :code:`autogen.sh` manually if you need this. You can
+also re-enable maintainer mode with :code:`configure` if you like, though this
+is not a tested configuration.
+
 :code:`configure` options
 -------------------------
 
