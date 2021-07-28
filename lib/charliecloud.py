@@ -93,9 +93,6 @@ verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 
-# Bail out variables
-prepare_only = False # If true, bail out of push
-
 # Minimum Python version. NOTE: Keep in sync with configure.ac.
 PYTHON_MIN = (3,6)
 
@@ -1240,10 +1237,6 @@ class Registry_HTTP:
          can be anything requests can handle; if it's an open file, then it's
          wrapped in a Progress_Reader object. note is a string to prepend to
          the log messages; default empty string."""
-      global prepare_only
-      if (prepare_only):
-         INFO("prepare only; %s%s" % (note, digest[:7]))
-         return
       INFO("%s%s: checking if already in repository" % (note, digest[:7]))
       # 1. Check if blob already exists. If so, stop.
       if (self.blob_exists_p(digest)):
@@ -1277,10 +1270,6 @@ class Registry_HTTP:
 
    def config_upload(self, config):
       "Upload config (sequence of bytes)."
-      global prepare_only
-      if (prepare_only):
-        INFO("prepare only; skipping config upload")
-        return
       self.blob_upload(bytes_hash(config), config, "config: ")
 
    def credentials_read(self):
@@ -1352,10 +1341,6 @@ class Registry_HTTP:
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
       # Note: The manifest is *not* uploaded as a blob. We just do one PUT.
-      global prepare_only
-      if (prepare_only):
-         INFO("prepare only; skipping manifest upload")
-         return
       INFO("manifest: uploading")
       url = self._url_of("manifests", self.ref.tag)
       self.request("PUT", url, {201}, data=manifest,
@@ -1726,13 +1711,13 @@ def file_gzip(path, args=[]):
       unlink(path_c)
    # Compress.
    cmd([file_gzip.gzip] + args + [str(path)])
-   # Zero out GZIP header timestamp bytes to ensure layer hash is always
-   # consistent. See. https://github.com/hpc/charliecloud/issues/1080
+   # Zero out GZIP header timestamp, bytes 4–7 zero-indexed inclusive [1], to
+   # ensure layer hash is consistent. See issue #1080.
+   # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
    fp = open_(path_c, "r+b")
-   # Timestamp offset. See https://commandlinefanatic.com/cgi-bin/showarticle.cgi?article=art053
-   ossafe(fp.seek, "can't seek timestamp offset: %s" % fp, 4)
-   ossafe(fp.write, "can't write file: %s" % fp, b'\x00\x00\x00\x00')
-   ossafe(fp.close, "can't close file: %s" % fp)
+   ossafe(fp.seek, "can't seek: %s" % fp, 4)
+   ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
+   ossafe(fp.close, "can't close: %s" % fp)
    return path_c
 
 def file_hash(path):
