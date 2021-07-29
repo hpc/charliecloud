@@ -376,8 +376,26 @@ AC_CHECK_PROG([SHELLCHECK], [shellcheck], [shellcheck])
 CH_CHECK_VERSION([SHELLCHECK], [$vmin_shellcheck],
                  [--version | sed -n '2{s/^version: //;p;q}'])
 
+# FUSE3
+AC_CHECK_LIB([fuse3], [fuse_set_signal_handlers], [LIBFUSE=-lfuse3], [
+    AC_MSG_ERROR([fuse3 not found])
+])
+AC_SUBST([LIBFUSE])
+
+# SquashFUSE_LL
+AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount], [LIBSQFUSE=-lsquashfuse_ll], [
+    AC_MSG_ERROR([sq_ll_mount() not found])
+])
+AC_CHECK_HEADERS([ll.h], [AC_SUBST([LIBSQFUSE])], [ ], [
+[#ifdef FUSE_USE_VERSION >= 30
+# include <fuse3/fuse_lowlevel.h>
+# else
+#include <fuse_lowlevel.h>
+#endif
+]])
+
 # SquashFUSE
-vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
+vmin_squashfuse=0.1.104  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
 AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
 CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
                  [--help |& head -1 | cut -d' ' -f2])
