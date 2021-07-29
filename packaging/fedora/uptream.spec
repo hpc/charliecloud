@@ -11,7 +11,7 @@
 
 Name:          charliecloud
 Version:       0.24
-Release:       9%{?dist}
+Release:       10%{?dist}
 Summary:       Lightweight user-defined software stacks for high-performance computing
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
@@ -190,6 +190,9 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
 %changelog
+* Wed Jul 28 2021 Jordan Ogas <jogas@lanl.gov> 0.24-10
+- fix yet another typo; BuildRequires
+
 * Wed Jul 28 2021 Jordan Ogas <jogas@lanl.gov> 0.24-9
 - add version to obsoletes
 
@@ -347,3 +350,4 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 * Thu Mar 14 2019  <jogas@lanl.gov> 0.9.8-1
 - Add initial Fedora/EPEL package
+
