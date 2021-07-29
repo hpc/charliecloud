@@ -1361,6 +1361,7 @@ class Registry_HTTP:
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
       # Note: The manifest is *not* uploaded as a blob. We just do one PUT.
+      INFO("manifest: uploading")
       url = self._url_of("manifests", self.ref.tag)
       self.request("PUT", url, {201}, data=manifest,
                    headers={ "Content-Type": TYPE_MANIFEST })
@@ -1730,6 +1731,13 @@ def file_gzip(path, args=[]):
       unlink(path_c)
    # Compress.
    cmd([file_gzip.gzip] + args + [str(path)])
+   # Zero out GZIP header timestamp, bytes 4–7 zero-indexed inclusive [1], to
+   # ensure layer hash is consistent. See issue #1080.
+   # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
+   fp = open_(path_c, "r+b")
+   ossafe(fp.seek, "can't seek: %s" % fp, 4)
+   ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
+   ossafe(fp.close, "can't close: %s" % fp)
    return path_c
 
 def file_hash(path):

@@ -140,6 +140,5 @@ class Image_Pusher:
          ul.layer_from_file(digest, tarball,
                             "layer %d/%d: " % (i, len(self.layers)))
       ul.config_upload(self.config)
-      ch.INFO("manifest: uploading")
       ul.manifest_upload(self.manifest)
       ul.close()
