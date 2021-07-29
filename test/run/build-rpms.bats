@@ -37,7 +37,6 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/bin/ch-run'* ]]
     [[ $output = *'/usr/lib/charliecloud/base.sh'* ]]
-    [[ $output = *'/usr/share/doc/charliecloud-'*'/examples/lammps/Dockerfile'* ]]
     [[ $output = *'/usr/share/man/man7/charliecloud.7.gz'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud-builder"
     echo "$output"
@@ -60,6 +59,7 @@ setup () {
     run ch-run "$img" -- rpm -ql "charliecloud-doc"
     echo "$output"
     [[ $output = *'/usr/share/doc/charliecloud-'*'/html'* ]]
+    [[ $output = *'/usr/share/doc/charliecloud-'*'/examples/lammps/Dockerfile'* ]]
 }
 
 @test 'remove el7 RPMs' {
@@ -112,7 +112,6 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/bin/ch-run'* ]]
     [[ $output = *'/usr/lib/charliecloud/base.sh'* ]]
-    [[ $output = *'/usr/share/doc/charliecloud-'*'/examples/lammps/Dockerfile'* ]]
     [[ $output = *'/usr/share/man/man7/charliecloud.7.gz'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud-builder"
     echo "$output"
@@ -128,6 +127,7 @@ setup () {
     run ch-run "$img" -- rpm -ql "charliecloud-doc"
     echo "$output"
     [[ $output = *'/usr/share/doc/charliecloud/html'* ]]
+    [[ $output = *'/usr/share/doc/charliecloud/examples/lammps/Dockerfile'* ]]
 }
 
 @test 'remove el8 RPMs' {

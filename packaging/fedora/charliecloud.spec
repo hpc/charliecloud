@@ -38,6 +38,7 @@ For more information: https://hpc.github.io/charliecloud
 
 %package builder
 Summary:       Charliecloud container image building tools
+BuildArch:     noarch
 BuildRequires: python3-devel
 BuildRequires: python%{python3_pkgversion}-lark-parser
 BuildRequires: python%{python3_pkgversion}-requests
@@ -179,14 +180,15 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 %files doc
 %license LICENSE
+%{_pkgdocdir}/examples
 %{_pkgdocdir}/html
+%{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
+
 
 %files test
 %{_bindir}/ch-test
 %{_libexecdir}/%{name}/test
 %{_mandir}/man1/ch-test.1*
-%{_pkgdocdir}/examples
-%{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
 %changelog
 * Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@

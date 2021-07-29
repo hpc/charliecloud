@@ -20,7 +20,7 @@ import time
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
 CH_RUN  = [CH_BASE + "/bin/ch-run"]
 PACKAGES = ["charliecloud",
-            "charliecloud-builder",
+            "charliecloud-builder", # depends on -doc
             "charliecloud-debuginfo",
             "charliecloud-doc",
             "charliecloud-test"]
@@ -167,7 +167,7 @@ rpmbuild root:      %(rpmbuild)s
    rpms_arch      = "%s/%s" % (rpms_src, ARCH)
    rpms_noarch    = "%s/noarch" % rpms_src
    rpms = {'charliecloud':           [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
-           'charliecloud-builder':   [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
+           'charliecloud-builder':   [rpms_noarch, '%s.noarch.rpm' % rpms_dist],
            'charliecloud-debuginfo': [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
            'charliecloud-doc':       [rpms_noarch, '%s.noarch.rpm' % rpms_dist],
            'charliecloud-test':      [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)]}
