@@ -148,14 +148,14 @@ int main(int argc, char *argv[])
    image = img_type(argv[arg_next]);
    if(image == 1) {
       // img is a sqfs
-      #ifdef HAVE_SQFUSE
+      #ifdef RUN_SQ
         if(args.c.newroot == NULL) {// set mount point to default
             Te ((asprintf(&args.c.newroot, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
             mkdirs("/", args.c.newroot, NULL, 0); // makes default dir if doesn't exist
          }
          args.c.sq_filepath = argv[arg_next];
       #else
-         FATAL("no fuse!!");
+         FATAL("missing fuse or squashfuse");
       #endif
    } else if(image == 0) {
       // img is a dir
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
    INFO("private /tmp: %d", args.c.private_tmp);
 
    fix_environment(&args);
-   #ifdef HAVE_SQFUSE
+   #ifdef RUN_SQ
       if (args.c.sq_filepath != NULL) {
          // img is a sqfs
          Ze (atexit(sq_clean), "can't set up exit handler");

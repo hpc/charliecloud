@@ -387,6 +387,7 @@ AS_IF([   test "$have_fuse" = yes \
       [have_ch_fuse=yes],
       [have_ch_fuse=no])
 AM_CONDITIONAL([HAVE_SQFUSE], [test "$have_ch_fuse" = yes])
+AC_DEFINE([RUN_SQ], ["$HAVE_SQFUSE"], [Have correct fuse and squashfuse libraries])
 
 # SquashFUSE
 vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.

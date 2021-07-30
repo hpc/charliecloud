@@ -4,7 +4,7 @@ load ../common
 
 @test 'ch-run: squash' {
     scope standard
-    [[ $HAVE_SQFUSE = yes ]] || skip 'no squashfuse'
+    [[ ! "$RUN_SQ" ]] || skip 'no squashfuse'
 
     ch_sqfs="${CH_TEST_TARDIR}/00_tiny.sqfs"
     ch_mnt="/var/tmp/${USER}.ch/mnt"
@@ -52,7 +52,7 @@ load ../common
 
 @test 'ch-run: squash errors' {
     scope standard
-    [[ $HAVE_FUSE = yes ]] || skip 'no squashfuse'
+    [[ ! "$RUN_SQ" ]] || skip 'no squashfuse'
 
     ch_sqfs="${CH_TEST_TARDIR}"/00_tiny.sqfs
 
