@@ -89,10 +89,10 @@ AX_PTHREAD
 
 # Docs recommend AC_SEARCH_LIBS, but I couldn't get it to not put "-lrt" in
 # LIBS. We only need it for ch-run.
-AC_CHECK_LIB([rt], [shm_open], [LIBRT=-lrt], [
+AC_CHECK_LIB([rt], [shm_open], [CH_RUN_LIBS=-lrt], [
   AC_MSG_ERROR([shm_open(3) not found])
 ])
-AC_SUBST([LIBRT])
+#AC_SUBST([LIBRT])
 
 
 ## Options
@@ -377,22 +377,16 @@ CH_CHECK_VERSION([SHELLCHECK], [$vmin_shellcheck],
                  [--version | sed -n '2{s/^version: //;p;q}'])
 
 # FUSE3
-AC_CHECK_LIB([fuse3], [fuse_set_signal_handlers], [LIBFUSE=-lfuse3], [
-    AC_MSG_ERROR([fuse3 not found])
-])
-AC_SUBST([LIBFUSE])
+AC_CHECK_LIB([fuse3], [fuse_set_signal_handlers], [CH_RUN_LIBS+=' -lfuse3'; have_fuse=yes], [have_fuse=no])
 
 # SquashFUSE_LL
-AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount], [LIBSQFUSE=-lsquashfuse_ll], [
-    AC_MSG_ERROR([sq_ll_mount() not found])
-])
-AC_CHECK_HEADERS([ll.h], [AC_SUBST([LIBSQFUSE])], [ ], [
-[#ifdef FUSE_USE_VERSION >= 30
-# include <fuse3/fuse_lowlevel.h>
-# else
-#include <fuse_lowlevel.h>
-#endif
-]])
+AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount], [CH_RUN_LIBS+=' -lsquashfuse_ll'; have_sqfuse=yes], [have_sqfuse=no])
+AC_SUBST([CH_RUN_LIBS])
+AS_IF([   test "$have_fuse" = yes \
+       && test "$have_sqfuse" = yes],
+      [have_ch_fuse=yes],
+      [have_ch_fuse=no])
+AM_CONDITIONAL([HAVE_SQFUSE], [test "$have_ch_fuse" = no])
 
 # SquashFUSE
 vmin_squashfuse=0.1.104  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
@@ -676,6 +670,10 @@ Running containers
 
   ch-mount(1) and ch-umount(1) SquashFS images: ${have_ch_mount}
     SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION_NOTE}
+
+  use sqfs workflow: ${have_ch_fuse}
+    fuse3 ... ${have_fuse}
+    squashfuse ... ${have_sqfuse}
 
   inject nVidia GPU libraries: ${have_nvidia}
     nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION_NOTE}

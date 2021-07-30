@@ -71,32 +71,6 @@ void sq_clean()
    sqfs_ll_unmount(&sq.chan, sq.mountpt);
 }
 
-/* Returns if image a directory, sqfs or others */
-enum img img_type(const char *path)
-{
-   struct stat read;
-   FILE *file;
-   char magic[4];
-
-   Te (stat(path, &read) == 0, "can't stat %s", path);
-   if (S_ISDIR(read.st_mode)) // is a dir?
-      return DIRECTORY;
-
-   if (!S_ISREG(read.st_mode)) // not a file?
-      return OTHER;
-
-   file = fopen(path, "rb");
-   Te ((file != NULL), "can't open %s", path);
-   Te ((fread(magic, 4, 1, file) == 1), "can't read %s", path);
-
-   // sqfs magic number: 0x73717368
-   // see: https://dr-emann.github.io/squashfs/
-   DEBUG("Magic Number: %x%x%x%x", magic[3], magic[2], magic[1], magic[0]);
-   if(strcmp(magic, "hsqs") == 0) // is a sqfs?
-      return SQFS;
-   return OTHER;
-}
-
 /* Mounts sqfs image. Returns mount point */
 void sq_mount(char *mountdir, char *filepath)
 {
