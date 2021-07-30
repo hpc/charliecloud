@@ -106,7 +106,6 @@ int main(int argc, char *argv[])
    int arg_next;
    int c_argc;
    char ** c_argv;
-   enum img type;
 
    privs_verify_invoking();
 
@@ -145,7 +144,7 @@ int main(int argc, char *argv[])
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
 
-   type = img_type(argv[arg_next]);
+   enum img type = img_type(argv[arg_next]);
    if(type == SQFS) {
       // img is a sqfs
       #ifdef HAVE_SQFUSE
