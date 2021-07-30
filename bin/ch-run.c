@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
    int arg_next;
    int c_argc;
    char ** c_argv;
+   int image;
 
    privs_verify_invoking();
 
@@ -144,8 +145,8 @@ int main(int argc, char *argv[])
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
 
-   enum img type = img_type(argv[arg_next]);
-   if(type == SQFS) {
+   image = img_type(argv[arg_next]);
+   if(image == 1) {
       // img is a sqfs
       #ifdef HAVE_SQFUSE
         if(args.c.newroot == NULL) {// set mount point to default
@@ -156,7 +157,7 @@ int main(int argc, char *argv[])
       #else
          FATAL("no fuse!!");
       #endif
-   } else if(type == DIRECTORY) {
+   } else if(image == 0) {
       // img is a dir
       if(args.c.newroot != NULL) // --squashmnt was set
          WARNING("WARNING: invalid option -s, --squashmnt");

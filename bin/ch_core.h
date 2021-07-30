@@ -39,8 +39,14 @@ struct container {
    bool writable;
 };
 
+/*enum img {
+   DIRECTORY,  // image is unpacked as a directory
+   SQFS,       // image is a squashfs
+   OTHER,      // image is neither a directory or sqfs
+}; */
 
 /** Function prototypes **/
 
 void containerize(struct container *c);
+int img_type(const char *path);
 void run_user_command(char *argv[], const char *initial_dir);

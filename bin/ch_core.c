@@ -236,7 +236,7 @@ void enter_udss(struct container *c)
 }
 
 /* Returns if image a directory, sqfs or others */
-enum img img_type(const char *path)
+int img_type(const char *path)
 {
    struct stat read;
    FILE *file;
@@ -244,10 +244,10 @@ enum img img_type(const char *path)
 
    Te (stat(path, &read) == 0, "can't stat %s", path);
    if (S_ISDIR(read.st_mode)) // is a dir?
-      return DIRECTORY;
+      return 0; //DIRECTORY;
 
    if (!S_ISREG(read.st_mode)) // not a file?
-      return OTHER;
+      return -1; //OTHER;
 
    file = fopen(path, "rb");
    Te ((file != NULL), "can't open %s", path);
@@ -257,8 +257,8 @@ enum img img_type(const char *path)
    // see: https://dr-emann.github.io/squashfs/
    DEBUG("Magic Number: %x%x%x%x", magic[3], magic[2], magic[1], magic[0]);
    if(strcmp(magic, "hsqs") == 0) // is a sqfs?
-      return SQFS;
-   return OTHER;
+      return 1; //SQFS;
+   return -1; //OTHER;
 }
 /* Begin coordinated section of namespace joining. */
 void join_begin(int join_ct, const char *join_tag)
