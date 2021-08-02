@@ -35,6 +35,10 @@ addFilter(r'only-non-binary-in-usr-lib')
 # https://bugzilla.redhat.com/show_bug.cgi?id=1286382
 addFilter(r'python-bytecode-without-source')
 
+# We don't specify a version because the offending package was not out long and
+# we intend to remove Obsolete lines in the near future.
+addFilter(r'unversioned-explicit-obsoletes')
+
 ### charliecloud-test ###
 
 # Charliecloud is a container runtime. These shared objects are never used in
