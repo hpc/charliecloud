@@ -20,9 +20,7 @@ BuildRequires: gcc rsync bash
 Requires:      squashfuse squashfs-tools
 Patch1:        el7-pkgdir.patch
 # Suggests:    name-builder docker buildah
-Provides:      %{name}-runtime
 Obsoletes:     %{name}-runtime < 0.24-9
-Provides:      %{name}-common
 Obsoletes:     %{name}-common  < 0.24-9
 
 %description
@@ -46,11 +44,11 @@ Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
-Provides:      %{name}-builders
 Obsoletes:     %{name}-builders
 
 %description builder
-This package provides tools to build Charliecloud container images.
+This package provides ch-image, Charliecloud's completely unprivileged container
+image manipulation tool.
 
 %package       doc
 Summary:       Charliecloud html documentation
@@ -145,22 +143,22 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_bindir}/ch-ssh
 %{_bindir}/ch-umount
 %{_bindir}/ch-tar2dir
-%{_mandir}/man1/ch-build.1*
-%{_mandir}/man1/ch-build2dir.1*
-%{_mandir}/man1/ch-builder2squash.1*
-%{_mandir}/man1/ch-builder2tar.1*
-%{_mandir}/man1/ch-checkns.1*
-%{_mandir}/man1/ch-dir2squash.1*
-%{_mandir}/man1/ch-fromhost.1*
-%{_mandir}/man1/ch-mount.1*
-%{_mandir}/man1/ch-pull2dir.1*
-%{_mandir}/man1/ch-pull2tar.1*
-%{_mandir}/man1/ch-run.1*
-%{_mandir}/man1/ch-run-oci.1*
-%{_mandir}/man1/ch-ssh.1*
-%{_mandir}/man1/ch-tar2dir.1*
-%{_mandir}/man1/ch-umount.1*
-%{_mandir}/man7/charliecloud.7*
+%{_mandir}/man1/ch-build.1
+%{_mandir}/man1/ch-build2dir.1
+%{_mandir}/man1/ch-builder2squash.1
+%{_mandir}/man1/ch-builder2tar.1
+%{_mandir}/man1/ch-checkns.1
+%{_mandir}/man1/ch-dir2squash.1
+%{_mandir}/man1/ch-fromhost.1
+%{_mandir}/man1/ch-mount.1
+%{_mandir}/man1/ch-pull2dir.1
+%{_mandir}/man1/ch-pull2tar.1
+%{_mandir}/man1/ch-run.1
+%{_mandir}/man1/ch-run-oci.1
+%{_mandir}/man1/ch-ssh.1
+%{_mandir}/man1/ch-tar2dir.1
+%{_mandir}/man1/ch-umount.1
+%{_mandir}/man7/charliecloud.7
 %{_prefix}/lib/%{name}/base.sh
 %{_prefix}/lib/%{name}/contributors.bash
 %{_prefix}/lib/%{name}/version.sh
@@ -168,7 +166,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 %files builder
 %{_bindir}/ch-image
-%{_mandir}/man1/ch-image.1*
+%{_mandir}/man1/ch-image.1
 %{_prefix}/lib/%{name}/build.py
 %{_prefix}/lib/%{name}/charliecloud.py
 %{_prefix}/lib/%{name}/fakeroot.py
@@ -188,7 +186,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %files test
 %{_bindir}/ch-test
 %{_libexecdir}/%{name}/test
-%{_mandir}/man1/ch-test.1*
+%{_mandir}/man1/ch-test.1
 
 %changelog
 * Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@
