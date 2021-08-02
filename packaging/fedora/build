@@ -20,7 +20,7 @@ import time
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
 CH_RUN  = [CH_BASE + "/bin/ch-run"]
 PACKAGES = ["charliecloud",
-            "charliecloud-builder", # depends on -doc
+            "charliecloud-builder",
             "charliecloud-debuginfo",
             "charliecloud-doc",
             "charliecloud-test"]
