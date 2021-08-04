@@ -15,15 +15,26 @@
 # For each distribution, we test these factors:
 #
 #   - whether or not --force is given (2)
-#   - commands that (5)
+#   - whether or not preparation for --force is already done (2)
+#   - commands that (4)
 #       - don't need --force, and fail
 #       - don't need --force, and succeed
 #       - apparently need --force but in fact do not
-#       - really need --force, and preparation:
-#           - is already done by the base image
-#           - is not already done
+#       - really do need --force
 #
-# This yields 5×2 = 10 tests per distribution.
+# This would appear to yield 2×2×4 = 16 tests per distribution. However:
+#
+#   1. We only try pre-prepared images for "really need" commands with --force
+#      given, to save time, so it's at most 9 potential tests.
+#
+#   2. Some distros don't have any pre-preparation step, so that test doesn't
+#      make sense.
+#
+#   3. Some distros don't have an "apparently need" command determined.
+#
+# Bottom line, the number of tests per distro varies. See the code below for
+# specific details.
+
 
 import abc
 import enum
