@@ -255,7 +255,7 @@ int img_type(const char *path)
 
    // sqfs magic number: 0x73717368
    // see: https://dr-emann.github.io/squashfs/
-   DEBUG("Magic Number: %x%x%x%x", magic[3], magic[2], magic[1], magic[0]);
+   VERBOSE("Magic Number: %x%x%x%x", magic[3], magic[2], magic[1], magic[0]);
    if(strcmp(magic, "hsqs") == 0) // is a sqfs?
       return 1; //SQFS;
    return -1; //OTHER;

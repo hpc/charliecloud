@@ -13,10 +13,18 @@
 
 // low level functionality from squashfuse
 #include <ll.h>
+#undef PACKAGE
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
+#undef VERSION
 
 #include "ch_fuse.h"
 #include "ch_core.h"
 #include "ch_misc.h"
+#include "config.h"
 
 /** Constants **/
 
@@ -57,7 +65,6 @@ void sq_end();
    SIGCHLD which triggers this method that ends the parent process */
 void sq_end()
 {
-   DEBUG("end fuse loop");
    exit(0);
 }
 
@@ -67,7 +74,7 @@ void sq_clean()
 {
    fuse_remove_signal_handlers(sq.chan.session);
    sqfs_ll_destroy(sq.ll);
-   DEBUG("unmounting: %s", sq.mountpt);
+   VERBOSE("unmounting: %s", sq.mountpt);
    sqfs_ll_unmount(&sq.chan, sq.mountpt);
 }
 
@@ -76,7 +83,7 @@ void sq_mount(char *mountdir, char *filepath)
 {
    // argc set at 2 when verbose set to 3+ which sets debug argument for FUSE
    char *argv[] = {filepath, "-d"};
-   int argc = (verbose > 2) ? 2 : 1;
+   int argc = (verbose > 3) ? 2 : 1;
    struct fuse_args args = FUSE_ARGS_INIT(argc, argv); //arguments for FUSE
 
    sq.mountpt = mountdir;

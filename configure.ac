@@ -384,12 +384,10 @@ AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount], [CH_RUN_LIBS+=' -lsquashfuse_ll';
 AC_SUBST([CH_RUN_LIBS])
 AS_IF([   test "$have_fuse" = yes \
        && test "$have_sqfuse" = yes],
-      [have_ch_fuse=yes],
+      [have_ch_fuse=yes
+       AC_DEFINE([RUN_SQ], [1], [Have correct fuse and squashfuse libraries])],
       [have_ch_fuse=no])
 AM_CONDITIONAL([HAVE_SQFUSE], [test "$have_ch_fuse" = yes])
-AS_IF([test "$have_ch_fuse" = yes], #fix later
-      [AC_DEFINE([RUN_SQ], [1], [Have correct fuse and squashfuse libraries])],
-      [AC_DEFINE([RUN_SQ], [0], [Have correct fuse and squashfuse libraries])])
 
 # SquashFUSE
 vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
