@@ -1,4 +1,4 @@
-# ch-test-scope: quick
+# ch-test-scope: full
 FROM debian:buster
 
 RUN    apt-get update \
