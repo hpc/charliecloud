@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
             mkdirs("/", args.c.newroot, NULL, 0); // makes default dir if doesn't exist
          }
          args.c.sq_filepath = argv[arg_next];
-      #elif
+      #else
          FATAL("missing fuse or squashfuse");
       #endif
    } else if(image == 0) {
