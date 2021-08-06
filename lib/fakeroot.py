@@ -161,7 +161,7 @@ DEFAULT_CONFIGS = {
 
    "rhel7":
    { "name": "CentOS/RHEL 7",
-     "distro-match": ("/etc/redhat-release", r"release 7\."),
+     "distro-match": ("/etc/redhat-release", r"CentOS|(Red Hat Enterprise) Linux release 7\."),
      "bad-match": ("/etc/redhat-release", r"release [1-6]\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
@@ -177,7 +177,7 @@ DEFAULT_CONFIGS = {
 
    "rhel8":
    { "name": "CentOS/RHEL 8+",
-     "distro-match":  ("/etc/redhat-release", r"release "),
+     "distro-match":  ("/etc/redhat-release", r"CentOS|(Red Hat Enterprise) Linux "),
      "bad-match": ("/etc/redhat-release", r"release [1-6]\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
