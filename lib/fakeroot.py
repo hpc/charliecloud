@@ -161,7 +161,8 @@ DEFAULT_CONFIGS = {
 
    "rhel7":
    { "name": "CentOS/RHEL 7",
-     "match": ("/etc/redhat-release", r"release 7\."),
+     "distro-match": ("/etc/redhat-release", r"release 7\."),
+     "bad-match": ("/etc/redhat-release", r"release [1-6]\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
@@ -175,8 +176,9 @@ DEFAULT_CONFIGS = {
      "each": ["fakeroot"] },
 
    "rhel8":
-   { "name": "CentOS/RHEL 8",
-     "match":  ("/etc/redhat-release", r"release 8"),
+   { "name": "CentOS/RHEL 8+",
+     "distro-match":  ("/etc/redhat-release", r"release "),
+     "bad-match": ("/etc/redhat-release", r"release [1-6]\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
@@ -213,8 +215,9 @@ DEFAULT_CONFIGS = {
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
    "debderiv":
-   { "name": "Debian (9, 10) or Ubuntu (16, 18, 20)",
-     "match": ("/etc/os-release", r"(stretch|buster|xenial|bionic|focal)"),
+   { "name": "Debian 8+ or Ubuntu 16+",
+     "distro-match": ("/etc/os-release", r"Debian|Ubuntu"),
+     "bad-match": ("/etc/os-release", r"(Debian GNU/Linux [0-7])|(Ubuntu 1[0-5])"),
      "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
                 " || ! fgrep -q _apt /etc/passwd",
                 "echo 'APT::Sandbox::User \"root\";'"
@@ -234,8 +237,9 @@ DEFAULT_CONFIGS = {
    #    not required.
 
    "fedora":
-   { "name": "Fedora 24+,",
-     "match":  ("/etc/fedora-release", r"release (2[4-9]|[3-9][0-9])"),
+   { "name": "Fedora 20+,",
+     "distro-match":  ("/etc/fedora-release", r"Fedora release"),
+     "bad-match":  ("/etc/fedora-release", r"Fedora release ([0-9] |1[0-9]|20)"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "dnf install -y fakeroot") ],
      "cmds": ["dnf", "rpm", "yum"],
@@ -310,9 +314,10 @@ class Fakeroot():
 
    def __init__(self, image_path, tag, cfg, inject_p):
       ch.VERBOSE("workarounds: testing config: %s" % tag)
-      file_path = "%s/%s" % (image_path, cfg["match"][0])
+      file_path = "%s/%s" % (image_path, cfg["distro-match"][0])
       if (not (    os.path.isfile(file_path)
-               and ch.grep_p(file_path, cfg["match"][1]))):
+               and ch.grep_p(file_path, cfg["distro-match"][1])
+               and not ch.grep_p(file_path, cfg["bad-match"][1]))):
           raise Config_Aint_Matched(tag)
       self.tag = tag
       self.inject_ct = 0
