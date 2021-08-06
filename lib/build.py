@@ -85,6 +85,8 @@ def main(cli_):
             cli.tag = m.group(4)
          elif m.group(2):  # containing directory
             cli.tag = m.group(2)
+      else:
+          ch.FATAL("no image tag provided and unable to infer one")
 
    # Deal with build arguments.
    def build_arg_get(arg):
