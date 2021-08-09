@@ -381,9 +381,20 @@ AC_CHECK_LIB([fuse3], [fuse_set_signal_handlers], [CH_RUN_LIBS+=' -lfuse3'; have
 
 # SquashFUSE_LL
 AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount], [CH_RUN_LIBS+=' -lsquashfuse_ll'; have_sqfuse=yes], [have_sqfuse=no])
+AC_CHECK_HEADERS([ll.h], [have_ll=yes], [have_ll=no], [
+ #undef PACKAGE
+ #undef PACKAGE_BUGREPORT
+ #undef PACKAGE_NAME
+ #undef PACKAGE_STRING
+ #undef PACKAGE_TARNAME
+ #undef PACKAGE_VERSION
+ #undef VERSION
+])
+
 AC_SUBST([CH_RUN_LIBS])
 AS_IF([   test "$have_fuse" = yes \
-       && test "$have_sqfuse" = yes],
+       && test "$have_sqfuse" = yes \
+       && test "$have_ll" = yes],
       [have_ch_fuse=yes
        AC_DEFINE([RUN_SQ], [1], [Have correct fuse and squashfuse libraries])],
       [have_ch_fuse=no])
