@@ -519,11 +519,13 @@ class I_copy(Instruction):
       # Expand source wildcards.
       srcs = list()
       for src in self.srcs:
-         for i in glob.glob("%s/%s" % (context, src)):  # glob can't take Path
+         matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
+         if (len(matches) == 0):
+            ch.FATAL("can't copy: not found: %s" % src)
+         for i in matches:
             srcs.append(i)
             ch.VERBOSE("source: %s" % i)
-      if (len(srcs) == 0):
-         ch.FATAL("can't COPY: no sources found")
+      assert (len(srcs) > 0)
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
       for src in srcs:
