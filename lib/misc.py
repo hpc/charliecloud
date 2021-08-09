@@ -39,6 +39,25 @@ class Version(Action_Exit):
 # Argument: command line arguments Namespace. Do not need to call sys.exit()
 # because caller manages that.
 
+def build_cache(cli):
+   ch.dependencies_check()
+   ch.dependency_git()
+   if (cli.gc):
+      ch.INFO('TODO: run garbage collection')
+      sys.exit(0)
+   if (cli.reset):
+      ch.INFO('TODO: reset git cache and re-init')
+      sys.exit(0)
+   if (cli.tree_text):
+      ch.INFO('TODO: print pretty tree')
+      sys.exit(0)
+   if (cli.tree_dot):
+      ch.INFO('TODO: print pretty tree2')
+      sys.exit(0)
+    # TODO: print number of entries (commits), number of files, disk space used,
+    # number of named and unammed branches, number of state IDs.
+   return True
+
 def delete(cli):
    ch.dependencies_check()
    img_ref = ch.Image_Ref(cli.image_ref)

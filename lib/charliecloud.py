@@ -84,6 +84,12 @@ ARCH_MAP = { "x86_64":    "amd64",
 arch = None       # requested by user
 arch_host = None  # of host
 
+# Cache mode
+CACHE_BU_MODES = ('enable', 'disable', 'rebuild')
+CACHE_DL_MODES = ('enable', 'write-only')
+cache_bu = None
+cache_dl = None
+
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
@@ -1103,6 +1109,7 @@ class Progress_Writer:
       self.progress = None
 
    def close(self):
+
       if (self.progress is not None):
          self.progress.done()
          ossafe(self.fp.close, "can't close: %s" % self.path)
@@ -1682,6 +1689,11 @@ def dependencies_check():
    if (len(depfails) > 0):
       sys.exit(1)
 
+def dependency_git():
+    # TODO: Figure out: 1. what git version we need, and 2) how to check it.
+    # FIXME: implement
+    return True
+
 def digest_trim(d):
    """Remove the algorithm tag from digest d and return the rest.
 
@@ -1805,6 +1817,40 @@ def init(cli):
       arch = arch_host
    else:
       arch = cli.arch
+   # cache modes
+   cache = collections.namedtuple('cache', 'mode set_by')
+   global cache_bu
+   if (not cli.no_cache):
+      # build
+      assert (cli.build_cache is not None)
+      if (cli.build_cache == "pranav"): # default (jogas chess nemesis)
+         # FIXME: git still poops to stdout
+         if (not cmd(['git', '--version'], env=None, fail_ok=True)):
+            if (dependency_git):
+               cache_bu = cache('enable', 'default')
+            else:
+               cache_bu = cache('disable', 'default (git too old)')
+         else:
+            cache_bu = cache('disable', 'default (no git)')
+      else:
+         mode = cli.build_cache
+         if (mode in CACHE_BU_MODES):
+            cache_bu = cache(mode, 'command line')
+         else:
+            FATAL('error: invalid build cache mode: %s' % mode)
+      # download
+      global cache_dl
+      assert(cli.download_cache is not None)
+      mode = cli.build_cache
+      if (mode == "pranav"):
+         cache_dl = cache('enable', 'default')
+      elif (mode in CACHE_DL_MODES):
+         cache_dl = cache(mode, 'command line')
+      else:
+         FATAL('error: invalid cache mode: %s' % mode)
+   else:
+      cache_bu = cache('rebuild', 'command line')
+      cache_dl = cache('write-only', 'command line')
    # misc
    global password_many, tls_verify
    password_many = cli.password_many

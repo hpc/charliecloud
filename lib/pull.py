@@ -113,11 +113,12 @@ class Image_Puller:
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
          if (os.path.exists(self.config_path) and self.use_cache):
-            ch.INFO("config: using existing file")
+            ch.INFO("config:           using existing file")
          else:
             self.registry.blob_to_file(self.config_hash, self.config_path,
-                                       "config: downloading")
+                                       "config:           downloading")
       # layers
+      ch.INFO()
       for (i, lh) in enumerate(self.layer_hashes, start=1):
          path = self.layer_path(lh)
          ch.VERBOSE("layer path: %s" % path)
@@ -155,11 +156,11 @@ class Image_Puller:
       if (str(self.image.ref) in manifests_internal):
          raise ch.No_Fatman_Error()  # no fat manifests for internal library
       if (os.path.exists(self.fatman_path) and self.use_cache):
-         ch.INFO("manifest list: using existing file")
+         ch.INFO("manifest list:    using existing file")
       else:
          # raises Not_In_Registry_Error if needed
          self.registry.fatman_to_file(self.fatman_path,
-                                      "manifest list: downloading")
+                                      "manifest list:    downloading")
       fm = ch.json_from_file(self.fatman_path, "fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
          # FIXME (issue #1101): If it's a v2 manifest we could use it instead
@@ -209,7 +210,7 @@ class Image_Puller:
       try:
          # internal manifest library, e.g. for "FROM scratch"
          manifest = manifests_internal[str(self.image.ref)]
-         ch.INFO("manifest: using internal library")
+         ch.INFO("manifest:         using internal library")
       except KeyError:
          # download the file if needed, then parse it
          if (ch.arch == "yolo" or self.architectures is None):
@@ -218,10 +219,10 @@ class Image_Puller:
             digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
          if (os.path.exists(self.manifest_path) and self.use_cache):
-            ch.INFO("manifest: using existing file")
+            ch.INFO("manifest:         using existing file")
          else:
             self.registry.manifest_to_file(self.manifest_path,
-                                           "manifest: downloading",
+                                           "manifest:         downloading",
                                            digest=digest)
          manifest = ch.json_from_file(self.manifest_path, "manifest")
       # validate schema version
