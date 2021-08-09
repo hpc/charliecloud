@@ -631,14 +631,14 @@ directory :code:`./foo/bar`::
 
    $ ch-image build -t bar -f ./foo/bar/Dockerfile ./foo/bar
    [...]
-   grown in 4 instructions: bar
+   built in 4 instructions: bar
 
 Same, but infer the image name and Dockerfile from the context directory
 path::
 
    $ ch-image build ./foo/bar
    [...]
-   grown in 4 instructions: bar
+   built in 4 instructions: bar
 
 Build using humongous vendor compilers you want to bind-mount instead of
 installing into a layer::

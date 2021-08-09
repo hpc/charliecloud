@@ -183,7 +183,7 @@ def main(cli_):
       else:
          ch.INFO("--force: init OK & modified %d RUN instructions"
                  % fakeroot_config.inject_ct)
-   ch.INFO("grown in %d instructions: %s"
+   ch.INFO("built in %d instructions: %s"
            % (ml.instruction_ct, images[image_i]))
 
 class Main_Loop(lark.Visitor):

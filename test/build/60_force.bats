@@ -65,5 +65,5 @@ EOF
     [[ $(echo "$output" | grep -Fc 'RUN: new command:') -eq 2 ]]
     [[ $output = *'init: already initialized'* ]]
     [[ $output = *'--force: init OK & modified 2 RUN instructions'* ]]
-    [[ $output = *'grown in 4 instructions: tmpimg'* ]]
+    [[ $output = *'built in 4 instructions: tmpimg'* ]]
 }

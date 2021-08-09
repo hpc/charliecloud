@@ -150,7 +150,7 @@ test6 b
 test 7a
  66 RUN ['/bin/sh', '-c', 'echo test\\ 7\\ b']
 test 7 b
-grown in 16 instructions: tmpimg
+built in 16 instructions: tmpimg
 EOF
 )
     diff -u <(echo "$output_expected") <(echo "$output")
@@ -529,7 +529,7 @@ EOF
    echo "$output"
    [[ status -eq 0 ]]
    if [[ $CH_BUILDER = ch-image ]]; then
-      [[ $output = *"grown in 3 instructions: tmpimg"* ]]
+      [[ $output = *"built in 3 instructions: tmpimg"* ]]
    else
       [[ $output = *"Successfully built"* ]]
    fi
