@@ -92,7 +92,6 @@ AX_PTHREAD
 AC_CHECK_LIB([rt], [shm_open], [CH_RUN_LIBS=-lrt], [
   AC_MSG_ERROR([shm_open(3) not found])
 ])
-#AC_SUBST([LIBRT])
 
 
 ## Options
@@ -686,6 +685,7 @@ Running containers
   use sqfs workflow: ${have_ch_fuse}
     fuse3 ... ${have_fuse}
     squashfuse ... ${have_sqfuse}
+    ll.h ... ${have_ll}
 
   inject nVidia GPU libraries: ${have_nvidia}
     nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION_NOTE}

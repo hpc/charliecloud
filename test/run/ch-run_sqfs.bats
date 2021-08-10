@@ -5,7 +5,7 @@ load ../common
 @test 'ch-run: squash' {
     scope standard
     # shellcheck disable=SC2078
-    [[ ! RUN_SQ ]] || skip 'no squashfuse'
+    [[ RUN_SQ != 1 ]] || skip 'no squashfuse'
 
     ch_sqfs="${CH_TEST_TARDIR}/00_tiny.sqfs"
     ch_mnt="/var/tmp/${USER}.ch/mnt"
@@ -19,28 +19,28 @@ load ../common
     rmdir "${ch_mnt}"
 
     # -s option
-    unpack="${BATS_TMPDIR}/tmp"
-    run ch-run -s "$unpack" -v "$ch_sqfs" -- /bin/true
+    mountpt="${BATS_TMPDIR}/tmp"
+    run ch-run -s "$mountpt" -v "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"newroot: ${unpack}"* ]]
-    [[ -d "$unpack" ]]
-    rmdir "$unpack"
+    [[ $output = *"newroot: ${mountpt}"* ]]
+    [[ -d "$mountpt" ]]
+    rmdir "$mountpt"
 
     # -s with non-sqfs img
-    run ch-run -s "$unpack" -v "$ch_timg" -- /bin/true
+    run ch-run -s "$mountpt" -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"WARNING: invalid option -s, --squashmnt"* ]]
     [[ $output = *"newroot: ${ch_timg}"* ]]
 
     # only create 1 directory
-    run ch-run -s "$unpack" -v "$ch_sqfs" -- /bin/true
+    run ch-run -s "$mountpt" -v "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"newroot: ${unpack}"* ]]
-    [[ -d "$unpack" ]]
-    rmdir "$unpack"
+    [[ $output = *"newroot: ${mountpt}"* ]]
+    [[ -d "$mountpt" ]]
+    rmdir "$mountpt"
 
    # create multiple directory w/ default
    # **** tmp test ************
@@ -54,7 +54,7 @@ load ../common
 @test 'ch-run: squash errors' {
     scope standard
     # shellcheck disable=SC2078
-    [[ ! RUN_SQ ]] || skip 'no squashfuse'
+    [[ RUN_SQ != 1 ]] || skip 'no squashfuse'
 
     ch_sqfs="${CH_TEST_TARDIR}"/00_tiny.sqfs
 
@@ -65,12 +65,12 @@ load ../common
     [[ $output = *"mount point can't be empty"* ]]
 
     # parent dir doesn't exist
-    unpack="${BATS_TMPDIR}/sq/mnt"
-    run ch-run -s "$unpack" "$ch_sqfs" -- /bin/true
+    mountpt="${BATS_TMPDIR}/sq/mnt"
+    run ch-run -s "$mountpt" "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]] # exits with status of 139
-    [[ $output = *"failed to make: ${unpack}"* ]]
-    [[ ! -e "$unpack" ]]
+    [[ $output = *"failed to make: ${mountpt}"* ]]
+    [[ ! -e "$mountpt" ]]
 
     # mount point contains a file, can't opendir but shouldn't make it
     run ch-run -s /var/tmp/file "$ch_sqfs" -- /bin/true
