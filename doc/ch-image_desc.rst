@@ -149,6 +149,12 @@ images runnable with :code:`ch-run`, this is not a supported use case. The
 supported workflow uses :code:`ch-builder2tar` or :code:`ch-builder2squash` to
 obtain a packed image; see the tutorial for details.
 
+Storage directories have no forward or backward version compatibility
+guarantees, though it often works fine. :code:`ch-image` prints a warning if
+the storage directory was initialized by a different version of Charliecloud
+than you are running. You can use :code:`ch-image reset` to delete the storage
+directory and re-initialize it with the current version.
+
 .. warning::
 
    Network filesystems, especially Lustre, are typically bad choices for the

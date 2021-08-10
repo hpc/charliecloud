@@ -279,10 +279,10 @@ EOF
 }
 
 @test 'ch-image reset' {
-   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/reset
+   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-reset
 
    # Ensure our test storage dir doesn't exist yet.
-   [[ ! -e $CH_IMAGE_STORAGE ]]
+   [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
    # Put an image innit.
    ch-image pull alpine:3.9
@@ -297,15 +297,26 @@ EOF
    # Reset.
    ch-image reset
 
-   # Image storage directory should be gone.
-   ls "$CH_IMAGE_STORAGE" || true
-   [[ ! -e $CH_IMAGE_STORAGE ]]
+   # Image storage directory should be empty now.
+   expected=$(cat <<'EOF'
+.:
+dlcache
+img
+ulcache
+version
 
-   # List images; should error with not found.
-   run ch-image list
-   echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output = *"does not exist: $CH_IMAGE_STORAGE"* ]]
+./dlcache:
+
+./img:
+
+./ulcache:
+EOF
+)
+   actual=$(cd "$CH_IMAGE_STORAGE" && ls -1R)
+   diff -u <(echo "$expected") <(echo "$actual")
+
+   # Remove storage directory.
+   rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
    # Reset again; should error.
    run ch-image reset
@@ -412,4 +423,51 @@ EOF
   ]
 }
 EOF
+}
+
+@test 'storage directory versioning' {
+   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-version
+
+   # Ensure our test storage dir doesn't exist yet.
+   [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
+
+   # Initialize.
+   run ch-image -v list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"initializing storage directory: ${ch_version_base} ${CH_IMAGE_STORAGE}"* ]]
+
+   # Use existing.
+   run ch-image -v list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"found existing storage directory: ${ch_version_base} ${CH_IMAGE_STORAGE}"* ]]
+   [[ $output != *'warning'* ]]
+
+   # Fake version mismatch.
+   printf 'WEIRDAL' > "$CH_IMAGE_STORAGE"/version
+   cat "$CH_IMAGE_STORAGE"/version
+   echo  # newline
+
+   # Use existing, but version warning.
+   run ch-image -v list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"found existing storage directory: WEIRDAL ${CH_IMAGE_STORAGE}"* ]]
+   [[ $output = *"warning: storage directory version is WEIRDAL but you are running ${ch_version}"* ]]
+
+   # Reset.
+   run ch-image -v reset
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output != *'found existing'* ]]
+   [[ $output != *'warning'* ]]
+   [[ $output = *"initializing storage directory: ${ch_version_base} ${CH_IMAGE_STORAGE}"* ]]
+
+   # Use existing again, no warning.
+   run ch-image -v list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"found existing storage directory: ${ch_version_base} ${CH_IMAGE_STORAGE}"* ]]
+   [[ $output != *'warning'* ]]
 }

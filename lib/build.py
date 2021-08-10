@@ -97,10 +97,7 @@ def main(cli_):
             ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
          return (kv[0], v)
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
-
-   # Finish CLI initialization.
    ch.DEBUG(cli)
-   ch.dependencies_check()
 
    # Guess whether the context is a URL, and error out if so. This can be a
    # typical looking URL e.g. "https://..." or also something like

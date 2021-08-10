@@ -23,6 +23,8 @@ import tarfile
 import time
 import types
 
+import version
+
 
 ## Imports not in standard library ##
 
@@ -447,17 +449,7 @@ class Image:
          path = self.metadata_path // "config.pulled.json"
          copy2(config_json, path)
          VERBOSE("pulled config path: %s" % path)
-         # Open and parse JSON.
-         fp = open_(config_json, "rt", encoding="UTF-8")
-         text = ossafe(fp.read, "can't read: %s" % config_json)
-         ossafe(fp.close, "can't close: %s" % config_json)
-         try:
-            config = json.loads(text)
-         except json.JSONDecodeError as x:
-            FATAL("can't parse config file: %s:%d: %s"
-                  % (config_json, x.lineno, x.msg))
-         DEBUG("pulled config:\n%s" % json.dumps(config, indent=2))
-         self.metadata_merge_from_config(config)
+         self.metadata_merge_from_config(json_from_file(path, "config"))
       self.metadata_save()
 
    def metadata_save(self):
@@ -535,7 +527,7 @@ class Image:
          present will be left unchanged. After this, self.unpack_path is a
          valid Charliecloud image directory."""
       # Metadata directory.
-      mkdirs(self.unpack_path // "ch")
+      mkdir(self.unpack_path // "ch")
       file_ensure_exists(self.unpack_path // "ch/environment")
       # Essential directories & mount points. Do nothing if something already
       # exists, without dereferencing, in case it's a symlink, which will work
@@ -711,7 +703,7 @@ class Image:
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."
       self.unpack_create_ok()
-      mkdirs(self.unpack_path)
+      mkdir(self.unpack_path)
 
 
 class Image_Ref:
@@ -1071,7 +1063,7 @@ class Progress_Reader:
          ossafe(self.fp.close, "can't close: %s" % self.fp.name)
 
    def read(self, size=-1):
-     data = self.fp.read(size)
+     data = ossafe(fp.read, "can't read: %s" % self.fp.name, size)
      self.progress.update(len(data))
      return data
 
@@ -1458,6 +1450,10 @@ class Storage:
    def upload_cache(self):
       return self.root // "ulcache"
 
+   @property
+   def version_file(self):
+      return self.root // "version"
+
    @staticmethod
    def root_default():
       # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
@@ -1480,6 +1476,41 @@ class Storage:
       except KeyError:
          return None
 
+   def init(self):
+      """Create the storage directory if it doesn't exist and ensure it
+         contains all the appropriate top-level directories & metadata.
+
+         Also, check storage directory version and warn on mismatch. This is
+         currently defined as a difference in the main version number:
+         releases are all different from one another, and pre-releases are
+         different from the prior release but not the upcoming release. E.g.:
+
+           * 0.24 != 0.25
+           * 0.24 != 0.25~pre+foo.0729a78
+           * 0.25 == 0.25~pre+foo.0729a78."""
+      prog_version = version.VERSION.split("~")[0]
+      if (os.path.isdir(self.root)):
+         if (not self.valid_p):
+            FATAL("storage directory seems invalid: %s" % self.root)
+         if (os.path.isfile(self.version_file)):
+            storage_version = file_read_all(self.version_file)
+         else:
+            storage_version = "unknown"
+         VERBOSE("found existing storage directory: %s %s"
+                 % (storage_version, self.root))
+         if (prog_version != storage_version):
+            WARNING("storage directory version is %s but you are running %s"
+                    % (storage_version, version.VERSION))
+            WARNING('consider "ch-image reset" if anything weird happens')
+      else:
+         INFO("initializing storage directory: %s %s"
+              % (prog_version, self.root))
+         mkdirs(self.root)  # FIXME: use mkdir() when we don't need two levels
+         mkdir(self.download_cache)
+         mkdir(self.unpack_base)
+         mkdir(self.upload_cache)
+         file_write(self.version_file, prog_version)
+
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
          digest = "skinny"
@@ -1492,6 +1523,7 @@ class Storage:
    def reset(self):
       if (self.valid_p()):
          rmtree(self.root)
+         self.init()  # largely for debugging
       else:
          FATAL("%s not a builder storage" % (self.root));
 
@@ -1499,6 +1531,7 @@ class Storage:
       return self.unpack_base // image_ref.for_path
 
    def valid_p(self):
+      # FIXME: require version file too when appropriate (#1147)
       "Return True if storage present and seems valid, False otherwise."
       return (os.path.isdir(self.unpack_base) and
               os.path.isdir(self.download_cache))
@@ -1753,6 +1786,20 @@ def file_hash(path):
    ossafe(fp.close, "can't close: %s" % path)
    return h.hexdigest()
 
+def file_read_all(path, text=True):
+   """Return the contents of file at path, or exit with error. If text, read
+      in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
+   if (text):
+      mode = "rt"
+      encoding = "UTF-8"
+   else:
+      mode = "rb"
+      encoding = None
+   fp = open_(path, mode, encoding=encoding)
+   data = ossafe(fp.read, "can't read: %s" % path)
+   ossafe(fp.close, "can't close: %s" % path)
+   return data
+
 def file_size(path, follow_symlinks=False):
    "Return the size of file at path in bytes."
    st = ossafe(os.stat, "can't stat: %s" % path,
@@ -1815,9 +1862,7 @@ def init(cli):
 
 def json_from_file(path, msg):
    DEBUG("loading JSON: %s: %s" % (msg, path))
-   fp = open_(path, "rt", encoding="UTF-8")
-   text = ossafe(fp.read, "can't read: %s" % path)
-   ossafe(fp.close, "can't close: %s" % path)
+   text = file_read_all(path)
    TRACE("text:\n%s" % text)
    try:
       data = json.loads(text)
@@ -1839,12 +1884,22 @@ def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):
       color_reset(log_fp)
 
-def mkdirs(path):
+def mkdir(path):
    TRACE("ensuring directory: %s" % path)
+   try:
+      os.mkdir(path)
+   except FileExistsError as x:
+      if (not os.path.isdir(path)):
+         ch.FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
+   except OSError as x:
+      ch.FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
+
+def mkdirs(path):
+   TRACE("ensuring directories: %s" % path)
    try:
       os.makedirs(path, exist_ok=True)
    except OSError as x:
-      ch.FATAL("can't create directory: %s: %s: %s"
+      ch.FATAL("can't mkdir: %s: %s: %s"
                % (path, x.filename, x.strerror))
 
 def now_utc_iso8601():

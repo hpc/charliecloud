@@ -19,7 +19,6 @@ manifests_internal = {
 ## Main ##
 
 def main(cli):
-   ch.dependencies_check()
    # Set things up.
    ref = ch.Image_Ref(cli.image_ref)
    if (cli.parse_only):
@@ -86,7 +85,6 @@ class Image_Puller:
       "Download image metadata and layers and put them in the download cache."
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       ch.VERBOSE("downloading image: %s" % self.image)
-      ch.mkdirs(ch.storage.download_cache)
       try:
          # fat manifest
          if (ch.arch != "yolo"):
