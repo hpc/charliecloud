@@ -32,7 +32,7 @@ def main(cli):
       ch.INFO("destination:      %s" % image.unpack_path)
    else:
       ch.VERBOSE("destination:      %s" % image.unpack_path)
-   pullet = Image_Puller(image, not cli.no_cache)
+   pullet = Image_Puller(image, ch.cache_dl)
    pullet.pull_to_unpacked(cli.last_layer)
    pullet.done()
    ch.done_notify()
@@ -49,13 +49,20 @@ class Image_Puller:
                 "registry",
                 "use_cache")
 
-   def __init__(self, image, use_cache):
+   def __init__(self, image, cache_dl):
       self.architectures = None
       self.image = image
       self.registry = ch.Registry_HTTP(image.ref)
       self.config_hash = None
       self.layer_hashes = None
-      self.use_cache = use_cache
+      if (self.cache_mode == 'enable'):
+         self.use_cache = True
+      else:
+         self.use_cache = False
+
+   @property
+   def cache_mode(self):
+      return ch.cache_dl.mode
 
    @property
    def config_path(self):

@@ -42,11 +42,20 @@ class Version(Action_Exit):
 def build_cache(cli):
    ch.dependencies_check()
    ch.dependency_git()
+   # Does the cache exist
+   if (os.path.isdir(ch.storage.build_cache)):
+      if (not ch.cache_build_sane()):
+         ch.FATAL("build cache is funky\nhint: build-cache --reset")
+   else:
+      ch.cache_build_init()
    if (cli.gc):
       ch.INFO('TODO: run garbage collection')
       sys.exit(0)
    if (cli.reset):
-      ch.INFO('TODO: reset git cache and re-init')
+      ch.INFO('removing build cache ...')
+      ch.rmtree(ch.storage.build_cache)
+      ch.cache_build_init()
+      ch.INFO('done')
       sys.exit(0)
    if (cli.tree_text):
       ch.INFO('TODO: print pretty tree')

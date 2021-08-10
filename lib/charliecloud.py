@@ -94,6 +94,12 @@ cache_dl = None
 CH_BIN = None
 CH_RUN = None
 
+# Git Commands
+git_cmd = collections.namedtuple("git", ("command", "env", "fail_ok", "silent"))
+git_avail    = git_cmd(['git', '--version'], None, True, True)
+git_head_get = git_cmd(["git", "rev-parse", "HEAD"], None, True, True)
+git_init     = git_cmd(["git", "init", "--bare"], None, False, True)
+
 # Logging; set using init() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
@@ -1454,8 +1460,12 @@ class Storage:
       self.root = Path(self.root)
 
    @property
+   def build_cache(self):
+      return self.root // "bu"
+
+   @property
    def download_cache(self):
-      return self.root // "dlcache"
+      return self.root // "dl"
 
    @property
    def unpack_base(self):
@@ -1463,7 +1473,7 @@ class Storage:
 
    @property
    def upload_cache(self):
-      return self.root // "ulcache"
+      return self.root // "ul"
 
    @staticmethod
    def root_default():
@@ -1641,6 +1651,36 @@ def bytes_hash(data):
    h.update(data)
    return h.hexdigest()
 
+# FIXME: unclear where this function belongs. We need to be able to init
+# the cache from two places: 1. build.py and 2. misc.py (--reset).
+def cache_build_init():
+   INFO("initializing build cache ...")
+   bu = storage.build_cache
+   VERBOSE("build cache storage: %s" % bu) # verbose
+   mkdirs(bu)
+   cwd = ossafe(os.getcwd, "can't get current working directory")
+   os.chdir(bu) #FIXME: not working with ossafe
+   # initialize bare git repo
+   if (cmd(*git_head_get)):
+      VERBOSE("initialize git repo...")
+      cmd(*git_init)
+   else:
+      FATAL("build cache storage dirty\nhint: build-cache --reset")
+
+def cache_build_sane():
+   "Return True if build cache appears sane"
+   bu = storage.build_cache
+   if (    os.path.isdir(bu  // "branches")
+       and os.path.exists(bu // "config")
+       and os.path.exists(bu // "description")
+       and os.path.exists(bu // "HEAD")
+       and os.path.isdir(bu  // "hooks")
+       and os.path.isdir(bu  // "info")
+       and os.path.isdir(bu  // "objects")
+       and os.path.isdir(bu  // "refs")):
+      return True
+   return False
+
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
@@ -1649,10 +1689,15 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + [img, "--"] + args)
    return cmd(args, env, fail_ok)
 
-def cmd(args, env=None, fail_ok=False):
+# FIXME: we don't want git output sometimes; find a smarter way to do this.
+def cmd(args, env=None, fail_ok=False, silent=False):
    VERBOSE("environment: %s" % env)
    VERBOSE("executing: %s" % args)
-   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   if (silent):
+       cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+   else:
+       cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
    if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
@@ -1825,7 +1870,7 @@ def init(cli):
       assert (cli.build_cache is not None)
       if (cli.build_cache == "pranav"): # default (jogas chess nemesis)
          # FIXME: git still poops to stdout
-         if (not cmd(['git', '--version'], env=None, fail_ok=True)):
+         if (not cmd(*git_avail)):
             if (dependency_git):
                cache_bu = cache('enable', 'default')
             else:
@@ -1851,6 +1896,8 @@ def init(cli):
    else:
       cache_bu = cache('rebuild', 'command line')
       cache_dl = cache('write-only', 'command line')
+   VERBOSE("build cache:    %s (%s)" %(cache_bu.mode, cache_bu.set_by))
+   VERBOSE("download cache: %s (%s)" %(cache_dl.mode, cache_dl.set_by))
    # misc
    global password_many, tls_verify
    password_many = cli.password_many

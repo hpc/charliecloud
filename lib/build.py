@@ -640,12 +640,17 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
       self.base_image = ch.Image(self.base_ref)
-      if (os.path.isdir(self.base_image.unpack_path)):
-         ch.VERBOSE("base image found: %s" % self.base_image.unpack_path)
+      if   (    os.path.isdir(self.base_image.unpack_path)
+            and ch.cache_dl.mode == 'enable'):
+         ch.VERBOSE("download cache enabled; base image found: %s" %
+                    self.base_image.unpack_path)
       else:
-         ch.VERBOSE("base image not found, pulling")
+         if (ch.cache_dl.mode == 'write-only'):
+            ch.VERBOSE("download cache write-only, pulling")
+         else:
+            ch.VERBOSE("download cache enabled; base image not found, pulling")
          # a young hen, especially one less than one year old.
-         pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
+         pullet = pull.Image_Puller(self.base_image, ch.cache_dl)
          pullet.pull_to_unpacked()
          pullet.done()
       image.copy_unpacked(self.base_image)
