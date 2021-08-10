@@ -4,7 +4,8 @@ load ../common
 
 @test 'ch-run: squash' {
     scope standard
-    [[ "$RUN_SQ" != 1 ]] || skip 'no squashfuse'
+    # shellcheck disable=SC2078
+    [[ ! RUN_SQ ]] || skip 'no squashfuse'
 
     ch_sqfs="${CH_TEST_TARDIR}/00_tiny.sqfs"
     ch_mnt="/var/tmp/${USER}.ch/mnt"
@@ -52,7 +53,8 @@ load ../common
 
 @test 'ch-run: squash errors' {
     scope standard
-    [[ "$RUN_SQ" != 1 ]] || skip 'no squashfuse'
+    # shellcheck disable=SC2078
+    [[ ! RUN_SQ ]] || skip 'no squashfuse'
 
     ch_sqfs="${CH_TEST_TARDIR}"/00_tiny.sqfs
 
