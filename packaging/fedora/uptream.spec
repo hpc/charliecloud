@@ -11,7 +11,7 @@
 
 Name:          charliecloud
 Version:       0.24
-Release:       10%{?dist}
+Release:       12%{?dist}
 Summary:       Lightweight user-defined software stacks for high-performance computing
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
@@ -19,11 +19,9 @@ Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{n
 BuildRequires: gcc rsync bash
 Requires:      squashfuse squashfs-tools
 Patch1:        el7-pkgdir.patch
-# Suggests:    charliecloud-builder docker buildah
-Provides:      charliecloud-runtime
-Obsoletes:     charliecloud-runtime < %{version}-%{release}
-Provides:      charliecloud-common
-Obsoletes:     charliecloud-common  < %{version}-%{release}
+# Suggests:    name-builder docker buildah
+Obsoletes:     %{name}-runtime
+Obsoletes:     %{name}-common
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -32,13 +30,13 @@ This simple approach avoids most security risks while maintaining access to
 the performance and functionality already on offer.
 
 Container images can be built using Docker or anything else that can generate
-a standard Linux filesystem tree.\
+a standard Linux filesystem tree.
 
 For more information: https://hpc.github.io/charliecloud
 
 %package builder
 Summary:       Charliecloud container image building tools
-BuildRequires: %{name}
+BuildArch:     noarch
 BuildRequires: python3-devel
 BuildRequires: python%{python3_pkgversion}-lark-parser
 BuildRequires: python%{python3_pkgversion}-requests
@@ -46,11 +44,11 @@ Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
-Provides:      charliecloud-builders
-Obsoletes:     charliecloud-builders
+Obsoletes:     %{name}-builders
 
 %description builder
-This package provides tools to build Charliecloud container images.
+This package provides ch-image, Charliecloud's completely unprivileged container
+image manipulation tool.
 
 %package       doc
 Summary:       Charliecloud html documentation
@@ -145,11 +143,20 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_bindir}/ch-ssh
 %{_bindir}/ch-umount
 %{_bindir}/ch-tar2dir
+%{_mandir}/man1/ch-build.1*
+%{_mandir}/man1/ch-build2dir.1*
+%{_mandir}/man1/ch-builder2squash.1*
+%{_mandir}/man1/ch-builder2tar.1*
 %{_mandir}/man1/ch-checkns.1*
+%{_mandir}/man1/ch-dir2squash.1*
+%{_mandir}/man1/ch-fromhost.1*
 %{_mandir}/man1/ch-mount.1*
+%{_mandir}/man1/ch-pull2dir.1*
+%{_mandir}/man1/ch-pull2tar.1*
 %{_mandir}/man1/ch-run.1*
 %{_mandir}/man1/ch-run-oci.1*
 %{_mandir}/man1/ch-ssh.1*
+%{_mandir}/man1/ch-tar2dir.1*
 %{_mandir}/man1/ch-umount.1*
 %{_mandir}/man7/charliecloud.7*
 %{_prefix}/lib/%{name}/base.sh
@@ -159,16 +166,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 %files builder
 %{_bindir}/ch-image
-%{_mandir}/man1/ch-build.1*
-%{_mandir}/man1/ch-build2dir.1*
-%{_mandir}/man1/ch-builder2squash.1*
-%{_mandir}/man1/ch-builder2tar.1*
-%{_mandir}/man1/ch-dir2squash.1*
-%{_mandir}/man1/ch-fromhost.1*
 %{_mandir}/man1/ch-image.1*
-%{_mandir}/man1/ch-pull2dir.1*
-%{_mandir}/man1/ch-pull2tar.1*
-%{_mandir}/man1/ch-tar2dir.1*
 %{_prefix}/lib/%{name}/build.py
 %{_prefix}/lib/%{name}/charliecloud.py
 %{_prefix}/lib/%{name}/fakeroot.py
@@ -180,16 +178,30 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 %files doc
 %license LICENSE
+%{_pkgdocdir}/examples
 %{_pkgdocdir}/html
+%{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
+
 
 %files test
 %{_bindir}/ch-test
 %{_libexecdir}/%{name}/test
 %{_mandir}/man1/ch-test.1*
-%{_pkgdocdir}/examples
-%{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
+
 
 %changelog
+* Thu Aug 05 2021 Jordan Ogas <jogas@lanl,gov> 0.24-12
+- remove version numbers from Obsolete
+- remove Provides tag
+- replace package name with macro
+- tidy
+
+* Thu Jul 29 2021 Jordan Ogas <jogas@lanl.gov> 0.24-11
+- move -builder to noarch
+- move examples back to -doc
+- add versions to obsoletes
+- use name macro
+
 * Wed Jul 28 2021 Jordan Ogas <jogas@lanl.gov> 0.24-10
 - fix yet another typo; BuildRequires
 
@@ -350,4 +362,3 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 * Thu Mar 14 2019  <jogas@lanl.gov> 0.9.8-1
 - Add initial Fedora/EPEL package
-
