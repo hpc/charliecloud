@@ -6,25 +6,23 @@
 # §3.0
 
 from obspy import read
+import sys
 
-st = read('RJOB_061005_072159.ehz.new')
-#print(st)
-#print(len(st))
-tr = st[0]  # assign first and only trace to new variable
-print(tr)
+output_file = sys.argv[1]
+
+stream = read('RJOB_061005_072159.ehz.new')
+trace = stream[0]  # assign first and only trace to new variable
+print(trace)
 
 # §3.1
 
-print(tr.stats)
-#print(tr.stats.station)
-#print(tr.stats.datatype)
+print(trace.stats)
 
 # §3.2
 
-#print(tr.data)
-print(tr.data[0:3])
-print(len(tr))
+print(trace.data[0:3])
+print(len(trace))
 
 # §3.3
 
-tr.plot(outfile="/mnt/obspy.pdf")
+trace.plot(outfile=output_file)
