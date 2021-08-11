@@ -1063,7 +1063,7 @@ class Progress_Reader:
          ossafe(self.fp.close, "can't close: %s" % self.fp.name)
 
    def read(self, size=-1):
-     data = ossafe(fp.read, "can't read: %s" % self.fp.name, size)
+     data = ossafe(self.fp.read, "can't read: %s" % self.fp.name, size)
      self.progress.update(len(data))
      return data
 
@@ -1890,9 +1890,9 @@ def mkdir(path):
       os.mkdir(path)
    except FileExistsError as x:
       if (not os.path.isdir(path)):
-         ch.FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
+         FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
    except OSError as x:
-      ch.FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
+      FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
 
 def mkdirs(path):
    TRACE("ensuring directories: %s" % path)
