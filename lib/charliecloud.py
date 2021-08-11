@@ -57,7 +57,7 @@ except ImportError:
    requests.auth.AuthBase = object
 
 
-## Globals ##
+## Constants ##
 
 # Architectures. This maps the "machine" field returned by uname(2), also
 # available as "uname -m" and platform.machine(), into architecture names that
@@ -81,40 +81,6 @@ ARCH_MAP = { "x86_64":    "amd64",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
-
-# Active architecture (both using registry vocabulary)
-arch = None       # requested by user
-arch_host = None  # of host
-
-# FIXME: currently set in ch-image :P
-CH_BIN = None
-CH_RUN = None
-
-# Logging; set using init() below.
-verbose = 0          # Verbosity level. Can be 0, 1, or 2.
-log_festoon = False  # If true, prepend pid and timestamp to chatter.
-log_fp = sys.stderr  # File object to print logs to.
-
-# Minimum Python version. NOTE: Keep in sync with configure.ac.
-PYTHON_MIN = (3,6)
-
-# Verify TLS certificates? Passed to requests.
-tls_verify = True
-
-# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
-# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
-# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
-# takes over.
-HTTP_CHUNK_SIZE = 256 * 1024
-
-# Content types for some stuff we care about.
-TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
-TYPE_MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
-TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
-TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
-
-# Top-level directories we create if not present.
-STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -211,6 +177,48 @@ _NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
+
+# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
+# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
+# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
+# takes over.
+HTTP_CHUNK_SIZE = 256 * 1024
+
+# Minimum Python version. NOTE: Keep in sync with configure.ac.
+PYTHON_MIN = (3,6)
+
+# Content types for some stuff we care about.
+TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+TYPE_MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
+TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
+TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
+
+# Top-level directories we create if not present.
+STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
+
+# Storage directory format version. We refuse to operate on storage
+# directories with non-matching versions. Increment this number when the
+# format changes non-trivially.
+STORAGE_VERSION = 2
+
+
+## Globals ##
+
+# Active architecture (both using registry vocabulary)
+arch = None       # requested by user
+arch_host = None  # of host
+
+# FIXME: currently set in ch-image :P
+CH_BIN = None
+CH_RUN = None
+
+# Logging; set using init() below.
+verbose = 0          # Verbosity level. Can be 0, 1, or 2.
+log_festoon = False  # If true, prepend pid and timestamp to chatter.
+log_fp = sys.stderr  # File object to print logs to.
+
+# Verify TLS certificates? Passed to requests.
+tls_verify = True
 
 
 ## Exceptions ##
@@ -1477,39 +1485,31 @@ class Storage:
          return None
 
    def init(self):
-      """Create the storage directory if it doesn't exist and ensure it
-         contains all the appropriate top-level directories & metadata.
-
-         Also, check storage directory version and warn on mismatch. This is
-         currently defined as a difference in the main version number:
-         releases are all different from one another, and pre-releases are
-         different from the prior release but not the upcoming release. E.g.:
-
-           * 0.24 != 0.25
-           * 0.24 != 0.25~pre+foo.0729a78
-           * 0.25 == 0.25~pre+foo.0729a78."""
-      prog_version = version.VERSION.split("~")[0]
-      if (os.path.isdir(self.root)):
+      """Ensure the storage directory exists, contains all the appropriate
+         top-level directories & metadata, and is the appropriate version."""
+      if (not os.path.isdir(self.root)):
+         op = "initializing"
+         v_found = None
+      else:
+         op = "upgrading"
          if (not self.valid_p):
             FATAL("storage directory seems invalid: %s" % self.root)
          if (os.path.isfile(self.version_file)):
-            storage_version = file_read_all(self.version_file)
+            v_found = int(file_read_all(self.version_file))
          else:
-            storage_version = "unknown"
-         VERBOSE("found existing storage directory: %s %s"
-                 % (storage_version, self.root))
-         if (prog_version != storage_version):
-            WARNING("storage directory version is %s but you are running %s"
-                    % (storage_version, version.VERSION))
-            WARNING('consider "ch-image reset" if anything weird happens')
-      else:
-         INFO("initializing storage directory: %s %s"
-              % (prog_version, self.root))
-         mkdirs(self.root)  # FIXME: use mkdir() when we don't need two levels
+            v_found = 1
+      if (v_found == STORAGE_VERSION):
+         VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
+      elif (v_found in {None, 1}):  # initialize/upgrade
+         INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
+         mkdirs(self.root)  # FIXME: use mkdir() when don't need two levels
          mkdir(self.download_cache)
          mkdir(self.unpack_base)
          mkdir(self.upload_cache)
-         file_write(self.version_file, prog_version)
+         file_write(self.version_file, "%d\n" % STORAGE_VERSION)
+      else:                         # can't upgrade
+         FATAL('incompatible storage directory v%d; you can delete it and re-initialize for this version of Charliecloud with "ch-image reset": %s'
+               % (v_found, self.root))
 
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):

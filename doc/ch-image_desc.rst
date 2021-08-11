@@ -122,10 +122,11 @@ store secrets in environment variables.
 Storage directory
 =================
 
-:code:`ch-image` maintains state using normal files and directories, including
-unpacked container images, located in its *storage directory*. There is no
-notion of storage drivers, graph drivers, etc., to select and/or configure. In
-descending order of priority, this directory is located at:
+:code:`ch-image` maintains state using normal files and directories located in
+its *storage directory*; contents include temporary images used for building
+and various caches.
+
+In descending order of priority, this directory is located at:
 
   :code:`-s`, :code:`--storage DIR`
     Command line option.
@@ -135,6 +136,9 @@ descending order of priority, this directory is located at:
 
   :code:`/var/tmp/$USER/ch-image`
     Default.
+
+Unlike many container implementations, there is no notion of storage drivers,
+graph drivers, etc., to select and/or configure.
 
 The storage directory can reside on any filesystem. However, it contains lots
 of small files and metadata traffic can be intense. For example, the
@@ -149,11 +153,11 @@ images runnable with :code:`ch-run`, this is not a supported use case. The
 supported workflow uses :code:`ch-builder2tar` or :code:`ch-builder2squash` to
 obtain a packed image; see the tutorial for details.
 
-Storage directories have no forward or backward version compatibility
-guarantees, though it often works fine. :code:`ch-image` prints a warning if
-the storage directory was initialized by a different version of Charliecloud
-than you are running. You can use :code:`ch-image reset` to delete the storage
-directory and re-initialize it with the current version.
+The storage directory format changes on no particular schedule. Often
+:code:`ch-image` is able to upgrade the directory; however, downgrading is not
+supported and sometimes upgrade is not possible. In these cases,
+:code:`ch-image` will refuse to run until you delete and re-initialize the
+directory with :code:`ch-image reset`.
 
 .. warning::
 

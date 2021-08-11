@@ -431,43 +431,50 @@ EOF
    # Ensure our test storage dir doesn't exist yet.
    [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
-   # Initialize.
+   # Initialize by listing.
+   run ch-image list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"initializing storage directory: v"*" ${CH_IMAGE_STORAGE}"* ]]
+
+   # Read current version.
+   v_current=$(cat "$CH_IMAGE_STORAGE"/version)
+
+   # Version matches; success.
    run ch-image -v list
    echo "$output"
    [[ $status -eq 0 ]]
-   [[ $output = *"initializing storage directory: ${ch_version_base} ${CH_IMAGE_STORAGE}"* ]]
+   [[ $output = *"found storage dir v${v_current}: ${CH_IMAGE_STORAGE}"* ]]
 
-   # Use existing.
-   run ch-image -v list
-   echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output = *"found existing storage directory: ${ch_version_base} ${CH_IMAGE_STORAGE}"* ]]
-   [[ $output != *'warning'* ]]
-
-   # Fake version mismatch.
-   printf 'WEIRDAL' > "$CH_IMAGE_STORAGE"/version
+   # Fake version mismatch - non-upgradeable.
+   echo '-1' > "$CH_IMAGE_STORAGE"/version
    cat "$CH_IMAGE_STORAGE"/version
-   echo  # newline
 
-   # Use existing, but version warning.
+   # Version mismatch; fail.
    run ch-image -v list
    echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output = *"found existing storage directory: WEIRDAL ${CH_IMAGE_STORAGE}"* ]]
-   [[ $output = *"warning: storage directory version is WEIRDAL but you are running ${ch_version}"* ]]
+   [[ $status -eq 1 ]]
+   [[ $output = *'error: incompatible storage directory v-1'* ]]
 
    # Reset.
-   run ch-image -v reset
+   run ch-image reset
    echo "$output"
    [[ $status -eq 0 ]]
-   [[ $output != *'found existing'* ]]
-   [[ $output != *'warning'* ]]
-   [[ $output = *"initializing storage directory: ${ch_version_base} ${CH_IMAGE_STORAGE}"* ]]
+   [[ $output = *"initializing storage directory: v${v_current} ${CH_IMAGE_STORAGE}"* ]]
 
-   # Use existing again, no warning.
+   # Version matches again; success.
    run ch-image -v list
    echo "$output"
    [[ $status -eq 0 ]]
-   [[ $output = *"found existing storage directory: ${ch_version_base} ${CH_IMAGE_STORAGE}"* ]]
-   [[ $output != *'warning'* ]]
+   [[ $output = *"found storage dir v${v_current}: ${CH_IMAGE_STORAGE}"* ]]
+
+   # Fake version mismatch - no file (v1).
+   rm "$CH_IMAGE_STORAGE"/version
+
+   # Version mismatch; upgrade; success.
+   run ch-image -v list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"upgrading storage directory: v${v_current} ${CH_IMAGE_STORAGE}"* ]]
+   [[ $(cat "$CH_IMAGE_STORAGE"/version) -eq "$v_current" ]]
 }
