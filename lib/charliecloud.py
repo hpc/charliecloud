@@ -554,6 +554,7 @@ class Image:
       layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
+      mkdir(self.unpack_path)  # create directory in case no layers
       top_dirs = set()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
