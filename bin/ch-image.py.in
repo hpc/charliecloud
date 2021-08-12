@@ -157,7 +157,7 @@ def main():
                    help="clear and re-initialize build cache")
    sp.add_argument("--tree-text",
                    action="store_true",
-                   help="Print a text tree of the cache storage")
+                   help="print a text tree of the cache storage")
    sp.add_argument("--tree-dot",
                    action="store_true",
                    help="create a DOT and PDF export of the tree in CWD")

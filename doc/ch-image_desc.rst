@@ -77,14 +77,14 @@ Common options placed before the sub-command:
 
    :code:`--build-cache`
       There are three modes for the build cache:
-      1. enabled: The cache may be both read and written. This is the default if
+      1. enable: The cache may be both read and written. This is the default if
          Git version xxxFIXMExxx is installed.
 
       2. rebuild: Reading from the cache is disabled, except for obtaining the
          base image with FROM, which is read from the cache if it exists. (This
          exception is why it's not called write-only.) Writing is enabled.
 
-      3.  disabled: The cache may be neither read nor written. Default if no appro-
+      3. disabl: The cache may be neither read nor written. Default if no appro-
          priate Git is installed.
 
       **Notes:**

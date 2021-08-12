@@ -1109,7 +1109,6 @@ class Progress_Writer:
       self.progress = None
 
    def close(self):
-
       if (self.progress is not None):
          self.progress.done()
          ossafe(self.fp.close, "can't close: %s" % self.path)
