@@ -652,7 +652,7 @@ class I_from_(Instruction):
          else:
             ch.VERBOSE("download cache enabled; base image not found, pulling")
          # a young hen, especially one less than one year old.
-         pullet = pull.Image_Puller(self.base_image, ch.cache_dl)
+         pullet = pull.Image_Puller(self.base_image)
          pullet.pull_to_unpacked()
          pullet.done()
       image.copy_unpacked(self.base_image)
