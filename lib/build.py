@@ -491,6 +491,8 @@ class I_copy(Instruction):
       return dst_canon
 
    def execute_(self):
+      if (len(self.srcs) < 1):
+         ch.FATAL("can't COPY: must specify at least one source")
       # Complain about unsupported stuff.
       if (self.options.pop("chown", False)):
          self.unsupported_forever_warn("--chown")
@@ -525,7 +527,6 @@ class I_copy(Instruction):
          for i in matches:
             srcs.append(i)
             ch.VERBOSE("source: %s" % i)
-      assert (len(srcs) > 0)
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
       for src in srcs:

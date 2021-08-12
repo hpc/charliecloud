@@ -846,6 +846,22 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
 
+    # No sources given.
+    run ch-build -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+COPY .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *"error: can't parse: -:2,7"* ]]
+    run ch-build -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+COPY ["."]
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *"error: can't COPY: must specify at least one source"* ]]
+
     # No sources found.
     run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
