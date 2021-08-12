@@ -28,6 +28,7 @@ def main(cli):
    image = ch.Image(ref, cli.image_dir)
    ch.INFO("pulling image:    %s" % ref)
    ch.INFO("requesting arch:  %s" % ch.arch)
+   ch.INFO("download cache:   %s (%s)" % (ch.cache_dl.mode, ch.cache_dl.set_by))
    if (cli.image_dir is not None):
       ch.INFO("destination:      %s" % image.unpack_path)
    else:

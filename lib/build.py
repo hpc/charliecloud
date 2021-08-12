@@ -143,6 +143,8 @@ def main(cli_):
    if (cli.parse_only):
       sys.exit(0)
 
+   ch.INFO("build cache:      %s (%s)" % (ch.cache_bu.mode, ch.cache_bu.set_by))
+
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
    image_ct = sum(1 for i in ch.tree_children(tree, "from_"))
