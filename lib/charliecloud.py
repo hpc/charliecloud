@@ -94,11 +94,6 @@ cache_dl = None
 CH_BIN = None
 CH_RUN = None
 
-# FIXME: Git commands intended to be passed to cmd() as arguments.
-git_avail         = (['git', '--version'], None, True, True)
-git_revparse_head = (["git", "rev-parse", "HEAD"], None, True, True)
-git_init          = (["git", "init", "--bare"], None, False, True)
-
 # Logging; set using init() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
@@ -1902,17 +1897,17 @@ def init(cli):
          if (mode in CACHE_BU_MODES):
             cache_bu = cache(mode, 'command line')
          else:
-            FATAL('error: invalid build cache mode: %s' % mode)
+            FATAL('invalid build cache mode: %s' % mode)
       # download
       global cache_dl
       assert(cli.download_cache is not None)
-      mode = cli.build_cache
+      mode = cli.download_cache
       if (mode == "pranav"):
          cache_dl = cache('enable', 'default')
       elif (mode in CACHE_DL_MODES):
          cache_dl = cache(mode, 'command line')
       else:
-         FATAL('error: invalid cache mode: %s' % mode)
+         FATAL('invalid cache mode: %s' % mode)
    else:
       # no-cache configuration
       cache_bu = cache('rebuild', 'command line')

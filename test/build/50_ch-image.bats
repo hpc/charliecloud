@@ -31,6 +31,61 @@ setup () {
     [[ $output = *'verbose level: 1'* ]]
 }
 
+@test 'ch-image cache modes' {
+    # FIXME: determine git version (note our github actions vm, ubuntu 20.04,
+    # probably has whatever version we end up deciding on)
+
+    # defaults (dependencies met)
+    run ch-image -vv list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'build cache:    enable (default)' ]]
+    [[ $output = *'download cache: enable (default)' ]]
+
+    run ch-image --no-cache -vv list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'build cache:    rebuild (command line)' ]]
+    [[ $output = *'download cache: write-only (command line)' ]]
+
+    # FIXME: how to test with: 1. no git, and 2. old git
+
+    # bu rebuild, dl default
+    run ch-image --build-cache=rebuild -vv
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'build cache:    rebuild (command line)' ]]
+    [[ $output = *'download cache:'*'(default'* ]]
+
+    # bu enable, dl default
+    run ch-image --build-cache=rebuild -vv
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'build cache:    enable (command line)' ]]
+    [[ $output = *'download cache:'*'(default'* ]]
+
+    # bu disable, dl default
+    run ch-image --build-cache=disable -vv
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'build cache:    disable (command line)' ]]
+    [[ $output = *'download cache:'*'(default'* ]]
+
+    # dl write-only, bu default
+    run ch-image --download-cache=write-only -vv list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'build cache:'*'(default'* ]]
+    [[ $output = *'download cache: write-only (command line)' ]]
+
+    # dl enable, bu default
+    run ch-image --download-cache=enable -vv list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'build cache:'*'(default)'* ]]
+    [[ $output = *'download cache: enable (command line)' ]]
+}
+
 @test 'ch-image delete' {
     # verify delete/test image doesn't exist
     run ch-image list
