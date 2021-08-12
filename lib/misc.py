@@ -42,30 +42,33 @@ class Version(Action_Exit):
 def build_cache(cli):
    ch.dependencies_check()
    ch.dependency_git()
-   # Does the cache exist
-   if (os.path.isdir(ch.storage.build_cache)):
-      if (not ch.cache_build_sane()):
-         ch.FATAL("build cache is funky\nhint: build-cache --reset")
-   else:
-      ch.cache_build_init()
-   if (cli.gc):
-      ch.INFO('TODO: run garbage collection')
-      sys.exit(0)
+   # reset and init
    if (cli.reset):
-      ch.INFO('removing build cache ...')
-      ch.rmtree(ch.storage.build_cache)
+      if (os.path.isdir(ch.storage.build_cache)):
+         ch.cache_build_reset()
       ch.cache_build_init()
-      ch.INFO('done')
-      sys.exit(0)
+      ch.done_notify_exit()
+   # run garbage collection
+   if (cli.gc):
+      ch.INFO('running garbage collection ...')
+      ch.cache_build_gc()
+      ch.done_notify_exit()
+   # print text tree
    if (cli.tree_text):
       ch.INFO('TODO: print pretty tree')
-      sys.exit(0)
+      ch.done_notify_exit()
+   # create tree files
    if (cli.tree_dot):
-      ch.INFO('TODO: print pretty tree2')
-      sys.exit(0)
+      ch.INFO('TODO: create pretty tree files')
+      ch.done_notify_exit()
+   # print general info
+   if (os.path.isdir(ch.storage.build_cache)):
+      ch.INFO('TODO: print the stuff')
+      ch.done_notify_exit()
+   else:
+      ch.INFO("cache is emtpy")
     # TODO: print number of entries (commits), number of files, disk space used,
     # number of named and unammed branches, number of state IDs.
-   return True
 
 def delete(cli):
    ch.dependencies_check()

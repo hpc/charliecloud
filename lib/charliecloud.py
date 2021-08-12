@@ -94,11 +94,10 @@ cache_dl = None
 CH_BIN = None
 CH_RUN = None
 
-# Git Commands
-git_cmd = collections.namedtuple("git", ("command", "env", "fail_ok", "silent"))
-git_avail    = git_cmd(['git', '--version'], None, True, True)
-git_head_get = git_cmd(["git", "rev-parse", "HEAD"], None, True, True)
-git_init     = git_cmd(["git", "init", "--bare"], None, False, True)
+# FIXME: Git commands intended to be passed to cmd() as arguments.
+git_avail         = (['git', '--version'], None, True, True)
+git_revparse_head = (["git", "rev-parse", "HEAD"], None, True, True)
+git_init          = (["git", "init", "--bare"], None, False, True)
 
 # Logging; set using init() below.
 verbose = 0          # Verbosity level. Can be 0, 1, or 2.
@@ -1651,25 +1650,34 @@ def bytes_hash(data):
    h.update(data)
    return h.hexdigest()
 
-# FIXME: unclear where this function belongs. We need to be able to init
-# the cache from two places: 1. build.py and 2. misc.py (--reset).
+def cache_build_gc():
+   wd = os.getcwd()
+   ossafe(os.chdir(), storage.build_cache, "can't cd: %s" % bu)
+   cmd_git(["git", "gc", "--prune=now"])
+   ossafe(os.chdir(), wd, "can't cd: %s" % bu)
+
 def cache_build_init():
-   INFO("initializing build cache ...")
+   "Create build cache storage dir and initialize bare git repo; fail otherwise"
+   INFO("initializing build cache.")
    bu = storage.build_cache
-   VERBOSE("build cache storage: %s" % bu) # verbose
-   mkdirs(bu)
-   cwd = ossafe(os.getcwd, "can't get current working directory")
-   os.chdir(bu) #FIXME: not working with ossafe
-   # initialize bare git repo
-   if (cmd(*git_head_get)):
-      VERBOSE("initialize git repo...")
-      cmd(*git_init)
-   else:
-      FATAL("build cache storage dirty\nhint: build-cache --reset")
+   VERBOSE("build cache storage: %s" % bu)
+   try:
+      mkdirs(bu, exist_ok=False)
+   except FileExistsError:
+      FATAL("build-cache exists")
+   VERBOSE("initialize bare git repo...")
+   cmd_git(["git", "init", "--bare", "--initial-branch=root", bu])
+   if (not cache_build_sane()):
+      FATAL("failed to initilize build cache")
+
+def cache_build_reset():
+   INFO("removing build cache.")
+   rmtree(storage.build_cache)
 
 def cache_build_sane():
-   "Return True if build cache appears sane"
+   "Return True if build cache appears sane; otherwise return false"
    bu = storage.build_cache
+   # FIXME: probably a better way to do this
    if (    os.path.isdir(bu  // "branches")
        and os.path.exists(bu // "config")
        and os.path.exists(bu // "description")
@@ -1689,15 +1697,22 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + [img, "--"] + args)
    return cmd(args, env, fail_ok)
 
-# FIXME: we don't want git output sometimes; find a smarter way to do this.
-def cmd(args, env=None, fail_ok=False, silent=False):
+def cmd(args, env=None, fail_ok=False):
    VERBOSE("environment: %s" % env)
    VERBOSE("executing: %s" % args)
-   if (silent):
-       cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-   else:
-       cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   if (not fail_ok and cp.returncode):
+      FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
+   return cp.returncode
+
+def cmd_git(args, fail_ok=False):
+   VERBOSE("executing: %s" % args)
+   cp = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+   out, err = cp.communicate()
+   if (out.decode("utf-8") != ''):
+      VERBOSE("%s" % out.decode("utf-8"))
+   if (err.decode("utf-8") != ''):
+      VERBOSE("%s" % err.decode("utf-8"))
    if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
@@ -1735,8 +1750,8 @@ def dependencies_check():
       sys.exit(1)
 
 def dependency_git():
-    # TODO: Figure out: 1. what git version we need, and 2) how to check it.
-    # FIXME: implement
+    # FIXME: TODO: Figure out: 1. what git version we need, and 2) how to
+    # check it.
     return True
 
 def digest_trim(d):
@@ -1752,6 +1767,10 @@ def digest_trim(d):
       FATAL("not a string: %s" % repr(d))
    except IndexError:
       FATAL("no algorithm tag: %s" % d)
+
+def done_notify_exit():
+   done_notify()
+   sys.exit(0)
 
 def done_notify():
    if (os.environ.get("USER", None) == "jogas"):
@@ -1869,8 +1888,9 @@ def init(cli):
       # build
       assert (cli.build_cache is not None)
       if (cli.build_cache == "pranav"): # default (jogas chess nemesis)
-         # FIXME: git still poops to stdout
-         if (not cmd(*git_avail)):
+         # do we have git?
+         if (not cmd_git(["git", "--version"], fail_ok=True)):
+            # is it the correct version?
             if (dependency_git):
                cache_bu = cache('enable', 'default')
             else:
@@ -1894,6 +1914,7 @@ def init(cli):
       else:
          FATAL('error: invalid cache mode: %s' % mode)
    else:
+      # no-cache configuration
       cache_bu = cache('rebuild', 'command line')
       cache_dl = cache('write-only', 'command line')
    VERBOSE("build cache:    %s (%s)" %(cache_bu.mode, cache_bu.set_by))
@@ -1932,10 +1953,10 @@ def log(*args, color=None, prefix="", **kwargs):
    if (color is not None):
       color_reset(log_fp)
 
-def mkdirs(path):
+def mkdirs(path, exist_ok=True):
    TRACE("ensuring directory: %s" % path)
    try:
-      os.makedirs(path, exist_ok=True)
+      os.makedirs(path, exist_ok=exist_ok)
    except OSError as x:
       ch.FATAL("can't create directory: %s: %s: %s"
                % (path, x.filename, x.strerror))
