@@ -853,14 +853,22 @@ COPY .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *"error: can't parse: -:2,7"* ]]
+    if [[ $CH_BUILDER = ch-image ]]; then
+        [[ $output = *"error: can't parse: -:2,7"* ]]
+    else
+        [[ $output = *'COPY requires at least two arguments'* ]]
+    fi
     run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY ["."]
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *"error: can't COPY: must specify at least one source"* ]]
+    if [[ $CH_BUILDER = ch-image ]]; then
+        [[ $output = *"error: can't COPY: must specify at least one source"* ]]
+    else
+        [[ $output = *'COPY requires at least two arguments'* ]]
+    fi
 
     # No sources found.
     run ch-build -t tmpimg -f - . <<'EOF'
