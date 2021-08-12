@@ -510,7 +510,6 @@ installing into the image::
    RUN ldconfig
 
 
-
 :code:`delete`
 ==============
 
@@ -812,8 +811,6 @@ Delete all images and cache from ch-image builder storage.
    $ ch-image [...] storage-path
 
 Print the storage directory path and exit.
-
-
 
 
 Environment variables
