@@ -75,8 +75,32 @@ Common options placed before the sub-command:
         architecture as a simple string and converts to/from the registry view
         transparently.
 
+   :code:`--build-cache`
+      There are three modes for the build cache:
+      1. enabled: The cache may be both read and written. This is the default if
+         Git version xxxFIXMExxx is installed.
+
+      2. rebuild: Reading from the cache is disabled, except for obtaining the
+         base image with FROM, which is read from the cache if it exists. (This
+         exception is why it's not called write-only.) Writing is enabled.
+
+      3.  disabled: The cache may be neither read nor written. Default if no appro-
+         priate Git is installed.
+
+      **Notes:**
+      TODO
+
+   :code:`--download-cache`
+      There are two modes for the download cache:
+      1. enabled: The cache may be both read and written. This is the default.
+
+      2. write-only: Reading is disabled; writing is enabled.
+
+      **Notes:**
+      TODO
+
   :code:`--no-cache`
-    Download everything needed, ignoring the cache.
+    Shorthand for :code:`--build-cache=rebuild --download-cache=write-only`.
 
   :code:`--password-many`
     Re-prompt the user every time a registry password is needed.
@@ -290,6 +314,34 @@ The details are specific to each distribution. :code:`ch-image` analyzes image
 content (e.g., grepping :code:`/etc/debian_version`) to select a
 configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image`
 prints exactly what it is doing.
+
+:code:`build-cache`
+-------------------
+
+::
+
+   $ ch-image [...] build-cache [...]
+
+Print basic information about the cache: number of entries (commits), number of
+files, disk space used, number of named and unnamed branches, number of state
+IDs, etc.
+
+Options:
+
+  :code:`--gc`
+    Run Git garbage collection on the cache. Among other things, this will
+    remove all cache entries not currently reachable from a named branch.
+
+  :code:`--reset`
+    Clear and re-initialize the build cache.
+
+  :code:`--tree-text`
+    Print a text tree of the cache using Git's :code:`git log --graph` feature.
+
+  :code:`--tree-dot`
+    Create a DOT export of the tree and a PDF rendering in the current working
+    directory, :code:`./build-cache.dot` and a `./build-cache.pdf` respectively.
+
 
 :code:`delete`
 --------------
