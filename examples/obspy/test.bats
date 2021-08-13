@@ -10,6 +10,9 @@ setup () {
 }
 
 @test "${ch_tag}/hello" {
+    # Remove prior test's plot to avoid using it if something else breaks.
+    rm -f "$CHTEST_EXAMPLES_DIR"/obspy/obspy.png
+
     ch-run -b "$BATS_TMPDIR":/mnt "$ch_img" -- /hello.py /mnt/obspy.png
 
     # Compare reference image to generated image.
