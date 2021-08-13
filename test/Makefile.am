@@ -10,7 +10,6 @@ build/10_sanity.bats \
 build/40_pull.bats \
 build/50_ch-image.bats \
 build/50_dockerfile.bats \
-build/50_fakeroot.bats \
 build/50_localregistry.bats \
 build/50_misc.bats \
 build/99_cleanup.bats \
@@ -61,11 +60,19 @@ sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
+CLEANFILES = $(sobuilts) \
+             docs-sane force-auto make-perms-test \
+             build/61_force-auto.bats
+
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
 nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
-CLEANFILES = $(sobuilts) docs-sane make-perms-test
+if ENABLE_CH_IMAGE  # this means we have Python
+nobase_test_DATA += build/61_force-auto.bats
+build/61_force-auto.bats: force-auto
+	./$< > $@
+endif
 # See comment about symlinks in examples/Makefile.am.
 all-local:
 	ln -fTs /tmp fixtures/symlink-to-tmp
@@ -78,11 +85,12 @@ uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
 endif
-EXTRA_DIST += $(testfiles) $(testfiles_exec) docs-sane.py.in make-perms-test.py.in
+EXTRA_DIST += $(testfiles) $(testfiles_exec) \
+              docs-sane.py.in force-auto.py.in make-perms-test.py.in
 EXTRA_SCRIPTS = $(sobuilts)
 
 ## Python scripts - need text processing
-docs-sane make-perms-test: %: %.py.in
+docs-sane force-auto make-perms-test: %: %.py.in
 	rm -f $@
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
 	chmod +rx,-w $@  # respects umask

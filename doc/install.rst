@@ -46,10 +46,19 @@ common distributions should be sufficient.
 
   * Automake
   * Autoconf
+  * Python's :code:`pip3` package installer and its :code:`wheel` extension
 
 Create :code:`configure` with::
 
   $ ./autogen.sh
+
+This script has a few options; see its :code:`--help`.
+
+Note that Charliecloud disables Automake's "maintainer mode" by default, so
+the build system (Makefiles, :code:`configure`, etc.) will never automatically
+be rebuilt. You must run :code:`autogen.sh` manually if you need this. You can
+also re-enable maintainer mode with :code:`configure` if you like, though this
+is not a tested configuration.
 
 :code:`configure` options
 -------------------------
@@ -57,8 +66,8 @@ Create :code:`configure` with::
 Charliecloud's :code:`configure` has the following options in addition to the
 standard ones.
 
-Feature selection
-~~~~~~~~~~~~~~~~~
+Feature selection: :code:`--disable-FOO`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, all features that can be built will be built and installed. You
 can exclude some features with:
@@ -75,8 +84,8 @@ can exclude some features with:
 You can also say :code:`--enable-FOO` to fail the build if :code:`FOO` can't
 be built.
 
-Dependency selection
-~~~~~~~~~~~~~~~~~~~~
+Dependency selection: :code:`--with-FOO`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some dependencies can be specified as follows. Note that :code:`--without-FOO`
 is not supported; use the feature selectors above.
@@ -93,8 +102,11 @@ is not supported; use the feature selectors above.
   Path to Python used by :code:`sphinx-build`. Default: shebang of
   :code:`sphinx-build`.
 
-Less strict build
-~~~~~~~~~~~~~~~~~
+Less strict build: :code:`--enable-buggy-build`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Please do not use this option routinely, as that hides bugs that we cannot
+find otherwise.*
 
 By default, Charliecloud builds with :code:`CFLAGS` including :code:`-Wall
 -Werror`. The principle here is that we prefer diagnostics that are as noisy
@@ -131,8 +143,34 @@ Don't hesitate to use it. But if you do, we would very much appreciate if you:
   1. File a bug explaining why! We'll fix it.
   2. Remove it from your package or procedure once we fix that bug.
 
-**Please do not use this option routinely, as that hides bugs that we cannot
-find otherwise.**
+Disable bundled Lark package: :code:`--disable-bundled-lark`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*This option is minimally supported and not recommended. Use only if you
+really know what you are doing.*
+
+Charliecloud uses the Python package `Lark
+<https://lark-parser.readthedocs.io/en/latest/>`_ for parsing Dockerfiles and
+image references. Because this package is developed rapidly, and recent
+versions have important features and bug fixes not yet available in common
+distributions, we bundle the package with Charliecloud.
+
+If you prefer a separately-installed Lark, either via system packages or
+:code:`pip`, you can use :code:`./configure --disable-bundled-lark`. This
+excludes the bundled Lark from being installed or placed in :code:`make dist`
+tarballs. It *does not* remove the bundled Lark from the source directory; if
+you run from the source directory (i.e., without installing), the bundled Lark
+will be used if present regardless of this option.
+
+Bundled Lark is included in the tarballs we distribute. You can remove it and
+re-build :code:`configure` with :code:`./autogen.sh --rm-lark --no-lark`. If
+you are starting from a Git checkout, bundled Lark is installed by default by
+:code:`./autogen.sh`, but you can prevent this with :code:`./autogen.sh
+--no-lark`.
+
+The main use case for these options is to support package maintainers. If this
+is you and does not meet your needs, please get in touch with us and we will
+help.
 
 Install with package manager
 ============================
@@ -419,13 +457,6 @@ Options include:
   * Filesystem directory, for builders that support this (e.g.,
     :code:`ch-image`).
 
-"lark-parser" Python package
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-PyPI has two incompatible packages that provide the module :code:`lark`,
-"`lark-parser <https://pypi.org/project/lark-parser/>`_" and "lark". You want
-"lark-parser".
-
 Python
 ~~~~~~
 
@@ -693,3 +724,5 @@ currently running.
 If the tests don't pass, that's a bug. Please report it!
 
 Now you can :code:`vagrant ssh` and do all the usual Vagrant stuff.
+
+..  LocalWords:  Werror Flameeyes

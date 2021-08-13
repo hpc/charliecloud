@@ -445,6 +445,11 @@ Charliecloud is small enough to just rebuild everything with::
 
   $ ./autogen.sh && ./configure && make clean && make
 
+Special images
+--------------
+
+For images not needed after completion of a test, tag them :code:`tmpimg`.
+This leaves only one extra image at the end of the test suite.
 
 Writing a test image using the standard workflow
 ------------------------------------------------
@@ -1370,4 +1375,21 @@ Additional sources
 * :code:`runc create` man page: https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md
 * https://github.com/opencontainers/runtime-spec/blob/master/runtime.md
 
-..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix
+
+Miscellaneous notes
+===================
+
+Updating bundled Lark parser
+----------------------------
+
+In order to change the version of the bundled lark parser you must modify
+multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
+catch both dot notation and tuples, but not the list of filenames in
+:code:`lib/Makefile.am`)::
+
+  $ misc/grep -E '0(\.|, )11(\.|, )3($|\s|\))'
+
+What to do in each location should either be obvious or commented.
+
+
+..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg

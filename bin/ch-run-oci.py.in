@@ -80,6 +80,8 @@ def args_parse():
    sp.add_argument("cid", metavar="CONTAINER_ID")
 
    args_ = ap.parse_args()
+   args_.arch = "yolo"
+   args_.password_many = False
    args_.storage = None
    args_.tls_no_verify = False
    ch.init(args_)

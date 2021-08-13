@@ -107,7 +107,7 @@ jobs:
           [[ $(command -v pip3) == /usr/local/bin/pip3 ]]
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
-          sudo sh -c 'umask 0022 && pip3 install lark-parser requests'
+          sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -140,6 +140,35 @@ jobs:
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
 
+      - name: disable bundled lark, ch-image
+        if: ${{ matrix.builder == 'ch-image' }}
+        run: |
+          set -x
+          # no install, disable
+          ./autogen.sh --no-lark
+          ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
+          fgrep 'bundled Lark: no' config.log
+          fgrep 'lark.py under source dir ... no' config.log
+          ! test -f ./lib/lark/lark.py
+          make $ch_makej
+          sudo make $ch_makej install
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          make clean
+          # install, disable
+          ./autogen.sh
+          ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
+          fgrep 'bundled Lark: no' config.log
+          fgrep 'lark.py under source dir ... yes' config.log
+          test -f ./lib/lark/lark.py
+          make $ch_makej
+          sudo make $ch_makej install
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          make clean
+          # no install, enable: build fails, untested
+          # install, enable: normal configuration, remainder of CI
+
       - name: build/install from Git
         run: |
           ./autogen.sh
@@ -151,7 +180,12 @@ jobs:
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
           [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
+          if [[ $CH_BUILDER = ch-image ]]; then
+              fgrep 'with ch-image(1): yes' config.log
+              fgrep 'bundled Lark: yes' config.log
+              fgrep 'lark.py under source dir ... yes' config.log
+              test -f ./lib/lark/lark.py
+          fi
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
@@ -161,11 +195,18 @@ jobs:
           sudo make $ch_makej install
           bin/ch-run --version
           $ch_prefix/from-git/bin/ch-run --version
+          # Ensure bundled Lark in tarball.
+          make $ch_makej dist
+          tar tf charliecloud-*.tar.gz | fgrep /lib/lark/lark.py
 
       - name: late setup & validation, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
+          set -x
           [[ $(bin/ch-image python-path) = /usr/local/bin/python3 ]]
+          [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py" ]]
+          [[ $($ch_prefix/from-git/bin/ch-image python-path) = /usr/local/bin/python3 ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git/lib/charliecloud/lark/__init__.py" ]]
 
       - name: late setup & validation, all
         run: |
@@ -310,7 +351,6 @@ jobs:
           set -x
           fgrep 'documentation: no' config.log
           fgrep 'with Docker: yes' config.log
-          fgrep 'with ch-image(1): no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'recommended tests with tarballs: yes' config.log

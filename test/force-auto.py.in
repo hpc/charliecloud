@@ -1,0 +1,289 @@
+#!/usr/bin/env python3
+
+# This script generates a BATS file to exercise "ch-image build --force"
+# across a variety of distributions. It's used by Makefile.am.
+#
+# About each distribution, we remember:
+#
+#   - base image name
+#   - config name it should select
+#   - scope
+#       standard: all tests in standard scope
+#       full: one test in standard scope, the rest in full
+#   - any tests invalid for that distro
+#
+# For each distribution, we test these factors:
+#
+#   - whether or not --force is given (2)
+#   - whether or not preparation for --force is already done (2)
+#   - commands that (4)
+#       - don't need --force, and fail
+#       - don't need --force, and succeed
+#       - apparently need --force but in fact do not
+#       - really do need --force
+#
+# This would appear to yield 2×2×4 = 16 tests per distribution. However:
+#
+#   1. We only try pre-prepared images for "really need" commands with --force
+#      given, to save time, so it's at most 9 potential tests.
+#
+#   2. Some distros don't have any pre-preparation step, so that test doesn't
+#      make sense.
+#
+#   3. Some distros don't have an "apparently need" command determined.
+#
+# Bottom line, the number of tests per distro varies. See the code below for
+# specific details.
+
+
+import abc
+import enum
+
+@enum.unique
+class Scope(enum.Enum):
+   STANDARD = "standard"
+   FULL = "full"
+
+@enum.unique
+class Run(enum.Enum):
+   UNNEEDED_FAIL = "unneeded fail"
+   UNNEEDED_WIN = "unneeded win"
+   FAKE_NEEDED = "fake needed"
+   NEEDED = "needed"
+
+
+class Test(abc.ABC):
+
+   base = None
+   config = None
+   scope = Scope.FULL
+   prep_run = None
+   runs = { Run.UNNEEDED_FAIL: "false",
+            Run.UNNEEDED_WIN: "true" }
+
+   def __init__(self, run, forced, preprep):
+      self.run = run
+      self.forced = forced
+      self.preprep = preprep
+
+   def __str__(self):
+      preprep = "preprep" if self.preprep else "no preprep"
+      force = "with --force" if self.forced else "w/o --force"
+      return f"{self.base}, {self.run.value}, {force}, {preprep}"
+
+   @property
+   def build1_post_hook(self):
+      return ""
+
+   @property
+   def build2_post_hook(self):
+      return ""
+
+   def as_grep_files(self, grep_files, image, invert=False):
+      cmds = []
+      for (re, path) in grep_files:
+         path = f"\"$CH_IMAGE_STORAGE\"/img/{image}/{path}"
+         cmd = f"ls -lh {path}"
+         if (invert):
+            cmd = f"! ( {cmd} )"
+         cmds.append(cmd)
+         if (not invert):
+            cmds.append(f"grep -Eq -- '{re}' {path}")
+      return "\n".join(cmds)
+
+   def as_outputs(self, outputs, invert=False):
+      cmds = []
+      for out in outputs:
+         out = f"echo \"$output\" | grep -Eq -- \"{out}\""
+         if (invert):
+            out = f"! ( {out} )"
+         cmds.append(out)
+      return "\n".join(cmds)
+
+   def as_runs(self, runs):
+      return "\n".join("RUN %s" % run for run in runs)
+
+   def test(self):
+      # skip?
+      if (self.preprep and not (self.forced and self.run == Run.NEEDED)):
+         print(f"\n# skip: {self}: not needed")
+         return
+      if (self.preprep and self.prep_run is None):
+         print(f"\n# skip: {self}: no preprep command")
+         return
+      # scope
+      if (self.scope == Scope.STANDARD or self.run == Run.NEEDED):
+         scope = "standard"
+      else:
+         scope = "full"
+      # build 1 to make prep-prepped image (e.g. install EPEL) if needed
+      if (not self.preprep):
+         build1 = "# skipped: no separate prep"
+         build2_base = self.base
+      else:
+         build2_base = "tmpimg"
+         build1 = f"""\
+run ch-image -v build -t tmpimg -f - . << 'EOF'
+FROM {self.base}
+RUN {self.prep_run}
+EOF
+echo "$output"
+[[ $status -eq 0 ]]
+{self.build1_post_hook}"""
+      # force
+      force = "--force" if self.forced else ""
+      # run command we're testing
+      try:
+         run = self.runs[self.run]
+      except KeyError:
+         print(f"\n# skip: {self}: no run command")
+         return
+      # status
+      if (   self.run == Run.UNNEEDED_FAIL
+          or ( self.run == Run.NEEDED and not self.forced )):
+         status = 1
+      else:
+         status = 0
+      # output
+      outs = []
+      if (self.forced):
+         outs += [f"will use --force: {self.config}"]
+         if (self.run == Run.UNNEEDED_WIN ):
+            outs += ["warning: --force specified, but nothing to do"]
+         elif (self.run in { Run.NEEDED, Run.FAKE_NEEDED }):
+            outs += ["--force: init OK & modified 1 RUN instructions"]
+      else:
+         outs += [f"available --force: {self.config}"]
+         if (self.run in { Run.NEEDED, Run.FAKE_NEEDED }):
+            outs += ["RUN: available here with --force"]
+            if (self.run == Run.NEEDED):
+               outs += ["build failed: --force may fix it"]
+         elif (self.run == Run.UNNEEDED_FAIL):
+            outs += ["build failed: current version of --force wouldn't help"]
+      out = self.as_outputs(outs)
+      # emit the test
+      print(f"""
+@test "ch-image --force: {self}" {{
+scope {scope}
+
+# build 1: intermediate image for preparatory commands
+{build1}
+
+# build 2: image we're testing
+run ch-image -v build {force} -t tmpimg2 -f - . << 'EOF'
+FROM {build2_base}
+RUN {run}
+EOF
+echo "$output"
+[[ $status -eq {status} ]]
+{out}
+{self.build2_post_hook}
+}}
+""", end="")
+
+
+class _EPEL_Mixin:
+
+   # Mixin class for RPM distros where we want to pre-install EPEL. I think
+   # this should maybe go away and just go into a _Red_Hat base class, i.e.
+   # test all RPM distros with EPEL pre-installed, but this matches what
+   # existed in 50_fakeroot.bats. Note the install-EPEL command is elsewhere.
+
+   epel_outputs = ["(Updating|Installing).+: epel-release"]
+   epel_greps = [("enabled=1", "/etc/yum.repos.d/epel*.repo")]
+
+   @property
+   def build1_post_hook(self):
+      return "\n".join(["# validate EPEL installed",
+                        self.as_outputs(self.epel_outputs),
+                        self.as_grep_files(self.epel_greps, "tmpimg")])
+
+   @property
+   def build2_post_hook(self):
+      return "\n".join([
+         "# validate EPEL present if installed by build 1, gone if by --force",
+         self.as_grep_files(self.epel_greps, "tmpimg2", not self.preprep)])
+
+
+class _RHEL7(Test):
+   config = "rhel7"
+   runs = { **Test.runs, **{ Run.FAKE_NEEDED: "yum install -y ed",
+                             Run.NEEDED:      "yum install -y openssh" } }
+
+class CentOS_7(_RHEL7, _EPEL_Mixin):
+   scope = Scope.STANDARD
+   base = "centos:7"
+   prep_run = "yum install -y epel-release"
+
+
+class _RHEL8(Test):
+   config = "rhel8"
+   runs = { **Test.runs, **{ Run.FAKE_NEEDED: "dnf install -y --setopt=install_weak_deps=false ed",
+                             Run.NEEDED:      "dnf install -y --setopt=install_weak_deps=false openssh" } }
+
+class CentOS_8(_RHEL8, _EPEL_Mixin):
+   base = "centos:8"
+   prep_run = "dnf install -y epel-release"
+class CentOS_8_Stream(_RHEL8):
+   # pulling from quay.io per the CentOS wiki
+   # https://wiki.centos.org/FAQ/CentOSStream#What_artifacts_are_built.3F
+   base = "quay.io/centos/centos:stream8"
+class RHEL_UBI_8(_RHEL8):
+   base = "registry.access.redhat.com/ubi8/ubi"
+
+
+class _Fedora(_RHEL8):
+   config = "fedora"
+
+class Fedora_26(_Fedora):
+   # We would prefer to test the lowest supported --force version, 24,
+   # but the ancient version of dnf it has doesn't fail the transaction when
+   # a package fails so we test with 26 instead.
+   base = "fedora:26"
+class Fedora_Latest(_Fedora):
+   base = "fedora:latest"
+
+
+class _Debian(Test):
+   config = "debderiv"
+   runs = { **Test.runs, **{ Run.NEEDED:      "apt-get update && apt-get install -y openssh-client" } }
+class Debian_9(_Debian):
+   base = "debian:stretch"
+class Debian_10(_Debian):
+   scope = Scope.STANDARD
+   base = "debian:buster"
+class Ubuntu_16(_Debian):
+   base = "ubuntu:xenial"
+class Ubuntu_18(_Debian):
+   base = "ubuntu:bionic"
+class Ubuntu_20(_Debian):
+   base = "ubuntu:focal"
+
+
+# main loop
+
+print("""\
+# NOTE: This file is auto-generated. Do not modify.
+
+load ../common
+
+setup () {
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+}
+""")
+
+for test in [CentOS_7,
+             CentOS_8,
+             CentOS_8_Stream,
+             RHEL_UBI_8,
+             Fedora_26,
+             Fedora_Latest,
+             Debian_9,
+             Debian_10,
+             Ubuntu_16,
+             Ubuntu_18,
+             Ubuntu_20]:
+   for run in Run:
+      for forced in (False, True):
+         for preprep in (False, True):
+            test(run, forced, preprep).test()

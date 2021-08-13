@@ -20,6 +20,7 @@ import time
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/../..")
 CH_RUN  = [CH_BASE + "/bin/ch-run"]
 PACKAGES = ["charliecloud",
+            "charliecloud-builder",
             "charliecloud-debuginfo",
             "charliecloud-doc",
             "charliecloud-test"]
@@ -115,8 +116,6 @@ rpmbuild root:      %(rpmbuild)s
                "%s/charliecloud.rpmlintrc" % rpm_specs)
    shutil.copy("%s/packaging/fedora/el7-pkgdir.patch" % CH_BASE,
                "%s/el7-pkgdir.patch" % rpm_sources)
-   shutil.copy("%s/packaging/fedora/lib64.patch" % CH_BASE,
-               "%s/lib64.patch" % rpm_sources)
 
    # Remove temporary Git directory.
    print("# rm -rf %s" % git_tmp)
@@ -167,10 +166,11 @@ rpmbuild root:      %(rpmbuild)s
    rpms_src       = "/usr/local/src/RPMS"
    rpms_arch      = "%s/%s" % (rpms_src, ARCH)
    rpms_noarch    = "%s/noarch" % rpms_src
-   rpms = {'charliecloud': [rpms_arch, '%s.%s.rpm' % (rpms_dist, ARCH)],
-           'charliecloud-debuginfo': [rpms_arch,'%s.%s.rpm' %(rpms_dist, ARCH)],
-           'charliecloud-doc': [rpms_noarch, '%s.noarch.rpm' % rpms_dist],
-           'charliecloud-test': [rpms_arch, '%s.%s.rpm' % (rpms_dist, ARCH)]}
+   rpms = {'charliecloud':           [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
+           'charliecloud-builder':   [rpms_noarch, '%s.noarch.rpm' % rpms_dist],
+           'charliecloud-debuginfo': [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
+           'charliecloud-doc':       [rpms_noarch, '%s.noarch.rpm' % rpms_dist],
+           'charliecloud-test':      [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)]}
    rpm_specs      = "/usr/local/src/SPECS"
    rpm_sources    = "/usr/local/src/SOURCES"
    rpmbuild_args += ["--define", "_topdir /usr/local/src"]

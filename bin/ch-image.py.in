@@ -75,12 +75,19 @@ def main():
    # [2]: https://docs.python.org/3/library/argparse.html#parents
    # [3]: https://stackoverflow.com/a/54936198
    common_opts = \
-      [[ ["--dependencies"],
+      [[ ["-a", "--arch"],
+         { "metavar": "ARCH",
+           "default": "host",
+           "help": "architecture for image registries (default: host)"}],
+       [ ["--dependencies"],
          { "action": misc.Dependencies,
            "help": "print any missing dependencies and exit" }],
        [ ["--no-cache"],
          { "action": "store_true",
            "help": "download everything needed, ignoring the cache" }],
+       [ ["--password-many"],
+         { "action": "store_true",
+           "help": "re-prompt each time a registry password is needed" }],
        [ ["-s", "--storage"],
          { "metavar": "DIR",
            "help": "set builder internal storage directory to DIR" }],
@@ -139,9 +146,11 @@ def main():
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
 
    # list
-   help="list images in storage"
+   help="print information about image(s)"
    sp = sps.add_parser("list", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
+                   help="print details of this image only")
    sp.set_defaults(func=misc.list_)
    add_opts(sp, common_opts, True)
 

@@ -8,8 +8,8 @@ Synopsis
 Description
 ===========
 
-Run command :code:`CMD` in a Charliecloud container using the flattened and
-unpacked image directory located at :code:`NEWROOT`.
+Run command :code:`CMD` in a fully unprivileged Charliecloud container using
+the flattened and unpacked image directory located at :code:`NEWROOT`.
 
   :code:`-b`, :code:`--bind=SRC[:DST]`
     Bind-mount :code:`SRC` at guest :code:`DST`. The default destination if
@@ -109,6 +109,16 @@ unpacked image directory located at :code:`NEWROOT`.
   :code:`-V`, :code:`--version`
     Print version and exit.
 
+**Note:** Because :code:`ch-run` is fully unprivileged, it is not possible to
+change UIDs and GIDs within the container (the relevant system calls fail). In
+particular, setuid, setgid, and setcap executables do not work. As a
+precaution, :code:`ch-run` calls :code:`prctl(PR_SET_NO_NEW_PRIVS, 1)` to
+`disable these executables
+<https://www.kernel.org/doc/Documentation/prctl/no_new_privs.txt>`_ within the
+container. This does not reduce functionality but is a "belt and suspenders"
+precaution to reduce the attack surface should bugs in these system calls or
+elsewhere arise.
+
 SquashFS and FUSE
 =================
 
@@ -145,7 +155,6 @@ is finished running when the user command is finished and send a
 :code:`SIGCHLD`. That signal triggers the exist handler which unmounts and
 cleans up.
 
-
 Host files and directories available in container via bind mounts
 =================================================================
 
@@ -154,30 +163,46 @@ In addition to any directories specified by the user with :code:`--bind`,
 in as well.
 
 The following host files and directories are bind-mounted at the same location
-in the container. These cannot be disabled. Required (must exist both on host
-and within the image):
+in the container. These give access to the host's devices and various kernel
+facilities. (Recall that Charliecloud provides minimal isolation and
+containerized processes are mostly normal unprivileged processes.) They cannot
+be disabled and are required; i.e., they must exist both on host and within
+the image.
 
   * :code:`/dev`
   * :code:`/proc`
   * :code:`/sys`
 
-Optional (only if path exists on both host and within the image; no error or
-warning if not):
+Optional; bind-mounted only if path exists on both host and within the image,
+without error or warning if not.
 
-  * :code:`/etc/hosts`
-  * :code:`/etc/machine-id`
-  * :code:`/etc/resolv.conf`
-  * :code:`/var/lib/hugetlbfs` at guest :code:`/var/opt/cray/hugetlbfs`
-  * :code:`/var/opt/cray/alps/spool`
-  * :code:`$PREFIX/bin/ch-ssh` at guest :code:`/usr/bin/ch-ssh`
+  * :code:`/etc/hosts` and :code:`/etc/resolv.conf`. Because Charliecloud
+    containers share the host network namespace, they need the same hostname
+    resolution configuration.
+
+  * :code:`/etc/machine-id`. Provides a unique ID for the OS installation;
+    matching the host works for most situations. Needed to support D-Bus, some
+    software licensing situations, and likely other use cases. See also `issue
+    #1050 <https://github.com/hpc/charliecloud/issues/1050>`_.
+
+  * :code:`/var/lib/hugetlbfs` at guest :code:`/var/opt/cray/hugetlbfs`, and
+    :code:`/var/opt/cray/alps/spool`. These support Cray MPI.
+
+  * :code:`$PREFIX/bin/ch-ssh` at guest :code:`/usr/bin/ch-ssh`. SSH wrapper
+    that automatically containerizes after connecting.
 
 Additional bind mounts done by default but can be disabled; see the options
-above:
+above.
 
-  * :code:`$HOME` at :code:`/home/$USER` (and image :code:`/home` is hidden)
-  * :code:`/tmp`
-  * temporary file at :code:`/etc/passwd`
-  * temporary file at :code:`/etc/group`
+  * :code:`$HOME` at :code:`/home/$USER` (and image :code:`/home` is hidden).
+    Makes user data and init files available.
+
+  * :code:`/tmp`. Provides a temporary directory that persists between
+    container runs and is shared with non-containerized application
+    components.
+
+  * temporary files at :code:`/etc/passwd` and :code:`/etc/group`. Usernames
+    and group names need to be customized for each container run.
 
 Multiple processes in the same container with :code:`--join`
 =============================================================

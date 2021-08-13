@@ -243,7 +243,7 @@ EOF
 @test 'pull image with manifest schema v1' {
     # Verify we handle images with manifest schema version one (v1).
 
-    unpack=$BATS_TMPDIR
+    unpack="${BATS_TMPDIR}/tmp"
     cache=$unpack/dlcache
     # We target debian:squeeze because 1) it always returns a v1 manifest
     # schema (regardless of media type specified), and 2) it isn't very large,
@@ -251,10 +251,12 @@ EOF
     img=debian:squeeze
 
     ch-image pull --storage="$unpack" \
-                  --no-cache \
                   "$img"
     [[ $status -eq 0 ]]
-    grep -F '"schemaVersion": 1' "${cache}/${img}.manifest.json"
+
+    grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
+
+    rm -Rf "$unpack"
 }
 
 @test 'pull from public repos' {
@@ -281,7 +283,8 @@ EOF
     # Google Container Registry:
     # https://console.cloud.google.com/gcr/images/google-containers/GLOBAL
     # FIXME: "latest" tags do not work, but they do in Docker (issue #896)
-    ch-image pull gcr.io/google-containers/busybox:1.27
+    # FIXME: arch-aware pull does not work either (issue #1100)
+    ch-image pull --arch=yolo gcr.io/google-containers/busybox:1.27
 
     # nVidia NGC: https://ngc.nvidia.com
     # FIXME: 96 MiB unpacked; also kind of slow
@@ -371,4 +374,60 @@ EOF
   ]
 }
 EOF
+}
+
+
+@test 'pull by arch' {
+    # Has fat manifest; requested arch exists. There's not much simple to look
+    # for in the output, so just see if it works.
+    ch-image --arch=yolo pull alpine:latest
+    ch-image --arch=host pull alpine:latest
+    ch-image --arch=amd64 pull alpine:latest
+    ch-image --arch=arm64/v8 pull alpine:latest
+
+    # Has fat manifest, but requested arch does not exist.
+    run ch-image --arch=doesnotexist pull alpine:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'requested arch unavailable:'*'not one of:'* ]]
+
+    # Delete it so we don't try to use a non-matching arch for other testing.
+    ch-image delete alpine:latest
+
+    # No fat manifest.
+    ch-image --arch=yolo pull charliecloud/metadata:2021-01-15
+    ch-image --arch=amd64 pull charliecloud/metadata:2021-01-15
+    if [[ $(uname -m) == 'x86_64' ]]; then
+        ch-image --arch=host pull charliecloud/metadata:2021-01-15
+        run ch-image --arch=arm64/v8 pull charliecloud/metadata:2021-01-15
+        echo "$output"
+        [[ $status -eq 1 ]]
+        [[ $output = *'image is architecture-unaware; try --arch=yolo?' ]]
+    fi
+}
+
+@test 'pull images that do not exist' {
+    # name does not exist remotely, in library
+    run ch-image pull doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/library/doesnotexist:latest'* ]]
+
+    # tag does not exist remotely, in library
+    run ch-image pull alpine:doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/library/alpine:doesnotexist'* ]]
+
+    # name does not exist remotely, not in library
+    run ch-image pull charliecloud/doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/charliecloud/doesnotexist:latest'* ]]
+
+    # tag does not exist remotely, not in library
+    run ch-image pull charliecloud/metadata:doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/charliecloud/metadata:doesnotexist'* ]]
 }

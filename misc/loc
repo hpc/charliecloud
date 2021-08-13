@@ -275,6 +275,7 @@ countem "MISCELLANEOUS" /tmp/loc.misc
 # ignored - this includes binaries and files we distribute but didn't write
 find . -type f -a \( \
         -name '*.ico' \
+     -o -name '.gitmodules' \
      -o -name '*.png' \
      -o -name '*.tar.gz' \
      -o -name 'file[A-Z0-9y]*' \

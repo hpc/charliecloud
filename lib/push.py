@@ -1,6 +1,5 @@
 import json
 import os.path
-import platform
 
 import charliecloud as ch
 import version
@@ -58,7 +57,7 @@ class Image_Pusher:
       "Return an empty config, ready to be filled in."
       # FIXME: URL of relevant docs?
       # FIXME: tidy blank/empty fields?
-      return { "architecture": platform.machine(),
+      return { "architecture": ch.arch_host_get(),
                "charliecloud_version": version.VERSION,
                "comment": "pushed with Charliecloud",
                "config": {},
@@ -141,6 +140,5 @@ class Image_Pusher:
          ul.layer_from_file(digest, tarball,
                             "layer %d/%d: " % (i, len(self.layers)))
       ul.config_upload(self.config)
-      ch.INFO("manifest: uploading")
       ul.manifest_upload(self.manifest)
       ul.close()

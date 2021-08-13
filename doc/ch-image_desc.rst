@@ -8,7 +8,7 @@ Synopsis
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] delete IMAGE_REF
    $ ch-image [...] import PATH IMAGE_REF
-   $ ch-image [...] list
+   $ ch-image [...] list [IMAGE_REF]
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
@@ -21,12 +21,15 @@ Description
 
 :code:`ch-image` is a tool for building and manipulating container images, but
 not running them (for that you want :code:`ch-run`). It is completely
-unprivileged, with no setuid/setgid/setcap helpers.
+unprivileged, with no setuid/setgid/setcap helpers. The action to take is
+specified by a sub-command.
 
 Options that print brief information and then exit:
 
   :code:`-h`, :code:`--help`
-    Print help and exit successfully.
+    Print help and exit successfully. If specified before the sub-command,
+    print general help and list of sub-commands; if after the sub-command,
+    print help specific to that sub-command.
 
   :code:`--dependencies`
     Report dependency problems on standard output, if any, and exit. If all is
@@ -38,8 +41,48 @@ Options that print brief information and then exit:
 
 Common options placed before the sub-command:
 
+  :code:`-a`, :code:`--arch ARCH`
+     Use :code:`ARCH` for architecture-aware registry operations, currently
+     :code:`pull` and pulls done within :code:`build`. :code:`ARCH` can be:
+     (1) :code:`yolo`, to bypass architecture-aware code and use the
+     registry's default architecture; (2) :code:`host`, to use the host's
+     architecture, obtained with the equivalent of :code:`uname -m` (default
+     if :code:`--arch` not specified); or (3) an architecture name. If the
+     specified architecture is not available, the error message will list
+     which ones are.
+
+     **Notes:**
+
+     1. :code:`ch-image` is limited to one image per image reference in
+        builder storage at a time, regardless of architecture. For example, if
+        you say :code:`ch-image pull --arch=foo baz` and then :code:`ch-image
+        pull --arch=bar baz`, builder storage will contain one image called
+        "baz", with architecture "bar".
+
+     2. Images' default architecture is usually :code:`amd64`, so this is
+        usually what you get with :code:`--arch=yolo`. Similarly, if a
+        registry image is architecture-unaware, it will still be pulled with
+        :code:`--arch=amd64` and :code:`--arch=host` on x86-64 hosts (other
+        host architectures must specify :code:`--arch=yolo` to pull
+        architecture-unaware images).
+
+     3. :code:`uname -m` and image registries often use different names for
+        the same architecture. For example, what :code:`uname -m` reports as
+        "x86_64" is known to registries as "amd64". :code:`--arch=host` should
+        translate if needed, but it's useful to know this is happening.
+        Directly specified architecture names are passed to the registry
+        without translation.
+
+     4. Registries treat architecture as a pair of items, architecture and
+        sometimes variant (e.g., "arm" and "v7"). Charliecloud treats
+        architecture as a simple string and converts to/from the registry view
+        transparently.
+
   :code:`--no-cache`
     Download everything needed, ignoring the cache.
+
+  :code:`--password-many`
+    Re-prompt the user every time a registry password is needed.
 
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory (see below for important details).
@@ -50,6 +93,35 @@ Common options placed before the sub-command:
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
+
+
+Authentication
+==============
+
+If the remote repository needs authentication, Charliecloud will prompt you
+for a username and password. Note that some repositories call the secret
+something other than "password"; e.g., GitLab calls it a "personal access
+token (PAT)".
+
+These values are remembered for the life of the process and silently
+re-offered to the registry if needed. One case when this happens is on push to
+a private registry: many registries will first offer a read-only token when
+:code:`ch-image` checks if something exists, then re-authenticate when
+upgrading the token to read-write for upload. If your site uses one-time
+passwords such as provided by a security device, you can specify
+:code:`--password-many` to provide a new secret each time.
+
+These values are not saved persistently, e.g. in a file. Note that we do use
+normal Python variables for this information, without pinning them into
+physical RAM with `mlock(2)
+<https://man7.org/linux/man-pages/man2/mlock.2.html>`_ or any other special
+treatment, so we cannot guarantee they will never reach non-volatile storage.
+
+There is no separate :code:`login` subcommand like Docker. For non-interactive
+authentication, you can use environment variables :code:`CH_IMAGE_USERNAME`
+and :code:`CH_IMAGE_PASSWORD`. Only do this if you fully understand the
+implications for your specific use case, because it is difficult to securely
+store secrets in environment variables.
 
 
 Storage directory
@@ -89,18 +161,22 @@ obtain a packed image; see the tutorial for details.
    will likely have strong opinions.
 
 
-Subcommands
-===========
-
 :code:`build`
--------------
+=============
+
+Build an image from a Dockerfile and put it in the storage directory.
+
+Synopsis
+--------
 
 ::
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
 
-Build an image from a Dockerfile and put it in the storage directory. Use
-:code:`ch-run -w -u0 -g0 --no-home --no-passwd` to execute :code:`RUN`
+Description
+-----------
+
+Uses :code:`ch-run -w -u0 -g0 --no-home --no-passwd` to execute :code:`RUN`
 instructions. Note that :code:`FROM` implicitly pulls the base image if
 needed, so you may want to read about the :code:`pull` subcommand below as
 well.
@@ -157,6 +233,9 @@ Options:
   :code:`-t`, :code:`-tag TAG`
     Name of image to create. If not specified, use the final component of path
     :code:`CONTEXT`. Append :code:`:latest` if no colon present.
+
+Privilege model
+---------------
 
 :code:`ch-image` is a *fully* unprivileged image builder. It does not use any
 setuid or setcap helper programs, and it does not use configuration files
@@ -224,138 +303,8 @@ content (e.g., grepping :code:`/etc/debian_version`) to select a
 configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image`
 prints exactly what it is doing.
 
-:code:`delete`
---------------
-
-::
-
-   $ ch-image [...] delete IMAGE_REF
-
-Delete the image described by the image reference :code:`IMAGE_REF` from the
-storage directory.
-
-:code:`import`
---------------
-
-::
-
-   $ ch-image [...] import PATH IMAGE_REF
-
-Copy the image at :code:`PATH` into builder storage with name
-:code:`IMAGE_REF`. :code:`PATH` can be:
-
-* an image directory
-* a tarball with no top-level directory (a.k.a. a "`tarbomb <https://en.wikipedia.org/wiki/Tar_(computing)#Tarbomb>`_")
-* a standard tarball with one top-level directory
-
-If the imported image contains Charliecloud metadata, that will be imported
-unchanged, i.e., images exported from :code:`ch-image` builder storage will be
-functionally identical when re-imported.
-
-:code:`pull`
-------------
-
-::
-
-   $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
-
-Pull the image described by the image reference :code:`IMAGE_REF` from a
-repository to the local filesystem. See the FAQ for the gory details on
-specifying image references.
-
-Destination:
-
-  :code:`IMAGE_DIR`
-    If specified, place the unpacked image at this path; it is then ready for
-    use by :code:`ch-run` or other tools. The storage directory will not
-    contain a copy of the image, i.e., it is only unpacked once.
-
-Options:
-
-  :code:`--last-layer N`
-    Unpack only :code:`N` layers, leaving an incomplete image. This option is
-    intended for debugging.
-
-  :code:`--parse-only`
-    Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
-    without talking to the internet or touching the storage directory.
-
-This script does a fair amount of validation and fixing of the layer tarballs
-before flattening in order to support unprivileged use despite image problems
-we frequently see in the wild. For example, device files are ignored, and file
-and directory permissions are increased to a minimum of :code:`rwx------` and
-:code:`rw-------` respectively. Note, however, that symlinks pointing outside
-the image are permitted, because they are not resolved until runtime within a
-container.
-
-The following metadata in the pulled image is retained; all other metadata is
-currently ignored. (If you have a need for additional metadata, please let us
-know!)
-
-  * Current working directory set with :code:`WORKDIR` is effective in
-    downstream Dockerfiles.
-
-  * Environment variables set with :code:`ENV` are effective in downstream
-    Dockerfiles and also written to :code:`/ch/environment` for use in
-    :code:`ch-run --set-env`.
-
-  * Mount point directories specified with :code:`VOLUME` are created in the
-    image if they don't exist, but no other action is taken.
-
-Note that some images (e.g., those with a "version 1 manifest") do not contain
-metadata. A warning is printed in this case.
-
-:code:`push`
-------------
-
-::
-
-   $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
-
-Push the image described by the image reference :code:`IMAGE_REF` from the
-local filesystem to a repository. See the FAQ for the gory details on
-specifying image references.
-
-Because Charliecloud is fully unprivileged, the owner and group of files in
-its images are not meaningful in the broader ecosystem. Thus, when pushed,
-everything in the image is flattened to user:group :code:`root:root`. Also,
-setuid/setgid bits are removed, to avoid surprises if the image is pulled by a
-privileged container implementation.
-
-Destination:
-
-  :code:`DEST_REF`
-    If specified, use this as the destination image reference, rather than
-    :code:`IMAGE_REF`. This lets you push to a repository without permanently
-    adding a tag to the image.
-
-Options:
-
-  :code:`--image DIR`
-    Use the unpacked image located at :code:`DIR` rather than an image in the
-    storage directory named :code:`IMAGE_REF`.
-
-:code:`reset`
--------------
-
-::
-
-   $ ch-image [...] reset
-
-Delete all images and cache from ch-image builder storage.
-
-:code:`storage-path`
---------------------
-
-::
-
-   $ ch-image [...] storage-path
-
-Print the storage directory path and exit.
-
-
 Compatibility with other Dockerfile interpreters
-================================================
+------------------------------------------------
 
 :code:`ch-image` is an independent implementation and shares no code with
 other Dockerfile interpreters. It uses a formal Dockerfile parsing grammar
@@ -375,33 +324,26 @@ allows straightforward extensions if needed to support scientific computing.
 interpreters, though as an independent implementation, it is not
 bug-compatible.
 
-This section describes differences from the Dockerfile reference that we
-expect to be approximately permanent. For an overview of features we have not
-yet implemented and our plans, see our `road map
-<https://github.com/hpc/charliecloud/projects/1>`_ on GitHub. Plain old bugs
-are in our `GitHub issues <https://github.com/hpc/charliecloud/issues>`_.
+The following subsections describe differences from the Dockerfile reference
+that we expect to be approximately permanent. For not-yet-implemented features
+and bugs in this area, see `related issues
+<https://github.com/hpc/charliecloud/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3Aimage>`_
+on GitHub.
 
 None of these are set in stone. We are very interested in feedback on our
 assessments and open questions. This helps us prioritize new features and
 revise our thinking about what is needed for HPC containers.
 
 Context directory
------------------
+~~~~~~~~~~~~~~~~~
 
 The context directory is bind-mounted into the build, rather than copied like
 Docker. Thus, the size of the context is immaterial, and the build reads
 directly from storage like any other local process would. However, you still
 can't access anything outside the context directory.
 
-Authentication
---------------
-
-:code:`ch-image` can authenticate using one-time passwords, e.g. those
-provided by a security token. Unlike :code:`docker login`, it does not assume
-passwords are persistent.
-
-Environment variables
----------------------
+Variable substitution
+~~~~~~~~~~~~~~~~~~~~~
 
 Variable substitution happens for *all* instructions, not just the ones listed
 in the Dockerfile reference.
@@ -410,10 +352,12 @@ in the Dockerfile reference.
 with Docker where these variables miss upon *use*, except for certain
 cache-excluded variables that never cause misses, listed below.
 
-Like Docker, :code:`ch-image` pre-defines the following proxy variables, which
-do not require an :code:`ARG` instruction. However, they are available if the
-same-named environment variable is defined; :code:`--build-arg` is not
-required. Changes to these variables do not cause a cache miss.
+:code:`ch-image` passes the following proxy environment variables in to the
+build. Changes to these variables do not cause a cache miss. They do not
+require an :code:`ARG` instruction, as `documented
+<https://docs.docker.com/engine/reference/builder/#predefined-args>`_ in the
+Dockerfile reference. Unlike Docker, they are available if the same-named
+environment variable is defined; :code:`--build-arg` is not required.
 
 .. code-block:: sh
 
@@ -426,7 +370,15 @@ required. Changes to these variables do not cause a cache miss.
    NO_PROXY
    no_proxy
 
-The following variables are also pre-defined:
+In addition to those listed in the Dockerfile reference, these environment
+variables are passed through in the same way:
+
+.. code-block:: sh
+
+   SSH_AUTH_SOCK
+
+Finally, these variables are also pre-defined but are unrelated to the host
+environment:
 
 .. code-block:: sh
 
@@ -437,7 +389,7 @@ Note that :code:`ARG` and :code:`ENV` have different syntax despite very
 similar semantics.
 
 :code:`COPY`
-------------
+~~~~~~~~~~~~
 
 Especially for people used to UNIX :code:`cp(1)`, the semantics of the
 Dockerfile :code:`COPY` instruction can be confusing.
@@ -503,7 +455,7 @@ We expect the following differences to be permanent:
   unprivileged build.
 
 Features we do not plan to support
-----------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Parser directives are not supported. We have not identified a need for any
   of them.
@@ -528,18 +480,8 @@ Features we do not plan to support
   focus on that and will not introduce the volume management features that
   Docker has.
 
-
-Environment variables
-=====================
-
-.. include:: py_env.rst
-
-
 Examples
-========
-
-:code:`build`
--------------
+--------
 
 Build image :code:`bar` using :code:`./foo/bar/Dockerfile` and context
 directory :code:`./foo/bar`::
@@ -556,7 +498,7 @@ path::
    grown in 4 instructions: bar
 
 Build using humongous vendor compilers you want to bind-mount instead of
-installing into a layer::
+installing into the image::
 
    $ ch-image build --bind /opt/bigvendor:/opt .
    $ cat Dockerfile
@@ -567,24 +509,180 @@ installing into a layer::
    RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround
    RUN ldconfig
 
+
+:code:`delete`
+==============
+
+::
+
+   $ ch-image [...] delete IMAGE_REF
+
+Delete the image described by the image reference :code:`IMAGE_REF` from the
+storage directory.
+
+
+:code:`list`
+============
+
+Print information about images. If no argument given, list the images in
+builder storage.
+
+Synopsis
+--------
+
+::
+
+   $ ch-image [...] list [IMAGE_REF]
+
+Description
+-----------
+
+Optional argument:
+
+  :code:`IMAGE_REF`
+    Print details of what's known about :code:`IMAGE_REF`, both locally and in
+    the remote registry, if any.
+
+Examples
+--------
+
+List images in builder storage::
+
+   $ ch-image list
+   alpine:3.9 (amd64)
+   alpine:latest (amd64)
+   debian:buster (amd64)
+
+Print details about Debian Buster image::
+
+   $ ch-image list debian:buster
+   details of image:    debian:buster
+   in local storage:    no
+   full remote ref:     registry-1.docker.io:443/library/debian:buster
+   available remotely:  yes
+   remote arch-aware:   yes
+   host architecture:   amd64
+   archs available:     386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x
+
+
+:code:`import`
+==============
+
+::
+
+   $ ch-image [...] import PATH IMAGE_REF
+
+Copy the image at :code:`PATH` into builder storage with name
+:code:`IMAGE_REF`. :code:`PATH` can be:
+
+* an image directory
+* a tarball with no top-level directory (a.k.a. a "`tarbomb <https://en.wikipedia.org/wiki/Tar_(computing)#Tarbomb>`_")
+* a standard tarball with one top-level directory
+
+If the imported image contains Charliecloud metadata, that will be imported
+unchanged, i.e., images exported from :code:`ch-image` builder storage will be
+functionally identical when re-imported.
+
+
 :code:`pull`
-------------
+============
 
-Download the Debian Buster image and place it in the storage directory::
+Pull the image described by the image reference :code:`IMAGE_REF` from a
+repository to the local filesystem.
 
-  $ ch-image pull debian:buster
-  pulling image:   debian:buster
+Synopsis
+--------
 
-  manifest: downloading
-  layer 1/1: d6ff36c: downloading
-  layer 1/1: d6ff36c: listing
-  validating tarball members
-  resolving whiteouts
-  flattening image
-  layer 1/1: d6ff36c: extracting
-  done
+::
 
-Same, except place the image in :code:`/tmp/buster`::
+   $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
+
+See the FAQ for the gory details on specifying image references.
+
+Description
+-----------
+
+Destination:
+
+  :code:`IMAGE_DIR`
+    If specified, place the unpacked image at this path; it is then ready for
+    use by :code:`ch-run` or other tools. The storage directory will not
+    contain a copy of the image, i.e., it is only unpacked once.
+
+Options:
+
+  :code:`--last-layer N`
+    Unpack only :code:`N` layers, leaving an incomplete image. This option is
+    intended for debugging.
+
+  :code:`--parse-only`
+    Parse :code:`IMAGE_REF`, print a parse report, and exit successfully
+    without talking to the internet or touching the storage directory.
+
+This script does a fair amount of validation and fixing of the layer tarballs
+before flattening in order to support unprivileged use despite image problems
+we frequently see in the wild. For example, device files are ignored, and file
+and directory permissions are increased to a minimum of :code:`rwx------` and
+:code:`rw-------` respectively. Note, however, that symlinks pointing outside
+the image are permitted, because they are not resolved until runtime within a
+container.
+
+The following metadata in the pulled image is retained; all other metadata is
+currently ignored. (If you have a need for additional metadata, please let us
+know!)
+
+  * Current working directory set with :code:`WORKDIR` is effective in
+    downstream Dockerfiles.
+
+  * Environment variables set with :code:`ENV` are effective in downstream
+    Dockerfiles and also written to :code:`/ch/environment` for use in
+    :code:`ch-run --set-env`.
+
+  * Mount point directories specified with :code:`VOLUME` are created in the
+    image if they don't exist, but no other action is taken.
+
+Note that some images (e.g., those with a "version 1 manifest") do not contain
+metadata. A warning is printed in this case.
+
+Examples
+--------
+
+Download the Debian Buster image matching the host's architecture and place it
+in the storage directory::
+
+   $ uname -m
+   aarch32
+   pulling image:    debian:buster
+   requesting arch:  arm64/v8
+   manifest list: downloading
+   manifest: downloading
+   config: downloading
+   layer 1/1: c54d940: downloading
+   flattening image
+   layer 1/1: c54d940: listing
+   validating tarball members
+   resolving whiteouts
+   layer 1/1: c54d940: extracting
+   image arch: arm64
+   done
+
+Same, specifying the architecture explicitly::
+
+   $ ch-image --arch=arm/v7 pull debian:buster
+   pulling image:    debian:buster
+   requesting arch:  arm/v7
+   manifest list: downloading
+   manifest: downloading
+   config: downloading
+   layer 1/1: 8947560: downloading
+   flattening image
+   layer 1/1: 8947560: listing
+   validating tarball members
+   resolving whiteouts
+   layer 1/1: 8947560: extracting
+   image arch: arm (may not match host arm64/v8)
+
+Download the same image and place it in :code:`/tmp/buster`::
 
    $ ch-image pull debian:buster /tmp/buster
    [...]
@@ -592,8 +690,46 @@ Same, except place the image in :code:`/tmp/buster`::
    bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
    boot  etc  lib   media  opt  root  sbin  sys  usr
 
+
 :code:`push`
-------------
+============
+
+Push the image described by the image reference :code:`IMAGE_REF` from the
+local filesystem to a repository.
+
+Synopsis
+--------
+
+::
+
+   $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
+
+See the FAQ for the gory details on specifying image references.
+
+Description
+-----------
+
+Destination:
+
+  :code:`DEST_REF`
+    If specified, use this as the destination image reference, rather than
+    :code:`IMAGE_REF`. This lets you push to a repository without permanently
+    adding a tag to the image.
+
+Options:
+
+  :code:`--image DIR`
+    Use the unpacked image located at :code:`DIR` rather than an image in the
+    storage directory named :code:`IMAGE_REF`.
+
+Because Charliecloud is fully unprivileged, the owner and group of files in
+its images are not meaningful in the broader ecosystem. Thus, when pushed,
+everything in the image is flattened to user:group :code:`root:root`. Also,
+setuid/setgid bits are removed, to avoid surprises if the image is pulled by a
+privileged container implementation.
+
+Examples
+--------
 
 Push a local image to the registry :code:`example.com:5000` at path
 :code:`/foo/bar` with tag :code:`latest`. Note that in this form, the local
@@ -657,4 +793,34 @@ in the remote registry, so we don't upload it again.)
    done
 
 
-..  LocalWords:  tmpfs'es bigvendor
+:code:`reset`
+=============
+
+::
+
+   $ ch-image [...] reset
+
+Delete all images and cache from ch-image builder storage.
+
+
+:code:`storage-path`
+====================
+
+::
+
+   $ ch-image [...] storage-path
+
+Print the storage directory path and exit.
+
+
+Environment variables
+=====================
+
+:code:`CH_IMAGE_USERNAME`, :code:`CH_IMAGE_PASSWORD`
+  Username and password for registry authentication. **See important caveats
+  in section "Authentication" above.**
+
+.. include:: py_env.rst
+
+
+..  LocalWords:  tmpfs'es bigvendor AUTH Aimage
