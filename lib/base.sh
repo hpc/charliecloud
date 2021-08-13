@@ -13,16 +13,16 @@ lib="${ch_bin}/../lib/charliecloud"
 # Don't call in a subshell or the selection will be lost.
 builder_choose () {
     if [ -z "$CH_BUILDER" ]; then
-        if ( command -v docker >/dev/null 2>&1 ); then
+        if command -v docker > /dev/null 2>&1; then
             export CH_BUILDER=docker
-        elif ( "${ch_bin}/ch-grow" --dependencies > /dev/null 2>&1); then
-            export CH_BUILDER=ch-grow
+        elif "${ch_bin}/ch-image" --dependencies > /dev/null 2>&1; then
+            export CH_BUILDER=ch-image
         else
             export CH_BUILDER=none
         fi
     fi
     case $CH_BUILDER in
-        buildah|buildah-runc|buildah-setuid|ch-grow|docker|none)
+        buildah|buildah-runc|buildah-setuid|ch-image|docker|none)
             ;;
         *)
             echo "unknown builder: $CH_BUILDER" 1>&2
@@ -31,16 +31,22 @@ builder_choose () {
     esac
 }
 
+# Return success if path $1 exists, without dereferencing links, failure
+# otherwise. ("test -e" dereferences.)
+exist_p () {
+    stat "$1" > /dev/null 2>&1
+}
+
 pack_fmt_valid () {
     case $1 in
     squash)
-        if ( ! command -v mksquashfs >/dev/null 2>&1 ); then
+        if ! command -v mksquashfs > /dev/null 2>&1; then
             echo "can't use squash for packed images: no mksquashfs found" 1>&2
             exit 1
         fi
         ;;
     tar)
-        if ( ! command -v tar >/dev/null 2>&1 ); then
+        if ! command -v tar > /dev/null 2>&1; then
             echo "can't use tar for packed images: no tar found" 1>&2
             exit 1
         fi
@@ -54,7 +60,7 @@ pack_fmt_valid () {
 
 pack_fmt_choose () {
     if [ -z "$CH_PACK_FMT" ]; then
-        if ( command -v mksquashfs >/dev/null 2>&1 ); then
+        if command -v mksquashfs > /dev/null 2>&1; then
             export CH_PACK_FMT=squash
         else
             export CH_PACK_FMT=tar
@@ -82,8 +88,11 @@ parse_basic_args () {
 }
 
 # Convert container registry path to filesystem compatible path.
+#
+# NOTE: This is used both to name user-visible stuff like tarballs as well as
+# dig around in the ch-image storage directory.
 tag_to_path () {
-    echo "$1" | sed 's/\//./g'
+    echo "$1" | sed 's/\//%/g'
 }
 
 usage () {
@@ -145,7 +154,7 @@ vset () {
 
 
 # Do we need sudo to run docker?
-if ( docker info > /dev/null 2>&1 ); then
+if docker info > /dev/null 2>&1; then
     docker_ () {
         docker "$@"
     }
@@ -156,7 +165,7 @@ else
 fi
 
 # Use parallel gzip if it's available.
-if ( command -v pigz >/dev/null 2>&1 ); then
+if command -v pigz > /dev/null 2>&1; then
     gzip_ () {
         pigz "$@"
     }
@@ -167,21 +176,26 @@ else
 fi
 
 # Use fuse low-level API if it's available.
-if ( command -v squashfuse_ll >/dev/null 2>&1 ); then
+if command -v squashfuse_ll > /dev/null 2>&1; then
     squashfuse_ () {
         squashfuse_ll "$@"
     }
-else
+elif command -v squashfuse > /dev/null 2>&1; then
     squashfuse_ () {
         echo "WARNING:" 1>&2
         echo "Low-level FUSE API unavailable; squashfuse will be slower" 1>&2
         squashfuse "$@"
     }
+else
+    squashfuse_ () {
+        echo "can't mount: no squashfuse or squashfuse_ll command found" 1>&2
+        exit 1
+    }
 fi
 
 # Use pv to show a progress bar, if it's available. (We also don't want a
 # progress bar if stdin is not a terminal, but pv takes care of that.)
-if ( command -v pv >/dev/null 2>&1 ); then
+if command -v pv > /dev/null 2>&1; then
     pv_ () {
         pv -pteb "$@"
     }

@@ -46,11 +46,19 @@ common distributions should be sufficient.
 
   * Automake
   * Autoconf
-  * Autoconf Archive
+  * Python's :code:`pip3` package installer and its :code:`wheel` extension
 
 Create :code:`configure` with::
 
   $ ./autogen.sh
+
+This script has a few options; see its :code:`--help`.
+
+Note that Charliecloud disables Automake's "maintainer mode" by default, so
+the build system (Makefiles, :code:`configure`, etc.) will never automatically
+be rebuilt. You must run :code:`autogen.sh` manually if you need this. You can
+also re-enable maintainer mode with :code:`configure` if you like, though this
+is not a tested configuration.
 
 :code:`configure` options
 -------------------------
@@ -58,20 +66,26 @@ Create :code:`configure` with::
 Charliecloud's :code:`configure` has the following options in addition to the
 standard ones.
 
+Feature selection: :code:`--disable-FOO`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 By default, all features that can be built will be built and installed. You
 can exclude some features with:
 
-  =========================  =======================================================
+  ========================== =======================================================
   option                     don't build or install
-  =========================  =======================================================
+  ========================== =======================================================
   :code:`--disable-html`     HTML documentation
   :code:`--disable-man`      man pages
   :code:`--disable-tests`    test suite
-  :code:`--disable-ch-grow`  :code:`ch-grow` unprivileged builder and :code:`ch-tug`
-  =========================  =======================================================
+  :code:`--disable-ch-image` :code:`ch-image` unprivileged builder & image manager
+  ========================== =======================================================
 
 You can also say :code:`--enable-FOO` to fail the build if :code:`FOO` can't
 be built.
+
+Dependency selection: :code:`--with-FOO`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some dependencies can be specified as follows. Note that :code:`--without-FOO`
 is not supported; use the feature selectors above.
@@ -88,6 +102,75 @@ is not supported; use the feature selectors above.
   Path to Python used by :code:`sphinx-build`. Default: shebang of
   :code:`sphinx-build`.
 
+Less strict build: :code:`--enable-buggy-build`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Please do not use this option routinely, as that hides bugs that we cannot
+find otherwise.*
+
+By default, Charliecloud builds with :code:`CFLAGS` including :code:`-Wall
+-Werror`. The principle here is that we prefer diagnostics that are as noisy
+as practical, so that problems are identified early and we can fix them. We
+prefer :code:`-Werror` unless there is a specific reason to turn it off. For
+example, this approach identified a buggy :code:`configure` test (`issue #798
+<https://github.com/hpc/charliecloud/issues/798>`_).
+
+Many others recommend the opposite. For example, Gentoo's "`Common mistakes
+<https://devmanual.gentoo.org/ebuild-writing/common-mistakes/index.html>`_"
+guide advises against :code:`-Werror` because it causes breakage that is
+"random" and "without purpose". There is a well-known `blog post
+<https://flameeyes.blog/2009/02/25/future-proof-your-code-dont-use-werror/>`_
+from Flameeyes that recommends :code:`-Werror` be off by default and used by
+developers and testers only.
+
+In our opinion, for Charliecloud, these warnings are most likely the result of
+real bugs and shouldn't be hidden (i.e., they are neither random nor without
+purpose). Our code should have no warnings, regardless of compiler, and any
+spurious warnings should be silenced individually. We do not have the
+resources to test with a wide variety of compilers, so enabling
+:code:`-Werror` only for development and testing, as recommended by others,
+means that we miss potentially important diagnostics — people typically do not
+pay attention to warnings, only errors.
+
+That said, we recognize that packagers and end users just want to build the
+code with a minimum of hassle. Thus, we provide the :code:`configure` flag:
+
+:code:`--enable-buggy-build`
+  Remove :code:`-Werror` from :code:`CFLAGS` when building.
+
+Don't hesitate to use it. But if you do, we would very much appreciate if you:
+
+  1. File a bug explaining why! We'll fix it.
+  2. Remove it from your package or procedure once we fix that bug.
+
+Disable bundled Lark package: :code:`--disable-bundled-lark`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*This option is minimally supported and not recommended. Use only if you
+really know what you are doing.*
+
+Charliecloud uses the Python package `Lark
+<https://lark-parser.readthedocs.io/en/latest/>`_ for parsing Dockerfiles and
+image references. Because this package is developed rapidly, and recent
+versions have important features and bug fixes not yet available in common
+distributions, we bundle the package with Charliecloud.
+
+If you prefer a separately-installed Lark, either via system packages or
+:code:`pip`, you can use :code:`./configure --disable-bundled-lark`. This
+excludes the bundled Lark from being installed or placed in :code:`make dist`
+tarballs. It *does not* remove the bundled Lark from the source directory; if
+you run from the source directory (i.e., without installing), the bundled Lark
+will be used if present regardless of this option.
+
+Bundled Lark is included in the tarballs we distribute. You can remove it and
+re-build :code:`configure` with :code:`./autogen.sh --rm-lark --no-lark`. If
+you are starting from a Git checkout, bundled Lark is installed by default by
+:code:`./autogen.sh`, but you can prevent this with :code:`./autogen.sh
+--no-lark`.
+
+The main use case for these options is to support package maintainers. If this
+is you and does not meet your needs, please get in touch with us and we will
+help.
 
 Install with package manager
 ============================
@@ -97,16 +180,15 @@ package managers.
 
 Maintained by us:
 
-  * Generic RPMs downloadable from our `releases page <https://github.com/hpc/charliecloud/releases>`_.
   * `Spack
     <https://spack.readthedocs.io/en/latest/package_list.html#charliecloud>`_;
-    install with :code:`+builder` to get :code:`ch-grow`.
+    install with :code:`+builder` to get :code:`ch-image`.
   * `Fedora/EPEL <https://bodhi.fedoraproject.org/updates/?search=charliecloud>`_;
-    check for availabile versions with :code:`{yum,dnf} list charliecloud`.
+    check for available versions with :code:`{yum,dnf} list charliecloud`.
 
 Maintained by others:
 
-  * `Debian <https://packages.debian.org/search?keywords=charliecloud>`_
+  * `Debian <https://packages.debian.org/source/charliecloud>`_
   * `Gentoo <https://packages.gentoo.org/packages/sys-cluster/charliecloud>`_
   * `NixOS <https://github.com/NixOS/nixpkgs/tree/master/pkgs/applications/virtualization/charliecloud>`_
   * `SUSE <https://packagehub.suse.com/packages/charliecloud/>`_ and `openSUSE <https://build.opensuse.org/package/show/network:cluster/charliecloud>`_
@@ -373,14 +455,7 @@ Options include:
     GitLab instance.
 
   * Filesystem directory, for builders that support this (e.g.,
-    :code:`ch-grow`).
-
-"lark-parser" Python package
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-PyPI has two incompatible packages that provide the module :code:`lark`,
-"`lark-parser <https://pypi.org/project/lark-parser/>`_" and "lark". You want
-"lark-parser".
+    :code:`ch-image`).
 
 Python
 ~~~~~~
@@ -388,16 +463,29 @@ Python
 We use Python for scripts that would be really hard to do in Bash, when we
 think Python is likely to be available.
 
+ShellCheck
+~~~~~~~~~~
+
+`ShellCheck <https://www.shellcheck.net/>`_ is a very thorough and capable
+linter for shell scripts. In order to pass the full test suite, all the shell
+scripts need to pass ShellCheck.
+
+While it is widely available in distributions, the packaged version is usually
+too old. Building from source is tricky because it's a Haskell program, which
+isn't a widely available tool chain. Fortunately, the developers provide
+pre-compiled `static binaries
+<https://github.com/koalaman/shellcheck/releases>`_ on their GitHub page.
+
 Sphinx
 ~~~~~~
 
 We use Sphinx to build the documentation; the theme is
 `sphinx-rtd-theme <https://sphinx-rtd-theme.readthedocs.io/en/stable/>`_.
 
-Minimum versions are listed above. We currently use Sphinx 1.8 for building
-what's on the web because there are bugs problematic for us in 2.x, e.g. `bad
-spacing in lists
-<https://github.com/readthedocs/sphinx_rtd_theme/issues/799>`_.
+Minimum versions are listed above. Note that while anything greater than the
+minimum should yield readable documentation, we don't test quality with
+anything other than what we use to build the website, which is usually but not
+always the most recent version available on PyPI.
 
 If you're on Debian Stretch or some version of Ubuntu, installing with
 :code:`pip3` will silently install into :code:`~/.local`, leaving the
@@ -636,3 +724,5 @@ currently running.
 If the tests don't pass, that's a bug. Please report it!
 
 Now you can :code:`vagrant ssh` and do all the usual Vagrant stuff.
+
+..  LocalWords:  Werror Flameeyes

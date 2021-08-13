@@ -9,6 +9,11 @@
 # common and we'd prefer not to introduce another dependency. For example,
 # it's a standard tool on Debian but only in EPEL for CentOS.
 #
+# FIXME: Despite the guidance in the Build script API docs, this produces a
+# tarball even though the process does not naturally produce one. This is
+# because we are also creating some rather bizarre tar edge cases. These
+# should be moved to a separate script.
+#
 # ch-test-scope: quick
 
 set -ex
@@ -105,13 +110,24 @@ touch img/mnt/dev/dontdeleteme
 # Fixture to make sure we raise hidden files in non-tarbombs.
 touch img/.hiddenfile1 img/..hiddenfile2 img/...hiddenfile3
 
+# Fixtures for bind-mounting
+ln -s ../bind4 img/mnt/bind4
+ln -s ./doesnotexist img/mnt/link-b0rken-rel
+ln -s /doesnotexist img/mnt/link-b0rken-abs
+ln -s /tmp img/mnt/link-bad-abs
+ln -s ../.. img/mnt/link-bad-rel
+
+# Fixture to test resolv.conf as symlink (issue #1015).
+mv img/etc/resolv.conf img/etc/resolv.conf.real
+ln -s /etc/resolv.conf.real img/etc/resolv.conf
+
 
 ## Tar it up.
 
 # Using pigz saves about 8 seconds. Normally we wouldn't care about that, but
 # this script is part of the quick scope, which we'd like developers to use
 # frequently, so every second matters.
-if ( command -v pigz >/dev/null 2>&1 ); then
+if command -v pigz > /dev/null 2>&1; then
     gzip_cmd=pigz
 else
     gzip_cmd=gzip

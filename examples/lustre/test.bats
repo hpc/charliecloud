@@ -1,6 +1,6 @@
 true
 # shellcheck disable=SC2034
-CH_TEST_TAG=%ch_test_tag%
+CH_TEST_TAG=$ch_test_tag
 
 load "${CHTEST_DIR}/common.bash"
 
@@ -18,7 +18,7 @@ setup () {
             skip "$msg"
         fi
     elif [[ ! -d $CH_TEST_LUSTREDIR ]]; then
-        echo "'${CH_TEST_LUSTREDIR}' is not a directory"
+        echo "'${CH_TEST_LUSTREDIR}' is not a directory" 1>&2
         exit 1
     fi
 }

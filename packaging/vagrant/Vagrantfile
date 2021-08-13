@@ -69,22 +69,28 @@ Vagrant.configure("2") do |c|
     set -e
     cd /tmp
 
-    # Basic stuff from standard repos.
+    # Basic stuff from standard repos and confgure yum to fail on missing pkgs.
     yum makecache fast
-    yum-config-manager --setopt=deltarpm=0 --save
+    yum-config-manager --setopt=deltarpm=0 --setopt=skip_missing_names_on_install=0 --save
     yum -y upgrade
     yum -y install emacs \
                    vim \
                    wget
 
     # Git from IUS. This also activates EPEL.
-    wget https://centos7.iuscommunity.org/ius-release.rpm
+    # From here: https://ius.io/setup
+    # Likely to be deprecated again sometime in the future
+    wget https://repo.ius.io/ius-release-el7.rpm
     yum -y install epel-release
-    rpm --install ius-release.rpm
-    yum -y install git2u
+    rpm --install ius-release-el7.rpm
+    yum -y install git222
 
     # Optional dependencies.
     yum -y install bats pigz pv python36
+
+    # Squash dependencies.
+    yum -y install squashfs-tools.x86_64
+    yum -y install squashfuse.x86_64
 
     # Add /usr/local/{bin,sbin} to $PATH.
     echo 'export PATH=/usr/local/sbin:/usr/local/bin:$PATH' > /etc/profile.d/path.sh
@@ -184,13 +190,13 @@ EOF2
     ./autogen.sh
     ./configure
     make
-    sudo make install PREFIX=/usr/local
+    sudo make install
     which ch-run
     ch-run --version
   EOF
 
   # Install Buildah.
-  c.vm.provision "buildah", type: "shell", privileged: false,
+  c.vm.provision "buildah", type: "shell", run: "never", privileged: false,
                  inline: <<-EOF
     set -e
     cd /usr/local/src
@@ -222,22 +228,21 @@ EOF2
     git checkout "$BUILDAH_VERSION"
     make
     sudo make install
+    # Setup buildah's system configuration files
+    sudo mkdir -p /etc/containers
+    # These files are already on the image, but the defaults don't work with our buildah
+    sudo cp tests/policy.json /etc/containers
+    sudo cp tests/registries.conf /etc/containers
   EOF
 
-  # Install ch-grow dependencies.
-  c.vm.provision "ch-grow", type: "shell", privileged: false,
+  # Install ch-image dependencies.
+  c.vm.provision "ch-image", type: "shell", privileged: false,
                  inline: <<-EOF
     set -e
     cd /usr/local/src
-    sudo yum -y install python36 \
-                        python36-pip \
-                        skopeo
-
-    wget https://github.com/openSUSE/umoci/releases/download/v0.4.4/umoci.amd64
-    sudo chmod 755 umoci.amd64
-    sudo mv umoci.amd64 /usr/bin/umoci
-    umoci --version
+    sudo yum -y install python36 python36-pip
     sudo pip3 install lark-parser
+    sudo pip3 install requests
   EOF
 
   # Twiddle vagrant user so Charliecloud tests will pass (add to a second
@@ -249,8 +254,8 @@ EOF2
     echo '%vagrant ALL=(ALL:ALL) NOPASSWD: ALL' > /etc/sudoers.d/vagrant
 
     # Configure subuids and subgids for runc.
-    sudo usermod --add-subuids 10000-65536 vagrant
-    sudo usermod --add-subgids 10000-65536 vagrant
+    usermod --add-subuids 10000-65536 vagrant
+    usermod --add-subgids 10000-65536 vagrant
   EOF
 
   # Remove unneeded packages.
@@ -279,8 +284,8 @@ EOF2
     chown -R charlie:charlie /usr/local/src/charliecloud
 
     # Configure subuids and subgids for runc.
-    sudo usermod --add-subuids 10000-65536 charlie
-    sudo usermod --add-subgids 10000-65536 charlie
+    usermod --add-subuids 10000-65536 charlie
+    usermod --add-subgids 10000-65536 charlie
 
     # Automatically log in "charlie" on the console, so they have a way to get
     # in if SSH isn't working.
@@ -288,6 +293,10 @@ EOF2
     rm -f getty@tty1.service
     cp /lib/systemd/system/getty@.service getty@tty1.service
     sed -ri 's|^ExecStart=.*$|ExecStart=-/sbin/agetty --autologin charlie --noclear %I|' getty@tty1.service
+
+    # A test tries to signal a getty process from within the container, so
+    # we need at least one enabled.
+    sudo systemctl enable getty@tty2.service
 
     # Configure SSH to allow password logins. We would prefer to keep the
     # Vagrant default of SSH keys only, but I can't figure out how to get the
@@ -297,7 +306,7 @@ EOF2
 
     # Fix /etc/shadow permissions. Not clear where they were broken, but
     # passwd(1) below fails without this.
-    sudo restorecon -v /etc/shadow
+    restorecon -v /etc/shadow
 
     # Lock out password login for root and vagrant, because the default
     # password is well-known and we now allow password login.
@@ -318,9 +327,9 @@ EOF2
     else
         user=vagrant
     fi
-    sudo -iu $user -- sh -c "ch-test clean && ch-test -b docker"
-    sudo -iu $user -- sh -c "ch-test clean && ch-test -b buildah"
-    sudo -iu $user -- sh -c "ch-test clean && ch-test -b ch-grow"
+    sudo -iu $user -- sh -c "ch-test --pedantic yes -b docker all"
+    #sudo -iu $user -- sh -c "ch-test --pedantic yes -b buildah all"
+    sudo -iu $user -- sh -c "ch-test --pedantic yes -b ch-image all"
   EOF
 end
 

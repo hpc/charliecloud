@@ -1,6 +1,5 @@
-# FIXME: was full; doesn't work after autotools update
-# ch-test-scope: skip
-FROM debian9
+# ch-test-scope: full
+FROM centos:8
 
 # Note: Spack is a bit of an odd duck testing wise. Because it's a package
 # manager, the key tests we want are to install stuff (this includes the Spack
@@ -16,20 +15,22 @@ FROM debian9
 
 # Packages needed to install Spack [1].
 #
-# Note: Spack claims that Python 3 works, but using python3 here fails later
-# with "/usr/bin/env: 'python': No such file or directory".
-RUN apt-get install -y \
-    python \
-    gcc \
-    make \
-    git \
-    curl
-
-# Packages needed to install Charliecloud with Spack. These are in Spack's
-# Docker example [2] but are not documented as prerequisites [1].
-RUN apt-get install -y \
-    g++ \
-    unzip
+# bzip, file, patch, unzip, and which are packages needed to install
+# Charliecloud with Spack. These are in Spack's Docker example [2] but are not
+# documented as prerequisites [1].
+RUN dnf install -y --setopt=install_weak_deps=false \
+                gcc \
+                gcc-c++ \
+                git \
+                gnupg2-smime \
+                python3 \
+                make \
+                bzip2 \
+                file \
+                patch \
+                unzip \
+                which \
+ && dnf clean all
 
 # Certain Spack packages (e.g., tar) puke if they detect themselves being
 # configured as UID 0. This is the override. See issue #540 and [2].
@@ -40,14 +41,9 @@ ARG FORCE_UNSAFE_CONFIGURE=1
 # place it at a standard path ("spack clone" simply clones another working
 # directory to a new path).
 #
-# Spack does have releases, but they seem pretty stale. As of 2019-09-12, the
-# most recent version is 0.12.1 dated 8 months ago, 2019-01-13; there have
-# been hundreds if not thousands of commits on the default branch "develop"
-# since then. We follow develop for this reason and also to catch problems
-# installing Charliecloud with latest Spack.
-ENV SPACK_REPO https://github.com/spack/spack
-#ENV SPACK_VERSION 0.12.1
-#RUN git clone --branch v$SPACK_VERSION --depth 1 $SPACK_REPO
+# We follow the develop branch to catch problems installing Charliecloud with
+# the latest Spack.
+ARG SPACK_REPO=https://github.com/spack/spack
 RUN git clone --depth 1 $SPACK_REPO
 RUN cd spack && git status && git rev-parse --short HEAD
 
@@ -59,24 +55,20 @@ RUN spack compiler find --scope system
 # Test: Some basic commands.
 RUN which spack
 RUN spack --version
+RUN spack compiler find
 RUN spack compiler list
 RUN spack compiler list --scope=system
 RUN spack compiler list --scope=user
 RUN spack compilers
-RUN spack spec netcdf
+RUN spack spec charliecloud
 
 # Test: Install Charliecloud.
-RUN spack spec charliecloud+builder
-RUN spack install charliecloud+builder
-
-# Test: Run Spack test suite. Distro package dependencies discovered by trial
-# and error.
-#
-# FIXME: Commented out because the suite fails. Last time I tried, 6 tests
-# failed and 1 "xfailed".
-#RUN apt-get install -y \
-#    python-pkg-resources
-#RUN spack test
+# Kludge: here we specify an older python sphinx rtd_theme version because
+# newer default version, 0.5.0, introduces a dependency on node-js which doesn't
+# appear to build on gcc 4.8 or gcc 8.3
+# (see: https://github.com/spack/spack/issues/19310).
+RUN spack spec charliecloud+docs^py-sphinx-rtd-theme@0.4.3
+RUN spack install charliecloud+docs^py-sphinx-rtd-theme@0.4.3
 
 # Clean up.
 RUN spack clean --all

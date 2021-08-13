@@ -1,6 +1,6 @@
 true
 # shellcheck disable=SC2034
-CH_TEST_TAG=%ch_test_tag%
+CH_TEST_TAG=$ch_test_tag
 
 load "${CHTEST_DIR}/common.bash"
 
@@ -23,26 +23,30 @@ setup () {
     scope standard
     prerequisites_ok spark
     umask 0077
-    spark_dir=~/ch-spark-test.tmp  # runs before each test, so no mktemp
+
+    # Unset these Java variables so the container doesn't use host paths.
+    unset JAVA_BINDIR JAVA_HOME JAVA_ROOT
+
+    spark_dir=${TMP_}/spark  # runs before each test, so no mktemp
     spark_config=$spark_dir
     spark_log=/tmp/sparklog
+    confbind=${spark_config}:/mnt/0
     if [[ $ch_multinode ]]; then
-        # Use the last non-loopback IP address. This is a barely educated
-        # guess and shouldn't be relied on for real code, but hopefully it
-        # works for testing.
-        master_ip=$(  ip -o -f inet addr show \
-                    | grep -F 'scope global' \
-                    | tail -1 \
-                    | sed -r 's/^.+inet ([0-9.]+).+/\1/')
+        # We use hostname to determine the interface to use for this test,
+        # avoiding complicated logic determining which interface is the HSN.
+        # In many environments this likely results in the tests running over
+        # the slower management interface, which is fine for testing, but
+        # should be avoided for large scale runs.
+        master_host="$(hostname)"
         # Start Spark workers using pdsh. We would really prefer to do this
         # using srun, but that doesn't work; see issue #230.
         command -v pdsh >/dev/null 2>&1 || pedantic_fail "pdsh not in path"
         pernode="pdsh -R ssh -w ${SLURM_NODELIST} -- PATH='${PATH}'"
     else
-        master_ip=127.0.0.1
+        master_host=localhost
         pernode=
     fi
-    master_url="spark://${master_ip}:7077"
+    master_url="spark://${master_host}:7077"
     master_log="${spark_log}/*master.Master*.out"
 }
 
@@ -53,26 +57,33 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = 'u=rwx,g=,o=' ]]
     # create config
-    mkdir -p "$spark_config"
+    $ch_mpirun_node mkdir -p "$spark_config"
+    # We set JAVA_HOME in the spark environment file as this appears to be the
+    # idiomatic method for ensuring spark finds the java install.
     tee <<EOF > "${spark_config}/spark-env.sh"
 SPARK_LOCAL_DIRS=/tmp/spark
 SPARK_LOG_DIR=$spark_log
 SPARK_WORKER_DIR=/tmp/spark
 SPARK_LOCAL_IP=127.0.0.1
-SPARK_MASTER_HOST=${master_ip}
+SPARK_MASTER_HOST=${master_host}
+JAVA_HOME=/usr/lib/jvm/default-java/
 EOF
     my_secret=$(cat /dev/urandom | tr -dc '0-9a-f' | head -c 48)
     tee <<EOF > "${spark_config}/spark-defaults.conf"
 spark.authenticate.true
 spark.authenticate.secret ${my_secret}
 EOF
+    if [[ $ch_multinode ]]; then
+        sbcast -f "${spark_config}/spark-env.sh" "${spark_config}/spark-env.sh"
+        sbcast -f "${spark_config}/spark-defaults.conf" "${spark_config}/spark-defaults.conf"
+    fi
 }
 
 @test "${ch_tag}/start" {
     # remove old master logs so new one has predictable name
     rm -Rf --one-file-system "$spark_log"
     # start the master
-    ch-run -b "$spark_config" "$ch_img" -- /opt/spark/sbin/start-master.sh
+    ch-run -b "$confbind" "$ch_img" -- /opt/spark/sbin/start-master.sh
     sleep 7
     # shellcheck disable=SC2086
     cat $master_log
@@ -80,7 +91,7 @@ EOF
     grep -Fq 'New state: ALIVE' $master_log
     # start the workers
     # shellcheck disable=SC2086
-    $pernode ch-run -b "$spark_config" "$ch_img" -- \
+    $pernode ch-run -b "$confbind" "$ch_img" -- \
                     /opt/spark/sbin/start-slave.sh "$master_url"
     sleep 7
 }
@@ -100,7 +111,7 @@ EOF
 }
 
 @test "${ch_tag}/pi" {
-    run ch-run -b "$spark_config" "$ch_img" -- \
+    run ch-run -b "$confbind" "$ch_img" -- \
                /opt/spark/bin/spark-submit --master "$master_url" \
                /opt/spark/examples/src/main/python/pi.py 64
     echo "$output"
@@ -111,8 +122,8 @@ EOF
 }
 
 @test "${ch_tag}/stop" {
-    $pernode ch-run -b "$spark_config" "$ch_img" -- /opt/spark/sbin/stop-slave.sh
-    ch-run -b "$spark_config" "$ch_img" -- /opt/spark/sbin/stop-master.sh
+    $pernode ch-run -b "$confbind" "$ch_img" -- /opt/spark/sbin/stop-slave.sh
+    ch-run -b "$confbind" "$ch_img" -- /opt/spark/sbin/stop-master.sh
     sleep 2
     # Any Spark processes left?
     # (Use egrep instead of fgrep so we don't match the grep process.)

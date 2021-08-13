@@ -64,16 +64,16 @@ Create a SquashFS file from an image directory.
 ch-fromhost
 +++++++++++
 
-Inject files from the host into an image directory.
+Inject files from the host into an image directory, with various magic.
 
 .. include:: ./ch-fromhost_desc.rst
 
-ch-grow
-+++++++
+ch-image
+++++++++
 
-Build an image from a Dockerfile; completely unprivileged.
+Build and manage images; completely unprivileged.
 
-.. include:: ./ch-grow_desc.rst
+.. include:: ./ch-image_desc.rst
 
 ch-mount
 ++++++++
@@ -134,13 +134,6 @@ ch-test
 Run some or all of the Charliecloud test suite.
 
 .. include:: ./ch-test_desc.rst
-
-ch-tug
-++++++
-
-Pull and flatten image from repository to local filesystem.
-
-.. include:: ./ch-tug_desc.rst
 
 ch-umount
 +++++++++

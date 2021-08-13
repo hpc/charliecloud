@@ -2,37 +2,36 @@
 FROM centos:7
 
 # This image has two purposes: (1) demonstrate we can build a CentOS 7 image
-# and (2) provide a build environment for Charliecloud RPMs.
+# and (2) provide a build environment for Charliecloud EPEL 7 RPMs.
 
-# Install packages we actually need.
-RUN yum -y install epel-release
-RUN yum -y install \
-           bats \
-           gcc \
-           make \
-           python36 \
-           rpm-build \
-           rpmlint \
-           wget
+# Install our dependencies, ensuring we fail out if any are missing.
+RUN yum install -y epel-release \
+ && yum install -y --setopt=skip_missing_names_on_install=0 \
+                autoconf \
+                automake \
+                bats \
+                fakeroot \
+                gcc \
+                git \
+                make \
+                python3-devel \
+                python3 \
+                python36-lark-parser \
+                python36-requests \
+                python36-sphinx \
+                python36-sphinx_rtd_theme \
+                rpm-build \
+                rpmlint \
+                rsync \
+                squashfs-tools \
+                squashfuse \
+                wget \
+ && yum clean all
 
-# Like apt(8), Yum/RPM like to chown(2), etc., if they believe they are root.
-# This fails in an unprivileged user namespace because UID 0 is fake. Unlike
-# apt, RPM makes these system calls directly, so there's no opportunity for
-# kludges like linking chown(1) to true(1). For example:
-#
-#    Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
-#  Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64
-#  error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726: cpio: chown
-#    Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4
-#  error: dbus-1:1.10.24-13.el7_6.x86_64: install failed
-#  error: dbus-1:1.10.24-12.el7.x86_64: erase skipped
-#
-# We can instead use fakeroot(1), though there seems to be a performance
-# impact. In the interest of time, we demonstrate this by upgrading a single
-# package, though "yum upgrade" seems to pretty reliably tickle the problem.
-# See issue #472.
-RUN          yum -y install fakeroot
-RUN fakeroot yum -y upgrade dbus
+# We need to install epel rpm-macros after python3-devel to get the correct
+# python package version for our spec file macros.
+# https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/K4EH7V3OUFJFVL6A72IILJUA6JFX2HZW/
+RUN yum install -y epel-rpm-macros
 
-# Clean up.
-RUN yum clean all
+# Need wheel to install bundled Lark, and the RPM version doesn't work.
+RUN pip3 install wheel

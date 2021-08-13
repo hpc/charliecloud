@@ -25,7 +25,11 @@
 /** Constants **/
 
 /* Names of verbosity levels. */
-const char *VERBOSE_LEVELS[] = { "error", "warning", "info", "debug" };
+const char *VERBOSE_LEVELS[] = { "error",
+                                 "warning",
+                                 "info",
+                                 "verbose",
+                                 "debug" };
 
 
 /** External variables **/
@@ -42,11 +46,14 @@ int verbose;
 /** Functions **/
 
 /* Concatenate strings a and b, then return the result. */
-char *cat(char *a, char *b)
+char *cat(const char *a, const char *b)
 {
    char *ret;
-
-   T_ (1 <= asprintf(&ret, "%s%s", a, b));
+   if (a == NULL)
+      a = "";
+   if (b == NULL)
+       b = "";
+   T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
 }
 
@@ -77,13 +84,72 @@ void log_ids(const char *func, int line)
    }
 }
 
+/* Create directories in path under base. Exit with an error if anything goes
+   wrong. For example, mkdirs("/foo", "/bar/baz") will create directories
+   /foo/bar and /foo/bar/baz if they don't already exist, but /foo must exist
+   already. Symlinks are followed. path must remain under base, i.e. you can't
+   use symlinks or ".." to climb out. */
+void mkdirs(const char *base, const char *path,
+            char **denylist, size_t denylist_ct)
+{
+   char *basec, *component, *next, *nextc, *pathw, *saveptr;
+   struct stat sb;
+
+   T_ (base[0] != 0   && path[0] != 0);      // no empty paths
+   T_ (base[0] == '/' && path[0] == '/');    // absolute paths only
+
+   basec = realpath_safe(base);
+
+   DEBUG("mkdirs: base: %s", basec);
+   DEBUG("mkdirs: path: %s", path);
+   for (size_t i = 0; i < denylist_ct; i++)
+      DEBUG("mkdirs: deny: %s", denylist[i]);
+
+   pathw = cat(path, "");  // writeable copy
+   saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
+   component = strtok_r(pathw, "/", &saveptr);
+   nextc = basec;
+   while (component != NULL) {
+      next = cat(nextc, "/");
+      next = cat(next, component);  // canonical except for last component
+      DEBUG("mkdirs: next: %s", next)
+      component = strtok_r(NULL, "/", &saveptr);  // next NULL if current last
+      if (path_exists(next, &sb, false)) {
+         if (S_ISLNK(sb.st_mode)) {
+            char buf;                             // we only care if absolute
+            Tf (1 == readlink(next, &buf, 1), "can't read symlink: %s", next);
+            Tf (buf != '/', "can't mkdir: symlink not relative: %s", next);
+            Te (path_exists(next, &sb, true),     // resolve symlink
+                "can't mkdir: broken symlink: %s", next);
+         }
+         Tf (S_ISDIR(sb.st_mode) || !component,   // last component not dir OK
+             "can't mkdir: exists but not a directory: %s", next);
+         nextc = realpath_safe(next);
+         DEBUG("mkdirs: exists, canonical: %s", nextc);
+      } else {
+         Te (path_subdir_p(basec, next),
+             "can't mkdir: %s not subdirectory of %s", next, basec);
+         for (size_t i = 0; i < denylist_ct; i++)
+            Ze (path_subdir_p(denylist[i], next),
+                "can't mkdir: %s under existing bind-mount %s",
+                next, denylist[i]);
+         Zf (mkdir(next, 0777), "can't mkdir: %s", next);
+         nextc = next;  // canonical b/c we just created last component as dir
+         DEBUG("mkdirs: created: %s", nextc)
+      }
+   }
+   DEBUG("mkdirs: done");
+}
+
 /* Print a formatted message on stderr if the level warrants it. Levels:
 
      0 : "error"   : always print; exit unsuccessfully afterwards
      1 : "warning" : always print
      2 : "info"    : print if verbose >= 2
-     3 : "debug"   : print if verbose >= 3 */
-void msg(int level, char *file, int line, int errno_, char *fmt, ...)
+     3 : "verbose" : print if verbose >= 3
+     4 : "debug"   : print if verbose >= 4 */
+void msg(int level, const char *file, int line, int errno_,
+         const char *fmt, ...)
 {
    va_list ap;
 
@@ -110,13 +176,24 @@ void msg(int level, char *file, int line, int errno_, char *fmt, ...)
       exit(EXIT_FAILURE);
 }
 
-/* Return true if the given path exists, false otherwise. On error, exit. */
-bool path_exists(char *path)
+/* Return true if the given path exists, false otherwise. On error, exit. If
+   statbuf is non-null, store the result of stat(2) there. If follow_symlink
+   is true and the last component of path is a symlink, stat(2) the target of
+   the symlnk; otherwise, lstat(2) the link itself. */
+bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink)
 {
-   struct stat sb;
+   struct stat statbuf_;
 
-   if (stat(path, &sb) == 0)
-      return true;
+   if (statbuf == NULL)
+      statbuf = &statbuf_;
+
+   if (follow_symlink) {
+      if (stat(path, statbuf) == 0)
+         return true;
+   } else {
+      if (lstat(path, statbuf) == 0)
+         return true;
+   }
 
    Tf (errno == ENOENT, "can't stat: %s", path);
    return false;
@@ -132,7 +209,7 @@ bool path_exists(char *path)
    Also, the kernel contains a test "unprivileged-remount-test.c" that
    manually translates the flags. Thus, I wasn't comfortable simply passing
    the output of statvfs(3) to mount(2). */
-unsigned long path_mount_flags(char *path)
+unsigned long path_mount_flags(const char *path)
 {
    struct statvfs sv;
    unsigned long known_flags =   ST_MANDLOCK   | ST_NOATIME  | ST_NODEV
@@ -155,7 +232,7 @@ unsigned long path_mount_flags(char *path)
 }
 
 /* Split path into dirname and basename. */
-void path_split(char *path, char **dir, char **base)
+void path_split(const char *path, char **dir, char **base)
 {
    char *path2;
 
@@ -165,6 +242,37 @@ void path_split(char *path, char **dir, char **base)
    *base = basename(path2);
 }
 
+/* Return true if path is a subdirectory of base, false otherwise. Acts on the
+   paths as given, with no canonicalization or other reference to the
+   filesystem. For example:
+
+      path_subdir_p("/foo", "/foo/bar")   => true
+      path_subdir_p("/foo", "/bar")       => false
+      path_subdir_p("/foo/bar", "/foo/b") => false */
+bool path_subdir_p(const char *base, const char *path)
+{
+   int base_len = strlen(base);
+
+   if (base_len > strlen(path))
+      return false;
+
+   if (!strcmp(base, "/"))  // below logic breaks if base is root
+      return true;
+
+   return (   !strncmp(base, path, base_len)
+           && (path[base_len] == '/' || path[base_len] == 0));
+}
+
+/* Like realpath(3), but exit with error on failure. */
+char *realpath_safe(const char *path)
+{
+   char *pathc;
+
+   pathc = realpath(path, NULL);
+   Tf (pathc != NULL, "can't canonicalize: %s", path);
+   return pathc;
+}
+
 /* Split string str at first instance of delimiter del. Set *a to the part
    before del, and *b to the part after. Both can be empty; if no token is
    present, set both to NULL. Unlike strsep(3), str is unchanged; *a and *b
@@ -172,12 +280,13 @@ void path_split(char *path, char **dir, char **base)
    implications: (1) the caller must free(3) *a but not *b, and (2) the parts
    can be rejoined by setting *(*b-1) to del. The point here is to provide an
    easier wrapper for strsep(3). */
-void split(char **a, char **b, char *str, char del)
+void split(char **a, char **b, const char *str, char del)
 {
+   char *tmp;
    char delstr[2] = { del, 0 };
    T_ (str != NULL);
-   str = strdup(str);
-   *b = str;
+   tmp = strdup(str);
+   *b = tmp;
    *a = strsep(b, delstr);
    if (*b == NULL)
       *a = NULL;

@@ -42,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Charliecloud'
-copyright = u'2014–2019, Triad National Security, LLC'
+copyright = u'2014–2021, Triad National Security, LLC'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -73,7 +73,8 @@ exclude_patterns = ["doctrees", "html", "man"]
 #
 # on files included via ".. include::'. I believe this was fixed in 1.4.3 and
 # the relevant issue is: https://github.com/sphinx-doc/sphinx/issues/2603
-exclude_patterns += ["*_desc.rst", "_deps.rst", "bugs.rst", "see_also.rst"]
+exclude_patterns += ["*_desc.rst", "_deps.rst", "bugs.rst", "py_env.rst",
+                     "see_also.rst"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -237,12 +238,16 @@ latex_documents = [
 
 # -- Options for manual page output --------------------------------------------
 
+# Put all man pages in one directory regardless of section. Default changes to
+# True in Sphinx 4.0, which broke our builds (#1060).
+man_make_section_directory = False
+
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
    ("charliecloud", "charliecloud",
     "Lightweight user-defined software stacks for high-performance computing",
-    [], 1),
+    [], 7),
    ("ch-build", "ch-build",
     "Build an image and place it in the builder's back-end storage",
     [], 1),
@@ -261,11 +266,11 @@ man_pages = [
    ("ch-dir2squash", "ch-dir2squash",
     "Create a SquashFS file from an image directory",
     [], 1),
-   ("ch-grow", "ch-grow",
-    "Build an image from a Dockerfile; completely unprivileged",
-    [], 1),
    ("ch-fromhost", "ch-fromhost",
-    "Inject files from the host into an image directory",
+    "Inject files from the host into an image directory, with various magic",
+    [], 1),
+   ("ch-image", "ch-image",
+    "Build and manage images; completely unprivileged",
     [], 1),
    ("ch-mount", "ch-mount",
     "Mount a SquashFS image file using FUSE",
@@ -289,9 +294,6 @@ man_pages = [
     [], 1),
    ("ch-test", "ch-test",
     "Run some or all of the Charliecloud test suite",
-    [], 1),
-   ("ch-tug", "ch-tug",
-    "Pull and flatten image from repository to local filesystem",
     [], 1),
    ("ch-umount", "ch-umount",
     "Unmount a FUSE mounted squash filesystem and remove the mount point",

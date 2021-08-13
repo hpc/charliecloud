@@ -1,0 +1,312 @@
+#!/bin/bash
+
+# Count lines of code in the project in an intelligent way.
+#
+# Notes/gotchas:
+#
+#   1. Use temporary files instead of variables to allow easier examination
+#      after the script is run, and also because newline handling in shell
+#      variables is rather hairy & error prone (e.g., command substitution
+#      strips trailing newlines but echo adds a trailing newline, hiding it).
+#
+#   2. To add/update language definitions, cloc only has "merge, but mine are
+#      lower priority" (--read-lang-def) and "use mine only, with no default
+#      definitions" (--force-lang-def). We need "merge my definitions with
+#      default, but with mine higher priority", so we emulate it with
+#      --force-lang-def, providing all the language definitions we need, some
+#      of which are altered.
+#
+#   3. cloc also does not have a way to define file prefixes (say,
+#      Dockerfile.*). So we list all the Dockerfiles we have manually in the
+#      language definitions.
+
+set -e -o pipefail
+
+export LC_ALL=C
+cd "$(dirname "$0")"/..
+
+countem () {
+    msg=$1
+    infile=$2
+    outfile=${2}.out
+    catfile=${2}.cat
+    ignore_ct=${3:-0}
+    nolist=$4
+    echo
+    echo "*** $msg ***"
+    #cat "$infile"
+    cloc --force-lang-def=/dev/stdin \
+         --categorized="$catfile" \
+         --list-file="$infile" \
+         <<'EOF' > "$outfile"
+Bash
+    filter remove_matches ^\s*#
+    filter remove_inline #.*$
+    extension bash
+    extension bats
+    extension bats.in
+    script_exe bash
+    3rd_gen_scale 3.81
+    end_of_line_continuation \\$
+C
+    filter rm_comments_in_strings " /* */
+    filter rm_comments_in_strings " // 
+    filter call_regexp_common C++
+    extension c
+    extension h
+    3rd_gen_scale 0.77
+    end_of_line_continuation \\$
+conf-like
+    filter remove_matches ^\s*#
+    filter remove_inline #.*$
+    extension rpmlintrc
+    extension spec
+    filename .dockerignore
+    filename .gitattributes
+    filename .gitignore
+    3rd_gen_scale 1.00
+    end_of_line_continuation \\$
+Dockerfile
+    filter remove_matches ^\s*#
+    filter remove_inline #.*$
+    filename Dockerfile
+    filename Dockerfile.00_tiny
+    filename Dockerfile.argenv
+    filename Dockerfile.centos7
+    filename Dockerfile.centos8
+    filename Dockerfile.debian9
+    filename Dockerfile.file-quirks
+    filename Dockerfile.metadata
+    filename Dockerfile.mpich
+    filename Dockerfile.nvidia
+    filename Dockerfile.openmpi
+    3rd_gen_scale 2.00
+    end_of_line_continuation \\$
+m4
+    filter remove_matches ^dnl\s
+    filter remove_matches ^\s*#
+    filter remove_inline #.*$
+    extension ac
+    extension m4
+    3rd_gen_scale 1.00
+Make
+    filter remove_matches ^\s*#
+    filter remove_inline #.*$
+    extension Gnumakefile
+    extension Makefile
+    extension am
+    extension gnumakefile
+    extension makefile
+    extension mk
+    filename Gnumakefile
+    filename Makefile
+    filename gnumakefile
+    filename makefile
+    script_exe make
+    3rd_gen_scale 2.50
+    end_of_line_continuation \\$
+patch
+    filter remove_matches ^#
+    filter remove_matches ^\-\-\-
+    filter remove_matches ^\+\+\+
+    filter remove_matches ^\s
+    filter remove_matches ^@@
+    extension diff
+    extension patch
+    3rd_gen_scale 1.00
+plain text
+    filter remove_matches TEXT_HAS_NO_COMMENTS_BUT_A_FILTER_IS_REQUIRED
+    extension txt
+    filename PERUSEME
+    filename README
+    filename VERSION
+    3rd_gen_scale 1.00
+POSIX sh
+    filter remove_matches ^\s*#
+    filter remove_inline #.*$
+    extension sh
+    script_exe sh
+    3rd_gen_scale 3.81
+    end_of_line_continuation \\$
+Python
+    filter remove_matches ^\s*#
+    filter docstring_to_C
+    filter call_regexp_common C
+    filter remove_inline #.*$
+    extension py
+    extension py.in
+    script_exe python
+    script_exe python2.6
+    script_exe python2.7
+    script_exe python3
+    script_exe python3.3
+    script_exe python3.4
+    script_exe python3.5
+    3rd_gen_scale 4.20
+    end_of_line_continuation \\$
+ReST
+    filter remove_between_regex ^\.\. ^[^\s\.]
+    extension rst
+    3rd_gen_scale 1.50
+Ruby
+    filter remove_matches ^\s*#
+    filter remove_below_above ^=begin ^=end
+    filter remove_inline #.*$
+    extension rake
+    extension rb
+    filename Rakefile
+    filename rakefile
+    filename Vagrantfile
+    script_exe ruby
+    3rd_gen_scale 4.20
+    end_of_line_continuation \\$
+VTK
+    filter remove_matches ^\s*#
+    extension vtk
+    3rd_gen_scale 1.00
+    end_of_line_continuation \\$
+YAML
+    filter remove_matches ^\s*#
+    filter remove_inline #.*$
+    extension yaml
+    extension yml
+    3rd_gen_scale 0.90
+EOF
+    if [[ -z $nolist ]]; then
+        cat "$catfile"
+    fi
+    cat "$outfile"
+    if ! grep -Eq "\b${ignore_ct} files ignored" "$outfile"; then
+        grep -F '(unknown)' "$catfile" || true
+        echo
+        echo "🚨🚨🚨 cloc ignoring wrong number of files; expected ${ignore_ct} 🚨🚨🚨"
+        exit 1
+    fi
+}
+
+if [[ -e ./Makefile.in ]]; then
+    echo '🚨🚨🚨 Makefile.in seems to exist 🚨🚨🚨'
+    echo 'did you "make distclean; ./autogen.sh --clean"?'
+    exit 1
+fi
+
+min_cloc=1.81
+if    ! command -v cloc > /dev/null \
+   || [[ $(  printf '%s\n%s\n' "$min_cloc" "$(cloc --version)" \
+           | sort -V | head -1 ) != "$min_cloc" ]]; then
+    echo "🚨🚨🚨 no cloc version ≥ $min_cloc 🚨🚨🚨"
+    echo 'did you try a better operating system?'
+    exit 1
+fi
+
+# program (Charliecloud itself)
+find ./bin ./lib -type f -a \( \
+        -name '*.c' \
+     -o -name '*.h' \
+     -o -name '*.py' \
+     -o -name '*.py.in' \
+     -o -name '*.sh' \
+     -o -path './bin/ch-*' \) | grep -Fv ./bin/ch-test | sort > /tmp/loc.program
+countem "PROGRAM" /tmp/loc.program
+
+# test suite
+find ./.github ./examples ./test -type f -a \( \
+        -name '*.bats' \
+     -o -name '*.bats.in' \
+     -o -name '*.c' \
+     -o -name '*.patch' \
+     -o -name '*.py' \
+     -o -name '*.py.in' \
+     -o -name '*.sh' \
+     -o -name '*.vtk' \
+     -o -name '*.yml' \
+     -o -name 'Build.*' \
+     -o -name 'Dockerfile.*' \
+     -o -name .dockerignore \
+     -o -name Build \
+     -o -name Dockerfile \
+     -o -name Makefile \
+     -o -name README \
+     -o -path ./test/fixtures/README \
+     -o -path ./.github/PERUSEME \
+     -o -path ./examples/chtest/printns \
+     -o -path ./test/common.bash \
+     -o -path ./test/sotest/files_inferrable.txt \
+     -o -path ./test/whiteout \) | sort > /tmp/loc.test
+echo ./bin/ch-test >> /tmp/loc.test
+countem "TEST SUITE & EXAMPLES" /tmp/loc.test
+
+# documentation
+find . -type f -a \( \
+         -path './doc/*.rst' \
+      -o -path ./README.rst \
+      -o -path ./doc/conf.py \
+      -o -path ./doc/make-deps-overview \
+      -o -path ./doc/man/README \
+      -o -path ./doc/publish \) | sort > /tmp/loc.doc
+countem "DOCUMENTATION" /tmp/loc.doc
+
+# build system
+find . -type f -a \( \
+        -name Makefile.am \
+     -o -path ./autogen.sh \
+     -o -path ./configure.ac \
+     -o -path ./misc/version \
+     -o -path ./misc/m4/README \) | sort > /tmp/loc.build
+countem "BUILD SYSTEM" /tmp/loc.build
+
+# packaging code
+find ./packaging \(    -path ./packaging/debian \
+                    -o -name .vagrant \
+                    -o -name Makefile.am \) -prune -o -type f \
+     -print | sort > /tmp/loc.packaging
+countem "PACKAGING" /tmp/loc.packaging
+
+# misc
+find . -type f -a \( \
+        -path ./.gitattributes \
+     -o -path ./.gitignore \
+     -o -path ./VERSION \
+     -o -path ./misc/docker-clean.sh \
+     -o -path ./misc/grep \
+     -o -path ./misc/loc \) | sort > /tmp/loc.misc
+countem "MISCELLANEOUS" /tmp/loc.misc
+
+# ignored - this includes binaries and files we distribute but didn't write
+find . -type f -a \( \
+        -name '*.ico' \
+     -o -name '.gitmodules' \
+     -o -name '*.png' \
+     -o -name '*.tar.gz' \
+     -o -name 'file[A-Z0-9y]*' \
+     -o -name 's_dir?' \
+     -o -name 's_file?' \
+     -o -path './misc/m4/*.m4' \
+     -o -path './packaging/debian/*' \
+     -o -name 'file_' \
+     -o -path ./LICENSE \
+     -o -path ./test/fixtures/empty-file \) | sort > /tmp/loc.ignored
+echo
+echo "*** IGNORED ***"
+cat /tmp/loc.ignored
+
+# everything
+find . \(    -path ./.git \
+         -o -name __pycache__ \
+         -o -name .vagrant \) -prune -o -type f -print \
+  | sort > /tmp/loc.all
+cat /tmp/loc.{all,ignored} | sort | uniq -u > /tmp/loc.total
+countem "TOTAL" /tmp/loc.total 0 nolist
+
+# test for files we forgot
+  cat /tmp/loc.{program,test,doc,build,packaging,misc,ignored,all} \
+| sort | uniq -c | (grep -Ev '^\s*2' || true) > /tmp/loc.extra
+if [[ -s /tmp/loc.extra ]]; then
+    echo
+    echo 'UNKNOWN FILES'
+    cat /tmp/loc.extra
+    echo
+    echo '🚨🚨🚨 unknown files found 🚨🚨🚨'
+    echo 'did you "make distclean; ./autogen.sh --clean"?'
+    exit 1
+fi

@@ -61,6 +61,21 @@ EOF
 
 
 # shellcheck disable=SC2016
+@test '$CH_RUNNING' {
+    scope standard
+
+    if [[ -v CH_RUNNING ]]; then
+      echo "\$CH_RUNNING already set: $CH_RUNNING"
+      false
+    fi
+
+    run ch-run "$ch_timg" -- /bin/sh -c 'env | grep -E ^CH_RUNNING'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
+}
+
+# shellcheck disable=SC2016
 @test '$HOME' {
     scope quick
     echo "host: $HOME"
@@ -176,24 +191,43 @@ EOF
 
 @test 'ch-run --bind' {
     scope quick
-    # one bind, default destination (/mnt/0)
-    ch-run -b "${ch_imgdir}/bind1" "$ch_timg" -- cat /mnt/0/file1
+
+    # set up sources
+    mkdir -p "${ch_timg}/${ch_imgdir}/bind1"
+    mkdir -p "${ch_timg}/${ch_imgdir}/bind2"
+    # remove destinations that will be created
+    rmdir "${ch_timg}/bind3" || true
+    [[ ! -e ${ch_timg}/bind3 ]]
+    rmdir "${ch_timg}/bind4/a" "${ch_timg}/bind4/b" "${ch_timg}/bind4" || true
+    [[ ! -e ${ch_timg}/bind4 ]]
+
+    # one bind, default destination
+    ch-run -b "${ch_imgdir}/bind1" "$ch_timg" -- cat "${ch_imgdir}/bind1/file1"
     # one bind, explicit destination
     ch-run -b "${ch_imgdir}/bind1:/mnt/9" "$ch_timg" -- cat /mnt/9/file1
 
+    # one bind, create destination, one level
+    ch-run -w -b "${ch_imgdir}/bind1:/bind3" "$ch_timg" -- cat /bind3/file1
+    # one bind, create destination, two levels
+    ch-run -w -b "${ch_imgdir}/bind1:/bind4/a" "$ch_timg" -- cat /bind4/a/file1
+    # one bind, create destination, two levels via symlink
+    [[ -L ${ch_timg}/mnt/bind4 ]]
+    ch-run -w -b "${ch_imgdir}/bind1:/mnt/bind4/b" "$ch_timg" \
+           -- cat /bind4/b/file1
+
     # two binds, default destination
     ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2" "$ch_timg" \
-           -- cat /mnt/0/file1 /mnt/1/file2
+           -- cat "${ch_imgdir}/bind1/file1" "${ch_imgdir}/bind2/file2"
     # two binds, explicit destinations
     ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2:/mnt/9" \
            "$ch_timg" \
            -- cat /mnt/8/file1 /mnt/9/file2
     # two binds, default/explicit
     ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/mnt/9" "$ch_timg" \
-           -- cat /mnt/0/file1 /mnt/9/file2
+           -- cat "${ch_imgdir}/bind1/file1" /mnt/9/file2
     # two binds, explicit/default
     ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2" "$ch_timg" \
-           -- cat /mnt/8/file1 /mnt/1/file2
+           -- cat /mnt/8/file1 "${ch_imgdir}/bind2/file2"
 
     # bind one source at two destinations
     ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind1:/mnt/9" \
@@ -209,31 +243,16 @@ EOF
     # overmount tmpfs at /home
     ch-run -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
     # bind to /home without overmount
-    ch-run --no-home -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
+    ch-run --no-home -b "${ch_imgdir}/bind1:/home" "$ch_timg" \
+           -- cat /home/file1
     # omit default /home, with unrelated --bind
-    ch-run --no-home -b "${ch_imgdir}/bind1" "$ch_timg" -- cat /mnt/0/file1
+    ch-run --no-home -b "${ch_imgdir}/bind1" "$ch_timg" \
+           -- cat "${ch_imgdir}/bind1/file1"
 }
 
 
 @test 'ch-run --bind errors' {
     scope quick
-
-    # more binds (11) than default destinations
-    run ch-run -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               -b "${ch_imgdir}/bind1" \
-               "$ch_timg" -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_timg}/mnt/10"* ]]
 
     # no argument to --bind
     run ch-run "$ch_timg" -b
@@ -259,37 +278,119 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'--bind: no destination provided'* ]]
 
+    # destination is /
+    run ch-run -b "${ch_imgdir}/bind1:/" "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"--bind: destination can't be /"* ]]
+
+    # destination is relative
+    run ch-run -b "${ch_imgdir}/bind1:foo" "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"--bind: destination must be absolute"* ]]
+
+    # destination climbs out of image, exists
+    run ch-run -b "${ch_imgdir}/bind1:/.." "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't bind: ${ch_imgdir} not subdirectory of ${ch_timg}"* ]]
+
+    # destination climbs out of image, does not exist
+    run ch-run -b "${ch_imgdir}/bind1:/../doesnotexist/a" "$ch_timg" \
+               -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: ${ch_imgdir}/doesnotexist not subdirectory of ${ch_timg}"* ]]
+    [[ ! -e ${ch_imgdir}/doesnotexist ]]
+
     # source does not exist
     run ch-run -b "${ch_imgdir}/hoops" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
+    [[ $output = *"can't bind: source not found: ${ch_imgdir}/hoops"* ]]
 
     # destination does not exist
     run ch-run -b "${ch_imgdir}/bind1:/goops" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_timg}/goops"* ]]
+    [[ $output = *"can't mkdir: ${ch_timg}/goops: Read-only file system"* ]]
 
     # neither source nor destination exist
     run ch-run -b "${ch_imgdir}/hoops:/goops" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
+    [[ $output = *"can't bind: source not found: ${ch_imgdir}/hoops"* ]]
 
     # correct bind followed by source does not exist
-    run ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/hoops" "$ch_timg" -- \
-              true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_imgdir}/hoops"* ]]
-
-    # correct bind followed by destination does not exist
-    run ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/goops" \
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/0" -b "${ch_imgdir}/hoops" \
                "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: not found: ${ch_timg}/goops"* ]]
+    [[ $output = *"can't bind: source not found: ${ch_imgdir}/hoops"* ]]
+
+    # correct bind followed by destination does not exist
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/0" -b "${ch_imgdir}/bind2:/goops" \
+               "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: ${ch_timg}/goops: Read-only file system"* ]]
+
+    # destination is broken symlink, absolute
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken-abs" "$ch_timg" \
+        -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: symlink not relative: ${ch_timg}/mnt/link-b0rken-abs"* ]]
+
+    # destination is broken symlink, relative, directly
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken-rel" "$ch_timg" \
+        -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: broken symlink: ${ch_timg}/mnt/link-b0rken-rel"* ]]
+    [[ ! -e ${ch_timg}/mnt/doesnotexist ]]
+
+    # destination goes through broken symlink
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken-rel/a" "$ch_timg" \
+               -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: broken symlink: ${ch_timg}/mnt/link-b0rken-rel"* ]]
+    [[ ! -e ${ch_timg}/mnt/doesnotexist ]]
+
+    # destination is absolute symlink outside image
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-abs" "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't bind: /tmp not subdirectory of ${ch_timg}"* ]]
+
+    # destination relative symlink outside image
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-rel" "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't bind: "*" not subdirectory of ${ch_timg}"* ]]
+
+    # mkdir(2) under existing bind-mount, default, first level
+    run ch-run -b "${ch_imgdir}/bind1:/proc/doesnotexist" "$ch_timg" \
+        -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: ${ch_timg}/proc/doesnotexist under existing bind-mount ${ch_timg}/proc "* ]]
+
+    # mkdir(2) under existing bind-mount, user-supplied, first level
+    run ch-run -b "${ch_imgdir}/bind1:/mnt/0" \
+               -b "${ch_imgdir}/bind2:/mnt/0/foo" "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: ${ch_timg}/mnt/0/foo under existing bind-mount ${ch_timg}/mnt/0 "* ]]
+
+    # mkdir(2) under existing bind-mount, default, 2nd level
+    run ch-run -b "${ch_imgdir}/bind1:/proc/sys/doesnotexist" "$ch_timg" \
+        -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't mkdir: ${ch_timg}/proc/sys/doesnotexist under existing bind-mount ${ch_timg}/proc "* ]]
 }
 
 
@@ -315,6 +416,8 @@ EOF
     #   []
 
     # Valid inputs. Use Python to print the results to avoid ambiguity.
+    export SET=foo
+    export SET2=boo
     f_in=${BATS_TMPDIR}/env.txt
     cat <<'EOF' > "$f_in"
 chse_a1=bar
@@ -327,16 +430,54 @@ chse_a7=''''
 
 chse_b1="bar"
 chse_b2=bar # baz
-chse_b3=$PATH
- chse_b4=bar
-chse_b5= bar
+ chse_b3=bar
+chse_b4= bar
 
 chse_c1=foo
 chse_c1=bar
+
+chse_d1=foo:
+chse_d2=:foo
+chse_d3=:
+chse_d4=::
+chse_d5=$SET
+chse_d6=$SET:$SET2
+chse_d7=bar:$SET
+chse_d8=bar:baz:$SET
+chse_d9=$SET:bar
+chse_dA=$SET:bar:baz
+chse_dB=bar:$SET:baz
+chse_dC=bar:baz:$SET:bar:baz
+
+chse_e1=:$SET
+chse_e2=::$SET
+chse_e3=$SET:
+chse_e4=$SET::
+chse_e5=bar:$
+chse_e6=bar:*
+chse_e7=bar$SET
+chse_e8=bar::$SET
+
+chse_f1=$UNSET
+chse_f2=foo:$UNSET
+chse_f3=foo:$UNSET:
+chse_f4=$UNSET:foo
+chse_f5=:$UNSET:foo
+chse_f6=foo:$UNSET:$UNSET2
+chse_f7=foo:$UNSET:$UNSET2:
+chse_f8=$UNSET:$UNSET2:foo
+chse_f9=:$UNSET:$UNSET2:foo
+chse_fA=foo:$UNSET:bar
+chse_fB=foo:$UNSET:$UNSET2:bar
+chse_fC=:$UNSET
+chse_fD=::$UNSET
+chse_fE=$UNSET:
+chse_fF=$UNSET::
+
 EOF
     cat "$f_in"
     output_expected=$(cat <<'EOF'
-(' chse_b4', 'bar')
+(' chse_b3', 'bar')
 ('chse_a1', 'bar')
 ('chse_a2', 'bar=baz')
 ('chse_a3', 'bar baz')
@@ -346,9 +487,43 @@ EOF
 ('chse_a7', "''")
 ('chse_b1', '"bar"')
 ('chse_b2', 'bar # baz')
-('chse_b3', '$PATH')
-('chse_b5', ' bar')
+('chse_b4', ' bar')
 ('chse_c1', 'bar')
+('chse_d1', 'foo:')
+('chse_d2', ':foo')
+('chse_d3', ':')
+('chse_d4', '::')
+('chse_d5', 'foo')
+('chse_d6', 'foo:boo')
+('chse_d7', 'bar:foo')
+('chse_d8', 'bar:baz:foo')
+('chse_d9', 'foo:bar')
+('chse_dA', 'foo:bar:baz')
+('chse_dB', 'bar:foo:baz')
+('chse_dC', 'bar:baz:foo:bar:baz')
+('chse_e1', ':foo')
+('chse_e2', '::foo')
+('chse_e3', 'foo:')
+('chse_e4', 'foo::')
+('chse_e5', 'bar:$')
+('chse_e6', 'bar:*')
+('chse_e7', 'bar$SET')
+('chse_e8', 'bar::foo')
+('chse_f1', '')
+('chse_f2', 'foo')
+('chse_f3', 'foo:')
+('chse_f4', 'foo')
+('chse_f5', ':foo')
+('chse_f6', 'foo')
+('chse_f7', 'foo:')
+('chse_f8', 'foo')
+('chse_f9', ':foo')
+('chse_fA', 'foo:bar')
+('chse_fB', 'foo:bar')
+('chse_fC', '')
+('chse_fD', ':')
+('chse_fE', '')
+('chse_fF', ':')
 EOF
 )
     run ch-run --set-env="$f_in" "$ch_timg" -- python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'
@@ -375,6 +550,7 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
+
 @test 'ch-run --set-env errors' {
     scope standard
     f_in=${BATS_TMPDIR}/env.txt
@@ -384,7 +560,6 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"--set-env: can't open:"* ]]
-    [[ $output = *"No such file or directory"* ]]
 
     # Note: I'm not sure how to test an error during reading, i.e., getline(3)
     # rather than fopen(3). Hence no test for "error reading".
@@ -404,6 +579,24 @@ EOF
     [[ $output = *"--set-env: empty name: ${f_in}:1"* ]]
 }
 
+# shellcheck disable=SC2016
+@test 'ch-run --set-env command line' {
+    scope standard
+
+    # missing '''
+    # shellcheck disable=SC2086
+    run ch-run --set-env=foo='$test:app' --env-no-expand -v "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'environment: foo=$test:app'* ]]
+
+   # missing environment variable
+   run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
+   echo "$output"
+   [[ $status -eq 1 ]]
+   [[ $output = *'$PATH:foo: No such file or directory'* ]]
+}
+
 @test 'ch-run --unset-env' {
     scope standard
 
@@ -414,20 +607,21 @@ EOF
     run ch-run --unset-env=doesnotmatch "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
-    ex='^(_|HOME|PATH|SHLVL)='  # variables expected to change
+    ex='^(_|CH_RUNNING|HOME|PATH|SHLVL)='  # variables expected to change
     diff -u <(env | grep -Ev "$ex") <(echo "$output" | grep -Ev "$ex")
 
     printf '\n# Everything\n\n'
     run ch-run --unset-env='*' "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = '' ]]
+    [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
 
     printf '\n# Everything, plus shell re-adds\n\n'
-    run ch-run --unset-env='*' "$ch_timg" -- /bin/sh -c env
+    run ch-run --unset-env='*' "$ch_timg" -- /bin/sh -c 'env | sort'
     echo "$output"
     [[ $status -eq 0 ]]
-    diff -u <(printf 'SHLVL=1\nPWD=/\n') <(echo "$output")
+    diff -u <(printf 'CH_RUNNING=Weird Al Yankovic\nPWD=/\nSHLVL=1\n') \
+            <(echo "$output")
 
     printf '\n# Without wildcards\n\n'
     run ch-run --unset-env=chue_1 "$ch_timg" -- env
@@ -447,6 +641,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'--unset-env: GLOB must have non-zero length'* ]]
 }
+
 
 @test 'ch-run mixed --set-env and --unset-env' {
     scope standard
@@ -556,6 +751,7 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
+
 @test 'broken image errors' {
     scope standard
     img="${BATS_TMPDIR}/broken-image"
@@ -585,7 +781,7 @@ EOF
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind: not found: .+/${f}"
+        r="can't bind: destination not found: .+/${f}"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
     done
@@ -624,7 +820,7 @@ EOF
         mkdir "${img}/${d}"  # restore before test fails for idempotency
         echo "$output"
         [[ $status -eq 1 ]]
-        r="can't bind: not found: .+/${d}"
+        r="can't bind: destination not found: .+/${d}"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
     done
@@ -693,6 +889,7 @@ EOF
     [[ $(find /tmp -maxdepth 1 -name 'ch-run_passwd*' | wc -l) -eq 0 ]]
     [[ $(find /tmp -maxdepth 1 -name 'ch-run_group*' | wc -l) -eq 0 ]]
 }
+
 
 @test 'UID and/or GID invalid on host' {
     scope standard

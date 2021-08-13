@@ -1,0 +1,103 @@
+[This file is not called README because files named .github/README.* get
+picked up by GitHub and used as the main project README.]
+
+This directory defines our GitHub Actions test suite setup.
+
+The basic strategy is to start one “job” per builder; these run in parallel.
+Each job then cycles through several different configurations, which vary per
+builder. It is configured to “fail fast”, i.e., if one of the jobs fails, the
+others will be immediately cancelled. For example, we only run the quick test
+suite on one builder, but if it fails everything will stop and you still get
+notified quickly.
+
+The number of concurrent jobs is not clear to me, but I’ve seen 7 and the
+documentation [1] implies it’s at least 20 (though I assume there is some
+global limit for OSS projects too). Nominally, jobs are started from the left
+side of the list, so anything we think is likely to fail fast (e.g., the quick
+scope) should be leftward; in practice it seems to be random.
+
+We could add more matrix dimensions, but then we’d have to deal with ordering
+more carefully, and pass the Docker cache manually (or not use it for some
+things).
+
+  [1]: https://docs.github.com/en/free-pro-team@latest/actions/reference/usage-limits-billing-and-administration
+
+Conventions:
+
+  * We install everything to start, then uninstall as needed for more
+    bare-bones tests.
+
+  * For the “extra things’ tests:
+
+    * Docker is the fastest builder, so that’s where we put extra things.
+
+    * We need to retain sudo for uninstalling stuff.
+
+    * I could not figure out how to set a boolean variable for use in “if”
+      conditions. (I *did* get an environment variable to work, but not using
+      our set/unset convention, rather the strings “true” and “false”. This
+      seemed error-prone.) Therefore the extra things tests all use the full
+      expression.
+
+Miscellaneous notes and gotchas:
+
+  * Runner specs (as of 2020-11-25), nominal: Azure Standard_DS2_v2 virtual
+    machine: 2 vCPUs, 7 GiB RAM, 15 GiB SSD storage. The OS image is
+    bare-bones but there is a lot of software installed in third-party
+    locations [1].
+
+    Looking at the actual VM provisioned, the disk specs are a little
+    different: it’s got an 84GiB root filesystem mounted, and another 9GiB
+    mounted on /mnt. With a little deleting, maybe we can make room for a
+    full-scope test.
+
+    It does seem to boot faster than Travis; overall performance is worse; but
+    total test time is lower (Travis took 50–55 minutes to complete a passing
+    build).
+
+    [1]: https://github.com/actions/virtual-environments/blob/ubuntu20/20201116.1/images/linux/Ubuntu2004-README.md
+
+  * The default shell (Bash) does not read any init files [1], so you cannot
+    configure it with e.g. .bashrc.
+
+    [1]: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#using-a-specific-shell
+
+  * GitHub doesn’t seem to notice our setup if .github is a symlink. :(
+
+  * GitHub seems to want us to encapsulate some of the steps that are now just
+    shell scripts into “actions”. I haven’t looked into this. Issue #914.
+
+  * Force-push does start a new build.
+
+  * Commands in “run” blocks aren’t logged by default; you need “set -x” if
+    you want to see them. However there seems to be a race condition, so the
+    commands and their output aren’t always interleaved correctly.
+
+  * “docker” does not require “sudo”.
+
+  * There are several places where we configure, make, make install. These
+    need to be kept in sync. Perhaps there is an opportunity for an “Action”
+    here? But the configure output validation varies.
+
+  * The .github directory doesn’t have a Makefile.am; the files are listed in
+    the root Makefile.am.
+
+  * Most variables are strings. It’s easy to get into a situation where you
+    set a variable to “false” but it’s the string “false” so it’s true.
+
+  * Viewing step output is glitchy:
+
+    * While the job is in progress, sometimes the step headings are links and
+      sometimes they aren’t.
+
+    * If it does work, you can’t scroll back to the start.
+
+    * The “in progress” throbber seems to often be on the wrong heading.
+
+    * When it’s over, sometimes clicking on a heading opens it but the content
+      is blank; in this case, clicking a different job and coming back seems
+      to fix things.
+
+  * Previously we listed $CH_TEST_TARDIR and $CH_TEST_IMGDIR between phases. I
+    didn’t transfer that over. It must have been useful, so let’s pay
+    attention to see if it needs to be re-added.

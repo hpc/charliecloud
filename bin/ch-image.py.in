@@ -1,0 +1,228 @@
+#!%PYTHON_SHEBANG%
+
+import argparse
+import inspect
+import os.path
+import sys
+
+sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
+                    + "/../lib/charliecloud"))
+import charliecloud as ch
+import build
+import misc
+import pull
+import push
+
+
+## Constants ##
+
+# FIXME: It's currently easy to get the ch-run path from another script, but
+# hard from something in lib. So, we set it here for now.
+ch.CH_BIN = os.path.dirname(os.path.abspath(
+                 inspect.getframeinfo(inspect.currentframe()).filename))
+ch.CH_RUN = ch.CH_BIN + "/ch-run"
+
+
+## Main ##
+
+def main():
+
+   if (not os.path.exists(ch.CH_RUN)):
+      ch.depfails.append(("missing", ch.CH_RUN))
+
+   ap = argparse.ArgumentParser(formatter_class=ch.HelpFormatter,
+      description="Build and manage images; completely unprivileged.",
+      epilog="""Storage directory is used for caching and temporary images.
+                Location: first defined of --storage, $CH_IMAGE_STORAGE, and
+                %s.""" % ch.Storage.root_default())
+   ap._optionals.title = "options"  # https://stackoverflow.com/a/16981688
+   sps = ap.add_subparsers(title="subcommands", metavar="CMD")
+
+   # Common options.
+   #
+   # --dependencies (and --help and --version) are options rather than
+   # subcommands for consistency with other commands.
+   #
+   # These are also accepted *after* the subcommand, as it makes wrapping
+   # ch-image easier and possibly improve the UX. There are multiple ways to
+   # do this, though no tidy ones unfortunately. Here, we build up a
+   # dictionary of options we want, and pass it to both main and subcommand
+   # parsers; this works because both go into the same Namespace object. There
+   # are two quirks to be aware of:
+   #
+   #   1. We omit the common options from subcommand --help for clarity and
+   #      because before the subcommand is preferred.
+   #
+   #   2. We suppress defaults in the subcommand [1]. Without this, the
+   #      subcommand option value wins even it it's the default. :P Currently,
+   #      if specified in both places, the subcommand value wins and the
+   #      before value is not considered at all, e.g. "ch-image -vv foo -v"
+   #      gives verbosity 1, not 3. This oddity seemed acceptable.
+   #
+   # Alternate approaches include:
+   #
+   #   * Set the main parser as the "parent" of the subcommand parser [2].
+   #     This may be the documented approach? However, it adds all the
+   #     subcommands to the subparser, which we don't want. A workaround would
+   #     be to create a *third* parser that's the parent of both the main and
+   #     subcommand parsers, but that seems like too much indirection to me.
+   #
+   #   * A two-stage parse (parse_known_args(), then parse_args() to have the
+   #     main parser look again) works [3], but is complicated and has some
+   #     odd side effects e.g. multiple subcommands will be accepted.
+   #
+   # [1]: https://bugs.python.org/issue9351#msg373665
+   # [2]: https://docs.python.org/3/library/argparse.html#parents
+   # [3]: https://stackoverflow.com/a/54936198
+   common_opts = \
+      [[ ["-a", "--arch"],
+         { "metavar": "ARCH",
+           "default": "host",
+           "help": "architecture for image registries (default: host)"}],
+       [ ["--dependencies"],
+         { "action": misc.Dependencies,
+           "help": "print any missing dependencies and exit" }],
+       [ ["--no-cache"],
+         { "action": "store_true",
+           "help": "download everything needed, ignoring the cache" }],
+       [ ["--password-many"],
+         { "action": "store_true",
+           "help": "re-prompt each time a registry password is needed" }],
+       [ ["-s", "--storage"],
+         { "metavar": "DIR",
+           "help": "set builder internal storage directory to DIR" }],
+       [ ["--tls-no-verify"],
+         { "action": "store_true",
+           "help": "don't verify registry certificates (dangerous!)" }],
+       [ ["-v", "--verbose"],
+         { "action": "count",
+           "default": 0,
+           "help": "print extra chatter (can be repeated)" } ],
+       [ ["--version"],
+         { "action": misc.Version,
+           "help": "print version and exit" } ]]
+   def add_opts(p, opts, sub):
+      for (args, kwargs) in opts:
+         if (sub):
+            kwargs = { **kwargs,
+                       "default": argparse.SUPPRESS,
+                       "help": argparse.SUPPRESS }
+         p.add_argument(*args, **kwargs)
+   add_opts(ap, common_opts, False)
+
+   # build
+   help="build image from Dockerfile"
+   sp = sps.add_parser("build", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=build.main)
+   add_opts(sp, common_opts, True)
+   sp.add_argument("-b", "--bind", metavar="SRC[:DST]",
+                   action="append", default=[],
+                   help="mount SRC at guest DST (default: same as SRC)")
+   sp.add_argument("--build-arg", metavar="ARG[=VAL]",
+                   action="append", default=[],
+                   help="set build-time variable ARG to VAL, or $ARG if no VAL")
+   sp.add_argument("-f", "--file", metavar="DOCKERFILE",
+                   help="Dockerfile to use (default: CONTEXT/Dockerfile)")
+   sp.add_argument("--force", action="store_true",
+                   help="inject unprivileged build workarounds")
+   sp.add_argument("-n", "--dry-run", action="store_true",
+                   help="don't execute instructions")
+   sp.add_argument("--no-force-detect", action="store_true",
+                   help="don't try to detect if --force workarounds would work")
+   sp.add_argument("--parse-only", action="store_true",
+                   help="stop after parsing the Dockerfile")
+   sp.add_argument("-t", "--tag", metavar="TAG",
+                   help="name of image to create (default: inferred)")
+   sp.add_argument("context", metavar="CONTEXT",
+                   help="context directory")
+
+   # delete
+   help="delete image from internal storage"
+   sp = sps.add_parser("delete", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=misc.delete)
+   add_opts(sp, common_opts, True)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
+
+   # list
+   help="print information about image(s)"
+   sp = sps.add_parser("list", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
+                   help="print details of this image only")
+   sp.set_defaults(func=misc.list_)
+   add_opts(sp, common_opts, True)
+
+   # import
+   help="copy external image into storage"
+   sp = sps.add_parser("import", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=misc.import_)
+   add_opts(sp, common_opts, True)
+   sp.add_argument("path", metavar="PATH",
+                   help="directory or tarball to import")
+   sp.add_argument("image_ref", metavar="IMAGE_REF",
+                   help="destination image name")
+
+   # pull
+   help="pull image from remote repository to local filesystem"
+   sp = sps.add_parser("pull", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=pull.main)
+   add_opts(sp, common_opts, True)
+   sp.add_argument("--last-layer", metavar="N", type=int,
+                   help="stop after unpacking N layers")
+   sp.add_argument("--parse-only", action="store_true",
+                   help="stop after parsing the image reference")
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
+   sp.add_argument("image_dir", metavar="IMAGE_DIR", nargs="?",
+                   help="unpacked image path (default: opaque path in storage dir)")
+
+   # push
+   help="push image from local filesystem to remote repository"
+   sp = sps.add_parser("push", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=push.main)
+   add_opts(sp, common_opts, True)
+   sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
+   sp.add_argument("--image", metavar="DIR",
+                   help="path to unpacked image (default: opaque path in storage dir)")
+   sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
+                   help="destination image reference (default: IMAGE_REF)")
+
+   # python-path
+   help="print path to python interpreter in use"
+   sp = sps.add_parser("python-path", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=misc.python_path)
+
+   # reset
+   help="delete everything in ch-image builder storage"
+   sp = sps.add_parser("reset", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=misc.reset)
+   add_opts(sp, common_opts, True)
+
+   # storage-path
+   help="print storage directory path"
+   sp = sps.add_parser("storage-path", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   sp.set_defaults(func=misc.storage_path)
+   add_opts(sp, common_opts, True)
+
+   # Parse it up!
+   if (len(sys.argv) < 2):
+       ap.print_help(file=sys.stderr)
+       sys.exit(1)
+   cli = ap.parse_args()
+   ch.init(cli)
+
+   # Dispatch.
+   cli.func(cli)
+
+
+## Bootstrap ##
+
+if (__name__ == "__main__"):
+   main()

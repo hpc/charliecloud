@@ -1,0 +1,10 @@
+# Exclude everything by default
+*
+
+# Needed for Dockerfile.openmpi
+!dont-init-ucx-on-intel-cray.patch
+
+# Needed for Dockerfile.exhaustive
+!Dockerfile.*
+
+

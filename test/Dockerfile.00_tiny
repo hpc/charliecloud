@@ -1,0 +1,8 @@
+# Minimal image useful for later tests.
+
+# ch-test-scope: quick
+
+FROM alpine:3.9
+
+# Base image has no default command; we need one to build.
+CMD ["true"]

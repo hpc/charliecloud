@@ -4,7 +4,6 @@ import argparse
 import distutils.version
 import inspect
 import json
-import logging
 import os
 import re
 import signal
@@ -15,42 +14,43 @@ import types
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../lib/charliecloud"))
-import version
+import charliecloud as ch
+import misc
 
 
 BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
-OCI_VERSION_MIN = "1.0.1-dev"
-OCI_VERSION_MAX = "1.0.1-dev"
+OCI_VERSION_MIN = "1.0.1-dev"  # inclusive
+OCI_VERSION_MAX = "1.0.999"    # inclusive
 
 args = None   # CLI Namespace
-l = None      # logger object
 state = None  # state object
 
 
 def main():
-   global l, args, state
-   l = log_setup()
-   l.debug("--- starting ------------------------------------")
-   l.debug("args: %s" % sys.argv)
-   l.debug("environment: %s" % { k: v for (k, v) in os.environ.items()
-                                 if k.startswith("CH_RUN_OCI_") })
+   global args, state
    args = args_parse()
-   l.debug("CLI: %s" % args)
+   ch.VERBOSE("--- starting ------------------------------------")
+   ch.VERBOSE("args: %s" % sys.argv)
+   ch.VERBOSE("environment: %s" % { k: v for (k, v) in os.environ.items()
+                                  if k.startswith("CH_RUN_OCI_") })
+   ch.VERBOSE("CLI: %s" % args)
    if (args.op.__name__ == "op_" + os.getenv("CH_RUN_OCI_HANG", default="")):
-      l.debug("hanging before %s per CH_RUN_OCI_HANG" % args.op.__name__)
+      ch.VERBOSE("hanging before %s per CH_RUN_OCI_HANG" % args.op.__name__)
       sleep_forever()
       assert False, "unreachable code reached"
    state = state_load()
    args.op()
-   l.debug("done")
+   ch.VERBOSE("done")
 
 
 def args_parse():
 
    ap = argparse.ArgumentParser(description='OCI wrapper for "ch-run".')
-   ap.add_argument("--version", action="store_true",
+   ap.add_argument("-v", "--verbose", action="count", default=0,
+                   help="print extra chatter (can be repeated)")
+   ap.add_argument("--version", action=misc.Version,
                    help="print version and exit")
    sps = ap.add_subparsers()
 
@@ -80,24 +80,25 @@ def args_parse():
    sp.add_argument("cid", metavar="CONTAINER_ID")
 
    args_ = ap.parse_args()
+   args_.arch = "yolo"
+   args_.password_many = False
+   args_.storage = None
+   args_.tls_no_verify = False
+   ch.init(args_)
 
    if len(sys.argv) < 2:
       ap.print_help(file=sys.stderr)
       sys.exit(1)
 
-   if (args_.version):
-      print(version.VERSION)
-      sys.exit(0)
-
    bundle_ = bundle_from_cid(args_.cid)
    if ("bundle" in args_ and args_.bundle != bundle_):
-      fatal("bundle argument \"%s\" differs from inferred bundle \"%s\""
+      ch.FATAL("bundle argument \"%s\" differs from inferred bundle \"%s\""
             % (args_.bundle, bundle_))
    args_.bundle = bundle_
 
    pid_file_ = pid_file_from_bundle(args_.bundle)
    if ("pid_file" in args_ and args_.pid_file != pid_file_):
-      fatal("pid_file argument \"%s\" differs from inferred \"%s\""
+      ch.FATAL("pid_file argument \"%s\" differs from inferred \"%s\""
             % (args_.pid_file, pid_file_))
    args_.pid_file = pid_file_
 
@@ -106,49 +107,32 @@ def args_parse():
 def bundle_from_cid(cid):
    m = re.search(r"^buildah-buildah(.+)$", cid)
    if (m is None):
-      fatal("cannot parse container ID: %s" % cid)
+      ch.FATAL("cannot parse container ID: %s" % cid)
    paths = []
    for p in BUNDLE_PREFIX:
       paths.append("%s/buildah%s" % (p, m.group(1)))
-      if os.path.exists(paths[-1]):
+      if (os.path.exists(paths[-1])):
          return paths[-1]
-   fatal("can't infer bundle path; none of these exist: %s" % " ".join(paths))
+   ch.FATAL("can't infer bundle path; none of these exist: %s"
+            % " ".join(paths))
 
 def debug_lines(s):
    for line in s.splitlines():
-      l.debug(line)
-
-
-def fatal(msg):
-   l.critical(msg)
-   sys.exit(1)
-
-
-def file_ensure_exists(path):
-   with open(path, "a") as fp:
-      pass
-
-
-def file_write(path, content, mode=None):
-   with open(path, "wt") as fp:
-      fp.write(content)
-      if (mode is not None):
-         os.chmod(fp.fileno(), mode)
-
+      ch.VERBOSE(line)
 
 def image_fixup(path):
-   l.debug("fixing up image: %s" % path)
+   ch.VERBOSE("fixing up image: %s" % path)
    # Metadata directory.
-   mkdirs("%s/ch/bin" % path)
+   ch.mkdirs("%s/ch/bin" % path)
    # Mount points.
-   file_ensure_exists("%s/etc/hosts" % path)
-   file_ensure_exists("%s/etc/resolv.conf" % path)
+   ch.file_ensure_exists("%s/etc/hosts" % path)
+   ch.file_ensure_exists("%s/etc/resolv.conf" % path)
    # /etc/{passwd,group}
-   file_write("%s/etc/passwd" % path, """\
+   ch.file_write("%s/etc/passwd" % path, """\
 root:x:0:0:root:/root:/bin/sh
 nobody:x:65534:65534:nobody:/:/bin/false
 """)
-   file_write("%s/etc/group" % path, """\
+   ch.file_write("%s/etc/group" % path, """\
 root:x:0:
 nogroup:x:65534:
 """)
@@ -156,53 +140,28 @@ nogroup:x:65534:
    # unprivileged user namespace. See also the default environment.
    #
    # Debian apt/dpkg/etc. want to chown(1), chgrp(1), etc. in various ways.
-   symlink("/bin/true", "%s/ch/bin/chown" % path)
-   symlink("/bin/true", "%s/ch/bin/chgrp" % path)
-   symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
+   ch.symlink("/bin/true", "%s/ch/bin/chgrp" % path)
+   ch.symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
    # Debian package management also wants to mess around with users. This is
    # causing problems with /etc/gshadow and other files. These links don't
    # work if they are in /ch/bin, I think because dpkg is resetting the path?
    # For now we'll do this, but I don't like it. fakeroot(1) also solves the
    # problem (see issue #472).
-   symlink("/bin/true", "%s/usr/sbin/groupadd" % path, clobber=True)
-   symlink("/bin/true", "%s/usr/sbin/useradd" % path, clobber=True)
-   symlink("/bin/true", "%s/usr/sbin/usermod" % path, clobber=True)
-   symlink("/bin/true", "%s/usr/bin/chage" % path, clobber=True)
-
-
-def log_setup():
-   # Always set up a logger on stderr that only prints errors.
-   l_ = logging.getLogger(None)
-   l_.setLevel(logging.NOTSET)
-   h = logging.StreamHandler(sys.stderr)
-   h.setLevel(logging.ERROR)
-   h.setFormatter(logging.Formatter("%s[%%(process)s]: %%(message)s"
-                                    % os.path.basename(sys.argv[0])))
-   l_.addHandler(h)
-   # If environment variable, set up a file logger at DEBUG level too.
-   file_ = os.getenv("CH_RUN_OCI_LOGFILE")
-   if (file_ is not None):
-      h = logging.FileHandler(file_)
-      h.setLevel(logging.DEBUG)
-      h.setFormatter(logging.Formatter("%(process)5d %(asctime)s %(message)s"))
-      l_.addHandler(h)
-   return l_
-
-
-def mkdirs(path):
-   l.debug("ensuring directory: " + path)
-   os.makedirs(path, exist_ok=True)
-
+   ch.symlink("/bin/true", "%s/bin/chown" % path, clobber=True)
+   ch.symlink("/bin/true", "%s/usr/sbin/groupadd" % path, clobber=True)
+   ch.symlink("/bin/true", "%s/usr/sbin/useradd" % path, clobber=True)
+   ch.symlink("/bin/true", "%s/usr/sbin/usermod" % path, clobber=True)
+   ch.symlink("/bin/true", "%s/usr/bin/chage" % path, clobber=True)
 
 def op_create():
    # Validate arguments.
    if (args.console_socket):
-      fatal("--console-socket not supported")
+      ch.FATAL("--console-socket not supported")
 
    # Start dummy supervisor.
    if (state.pid is not None):
-      fatal("container already created")
-   pid = os.fork()
+      ch.FATAL("container already created")
+   pid = ch.ossafe(os.fork, "can't fork")
    if (pid == 0):
       # Child; the only reason to exist is so Buildah sees a process when it
       # looks for one. Sleep until told to exit.
@@ -210,25 +169,22 @@ def op_create():
       # Note: I looked into changing the process title and this turns out to
       # be remarkably hairy unless you use a 3rd-party module.
       def exit_(sig, frame):
-         l.debug("dummy supervisor: done")
+         ch.VERBOSE("dummy supervisor: done")
          sys.exit(0)
       signal.signal(signal.SIGTERM, exit_)
-      l.debug("dummy supervisor: starting")
+      ch.VERBOSE("dummy supervisor: starting")
       sleep_forever()
    else:
       state.pid = pid
-      with open(args.pid_file, "wt") as fp:
+      with ch.open_(args.pid_file, "wt") as fp:
          print("%d" % pid, file=fp)
-      l.debug("dummy supervisor started with pid %d" % pid)
-
+      ch.VERBOSE("dummy supervisor started with pid %d" % pid)
 
 def op_delete():
-   l.debug("delete operation is a no-op")
-
+   ch.VERBOSE("delete operation is a no-op")
 
 def op_kill():
-   l.debug("kill operation is a no-op")
-
+   ch.VERBOSE("kill operation is a no-op")
 
 def op_start():
    # Note: Contrary to the implication of its name, the "start" operation
@@ -238,28 +194,28 @@ def op_start():
 
    # Unsupported features to barf about.
    if (state.pid is None):
-      fatal("can't start: not created yet")
+      ch.FATAL("can't start: not created yet")
    if (c["process"].get("terminal", False)):
-      fatal("not supported: pseudoterminals")
+      ch.FATAL("not supported: pseudoterminals")
    if ("annotations" in c):
-      fatal("not supported: annotations")
+      ch.FATAL("not supported: annotations")
    if ("hooks" in c):
-      fatal("not supported: hooks")
+      ch.FATAL("not supported: hooks")
    for d in c["linux"]["namespaces"]:
       if ("path" in d):
-         fatal("not supported: joining existing namespaces")
+         ch.FATAL("not supported: joining existing namespaces")
    if ("intelRdt" in c["linux"]):
-      fatal("not supported: Intel RDT")
+      ch.FATAL("not supported: Intel RDT")
 
    # Environment file. This is a list of lines, not a dict.
    #
    # GNU tar, when it thinks it's running as root, tries to chown(2) and
    # chgrp(2) files to whatever's in the tarball. --no-same-owner avoids this.
-   with open(args.bundle + "/environment", "wt") as fp:
+   with ch.open_(args.bundle + "/environment", "wt") as fp:
       for line in (  c["process"]["env"]                  # from Dockerfile
                    + [ "TAR_OPTIONS=--no-same-owner" ]):  # ours
          line = re.sub(r"^(PATH=)", "\\1/ch/bin:", line)
-         l.debug("env: %s" % line)
+         ch.VERBOSE("env: %s" % line)
          print(line, file=fp)
 
    # Build command line.
@@ -281,27 +237,26 @@ def op_start():
 
    # Execute user command. We can't execv(2) because we have to do cleanup
    # after it exits.
-   file_ensure_exists(args.bundle + "/user_started")
-   l.debug("user command: %s" % ca)
+   ch.file_ensure_exists(args.bundle + "/user_started")
+   ch.VERBOSE("user command: %s" % ca)
    # Standard output disappears, so send stdout to stderr.
    cp = subprocess.run(ca, stdout=2)
-   file_ensure_exists(args.bundle + "/user_done")
-   l.debug("user command done")
+   ch.file_ensure_exists(args.bundle + "/user_done")
+   ch.VERBOSE("user command done")
 
    # Stop dummy supervisor.
    if (state.pid is None):
-      fatal("no dummy supervisor PID found")
+      ch.FATAL("no dummy supervisor PID found")
    try:
       os.kill(state.pid, signal.SIGTERM)
       state.pid = None
       os.unlink(args.pid_file)
    except OSError as x:
-      fatal("can't kill PID %d: %s (%d)" % (state.pid, x.strerror, x.errno))
+      ch.FATAL("can't kill PID %d: %s (%d)" % (state.pid, x.strerror, x.errno))
 
    # Puke if user command failed.
    if (cp.returncode != 0):
-      fatal("user command failed: %d" % cp.returncode)
-
+      ch.FATAL("user command failed: %d" % cp.returncode)
 
 def op_state():
    def status():
@@ -324,49 +279,32 @@ def op_state():
    debug_lines(out)
    print(out)
 
-
 def sleep_forever():
    while True:
       time.sleep(60)  # can't provide infinity here
 
-
-def symlink(target, source, clobber=False):
-   if (clobber and os.path.isfile(source)):
-      os.unlink(source)
-   try:
-      os.symlink(target, source)
-   except FileExistsError:
-      if (not os.path.islink(source)):
-         FATAL("can't symlink: source exists and isn't a symlink: %s"
-               % source)
-      if (os.readlink(source) != target):
-         FATAL("can't symlink: %s exists; want target %s but existing is %s"
-               % (source, target, os.readlink(source)))
-
-
 def pid_file_from_bundle(bundle):
    return bundle + "/pid"
-
 
 def state_load():
    st = types.SimpleNamespace()
 
-   st.config = json.load(open(args.bundle + "/config.json"))
+   st.config = json.load(ch.open_(args.bundle + "/config.json", "rt"))
    #debug_lines(json.dumps(st.config, indent=2))
 
    v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
    v_actual = distutils.version.LooseVersion(st.config["ociVersion"])
    v_max = distutils.version.LooseVersion(OCI_VERSION_MAX)
    if (not v_min <= v_actual <= v_max):
-      fatal("unsupported OCI version: %s" % st.config["ociVersion"])
+      ch.FATAL("unsupported OCI version: %s" % st.config["ociVersion"])
 
    try:
-      fp = open(args.pid_file)
-      st.pid = int(fp.read())
-      l.debug("found supervisor pid: %d" % st.pid)
+      fp = open(args.pid_file, "rt")
+      st.pid = int(ch.ossafe(fp.read, "can't read: %s" % args.pid_file))
+      ch.VERBOSE("found supervisor pid: %d" % st.pid)
    except FileNotFoundError:
       st.pid = None
-      l.debug("no supervisor pid found")
+      ch.VERBOSE("no supervisor pid found")
 
    st.user_command_started = os.path.isfile(args.bundle + "/user_started")
    st.user_command_done = os.path.isfile(args.bundle + "/user_done")

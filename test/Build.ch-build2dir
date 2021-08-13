@@ -4,16 +4,16 @@
 
 # Generate image directory using ch-build2dir and stage it for testing.
 
-set -e
+set -ex
 
 srcdir=$1
-tarball_gz=${2}.tar.gz
-workdir=$3
+outdir=$2
+#workdir=$3  # unused
 
-tag=build2dir
+tag=$(basename "$outdir")
+outdir_parent=$(dirname "$outdir")
 
 cd "$srcdir"
-ch-build2dir -t $tag --file=Dockerfile.build2dir . "$workdir"
-cd "$workdir"
-tar czf ${tag}.tar.gz $tag
-mv ${tag}.tar.gz "$tarball_gz"
+
+ch-build2dir -t "$tag" --file=./Dockerfile.build2dir . "$outdir_parent"
+[[ -d $outdir ]]

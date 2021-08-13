@@ -130,19 +130,15 @@ EOF
 
     ;;
 
-ch-grow)
-
-    case $image in
-        *:*)
-            ;;
-        *)
-            image="${image}:latest"
-            ;;
-    esac
-
+ch-image)
+    storage=$("${ch_bin}/ch-image" storage-path)/img/$(tag_to_path "$image")
+    if [ ! -d "$storage" ]; then
+        echo "$image not found in builder storage" 1>&2
+        exit 1
+    fi
     echo "exporting"
-    storage=$("${ch_bin}/ch-grow" --print-storage /doesnotexist)
-    ( cd "${storage}/img/${image}" && tar cf - . ) | pv_ > "$tar"
+    echo "$storage"
+    ( cd "$storage" && tar cf - . ) | pv_ > "$tar"
 
     ;;
 
@@ -164,8 +160,15 @@ docker)
 
     ;;
 
+none)
+
+    echo 'this script does not support the above builder' 1>&2
+    exit 1
+    ;;
+
 *)
-    Echo "unknown builder: $CH_BUILDER" 1>&2
+    # builder_choose() above should have ensured the builder is good.
+    echo "unreachable code reached: unknown builder: $CH_BUILDER" 1>&2
     exit 1
     ;;
 esac

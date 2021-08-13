@@ -37,6 +37,14 @@ filesystem permissions fixtures must be created manually, in order to
 accommodate configurations where sudo is not available via the same login path
 used for running tests.
 
+The packed and unpacked image directories specified for testing are volatile.
+The contents of these directories are deleted before the build and run phases,
+respectively.
+
+In all four cases, when creating directories, only the final path component is
+created. Parent directories must already exist, i.e., :code:`ch-test` uses the
+behavior of :code:`mkdir` rather than :code:`mkdir -p`.
+
 Some of the tests exercise parallel functionality. If :code:`ch-test` is run
 on a single node, multiple cores will be used; if in a Slurm allocation,
 multiple nodes too.
@@ -47,8 +55,7 @@ tested on different systems by copying the necessary artifacts between them,
 e.g. by building images on one system and running them on another. The *scope*
 allows trading off thoroughness versus time.
 
-:code:`PHASE` must be one of the following; the default is to run
-:code:`build`, :code:`run`, and :code:`examples` in that order.
+:code:`PHASE` must be one of the following:
 
   :code:`build`
     Image building and associated functionality, with the selected builder.
@@ -62,6 +69,10 @@ allows trading off thoroughness versus time.
     Example applications. Requires an unpacked images directory produced by a
     successful :code:`run` phase.
 
+  :code:`all`
+    Execute phases :code:`build`, :code:`run`, and :code:`examples`, in that
+    order.
+
   :code:`mk-perm-dirs`
     Create the filesystem permissions directories. Requires
     :code:`--perm-dirs`.
@@ -74,8 +85,19 @@ allows trading off thoroughness versus time.
     Remove the filesystem permissions directories. Requires
     :code:`--perm-dirs`.
 
-  a specific :code:`.bats` file
-    Run the tests in that file. **(Not yet implemented.)**
+  :code:`-f`, :code:`--file FILE[:TEST]`
+    Run the tests in the given file only, which can be an arbitrary
+    :code:`.bats` file, except for :code:`test.bats` under :code:`examples`,
+    where you must specify the corresponding Dockerfile or :code:`Build` file
+    instead. This is somewhat brittle and typically used for development or
+    debugging. For example, it does not check whether the pre-requisites of
+    whatever is in the file are satisfied. Often running :code:`build` and
+    :code:`run` first is sufficient, but this varies.
+
+    If :code:`TEST` is also given, then run only the test with that name,
+    skipping the others. The separator is a literal colon. Most test names
+    contain spaces, so you'll usually need to quote the argument to protect it
+    from the shell.
 
 Scope is specified with:
 

@@ -11,7 +11,8 @@ Usage:
 
   $ $(basename "$0") [-b BUILDER] [--builder-info] -t TAG [ARGS ...] CONTEXT
 
-BUILDER is one of: buildah ch-grow docker.
+BUILDER is "ch-image" or "docker"
+        (or experimentally: "buildah", "buildah-runc", "buildah-setuid")
 ARGS are passed unchanged to the underlying builder.
 EOF
 )
@@ -48,8 +49,8 @@ if [ -n "$builder_info" ]; then
         buildah*)
             buildah --version
             ;;
-        ch-grow)
-            "${ch_bin}/ch-grow" --version
+        ch-image)
+            "${ch_bin}/ch-image" --version
             ;;
         docker)
             docker --version  # no wrapper: sudo not needed for --version
@@ -82,21 +83,49 @@ case $CH_BUILDER in
                 ignore_chown=false
                 ;;
         esac
-        BUILDAH_LAYERS=true \
-        buildah --storage-opt .ignore_chown_errors="$ignore_chown" \
-                build-using-dockerfile \
-                --build-arg HTTP_PROXY="$HTTP_PROXY" \
-                --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
-                --build-arg NO_PROXY="$NO_PROXY" \
-                --build-arg http_proxy="$http_proxy" \
-                --build-arg https_proxy="$https_proxy" \
-                --build-arg no_proxy="$no_proxy" \
-                --isolation=rootless \
-                --runtime="$runtime" \
-                "$@" < /dev/null
+        # Set BUILDAH_LAYERS instead of using "--layers=true" to avoid the
+        # error "can only set one of 'layers' or 'no-cache'".
+        export BUILDAH_LAYERS=true
+        # If Buildah sees a terminal on stdin, it does TTY stuff that confuses
+        # ch-run-oci, so we always have to redirect stdin. If it's already
+        # redirected, just pass that through; otherwise, use /dev/null.
+        #
+        # We used to redirect from /dev/stdin in the former case. However,
+        # this started throwing errors in CI out of the blue (issue #964):
+        #
+        #   cannot open /dev/stdin: No such device or address
+        #
+        # The buildah invocation is repeated because I couldn't figure out how
+        # to put the arguments in a variable and then get them out again
+        # reliably without Bash arrays.
+        if [ -t 0 ]; then
+            buildah --storage-opt .ignore_chown_errors="$ignore_chown" \
+                    build-using-dockerfile \
+                    --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                    --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                    --build-arg NO_PROXY="$NO_PROXY" \
+                    --build-arg http_proxy="$http_proxy" \
+                    --build-arg https_proxy="$https_proxy" \
+                    --build-arg no_proxy="$no_proxy" \
+                    --isolation=rootless \
+                    --runtime="$runtime" \
+                    "$@" < /dev/null
+        else
+            buildah --storage-opt .ignore_chown_errors="$ignore_chown" \
+                    build-using-dockerfile \
+                    --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                    --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                    --build-arg NO_PROXY="$NO_PROXY" \
+                    --build-arg http_proxy="$http_proxy" \
+                    --build-arg https_proxy="$https_proxy" \
+                    --build-arg no_proxy="$no_proxy" \
+                    --isolation=rootless \
+                    --runtime="$runtime" \
+                    "$@"
+        fi
         ;;
-    ch-grow)
-        "${ch_bin}/ch-grow" "$@"
+    ch-image)
+        "${ch_bin}/ch-image" build "$@"
         ;;
     docker)
         # Coordinate this list with test "build.bats/proxy variables".

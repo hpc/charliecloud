@@ -71,18 +71,17 @@ should not be assigned to a person.
 Peer review
 -----------
 
-**Issues and pull requests.** The standard workflow is to introduce a
-change in an issue, get consensus on what to do, and then create a `pull
+**Issues and pull requests.** The standard workflow is to introduce a change
+in an issue, get consensus on what to do, and then create a *draft* `pull
 request <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_
-(PR) for the implementation. The issue, not the PR, should be tagged and
-milestoned so a given change shows up only once in the various views.
+(PR) for the implementation.
+
+The issue, not the PR, should be tagged and milestoned so a given change shows
+up only once in the various views.
 
 If consensus is obtained through other means (e.g., in-person discussion),
 then open a PR directly. In this case, the PR should be tagged and milestoned,
 since there is no issue.
-
-Trivial changes (e.g., fix Travis, fix a regression within a release,
-code formatting) can be done without an issue or PR.
 
 **Address a single concern.** When possible, issues and PRs should address
 completely one self-contained change. If there are multiple concerns, make
@@ -95,7 +94,7 @@ implement the code. Reviews of the form "you need a completely different
 approach" are no fun.
 
 **Tests must pass.** PRs will not be merged until they pass the tests. While
-this most saliently includes Travis, the tests should also pass on your
+this most saliently includes CI, the tests should also pass on your
 development box as well as all relevant clusters (if appropriate for the
 changes).
 
@@ -108,22 +107,24 @@ deal with that. We also want this information in only one place (the commit
 log). Instead, use "addresses", and we'll edit the keywords into the commit
 message(s) at merge time if needed.
 
-**PR review procedure.** When your PR is ready for review — which may or may
-not be when you want it considered for merging — do one or both of:
+**PR review procedure.** When your draft PR is ready for review — which may or
+may not be when you want it considered for merging! — do one or both of:
 
 * Request review from the person(s) you want to look at it. If you think it
   may be ready for merge, that should include the project lead. The purpose of
-  requsting review is so the person is notified you need their help.
+  requesting review is so the person is notified you need their help.
 
 * If you think it may be ready to merge (even if you're not sure), then also
-  tag the PR :code:`ready to merge`. The purpose of this is so the project
-  lead can see which PRs are ready to consider for merging. If the project
-  lead decides it's ready, they will merge; otherwise, they'll untag.
+  mark the PR "ready to review". The purpose of this is so the project lead
+  can see which PRs are ready to consider for merging (green icon) and which
+  are not (gray icon). If the project lead decides it's ready, they will
+  merge; otherwise, they'll change it back to draft.
 
 In both cases, the person from whom you requested review now owns the branch,
 and you should stop work on it unless and until you get it back.
 
-Do not hesitate to pester your reviewer if you haven't heard back promptly.
+Do not hesitate to pester your reviewer if you haven't heard back promptly,
+say within 24 hours.
 
 *Special case 1:* Often, the review consists of code changes, and the reviewer
 will want you to assess those changes. GitHub doesn't let you request review
@@ -177,8 +178,8 @@ After merge, the branch is deleted via the web interface.
 **Branch history tidiness.** Commit frequently at semantically relevant times,
 and keep in mind that this history will probably be squashed per above. It is
 not necessary to rebase or squash to keep branch history tidy. But, don't go
-crazy. Commit messages like "try 2" and "fix Travis again" are a bad sign; so
-are carefully proofread ones. Commit messages that are brief, technically
+crazy. Commit messages like "try 2" and "fix CI again" are a bad sign; so are
+carefully proofread ones. Commit messages that are brief, technically
 relevant, and quick to write are what you want on feature branches.
 
 **Keep branches up to date.** Merge master into your branch, rather than
@@ -216,59 +217,77 @@ Continuous integration testing
 reasons. We are working to improve testing for normal commits on master, but
 full parity is probably unlikely.
 
-**Travis budget.** Because we're on the free tier, we only get 5 Travis jobs
-running at a time. Currently, each job takes about ten minutes, there are
-seven of them per tested commit, and PRs double this (once on the branch and
-once with a test merge commit). The resource is there for your use, so take
-advantage of it, but be mindful of the cost, since your fellow developers
-might be trying to get in too.
+**Cycles budget.** The resource is there for your use, so take advantage of
+it, but be mindful of the various costs of this compute time.
 
 Things you can do include testing locally first, cancelling jobs you know will
 fail or that won't give you additional information, and not pushing every
-commit (Travis tests only the most recent commit in a pushed group).
+commit (CI tests only the most recent commit in a pushed group).
 
-**Iterating with Travis.** When trying to make Travis happy, use a throwaway
-branch that you force-push or squash-merge. Don't submit a PR with half a
-dozen "fix Travis" commits.
+**Iterating.** When trying to make CI happy, force-push or squash-merge. Don't
+submit a PR with half a dozen "fix CI" commits.
 
-**Purging Docker cache.** :code:`test/docker-clean.sh` can be used to purge
+**Purging Docker cache.** :code:`misc/docker-clean.sh` can be used to purge
 your Docker cache, either by removing all tags or deleting all containers and
 images. The former is generally preferred, as it lets you update only those
 base images that have actually changed (the ones that haven't will be
 re-tagged).
 
-GitHub tags
------------
+Issue labeling
+--------------
 
-What kind of issue is it?
-~~~~~~~~~~~~~~~~~~~~~~~~~
+We use the following labels (a.k.a. tags) to organize issues. Each issue (or
+stand-alone PR) should have label(s) from every category, with the exception
+of disposition which only applies to closed issues.
+
+Charliecloud team members should label their own issues. Members of the
+general public are more than welcome to label their issues if they like, but
+in practice this is rare, which is fine. Whoever triages the incoming issue
+should add or adjust labels as needed.
+
+.. note::
+
+   This scheme is designed to organize open issues only. There have been
+   previous schemes, and we have not re-labeled closed issues.
+
+What kind of change is it?
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Choose *one type* from:
 
 :code:`bug`
-  Problem of some kind that needs to be fixed; i.e., something doesn't work.
-  This includes usability and documentation problems. Should have steps to
-  reproduce with expected and actual behavior.
+  Something doesn't work; e.g., it doesn't work as intended or it was
+  mis-designed. This includes usability and documentation problems. Steps to
+  reproduce with expected and actual behavior are almost always very helpful.
 
 :code:`enhancement`
   Things work, but it would be better if something was different. For example,
-  a new feature proposal or refactoring. Should have steps to reproduce with
-  desired and actual behavior.
+  a new feature proposal, an improvement in how a feature works, or clarifying
+  an error message. Steps to reproduce with desired and current behavior are
+  often helpful.
 
-:code:`help wanted`
-  The core team does not plan to address this issue, perhaps because we don't
-  know how, but we think it would be good to address it. We hope someone from
-  the community will volunteer.
+:code:`refactor`
+  Change that will improve Charliecloud but does not materially affect
+  user-visible behavior. Note this doesn't mean "invisible to the user"; even
+  user-facing documentation or logging changes could feasibly be this, if they
+  are more cleanup-oriented.
 
-:code:`key issue`
-  A particularly important or notable issue.
+How important/urgent is it?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:code:`question`
-  Support request that does not report a problem or ask for a change. Close
-  these after the question is answered or several days with no activity.
+Choose *one priority* from:
 
-What do we plan to do about it?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:code:`high`
+  High priority.
 
-For all of these, leave other tags in place, e.g. :code:`bug`.
+:code:`medium`
+  Medium priority.
+
+:code:`low`
+  Low priority. Note: Unfortunately, due to resource limitations, complex
+  issues here are likely to wait a long time, perhaps forever. If that makes
+  you particularly sad on a particular issue, please comment to say why. Maybe
+  it's mis-prioritized.
 
 :code:`deferred`
   No plans to do this, but not rejected. These issues stay open, because we do
@@ -276,32 +295,128 @@ For all of these, leave other tags in place, e.g. :code:`bug`.
   risky; you probably want to argue successfully that it should be done before
   starting work on it.
 
+Priority is indeed required, though it can be tricky because the levels are
+fuzzy. Do not hesitate to ask for advice. Considerations include: is customer
+or development work blocked by the issue; how valuable is the issue for
+customers; does the issue affect key customers; how many customers are
+affected; how much of Charliecloud is affected; what is the workaround like,
+if any. Difficulty of the issue is not a factor in priority, i.e., here we are
+trying to express benefit, not cost/benefit ratio. Perhaps the `Debian bug
+severity levels <https://www.debian.org/Bugs/Developer#severities>`_ provide
+inspiration. The number of :code:`high` priority issues should be relatively
+low.
+
+In part because priority is quite imprecise, issues are not a priority queue,
+i.e., we do work on lower-priority issues while higher-priority ones are still
+open. Related to this, issues do often move between priority levels. In
+particular, if you think we picked the wrong priority level, please say so.
+
+What part of Charliecloud is affected?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Choose *one or more components* from:
+
+:code:`runtime`
+  The container runtime itself; largely :code:`ch-run`.
+
+:code:`image`
+  Image building and interaction with image registries; largely
+  :code:`ch-image`. (Not to be confused with image management tasks done by
+  glue code.)
+
+:code:`glue`
+  The “glue” that ties the runtime and image management (:code:`ch-image` or
+  another builder) together. Largely shell scripts in :code:`bin`.
+
+:code:`install`
+  Charliecloud build & install system, packaging, etc. (Not to be confused
+  with image building.)
+
+:code:`doc`
+  Documentation.
+
+:code:`test`
+  Test suite and examples.
+
+:code:`misc`
+  Everything else. Do not combine with another component.
+
+Special considerations
+~~~~~~~~~~~~~~~~~~~~~~
+
+Choose *one or more extras* from:
+
+:code:`blocked`
+  We can't do this yet because something else needs to happen first. If that
+  something is another issue, mention it in a comment.
+
+:code:`hpc`
+  Related specifically to HPC and HPC scaling considerations; e.g.,
+  interactions with job schedulers.
+
+:code:`uncertain`
+  Course of action is unclear. For example: is the feature a good idea,
+  what is a good approach to solve the bug, what additional information is
+  needed.
+
+:code:`usability`
+  Affects usability of any part of Charliecloud, including documentation and
+  project organization.
+
+Why was it closed?
+~~~~~~~~~~~~~~~~~~
+
+If the issue was resolved (i.e., bug fixed or enhancement/refactoring
+implemented), there is no disposition tag. Otherwise, to explain why not,
+choose *one disposition* from:
+
+:code:`cantfix`
+  The issue is not something we can resolve. Typically problems with other
+  software, problems with containers in general that we can't work around, or
+  not actionable due to clarity or other reasons. *Use caution when blaming a
+  problem on user error. Often (or usually) there is a documentation or
+  usability bug that caused the "user error".*
+
+:code:`discussion`
+  Converted to a discussion. The most common use is when someone asks a
+  question rather than making a request for some change.
+
 :code:`duplicate`
-  Same as some other previously reported issue. In addition to this tag,
-  duplicates should refer to the other issue and be closed.
+  Same as some other issue. In addition to this tag, duplicates should refer
+  to the other issue in a comment to record the link. Of the duplicates, the
+  better one should stay open (e.g., clearer reproduction steps); if they are
+  roughly equal in quality, the older one should stay open.
 
-:code:`obsolete`
-  No longer relevant, moot, etc. Close.
-
-:code:`erroneous`
-  Not a Charliecloud issue; close. *Use caution when blaming a problem on user
-  error. Often (or usually) there is a documentation or usability bug that
-  caused the "user error".*
-
-:code:`ready to merge`
-  PRs only. Adding this tag speculates that the PR is complete and requests it
-  be considered for merging to master. If the project lead requests changes,
-  they'll remove the tag. Re-add it when you're ready to try again. Lead
-  removes tag after merging.
+:code:`moot`
+  No longer relevant. Examples: withdrawn by reporter, fixed in current
+  version (use :code:`duplicate` instead if it applies though), obsoleted by
+  change in plans.
 
 :code:`wontfix`
-  We are not going to do this, and we won't merge PRs. Close issue after
-  tagging, though sometimes you'll want to leave a few days to allow for
-  further discussion to catch mistaken tags.
+  We are not going to do this, and we won't merge PRs. Sometimes you'll want
+  to tag and then wait a few days before closing, to allow for further
+  discussion to catch mistaken tags.
 
 :code:`worksforme`
-  We cannot reproduce the issue. Typical workflow is to tag, then wait a few
-  days for clarification before closing.
+  We cannot reproduce a bug, and it seems unlikely this will change given
+  available information. Typically you'll want to tag, then wait a few days
+  for clarification before closing. Bugs closed with this tag that do gain a
+  reproducer later should definitely be re-opened. For some bugs, it really
+  feels like they should be reproducible but we're missing it somehow; such
+  bugs should be left open in hopes of new insight arising.
+
+Deprecated labels
+~~~~~~~~~~~~~~~~~
+
+You might see these on old issues, but they are no longer in use.
+
+* :code:`help wanted`: This tended to get stale and wasn't generating any
+  leads.
+
+* :code:`key issue`: Replaced by priority labels.
+
+* :code:`question`: Replaced by Discussions. (If you report a bug that seems
+  to be a discussion, we'll be happy to convert it to you.)
 
 
 Test suite
@@ -313,7 +428,7 @@ Timing the tests
 The :code:`ts` utility from :code:`moreutils` is quite handy. The following
 prepends each line with the elapsed time since the previous line::
 
-  $ CH_TEST_SCOPE=quick make test | ts -i '%M:%.S'
+  $ ch-test -s quick | ts -i '%M:%.S'
 
 Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
 
@@ -330,36 +445,62 @@ Charliecloud is small enough to just rebuild everything with::
 
   $ ./autogen.sh && ./configure && make clean && make
 
+Special images
+--------------
+
+For images not needed after completion of a test, tag them :code:`tmpimg`.
+This leaves only one extra image at the end of the test suite.
 
 Writing a test image using the standard workflow
 ------------------------------------------------
 
-The Charliecloud test suite has a workflow that can build images by three
+Summary
+~~~~~~~
+
+The Charliecloud test suite has a workflow that can build images by two
 methods:
 
 1. From a Dockerfile, using :code:`ch-build`.
-2. By pulling a Docker image, with :code:`docker pull`.
-3. By running a custom script.
+2. By running a custom script.
 
-To create an image that will be built, unpacked, and basic tests run within,
-create a file in :code:`test/` called
-:code:`{Dockerfile,Docker_Pull,Build}.foo`. This will create an image tagged
-:code:`foo`.
+To create an image that will be built and unpacked and/or mounted, create a
+file in :code:`examples` (if the image recipe is useful as an example) or
+:code:`test` (if not) called :code:`{Dockerfile,Build}.foo`. This will create
+an image tagged :code:`foo`. Additional tests can be added to the test suite
+Bats files.
 
 To create an image with its own tests, documentation, etc., create a directory
-in :code:`examples/*`. In this directory, place
-:code:`{Dockerfile,Docker_Pull,Build}[.foo]` to build the image and
-:code:`test.bats` with your tests. For example, the file
-:code:`examples/mpi/foo/Dockerfile` will create an image tagged :code:`foo`,
-and :code:`examples/mpi/foo/Dockerfile.bar` tagged :code:`foo-bar`. These
-images also get the basic tests.
+in :code:`examples`. In this directory, place
+:code:`{Dockerfile,Build}[.foo]` to build the image and :code:`test.bats` with
+your tests. For example, the file :code:`examples/foo/Dockerfile` will create
+an image tagged :code:`foo`, and :code:`examples/foo/Dockerfile.bar` tagged
+:code:`foo-bar`. These images also get the build and unpack/mount tests.
+
+Additional directories can be symlinked into :code:`examples` and will be
+integrated into the test suite. This allows you to create a site-specific test
+suite. :code:`ch-test` finds tests at any directory depth; e.g.
+:code:`examples/foo/bar/Dockerfile.baz` will create a test image tagged
+:code:`bar-baz`.
 
 Image tags in the test suite must be unique.
 
+Order of processing; within each item, alphabetical order:
+
+1. Dockerfiles in :code:`test`.
+2. :code:`Build` files in :code:`test`.
+3. Dockerfiles in :code:`examples`.
+4. :code:`Build` files in :code:`examples`.
+
+The purpose of doing :code:`Build` second is so they can leverage what has
+already been built by a Dockerfile, which is often more straightforward.
+
+How to specify when to include and exclude a test image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Each of these image build files must specify its scope for building and
 running, which must be greater than or equal than the scope of all tests in
-the corresponding :code:`test.bats`. Exactly one of the following strings must
-be in each file:
+any corresponding :code:`.bats` files. Exactly one of the following strings
+must appear:
 
 .. code-block:: none
 
@@ -369,57 +510,62 @@ be in each file:
 
 Other stuff on the line (e.g., comment syntax) is ignored.
 
-Similarly, you can exclude an architecture with e.g.:
+Optional test modification directives are:
 
-.. code-block:: none
+  :code:`ch-test-arch-exclude: ARCH`
+    If the output of :code:`uname -m` matches :code:`ARCH`, skip the file.
 
-  ch-test-arch-exclude: aarch64  # ARM not supported upstream
+  :code:`ch-test-builder-exclude: BUILDER`
+    If using :code:`BUILDER`, skip the file.
 
-Additional subdirectories can be symlinked into :code:`examples/` and will be
-integrated into the test suite. This allows you to create a site-specific test
-suite.
+  :code:`ch-test-builder-include: BUILDER`
+    If specified, run only if using :code:`BUILDER`. Can be repeated to
+    include multiple builders. If specified zero times, all builders are
+    included.
 
-:code:`Dockerfile`:
+  :code:`ch-test-need-sudo`
+    Run only if user has sudo.
 
-  * It's a Dockerfile.
+How to write a :code:`Dockerfile` recipe
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:code:`Docker_Pull`:
+It's a standard Dockerfile.
 
-  * First line states the address to pull from Docker Hub.
-  * Second line is a scope expression as described above.
-  * Examples (these refer to the same image as of this writing):
+How to write a :code:`Build` recipe
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    .. code-block:: none
+This is an arbitrary script or program that builds the image. It gets three
+command line arguments:
 
-      alpine:3.6
-      alpine@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d
+  * :code:`$1`: Absolute path to directory containing :code:`Build`.
 
-:code:`Build`:
+  * :code:`$2`: Absolute path and name of output image, without extension.
+    This can be either:
 
-  * Script or program that builds the image.
+    * Tarball compressed with gzip or xz; append :code:`.tar.gz` or
+      :code:`.tar.xz` to :code:`$2`. If :code:`ch-test --pack-fmt=squash`,
+      then this tarball will be unpacked and repacked as a SquashFS.
+      Therefore, only use tarball output if the image build process naturally
+      produces it and you would have to unpack it to get a directory (e.g.,
+      :code:`docker export`).
 
-  * Arguments:
+    * Directory; use :code:`$2` unchanged. The contents of this directory will
+      be packed without any enclosing directory, so if you want an enclosing
+      directory, include one. Hidden (dot) files in :code:`$2` will be ignored.
 
-    * :code:`$1`: Absolute path to directory containing :code:`Build`.
+  * :code:`$3`: Absolute path to temporary directory for use by the script.
+    This can be used for whatever and need no be cleaned up; the test harness
+    will delete it.
 
-    * :code:`$2`: Absolute path and name of output archive, without extension.
-      The script should use an archive format compatible with
-      :code:`ch-tar2dir` and append the appropriate extension (e.g.,
-      :code:`.tar.gz`).
+Other requirements:
 
-    * :code:`$3`: Absolute path to appropriate temporary directory.
-
-  * The script must not write anything in the current directory.
-
-  * Temporary directory can be used for whatever and need not be cleaned up.
-    It will be deleted by the test harness.
+  * The script may write only in two directories: (a) the parent directory of
+    :code:`$2` and (b) :code:`$3`. Specifically, it may not write to the
+    current working directory. Everything written to the parent directory of
+    :code:`$2` must have a name starting with :code:`$(basename $2)`.
 
   * The first entry in :code:`$PATH` will be the Charliecloud under test,
     i.e., bare :code:`ch-*` commands will be the right ones.
-
-  * The tarball must not contain leading directory components; top-level
-    filesystem directories such as bin and usr must be at the root of the
-    tarball with no leading path (:code:`./` is acceptable).
 
   * Any programming language is permitted. To be included in the Charliecloud
     source code, a language already in the test suite dependencies is
@@ -432,7 +578,7 @@ suite.
 
   * Exit codes:
 
-    * 0: Image tarball successfully created.
+    * 0: Image successfully created.
     * 65: One or more dependencies were not met.
     * 126 or 127: No interpreter available for script language (the shell
       takes care of this).
@@ -458,12 +604,24 @@ abstracted away.
 Dependencies
 ------------
 
-  * Python 2.7 or 3.4+
+  * charliecloud
+  * Python 3.6+
   * Either:
 
-    * RPM-based system of roughly RHEL/CentOS 7 vintage or newer, with RPM
-      build tools installed
-    * System that can run Charliecloud containers
+    * the provided example :code:`centos7` or :code:`centos8` image
+    * a RHEL/CentOS 7 or newer container image with (note there are different
+      python version names for the listed packages in RHEL/CentOS 8):
+      * autoconf
+      * automake
+      * gcc
+      * make
+      * python36
+      * python36-sphinx
+      * python36-sphinx_rtd_theme
+      * rpm-build
+      * rpmlint
+      * rsync
+
 
 :code:`rpmbuild` wrapper script
 -------------------------------
@@ -478,11 +636,9 @@ The script must be run from the root of a Charliecloud Git working directory.
 
 Usage::
 
-  $ packaging/fedora/build [OPTIONS] VERSION
+  $ packaging/fedora/build [OPTIONS] IMAGE VERSION
 
 Options:
-
-  * :code:`--image=DIR` : Build in Charliecloud image directory :code:`DIR`.
 
   * :code:`--install` : Install the RPMs after building into the build
     environment.
@@ -490,19 +646,17 @@ Options:
   * :code:`--rpmbuild=DIR` : Use RPM build directory root :code:`DIR`
     (default: :code:`~/rpmbuild`).
 
-For example, to build a version 0.9.7 RPM, on an RPM system, and leave the
-results in :code:`~/rpmbuild/RPMS`::
+For example, to build a version 0.9.7 RPM from the CentOS 7 image provided with
+the test suite, on any system, and leave the results in :code:`~/rpmbuild/RPMS`
+(note that the test suite would also build the necessary image diretory::
 
-  $ packaging/fedora/build 0.9.7-1
+  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
+  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 0.9.7-1
 
-To build a pre-release RPM of Git HEAD using the CentOS 7 image provided with
-the test suite (note that the test suite would also build the necessary image
-directory)::
+To build a pre-release RPM of Git HEAD using the CentOS 7 image::
 
-  $ bin/ch-build -t centos7 -f test/Dockerfile.centos7 test
-  $ bin/ch-builder2tar centos7 $CH_TEST_TARDIR
-  $ bin/ch-tar2dir $CH_TEST_TARDIR/centos7.tar.gz $CH_TEST_IMGDIR
-  $ packaging/fedora/build --image $CH_TEST_IMGDIR/centos7 HEAD
+  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
+  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 HEAD
 
 Gotchas and quirks
 ------------------
@@ -783,6 +937,36 @@ Variable conventions in shell scripts and :code:`.bats` files
 
     foo=${bar}/baz    # yes
     foo="${bar}/baz"  # no
+
+C code
+------
+
+:code:`const`
+~~~~~~~~~~~~~
+
+The :code:`const` keyword is used to indicate that variables are read-only. It
+has a variety of uses; in Charliecloud, we use it for `function pointer
+arguments <https://softwareengineering.stackexchange.com/a/204720>`_ to state
+whether or not the object pointed to will be altered by the function. For
+example:
+
+.. code-block:: c
+
+  void foo(const char *in, char *out)
+
+is a function that will not alter the string pointed to by :code:`in` but may
+alter the string pointed to by :code:`out`. (Note that :code:`char const` is
+equivalent to :code:`const char`, but we use the latter order because that's
+what appears in GCC error messages.)
+
+We do not use :code:`const` on local variables or function arguments passed by
+value. One could do this to be more clear about what is and isn't mutable, but
+it adds quite a lot of noise to the source code, and in our evaluations didn't
+catch any bugs. We also do not use it on double pointers (e.g., :code:`char
+**out` used when a function allocates a string and sets the caller's pointer
+to point to it), because so far those are all out-arguments and C has
+`confusing rules <http://c-faq.com/ansi/constmismatch.html>`_ about double
+pointers and :code:`const`.
 
 
 OCI technical notes
@@ -1191,4 +1375,21 @@ Additional sources
 * :code:`runc create` man page: https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md
 * https://github.com/opencontainers/runtime-spec/blob/master/runtime.md
 
-..  LocalWords:  milestoned gh nv cht Chacon's scottchacon
+
+Miscellaneous notes
+===================
+
+Updating bundled Lark parser
+----------------------------
+
+In order to change the version of the bundled lark parser you must modify
+multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
+catch both dot notation and tuples, but not the list of filenames in
+:code:`lib/Makefile.am`)::
+
+  $ misc/grep -E '0(\.|, )11(\.|, )3($|\s|\))'
+
+What to do in each location should either be obvious or commented.
+
+
+..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg

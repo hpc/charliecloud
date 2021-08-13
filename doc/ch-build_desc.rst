@@ -20,13 +20,17 @@ build environment if the builder doesn't do this by default).
 
 Supported builders, unprivileged:
 
-  * :code:`buildah`: Buildah in "rootless" mode with no setuid helpers, using
-    :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions. This
-    requires Buildah v1.10.1+; see the install instructions.
-
-  * :code:`ch-grow`: Our internal builder.
+  * :code:`ch-image`: Our internal builder.
 
 Supported builders, privileged:
+
+  * :code:`docker`: Docker.
+
+Experimental builders (i.e., the code is there but not tested much):
+
+  * :code:`buildah`: Buildah in "rootless" mode with no setuid helpers, using
+    :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN` instructions. This
+    mode is fully unprivileged.
 
   * :code:`buildah-runc`: Buildah in "rootless" mode with setuid
     helpers, using the default :code:`runc` for :code:`RUN` instructions.
@@ -34,8 +38,6 @@ Supported builders, privileged:
   * :code:`buildah-setuid`: Buildah in "rootless" mode with setuid helpers,
     using :code:`ch-run` (via :code:`ch-run-oci`) for :code:`RUN`
     instructions.
-
-  * :code:`docker`: Docker.
 
 Specifying the builder, in descending order of priority:
 
@@ -46,7 +48,7 @@ Specifying the builder, in descending order of priority:
     Environment variable
 
   Default
-    :code:`docker` if Docker is installed; otherwise, :code:`ch-grow`.
+    :code:`docker` if Docker is installed; otherwise, :code:`ch-image`.
 
 Other arguments:
 
@@ -95,12 +97,12 @@ Instead, use :code:`/bar/Dockerfile.baz`::
 
   $ ch-build -t foo --file=/bar/Dockerfile.baz /bar
 
-Equivalent to the first example, but use :code:`ch-grow` even if Docker is
+Equivalent to the first example, but use :code:`ch-image` even if Docker is
 installed::
 
-  $ ch-build -b ch-grow -t foo /bar
+  $ ch-build -b ch-image -t foo /bar
 
 Equivalent to above::
 
-  $ export CH_BUILDER=ch-grow
+  $ export CH_BUILDER=ch-image
   $ ch-build -t foo /bar
