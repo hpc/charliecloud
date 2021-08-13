@@ -56,7 +56,7 @@ const struct argp_option options[] = {
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
    { "set-env",        -6, "FILE", 0, "set environment variables in FILE"},
-   { "squashmt",      's', "DIR",  0, "mount and run sqfs"},
+   { "squashmt",      's', "MNTPT",0, "mount and run sqfs"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
    { "unset-env",      -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",       'v', 0,      0, "be more verbose (debug if repeated)" },

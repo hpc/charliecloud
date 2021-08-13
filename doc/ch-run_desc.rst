@@ -84,6 +84,10 @@ unpacked image directory located at :code:`NEWROOT`.
     set environment variable(s), either as specified in host path :code:`FILE`,
     or set variable :code:`VAR` to :code:`VALUE`
 
+  :code:`-s`, :code:`--squashmnt=MNTDIR`
+    By default, the mount point is :code:`/var/tmp/$USER.ch/mnt`. If this is
+    specified, the :code:`sqfs` will mount on :code:`MNTDIR`.
+
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
 
@@ -104,6 +108,43 @@ unpacked image directory located at :code:`NEWROOT`.
 
   :code:`-V`, :code:`--version`
     Print version and exit.
+
+SquashFS and FUSE
+=================
+
+:code:`ch-run` can mount, run and unmount a :code:`SQFS` image in one single
+user command. The workflow is ran when :code:`NEWROOT` is a :code:`SQFS`. The
+default mount point is :code:`/var/tmp/$USER.ch/mnt`. Using
+:code:`--squashmnt=MNTPT` allows the user to manually state the mount point. If
+the mount point already exists, the :code:`SQFS` will mount over the directory.
+During clean up, the mount directory isn't removed.
+
+LibFUSE requirements
+--------------------
+
+There are multiple varitations of :code:`libfuse3.so.3` the one below is the
+one we use.
+<https://github.com/libfuse/libfuse>
+
+SquashFUSE low level functionality
+----------------------------------
+
+SquashFUSE has a shared object file, :code:`libsquashfuse_ll.so` that holds
+all of :code:`FUSE` low level operations. Charliecloud links that library
+so :code:`ch-run` can utilize their functionality.
+   *`Currently :code:`libsquashfuse_ll.so` is only available on their master
+     branch and not their latest release`*
+
+Additional processes
+--------------------
+
+An extra process is needed to run the :code:`FUSE` loop. When :code:`ch-run`
+is forked, the :code:`FUSE` loop runs as the parent process while
+:code:`ch-run` continues running in the child process. When the child process
+is finished running when the user command is finished and send a
+:code:`SIGCHLD`. That signal triggers the exist handler which unmounts and
+cleans up.
+
 
 Host files and directories available in container via bind mounts
 =================================================================
