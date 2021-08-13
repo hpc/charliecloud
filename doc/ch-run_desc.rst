@@ -142,8 +142,9 @@ SquashFUSE low level functionality
 SquashFUSE has a shared object file, :code:`libsquashfuse_ll.so` that holds
 all of :code:`FUSE` low level operations. Charliecloud links that library
 so :code:`ch-run` can utilize their functionality.
-   *`Currently :code:`libsquashfuse_ll.so` is only available on their master
-     branch and not their latest release`*
+
+Currently :code:`libsquashfuse_ll.so` is only available on their master
+branch and not their latest release
 
 Additional processes
 --------------------
