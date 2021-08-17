@@ -753,20 +753,18 @@ class Image_Ref:
                                    parser="earley", propagate_positions=True)
       if ("%" in s):
          s = s.replace("%", "/")
+      hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       try:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
          if (x.column == -1):
-            FATAL("image ref syntax, at end: %s" % s,
-                 hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference");
+            FATAL("image ref syntax, at end: %s" % s, hint);
          else:
-            FATAL("image ref syntax, char %d: %s" % (x.column, s),
-                 hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference");
+            FATAL("image ref syntax, char %d: %s" % (x.column, s), hint)
       except lark.exceptions.UnexpectedEOF as x:
          # We get UnexpectedEOF because of Lark issue #237. This exception
          # doesn't have a column location.
-         FATAL("image ref syntax, at end: %s" % s,
-              hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference");
+         FATAL("image ref syntax, at end: %s" % s, hint)
       DEBUG(tree.pretty())
       return tree
 
@@ -1573,31 +1571,31 @@ class TarFile(tarfile.TarFile):
 
 ## Supporting functions ##
 
-def DEBUG(msg, hint=None):
+def DEBUG(*args, **kwargs):
    if (verbose >= 2):
-      log(msg, hint=hint, color="38;5;6m")  # dark cyan (same as 36m)
+      log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
 
-def ERROR(msg, hint=None):
-   log(msg, hint=hint, color="1;31m", prefix="error: ")  # bold red
+def ERROR(*args, **kwargs):
+   log(*args, color="1;31m", prefix="error: ", **kwargs)  # bold red
 
-def FATAL(msg, hint=None):
-   ERROR(msg, hint=hint)
+def FATAL(*args, **kwargs):
+   ERROR(*args, **kwargs)
    sys.exit(1)
 
-def INFO(msg, hint=None):
+def INFO(*args, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   log(msg, hint=hint, color="33m")  # yellow
+   log(*args, color="33m", **kwargs)  # yellow
 
-def TRACE(msg, hint=None):
+def TRACE(*args, **kwargs):
    if (verbose >= 3):
-      log(msg, hint=hint, color="38;5;6m")  # dark cyan (same as 36m)
+      log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
 
-def VERBOSE(msg, hint=None):
+def VERBOSE(*args, **kwargs):
    if (verbose >= 1):
-      log(msg, hint=hint, color="38;5;14m")  # light cyan (1;36m but not bold)
+      log(*args, color="38;5;14m", **kwargs)  # light cyan (1;36m but not bold)
 
-def WARNING(msg, hint=None):
-   log(msg, hint=hint, color="31m", prefix="warning: ")  # red
+def WARNING(*args, **kwargs):
+   log(*args, color="31m", prefix="warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -1801,14 +1799,13 @@ def log(msg, hint=None, color=None, prefix=""):
    if (color is not None):
       color_set(color, log_fp)
    if (log_festoon):
-      prefix = ("%5d %s  %s"
-                % (os.getpid(),
-                   datetime.datetime.now().isoformat(timespec="milliseconds"),
-                   prefix))
-   print(prefix, file=log_fp, end="")
-   print(msg, flush=True, file=log_fp)
+      ts = datetime.datetime.now().isoformat(timespec="milliseconds")
+      festoon = ("%5d %s  " % (os.getpid(), ts))
+   else:
+      festoon = ""
+   print(festoon, prefix, msg, sep="", file=log_fp, flush=True)
    if (hint is not None):
-      print("hint:", hint, flush=True, file=log_fp, end="")
+      print(festoon, "hint: ", hint, sep="", file=log_fp, flush=True)
    if (color is not None):
       color_reset(log_fp)
 
