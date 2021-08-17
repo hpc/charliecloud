@@ -81,11 +81,11 @@ def main(cli_):
       m = re.search(r"(([^/]+)/)?((\w+)\.dockerfile)|(Dockerfile(\.(.+))?)$",
                     os.path.abspath(cli.file))
       if (m is not None):
-         # foo.dockerfile case
+         # foo.dockerfile case.
          if(m.group(4) is not None):
             cli.tag = m.group(4)
             ch.VERBOSE("Inferred tag from Dockerfile basename: %s" % cli.tag)
-         # Dockerfile.foo case
+         # Dockerfile.foo case.
          elif(m.group(7) is not None):
             cli.tag = m.group(7)
             ch.VERBOSE("Inferred tag from Dockerfile extension: %s" % cli.tag)
@@ -94,9 +94,12 @@ def main(cli_):
                  cli.tag = (os.path.basename(os.path.abspath(cli.context)))
              else:
                  # The tag of "root" is used when one is not provided and we
-                 # attempt to infer one from a context directory of "/"
+                 # attempt to infer one from a context directory of "/".
                  cli.tag = "root"
              ch.VERBOSE("Inferred tag from context directory name: %s" % cli.tag)
+      else:
+         # TODO: add hint for "-t" option once PR 1121 is merged.
+         ch.FATAL("no image tag provided and unable to infer one")
                 
 
    # Deal with build arguments.
