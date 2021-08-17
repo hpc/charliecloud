@@ -7,7 +7,8 @@ chtest/dev_proc_sys.py \
 chtest/fs_perms.py \
 chtest/printns \
 chtest/signal_out.py \
-hello/hello.sh
+hello/hello.sh \
+obspy/hello.py
 
 noexecs = \
 Dockerfile.centos7 \
@@ -64,6 +65,7 @@ mpihello/slurm.sh \
 multistage/Dockerfile \
 obspy/Dockerfile \
 obspy/README \
+obspy/obspy.png \
 paraview/Dockerfile \
 paraview/cone.2ranks.vtk \
 paraview/cone.nranks.vtk \
