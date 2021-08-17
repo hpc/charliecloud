@@ -76,17 +76,28 @@ def main(cli_):
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
 
-   # Infer image name if needed.
+   # Infer image name (tag) if needed.
    if (cli.tag is None):
       m = re.search(r"(([^/]+)/)?Dockerfile(\.(.+))?$",
                     os.path.abspath(cli.file))
       if (m is not None):
-         if m.group(4):    # extension
-            cli.tag = m.group(4)
-         elif m.group(2):  # containing directory
-            cli.tag = m.group(2)
+         cli.tag = m.group(4)
+         ch.VERBOSE("Inferred tag from Dockerfile extension: %s" % cli.tag)
       else:
-          ch.FATAL("no image tag provided and unable to infer one")
+         m = re.search(r"(\w+)(\.dockerfile)$",
+                       os.path.abspath(cli.file))
+         if (m is not None):
+            cli.tag = m.group(1)
+            ch.VERBOSE("Inferred tag from Dockerfile basename: %s" % cli.tag)
+         else:
+             if (os.path.abspath(cli.context) != "/"):
+                 cli.tag = (os.path.basename(os.path.abspath(cli.context)))
+             else:
+                 # The tag of "root" is used when no tag is provided and we
+                 # attempt to infer one from a context directory of "/""
+                 cli.tag = "root"
+             ch.VERBOSE("Inferred tag from context directory name: %s" % cli.tag)
+                
 
    # Deal with build arguments.
    def build_arg_get(arg):

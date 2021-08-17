@@ -222,8 +222,12 @@ Options:
     Stop after parsing the Dockerfile.
 
   :code:`-t`, :code:`-tag TAG`
-    Name of image to create. If not specified, use the final component of path
-    :code:`CONTEXT`. Append :code:`:latest` if no colon present.
+    Name of image to create. If not specified, an attempt to infer a tag is made.
+    This inference process operates in this order:
+    1. Use the Dockerfile's extension if there is one e.g. Dockerfile.foo -> `foo`.
+    2. If the extension is `dockerfile` use the basename e.g. foo.dockerfile -> `foo`.
+    3. Use the name of the `CONTEXT` directory provided it isn't `/`.
+    Append :code:`:latest` if no colon present.
 
 :code:`ch-image` is a *fully* unprivileged image builder. It does not use any
 setuid or setcap helper programs, and it does not use configuration files
