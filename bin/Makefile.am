@@ -27,12 +27,10 @@ dist_bin_SCRIPTS = ch-build \
                    ch-builder2tar \
                    ch-dir2squash \
                    ch-fromhost \
-                   ch-mount \
                    ch-pull2dir \
                    ch-pull2tar \
                    ch-tar2dir \
-                   ch-test \
-                   ch-umount
+                   ch-test
 
 
 ## Python scripts - need text processing
