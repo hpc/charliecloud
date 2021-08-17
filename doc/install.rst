@@ -498,15 +498,27 @@ matches previous :code:`pip` behavior.) See Debian bugs `725848
 <https://bugs.debian.org/725848>`_ and `820856
 <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856>`_.
 
-SquashFS
-~~~~~~~~
+SquashFS and SquashFUSE
+~~~~~~~~~~~~~~~~~~~~~~~
 
 The SquashFS workflow requires `SquashFS Tools
-<https://github.com/plougher/squashfs-tools>`_ and/or `SquashFUSE
-<https://github.com/vasi/squashfuse>`_. Note that distribution packages of
-SquashFUSE often provide only the "high level" executables; the "low level"
-executables have better performance. These can be installed from source on any
-distribution.
+<https://github.com/plougher/squashfs-tools>`_ to create SquashFS archives.
+
+To mount these archives using :code:`ch-run`'s internal code, you need:
+
+* `libfuse3 <https://github.com/libfuse/libfuse>`_, which is probably
+  available in your distribution, and
+
+* a very recent version of `SquashFUSE <https://github.com/vasi/squashfuse>`_
+  that has the :code:`libsquashfuse_ll` shared library. At the time of this
+  writing (August 2021), this is probably `commit 56a24f6
+  <https://github.com/vasi/squashfuse/commit/56a24f6c7f6e5cfd0ce5185f175da223d00dc1ca>`_
+  or newer, and there is no versioned release yet.
+
+Without these, you can still use a SquashFS workflow but must mount and
+unmount the filesystem archives manually. You can do this using the
+executables that come with SquashFUSE, and the version requirement is much
+less stringent.
 
 sudo, generic
 ~~~~~~~~~~~~~
@@ -725,4 +737,4 @@ If the tests don't pass, that's a bug. Please report it!
 
 Now you can :code:`vagrant ssh` and do all the usual Vagrant stuff.
 
-..  LocalWords:  Werror Flameeyes
+..  LocalWords:  Werror Flameeyes plougher

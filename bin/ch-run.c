@@ -39,7 +39,7 @@ Example:\n\
 \n\
 You cannot use this program to actually change your UID.\n";
 
-const char args_doc[] = "NEWROOT CMD [ARG...]";
+const char args_doc[] = "IMAGE -- CMD [ARG...]";
 
 const struct argp_option options[] = {
    { "bind",          'b', "SRC[:DST]", 0,
@@ -52,11 +52,11 @@ const struct argp_option options[] = {
    { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
+   { "mount",         'm', "DIR",  0, "squashfs mount point"},
    { "no-home",        -2, 0,      0, "don't bind-mount your home directory"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
    { "set-env",        -6, "FILE", 0, "set environment variables in FILE"},
-   { "squashmt",      's', "MNTPT",0, "mount and run sqfs"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
    { "unset-env",      -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",       'v', 0,      0, "be more verbose (debug if repeated)" },

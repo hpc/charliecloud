@@ -3,13 +3,14 @@ Synopsis
 
 ::
 
-  $ ch-run [OPTION...] NEWROOT CMD [ARG...]
+  $ ch-run [OPTION...] IMAGE -- CMD [ARG...]
 
 Description
 ===========
 
 Run command :code:`CMD` in a fully unprivileged Charliecloud container using
-the flattened and unpacked image directory located at :code:`NEWROOT`.
+the image located at :code:`IMAGE`, which can be either a directory or, if the
+proper support is enabled, a SquashFS archive.
 
   :code:`-b`, :code:`--bind=SRC[:DST]`
     Bind-mount :code:`SRC` at guest :code:`DST`. The default destination if
@@ -63,6 +64,11 @@ the flattened and unpacked image directory located at :code:`NEWROOT`.
     Label for :code:`ch-run` peer group (implies :code:`--join`; default: see
     below).
 
+  :code:`-m`, :code:`--mount=DIR`
+    Use :code:`DIR` for the SquashFS mount point, which must already exist. If
+    not specified, the default is :code:`/var/tmp/$USER.ch/mnt`, which *will*
+    be created if needed.
+
   :code:`--no-home`
     By default, your host home directory (i.e., :code:`$HOME`) is bind-mounted
     at guest :code:`/home/$USER`. This is accomplished by mounting a new
@@ -81,12 +87,8 @@ the flattened and unpacked image directory located at :code:`NEWROOT`.
     new :code:`tmpfs` is mounted on the container's :code:`/tmp` instead.
 
   :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
-    set environment variable(s), either as specified in host path :code:`FILE`,
+    Set environment variable(s), either as specified in host path :code:`FILE`,
     or set variable :code:`VAR` to :code:`VALUE`
-
-  :code:`-s`, :code:`--squashmnt=MNTDIR`
-    By default, the mount point is :code:`/var/tmp/$USER.ch/mnt`. If this is
-    specified, the :code:`sqfs` will mount on :code:`MNTDIR`.
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
@@ -119,42 +121,42 @@ container. This does not reduce functionality but is a "belt and suspenders"
 precaution to reduce the attack surface should bugs in these system calls or
 elsewhere arise.
 
-SquashFS and FUSE
-=================
+Image format
+============
 
-:code:`ch-run` can mount, run and unmount a :code:`SQFS` image in one single
-user command. The workflow is ran when :code:`NEWROOT` is a :code:`SQFS`. The
-default mount point is :code:`/var/tmp/$USER.ch/mnt`. Using
-:code:`--squashmnt=MNTPT` allows the user to manually state the mount point. If
-the mount point already exists, the :code:`SQFS` will mount over the directory.
-During clean up, the mount directory isn't removed.
+:code:`ch-run` supports two different image formats.
 
-LibFUSE requirements
---------------------
+The first is a simple directory that contains a Linux filesystem tree. This
+can be accomplished by:
 
-There are multiple varitations of :code:`libfuse3.so.3` the one below is the
-one we use.
-<https://github.com/libfuse/libfuse>
+* Charliecloud's tarball workflow: :code:`ch-builder2tar` and
+  :code:`ch-tar2dir` workflow.
 
-SquashFUSE low level functionality
-----------------------------------
+* Manually mounting a filesystem archive, e.g. with :code:`ch-builder2squash`
+  and the external :code:`squashfuse` executable.
 
-SquashFUSE has a shared object file, :code:`libsquashfuse_ll.so` that holds
-all of :code:`FUSE` low level operations. Charliecloud links that library
-so :code:`ch-run` can utilize their functionality.
+* Any other workflow that produces an appropriate directory tree.
 
-Currently :code:`libsquashfuse_ll.so` is only available on their master
-branch and not their latest release
+The second is a SquashFS filesystem archive, available if :code:`ch-run` is
+linked with the optional :code:`libsquashfuse_ll`. This is accomplished by
+mounting the filesystem, servicing its FUSE requests, and unmounting it all
+within :code:`ch-run`. See :code:`--mount` above for details on the mount
+point.
 
-Additional processes
---------------------
+Prior versions of Charliecloud provided wrappers for the :code:`squashfuse`
+and :code:`squashfuse_ll` SquashFS mount commands and :code:`fusermount -u`
+unmount command. These are no longer provided because we concluded they had
+minimal value-add over the standard, unwrapped commands.
 
-An extra process is needed to run the :code:`FUSE` loop. When :code:`ch-run`
-is forked, the :code:`FUSE` loop runs as the parent process while
-:code:`ch-run` continues running in the child process. When the child process
-is finished running when the user command is finished and send a
-:code:`SIGCHLD`. That signal triggers the exist handler which unmounts and
-cleans up.
+.. warning::
+
+   Currently, Charliecloud unmounts the SquashFS filesystem when user command
+   :code:`CMD`'s process exits. It does not monitor any of its child
+   processes. Therefore, user commands that spawn multiple processes and the
+   parent exits before the children (e.g., some daemons) will have the image
+   unmounted from underneath them. In this case, the workaround is to
+   mount/unmount using external tools. We expect to remove this limitation in
+   a future version.
 
 Host files and directories available in container via bind mounts
 =================================================================
@@ -540,4 +542,4 @@ Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
 
-..  LocalWords:  mtune NEWROOT hugetlbfs
+..  LocalWords:  mtune NEWROOT hugetlbfs fusermount
