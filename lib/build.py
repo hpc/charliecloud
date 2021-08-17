@@ -133,7 +133,8 @@ def main(cli_):
       tree = parser.parse(text)
    except lark.exceptions.UnexpectedInput as x:
       ch.VERBOSE(x)  # noise about what was expected in the grammar
-      ch.FATAL("can't parse: %s:%d,%d\n\n%s" % (cli.file, x.line, x.column, x.get_context(text, 39)))
+      ch.FATAL("can't parse: %s:%d,%d\n\n%s"
+               % (cli.file, x.line, x.column, x.get_context(text, 39)))
    ch.VERBOSE(tree.pretty())
 
    # Sometimes we exit after parsing.
@@ -377,7 +378,7 @@ class I_copy(Instruction):
          must exist already and be a directory. Unlike subdirectories, the
          metadata of dst will not be altered to match src."""
       def onerror(x):
-         ch.FATAL("error scanning directory: %s: %s" % (x.filename, x.strerror))
+         ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
       src = ch.Path(os.path.realpath(src))

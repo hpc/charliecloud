@@ -82,6 +82,10 @@ ARCH_MAP = { "x86_64":    "amd64",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
 
+# String to use as hint when we throw an error that suggests a bug.
+BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
+
+
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
 GRAMMAR = r"""
@@ -1510,8 +1514,8 @@ class Storage:
          mkdir(self.upload_cache)
          file_write(self.version_file, "%d\n" % STORAGE_VERSION)
       else:                         # can't upgrade
-         FATAL('incompatible storage directory v%d; you can delete it and re-initialize for this version of Charliecloud with "ch-image reset": %s'
-               % (v_found, self.root))
+         FATAL("incompatible storage directory v%d: %s" % (v_found, self.root),
+               'you can delete and re-initialize with "ch-image reset"')
 
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
@@ -1659,7 +1663,7 @@ def arch_host_get():
    try:
       arch_registry = ARCH_MAP[arch_uname]
    except KeyError:
-      FATAL("unknown host architecture: %s" % arch_uname)
+      FATAL("unknown host architecture: %s" % arch_uname, BUG_REPORT_PLZ)
    VERBOSE("host architecture for registry: %s" % arch_registry)
    return arch_registry
 
@@ -1902,8 +1906,7 @@ def mkdirs(path):
    try:
       os.makedirs(path, exist_ok=True)
    except OSError as x:
-      ch.FATAL("can't mkdir: %s: %s: %s"
-               % (path, x.filename, x.strerror))
+      FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
 
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
@@ -1941,8 +1944,8 @@ def rmtree(path):
       try:
          shutil.rmtree(path)
       except OSError as x:
-         ch.FATAL("can't recursively delete directory %s: %s: %s"
-                  % (path, x.filename, x.strerror))
+         FATAL("can't recursively delete directory %s: %s: %s"
+               % (path, x.filename, x.strerror))
    else:
       assert False, "unimplemented"
 
@@ -1958,7 +1961,7 @@ def symlink(target, source, clobber=False):
          FATAL("can't symlink: %s exists; want target %s but existing is %s"
                % (source, target, os.readlink(source)))
    except OSError as x:
-      ch.FATAL("can't symlink: %s -> %s: %s" % (source, target, x.strerror))
+      FATAL("can't symlink: %s -> %s: %s" % (source, target, x.strerror))
 
 def tree_child(tree, cname):
    """Locate a descendant subtree named cname using breadth-first search and
