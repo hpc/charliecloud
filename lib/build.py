@@ -78,7 +78,7 @@ def main(cli_):
 
    # Infer image name (tag) if needed.
    if (cli.tag is None):
-      m = re.search(r"Dockerfile\.(\w+)|(\w+)\.dockerfile$",
+      m = re.search(r"Dockerfile\.(.+)|([^/]+)\.dockerfile$",
                     os.path.abspath(cli.file))
       if (m is not None):
          # Dockerfile.foo case.
