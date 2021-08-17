@@ -23,6 +23,8 @@ import tarfile
 import time
 import types
 
+import version
+
 
 ## Imports not in standard library ##
 
@@ -55,7 +57,7 @@ except ImportError:
    requests.auth.AuthBase = object
 
 
-## Globals ##
+## Constants ##
 
 # Architectures. This maps the "machine" field returned by uname(2), also
 # available as "uname -m" and platform.machine(), into architecture names that
@@ -79,40 +81,6 @@ ARCH_MAP = { "x86_64":    "amd64",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
-
-# Active architecture (both using registry vocabulary)
-arch = None       # requested by user
-arch_host = None  # of host
-
-# FIXME: currently set in ch-image :P
-CH_BIN = None
-CH_RUN = None
-
-# Logging; set using init() below.
-verbose = 0          # Verbosity level. Can be 0, 1, or 2.
-log_festoon = False  # If true, prepend pid and timestamp to chatter.
-log_fp = sys.stderr  # File object to print logs to.
-
-# Minimum Python version. NOTE: Keep in sync with configure.ac.
-PYTHON_MIN = (3,6)
-
-# Verify TLS certificates? Passed to requests.
-tls_verify = True
-
-# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
-# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
-# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
-# takes over.
-HTTP_CHUNK_SIZE = 256 * 1024
-
-# Content types for some stuff we care about.
-TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
-TYPE_MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
-TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
-TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
-
-# Top-level directories we create if not present.
-STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -210,6 +178,48 @@ _NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
 
+# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
+# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
+# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
+# takes over.
+HTTP_CHUNK_SIZE = 256 * 1024
+
+# Minimum Python version. NOTE: Keep in sync with configure.ac.
+PYTHON_MIN = (3,6)
+
+# Content types for some stuff we care about.
+TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+TYPE_MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
+TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
+TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
+
+# Top-level directories we create if not present.
+STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
+
+# Storage directory format version. We refuse to operate on storage
+# directories with non-matching versions. Increment this number when the
+# format changes non-trivially.
+STORAGE_VERSION = 2
+
+
+## Globals ##
+
+# Active architecture (both using registry vocabulary)
+arch = None       # requested by user
+arch_host = None  # of host
+
+# FIXME: currently set in ch-image :P
+CH_BIN = None
+CH_RUN = None
+
+# Logging; set using init() below.
+verbose = 0          # Verbosity level. Can be 0, 1, or 2.
+log_festoon = False  # If true, prepend pid and timestamp to chatter.
+log_fp = sys.stderr  # File object to print logs to.
+
+# Verify TLS certificates? Passed to requests.
+tls_verify = True
+
 
 ## Exceptions ##
 
@@ -218,6 +228,37 @@ class Not_In_Registry_Error(Exception): pass
 
 
 ## Classes ##
+
+class Credentials:
+
+   __slots__ = ("password",
+                "username")
+
+   def __init__(self):
+      self.username = None
+      self.password = None
+
+   def get(self):
+      # If stored, return those.
+      if (self.username is not None):
+         username = self.username
+         password = self.password
+      else:
+         try:
+            # Otherwise, use environment variables.
+            username = os.environ["CH_IMAGE_USERNAME"]
+            password = os.environ["CH_IMAGE_PASSWORD"]
+         except KeyError:
+            # Finally, prompt the user.
+            # FIXME: This hangs in Bats despite sys.stdin.isatty() == True.
+            username = input("\nUsername: ")
+            password = getpass.getpass("Password: ")
+         if (not password_many):
+            # Remember the credentials.
+            self.username = username
+            self.password = password
+      return (username, password)
+
 
 class HelpFormatter(argparse.HelpFormatter):
 
@@ -416,17 +457,7 @@ class Image:
          path = self.metadata_path // "config.pulled.json"
          copy2(config_json, path)
          VERBOSE("pulled config path: %s" % path)
-         # Open and parse JSON.
-         fp = open_(config_json, "rt", encoding="UTF-8")
-         text = ossafe(fp.read, "can't read: %s" % config_json)
-         ossafe(fp.close, "can't close: %s" % config_json)
-         try:
-            config = json.loads(text)
-         except json.JSONDecodeError as x:
-            FATAL("can't parse config file: %s:%d: %s"
-                  % (config_json, x.lineno, x.msg))
-         DEBUG("pulled config:\n%s" % json.dumps(config, indent=2))
-         self.metadata_merge_from_config(config)
+         self.metadata_merge_from_config(json_from_file(path, "config"))
       self.metadata_save()
 
    def metadata_save(self):
@@ -504,7 +535,7 @@ class Image:
          present will be left unchanged. After this, self.unpack_path is a
          valid Charliecloud image directory."""
       # Metadata directory.
-      mkdirs(self.unpack_path // "ch")
+      mkdir(self.unpack_path // "ch")
       file_ensure_exists(self.unpack_path // "ch/environment")
       # Essential directories & mount points. Do nothing if something already
       # exists, without dereferencing, in case it's a symlink, which will work
@@ -523,6 +554,7 @@ class Image:
       layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
+      mkdir(self.unpack_path)  # create directory in case no layers
       top_dirs = set()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
@@ -680,7 +712,7 @@ class Image:
    def unpack_create(self):
       "Ensure the unpack directory exists, replacing or creating if needed."
       self.unpack_create_ok()
-      mkdirs(self.unpack_path)
+      mkdir(self.unpack_path)
 
 
 class Image_Ref:
@@ -1041,7 +1073,7 @@ class Progress_Reader:
          ossafe(self.fp.close, "can't close: %s" % self.fp.name)
 
    def read(self, size=-1):
-     data = self.fp.read(size)
+     data = ossafe(self.fp.read, "can't read: %s" % self.fp.name, size)
      self.progress.update(len(data))
      return data
 
@@ -1097,6 +1129,7 @@ class Registry_HTTP:
    # authentication token anonymously.
 
    __slots__ = ("auth",
+                "creds",
                 "ref",
                 "session")
 
@@ -1121,6 +1154,7 @@ class Registry_HTTP:
       # Need an image ref with all the defaults filled in.
       self.ref = ref.canonical
       self.auth = self.Null_Auth()
+      self.creds = Credentials()
       self.session = None
       # This is commented out because it prints full request and response
       # bodies to standard output (not stderr), which overwhelms the terminal.
@@ -1138,7 +1172,7 @@ class Registry_HTTP:
       VERBOSE("authenticating using Basic")
       if ("realm" not in auth_d):
          FATAL("WWW-Authenticate missing realm")
-      (username, password) = self.credentials_read()
+      (username, password) = self.creds.get()
       self.auth = requests.auth.HTTPBasicAuth(username, password)
 
    def authenticate_bearer(self, res, auth_d):
@@ -1171,7 +1205,7 @@ class Registry_HTTP:
             token = res.json()["token"]
       # If that failed or was inappropriate, try for an authenticated token.
       if (token is None):
-         (username, password) = self.credentials_read()
+         (username, password) = self.creds.get()
          auth = requests.auth.HTTPBasicAuth(username, password)
          res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
                                 params=params)
@@ -1273,19 +1307,6 @@ class Registry_HTTP:
       "Upload config (sequence of bytes)."
       self.blob_upload(bytes_hash(config), config, "config: ")
 
-   def credentials_read(self):
-      try:
-         # FIXME: We use these environment variables in the test suite, but
-         # they are currently undocumented while we think more carefully about
-         # how to do non-interactive authentication (issue #849).
-         username = os.environ["CH_IMAGE_USERNAME"]
-         password = os.environ["CH_IMAGE_PASSWORD"]
-      except KeyError:
-         # FIXME: This hangs in Bats; sys.stdin.isatty() was still True though.
-         username = input("\nUsername: ")
-         password = getpass.getpass("Password: ")
-      return (username, password)
-
    def fatman_to_file(self, path, msg):
       """GET the manifest for self.image and save it at path. This seems to
          have three possible results:
@@ -1342,6 +1363,7 @@ class Registry_HTTP:
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
       # Note: The manifest is *not* uploaded as a blob. We just do one PUT.
+      INFO("manifest: uploading")
       url = self._url_of("manifests", self.ref.tag)
       self.request("PUT", url, {201}, data=manifest,
                    headers={ "Content-Type": TYPE_MANIFEST })
@@ -1438,6 +1460,10 @@ class Storage:
    def upload_cache(self):
       return self.root // "ulcache"
 
+   @property
+   def version_file(self):
+      return self.root // "version"
+
    @staticmethod
    def root_default():
       # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
@@ -1460,6 +1486,33 @@ class Storage:
       except KeyError:
          return None
 
+   def init(self):
+      """Ensure the storage directory exists, contains all the appropriate
+         top-level directories & metadata, and is the appropriate version."""
+      if (not os.path.isdir(self.root)):
+         op = "initializing"
+         v_found = None
+      else:
+         op = "upgrading"
+         if (not self.valid_p):
+            FATAL("storage directory seems invalid: %s" % self.root)
+         if (os.path.isfile(self.version_file)):
+            v_found = int(file_read_all(self.version_file))
+         else:
+            v_found = 1
+      if (v_found == STORAGE_VERSION):
+         VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
+      elif (v_found in {None, 1}):  # initialize/upgrade
+         INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
+         mkdirs(self.root)  # FIXME: use mkdir() when don't need two levels
+         mkdir(self.download_cache)
+         mkdir(self.unpack_base)
+         mkdir(self.upload_cache)
+         file_write(self.version_file, "%d\n" % STORAGE_VERSION)
+      else:                         # can't upgrade
+         FATAL('incompatible storage directory v%d; you can delete it and re-initialize for this version of Charliecloud with "ch-image reset": %s'
+               % (v_found, self.root))
+
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
          digest = "skinny"
@@ -1472,6 +1525,7 @@ class Storage:
    def reset(self):
       if (self.valid_p()):
          rmtree(self.root)
+         self.init()  # largely for debugging
       else:
          FATAL("%s not a builder storage" % (self.root));
 
@@ -1479,6 +1533,7 @@ class Storage:
       return self.unpack_base // image_ref.for_path
 
    def valid_p(self):
+      # FIXME: require version file too when appropriate (#1147)
       "Return True if storage present and seems valid, False otherwise."
       return (os.path.isdir(self.unpack_base) and
               os.path.isdir(self.download_cache))
@@ -1711,6 +1766,13 @@ def file_gzip(path, args=[]):
       unlink(path_c)
    # Compress.
    cmd([file_gzip.gzip] + args + [str(path)])
+   # Zero out GZIP header timestamp, bytes 4–7 zero-indexed inclusive [1], to
+   # ensure layer hash is consistent. See issue #1080.
+   # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
+   fp = open_(path_c, "r+b")
+   ossafe(fp.seek, "can't seek: %s" % fp, 4)
+   ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
+   ossafe(fp.close, "can't close: %s" % fp)
    return path_c
 
 def file_hash(path):
@@ -1725,6 +1787,20 @@ def file_hash(path):
       h.update(data)
    ossafe(fp.close, "can't close: %s" % path)
    return h.hexdigest()
+
+def file_read_all(path, text=True):
+   """Return the contents of file at path, or exit with error. If text, read
+      in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
+   if (text):
+      mode = "rt"
+      encoding = "UTF-8"
+   else:
+      mode = "rb"
+      encoding = None
+   fp = open_(path, mode, encoding=encoding)
+   data = ossafe(fp.read, "can't read: %s" % path)
+   ossafe(fp.close, "can't close: %s" % path)
+   return data
 
 def file_size(path, follow_symlinks=False):
    "Return the size of file at path in bytes."
@@ -1755,8 +1831,8 @@ def grep_p(path, rx):
       FATAL("error reading %s: %s" % (path, x.strerror))
 
 def init(cli):
-   global arch, arch_host, log_festoon, log_fp, storage, tls_verify, verbose
    # logging
+   global log_festoon, log_fp, verbose
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    if ("CH_LOG_FESTOON" in os.environ):
@@ -1768,15 +1844,19 @@ def init(cli):
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
    # storage object
+   global storage
    storage = Storage(cli.storage)
    # architecture
+   global arch, arch_host
    assert (cli.arch is not None)
    arch_host = arch_host_get()
    if (cli.arch == "host"):
       arch = arch_host
    else:
       arch = cli.arch
-   # TLS verification
+   # misc
+   global password_many, tls_verify
+   password_many = cli.password_many
    if (cli.tls_no_verify):
       tls_verify = False
       rpu = requests.packages.urllib3
@@ -1784,9 +1864,7 @@ def init(cli):
 
 def json_from_file(path, msg):
    DEBUG("loading JSON: %s: %s" % (msg, path))
-   fp = open_(path, "rt", encoding="UTF-8")
-   text = ossafe(fp.read, "can't read: %s" % path)
-   ossafe(fp.close, "can't close: %s" % path)
+   text = file_read_all(path)
    TRACE("text:\n%s" % text)
    try:
       data = json.loads(text)
@@ -1809,12 +1887,22 @@ def log(msg, hint=None, color=None, prefix=""):
    if (color is not None):
       color_reset(log_fp)
 
-def mkdirs(path):
+def mkdir(path):
    TRACE("ensuring directory: %s" % path)
+   try:
+      os.mkdir(path)
+   except FileExistsError as x:
+      if (not os.path.isdir(path)):
+         FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
+   except OSError as x:
+      FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
+
+def mkdirs(path):
+   TRACE("ensuring directories: %s" % path)
    try:
       os.makedirs(path, exist_ok=True)
    except OSError as x:
-      ch.FATAL("can't create directory: %s: %s: %s"
+      ch.FATAL("can't mkdir: %s: %s: %s"
                % (path, x.filename, x.strerror))
 
 def now_utc_iso8601():

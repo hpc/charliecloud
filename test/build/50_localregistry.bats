@@ -91,3 +91,17 @@ setup () {
     [[ $(stat -c '%A' "$img2"/setuid_dir) =  drwxr-x--- ]]
     [[ $(stat -c '%A' "$img2"/setgid_dir) =  drwxr-x--- ]]
 }
+
+@test "${tag}: consistent layer hash" {
+    run ch-image push --tls-no-verify 00_tiny localhost:5000/00_tiny
+    echo "$output"
+    [[ $status -eq 0 ]]
+    push1=$(echo "$output" | grep -E 'layer 1/1: .+: checking')
+
+    run ch-image push --tls-no-verify 00_tiny localhost:5000/00_tiny
+    echo "$output"
+    [[ $status -eq 0 ]]
+    push2=$(echo "$output" | grep -E 'layer 1/1: .+: checking')
+
+    diff -u <(echo "$push1") <(echo "$push2")
+}

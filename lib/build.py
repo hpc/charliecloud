@@ -53,6 +53,7 @@ ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "https_proxy": os.environ.get("https_proxy"),
                  "ftp_proxy": os.environ.get("ftp_proxy"),
                  "no_proxy": os.environ.get("no_proxy"),
+                 "SSH_AUTH_SOCK": os.environ.get("SSH_AUTH_SOCK"),
                  "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                  # GNU tar, when it thinks it's running as root, tries to
                  # chown(2) and chgrp(2) files to whatever's in the tarball.
@@ -96,10 +97,7 @@ def main(cli_):
             ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
          return (kv[0], v)
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
-
-   # Finish CLI initialization.
    ch.DEBUG(cli)
-   ch.dependencies_check()
 
    # Guess whether the context is a URL, and error out if so. This can be a
    # typical looking URL e.g. "https://..." or also something like

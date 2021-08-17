@@ -207,6 +207,8 @@ ch_lib=$(ch-build --_lib-path)
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
 # shellcheck disable=SC2034
+ch_version_base=$(echo "$ch_version" | sed -E 's/~.+//')
+# shellcheck disable=SC2034
 ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 
 # Separate directories for tarballs and images.
