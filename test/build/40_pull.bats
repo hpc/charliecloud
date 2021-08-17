@@ -395,7 +395,7 @@ EOF
     run ch-image --arch=doesnotexist pull alpine:latest
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'requested arch unavailable:'*'not one of:'* ]]
+    [[ $output = *'requested arch unavailable:'*'available:'* ]]
 
     # Delete it so we don't try to use a non-matching arch for other testing.
     ch-image delete alpine:latest
@@ -408,7 +408,7 @@ EOF
         run ch-image --arch=arm64/v8 pull charliecloud/metadata:2021-01-15
         echo "$output"
         [[ $status -eq 1 ]]
-        [[ $output = *'image is architecture-unaware; try --arch=yolo?' ]]
+        [[ $output = *'image is architecture-unaware'*'consider --arch=yolo' ]]
     fi
 }
 
