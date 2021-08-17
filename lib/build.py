@@ -78,17 +78,17 @@ def main(cli_):
 
    # Infer image name (tag) if needed.
    if (cli.tag is None):
-      m = re.search(r"(([^/]+)/)?Dockerfile(\.(.+))?$",
+      m = re.search(r"(([^/]+)/)?((\w+)\.dockerfile)|(Dockerfile(\.(.+))?)$",
                     os.path.abspath(cli.file))
       if (m is not None):
-         cli.tag = m.group(4)
-         ch.VERBOSE("Inferred tag from Dockerfile extension: %s" % cli.tag)
-      else:
-         m = re.search(r"(\w+)(\.dockerfile)$",
-                       os.path.abspath(cli.file))
-         if (m is not None):
-            cli.tag = m.group(1)
+         # foo.dockerfile case
+         if(m.group(4) is not None):
+            cli.tag = m.group(4)
             ch.VERBOSE("Inferred tag from Dockerfile basename: %s" % cli.tag)
+         # Dockerfile.foo case
+         elif(m.group(7) is not None):
+            cli.tag = m.group(7)
+            ch.VERBOSE("Inferred tag from Dockerfile extension: %s" % cli.tag)
          else:
              if (os.path.abspath(cli.context) != "/"):
                  cli.tag = (os.path.basename(os.path.abspath(cli.context)))
