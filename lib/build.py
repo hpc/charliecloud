@@ -93,8 +93,8 @@ def main(cli_):
              if (os.path.abspath(cli.context) != "/"):
                  cli.tag = (os.path.basename(os.path.abspath(cli.context)))
              else:
-                 # The tag of "root" is used when no tag is provided and we
-                 # attempt to infer one from a context directory of "/""
+                 # The tag of "root" is used when one is not provided and we
+                 # attempt to infer one from a context directory of "/"
                  cli.tag = "root"
              ch.VERBOSE("Inferred tag from context directory name: %s" % cli.tag)
                 

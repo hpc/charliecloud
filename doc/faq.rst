@@ -631,8 +631,8 @@ These references parse into the following components, in this order:
 
 5. If path given, a slash.
 
-6. The image name, which matches :code:`[a-z0-9_.-]+`. Required; here
-   :code:`hello-world`.
+6. The image name (:code:`TAG`), which matches :code:`[a-z0-9_.-]+`. Required;
+   here :code:`hello-world`.
 
 7. Zero or one of:
 

@@ -5,7 +5,7 @@
 #
 # About each distribution, we remember:
 #
-#   - base image name
+#   - base image name (tag)
 #   - config name it should select
 #   - scope
 #       standard: all tests in standard scope

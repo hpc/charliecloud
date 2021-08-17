@@ -246,6 +246,7 @@ Options:
     1. Use the Dockerfile's extension if there is one e.g. Dockerfile.foo -> `foo`.
     2. If the extension is `dockerfile` use the basename e.g. foo.dockerfile -> `foo`.
     3. Use the name of the `CONTEXT` directory provided it isn't `/`.
+    4. If the `CONTEXT` directory is `/` use "root".
     Append :code:`:latest` if no colon present.
 
 Privilege model
@@ -504,8 +505,8 @@ directory :code:`./foo/bar`::
    [...]
    grown in 4 instructions: bar
 
-Same, but infer the image name and Dockerfile from the context directory
-path::
+Same, but infer the image name (:code:`TAG`) and Dockerfile from the context
+directory path::
 
    $ ch-image build ./foo/bar
    [...]
