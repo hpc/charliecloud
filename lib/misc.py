@@ -40,13 +40,26 @@ class Version(Action_Exit):
 # because caller manages that.
 
 def delete(cli):
-   ch.dependencies_check()
    img_ref = ch.Image_Ref(cli.image_ref)
    img = ch.Image(img_ref)
    img.unpack_delete()
 
+def import_(cli):
+   if (not os.path.exists(cli.path)):
+      ch.FATAL("can't copy: not found: %s" % cli.path)
+   dst = ch.Image(ch.Image_Ref(cli.image_ref))
+   ch.INFO("importing:    %s" % cli.path)
+   ch.INFO("destination:  %s" % dst)
+   if (os.path.isdir(cli.path)):
+      dst.copy_unpacked(cli.path)
+   else:  # tarball, hopefully
+      dst.unpack([cli.path])
+   # initialize metadata if needed
+   dst.metadata_load()
+   dst.metadata_save()
+   ch.done_notify()
+
 def list_(cli):
-   ch.dependencies_check()
    imgdir = ch.storage.unpack_base
    if (cli.image_ref is None):
       # list all images
@@ -92,27 +105,10 @@ def list_(cli):
       print("host architecture:   %s" % ch.arch_host)
       print("archs available:     %s" % arch_avail)
 
-def import_(cli):
-   ch.dependencies_check()
-   if (not os.path.exists(cli.path)):
-      ch.FATAL("can't copy: not found: %s" % cli.path)
-   dst = ch.Image(ch.Image_Ref(cli.image_ref))
-   ch.INFO("importing:    %s" % cli.path)
-   ch.INFO("destination:  %s" % dst)
-   if (os.path.isdir(cli.path)):
-      dst.copy_unpacked(cli.path)
-   else:  # tarball, hopefully
-      dst.unpack([cli.path])
-   # initialize metadata if needed
-   dst.metadata_load()
-   dst.metadata_save()
-   ch.done_notify()
-
 def python_path(cli):
    print(sys.executable)
 
 def reset(cli):
-   ch.dependencies_check()
    ch.storage.reset()
 
 def storage_path(cli):
