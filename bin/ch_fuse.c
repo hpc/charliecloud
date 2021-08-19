@@ -11,15 +11,16 @@
 #include <dirent.h>
 #include <sys/wait.h>
 
-// low level functionality from squashfuse
-#include <ll.h>
-#undef PACKAGE
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
-#undef VERSION
+// SquashFUSE has a bug where ll.h includes SquashFUSE's own config.h. (FIXME:
+// report and link.) This clashes with our own config.h, as well as the system
+// headers because it defines _POSIX_C_SOURCE. By defining SQFS_CONFIG_H,
+// SquashFUSE's config.h skips itself. But then FUSE_USE_VERSION isn't
+// defined, which makes other parts of ll.h puke. Looking at their code, it
+// seems the only values used are 32 (for libfuse3) and 26 (for libfuse2), so
+// we can just blindly define it.
+#define SQFS_CONFIG_H
+#define FUSE_USE_VERSION 32
+#include <squashfuse/ll.h>
 
 #include "ch_fuse.h"
 #include "ch_core.h"
