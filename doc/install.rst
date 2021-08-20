@@ -87,18 +87,35 @@ be built.
 Dependency selection: :code:`--with-FOO`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Some dependencies can be specified as follows. Note that :code:`--without-FOO`
-is not supported; use the feature selectors above.
+Some dependencies can be specified as follows. Note only some of these support
+:code:`--with-FOO=no`, as listed.
 
-:code:`--with-python`
+:code:`--with-libsquashfuse={yes,no,PATH}`
+  Whether to link with :code:`libsquashfuse`. Options:
+
+  * If not specified: Look for :code:`libsquashfuse` in standard install
+    locations and link with it if found. Otherwise disable internal SquashFS
+    mount, with no warning or error.
+
+  * :code:`yes`: Look for :code:`libsquashfuse` in standard locations and link
+    with it if found; otherwise, error.
+
+  * :code:`no`: Disable :code:`libsquashfuse` linking and internal SquashFS
+    mounting, even if it's installed.
+
+  * Path to :code:`libsquashfuse` install location, not including final
+    :code:`lib` or :code:`include` component: Link with :code:`libsquashfuse`
+    found there (or error if not found), and add it to :code:`ch-run`'s RPATH.
+
+:code:`--with-python=SHEBANG`
   Shebang line to use for Python scripts. Default:
   :code:`/usr/bin/env python3`.
 
-:code:`--with-sphinx-build`
+:code:`--with-sphinx-build=PATH`
   Path to :code:`sphinx-build` executable. Default: the :code:`sphinx-build`
   found first in :code:`$PATH`.
 
-:code:`--with-sphinx-python`
+:code:`--with-sphinx-python=PATH`
   Path to Python used by :code:`sphinx-build`. Default: shebang of
   :code:`sphinx-build`.
 
@@ -513,7 +530,9 @@ To mount these archives using :code:`ch-run`'s internal code, you need:
   that has the :code:`libsquashfuse_ll` shared library. At the time of this
   writing (August 2021), this is probably `commit 56a24f6
   <https://github.com/vasi/squashfuse/commit/56a24f6c7f6e5cfd0ce5185f175da223d00dc1ca>`_
-  or newer, and there is no versioned release yet.
+  or newer, and there is no versioned release yet. This must be installed,
+  though it can be a non-standard location; :code:`ch-run` can't link with a
+  :code:`libsquashfuse` in the build directory.
 
 Without these, you can still use a SquashFS workflow but must mount and
 unmount the filesystem archives manually. You can do this using the
