@@ -10,10 +10,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "ch_core.h"
-#include "ch_fuse.h"
-#include "ch_misc.h"
 #include "config.h"
+#include "ch_core.h"
+#include "ch_misc.h"
+
 
 /** Constants and macros **/
 
@@ -52,7 +52,7 @@ const struct argp_option options[] = {
    { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
-   { "mount",         'm', "DIR",  0, "squashfs mount point"},
+   { "mount",         'm', "DIR",  0, "SquashFS mount point"},
    { "no-home",        -2, 0,      0, "don't bind-mount your home directory"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
@@ -106,7 +106,6 @@ int main(int argc, char *argv[])
    int arg_next;
    int c_argc;
    char ** c_argv;
-   enum img image;
 
    privs_verify_invoking();
 
@@ -115,6 +114,7 @@ int main(int argc, char *argv[])
                                                   .container_gid = getegid(),
                                                   .container_uid = geteuid(),
                                                   .env_expand = true,
+                                                  .img_path = NULL,
                                                   .newroot = NULL,
                                                   .join = false,
                                                   .join_ct = 0,
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
                                                   .private_passwd = false,
                                                   .private_tmp = false,
                                                   .old_home = getenv("HOME"),
-                                                  .sq_filepath = NULL,
+                                                  .type = IMG_DIRECTORY,
                                                   .writable = false },
                          .initial_dir = NULL };
    // These need to be on the heap because we realloc(3) them later.
@@ -144,31 +144,22 @@ int main(int argc, char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
+   args.c.img_path = argv[arg_next++];
+   args.c.type = img_type_get(args.c.img_path);
 
-   image = img_type(argv[arg_next]);
-   if(image == SQFS) {
-      // img is a sqfs
-       #ifdef RUN_SQ
-        if(args.c.newroot == NULL) {// set mount point to default
-            Te ((asprintf(&args.c.newroot, "/var/tmp/%s.ch/mnt", getenv("USER")) >= 0), "failed to create mount point");
-            mkdirs("/", args.c.newroot, NULL, 0); // makes default dir if doesn't exist
-         }
-         args.c.sq_filepath = argv[arg_next];
-      #else
-         FATAL("missing fuse or squashfuse");
-      #endif
-   } else if(image == DIRECTORY) {
-      // img is a dir
-      if(args.c.newroot != NULL) // --squashmnt was set
-         WARNING("WARNING: invalid option -s, --squashmnt");
-      args.c.newroot = realpath(argv[arg_next], NULL);
-   } else {
-      // img is not sqfs or dir
-      FATAL("image not dir or sqfs");
+   switch (args.c.type) {
+   case IMG_DIRECTORY:
+      if (args.c.newroot != NULL)  // --mount was set
+         WARNING("--mount invalid with directory image, ignoring");
+      args.c.newroot = realpath(args.c.img_path, NULL);
+      Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_path);
+      break;
+   case IMG_SQUASH:
+#ifndef HAVE_LIBSQUASHFUSE
+      FATAL("this ch-run does not support internal SquashFS mounts");
+#endif
+      break;
    }
-
-   Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
-   arg_next++;
 
    if (args.c.join) {
       args.c.join_ct = join_ct(args.c.join_ct);
@@ -181,6 +172,7 @@ int main(int argc, char *argv[])
       c_argv[i] = argv[i + arg_next];
 
    INFO("verbosity: %d", verbose);
+   INFO("image: %s", args.c.img_path);
    INFO("newroot: %s", args.c.newroot);
    INFO("container uid: %u", args.c.container_uid);
    INFO("container gid: %u", args.c.container_gid);
@@ -189,13 +181,6 @@ int main(int argc, char *argv[])
    INFO("private /tmp: %d", args.c.private_tmp);
 
    fix_environment(&args);
-   #ifdef RUN_SQ
-      if (args.c.sq_filepath != NULL) {
-         // img is a sqfs
-         Ze (atexit(sq_clean), "can't set up exit handler");
-         sq_mount(args.c.newroot, args.c.sq_filepath);
-      }
-   #endif
    containerize(&args.c);
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
@@ -528,7 +513,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case 'j':
       args->c.join = true;
       break;
-   case 's':
+   case 'm':
       Ze ((arg[0] == '\0'), "mount point can't be empty");
       args->c.newroot = arg;
       break;

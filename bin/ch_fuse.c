@@ -1,15 +1,17 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
-/* There are different prefixs depending on where the function is from.
-   squashFUSE uses the prefix sqfs_ll for lowlevel functionality. Charliecloud
-   used the prefix sq. */
+/* Function prefixes:
+
+   fuse_     libfuse; docs: https://libfuse.github.io/doxygen/globals.html
+   sqfs_ll_  SquashFUSE; no docs but: https://github.com/vasi/squashfuse
+   sq_       Charliecloud */
 
 #define _GNU_SOURCE
+#include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <dirent.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 // SquashFUSE has a bug where ll.h includes SquashFUSE's own config.h. (FIXME:
 // report and link.) This clashes with our own config.h, as well as the system
@@ -22,15 +24,29 @@
 #define FUSE_USE_VERSION 32
 #include <squashfuse/ll.h>
 
-#include "ch_fuse.h"
-#include "ch_core.h"
-#include "ch_misc.h"
 #include "config.h"
+#include "ch_core.h"
+#include "ch_fuse.h"
+#include "ch_misc.h"
+
+
+/** Types **/
+
+/* A SquashFUSE mount. SquashFUSE allocates ll for us but not chan; use
+   pointers for both for consistency. */
+struct squash {
+   char *mountpt;       // path to mount point
+   sqfs_ll_chan *chan;  // FUSE channel associated with SquashFUSE mount
+   sqfs_ll *ll;         // SquashFUSE low-level data structure
+};
+
 
 /** Constants **/
 
-/* Holds fuse low level operations */
-struct fuse_lowlevel_ops sqfs_ll_ops = {
+/* This mapping tells libfuse what functions implement which FUSE operations.
+   It is passed to sqfs_ll_mount(). Why it is not internal to SquashFUSE I
+   have no idea. */
+struct fuse_lowlevel_ops OPS = {
     .getattr    = &sqfs_ll_op_getattr,
     .opendir    = &sqfs_ll_op_opendir,
     .releasedir = &sqfs_ll_op_releasedir,
@@ -47,73 +63,160 @@ struct fuse_lowlevel_ops sqfs_ll_ops = {
     .statfs     = &stfs_ll_op_statfs
 };
 
-/** Types **/
-struct squash {
-   char *mountpt;       // mount point of sqfs
-   sqfs_ll_chan chan;   // fuse channel associated with squash fuse session
-   sqfs_ll *ll;         // squashfs image
-};
 
 /** Global variables **/
+
+/* SquashFUSE mount. Initialized in sq_mount() and then used in most of the
+   other functions in this file. It's a global because the signal handler
+   needs access to it. */
 struct squash sq;
 
+/* True if exit request signal handler received SIGCHLD. */
+volatile bool sigchld_received;
+
+/* True if any exit request signal has been received. */
+volatile bool loop_terminating = false;
+
+
 /** Function prototypes (private) **/
-void sq_end();
+
+void sq_done_request(int signum);
+int sq_loop();
+void sq_mount(const char *img_path, char *mountpt);
+
 
 /** Functions **/
 
-/* Assigned to SIGCHLD. When child process (ch-run) is done running it sends a
-   SIGCHLD which triggers this method that ends the parent process */
-void sq_end()
+/* Signal handler to end the FUSE loop. This simply requests FUSE to end its
+   loop, causing fuse_session_loop() to exit. */
+void sq_done_request(int signum)
 {
-   exit(0);
+   if (!loop_terminating) {  // only act on first signal
+      loop_terminating = true;
+      sigchld_received = (signum == SIGCHLD);
+      fuse_session_exit(sq.chan->session);
+   }
 }
 
-/* Assigned as exit handler. When parent process (fuse loop) ends in sq_end,
-   it triggers this method that unmounts and cleans up the sqfs */
-void sq_clean()
+/* Mount SquashFS archive c->img_path on directory c->newroot. If the latter
+   is NULL, then mkdir(2) the default mount point and assign its path to
+   c->newroot. After mounting, fork; the child returns immediately while the
+   parent runs the FUSE loop until the child exits and then exits itself,
+   with the same exit code as the child (unless something else went wrong). */
+void sq_fork(struct container *c)
 {
-   fuse_remove_signal_handlers(sq.chan.session);
+   pid_t pid_child;
+   struct stat st;
+
+   // Default mount point?
+   if (c->newroot == NULL) {
+      char *subdir;
+      char *username = getenv("USER");
+      Te (username != NULL, "$USER not set");
+      T_ (asprintf(&subdir, "/%s.ch/mnt", username) > 0);
+      c->newroot = cat("/var/tmp", subdir);
+      INFO("using default mount point: %s", c->newroot);
+      mkdirs("/var/tmp", subdir, NULL, 0);
+   }
+
+   // Verify mount point exists and is a directory. (SquashFS file path
+   // already checked in img_type_get().)
+   Zf (stat(c->newroot, &st), "can't stat mount point: %s", c->newroot);
+   Te (S_ISDIR(st.st_mode), "not a directory: %s", c->newroot);
+
+   // Mount SquashFS.
+   sq_mount(c->img_path, c->newroot);
+
+   // Now that the filesystem is mounted, we can fork without race condition.
+   // The child returns to caller and runs the user command. When that exits,
+   // the parent gets SIGCHLD.
+   pid_child = fork();
+   Tf (pid_child >= 0, "can't fork");
+   if (pid_child > 0)  // parent (child does nothing here)
+      exit(sq_loop());
+}
+
+/* Run the squash loop to completion and return the exit code of the user
+   command. Warning: This sets up but does not restore signal handlers. */
+int sq_loop()
+{
+   struct sigaction fin, ign;
+   int looped, exit_code, child_status;
+   // Set up signal handlers. Avoid fuse_set_signal_handlers() because we need
+   // to catch a different set of signals, letting some be handled by the user
+   // command [1]. Use sigaction(2) instead of signal(2) because the latter's
+   // man page [2] says “avoid its use” and there are reports of bad
+   // interactions with libfuse [3].
+   //
+   // [1]: https://unix.stackexchange.com/questions/176235
+   // [2]: https://man7.org/linux/man-pages/man2/signal.2.html
+   // [3]: https://stackoverflow.com/a/8918597
+   fin.sa_handler = sq_done_request;
+   Z_ (sigemptyset(&fin.sa_mask));  // block no other signals during handling
+   fin.sa_flags = SA_NOCLDSTOP;     // only SIGCHLD on child exit
+   ign.sa_handler = SIG_IGN;
+   Z_ (sigaction(SIGCHLD, &fin, NULL));  // user command exits
+   Z_ (sigaction(SIGHUP,  &ign, NULL));  // terminal/session terminated
+   Z_ (sigaction(SIGINT,  &ign, NULL));  // Control-C
+   Z_ (sigaction(SIGPIPE, &ign, NULL));  // broken pipe; we don't use pipes
+   Z_ (sigaction(SIGTERM, &fin, NULL));  // somebody asked us to exit
+
+   // Run the FUSE loop, which services FUSE requests until sq_done_request()
+   // is invoked by a signal and tells it to stop, or someone unmounts the
+   // filesystem externally with e.g. fusermount(1). Because we don't use
+   // fuse_set_signal_handlers(), the return value doesn't contain the signal
+   // number that ended the loop, contrary to the documentation.
+   //
+   // FIXME: this is single-threaded; see issue #1157.
+   looped = fuse_session_loop(sq.chan->session);
+   if (looped < 0) {
+      errno = -looped;  // restore encoded errno so our logging finds it
+      Tf (0, "FUSE session failed");
+   }
+   INFO("FUSE loop terminated successfully");
+
+   // Clean up zombie child if exit signal was SIGCHLD.
+   if (!sigchld_received)
+      exit_code = 0;
+   else {
+      Tf (wait(&child_status) >= 0, "can't wait for child");
+      Te (WIFEXITED(child_status), "child terminated abnormally");
+      exit_code = WEXITSTATUS(child_status);
+      INFO("child terminated normally with exit code %d", exit_code);
+   }
+
+   // Clean up SquashFS mount. These functions have no error reporting.
+   INFO("unmounting: %s", sq.mountpt);
    sqfs_ll_destroy(sq.ll);
-   VERBOSE("unmounting: %s", sq.mountpt);
-   sqfs_ll_unmount(&sq.chan, sq.mountpt);
+   sqfs_ll_unmount(sq.chan, sq.mountpt);
+
+   INFO("FUSE loop done");
+   return exit_code;
 }
 
-/* Mounts sqfs image. Returns mount point */
-void sq_mount(char *mountdir, char *filepath)
+/* Mount the SquashFS img_path at mountpt. Exit on any errors. */
+void sq_mount(const char *img_path, char *mountpt)
 {
-   // argc set at 2 when verbose set to 3+ which sets debug argument for FUSE
-   char *argv[] = {filepath, "-d"};
-   int argc = (verbose > 3) ? 2 : 1;
-   struct fuse_args args = FUSE_ARGS_INIT(argc, argv); //arguments for FUSE
+   // SquashFUSE mount takes basically a command line rather than having a
+   // standard library API. It's unclear to me where this command line is
+   // documented, but the libfuse docs [1] suggest mount(8).
+   // [1]: https://libfuse.github.io/doxygen/fuse-3_810_83_2include_2fuse_8h.html#ad866b0fd4d81bdbf3e737f7273ba4520
+   char *mount_argv[] = {"WEIRDAL", "-d"};
+   int mount_argc = (verbose > 3) ? 2 : 1;  // include -d if high verbosity
+   struct fuse_args mount_args = FUSE_ARGS_INIT(mount_argc, mount_argv);
 
-   sq.mountpt = mountdir;
-   INFO("mount point: %s", sq.mountpt);
+   sq.mountpt = mountpt;
+   T_ (sq.chan = malloc(sizeof(sqfs_ll_chan)));
 
-   // mount sqfs
-   sq.ll = sqfs_ll_open(filepath, 0);
-   Te (sq.ll, "failed to open %s", filepath);
-   if(!opendir(sq.mountpt)) {
-      Tf ((ENOENT == errno), "can't make %s", sq.mountpt); //errno not dir doesn't exist
-      Ze (mkdir(sq.mountpt, 0777), "failed to make: %s", sq.mountpt);
-   }
+   sq.ll = sqfs_ll_open(img_path, 0);
+   Te (sq.ll != NULL, "can't open SquashFS: %s; try ch-run -vv?", img_path);
 
-   // two 'sources' of error 1. can't create fuse session, 2. can't mount
-   if (SQFS_OK != sqfs_ll_mount(&sq.chan, sq.mountpt, &args, &sqfs_ll_ops, sizeof(sqfs_ll_ops), sq.ll)) {
-      Te ((sq.chan.session), "failed to make fuse session");
-      FATAL("failed to mount");
-   }
-   signal(SIGCHLD, sq_end); //end fuse loop when ch-run is done
-
-   // tries to set signal handlers, returns -1 if failed
-   Te ((fuse_set_signal_handlers(sq.chan.session) >= 0), "can't set signal handlers");
-
-   // child process never returns when successful
-   // parent process runs fuse loop until child process ends and sends a SIGCHLD
-   int status = fork();
-   Te (status >=0, "failed to fork process");
-   if (status > 0) { //parent process
-      // tries to create fuse loop, returns -1 if failed
-      Te ((fuse_session_loop(sq.chan.session) >= 0), "failed to make fuse loop");
+   if (sqfs_ll_mount(sq.chan, sq.mountpt, &mount_args,
+                     &OPS, sizeof(OPS), sq.ll) != SQFS_OK) {
+      // We get back only SQFS_OK or SQFS_ERR, with no further detail. Looking
+      // at the source code [1], the latter says either fuse_session_new() or
+      // fuse_session_mount() failed, but we can't tell which.
+      // [1]: https://github.com/vasi/squashfuse/blob/74f4fe8/ll.c#L399
+      FATAL("unknown FUSE error mounting SquashFS; try ch-run -vv?");
    }
 }

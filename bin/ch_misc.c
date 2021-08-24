@@ -158,6 +158,9 @@ void msg(int level, const char *file, int line, int errno_,
 
    fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
 
+   if (level <= 1)
+      fprintf(stderr, "%s: ", VERBOSE_LEVELS[level]);
+
    if (fmt == NULL)
       fputs(VERBOSE_LEVELS[level], stderr);
    else {
