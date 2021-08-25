@@ -138,7 +138,7 @@ void sq_fork(struct container *c)
 
 /* Run the squash loop to completion and return the exit code of the user
    command. Warning: This sets up but does not restore signal handlers. */
-int sq_loop()
+int sq_loop(void)
 {
    struct sigaction fin, ign;
    int looped, exit_code, child_status;
