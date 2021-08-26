@@ -21,6 +21,11 @@ manifests_internal = {
 def main(cli):
    ch.dependencies_check()
    # Set things up.
+   dl_path = ch.storage.root // "dl"
+   if (cli.no_cache):
+      ch.cache_dl = ch.Cache_dl(ch.Mode.WRITE_ONLY, dl_path)
+   else:
+      ch.cache_dl = ch.Cache_dl(cli.download_cache, dl_path)
    ref = ch.Image_Ref(cli.image_ref)
    if (cli.parse_only):
       print(ref.as_verbose_str)
@@ -28,12 +33,12 @@ def main(cli):
    image = ch.Image(ref, cli.image_dir)
    ch.INFO("pulling image:    %s" % ref)
    ch.INFO("requesting arch:  %s" % ch.arch)
-   ch.INFO("download cache:   %s (%s)" % (ch.cache_dl.mode, ch.cache_dl.set_by))
+   ch.INFO("download cache:   %s" % ch.cache_dl.cache_mode.value)
    if (cli.image_dir is not None):
       ch.INFO("destination:      %s" % image.unpack_path)
    else:
       ch.VERBOSE("destination:      %s" % image.unpack_path)
-   pullet = Image_Puller(image)
+   pullet = Image_Puller(image, ch.cache_dl.use_cache())
    pullet.pull_to_unpacked(cli.last_layer)
    pullet.done()
    ch.done_notify()
@@ -50,20 +55,13 @@ class Image_Puller:
                 "registry",
                 "use_dlcache")
 
-   def __init__(self, image):
+   def __init__(self, image, use_cache=False):
       self.architectures = None
       self.image = image
       self.registry = ch.Registry_HTTP(image.ref)
       self.config_hash = None
       self.layer_hashes = None
-      if (self.cache_dl_mode == 'enable'):
-         self.use_dlcache = True
-      else:
-         self.use_dlcache = False
-
-   @property
-   def cache_dl_mode(self):
-      return ch.cache_dl.mode
+      self.use_dlcache = use_cache
 
    @property
    def config_path(self):

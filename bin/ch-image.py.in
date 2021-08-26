@@ -81,11 +81,9 @@ def main():
            "help": "architecture for image registries (default: host)"}],
        [ ["--build-cache"],
          { "metavar": "MODE",
-           "default": "pranav",
            "help": "build cache mode: enable (default), disable, rebuild"}],
        [ ["--download-cache"],
          { "metavar": "MODE",
-           "default": "pranav",
            "help": "download cache mode: enable (default), disable"}],
        [ ["--dependencies"],
          { "action": misc.Dependencies,
@@ -149,16 +147,17 @@ def main():
    help="build cache information and options"
    sp = sps.add_parser("build-cache", help=help, description=help,
                   formatter_class=ch.HelpFormatter)
-   sp.add_argument("--gc",
+   grp = sp.add_mutually_exclusive_group()
+   grp.add_argument("--gc",
                    action="store_true",
                    help="run garbage collection on cache")
-   sp.add_argument("--reset",
+   grp.add_argument("--reset",
                    action="store_true",
                    help="clear and re-initialize build cache")
-   sp.add_argument("--tree-text",
+   grp.add_argument("--tree-text",
                    action="store_true",
                    help="print a text tree of the cache storage")
-   sp.add_argument("--tree-dot",
+   grp.add_argument("--tree-dot",
                    action="store_true",
                    help="create a DOT and PDF export of the tree in CWD")
    sp.set_defaults(func=misc.build_cache)

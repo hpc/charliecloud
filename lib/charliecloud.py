@@ -4,6 +4,7 @@ import collections
 import collections.abc
 import copy
 import datetime
+import enum
 import getpass
 import hashlib
 import http.client
@@ -20,9 +21,11 @@ import stat
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 import types
 
+from abc import ABC, abstractmethod
 
 ## Imports not in standard library ##
 
@@ -84,9 +87,10 @@ ARCH_MAP = { "x86_64":    "amd64",
 arch = None       # requested by user
 arch_host = None  # of host
 
-# Cache mode
-CACHE_BU_MODES = ('enable', 'disable', 'rebuild')
-CACHE_DL_MODES = ('enable', 'write-only')
+# Cache content we care about.
+CACHE_ROOT_ID = "5745495244414c59414e4b4f56494300"
+GIT_MIN = (2, 30, 1)
+GIT_MAX = (2, 30, 1)
 cache_bu = None
 cache_dl = None
 
@@ -112,10 +116,10 @@ tls_verify = True
 HTTP_CHUNK_SIZE = 256 * 1024
 
 # Content types for some stuff we care about.
-TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+TYPE_MANIFEST      = "application/vnd.docker.distribution.manifest.v2+json"
 TYPE_MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
-TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
-TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
+TYPE_CONFIG        = "application/vnd.docker.container.image.v1+json"
+TYPE_LAYER         = "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
 # Top-level directories we create if not present.
 STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
@@ -222,8 +226,169 @@ _NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 class No_Fatman_Error(Exception): pass
 class Not_In_Registry_Error(Exception): pass
 
+## Enums ##
+class Mode(enum.Enum):
+   ENABLED    = "enable"
+   DISABLED   = "disable"
+   REBUILD    = "rebuild"
+   WRITE_ONLY = "write-only"
+
 
 ## Classes ##
+
+class Cache(ABC):
+   """Gerneric cache object.
+
+      mode         ........ FIXME
+      storage_path ........ FIXME"""
+   __slots__ = ("mode",
+                "cache_path")
+
+   def __init__(self, mode, p):
+      if (mode is None):
+         self.mode = self.mode_default()
+      else:
+         self.mode = self.mode_check(mode)
+      assert(p is not None)
+      self.cache_path = p
+
+   @property
+   def cache_mode(self):
+      return self.mode
+
+   @cache_mode.setter
+   def cache_mode(self, m):
+      self.mode = m
+
+   @property
+   def storage_path(self):
+      return self.cache_path
+
+   @abstractmethod
+   def mode_check(self):
+      pass
+
+   @abstractmethod
+   def mode_default(self):
+      pass
+
+
+class Cache_dl(Cache):
+   def mode_check(self, mode):
+      if (type(mode) == Mode):
+         if (mode == Mode.WRITE_ONLY or mode == Mode.ENABLED):
+            return mode
+      else:
+         for m in Mode:
+            if (     mode == m.value
+                and (m == Mode.WRITE_ONLY or m == Mode.ENABLED)):
+               return m
+      FATAL("invalid download cache mode: %s" % mode)
+
+   def mode_default(self):
+      return Mode.ENABLED
+
+   def use_cache(self):
+      if (self.mode == Mode.ENABLED):
+         return True
+      return False
+
+
+class Cache_bu(Cache):
+   @staticmethod
+   def storage_sane(path_):
+      "Return True if build cache path appears sane; otherwise return false"
+      # Typical porcelain commands that ensure sanity do not work on our bare
+      # repo; check for the standard files and directories created when a bare
+      # repository is initiated.
+      if (    os.path.isdir(path_  // "branches")
+          and os.path.exists(path_ // "config")
+          and os.path.exists(path_ // "description")
+          and os.path.exists(path_ // "HEAD")
+          and os.path.isdir(path_  // "hooks")
+          and os.path.isdir(path_  // "info")
+          and os.path.isdir(path_  // "objects")
+          and os.path.isdir(path_  // "refs")):
+         return True
+      return False
+
+   def mode_check(self, mode):
+      if (type(mode) == Mode):
+         if (mode.name in Mode and mode != Mode.WRITE_ONLY):
+            return mode
+      else:
+         for m in Mode:
+            if (mode == m.value and m != Mode.WRITE_ONLY):
+               return m
+      FATAL("invalid build cache mode: %s")
+
+   def mode_default(self):
+      # cmd() doesn't give us a good way to return output to operate on, so we
+      # just use vanilla subprocess without a wrapper here.
+      cp = subprocess.run(["git", "--version"], encoding="utf-8",
+                          stdin=subprocess.DEVNULL,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+      if (cp.returncode):
+         VERBOSE("build cache mode: disabled (no git installed)")
+         return Mode.DISABLED
+      out = cp.stdout.split(" ")[-1]
+      git_version = tuple(int(i) for i in out.strip().split("."))
+      if (not GIT_MIN <= git_version <= GIT_MAX):
+         VERBOSE("build cache mode: disabled (git too old)")
+         return Mode.DISABLED
+      VERBOSE("build cache mode: enabled (default)")
+      return Mode.ENABLED
+
+   def storage_init(self):
+      """Create build cache storage dir, initialize bare git repo, and set
+         upstream origin to root; fail otherwise"""
+      VERBOSE("build cache storage: %s" % self.storage_path)
+      try:
+         mkdirs(self.storage_path, exist_ok=False)
+      except FileExistsError:
+         FATAL("build-cache exists")
+      VERBOSE("initialize bare git repo")
+      # init bare repo
+      cmd_git(["init", "--bare", "--initial-branch=root", self.storage_path])
+      # set bare repo upstream origin to "root"
+      with tempfile.TemporaryDirectory(dir=self.storage_path) as tmpdir:
+         VERBOSE("setting upstream origin root")
+         init_dir = Path(os.path.join(tmpdir, "init"))
+         cmd_git(["clone", self.storage_path, init_dir])
+         cmd_git(["checkout", "-b", "root"], cwd=init_dir)
+         cmd(["touch", ".root"], cwd=init_dir)
+         cmd_git(["add", ".root"], cwd=init_dir)
+         cmd_git(["commit", "-m", CACHE_ROOT_ID], cwd=init_dir)
+         cmd_git(["push", "--set-upstream", "origin", "root"], cwd=init_dir)
+
+      if (not self.storage_sane(self.storage_path)):
+         FATAL("failed to initilize build cache")
+
+   def storage_prune(self):
+      cmd_git(["gc", "--prune=now"], self.storage_path)
+
+   def storage_reset(self):
+      "Remove and re-initialize storage directory."
+      if (os.path.isdir(self.storage_path)):
+         VERBOSE("removing build cache storage: %s" % self.storage_path)
+         rmtree(self.storage_path)
+      self.storage_init()
+
+   def storage_tree_print(self):
+      self.storage_sane(self.storage_path)
+      args = ["git", "--no-pager", "log", "--graph", "--all",
+              "--format='%C(auto)%d %h %Cblue%al%Creset %s'"]
+      cp = subprocess.run(args, cwd=self.storage_path, encoding="utf=8",
+                          stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+      INFO(cp.stdout)
+      if (cp.returncode):
+         exit(1)
+
+   def storage_tree_dot(self):
+      pass
+
 
 class Credentials:
 
@@ -1644,72 +1809,32 @@ def bytes_hash(data):
    h.update(data)
    return h.hexdigest()
 
-def cache_build_gc():
-   wd = os.getcwd()
-   ossafe(os.chdir(), storage.build_cache, "can't cd: %s" % bu)
-   cmd_git(["git", "gc", "--prune=now"])
-   ossafe(os.chdir(), wd, "can't cd: %s" % bu)
-
-def cache_build_init():
-   "Create build cache storage dir and initialize bare git repo; fail otherwise"
-   INFO("initializing build cache.")
-   bu = storage.build_cache
-   VERBOSE("build cache storage: %s" % bu)
-   try:
-      mkdirs(bu, exist_ok=False)
-   except FileExistsError:
-      FATAL("build-cache exists")
-   VERBOSE("initialize bare git repo...")
-   cmd_git(["git", "init", "--bare", "--initial-branch=root", bu])
-   if (not cache_build_sane()):
-      FATAL("failed to initilize build cache")
-
-def cache_build_reset():
-   INFO("removing build cache.")
-   rmtree(storage.build_cache)
-
-def cache_build_sane():
-   "Return True if build cache appears sane; otherwise return false"
-   bu = storage.build_cache
-   # FIXME: probably a better way to do this
-   if (    os.path.isdir(bu  // "branches")
-       and os.path.exists(bu // "config")
-       and os.path.exists(bu // "description")
-       and os.path.exists(bu // "HEAD")
-       and os.path.isdir(bu  // "hooks")
-       and os.path.isdir(bu  // "info")
-       and os.path.isdir(bu  // "objects")
-       and os.path.isdir(bu  // "refs")):
-      return True
-   return False
-
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
-   return cmd(args, env, fail_ok)
+   return cmd(args, env=env, fail_ok=fail_ok)
 
-def cmd(args, env=None, fail_ok=False):
-   VERBOSE("environment: %s" % env)
+def cmd(args, cwd=None, encoding=None, env=None, fail_ok=False,
+        stdout=None, stderr=None, stdin=None, verbose_out=False):
+   if (env is not None):
+      VERBOSE("environment: %s" % env)
    VERBOSE("executing: %s" % args)
-   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   cp = subprocess.run(args, cwd=cwd, encoding=encoding, env=env,
+                       stderr=stderr, stdin=stdin, stdout=stdout)
+   if (verbose_out):
+      VERBOSE("%s" % cp.stdout)
    if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
 
-def cmd_git(args, fail_ok=False):
-   VERBOSE("executing: %s" % args)
-   cp = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-   out, err = cp.communicate()
-   if (out.decode("utf-8") != ''):
-      VERBOSE("%s" % out.decode("utf-8"))
-   if (err.decode("utf-8") != ''):
-      VERBOSE("%s" % err.decode("utf-8"))
-   if (not fail_ok and cp.returncode):
-      FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
-   return cp.returncode
+def cmd_git(args, fail_ok=False, cwd=None):
+   args.insert(0, "git")
+   cmd(args, encoding="utf-8", verbose_out=True, cwd=cwd,
+                       stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT)
 
 def color_reset(*fps):
    for fp in fps:
@@ -1744,7 +1869,7 @@ def dependencies_check():
       sys.exit(1)
 
 def dependency_git():
-    # FIXME: TODO: Figure out: 1. what git version we need, and 2) how to
+    # FIXME: Figure out: 1. what git version we need, and 2) how to
     # check it.
     return True
 
@@ -1875,44 +2000,6 @@ def init(cli):
       arch = arch_host
    else:
       arch = cli.arch
-   # cache modes
-   cache = collections.namedtuple('cache', 'mode set_by')
-   global cache_bu
-   if (not cli.no_cache):
-      # build
-      assert (cli.build_cache is not None)
-      if (cli.build_cache == "pranav"): # default (jogas chess nemesis)
-         # do we have git?
-         if (not cmd_git(["git", "--version"], fail_ok=True)):
-            # is it the correct version?
-            if (dependency_git):
-               cache_bu = cache('enable', 'default')
-            else:
-               cache_bu = cache('disable', 'default (git too old)')
-         else:
-            cache_bu = cache('disable', 'default (no git)')
-      else:
-         mode = cli.build_cache
-         if (mode in CACHE_BU_MODES):
-            cache_bu = cache(mode, 'command line')
-         else:
-            FATAL('invalid build cache mode: %s' % mode)
-      # download
-      global cache_dl
-      assert(cli.download_cache is not None)
-      mode = cli.download_cache
-      if (mode == "pranav"):
-         cache_dl = cache('enable', 'default')
-      elif (mode in CACHE_DL_MODES):
-         cache_dl = cache(mode, 'command line')
-      else:
-         FATAL('invalid cache mode: %s' % mode)
-   else:
-      # no-cache configuration
-      cache_bu = cache('rebuild', 'command line')
-      cache_dl = cache('write-only', 'command line')
-   VERBOSE("build cache:    %s (%s)" %(cache_bu.mode, cache_bu.set_by))
-   VERBOSE("download cache: %s (%s)" %(cache_dl.mode, cache_dl.set_by))
    # misc
    global password_many, tls_verify
    password_many = cli.password_many

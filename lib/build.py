@@ -118,6 +118,16 @@ def main(cli_):
    global env
    env = Environment()
 
+   # Set up cache
+   if (cli.no_cache):
+      assert(ch.cache_bu is None)
+      assert(ch.cache_dl is None)
+      ch.cache_dl = ch.Cache_bu(ch.Mode.WRITE_ONLY, ch.storage.root // "dl")
+      ch.cache_bu = ch.Cache_bu(ch.Mode.DISABLED, ch.storage.root // "bu")
+   else:
+      ch.cache_dl = ch.Cache_dl(cli.download_cache, ch.storage.root // "dl")
+      ch.cache_bu = ch.Cache_bu(cli.build_cache, ch.storage.root // "bu")
+
    # Read input file.
    if (cli.file == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
@@ -143,7 +153,7 @@ def main(cli_):
    if (cli.parse_only):
       sys.exit(0)
 
-   ch.INFO("build cache:      %s (%s)" % (ch.cache_bu.mode, ch.cache_bu.set_by))
+   ch.INFO("build cache:      %s" % ch.cache_bu.cache_mode.value)
 
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
@@ -643,11 +653,11 @@ class I_from_(Instruction):
       # Initialize image.
       self.base_image = ch.Image(self.base_ref)
       if   (    os.path.isdir(self.base_image.unpack_path)
-            and ch.cache_dl.mode == 'enable'):
+            and ch.cache_dl.mode == ch.Mode.ENABLED):
          ch.VERBOSE("download cache enabled; base image found: %s" %
                     self.base_image.unpack_path)
       else:
-         if (ch.cache_dl.mode == 'write-only'):
+         if (cache_dl.mode == ch.Mode.WRITE_ONLY):
             ch.VERBOSE("download cache write-only, pulling")
          else:
             ch.VERBOSE("download cache enabled; base image not found, pulling")

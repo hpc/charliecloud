@@ -40,35 +40,31 @@ class Version(Action_Exit):
 # because caller manages that.
 
 def build_cache(cli):
-   ch.dependencies_check()
-   ch.dependency_git()
+   storage_path = ch.storage.root // "bu"
+   cache_bu = ch.Cache_bu(cli.build_cache, storage_path)
+
    # reset and init
    if (cli.reset):
-      if (os.path.isdir(ch.storage.build_cache)):
-         ch.cache_build_reset()
-      ch.cache_build_init()
-      ch.done_notify_exit()
+      ch.INFO("resetting build cache storage directory.")
+      cache_bu.storage_reset()
    # run garbage collection
    if (cli.gc):
       ch.INFO('running garbage collection ...')
-      ch.cache_build_gc()
-      ch.done_notify_exit()
+      cache_bu.storage_prune()
    # print text tree
    if (cli.tree_text):
-      ch.INFO('TODO: print pretty tree')
-      ch.done_notify_exit()
+      cache_bu.storage_tree_print()
    # create tree files
    if (cli.tree_dot):
       ch.INFO('TODO: create pretty tree files')
-      ch.done_notify_exit()
    # print general info
    if (os.path.isdir(ch.storage.build_cache)):
-      ch.INFO('TODO: print the stuff')
-      ch.done_notify_exit()
+      ch.INFO("""
+FIXME: print number of entries (commits), number of files, disk space used,
+number of named and unammed branches, number of state IDs.""")
    else:
       ch.INFO("cache is emtpy")
-    # TODO: print number of entries (commits), number of files, disk space used,
-    # number of named and unammed branches, number of state IDs.
+   ch.done_notify()
 
 def delete(cli):
    ch.dependencies_check()
