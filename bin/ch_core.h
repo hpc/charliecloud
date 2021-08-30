@@ -23,6 +23,7 @@ struct bind {
 enum img_type {
    IMG_DIRECTORY,  // normal directory, perhaps an external mount of some kind
    IMG_SQUASH,     // SquashFS archive file (not yet mounted)
+   IMG_NONE,       // image type is not set yet
 };
 
 struct container {

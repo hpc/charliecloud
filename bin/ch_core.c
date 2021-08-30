@@ -257,7 +257,7 @@ enum img_type img_type_get(const char *path)
    Tf (fp != NULL, "can't open: %s", path);
    Tf (fread(magic, sizeof(char), 4, fp) == 4, "can't read: %s", path);
    Zf (fclose(fp), "can't close: %s", path);
-   INFO("image file magic: %x%x %x%x", magic[0], magic[1], magic[2], magic[3]);
+   INFO("image file magic expected: 6873 7173\t actual: %x%x %x%x", magic[0], magic[1], magic[2], magic[3]);
 
    // SquashFS magic number is 6873 7173, i.e. "hsqs". I think "sqsh" was
    // intended but the superblock designers were confused about endianness.
@@ -266,7 +266,7 @@ enum img_type img_type_get(const char *path)
       return IMG_SQUASH;
 
    FATAL("unknown image type: %s", path);
-   return IMG_DIRECTORY;  // unreachable, avoid warning; see issue #1158
+   return IMG_NONE;  // unreachable, avoid warning; see issue #1158
 }
 /* Begin coordinated section of namespace joining. */
 void join_begin(int join_ct, const char *join_tag)

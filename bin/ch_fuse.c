@@ -13,15 +13,19 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-// SquashFUSE has a bug where ll.h includes SquashFUSE's own config.h. (FIXME:
-// report and link.) This clashes with our own config.h, as well as the system
+// SquashFUSE has a bug where ll.h includes SquashFUSE's own config.h.
+// This clashes with our own config.h, as well as the system
 // headers because it defines _POSIX_C_SOURCE. By defining SQFS_CONFIG_H,
 // SquashFUSE's config.h skips itself. But then FUSE_USE_VERSION isn't
 // defined, which makes other parts of ll.h puke. Looking at their code, it
 // seems the only values used are 32 (for libfuse3) and 26 (for libfuse2), so
 // we can just blindly define it.
+// [1]: https://github.com/vasi/squashfuse/issues/65
 #define SQFS_CONFIG_H
 #define FUSE_USE_VERSION 32
+// SquashFUSE redefines __le16 unless HAVE_LINUX_TYPES_LE16 is defined. We are
+// assuming it is defined in <linux/types.h> on your machine.
+#define HAVE_LINUX_TYPES_LE16
 #include <squashfuse/ll.h>
 
 #include "config.h"

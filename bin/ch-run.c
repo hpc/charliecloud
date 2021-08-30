@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
                                                   .private_passwd = false,
                                                   .private_tmp = false,
                                                   .old_home = getenv("HOME"),
-                                                  .type = IMG_DIRECTORY,
+                                                  .type = IMG_NONE,
                                                   .writable = false },
                          .initial_dir = NULL };
    // These need to be on the heap because we realloc(3) them later.
@@ -158,6 +158,9 @@ int main(int argc, char *argv[])
 #ifndef HAVE_LIBSQUASHFUSE
       FATAL("this ch-run does not support internal SquashFS mounts");
 #endif
+      break;
+   case IMG_NONE:
+      FATAL("unknown image type: %s", args.c.img_path);
       break;
    }
 
