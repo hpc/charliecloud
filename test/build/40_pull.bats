@@ -172,7 +172,7 @@ EOF
 
     # errors
 
-    # invalid character in image name (tag)
+    # invalid character in image name
     cat <<'EOF' | image_ref_parse 'name*' 1
 error: image ref syntax, char 5: name*
 EOF

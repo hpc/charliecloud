@@ -76,27 +76,30 @@ def main(cli_):
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
 
-   # Infer image name (tag) if needed.
+   # Infer image name if needed.
    if (cli.tag is None):
-      m = re.search(r"Dockerfile\.(.+)|([^/]+)\.dockerfile$",
-                    os.path.abspath(cli.file))
-      if (m is not None):
-         # Dockerfile.foo case.
-         if(m.group(1) is not None):
-            cli.tag = m.group(1)
-            ch.VERBOSE("Inferred tag from Dockerfile extension: %s" % cli.tag)
-         # foo.dockerfile case.
-         else:
-            cli.tag = m.group(2)
-            ch.VERBOSE("Inferred tag from Dockerfile basename: %s" % cli.tag)
+      path = os.path.basename(cli.file)
+      if ("." in path):
+         (base, ext_all) = str(path).split(".", maxsplit=1)
+         (base_all, ext_last) = str(path).rsplit(".", maxsplit=1)
       else:
-         if (os.path.abspath(cli.context) != "/"):
-            cli.tag = (os.path.basename(os.path.abspath(cli.context)))
-         else:
-            # The tag of "root" is used when one is not provided and we
-            # attempt to infer one from a context directory of "/".
-            cli.tag = "root"
-         ch.VERBOSE("Inferred tag from context directory name: %s" % cli.tag)
+         base = None
+         ext_last = None
+      if (base == "Dockerfile"):
+         cli.tag = ext_all
+         ch.VERBOSE("inferring name from Dockerfile extension: %s" % cli.tag)
+      elif (ext_last == "dockerfile"):
+         cli.tag = base_all
+         ch.VERBOSE("inferring name from Dockerfile basename: %s" % cli.tag)
+      elif (os.path.abspath(cli.context) != "/"):
+         cli.tag = os.path.basename(os.path.abspath(cli.context))
+         ch.VERBOSE("inferring name from context directory: %s" % cli.tag)
+      else:
+         assert (os.path.abspath(cli.context) == "/")
+         cli.tag = "root"
+         ch.VERBOSE("inferring name with root context directory: %s" % cli.tag)
+      cli.tag = re.sub(r"[^a-z0-9_.-]", "", cli.tag.lower())
+      ch.INFO("inferred image name: %s" % cli.tag)
 
    # Deal with build arguments.
    def build_arg_get(arg):

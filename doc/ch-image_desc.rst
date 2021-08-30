@@ -240,14 +240,24 @@ Options:
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
 
-  :code:`-t`, :code:`-tag TAG`
-    Name of image to create. If not specified, an attempt to infer a tag is made.
-    This inference process operates in this order:
-    1. Use the Dockerfile's extension if there is one e.g. Dockerfile.foo -> `foo`.
-    2. If the extension is `dockerfile` use the basename e.g. foo.dockerfile -> `foo`.
-    3. Use the name of the `CONTEXT` directory provided it isn't `/`.
-    4. If the `CONTEXT` directory is `/` use "root".
-    Append :code:`:latest` if no colon present.
+  :code:`-t`, :code:`--tag TAG`
+    Name of image to create. If not specified, infer the name:
+
+    1. If Dockerfile named :code:`Dockerfile` with an extension: use the
+       extension with invalid characters stripped, e.g.
+       :code:`Dockerfile.@FOO.bar` → :code:`foo.bar`.
+
+    2. If Dockerfile has extension :code:`dockerfile`: use the basename with
+       the same transformation, e.g. :code:`baz.@QUX.dockerfile` ->
+       :code:`baz.qux`.
+
+    3. If context directory is not :code:`/`: use its name, i.e. the last
+       component of the absolute path to the context directory, with the same
+       transformation,
+
+    4. Otherwise (context directory is :code:`/`): use :code:`root`.
+
+    If no colon present in the name, append :code:`:latest`.
 
 Privilege model
 ---------------
@@ -505,8 +515,8 @@ directory :code:`./foo/bar`::
    [...]
    grown in 4 instructions: bar
 
-Same, but infer the image name (:code:`TAG`) and Dockerfile from the context
-directory path::
+Same, but infer the image name and Dockerfile from the context directory
+path::
 
    $ ch-image build ./foo/bar
    [...]
