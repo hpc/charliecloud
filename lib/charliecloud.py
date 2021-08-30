@@ -1868,11 +1868,6 @@ def dependencies_check():
    if (len(depfails) > 0):
       sys.exit(1)
 
-def dependency_git():
-    # FIXME: Figure out: 1. what git version we need, and 2) how to
-    # check it.
-    return True
-
 def digest_trim(d):
    """Remove the algorithm tag from digest d and return the rest.
 
