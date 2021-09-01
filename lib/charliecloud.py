@@ -38,7 +38,7 @@ depfails = []
 # [1]: https://github.com/lark-parser/lark/issues/505
 import lark
 LARK_MIN = (0,  7, 1)
-LARK_MAX = (0, 11, 3)
+LARK_MAX = (0, 12, 0)
 lark_version = tuple(int(i) for i in lark.__version__.split("."))
 if (not LARK_MIN <= lark_version <= LARK_MAX):
    depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
