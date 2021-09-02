@@ -17,9 +17,16 @@ jobs:
         builder: [none, docker, ch-image]
         keep_sudo:  # if false, remove self from sudoers after install/setup
           - false
+        run_squashfs: #if false, squashFS workflow doesn't build
+          - false
         include:
           - builder: docker
             keep_sudo: true
+            run_squashfs: false
+        include:
+          - builder: docker
+            keep_sudo: false
+            run_squashfs: true
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
@@ -365,6 +372,34 @@ jobs:
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
           bin/ch-test --pack-fmt=tar all
+
+     - name: install libsquashfuse
+       if: ${{matrix.run_squashfs }}
+       run: |
+         cd /usr/local/src # same parent dir as python install
+         git clone -q https://github.com/vasi/squashfuse.git
+         cd squashfuse
+         ./autogen.sh
+         ./configure --bindir=/usr/local
+         make $ch_makej
+
+      - name: rebuild
+        if: ${{ matrix.run_squashfs }}
+        run: |
+          make distclean
+          # Configure with libsquashfuse.
+          ./configure --with-libsquashfuse=/usr/local/src/squashfuse --preflix=/doesnotexist
+          set -x
+          fgrep 'internal mount with libsquashfuse ... yes' config.log
+          set +x
+          # Build and install.
+          make $ch_makej
+          bin/ch-run --version
+
+      - name: run test suite (Git WD, standard, squashfs)
+        if: ${{ matrix.run_squashfs }}
+        run: |
+          bin/ch-test all
 
       - name: print ending environment
         if: ${{ always() }}
