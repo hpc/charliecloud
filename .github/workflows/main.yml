@@ -23,7 +23,7 @@ jobs:
           - builder: docker
             keep_sudo: true
             run_squashfs: false
-        include:
+
           - builder: docker
             keep_sudo: false
             run_squashfs: true
