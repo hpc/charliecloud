@@ -150,7 +150,7 @@ jobs:
           #fgrep 'bundled Lark: no' config.log
           #fgrep 'lark.py under source dir ... no' config.log
           # updated configure output prints "lark" module .... bundled
-          fgrep '"lark" module: bundled"
+          fgrep '"lark" module: bundled"'
           ! test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
