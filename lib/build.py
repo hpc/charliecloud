@@ -97,10 +97,7 @@ def main(cli_):
             ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
          return (kv[0], v)
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
-
-   # Finish CLI initialization.
    ch.DEBUG(cli)
-   ch.dependencies_check()
 
    # Guess whether the context is a URL, and error out if so. This can be a
    # typical looking URL e.g. "https://..." or also something like
@@ -491,6 +488,8 @@ class I_copy(Instruction):
       return dst_canon
 
    def execute_(self):
+      if (len(self.srcs) < 1):
+         ch.FATAL("can't COPY: must specify at least one source")
       # Complain about unsupported stuff.
       if (self.options.pop("chown", False)):
          self.unsupported_forever_warn("--chown")
@@ -519,11 +518,12 @@ class I_copy(Instruction):
       # Expand source wildcards.
       srcs = list()
       for src in self.srcs:
-         for i in glob.glob("%s/%s" % (context, src)):  # glob can't take Path
+         matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
+         if (len(matches) == 0):
+            ch.FATAL("can't copy: not found: %s" % src)
+         for i in matches:
             srcs.append(i)
             ch.VERBOSE("source: %s" % i)
-      if (len(srcs) == 0):
-         ch.FATAL("can't COPY: no sources found")
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
       for src in srcs:

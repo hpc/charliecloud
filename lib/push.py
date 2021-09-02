@@ -8,7 +8,6 @@ import version
 ## Main ##
 
 def main(cli):
-   ch.dependencies_check()
    src_ref = ch.Image_Ref(cli.source_ref)
    ch.INFO("pushing image:   %s" % src_ref)
    image = ch.Image(src_ref, cli.image)
@@ -94,7 +93,6 @@ class Image_Pusher:
          There is not currently any support for re-using any previously
          prepared files already in the upload cache, because we don't yet have
          a way to know if these have changed until they are already build."""
-      ch.mkdirs(ch.storage.upload_cache)
       tars_uc = self.image.tarballs_write(ch.storage.upload_cache)
       tars_c = list()
       config = self.config_new()

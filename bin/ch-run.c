@@ -293,6 +293,9 @@ void fix_environment(struct args *args)
       INFO("new $PATH: %s", new_value);
    }
 
+   // $TMPDIR: Unset.
+   Z_ (unsetenv("TMPDIR"));
+
    // --set-env and --unset-env.
    for (int i = 0; args->env_deltas[i].action != ENV_END; i++) {
       char *arg = args->env_deltas[i].arg;

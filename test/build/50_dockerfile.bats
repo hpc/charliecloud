@@ -846,19 +846,47 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
 
-    # File not found.
+    # No sources given.
+    run ch-build -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+COPY .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    if [[ $CH_BUILDER = ch-image ]]; then
+        [[ $output = *"error: can't parse: -:2,7"* ]]
+    else
+        [[ $output = *'COPY requires at least two arguments'* ]]
+    fi
+    run ch-build -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+COPY ["."]
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    if [[ $CH_BUILDER = ch-image ]]; then
+        [[ $output = *"error: can't COPY: must specify at least one source"* ]]
+    else
+        [[ $output = *'COPY requires at least two arguments'* ]]
+    fi
+
+    # No sources found.
     run ch-build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY doesnotexist .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = docker ]]; then
-        [[ $output = *'file does not exist'* ]]
-    else
-        # This diagnostic is not fantastic, but it's what we got for now.
-        [[ $output = *'no sources found'* ]]
-    fi
+    [[ $output = *'not found'* ]]
+
+    # Some sources found.
+    run ch-build -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+COPY fixtures/README doesnotexist .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'not found'* ]]
 }
 
 

@@ -249,9 +249,9 @@ class _Debian(Test):
    runs = { **Test.runs, **{ Run.NEEDED:      "apt-get update && apt-get install -y openssh-client" } }
 class Debian_9(_Debian):
    base = "debian:stretch"
-class Debian_10(_Debian):
+class Debian_11(_Debian):
    scope = Scope.STANDARD
-   base = "debian:buster"
+   base = "debian:bullseye"
 class Ubuntu_16(_Debian):
    base = "ubuntu:xenial"
 class Ubuntu_18(_Debian):
@@ -279,7 +279,7 @@ for test in [CentOS_7,
              Fedora_26,
              Fedora_Latest,
              Debian_9,
-             Debian_10,
+             Debian_11,
              Ubuntu_16,
              Ubuntu_18,
              Ubuntu_20]:

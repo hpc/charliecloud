@@ -21,8 +21,8 @@ proper support is enabled, a SquashFS archive.
     created as an empty directory. However, :code:`DST` must be entirely
     within the image itself; :code:`DST` cannot enter a previous bind mount.
     For example, :code:`--bind /foo:/tmp/foo` will fail because :code:`/tmp`
-    is shared with the host via bind-mount (unless :code:`--private-tmp` is
-    given).
+    is shared with the host via bind-mount (unless :code:`$TMPDIR` is set to
+    something else or :code:`--private-tmp` is given).
 
     Most images do have ten directories :code:`/mnt/[0-9]` already available
     as mount points.
@@ -83,8 +83,9 @@ proper support is enabled, a SquashFS archive.
     created and the image's files are exposed.
 
   :code:`-t`, :code:`--private-tmp`
-    By default, :code:`/tmp` is shared with the host. If this is specified, a
-    new :code:`tmpfs` is mounted on the container's :code:`/tmp` instead.
+    By default, the host's :code:`/tmp` (or :code:`$TMPDIR` if set) is
+    bind-mounted at container :code:`/tmp`. If this is specified, a new
+    :code:`tmpfs` is mounted on the container's :code:`/tmp` instead.
 
   :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
     Set environment variable(s), either as specified in host path :code:`FILE`,
@@ -200,9 +201,9 @@ above.
   * :code:`$HOME` at :code:`/home/$USER` (and image :code:`/home` is hidden).
     Makes user data and init files available.
 
-  * :code:`/tmp`. Provides a temporary directory that persists between
-    container runs and is shared with non-containerized application
-    components.
+  * :code:`/tmp` (or :code:`$TMPDIR` if set) at guest :code:`/tmp`. Provides a
+    temporary directory that persists between container runs and is shared
+    with non-containerized application components.
 
   * temporary files at :code:`/etc/passwd` and :code:`/etc/group`. Usernames
     and group names need to be customized for each container run.
@@ -295,8 +296,8 @@ By default, :code:`ch-run` makes the following environment variable changes:
   figure out that it's in an unprivileged container and what namespaces are
   active without this hint, the checks can be messy, and there is no way to
   tell that it's a *Charliecloud* container specifically. This variable makes
-  such a test simple and well-defined. (Note: This variable is unaffected by
-  :code:`--unset-env`.)
+  such a test simple and well-defined. (**Note:** This variable is unaffected
+  by :code:`--unset-env`.)
 
 * :code:`$HOME`: If the path to your home directory is not :code:`/home/$USER`
   on the host, then an inherited :code:`$HOME` will be incorrect inside the
@@ -319,6 +320,10 @@ By default, :code:`ch-run` makes the following environment variable changes:
     * `The case for the /usr Merge <https://www.freedesktop.org/wiki/Software/systemd/TheCaseForTheUsrMerge/>`_
     * `Fedora <https://fedoraproject.org/wiki/Features/UsrMove>`_
     * `Debian <https://wiki.debian.org/UsrMerge>`_
+
+* :code:`$TMPDIR`: Unset, because this is almost certainly a host path, and
+  that host path is made available in the guest at :code:`/tmp` unless
+  :code:`--private-tmp` is given.
 
 Setting variables with :code:`--set-env`
 ----------------------------------------
@@ -542,4 +547,4 @@ Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
 
-..  LocalWords:  mtune NEWROOT hugetlbfs fusermount
+..  LocalWords:  mtune NEWROOT hugetlbfs
