@@ -373,8 +373,8 @@ jobs:
         run: |
           bin/ch-test --pack-fmt=tar all
 
-     - name: install libsquashfuse
-       if: ${{matrix.run_squashfs }}
+      - name: install libsquashfuse
+       if: ${{ matrix.run_squashfs }}
        run: |
          cd /usr/local/src # same parent dir as python install
          git clone -q https://github.com/vasi/squashfuse.git
