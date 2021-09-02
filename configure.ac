@@ -21,6 +21,21 @@ AS_CASE([$host_os],
   [*],      [AC_MSG_ERROR([Linux is the only supported OS; see issue @%:@42.])]
 )
 
+# Turn off maintainer mode by default. This appears to be controversial; see
+# issue #595 for links to some discussion.
+#
+# Bottom line for me: Maintainer mode has (1) never re-built the build system
+# in a situation where I felt it helped, but (2) fairly regularly re-builds or
+# re-configures at surprising times.
+#
+# In particular, it often rebuilds before "make clean" and friends, e.g. if
+# you change branches and then clean. This seems wrong. In my view, clean
+# should remove what is currently there, not what *would have been there* had
+# the build used a different, not-yet-existing build system. Disabling
+# maintainer mode also lets us put "make maintainer-clean" in autogen.sh
+# without triggering spurious rebuilds.
+AM_MAINTAINER_MODE([disable])
+
 # By default, Autotools honors umask for directories but not files. Thus, if
 # you "sudo make install" with a umask more restrictive than 0022, the result
 # is an installation unavailable to most users (issue #947). This appears to
@@ -313,7 +328,7 @@ CH_CHECK_VERSION([NVIDIA_CLI], [$vmin_nvidia_CLI],
                  [-V | head -1 | cut -d' ' -f2])
 AC_MSG_CHECKING([for nVidia libraries & executables])
 AS_IF([test -n "$NVIDIA_CLI"],
-  [AS_IF([nvidia-container-cli list | grep -Fq libnvidia-glcore.so],
+  [AS_IF([nvidia-container-cli list | grep -Fq libnvidia],
         [have_nvidia_libs=yes],
         [have_nvidia_libs=no])],
   [have_nvidia_libs=no])

@@ -707,4 +707,139 @@ Alpine 3.9 image pulled from Docker hub::
   $ ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
   3.9.5
 
-..  LocalWords:  CAs
+How do I authenticate with SSH during :code:`ch-image` build?
+-------------------------------------------------------------
+
+The simplest approach is to run the `SSH agent
+<https://man.openbsd.org/ssh-agent>`_ on the host. :code:`ch-image` then
+leverages this with two steps:
+
+  1. pass environment variable :code:`SSH_AUTH_SOCK` into the build, with no
+     need to put :code:`ARG` in the Dockerfile or specify :code:`--build-arg`
+     on the command line; and
+
+  2. bind-mount host :code:`/tmp` to guest :code:`/tmp`, which is where the
+     SSH agent's listening socket usually resides.
+
+Thus, SSH within the container will use this existing SSH agent on the host to
+authenticate without further intervention.
+
+For example, after making :code:`ssh-agent` available on the host, which is OS
+and site-specific::
+
+  $ echo $SSH_AUTH_SOCK
+  /tmp/ssh-rHsFFqwwqh/agent.49041
+  $ ssh-add
+  Enter passphrase for /home/charlie/.ssh/id_rsa:
+  Identity added: /home/charlie/.ssh/id_rsa (/home/charlie/.ssh/id_rsa)
+  $ ssh-add -l
+  4096 SHA256:aN4n2JeMah2ekwhyHnb0Ug9bYMASmY+5uGg6MrieaQ /home/charlie/.ssh/id_rsa (RSA)
+  $ cat ./Dockerfile
+  FROM alpine:latest
+  RUN apk add openssh
+  RUN echo $SSH_AUTH_SOCK
+  RUN ssh git@github.com
+  $ ch-image build -t foo -f ./Dockerfile .
+  [...]
+    3 RUN ['/bin/sh', '-c', 'echo $SSH_AUTH_SOCK']
+    /tmp/ssh-rHsFFqwwqh/agent.49041
+    4 RUN ['/bin/sh', '-c', 'ssh git@github.com']
+  [...]
+  Hi charlie! You've successfully authenticated, but GitHub does not provide shell access.
+
+Note this example is rather contrived — bare SSH sessions in a Dockerfile
+rarely make sense. In practice, SSH is used as a transport to fetch something,
+e.g. with :code:`scp(1)` or :code:`git(1)`. See the next entry for a more
+realistic example.
+
+SSH stops :code:`ch-image` build with interactive queries
+---------------------------------------------------------
+
+This often occurs during an SSH-based Git clone. For example:
+
+.. code-block:: docker
+
+  FROM alpine:latest
+  RUN apk add git openssh
+  RUN git clone git@github.com:hpc/charliecloud.git
+
+.. code-block:: console
+
+  $ ch-image build -t foo -f ./Dockerfile .
+  [...]
+  3 RUN ['/bin/sh', '-c', 'git clone git@github.com:hpc/charliecloud.git']
+  Cloning into 'charliecloud'...
+  The authenticity of host 'github.com (140.82.113.3)' can't be established.
+  RSA key fingerprint is SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8.
+  Are you sure you want to continue connecting (yes/no/[fingerprint])?
+
+At this point, the build stops while SSH waits for input.
+
+This happens even if you have :code:`github.com` in your
+:code:`~/.ssh/known_hosts`. This file is not available to the build because
+:code:`ch-image` runs :code:`ch-run` with :code:`--no-home`, so :code:`RUN`
+instructions can't see anything in your home directory.
+
+Solutions include:
+
+  1. Change to anonymous HTTPS clone, if available. Most public repositories
+     will support this. For example:
+
+     .. code-block:: docker
+
+       FROM alpine:latest
+       RUN apk add git
+       RUN git clone https://github.com/hpc/charliecloud.git
+
+  2. Approve the connection interactively by typing :code:`yes`. Note this
+     will record details of the connection within the image, including IP
+     address and the fingerprint. The build also remains interactive.
+
+  3. Edit the image's system `SSH config
+     <https://man.openbsd.org/ssh_config>`_ to turn off host key checking.
+     Note this can be rather hairy, because the SSH config language is quite
+     flexible and the first instance of a directive is the one used. However,
+     often the changes can be simply appended:
+
+     .. code-block:: docker
+
+       FROM alpine:latest
+       RUN apk add git openssh
+       RUN printf 'StrictHostKeyChecking=no\nUserKnownHostsFile=/dev/null\n' \
+           >> /etc/ssh/ssh_config
+       RUN git clone git@github.com:hpc/charliecloud.git
+
+     Check your institutional policy on whether this is permissible, though
+     it's worth noting that users `almost never
+     <https://www.usenix.org/system/files/login/articles/105484-Gutmann.pdf>`_
+     verify the host fingerprints anyway.
+
+     This will not record details of the connection in the image.
+
+  4. Turn off host key checking on the SSH command line. (See caveats in the
+     previous item.) The wrapping tool should provide a way to configure this
+     command line. For example, for Git:
+
+     .. code-block:: docker
+
+       FROM alpine:latest
+       RUN apk add git openssh
+       ARG GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+       RUN git clone git@github.com:hpc/charliecloud.git
+
+  5. Add the remote host to the system known hosts file, e.g.:
+
+     .. code-block:: docker
+
+       FROM alpine:latest
+       RUN apk add git openssh
+       RUN echo 'github.com,140.82.112.4 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==' >> /etc/ssh/ssh_known_hosts
+       RUN git clone git@github.com:hpc/charliecloud.git
+
+     This records connection details in both the Dockerfile and the image.
+
+Other approaches could be found with web searches such as "automate unattended
+SSH" or "SSH in cron jobs".
+
+
+..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ

@@ -243,7 +243,7 @@ EOF
 @test 'pull image with manifest schema v1' {
     # Verify we handle images with manifest schema version one (v1).
 
-    unpack=$BATS_TMPDIR
+    unpack="${BATS_TMPDIR}/tmp"
     cache=$unpack/dlcache
     # We target debian:squeeze because 1) it always returns a v1 manifest
     # schema (regardless of media type specified), and 2) it isn't very large,
@@ -251,10 +251,12 @@ EOF
     img=debian:squeeze
 
     ch-image pull --storage="$unpack" \
-                  --no-cache \
                   "$img"
     [[ $status -eq 0 ]]
+
     grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
+
+    rm -Rf "$unpack"
 }
 
 @test 'pull from public repos' {

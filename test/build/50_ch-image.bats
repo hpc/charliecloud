@@ -279,10 +279,10 @@ EOF
 }
 
 @test 'ch-image reset' {
-   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/reset
+   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-reset
 
    # Ensure our test storage dir doesn't exist yet.
-   [[ ! -e $CH_IMAGE_STORAGE ]]
+   [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
    # Put an image innit.
    ch-image pull alpine:3.9
@@ -297,15 +297,26 @@ EOF
    # Reset.
    ch-image reset
 
-   # Image storage directory should be gone.
-   ls "$CH_IMAGE_STORAGE" || true
-   [[ ! -e $CH_IMAGE_STORAGE ]]
+   # Image storage directory should be empty now.
+   expected=$(cat <<'EOF'
+.:
+dlcache
+img
+ulcache
+version
 
-   # List images; should error with not found.
-   run ch-image list
-   echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output = *"does not exist: $CH_IMAGE_STORAGE"* ]]
+./dlcache:
+
+./img:
+
+./ulcache:
+EOF
+)
+   actual=$(cd "$CH_IMAGE_STORAGE" && ls -1R)
+   diff -u <(echo "$expected") <(echo "$actual")
+
+   # Remove storage directory.
+   rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
    # Reset again; should error.
    run ch-image reset
@@ -323,7 +334,7 @@ EOF
 }
 
 @test 'ch-image build --bind' {
-    run ch-image --no-cache build -t build-bind -f - \
+    run ch-image --no-cache build -t tmpimg -f - \
                 -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
 FROM 00_tiny
 RUN mount
@@ -337,10 +348,10 @@ EOF
 }
 
 @test 'ch-image build: metadata carry-forward' {
-    img=$CH_IMAGE_STORAGE/img/build-metadata
+    img=$CH_IMAGE_STORAGE/img/tmpimg
 
     # Print out current metadata, then update it.
-    run ch-image build --no-cache -t build-metadata -f - . <<'EOF'
+    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
 FROM charliecloud/metadata:2021-01-15
 RUN echo "cwd1: $PWD"
 WORKDIR /usr
@@ -412,4 +423,58 @@ EOF
   ]
 }
 EOF
+}
+
+@test 'storage directory versioning' {
+   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-version
+
+   # Ensure our test storage dir doesn't exist yet.
+   [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
+
+   # Initialize by listing.
+   run ch-image list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"initializing storage directory: v"*" ${CH_IMAGE_STORAGE}"* ]]
+
+   # Read current version.
+   v_current=$(cat "$CH_IMAGE_STORAGE"/version)
+
+   # Version matches; success.
+   run ch-image -v list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"found storage dir v${v_current}: ${CH_IMAGE_STORAGE}"* ]]
+
+   # Fake version mismatch - non-upgradeable.
+   echo '-1' > "$CH_IMAGE_STORAGE"/version
+   cat "$CH_IMAGE_STORAGE"/version
+
+   # Version mismatch; fail.
+   run ch-image -v list
+   echo "$output"
+   [[ $status -eq 1 ]]
+   [[ $output = *'error: incompatible storage directory v-1'* ]]
+
+   # Reset.
+   run ch-image reset
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"initializing storage directory: v${v_current} ${CH_IMAGE_STORAGE}"* ]]
+
+   # Version matches again; success.
+   run ch-image -v list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"found storage dir v${v_current}: ${CH_IMAGE_STORAGE}"* ]]
+
+   # Fake version mismatch - no file (v1).
+   rm "$CH_IMAGE_STORAGE"/version
+
+   # Version mismatch; upgrade; success.
+   run ch-image -v list
+   echo "$output"
+   [[ $status -eq 0 ]]
+   [[ $output = *"upgrading storage directory: v${v_current} ${CH_IMAGE_STORAGE}"* ]]
+   [[ $(cat "$CH_IMAGE_STORAGE"/version) -eq "$v_current" ]]
 }
