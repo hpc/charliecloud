@@ -374,14 +374,14 @@ jobs:
           bin/ch-test --pack-fmt=tar all
 
       - name: install libsquashfuse
-       if: ${{ matrix.run_squashfs }}
-       run: |
-         cd /usr/local/src # same parent dir as python install
-         git clone -q https://github.com/vasi/squashfuse.git
-         cd squashfuse
-         ./autogen.sh
-         ./configure --bindir=/usr/local
-         make $ch_makej
+        if: ${{ matrix.run_squashfs }}
+        run: |
+          cd /usr/local/src # same parent dir as python install
+          git clone -q https://github.com/vasi/squashfuse.git
+          cd squashfuse
+          ./autogen.sh
+          ./configure --bindir=/usr/local
+          make $ch_makej
 
       - name: rebuild
         if: ${{ matrix.run_squashfs }}
