@@ -182,7 +182,7 @@ void enter_udss(struct container *c)
    if (c->private_tmp) {
       tmpfs_mount("/tmp", c->newroot, NULL);
    } else {
-      bind_mount(host_tmp(), "/tmp", BD_REQUIRED, c->newroot, 0);
+      bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0);
    }
    // Container /home.
    if (!c->private_home) {
@@ -427,7 +427,7 @@ void setup_passwd(const struct container *c)
    struct passwd *p;
 
    // /etc/passwd
-   T_ (path = cat(host_tmp(), "/ch-run_passwd.XXXXXX"));
+   T_ (path = cat(host_tmp, "/ch-run_passwd.XXXXXX"));
    T_ (-1 != (fd = mkstemp(path)));  // mkstemp(3) writes path
    if (c->container_uid != 0)
       T_ (1 <= dprintf(fd, "root:x:0:0:root:/root:/bin/sh\n"));
@@ -454,7 +454,7 @@ void setup_passwd(const struct container *c)
    Z_ (unlink(path));
 
    // /etc/group
-   T_ (path = cat(host_tmp(), "/ch-run_group.XXXXXX"));
+   T_ (path = cat(host_tmp, "/ch-run_group.XXXXXX"));
    T_ (-1 != (fd = mkstemp(path)));
    if (c->container_gid != 0)
       T_ (1 <= dprintf(fd, "root:x:0:\n"));

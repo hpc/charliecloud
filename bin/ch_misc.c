@@ -37,6 +37,9 @@ const char *VERBOSE_LEVELS[] = { "error",
 /* Level of chatter on stderr desired (0-3). */
 int verbose;
 
+/* Path to host temporary directory. Set during command line processing. */
+char *host_tmp = NULL;
+
 
 /** Function prototypes (private) **/
 
@@ -55,15 +58,6 @@ char *cat(const char *a, const char *b)
        b = "";
    T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
-}
-
-/* Return the path to a temporary directory for use on the host, either
-   $TMPDIR if set or "/tmp". Callers should not alter this pointer, but it
-   can't be const because getenv(3) doesn't return a const char *. */
-char *host_tmp(void)
-{
-   char *tmp = getenv("TMPDIR");
-   return tmp != NULL ? tmp : "/tmp";
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
