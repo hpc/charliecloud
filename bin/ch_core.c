@@ -163,7 +163,7 @@ void containerize(struct container *c)
    in bin/ch-checkns.c. */
 void enter_udss(struct container *c)
 {
-   char *newroot_parent, *newroot_base, *host_tmp;
+   char *newroot_parent, *newroot_base;
 
    LOG_IDS;
 
@@ -179,20 +179,11 @@ void enter_udss(struct container *c)
    if (!c->private_passwd)
       setup_passwd(c);
    // Container /tmp.
-   if ( c->tmp == NULL )
-   {
-      T_ ( host_tmp = strdup("/tmp") );
-   }
-   else
-   {
-      T_ ( host_tmp = strdup(c->tmp) );
-   }
    if (c->private_tmp) {
-      tmpfs_mount(host_tmp, c->newroot, NULL);
+      tmpfs_mount("/tmp", c->newroot, NULL);
    } else {
-      bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0);
+      bind_mount(host_tmp(), "/tmp", BD_REQUIRED, c->newroot, 0);
    }
-   free (host_tmp);
    // Container /home.
    if (!c->private_home) {
       char *newhome;
@@ -432,23 +423,11 @@ void setup_passwd(const struct container *c)
 {
    int fd;
    char *path;
-   static char tfsuffix_p[] = "/ch-run_passwd.XXXXXX";
-   static char tfsuffix_g[] = "/ch-run_group.XXXXXX";
    struct group *g;
    struct passwd *p;
 
    // /etc/passwd
-   if ( c->tmp == NULL )
-   {
-       T_ (path = strdup("/tmp/ch-run_passwd.XXXXXX"));
-   }
-   else
-   {
-      path = (char*) calloc (PATH_CHARS, sizeof(char *));
-      strncpy( path, c->tmp, PATH_CHARS-strlen(tfsuffix_p)-1);
-      path[PATH_CHARS-strlen(tfsuffix_p)-1] = '\0';
-      strcat (path,tfsuffix_p);
-   }
+   T_ (path = cat(host_tmp(), "/ch-run_passwd.XXXXXX"));
    T_ (-1 != (fd = mkstemp(path)));  // mkstemp(3) writes path
    if (c->container_uid != 0)
       T_ (1 <= dprintf(fd, "root:x:0:0:root:/root:/bin/sh\n"));
@@ -473,19 +452,9 @@ void setup_passwd(const struct container *c)
    Z_ (close(fd));
    bind_mount(path, "/etc/passwd", BD_REQUIRED, c->newroot, 0);
    Z_ (unlink(path));
-   free (path);
+
    // /etc/group
-   if ( c->tmp == NULL )
-   {
-      T_ (path = strdup("/tmp/ch-run_group.XXXXXX"));
-   }
-   else
-   {
-      path = (char*) calloc (PATH_CHARS, sizeof(char *));
-      strncpy( path, c->tmp, PATH_CHARS-strlen(tfsuffix_g)-1);
-      path[PATH_CHARS-strlen(tfsuffix_g)-1] = '\0';
-      strcat (path,tfsuffix_g);
-   }
+   T_ (path = cat(host_tmp(), "/ch-run_group.XXXXXX"));
    T_ (-1 != (fd = mkstemp(path)));
    if (c->container_gid != 0)
       T_ (1 <= dprintf(fd, "root:x:0:\n"));
@@ -506,7 +475,6 @@ void setup_passwd(const struct container *c)
    Z_ (close(fd));
    bind_mount(path, "/etc/group", BD_REQUIRED, c->newroot, 0);
    Z_ (unlink(path));
-   free (path);
 }
 
 /* Mount a tmpfs at the given path. */

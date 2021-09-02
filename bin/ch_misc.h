@@ -68,9 +68,11 @@
 
 extern int verbose;
 
+
 /** Function prototypes **/
 
 char *cat(const char *a, const char *b);
+char *host_tmp(void);
 void log_ids(const char *func, int line);
 void mkdirs(const char *base, const char *path,
             char **denylist, size_t denylist_ct);

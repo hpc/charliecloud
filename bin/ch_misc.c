@@ -57,6 +57,15 @@ char *cat(const char *a, const char *b)
    return ret;
 }
 
+/* Return the path to a temporary directory for use on the host, either
+   $TMPDIR if set or "/tmp". Callers should not alter this pointer, but it
+   can't be const because getenv(3) doesn't return a const char *. */
+char *host_tmp(void)
+{
+   char *tmp = getenv("TMPDIR");
+   return tmp != NULL ? tmp : "/tmp";
+}
+
 /* If verbose, print uids and gids on stderr prefixed with where. */
 void log_ids(const char *func, int line)
 {
