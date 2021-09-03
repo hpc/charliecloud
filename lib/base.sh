@@ -31,6 +31,16 @@ builder_choose () {
     esac
 }
 
+deprecated_convert=$(cat <<EOF
+
+warning: This script is deprecated in favor of ch-convert.
+warning: It will be removed in the next release.
+EOF
+)
+deprecated_convert_warn () {
+    echo "$deprecated_convert" 1>&2
+}
+
 # Return success if path $1 exists, without dereferencing links, failure
 # otherwise. ("test -e" dereferences.)
 exist_p () {

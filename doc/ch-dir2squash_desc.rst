@@ -8,6 +8,9 @@ Synopsis
 Description
 ===========
 
+.. warning:: This script is deprecated in favor of :code:`ch-convert`. It will
+             be removed in the next release.
+
 Create Charliecloud SquashFS file from image directory :code:`IMGDIR` under
 directory :code:`OUTDIR`, named as last component of :code:`IMGDIR` plus
 suffix :code:`.sqfs`.
