@@ -1,0 +1,197 @@
+#!/bin/sh
+
+## preamble ##################################################################
+
+lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+. "${lib}/base.sh"
+PATH=${ch_bin}:$PATH
+
+# shellcheck disable=SC2034
+usage=$(cat <<EOF
+Convert an image from one format to another.
+
+Usage:
+
+  $ $(basename "$0") [-i FMT] [-o FMT] [OPTION ...] IN OUT
+EOF
+)
+
+
+## supporting functions ######################################################
+
+# Return basename of $2 (format $1) with no extension and filesystem-invalid
+# characters removed, i.e., suitable for a new extension to be appended. Only
+# extensions valid for the format $1 are considered.
+desc_base () {
+    fmt=$1
+    dsc=$2
+    case $fmt in
+        dir)
+            echo "$(basename "$dsc")"
+            ;;
+        ch-image|docker)
+            echo "$dsc" | tr '/' '%'
+            ;;
+        squash)
+            echo "$(basename "$dsc")" \
+                 | sed -E 's/\.(sqfs|squash|squashfs|squishy)$//'
+            ;;
+        tar)
+            echo "$(basename "$dsc")" | sed -E 's/\.(t.z|tar(\.(.|..))?)$//'
+            ;;
+        *)
+            FATAL "invalid format: $fmt"
+            ;;
+    esac
+}
+
+# Return validated format $1: if non-empty and valid, return it; if empty,
+# infer format from the descriptor $2; otherwise, exit with error.
+fmt_validate () {
+    fmt=$1
+    dsc=$2
+    if [ -z "$fmt" ]; then
+        case $dsc in
+            *.sqfs|*.squash|*.squashfs|*.squishy)
+                fmt=squash
+                ;;
+            *.tar|*.t?z|*.tar.?|*.tar.??)
+                fmt=tar
+                ;;
+            /*|./*)
+                fmt=dir
+                ;;
+            *:*)
+                if [ -n "$have_ch_image" ]; then
+                    fmt=ch-image
+                elif [ -n "$have_docker" ]; then
+                    fmt=docker
+                else
+                    FATAL "descriptor looks like builder storage but no builder found: ${dsc}"
+                fi
+                ;;
+            *)
+                FATAL "no format given, can't infer from: ${dsc}"
+                ;;
+        esac
+    fi
+    case $fmt in
+        ch-image|dir|docker|squash|tar)
+            ;;
+        *)
+            FATAL "invalid format: ${fmt}"
+            ;;
+    esac
+    echo "$fmt"
+}
+
+# Infer output descriptor by setting $out_desc, if appropriate. Otherwise,
+# leave it unchanged.
+out_infer () {
+    if [ -n "$out_fmt_explicit" ] && [ -d "$out_desc" ]; then
+        base=$(desc_base "$in_fmt" "$in_desc")
+        case $out_fmt in
+            dir)
+                out_desc=${out_desc}/${base}
+                ;;
+            squash)
+                if [ "$USER" = rgoff ]; then
+                    out_desc=${out_desc}/${base}.squishy
+                else
+                    out_desc=${out_desc}/${base}.sqfs
+                fi
+                ;;
+            tar)
+                out_desc=${out_desc}/${base}.tar.gz
+                ;;
+        esac
+    fi
+}
+
+tmpdir_validate () {
+    case $tmpdir in
+        /*)
+            ;;
+        *)
+            FATAL "temp dir must be absolute: ${tmpdir}"
+            ;;
+    esac
+}
+
+
+## main ######################################################################
+
+if [ -n "$TMPDIR" ]; then
+    tmpdir=$TMPDIR
+else
+    tmpdir=/var/tmp
+fi
+
+while true; do
+    if ! parse_basic_arg "$1"; then
+        case $1 in
+            -i|--in-fmt)
+                shift
+                in_fmt=$1
+                ;;
+            -i=*|--in-fmt=*)
+                in_fmt=${1#*=}
+                ;;
+            -n|--dry-run)
+                dry_run=yes
+                ;;
+            --no-clobber)
+                no_clobber=yes
+                ;;
+            -o|--out-fmt)
+                shift
+                out_fmt=$1
+                ;;
+            -o=*|--out-fmt=*)
+                out_fmt=${1#*=}
+                ;;
+            --tmp)
+                shift
+                tmpdir=$1
+                ;;
+            *)
+                break
+                ;;
+        esac
+    fi
+    shift
+done
+if [ "$#" -ne 2 ]; then
+    usage
+fi
+in_desc=$1
+out_desc=$2
+VERBOSE "verbose level: ${verbose}"
+
+if command -v ch-image > /dev/null 2>&1; then
+    have_ch_image=yes
+    VERBOSE 'ch-image: found'
+else
+    VERBOSE 'ch-image: not found'
+fi
+if command -v docker > /dev/null 2>&1; then
+    have_docker=yes
+    VERBOSE 'docker: found'
+else
+    VERBOSE 'docker: not found'
+fi
+
+[ -n "$in_fmt" ] && in_fmt_explicit=yes
+in_fmt=$(fmt_validate "$in_fmt" "$in_desc")
+[ -n "$out_fmt" ] && out_fmt_explicit=yes
+out_fmt=$(fmt_validate "$out_fmt" "$out_desc")
+out_infer
+tmpdir_validate
+
+VERBOSE "temp dir: ${tmpdir}"
+INFO 'input:   %-8s  %s' "$in_fmt"  "$in_desc"
+INFO 'output:  %-8s  %s' "$out_fmt" "$out_desc"
+
+if [ "$in_fmt" = "$out_fmt" ]; then
+    FATAL 'input and output formats must be different'
+fi

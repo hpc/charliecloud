@@ -10,6 +10,29 @@ lib="${ch_bin}/../lib/charliecloud"
 . "${lib}/version.sh"
 
 
+# Verbosity level; works the same as the Python code.
+verbose=0
+
+FATAL () {
+    printf 'error: ' 1>&2
+    printf "$@" 1>&2
+    printf '\n' 1>&2
+    exit 1
+}
+
+INFO () {
+    printf "$@" 1>&2
+    printf '\n' 1>&2
+}
+
+VERBOSE () {
+    if [ "$verbose" -ge 1 ]; then
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
+}
+
+
 # Don't call in a subshell or the selection will be lost.
 builder_choose () {
     if [ -z "$CH_BUILDER" ]; then
@@ -79,21 +102,35 @@ pack_fmt_choose () {
     pack_fmt_valid "$CH_PACK_FMT"
 }
 
+# Try to parse $1 as a common argument. If accepted, either exit (for things
+# like --help) or return success; otherwise, return failure (i.e., not a
+# common argument).
+parse_basic_arg () {
+    case $1 in
+        --_lib-path)  # undocumented
+            echo "$lib"
+            exit 0
+            ;;
+        --help)
+            usage 0   # exits
+            ;;
+        -v|--verbose)
+            verbose=$((verbose+1))
+            return 0
+            ;;
+        --version)
+            version   # exits
+            ;;
+    esac
+    return 1  # not a basic arg
+}
+
 parse_basic_args () {
     if [ "$#" -eq 0 ]; then
         usage 1
     fi
     for i in "$@"; do
-        if [ "$i" = --_lib-path ]; then  # undocumented
-            echo "$lib"
-            exit 0
-        fi
-        if [ "$i" = --help ]; then
-            usage 0
-        fi
-        if [ "$1" = --version ]; then
-            version
-        fi
+        parse_basic_arg "$i" || true
     done
 }
 

@@ -32,7 +32,11 @@ producing the final format actually needed.
     Print help and exit.
 
   :code:`-i`, :code:`--in-fmt FMT`
-   Input image format is :code:`FMT`. If omitted, inferred as described below.
+    Input image format is :code:`FMT`. If omitted, inferred as described below.
+
+  :code:`-n`, :code:`--dry-run`
+    Don't read the input or write the output. Useful for testing format and
+    filename inference.
 
   :code:`--no-clobber`
     Error if :code:`OUT` already exists, rather than replacing it.
