@@ -161,7 +161,7 @@ DEFAULT_CONFIGS = {
 
    "rhel7":
    { "name": "CentOS/RHEL 7",
-     "match": ("/etc/redhat-release", r"release 7\."),
+     "match": ("/etc/redhat-release", r"(Red Hat|CentOS).*release 7\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
@@ -176,7 +176,7 @@ DEFAULT_CONFIGS = {
 
    "rhel8":
    { "name": "CentOS/RHEL 8+",
-     "match":  ("/etc/redhat-release", r"release (?![0-7]\.)"),
+     "match":  ("/etc/redhat-release", r"(Red Hat|CentOS).*release (?![0-7]\.)"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
