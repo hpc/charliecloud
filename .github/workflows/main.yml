@@ -188,7 +188,7 @@ jobs:
         run: |
           set -x
           # disable
-          make distclean
+          make clean
           ./autogen.sh
           ./configure --with-libsquashfuse=no --prefix=$ch_prefix/from-git
           fgrep 'internal mount with libsquashfuse ... no' config.log
