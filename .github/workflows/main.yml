@@ -125,7 +125,6 @@ jobs:
           ./autogen.sh
           ./configure --bindir=/usr/local
           make $ch_makej
-          make install
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -192,7 +191,7 @@ jobs:
           set -x
           # disable
           ./autogen.sh
-          ./configure --with-libsquashfuse=no --prefix=$ch_prefix/from-git
+          ./configure --with-libsquashfuse=/usr/local/squashfuse --prefix=$ch_prefix/from-git
           fgrep 'internal mount with libsquashfuse ... no' config.log
           # enable
           ./configure --with-libsquashfuse=yes --prefix=$ch_prefix/from-git
