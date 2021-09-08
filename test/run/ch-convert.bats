@@ -155,3 +155,66 @@ load ../common
     [[ $status -eq 1 ]]
     [[ $output = *'FIXME'* ]]
 }
+
+@test 'ch-convert: all formats' {
+    scope standard
+
+    # FIXME: pedantic mode
+
+    # The most efficient way to do this test would be to start with a
+    # directory, cycle through all the formats one at a time, with directory
+    # being last, then compare the starting and ending directories. That
+    # corresponds to visiting all the cells in this matrix, starting from one
+    # labeled "a", ending in one labeled "b", and skipping those labeled with
+    # a dash. Also, if visit n is in column i, then the next visit n+1 must be
+    # in row i. This approach does each conversion exactly once.
+    #
+    #               output ->
+    #               | dir      | ch-image | docker   | squash   | tar     |
+    # input         +----------+----------+----------+----------+---------+
+    #   |  dir      |    —     |    a     |    a     |    a     |    a    |
+    #   v  ch-image |    b     |    —     |          |          |         |
+    #      docker   |    b     |          |    —     |          |         |
+    #      squash   |    b     |          |          |    —     |         |
+    #      tar      |    b     |          |          |          |    —    |
+    #               +----------+----------+----------+----------+---------+
+    #
+    # Because we start with a directory already available, this would yield
+    # 5*5 - 5 - 1 = 19 conversions. However, I was not able to figure out a
+    # traversal order that would meet the constraints.
+    #
+    # Thus, we use the following algorithm with some caching. I think it is
+    # close but I haven't counted.
+    #
+    #   for every format i except dir:             (4 iterations)
+    #     convert start_dir -> i
+    #     convert i -> finish_dir
+    #     compare start_dir with finish_dir
+    #     for every format j except i and dir:     (3)
+    #          convert i -> j
+    #          convert j -> finish_dir
+    #          compare start_dir with finish_dir
+    #
+    # This yields 4 * (2 + 3 * 2) = 32 conversions, due I think to excess
+    # conversions to dir. However, it can better isolate where the conversion
+    # went wrong, because the chain is 3 conversions long rather than 19.
+
+    rm -Rf --one-file-system "${BATS_TMPDIR}/convert.*"
+    ct=0
+    for i in ch-image docker squash tar; do
+        ct=$((ct+1))
+        echo
+        echo "outer ${ct}: dir -> ${i}"
+        for j in ch-image docker squash tar; do
+            if [[ $i != $j ]]; then
+                ct=$((ct+1))
+                echo "inner $ct: $i -> $j"
+            fi
+            ct=$((ct+1))
+            echo "inner $ct: $j -> dir"
+            # compare here
+        done
+    done
+
+    false
+}
