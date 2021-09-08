@@ -184,7 +184,7 @@ jobs:
           # install, enable: normal configuration, remainder of CI
 
       - name: disable squashFS, ch-image
-        if: ${{matrix.run_squashfs == 'external'}}
+        if: ${{matrix.run_squashfs == 'internal'}}
         run: |
           set -x
           # disable
