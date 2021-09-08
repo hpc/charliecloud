@@ -125,6 +125,7 @@ jobs:
           ./autogen.sh
           ./configure --bindir=/usr/local
           make $ch_makej
+          make install
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
