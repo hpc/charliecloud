@@ -115,6 +115,8 @@ jobs:
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
+          # Install libfuse3 for libsquashFUSE.
+          sudo apt-get install -y libfuse3-dev
           # Install version of libsquashFUSE we need for SquashFS workflow.
           # Currently needed functionality is only on master branch.
           cd /usr/local/src
