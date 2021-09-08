@@ -164,7 +164,7 @@ jobs:
           # no install, disable
           ./autogen.sh --no-lark
           ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
-          fgrep '"lark" module ... external' config.log
+          #fgrep '"lark" module ... external' config.log
           ! test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
@@ -174,7 +174,7 @@ jobs:
           # install, disable
           ./autogen.sh
           ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
-          fgrep '"lark" module ... external' config.log
+          #fgrep '"lark" module ... external' config.log
           # external, in source dir
           test -f ./lib/lark/lark.py
           make $ch_makej
