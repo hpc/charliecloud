@@ -191,10 +191,10 @@ jobs:
           set -x
           # disable
           ./autogen.sh
-          ./configure --with-libsquashfuse=/usr/local/squashfuse --prefix=$ch_prefix/from-git
+          ./configure --with-libsquashfuse=no --prefix=$ch_prefix/from-git
           fgrep 'internal mount with libsquashfuse ... no' config.log
           # enable
-          ./configure --with-libsquashfuse=yes --prefix=$ch_prefix/from-git
+          ./configure --with-libsquashfuse=/usr/local/src/squashfuse --prefix=$ch_prefix/from-git
           fgrep 'internal mount with libsquashfuse ... yes' config log
           set +x
           make $ch_makej
