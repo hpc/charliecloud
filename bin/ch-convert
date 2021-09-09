@@ -17,7 +17,43 @@ EOF
 )
 
 
+## conversion functions ######################################################
+
+# These twenty functions (many are short) are dispatched based on function
+# name at the end of the script. All take two parameters: $1 is the input
+# descriptor and $2 is the output descriptor.
+
+cv_chimage_dir () {
+    chimage_in_validate "$1"
+    dir_out_validate "$2"
+    INFO "copying ..."
+    cp -a "$img" "$2"  # FIXME: no progress meter
+    dir_fixup "$2"
+}
+
+cv_dir_chimage () {
+    dir_in_validate "$1"
+    chimage_out_validate "$2"
+    INFO "importing ..."
+    ch-image import "$1" "$2"  # FIXME: no progress meter
+}
+
+
 ## supporting functions ######################################################
+
+# Validate that $1 can be used as an input ch-image image.
+chimage_in_validate () {
+    img=$(ch-image storage-path)/img/$(tag_to_path "$1")
+    [ -d "$img" ] || FATAL "source image not found in ch-image storage: $1"
+}
+
+# Validate that $1 can be used as an output ch-image image.
+chimage_out_validate () {
+    img=$(ch-image storage-path)/img/$(tag_to_path "$1")
+    if [ -d "$img" ] && [ -n "$no_clobber" ]; then
+        FATAL "exists in ch-image storage, not deleting per --no-clobber: ${1}"
+    fi
+}
 
 # Return basename of $2 (format $1) with no extension and filesystem-invalid
 # characters removed, i.e., suitable for a new extension to be appended. Only
@@ -30,7 +66,7 @@ desc_base () {
             echo "$(basename "$dsc")"
             ;;
         ch-image|docker)
-            echo "$dsc" | tr '/' '%'
+            echo "$(tag_to_path $dsc)"
             ;;
         squash)
             echo "$(basename "$dsc")" \
@@ -43,6 +79,50 @@ desc_base () {
             FATAL "invalid format: $fmt"
             ;;
     esac
+}
+
+# Ensure $1 has everything needed to be an image directory.
+dir_fixup () {
+    DEBUG "fixing up: $1"
+    # Ensure mount points that ch-run needs exist. Do nothing if something
+    # already exists, without dereferencing, in case it's a symlink, which
+    # will work for bind-mount later but won't resolve correctly now outside
+    # the container (e.g. linuxcontainers.org images; issue #1015).
+    #
+    # WARNING: Keep in sync with other shell scripts & Image.unpack_init().
+    echo 'This directory is a Charliecloud image.' > "${1}/WEIRD_AL_YANKOVIC"
+    for i in bin dev etc mnt proc usr \
+             mnt/0 mnt/1 mnt/2 mnt/3 mnt/4 mnt/5 mnt/6 mnt/7 mnt/8 mnt/9; do
+        exist_p "${1}/${i}" || mkdir "${1}/${i}"
+    done
+    for i in etc/hosts etc/resolv.conf; do
+        exist_p "${1}/${i}" || touch "${1}/${i}"
+    done
+}
+
+# Validate that $1 can be used as an input directory.
+dir_in_validate () {
+    [ -d "$1" ] || FATAL "not a directory: ${1}"
+}
+
+# Validate that $1 can be used as output directory: (1) Parent exists. (2) $1
+# does not exist, unless it looks like an image, in which case remove it (or
+# error if --noclobber).
+dir_out_validate () {
+    parent_validate "$1"
+    if [ -e "$1" ]; then
+        [ -d "$1" ] || FATAL "exists but not a directory: ${1}"
+        if [ -d "${1}/bin" ] && [ -d "${1}/dev" ] && [ -d "${1}/usr" ]; then
+            if [ -n "$no_clobber" ]; then
+                FATAL "exists, not deleting per --no-clobber: ${1}"
+            else
+                INFO "deleting existing image: ${1}"
+                rm -Rf --one-file-system "$1"
+            fi
+        else
+            FATAL "exists but does not appear to be an image: ${1}"
+        fi
+    fi
 }
 
 # Return validated format $1: if non-empty and valid, return it; if empty,
@@ -76,7 +156,17 @@ fmt_validate () {
         esac
     fi
     case $fmt in
-        ch-image|dir|docker|squash|tar)
+        ch-image)
+            if [ -z "$have_ch_image" ]; then
+                FATAL "format ch-image invalid: ch-image not found"
+            fi
+            ;;
+        docker)
+            if [ -z "$have_docker" ]; then
+                FATAL "format docker invalid: docker not found"
+            fi
+            ;;
+        dir|squash|tar)
             ;;
         *)
             FATAL "invalid format: ${fmt}"
@@ -106,6 +196,12 @@ out_infer () {
                 ;;
         esac
     fi
+}
+
+# Validate the parent or enclosing directory of $1 exists.
+parent_validate () {
+    parent=$(dirname "$1")
+    [ -d "$parent" ] || "not a directory: $parent"
 }
 
 tmpdir_validate () {
@@ -189,9 +285,17 @@ out_infer
 tmpdir_validate
 
 VERBOSE "temp dir: ${tmpdir}"
+VERBOSE "noclobber: ${no_clobber:-will clobber}"
 INFO 'input:   %-8s  %s' "$in_fmt"  "$in_desc"
 INFO 'output:  %-8s  %s' "$out_fmt" "$out_desc"
 
 if [ "$in_fmt" = "$out_fmt" ]; then
     FATAL 'input and output formats must be different'
 fi
+
+# POSIX sh does not support hyphen in function names, so remove it.
+in_fmt_dispatch=$(echo "$in_fmt" | tr -d '-')
+out_fmt_dispatch=$(echo "$out_fmt" | tr -d '-')
+
+# Dispatch to conversion function.
+"cv_${in_fmt_dispatch}_${out_fmt_dispatch}" "$in_desc" "$out_desc"

@@ -1,5 +1,58 @@
 load ../common
 
+
+# Kludge to cook up the right input and output descriptors for ch-convert.
+convert () {
+    ct=$1
+    in_fmt=$2
+    out_fmt=$3;
+    case $in_fmt in
+        ch-image)
+            in_desc=tmpimg
+            ;;
+        dir)
+            in_desc=$ch_timg
+            ;;
+        docker)
+            in_desc=tmpimg
+            ;;
+        tar)
+            in_desc=${BATS_TMPDIR}/convert.tar.gz
+            ;;
+        squash)
+            in_desc=${BATS_TMPDIR}/convert.sqfs
+            ;;
+        *)
+            echo "unknown input format: $in_fmt"
+            false
+            ;;
+    esac
+    case $out_fmt in
+        ch-image)
+            out_desc=tmpimg
+            ;;
+        dir)
+            out_desc=${BATS_TMPDIR}/convert.dir
+            ;;
+        docker)
+            out_desc=tmpimg
+            ;;
+        tar)
+            out_desc=${BATS_TMPDIR}/convert.tar.gz
+            ;;
+        squash)
+            out_desc=${BATS_TMPDIR}/convert.sqfs
+            ;;
+        *)
+            echo "unknown output format: $out_fmt"
+            false
+            ;;
+    esac
+    echo "CONVERT ${ct}: ${in_desc} ($in_fmt) -> ${out_desc} (${out_fmt})"
+    ch-convert -v -i "$in_fmt" -o "$out_fmt" "$in_desc" "$out_desc"
+}
+
+
 @test 'ch-convert: format inference' {
     scope standard
 
@@ -199,22 +252,25 @@ load ../common
     # conversions to dir. However, it can better isolate where the conversion
     # went wrong, because the chain is 3 conversions long rather than 19.
 
-    rm -Rf --one-file-system "${BATS_TMPDIR}/convert.*"
+    rm -Rf --one-file-system "$BATS_TMPDIR"/convert.*
     ct=0
-    for i in ch-image docker squash tar; do
+    for i in ch-image; do
         ct=$((ct+1))
         echo
-        echo "outer ${ct}: dir -> ${i}"
-        for j in ch-image docker squash tar; do
+        convert "$ct" dir "$i"
+        for j in ch-image; do
             if [[ $i != $j ]]; then
                 ct=$((ct+1))
-                echo "inner $ct: $i -> $j"
+                convert "$ct" "$i" "$j"
             fi
             ct=$((ct+1))
-            echo "inner $ct: $j -> dir"
-            # compare here
+            convert "$ct" "$j" dir
+            # This diff skips the /ch directory with ch-image metadata,
+            # because that's only present when passing through ch-image.
+            diff -qr --no-dereference --exclude=ch \
+                 "$ch_timg" "${BATS_TMPDIR}/convert.dir"
         done
     done
 
-    false
+    #false
 }

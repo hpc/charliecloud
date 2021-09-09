@@ -13,6 +13,13 @@ lib="${ch_bin}/../lib/charliecloud"
 # Verbosity level; works the same as the Python code.
 verbose=0
 
+DEBUG () {
+    if [ "$verbose" -ge 2 ]; then
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
+}
+
 FATAL () {
     printf 'error: ' 1>&2
     printf "$@" 1>&2
@@ -139,7 +146,7 @@ parse_basic_args () {
 # NOTE: This is used both to name user-visible stuff like tarballs as well as
 # dig around in the ch-image storage directory.
 tag_to_path () {
-    echo "$1" | sed 's/\//%/g'
+    echo "$1" | tr '/' '%'
 }
 
 usage () {
