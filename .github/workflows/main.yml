@@ -130,7 +130,7 @@ jobs:
           ./autogen.sh
           ./configure --prefix=/usr/local
           make
-          sudo sh -c 'unmask 0022 && make install'
+          sudo sh -c 'umask 0022 && make install'
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
