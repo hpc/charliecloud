@@ -115,6 +115,11 @@ jobs:
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
+
+      - name: install libsquashfuse
+        if: ${{ matrix.builder == 'ch-image' }}
+        run: |
+          set -x
           # Install libfuse3 for libsquashFUSE.
           sudo apt-get install -y libfuse3-dev
           # Install version of libsquashFUSE we need for SquashFS workflow.
@@ -123,8 +128,9 @@ jobs:
           git clone -q https://github.com/vasi/squashfuse.git
           cd squashfuse
           ./autogen.sh
-          ./configure --bindir=/usr/local
-          make $ch_makej
+          ./configure --prefix=/usr/local
+          make
+          sudo sh -c 'unmask 0022 && make install'
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -164,18 +170,22 @@ jobs:
           # no install, disable
           ./autogen.sh --no-lark
           ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
-          #fgrep '"lark" module ... external' config.log
+          fgrep '"lark" module ... external' config.log
           ! test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
           [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
           [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
           make clean
+
+      - name: install and disable bundled lark, ch-image
+        if: ${{ matrix.builder == 'ch-image' }}
+        run: |
+          set -x
           # install, disable
           ./autogen.sh
           ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
-          #fgrep '"lark" module ... external' config.log
-          # external, in source dir
+          fgrep '"lark" module ... bundled' config.log
           test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
@@ -185,7 +195,7 @@ jobs:
           # no install, enable: build fails, untested
           # install, enable: normal configuration, remainder of CI
 
-      - name: disable squashFS, ch-image
+      - name: squashFS, ch-image
         if: ${{matrix.run_squashfs == 'internal'}}
         run: |
           set -x
@@ -194,7 +204,7 @@ jobs:
           ./configure --with-libsquashfuse=no --prefix=$ch_prefix/from-git
           fgrep 'internal mount with libsquashfuse ... no' config.log
           # enable
-          ./configure --with-libsquashfuse=/usr/local/lib --prefix=$ch_prefix/from-git
+          ./configure --with-libsquashfuse=yes --prefix=$ch_prefix/from-git
           fgrep 'internal mount with libsquashfuse ... yes' config log
           set +x
           make $ch_makej
