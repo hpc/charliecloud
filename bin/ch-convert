@@ -42,6 +42,10 @@ cv_chimage_docker () {
     rm "$chimage_tar"
 }
 
+cv_chimage_squash () {
+    ...
+}
+
 cv_chimage_tar () {
     chimage_in_validate "$1"
     tar_out_validate "$2"
@@ -67,6 +71,19 @@ cv_dir_docker () {
     cv_dir_tar "$1" "$dirtar"  # FIXME: needlessly compresses
     cv_tar_docker "$dirtar" "$2"
     rm "$dirtar"
+}
+
+cv_dir_squash () {
+    dir_in_validate "$1"
+    squash_out_validate "$2"
+    pflist=${tmpdir}/pseudofiles
+    INFO 'packing ...'
+    touch "$pflist"
+    mount_points_ensure "$1" "$pflist"
+    # 64kiB block size based on Shane's experiments.
+    # FIXME: mksquashfs(1) is incredibly noisy
+    mksquashfs "$1" "$2" -b 65536 -noappend -all-root -fstime 0 -pf "$pflist"
+    rm "$pflist"
 }
 
 cv_dir_tar () {
@@ -96,6 +113,10 @@ cv_docker_dir () {
     rm "$docker_out"
 }
 
+cv_docker_squash () {
+    ...
+}
+
 cv_docker_tar () {
     docker_in_validate "$1"
     tar_out_validate "$2"
@@ -114,6 +135,22 @@ cv_docker_tar () {
     pv_ < "$tmptar" | gzip_ -6 > "$2"
     rm "$tmptar"
     rm "$tmpenv"
+}
+
+cv_squash_chimage () {
+    ...
+}
+
+cv_squash_dir () {
+    ...
+}
+
+cv_squash_docker () {
+    ...
+}
+
+cv_squash_tar () {
+    ...
 }
 
 cv_tar_chimage () {
@@ -167,22 +204,88 @@ cv_tar_docker () {
     docker_ import "$1" "$2"  # FIXME: no progress meter
 }
 
+cv_tar_squash () {
+    ...
+}
 
-## supporting functions ######################################################
 
-# Validate that $1 can be used as an input ch-image image.
+## input/output validation functions #########################################
+
+# Each of these checks whether $1 can be used as input/output descriptor for
+# that format, and also whether it already exists if --no-clobber. Exit with
+# error on validation failure.
+
 chimage_in_validate () {
     img=$(chimage_path "$1")
     [ -d "$img" ] || FATAL "source image not found in ch-image storage: $1"
 }
 
-# Validate that $1 can be used as an output ch-image image.
 chimage_out_validate () {
     img=$(chimage_path "$1")
     if [ -d "$img" ] && [ -n "$no_clobber" ]; then
         FATAL "exists in ch-image storage, not deleting per --no-clobber: ${1}"
     fi
 }
+
+# Validate that $1 can be used as an input directory.
+dir_in_validate () {
+    [ -d "$1" ] || FATAL "not a directory: ${1}"
+}
+
+dir_out_validate () {
+    parent_validate "$1"
+    # $1 must not exist, unless it looks like an image, in which case remove
+    # it (or error if --noclobber).
+    if [ -e "$1" ]; then
+        [ -d "$1" ] || FATAL "exists but not a directory: ${1}"
+        if [ -d "${1}/bin" ] && [ -d "${1}/dev" ] && [ -d "${1}/usr" ]; then
+            if [ -n "$no_clobber" ]; then
+                FATAL "exists, not deleting per --no-clobber: ${1}"
+            else
+                INFO "deleting existing image: ${1}"
+                rm -Rf --one-file-system "$1"
+            fi
+        else
+            FATAL "exists but does not appear to be an image: ${1}"
+        fi
+    fi
+}
+
+docker_in_validate () {
+    digest=$(docker_ image ls -q "$1")
+    [ -n "$digest" ] || FATAL "source not found in Docker storage: ${1}"
+}
+
+docker_out_validate () {
+    digest=$(docker_ image ls -q "$1")
+    if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
+        FATAL "exists in Docker storage, not deleting per --no-clobber: ${1}"
+    fi
+}
+
+squash_out_validate () {
+    parent_validate "$1"
+    path_noclobber "$1"
+}
+
+tar_in_validate () {
+    [ -e "$1" ] || FATAL "not found: ${1}"
+}
+
+tar_out_validate () {
+    case $1 in
+        *.tar.gz)
+            ;;
+        *)
+            FATAL "only gzipped tar output (.tar.gz) supported"
+            ;;
+    esac
+    parent_validate "$1"
+    path_noclobber "$1"
+}
+
+
+## supporting functions ######################################################
 
 # Return the path to image $1 in ch-image storage.
 chimage_path () {
@@ -231,57 +334,8 @@ dir_fixup () {
           done )
         rmdir "${1}/${files}"
     fi
-    # Ensure mount points that ch-run needs exist. Do nothing if something
-    # already exists, without dereferencing, in case it's a symlink, which
-    # will work for bind-mount later but won't resolve correctly now outside
-    # the container (e.g. linuxcontainers.org images; issue #1015).
-    #
-    # WARNING: Keep in sync with other shell scripts & Image.unpack_init().
-    echo 'This directory is a Charliecloud image.' > "${1}/WEIRD_AL_YANKOVIC"
-    for i in bin dev etc mnt proc usr \
-             mnt/0 mnt/1 mnt/2 mnt/3 mnt/4 mnt/5 mnt/6 mnt/7 mnt/8 mnt/9; do
-        exist_p "${1}/${i}" || mkdir "${1}/${i}"
-    done
-    for i in etc/hosts etc/resolv.conf; do
-        exist_p "${1}/${i}" || touch "${1}/${i}"
-    done
-}
-
-# Validate that $1 can be used as an input directory.
-dir_in_validate () {
-    [ -d "$1" ] || FATAL "not a directory: ${1}"
-}
-
-# Validate that $1 can be used as output directory: (1) Parent exists. (2) $1
-# does not exist, unless it looks like an image, in which case remove it (or
-# error if --noclobber).
-dir_out_validate () {
-    parent_validate "$1"
-    if [ -e "$1" ]; then
-        [ -d "$1" ] || FATAL "exists but not a directory: ${1}"
-        if [ -d "${1}/bin" ] && [ -d "${1}/dev" ] && [ -d "${1}/usr" ]; then
-            if [ -n "$no_clobber" ]; then
-                FATAL "exists, not deleting per --no-clobber: ${1}"
-            else
-                INFO "deleting existing image: ${1}"
-                rm -Rf --one-file-system "$1"
-            fi
-        else
-            FATAL "exists but does not appear to be an image: ${1}"
-        fi
-    fi
-}
-
-docker_in_validate () {
-    digest=$(docker_ image ls -q "$1")
-    [ -n "$digest" ] || FATAL "source not found in Docker storage: ${1}"
-}
-
-docker_out_validate () {
-    digest=$(docker_ image ls -q "$1")
-    if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
-        FATAL "exists in Docker storage, not deleting per --no-clobber: ${1}"
-    fi
+    # Ensure mount points are present.
+    mount_points_ensure "$1"
 }
 
 # Return validated format $1: if non-empty and valid, return it; if empty,
@@ -334,6 +388,48 @@ fmt_validate () {
     echo "$fmt"
 }
 
+# Ensure mount points needed by ch-run exist in directory $1. Do nothing if
+# something already exists, without dereferencing, in case it's a symlink,
+# which will work for bind-mount later but won't resolve correctly now outside
+# the container (e.g. linuxcontainers.org images; issue #1015).
+#
+# If $2 is non-empty, append missing mount points to a list of mksquashfs(1)
+# "pseudo files" to that file instead of modifying $1. While pseudo files
+# don't conflict with actual files, they do generate a warning.
+#
+# An alternative approach is to create the mount points in a temporary
+# directory, then append that to the SquashFS archive. However, mksquashfs(1)
+# does not merge the new files. Ff an existing file or directory is given in
+# the appended directory, both go into the archive, with the second renamed
+# (to "foo_1"). This make it impossible to add mount points to a directory
+# that already exists; e.g., if /etc exists, /etc/resolv.conf will end up at
+# /etc_1/resolv.conf.
+#
+# WARNING: Keep in sync with Image.unpack_init().
+mount_points_ensure () {
+    # directories
+    for i in bin dev etc mnt proc usr \
+             mnt/0 mnt/1 mnt/2 mnt/3 mnt/4 mnt/5 mnt/6 mnt/7 mnt/8 mnt/9; do
+        if ! exist_p "${1}/${i}"; then
+            if [ -n "$2" ]; then
+                echo "${i} d 755 root root" >> "$2"
+            else
+                mkdir "${1}/${i}"
+            fi
+        fi
+    done
+    # files
+    for i in etc/hosts etc/resolv.conf; do
+        if ! exist_p "${1}/${i}"; then
+            if [ -n "$2" ]; then
+                echo "${i} f 644 root root true" >> "$2"
+            else
+                touch "${1}/${i}"
+            fi
+        fi
+    done
+}
+
 # Infer output descriptor by setting $out_desc, if appropriate. Otherwise,
 # leave it unchanged.
 out_infer () {
@@ -363,19 +459,8 @@ parent_validate () {
     [ -d "$parent" ] || "not a directory: $parent"
 }
 
-tar_in_validate () {
-    [ -e "$1" ] || FATAL "not found: ${1}"
-}
-
-tar_out_validate () {
-    case $1 in
-        *.tar.gz)
-            ;;
-        *)
-            FATAL "only gzipped tar output (.tar.gz) supported"
-            ;;
-    esac
-    parent_validate "$1"
+# Exit with error if $1 exists and --no-clobber was given.
+path_noclobber () {
     if [ -e "$1" ] && [ -n "$no_clobber" ]; then
         FATAL "exists, not overwriting per --no-clobber: ${1}"
     fi
