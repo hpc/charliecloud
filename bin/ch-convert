@@ -474,9 +474,11 @@ if [ "$in_fmt" = "$out_fmt" ]; then
     FATAL 'input and output formats must be different'
 fi
 
-# Dispatch to conversion function. POSIX sh does not support hyphen in
-# function names, so remove it.
-"cv_$(echo "$in_fmt" | tr -d '-')_$(echo "$out_fmt" | tr -d '-')" \
-    "$in_desc" "$out_desc"
+if [ -z "$dry_run" ]; then
+    # Dispatch to conversion function. POSIX sh does not support hyphen in
+    # function names, so remove it.
+    "cv_$(echo "$in_fmt" | tr -d '-')_$(echo "$out_fmt" | tr -d '-')" \
+        "$in_desc" "$out_desc"
+fi
 
 rmdir "$tmpdir"

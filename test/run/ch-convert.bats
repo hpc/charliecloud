@@ -153,19 +153,19 @@ test_from () {
     [[ $output = *'input:   squash'* ]]
 
     # tar
-    run ch-convert -n ./foo:bar.tar out.tar
+    run ch-convert -n ./foo:bar.tar out.sqfs
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'input:   tar'* ]]
-    run ch-convert -n ./foo:bar.tgz out.tar
+    run ch-convert -n ./foo:bar.tgz out.sqfs
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'input:   tar'* ]]
-    run ch-convert -n ./foo:bar.tar.Z out.tar
+    run ch-convert -n ./foo:bar.tar.Z out.sqfs
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'input:   tar'* ]]
-    run ch-convert -n ./foo:bar.tar.gz out.tar
+    run ch-convert -n ./foo:bar.tar.gz out.sqfs
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'input:   tar'* ]]
@@ -289,10 +289,12 @@ test_from () {
     [[ $output = *'error: input and output formats must be different'* ]]
 
     # output directory not an image
-    run ch-convert -n foo.sqfs "$BATS_TMPDIR"
+    touch "${BATS_TMPDIR}/foo.tar"
+    run ch-convert "${BATS_TMPDIR}/foo.tar" "$BATS_TMPDIR"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'FIXME'* ]]
+    [[ $output = *"error: exists but does not appear to be an image: ${BATS_TMPDIR}"* ]]
+    rm "${BATS_TMPDIR}/foo.tar"
 }
 
 @test 'ch-convert: dir -> ch-image -> X' {
