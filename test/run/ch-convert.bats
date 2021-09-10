@@ -1,6 +1,37 @@
 load ../common
 
 
+# Return success if directories $1 and $2 are recursively the same, failure
+# otherwise. This compares only metadata. False positives are possible if a
+# file's content changes but the size and all other metadata stays the same;
+# this seems unlikely. We could also use "diff -qr --no-dereference", which
+# would also compare file conttent, but diff's --exclude only accepts basename
+# patterns, not paths. The long list of excludes is things that don't
+# round-trip through the various formats; the surprising directories (e.g.
+# /dev) are because modification times seem to change.
+compare () {
+    out=$(  rsync -nv -aAX --delete "${1}/" "$2" \
+          | sed -E -e '/^$/d' \
+                   -e '/^sending incremental file list/d' \
+                   -e '/^sent [0-9,]+ bytes/d' \
+                   -e '/^total size is/d' \
+                   -e '\|^deleting ch/|d' \
+                   -e '\|^deleting .dockerenv$|d' \
+                   -e '\|^deleting dev/console$|d' \
+                   -e '\|^deleting dev/pts/$|d' \
+                   -e '\|^deleting dev/shm/$|d' \
+                   -e '\|^./$|d' \
+                   -e '\|^WEIRD_AL_YANKOVIC$|d' \
+                   -e '\|^dev/$|d' \
+                   -e '\|^etc/$|d' \
+                   -e '\|^etc/hostname$|d' \
+                   -e '\|^etc/hosts$|d' \
+                   -e '\|^etc/resolv.conf -> /etc/resolv.conf.real$|d' \
+                   -e '\|^mnt/dev/dontdeleteme$|d' )
+    echo "$out"
+    [ -z "$out" ]
+}
+
 # Kludge to cook up the right input and output descriptors for ch-convert.
 convert () {
     ct=$1
@@ -252,23 +283,20 @@ convert () {
     # conversions to dir. However, it can better isolate where the conversion
     # went wrong, because the chain is 3 conversions long rather than 19.
 
-    rm -Rf --one-file-system "$BATS_TMPDIR"/convert.*
     ct=0
-    for i in ch-image; do
+    for i in ch-image docker tar; do
         ct=$((ct+1))
         echo
         convert "$ct" dir "$i"
-        for j in ch-image; do
+        for j in ch-image docker tar; do
             if [[ $i != $j ]]; then
                 ct=$((ct+1))
                 convert "$ct" "$i" "$j"
             fi
             ct=$((ct+1))
+            rm -Rf --one-file-system "$BATS_TMPDIR"/convert.dir
             convert "$ct" "$j" dir
-            # This diff skips the /ch directory with ch-image metadata,
-            # because that's only present when passing through ch-image.
-            diff -qr --no-dereference --exclude=ch \
-                 "$ch_timg" "${BATS_TMPDIR}/convert.dir"
+            compare "$ch_timg" "${BATS_TMPDIR}/convert.dir"
         done
     done
 

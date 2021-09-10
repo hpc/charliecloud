@@ -20,22 +20,151 @@ EOF
 ## conversion functions ######################################################
 
 # These twenty functions (many are short) are dispatched based on function
-# name at the end of the script. All take two parameters: $1 is the input
-# descriptor and $2 is the output descriptor.
+# name at the end of the script, but are also useable as components of other
+# conversion functions (in which case the caller must ensure the output does
+# not exist). All take two parameters: $1 is the input descriptor and $2 is
+# the output descriptor.
 
 cv_chimage_dir () {
     chimage_in_validate "$1"
     dir_out_validate "$2"
-    INFO "copying ..."
+    INFO 'exporting ...'
     cp -a "$img" "$2"  # FIXME: no progress meter
     dir_fixup "$2"
+}
+
+cv_chimage_docker () {
+    chimage_in_validate "$1"
+    docker_out_validate "$2"
+    chimage_tar=${tmpdir}/weirdal.tar.gz
+    cv_chimage_tar "$1" "$chimage_tar"  # FIXME: needlessly compresses?
+    cv_tar_docker "$chimage_tar" "$2"
+    rm "$chimage_tar"
+}
+
+cv_chimage_tar () {
+    chimage_in_validate "$1"
+    tar_out_validate "$2"
+    img=$(chimage_path "$1")
+    INFO 'exporting ...'
+    ( cd $img && tar czf - . ) | pv_ > "$2"
 }
 
 cv_dir_chimage () {
     dir_in_validate "$1"
     chimage_out_validate "$2"
-    INFO "importing ..."
+    INFO 'importing ...'
     ch-image import "$1" "$2"  # FIXME: no progress meter
+}
+
+cv_dir_docker () {
+    dir_in_validate "$1"
+    docker_out_validate "$2"
+    dirtar=${tmpdir}/weirdal.tar.gz
+    # One could also use "docker build" with "FROM scratch" and "COPY",
+    # apparently saving a tar step. However, this will in fact tar the source
+    # directory anyway to send it to the Docker daemon.
+    cv_dir_tar "$1" "$dirtar"  # FIXME: needlessly compresses
+    cv_tar_docker "$dirtar" "$2"
+    rm "$dirtar"
+}
+
+cv_dir_tar () {
+    dir_in_validate "$1"
+    tar_out_validate "$2"
+    # Don't add essential files & directories because that will happen later
+    # when converted to dir or squash.
+    INFO 'packing ...'
+    ( cd "$1" && tar czf - . ) | pv_ > "$2"
+}
+
+cv_docker_chimage () {
+   docker_in_validate "$1"
+   chimage_out_validate "$2"
+   docker_out=${tmpdir}/weirdal.tar.gz
+   cv_docker_tar "$1" "$docker_out"  # FIXME: needlessly compresses
+   cv_tar_chimage "$docker_out" "$2"
+   rm "$docker_out"
+}
+
+cv_docker_dir () {
+    docker_in_validate "$1"
+    dir_out_validate "$2"
+    docker_out="${tmpdir}/weirdal.tar.gz"
+    cv_docker_tar "$1" "$docker_out"  # FIXME: needlessly compresses
+    cv_tar_dir "$docker_out" "$2"
+    rm "$docker_out"
+}
+
+cv_docker_tar () {
+    docker_in_validate "$1"
+    tar_out_validate "$2"
+    tmptar=${tmpdir}/weirdal.tar
+    tmpenv=${tmpdir}/weirdal.env
+    INFO 'exporting ...'
+    cid=$(docker_ create --read-only "$1" /bin/true)  # cmd needed but not run
+    size=$(docker_ image inspect "$1" --format='{{.Size}}')
+    docker_ export "$cid" | pv_ -s "$size" > "$tmptar"
+    docker_ rm "$cid" > /dev/null
+    INFO 'adding environment ...'
+    docker_ inspect "$1" \
+            --format='{{range .Config.Env}}{{println .}}{{end}}' > "$tmpenv"
+    tar rf "$tmptar" -b1 -P --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
+    INFO 'compressing ...'
+    pv_ < "$tmptar" | gzip_ -6 > "$2"
+    rm "$tmptar"
+    rm "$tmpenv"
+}
+
+cv_tar_chimage () {
+    tar_in_validate "$1"
+    chimage_out_validate "$2"
+    INFO 'importing ...'
+    ch-image import "$1" "$2"  # FIXME: no progress meter
+}
+
+cv_tar_dir () {
+    tar_in_validate "$1"
+    # Infer decompression argument because GNU tar is unable to do so if input
+    # is a pipe, and we want to keep pv(1). See:
+    # https://www.gnu.org/software/tar/manual/tar.html#gzip
+    case $1 in
+        *.tar)
+            decompress=
+            ;;
+        *.tar.gz)
+            decompress=z
+            ;;
+        *.tar.xz)
+            decompress=J
+            ;;
+        *.tgz)
+            decompress=z
+            ;;
+        *)
+            echo "unknown extension: ${tarball}" 1>&2
+            exit 1
+            ;;
+    esac
+    dir_out_validate "$2"
+    INFO 'unpacking ...'
+    mkdir "$2"
+    # Use a pipe because PV ignores arguments if it's cat rather than PV.
+    #
+    # See FAQ on /dev exclusion. --no-wildcards-match-slash needed to prevent
+    # * matching multiple directories; tar default differs from sh behavior.
+      pv_ -s "$(stat -c%s "$1")" < "$1" \
+    | tar x$decompress -C "$2" -f - \
+          --anchored --no-wildcards-match-slash \
+          --exclude='dev/*' --exclude='*/dev/*'
+    dir_fixup "$2"
+}
+
+cv_tar_docker () {
+    tar_in_validate "$1"
+    docker_out_validate "$2"
+    INFO "importing ..."
+    docker_ import "$1" "$2"  # FIXME: no progress meter
 }
 
 
@@ -43,16 +172,21 @@ cv_dir_chimage () {
 
 # Validate that $1 can be used as an input ch-image image.
 chimage_in_validate () {
-    img=$(ch-image storage-path)/img/$(tag_to_path "$1")
+    img=$(chimage_path "$1")
     [ -d "$img" ] || FATAL "source image not found in ch-image storage: $1"
 }
 
 # Validate that $1 can be used as an output ch-image image.
 chimage_out_validate () {
-    img=$(ch-image storage-path)/img/$(tag_to_path "$1")
+    img=$(chimage_path "$1")
     if [ -d "$img" ] && [ -n "$no_clobber" ]; then
         FATAL "exists in ch-image storage, not deleting per --no-clobber: ${1}"
     fi
+}
+
+# Return the path to image $1 in ch-image storage.
+chimage_path () {
+    echo "$(ch-image storage-path)/img/$(tag_to_path "$1")"
 }
 
 # Return basename of $2 (format $1) with no extension and filesystem-invalid
@@ -84,6 +218,19 @@ desc_base () {
 # Ensure $1 has everything needed to be an image directory.
 dir_fixup () {
     DEBUG "fixing up: $1"
+    # Make all directories writeable so we can delete later (hello, Red Hat).
+    find "$1" -type d -a ! -perm /200 -exec chmod u+w {} +
+    # If tarball had a single containing directory, move the contents up a
+    # level and remove the containing directory. It is non-trivial in POSIX sh
+    # to deal with hidden files; see https://unix.stackexchange.com/a/6397.
+    files=$(ls -Aq "$1")
+    if [ "$(echo "$files" | wc -l)" -eq 1 ]; then
+        ( cd "${1}/${files}"
+          for f in * .[!.]* ..?*; do
+              if [ -e "$f" ]; then mv -- "$f" ..; fi
+          done )
+        rmdir "${1}/${files}"
+    fi
     # Ensure mount points that ch-run needs exist. Do nothing if something
     # already exists, without dereferencing, in case it's a symlink, which
     # will work for bind-mount later but won't resolve correctly now outside
@@ -122,6 +269,18 @@ dir_out_validate () {
         else
             FATAL "exists but does not appear to be an image: ${1}"
         fi
+    fi
+}
+
+docker_in_validate () {
+    digest=$(docker_ image ls -q "$1")
+    [ -n "$digest" ] || FATAL "source not found in Docker storage: ${1}"
+}
+
+docker_out_validate () {
+    digest=$(docker_ image ls -q "$1")
+    if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
+        FATAL "exists in Docker storage, not deleting per --no-clobber: ${1}"
     fi
 }
 
@@ -204,7 +363,34 @@ parent_validate () {
     [ -d "$parent" ] || "not a directory: $parent"
 }
 
-tmpdir_validate () {
+tar_in_validate () {
+    [ -e "$1" ] || FATAL "not found: ${1}"
+}
+
+tar_out_validate () {
+    case $1 in
+        *.tar.gz)
+            ;;
+        *)
+            FATAL "only gzipped tar output (.tar.gz) supported"
+            ;;
+    esac
+    parent_validate "$1"
+    if [ -e "$1" ] && [ -n "$no_clobber" ]; then
+        FATAL "exists, not overwriting per --no-clobber: ${1}"
+    fi
+}
+
+# Set $tmpdir to be a new directory with a unique and unpredictable name, as a
+# subdirectory of --tmp, $TMPDIR, or /var/tmp, whichever is first set.
+tmpdir_setup () {
+    if [ -z "$tmpdir" ]; then
+        if [ -n "$TMPDIR" ]; then
+            tmpdir=$TMPDIR
+        else
+            tmpdir=/var/tmp
+        fi
+    fi
     case $tmpdir in
         /*)
             ;;
@@ -212,16 +398,11 @@ tmpdir_validate () {
             FATAL "temp dir must be absolute: ${tmpdir}"
             ;;
     esac
+    tmpdir=$(mktemp -d --tmpdir="$tmpdir" ch-convert.XXXXXX)
 }
 
 
 ## main ######################################################################
-
-if [ -n "$TMPDIR" ]; then
-    tmpdir=$TMPDIR
-else
-    tmpdir=/var/tmp
-fi
 
 while true; do
     if ! parse_basic_arg "$1"; then
@@ -282,7 +463,7 @@ in_fmt=$(fmt_validate "$in_fmt" "$in_desc")
 [ -n "$out_fmt" ] && out_fmt_explicit=yes
 out_fmt=$(fmt_validate "$out_fmt" "$out_desc")
 out_infer
-tmpdir_validate
+tmpdir_setup
 
 VERBOSE "temp dir: ${tmpdir}"
 VERBOSE "noclobber: ${no_clobber:-will clobber}"
@@ -293,9 +474,9 @@ if [ "$in_fmt" = "$out_fmt" ]; then
     FATAL 'input and output formats must be different'
 fi
 
-# POSIX sh does not support hyphen in function names, so remove it.
-in_fmt_dispatch=$(echo "$in_fmt" | tr -d '-')
-out_fmt_dispatch=$(echo "$out_fmt" | tr -d '-')
+# Dispatch to conversion function. POSIX sh does not support hyphen in
+# function names, so remove it.
+"cv_$(echo "$in_fmt" | tr -d '-')_$(echo "$out_fmt" | tr -d '-')" \
+    "$in_desc" "$out_desc"
 
-# Dispatch to conversion function.
-"cv_${in_fmt_dispatch}_${out_fmt_dispatch}" "$in_desc" "$out_desc"
+rmdir "$tmpdir"
