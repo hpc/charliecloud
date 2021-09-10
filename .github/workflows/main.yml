@@ -205,9 +205,9 @@ jobs:
           fgrep 'internal mount with libsquashfuse ... no' config.log
           # enable
           ./configure --with-libsquashfuse=yes --prefix=$ch_prefix/from-git
-          fgrep 'internal mount with libsquashfuse ... yes' config log
+          fgrep 'internal mount with libsquashfuse ... yes' config.log
           set +x
-          make $ch_makej
+          make
           # tmp check
           bin/ch-test all
           make clean
