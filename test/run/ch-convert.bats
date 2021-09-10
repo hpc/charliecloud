@@ -1,5 +1,45 @@
 load ../common
 
+# Testing strategy overview:
+#
+# The most efficient way to test conversion through all formats would be to
+# start with a directory, cycle through all the formats one at a time, with
+# directory being last, then compare the starting and ending directories. That
+# corresponds to visiting all the cells in the matrix below, starting from one
+# labeled "a", ending in one labeled "b", and skipping those labeled with a
+# dash. Also, if visit n is in column i, then the next visit n+1 must be in
+# row i. This approach does each conversion exactly once.
+#
+#               output ->
+#               | dir      | ch-image | docker   | squash   | tar     |
+# input         +----------+----------+----------+----------+---------+
+#   |  dir      |    —     |    a     |    a     |    a     |    a    |
+#   v  ch-image |    b     |    —     |          |          |         |
+#      docker   |    b     |          |    —     |          |         |
+#      squash   |    b     |          |          |    —     |         |
+#      tar      |    b     |          |          |          |    —    |
+#               +----------+----------+----------+----------+---------+
+#
+# Because we start with a directory already available, this yields 5*5 - 5 - 1
+# = 19 conversions. However, I was not able to figure out a traversal order
+# that would meet the constraints.
+#
+# Thus, we use the following algorithm.
+#
+#   for every format i except dir:         (4 iterations)
+#     convert start_dir -> i
+#     for every format j except dir:       (4)
+#          if i≠j: convert i -> j
+#          convert j -> finish_dir
+#          compare start_dir with finish_dir
+#
+# This yields 4 * (3*2 + 1*1) = 28 conversions, due to excess conversions to
+# dir. However, it can better isolate where the conversion went wrong, because
+# the chain is 3 conversions long rather than 19.
+#
+# The outer loop is unrolled into four separate tests to avoid having one test
+# that runs for two minutes.
+
 
 # Return success if directories $1 and $2 are recursively the same, failure
 # otherwise. This compares only metadata. False positives are possible if a
@@ -81,6 +121,21 @@ convert () {
     esac
     echo "CONVERT ${ct}: ${in_desc} ($in_fmt) -> ${out_desc} (${out_fmt})"
     ch-convert -v -i "$in_fmt" -o "$out_fmt" "$in_desc" "$out_desc"
+}
+
+# Test conversions dir -> $1 -> (all) -> dir.
+test_from () {
+    ct=0
+    for j in ch-image docker tar; do
+        if [[ $1 != $j ]]; then
+            ct=$((ct+1))
+            convert "$ct" "$1" "$j"
+        fi
+        ct=$((ct+1))
+        rm -Rf --one-file-system "$BATS_TMPDIR"/convert.dir
+        convert "$ct" "$1" dir
+        compare "$ch_timg" "${BATS_TMPDIR}/convert.dir"
+    done
 }
 
 
@@ -240,65 +295,17 @@ convert () {
     [[ $output = *'FIXME'* ]]
 }
 
-@test 'ch-convert: all formats' {
+@test 'ch-convert: dir -> ch-image -> X' {
     scope standard
+    test_from ch-image
+}
 
-    # FIXME: pedantic mode
+@test 'ch-convert: dir -> docker -> X' {
+    scope standard
+    test_from docker
+}
 
-    # The most efficient way to do this test would be to start with a
-    # directory, cycle through all the formats one at a time, with directory
-    # being last, then compare the starting and ending directories. That
-    # corresponds to visiting all the cells in this matrix, starting from one
-    # labeled "a", ending in one labeled "b", and skipping those labeled with
-    # a dash. Also, if visit n is in column i, then the next visit n+1 must be
-    # in row i. This approach does each conversion exactly once.
-    #
-    #               output ->
-    #               | dir      | ch-image | docker   | squash   | tar     |
-    # input         +----------+----------+----------+----------+---------+
-    #   |  dir      |    —     |    a     |    a     |    a     |    a    |
-    #   v  ch-image |    b     |    —     |          |          |         |
-    #      docker   |    b     |          |    —     |          |         |
-    #      squash   |    b     |          |          |    —     |         |
-    #      tar      |    b     |          |          |          |    —    |
-    #               +----------+----------+----------+----------+---------+
-    #
-    # Because we start with a directory already available, this would yield
-    # 5*5 - 5 - 1 = 19 conversions. However, I was not able to figure out a
-    # traversal order that would meet the constraints.
-    #
-    # Thus, we use the following algorithm with some caching. I think it is
-    # close but I haven't counted.
-    #
-    #   for every format i except dir:             (4 iterations)
-    #     convert start_dir -> i
-    #     convert i -> finish_dir
-    #     compare start_dir with finish_dir
-    #     for every format j except i and dir:     (3)
-    #          convert i -> j
-    #          convert j -> finish_dir
-    #          compare start_dir with finish_dir
-    #
-    # This yields 4 * (2 + 3 * 2) = 32 conversions, due I think to excess
-    # conversions to dir. However, it can better isolate where the conversion
-    # went wrong, because the chain is 3 conversions long rather than 19.
-
-    ct=0
-    for i in ch-image docker tar; do
-        ct=$((ct+1))
-        echo
-        convert "$ct" dir "$i"
-        for j in ch-image docker tar; do
-            if [[ $i != $j ]]; then
-                ct=$((ct+1))
-                convert "$ct" "$i" "$j"
-            fi
-            ct=$((ct+1))
-            rm -Rf --one-file-system "$BATS_TMPDIR"/convert.dir
-            convert "$ct" "$j" dir
-            compare "$ch_timg" "${BATS_TMPDIR}/convert.dir"
-        done
-    done
-
-    #false
+@test 'ch-convert: dir -> tar -> X' {
+    scope standard
+    test_from ch-image
 }
