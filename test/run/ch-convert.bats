@@ -126,7 +126,7 @@ convert () {
 # Test conversions dir -> $1 -> (all) -> dir.
 test_from () {
     ct=0
-    for j in ch-image docker tar; do
+    for j in ch-image docker squash tar; do
         if [[ $1 != $j ]]; then
             ct=$((ct+1))
             convert "$ct" "$1" "$j"
@@ -305,6 +305,11 @@ test_from () {
 @test 'ch-convert: dir -> docker -> X' {
     scope standard
     test_from docker
+}
+
+@test 'ch-convert: dir -> squash -> X' {
+    scope standard
+    test_from squash
 }
 
 @test 'ch-convert: dir -> tar -> X' {

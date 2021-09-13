@@ -19,11 +19,11 @@ EOF
 
 ## conversion functions ######################################################
 
-# These twenty functions (many are short) are dispatched based on function
-# name at the end of the script, but are also useable as components of other
-# conversion functions (in which case the caller must ensure the output does
-# not exist). All take two parameters: $1 is the input descriptor and $2 is
-# the output descriptor.
+# These twenty functions (mostly short) are dispatched at the end of the
+# script based on their names, but are also useable as components of other
+# conversion functions (in which case the caller must ensure intermediate
+# outputs do not exist). All take two parameters: $1 is the input descriptor
+# and $2 is the output descriptor.
 
 cv_chimage_dir () {
     chimage_in_validate "$1"
@@ -43,7 +43,10 @@ cv_chimage_docker () {
 }
 
 cv_chimage_squash () {
-    ...
+    chimage_in_validate "$1"
+    squash_out_validate "$2"
+    img=$(chimage_path "$1")
+    cv_dir_squash "$img" "$2"
 }
 
 cv_chimage_tar () {
@@ -107,14 +110,19 @@ cv_docker_chimage () {
 cv_docker_dir () {
     docker_in_validate "$1"
     dir_out_validate "$2"
-    docker_out="${tmpdir}/weirdal.tar.gz"
+    docker_out=${tmpdir}/weirdal.tar.gz
     cv_docker_tar "$1" "$docker_out"  # FIXME: needlessly compresses
     cv_tar_dir "$docker_out" "$2"
     rm "$docker_out"
 }
 
 cv_docker_squash () {
-    ...
+    docker_in_validate "$1"
+    squash_out_validate "$2"
+    docker_dir=${tmpdir}/weirdal
+    cv_docker_dir "$1" "$docker_dir"  # FIXME: needlessly compresses
+    cv_dir_squash "$docker_dir" "$2"
+    rm -Rf --one-file-system "$docker_dir"
 }
 
 cv_docker_tar () {
@@ -138,19 +146,40 @@ cv_docker_tar () {
 }
 
 cv_squash_chimage () {
-    ...
+    squash_in_validate "$1"
+    chimage_out_validate "$2"
+    unsquash_dir=${tmpdir}/weirdal
+    cv_squash_dir "$1" "$unsquash_dir"
+    cv_dir_chimage "$unsquash_dir" "$2"
+    rm -Rf --one-file-system "$unsquash_dir"
 }
 
 cv_squash_dir () {
-    ...
+    squash_in_validate "$1"
+    dir_out_validate "$2"
+    # Note: unsquashfs(1) has no exclude filter, only include, so if the
+    # archive includes bad files like devices, this will fail. I don't know to
+    # what degree this will be a problem.
+    unsquashfs -d "$2" -user-xattrs "$1"
+    dir_fixup "$2"
 }
 
 cv_squash_docker () {
-    ...
+    squash_in_validate "$1"
+    docker_out_validate "$2"
+    unsquash_tar=${tmpdir}/weirdal.tar.gz
+    cv_squash_tar "$1" "$unsquash_tar"
+    cv_tar_docker "$unsquash_tar" "$2"
+    rm "$unsquash_tar"
 }
 
 cv_squash_tar () {
-    ...
+    squash_in_validate "$1"
+    tar_out_validate "$2"
+    unsquash_dir=${tmpdir}/weirdal
+    cv_squash_dir "$1" "$unsquash_dir"
+    cv_dir_tar "$unsquash_dir" "$2"
+    rm -Rf --one-file-system "$unsquash_dir"
 }
 
 cv_tar_chimage () {
@@ -205,7 +234,12 @@ cv_tar_docker () {
 }
 
 cv_tar_squash () {
-    ...
+    tar_in_validate "$1"
+    squash_out_validate "$2"
+    tar_dir=${tmpdir}/weirdal
+    cv_tar_dir "$1" "$tar_dir"
+    cv_dir_squash "$tar_dir" "$2"
+    rm -Rf --one-file-system "$tar_dir"
 }
 
 
@@ -261,6 +295,10 @@ docker_out_validate () {
     if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
         FATAL "exists in Docker storage, not deleting per --no-clobber: ${1}"
     fi
+}
+
+squash_in_validate () {
+    [ -e "$1" ] || FATAL "not found: ${1}"
 }
 
 squash_out_validate () {
