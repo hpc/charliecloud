@@ -135,7 +135,7 @@ DEFAULT_CONFIGS = {
    #
    # 5. Why grep a specified file vs. simpler alternatives?
    #
-   #    * Look at image name: Misses derived images, large number of tags
+   #    * Look at image name: Misses derived images, large number of names
    #      seems a maintenance headache, :latest changes.
    #
    #    * grep the same file for each distro: No standardized file for this.
