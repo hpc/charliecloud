@@ -5,17 +5,16 @@ CH_TEST_TAG=$ch_test_tag
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
-    scope skip  # issue #64
+    scope standard
     prerequisites_ok obspy
 }
 
-@test "${ch_tag}/runtests" {
-    # Some tests try to use the network even when they're not supposed to. I
-    # reported this as a bug on ObsPy [1]. In the meantime, exclude the
-    # modules with those tests. This is pretty heavy handed, as only three
-    # tests in these two modules have this problem, but I couldn't find a
-    # finer-grained exclusion mechanism.
-    #
-    # [1]: https://github.com/obspy/obspy/issues/1660
-    ch-run "$ch_img" -- bash -c '. activate && obspy-runtests -d -x core -x signal'
+@test "${ch_tag}/hello" {
+    # Remove prior test's plot to avoid using it if something else breaks.
+    rm -f "$BATS_TMPDIR"/obspy.png
+
+    ch-run -b "$BATS_TMPDIR":/mnt "$ch_img" -- /hello.py /mnt/obspy.png
+
+    # Compare reference image to generated image.
+    cmp "$CHTEST_EXAMPLES_DIR"/obspy/obspy.png "$BATS_TMPDIR"/obspy.png
 }

@@ -148,7 +148,8 @@ def main(cli_):
       tree = parser.parse(text)
    except lark.exceptions.UnexpectedInput as x:
       ch.VERBOSE(x)  # noise about what was expected in the grammar
-      ch.FATAL("can't parse: %s:%d,%d\n\n%s" % (cli.file, x.line, x.column, x.get_context(text, 39)))
+      ch.FATAL("can't parse: %s:%d,%d\n\n%s"
+               % (cli.file, x.line, x.column, x.get_context(text, 39)))
    ch.VERBOSE(tree.pretty())
 
    # Sometimes we exit after parsing.
@@ -392,7 +393,7 @@ class I_copy(Instruction):
          must exist already and be a directory. Unlike subdirectories, the
          metadata of dst will not be altered to match src."""
       def onerror(x):
-         ch.FATAL("error scanning directory: %s: %s" % (x.filename, x.strerror))
+         ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
       src = ch.Path(os.path.realpath(src))
@@ -503,6 +504,8 @@ class I_copy(Instruction):
       return dst_canon
 
    def execute_(self):
+      if (len(self.srcs) < 1):
+         ch.FATAL("can't COPY: must specify at least one source")
       # Complain about unsupported stuff.
       if (self.options.pop("chown", False)):
          self.unsupported_forever_warn("--chown")
@@ -531,11 +534,12 @@ class I_copy(Instruction):
       # Expand source wildcards.
       srcs = list()
       for src in self.srcs:
-         for i in glob.glob("%s/%s" % (context, src)):  # glob can't take Path
+         matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
+         if (len(matches) == 0):
+            ch.FATAL("can't copy: not found: %s" % src)
+         for i in matches:
             srcs.append(i)
             ch.VERBOSE("source: %s" % i)
-      if (len(srcs) == 0):
-         ch.FATAL("can't COPY: no sources found")
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
       for src in srcs:
