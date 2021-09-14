@@ -54,7 +54,7 @@ cv_chimage_tar () {
     tar_out_validate "$2"
     img=$(chimage_path "$1")
     INFO 'exporting ...'
-    ( cd $img && tar czf - . ) | pv_ > "$2"
+    ( cd "$img" && tar czf - . ) | pv_ > "$2"
 }
 
 cv_dir_chimage () {
@@ -219,6 +219,7 @@ cv_tar_dir () {
     #
     # See FAQ on /dev exclusion. --no-wildcards-match-slash needed to prevent
     # * matching multiple directories; tar default differs from sh behavior.
+    #shellcheck disable=SC2094
       pv_ -s "$(stat -c%s "$1")" < "$1" \
     | tar x$decompress -C "$2" -f - \
           --anchored --no-wildcards-match-slash \
@@ -338,17 +339,16 @@ desc_base () {
     dsc=$2
     case $fmt in
         dir)
-            echo "$(basename "$dsc")"
+            basename "$dsc"
             ;;
         ch-image|docker)
-            echo "$(tag_to_path $dsc)"
+            tag_to_path "$dsc"
             ;;
         squash)
-            echo "$(basename "$dsc")" \
-                 | sed -E 's/\.(sqfs|squash|squashfs|squishy)$//'
+            basename "$dsc" | sed -E 's/\.(sqfs|squash|squashfs|squishy)$//'
             ;;
         tar)
-            echo "$(basename "$dsc")" | sed -E 's/\.(t.z|tar(\.(.|..))?)$//'
+            basename "$dsc" | sed -E 's/\.(t.z|tar(\.(.|..))?)$//'
             ;;
         *)
             FATAL "invalid format: $fmt"
@@ -366,7 +366,7 @@ dir_fixup () {
     # to deal with hidden files; see https://unix.stackexchange.com/a/6397.
     files=$(ls -Aq "$1")
     if [ "$(echo "$files" | wc -l)" -eq 1 ]; then
-        ( cd "${1}/${files}"
+        ( cd "${1}/${files}" || FATAL "cd failed: ${1}/${files}"
           for f in * .[!.]* ..?*; do
               if [ -e "$f" ]; then mv -- "$f" ..; fi
           done )
@@ -581,7 +581,6 @@ else
     VERBOSE 'docker: not found'
 fi
 
-[ -n "$in_fmt" ] && in_fmt_explicit=yes
 in_fmt=$(fmt_validate "$in_fmt" "$in_desc")
 [ -n "$out_fmt" ] && out_fmt_explicit=yes
 out_fmt=$(fmt_validate "$out_fmt" "$out_desc")

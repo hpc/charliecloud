@@ -40,6 +40,17 @@ load ../common
 # The outer loop is unrolled into four separate tests to avoid having one test
 # that runs for two minutes.
 
+# This is a little goofy, because several of the texts need *all* the
+# builders. Thus, we (a) run only for builder ch-image but (b)
+# pedantic-require Docker to also be installed.
+setup () {
+    scope standard
+    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    if ! command -v docker > /dev/null 2>&1; then
+        pedantic_fail 'docker not found'
+    fi
+}
+
 
 # Return success if directories $1 and $2 are recursively the same, failure
 # otherwise. This compares only metadata. False positives are possible if a
@@ -125,9 +136,10 @@ convert () {
 
 # Test conversions dir -> $1 -> (all) -> dir.
 test_from () {
-    ct=0
+    ct=1
+    convert "$ct" dir "$1"
     for j in ch-image docker squash tar; do
-        if [[ $1 != $j ]]; then
+        if [[ $1 != "$j" ]]; then
             ct=$((ct+1))
             convert "$ct" "$1" "$j"
         fi
@@ -140,8 +152,6 @@ test_from () {
 
 
 @test 'ch-convert: format inference' {
-    scope standard
-
     # Test input only; output uses same code. Test cases match all the
     # criteria to validate the priority. We don't exercise every possible
     # descriptor pattern, only those I thought had potential for error.
@@ -198,8 +208,6 @@ test_from () {
 }
 
 @test 'ch-convert: filename inference' {
-    scope standard
-
     echo
     # ch-image -> dir
     run ch-convert -n -i ch-image -o dir foo/bar "$BATS_TMPDIR"
@@ -280,8 +288,6 @@ test_from () {
 }
 
 @test 'ch-convert: errors' {
-    scope standard
-
     # same format
     run ch-convert -n foo.tar foo.tar.gz
     echo "$output"
@@ -298,21 +304,17 @@ test_from () {
 }
 
 @test 'ch-convert: dir -> ch-image -> X' {
-    scope standard
     test_from ch-image
 }
 
 @test 'ch-convert: dir -> docker -> X' {
-    scope standard
     test_from docker
 }
 
 @test 'ch-convert: dir -> squash -> X' {
-    scope standard
     test_from squash
 }
 
 @test 'ch-convert: dir -> tar -> X' {
-    scope standard
-    test_from ch-image
+    test_from tar
 }
