@@ -132,12 +132,11 @@ filesystem.
   3. :code:`/*`, :code:`./*`, i.e. absolute path or relative path with
      explicit dot: Directory.
 
-  4. :code:`*:*`, i.e. containing a colon, and:
+  4. If `ch-image` is installed: :code:`ch-image` internal storage.
 
-     1. :code:`ch-image` is installed: :code:`ch-image` internal storage.
-     2. Docker is installed: Docker internal storage.
+  5. If Docker is installed: Docker internal storage.
 
-  5. Otherwise: No format inference.
+  6. Otherwise: No format inference.
 
 Note that builder image references with no tag, such as :code:`debian`, are
 not inferred. The workaround is to add the default tag, in this case

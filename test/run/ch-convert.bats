@@ -187,7 +187,7 @@ test_from () {
     [[ $output = *'input:   dir'* ]]
 
     # builders
-    run ch-convert -n foo:bar out.tar
+    run ch-convert -n foo out.tar
     echo "$output"
     if command -v ch-image > /dev/null 2>&1; then
         [[ $status -eq 0 ]]
@@ -199,12 +199,6 @@ test_from () {
         [[ $status -eq 1 ]]
         [[ $output = *'no builder found' ]]
     fi
-
-    # no inference
-    run ch-convert -n foo out.tar
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"can't infer from: foo"* ]]
 }
 
 @test 'ch-convert: filename inference' {

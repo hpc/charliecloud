@@ -392,7 +392,7 @@ fmt_validate () {
             /*|./*)
                 fmt=dir
                 ;;
-            *:*)
+            *)
                 if [ -n "$have_ch_image" ]; then
                     fmt=ch-image
                 elif [ -n "$have_docker" ]; then
@@ -400,9 +400,6 @@ fmt_validate () {
                 else
                     FATAL "descriptor looks like builder storage but no builder found: ${dsc}"
                 fi
-                ;;
-            *)
-                FATAL "no format given, can't infer from: ${dsc}"
                 ;;
         esac
     fi
