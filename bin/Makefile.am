@@ -21,6 +21,7 @@ dist_bin_SCRIPTS = ch-build \
                    ch-build2dir \
                    ch-builder2squash \
                    ch-builder2tar \
+                   ch-convert \
                    ch-dir2squash \
                    ch-fromhost \
                    ch-mount \
