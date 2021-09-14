@@ -318,3 +318,41 @@ test_from () {
 @test 'ch-convert: dir -> tar -> X' {
     test_from tar
 }
+
+@test 'ch-convert: --no-clobber' {
+    # ch-image
+    run ch-convert --no-clobber -o ch-image "$BATS_TMPDIR" tmpimg
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists in ch-image storage, not deleting per --no-clobber: tmpimg" ]]
+
+    # dir
+    ch-convert -i ch-image -o dir 00_tiny "$BATS_TMPDIR"
+    run ch-convert --no-clobber -i ch-image -o dir 00_tiny "$BATS_TMPDIR"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny" ]]
+    rm -Rf --one-file-system "${BATS_TMPDIR}/00_tiny"
+
+    # docker
+    run ch-convert --no-clobber -o docker "$BATS_TMPDIR" tmpimg
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists in Docker storage, not deleting per --no-clobber: tmpimg" ]]
+
+    # squash
+    touch "${BATS_TMPDIR}/00_tiny.sqfs"
+    run ch-convert --no-clobber -i ch-image -o squash 00_tiny "$BATS_TMPDIR"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny.sqfs" ]]
+    rm "${BATS_TMPDIR}/00_tiny.sqfs"
+
+    # tar
+    touch "${BATS_TMPDIR}/00_tiny.tar.gz"
+    run ch-convert --no-clobber -i ch-image -o tar 00_tiny "$BATS_TMPDIR"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny.tar.gz" ]]
+    rm "${BATS_TMPDIR}/00_tiny.tar.gz"
+}

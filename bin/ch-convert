@@ -500,7 +500,7 @@ parent_validate () {
 # Exit with error if $1 exists and --no-clobber was given.
 path_noclobber () {
     if [ -e "$1" ] && [ -n "$no_clobber" ]; then
-        FATAL "exists, not overwriting per --no-clobber: ${1}"
+        FATAL "exists, not deleting per --no-clobber: ${1}"
     fi
 }
 
