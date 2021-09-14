@@ -604,3 +604,5 @@ if [ -z "$dry_run" ]; then
 fi
 
 rmdir "$tmpdir"
+
+INFO 'done'

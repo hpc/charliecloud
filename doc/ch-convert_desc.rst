@@ -45,9 +45,12 @@ producing the final format actually needed.
     Output image format is :code:`FMT`; inferred if omitted.
 
   :code:`--tmp DIR`
-    Path to temporary directory. Storage may be needed up to twice the
-    uncompressed size of the image, depending on the input and output formats.
-    Default: :code:`$TMPDIR` if specified; otherwise :code:`/var/tmp`.
+    A sub-directory is created in :code:`DIR` and removed at the end of a
+    successful conversion. **If this script crashes or errors out, the
+    temporary directory is left behind to assist in debugging.** Storage may
+    be needed up to twice the uncompressed size of the image, depending on the
+    input and output formats. Default: :code:`$TMPDIR` if specified; otherwise
+    :code:`/var/tmp`.
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter. Can be repeated.
@@ -95,6 +98,10 @@ Image formats
     :code:`ch-run`'s internal SquashFUSE mounting. Most systems have at least
     the SquashFS-Tools installed which allows unpacking into a directory, just
     like tar. Due to this greater flexibility, SquashFS is preferred to tar.
+
+    **Note:** Conversions to and from SquashFS are quite noisy due to the
+    verbosity of the underlying :code:`mksquashfs(1)` and
+    :code:`unsquashfs(1)` tools.
 
   :code:`tar`
     Tar archive containing the flattened image with no layer sub-archives;
