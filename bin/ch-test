@@ -41,10 +41,10 @@ Valid scopes: quick, standard, full
 
 Additional options:
 
-  -b, --builder BUILDER  image builder to use
+  -b,--builder BUILDER   image builder to use
   --dry-run              print summary of what would be tested and exit
-  --file FILE[:TEST]     run tests in FILE only, or even just TEST
-  -h, --help             print this help and exit
+  -f,--file FILE[:TEST]  run tests in FILE only, or even just TEST
+  -h,--help              print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
   --pack-fmt FMT         packed image format ("squash" or "tar")
