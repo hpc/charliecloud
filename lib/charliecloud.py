@@ -596,7 +596,7 @@ class Image:
          dev_ct = 0
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
-            self.validate_tar_path(fp.name, m.name)
+            TarFile.fix_member_path(m, fp.name)
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
@@ -623,17 +623,9 @@ class Image:
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
 
-   def validate_tar_path(self, filename, path):
-      "Reject paths outside the tar top level by aborting the program."
-      if (len(path) > 0 and path[0] == "/"):
-         FATAL("rejecting absolute path: %s: %s" % (filename, path))
-      if (".." in path.split("/")):
-         FATAL("rejecting path with up-level: %s: %s" % (filename, path))
-
    def validate_tar_link(self, filename, path, target):
       """Reject hard link targets outside the tar top level by aborting the
          program."""
-      self.validate_tar_path(filename, path)
       if (len(target) > 0 and target[0] == "/"):
          FATAL("rejecting absolute hard link target: %s: %s -> %s"
                % (filename, path, target))
@@ -1591,6 +1583,20 @@ class TarFile(tarfile.TarFile):
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))
+
+   @staticmethod
+   def fix_member_path(ti, tarball_path):
+      """Repair or reject (by aborting the program) ti.name (member path) if
+         it climbs outside the top level or has some other problem."""
+      old_name = ti.name
+      if (len(ti.name) == 0):
+         FATAL("rejecting zero-length member path: %s" % (tarball_path))
+      if (".." in ti.name.split("/")):
+         FATAL("rejecting member path with up-level: %s: %s" % (filename, path))
+      if (ti.name[0] == "/"):
+         ti.name = "." + old_name  # add dot so we don't have to count slashes
+      if (ti.name != old_name):
+         WARNING("fixed member path: %s -> %s" % (old_name, ti.name))
 
    @staticmethod
    def fix_member_uidgid(ti):
