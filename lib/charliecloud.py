@@ -1009,9 +1009,9 @@ class Progress:
       self.divisor = divisor
       self.length = length
       if (not os.isatty(log_fp.fileno()) or log_festoon):
-         self.overwrite_p = False
+         self.overwrite_p = False  # updates all use same line
       else:
-         self.overwrite_p = True
+         self.overwrite_p = True   # each update on new line
       self.precision = 1 if self.divisor >= 1000 else 0
       self.progress = 0
       self.display_last = float("-inf")
@@ -1035,11 +1035,7 @@ class Progress:
                line = "%s: %s" % (self.msg, pct)
             else:
                line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
-         if (self.overwrite_p):
-            line += "\r"  # CR so next INFO overwrites
-         else:
-            line += "\n"  # move to next line like usual
-         INFO(line)
+         INFO(line, end=("\r" if self.overwrite_p else "\n"))
          self.display_last = now
 
    def done(self):
@@ -1876,7 +1872,7 @@ def json_from_file(path, msg):
       FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
    return data
 
-def log(msg, hint=None, color=None, prefix=""):
+def log(msg, hint=None, color=None, prefix="", end="\n"):
    if (color is not None):
       color_set(color, log_fp)
    if (log_festoon):
@@ -1884,7 +1880,7 @@ def log(msg, hint=None, color=None, prefix=""):
       festoon = ("%5d %s  " % (os.getpid(), ts))
    else:
       festoon = ""
-   print(festoon, prefix, msg, sep="", file=log_fp, flush=True)
+   print(festoon, prefix, msg, sep="", file=log_fp, end=end, flush=True)
    if (hint is not None):
       print(festoon, "hint: ", hint, sep="", file=log_fp, flush=True)
    if (color is not None):
