@@ -750,11 +750,9 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
-test_sq=$(cat ../bin/config.h | grep HAVE_LIBSQUASHFUSE)
-
 @test 'ch-run: squashfs' {
 scope standard
-    [[ $test_sq = *"#undef"* ]] && skip 'no squashfuse'
+    [[ $TEST_SQ == 'yes' ]] || skip 'no squashfuse'
 
     ch_sqfs="${CH_TEST_TARDIR}/00_tiny.sqfs"
     ch_mnt="/var/tmp/${USER}.ch/mnt"
@@ -794,7 +792,7 @@ scope standard
 
 @test 'ch-run: squashfs errors' {
     scope standard
-    [[ $test_sq = *"#undef"* ]] && skip 'no squashfuse'
+    [[ $TEST_SQ == yes ]] || skip 'no squashfuse'
 
     ch_sqfs="${CH_TEST_TARDIR}"/00_tiny.sqfs
 

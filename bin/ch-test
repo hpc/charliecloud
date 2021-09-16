@@ -596,6 +596,7 @@ test_one_file () {
 }
 
 test_run () {
+    squash_check
     echo 'executing run phase tests ...'
     if [[ ! -f ${TMP_}/run_auto.bats ]]; then
         fatal "${TMP_}/run_auto.bats not found"
@@ -613,6 +614,18 @@ test_run () {
         done
     fi
     set +e
+}
+
+squash_check () {
+
+   output=$(ldd "${ch_bin}/ch-run")
+   if [[ $output != *"libsquashfuse_ll.so.0"* ]]; then
+      TEST_SQ=no
+   else
+      TEST_SQ=yes
+   fi
+   export TEST_SQ
+
 }
 
 # Exit with failure if given version number is below a minimum.
