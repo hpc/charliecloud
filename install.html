@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>1. Installing &mdash; Charliecloud 0.24 documentation</title>
+  <title>1. Installing &mdash; Charliecloud 0.25 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.24
+                0.25
               </div>
             
           
@@ -96,9 +96,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#using-release-tarball">1.1.1. Using release tarball</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#from-git-checkout">1.1.2. From Git checkout</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#configure-options">1.1.3. <code class="code docutils literal notranslate"><span class="pre">configure</span></code> options</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#feature-selection">1.1.3.1. Feature selection</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#dependency-selection">1.1.3.2. Dependency selection</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#less-strict-build">1.1.3.3. Less strict build</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#feature-selection-disable-foo">1.1.3.1. Feature selection: <code class="code docutils literal notranslate"><span class="pre">--disable-FOO</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dependency-selection-with-foo">1.1.3.2. Dependency selection: <code class="code docutils literal notranslate"><span class="pre">--with-FOO</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#less-strict-build-enable-buggy-build">1.1.3.3. Less strict build: <code class="code docutils literal notranslate"><span class="pre">--enable-buggy-build</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#disable-bundled-lark-package-disable-bundled-lark">1.1.3.4. Disable bundled Lark package: <code class="code docutils literal notranslate"><span class="pre">--disable-bundled-lark</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -122,13 +123,12 @@
 <li class="toctree-l4"><a class="reference internal" href="#c-compiler">1.3.4.4. C compiler</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#docker">1.3.4.5. Docker</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#image-repository-access">1.3.4.6. image repository access</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#lark-parser-python-package">1.3.4.7. “lark-parser” Python package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#python">1.3.4.8. Python</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#shellcheck">1.3.4.9. ShellCheck</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sphinx">1.3.4.10. Sphinx</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#squashfs">1.3.4.11. SquashFS</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudo-generic">1.3.4.12. sudo, generic</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#wget">1.3.4.13. Wget</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#python">1.3.4.7. Python</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#shellcheck">1.3.4.8. ShellCheck</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sphinx">1.3.4.9. Sphinx</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squashfs">1.3.4.10. SquashFS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudo-generic">1.3.4.11. sudo, generic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wget">1.3.4.12. Wget</a></li>
 </ul>
 </li>
 </ul>
@@ -282,19 +282,26 @@ common distributions should be sufficient.</p>
 <div><ul class="simple">
 <li><p>Automake</p></li>
 <li><p>Autoconf</p></li>
+<li><p>Python’s <code class="code docutils literal notranslate"><span class="pre">pip3</span></code> package installer and its <code class="code docutils literal notranslate"><span class="pre">wheel</span></code> extension</p></li>
 </ul>
 </div></blockquote>
 <p>Create <code class="code docutils literal notranslate"><span class="pre">configure</span></code> with:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ./autogen.sh
 </pre></div>
 </div>
+<p>This script has a few options; see its <code class="code docutils literal notranslate"><span class="pre">--help</span></code>.</p>
+<p>Note that Charliecloud disables Automake’s “maintainer mode” by default, so
+the build system (Makefiles, <code class="code docutils literal notranslate"><span class="pre">configure</span></code>, etc.) will never automatically
+be rebuilt. You must run <code class="code docutils literal notranslate"><span class="pre">autogen.sh</span></code> manually if you need this. You can
+also re-enable maintainer mode with <code class="code docutils literal notranslate"><span class="pre">configure</span></code> if you like, though this
+is not a tested configuration.</p>
 </div>
 <div class="section" id="configure-options">
 <h3><a class="toc-backref" href="#id8"><span class="section-number">1.1.3. </span><code class="code docutils literal notranslate"><span class="pre">configure</span></code> options</a><a class="headerlink" href="#configure-options" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud’s <code class="code docutils literal notranslate"><span class="pre">configure</span></code> has the following options in addition to the
 standard ones.</p>
-<div class="section" id="feature-selection">
-<h4><span class="section-number">1.1.3.1. </span>Feature selection<a class="headerlink" href="#feature-selection" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="feature-selection-disable-foo">
+<h4><span class="section-number">1.1.3.1. </span>Feature selection: <code class="code docutils literal notranslate"><span class="pre">--disable-FOO</span></code><a class="headerlink" href="#feature-selection-disable-foo" title="Permalink to this headline">¶</a></h4>
 <p>By default, all features that can be built will be built and installed. You
 can exclude some features with:</p>
 <blockquote>
@@ -327,8 +334,8 @@ can exclude some features with:</p>
 <p>You can also say <code class="code docutils literal notranslate"><span class="pre">--enable-FOO</span></code> to fail the build if <code class="code docutils literal notranslate"><span class="pre">FOO</span></code> can’t
 be built.</p>
 </div>
-<div class="section" id="dependency-selection">
-<h4><span class="section-number">1.1.3.2. </span>Dependency selection<a class="headerlink" href="#dependency-selection" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="dependency-selection-with-foo">
+<h4><span class="section-number">1.1.3.2. </span>Dependency selection: <code class="code docutils literal notranslate"><span class="pre">--with-FOO</span></code><a class="headerlink" href="#dependency-selection-with-foo" title="Permalink to this headline">¶</a></h4>
 <p>Some dependencies can be specified as follows. Note that <code class="code docutils literal notranslate"><span class="pre">--without-FOO</span></code>
 is not supported; use the feature selectors above.</p>
 <dl class="simple">
@@ -343,8 +350,10 @@ found first in <code class="code docutils literal notranslate"><span class="pre"
 </dd>
 </dl>
 </div>
-<div class="section" id="less-strict-build">
-<h4><span class="section-number">1.1.3.3. </span>Less strict build<a class="headerlink" href="#less-strict-build" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="less-strict-build-enable-buggy-build">
+<h4><span class="section-number">1.1.3.3. </span>Less strict build: <code class="code docutils literal notranslate"><span class="pre">--enable-buggy-build</span></code><a class="headerlink" href="#less-strict-build-enable-buggy-build" title="Permalink to this headline">¶</a></h4>
+<p><em>Please do not use this option routinely, as that hides bugs that we cannot
+find otherwise.</em></p>
 <p>By default, Charliecloud builds with <code class="code docutils literal notranslate"><span class="pre">CFLAGS</span></code> including <code class="code docutils literal notranslate"><span class="pre">-Wall</span>
 <span class="pre">-Werror</span></code>. The principle here is that we prefer diagnostics that are as noisy
 as practical, so that problems are identified early and we can fix them. We
@@ -376,8 +385,29 @@ code with a minimum of hassle. Thus, we provide the <code class="code docutils l
 <li><p>Remove it from your package or procedure once we fix that bug.</p></li>
 </ol>
 </div></blockquote>
-<p><strong>Please do not use this option routinely, as that hides bugs that we cannot
-find otherwise.</strong></p>
+</div>
+<div class="section" id="disable-bundled-lark-package-disable-bundled-lark">
+<h4><span class="section-number">1.1.3.4. </span>Disable bundled Lark package: <code class="code docutils literal notranslate"><span class="pre">--disable-bundled-lark</span></code><a class="headerlink" href="#disable-bundled-lark-package-disable-bundled-lark" title="Permalink to this headline">¶</a></h4>
+<p><em>This option is minimally supported and not recommended. Use only if you
+really know what you are doing.</em></p>
+<p>Charliecloud uses the Python package <a class="reference external" href="https://lark-parser.readthedocs.io/en/latest/">Lark</a> for parsing Dockerfiles and
+image references. Because this package is developed rapidly, and recent
+versions have important features and bug fixes not yet available in common
+distributions, we bundle the package with Charliecloud.</p>
+<p>If you prefer a separately-installed Lark, either via system packages or
+<code class="code docutils literal notranslate"><span class="pre">pip</span></code>, you can use <code class="code docutils literal notranslate"><span class="pre">./configure</span> <span class="pre">--disable-bundled-lark</span></code>. This
+excludes the bundled Lark from being installed or placed in <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">dist</span></code>
+tarballs. It <em>does not</em> remove the bundled Lark from the source directory; if
+you run from the source directory (i.e., without installing), the bundled Lark
+will be used if present regardless of this option.</p>
+<p>Bundled Lark is included in the tarballs we distribute. You can remove it and
+re-build <code class="code docutils literal notranslate"><span class="pre">configure</span></code> with <code class="code docutils literal notranslate"><span class="pre">./autogen.sh</span> <span class="pre">--rm-lark</span> <span class="pre">--no-lark</span></code>. If
+you are starting from a Git checkout, bundled Lark is installed by default by
+<code class="code docutils literal notranslate"><span class="pre">./autogen.sh</span></code>, but you can prevent this with <code class="code docutils literal notranslate"><span class="pre">./autogen.sh</span>
+<span class="pre">--no-lark</span></code>.</p>
+<p>The main use case for these options is to support package maintainers. If this
+is you and does not meet your needs, please get in touch with us and we will
+help.</p>
 </div>
 </div>
 </div>
@@ -472,6 +502,12 @@ shell and utilities.</p>
 <li><p>C99 compiler</p></li>
 </ul>
 </div></blockquote>
+<p>bundled Lark:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>lark.py under source dir</p></li>
+</ul>
+</div></blockquote>
 <p>documentation:</p>
 <blockquote>
 <div><ul class="simple">
@@ -496,7 +532,6 @@ shell and utilities.</p>
 <li><p>enabled</p></li>
 <li><p>Python shebang line</p></li>
 <li><p>Python in shebang ≥ 3.6</p></li>
-<li><p>“lark-parser” module ≥ 0.7.1</p></li>
 <li><p>“requests” module ≥ 2.6.0</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></p></li>
 </ul>
@@ -748,19 +783,13 @@ GitLab instance.</p></li>
 </ul>
 </div></blockquote>
 </div>
-<div class="section" id="lark-parser-python-package">
-<h4><span class="section-number">1.3.4.7. </span>“lark-parser” Python package<a class="headerlink" href="#lark-parser-python-package" title="Permalink to this headline">¶</a></h4>
-<p>PyPI has two incompatible packages that provide the module <code class="code docutils literal notranslate"><span class="pre">lark</span></code>,
-“<a class="reference external" href="https://pypi.org/project/lark-parser/">lark-parser</a>” and “lark”. You want
-“lark-parser”.</p>
-</div>
 <div class="section" id="python">
-<h4><span class="section-number">1.3.4.8. </span>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.4.7. </span>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h4>
 <p>We use Python for scripts that would be really hard to do in Bash, when we
 think Python is likely to be available.</p>
 </div>
 <div class="section" id="shellcheck">
-<h4><span class="section-number">1.3.4.9. </span>ShellCheck<a class="headerlink" href="#shellcheck" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.4.8. </span>ShellCheck<a class="headerlink" href="#shellcheck" title="Permalink to this headline">¶</a></h4>
 <p><a class="reference external" href="https://www.shellcheck.net/">ShellCheck</a> is a very thorough and capable
 linter for shell scripts. In order to pass the full test suite, all the shell
 scripts need to pass ShellCheck.</p>
@@ -770,7 +799,7 @@ isn’t a widely available tool chain. Fortunately, the developers provide
 pre-compiled <a class="reference external" href="https://github.com/koalaman/shellcheck/releases">static binaries</a> on their GitHub page.</p>
 </div>
 <div class="section" id="sphinx">
-<h4><span class="section-number">1.3.4.10. </span>Sphinx<a class="headerlink" href="#sphinx" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.4.9. </span>Sphinx<a class="headerlink" href="#sphinx" title="Permalink to this headline">¶</a></h4>
 <p>We use Sphinx to build the documentation; the theme is
 <a class="reference external" href="https://sphinx-rtd-theme.readthedocs.io/en/stable/">sphinx-rtd-theme</a>.</p>
 <p>Minimum versions are listed above. Note that while anything greater than the
@@ -787,14 +816,14 @@ write to <code class="code docutils literal notranslate"><span class="pre">/usr/
 matches previous <code class="code docutils literal notranslate"><span class="pre">pip</span></code> behavior.) See Debian bugs <a class="reference external" href="https://bugs.debian.org/725848">725848</a> and <a class="reference external" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856">820856</a>.</p>
 </div>
 <div class="section" id="squashfs">
-<h4><span class="section-number">1.3.4.11. </span>SquashFS<a class="headerlink" href="#squashfs" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.4.10. </span>SquashFS<a class="headerlink" href="#squashfs" title="Permalink to this headline">¶</a></h4>
 <p>The SquashFS workflow requires <a class="reference external" href="https://github.com/plougher/squashfs-tools">SquashFS Tools</a> and/or <a class="reference external" href="https://github.com/vasi/squashfuse">SquashFUSE</a>. Note that distribution packages of
 SquashFUSE often provide only the “high level” executables; the “low level”
 executables have better performance. These can be installed from source on any
 distribution.</p>
 </div>
 <div class="section" id="sudo-generic">
-<h4><span class="section-number">1.3.4.12. </span>sudo, generic<a class="headerlink" href="#sudo-generic" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.4.11. </span>sudo, generic<a class="headerlink" href="#sudo-generic" title="Permalink to this headline">¶</a></h4>
 <p>Privilege escalation via sudo is used in the test suite to:</p>
 <blockquote>
 <div><ul class="simple">
@@ -805,7 +834,7 @@ distribution.</p>
 <p>(Note that Charliecloud also uses <code class="code docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">docker</span></code>; see above.)</p>
 </div>
 <div class="section" id="wget">
-<h4><span class="section-number">1.3.4.13. </span>Wget<a class="headerlink" href="#wget" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.4.12. </span>Wget<a class="headerlink" href="#wget" title="Permalink to this headline">¶</a></h4>
 <p>Wget is used to demonstrate building an image without a builder (the main test
 image used to exercise Charliecloud itself).</p>
 </div>

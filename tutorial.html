@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>2. Tutorial &mdash; Charliecloud 0.24 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.25 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.24
+                0.25
               </div>
             
           
@@ -822,13 +822,21 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
                 libarchive <span class="se">\</span>
                 make <span class="se">\</span>
                 python3 <span class="se">\</span>
+                python3-devel <span class="se">\</span>
+                python3-lark-parser <span class="se">\</span>
+                python3-requests <span class="se">\</span>
                 python3-sphinx <span class="se">\</span>
                 python3-sphinx_rtd_theme <span class="se">\</span>
                 rpm-build <span class="se">\</span>
                 rpmlint <span class="se">\</span>
                 rsync <span class="se">\</span>
+                squashfs-tools <span class="se">\</span>
+                squashfuse <span class="se">\</span>
                 wget <span class="se">\</span>
  <span class="o">&amp;&amp;</span> dnf clean all
+
+<span class="c"># Need wheel to install bundled Lark, and the RPM version doesn&#39;t work.</span>
+<span class="k">RUN</span> pip3 install wheel
 
 <span class="c"># CentOS&#39;s linker doesn&#39;t search these paths by default; add them because we</span>
 <span class="c"># will install stuff later into /usr/local.</span>
