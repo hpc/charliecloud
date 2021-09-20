@@ -175,31 +175,37 @@ EOF
     # invalid character in image name
     cat <<'EOF' | image_ref_parse 'name*' 1
 error: image ref syntax, char 5: name*
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # missing port number
     cat <<'EOF' | image_ref_parse 'example.com:/path1/name' 1
 error: image ref syntax, char 13: example.com:/path1/name
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # path with leading slash
     cat <<'EOF' | image_ref_parse '/path1/name' 1
 error: image ref syntax, char 1: /path1/name
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # path but no name
     cat <<'EOF' | image_ref_parse 'path1/' 1
 error: image ref syntax, at end: path1/
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # bad digest algorithm
     cat <<'EOF' | image_ref_parse 'name@sha512:feeddad' 1
 error: image ref syntax, char 5: name@sha512:feeddad
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # both tag and digest
     cat <<'EOF' | image_ref_parse 'name:tag@sha512:feeddad' 1
 error: image ref syntax, char 9: name:tag@sha512:feeddad
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 }
 
@@ -389,7 +395,7 @@ EOF
     run ch-image --arch=doesnotexist pull alpine:latest
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'requested arch unavailable:'*'not one of:'* ]]
+    [[ $output = *'requested arch unavailable:'*'available:'* ]]
 
     # Delete it so we don't try to use a non-matching arch for other testing.
     ch-image delete alpine:latest
@@ -402,7 +408,7 @@ EOF
         run ch-image --arch=arm64/v8 pull charliecloud/metadata:2021-01-15
         echo "$output"
         [[ $status -eq 1 ]]
-        [[ $output = *'image is architecture-unaware; try --arch=yolo?' ]]
+        [[ $output = *'image is architecture-unaware'*'consider --arch=yolo' ]]
     fi
 }
 

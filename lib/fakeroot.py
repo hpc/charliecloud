@@ -135,7 +135,7 @@ DEFAULT_CONFIGS = {
    #
    # 5. Why grep a specified file vs. simpler alternatives?
    #
-   #    * Look at image name: Misses derived images, large number of tags
+   #    * Look at image name: Misses derived images, large number of names
    #      seems a maintenance headache, :latest changes.
    #
    #    * grep the same file for each distro: No standardized file for this.
@@ -161,7 +161,7 @@ DEFAULT_CONFIGS = {
 
    "rhel7":
    { "name": "CentOS/RHEL 7",
-     "match": ("/etc/redhat-release", r"release 7\."),
+     "match": ("/etc/redhat-release", r"(Red Hat|CentOS).*release 7\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
@@ -175,8 +175,8 @@ DEFAULT_CONFIGS = {
      "each": ["fakeroot"] },
 
    "rhel8":
-   { "name": "CentOS/RHEL 8",
-     "match":  ("/etc/redhat-release", r"release 8"),
+   { "name": "CentOS/RHEL 8+",
+     "match":  ("/etc/redhat-release", r"(Red Hat|CentOS).*release (?![0-7]\.)"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
@@ -213,8 +213,8 @@ DEFAULT_CONFIGS = {
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
    "debderiv":
-   { "name": "Debian (9, 10) or Ubuntu (16, 18, 20)",
-     "match": ("/etc/os-release", r"(stretch|buster|xenial|bionic|focal)"),
+   { "name": "Debian 9+ or Ubuntu 14+",
+     "match": ("/etc/os-release", r"Debian GNU/Linux (?![0-8] )|Ubuntu (?![0-9]\.|1[0-3]\.)"),
      "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
                 " || ! fgrep -q _apt /etc/passwd",
                 "echo 'APT::Sandbox::User \"root\";'"
@@ -235,7 +235,7 @@ DEFAULT_CONFIGS = {
 
    "fedora":
    { "name": "Fedora 24+,",
-     "match":  ("/etc/fedora-release", r"release (2[4-9]|[3-9][0-9])"),
+     "match":  ("/etc/fedora-release", r"release (?!1?[0-9] |2[0-3] )"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "dnf install -y fakeroot") ],
      "cmds": ["dnf", "rpm", "yum"],

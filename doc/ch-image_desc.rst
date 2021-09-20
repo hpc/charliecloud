@@ -240,9 +240,24 @@ Options:
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
 
-  :code:`-t`, :code:`-tag TAG`
-    Name of image to create. If not specified, use the final component of path
-    :code:`CONTEXT`. Append :code:`:latest` if no colon present.
+  :code:`-t`, :code:`--tag TAG`
+    Name of image to create. If not specified, infer the name:
+
+    1. If Dockerfile named :code:`Dockerfile` with an extension: use the
+       extension with invalid characters stripped, e.g.
+       :code:`Dockerfile.@FOO.bar` → :code:`foo.bar`.
+
+    2. If Dockerfile has extension :code:`dockerfile`: use the basename with
+       the same transformation, e.g. :code:`baz.@QUX.dockerfile` ->
+       :code:`baz.qux`.
+
+    3. If context directory is not :code:`/`: use its name, i.e. the last
+       component of the absolute path to the context directory, with the same
+       transformation,
+
+    4. Otherwise (context directory is :code:`/`): use :code:`root`.
+
+    If no colon present in the name, append :code:`:latest`.
 
 Privilege model
 ---------------

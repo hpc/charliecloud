@@ -37,6 +37,9 @@ const char *VERBOSE_LEVELS[] = { "error",
 /* Level of chatter on stderr desired (0-3). */
 int verbose;
 
+/* Path to host temporary directory. Set during command line processing. */
+char *host_tmp = NULL;
+
 
 /** Function prototypes (private) **/
 

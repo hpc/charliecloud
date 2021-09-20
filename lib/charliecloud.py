@@ -38,7 +38,7 @@ depfails = []
 # [1]: https://github.com/lark-parser/lark/issues/505
 import lark
 LARK_MIN = (0,  7, 1)
-LARK_MAX = (0, 11, 3)
+LARK_MAX = (0, 12, 0)
 lark_version = tuple(int(i) for i in lark.__version__.split("."))
 if (not LARK_MIN <= lark_version <= LARK_MAX):
    depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
@@ -81,6 +81,9 @@ ARCH_MAP = { "x86_64":    "amd64",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
+
+# String to use as hint when we throw an error that suggests a bug.
+BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
 
 # This is a general grammar for all the parsing we need to do. As such, you
 # must prepend a start rule before use.
@@ -593,7 +596,7 @@ class Image:
          dev_ct = 0
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
-            self.validate_tar_path(fp.name, m.name)
+            TarFile.fix_member_path(m, fp.name)
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
@@ -620,17 +623,9 @@ class Image:
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
 
-   def validate_tar_path(self, filename, path):
-      "Reject paths outside the tar top level by aborting the program."
-      if (len(path) > 0 and path[0] == "/"):
-         FATAL("rejecting absolute path: %s: %s" % (filename, path))
-      if (".." in path.split("/")):
-         FATAL("rejecting path with up-level: %s: %s" % (filename, path))
-
    def validate_tar_link(self, filename, path, target):
       """Reject hard link targets outside the tar top level by aborting the
          program."""
-      self.validate_tar_path(filename, path)
       if (len(target) > 0 and target[0] == "/"):
          FATAL("rejecting absolute hard link target: %s: %s -> %s"
                % (filename, path, target))
@@ -785,17 +780,18 @@ class Image_Ref:
                                    parser="earley", propagate_positions=True)
       if ("%" in s):
          s = s.replace("%", "/")
+      hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       try:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
          if (x.column == -1):
-            FATAL("image ref syntax, at end: %s" % s)
+            FATAL("image ref syntax, at end: %s" % s, hint);
          else:
-            FATAL("image ref syntax, char %d: %s" % (x.column, s))
+            FATAL("image ref syntax, char %d: %s" % (x.column, s), hint)
       except lark.exceptions.UnexpectedEOF as x:
          # We get UnexpectedEOF because of Lark issue #237. This exception
          # doesn't have a column location.
-         FATAL("image ref syntax, at end: %s" % s)
+         FATAL("image ref syntax, at end: %s" % s, hint)
       DEBUG(tree.pretty())
       return tree
 
@@ -1005,9 +1001,9 @@ class Progress:
       self.divisor = divisor
       self.length = length
       if (not os.isatty(log_fp.fileno()) or log_festoon):
-         self.overwrite_p = False
+         self.overwrite_p = False  # updates all use same line
       else:
-         self.overwrite_p = True
+         self.overwrite_p = True   # each update on new line
       self.precision = 1 if self.divisor >= 1000 else 0
       self.progress = 0
       self.display_last = float("-inf")
@@ -1031,11 +1027,7 @@ class Progress:
                line = "%s: %s" % (self.msg, pct)
             else:
                line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
-         if (self.overwrite_p):
-            line += "\r"  # CR so next INFO overwrites
-         else:
-            line += "\n"  # move to next line like usual
-         INFO(line, end="")
+         INFO(line, end=("\r" if self.overwrite_p else "\n"))
          self.display_last = now
 
    def done(self):
@@ -1509,8 +1501,8 @@ class Storage:
          mkdir(self.upload_cache)
          file_write(self.version_file, "%d\n" % STORAGE_VERSION)
       else:                         # can't upgrade
-         FATAL('incompatible storage directory v%d; you can delete it and re-initialize for this version of Charliecloud with "ch-image reset": %s'
-               % (v_found, self.root))
+         FATAL("incompatible storage directory v%d: %s" % (v_found, self.root),
+               'you can delete and re-initialize with "ch-image reset"')
 
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
@@ -1589,6 +1581,20 @@ class TarFile(tarfile.TarFile):
                   % (stat.S_IFMT(st.st_mode), targetpath))
 
    @staticmethod
+   def fix_member_path(ti, tarball_path):
+      """Repair or reject (by aborting the program) ti.name (member path) if
+         it climbs outside the top level or has some other problem."""
+      old_name = ti.name
+      if (len(ti.name) == 0):
+         FATAL("rejecting zero-length member path: %s" % (tarball_path))
+      if (".." in ti.name.split("/")):
+         FATAL("rejecting member path with up-level: %s: %s" % (filename, path))
+      if (ti.name[0] == "/"):
+         ti.name = "." + old_name  # add dot so we don't have to count slashes
+      if (ti.name != old_name):
+         WARNING("fixed member path: %s -> %s" % (old_name, ti.name))
+
+   @staticmethod
    def fix_member_uidgid(ti):
       assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
       if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
@@ -1627,10 +1633,10 @@ class TarFile(tarfile.TarFile):
 
 def DEBUG(*args, **kwargs):
    if (verbose >= 2):
-      log(color="38;5;6m", *args, **kwargs)  # dark cyan (same as 36m)
+      log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(*args, **kwargs):
-   log(color="1;31m", prefix="error: ", *args, **kwargs)  # bold red
+   log(*args, color="1;31m", prefix="error: ", **kwargs)  # bold red
 
 def FATAL(*args, **kwargs):
    ERROR(*args, **kwargs)
@@ -1638,18 +1644,18 @@ def FATAL(*args, **kwargs):
 
 def INFO(*args, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   log(color="33m", *args, **kwargs)  # yellow
+   log(*args, color="33m", **kwargs)  # yellow
 
 def TRACE(*args, **kwargs):
    if (verbose >= 3):
-      log(color="38;5;6m", *args, **kwargs)  # dark cyan (same as 36m)
+      log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
 
 def VERBOSE(*args, **kwargs):
    if (verbose >= 1):
-      log(color="38;5;14m", *args, **kwargs)  # light cyan (1;36m but not bold)
+      log(*args, color="38;5;14m", **kwargs)  # light cyan (1;36m but not bold)
 
 def WARNING(*args, **kwargs):
-   log(color="31m", prefix="warning: ", *args, **kwargs)  # red
+   log(*args, color="31m", prefix="warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -1658,7 +1664,7 @@ def arch_host_get():
    try:
       arch_registry = ARCH_MAP[arch_uname]
    except KeyError:
-      FATAL("unknown host architecture: %s" % arch_uname)
+      FATAL("unknown host architecture: %s" % arch_uname, BUG_REPORT_PLZ)
    VERBOSE("host architecture for registry: %s" % arch_registry)
    return arch_registry
 
@@ -1872,16 +1878,17 @@ def json_from_file(path, msg):
       FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
    return data
 
-def log(*args, color=None, prefix="", **kwargs):
+def log(msg, hint=None, color=None, prefix="", end="\n"):
    if (color is not None):
       color_set(color, log_fp)
    if (log_festoon):
-      prefix = ("%5d %s  %s"
-                % (os.getpid(),
-                   datetime.datetime.now().isoformat(timespec="milliseconds"),
-                   prefix))
-   print(prefix, file=log_fp, end="")
-   print(flush=True, file=log_fp, *args, **kwargs)
+      ts = datetime.datetime.now().isoformat(timespec="milliseconds")
+      festoon = ("%5d %s  " % (os.getpid(), ts))
+   else:
+      festoon = ""
+   print(festoon, prefix, msg, sep="", file=log_fp, end=end, flush=True)
+   if (hint is not None):
+      print(festoon, "hint: ", hint, sep="", file=log_fp, flush=True)
    if (color is not None):
       color_reset(log_fp)
 
@@ -1900,8 +1907,7 @@ def mkdirs(path):
    try:
       os.makedirs(path, exist_ok=True)
    except OSError as x:
-      ch.FATAL("can't mkdir: %s: %s: %s"
-               % (path, x.filename, x.strerror))
+      FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
 
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
@@ -1939,8 +1945,8 @@ def rmtree(path):
       try:
          shutil.rmtree(path)
       except OSError as x:
-         ch.FATAL("can't recursively delete directory %s: %s: %s"
-                  % (path, x.filename, x.strerror))
+         FATAL("can't recursively delete directory %s: %s: %s"
+               % (path, x.filename, x.strerror))
    else:
       assert False, "unimplemented"
 
@@ -1956,7 +1962,7 @@ def symlink(target, source, clobber=False):
          FATAL("can't symlink: %s exists; want target %s but existing is %s"
                % (source, target, os.readlink(source)))
    except OSError as x:
-      ch.FATAL("can't symlink: %s -> %s: %s" % (source, target, x.strerror))
+      FATAL("can't symlink: %s -> %s: %s" % (source, target, x.strerror))
 
 def tree_child(tree, cname):
    """Locate a descendant subtree named cname using breadth-first search and
