@@ -167,6 +167,18 @@ EOF
 }
 
 
+# shellcheck disable=SC2016
+@test '$TMPDIR' {
+    scope standard
+    mkdir -p "${BATS_TMPDIR}/tmpdir"
+    touch "${BATS_TMPDIR}/tmpdir/file-in-tmpdir"
+    TMPDIR=${BATS_TMPDIR}/tmpdir run ch-run "$ch_timg" -- ls -1 /tmp
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = file-in-tmpdir ]]
+}
+
+
 @test 'ch-run --cd' {
     scope quick
     # Default initial working directory is /.

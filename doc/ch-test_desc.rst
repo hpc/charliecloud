@@ -94,10 +94,10 @@ allows trading off thoroughness versus time.
     whatever is in the file are satisfied. Often running :code:`build` and
     :code:`run` first is sufficient, but this varies.
 
-    If :code:`TEST` is also given, then run only the test with that name,
-    skipping the others. The separator is a literal colon. Most test names
-    contain spaces, so you'll usually need to quote the argument to protect it
-    from the shell.
+    If :code:`TEST` is also given, then run only tests with name containing
+    that string, skipping the others. The separator is a literal colon. If the
+    string contains shell metacharacters such as space, you'll need to quote
+    the argument to protect it from the shell.
 
 Scope is specified with:
 

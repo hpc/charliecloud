@@ -596,7 +596,7 @@ class Image:
          dev_ct = 0
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
-            self.validate_tar_path(fp.name, m.name)
+            TarFile.fix_member_path(m, fp.name)
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
@@ -623,17 +623,9 @@ class Image:
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                  % (i, len(layers), lh[:7], dev_ct))
 
-   def validate_tar_path(self, filename, path):
-      "Reject paths outside the tar top level by aborting the program."
-      if (len(path) > 0 and path[0] == "/"):
-         FATAL("rejecting absolute path: %s: %s" % (filename, path))
-      if (".." in path.split("/")):
-         FATAL("rejecting path with up-level: %s: %s" % (filename, path))
-
    def validate_tar_link(self, filename, path, target):
       """Reject hard link targets outside the tar top level by aborting the
          program."""
-      self.validate_tar_path(filename, path)
       if (len(target) > 0 and target[0] == "/"):
          FATAL("rejecting absolute hard link target: %s: %s -> %s"
                % (filename, path, target))
@@ -1009,9 +1001,9 @@ class Progress:
       self.divisor = divisor
       self.length = length
       if (not os.isatty(log_fp.fileno()) or log_festoon):
-         self.overwrite_p = False
+         self.overwrite_p = False  # updates all use same line
       else:
-         self.overwrite_p = True
+         self.overwrite_p = True   # each update on new line
       self.precision = 1 if self.divisor >= 1000 else 0
       self.progress = 0
       self.display_last = float("-inf")
@@ -1035,11 +1027,7 @@ class Progress:
                line = "%s: %s" % (self.msg, pct)
             else:
                line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
-         if (self.overwrite_p):
-            line += "\r"  # CR so next INFO overwrites
-         else:
-            line += "\n"  # move to next line like usual
-         INFO(line)
+         INFO(line, end=("\r" if self.overwrite_p else "\n"))
          self.display_last = now
 
    def done(self):
@@ -1593,6 +1581,20 @@ class TarFile(tarfile.TarFile):
                   % (stat.S_IFMT(st.st_mode), targetpath))
 
    @staticmethod
+   def fix_member_path(ti, tarball_path):
+      """Repair or reject (by aborting the program) ti.name (member path) if
+         it climbs outside the top level or has some other problem."""
+      old_name = ti.name
+      if (len(ti.name) == 0):
+         FATAL("rejecting zero-length member path: %s" % (tarball_path))
+      if (".." in ti.name.split("/")):
+         FATAL("rejecting member path with up-level: %s: %s" % (filename, path))
+      if (ti.name[0] == "/"):
+         ti.name = "." + old_name  # add dot so we don't have to count slashes
+      if (ti.name != old_name):
+         WARNING("fixed member path: %s -> %s" % (old_name, ti.name))
+
+   @staticmethod
    def fix_member_uidgid(ti):
       assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
       if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
@@ -1876,7 +1878,7 @@ def json_from_file(path, msg):
       FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
    return data
 
-def log(msg, hint=None, color=None, prefix=""):
+def log(msg, hint=None, color=None, prefix="", end="\n"):
    if (color is not None):
       color_set(color, log_fp)
    if (log_festoon):
@@ -1884,7 +1886,7 @@ def log(msg, hint=None, color=None, prefix=""):
       festoon = ("%5d %s  " % (os.getpid(), ts))
    else:
       festoon = ""
-   print(festoon, prefix, msg, sep="", file=log_fp, flush=True)
+   print(festoon, prefix, msg, sep="", file=log_fp, end=end, flush=True)
    if (hint is not None):
       print(festoon, "hint: ", hint, sep="", file=log_fp, flush=True)
    if (color is not None):
