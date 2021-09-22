@@ -195,23 +195,6 @@ jobs:
           # no install, enable: build fails, untested
           # install, enable: normal configuration, remainder of CI
 
-      - name: squashFS, ch-image
-        if: ${{matrix.run_squashfs == 'internal'}}
-        run: |
-          set -x
-          # disable
-          ./autogen.sh
-          ./configure --with-libsquashfuse=no --prefix=$ch_prefix/from-git
-          fgrep 'internal mount with libsquashfuse ... no' config.log
-          # enable
-          ./configure --with-libsquashfuse=yes --prefix=$ch_prefix/from-git
-          fgrep 'internal mount with libsquashfuse ... yes' config.log
-          set +x
-          make
-          # tmp check
-          bin/ch-test all
-          make clean
-
       - name: build/install from Git
         run: |
           ./autogen.sh
@@ -229,6 +212,8 @@ jobs:
               #fgrep 'lark.py under source dir ... yes' config.log
               test -f ./lib/lark/lark.py
           fi
+          [[ matrix.run_squashfs = internal ]] && fgrep 'internal mount with libsquashfuse ... yes' config.log
+          [[ matrix.run_squashfs = external ]] && fgrep 'internal mount with libsquashfuse ... no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
