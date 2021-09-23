@@ -17,16 +17,16 @@ jobs:
         builder: [none, docker, ch-image]
         keep_sudo:  # if false, remove self from sudoers after install/setup
           - false
-        run_squashfs: #if false, squashFS workflow doesn't build
-          - external
+        squashfs: #if no_squashfs, squashFS workflow doesn't build
+          - no_squashfs
         include:
           - builder: docker
             keep_sudo: true
-            run_squashfs: external
+            squashfs: no_squashfs
 
           - builder: ch-image
             keep_sudo: false
-            run_squashfs: internal
+            squashfs: run_squashfs
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
@@ -117,7 +117,7 @@ jobs:
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
 
       - name: install libsquashfuse
-        if: ${{ matrix.builder == 'ch-image' }}
+        if: ${{ matrix.squashfs == 'run_squashfs' }}
         run: |
           set -x
           # Install libfuse3 for libsquashFUSE.
@@ -212,8 +212,8 @@ jobs:
               #fgrep 'lark.py under source dir ... yes' config.log
               test -f ./lib/lark/lark.py
           fi
-          [[ matrix.run_squashfs = internal ]] && fgrep 'internal mount with libsquashfuse ... yes' config.log
-          [[ matrix.run_squashfs = external ]] && fgrep 'internal mount with libsquashfuse ... no' config.log
+          [[ matrix.squashfs = run_squashfs ]] && fgrep 'internal mount with libsquashfuse ... yes' config.log
+          [[ matrix.squashfs = no_squashfs ]] && fgrep 'internal mount with libsquashfuse ... no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
