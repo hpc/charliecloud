@@ -208,8 +208,7 @@ jobs:
           [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
           if [[ $CH_BUILDER = ch-image ]]; then
               fgrep 'with ch-image(1): yes' config.log
-              #fgrep 'bundled Lark: yes' config.log
-              #fgrep 'lark.py under source dir ... yes' config.log
+              fgrep '"lark" module ... bundled' config.log
               test -f ./lib/lark/lark.py
           fi
           [[ matrix.squashfs = run_squashfs ]] && fgrep 'internal mount with libsquashfuse ... yes' config.log

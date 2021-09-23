@@ -97,6 +97,7 @@ void privs_verify_invoking();
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
 
+
 /** Main **/
 
 int main(int argc, char *argv[])

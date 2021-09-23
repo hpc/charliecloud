@@ -160,6 +160,7 @@ void containerize(struct container *c)
       join_namespaces(join.shared->winner_pid);
    if (c->join)
       join_end();
+
 }
 
 /* Enter the UDSS. After this, we are inside the UDSS.

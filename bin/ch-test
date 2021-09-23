@@ -617,15 +617,13 @@ test_run () {
 }
 
 squash_check () {
-
-   output=$(ldd "${ch_bin}/ch-run")
-   if [[ $output != *"libsquashfuse_ll.so.0"* ]]; then
-      TEST_SQ=no
-   else
+   output=$(ldd "${ch_bin}/ch-run") #did ch-run link with libsquashfuse
+   if [[ $output = *"libsquashfuse_ll.so.0"* ]]; then
       TEST_SQ=yes
+   else
+      TEST_SQ=no
    fi
    export TEST_SQ
-
 }
 
 # Exit with failure if given version number is below a minimum.

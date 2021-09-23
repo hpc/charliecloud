@@ -393,6 +393,7 @@ EOF
     [[ $output = *"can't mkdir: ${ch_timg}/proc/sys/doesnotexist under existing bind-mount ${ch_timg}/proc "* ]]
 }
 
+
 @test 'ch-run --set-env' {
     scope standard
 
@@ -762,7 +763,6 @@ scope standard
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"using default mount point: ${ch_mnt}"* ]]
-
     [[ -d ${ch_mnt} ]]
     rmdir "${ch_mnt}"
 

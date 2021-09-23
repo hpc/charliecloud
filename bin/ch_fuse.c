@@ -81,13 +81,11 @@ volatile bool sigchld_received;
 /* True if any exit request signal has been received. */
 volatile bool loop_terminating = false;
 
-
 /** Function prototypes (private) **/
 
 void sq_done_request(int signum);
 int sq_loop();
 void sq_mount(const char *img_path, char *mountpt);
-
 
 /** Functions **/
 
