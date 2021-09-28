@@ -375,7 +375,7 @@ EOF
     run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-abs" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: /tmp not subdirectory of ${ch_timg}"* ]]
+    [[ $output = *"can't bind: "*" not subdirectory of ${ch_timg}"* ]]
 
     # destination relative symlink outside image
     run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-rel" "$ch_timg" -- /bin/true
@@ -617,10 +617,11 @@ EOF
 
     printf '\n# Nothing\n\n'
     run ch-run --unset-env=doesnotmatch "$ch_timg" -- env
-    echo "$output"
+    echo "$output" | sort
     [[ $status -eq 0 ]]
-    ex='^(_|CH_RUNNING|HOME|PATH|SHLVL)='  # variables expected to change
-    diff -u <(env | grep -Ev "$ex") <(echo "$output" | grep -Ev "$ex")
+    ex='^(_|CH_RUNNING|HOME|PATH|SHLVL|TMPDIR)='  # expected to change
+    diff -u <(env | grep -Ev "$ex" | sort) \
+	    <(echo "$output" | grep -Ev "$ex" | sort)
 
     printf '\n# Everything\n\n'
     run ch-run --unset-env='*' "$ch_timg" -- env
@@ -766,7 +767,8 @@ EOF
 
 @test 'broken image errors' {
     scope standard
-    img="${BATS_TMPDIR}/broken-image"
+    img=${BATS_TMPDIR}/broken-image
+    tmpdir=${TMPDIR:-/tmp}
 
     # Create an image skeleton.
     dirs=$(echo {dev,proc,sys})
@@ -895,11 +897,11 @@ EOF
 
     # At this point, there should be exactly two each of passwd and group
     # temporary files. Remove them.
-    [[ $(find /tmp -maxdepth 1 -name 'ch-run_passwd*' | wc -l) -eq 2 ]]
-    [[ $(find /tmp -maxdepth 1 -name 'ch-run_group*' | wc -l) -eq 2 ]]
-    rm -v /tmp/ch-run_{passwd,group}*
-    [[ $(find /tmp -maxdepth 1 -name 'ch-run_passwd*' | wc -l) -eq 0 ]]
-    [[ $(find /tmp -maxdepth 1 -name 'ch-run_group*' | wc -l) -eq 0 ]]
+    [[ $(find -H "$tmpdir" -maxdepth 1 -name 'ch-run_passwd*' | wc -l) -eq 2 ]]
+    [[ $(find -H "$tmpdir" -maxdepth 1 -name 'ch-run_group*'  | wc -l) -eq 2 ]]
+    rm -v "$tmpdir"/ch-run_{passwd,group}*
+    [[ $(find -H "$tmpdir" -maxdepth 1 -name 'ch-run_passwd*' | wc -l) -eq 0 ]]
+    [[ $(find -H "$tmpdir" -maxdepth 1 -name 'ch-run_group*'  | wc -l) -eq 0 ]]
 }
 
 
