@@ -11,9 +11,9 @@ tag='ch-image push'
 setup () {
     scope standard
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
-    # Skip unless CI or there is a listener on localhost:5000.
-    if [[ -z $CI ]] && ! (   command -v ss > /dev/null 2>&1 \
-                          && ss -lnt | grep -F :5000); then
+    # Skip unless GitHub Actions or there is a listener on localhost:5000.
+    if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
+                                      && ss -lnt | grep -F :5000); then
         skip 'no local registry'
     fi
 
