@@ -849,12 +849,16 @@ fields:
 
    def defaults_add(self):
       "Set defaults for all empty fields."
-      if (self.host is None): self.host = "registry-1.docker.io"
-      if (self.port is None): self.port = 443
-      if (self.host == "registry-1.docker.io" and len(self.path) == 0):
-         # FIXME: For Docker Hub only, images with no path need a path of
-         # "library" substituted. Need to understand/document the rules here.
-         self.path = ["library"]
+      if (self.host is None):
+         self.host = os.getenv("CH_REGY_DEFAULT_HOST", "registry-1.docker.io")
+      if (self.port is None):
+         self.port = int(os.getenv("CH_REGY_DEFAULT_PORT", 443))
+      if (len(self.path) == 0):
+         self.path = os.getenv("CH_REGY_DEFAULT_PATH", "").split("/")
+         if (len(self.path) == 0 and self.host == "registry-1.docker.io"):
+            # FIXME: For Docker Hub only, images with no path need a path of
+            # "library" substituted. Need to understand/document rules here.
+            self.path = ["library"]
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):

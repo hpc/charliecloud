@@ -266,6 +266,9 @@ EOF
 }
 
 @test 'pull from public repos' {
+    if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
+        skip 'default registry host set'  # avoid Docker Hub
+    fi
     if [[ -z $CI ]]; then
         # Verify we can reach the public internet, except on CI, where we
         # insist this should work.
@@ -413,6 +416,10 @@ EOF
 }
 
 @test 'pull images that do not exist' {
+    if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
+        skip 'default registry host set'  # avoid Docker Hub
+    fi
+
     # name does not exist remotely, in library
     run ch-image pull doesnotexist:latest
     echo "$output"
