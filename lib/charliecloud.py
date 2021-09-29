@@ -853,14 +853,13 @@ fields:
          self.host = os.getenv("CH_REGY_DEFAULT_HOST", "registry-1.docker.io")
       if (self.port is None):
          self.port = int(os.getenv("CH_REGY_DEFAULT_PORT", 443))
-      if (len(self.path) == 0):
-         self.path = os.getenv("CH_REGY_DEFAULT_PATH", [])
-         if (isinstance(self.path, str)):
-            self.path = self.path.split("/")
-         if (len(self.path) == 0 and self.host == "registry-1.docker.io"):
-            # FIXME: For Docker Hub only, images with no path need a path of
-            # "library" substituted. Need to understand/document rules here.
-            self.path = ["library"]
+      if (self.host == "registry-1.docker.io" and len(self.path) == 0):
+         # FIXME: For Docker Hub only, images with no path need a path of
+         # "library" substituted. Need to understand/document the rules here.
+         self.path = ["library"]
+      prefix = os.getenv("CH_REGY_PATH_PREFIX")
+      if (prefix is not None):
+         self.path = prefix.split("/") + self.path
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
