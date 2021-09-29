@@ -854,7 +854,9 @@ fields:
       if (self.port is None):
          self.port = int(os.getenv("CH_REGY_DEFAULT_PORT", 443))
       if (len(self.path) == 0):
-         self.path = os.getenv("CH_REGY_DEFAULT_PATH", "").split("/")
+         self.path = os.getenv("CH_REGY_DEFAULT_PATH", [])
+         if (isinstance(self.path, str)):
+            self.path = self.path.split("/")
          if (len(self.path) == 0 and self.host == "registry-1.docker.io"):
             # FIXME: For Docker Hub only, images with no path need a path of
             # "library" substituted. Need to understand/document rules here.
