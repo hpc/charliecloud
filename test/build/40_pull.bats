@@ -248,6 +248,9 @@ EOF
 
 @test 'pull image with manifest schema v1' {
     # Verify we handle images with manifest schema version one (v1).
+    if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
+       skip 'default registry host set'  # only v1 on Docker Hub
+    fi
 
     unpack="${BATS_TMPDIR}/tmp"
     cache=$unpack/dlcache
@@ -415,9 +418,10 @@ EOF
     fi
 }
 
+
 @test 'pull images that do not exist' {
     if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
-        skip 'default registry host set'  # avoid Docker Hub
+        skip 'default registry host set'  # errors are Docker Hub specific
     fi
 
     # name does not exist remotely, in library
