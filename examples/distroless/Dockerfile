@@ -3,7 +3,7 @@
 # dependencies only. https://github.com/GoogleContainerTools/distroless
 # The python3 image was chosen for ease of testing.
 FROM gcr.io/distroless/python3
-COPY . /distroless
+COPY hello.py /
 
 # Without the CMD directive ch-builder2tar will fail when using docker
-CMD ["/distroless/hello.py"]
+CMD ["/hello.py"]
