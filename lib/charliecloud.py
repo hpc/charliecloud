@@ -849,7 +849,15 @@ fields:
 
    def defaults_add(self):
       "Set defaults for all empty fields."
-      if (self.host is None): self.host = "registry-1.docker.io"
+      if (self.host is None):
+         if ("CH_REGY_DEFAULT_HOST" not in os.environ):
+            self.host = "registry-1.docker.io"
+         else:
+            self.host = os.getenv("CH_REGY_DEFAULT_HOST")
+            self.port = int(os.getenv("CH_REGY_DEFAULT_PORT", 443))
+            prefix = os.getenv("CH_REGY_PATH_PREFIX")
+            if (prefix is not None):
+               self.path = prefix.split("/") + self.path
       if (self.port is None): self.port = 443
       if (self.host == "registry-1.docker.io" and len(self.path) == 0):
          # FIXME: For Docker Hub only, images with no path need a path of
