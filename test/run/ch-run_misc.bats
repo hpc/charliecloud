@@ -621,7 +621,7 @@ EOF
     [[ $status -eq 0 ]]
     ex='^(_|CH_RUNNING|HOME|PATH|SHLVL|TMPDIR)='  # expected to change
     diff -u <(env | grep -Ev "$ex" | sort) \
-	    <(echo "$output" | grep -Ev "$ex" | sort)
+            <(echo "$output" | grep -Ev "$ex" | sort)
 
     printf '\n# Everything\n\n'
     run ch-run --unset-env='*' "$ch_timg" -- env
