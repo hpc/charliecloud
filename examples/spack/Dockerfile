@@ -18,12 +18,14 @@ FROM centos:8
 # bzip, file, patch, unzip, and which are packages needed to install
 # Charliecloud with Spack. These are in Spack's Docker example [2] but are not
 # documented as prerequisites [1].
+#
+# Installing python3.8 to work around issues seen with 3.6
 RUN dnf install -y --setopt=install_weak_deps=false \
                 gcc \
                 gcc-c++ \
                 git \
                 gnupg2-smime \
-                python3 \
+                python38 \
                 make \
                 bzip2 \
                 file \
