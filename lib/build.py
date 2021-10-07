@@ -131,7 +131,7 @@ def main(cli_):
    env = Environment()
 
    # Read input file.
-   if (cli.file == "-"):
+   if (cli.file == "-" or cli.context == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
    else:
       fp = ch.open_(cli.file, "rt")
