@@ -1,0 +1,18 @@
+# This Dockerfile is used to test image with an OCI manifest (issue #1184). It
+# must be built with Podman; version 3.0.1 works.
+#
+# Scope is "skip" because we pull it to test; see test/build/50_pull.bats.
+# ch-test-scope: skip
+#
+# To build and push:
+#
+#   $ VERSION=$(date +%Y-%m-%d)
+#   $ podman build -t charliecloud/ocimanifest:$VERSION \
+#                  -f Dockerfile.ocimanifest .
+#   $ podman images | fgrep ocimanifest
+#   $ podman login
+#   $ podman push charliecloud/ocimanifest:$VERSION
+#
+
+FROM alpine:3.9
+RUN echo hello
