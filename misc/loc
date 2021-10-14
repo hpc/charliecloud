@@ -315,6 +315,6 @@ if [[ -s /tmp/loc.extra ]]; then
     cat /tmp/loc.extra
     echo
     echo '🚨🚨🚨 unknown files found 🚨🚨🚨'
-    echo 'did you "make distclean; ./autogen.sh --clean"?'
+    echo 'did you "./autogen.sh --clean --rm-lark"?'
     exit 1
 fi
