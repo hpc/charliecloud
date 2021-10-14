@@ -127,10 +127,11 @@ store secrets in environment variables.
 Storage directory
 =================
 
-:code:`ch-image` maintains state using normal files and directories, including
-unpacked container images, located in its *storage directory*. There is no
-notion of storage drivers, graph drivers, etc., to select and/or configure. In
-descending order of priority, this directory is located at:
+:code:`ch-image` maintains state using normal files and directories located in
+its *storage directory*; contents include temporary images used for building
+and various caches.
+
+In descending order of priority, this directory is located at:
 
   :code:`-s`, :code:`--storage DIR`
     Command line option.
@@ -140,6 +141,9 @@ descending order of priority, this directory is located at:
 
   :code:`/var/tmp/$USER/ch-image`
     Default.
+
+Unlike many container implementations, there is no notion of storage drivers,
+graph drivers, etc., to select and/or configure.
 
 The storage directory can reside on any filesystem. However, it contains lots
 of small files and metadata traffic can be intense. For example, the
@@ -153,6 +157,12 @@ While you can currently poke around in the storage directory and find unpacked
 images runnable with :code:`ch-run`, this is not a supported use case. The
 supported workflow uses :code:`ch-builder2tar` or :code:`ch-builder2squash` to
 obtain a packed image; see the tutorial for details.
+
+The storage directory format changes on no particular schedule. Often
+:code:`ch-image` is able to upgrade the directory; however, downgrading is not
+supported and sometimes upgrade is not possible. In these cases,
+:code:`ch-image` will refuse to run until you delete and re-initialize the
+directory with :code:`ch-image reset`.
 
 .. warning::
 
@@ -230,9 +240,24 @@ Options:
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
 
-  :code:`-t`, :code:`-tag TAG`
-    Name of image to create. If not specified, use the final component of path
-    :code:`CONTEXT`. Append :code:`:latest` if no colon present.
+  :code:`-t`, :code:`--tag TAG`
+    Name of image to create. If not specified, infer the name:
+
+    1. If Dockerfile named :code:`Dockerfile` with an extension: use the
+       extension with invalid characters stripped, e.g.
+       :code:`Dockerfile.@FOO.bar` → :code:`foo.bar`.
+
+    2. If Dockerfile has extension :code:`dockerfile`: use the basename with
+       the same transformation, e.g. :code:`baz.@QUX.dockerfile` ->
+       :code:`baz.qux`.
+
+    3. If context directory is not :code:`/`: use its name, i.e. the last
+       component of the absolute path to the context directory, with the same
+       transformation,
+
+    4. Otherwise (context directory is :code:`/`): use :code:`root`.
+
+    If no colon present in the name, append :code:`:latest`.
 
 Privilege model
 ---------------

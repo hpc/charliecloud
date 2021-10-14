@@ -15,6 +15,7 @@ build/50_misc.bats \
 build/99_cleanup.bats \
 common.bash \
 fixtures/empty-file \
+fixtures/README \
 make-auto.d/build.bats.in \
 make-auto.d/build_custom.bats.in \
 make-auto.d/builder_to_archive.bats.in \
@@ -43,10 +44,6 @@ Build.docker_pull \
 Build.missing \
 docs-sane \
 make-perms-test
-
-# Stuff that doesn't need to be installed.
-EXTRA_DIST = \
-fixtures/README
 
 # Program and shared library used for testing shared library injection. It's
 # built according to the rules below. In principle, we could use libtool for
@@ -85,8 +82,8 @@ uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
 endif
-EXTRA_DIST += $(testfiles) $(testfiles_exec) \
-              docs-sane.py.in force-auto.py.in make-perms-test.py.in
+EXTRA_DIST = $(testfiles) $(testfiles_exec) \
+             docs-sane.py.in force-auto.py.in make-perms-test.py.in
 EXTRA_SCRIPTS = $(sobuilts)
 
 ## Python scripts - need text processing

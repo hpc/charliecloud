@@ -138,7 +138,6 @@ ch-image)
         exit 1
     fi
     echo "exporting"
-    echo "$storage"
     ( cd "$storage" && tar cf - . ) | pv_ > "$tar"
 
     ;;

@@ -151,6 +151,11 @@ int main(int argc, char *argv[])
       args.c.join_tag = join_tag(args.c.join_tag);
    }
 
+   if (getenv("TMPDIR") != NULL)
+      host_tmp = getenv("TMPDIR");
+   else
+      host_tmp = "/tmp";
+
    c_argc = argc - arg_next;
    T_ (c_argv = calloc(c_argc + 1, sizeof(char *)));
    for (int i = 0; i < c_argc; i++)
@@ -273,6 +278,9 @@ void fix_environment(struct args *args)
       Z_ (setenv("PATH", new_value, 1));
       INFO("new $PATH: %s", new_value);
    }
+
+   // $TMPDIR: Unset.
+   Z_ (unsetenv("TMPDIR"));
 
    // --set-env and --unset-env.
    for (int i = 0; args->env_deltas[i].action != ENV_END; i++) {

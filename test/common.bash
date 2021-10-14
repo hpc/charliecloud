@@ -136,7 +136,7 @@ run () {
 scope () {
     if [[ -n $ch_one_test ]]; then
         # Ignore scope if a single test is given.
-        if [[ $ch_one_test != "$BATS_TEST_DESCRIPTION" ]]; then
+        if [[ $BATS_TEST_DESCRIPTION != *"$ch_one_test"* ]]; then
             skip 'per --file'
         else
             return 0
@@ -206,6 +206,8 @@ ch_lib=$(ch-build --_lib-path)
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
+# shellcheck disable=SC2034
+ch_version_base=$(echo "$ch_version" | sed -E 's/~.+//')
 # shellcheck disable=SC2034
 ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 
