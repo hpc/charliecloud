@@ -465,29 +465,6 @@ mount_points_ensure () {
     done
 }
 
-# Infer output descriptor by setting $out_desc, if appropriate. Otherwise,
-# leave it unchanged.
-out_infer () {
-    if [ -n "$out_fmt_explicit" ] && [ -d "$out_desc" ]; then
-        base=$(desc_base "$in_fmt" "$in_desc")
-        case $out_fmt in
-            dir)
-                out_desc=${out_desc}/${base}
-                ;;
-            squash)
-                if [ "$USER" = rgoff ]; then
-                    out_desc=${out_desc}/${base}.squishy
-                else
-                    out_desc=${out_desc}/${base}.sqfs
-                fi
-                ;;
-            tar)
-                out_desc=${out_desc}/${base}.tar.gz
-                ;;
-        esac
-    fi
-}
-
 # Validate the parent or enclosing directory of $1 exists.
 parent_validate () {
     parent=$(dirname "$1")
@@ -581,7 +558,6 @@ fi
 in_fmt=$(fmt_validate "$in_fmt" "$in_desc")
 [ -n "$out_fmt" ] && out_fmt_explicit=yes
 out_fmt=$(fmt_validate "$out_fmt" "$out_desc")
-out_infer
 tmpdir_setup
 
 VERBOSE "temp dir: ${tmpdir}"

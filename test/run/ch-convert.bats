@@ -40,6 +40,7 @@ load ../common
 # The outer loop is unrolled into four separate tests to avoid having one test
 # that runs for two minutes.
 
+
 # This is a little goofy, because several of the texts need *all* the
 # builders. Thus, we (a) run only for builder ch-image but (b)
 # pedantic-require Docker to also be installed.
@@ -201,85 +202,6 @@ test_from () {
     fi
 }
 
-@test 'ch-convert: filename inference' {
-    echo
-    # ch-image -> dir
-    run ch-convert -n -i ch-image -o dir foo/bar "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  dir       ${BATS_TMPDIR}/foo%bar"* ]]
-    # docker -> dir
-    run ch-convert -n -i docker -o dir foo/bar "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  dir       ${BATS_TMPDIR}/foo%bar"* ]]
-    # squash -> dir
-    run ch-convert -n -i squash -o dir foo.sqfs "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  dir       ${BATS_TMPDIR}/foo"* ]]
-    # tar -> dir
-    run ch-convert -n -i tar -o dir foo.tar.gz "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  dir       ${BATS_TMPDIR}/foo"* ]]
-
-    echo
-    # ch-image -> squash
-    run ch-convert -n -i ch-image -o squash foo/bar "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  squash    ${BATS_TMPDIR}/foo%bar.sqfs"* ]]
-    # dir -> squash
-    run ch-convert -n -i dir -o squash foo "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  squash    ${BATS_TMPDIR}/foo.sqfs"* ]]
-    # docker -> squash
-    run ch-convert -n -i docker -o squash foo/bar "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  squash    ${BATS_TMPDIR}/foo%bar.sqfs"* ]]
-    # tar -> squash
-    run ch-convert -n -i tar -o squash foo.tar.gz "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  squash    ${BATS_TMPDIR}/foo.sqfs"* ]]
-
-    echo
-    # ch-image -> tar
-    run ch-convert -n -i ch-image -o tar foo/bar "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  tar       ${BATS_TMPDIR}/foo%bar.tar.gz"* ]]
-    # dir -> tar
-    run ch-convert -n -i dir -o tar foo "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  tar       ${BATS_TMPDIR}/foo.tar.gz"* ]]
-    # docker -> tar
-    run ch-convert -n -i docker -o tar foo/bar "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  tar       ${BATS_TMPDIR}/foo%bar.tar.gz"* ]]
-    # squash -> tar
-    run ch-convert -n -i squash -o tar foo.sqfs "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  tar       ${BATS_TMPDIR}/foo.tar.gz"* ]]
-
-    echo
-    # squash no extension -> tar
-    run ch-convert -n -i squash -o tar foo "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  tar       ${BATS_TMPDIR}/foo.tar.gz"* ]]
-    # tar no extension -> squash
-    run ch-convert -n -i tar -o squash foo "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"output:  squash    ${BATS_TMPDIR}/foo.sqfs"* ]]
-}
 
 @test 'ch-convert: errors' {
     # same format

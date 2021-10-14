@@ -35,8 +35,8 @@ producing the final format actually needed.
     Input image format is :code:`FMT`. If omitted, inferred as described below.
 
   :code:`-n`, :code:`--dry-run`
-    Don't read the input or write the output. Useful for testing format and
-    filename inference.
+    Don't read the input or write the output. Useful for testing format
+    inference.
 
   :code:`--no-clobber`
     Error if :code:`OUT` already exists, rather than replacing it.
@@ -45,12 +45,12 @@ producing the final format actually needed.
     Output image format is :code:`FMT`; inferred if omitted.
 
   :code:`--tmp DIR`
-    A sub-directory is created in :code:`DIR` and removed at the end of a
-    successful conversion. **If this script crashes or errors out, the
-    temporary directory is left behind to assist in debugging.** Storage may
-    be needed up to twice the uncompressed size of the image, depending on the
-    input and output formats. Default: :code:`$TMPDIR` if specified; otherwise
-    :code:`/var/tmp`.
+    A sub-directory for temporary storage is created in :code:`DIR` and
+    removed at the end of a successful conversion. **If this script crashes or
+    errors out, the temporary directory is left behind to assist in
+    debugging.** Storage may be needed up to twice the uncompressed size of
+    the image, depending on the input and output formats. Default:
+    :code:`$TMPDIR` if specified; otherwise :code:`/var/tmp`.
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter. Can be repeated.
@@ -78,7 +78,7 @@ producing the final format actually needed.
 Image formats
 =============
 
-:code:`ch-convert` knows about these five values of :code:`FMT`:
+:code:`ch-convert` knows about these values of :code:`FMT`:
 
   :code:`ch-image`
     Internal storage for Charliecloud's unprivileged image builder (Dockerfile
@@ -86,8 +86,8 @@ Image formats
 
   :code:`dir`
     Ordinary filesystem directory (i.e., not a mount point) containing an
-    unpacked image. Output directories that already exist are only replaced if
-    they look like an image.
+    unpacked image. Output directories that already exist are replaced if they
+    look like an image; otherwise, exit with an error.
 
   :code:`docker`
     Internal storage for Docker.
@@ -114,8 +114,8 @@ All of these are local formats; :code:`ch-convert` does not know how to push
 or pull images.
 
 
-Format and filename inference
-=============================
+Format inference
+================
 
 :code:`ch-convert` tries to save typing by guessing formats when they are
 reasonably clear. This is done against filenames, rather than file contents,
@@ -138,64 +138,30 @@ filesystem.
 
   6. Otherwise: No format inference.
 
-Note that builder image references with no tag, such as :code:`debian`, are
-not inferred. The workaround is to add the default tag, in this case
-:code:`debian:latest`.
-
-If the output format is given explicitly as :code:`dir`, :code:`squash`, or
-:code:`tar`, and :code:`OUT` is a path to a directory that exists, then a
-filename within that directory will be inferred from :code:`IN` (similarly to
-:code:`cp(1)`). If the input format is builder storage of some kind, then the
-inferred filename is the input image name with slashes replaced with percent
-and an appropriate extension appended (i.e., :code:`.sqfs`, :code:`.tar.gz`,
-or no extension for directories). For other input formats, the final component
-of the path is used with the extension replaced.
-
-If the output format is image builder storage, there is no image name
-inference.
-
 
 Examples
 ========
 
 Typical build-to-run sequence for image :code:`foo/bar` using :code:`ch-run`'s
-internal SquashFUSE code, inferring the SquashFS archive's filename::
+internal SquashFUSE code, inferring the output format::
 
   $ sudo docker build -t foo/bar -f Dockerfile .
   [...]
-  $ ch-convert -o squash foo/bar:latest /var/tmp
+  $ ch-convert foo/bar:latest /var/tmp/foobar.sqfs
   input:   docker    foo/bar:latest
-  output:  squashfs  /var/tmp/foo%bar:latest.sqfs
+  output:  squashfs  /var/tmp/foobar.sqfs
   copying ...
   done
-  $ ch-run /var/tmp/foo%bar:latest.sqfs -- echo hello
+  $ ch-run /var/tmp/foobar.sqfs -- echo hello
   hello
 
-Same conversion, but inferring output format instead of filename::
+Same conversion, but no format inference::
 
-  $ ch-convert foo/bar:latest /var/tmp/foo%bar:latest.sqfs
+  $ ch-convert -i ch-image -o squash foo/bar:latest /var/tmp/foobar.sqfs
   input:   docker    foo/bar:latest
-  output:  squashfs  /var/tmp/foo%bar:latest.sqfs
+  output:  squashfs  /var/tmp/foobar.sqfs
   copying ...
   done
-
-Same conversion, but no inference at all::
-
-  $ ch-convert -i ch-image -o squash foo/bar:latest /var/tmp/foo%bar:latest.sqfs
-  input:   docker    foo/bar:latest
-  output:  squashfs  /var/tmp/foo%bar:latest.sqfs
-  copying ...
-  done
-
-Error inferring input format (:code:`:latest` omitted)::
-
-  $ ch-convert -o squash foo/bar /var/tmp
-  ch-convert[1234]: cannot infer format: foo/bar
-
-Error because output format and filename cannot be both inferred::
-
-  $ ch-convert foo/bar:latest /var/tmp
-  ch-convert[1234]: cannot infer both format and filename: /var/tmp
 
 
 ..  LocalWords:  FMT fmt
