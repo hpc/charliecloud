@@ -193,11 +193,11 @@ PYTHON_MIN = (3,6)
 # Content types for some stuff we care about.
 # See: https://github.com/opencontainers/image-spec/blob/main/media-types.md
 TYPES_MANIFEST = \
-   {"docker": "application/vnd.docker.distribution.manifest.v2+json",
-    "oci":    "application/vnd.oci.image.manifest.v1+json"}
+   {"docker2": "application/vnd.docker.distribution.manifest.v2+json",
+    "oci1":    "application/vnd.oci.image.manifest.v1+json"}
 TYPES_INDEX = \
-   {"docker": "application/vnd.docker.distribution.manifest.list.v2+json",
-    "oci":    "application/vnd.oci.image.index.v1+json"}
+   {"docker2": "application/vnd.docker.distribution.manifest.list.v2+json",
+    "oci1":    "application/vnd.oci.image.index.v1+json"}
 TYPE_CONFIG = "application/vnd.docker.container.image.v1+json"
 TYPE_LAYER = "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
@@ -1372,7 +1372,7 @@ class Registry_HTTP:
       INFO("manifest: uploading")
       url = self._url_of("manifests", self.ref.tag)
       self.request("PUT", url, {201}, data=manifest,
-                   headers={ "Content-Type": TYPES_MANIFEST["docker"] })
+                   headers={ "Content-Type": TYPES_MANIFEST["docker2"] })
 
    def request(self, method, url, statuses={200}, out=None, **kwargs):
       """Request url using method and return the response object. If statuses
