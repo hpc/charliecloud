@@ -2,4 +2,4 @@ EXTRA_DIST = \
 README \
 fedora/build \
 fedora/charliecloud.rpmlintrc \
-fedora/charliecloud.spec \
+fedora/charliecloud.spec
