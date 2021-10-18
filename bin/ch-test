@@ -900,7 +900,7 @@ if [[ -z $CHTEST_INSTALLED ]]; then
     if [[ $ch_version != "$cf_version" ]]; then
         warning "inconsistent configure version: ${cf_version}"
     fi
-    src_version=$("${ch_base}/misc/version")
+    src_version=$(cat ./VERSION)
     if [[ $ch_version != "$src_version" ]]; then
         warning "inconsistent source version: ${src_version}"
     fi
