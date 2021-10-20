@@ -132,11 +132,44 @@ convert () {
             ;;
     esac
     echo "CONVERT ${ct}: ${in_desc} ($in_fmt) -> ${out_desc} (${out_fmt})"
-    ch-convert -v -i "$in_fmt" -o "$out_fmt" "$in_desc" "$out_desc"
+    delete "$out_fmt" "$out_desc"
+    ch-convert --no-clobber -v -i "$in_fmt" -o "$out_fmt" "$in_desc" "$out_desc"
+    # Doing it twice doubles the time but also tests that both new conversions
+    # and overwrite work. Hence, full scope only.
+    if [[ $CH_TEST_SCOPE = full ]]; then
+        ch-convert -v -i "$in_fmt" -o "$out_fmt" "$in_desc" "$out_desc"
+    fi
+}
+
+delete () {
+    fmt=$1
+    desc=$2
+    case $fmt in
+        ch-image)
+            ch-image delete "$desc" || true
+            ;;
+        dir)
+            rm -Rf --one-file-system "$desc"
+            ;;
+        docker)
+            docker_ rmi -f "$desc"
+            ;;
+        tar)
+            rm -f "$desc"
+            ;;
+        squash)
+            rm -f "$desc"
+            ;;
+        *)
+            echo "unknown format: $fmt"
+            false
+            ;;
+    esac
 }
 
 # Test conversions dir -> $1 -> (all) -> dir.
 test_from () {
+    end=${BATS_TMPDIR}/convert.dir
     ct=1
     convert "$ct" dir "$1"
     for j in ch-image docker squash tar; do
@@ -145,9 +178,9 @@ test_from () {
             convert "$ct" "$1" "$j"
         fi
         ct=$((ct+1))
-        rm -Rf --one-file-system "$BATS_TMPDIR"/convert.dir
         convert "$ct" "$1" dir
-        compare "$ch_timg" "${BATS_TMPDIR}/convert.dir"
+        image_ok "$end"
+        compare "$ch_timg" "$end"
     done
 }
 
@@ -219,6 +252,72 @@ test_from () {
     rm "${BATS_TMPDIR}/foo.tar"
 }
 
+
+@test 'ch-convert: --no-clobber' {
+    # ch-image
+    printf 'FROM alpine:3.9\n' | ch-image build -t tmpimg -f - "$BATS_TMPDIR"
+    run ch-convert --no-clobber -o ch-image "$BATS_TMPDIR" tmpimg
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists in ch-image storage, not deleting per --no-clobber: tmpimg" ]]
+
+    # dir
+    ch-convert -i ch-image -o dir 00_tiny "$BATS_TMPDIR"/00_tiny
+    run ch-convert --no-clobber -i ch-image -o dir 00_tiny "$BATS_TMPDIR"/00_tiny
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny" ]]
+    rm -Rf --one-file-system "$BATS_TMPDIR"/00_tiny
+
+    # docker
+    printf 'FROM alpine:3.9\n' | docker_ build -t tmpimg -
+    run ch-convert --no-clobber -o docker "$BATS_TMPDIR" tmpimg
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists in Docker storage, not deleting per --no-clobber: tmpimg" ]]
+
+    # squash
+    touch "${BATS_TMPDIR}/00_tiny.sqfs"
+    run ch-convert --no-clobber -i ch-image -o squash 00_tiny "$BATS_TMPDIR"/00_tiny.sqfs
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny.sqfs" ]]
+    rm "${BATS_TMPDIR}/00_tiny.sqfs"
+
+    # tar
+    touch "${BATS_TMPDIR}/00_tiny.tar.gz"
+    run ch-convert --no-clobber -i ch-image -o tar 00_tiny "$BATS_TMPDIR"/00_tiny.tar.gz
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny.tar.gz" ]]
+    rm "${BATS_TMPDIR}/00_tiny.tar.gz"
+}
+
+
+@test 'ch-convert: pathological tarballs' {
+    [[ $CH_PACK_FMT = tar ]] || skip 'tar mode only'
+    out=${BATS_TMPDIR}/convert.dir
+    # Are /dev fixtures present in tarball? (issue #157)
+    present=$(tar tf "$ch_ttar" | grep -F deleteme)
+    [[ $(echo "$present" | wc -l) -eq 4 ]]
+    echo "$present" | grep -E '^img/dev/deleteme$'
+    echo "$present" | grep -E '^./dev/deleteme$'
+    echo "$present" | grep -E '^dev/deleteme$'
+    echo "$present" | grep -E '^img/mnt/dev/dontdeleteme$'
+    # Convert to dir.
+    ch-convert "$ch_ttar" "$out"
+    image_ok "$out"
+    # Did we raise hidden files correctly?
+    [[ -e ${out}/.hiddenfile1 ]]
+    [[ -e ${out}/..hiddenfile2 ]]
+    [[ -e ${out}/...hiddenfile3 ]]
+    # Did we remove the right /dev stuff?
+    [[ -e ${out}/mnt/dev/dontdeleteme ]]
+    [[ $(ls -Aq "${out}/dev") -eq 0 ]]
+    ch-run "$out" -- test -e /mnt/dev/dontdeleteme
+}
+
+
 @test 'ch-convert: dir -> ch-image -> X' {
     test_from ch-image
 }
@@ -233,42 +332,4 @@ test_from () {
 
 @test 'ch-convert: dir -> tar -> X' {
     test_from tar
-}
-
-@test 'ch-convert: --no-clobber' {
-    # ch-image
-    run ch-convert --no-clobber -o ch-image "$BATS_TMPDIR" tmpimg
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"error: exists in ch-image storage, not deleting per --no-clobber: tmpimg" ]]
-
-    # dir
-    ch-convert -i ch-image -o dir 00_tiny "$BATS_TMPDIR"
-    run ch-convert --no-clobber -i ch-image -o dir 00_tiny "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny" ]]
-    rm -Rf --one-file-system "${BATS_TMPDIR}/00_tiny"
-
-    # docker
-    run ch-convert --no-clobber -o docker "$BATS_TMPDIR" tmpimg
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"error: exists in Docker storage, not deleting per --no-clobber: tmpimg" ]]
-
-    # squash
-    touch "${BATS_TMPDIR}/00_tiny.sqfs"
-    run ch-convert --no-clobber -i ch-image -o squash 00_tiny "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny.sqfs" ]]
-    rm "${BATS_TMPDIR}/00_tiny.sqfs"
-
-    # tar
-    touch "${BATS_TMPDIR}/00_tiny.tar.gz"
-    run ch-convert --no-clobber -i ch-image -o tar 00_tiny "$BATS_TMPDIR"
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny.tar.gz" ]]
-    rm "${BATS_TMPDIR}/00_tiny.tar.gz"
 }

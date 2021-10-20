@@ -306,15 +306,18 @@ happy.
 
 .. _faq_docker2tar-size:
 
-:code:`ch-builder2tar` gives incorrect image sizes
---------------------------------------------------
+:code:`ch-convert` from Docker incorrect image sizes
+----------------------------------------------------
 
-:code:`ch-builder2tar` often finishes before the progress bar is complete. For
-example::
+When converting from Docker, :code:`ch-convert` often finishes before the
+progress bar is complete. For example::
 
-  $ ch-builder2tar mpihello /var/tmp
+  $ ch-convert -i docker mpihello /var/tmp/mpihello.tar.gz
+  input:   docker    mpihello
+  output:  tar       /var/tmp/mpihello.tar.gz
+  exporting ...
    373MiB 0:00:21 [============================>                 ] 65%
-  146M /var/tmp/mpihello.tar.gz
+  [...]
 
 In this case, the :code:`.tar.gz` contains 392 MB uncompressed::
 
@@ -329,9 +332,12 @@ But Docker thinks the image is 597 MB::
 
 We've also seen cases where the Docker-reported size is an *under*\ estimate::
 
-  $ ch-builder2tar spack /var/tmp
+  $ ch-convert -i docker spack /var/tmp/spack.tar.gz
+  input:   docker    spack
+  output:  tar       /var/tmp/spack.tar.gz
+  exporting ...
    423MiB 0:00:22 [============================================>] 102%
-  162M /var/tmp/spack.tar.gz
+  [...]
   $ zcat /var/tmp/spack.tar.gz | wc
   4181186 20317858 444212736
   $ sudo docker image inspect spack | fgrep -i size
@@ -354,13 +360,13 @@ We cannot reliably prevent device files from being included in the tar,
 because often that is outside our control, e.g. :code:`docker export` produces
 a tarball. Thus, we must exclude them at unpacking time.
 
-An additional complication is that :code:`ch-tar2dir` can handle tarballs both
+An additional complication is that :code:`ch-convert` can read tarballs both
 with a single top-level directory and without, i.e. “tarbombs”. For example,
 best practice use of :code:`tar` on the command line produces the former,
-while :code:`docker export` (perhaps via :code:`ch-builder2tar`) produces a
-tarbomb.
+while :code:`docker export` (invoked by :code:`ch-convert` when converting
+from Docker) produces a tarbomb.
 
-Thus, :code:`ch-tar2dir` uses :code:`tar --exclude` to exclude from unpacking
+Thus, :code:`ch-convert` uses :code:`tar --exclude` to exclude from unpacking
 everything under :code:`./dev` and :code:`*/dev`, i.e., directory :code:`dev`
 appearing at either the first or second level are forced to be empty.
 
@@ -842,4 +848,5 @@ Other approaches could be found with web searches such as "automate unattended
 SSH" or "SSH in cron jobs".
 
 
-..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za
+..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za mpihello
+..  LocalWords:  VirtualSize

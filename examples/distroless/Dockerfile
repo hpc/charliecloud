@@ -4,6 +4,3 @@
 # The python3 image was chosen for ease of testing.
 FROM gcr.io/distroless/python3
 COPY hello.py /
-
-# Without the CMD directive ch-builder2tar will fail when using docker
-CMD ["/hello.py"]

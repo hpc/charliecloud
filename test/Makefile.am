@@ -37,9 +37,6 @@ sotest/sotest.c
 # Test files that should be executable.
 testfiles_exec = \
 Build.centos7xz \
-Build.ch-build2dir \
-Build.ch-pull2dir \
-Build.ch-pull2tar \
 Build.docker_pull \
 Build.missing \
 docs-sane \
