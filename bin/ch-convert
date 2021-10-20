@@ -556,7 +556,6 @@ else
 fi
 
 in_fmt=$(fmt_validate "$in_fmt" "$in_desc")
-[ -n "$out_fmt" ] && out_fmt_explicit=yes
 out_fmt=$(fmt_validate "$out_fmt" "$out_desc")
 tmpdir_setup
 
