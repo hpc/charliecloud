@@ -136,7 +136,7 @@ run () {
 scope () {
     if [[ -n $ch_one_test ]]; then
         # Ignore scope if a single test is given.
-        if [[ $ch_one_test != "$BATS_TEST_DESCRIPTION" ]]; then
+        if [[ $BATS_TEST_DESCRIPTION != *"$ch_one_test"* ]]; then
             skip 'per --file'
         else
             return 0

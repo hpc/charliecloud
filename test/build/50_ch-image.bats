@@ -271,8 +271,6 @@ EOF
     run ch-image list scratch
     echo "$output"
     [[ $status -eq 0 ]]
-    #[[ $output = *'in local storage:    yes'* ]]  # varies
-    [[ $output = *'full remote ref:     registry-1.docker.io:443/library/scratch:latest'* ]]
     [[ $output = *'available remotely:  yes'* ]]
     [[ $output = *'remote arch-aware:   no'* ]]
     [[ $output = *'archs available:     unknown'* ]]

@@ -36,15 +36,15 @@ For more information: https://hpc.github.io/charliecloud
 
 %package builder
 Summary:       Charliecloud container image building tools
+License:       ASL 2.0 and MIT
 BuildArch:     noarch
 BuildRequires: python3-devel
-BuildRequires: python%{python3_pkgversion}-lark-parser
 BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
-Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
 Obsoletes:     %{name}-builders
+Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 0.11.3
 
 %description builder
 This package provides ch-image, Charliecloud's completely unprivileged container
@@ -85,7 +85,6 @@ CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
 %configure --docdir=%{_pkgdocdir} \
            --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
-           --disable-bundled-lark \
 %if 0%{?el7}
            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
@@ -166,6 +165,9 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_prefix}/lib/%{name}/build.py
 %{_prefix}/lib/%{name}/charliecloud.py
 %{_prefix}/lib/%{name}/fakeroot.py
+%{_prefix}/lib/%{name}/lark
+%{_prefix}/lib/%{name}/lark-0.11.3.dist-info
+%{_prefix}/lib/%{name}/lark-stubs
 %{_prefix}/lib/%{name}/misc.py
 %{_prefix}/lib/%{name}/pull.py
 %{_prefix}/lib/%{name}/push.py

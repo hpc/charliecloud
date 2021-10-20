@@ -78,13 +78,28 @@ def main(cli_):
 
    # Infer image name if needed.
    if (cli.tag is None):
-      m = re.search(r"(([^/]+)/)?Dockerfile(\.(.+))?$",
-                    os.path.abspath(cli.file))
-      if (m is not None):
-         if m.group(4):    # extension
-            cli.tag = m.group(4)
-         elif m.group(2):  # containing directory
-            cli.tag = m.group(2)
+      path = os.path.basename(cli.file)
+      if ("." in path):
+         (base, ext_all) = str(path).split(".", maxsplit=1)
+         (base_all, ext_last) = str(path).rsplit(".", maxsplit=1)
+      else:
+         base = None
+         ext_last = None
+      if (base == "Dockerfile"):
+         cli.tag = ext_all
+         ch.VERBOSE("inferring name from Dockerfile extension: %s" % cli.tag)
+      elif (ext_last == "dockerfile"):
+         cli.tag = base_all
+         ch.VERBOSE("inferring name from Dockerfile basename: %s" % cli.tag)
+      elif (os.path.abspath(cli.context) != "/"):
+         cli.tag = os.path.basename(os.path.abspath(cli.context))
+         ch.VERBOSE("inferring name from context directory: %s" % cli.tag)
+      else:
+         assert (os.path.abspath(cli.context) == "/")
+         cli.tag = "root"
+         ch.VERBOSE("inferring name with root context directory: %s" % cli.tag)
+      cli.tag = re.sub(r"[^a-z0-9_.-]", "", cli.tag.lower())
+      ch.INFO("inferred image name: %s" % cli.tag)
 
    # Deal with build arguments.
    def build_arg_get(arg):
@@ -133,7 +148,8 @@ def main(cli_):
       tree = parser.parse(text)
    except lark.exceptions.UnexpectedInput as x:
       ch.VERBOSE(x)  # noise about what was expected in the grammar
-      ch.FATAL("can't parse: %s:%d,%d\n\n%s" % (cli.file, x.line, x.column, x.get_context(text, 39)))
+      ch.FATAL("can't parse: %s:%d,%d\n\n%s"
+               % (cli.file, x.line, x.column, x.get_context(text, 39)))
    ch.VERBOSE(tree.pretty())
 
    # Sometimes we exit after parsing.
@@ -377,7 +393,7 @@ class I_copy(Instruction):
          must exist already and be a directory. Unlike subdirectories, the
          metadata of dst will not be altered to match src."""
       def onerror(x):
-         ch.FATAL("error scanning directory: %s: %s" % (x.filename, x.strerror))
+         ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
       src = ch.Path(os.path.realpath(src))

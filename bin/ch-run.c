@@ -170,6 +170,11 @@ int main(int argc, char *argv[])
       args.c.join_tag = join_tag(args.c.join_tag);
    }
 
+   if (getenv("TMPDIR") != NULL)
+      host_tmp = getenv("TMPDIR");
+   else
+      host_tmp = "/tmp";
+
    c_argc = argc - arg_next;
    T_ (c_argv = calloc(c_argc + 1, sizeof(char *)));
    for (int i = 0; i < c_argc; i++)

@@ -221,8 +221,8 @@ class _RHEL8(Test):
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "dnf install -y --setopt=install_weak_deps=false ed",
                              Run.NEEDED:      "dnf install -y --setopt=install_weak_deps=false openssh" } }
 
-class CentOS_8(_RHEL8, _EPEL_Mixin):
-   base = "centos:8"
+class CentOS_Latest(_RHEL8, _EPEL_Mixin):
+   base = "centos:latest"
    prep_run = "dnf install -y epel-release"
 class CentOS_8_Stream(_RHEL8):
    # pulling from quay.io per the CentOS wiki
@@ -248,16 +248,16 @@ class _Debian(Test):
    config = "debderiv"
    runs = { **Test.runs, **{ Run.NEEDED:      "apt-get update && apt-get install -y openssh-client" } }
 class Debian_9(_Debian):
-   base = "debian:stretch"
-class Debian_11(_Debian):
+   base = "debian:9"
+class Debian_Latest(_Debian):
    scope = Scope.STANDARD
-   base = "debian:bullseye"
+   base = "debian:latest"
 class Ubuntu_16(_Debian):
-   base = "ubuntu:xenial"
+   base = "ubuntu:16.04"
 class Ubuntu_18(_Debian):
-   base = "ubuntu:bionic"
-class Ubuntu_20(_Debian):
-   base = "ubuntu:focal"
+   base = "ubuntu:18.04"
+class Ubuntu_Latest(_Debian):
+   base = "ubuntu:latest"
 
 
 # main loop
@@ -273,16 +273,16 @@ setup () {
 """)
 
 for test in [CentOS_7,
-             CentOS_8,
+             CentOS_Latest,
              CentOS_8_Stream,
              RHEL_UBI_8,
              Fedora_26,
              Fedora_Latest,
              Debian_9,
-             Debian_11,
+             Debian_Latest,
              Ubuntu_16,
              Ubuntu_18,
-             Ubuntu_20]:
+             Ubuntu_Latest]:
    for run in Run:
       for forced in (False, True):
          for preprep in (False, True):

@@ -547,4 +547,4 @@ Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
 
-..  LocalWords:  mtune NEWROOT hugetlbfs
+..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge

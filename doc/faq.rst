@@ -631,7 +631,7 @@ These references parse into the following components, in this order:
 
 5. If path given, a slash.
 
-6. The image name, which matches :code:`[a-z0-9_.-]+`. Required; here
+6. The image name (tag), which matches :code:`[a-z0-9_.-]+`. Required; here
    :code:`hello-world`.
 
 7. Zero or one of:
@@ -842,4 +842,4 @@ Other approaches could be found with web searches such as "automate unattended
 SSH" or "SSH in cron jobs".
 
 
-..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ
+..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za

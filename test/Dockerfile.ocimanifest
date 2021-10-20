@@ -1,0 +1,25 @@
+# This Dockerfile is used to test image with an OCI manifest (issue #1184).
+#
+# WARNING: The manifest is produced by the build tool and is rather opaque.
+# Specifically, re-building the image might silently produce a different
+# manifest that also works, negating the value of this test. Building this
+# image with Podman 3.0.1 did trigger the above issue; Podman 3.4.0 very
+# likely has the same behavior. Bottom line, be very cautious about
+# re-building this image. One approach would be to comment out the content
+# types added by #1184 and see if the updated image still triggers the bug.
+#
+# Scope is "skip" because we pull it to test; see test/build/50_pull.bats.
+# ch-test-scope: skip
+#
+# To build and push:
+#
+#   $ VERSION=$(date +%Y-%m-%d)
+#   $ podman build -t charliecloud/ocimanifest:$VERSION \
+#                  -f Dockerfile.ocimanifest .
+#   $ podman images | fgrep ocimanifest
+#   $ podman login
+#   $ podman push charliecloud/ocimanifest:$VERSION
+#
+
+FROM alpine:3.9
+RUN echo hello

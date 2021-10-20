@@ -148,7 +148,7 @@ def main():
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",
-                   help="name of image to create (default: inferred)")
+                   help="name (tag) of image to create (default: inferred)")
    sp.add_argument("context", metavar="CONTEXT",
                    help="context directory")
 
@@ -167,7 +167,7 @@ def main():
    sp.add_argument("path", metavar="PATH",
                    help="directory or tarball to import")
    sp.add_argument("image_ref", metavar="IMAGE_REF",
-                   help="destination image name")
+                   help="destination image name (tag)")
 
    # list
    help="print information about image(s)"

@@ -91,9 +91,9 @@ class Image_Puller:
             try:
                self.fatman_load()
                if (ch.arch not in self.architectures):
-                  ch.FATAL("requested arch unavailable: %s not one of: %s"
-                           % (ch.arch,
-                              " ".join(sorted(self.architectures.keys()))))
+                  ch.FATAL("requested arch unavailable: %s" % ch.arch,
+                           ("available: %s"
+                            % " ".join(sorted(self.architectures.keys()))))
             except ch.No_Fatman_Error:
                if (ch.arch == "amd64"):
                   # We're guessing that enough arch-unaware images are amd64 to
@@ -102,7 +102,8 @@ class Image_Puller:
                   ch.WARNING("image is architecture-unaware")
                   ch.WARNING("requested arch is amd64; using --arch=yolo")
                else:
-                  ch.FATAL("image is architecture-unaware; try --arch=yolo?")
+                  ch.FATAL("image is architecture-unaware",
+                           "consider --arch=yolo")
          # manifest
          self.manifest_load()
       except ch.Not_In_Registry_Error:
@@ -134,7 +135,7 @@ class Image_Puller:
          code = data["errors"][0]["code"]
          msg = data["errors"][0]["message"]
       except (IndexError, KeyError):
-         ch.FATAL("malformed error data (yes this is ironic)")
+         ch.FATAL("malformed error data", "yes, this is ironic")
       return (code, msg)
 
    def fatman_load(self):
@@ -281,7 +282,8 @@ class Image_Puller:
                     or k.get('platform').get('variant') == variant)):
             digest = k.get('digest')
       if (digest is None):
-         ch.FATAL('arch not found for image: %s; try "ch-image list"?' % arch)
+         ch.FATAL("arch not found for image: %s" % arch,
+                  'try "ch-image list IMAGE_REF"')
       return digest
 
    def pull_to_unpacked(self, last_layer=None):

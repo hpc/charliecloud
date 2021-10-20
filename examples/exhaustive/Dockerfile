@@ -8,7 +8,7 @@
 #
 # See: https://docs.docker.com/engine/reference/builder
 #
-# ch-test-scope: standard
+# ch-test-scope: full
 # ch-test-builder-include: ch-image
 
 # Use a moderately complex image reference.

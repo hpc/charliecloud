@@ -19,6 +19,12 @@
 #   3. cloc also does not have a way to define file prefixes (say,
 #      Dockerfile.*). So we list all the Dockerfiles we have manually in the
 #      language definitions.
+#
+#   4. To debug "cloc ignoring wrong number of files": just look in
+#      /tmp/loc.ignored.out. However, you need cloc 1.84 or higher because of
+#      cloc issue #401 [1]; otherwise the file is empty.
+#
+# [1]: https://github.com/AlDanial/cloc/issues/401
 
 set -e -o pipefail
 
@@ -38,6 +44,7 @@ countem () {
     cloc --force-lang-def=/dev/stdin \
          --categorized="$catfile" \
          --list-file="$infile" \
+         --ignored=/tmp/loc.ignored.out \
          <<'EOF' > "$outfile"
 Bash
     filter remove_matches ^\s*#
@@ -79,6 +86,7 @@ Dockerfile
     filename Dockerfile.metadata
     filename Dockerfile.mpich
     filename Dockerfile.nvidia
+    filename Dockerfile.ocimanifest
     filename Dockerfile.openmpi
     3rd_gen_scale 2.00
     end_of_line_continuation \\$

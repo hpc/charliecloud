@@ -41,10 +41,10 @@ Valid scopes: quick, standard, full
 
 Additional options:
 
-  -b, --builder BUILDER  image builder to use
+  -b,--builder BUILDER   image builder to use
   --dry-run              print summary of what would be tested and exit
-  --file FILE[:TEST]     run tests in FILE only, or even just TEST
-  -h, --help             print this help and exit
+  -f,--file FILE[:TEST]  run tests in FILE only, or even just TEST
+  -h,--help              print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
   --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
   --pack-fmt FMT         packed image format ("squash" or "tar")
@@ -660,6 +660,36 @@ if /bin/bash -c 'set -e; [[ 1 = 0 ]]; exit 0'; then
     fatal 'Bash minimum version is 4.1'
 fi
 
+# Is the user a contributor?
+email=
+# First, ask Git for the configured e-mail address.
+if command -v git > /dev/null 2>&1; then
+    email="$(git config --get user.email || true)"
+fi
+# If that doesn't work, construct it from the environment.
+if [[ -z $email ]]; then
+    email="$USER@$(hostname --domain)"
+fi
+ch_contributor=
+for i in "${ch_contributors[@]}"; do
+    if [[ $i == "$email" ]]; then
+        ch_contributor=yes
+    fi
+done
+
+# Ensure Bats is installed.
+if command -v bats > /dev/null 2>&1; then
+    bats=$(command -v bats)
+    bats_version="$(bats --version | awk '{print $2}')"
+else
+    fatal 'Bats not found'
+fi
+
+# Reject non-default registry on GitHub Actions.
+if [[ -n $GITHUB_ACTIONS && -n $CH_REGY_DEFAULT_HOST ]]; then
+    fatal 'non-default registry on GitHub Actions invalid'
+fi
+
 # Create a directory to hold auto-generated test artifacts.
 TMP_=/tmp/ch-test.tmp.$USER
 if [[ ! -d $TMP_ ]]; then
@@ -702,36 +732,10 @@ if [[ ! -d $CHTEST_EXAMPLES_DIR ]]; then
     fatal "examples not found: $CHTEST_EXAMPLES_DIR"
 fi
 
-# Is the user a contributor?
-email=
-# First, ask Git for the configured e-mail address.
-if command -v git > /dev/null 2>&1; then
-    email="$(git config --get user.email || true)"
-fi
-# If that doesn't work, construct it from the environment.
-if [[ -z $email ]]; then
-    email="$USER@$(hostname --domain)"
-fi
-ch_contributor=
-for i in "${ch_contributors[@]}"; do
-    if [[ $i == "$email" ]]; then
-        ch_contributor=yes
-    fi
-done
-
-# Ensure Bats is installed.
-if command -v bats > /dev/null 2>&1; then
-    bats=$(command -v bats)
-    bats_version="$(bats --version | awk '{print $2}')"
-else
-    fatal 'Bats not found'
-fi
-
+# Parse arguments.
 if [[ $# == 0 ]]; then
     usage 1
 fi
-
-# Parse arguments.
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in

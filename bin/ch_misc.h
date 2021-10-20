@@ -67,6 +67,8 @@
 /** External variables **/
 
 extern int verbose;
+extern char * host_tmp;
+
 
 /** Function prototypes **/
 
