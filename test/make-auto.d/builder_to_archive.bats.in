@@ -6,7 +6,7 @@
         [[ $CH_PACK_FMT = tar ]]
         archive=${ch_tardir}/%(tag)s.tar.gz
     fi
-    ch-convert -i $CH_BUILDER %(tag)s "$archive"
+    ch-convert -i "$CH_BUILDER" %(tag)s "$archive"
     archive_grep "$archive"
     archive_ok "$archive"
 }

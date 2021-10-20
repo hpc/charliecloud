@@ -29,4 +29,4 @@ if [[ -z $hash_ ]]; then
     exit 1
 fi
 
-ch-convert -i docker "$tag" "$(dirname "$tarball_gz")"
+ch-convert -i docker "$tag" "$tarball_gz"
