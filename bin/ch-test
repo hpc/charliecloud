@@ -213,7 +213,7 @@ libsquashfuse_set () {
     fi
     export ch_have_libsquashfuse
     printf "%-*s %s (%s)\n" "$width" \
-           'libsquashfuse linked:' "${ch_have_libsquashfuse:-no}" autodetected
+           'libsquashfuse:' "${ch_have_libsquashfuse:-no}" autodetected
 }
 
 pack_fmt_set () {
