@@ -15,24 +15,24 @@ jobs:
       fail-fast: true  # if any job fails, cancel the rest immediately
       matrix:
         builder: [none, docker, ch-image]
-        keep_sudo:  # if false, remove self from sudoers after install/setup
+        keep_sudo:      # if false, remove self from sudoers post-install/setup
           - false
-        squashfs: #if no_squashfs, squashFS workflow doesn't build
-          - no_squashfs
+        libsquashfuse:  # if true, link with libsquashfuse
+          - false
         include:
           - builder: docker
             keep_sudo: true
-            squashfs: no_squashfs
-
+            libsquashfuse: false
           - builder: ch-image
             keep_sudo: false
-            squashfs: run_squashfs
+            libsquashfuse: true
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
       CH_TEST_IMGDIR: /mnt/images
       CH_TEST_PERMDIRS: /mnt/perms_test /run/perms_test
       ch_prefix: /var/tmp
+      ci_libsquashfuse: ${{ matrix.libsquashfuse }}
 
     steps:
       - uses: actions/checkout@v2
@@ -63,6 +63,8 @@ jobs:
 
       - name: print starting environment
         run: |
+          echo keep_sudo: ${{ matrix.keep_sudo }}
+          echo libsquashfuse: ${{ matrix.libsquashfuse }}
           env | egrep '^(PATH|USER)='
           env | egrep '^(ch|CH)_'
           [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
@@ -117,15 +119,13 @@ jobs:
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
 
       - name: install libsquashfuse
-        if: ${{ matrix.squashfs == 'run_squashfs' }}
+        if: ${{ matrix.libsquashfuse }}
         run: |
           set -x
-          # Install libfuse3 for libsquashFUSE.
           sudo apt-get install -y libfuse3-dev
-          # Install version of libsquashFUSE we need for SquashFS workflow.
-          # Currently needed functionality is only on master branch.
+          # Currently we need the master branch of SquashFUSE.
           cd /usr/local/src
-          git clone -q https://github.com/vasi/squashfuse.git
+          git clone https://github.com/vasi/squashfuse.git
           cd squashfuse
           ./autogen.sh
           ./configure --prefix=/usr/local
@@ -177,11 +177,6 @@ jobs:
           [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
           [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
           make clean
-
-      - name: install and disable bundled lark, ch-image
-        if: ${{ matrix.builder == 'ch-image' }}
-        run: |
-          set -x
           # install, disable
           ./autogen.sh
           ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
@@ -211,8 +206,11 @@ jobs:
               fgrep '"lark" module ... bundled' config.log
               test -f ./lib/lark/lark.py
           fi
-          [[ matrix.squashfs = run_squashfs ]] && fgrep 'internal mount with libsquashfuse ... yes' config.log
-          [[ matrix.squashfs = no_squashfs ]] && fgrep 'internal mount with libsquashfuse ... no' config.log
+          if [[ ${{ matrix.libsquashfuse }} = true ]]; then
+              fgrep 'internal mount with libsquashfuse ... yes' config.log
+          else
+              fgrep 'internal mount with libsquashfuse ... no' config.log
+          fi
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log

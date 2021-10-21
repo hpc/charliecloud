@@ -764,11 +764,12 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
-@test 'ch-run: squashfs' {
-scope standard
-    [[ $TEST_SQ == 'yes' ]] || skip 'no squashfuse'
+@test 'ch-run: internal SquashFUSE mounting' {
+    scope standard
+    [[ $CH_PACK_FMT == squash ]] || skip 'squash mode only'
+    [[ -n $ch_have_libsquashfuse ]] || skip 'libsquashfuse not linked'
 
-    ch_sqfs="${CH_TEST_TARDIR}/00_tiny.sqfs"
+    ch_sqfs="$CH_TEST_TARDIR"/00_tiny.sqfs
     ch_mnt="/var/tmp/${USER}.ch/mnt"
 
     # default mount point
@@ -780,12 +781,13 @@ scope standard
     rmdir "${ch_mnt}"
 
     # -m option
-    mountpt="${BATS_TMPDIR}/sqfs_tmpdir" #fix later
-    mkdir "$mountpt"
+    mountpt="${BATS_TMPDIR}/sqfs_tmpdir"
+    [[ -e $mountpt ]] || mkdir "$mountpt"
     run ch-run -m "$mountpt" -v "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"newroot: ${mountpt}"* ]]
+    rmdir "$mountpt"
 
     # -m with non-sqfs img
     run ch-run -m "$mountpt" -v "$ch_timg" -- /bin/true
@@ -793,58 +795,54 @@ scope standard
     [[ $status -eq 0 ]]
     [[ $output = *"warning: --mount invalid with directory image, ignoring"* ]]
     [[ $output = *"newroot: ${ch_timg}"* ]]
-
-    # only create 1 directory
-    run ch-run -m "$mountpt" -v "$ch_sqfs" -- /bin/true
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"newroot: ${mountpt}"* ]]
-    [[ -d "$mountpt" ]]
-    rmdir "$mountpt"
 }
 
-@test 'ch-run: squashfs errors' {
+@test 'ch-run: internal SquashFUSE errors' {
     scope standard
-    [[ $TEST_SQ == yes ]] || skip 'no squashfuse'
+    [[ $CH_PACK_FMT == squash ]] || skip 'squash mode only'
+    [[ -n $ch_have_libsquashfuse ]] || skip 'libsquashfuse not linked'
 
-    ch_sqfs="${CH_TEST_TARDIR}"/00_tiny.sqfs
+    ch_sqfs="$CH_TEST_TARDIR"/00_tiny.sqfs
 
-    # empty mount point
+    # mount point is empty string
     run ch-run --mount= "$ch_sqfs" -- /bin/true
     echo "$output"
-    [[ $status -ne 0 ]] # exits with status of 139
-    [[ $output = *"mount point can't be empty"* ]]
+    [[ $status -ne 0 ]]  # exits with status of 139
+    [[ $output = *"mount point can't be empty string"* ]]
 
-    # parent dir doesn't exist
-    mountpt="${BATS_TMPDIR}/sq/mnt"
-    run ch-run -m "$mountpt" "$ch_sqfs" -- /bin/true
+    # mount point doesn't exist
+    run ch-run -m /doesnotexist "$ch_sqfs" -- /bin/true
     echo "$output"
-    [[ $status -ne 0 ]] # exits with status of 139
-    [[ $output = *"can't stat mount point: ${mountpt}"* ]]
+    [[ $status -ne 0 ]]  # exits with status of 139
+    [[ $output = *"can't stat mount point: /doesnotexist: No such file or directory"* ]]
 
-    # mount point contains a file, can't opendir but shouldn't make it
-    run ch-run -m /var/tmp/file "$ch_sqfs" -- /bin/true
+    # mount point is a file
+    run ch-run -m ./fixtures/README "$ch_sqfs" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *"can't stat mount point: /var/tmp/file"* ]]
+    [[ $output = *'not a directory: ./fixtures/README'* ]]
 
-    # input is file but not sqfs
-    run ch-run Build.missing -- /bin/true
+    # image is file but not sqfs
+    run ch-run -vv ./fixtures/README -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"unknown image type: Build.missing"* ]]
+    [[ $output = *'magic expected: 6873 7173; actual: 596f 7520'* ]]
+    [[ $output = *'unknown image type: ./fixtures/README'* ]]
 
-    # input has same magic number but is broken
-    sq_tmp="${CH_TEST_TARDIR}"/tmp.sqfs
-    # copy over magic number from sqfs to broken sqfs
-    dd if="$ch_sqfs" of="$sq_tmp" conv=notrunc bs=1 count=4
-    run ch-run -vvv "$sq_tmp" -- /bin/true
+    # image is a broken sqfs
+    sq_tmp="$BATS_TMPDIR"/b0rken.sqfs
+    cp "$ch_sqfs" "$sq_tmp"
+    # corrupt inode count (bytes 4–7, 0-indexed)
+    printf '\xED\x5F\x84\x00' | dd of="$sq_tmp" bs=1 count=4 seek=4 conv=notrunc
+    ls -l "$ch_sqfs" "$sq_tmp"
+    run ch-run -vv "$sq_tmp" -- ls -l /
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *"actual: 6873 7173"* ]]
+    [[ $output = *'magic expected: 6873 7173; actual: 6873 7173'* ]]
     [[ $output = *"can't open SquashFS: ${sq_tmp}"* ]]
-    rm "${sq_tmp}"
+    rm "$sq_tmp"
 }
+
 @test 'broken image errors' {
     scope standard
     img=${BATS_TMPDIR}/broken-image

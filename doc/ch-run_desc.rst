@@ -141,20 +141,20 @@ can be accomplished by:
 The second is a SquashFS filesystem archive, available if :code:`ch-run` is
 linked with the optional :code:`libsquashfuse_ll`. This is accomplished by
 mounting the filesystem, servicing its FUSE requests, and unmounting it all
-within :code:`ch-run`. See :code:`--mount` above for details on the mount
-point.
+within :code:`ch-run`. See :code:`--mount` above to set the mount point
+location.
 
 Prior versions of Charliecloud provided wrappers for the :code:`squashfuse`
 and :code:`squashfuse_ll` SquashFS mount commands and :code:`fusermount -u`
-unmount command. These are no longer provided because we concluded they had
-minimal value-add over the standard, unwrapped commands.
+unmount command. We removed these because we concluded they had minimal
+value-add over the standard, unwrapped commands.
 
 .. warning::
 
    Currently, Charliecloud unmounts the SquashFS filesystem when user command
    :code:`CMD`'s process exits. It does not monitor any of its child
-   processes. Therefore, user commands that spawn multiple processes and the
-   parent exits before the children (e.g., some daemons) will have the image
+   processes. Therefore, if the user command spawns child processes and then
+   exits before them (e.g., some daemons), those children will have the image
    unmounted from underneath them. In this case, the workaround is to
    mount/unmount using external tools. We expect to remove this limitation in
    a future version.
@@ -547,4 +547,4 @@ Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
 
-..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge
+..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount

@@ -200,6 +200,22 @@ dirs_unpriv_rm () {
     dir_tmp_rm
 }
 
+libsquashfuse_set () {
+    width=$1
+    if [[ $(ldd "${ch_bin}/ch-run") = *"libsquashfuse"* ]]; then
+        ch_have_libsquashfuse=yes
+    else
+        ch_have_libsquashfuse=
+    fi
+    # If CI demands libsquashfuse mode, validate we match.
+    if [[ $ci_libsquashfuse = 'true' && -z $ch_have_libsquashfuse ]]; then
+        fatal 'CI demands libsquashfuse but ch-run not linked'
+    fi
+    export ch_have_libsquashfuse
+    printf "%-*s %s (%s)\n" "$width" \
+           'libsquashfuse linked:' "${ch_have_libsquashfuse:-no}" autodetected
+}
+
 pack_fmt_set () {
     width=$1
     if [[ -n $pack_fmt ]]; then
@@ -596,7 +612,6 @@ test_one_file () {
 }
 
 test_run () {
-    squash_check
     echo 'executing run phase tests ...'
     if [[ ! -f ${TMP_}/run_auto.bats ]]; then
         fatal "${TMP_}/run_auto.bats not found"
@@ -614,16 +629,6 @@ test_run () {
         done
     fi
     set +e
-}
-
-squash_check () {
-   output=$(ldd "${ch_bin}/ch-run") #did ch-run link with libsquashfuse
-   if [[ $output = *"libsquashfuse_ll.so.0"* ]]; then
-      TEST_SQ=yes
-   else
-      TEST_SQ=no
-   fi
-   export TEST_SQ
 }
 
 # Exit with failure if given version number is below a minimum.
@@ -890,6 +895,7 @@ vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
 vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
 pack_fmt_set 21
+libsquashfuse_set 21
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \

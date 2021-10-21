@@ -531,8 +531,8 @@ To mount these archives using :code:`ch-run`'s internal code, you need:
   writing (August 2021), this is probably `commit 56a24f6
   <https://github.com/vasi/squashfuse/commit/56a24f6c7f6e5cfd0ce5185f175da223d00dc1ca>`_
   or newer, and there is no versioned release yet. This must be installed,
-  though it can be a non-standard location; :code:`ch-run` can't link with a
-  :code:`libsquashfuse` in the build directory.
+  though it can be a non-standard location; :code:`ch-run` can't link with
+  :code:`libsquashfuse` in the latter's build directory.
 
 Without these, you can still use a SquashFS workflow but must mount and
 unmount the filesystem archives manually. You can do this using the

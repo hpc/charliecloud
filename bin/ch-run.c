@@ -526,7 +526,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join = true;
       break;
    case 'm':
-      Ze ((arg[0] == '\0'), "mount point can't be empty");
+      Ze ((arg[0] == '\0'), "mount point can't be empty string");
       args->c.newroot = arg;
       break;
    case 't':
