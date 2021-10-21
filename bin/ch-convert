@@ -313,10 +313,10 @@ tar_in_validate () {
 
 tar_out_validate () {
     case $1 in
-        *.tar.gz)
+        *.tar.gz|*.tgz)
             ;;
         *)
-            FATAL "only gzipped tar output (.tar.gz) supported"
+            FATAL "only gzipped tar output (.tar.gz or .tgz) supported"
             ;;
     esac
     parent_validate "$1"
