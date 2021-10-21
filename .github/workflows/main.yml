@@ -15,24 +15,24 @@ jobs:
       fail-fast: true  # if any job fails, cancel the rest immediately
       matrix:
         builder: [none, docker, ch-image]
-        keep_sudo:      # if false, remove self from sudoers post-install/setup
+        keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
-        libsquashfuse:  # if true, link with libsquashfuse
-          - false
+        squashfuse:
+          - external
         include:
           - builder: docker
             keep_sudo: true
-            libsquashfuse: false
+            squashfuse: external
           - builder: ch-image
             keep_sudo: false
-            libsquashfuse: true
+            squashfuse: internal
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
       CH_TEST_IMGDIR: /mnt/images
       CH_TEST_PERMDIRS: /mnt/perms_test /run/perms_test
       ch_prefix: /var/tmp
-      ci_libsquashfuse: ${{ matrix.libsquashfuse }}
+      ci_squashfuse: ${{ matrix.squashfuse }}
 
     steps:
       - uses: actions/checkout@v2
@@ -64,7 +64,7 @@ jobs:
       - name: print starting environment
         run: |
           echo keep_sudo: ${{ matrix.keep_sudo }}
-          echo libsquashfuse: ${{ matrix.libsquashfuse }}
+          echo squashfuse: ${{ matrix.squashfuse }}
           env | egrep '^(PATH|USER)='
           env | egrep '^(ch|CH)_'
           [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
@@ -119,7 +119,7 @@ jobs:
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
 
       - name: install libsquashfuse
-        if: ${{ matrix.libsquashfuse }}
+        if: ${{ matrix.squashfuse == 'internal' }}
         run: |
           set -x
           sudo apt-get install -y libfuse3-dev
@@ -206,7 +206,7 @@ jobs:
               fgrep '"lark" module ... bundled' config.log
               test -f ./lib/lark/lark.py
           fi
-          if [[ ${{ matrix.libsquashfuse }} = true ]]; then
+          if [[ ${{ matrix.squashfuse }} = internal ]]; then
               fgrep 'internal mount with libsquashfuse ... yes' config.log
           else
               fgrep 'internal mount with libsquashfuse ... no' config.log

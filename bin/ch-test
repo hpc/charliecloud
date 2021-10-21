@@ -208,7 +208,7 @@ libsquashfuse_set () {
         ch_have_libsquashfuse=
     fi
     # If CI demands libsquashfuse mode, validate we match.
-    if [[ $ci_libsquashfuse = 'true' && -z $ch_have_libsquashfuse ]]; then
+    if [[ $ci_squashfuse = internal && -z $ch_have_libsquashfuse ]]; then
         fatal 'CI demands libsquashfuse but ch-run not linked'
     fi
     export ch_have_libsquashfuse
