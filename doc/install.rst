@@ -103,9 +103,13 @@ Some dependencies can be specified as follows. Note only some of these support
   * :code:`no`: Disable :code:`libsquashfuse` linking and internal SquashFS
     mounting, even if it's installed.
 
-  * Path to :code:`libsquashfuse` install location, not including final
-    :code:`lib` or :code:`include` component: Link with :code:`libsquashfuse`
-    found there (or error if not found), and add it to :code:`ch-run`'s RPATH.
+  * Path to :code:`libsquashfuse` install prefix: Link with
+    :code:`libsquashfuse` found there, or error if not found, and add it to
+    :code:`ch-run`'s RPATH. (Note this argument is *not* the directory
+    containing the shared library or header file.)
+
+  **Note:** A very specific version and configuration of SquashFUSE is
+  required. See below for details.
 
 :code:`--with-python=SHEBANG`
   Shebang line to use for Python scripts. Default:
@@ -523,8 +527,9 @@ The SquashFS workflow requires `SquashFS Tools
 
 To mount these archives using :code:`ch-run`'s internal code, you need:
 
-* `libfuse3 <https://github.com/libfuse/libfuse>`_, which is probably
-  available in your distribution, and
+* `libfuse3 <https://github.com/libfuse/libfuse>`_ including development
+  files, which is probably available in your distribution (e.g.,
+  :code:`libfuse3-dev`), and
 
 * a very recent version of `SquashFUSE <https://github.com/vasi/squashfuse>`_
   that has the :code:`libsquashfuse_ll` shared library. At the time of this
@@ -538,6 +543,11 @@ Without these, you can still use a SquashFS workflow but must mount and
 unmount the filesystem archives manually. You can do this using the
 executables that come with SquashFUSE, and the version requirement is much
 less stringent.
+
+.. note:: If :code:`libfuse2` development files are available but those for
+   :code:`libfuse3` are not, SquashFUSE will still build and install, but the
+   proper components will not be available, so Charliecloud's
+   :code:`configure` will say it's not found.
 
 sudo, generic
 ~~~~~~~~~~~~~
