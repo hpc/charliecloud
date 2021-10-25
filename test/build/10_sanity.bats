@@ -107,7 +107,6 @@ load ../common
         shellcheck -e SC1090,SC2002,SC2154 "$i"
     done < <( find "$ch_base" \
                    \(    -name .git \
-                      -o -name .vagrant \
                       -o -name build-aux \) -prune \
                 -o \( -name '*.sh' -print \) \
                 -o \( -name '*.bash' -print \) \
