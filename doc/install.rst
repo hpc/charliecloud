@@ -87,18 +87,39 @@ be built.
 Dependency selection: :code:`--with-FOO`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Some dependencies can be specified as follows. Note that :code:`--without-FOO`
-is not supported; use the feature selectors above.
+Some dependencies can be specified as follows. Note only some of these support
+:code:`--with-FOO=no`, as listed.
 
-:code:`--with-python`
+:code:`--with-libsquashfuse={yes,no,PATH}`
+  Whether to link with :code:`libsquashfuse`. Options:
+
+  * If not specified: Look for :code:`libsquashfuse` in standard install
+    locations and link with it if found. Otherwise disable internal SquashFS
+    mount, with no warning or error.
+
+  * :code:`yes`: Look for :code:`libsquashfuse` in standard locations and link
+    with it if found; otherwise, error.
+
+  * :code:`no`: Disable :code:`libsquashfuse` linking and internal SquashFS
+    mounting, even if it's installed.
+
+  * Path to :code:`libsquashfuse` install prefix: Link with
+    :code:`libsquashfuse` found there, or error if not found, and add it to
+    :code:`ch-run`'s RPATH. (Note this argument is *not* the directory
+    containing the shared library or header file.)
+
+  **Note:** A very specific version and configuration of SquashFUSE is
+  required. See below for details.
+
+:code:`--with-python=SHEBANG`
   Shebang line to use for Python scripts. Default:
   :code:`/usr/bin/env python3`.
 
-:code:`--with-sphinx-build`
+:code:`--with-sphinx-build=PATH`
   Path to :code:`sphinx-build` executable. Default: the :code:`sphinx-build`
   found first in :code:`$PATH`.
 
-:code:`--with-sphinx-python`
+:code:`--with-sphinx-python=PATH`
   Path to Python used by :code:`sphinx-build`. Default: shebang of
   :code:`sphinx-build`.
 
@@ -498,15 +519,35 @@ matches previous :code:`pip` behavior.) See Debian bugs `725848
 <https://bugs.debian.org/725848>`_ and `820856
 <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856>`_.
 
-SquashFS
-~~~~~~~~
+SquashFS and SquashFUSE
+~~~~~~~~~~~~~~~~~~~~~~~
 
 The SquashFS workflow requires `SquashFS Tools
-<https://github.com/plougher/squashfs-tools>`_ and/or `SquashFUSE
-<https://github.com/vasi/squashfuse>`_. Note that distribution packages of
-SquashFUSE often provide only the "high level" executables; the "low level"
-executables have better performance. These can be installed from source on any
-distribution.
+<https://github.com/plougher/squashfs-tools>`_ to create SquashFS archives.
+
+To mount these archives using :code:`ch-run`'s internal code, you need:
+
+* `libfuse3 <https://github.com/libfuse/libfuse>`_ including development
+  files, which is probably available in your distribution (e.g.,
+  :code:`libfuse3-dev`), and
+
+* a very recent version of `SquashFUSE <https://github.com/vasi/squashfuse>`_
+  that has the :code:`libsquashfuse_ll` shared library. At the time of this
+  writing (August 2021), this is probably `commit 56a24f6
+  <https://github.com/vasi/squashfuse/commit/56a24f6c7f6e5cfd0ce5185f175da223d00dc1ca>`_
+  or newer, and there is no versioned release yet. This must be installed,
+  though it can be a non-standard location; :code:`ch-run` can't link with
+  :code:`libsquashfuse` in the latter's build directory.
+
+Without these, you can still use a SquashFS workflow but must mount and
+unmount the filesystem archives manually. You can do this using the
+executables that come with SquashFUSE, and the version requirement is much
+less stringent.
+
+.. note:: If :code:`libfuse2` development files are available but those for
+   :code:`libfuse3` are not, SquashFUSE will still build and install, but the
+   proper components will not be available, so Charliecloud's
+   :code:`configure` will say it's not found.
 
 sudo, generic
 ~~~~~~~~~~~~~
@@ -523,3 +564,6 @@ Wget
 
 Wget is used to demonstrate building an image without a builder (the main test
 image used to exercise Charliecloud itself).
+
+
+..  LocalWords:  Werror Flameeyes plougher

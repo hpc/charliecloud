@@ -68,13 +68,6 @@ Build and manage images; completely unprivileged.
 
 .. include:: ./ch-image_desc.rst
 
-ch-mount
-++++++++
-
-Mount a SquashFS image file using FUSE.
-
-.. include:: ./ch-mount_desc.rst
-
 ch-pull2dir
 +++++++++++
 
@@ -127,10 +120,3 @@ ch-test
 Run some or all of the Charliecloud test suite.
 
 .. include:: ./ch-test_desc.rst
-
-ch-umount
-+++++++++
-
-Unmount a FUSE mounted squash filesystem and remove the mount point.
-
-.. include:: ./ch-umount_desc.rst

@@ -11,8 +11,8 @@
 #include <unistd.h>
 
 #include "config.h"
-#include "ch_misc.h"
 #include "ch_core.h"
+#include "ch_misc.h"
 
 
 /** Constants and macros **/
@@ -39,7 +39,7 @@ Example:\n\
 \n\
 You cannot use this program to actually change your UID.\n";
 
-const char args_doc[] = "NEWROOT CMD [ARG...]";
+const char args_doc[] = "IMAGE -- CMD [ARG...]";
 
 const struct argp_option options[] = {
    { "bind",          'b', "SRC[:DST]", 0,
@@ -52,6 +52,7 @@ const struct argp_option options[] = {
    { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
+   { "mount",         'm', "DIR",  0, "SquashFS mount point"},
    { "no-home",        -2, 0,      0, "don't bind-mount your home directory"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
@@ -114,6 +115,7 @@ int main(int argc, char *argv[])
                                                   .container_gid = getegid(),
                                                   .container_uid = geteuid(),
                                                   .env_expand = true,
+                                                  .img_path = NULL,
                                                   .newroot = NULL,
                                                   .join = false,
                                                   .join_ct = 0,
@@ -123,6 +125,7 @@ int main(int argc, char *argv[])
                                                   .private_passwd = false,
                                                   .private_tmp = false,
                                                   .old_home = getenv("HOME"),
+                                                  .type = IMG_NONE,
                                                   .writable = false },
                          .initial_dir = NULL };
    // These need to be on the heap because we realloc(3) them later.
@@ -142,9 +145,25 @@ int main(int argc, char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   args.c.newroot = realpath(argv[arg_next], NULL);
-   Tf (args.c.newroot != NULL, "can't find image: %s", argv[arg_next]);
-   arg_next++;
+   args.c.img_path = argv[arg_next++];
+   args.c.type = img_type_get(args.c.img_path);
+
+   switch (args.c.type) {
+   case IMG_DIRECTORY:
+      if (args.c.newroot != NULL)  // --mount was set
+         WARNING("--mount invalid with directory image, ignoring");
+      args.c.newroot = realpath(args.c.img_path, NULL);
+      Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_path);
+      break;
+   case IMG_SQUASH:
+#ifndef HAVE_LIBSQUASHFUSE
+      FATAL("this ch-run does not support internal SquashFS mounts");
+#endif
+      break;
+   case IMG_NONE:
+      FATAL("unknown image type: %s", args.c.img_path);
+      break;
+   }
 
    if (args.c.join) {
       args.c.join_ct = join_ct(args.c.join_ct);
@@ -162,6 +181,7 @@ int main(int argc, char *argv[])
       c_argv[i] = argv[i + arg_next];
 
    INFO("verbosity: %d", verbose);
+   INFO("image: %s", args.c.img_path);
    INFO("newroot: %s", args.c.newroot);
    INFO("container uid: %u", args.c.container_uid);
    INFO("container gid: %u", args.c.container_gid);
@@ -504,6 +524,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case 'j':
       args->c.join = true;
+      break;
+   case 'm':
+      Ze ((arg[0] == '\0'), "mount point can't be empty string");
+      args->c.newroot = arg;
       break;
    case 't':
       args->c.private_tmp = true;
