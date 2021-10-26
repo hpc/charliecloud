@@ -84,7 +84,7 @@ EOF
     rm -Rf --one-file-system "$spark_log"
     # start the master
     ch-run -b "$confbind" "$ch_img" -- /opt/spark/sbin/start-master.sh
-    sleep 7
+    sleep 15
     # shellcheck disable=SC2086
     cat $master_log
     # shellcheck disable=SC2086
@@ -93,7 +93,7 @@ EOF
     # shellcheck disable=SC2086
     $pernode ch-run -b "$confbind" "$ch_img" -- \
                     /opt/spark/sbin/start-slave.sh "$master_url"
-    sleep 7
+    sleep 15
 }
 
 @test "${ch_tag}/worker count" {
