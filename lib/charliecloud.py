@@ -399,6 +399,7 @@ class Image:
       self.metadata = { "arch": None,
                         "cwd": "/",
                         "env": dict(),
+                        "history": list(),
                         "labels": dict(),
                         "shell": ["/bin/sh", "-c"],
                         "volumes": list() }  # set isn't JSON-serializable
@@ -446,6 +447,13 @@ class Image:
             except AttributeError:
                FATAL("can't parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
+      # history
+      try:
+         hist = config["history"]
+      except AttributeError:
+         FATAL("config missing key 'history'")
+      for k in hist:
+         self.metadata["history"].append(k)
       # labels
       set_("labels", "config", "Labels")  # copy reference
       # shell
