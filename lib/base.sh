@@ -233,24 +233,6 @@ else
     }
 fi
 
-# Use fuse low-level API if it's available.
-if command -v squashfuse_ll > /dev/null 2>&1; then
-    squashfuse_ () {
-        squashfuse_ll "$@"
-    }
-elif command -v squashfuse > /dev/null 2>&1; then
-    squashfuse_ () {
-        echo "WARNING:" 1>&2
-        echo "Low-level FUSE API unavailable; squashfuse will be slower" 1>&2
-        squashfuse "$@"
-    }
-else
-    squashfuse_ () {
-        echo "can't mount: no squashfuse or squashfuse_ll command found" 1>&2
-        exit 1
-    }
-fi
-
 # Use pv to show a progress bar, if it's available. (We also don't want a
 # progress bar if stdin is not a terminal, but pv takes care of that.)
 if command -v pv > /dev/null 2>&1; then

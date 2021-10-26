@@ -275,9 +275,6 @@ man_pages = [
    ("ch-image", "ch-image",
     "Build and manage images; completely unprivileged",
     [], 1),
-   ("ch-mount", "ch-mount",
-    "Mount a SquashFS image file using FUSE",
-    [], 1),
    ("ch-pull2dir", "ch-pull2dir",
     "Pull image from a Docker Hub and unpack into directory",
     [], 1),
@@ -297,9 +294,6 @@ man_pages = [
     [], 1),
    ("ch-test", "ch-test",
     "Run some or all of the Charliecloud test suite",
-    [], 1),
-   ("ch-umount", "ch-umount",
-    "Unmount a FUSE mounted squash filesystem and remove the mount point",
     [], 1),
 ]
 

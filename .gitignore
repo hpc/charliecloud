@@ -37,7 +37,6 @@ a.out
 /test/sotest/sotest
 /test/sotest/bin/
 /test/sotest/lib/
-/packaging/vagrant/.vagrant
 
 # perhaps-unpacked tarballs at root of working directory
 /charliecloud-*.tar*

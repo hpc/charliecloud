@@ -2,9 +2,9 @@
     scope %(scope)s
     prerequisites_ok %(tag)s
     if [[ -e "${ch_tardir}/%(tag)s.sqfs" ]]; then
-        ch-mount "${ch_tardir}/%(tag)s".sqfs "$ch_mounts"
-        img="${ch_mounts}/%(tag)s"
-        ch-umount "$img"
+        squashfuse "${ch_tardir}/%(tag)s".sqfs "$ch_mounts"
+        img="${ch_mounts}"
+        fusermount -u "$img"
         # FIXME: .sqfs should be mounted and tested
         unsquashfs -d "${ch_imgdir}/%(tag)s" "${ch_tardir}/%(tag)s.sqfs"
     else

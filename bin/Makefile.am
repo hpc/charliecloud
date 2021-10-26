@@ -9,8 +9,12 @@ bin_PROGRAMS = ch-checkns ch-run ch-ssh
 ch_checkns_SOURCES = ch-checkns.c ch_misc.h ch_misc.c
 
 ch_run_SOURCES = ch-run.c ch_core.h ch_core.c ch_misc.h ch_misc.c
+if HAVE_LIBSQUASHFUSE
+ch_run_SOURCES += ch_fuse.h ch_fuse.c
+endif
+
 ch_run_CFLAGS = $(CFLAGS) $(PTHREAD_CFLAGS)
-ch_run_LDADD = $(LIBRT)
+ch_run_LDADD = $(CH_RUN_LIBS)
 
 ch_ssh_SOURCES = ch-ssh.c ch_misc.h ch_misc.c
 
@@ -24,12 +28,10 @@ dist_bin_SCRIPTS = ch-build \
                    ch-convert \
                    ch-dir2squash \
                    ch-fromhost \
-                   ch-mount \
                    ch-pull2dir \
                    ch-pull2tar \
                    ch-tar2dir \
-                   ch-test \
-                   ch-umount
+                   ch-test
 
 
 ## Python scripts - need text processing

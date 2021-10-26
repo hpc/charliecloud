@@ -265,7 +265,6 @@ countem "BUILD SYSTEM" /tmp/loc.build
 
 # packaging code
 find ./packaging \(    -path ./packaging/debian \
-                    -o -name .vagrant \
                     -o -name Makefile.am \) -prune -o -type f \
      -print | sort > /tmp/loc.packaging
 countem "PACKAGING" /tmp/loc.packaging
@@ -300,8 +299,8 @@ cat /tmp/loc.ignored
 
 # everything
 find . \(    -path ./.git \
-         -o -name __pycache__ \
-         -o -name .vagrant \) -prune -o -type f -print \
+         -o -name __pycache__ \) \
+         -prune -o -type f -print \
   | sort > /tmp/loc.all
 cat /tmp/loc.{all,ignored} | sort | uniq -u > /tmp/loc.total
 countem "TOTAL" /tmp/loc.total 0 nolist

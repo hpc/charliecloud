@@ -21,6 +21,9 @@
 #include "config.h"
 #include "ch_misc.h"
 #include "ch_core.h"
+#ifdef HAVE_LIBSQUASHFUSE
+#include "ch_fuse.h"
+#endif
 
 
 /** Macros **/
@@ -147,6 +150,10 @@ void containerize(struct container *c)
    if (c->join)
       join_begin(c->join_ct, c->join_tag);
    if (!c->join || join.winner_p) {
+#ifdef HAVE_LIBSQUASHFUSE
+      if (c->type == IMG_SQUASH)
+         sq_fork(c);
+#endif
       setup_namespaces(c);
       enter_udss(c);
    } else
@@ -235,6 +242,33 @@ void enter_udss(struct container *c)
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
 }
 
+/* Return image type of path, or exit with error if not a valid type. */
+enum img_type img_type_get(const char *path)
+{
+   struct stat read;
+   FILE *fp;
+   char magic[4];  // four bytes, not a string
+
+   Zf (stat(path, &read), "can't stat: %s", path);
+
+   if (S_ISDIR(read.st_mode))
+      return IMG_DIRECTORY;
+
+   fp = fopen(path, "rb");
+   Tf (fp != NULL, "can't open: %s", path);
+   Tf (fread(magic, sizeof(char), 4, fp) == 4, "can't read: %s", path);
+   Zf (fclose(fp), "can't close: %s", path);
+   INFO("image file magic expected: 6873 7173; actual: %x%x %x%x", magic[0], magic[1], magic[2], magic[3]);
+
+   // SquashFS magic number is 6873 7173, i.e. "hsqs". I think "sqsh" was
+   // intended but the superblock designers were confused about endianness.
+   // See: https://dr-emann.github.io/squashfs/
+   if (memcmp(magic, "hsqs", 4) == 0)
+      return IMG_SQUASH;
+
+   FATAL("unknown image type: %s", path);
+   return IMG_NONE;  // unreachable, avoid warning; see issue #1158
+}
 /* Begin coordinated section of namespace joining. */
 void join_begin(int join_ct, const char *join_tag)
 {
