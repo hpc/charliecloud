@@ -18,7 +18,9 @@ AC_CONFIG_SRCDIR([bin/ch-run.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([misc/m4])
 
+AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 AS_CASE([$host_os],
   [linux*], [],
   [*],      [AC_MSG_ERROR([Linux is the only supported OS; see issue @%:@42.])]
