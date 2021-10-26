@@ -78,6 +78,7 @@ jobs:
           free -m
           df -h
           locale -a
+          shellcheck --version
 
       - name: lines of code
         if: ${{ matrix.builder == 'none' }}
