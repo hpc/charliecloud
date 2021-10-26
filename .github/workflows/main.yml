@@ -78,7 +78,6 @@ jobs:
           free -m
           df -h
           locale -a
-          shellcheck --version
 
       - name: lines of code
         if: ${{ matrix.builder == 'none' }}
@@ -163,6 +162,13 @@ jobs:
           sudo apt-get install squashfs-tools squashfuse
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
+          # Use newest shellcheck.
+          cd /usr/local/src
+          wget -nv https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz
+          tar xf shellcheck-stable.linux.x86_64.tar.xz
+          mv shellcheck-stable/shellcheck /usr/local/bin
+          which shellcheck
+          shellcheck --version
 
       - name: disable bundled lark, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
