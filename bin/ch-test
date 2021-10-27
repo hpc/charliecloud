@@ -20,13 +20,14 @@ warning () {
 
 ### Setup
 
-lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
-if [[ ! -f ${lib}/base.sh ]]; then
-    fatal "install or build problem: not found: ${lib}/base.sh"
+ch_lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+if [[ ! -f ${ch_lib}/base.sh ]]; then
+    fatal "install or build problem: not found: ${ch_lib}/base.sh"
 fi
-. "${lib}/base.sh"
-. "${lib}/contributors.bash"
+. "${ch_lib}/base.sh"
+. "${ch_lib}/contributors.bash"
 export ch_bin
+export ch_lib
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
@@ -129,14 +130,7 @@ dir_img_mk () {
 }
 
 dir_img_rm () {
-    # Remove CH_TEST_IMGDIR if 1) the directory is empty; or 2) the directory
-    # is non-empty but contains a sentinel file.
-    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r \
-       &&  [[ ! -e $CH_TEST_TARDIR/WEIRD_AL_YANKOVIC ]]; then
-        fatal "$CH_TEST_IMGDIR missing sentinel file; manually delete."
-    fi
-    echo "removing $CH_TEST_IMGDIR"
-    $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_IMGDIR"
+    dir_rm_safe "$CH_TEST_IMGDIR"
 }
 
 # Remove a filesystem permissions fixture directory. Ensure that the target
@@ -146,6 +140,17 @@ dir_perm_rm () {
           && -d "${1}/pass" && -d "${1}/nopass" ]]; then
         echo "removing ${1}"
         sudo rm -rf --one-file-system "$1"
+    fi
+}
+
+# Remove directory $1 if it's either 1) empty or 2) contains a sentinel file.
+dir_rm_safe () {
+    if [[    $(find "$1" -maxdepth 1 -mindepth 1 | wc -l) == 0 \
+          || -e ${1}/WEIRD_AL_YANKOVIC ]]; then
+        echo "removing $1"
+        $ch_mpirun_node rm -rf --one-file-system "$1"
+    else
+        fatal "non-empty and missing sentinel file; manually delete: $1"
     fi
 }
 
@@ -177,14 +182,7 @@ dir_tar_mk () {
 }
 
 dir_tar_rm () {
-    # Remove CH_TEST_TARDIR if 1) the directory is empty; or 2) the directory
-    # is non-empty but contains a sentinel file.
-    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r \
-       && [[ ! -e $CH_TEST_TARDIR/WEIRD_AL_YANKOVIC ]]; then
-        fatal "$CH_TEST_TARDIR missing sentinel file; manually delete."
-    fi
-    echo "removing $CH_TEST_TARDIR"
-    $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_TARDIR"
+    dir_rm_safe "$CH_TEST_TARDIR"
 }
 
 dir_tmp_rm () {
