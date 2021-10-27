@@ -1,24 +1,25 @@
 #!/usr/bin/env bash
+
 # rstudio_auth method from https://github.com/nickjer/singularity-rstudio
 
-# Confirm username is supplied
-if [[ $# -ne 1 ]]; then
-  exit 1
-fi
-USERNAME="${1}"
-
-# Confirm password environment variable exists (set in start_rstudio.sh)
-if [[ -z ${RSTUDIO_PASSWORD} ]]; then
-  exit 1
-fi
-
-# Read in the password from user
-read -s -p "Password: " PASSWORD
-echo ""
-
-if [[ ${USERNAME} == ${USER} && ${PASSWORD} == ${RSTUDIO_PASSWORD} ]]; then
-  exit 0
-else
-  exit 1
-fi
-
+## Confirm username is supplied
+#if [[ $# -ne 1 ]]; then
+#  exit 1
+#fi
+#USERNAME="${1}"
+#
+## Confirm password environment variable exists (set in start_rstudio.sh)
+#if [[ -z ${RSTUDIO_PASSWORD} ]]; then
+#  exit 1
+#fi
+#
+## Read in the password from user
+#read -s -p "Password: " PASSWORD
+#echo ""
+#
+#if [[ ${USERNAME} == ${USER} && ${PASSWORD} == ${RSTUDIO_PASSWORD} ]]; then
+#  exit 0
+#else
+#  exit 1
+#fi
+exit 0

@@ -1,18 +1,21 @@
-import getpass
 import time
+import os
+import getpass
 import selenium
-from selenium import webdriver
-from selenium.webdriver import FirefoxOptions
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import selenium.webdriver 
 
-opts = FirefoxOptions()
+# This script uses selenium to test if RStudio server is working. 
+# It signs in with the username and password. 
+
+# Sets up the firefox driver and runs it in headless mode with no GUI
+opts = selenium.webdriver.FirefoxOptions()
 opts.add_argument("--headless")
-driver = webdriver.Firefox(log_path='/tmp/geckodriver.log',firefox_options=opts)
+tmp_dir = os.environ['BATS_TMPDIR']
+driver = selenium.webdriver.Firefox(log_path='%s/geckodriver.log' % tmp_dir, 
+        firefox_options=opts)
 driver.get('http://127.0.0.1:8991')
 assert "Sign In" in driver.title
+# Fill in the username and password fields on the page
 elem = driver.find_element_by_name("username")
 elem.clear()
 user = getpass.getuser()
@@ -22,12 +25,19 @@ elem = driver.find_element_by_name("password")
 elem.clear()
 password = "charliecloud"
 elem.send_keys(password)
-elem.send_keys(Keys.RETURN)
 
+# Presses the button to sign in
 driver.find_element_by_xpath("//button[text()='Sign In']").click()
+
+# Sleep since it takes a while for the javascript to load in Rstudio web app
 time.sleep(30)
 try:
+    # Look for the rstudio_container id one of the main elements of the app
+    # If this isn't there the app failed to login successfully
     elem = driver.find_element_by_id("rstudio_container")
-    print('Good')
+    print('Rstudio login successful!')
 except selenium.common.exceptions.NoSuchElementException:
-    print('Bad')
+    print('Rstudio login failed!')
+finally:
+    driver.close()
+    driver.quit()

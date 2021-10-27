@@ -11,10 +11,8 @@ if [[ -z ${port} ]]; then
   exit 1
 fi
 
-RSTUDIO_AUTH="/bin/rstudio_auth"
-
 /usr/lib/rstudio-server/bin/rserver \
   --www-port="${port}" \
   --auth-none=0 \
-  --auth-pam-helper-path=${RSTUDIO_AUTH} \
+  --auth-pam-helper-path=/rstudio/rstudio_auth \
   --auth-encrypt-password=0
