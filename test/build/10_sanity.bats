@@ -91,20 +91,17 @@ load ../common
     fi
     # ShellCheck minimum version?
     version=$(shellcheck --version | grep -E '^version:' | cut -d' ' -f2)
-    major=${version%%.*}
-    rest=${version#*.}
-    minor=${rest%%.*}
-    echo "shellcheck: version '${version}', major '${major}', minor '${minor}'"
-    minor_needed=6
-    if [[ $minor -lt $minor_needed ]]; then
-        # No need to check major because minimum is 0.
-        pedantic_fail "shellcheck ${version} older than 0.${minor_needed}.0"
+    needed=0.7.2
+    lesser=$(printf "%s\n%s\n" "$version" "$needed" | sort -V | head -1)
+    echo "shellcheck: have ${version}, need ${needed}, lesser ${lesser}"
+    if  [[ $lesser != "$needed" ]]; then
+        pedantic_fail 'shellcheck too old'
     fi
     # Shell scripts and libraries: appropriate extension or shebang.
     # For awk program, see: https://unix.stackexchange.com/a/66099
     while IFS= read -r i; do
         echo "shellcheck: ${i}"
-        shellcheck -e SC1090,SC2002,SC2154 "$i"
+        shellcheck -x -P "$ch_lib" -e SC1090,SC2002,SC2154 "$i"
     done < <( find "$ch_base" \
                    \(    -name .git \
                       -o -name build-aux \) -prune \

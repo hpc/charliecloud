@@ -24,6 +24,11 @@ How do you spell Charliecloud?
 We try to be consistent with *Charliecloud* — one word, no camel case. That
 is, *Charlie Cloud* and *CharlieCloud* are both incorrect.
 
+How large is Charliecloud?
+--------------------------
+
+.. include:: loc.rst
+
 
 Errors
 ======
@@ -848,5 +853,5 @@ Other approaches could be found with web searches such as "automate unattended
 SSH" or "SSH in cron jobs".
 
 
-..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za mpihello
+..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello
 ..  LocalWords:  VirtualSize
