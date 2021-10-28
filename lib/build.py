@@ -19,6 +19,9 @@ import pull
 # Namespace from command line arguments. FIXME: be more tidy about this ...
 cli = None
 
+meta_hist = { "history": [ { "created": ch.now_utc_iso8601()},
+                           { "created_with": "ch-image v%s" % ch.version.VERSION}]}
+
 # Environment object.
 env = None
 
@@ -219,10 +222,10 @@ class Main_Loop(lark.Visitor):
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          inst.execute()
-         if (image_i != -1):
-            images[image_i].metadata_save()
+         if (self.instruction_ct > 0):
+            inst.metadata_add_history()
+         images[image_i].metadata_save()
          self.instruction_ct += inst.execute_increment
-
 
 ## Instruction classes ##
 
@@ -263,6 +266,12 @@ class Instruction(abc.ABC):
    @abc.abstractmethod
    def execute_(self):
       ...
+
+   def metadata_add_history(self):
+      hist = { "history": [ { "created": ch.now_utc_iso8601(),
+                              "created_by": "%s %s" % (self.str_name(), self.str_()),
+                              "created_with": "ch-image v%s" % ch.version.VERSION}]}
+      images[image_i].metadata_append(hist)
 
    def options_assert_empty(self):
       try:

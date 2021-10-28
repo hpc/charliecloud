@@ -464,6 +464,17 @@ class Image:
          for k in config["config"]["Volumes"].keys():
             self.metadata["volumes"].append(k)
 
+   def metadata_append(self, data):
+      DEBUG("appending metadata: %s" % data)
+      if (self.metadata is None):
+         path = self.metadata_path // "config.pulled.json"
+         self.metadata_merge_from_config(json_from_file(path, "config"))
+      for k in data:
+         if (k in self.metadata.keys()):
+            self.metadata[k] += data[k]
+         else:
+            FATAL("config has no key '%s'" % k)
+
    def metadata_replace(self, config_json):
       self.metadata_init()
       if (config_json is None):
