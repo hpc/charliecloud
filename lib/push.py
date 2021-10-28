@@ -114,7 +114,6 @@ class Image_Pusher:
                                      "digest": "sha256:" + hash_c })
       # Prepare metadata.
       ch.INFO("preparing metadata")
-      disc_data = self.image.metadata_load()
       config["history"] = self.image.metadata["history"]
       config_bytes = json.dumps(config, indent=2).encode("UTF-8")
       config_hash = ch.bytes_hash(config_bytes)

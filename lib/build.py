@@ -19,9 +19,6 @@ import pull
 # Namespace from command line arguments. FIXME: be more tidy about this ...
 cli = None
 
-meta_hist = { "history": [ { "created": ch.now_utc_iso8601()},
-                           { "created_with": "ch-image v%s" % ch.version.VERSION}]}
-
 # Environment object.
 env = None
 
