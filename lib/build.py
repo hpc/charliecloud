@@ -266,7 +266,7 @@ class Instruction(abc.ABC):
 
    def metadata_add_history(self):
       hist = { "history": [ { "created": ch.now_utc_iso8601(),
-                              "created_by": "%s %s" % (self.str_name(), self.str_()),
+                              "created_by": "%s %s" % (self.str_name(), self.str_())} ]}
       images[image_i].metadata_append(hist)
 
    def options_assert_empty(self):
