@@ -161,7 +161,7 @@ void msg(int level, const char *file, int line, int errno_,
 
    fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
 
-   if (level <= 1)
+   if (level <= 1 && fmt != NULL)
       fprintf(stderr, "%s: ", VERBOSE_LEVELS[level]);
 
    if (fmt == NULL)
@@ -296,6 +296,14 @@ void split(char **a, char **b, const char *str, char del)
    *a = strsep(b, delstr);
    if (*b == NULL)
       *a = NULL;
+}
+
+/* Return the current username, or exit with error if this can't be done. */
+const char *username(void)
+{
+   const char *u = getenv("USER");
+   Te (u != NULL, "$USER not set");
+   return u;
 }
 
 /* Report the version number. */

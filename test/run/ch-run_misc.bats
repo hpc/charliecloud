@@ -28,6 +28,7 @@ EOF
 
 @test 'mount image read-write' {
     scope quick
+    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'needs directory image'
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
 }
@@ -106,17 +107,16 @@ EOF
     # shellcheck disable=SC2016
     [[ $output = *'cannot find home directory: is $HOME set?'* ]]
 
-    # warn if $USER not set
+    # puke if $USER not set
     user_tmp=$USER
     unset USER
     # shellcheck disable=SC2016
     run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export USER=$user_tmp
     echo "$output"
-    [[ $status -eq 0 ]]
+    [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
-    [[ $output = *'$USER not set; cannot rewrite $HOME'* ]]
-    [[ $output = *"$HOME"* ]]
+    [[ $output = *'$USER not set'* ]]
 }
 
 
@@ -202,6 +202,7 @@ EOF
 
 @test 'ch-run --bind' {
     scope quick
+    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'needs directory image'
 
     # set up sources
     mkdir -p "${ch_timg}/${ch_imgdir}/bind1"
@@ -264,6 +265,7 @@ EOF
 
 @test 'ch-run --bind errors' {
     scope quick
+    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'needs directory image'
 
     # no argument to --bind
     run ch-run "$ch_timg" -b
@@ -765,8 +767,7 @@ EOF
 
 @test 'ch-run: internal SquashFUSE mounting' {
     scope standard
-    [[ $CH_PACK_FMT == squash ]] || skip 'squash mode only'
-    [[ -n $ch_have_libsquashfuse ]] || skip 'libsquashfuse not linked'
+    [[ $CH_TEST_PACK_FMT == squash-mount ]] || skip 'squash-mount format only'
 
     ch_sqfs="$CH_TEST_TARDIR"/00_tiny.sqfs
     ch_mnt="/var/tmp/${USER}.ch/mnt"
@@ -798,8 +799,7 @@ EOF
 
 @test 'ch-run: internal SquashFUSE errors' {
     scope standard
-    [[ $CH_PACK_FMT == squash ]] || skip 'squash mode only'
-    [[ -n $ch_have_libsquashfuse ]] || skip 'libsquashfuse not linked'
+    [[ $CH_TEST_PACK_FMT == squash-mount ]] || skip 'squash-mount format only'
 
     ch_sqfs="$CH_TEST_TARDIR"/00_tiny.sqfs
 

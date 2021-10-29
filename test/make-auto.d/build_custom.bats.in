@@ -8,34 +8,40 @@
     cd "%(dirname)s"
     run ./%(basename)s "$PWD" "$out" "$workdir"
     echo "$output"
-    # Pack image into appropriate format.
-    if [[ -f ${out}.tar.gz || -f ${out}.tar.xz ]]; then
-        tarballs=( "$out".tar.* )
-        [[ ${#tarballs[@]} -eq 1 ]]  # fail if both extensions were provided
-        tarball=${tarballs[0]}
-        if [[ $CH_PACK_FMT = squash ]]; then
-            # Tarball provided but pack format is SquashFS; repack.
-            ch-convert "$tarball" "${out}.sqfs"
-            rm "$tarball"
-        fi
-    elif [[ -d $out ]]; then
-        if [[ $CH_PACK_FMT = tar ]]; then
-            ( cd "$out" && tar czf "${out}.tar.gz" -- * )
-        elif [[ $CH_PACK_FMT = squash ]]; then
-            ch-convert "$out" "${out}.sqfs"
+    if [[ $status -eq 0 ]]; then
+        if [[ -f ${out}.tar.gz || -f ${out}.tar.xz ]]; then  # tarball
+            # Validate exactly one tarball came out.
+            tarballs=( "$out".tar.* )
+            [[ ${#tarballs[@]} -eq 1 ]]
+            tarball=${tarballs[0]}
+            # Convert to SquashFS if needed.
+            if [[ $CH_TEST_PACK_FMT = squash* ]]; then
+                ch-convert "$tarball" "${tarball/tar.?z/sqfs}"
+                rm "$tarball"
+            fi
+        elif [[ -d $out ]]; then                             # directory
+            case $CH_TEST_PACK_FMT in
+                squash-*)
+                    ext=.sqsh
+                    ;;
+                tar-unpack)
+                    ext=.tar.gz
+                    ;;
+                *)
+                    false  # unknown format
+                    ;;
+            esac
+            ch-convert "$out" "${out}.${ext}"
         else
-            false  # unknown pack format
+            false  # unknown format
         fi
-        rm -Rf --one-file-system "$out"
-    else
-        [[ $status -ne 0 ]]  # no tarball or directory; script should fail
     fi
-    # Clean up.
-    rm -Rf --one-file-system "$workdir"
+    rm -Rf --one-file-system "$out" "$workdir"
     if [[ $status -eq 65 ]]; then
-         touch "$pq"
-         rm -Rf --one-file-system "$out" "$out".tar.{gz,xz}
-         skip 'prerequisites not met'
+        touch "$pq"
+        rm -Rf --one-file-system "$out".tar.{gz,xz}
+        skip 'prerequisites not met'
+    else
+        return "$status"
     fi
-    [[ $status -eq 0 ]]
 }

@@ -163,13 +163,6 @@ scope () {
     esac
 }
 
-squashfs_ready () {
-    if [[ $CH_PACK_FMT != squashfs ]]; then
-        exit 1
-    fi
-    command -v mksquashfs && command -v squashfuse
-}
-
 unpack_img_all_nodes () {
     if [[ $1 ]]; then
         $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"

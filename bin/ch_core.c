@@ -199,10 +199,8 @@ void enter_udss(struct container *c)
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
       Tf (c->old_home != NULL, "cannot find home directory: is $HOME set?");
-      newhome = cat("/home/", getenv("USER"));
-      if(getenv("USER") != NULL) {
-         Z_ (mkdir(cat(c->newroot, newhome), 0755));
-      }
+      newhome = cat("/home/", username());
+      Z_ (mkdir(cat(c->newroot, newhome), 0755));
       bind_mount(c->old_home, newhome, BD_REQUIRED, c->newroot, 0);
    }
    // Container /usr/bin/ch-ssh.
@@ -472,7 +470,7 @@ void setup_passwd(const struct container *c)
    if (p) {
       T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
                        p->pw_name, c->container_uid, c->container_gid,
-                       p->pw_gecos, getenv("USER")));
+                       p->pw_gecos, username()));
    } else {
       if (errno) {
          Tf (0, "getpwuid(3) failed");

@@ -15,24 +15,20 @@ jobs:
       fail-fast: true  # if any job fails, cancel the rest immediately
       matrix:
         builder: [none, docker, ch-image]
+        pack_fmt: [🐘, 📠, 🎃]
         keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
-        squashfuse:
-          - external
         include:
           - builder: docker
             keep_sudo: true
-            squashfuse: external
-          - builder: ch-image
-            keep_sudo: false
-            squashfuse: internal
+            pack_fmt: 🐘
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
       CH_TEST_IMGDIR: /mnt/images
+      CH_TEST_PACK_FMT: ${{ matrix.pack_fmt }}
       CH_TEST_PERMDIRS: /mnt/perms_test /run/perms_test
       ch_prefix: /var/tmp
-      ci_squashfuse: ${{ matrix.squashfuse }}
 
     steps:
       - uses: actions/checkout@v2

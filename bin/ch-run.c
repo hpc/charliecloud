@@ -278,15 +278,8 @@ void fix_environment(struct args *args)
    char *name, *old_value, *new_value;
 
    // $HOME: Set to /home/$USER unless --no-home specified.
-   if (!args->c.private_home) {
-      old_value = getenv("USER");
-      if (old_value == NULL) {
-         WARNING("$USER not set; cannot rewrite $HOME");
-      } else {
-         T_ (1 <= asprintf(&new_value, "/home/%s", old_value));
-         Z_ (setenv("HOME", new_value, 1));
-      }
-   }
+   if (!args->c.private_home)
+      Z_ (setenv("HOME", cat("/home/", username()), 1));
 
    // $PATH: Append /bin if not already present.
    old_value = getenv("PATH");

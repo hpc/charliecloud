@@ -35,10 +35,11 @@ Run some or all of the Charliecloud test suite.
 
 Usage:
 
-  $ $(basename "$0") [PHASE] [--scope SCOPE] [OPTIONS]
+  $ $(basename "$0") [PHASE] [--scope SCOPE] [--pack-fmt FMT] [OPTIONS]
 
 Valid phases: build, run, examples, all, mk-perm-dirs, clean, rm-perm-dirs
 Valid scopes: quick, standard, full
+Valid pack formats: squash-mount, tar-unpack, squash-unpack
 
 Additional options:
 
@@ -47,8 +48,8 @@ Additional options:
   -f,--file FILE[:TEST]  run tests in FILE only, or even just TEST
   -h,--help              print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
-  --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
-  --pack-fmt FMT         packed image format ("squash" or "tar")
+  --pack-dir DIR         packed image directory; same as \$CH_TEST_TARDIR
+  --pack-fmt FMT         packed image format; same as \$CH_TEST_PACK_FMT
   --pedandic {yes,no}    set pedantic mode rather than guessing
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
   --sudo                 enable tests that need sudo
@@ -198,44 +199,64 @@ dirs_unpriv_rm () {
     dir_tmp_rm
 }
 
-libsquashfuse_set () {
-    width=$1
-    if [[ $(ldd "${ch_bin}/ch-run") = *"libsquashfuse"* ]]; then
-        ch_have_libsquashfuse=yes
-    else
-        ch_have_libsquashfuse=
-    fi
-    # If CI demands libsquashfuse mode, validate we match.
-    if [[ $ci_squashfuse = internal && -z $ch_have_libsquashfuse ]]; then
-        fatal 'CI demands libsquashfuse but ch-run not linked'
-    fi
-    export ch_have_libsquashfuse
-    printf "%-*s %s (%s)\n" "$width" \
-           'libsquashfuse:' "${ch_have_libsquashfuse:-no}" autodetected
-}
-
 pack_fmt_set () {
     width=$1
+    if command -v mksquashfs > /dev/null 2>&1; then
+        have_mksquashfs=yes
+    else
+        have_mksquashfs=
+    fi
+    if [[ $(ldd "${ch_bin}/ch-run") = *"libsquashfuse"* ]]; then
+        have_libsquashfuse=yes
+    else
+        have_libsquashfuse=
+    fi
     if [[ -n $pack_fmt ]]; then
         case $pack_fmt in
         '🐘')  # elephant emoji
-            pack_fmt=squash
+            pack_fmt=squash-mount
             ;;
         '📠')  # fax machine emoji
-            pack_fmt=tar
+            pack_fmt=tar-unpack
+            ;;
+        '🎃')  # jack-o-lantern emoji
+            pack_fmt=squash-unpack
             ;;
         esac
-        export CH_PACK_FMT=$pack_fmt
+        CH_TEST_PACK_FMT=$pack_fmt
         method='command line'
-    elif [[ -n $CH_PACK_FMT ]]; then
+    elif [[ -n $CH_TEST_PACK_FMT ]]; then
         method='environment'
+    elif [[ -n $have_mksquashfs && -n $have_libsquashfuse ]]; then
+        CH_TEST_PACK_FMT=squash-mount
+        method='default'
     else
-        pack_fmt_choose
+        CH_TEST_PACK_FMT=tar-unpack
         method='default'
     fi
+    export CH_TEST_PACK_FMT
     printf "%-*s %s (%s)\n" \
-           "$width" 'packed image format:' "$CH_PACK_FMT" "$method"
-    pack_fmt_valid "$CH_PACK_FMT"
+           "$width" 'packed image format:' "$CH_TEST_PACK_FMT" "$method"
+    case $CH_TEST_PACK_FMT in
+        squash-mount)
+            if [[ -z $have_mksquashfs ]]; then
+                fatal "format invalid: ${CH_TEST_PACK_FMT}: no mksquashfs"
+            fi
+            if [[ -z $have_libsquashfuse ]]; then
+                fatal "format invalid: ${CH_TEST_PACK_FMT}: ch-run not linked with libsquashfuse"
+            fi
+            ;;
+        tar-unpack)
+            ;;  # nothing to check (assume we have tar)
+        squash-unpack)
+            if [[ -z $have_libsquashfuse ]]; then
+                fatal "format invalid: ${CH_TEST_PACK_FMT}: ch-run not linked with libsquashfuse"
+            fi
+            ;;
+        *)
+            fatal "format unknown: ${CH_TEST_PACK_FMT}"
+            ;;
+    esac
 }
 
 pedantry_set () {
@@ -893,7 +914,6 @@ vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
 vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
 pack_fmt_set 21
-libsquashfuse_set 21
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
