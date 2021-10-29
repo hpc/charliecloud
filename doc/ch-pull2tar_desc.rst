@@ -8,6 +8,9 @@ Synopsis
 Description
 ===========
 
+.. warning:: This script is deprecated in favor of :code:`ch-convert`. It will
+             be removed in the next release.
+
 Pull a Docker image named :code:`IMAGE[:TAG]` from Docker Hub and flatten it
 into a Charliecloud tarball in directory :code:`OUTDIR`.
 

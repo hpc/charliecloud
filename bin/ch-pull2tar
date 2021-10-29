@@ -15,6 +15,7 @@ Usage:
   $ $(basename "$0") IMAGE DEST
 
 You must have sufficient privilege (via sudo) to run Docker commands.
+${deprecated_convert}
 EOF
 )
 
@@ -29,3 +30,5 @@ dest=$2
 
 docker_ pull "$image"
 "${ch_bin}/ch-builder2tar" "$image" "$dest"
+
+deprecated_convert_warn

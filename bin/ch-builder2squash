@@ -12,6 +12,7 @@ Usage:
   $ $(basename "$0") [-b BUILDER] IMAGE OUTDIR [ARGS ...]
 
 You must have sufficient privilege (via sudo) to run the Docker commands.
+${deprecated_convert}
 EOF
 )
 
@@ -57,3 +58,5 @@ tar=${temp}/${image}.tar
 # Create squashfs, and clean up intermediate files and folders.
 "${ch_bin}/ch-dir2squash" "${temp}/${image}" "$outdir" "$@"
 rm -rf --one-file-system "$temp"
+
+deprecated_convert_warn

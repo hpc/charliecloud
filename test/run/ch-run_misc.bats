@@ -18,8 +18,7 @@ load ../common
     scope quick
     run ch-run "$ch_timg" sh <<EOF
 set -e
-test -w /WEIRD_AL_YANKOVIC
-dd if=/dev/zero bs=1 count=1 of=/WEIRD_AL_YANKOVIC
+dd if=/dev/zero bs=1 count=1 of=/out
 EOF
     echo "$output"
     [[ $status -ne 0 ]]

@@ -646,16 +646,19 @@ Options:
   * :code:`--rpmbuild=DIR` : Use RPM build directory root :code:`DIR`
     (default: :code:`~/rpmbuild`).
 
-For example, to build a version 0.9.7 RPM from the CentOS 7 image provided with
-the test suite, on any system, and leave the results in :code:`~/rpmbuild/RPMS`
-(note that the test suite would also build the necessary image diretory::
+For example, to build a version 0.9.7 RPM from the CentOS 7 image provided
+with the test suite, on any system, and leave the results in
+:code:`~/rpmbuild/RPMS` (note the test suite would also build the
+necessary image directory)::
 
-  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
-  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 0.9.7-1
+  $ bin/ch-image build -t centos7 -f ./examples/Dockerfile.centos7 ./examples
+  $ bin/ch-convert centos7 $CH_TEST_IMGDIR/centos7
+  $ packaging/fedora/build $CH_TEST_IMGDIR/centos7 0.9.7-1
 
 To build a pre-release RPM of Git HEAD using the CentOS 7 image::
 
-  $ bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples $CH_TEST_IMGDIR
+  $ bin/ch-image build -t centos7 -f ./examples/Dockerfile.centos7 ./examples
+  $ bin/ch-convert centos7 $CH_TEST_IMGDIR/centos7
   $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 HEAD
 
 Gotchas and quirks

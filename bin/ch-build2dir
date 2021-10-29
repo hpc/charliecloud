@@ -12,6 +12,7 @@ Usage:
   $ $(basename "$0") -t TAG [ARGS ...] CONTEXT OUTDIR
 
 ARGS are passed unchanged to "ch-build".
+${deprecated_convert}
 EOF
 )
 
@@ -47,3 +48,5 @@ set -x
 "${ch_bin}"/ch-builder2tar "$tag" "$outdir"
 "${ch_bin}"/ch-tar2dir "${outdir}/${tag_fs}.tar.gz" "$outdir"
 rm "${outdir}/${tag_fs}.tar.gz"
+
+deprecated_convert_warn

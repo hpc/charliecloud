@@ -31,6 +31,8 @@ ch-builder2tar.rst \
 ch-build.rst \
 ch-checkns_desc.rst \
 ch-checkns.rst \
+ch-convert_desc.rst \
+ch-convert.rst \
 ch-dir2squash_desc.rst \
 ch-dir2squash.rst \
 ch-fromhost_desc.rst \
@@ -75,6 +77,7 @@ man/ch-build2dir.1 \
 man/ch-builder2squash.1 \
 man/ch-builder2tar.1 \
 man/ch-checkns.1 \
+man/ch-convert.1 \
 man/ch-dir2squash.1 \
 man/ch-fromhost.1 \
 man/ch-image.1 \
