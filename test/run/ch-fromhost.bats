@@ -1,5 +1,9 @@
 load ../common
 
+setup () {
+    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'need writeable image'
+}
+
 fromhost_clean () {
     [[ $1 ]]
     # We used to delete only specific paths, but this turned into an unwieldy

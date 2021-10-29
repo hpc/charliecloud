@@ -78,10 +78,10 @@ void bind_mount(const char *src, const char *dst, enum bind_dep,
 void bind_mounts(const struct bind *binds, const char *newroot,
                  unsigned long flags);
 void enter_udss(struct container *c);
-void join_begin(int join_ct, const char *join_tag);
+void join_begin(const char *join_tag);
 void join_namespace(pid_t pid, const char *ns);
 void join_namespaces(pid_t pid);
-void join_end();
+void join_end(int join_ct);
 void sem_timedwait_relative(sem_t *sem, int timeout);
 void setup_namespaces(const struct container *c);
 void setup_passwd(const struct container *c);
@@ -148,7 +148,7 @@ void containerize(struct container *c)
       return;
    }
    if (c->join)
-      join_begin(c->join_ct, c->join_tag);
+      join_begin(c->join_tag);
    if (!c->join || join.winner_p) {
 #ifdef HAVE_LIBSQUASHFUSE
       if (c->type == IMG_SQUASH)
@@ -159,7 +159,7 @@ void containerize(struct container *c)
    } else
       join_namespaces(join.shared->winner_pid);
    if (c->join)
-      join_end();
+      join_end(c->join_ct);
 
 }
 
@@ -199,7 +199,7 @@ void enter_udss(struct container *c)
       // Bind-mount user's home directory at /home/$USER. The main use case is
       // dotfiles.
       Tf (c->old_home != NULL, "cannot find home directory: is $HOME set?");
-      newhome = cat("/home/", username());
+      newhome = cat("/home/", username);
       Z_ (mkdir(cat(c->newroot, newhome), 0755));
       bind_mount(c->old_home, newhome, BD_REQUIRED, c->newroot, 0);
    }
@@ -268,7 +268,7 @@ enum img_type img_type_get(const char *path)
    return IMG_NONE;  // unreachable, avoid warning; see issue #1158
 }
 /* Begin coordinated section of namespace joining. */
-void join_begin(int join_ct, const char *join_tag)
+void join_begin(const char *join_tag)
 {
    int fd;
 
@@ -287,6 +287,7 @@ void join_begin(int join_ct, const char *join_tag)
       join.winner_p = true;
       Z_ (ftruncate(fd, sizeof(*join.shared)));
    } else if (errno == EEXIST) {
+      INFO("join: I lost");
       join.winner_p = false;
       fd = shm_open(join.shm_name, O_RDWR, 0);
       T_ (fd > 0);
@@ -299,22 +300,19 @@ void join_begin(int join_ct, const char *join_tag)
    T_ (join.shared != NULL);
    Z_ (close(fd));
 
-   if (join.winner_p) {
-      join.shared->winner_pid = getpid();
-      join.shared->proc_left_ct = join_ct;
-      // Keep lock; winner still serialized.
-   } else {
-      INFO("join: winner pid: %d", join.shared->winner_pid);
+   // Winner keeps lock; losers parallelize (winner will be done by now).
+   if (!join.winner_p)
       Z_ (sem_post(join.sem));
-      // Losers run in parallel (winner will be done by now).
-   }
 }
 
 /* End coordinated section of namespace joining. */
-void join_end()
+void join_end(int join_ct)
 {
-   // Serialize (winner never released lock).
-   if (!join.winner_p)
+   if (join.winner_p) {                                // winner still serial
+      INFO("join: winner initializing shared data");
+      join.shared->winner_pid = getpid();
+      join.shared->proc_left_ct = join_ct;
+   } else                                              // losers serialize
       sem_timedwait_relative(join.sem, JOIN_TIMEOUT);
 
    join.shared->proc_left_ct--;
@@ -328,8 +326,7 @@ void join_end()
       Zf (shm_unlink(join.shm_name), "can't unlink shm: %s", join.shm_name);
    }
 
-   // Parallelize.
-   Z_ (sem_post(join.sem));
+   Z_ (sem_post(join.sem));  // parallelize (all)
 
    Z_ (munmap(join.shared, sizeof(*join.shared)));
    Z_ (sem_close(join.sem));
@@ -371,12 +368,8 @@ void run_user_command(char *argv[], const char *initial_dir)
    if (initial_dir != NULL)
       Zf (chdir(initial_dir), "can't cd to %s", initial_dir);
 
-   if (verbose >= 3) {
-      fprintf(stderr, "argv:");
-      for (int i = 0; argv[i] != NULL; i++)
-         fprintf(stderr, " \"%s\"", argv[i]);
-      fprintf(stderr, "\n");
-   }
+   for (int i = 0; argv[i] != NULL; i++)
+      INFO("argv %d: %s", i, argv[i]);
 
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    execvp(argv[0], argv);  // only returns if error
@@ -470,7 +463,7 @@ void setup_passwd(const struct container *c)
    if (p) {
       T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
                        p->pw_name, c->container_uid, c->container_gid,
-                       p->pw_gecos, username()));
+                       p->pw_gecos, username));
    } else {
       if (errno) {
          Tf (0, "getpwuid(3) failed");

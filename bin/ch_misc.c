@@ -40,6 +40,9 @@ int verbose;
 /* Path to host temporary directory. Set during command line processing. */
 char *host_tmp = NULL;
 
+/* Username of invoking users. Set during command line processing. */
+char *username = NULL;
+
 
 /** Function prototypes (private) **/
 
@@ -296,14 +299,6 @@ void split(char **a, char **b, const char *str, char del)
    *a = strsep(b, delstr);
    if (*b == NULL)
       *a = NULL;
-}
-
-/* Return the current username, or exit with error if this can't be done. */
-const char *username(void)
-{
-   const char *u = getenv("USER");
-   Te (u != NULL, "$USER not set");
-   return u;
 }
 
 /* Report the version number. */

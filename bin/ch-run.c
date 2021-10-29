@@ -174,6 +174,8 @@ int main(int argc, char *argv[])
       host_tmp = getenv("TMPDIR");
    else
       host_tmp = "/tmp";
+   username = getenv("USER");
+   Te (username != NULL, "$USER not set");
 
    c_argc = argc - arg_next;
    T_ (c_argv = calloc(c_argc + 1, sizeof(char *)));
@@ -279,7 +281,7 @@ void fix_environment(struct args *args)
 
    // $HOME: Set to /home/$USER unless --no-home specified.
    if (!args->c.private_home)
-      Z_ (setenv("HOME", cat("/home/", username()), 1));
+      Z_ (setenv("HOME", cat("/home/", username), 1));
 
    // $PATH: Append /bin if not already present.
    old_value = getenv("PATH");

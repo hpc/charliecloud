@@ -116,7 +116,7 @@ void sq_fork(struct container *c)
    // Default mount point?
    if (c->newroot == NULL) {
       char *subdir;
-      T_ (asprintf(&subdir, "/%s.ch/mnt", username()) > 0);
+      T_ (asprintf(&subdir, "/%s.ch/mnt", username) > 0);
       c->newroot = cat("/var/tmp", subdir);
       INFO("using default mount point: %s", c->newroot);
       mkdirs("/var/tmp", subdir, NULL, 0);

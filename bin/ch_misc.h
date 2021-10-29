@@ -67,7 +67,8 @@
 /** External variables **/
 
 extern int verbose;
-extern char * host_tmp;
+extern char *host_tmp;
+extern char *username;
 
 
 /** Function prototypes **/
@@ -84,5 +85,4 @@ void path_split(const char *path, char **dir, char **base);
 bool path_subdir_p(const char *base, const char *path);
 char *realpath_safe(const char *path);
 void split(char **a, char **b, const char *str, char del);
-const char *username(void);
 void version(void);
