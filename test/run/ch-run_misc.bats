@@ -28,7 +28,7 @@ EOF
 
 @test 'mount image read-write' {
     scope quick
-    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'needs writeable image'
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
 }
@@ -202,7 +202,7 @@ EOF
 
 @test 'ch-run --bind' {
     scope quick
-    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'needs writeable image'
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
 
     # set up sources
     mkdir -p "${ch_timg}/${ch_imgdir}/bind1"
@@ -265,7 +265,7 @@ EOF
 
 @test 'ch-run --bind errors' {
     scope quick
-    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'needs writeable image'
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
 
     # no argument to --bind
     run ch-run "$ch_timg" -b
@@ -549,7 +549,7 @@ EOF
 @test 'ch-run --set-env from Dockerfile' {
     scope standard
     prerequisites_ok argenv
-    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'directory only: issue #1219'
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'directory only: issue #1219'
     img=${ch_imgdir}/argenv
 
     output_expected=$(cat <<'EOF'

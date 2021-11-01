@@ -1,7 +1,7 @@
 load ../common
 
 setup () {
-    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'need writeable image'
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'need writeable image'
 }
 
 fromhost_clean () {
