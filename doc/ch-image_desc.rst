@@ -367,6 +367,9 @@ Docker. Thus, the size of the context is immaterial, and the build reads
 directly from storage like any other local process would. However, you still
 can't access anything outside the context directory.
 
+If there is no context directory when using STDIN, the default location is
+your current working directory. 
+
 Variable substitution
 ~~~~~~~~~~~~~~~~~~~~~
 
