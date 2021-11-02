@@ -27,5 +27,6 @@ setup() {
 }
 
 @test "${ch_tag}/spec" {
+    skip 'issue #1221'
     ch-run "$ch_img" -- spack spec hdf5
 }
