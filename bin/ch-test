@@ -212,17 +212,6 @@ pack_fmt_set () {
         have_libsquashfuse=
     fi
     if [[ -n $pack_fmt ]]; then
-        case $pack_fmt in
-        '🐘')  # elephant emoji
-            pack_fmt=squash-mount
-            ;;
-        '📠')  # fax machine emoji
-            pack_fmt=tar-unpack
-            ;;
-        '🎃')  # jack-o-lantern emoji
-            pack_fmt=squash-unpack
-            ;;
-        esac
         CH_TEST_PACK_FMT=$pack_fmt
         method='command line'
     elif [[ -n $CH_TEST_PACK_FMT ]]; then
@@ -234,6 +223,17 @@ pack_fmt_set () {
         CH_TEST_PACK_FMT=tar-unpack
         method='default'
     fi
+    case $CH_TEST_PACK_FMT in
+        '🐘')  # elephant emoji U+1F418
+            CH_TEST_PACK_FMT=squash-mount
+            ;;
+        '📠')  # fax machine emoji U+1F4E0
+            CH_TEST_PACK_FMT=tar-unpack
+            ;;
+        '🎃')  # jack-o-lantern emoji U+1F383
+            CH_TEST_PACK_FMT=squash-unpack
+            ;;
+        esac
     export CH_TEST_PACK_FMT
     printf "%-*s %s (%s)\n" \
            "$width" 'packed image format:' "$CH_TEST_PACK_FMT" "$method"
@@ -249,8 +249,8 @@ pack_fmt_set () {
         tar-unpack)
             ;;  # nothing to check (assume we have tar)
         squash-unpack)
-            if [[ -z $have_libsquashfuse ]]; then
-                fatal "format invalid: ${CH_TEST_PACK_FMT}: ch-run not linked with libsquashfuse"
+            if [[ -z $have_mksquashfs ]]; then
+                fatal "format invalid: ${CH_TEST_PACK_FMT}: no mksquashfs"
             fi
             ;;
         *)
