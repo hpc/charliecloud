@@ -45,10 +45,13 @@ ARG FORCE_UNSAFE_CONFIGURE=1
 # place it at a standard path ("spack clone" simply clones another working
 # directory to a new path).
 #
-# We follow the develop branch to catch problems installing Charliecloud with
-# the latest Spack.
+# Depending on what's commented below, we get either Spack’s “develop” branch
+# or the latest released version. Using develop catches problems earlier, but
+# that branch has a LOT more churn and some of the problems might not occur in
+# a released version. I expect the right choice will change over time.
 ARG SPACK_REPO=https://github.com/spack/spack
-RUN git clone --depth 1 $SPACK_REPO
+#RUN git clone --depth 1 $SPACK_REPO  # tip of develop; faster clone
+RUN git clone $SPACK_REPO && cd spack && git checkout releases/latest  # slow
 RUN cd spack && git status && git rev-parse --short HEAD
 
 # Set up environment to use Spack. (We can't use setup-env.sh because the
