@@ -6,7 +6,6 @@ load "${CHTEST_DIR}/common.bash"
 
 setup() {
     scope full
-    [[ -z $ch_cray ]] || skip 'issue #193 and Spack issue #8618'
     prerequisites_ok spack
     export PATH=/spack/bin:$PATH
 }
