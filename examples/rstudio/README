@@ -1,0 +1,19 @@
+==What does this do?==
+This test sets up an Rstudio-server instance then checks that we can 
+login into it and runs some example code using an associated R instance.
+
+==Why?==
+ Running interactive applications in contianers is becoming increasingly 
+popular due to Jupyter and other systems. This test provides a framework for
+ testing such systems. 
+
+==How==
+It uses the selenium python library which automates
+ browser testing for webdevelopement. We install Firefox in the container
+for selenium to attach to. 
+
+==Weird Catches==
+The r-studio server is a daemon that we launch as a background process. 
+The daemon was getting stuck in the test running it as a normal background 
+process with &. We were able to workaround this by launching it with 
+subprocess.popen in python. 

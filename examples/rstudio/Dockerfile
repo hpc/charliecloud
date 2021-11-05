@@ -17,4 +17,4 @@ RUN wget https://github.com/mozilla/geckodriver/releases/download/$GECKODRIVER_V
 RUN tar xvf geckodriver-$GECKODRIVER_VERSION-linux32.tar.gz -C /usr/bin/ && \
                 rm geckodriver-$GECKODRIVER_VERSION-linux32.tar.gz
 
-COPY start_rstudio rstudio_auth run.py test_rstudio.py compare.sh model.R /rstudio 
+COPY start_rstudio rstudio_auth run.py test_rstudio.py model.R /rstudio 

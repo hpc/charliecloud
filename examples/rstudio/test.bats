@@ -13,8 +13,8 @@ setup () {
 @test "${ch_tag}/test rstudio-server" {
     # Start up on port 8991
     # If a previous test failed kill rserver before we begin
-    rstudio_server=$(pgrep -f "rserver --www-port=8991")
-    kill $rstudio_server
+    rstudio_server=$(pgrep -f "rserver --www-port=8991" || exit 0)
+    [[ ! -z "$rstudio_server" ]] && kill $rstudio_server
     ch-run "$ch_img" -- python3 /rstudio/run.py
     sleep 5
     rstudio_server=$(pgrep -f "rserver --www-port=8991")
