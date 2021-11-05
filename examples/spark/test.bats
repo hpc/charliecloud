@@ -48,7 +48,7 @@ setup () {
         pernode=
     fi
     master_url=spark://${master_host}:7077
-    master_log=${spark_log}/*master.Master*.out
+    master_log="${spark_log}/*master.Master*.out"  # expand globs later
 }
 
 
