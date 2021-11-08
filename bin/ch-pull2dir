@@ -15,6 +15,7 @@ Usage:
   $ $(basename "$0") IMAGE DEST
 
 You must have sufficient privilege (via sudo) to run Docker commands.
+${deprecated_convert}
 EOF
 )
 
@@ -31,3 +32,5 @@ dest=$2
 image=$(echo "$image" | sed 's/\//\./g')
 "${ch_bin}/ch-tar2dir" "${dest}/${image}.tar.gz" "$dest"
 rm -v "${dest}/${image}.tar.gz"
+
+deprecated_convert_warn

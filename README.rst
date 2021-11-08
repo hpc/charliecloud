@@ -99,6 +99,9 @@ following open-access paper:
   user-defined software stacks in HPC", 2017. In *Proc. Supercomputing*.
   DOI: `10.1145/3126908.3126925 <https://doi.org/10.1145/3126908.3126925>`_.
 
+*Note:* This paper contains out-of-date number for the size of Charliecloud's
+code. Please instead use the current number in the FAQ.
+
 Copyright and license
 ---------------------
 
@@ -125,5 +128,6 @@ express or implied, or assumes any liability for use of this software.
 If software is modified to produce derivative works, such derivative works
 should be clearly marked, so as not to confuse it with the version available
 from LANL.
+
 
 ..  LocalWords:  USENIX's

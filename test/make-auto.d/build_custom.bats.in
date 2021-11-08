@@ -15,15 +15,14 @@
         tarball=${tarballs[0]}
         if [[ $CH_PACK_FMT = squash ]]; then
             # Tarball provided but pack format is SquashFS; repack.
-            ch-tar2dir "$tarball" "$workdir"
-            ch-dir2squash "${workdir}/%(tag)s" "$ch_tardir"
+            ch-convert "$tarball" "${out}.sqfs"
             rm "$tarball"
         fi
     elif [[ -d $out ]]; then
         if [[ $CH_PACK_FMT = tar ]]; then
             ( cd "$out" && tar czf "${out}.tar.gz" -- * )
         elif [[ $CH_PACK_FMT = squash ]]; then
-            ch-dir2squash "$out" "$ch_tardir"
+            ch-convert "$out" "${out}.sqfs"
         else
             false  # unknown pack format
         fi

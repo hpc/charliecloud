@@ -8,6 +8,9 @@ Synopsis
 Description
 ===========
 
+.. warning:: This script is deprecated in favor of :code:`ch-convert`. It will
+             be removed in the next release.
+
 Pull Docker image named :code:`IMAGE[:TAG]` from Docker Hub and extract it
 into a subdirectory of :code:`DIR`. A temporary tarball is stored in
 :code:`DIR`.

@@ -31,6 +31,8 @@ ch-builder2tar.rst \
 ch-build.rst \
 ch-checkns_desc.rst \
 ch-checkns.rst \
+ch-convert_desc.rst \
+ch-convert.rst \
 ch-dir2squash_desc.rst \
 ch-dir2squash.rst \
 ch-fromhost_desc.rst \
@@ -58,6 +60,7 @@ faq.rst \
 favicon.ico \
 index.rst \
 install.rst \
+loc.rst \
 logo-sidebar.png \
 make-deps-overview \
 man/README \
@@ -74,6 +77,7 @@ man/ch-build2dir.1 \
 man/ch-builder2squash.1 \
 man/ch-builder2tar.1 \
 man/ch-checkns.1 \
+man/ch-convert.1 \
 man/ch-dir2squash.1 \
 man/ch-fromhost.1 \
 man/ch-image.1 \
@@ -170,6 +174,7 @@ if ENABLE_HTML
 	      $(BUILDDIR)/html/charliecloud.html \
 	      $(BUILDDIR)/html/ch-*.html \
 	      $(BUILDDIR)/html/bugs.html \
+	      $(BUILDDIR)/html/loc.html \
 	      $(BUILDDIR)/html/objects.inv \
 	      $(BUILDDIR)/html/see_also.html
 endif

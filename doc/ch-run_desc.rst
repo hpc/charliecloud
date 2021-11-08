@@ -130,19 +130,23 @@ Image format
 The first is a simple directory that contains a Linux filesystem tree. This
 can be accomplished by:
 
-* Charliecloud's tarball workflow: :code:`ch-builder2tar` and
-  :code:`ch-tar2dir` workflow.
+* :code:`ch-convert` directly from :code:`ch-image` or another builder to a
+  directory.
 
-* Manually mounting a filesystem archive, e.g. with :code:`ch-builder2squash`
-  and the external :code:`squashfuse` executable.
+* Charliecloud's tarball workflow: build or pull the image, :code:`ch-convert`
+  it to a tarball, transfer the tarball to the target system, then
+  :code:`ch-convert` the tarball to a directory.
+
+* Manually mount a SquashFS image, e.g. with :code:`squashfuse(1)` and then
+  un-mount it after run with :code:`fusermount -u`.
 
 * Any other workflow that produces an appropriate directory tree.
 
-The second is a SquashFS filesystem archive, available if :code:`ch-run` is
-linked with the optional :code:`libsquashfuse_ll`. This is accomplished by
-mounting the filesystem, servicing its FUSE requests, and unmounting it all
-within :code:`ch-run`. See :code:`--mount` above to set the mount point
-location.
+The second is a SquashFS image archive mounted internally by :code:`ch-run`,
+available if it's linked with the optional :code:`libsquashfuse_ll`.
+:code:`ch-run` mounts the image filesystem, services all FUSE requests, and
+unmounts it, all within :code:`ch-run`. See :code:`--mount` above to set the
+mount point location.
 
 Prior versions of Charliecloud provided wrappers for the :code:`squashfuse`
 and :code:`squashfuse_ll` SquashFS mount commands and :code:`fusermount -u`

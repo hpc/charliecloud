@@ -48,7 +48,7 @@ else
 fi
 
 # Unpack image
-srun ch-tar2dir "$tar" "$img"
+srun ch-convert -o dir "$tar" "$img"
 
 # Make Spark configuration
 mkdir "$conf"

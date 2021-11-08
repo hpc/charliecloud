@@ -132,6 +132,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_bindir}/ch-builder2squash
 %{_bindir}/ch-builder2tar
 %{_bindir}/ch-checkns
+%{_bindir}/ch-convert
 %{_bindir}/ch-dir2squash
 %{_bindir}/ch-fromhost
 %{_bindir}/ch-pull2dir
@@ -145,6 +146,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_mandir}/man1/ch-builder2squash.1*
 %{_mandir}/man1/ch-builder2tar.1*
 %{_mandir}/man1/ch-checkns.1*
+%{_mandir}/man1/ch-convert.1*
 %{_mandir}/man1/ch-dir2squash.1*
 %{_mandir}/man1/ch-fromhost.1*
 %{_mandir}/man1/ch-pull2dir.1*
