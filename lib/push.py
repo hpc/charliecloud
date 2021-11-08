@@ -115,7 +115,7 @@ class Image_Pusher:
       # Prepare metadata.
       ch.INFO("preparing metadata")
       self.image.metadata_load()
-      config["history"] = self.image.metadata["history"]
+      self.prepare_history(config)
       config_bytes = json.dumps(config, indent=2).encode("UTF-8")
       config_hash = ch.bytes_hash(config_bytes)
       manifest["config"]["size"] = len(config_bytes)
@@ -127,6 +127,19 @@ class Image_Pusher:
       self.layers = tars_c
       self.config = config_bytes
       self.manifest = manifest_bytes
+
+   def prepare_history(self, config):
+      config["history"] = self.image.metadata["history"]
+      # If the image we are pushing has been built with ch-image append history
+      # footer; otherwise carry over history as-is.
+      try:
+         config["builder"] = self.image.metadata["builder"]
+         push_hist_footer = {"created": ch.now_utc_iso8601(),
+                             "created_by": "%s push %s" % (config["builder"], self.image),
+                             "comment": "single layer (flattened) image" }
+         config["history"].append(push_hist_footer)
+      except KeyError:
+         pass
 
    def push(self):
       self.prepare()

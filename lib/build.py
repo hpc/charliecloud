@@ -35,7 +35,8 @@ image_i = -1
 image_alias = None
 # Number of stages.
 image_ct = None
-
+# Number of base history entries to convert to empty layers.
+image_hist_ct = None
 
 ## Imports not in standard library ##
 
@@ -219,8 +220,9 @@ class Main_Loop(lark.Visitor):
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          inst.execute()
-         if (self.instruction_ct > 0):
-            inst.metadata_add_history()
+         if (self.instruction_ct == 0):
+            inst.metadata_remove_history()
+         inst.metadata_add_history(self.instruction_ct)
          images[image_i].metadata_save()
          self.instruction_ct += inst.execute_increment
 
@@ -264,10 +266,14 @@ class Instruction(abc.ABC):
    def execute_(self):
       ...
 
-   def metadata_add_history(self):
+   def metadata_add_history(self, inst_ct):
       hist = { "history": [ { "created": ch.now_utc_iso8601(),
-                              "created_by": "%s %s" % (self.str_name(), self.str_())} ]}
+                              "created_by": "%s %s" % (self.str_name(), self.str_()),
+                              "empty_layer": "True"}]}
       images[image_i].metadata_append(hist)
+
+   def metadata_remove_history(self):
+      images[image_i].metadata_remove_history()
 
    def options_assert_empty(self):
       try:
