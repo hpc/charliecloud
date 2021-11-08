@@ -396,9 +396,10 @@ ch_foo=foo-ev
 EOF
 
     # /ch/metadata.json contents
-    diff -u - "${img}/ch/metadata.json" <<'EOF'
+    diff -u -I '"created"\:*' - "${img}/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
+  "builder": "ch-image",
   "cwd": "/usr",
   "env": {
     "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
@@ -406,6 +407,58 @@ EOF
     "ch_baz": "baz-ev",
     "ch_foo": "foo-ev"
   },
+  "history": [
+    {
+      "created": "2021-11-08T17:55:00Z",
+      "created_by": "FROM charliecloud/metadata:2021-01-15",
+      "empty_layer": "True"
+    },
+    {
+      "created": "2021-11-08T17:55:00Z",
+      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd1: $PWD\"']",
+      "empty_layer": "True"
+    },
+    {
+      "created": "2021-11-08T17:55:00Z",
+      "created_by": "WORKDIR /usr",
+      "empty_layer": "True"
+    },
+    {
+      "created": "2021-11-08T17:55:00Z",
+      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd2: $PWD\"']",
+      "empty_layer": "True"
+    },
+    {
+      "created": "2021-11-08T17:55:00Z",
+      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env1: /' | sort\"]",
+      "empty_layer": "True"
+    },
+    {
+      "created": "2021-11-08T17:55:01Z",
+      "created_by": "ENV ch_baz='baz-ev'",
+      "empty_layer": "True"
+    },
+    {
+      "created": "2021-11-08T17:55:01Z",
+      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env2: /' | sort\"]",
+      "empty_layer": "True"
+    },
+    {
+      "created": "2021-11-08T17:55:01Z",
+      "created_by": "RUN ['/bin/ash', '-c', 'echo \"shell1: $0\"']",
+      "empty_layer": "True"
+    },
+    {
+      "created": "2021-11-08T17:55:01Z",
+      "created_by": "SHELL ['/bin/sh', '-v', '-c']",
+      "empty_layer": "True"
+    },
+    {
+      "created": "2021-11-08T17:55:01Z",
+      "created_by": "RUN ['/bin/sh', '-v', '-c', 'echo \"shell2: $0\"']",
+      "empty_layer": "True"
+    }
+  ],
   "labels": {
     "ch_bar": "bar-label",
     "ch_foo": "foo-label"
