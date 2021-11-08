@@ -474,6 +474,8 @@ class Image:
             self.metadata[k] += data[k]
          else:
             FATAL("config has no key '%s'" % k)
+      # The builder setinel tells push if the target image was built with
+      # ch-image, in which case config history needs to be modified.
       self.metadata.update({"builder": "ch-image"})
       self.metadata_save()
 
@@ -482,14 +484,6 @@ class Image:
           path = self.metadata_path // "config.pulled.json"
           self.metadata_merge_from_config(json_from_file(path, "config"))
        self.metadata["history"] = []
-
-   def metadata_flatten_history(self):
-      if (self.metadata is None):
-         path = self.metadata_path // "config.pulled.json"
-         self.metadata_merge_from_config(json_from_file(path, "config"))
-
-      for i in range(len(self.metadata["history"])):
-         self.metadata["history"][i]["empty_layer"] = "True"
 
    def metadata_replace(self, config_json):
       self.metadata_init()

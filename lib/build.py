@@ -220,10 +220,11 @@ class Main_Loop(lark.Visitor):
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          inst.execute()
-         if (self.instruction_ct == 0):
-            inst.metadata_remove_history()
-         inst.metadata_add_history(self.instruction_ct)
-         images[image_i].metadata_save()
+         if (image_i != -1):
+            if (self.instruction_ct == 0):
+               inst.metadata_remove_history()
+            inst.metadata_add_history(self.instruction_ct)
+            images[image_i].metadata_save()
          self.instruction_ct += inst.execute_increment
 
 ## Instruction classes ##
