@@ -35,8 +35,7 @@ image_i = -1
 image_alias = None
 # Number of stages.
 image_ct = None
-# Number of base history entries to convert to empty layers.
-image_hist_ct = None
+
 
 ## Imports not in standard library ##
 
