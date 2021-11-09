@@ -194,8 +194,12 @@ well.
 Required argument:
 
   :code:`CONTEXT`
-    Path to context directory; this is the root of :code:`COPY` and
-    :code:`ADD` instructions in the Dockerfile.
+    Path to context directory. This is the root of :code:`COPY` instructions
+    in the Dockerfile. If a single hyphen (:code:`-`) is specified: (a) read
+    the Dockerfile from standard input, (b) specifying :code:`--file` is an
+    error, and (c) there is no context, so :code:`COPY` will fail. (See
+    :code:`--file` for how to provide the Dockerfile on standard input while
+    also having a context.)
 
 Options:
 
@@ -220,10 +224,10 @@ Options:
     environment variable :code:`KEY`.
 
   :code:`-f`, :code:`--file DOCKERFILE`
-    Use :code:`DOCKERFILE` instead of :code:`CONTEXT/Dockerfile`. Specify a
-    single hyphen (:code:`-`) to use standard input; note that in this case,
-    the context directory is still provided, which matches :code:`docker build
-    -f -` behavior.
+    Use :code:`DOCKERFILE` instead of :code:`CONTEXT/Dockerfile`. If a single
+    hyphen (:code:`-`) is specified, read the Dockerfile from standard input;
+    like :code:`docker build`, the context directory is still available in
+    this case.
 
   :code:`--force`
     Inject the unprivileged build workarounds; see discussion later in this
@@ -366,9 +370,6 @@ The context directory is bind-mounted into the build, rather than copied like
 Docker. Thus, the size of the context is immaterial, and the build reads
 directly from storage like any other local process would. However, you still
 can't access anything outside the context directory.
-
-If there is no context directory when using STDIN, the default location is
-your current working directory. 
 
 Variable substitution
 ~~~~~~~~~~~~~~~~~~~~~
