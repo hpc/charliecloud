@@ -16,7 +16,6 @@ setup () {
 }
 
 @test "${ch_tag}/man hello" {
-    skip "issue #833"
     ch-run "$ch_img" -- man hello > /dev/null
 }
 

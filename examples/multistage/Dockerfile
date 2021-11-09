@@ -32,7 +32,6 @@ RUN dnf install -y man
 # COPY the hello install over, by both name and index, making sure not to
 # overwrite existing contents. Recall that COPY works different than cp(1).
 COPY --from=0 /hello/usr/local/bin /usr/local/bin
-# FIXME: currently this crashes; see issue #833
-#COPY --from=buildstage /hello/usr/local/share /usr/local/share
+COPY --from=buildstage /hello/usr/local/share /usr/local/share
 COPY --from=buildstage /hello/usr/local/share/locale /usr/local/share/locale
 RUN ls -ld /usr/local/*/*
