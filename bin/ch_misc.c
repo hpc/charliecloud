@@ -48,6 +48,15 @@ char *host_tmp = NULL;
 
 /** Functions **/
 
+/* Return true if buffer buf of length size is all zeros, false otherwise. */
+bool buf_zero_p(void *buf, size_t size)
+{
+   for (size_t i = 0; i < size; i++)
+      if (((char *)buf)[i] != 0)
+         return false;
+   return true;
+}
+
 /* Concatenate strings a and b, then return the result. */
 char *cat(const char *a, const char *b)
 {
@@ -58,6 +67,48 @@ char *cat(const char *a, const char *b)
        b = "";
    T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
+}
+
+/* Copy the buffer of size size pointed to by new into the last position in
+   the zero-terminated array of elements with the same size on the heap
+   pointed to by *ar, reallocating it to hold one more element and setting
+   list to the new location. *list can be NULL to initialize a new list.
+   Return the new array size.
+
+   Note: ar must be cast, e.g. "list_append((void **)&foo, ...)".
+
+   Warning: This function relies on all pointers having the same
+   representation, which is true on most modern machines but is not guaranteed
+   by the standard [1]. We could instead return the new value of ar rather
+   than using an out parameter, which would avoid the double pointer and
+   associated non-portability but make it easy for callers to create dangling
+   pointers, i.e., after "a = list_append(b, ...)", b will dangle. That
+   problem could in turn be avoided by returning a *copy* of the array rather
+   than a modified array, but then the caller has to deal with the original
+   array itself. It seemed to me the present behavior was the best trade-off.
+
+   [1]: http://www.c-faq.com/ptrs/genericpp.html */
+void list_append(void **ar, void *new, size_t size)
+{
+   int ct;
+   T_ (ar != NULL && new != NULL);
+
+   // count existing elements
+   for (ct = 0; !buf_zero_p((char *)*ar + ct*size, size); ct++)
+      ;
+
+   T_ (*ar = realloc(*ar, (ct+2)*size));        // existing + new + terminator
+   memcpy((char *)*ar + ct*size, new, size);    // append new (no overlap)
+   memset((char *)*ar + (ct+1)*size, 0, size);  // set new terminator
+}
+
+/* Return a pointer to a new, empty zero-terminated array containing elements
+   of size size. */
+void *list_new(size_t size)
+{
+   void *list;
+   T_ (list = calloc(1, size));
+   return list;
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */

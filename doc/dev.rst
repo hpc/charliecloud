@@ -875,6 +875,40 @@ to point to it), because so far those are all out-arguments and C has
 `confusing rules <http://c-faq.com/ansi/constmismatch.html>`_ about double
 pointers and :code:`const`.
 
+Lists
+~~~~~
+
+The general convention is to use an array of elements terminated by an element
+containing all zeros (i.e., every byte is zero). While this precludes zero
+elements within the list, it makes it easy to iterate:
+
+.. code-block:: c
+
+  struct foo { int a; float b; };
+  struct foo *bar = ...;
+  for (int i = 0; bar[i].a != 0; i++)
+     do_stuff(bar[i]);
+
+Lists can be set either as literals:
+
+.. code-block:: c
+
+  struct foo bar[] = { {1, 2.0}, {3, 4.0}, {0, 0.0} };
+
+or built up from scratch on the heap; the contents of this list are
+equivalent (note the C99 trick to avoid create a :code:`struct foo` variable):
+
+.. code-block:: c
+
+  struct foo baz;
+  struct foo *qux = NULL;
+  baz.a = 1;
+  baz.b = 2.0;
+  list_append((void **)&qux, &baz, sizeof(struct foo));
+  list_append((void **)&qux, &((struct foo){3, 4.0}), sizeof(struct foo));
+
+This form of list should be used unless some API requires something else.
+
 
 OCI technical notes
 ===================

@@ -72,7 +72,10 @@ extern char * host_tmp;
 
 /** Function prototypes **/
 
+bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
+void list_append(void **ar, void *new, size_t size);
+void *list_new(size_t size);
 void log_ids(const char *func, int line);
 void mkdirs(const char *base, const char *path,
             char **denylist, size_t denylist_ct);
