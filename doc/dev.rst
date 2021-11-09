@@ -889,6 +889,10 @@ elements within the list, it makes it easy to iterate:
   for (int i = 0; bar[i].a != 0; i++)
      do_stuff(bar[i]);
 
+Note that the conditional checks that only one field of the struct (:code:`a`)
+is zero; this loop leverages knowledge of this specific data structure that
+checking only :code:`a` is sufficient.
+
 Lists can be set either as literals:
 
 .. code-block:: c
@@ -901,13 +905,40 @@ equivalent (note the C99 trick to avoid create a :code:`struct foo` variable):
 .. code-block:: c
 
   struct foo baz;
-  struct foo *qux = NULL;
+  struct foo *qux = list_new(sizeof(struct foo));
   baz.a = 1;
   baz.b = 2.0;
   list_append((void **)&qux, &baz, sizeof(struct foo));
   list_append((void **)&qux, &((struct foo){3, 4.0}), sizeof(struct foo));
 
 This form of list should be used unless some API requires something else.
+
+.. warning::
+
+  Taking the address of an array in C yields the address of the first element,
+  which is the same thing. For example, consider this list of strings, i.e.
+  pointers to :code:`char`:
+
+  .. code-block:: c
+
+    char foo[] = "hello";
+    char **list = list_new(sizeof(char *))
+    list_append((void **)list, &foo, sizeof(char *));  // error!
+
+  Because :code:`foo == &foo`, this will add to the list not a pointer to
+  :code:`foo` but the *contents* of :code:`foo`, i.e. (on a machine with
+  64-bit pointers) :code:`'h'`, :code:`'e'`, :code:`'l'`, :code:`'l'`,
+  :code:`'o'`, :code:`'\0'` followed by two bytes of whatever follows
+  :code:`foo` in memory.
+
+  This would work because :code:`bar != &bar`:
+
+  .. code-block:: c
+
+    char foo[] = "hello";
+    char bar = foo;
+    char **list = list_new(sizeof(char *))
+    list_append((void **)list, &bar, sizeof(char *));  // OK
 
 
 OCI technical notes
