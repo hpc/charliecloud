@@ -91,11 +91,14 @@ char *cat(const char *a, const char *b)
 void list_append(void **ar, void *new, size_t size)
 {
    int ct;
-   T_ (ar != NULL && new != NULL);
+   T_ (new != NULL);
 
    // count existing elements
-   for (ct = 0; !buf_zero_p((char *)*ar + ct*size, size); ct++)
-      ;
+   if (*ar == NULL)
+      ct = 0;
+   else
+      for (ct = 0; !buf_zero_p((char *)*ar + ct*size, size); ct++)
+         ;
 
    T_ (*ar = realloc(*ar, (ct+2)*size));        // existing + new + terminator
    memcpy((char *)*ar + ct*size, new, size);    // append new (no overlap)
@@ -146,21 +149,23 @@ void log_ids(const char *func, int line)
    wrong. For example, mkdirs("/foo", "/bar/baz") will create directories
    /foo/bar and /foo/bar/baz if they don't already exist, but /foo must exist
    already. Symlinks are followed. path must remain under base, i.e. you can't
-   use symlinks or ".." to climb out. */
-void mkdirs(const char *base, const char *path,
-            char **denylist, size_t denylist_ct)
+   use symlinks or ".." to climb out. denylist is a null-terminated array of
+   paths under which no directories may be created, or NULL if none. */
+void mkdirs(const char *base, const char *path, char **denylist)
 {
    char *basec, *component, *next, *nextc, *pathw, *saveptr;
    struct stat sb;
 
    T_ (base[0] != 0   && path[0] != 0);      // no empty paths
    T_ (base[0] == '/' && path[0] == '/');    // absolute paths only
+   if (denylist == NULL)
+      denylist = (char *[]){ NULL };
 
    basec = realpath_safe(base);
 
    DEBUG("mkdirs: base: %s", basec);
    DEBUG("mkdirs: path: %s", path);
-   for (size_t i = 0; i < denylist_ct; i++)
+   for (size_t i = 0; denylist[i] != NULL; i++)
       DEBUG("mkdirs: deny: %s", denylist[i]);
 
    pathw = cat(path, "");  // writeable copy
@@ -187,7 +192,7 @@ void mkdirs(const char *base, const char *path,
       } else {
          Te (path_subdir_p(basec, next),
              "can't mkdir: %s not subdirectory of %s", next, basec);
-         for (size_t i = 0; i < denylist_ct; i++)
+         for (size_t i = 0; denylist[i] != NULL; i++)
             Ze (path_subdir_p(denylist[i], next),
                 "can't mkdir: %s under existing bind-mount %s",
                 next, denylist[i]);

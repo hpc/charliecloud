@@ -48,7 +48,7 @@ struct bind BINDS_DEFAULT[] = {
    { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
    { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs",  BD_OPTIONAL },
    { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
-   { NULL }
+   { 0 }
 };
 
 
@@ -66,9 +66,8 @@ struct {
    } *shared;
 } join;
 
-/* Bind mounts done so far; canonical host paths. */
+/* Bind mounts done so far; canonical host paths. If null, there are none. */
 char **bind_mount_paths = NULL;
-size_t bind_mount_path_ct = 0;
 
 
 /** Function prototypes (private) **/
@@ -113,7 +112,7 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
       case BD_OPTIONAL:
          return;
       case BD_MAKE_DST:
-         mkdirs(newroot, dst, bind_mount_paths, bind_mount_path_ct);
+         mkdirs(newroot, dst, bind_mount_paths);
          break;
       }
 
@@ -121,12 +120,8 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
    dst_fullc = realpath_safe(dst_full);
    Tf (path_subdir_p(newrootc, dst_fullc),
        "can't bind: %s not subdirectory of %s", dst_fullc, newrootc);
-   if (strcmp(newroot, "/")) {  // don't record if newroot is "/"
-      bind_mount_path_ct++;
-      T_ (bind_mount_paths = realloc(bind_mount_paths,
-                                     bind_mount_path_ct * sizeof(char *)));
-      bind_mount_paths[bind_mount_path_ct - 1] = dst_fullc;
-   }
+   if (strcmp(newroot, "/"))  // don't record if newroot is "/"
+      list_append((void **)&bind_mount_paths, &dst_fullc, sizeof(char *));
 
    Zf (mount(src, dst_full, NULL, MS_REC|MS_BIND|flags, NULL),
        "can't bind %s to %s", src, dst_full);
