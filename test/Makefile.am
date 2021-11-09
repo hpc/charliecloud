@@ -78,6 +78,8 @@ install-data-hook:
 uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
+	rm -rf --one-file-system $(pkglibexecdir)
+
 endif
 EXTRA_DIST = $(testfiles) $(testfiles_exec) \
              docs-sane.py.in force-auto.py.in make-perms-test.py.in

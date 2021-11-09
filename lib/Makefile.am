@@ -1,22 +1,22 @@
 # Define an alias for pkglibdir to override Automake helpfulness:
 #
-#   error: 'pkglibdir' is not a legitimate directory for 'DATA'
+#	error: 'pkglibdir' is not a legitimate directory for 'DATA'
 #
 # See: https://www.gnu.org/software/automake/manual/html_node/Uniform.html
 mylibdir = $(pkglibdir)
 
 dist_mylib_DATA = base.sh \
-                  build.py \
-                  charliecloud.py \
-                  fakeroot.py \
-                  misc.py \
-                  pull.py \
-                  push.py
+				  build.py \
+				  charliecloud.py \
+				  fakeroot.py \
+				  misc.py \
+				  pull.py \
+				  push.py
 noinst_DATA = charliecloud
 mylib_DATA = contributors.bash \
-             version.py \
-             version.sh \
-             version.txt
+			 version.py \
+			 version.sh \
+			 version.txt
 
 # Bundled Lark (currently version 0.11.3); Automake does not support wildcards
 # [1], so list the files. Note it's version-specific. Hopefully if a new
@@ -97,6 +97,11 @@ contributors.bash: ../README.rst
 	printf '# shellcheck shell=bash\n' >> $@
 	printf 'declare -a ch_contributors\n' >> $@
 	sed -En 's/^\*.+<(.+@.+)>.*$$/ch_contributors+=('"'"'\1'"'"')/p' < $< >> $@
+
+# After uninstallation is complete remove the charliecloud directory and its
+# empty subdirs from DESTDIR/lib.
+uninstall-hook:
+	rm -rf --one-file-system $(pkglibdir)
 
 version.txt: ../configure
 	printf '@PACKAGE_VERSION@\n' > $@

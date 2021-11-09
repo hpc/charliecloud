@@ -154,3 +154,7 @@ uninstall-local:
 	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileA
 	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-A
 	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-B
+
+uninstall-hook:
+	rm -rf --one-file-system $(docdir)
+
