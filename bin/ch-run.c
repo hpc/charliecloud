@@ -103,14 +103,13 @@ int main(int argc, char *argv[])
    bool argp_help_fmt_set;
    struct args args;
    int arg_next;
-   int c_argc;
    char ** c_argv;
 
    privs_verify_invoking();
 
    verbose = 1;  // in charliecloud.h
    args = (struct args){
-      .c = (struct container){ .binds = list_new(sizeof(struct bind)),
+      .c = (struct container){ .binds = list_new(sizeof(struct bind), 0),
                                .ch_ssh = false,
                                .container_gid = getegid(),
                                .container_uid = geteuid(),
@@ -127,7 +126,7 @@ int main(int argc, char *argv[])
                                .old_home = getenv("HOME"),
                                .type = IMG_NONE,
                                .writable = false },
-      .env_deltas = list_new(sizeof(struct env_delta)),
+      .env_deltas = list_new(sizeof(struct env_delta), 0),
       .initial_dir = NULL };
 
    /* I couldn't find a way to set argp help defaults other than this
@@ -173,9 +172,8 @@ int main(int argc, char *argv[])
    else
       host_tmp = "/tmp";
 
-   c_argc = argc - arg_next;
-   T_ (c_argv = calloc(c_argc + 1, sizeof(char *)));
-   for (int i = 0; i < c_argc; i++)
+   c_argv = list_new(sizeof(char *), argc - arg_next);
+   for (int i = 0; i < argc - arg_next; i++)
       c_argv[i] = argv[i + arg_next];
 
    INFO("verbosity: %d", verbose);
@@ -295,7 +293,7 @@ void fix_environment(struct args *args)
             envs_set((char *[]){ arg, NULL }, NULL, args->c.env_expand);
          } else {
             // argument is filename
-            char **lines = list_new(sizeof(char *));
+            char **lines = list_new(sizeof(char *), 0);
             FILE *fp;
             Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
             for (int line_ct = 0; true; line_ct++) {
@@ -328,7 +326,7 @@ void fix_environment(struct args *args)
 
             [1]: https://unix.stackexchange.com/a/302987
             [2]: http://man7.org/linux/man-pages/man3/exec.3p.html */
-         char **new_environ = list_new(sizeof(char *));
+         char **new_environ = list_new(sizeof(char *), 0);
          for (int old_i = 0; environ[old_i] != NULL; old_i++) {
             int matchp;
             split(&name, &old_value, environ[old_i], '=');

@@ -103,11 +103,15 @@ void list_append(void **ar, void *new, size_t size)
 }
 
 /* Return a pointer to a new, empty zero-terminated array containing elements
-   of size size. */
-void *list_new(size_t size)
+   of size size, with room for ct elements without re-allocation. The latter
+   allows to pre-allocate an arbitrary number of slots in the list, which can
+   then be filled directly without testing the list's length for each one.
+   (The list is completely filled with zeros, so every position has a
+   terminator after it.) */
+void *list_new(size_t size, size_t ct)
 {
    void *list;
-   T_ (list = calloc(1, size));
+   T_ (list = calloc(ct+1, size));
    return list;
 }
 

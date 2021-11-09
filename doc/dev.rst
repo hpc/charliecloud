@@ -905,7 +905,7 @@ equivalent (note the C99 trick to avoid create a :code:`struct foo` variable):
 .. code-block:: c
 
   struct foo baz;
-  struct foo *qux = list_new(sizeof(struct foo));
+  struct foo *qux = list_new(sizeof(struct foo), 0);
   baz.a = 1;
   baz.b = 2.0;
   list_append((void **)&qux, &baz, sizeof(struct foo));
@@ -922,7 +922,7 @@ This form of list should be used unless some API requires something else.
   .. code-block:: c
 
     char foo[] = "hello";
-    char **list = list_new(sizeof(char *))
+    char **list = list_new(sizeof(char *), 0)
     list_append((void **)list, &foo, sizeof(char *));  // error!
 
   Because :code:`foo == &foo`, this will add to the list not a pointer to
@@ -937,7 +937,7 @@ This form of list should be used unless some API requires something else.
 
     char foo[] = "hello";
     char bar = foo;
-    char **list = list_new(sizeof(char *))
+    char **list = list_new(sizeof(char *), 0)
     list_append((void **)list, &bar, sizeof(char *));  // OK
 
 
