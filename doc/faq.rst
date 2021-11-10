@@ -852,6 +852,108 @@ Solutions include:
 Other approaches could be found with web searches such as "automate unattended
 SSH" or "SSH in cron jobs".
 
+How do I use Docker to build Charliecloud images?
+-------------------------------------------------
+
+The short version is to run Docker commands like :code:`docker build` and
+:code:`docker pull` like usual, and then use :code:`ch-convert` to copy the
+image from Docker storage to a SquashFS archive, tarball, or directory. If you
+are behind an HTTP proxy, that requires some extra setup for Docker; see
+below.
+
+Security implications of Docker
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Because Docker (a) makes installing random crap from the internet simple and
+(b) is easy to deploy insecurely, you should take care. Some of the
+implications are below. This list should not be considered comprehensive nor a
+substitute for appropriate expertise; adhere to your ethical and institutional
+responsibilities.
+
+* **Docker equals root.** Anyone who can run the :code:`docker` command or
+  interact with the Docker daemon can `trivially escalate to root
+  <http://web.archive.org/web/20170614013206/http://www.reventlov.com/advisories/using-the-docker-command-to-root-the-host>`_.
+  This is considered a feature.
+
+  For this reason, don't create the :code:`docker` group, as this will allow
+  passwordless, unlogged escalation for anyone in the group. Run it with
+  :code:`sudo docker`.
+
+  Also, Docker runs container processes as root by default. In addition to
+  being poor hygiene, this can be an escalation path, e.g. if you bind-mount
+  host directories.
+
+* **Docker alters your network configuration.** To see what it did::
+
+    $ ifconfig    # note docker0 interface
+    $ brctl show  # note docker0 bridge
+    $ route -n
+
+* **Docker installs services.** If you don't want the Docker service starting
+  automatically at boot, e.g.::
+
+    $ systemctl is-enabled docker
+    enabled
+    $ systemctl disable docker
+    $ systemctl is-enabled docker
+    disabled
+
+Configuring for a proxy
+~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, Docker does not work if you are behind a proxy, and it fails in
+two different ways.
+
+The first problem is that Docker itself must be told to use a proxy. This
+manifests as::
+
+  $ sudo docker run hello-world
+  Unable to find image 'hello-world:latest' locally
+  Pulling repository hello-world
+  Get https://index.docker.io/v1/repositories/library/hello-world/images: dial tcp 54.152.161.54:443: connection refused
+
+If you have a systemd system, the `Docker documentation
+<https://docs.docker.com/engine/admin/systemd/#http-proxy>`_ explains how to
+configure this. If you don't have a systemd system, then
+:code:`/etc/default/docker` might be the place to go?
+
+The second problem is that programs executed during build (:code:`RUN`
+instructions) need to know about the proxy as well. This manifests as images
+failing to build because they can't download stuff from the internet.
+
+One fix is to configure your :code:`.bashrc` or equivalent to:
+
+1. Set the proxy environment variables:
+
+   .. code-block:: sh
+
+     export HTTP_PROXY=http://proxy.example.com:8088
+     export http_proxy=$HTTP_PROXY
+     export HTTPS_PROXY=$HTTP_PROXY
+     export https_proxy=$HTTP_PROXY
+     export NO_PROXY='localhost,127.0.0.1,.example.com'
+     export no_proxy=$NO_PROXY
+
+2. Configure a :code:`docker build` wrapper:
+
+   .. code-block:: sh
+
+     # Run "docker build" with specified arguments, adding proxy variables if
+     # set. Assumes "sudo" is needed to run "docker".
+     function docker-build () {
+         if [[ -z $HTTP_PROXY ]]; then
+             sudo docker build "$@"
+         else
+             sudo docker build --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                               --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                               --build-arg NO_PROXY="$NO_PROXY" \
+                               --build-arg http_proxy="$http_proxy" \
+                               --build-arg https_proxy="$https_proxy" \
+                               --build-arg no_proxy="$no_proxy" \
+                               "$@"
+         fi
+     }
+
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello
 ..  LocalWords:  VirtualSize

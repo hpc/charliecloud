@@ -8,6 +8,10 @@ Synopsis
 Description
 ===========
 
+.. warning:: This script is deprecated in favor of using the desired builder
+             directly; we have added some tips for Docker to the FAQ. It will
+             be removed in the next release.
+
 Build an image named :code:`TAG` described by a Dockerfile. Place the result
 into the builder's back-end storage.
 
