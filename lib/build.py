@@ -269,7 +269,7 @@ class Instruction(abc.ABC):
    def metadata_add_history(self, inst_ct):
       hist = { "history": [ { "created": ch.now_utc_iso8601(),
                               "created_by": "%s %s" % (self.str_name(), self.str_()),
-                              "empty_layer": "True"}]}
+                              "empty_layer": True}]}
       images[image_i].metadata_append(hist)
 
    def metadata_remove_history(self):
