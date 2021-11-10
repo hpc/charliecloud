@@ -26,7 +26,7 @@ setup () {
 }
 
 
-# Test R installation 
+# Test local Rstudio installation. Verifies programming environemnt works.  
 @test "${ch_tag}/test R installation" {
     ch-run -b "$BATS_TMPDIR":/mnt/0 "$ch_img" -- bash -c "Rscript /rstudio/model.R"
     run ch-run -b "$BATS_TMPDIR":/mnt/0 "$ch_img" -b "$CHTEST_EXAMPLES_DIR"/rstudio:/mnt/1 -- bash -c "compare -metric AE /mnt/0/plot.png /mnt/1/plot.png null:"
