@@ -17,17 +17,21 @@ FROM centos:8
 #
 # bzip, file, patch, unzip, and which are packages needed to install
 # Charliecloud with Spack. These are in Spack's Docker example [2] but are not
-# documented as prerequisites [1].
+# documented as prerequisites [1]. texinfo is an undocumented dependency of
+# Spack's m4, and that package is in PowerTools.
+RUN sed -Ei 's/enabled=0/enabled=1/' \
+        /etc/yum.repos.d/CentOS-Linux-PowerTools.repo
 RUN dnf install -y --setopt=install_weak_deps=false \
+                bzip2 \
                 gcc \
                 gcc-c++ \
                 git \
                 gnupg2-smime \
-                python3 \
-                make \
-                bzip2 \
                 file \
+                make \
                 patch \
+                python3 \
+                texinfo \
                 unzip \
                 which \
  && dnf clean all
@@ -41,10 +45,13 @@ ARG FORCE_UNSAFE_CONFIGURE=1
 # place it at a standard path ("spack clone" simply clones another working
 # directory to a new path).
 #
-# We follow the develop branch to catch problems installing Charliecloud with
-# the latest Spack.
+# Depending on what's commented below, we get either Spack’s “develop” branch
+# or the latest released version. Using develop catches problems earlier, but
+# that branch has a LOT more churn and some of the problems might not occur in
+# a released version. I expect the right choice will change over time.
 ARG SPACK_REPO=https://github.com/spack/spack
-RUN git clone --depth 1 $SPACK_REPO
+#RUN git clone --depth 1 $SPACK_REPO  # tip of develop; faster clone
+RUN git clone $SPACK_REPO && cd spack && git checkout releases/latest  # slow
 RUN cd spack && git status && git rev-parse --short HEAD
 
 # Set up environment to use Spack. (We can't use setup-env.sh because the

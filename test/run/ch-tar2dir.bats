@@ -2,7 +2,7 @@ load ../common
 
 @test 'ch-tar2dir: unpack image' {
     scope standard
-    [[ $CH_PACK_FMT = tar ]] || skip 'issue #693'
+    [[ $CH_TEST_PACK_FMT = tar-unpack ]] || skip 'issue #693'
     if ( image_ok "$ch_timg" ); then
         # image exists, remove so we can test new unpack
         rm -Rf --one-file-system "$ch_timg"
@@ -19,7 +19,7 @@ load ../common
 
 @test 'ch-tar2dir: /dev cleaning' {  # issue #157
     scope standard
-    [[ $CH_PACK_FMT = tar ]] || skip 'issue #693'
+    [[ $CH_TEST_PACK_FMT = tar-unpack ]] || skip 'issue #693'
     # Are all fixtures present in tarball?
     present=$(tar tf "$ch_ttar" | grep -F deleteme)
     [[ $(echo "$present" | wc -l) -eq 4 ]]
