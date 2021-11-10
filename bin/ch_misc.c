@@ -157,12 +157,13 @@ void log_ids(const char *func, int line)
 void mkdirs(const char *base, const char *path, char **denylist)
 {
    char *basec, *component, *next, *nextc, *pathw, *saveptr;
+   char *denylist_null[] = { NULL };
    struct stat sb;
 
    T_ (base[0] != 0   && path[0] != 0);      // no empty paths
    T_ (base[0] == '/' && path[0] == '/');    // absolute paths only
    if (denylist == NULL)
-      denylist = (char *[]){ NULL };
+      denylist = denylist_null;  // literal here causes intermittent segfaults
 
    basec = realpath_safe(base);
 
