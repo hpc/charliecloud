@@ -889,7 +889,7 @@ EOF
     [[ $output = *'not found'* ]]
 
     # No context with stdin
-    run ch-image build - <<'EOF'
+    run ch-image build -t tmpimg - <<'EOF'
 FROM 00_tiny
 COPY fixtures/empty-file .
 EOF
