@@ -2,16 +2,14 @@
 FROM centos:8
 
 # This image has two purposes: (1) demonstrate we can build a CentOS 8 image
-# and (2) provide avbuild environment for Charliecloud EPEL 8 RPMs.
+# and (2) provide a build environment for Charliecloud EPEL 8 RPMs.
 #
 # Quirks:
 #
 #   1. Install the dnf ovl plugin to work around RPMDB corruption when
 #      building images with Docker and the OverlayFS storage driver.
 #
-#   2. Enable PowerTools repository, because some packages in EPEL depend on
-#      it. Use sed(1) because we don't want to install `dnf-plugins-core` just
-#      for this.
+#   2. Enable PowerTools repo, because some packages in EPEL depend on it.
 #
 #   3. Install packages needed to build el8 rpms.
 #
