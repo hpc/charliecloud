@@ -747,16 +747,6 @@ EOF
     [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
     test -f "$CH_IMAGE_STORAGE"/img/tmpimg/empty-file
 
-    # single source with no context on stdin
-    run ch-image build - <<'EOF'
-FROM 00_tiny
-COPY ["fixtures/empty-file", "."]
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"COPY ['fixtures/empty-file'] -> '.'"* ]]
-    test -f "$CH_IMAGE_STORAGE"/img/tmpimg/empty-file
-
     # multiple source
     run ch-image build -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
@@ -897,6 +887,16 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not found'* ]]
+
+    # No context with stdin
+    run ch-image build - <<'EOF'
+FROM 00_tiny
+COPY fixtures/empty-file .
+EOF
+   echo "$output"
+   [[ $status -ne 0 ]]
+   [[ $output = *'need valid context'* ]]
+
 }
 
 
