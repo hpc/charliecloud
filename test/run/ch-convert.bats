@@ -47,6 +47,7 @@ load ../common
 setup () {
     scope standard
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs directory images'
     if ! command -v docker > /dev/null 2>&1; then
         pedantic_fail 'docker not found'
     fi
