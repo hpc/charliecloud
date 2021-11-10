@@ -29,3 +29,8 @@ setup() {
 @test "${ch_tag}/spec" {
     ch-run "$ch_img" -- spack spec hdf5
 }
+
+@test "${ch_tag}/install chariecloud" {
+    ch-run "$ch_img" -- spack install charliecloud+docs^py-sphinx-rtd-theme@0.4.3
+    ch-run "$ch_img" -- spack clean --all
+}
