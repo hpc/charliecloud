@@ -401,6 +401,7 @@ variables are passed through in the same way:
 .. code-block:: sh
 
    SSH_AUTH_SOCK
+   USER
 
 Finally, these variables are also pre-defined but are unrelated to the host
 environment:

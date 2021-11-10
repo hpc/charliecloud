@@ -26,6 +26,9 @@ setup() {
     ch-run "$ch_img" -- spack compilers
 }
 
-@test "${ch_tag}/spec" {
-    ch-run "$ch_img" -- spack spec hdf5
+@test "${ch_tag}/find" {
+    run ch-run "$ch_img" -- spack find charliecloud
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'charliecloud@'* ]]
 }
