@@ -12,6 +12,7 @@ Unpack an image tarball into a directory.
 Usage:
 
   $ $(basename "$0") TARBALL DIR
+${deprecated_convert}
 EOF
 )
 
@@ -141,3 +142,5 @@ for i in etc/hosts etc/resolv.conf; do
 done
 
 echo "${newroot} unpacked ok"
+
+deprecated_convert_warn

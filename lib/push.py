@@ -71,7 +71,7 @@ class Image_Pusher:
    def manifest_new(class_):
       "Return an empty manifest, ready to be filled in."
       return { "schemaVersion": 2,
-               "mediaType": ch.TYPE_MANIFEST,
+               "mediaType": ch.TYPES_MANIFEST["docker2"],
                "config": { "mediaType": ch.TYPE_CONFIG,
                            "size": None,
                            "digest": None },

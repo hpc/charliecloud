@@ -14,6 +14,7 @@ Usage:
   $ $(basename "$0") INDIR OUTDIR [ARGS ...]
 
 ARGS are passed unchanged to mksquashfs.
+${deprecated_convert}
 EOF
 )
 
@@ -79,3 +80,5 @@ mksquashfs "$temp" "${outdir}/${image}.sqfs" -no-recovery
 
 rm -rf --one-file-system "$temp"
 ls -lh "${outdir}/${image}.sqfs"
+
+deprecated_convert_warn

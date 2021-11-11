@@ -191,10 +191,15 @@ HTTP_CHUNK_SIZE = 256 * 1024
 PYTHON_MIN = (3,6)
 
 # Content types for some stuff we care about.
-TYPE_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
-TYPE_MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
-TYPE_CONFIG =   "application/vnd.docker.container.image.v1+json"
-TYPE_LAYER =    "application/vnd.docker.image.rootfs.diff.tar.gzip"
+# See: https://github.com/opencontainers/image-spec/blob/main/media-types.md
+TYPES_MANIFEST = \
+   {"docker2": "application/vnd.docker.distribution.manifest.v2+json",
+    "oci1":    "application/vnd.oci.image.manifest.v1+json"}
+TYPES_INDEX = \
+   {"docker2": "application/vnd.docker.distribution.manifest.list.v2+json",
+    "oci1":    "application/vnd.oci.image.index.v1+json"}
+TYPE_CONFIG = "application/vnd.docker.container.image.v1+json"
+TYPE_LAYER = "application/vnd.docker.image.rootfs.diff.tar.gzip"
 
 # Top-level directories we create if not present.
 STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
@@ -849,7 +854,15 @@ fields:
 
    def defaults_add(self):
       "Set defaults for all empty fields."
-      if (self.host is None): self.host = "registry-1.docker.io"
+      if (self.host is None):
+         if ("CH_REGY_DEFAULT_HOST" not in os.environ):
+            self.host = "registry-1.docker.io"
+         else:
+            self.host = os.getenv("CH_REGY_DEFAULT_HOST")
+            self.port = int(os.getenv("CH_REGY_DEFAULT_PORT", 443))
+            prefix = os.getenv("CH_REGY_PATH_PREFIX")
+            if (prefix is not None):
+               self.path = prefix.split("/") + self.path
       if (self.port is None): self.port = 443
       if (self.host == "registry-1.docker.io" and len(self.path) == 0):
          # FIXME: For Docker Hub only, images with no path need a path of
@@ -1314,11 +1327,12 @@ class Registry_HTTP:
          responsible for distinguishing cases 1 and 2."""
       url = self._url_of("manifests", self.ref.version)
       pw = Progress_Writer(path, msg)
-      # Including TYPE_MANIFEST avoids the server trying to convert its v2
+      # Including TYPES_MANIFEST avoids the server trying to convert its v2
       # manifest to a v1 manifest, which currently fails for images
       # Charliecloud pushes. The error in the test registry is “empty history
       # when trying to create schema1 manifest”.
-      accept = "%s, %s;q=0.5" % (TYPE_MANIFEST_LIST, TYPE_MANIFEST)
+      accept = "%s;q=0.5" % ",".join(  list(TYPES_INDEX.values())
+                                     + list(TYPES_MANIFEST.values()))
       res = self.request("GET", url, out=pw, statuses={200, 401, 404},
                          headers={ "Accept" : accept })
       pw.close()
@@ -1344,8 +1358,9 @@ class Registry_HTTP:
          digest = "sha256:" + digest
       url = self._url_of("manifests", digest)
       pw = Progress_Writer(path, msg)
+      accept = "%s;q=0.5" % ",".join(TYPES_MANIFEST.values())
       res = self.request("GET", url, out=pw, statuses={200, 401, 404},
-                         headers={ "Accept" : TYPE_MANIFEST })
+                         headers={ "Accept" : accept })
       pw.close()
       if (res.status_code != 200):
          DEBUG(res.content)
@@ -1357,7 +1372,7 @@ class Registry_HTTP:
       INFO("manifest: uploading")
       url = self._url_of("manifests", self.ref.tag)
       self.request("PUT", url, {201}, data=manifest,
-                   headers={ "Content-Type": TYPE_MANIFEST })
+                   headers={ "Content-Type": TYPES_MANIFEST["docker2"] })
 
    def request(self, method, url, statuses={200}, out=None, **kwargs):
       """Request url using method and return the response object. If statuses

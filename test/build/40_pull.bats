@@ -246,26 +246,34 @@ EOF
     cd -
 }
 
-@test 'pull image with manifest schema v1' {
-    # Verify we handle images with manifest schema version one (v1).
+@test 'pull images with uncommon manifests' {
+    if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
+        # Manifests seem to vary by registry; we need Docker Hub.
+        skip 'default registry host set'
+    fi
 
-    unpack="${BATS_TMPDIR}/tmp"
-    cache=$unpack/dlcache
-    # We target debian:squeeze because 1) it always returns a v1 manifest
-    # schema (regardless of media type specified), and 2) it isn't very large,
-    # thus keeps test time down.
+    storage="${BATS_TMPDIR}/tmp"
+    cache=$storage/dlcache
+    export CH_IMAGE_STORAGE=$storage
+
+    # OCI manifest; see issue #1184.
+    img=charliecloud/ocimanifest:2021-10-12
+    ch-image pull "$img"
+
+    # Manifest schema version one (v1); see issue #814. Use debian:squeeze
+    # because 1) it always returns a v1 manifest schema (regardless of media
+    # type specified), and 2) it isn't very large, thus keeps test time down.
     img=debian:squeeze
-
-    ch-image pull --storage="$unpack" \
-                  "$img"
-    [[ $status -eq 0 ]]
-
+    ch-image pull "$img"
     grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
 
-    rm -Rf "$unpack"
+    rm -Rf --one-file-system "$storage"
 }
 
 @test 'pull from public repos' {
+    if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
+        skip 'default registry host set'  # avoid Docker Hub
+    fi
     if [[ -z $CI ]]; then
         # Verify we can reach the public internet, except on CI, where we
         # insist this should work.
@@ -412,7 +420,12 @@ EOF
     fi
 }
 
+
 @test 'pull images that do not exist' {
+    if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
+        skip 'default registry host set'  # errors are Docker Hub specific
+    fi
+
     # name does not exist remotely, in library
     run ch-image pull doesnotexist:latest
     echo "$output"

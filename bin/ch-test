@@ -20,13 +20,14 @@ warning () {
 
 ### Setup
 
-lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
-if [[ ! -f ${lib}/base.sh ]]; then
-    fatal "install or build problem: not found: ${lib}/base.sh"
+ch_lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+if [[ ! -f ${ch_lib}/base.sh ]]; then
+    fatal "install or build problem: not found: ${ch_lib}/base.sh"
 fi
-. "${lib}/base.sh"
-. "${lib}/contributors.bash"
+. "${ch_lib}/base.sh"
+. "${ch_lib}/contributors.bash"
 export ch_bin
+export ch_lib
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
@@ -34,10 +35,11 @@ Run some or all of the Charliecloud test suite.
 
 Usage:
 
-  $ $(basename "$0") [PHASE] [--scope SCOPE] [OPTIONS]
+  $ $(basename "$0") [PHASE] [--scope SCOPE] [--pack-fmt FMT] [OPTIONS]
 
 Valid phases: build, run, examples, all, mk-perm-dirs, clean, rm-perm-dirs
 Valid scopes: quick, standard, full
+Valid pack formats: squash-mount, tar-unpack, squash-unpack
 
 Additional options:
 
@@ -46,8 +48,8 @@ Additional options:
   -f,--file FILE[:TEST]  run tests in FILE only, or even just TEST
   -h,--help              print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
-  --pack-dir DIR         packed imaged directory; same as \$CH_TEST_TARDIR
-  --pack-fmt FMT         packed image format ("squash" or "tar")
+  --pack-dir DIR         packed image directory; same as \$CH_TEST_TARDIR
+  --pack-fmt FMT         packed image format; same as \$CH_TEST_PACK_FMT
   --pedandic {yes,no}    set pedantic mode rather than guessing
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
   --sudo                 enable tests that need sudo
@@ -129,14 +131,7 @@ dir_img_mk () {
 }
 
 dir_img_rm () {
-    # Remove CH_TEST_IMGDIR if 1) the directory is empty; or 2) the directory
-    # is non-empty but contains a sentinel file.
-    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r \
-       &&  [[ ! -e $CH_TEST_TARDIR/WEIRD_AL_YANKOVIC ]]; then
-        fatal "$CH_TEST_IMGDIR missing sentinel file; manually delete."
-    fi
-    echo "removing $CH_TEST_IMGDIR"
-    $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_IMGDIR"
+    dir_rm_safe "$CH_TEST_IMGDIR"
 }
 
 # Remove a filesystem permissions fixture directory. Ensure that the target
@@ -146,6 +141,17 @@ dir_perm_rm () {
           && -d "${1}/pass" && -d "${1}/nopass" ]]; then
         echo "removing ${1}"
         sudo rm -rf --one-file-system "$1"
+    fi
+}
+
+# Remove directory $1 if it's either 1) empty or 2) contains a sentinel file.
+dir_rm_safe () {
+    if [[    $(find "$1" -maxdepth 1 -mindepth 1 | wc -l) == 0 \
+          || -e ${1}/WEIRD_AL_YANKOVIC ]]; then
+        echo "removing $1"
+        $ch_mpirun_node rm -rf --one-file-system "$1"
+    else
+        fatal "non-empty and missing sentinel file; manually delete: $1"
     fi
 }
 
@@ -177,14 +183,7 @@ dir_tar_mk () {
 }
 
 dir_tar_rm () {
-    # Remove CH_TEST_TARDIR if 1) the directory is empty; or 2) the directory
-    # is non-empty but contains a sentinel file.
-    if find "$CH_TEST_TARDIR" -mindepth 1 &> /dev/null | read -r \
-       && [[ ! -e $CH_TEST_TARDIR/WEIRD_AL_YANKOVIC ]]; then
-        fatal "$CH_TEST_TARDIR missing sentinel file; manually delete."
-    fi
-    echo "removing $CH_TEST_TARDIR"
-    $ch_mpirun_node rm -rf --one-file-system "$CH_TEST_TARDIR"
+    dir_rm_safe "$CH_TEST_TARDIR"
 }
 
 dir_tmp_rm () {
@@ -202,26 +201,62 @@ dirs_unpriv_rm () {
 
 pack_fmt_set () {
     width=$1
-    if [[ -n $pack_fmt ]]; then
-        case $pack_fmt in
-        '🐘')  # elephant emoji
-            pack_fmt=squash
-            ;;
-        '📠')  # fax machine emoji
-            pack_fmt=tar
-            ;;
-        esac
-        export CH_PACK_FMT=$pack_fmt
-        method='command line'
-    elif [[ -n $CH_PACK_FMT ]]; then
-        method='environment'
+    if command -v mksquashfs > /dev/null 2>&1; then
+        have_mksquashfs=yes
     else
-        pack_fmt_choose
+        have_mksquashfs=
+    fi
+    if [[ $(ldd "${ch_bin}/ch-run") = *"libsquashfuse"* ]]; then
+        have_libsquashfuse=yes
+    else
+        have_libsquashfuse=
+    fi
+    if [[ -n $pack_fmt ]]; then
+        CH_TEST_PACK_FMT=$pack_fmt
+        method='command line'
+    elif [[ -n $CH_TEST_PACK_FMT ]]; then
+        method='environment'
+    elif [[ -n $have_mksquashfs && -n $have_libsquashfuse ]]; then
+        CH_TEST_PACK_FMT=squash-mount
+        method='default'
+    else
+        CH_TEST_PACK_FMT=tar-unpack
         method='default'
     fi
+    case $CH_TEST_PACK_FMT in
+        '🐘')  # elephant emoji U+1F418
+            CH_TEST_PACK_FMT=squash-mount
+            ;;
+        '📠')  # fax machine emoji U+1F4E0
+            CH_TEST_PACK_FMT=tar-unpack
+            ;;
+        '🎃')  # jack-o-lantern emoji U+1F383
+            CH_TEST_PACK_FMT=squash-unpack
+            ;;
+        esac
+    export CH_TEST_PACK_FMT
     printf "%-*s %s (%s)\n" \
-           "$width" 'packed image format:' "$CH_PACK_FMT" "$method"
-    pack_fmt_valid "$CH_PACK_FMT"
+           "$width" 'packed image format:' "$CH_TEST_PACK_FMT" "$method"
+    case $CH_TEST_PACK_FMT in
+        squash-mount)
+            if [[ -z $have_mksquashfs ]]; then
+                fatal "format invalid: ${CH_TEST_PACK_FMT}: no mksquashfs"
+            fi
+            if [[ -z $have_libsquashfuse ]]; then
+                fatal "format invalid: ${CH_TEST_PACK_FMT}: ch-run not linked with libsquashfuse"
+            fi
+            ;;
+        tar-unpack)
+            ;;  # nothing to check (assume we have tar)
+        squash-unpack)
+            if [[ -z $have_mksquashfs ]]; then
+                fatal "format invalid: ${CH_TEST_PACK_FMT}: no mksquashfs"
+            fi
+            ;;
+        *)
+            fatal "format unknown: ${CH_TEST_PACK_FMT}"
+            ;;
+    esac
 }
 
 pedantry_set () {
@@ -649,6 +684,36 @@ if /bin/bash -c 'set -e; [[ 1 = 0 ]]; exit 0'; then
     fatal 'Bash minimum version is 4.1'
 fi
 
+# Is the user a contributor?
+email=
+# First, ask Git for the configured e-mail address.
+if command -v git > /dev/null 2>&1; then
+    email="$(git config --get user.email || true)"
+fi
+# If that doesn't work, construct it from the environment.
+if [[ -z $email ]]; then
+    email="$USER@$(hostname --domain)"
+fi
+ch_contributor=
+for i in "${ch_contributors[@]}"; do
+    if [[ $i == "$email" ]]; then
+        ch_contributor=yes
+    fi
+done
+
+# Ensure Bats is installed.
+if command -v bats > /dev/null 2>&1; then
+    bats=$(command -v bats)
+    bats_version="$(bats --version | awk '{print $2}')"
+else
+    fatal 'Bats not found'
+fi
+
+# Reject non-default registry on GitHub Actions.
+if [[ -n $GITHUB_ACTIONS && -n $CH_REGY_DEFAULT_HOST ]]; then
+    fatal 'non-default registry on GitHub Actions invalid'
+fi
+
 # Create a directory to hold auto-generated test artifacts.
 TMP_=/tmp/ch-test.tmp.$USER
 if [[ ! -d $TMP_ ]]; then
@@ -691,36 +756,10 @@ if [[ ! -d $CHTEST_EXAMPLES_DIR ]]; then
     fatal "examples not found: $CHTEST_EXAMPLES_DIR"
 fi
 
-# Is the user a contributor?
-email=
-# First, ask Git for the configured e-mail address.
-if command -v git > /dev/null 2>&1; then
-    email="$(git config --get user.email || true)"
-fi
-# If that doesn't work, construct it from the environment.
-if [[ -z $email ]]; then
-    email="$USER@$(hostname --domain)"
-fi
-ch_contributor=
-for i in "${ch_contributors[@]}"; do
-    if [[ $i == "$email" ]]; then
-        ch_contributor=yes
-    fi
-done
-
-# Ensure Bats is installed.
-if command -v bats > /dev/null 2>&1; then
-    bats=$(command -v bats)
-    bats_version="$(bats --version | awk '{print $2}')"
-else
-    fatal 'Bats not found'
-fi
-
+# Parse arguments.
 if [[ $# == 0 ]]; then
     usage 1
 fi
-
-# Parse arguments.
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in

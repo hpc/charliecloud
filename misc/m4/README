@@ -28,10 +28,10 @@ To add a macro:
 
 Macros in use:
 
-  v2019.01.06  AX_CHECK_COMPILE_FLAG
-  v2019.01.06  AX_COMPARE_VERSION
-  v2019.01.06  AX_PTHREAD
-  v2019.01.06  AX_WITH_PROG
+  v2021.02.19  AX_CHECK_COMPILE_FLAG
+  v2021.02.19  AX_COMPARE_VERSION
+  v2021.02.19  AX_PTHREAD
+  v2021.02.19  AX_WITH_PROG
 
 [1]: https://www.gnu.org/software/autoconf-archive/
 [2]: https://github.com/autoconf-archive/autoconf-archive
