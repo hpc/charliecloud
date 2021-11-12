@@ -14,7 +14,8 @@
 #      definitions" (--force-lang-def). We need "merge my definitions with
 #      default, but with mine higher priority", so we emulate it with
 #      --force-lang-def, providing all the language definitions we need, some
-#      of which are altered.
+#      of which are altered. Use "cloc --write-lang-def=/dev/stdout | less" to
+#      see the default definitions.
 #
 #   3. cloc also does not have a way to define file prefixes (say,
 #      Dockerfile.*). So we list all the Dockerfiles we have manually in the
@@ -152,6 +153,17 @@ Python
     script_exe python3.5
     3rd_gen_scale 4.20
     end_of_line_continuation \\$
+R
+    filter remove_matches ^\s*#
+    filter remove_inline #.*$
+    extension R
+    extension expr-dist
+    extension r
+    extension rd
+    extension rprofile
+    extension rsx
+    3rd_gen_scale 3.00
+    end_of_line_continuation \\$
 ReST
     filter remove_between_regex ^\.\. ^[^\s\.]
     extension rst
@@ -217,7 +229,7 @@ find ./bin ./lib -type f -a \( \
      -o -path './bin/ch-*' \) | grep -Fv ./bin/ch-test | sort > /tmp/loc.program
 countem "PROGRAM" /tmp/loc.program
 
-# test suite
+# test suite & examples
 find ./.github ./examples ./test -type f -a \( \
         -name '*.bats' \
      -o -name '*.bats.in' \
@@ -238,6 +250,7 @@ find ./.github ./examples ./test -type f -a \( \
      -o -path ./test/fixtures/README \
      -o -path ./.github/PERUSEME \
      -o -path ./examples/chtest/printns \
+     -o -path ./examples/rstudio/model.R \
      -o -path ./test/common.bash \
      -o -path ./test/sotest/files_inferrable.txt \
      -o -path ./test/whiteout \) | sort > /tmp/loc.test
