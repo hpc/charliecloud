@@ -1,13 +1,10 @@
-# This example R script builds a linear model of distance vs speed 
-# using the cars dataset then plots it.
+# Build a linear regression model of distance vs. speed using the sample cars
+# dataset that comes with R, then print a summary of the model and plot it.
 
-args <- commandArgs(trailingOnly = TRUE)
-# Load vehicle data
 data(cars)
 
-# Create linear model
-lm <- lm(dist~speed, cars)
+m <- lm(dist~speed, cars)
+summary(m)
 
-# plot linear model results
 png('/mnt/0/plot.png')
-plot(lm, 1)
+plot(m, 1)

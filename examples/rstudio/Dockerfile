@@ -6,6 +6,7 @@ RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
     firefox-geckodriver \
     imagemagick \
+    libxt6 \
     python3-pip \
     strace
 

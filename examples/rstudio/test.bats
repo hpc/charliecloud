@@ -9,8 +9,33 @@ setup () {
     prerequisites_ok "rstudio"
 }
 
+
+@test "${ch_tag}/R itself" {
+    # Compute regression and check results.
+    run ch-run -b "$BATS_TMPDIR":/mnt/0 "$ch_img" -- Rscript /rstudio/model.R
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'(Intercept) -17.5791'* ]]
+    [[ $output = *'speed         3.9324'* ]]
+
+    # Check pixels (not metadata) against the reference plot. This uses
+    # ImageMagick's similarity metric “AE”, which is simply a count of pixels
+    # that are different [1]. If this is non-zero, you can look at
+    # $BATS_TMPDIR/diff.png, which highlights the differing pixels in red.
+    #
+    # [1]: https://imagemagick.org/script/command-line-options.php#metric
+    run ch-run -b "$BATS_TMPDIR":/mnt/0 "$ch_img" -- \
+        compare -metric AE /rstudio/plot.png /mnt/0/plot.png /mnt/0/diff.png
+    echo
+    echo "$output"
+    [[ $status -eq 0 ]]  # should be zero if images equal
+    [[ $output = '0' ]]  # entire output is number of differing pixels
+}
+
+
 # Test that we can login to rstudio
 @test "${ch_tag}/test rstudio-server" {
+    skip
     # Start up on port 8991
     # If a previous test failed kill rserver before we begin
     rstudio_server=$(pgrep -f "rserver --www-port=8991" || exit 0)
@@ -26,10 +51,3 @@ setup () {
 }
 
 
-# Test local Rstudio installation. Verifies programming environemnt works.  
-@test "${ch_tag}/test R installation" {
-    ch-run -b "$BATS_TMPDIR":/mnt/0 "$ch_img" -- bash -c "Rscript /rstudio/model.R"
-    run ch-run -b "$BATS_TMPDIR":/mnt/0 "$ch_img" -b "$CHTEST_EXAMPLES_DIR"/rstudio:/mnt/1 -- bash -c "compare -metric AE /mnt/0/plot.png /mnt/1/plot.png null:"
-    echo $output
-    [[ $output = *'0'* ]]
-}
