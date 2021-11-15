@@ -241,6 +241,35 @@ Inject the executables and libraries recommended by nVidia into the image, and
 then run :code:`ldconfig`::
 
   $ ch-fromhost --nvidia /var/tmp/baz
+  asking ldconfig for shared library destination
+  /sbin/ldconfig: Can't stat /libx32: No such file or directory
+  /sbin/ldconfig: Can't stat /usr/libx32: No such file or directory
+  shared library destination: /usr/lib64//bind9-export
+  injecting into image: /var/tmp/baz
+    /usr/bin/nvidia-smi -> /usr/bin (inferred)
+    /usr/bin/nvidia-debugdump -> /usr/bin (inferred)
+    /usr/bin/nvidia-persistenced -> /usr/bin (inferred)
+    /usr/bin/nvidia-cuda-mps-control -> /usr/bin (inferred)
+    /usr/bin/nvidia-cuda-mps-server -> /usr/bin (inferred)
+    /usr/lib64/libnvidia-ml.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-cfg.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libcuda.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-opencl.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-ptxjitcompiler.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-compiler.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-encode.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvcuvid.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-eglcore.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-glcore.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-tls.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-glsi.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-fbc.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-ifr.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libGLX_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libEGL_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libGLESv2_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libGLESv1_CM_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+  running ldconfig
 
 Inject the Cray-enabled MPI libraries into the image, and then run
 :code:`ldconfig`::
