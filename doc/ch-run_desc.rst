@@ -3,13 +3,14 @@ Synopsis
 
 ::
 
-  $ ch-run [OPTION...] NEWROOT CMD [ARG...]
+  $ ch-run [OPTION...] IMAGE -- CMD [ARG...]
 
 Description
 ===========
 
 Run command :code:`CMD` in a fully unprivileged Charliecloud container using
-the flattened and unpacked image directory located at :code:`NEWROOT`.
+the image located at :code:`IMAGE`, which can be either a directory or, if the
+proper support is enabled, a SquashFS archive.
 
   :code:`-b`, :code:`--bind=SRC[:DST]`
     Bind-mount :code:`SRC` at guest :code:`DST`. The default destination if
@@ -63,6 +64,11 @@ the flattened and unpacked image directory located at :code:`NEWROOT`.
     Label for :code:`ch-run` peer group (implies :code:`--join`; default: see
     below).
 
+  :code:`-m`, :code:`--mount=DIR`
+    Use :code:`DIR` for the SquashFS mount point, which must already exist. If
+    not specified, the default is :code:`/var/tmp/$USER.ch/mnt`, which *will*
+    be created if needed.
+
   :code:`--no-home`
     By default, your host home directory (i.e., :code:`$HOME`) is bind-mounted
     at guest :code:`/home/$USER`. This is accomplished by mounting a new
@@ -82,7 +88,7 @@ the flattened and unpacked image directory located at :code:`NEWROOT`.
     :code:`tmpfs` is mounted on the container's :code:`/tmp` instead.
 
   :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
-    set environment variable(s), either as specified in host path :code:`FILE`,
+    Set environment variable(s), either as specified in host path :code:`FILE`,
     or set variable :code:`VAR` to :code:`VALUE`
 
   :code:`-u`, :code:`--uid=UID`
@@ -115,6 +121,47 @@ precaution, :code:`ch-run` calls :code:`prctl(PR_SET_NO_NEW_PRIVS, 1)` to
 container. This does not reduce functionality but is a "belt and suspenders"
 precaution to reduce the attack surface should bugs in these system calls or
 elsewhere arise.
+
+Image format
+============
+
+:code:`ch-run` supports two different image formats.
+
+The first is a simple directory that contains a Linux filesystem tree. This
+can be accomplished by:
+
+* :code:`ch-convert` directly from :code:`ch-image` or another builder to a
+  directory.
+
+* Charliecloud's tarball workflow: build or pull the image, :code:`ch-convert`
+  it to a tarball, transfer the tarball to the target system, then
+  :code:`ch-convert` the tarball to a directory.
+
+* Manually mount a SquashFS image, e.g. with :code:`squashfuse(1)` and then
+  un-mount it after run with :code:`fusermount -u`.
+
+* Any other workflow that produces an appropriate directory tree.
+
+The second is a SquashFS image archive mounted internally by :code:`ch-run`,
+available if it's linked with the optional :code:`libsquashfuse_ll`.
+:code:`ch-run` mounts the image filesystem, services all FUSE requests, and
+unmounts it, all within :code:`ch-run`. See :code:`--mount` above to set the
+mount point location.
+
+Prior versions of Charliecloud provided wrappers for the :code:`squashfuse`
+and :code:`squashfuse_ll` SquashFS mount commands and :code:`fusermount -u`
+unmount command. We removed these because we concluded they had minimal
+value-add over the standard, unwrapped commands.
+
+.. warning::
+
+   Currently, Charliecloud unmounts the SquashFS filesystem when user command
+   :code:`CMD`'s process exits. It does not monitor any of its child
+   processes. Therefore, if the user command spawns child processes and then
+   exits before them (e.g., some daemons), those children will have the image
+   unmounted from underneath them. In this case, the workaround is to
+   mount/unmount using external tools. We expect to remove this limitation in
+   a future version.
 
 Host files and directories available in container via bind mounts
 =================================================================
@@ -504,4 +551,4 @@ Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
 
-..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge
+..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount

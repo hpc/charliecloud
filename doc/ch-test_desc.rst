@@ -3,7 +3,8 @@ Synopsis
 
 ::
 
-  $ ch-test [PHASE] [--scope SCOPE] [ARGS]
+  $ ch-test [PHASE] [--scope SCOPE] [--pack-fmt FMT] [ARGS]
+
 
 Description
 ===========
@@ -102,22 +103,40 @@ allows trading off thoroughness versus time.
 Scope is specified with:
 
   :code:`-s`, :code:`--scope SCOPE`
-    :code:`SCOPE` must be one of the following; the default is
-    :code:`standard`.
+    :code:`SCOPE` must be one of the following:
 
     * :code:`quick`: Most important subset of workflow. Handy for development.
-      Completion time: 1–2 minutes.
 
     * :code:`standard`: All tested workflow functionality and a selection of
-      more important examples. Completion time: 5–10 minutes.
+      more important examples. (Default.)
 
-    * :code:`full`: All available tests, including all examples. Completion
-      time, hot cache: 7–15 minutes; cold cache: 1–2 hours.
+    * :code:`full`: All available tests, including all examples.
+
+Image format is specified with:
+
+  :code:`--pack-fmt FMT`
+    :code:`FMT` must be one of the following:
+
+    * :code:`squash-mount` or 🐘: SquashFS archive, run directly from the
+      archive using :code:`ch-run`'s internal SquashFUSE functionality. In
+      this mode, tests that require writing to the image are skipped.
+
+    * :code:`tar-unpack` or 📠: Tarball, and the images are unpacked before
+      running.
+
+    * :code:`squash-unpack` or 🎃: SquashFS, and the images are unpacked
+      before running.
+
+    Default: :code:`$CH_TEST_PACK_FMT` if set. Otherwise, if
+    :code:`mksquashfs(1)` is available and :code:`ch-run` was built with
+    :code:`libsquashfuse` support, then :code:`squash-mount`, else
+    :code:`tar-unpack`.
 
 Additional arguments:
 
   :code:`-b`, :code:`--builder BUILDER`
-    Image builder to use. See ch-build(1) for how the default is selected.
+    Image builder to use. See :code:`ch-build(1)` for how the default is
+    selected.
 
   :code:`--dry-run`
     Print summary of what would be tested and then exit.
@@ -129,6 +148,13 @@ Additional arguments:
     Set unpacked images directory to :code:`DIR`. In a multi-node allocation,
     this directory may not be shared between nodes. Default:
     :code:`$CH_TEST_IMGDIR` if set; otherwise :code:`/var/tmp/img`.
+
+  :code:`--lustre DIR`
+    Use :code:`DIR` for run-phase Lustre tests. Default:
+    :code:`CH_TEST_LUSTREDIR` if set; otherwise skip them.
+
+    The tests will create, populate, and delete a new subdirectory under
+    :code:`DIR`, leaving everything else in :code:`DIR` untouched.
 
   :code:`--pack-dir DIR`
     Set packed images directory to :code:`DIR`. Default:
@@ -153,21 +179,12 @@ Additional arguments:
     Implies :code:`--sudo`. Default: :code:`CH_TEST_PERMDIRS` if set;
     otherwise skip the filesystem permissions tests.
 
-  :code:`--pack-fmt FMT`
-    Use packed image format :code:`FMT` (:code:`squash` or :code:`tar`).
-
   :code:`--sudo`
     Enable things that require sudo, such as certain privilege escalation
     tests and creating/removing the filesystem permissions fixtures. Requires
     generic :code:`sudo` capabilities. Note that the Docker builder uses
     :code:`sudo docker` even without this option.
 
-  :code:`--lustre DIR`
-    Use :code:`DIR` for run-phase Lustre tests. Default:
-    :code:`CH_TEST_LUSTREDIR` if set; otherwise skip them.
-
-    The tests will create, populate, and delete a new subdirectory under
-    :code:`DIR`, leaving everything else in :code:`DIR` untouched.
 
 Exit status
 ===========
@@ -176,12 +193,14 @@ Zero if all tests passed; non-zero if any failed. For setup and teardown
 phases, zero if everything was created or deleted correctly, non-zero
 otherwise.
 
+
 Bugs
 ====
 
 Bats will wait until all descendant processes finish before exiting, so if you
 get into a failure mode where a test sequence doesn't clean up all its
 processes, :code:`ch-test` will hang.
+
 
 Examples
 ========
@@ -243,3 +262,6 @@ Output has been omitted.
    (cn001)$ export CH_TEST_SCOPE=full
    (cn001)$ ch-test run
    (cn001)$ ch-test examples
+
+
+..  LocalWords:  fmt img

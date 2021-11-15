@@ -22,6 +22,7 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope standard
     prerequisites_ok spark
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'issue #1161'
     umask 0077
 
     # Unset these Java variables so the container doesn't use host paths.
@@ -46,9 +47,10 @@ setup () {
         master_host=localhost
         pernode=
     fi
-    master_url="spark://${master_host}:7077"
-    master_log="${spark_log}/*master.Master*.out"
+    master_url=spark://${master_host}:7077
+    master_log="${spark_log}/*master.Master*.out"  # expand globs later
 }
+
 
 @test "${ch_tag}/configure" {
     # check for restrictive umask
@@ -79,6 +81,7 @@ EOF
     fi
 }
 
+
 @test "${ch_tag}/start" {
     # remove old master logs so new one has predictable name
     rm -Rf --one-file-system "$spark_log"
@@ -92,9 +95,10 @@ EOF
     # start the workers
     # shellcheck disable=SC2086
     $pernode ch-run -b "$confbind" "$ch_img" -- \
-                    /opt/spark/sbin/start-slave.sh "$master_url"
+                    /opt/spark/sbin/start-worker.sh "$master_url"
     sleep 15
 }
+
 
 @test "${ch_tag}/worker count" {
     # Note that in the log, each worker shows up as 127.0.0.1, which might
@@ -110,6 +114,7 @@ EOF
     [[ $worker_ct -eq "$SLURM_NNODES" ]]
 }
 
+
 @test "${ch_tag}/pi" {
     run ch-run -b "$confbind" "$ch_img" -- \
                /opt/spark/bin/spark-submit --master "$master_url" \
@@ -121,8 +126,9 @@ EOF
     [[ $output = *'Pi is roughly 3.1'* ]]
 }
 
+
 @test "${ch_tag}/stop" {
-    $pernode ch-run -b "$confbind" "$ch_img" -- /opt/spark/sbin/stop-slave.sh
+    $pernode ch-run -b "$confbind" "$ch_img" -- /opt/spark/sbin/stop-worker.sh
     ch-run -b "$confbind" "$ch_img" -- /opt/spark/sbin/stop-master.sh
     sleep 2
     # Any Spark processes left?
@@ -130,6 +136,7 @@ EOF
     # shellcheck disable=SC2086
     $pernode ps aux | ( ! grep -E '[o]rg\.apache\.spark\.deploy' )
 }
+
 
 @test "${ch_tag}/hang" {
     # If there are any test processes remaining, this test will hang.

@@ -8,6 +8,9 @@
 #    "yes" for true and "no" for false. This differs from the Charliecloud
 #    convention of non-empty for true and empty for false.
 
+
+### Prologue #################################################################
+
 AC_INIT([Charliecloud], [m4_esyscmd_s([misc/version])],
         [https://github.com/hpc/charliecloud])
 AC_PREREQ([2.69])
@@ -15,7 +18,9 @@ AC_CONFIG_SRCDIR([bin/ch-run.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([misc/m4])
 
+AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 AS_CASE([$host_os],
   [linux*], [],
   [*],      [AC_MSG_ERROR([Linux is the only supported OS; see issue @%:@42.])]
@@ -68,11 +73,11 @@ AC_CONFIG_FILES([Makefile
                  packaging/Makefile
                  test/Makefile])
 
-# Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
-AC_PROG_CC
 
-# Set up CFLAGS.
-ch_cflags='-std=c99 -Wpedantic -Wall'
+### Options ##################################################################
+
+# Note: Variables must match option, e.g. --disable-foo-bar => enable_foo_bar.
+# Note: --with-sphinx-build provided by AX_WITH_PROG() below.
 
 AC_ARG_ENABLE([buggy-build],
   AS_HELP_STRING(
@@ -85,35 +90,45 @@ AC_ARG_ENABLE([buggy-build],
   )],
   [use_werror=yes])
 
-AC_MSG_NOTICE([use_werror: $use_werror])
-AS_IF([test $use_werror = yes], [ch_cflags+=' -Werror'])
+AC_ARG_ENABLE([bundled-lark],
+  AS_HELP_STRING([--disable-bundled-lark],
+                 [use system Lark (not recommended; see docs!)]),
+  [], [enable_bundled_lark=yes])
 
-AX_CHECK_COMPILE_FLAG([$ch_cflags], [
-  CFLAGS+=" $ch_cflags"
-], [
-  AC_MSG_ERROR([no suitable C99 compiler found])
-])
-AS_IF([test "$CC" = icc],
-      [AC_MSG_ERROR([icc not supported (see PR @%:@481)])])
+AC_ARG_ENABLE([ch-image],
+  AS_HELP_STRING([--disable-ch-image],
+                 [ch-image unprivileged builder & image manager]),
+  [], [enable_ch_image=yes])
 
+AC_ARG_ENABLE([html],
+  AS_HELP_STRING([--disable-html], [HTML documentation]),
+  [], [enable_html=yes])
 
-## Libraries
+AC_ARG_ENABLE([man],
+  AS_HELP_STRING([--disable-man], [man pages]),
+  [], [enable_man=yes])
 
-# Need pthreads for ch-run --join.
-AX_PTHREAD
+AC_ARG_ENABLE([test],
+  AS_HELP_STRING([--disable-test], [test suite]),
+  [], [enable_test=yes])
 
-# Docs recommend AC_SEARCH_LIBS, but I couldn't get it to not put "-lrt" in
-# LIBS. We only need it for ch-run.
-AC_CHECK_LIB([rt], [shm_open], [LIBRT=-lrt], [
-  AC_MSG_ERROR([shm_open(3) not found])
-])
-AC_SUBST([LIBRT])
-
-
-## Options
-
-# Note: Variables must match option, e.g. --disable-foo-bar => enable_foo_bar.
-# Note: --with-sphinx-build provided by AX_WITH_PROG() below.
+AC_ARG_WITH([libsquashfuse],
+  AS_HELP_STRING([--with-libsquashfuse=foo], [foo]))
+AS_CASE([$with_libsquashfuse],
+  [yes], # explicit “yes”
+    [want_libsquashfuse=yes
+     need_libsquashfuse=yes],
+  [no],  # explicit “no”
+    [want_libsquashfuse=no
+     need_libsquashfuse=no],
+  [''],  # option not specified
+    [want_libsquashfuse=yes
+     need_libsquashfuse=no],
+  [*],   # explicit path to libsquashfuse install
+    [want_libsquashfuse=yes
+     need_libsquashfuse=yes
+     lib_libsquashfuse=$with_libsquashfuse/lib
+     inc_libsquashfuse=$with_libsquashfuse/include])
 
 AC_ARG_WITH([python],
   AS_HELP_STRING(
@@ -130,29 +145,8 @@ AC_ARG_WITH([sphinx-python],
     [sphinx_python="$withval"],
     [sphinx_python=''])
 
-AC_ARG_ENABLE([html],
-  AS_HELP_STRING([--disable-html], [HTML documentation]),
-  [], [enable_html=yes])
 
-AC_ARG_ENABLE([man],
-  AS_HELP_STRING([--disable-man], [man pages]),
-  [], [enable_man=yes])
-
-AC_ARG_ENABLE([test],
-  AS_HELP_STRING([--disable-test], [test suite]),
-  [], [enable_test=yes])
-
-AC_ARG_ENABLE([ch-image],
-  AS_HELP_STRING([--disable-ch-image],
-                 [ch-image unprivileged builder & image manager]),
-  [], [enable_ch_image=yes])
-
-AC_ARG_ENABLE([bundled-lark],
-  AS_HELP_STRING([--disable-bundled-lark],
-                 [use system Lark (not recommended; see docs!)]),
-  [], [enable_bundled_lark=yes])
-
-## Feature test macros
+### Feature test macros ######################################################
 
 # Macro to validate executable versions. Arguments:
 #
@@ -210,7 +204,34 @@ AC_DEFUN([CH_CHECK_VERSION], [
 ])
 
 
-## Feature tests - build time
+### C compiler ###############################################################
+
+# Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
+AC_PROG_CC
+
+# Set up CFLAGS.
+ch_cflags='-std=c99 -Wpedantic -Wall'
+AS_IF([test -n "$lib_libsquashfuse"],
+      [ch_cflags+=" -I$inc_libsquashfuse -L$lib_libsquashfuse"])
+AS_IF([test $use_werror = yes],
+      [ch_cflags+=' -Werror'])
+
+AX_CHECK_COMPILE_FLAG([$ch_cflags], [
+  CFLAGS+=" $ch_cflags"
+], [
+  AC_MSG_ERROR([no suitable C99 compiler found])
+])
+AS_IF([test "$CC" = icc],
+      [AC_MSG_ERROR([icc not supported (see PR @%:@481)])])
+
+
+### ch-run required ##########################################################
+
+# Only ch-run needs any kind of interesting library stuff; this variable holds
+# the library arguments we need. This also requires us to use AC_CHECK_LIB
+# instead of the (recommended by docs) AC_SEARCH_LIBS, because that adds
+# things to LIBS, which we don't want because it's applied to all executables.
+CH_RUN_LIBS=
 
 # asprintf(3)
 #
@@ -236,13 +257,143 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
   [AC_MSG_RESULT([no])
    AC_MSG_ERROR([asprintf() not found, and we have no workaround; see config.log.])])
 
-#AC_CHECK_FUNCS(asprintfxxx, [], [
-#  AC_MSG_ERROR([asprintf() not found. Please report this bug.])])
+# pthreads; needed for "ch-run --join".
+AX_PTHREAD
+
+# POSIX IPC lives in librt.
+AC_CHECK_LIB([rt], [shm_open], [CH_RUN_LIBS="-lrt $CH_RUN_LIBS"], [
+  AC_MSG_ERROR([shm_open(3) not found])
+])
+
+# User namespaces
+AC_MSG_CHECKING([if in chroot])  # https://unix.stackexchange.com/a/14346
+AS_IF([test    "$(awk '$5=="/" {print $1}' </proc/1/mountinfo)" \
+            != "$(awk '$5=="/" {print $1}' </proc/$$/mountinfo)" ],
+      [chrooted=yes],
+      [chrooted=no])
+AC_MSG_RESULT($chrooted)
+AC_MSG_CHECKING([if user+mount namespaces work])
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #define _GNU_SOURCE
+    #include <sched.h>
+
+    int main(void)
+    {
+       if (unshare(CLONE_NEWNS|CLONE_NEWUSER))
+          return 1;  // syscall failed
+       else
+          return 0;  // syscall succeeded
+    }
+  ]])],
+  [have_userns=yes],
+  [have_userns=no],
+  [AC_MSG_ERROR([cross-compilation not supported])])
+AC_MSG_RESULT($have_userns)
+
+
+### SquashFS #################################################################
+
+# SquashFS Tools
+vmin_mksquashfs=4.2  # CentOS 7
+AC_CHECK_PROG([MKSQUASHFS], [mksquashfs], [mksquashfs])
+CH_CHECK_VERSION([MKSQUASHFS], [$vmin_mksquashfs],
+                 [-version | head -1 | cut -d' ' -f3])
+
+# SquashFUSE executables
+vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
+AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
+CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
+                 [--help 2>&1 | head -1 | cut -d' ' -f2])
+
+# libfuse3
+AC_CHECK_LIB([fuse3], [fuse_set_signal_handlers],
+  [have_libfuse3=yes],
+  [have_libfuse3=no])
+
+# libsquashfuse
+AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount],
+  [have_libsquashfuse_ll=yes],
+  [have_libsquashfuse_ll=no])
+AC_CHECK_HEADER([squashfuse/ll.h],
+  [have_ll_h=yes],
+  [have_ll_h=no],
+  [#define SQFS_CONFIG_H
+   #define FUSE_USE_VERSION 32
+  ])  # see comment in ch_fuse.c regarding these defines
+
+# Should we link with libsquashfuse?
+AS_IF([   test $want_libsquashfuse = yes \
+       && test $have_libfuse3 = yes \
+       && test $have_libsquashfuse_ll = yes \
+       && test $have_ll_h = yes],
+      [have_libsquashfuse=yes
+       CH_RUN_LIBS="-lsquashfuse_ll -lfuse3 -Wl,-rpath=$lib_libsquashfuse $CH_RUN_LIBS"],
+      [have_libsquashfuse=no])
+AS_IF([   test $need_libsquashfuse = yes \
+       && test $have_libsquashfuse = no],
+      [AC_MSG_ERROR([libsquashfuse requested but not found])])
+
+# Any SquashFUSE support at all?
+AS_IF([   test -n "$SQUASHFUSE" \
+       || test $have_libsquashfuse = yes],
+      [have_any_squashfuse=yes],
+      [have_any_squashfuse=no])
+
+
+### ch-image #################################################################
+
+# Python
+vmin_python=3.6  # NOTE: Keep in sync with lib/charliecloud.py
+AC_MSG_CHECKING([if "$PYTHON_SHEBANG" starts with slash])
+AS_CASE([$PYTHON_SHEBANG],
+  [/*], [AC_MSG_RESULT([ok])],
+  [*],  [AC_MSG_RESULT([no])
+         AC_MSG_ERROR([--with-python: must start with slash])])
+python="${PYTHON_SHEBANG#/usr/bin/env }"                # use shell to find it
+AS_CASE([$python],
+  [/*], [PYTHON="$python"],                              # absolute
+  [*],  [AC_CHECK_PROG([PYTHON], [$python], [$python])]  # verify it's in $PATH
+)
+CH_CHECK_VERSION([PYTHON], [$vmin_python],
+                 [--version | head -1 | cut -d' ' -f2])
+
+# Python module "requests"
+vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
+AS_IF([test -n "$PYTHON"], [
+  AC_MSG_CHECKING([for requests module])
+  cat <<EOF | $PYTHON_SHEBANG
+import sys
+try:
+   import requests
+except Exception:
+   sys.exit(1)
+EOF
+  AS_IF([test $? -eq 0],
+    [REQUESTS=$PYTHON; have_requests=yes],
+    [REQUESTS=;         have_requests=no])
+  AC_MSG_RESULT($have_requests)
+  CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
+    [-c 'import requests; print(requests.__version__)'])
+])
+
+# Check for bundled Lark; we do not verify or report version. Note this
+# assumes that $PWD is the top of the source tree. I don't believe anything
+# else is supported (see issue #820), but it's brittle.
+AC_MSG_CHECKING([for bundled Lark module])
+AS_IF([test -e ./lib/lark-*.dist-info],
+      [lark_status=bundled],
+      [lark_status=external])
+AC_MSG_RESULT($lark_status)
+AS_IF([   test $enable_bundled_lark = yes \
+       && test $lark_status != bundled],
+       [AC_MSG_ERROR([bundled Lark not found; see docs])])
+
+
+### Docs #####################################################################
 
 # Sphinx
 vmin_sphinx=1.2.3
 AX_WITH_PROG([SPHINX], [sphinx-build])
-AC_SUBST([SPHINX])
 CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
                  [--version | sed -E 's/sphinx-build //'])
 
@@ -289,18 +440,22 @@ EOF
     [-c 'import sphinx_rtd_theme; print(sphinx_rtd_theme.__version__)'])
 ], [RTD_VERSION_NOTE='moot b/c no sphinx-build'])
 
+# What should we build?
+AS_IF([   test -n "$SPHINX" \
+       && test -n "$DOCUTILS" \
+       && test -n "$RTD" \
+       && (test "$enable_man" = yes || test "$enable_html" = yes)],
+       [have_docs=yes],
+       [have_docs=no])
+AS_IF([   test $enable_html = yes && test $have_docs = no],
+      [AC_MSG_WARN([forcing --disable-html: no suitable sphinx-build])
+       enable_html=no])
+AS_IF([   test $enable_man = yes && test $have_docs = no],
+      [AC_MSG_WARN([forcing --disable-man: no suitable sphinx-build])
+       enable_man=no])
 
-## Feature tests - run time
 
-# Bash
-vmin_bash=4.1
-AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
-CH_CHECK_VERSION([_BASH], [$vmin_bash], [--version | head -1 | cut -d' ' -f4])
-
-# Bats
-vmin_bats=0.4.0
-AC_CHECK_PROG([BATS], [bats], [bats])
-CH_CHECK_VERSION([BATS], [$vmin_bats], [--version | cut -d' ' -f2])
+### Glue scripts #############################################################
 
 # Buildah
 vmin_buildah=1.11.2
@@ -311,12 +466,6 @@ CH_CHECK_VERSION([BUILDAH], [$vmin_buildah], [--version | cut -d' ' -f3])
 vmin_docker=17.03
 AC_CHECK_PROG([DOCKER], [docker], [docker])
 CH_CHECK_VERSION([DOCKER], [$vmin_docker], [-v | tr -d , | cut -d' ' -f3])
-
-# mksquashfs
-vmin_mksquashfs=4.2  # CentOS 7
-AC_CHECK_PROG([MKSQUASHFS], [mksquashfs], [mksquashfs])
-CH_CHECK_VERSION([MKSQUASHFS], [$vmin_mksquashfs],
-                 [-version | head -1 | cut -d' ' -f3])
 
 # mktemp - no version
 AC_CHECK_PROG([MKTEMP], [mktemp], [mktemp])
@@ -334,40 +483,18 @@ AS_IF([test -n "$NVIDIA_CLI"],
   [have_nvidia_libs=no])
 AC_MSG_RESULT($have_nvidia_libs)
 
-# Python
-vmin_python=3.6  # NOTE: Keep in sync with lib/charliecloud.py
-AC_MSG_CHECKING([if "$PYTHON_SHEBANG" starts with slash])
-AS_CASE([$PYTHON_SHEBANG],
-  [/*], [AC_MSG_RESULT([ok])],
-  [*],  [AC_MSG_RESULT([no])
-         AC_MSG_ERROR([--with-python: must start with slash])])
-AC_SUBST([PYTHON_SHEBANG])
-python="${PYTHON_SHEBANG#/usr/bin/env }"                # use shell to find it
-AS_CASE([$python],
-  [/*], [PYTHON="$python"],                              # absolute
-  [*],  [AC_CHECK_PROG([PYTHON], [$python], [$python])]  # verify it's in $PATH
-)
-CH_CHECK_VERSION([PYTHON], [$vmin_python],
-                 [--version | head -1 | cut -d' ' -f2])
 
-# Python module "requests"
-vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
-AS_IF([test -n "$PYTHON"], [
-  AC_MSG_CHECKING([for requests module])
-  cat <<EOF | $PYTHON_SHEBANG
-import sys
-try:
-   import requests
-except Exception:
-   sys.exit(1)
-EOF
-  AS_IF([test $? -eq 0],
-    [REQUESTS=$PYTHON; have_requests=yes],
-    [REQUESTS=;         have_requests=no])
-  AC_MSG_RESULT($have_requests)
-  CH_CHECK_VERSION([REQUESTS], [$vmin_requests],
-    [-c 'import requests; print(requests.__version__)'])
-])
+### Test suite ###############################################################
+
+# Bash
+vmin_bash=4.1
+AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
+CH_CHECK_VERSION([_BASH], [$vmin_bash], [--version | head -1 | cut -d' ' -f4])
+
+# Bats
+vmin_bats=0.4.0
+AC_CHECK_PROG([BATS], [bats], [bats])
+CH_CHECK_VERSION([BATS], [$vmin_bats], [--version | cut -d' ' -f2])
 
 # ShellCheck
 vmin_shellcheck=0.6.0
@@ -375,12 +502,6 @@ AC_CHECK_PROG([SHELLCHECK], [shellcheck], [shellcheck])
 # https://stackoverflow.com/questions/6022384
 CH_CHECK_VERSION([SHELLCHECK], [$vmin_shellcheck],
                  [--version | sed -n '2{s/^version: //;p;q}'])
-
-# SquashFUSE
-vmin_squashfuse=0.1.100  # Ubuntu 16.04 (Xenial). CentOS 7 has 0.1.102.
-AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
-CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
-                 [--help 2>&1 | head -1 | cut -d' ' -f2])
 
 # sudo, generic
 # Avoids prompting for password; see https://superuser.com/a/1183480.
@@ -393,67 +514,59 @@ CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
 #      [have_sudo=no])
 #AC_MSG_RESULT($have_sudo)
 
-# tar (yes, we can confidently assume tar, but this makes the report clearer)
-AC_CHECK_PROG([TAR], [tar], [tar])
-
-# User namespaces
-AC_MSG_CHECKING([if in chroot])  # https://unix.stackexchange.com/a/14346
-AS_IF([test    "$(awk '$5=="/" {print $1}' </proc/1/mountinfo)" \
-            != "$(awk '$5=="/" {print $1}' </proc/$$/mountinfo)" ],
-      [chrooted=yes],
-      [chrooted=no])
-AC_MSG_RESULT($chrooted)
-AC_MSG_CHECKING([if user+mount namespaces work])
-AC_RUN_IFELSE([AC_LANG_SOURCE([[
-    #define _GNU_SOURCE
-    #include <sched.h>
-
-    int main(void)
-    {
-       if (unshare(CLONE_NEWNS|CLONE_NEWUSER))
-          return 1;  // syscall failed
-       else
-          return 0;  // syscall succeeded
-    }
-  ]])],
-  [have_userns=yes
-   AC_DEFINE(HAVE_USERNS, 1, [user+mount namespaces work])],
-  [have_userns=no],
-  [AC_MSG_ERROR([cross-compilation not supported])])
-AC_MSG_RESULT($have_userns)
-
 # Wget
 vmin_wget=1.11  # 2008
 AC_CHECK_PROG([WGET], [wget], [wget])
 CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 
 
-## Adjust build options given what we have available.
+### Output variables #########################################################
 
-AS_IF([   test -n "$SPHINX" \
-       && test -n "$DOCUTILS" \
-       && test -n "$RTD" \
-       && (test "$enable_man" = yes || test "$enable_html" = yes)],
-       [have_docs=yes],
-       [have_docs=no])
-
-AS_IF([   test $enable_html = yes && test $have_docs = no],
-      [AC_MSG_WARN([forcing --disable-html: no suitable sphinx-build])
-       enable_html=no])
-
-AS_IF([   test $enable_man = yes && test $have_docs = no],
-      [AC_MSG_WARN([forcing --disable-man: no suitable sphinx-build])
-       enable_man=no])
-
-# Check if bundled Lark is installed in the source directory. Currently we
-# don't do anything other than report.
+# Autotools output variables are ... interesting. This is my best
+# understanding:
 #
-# Note this assumes that $PWD is the top of the source tree. I don't believe
-# anything else is supported (e.g., see issue #820), but it's brittle.
-AS_IF([   test -f ./lib/lark/lark.py],
-      [lark_installed=yes], [lark_installed=no])
-
-## Set up Makefile conditionals.
+#   1. AC_SUBST(foo) does two things in Makefile.am:
+#
+#      a. Replace the string "@foo@" with the value of foo anywhere it
+#         appears.
+#
+#      b. Set the Make variable foo to the same value, i.e., add "foo = @foo@"
+#         which is then substituted as in item 1.
+#
+#      So this is how you transfer a variable from configure to Make.
+#
+#   2. AC_SUBST_NOTMAKE(foo) does only (a).
+#
+#   3. AM_CONDITIONAL(foo, test) creates a variable for use in Automake
+#      conditionals. E.g. if you say in configure.ac:
+#
+#        AM_CONDITIONAL([foo], [test $foo = yes])
+#
+#      and then in Makefile.am:
+#
+#        if foo
+#            ... bar ...
+#        else
+#            ... baz ...
+#        endif
+#
+#      then if the configure variable $foo is "yes", lines "... bar ..." will
+#      be placed in the Makefile; otherwise, "... baz ..." will be included.
+#
+#      This is how you include and exclude portions of the Makefile.am from
+#      the output Makefile. It *does not* create a Make variable.
+#
+#   4. AC_DEFINE(foo, value, comment) #define's the preprocessor symbol foo to
+#      value in config.h. (Supposedly value and comment are optional but I got
+#      warnings doing that.) So this is how you make configure values
+#      available in C code (as macros, not variables). Typically you would
+#      define something or not (allowing #ifdef), rather than always define to
+#      true or false (which would require #if).
+#
+#   5. AC_DEFINE_UNQUOTES adds some extra transformations to the above. I
+#      didn't quite follow.
+#
+# Below are all the variables we want available outside configure.
 
 AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
@@ -461,8 +574,16 @@ AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
 AM_CONDITIONAL([ENABLE_LARK], [test $enable_bundled_lark = yes])
 
+AC_SUBST([CH_RUN_LIBS])
+AC_SUBST([PYTHON_SHEBANG])
+AC_SUBST([SPHINX])
 
-## Prepare report.
+AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
+AS_IF([test $have_libsquashfuse = yes],
+      [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
+
+
+### Prepare report ###########################################################
 
 # FIXME: Should replace all these with macros?
 
@@ -503,12 +624,7 @@ AS_IF([   test $have_any_builder = yes],
       [have_ch_build=yes],
       [have_ch_build=no])
 
-AS_IF([   test -n "$TAR"],
-      [have_pack_tar=yes],
-      [have_pack_tar=no])
-
-AS_IF([   test $have_any_builder = yes \
-       && test $have_pack_tar = yes],
+AS_IF([   test $have_any_builder = yes],
       [have_builder_to_tar=yes],
       [have_builder_to_tar=no])
 
@@ -518,14 +634,6 @@ AS_IF([   test $have_any_builder = yes \
       [have_pack_squash=no])
 
 # running containers
-
-AS_IF([   test -n "$TAR"],
-      [have_unpack_tar=yes],
-      [have_unpack_tar=no])
-
-AS_IF([   test -n "$SQUASHFUSE"],
-      [have_ch_mount=yes],
-      [have_ch_mount=no])
 
 AS_IF([   test -n "$NVIDIA_CLI" \
        && test $have_nvidia_libs = yes],
@@ -543,15 +651,12 @@ AS_IF([   test $enable_test = yes \
       [have_tests_basic=no])
 
 AS_IF([   test $have_tests_basic = yes \
-       && test $have_any_builder = yes \
-       && test $have_pack_tar = yes \
-       && test $have_unpack_tar = yes],
+       && test $have_any_builder = yes],
       [have_tests_tar=yes],
       [have_tests_tar=no])
 
 AS_IF([   test $have_tests_tar = yes \
-       && test $have_pack_squash = yes \
-       && test $have_ch_mount = yes],
+       && test $have_pack_squash = yes],
       [have_tests_squash=yes],
       [have_tests_squash=no])
 
@@ -563,7 +668,8 @@ AS_IF([   test $have_tests_squash = yes \
       [have_tests_all=yes],
       [have_tests_all=no])
 
-## Done
+
+### Write output files #######################################################
 
 AC_OUTPUT
 
@@ -613,8 +719,11 @@ Building Charliecloud
   required:
     C99 compiler ... ${CC} ${CC_VERSION}
 
-  bundled Lark: ${enable_bundled_lark}
-    lark.py under source dir ... ${lark_installed}
+  ch-run(1) internal SquashFS mounting: ${have_libsquashfuse}
+    enabled ... ${want_libsquashfuse}
+    libfuse3 ... ${have_libfuse3}
+    libsquashfuse_ll ... ${have_libsquashfuse_ll}
+    ll.h header ... ${have_ll_h}
 
   documentation: ${have_docs}
     sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
@@ -632,6 +741,7 @@ Building images via our wrappers
     enabled ... ${enable_ch_image}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
     Python in shebang ≥ $vmin_python ... ${PYTHON_VERSION_NOTE}
+    "lark" module ... ${lark_status}
     "requests" module ≥ $vmin_requests ... ${REQUESTS_VERSION_NOTE}
     ch-run(1) ... ${have_ch_run}
 
@@ -648,7 +758,6 @@ Managing container images
 
   pack images from builder storage to tarball: ${have_builder_to_tar}
     at least one builder ... ${have_any_builder}
-    tar(1) ... ${TAR:-not found}
 
   pack images from builder storage to SquashFS: ${have_pack_squash}
     at least one builder ... ${have_any_builder}
@@ -663,11 +772,9 @@ Running containers
   ch-run(1): ${have_ch_run}
     user+mount namespaces ... ${have_userns}$chroot_warning
 
-  unpack image tarballs: ${have_unpack_tar}
-    tar(1) ... ${TAR:-not found}
-
-  ch-mount(1) and ch-umount(1) SquashFS images: ${have_ch_mount}
-    SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION_NOTE}
+  run SquashFS images: ${have_any_squashfuse}
+    manual mount with SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION_NOTE}
+    internal mount with libsquashfuse ... ${have_libsquashfuse}
 
   inject nVidia GPU libraries: ${have_nvidia}
     nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION_NOTE}
@@ -687,13 +794,11 @@ Test suite
     basic tests ... ${have_tests_basic}
     any builder above ... ${have_any_builder}
     access to Docker Hub or mirror ... assumed yes
-    pack images with tar ... ${have_pack_tar}
-    unpack images with tar ... ${have_unpack_tar}
 
   recommended tests with SquashFS: ${have_tests_squash}
     recommended tests with tar ... ${have_tests_tar}
     pack images with SquashFS ... ${have_pack_squash}
-    mount/unmount SquashFS images ... ${have_ch_mount}
+    internal SquashFS mounting ... ${have_libsquashfuse}
 
   complete test suite: ${have_tests_all}
     recommended tests with SquashFS ... ${have_tests_squash}

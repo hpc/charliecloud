@@ -155,8 +155,8 @@ it into containers by default).
 
 While you can currently poke around in the storage directory and find unpacked
 images runnable with :code:`ch-run`, this is not a supported use case. The
-supported workflow uses :code:`ch-builder2tar` or :code:`ch-builder2squash` to
-obtain a packed image; see the tutorial for details.
+supported workflow uses :code:`ch-convert` to obtain a packed image; see the
+tutorial for details.
 
 The storage directory format changes on no particular schedule. Often
 :code:`ch-image` is able to upgrade the directory; however, downgrading is not
@@ -401,6 +401,7 @@ variables are passed through in the same way:
 .. code-block:: sh
 
    SSH_AUTH_SOCK
+   USER
 
 Finally, these variables are also pre-defined but are unrelated to the host
 environment:

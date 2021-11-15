@@ -8,6 +8,9 @@ Synopsis
 Description
 ===========
 
+.. warning:: This script is deprecated in favor of :code:`ch-convert`. It will
+             be removed in the next release.
+
 Build a Docker image named :code:`TAG` described by a Dockerfile (default
 :code:`$CONTEXT/Dockerfile`) and unpack it into :code:`OUTDIR/TAG`. This is a
 wrapper for :code:`ch-build`, :code:`ch-builder2tar`, and :code:`ch-tar2dir`;

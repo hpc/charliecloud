@@ -40,6 +40,9 @@ int verbose;
 /* Path to host temporary directory. Set during command line processing. */
 char *host_tmp = NULL;
 
+/* Username of invoking users. Set during command line processing. */
+char *username = NULL;
+
 
 /** Function prototypes (private) **/
 
@@ -160,6 +163,9 @@ void msg(int level, const char *file, int line, int errno_,
       return;
 
    fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
+
+   if (level <= 1 && fmt != NULL)
+      fprintf(stderr, "%s: ", VERBOSE_LEVELS[level]);
 
    if (fmt == NULL)
       fputs(VERBOSE_LEVELS[level], stderr);

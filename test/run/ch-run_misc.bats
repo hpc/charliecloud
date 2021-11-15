@@ -18,8 +18,7 @@ load ../common
     scope quick
     run ch-run "$ch_timg" sh <<EOF
 set -e
-test -w /WEIRD_AL_YANKOVIC
-dd if=/dev/zero bs=1 count=1 of=/WEIRD_AL_YANKOVIC
+dd if=/dev/zero bs=1 count=1 of=/out
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
@@ -29,6 +28,7 @@ EOF
 
 @test 'mount image read-write' {
     scope quick
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
 }
@@ -107,17 +107,16 @@ EOF
     # shellcheck disable=SC2016
     [[ $output = *'cannot find home directory: is $HOME set?'* ]]
 
-    # warn if $USER not set
+    # puke if $USER not set
     user_tmp=$USER
     unset USER
     # shellcheck disable=SC2016
     run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export USER=$user_tmp
     echo "$output"
-    [[ $status -eq 0 ]]
+    [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
-    [[ $output = *'$USER not set; cannot rewrite $HOME'* ]]
-    [[ $output = *"$HOME"* ]]
+    [[ $output = *'$USER not set'* ]]
 }
 
 
@@ -203,6 +202,7 @@ EOF
 
 @test 'ch-run --bind' {
     scope quick
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
 
     # set up sources
     mkdir -p "${ch_timg}/${ch_imgdir}/bind1"
@@ -265,6 +265,7 @@ EOF
 
 @test 'ch-run --bind errors' {
     scope quick
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
 
     # no argument to --bind
     run ch-run "$ch_timg" -b
@@ -544,9 +545,11 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
+
 @test 'ch-run --set-env from Dockerfile' {
     scope standard
     prerequisites_ok argenv
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'directory only: issue #1219'
     img=${ch_imgdir}/argenv
 
     output_expected=$(cat <<'EOF'
@@ -764,6 +767,83 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
+@test 'ch-run: internal SquashFUSE mounting' {
+    scope standard
+    [[ $CH_TEST_PACK_FMT == squash-mount ]] || skip 'squash-mount format only'
+
+    ch_mnt="/var/tmp/${USER}.ch/mnt"
+
+    # default mount point
+    run ch-run -v "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"newroot: (null)"* ]]
+    [[ $output = *"using default mount point: ${ch_mnt}"* ]]
+    [[ -d ${ch_mnt} ]]
+    rmdir "${ch_mnt}"
+
+    # -m option
+    mountpt="${BATS_TMPDIR}/sqfs_tmpdir"
+    [[ -e $mountpt ]] || mkdir "$mountpt"
+    run ch-run -m "$mountpt" -v "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"newroot: ${mountpt}"* ]]
+    rmdir "$mountpt"
+
+    # -m with non-sqfs img
+    img=${BATS_TMPDIR}/dirimg
+    ch-convert -i squash "$ch_timg" "$img"
+    run ch-run -m /doesnotexist -v "$img" -- /bin/true
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"warning: --mount invalid with directory image, ignoring"* ]]
+    [[ $output = *"newroot: ${img}"* ]]
+    rm -Rf --one-file-system "$img"
+}
+
+@test 'ch-run: internal SquashFUSE errors' {
+    scope standard
+    [[ $CH_TEST_PACK_FMT == squash-mount ]] || skip 'squash-mount format only'
+
+    # mount point is empty string
+    run ch-run --mount= "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -ne 0 ]]  # exits with status of 139
+    [[ $output = *"mount point can't be empty string"* ]]
+
+    # mount point doesn't exist
+    run ch-run -m /doesnotexist "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -ne 0 ]]  # exits with status of 139
+    [[ $output = *"can't stat mount point: /doesnotexist: No such file or directory"* ]]
+
+    # mount point is a file
+    run ch-run -m ./fixtures/README "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'not a directory: ./fixtures/README'* ]]
+
+    # image is file but not sqfs
+    run ch-run -vv ./fixtures/README -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'magic expected: 6873 7173; actual: 596f 7520'* ]]
+    [[ $output = *'unknown image type: ./fixtures/README'* ]]
+
+    # image is a broken sqfs
+    sq_tmp="$BATS_TMPDIR"/b0rken.sqfs
+    cp "$ch_timg" "$sq_tmp"
+    # corrupt inode count (bytes 4–7, 0-indexed)
+    printf '\xED\x5F\x84\x00' | dd of="$sq_tmp" bs=1 count=4 seek=4 conv=notrunc
+    ls -l "$ch_timg" "$sq_tmp"
+    run ch-run -vv "$sq_tmp" -- ls -l /
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'magic expected: 6873 7173; actual: 6873 7173'* ]]
+    [[ $output = *"can't open SquashFS: ${sq_tmp}"* ]]
+    rm "$sq_tmp"
+}
 
 @test 'broken image errors' {
     scope standard

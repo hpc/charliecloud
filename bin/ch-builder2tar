@@ -10,6 +10,7 @@ Flatten a builder image into a Charliecloud image tarball.
 Usage:
 
   $ $(basename "$0") [-b BUILDER] [--nocompress] IMAGE OUTDIR
+${deprecated_convert}
 EOF
 )
 
@@ -180,3 +181,5 @@ else
     rm "$tar"
     ls -lh "$tar_gzipped"
 fi
+
+deprecated_convert_warn

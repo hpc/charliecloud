@@ -31,14 +31,14 @@ ch-builder2tar.rst \
 ch-build.rst \
 ch-checkns_desc.rst \
 ch-checkns.rst \
+ch-convert_desc.rst \
+ch-convert.rst \
 ch-dir2squash_desc.rst \
 ch-dir2squash.rst \
 ch-fromhost_desc.rst \
 ch-fromhost.rst \
 ch-image_desc.rst \
 ch-image.rst \
-ch-mount_desc.rst \
-ch-mount.rst \
 ch-pull2dir_desc.rst \
 ch-pull2dir.rst \
 ch-pull2tar_desc.rst \
@@ -53,8 +53,6 @@ ch-tar2dir_desc.rst \
 ch-tar2dir.rst \
 ch-test_desc.rst \
 ch-test.rst \
-ch-umount_desc.rst \
-ch-umount.rst \
 command-usage.rst \
 conf.py \
 dev.rst \
@@ -62,6 +60,7 @@ faq.rst \
 favicon.ico \
 index.rst \
 install.rst \
+loc.rst \
 logo-sidebar.png \
 make-deps-overview \
 man/README \
@@ -78,18 +77,17 @@ man/ch-build2dir.1 \
 man/ch-builder2squash.1 \
 man/ch-builder2tar.1 \
 man/ch-checkns.1 \
+man/ch-convert.1 \
 man/ch-dir2squash.1 \
 man/ch-fromhost.1 \
 man/ch-image.1 \
-man/ch-mount.1 \
 man/ch-pull2dir.1 \
 man/ch-pull2tar.1 \
 man/ch-run.1 \
 man/ch-run-oci.1 \
 man/ch-ssh.1 \
 man/ch-tar2dir.1 \
-man/ch-test.1 \
-man/ch-umount.1
+man/ch-test.1
 endif
 
 if ENABLE_HTML
@@ -176,6 +174,7 @@ if ENABLE_HTML
 	      $(BUILDDIR)/html/charliecloud.html \
 	      $(BUILDDIR)/html/ch-*.html \
 	      $(BUILDDIR)/html/bugs.html \
+	      $(BUILDDIR)/html/loc.html \
 	      $(BUILDDIR)/html/objects.inv \
 	      $(BUILDDIR)/html/see_also.html
 endif

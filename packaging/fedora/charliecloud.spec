@@ -36,15 +36,15 @@ For more information: https://hpc.github.io/charliecloud
 
 %package builder
 Summary:       Charliecloud container image building tools
+License:       ASL 2.0 and MIT
 BuildArch:     noarch
 BuildRequires: python3-devel
-BuildRequires: python%{python3_pkgversion}-lark-parser
 BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
-Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
 Obsoletes:     %{name}-builders
+Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 0.11.3
 
 %description builder
 This package provides ch-image, Charliecloud's completely unprivileged container
@@ -85,7 +85,6 @@ CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
 %configure --docdir=%{_pkgdocdir} \
            --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
-           --disable-bundled-lark \
 %if 0%{?el7}
            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
@@ -133,31 +132,29 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_bindir}/ch-builder2squash
 %{_bindir}/ch-builder2tar
 %{_bindir}/ch-checkns
+%{_bindir}/ch-convert
 %{_bindir}/ch-dir2squash
 %{_bindir}/ch-fromhost
-%{_bindir}/ch-mount
 %{_bindir}/ch-pull2dir
 %{_bindir}/ch-pull2tar
 %{_bindir}/ch-run
 %{_bindir}/ch-run-oci
 %{_bindir}/ch-ssh
-%{_bindir}/ch-umount
 %{_bindir}/ch-tar2dir
 %{_mandir}/man1/ch-build.1*
 %{_mandir}/man1/ch-build2dir.1*
 %{_mandir}/man1/ch-builder2squash.1*
 %{_mandir}/man1/ch-builder2tar.1*
 %{_mandir}/man1/ch-checkns.1*
+%{_mandir}/man1/ch-convert.1*
 %{_mandir}/man1/ch-dir2squash.1*
 %{_mandir}/man1/ch-fromhost.1*
-%{_mandir}/man1/ch-mount.1*
 %{_mandir}/man1/ch-pull2dir.1*
 %{_mandir}/man1/ch-pull2tar.1*
 %{_mandir}/man1/ch-run.1*
 %{_mandir}/man1/ch-run-oci.1*
 %{_mandir}/man1/ch-ssh.1*
 %{_mandir}/man1/ch-tar2dir.1*
-%{_mandir}/man1/ch-umount.1*
 %{_mandir}/man7/charliecloud.7*
 %{_prefix}/lib/%{name}/base.sh
 %{_prefix}/lib/%{name}/contributors.bash
@@ -170,6 +167,9 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_prefix}/lib/%{name}/build.py
 %{_prefix}/lib/%{name}/charliecloud.py
 %{_prefix}/lib/%{name}/fakeroot.py
+%{_prefix}/lib/%{name}/lark
+%{_prefix}/lib/%{name}/lark-0.11.3.dist-info
+%{_prefix}/lib/%{name}/lark-stubs
 %{_prefix}/lib/%{name}/misc.py
 %{_prefix}/lib/%{name}/pull.py
 %{_prefix}/lib/%{name}/push.py

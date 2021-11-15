@@ -57,7 +57,8 @@ ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                  # GNU tar, when it thinks it's running as root, tries to
                  # chown(2) and chgrp(2) files to whatever's in the tarball.
-                 "TAR_OPTIONS": "--no-same-owner" }
+                 "TAR_OPTIONS": "--no-same-owner",
+                 "USER": os.environ.get("USER") }
 
 
 ## Main ##
