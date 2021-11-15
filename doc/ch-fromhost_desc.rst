@@ -270,7 +270,7 @@ Inject the Cray-enabled MPI libraries into the image, and then run
   found shared library: /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libirng.so
   found shared library: /opt/gcc/9.3.0/snos/lib64/libgcc_s.so.1
   found shared library: /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libintlc.so.5
-  injecting into image: /var/tmp/openmpi
+  injecting into image: /var/tmp/baz
     rm -f /var/tmp/openmpi/usr/lib64//bind9-export/libopen-rte.so.40
     rm -f /var/tmp/openmpi/usr/lib64/bind9-export/libopen-rte.so.40
     rm -f /var/tmp/openmpi/usr/lib64//bind9-export/libopen-pal.so.40
