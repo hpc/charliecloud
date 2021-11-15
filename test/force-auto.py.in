@@ -240,6 +240,8 @@ class Fedora_26(_Fedora):
    # but the ancient version of dnf it has doesn't fail the transaction when
    # a package fails so we test with 26 instead.
    base = "fedora:26"
+class Fedora_34(_Fedora):
+   base = "fedora:34"
 class Fedora_Latest(_Fedora):
    base = "fedora:latest"
 
@@ -277,7 +279,7 @@ for test in [CentOS_7,
              CentOS_8_Stream,
              RHEL_UBI_8,
              Fedora_26,
-             Fedora_Latest,
+             Fedora_34,  #Fedora_Latest,  # issue #1163
              Debian_9,
              Debian_Latest,
              Ubuntu_16,

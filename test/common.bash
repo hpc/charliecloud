@@ -101,11 +101,6 @@ multiprocess_ok () {
     true
 }
 
-need_squashfs () {
-    command -v mksquashfs > /dev/null 2>&1 || skip "no squashfs-tools found"
-    command -v squashfuse > /dev/null 2>&1 || skip "no squashfuse found"
-}
-
 pedantic_fail () {
     msg=$1
     if [[ -n $ch_pedantic ]]; then
@@ -161,13 +156,6 @@ scope () {
         *)
             exit 1
     esac
-}
-
-squashfs_ready () {
-    if [[ $CH_PACK_FMT != squashfs ]]; then
-        exit 1
-    fi
-    command -v mksquashfs && command -v squashfuse
 }
 
 unpack_img_all_nodes () {

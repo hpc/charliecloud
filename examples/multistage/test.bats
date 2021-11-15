@@ -20,6 +20,7 @@ setup () {
 }
 
 @test "${ch_tag}/files seem OK" {
+    [[ $CH_TEST_PACK_FMT = squash-mount ]] && skip 'need directory image'
     # hello executable itself.
     test -x "${ch_img}/usr/local/bin/hello"
     # Present by default.

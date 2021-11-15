@@ -503,7 +503,7 @@ SHELL ["/doesnotexist", "-c"]
 RUN print("hello")
 EOF
    echo "$output"
-   [[ status -eq 1 ]]
+   [[ $status -eq 1 ]]
    if [[ $CH_BUILDER = ch-image ]]; then
       [[ $output = *"/doesnotexist: No such file or directory"* ]]
    else
@@ -517,7 +517,7 @@ SHELL ["/bin/sh"]
 RUN true
 EOF
    echo "$output"
-   [[ status -ne 0 ]] # different builders use different error exit codes
+   [[ $status -ne 0 ]] # different builders use different error exit codes
    [[ $output = *"/bin/sh: can't open 'true': No such file or directory"* ]]
 
    # test that it works with python3
@@ -527,7 +527,7 @@ SHELL ["/usr/bin/python3", "-c"]
 RUN print ("hello")
 EOF
    echo "$output"
-   [[ status -eq 0 ]]
+   [[ $status -eq 0 ]]
    if [[ $CH_BUILDER = ch-image ]]; then
       [[ $output = *"grown in 3 instructions: tmpimg"* ]]
    else

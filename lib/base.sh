@@ -81,38 +81,6 @@ exist_p () {
     stat "$1" > /dev/null 2>&1
 }
 
-pack_fmt_valid () {
-    case $1 in
-    squash)
-        if ! command -v mksquashfs > /dev/null 2>&1; then
-            echo "can't use squash for packed images: no mksquashfs found" 1>&2
-            exit 1
-        fi
-        ;;
-    tar)
-        if ! command -v tar > /dev/null 2>&1; then
-            echo "can't use tar for packed images: no tar found" 1>&2
-            exit 1
-        fi
-        ;;
-    *)
-        echo "unknown packed image format: $1" 1>&2
-        exit 1
-        ;;
-    esac
-}
-
-pack_fmt_choose () {
-    if [ -z "$CH_PACK_FMT" ]; then
-        if command -v mksquashfs > /dev/null 2>&1; then
-            export CH_PACK_FMT=squash
-        else
-            export CH_PACK_FMT=tar
-        fi
-    fi
-    pack_fmt_valid "$CH_PACK_FMT"
-}
-
 # Try to parse $1 as a common argument. If accepted, either exit (for things
 # like --help) or return success; otherwise, return failure (i.e., not a
 # common argument).
