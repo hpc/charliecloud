@@ -315,20 +315,17 @@ jobs:
           $ch_prefix/from-tarball/bin/ch-run --version
           # Verify uninstall works.
           sudo make uninstall
-          files=$(find ch_prefix/from-tarball | sort)
-          files_expected=$(cat <<EOF
-/var/tmp/from-tarball/
-/var/tmp/from-tarball/bin
-/var/tmp/from-tarball/lib
-/var/tmp/from-tarball/libexec
-/var/tmp/from-tarball/share
-/var/tmp/from-tarball/share/doc
-/var/tmp/from-tarball/share/man
-/var/tmp/from-tarball/share/man1
-/var/tmp/from-tarball/share/man7
-EOF
-)
-          diff -u $files $files_expected
+          diff -u - <(find $ch_prefix/from-tarball | sort) <<'EOF'
+          /var/tmp/from-tarball/
+          /var/tmp/from-tarball/bin
+          /var/tmp/from-tarball/lib
+          /var/tmp/from-tarball/libexec
+          /var/tmp/from-tarball/share
+          /var/tmp/from-tarball/share/doc
+          /var/tmp/from-tarball/share/man
+          /var/tmp/from-tarball/share/man1
+          /var/tmp/from-tarball/share/man7
+          EOF
 
       - name: run test suite (Git WD, quick)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
