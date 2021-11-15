@@ -15,24 +15,20 @@ jobs:
       fail-fast: true  # if any job fails, cancel the rest immediately
       matrix:
         builder: [none, docker, ch-image]
+        pack_fmt: [squash-mount, tar-unpack, squash-unpack]
         keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
-        squashfuse:
-          - external
         include:
           - builder: docker
+            pack_fmt: squash-mount
             keep_sudo: true
-            squashfuse: external
-          - builder: ch-image
-            keep_sudo: false
-            squashfuse: internal
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
       CH_TEST_IMGDIR: /mnt/images
+      CH_TEST_PACK_FMT: ${{ matrix.pack_fmt }}
       CH_TEST_PERMDIRS: /mnt/perms_test /run/perms_test
       ch_prefix: /var/tmp
-      ci_squashfuse: ${{ matrix.squashfuse }}
 
     steps:
       - uses: actions/checkout@v2
@@ -63,8 +59,9 @@ jobs:
 
       - name: print starting environment
         run: |
+          echo builder: ${{ matrix.builder }}
+          echo pack_fmt: ${{ matrix.pack_fmt }}
           echo keep_sudo: ${{ matrix.keep_sudo }}
-          echo squashfuse: ${{ matrix.squashfuse }}
           env | egrep '^(PATH|USER)='
           env | egrep '^(ch|CH)_'
           [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
@@ -119,7 +116,7 @@ jobs:
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
 
       - name: install libsquashfuse
-        if: ${{ matrix.squashfuse == 'internal' }}
+        if: ${{ matrix.pack_fmt == 'squash-mount' }}
         run: |
           set -x
           sudo apt-get install -y libfuse3-dev
@@ -131,6 +128,7 @@ jobs:
           ./configure --prefix=/usr/local
           make
           sudo sh -c 'umask 0022 && make install'
+          sudo ldconfig
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -159,7 +157,7 @@ jobs:
           # configure doesn't tell us about these.
           sudo apt-get install pigz pv
           # configure does tell us about these.
-          sudo apt-get install squashfs-tools squashfuse
+          sudo apt-get install squashfs-tools
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
           # Use newest shellcheck.
@@ -213,7 +211,7 @@ jobs:
               fgrep '"lark" module ... bundled' config.log
               test -f ./lib/lark/lark.py
           fi
-          if [[ ${{ matrix.squashfuse }} = internal ]]; then
+          if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
               fgrep 'internal mount with libsquashfuse ... yes' config.log
           else
               fgrep 'internal mount with libsquashfuse ... no' config.log
@@ -225,7 +223,9 @@ jobs:
           # Build and install.
           make $ch_makej
           sudo make $ch_makej install
+          ldd bin/ch-run
           bin/ch-run --version
+          ldd $ch_prefix/from-git/bin/ch-run
           $ch_prefix/from-git/bin/ch-run --version
           # Ensure bundled Lark in tarball.
           make $ch_makej dist
@@ -314,24 +314,24 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-tarball/bin/ch-run --version
 
-      - name: run test suite (Git WD, quick, squash)
+      - name: run test suite (Git WD, quick)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
-          bin/ch-test --scope=quick --pack-fmt=squash all
+          bin/ch-test --scope=quick all
 
-      - name: run test suite (Git WD, standard, squash)
+      - name: run test suite (Git WD, standard)
         run: |
-          bin/ch-test --pack-fmt=squash all
+          bin/ch-test all
 
-      - name: run test suite (installed from Git WD, standard, squash)
+      - name: run test suite (installed from Git WD, standard)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
-          $ch_prefix/from-git/bin/ch-test --pack-fmt=squash all
+          $ch_prefix/from-git/bin/ch-test all
 
-      - name: run test suite (installed from tarball, standard, squash)
+      - name: run test suite (installed from tarball, standard)
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
-          $ch_prefix/from-tarball/bin/ch-test --pack-fmt=squash all
+          $ch_prefix/from-tarball/bin/ch-test all
 
       - name: rebuild with most things --disable’d
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
@@ -353,13 +353,13 @@ jobs:
           make $ch_makej
           bin/ch-run --version
 
-      - name: run test suite (Git WD, standard, squash)
+      - name: run test suite (Git WD, standard)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
-          bin/ch-test --pack-fmt=squash all
+          bin/ch-test all
 
       - name: remove non-essential dependencies
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
         run: |
           set -x
           # This breaks lots of dependencies unrelated to our build but YOLO.
@@ -368,20 +368,23 @@ jobs:
                     pv \
                     python3-requests \
                     squashfs-tools \
-                    squashfuse
           sudo pip3 uninstall -y sphinx sphinx-rtd-theme
+          if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
+              ( cd /usr/local/src/squashfuse && make uninstall )
+          fi
           ! python3 -c 'import requests'
           ! python3 -c 'import lark'
           test -e bin/ch-image
           bin/ch-test -f test/build/10_sanity.bats  # issue #806
 
       - name: rebuild
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
         run: |
           make distclean
           ./configure --prefix=/doesnotexist
           set -x
           fgrep 'documentation: no' config.log
+          fgrep 'internal mount with libsquashfuse ... no' config.log
           fgrep 'with Docker: yes' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
@@ -392,10 +395,10 @@ jobs:
           make $ch_makej
           bin/ch-run --version
 
-      - name: run test suite (Git WD, standard, tarballs)
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+      - name: run test suite (Git WD, standard)
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
         run: |
-          bin/ch-test --pack-fmt=tar all
+          bin/ch-test all
 
       - name: print ending environment
         if: ${{ always() }}
