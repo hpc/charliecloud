@@ -13,3 +13,5 @@ RUN apt-get install -y --no-install-recommends \
 RUN pip3 install selenium
 
 COPY . /rstudio
+
+RUN printf 'provider=sqlite\ndirectory=/tmp\n' > /etc/rstudio/database.conf

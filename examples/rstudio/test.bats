@@ -7,6 +7,9 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope standard
     prerequisites_ok "rstudio"
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'issue #1161'
+    pid_file=${BATS_TMPDIR}/rserver.pid
+    pw_file=${BATS_TMPDIR}/rserver-password.txt
 }
 
 
@@ -32,6 +35,60 @@ setup () {
     [[ $output = '0' ]]  # entire output is number of differing pixels
 }
 
+
+# I was not able to find any docs for rserver command line arguments online.
+# However you can see them with:
+#
+#   $ ch-run $CH_TEST_IMGDIR/rstudio -- \
+#            /usr/lib/rstudio-server/bin/rserver --help
+@test "${ch_tag}/start rstudio-server" {
+    # Generate a random password for logging into RStudio; read by
+    # rserver-auth.sh. This basic measure prevents other users on the system
+    # from connecting. We use a file rather than an environment variable so
+    # later tests can use it.
+    openssl rand -base64 18 > "$pw_file"
+    # Cleanup possibly left-over files from previous run.
+    rm -Rf --one-file-system "$pid_file" \
+                             "$BATS_TMPDIR"/rstudio-os.sqlite \
+                             "$BATS_TMPDIR"/rstudio-session \
+                             "$BATS_TMPDIR"/rstudio-server
+    # Start RStudio Server. Port is arbitrary.
+    ch-run "$ch_img" -- /usr/lib/rstudio-server/bin/rserver \
+                        --www-port=8991 \
+                        --www-address=127.0.0.1 \
+                        --server-daemonize=1 \
+                        --server-pid-file="$pid_file" \
+                        --server-user="$USER" \
+                        --server-data-dir="$BATS_TMPDIR" \
+                        --auth-none=0 \
+                        --auth-encrypt-password=0 \
+                        --auth-pam-helper-path=/rstudio/rserver-auth.sh \
+                        --verify-installation=1
+    # Wait for startup to complete (PID file appears).
+    for i in {1..10}; do
+        if [[ -f $pid_file ]]; then
+            break
+        fi
+        sleep 1
+    done
+    [[ $i -lt 10 ]]
+}
+
+
+@test "${ch_tag}/stop rstudio-server" {
+    [[ -f $pid_file ]]
+    pid=$(cat $pid_file)
+    kill "$pid"
+    # Wait for RStudio Server to exit.
+    for i in {1..10}; do
+        if [[ ! -d /proc/$i ]]; then
+            break
+        fi
+    done
+    [[ $i -lt 10 ]]
+    # Make sure no process named like our rserver(1) exists.
+    ! pgrep -f 'rserver --www-port=8991'
+}
 
 # Test that we can login to rstudio
 @test "${ch_tag}/test rstudio-server" {
