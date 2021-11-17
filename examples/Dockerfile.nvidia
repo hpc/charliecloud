@@ -30,23 +30,23 @@ RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86
  && apt-key add 7fa2af80.pub \
  && echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /" >> /etc/apt/sources.list \
  && apt-get update \
- && apt-get install -y --no-install-recommends cuda-toolkit-11-0 \
+ && apt-get install -y --no-install-recommends cuda-toolkit-11-2 \
  && rm -rf /var/lib/apt/lists/* 7fa2af80.pub
 
 # Build the sample app we'll use to test.
-WORKDIR /usr/local/cuda-11.0/samples/0_Simple/matrixMulCUBLAS
+WORKDIR /usr/local/cuda-11.2/samples/0_Simple/matrixMulCUBLAS
 RUN make
 
 
 ## Stage 2: Copy the built sample app into a clean Ubuntu image.
 FROM ubuntu:20.04
 
-COPY --from=0 /usr/local/cuda-11.0/samples/0_Simple/matrixMulCUBLAS /
+COPY --from=0 /usr/local/cuda-11.2/samples/0_Simple/matrixMulCUBLAS /
 
 # These are the two nVidia shared libraries that the sample app needs. We could
 # be smarter about finding this path. However, one thing to avoid is copying in
-# all of /usr/local/cuda-11.0/targets/x86_64-linux/lib, because that directory
+# all of /usr/local/cuda-11.2/targets/x86_64-linux/lib, because that directory
 # is quite large.
-COPY --from=0 /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcublas.so.11.2.0.252 /usr/local/lib
-COPY --from=0 /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcublasLt.so.11.2.0.252 /usr/local/lib
+COPY --from=0 /usr/local/cuda-11.2/targets/x86_64-linux/lib/libcublas.so.11.4.1.1043 /usr/local/lib
+COPY --from=0 /usr/local/cuda-11.2/targets/x86_64-linux/lib/libcublasLt.so.11.4.1.1043 /usr/local/lib
 RUN ldconfig

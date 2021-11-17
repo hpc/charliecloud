@@ -91,8 +91,9 @@ RUN dnf install -y --setopt=install_weak_deps=false \
 
 WORKDIR /usr/local/src
 
-# UCX. There is a package for CentOS 8 but it is old, so build from source.
-ARG UCX_VERSION=1.6.1
+# UCX. There is a package for CentOS 8 but we want control over build options,
+# specifically multithreaded support.
+ARG UCX_VERSION=1.11.2
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git \
  && cd ucx \
@@ -119,7 +120,7 @@ RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz 
 # Patch OpenMPI to disable UCX plugin on systems with Intel or Cray HSNs. UCX
 # has inferior performance than PSM2/uGNI but higher priority.
 ARG MPI_URL=https://www.open-mpi.org/software/ompi/v3.1/downloads
-ARG MPI_VERSION=3.1.5
+ARG MPI_VERSION=3.1.6
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz \
  && tar xf openmpi-${MPI_VERSION}.tar.gz
 COPY dont-init-ucx-on-intel-cray.patch ./openmpi-${MPI_VERSION}

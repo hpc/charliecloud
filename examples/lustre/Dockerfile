@@ -10,7 +10,7 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 perl \
  && dnf clean all
 
-ARG LUSTRE_VERSION=2.12.4
+ARG LUSTRE_VERSION=2.12.6
 ARG LUSTRE_URL=https://downloads.whamcloud.com/public/lustre/lustre-${LUSTRE_VERSION}/el8/client/RPMS/x86_64/
 
 # The lustre-client rpm has a dependency on the kmod-lustre-client rpm, this is

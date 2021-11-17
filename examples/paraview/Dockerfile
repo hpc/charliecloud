@@ -24,8 +24,8 @@ RUN pip3 install --no-binary=mpi4py \
 
 # ParaView. Use system libpng to work around issues linking with NEON specific
 # symbols on ARM.
-ARG PARAVIEW_MAJORMINOR=5.6
-ARG PARAVIEW_VERSION=5.6.2
+ARG PARAVIEW_MAJORMINOR=5.9
+ARG PARAVIEW_VERSION=5.9.1
 RUN wget -nv -O ParaView-v${PARAVIEW_VERSION}.tar.xz "https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v${PARAVIEW_MAJORMINOR}&type=binary&os=Sources&downloadFile=ParaView-v${PARAVIEW_VERSION}.tar.xz" \
  && tar xf ParaView-v${PARAVIEW_VERSION}.tar.xz \
  && mkdir ParaView-v${PARAVIEW_VERSION}.build \
