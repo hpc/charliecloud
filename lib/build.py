@@ -221,9 +221,7 @@ class Main_Loop(lark.Visitor):
                ch.FATAL("first instruction must be ARG or FROM")
          inst.execute()
          if (image_i != -1):
-            if (self.instruction_ct == 0):
-               inst.metadata_remove_history()
-            inst.metadata_add_history(self.instruction_ct)
+            inst.metadata_history_update(self.instruction_ct)
             images[image_i].metadata_save()
          self.instruction_ct += inst.execute_increment
 
@@ -267,14 +265,18 @@ class Instruction(abc.ABC):
    def execute_(self):
       ...
 
-   def metadata_add_history(self, inst_ct):
+   def metadata_history_add(self, inst_ct):
       hist = { "history": [ { "created": ch.now_utc_iso8601(),
                               "created_by": "%s %s" % (self.str_name(), self.str_()),
                               "empty_layer": True}]}
       images[image_i].metadata_append(hist)
 
-   def metadata_remove_history(self):
-      images[image_i].metadata_remove_history()
+   def metadata_history_remove(self):
+      images[image_i].metadata_history_remove()
+
+   # overriden when instruction is FROM
+   def metadata_history_update(self, inst_ct):
+     self.metadata_history_add(inst_ct)
 
    def options_assert_empty(self):
       try:
@@ -683,6 +685,11 @@ class I_from_(Instruction):
       global fakeroot_config
       fakeroot_config = fakeroot.detect(image.unpack_path,
                                         cli.force, cli.no_force_detect)
+
+   def metadata_history_update(self, inst_ct):
+      base_hist = images[image_i].metadata_history_return()
+      images[image_i].metadata_history_replace(base_hist)
+      self.metadata_history_add(inst_ct)
 
    def str_(self):
       alias = " AS %s" % self.alias if self.alias else ""

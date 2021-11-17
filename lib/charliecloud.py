@@ -479,7 +479,17 @@ class Image:
       self.metadata.update({"builder": "ch-image"})
       self.metadata_save()
 
-   def metadata_remove_history(self):
+   def metadata_history_replace(self, hist):
+      self.metadata["history"] = hist
+
+   def metadata_history_return(self):
+      "Return config history with all entires having empty_layer set to True"
+      hist = self.metadata["history"]
+      for i in range(len(hist)):
+         hist[i]["empty_layer"] = True
+      return hist
+
+   def metadata_history_remove(self):
        if (self.metadata is None):
           path = self.metadata_path // "config.pulled.json"
           self.metadata_merge_from_config(json_from_file(path, "config"))

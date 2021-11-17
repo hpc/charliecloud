@@ -396,7 +396,7 @@ ch_foo=foo-ev
 EOF
 
     # /ch/metadata.json contents
-    diff -u -I '"created"\:*' - "${img}/ch/metadata.json" <<'EOF'
+     diff -u -I '^.*"created":.*,$' - "${img}/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
   "builder": "ch-image",
@@ -409,54 +409,125 @@ EOF
   },
   "history": [
     {
-      "created": "2021-11-08T17:55:00Z",
+      "created_by": "/bin/sh -c #(nop) ADD file:a0afd0b0db7f9ee9496186ead087ec00edd1386ea8c018557d15720053f7308e in / ",
+      "empty_layer": true
+    },
+    {
+      "created_by": "/bin/sh -c #(nop)  CMD [\"/bin/sh\"]",
+      "empty_layer": true
+    },
+    {
+      "created_by": "/bin/sh -c #(nop)  CMD [\"true\"]",
+      "empty_layer": true
+    },
+    {
+      "created_by": "/bin/sh -c #(nop)  CMD [\"bar\" \"baz\"]",
+      "empty_layer": true
+    },
+    {
+      "created_by": "/bin/sh -c #(nop)  ENTRYPOINT [\"/bin/echo\" \"foo\"]",
+      "empty_layer": true
+    },
+    {
+      "created_by": "/bin/sh -c #(nop)  ENV ch_foo=foo-ev ch_bar=bar-ev",
+      "empty_layer": true
+    },
+    {
+      "created_by": "/bin/sh -c #(nop)  EXPOSE 5309/udp 867",
+      "empty_layer": true
+    },
+    {
+      "created_by": "/bin/sh -c #(nop)  HEALTHCHECK &{[\"CMD\" \"/bin/true\"] \"1m0s\" \"5s\" \"0s\" '\\x00'}",
+      "empty_layer": true
+    },
+    {
+      "created_by": "/bin/sh -c #(nop)  LABEL ch_foo=foo-label ch_bar=bar-label",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created_by": "/bin/sh -c #(nop)  MAINTAINER charlie@example.com",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created_by": "/bin/sh -c #(nop)  ONBUILD RUN echo hello",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created_by": "/bin/sh -c echo hello",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created_by": "/bin/echo world",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created_by": "/bin/ash -c #(nop)  SHELL [/bin/ash -c]",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created_by": "/bin/ash -c #(nop)  STOPSIGNAL SIGWINCH",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created_by": "/bin/ash -c #(nop)  USER charlie:chargrp",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created_by": "/bin/ash -c #(nop) WORKDIR /mnt",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created_by": "/bin/ash -c #(nop)  VOLUME [/mnt/foo /mnt/bar /mnt/foo]",
+      "empty_layer": true
+    },
+    {
       "created_by": "FROM charliecloud/metadata:2021-01-15",
-      "empty_layer": "True"
+      "empty_layer": true
     },
     {
-      "created": "2021-11-08T17:55:00Z",
       "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd1: $PWD\"']",
-      "empty_layer": "True"
+      "empty_layer": true
     },
     {
-      "created": "2021-11-08T17:55:00Z",
       "created_by": "WORKDIR /usr",
-      "empty_layer": "True"
+      "empty_layer": true
     },
     {
-      "created": "2021-11-08T17:55:00Z",
       "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd2: $PWD\"']",
-      "empty_layer": "True"
+      "empty_layer": true
     },
     {
-      "created": "2021-11-08T17:55:00Z",
       "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env1: /' | sort\"]",
-      "empty_layer": "True"
+      "empty_layer": true
     },
     {
-      "created": "2021-11-08T17:55:01Z",
       "created_by": "ENV ch_baz='baz-ev'",
-      "empty_layer": "True"
+      "empty_layer": true
     },
     {
-      "created": "2021-11-08T17:55:01Z",
       "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env2: /' | sort\"]",
-      "empty_layer": "True"
+      "empty_layer": true
     },
     {
-      "created": "2021-11-08T17:55:01Z",
       "created_by": "RUN ['/bin/ash', '-c', 'echo \"shell1: $0\"']",
-      "empty_layer": "True"
+      "empty_layer": true
     },
     {
-      "created": "2021-11-08T17:55:01Z",
       "created_by": "SHELL ['/bin/sh', '-v', '-c']",
-      "empty_layer": "True"
+      "empty_layer": true
     },
     {
-      "created": "2021-11-08T17:55:01Z",
       "created_by": "RUN ['/bin/sh', '-v', '-c', 'echo \"shell2: $0\"']",
-      "empty_layer": "True"
+      "empty_layer": true
     }
   ],
   "labels": {
