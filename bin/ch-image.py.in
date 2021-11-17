@@ -75,12 +75,19 @@ def main():
    # [2]: https://docs.python.org/3/library/argparse.html#parents
    # [3]: https://stackoverflow.com/a/54936198
    common_opts = \
-      [[ ["--dependencies"],
+      [[ ["-a", "--arch"],
+         { "metavar": "ARCH",
+           "default": "host",
+           "help": "architecture for image registries (default: host)"}],
+       [ ["--dependencies"],
          { "action": misc.Dependencies,
            "help": "print any missing dependencies and exit" }],
        [ ["--no-cache"],
          { "action": "store_true",
            "help": "download everything needed, ignoring the cache" }],
+       [ ["--password-many"],
+         { "action": "store_true",
+           "help": "re-prompt each time a registry password is needed" }],
        [ ["-s", "--storage"],
          { "metavar": "DIR",
            "help": "set builder internal storage directory to DIR" }],
@@ -94,24 +101,39 @@ def main():
        [ ["--version"],
          { "action": misc.Version,
            "help": "print version and exit" } ]]
-   def add_opts(p, opts, sub):
-      for (args, kwargs) in opts:
-         if (sub):
-            kwargs = { **kwargs,
-                       "default": argparse.SUPPRESS,
-                       "help": argparse.SUPPRESS }
-         p.add_argument(*args, **kwargs)
-   add_opts(ap, common_opts, False)
+
+   # Most, but not all, subcommands need to check dependencies before doing
+   # anything (the exceptions being basic information commands like
+   # storage-path). Similarly, only some need to initialize the storage
+   # directory. These dictionaries map the dispatch function to a boolean
+   # value saying whether to do those things.
+   dependencies_check = dict()
+   storage_init = dict()
+
+   # Helper function to set up a subparser. The star forces the latter two
+   # arguments to be called by keyword, for clarity.
+   def add_opts(p, dispatch, *, deps_check, stog_init):
+      assert (not stog_init or deps_check)  # can't init storage w/o deps
+      sp.set_defaults(func=dispatch)
+      dependencies_check[dispatch] = deps_check
+      storage_init[dispatch] = stog_init
+      for (args, kwargs) in common_opts:
+         p.add_argument(*args, **{ **kwargs,
+                                   "default": argparse.SUPPRESS,
+                                   "help": argparse.SUPPRESS })
+
+   # main parser
+   for (args, kwargs) in common_opts:
+      ap.add_argument(*args, **kwargs)
 
    # build
    help="build image from Dockerfile"
    sp = sps.add_parser("build", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=build.main)
-   add_opts(sp, common_opts, True)
+   add_opts(sp, build.main, deps_check=True, stog_init=True)
    sp.add_argument("-b", "--bind", metavar="SRC[:DST]",
                    action="append", default=[],
-                   help="mount SRC at guest DST (default /mnt/0, /mnt/1, etc.)")
+                   help="mount SRC at guest DST (default: same as SRC)")
    sp.add_argument("--build-arg", metavar="ARG[=VAL]",
                    action="append", default=[],
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
@@ -126,7 +148,7 @@ def main():
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",
-                   help="name of image to create (default: inferred)")
+                   help="name (tag) of image to create (default: inferred)")
    sp.add_argument("context", metavar="CONTEXT",
                    help="context directory")
 
@@ -134,23 +156,32 @@ def main():
    help="delete image from internal storage"
    sp = sps.add_parser("delete", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=misc.delete)
-   add_opts(sp, common_opts, True)
+   add_opts(sp, misc.delete, deps_check=True, stog_init=True)
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
 
+   # import
+   help="copy external image into storage"
+   sp = sps.add_parser("import", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   add_opts(sp, misc.import_, deps_check=True, stog_init=True)
+   sp.add_argument("path", metavar="PATH",
+                   help="directory or tarball to import")
+   sp.add_argument("image_ref", metavar="IMAGE_REF",
+                   help="destination image name (tag)")
+
    # list
-   help="list images in storage"
+   help="print information about image(s)"
    sp = sps.add_parser("list", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=misc.list_)
-   add_opts(sp, common_opts, True)
+   add_opts(sp, misc.list_, deps_check=True, stog_init=True)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
+                   help="print details of this image only")
 
    # pull
    help="pull image from remote repository to local filesystem"
    sp = sps.add_parser("pull", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=pull.main)
-   add_opts(sp, common_opts, True)
+   add_opts(sp, pull.main, deps_check=True, stog_init=True)
    sp.add_argument("--last-layer", metavar="N", type=int,
                    help="stop after unpacking N layers")
    sp.add_argument("--parse-only", action="store_true",
@@ -163,8 +194,7 @@ def main():
    help="push image from local filesystem to remote repository"
    sp = sps.add_parser("push", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=push.main)
-   add_opts(sp, common_opts, True)
+   add_opts(sp, push.main, deps_check=True, stog_init=True)
    sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("--image", metavar="DIR",
                    help="path to unpacked image (default: opaque path in storage dir)")
@@ -175,21 +205,19 @@ def main():
    help="print path to python interpreter in use"
    sp = sps.add_parser("python-path", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=misc.python_path)
+   add_opts(sp, misc.python_path, deps_check=False, stog_init=False)
 
    # reset
    help="delete everything in ch-image builder storage"
    sp = sps.add_parser("reset", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=misc.reset)
-   add_opts(sp, common_opts, True)
+   add_opts(sp, misc.reset, deps_check=True, stog_init=False)
 
    # storage-path
    help="print storage directory path"
    sp = sps.add_parser("storage-path", help=help, description=help,
                        formatter_class=ch.HelpFormatter)
-   sp.set_defaults(func=misc.storage_path)
-   add_opts(sp, common_opts, True)
+   add_opts(sp, misc.storage_path, deps_check=False, stog_init=False)
 
    # Parse it up!
    if (len(sys.argv) < 2):
@@ -199,6 +227,10 @@ def main():
    ch.init(cli)
 
    # Dispatch.
+   if (dependencies_check[cli.func]):
+      ch.dependencies_check()
+   if (storage_init[cli.func]):
+      ch.storage.init()
    cli.func(cli)
 
 

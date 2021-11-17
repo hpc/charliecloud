@@ -8,6 +8,9 @@ Synopsis
 Description
 ===========
 
+.. warning:: This script is deprecated in favor of :code:`ch-convert`. It will
+             be removed in the next release.
+
 Extract the tarball :code:`TARBALL` into a subdirectory of :code:`DIR`.
 :code:`TARBALL` must contain a Linux filesystem image, e.g. as created by
 :code:`ch-builder2tar`, and be compressed with :code:`gzip` or :code:`xz`. If

@@ -6,7 +6,6 @@ FROM centos:7
 
 # Install our dependencies, ensuring we fail out if any are missing.
 RUN yum install -y epel-release \
- && yum-config-manager --enable epel \
  && yum install -y --setopt=skip_missing_names_on_install=0 \
                 autoconf \
                 automake \
@@ -15,11 +14,24 @@ RUN yum install -y epel-release \
                 gcc \
                 git \
                 make \
-                python36 \
+                python3-devel \
+                python3 \
+                python36-lark-parser \
+                python36-requests \
                 python36-sphinx \
                 python36-sphinx_rtd_theme \
                 rpm-build \
                 rpmlint \
                 rsync \
+                squashfs-tools \
+                squashfuse \
                 wget \
  && yum clean all
+
+# We need to install epel rpm-macros after python3-devel to get the correct
+# python package version for our spec file macros.
+# https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/K4EH7V3OUFJFVL6A72IILJUA6JFX2HZW/
+RUN yum install -y epel-rpm-macros
+
+# Need wheel to install bundled Lark, and the RPM version doesn't work.
+RUN pip3 install wheel

@@ -24,6 +24,11 @@ How do you spell Charliecloud?
 We try to be consistent with *Charliecloud* — one word, no camel case. That
 is, *Charlie Cloud* and *CharlieCloud* are both incorrect.
 
+How large is Charliecloud?
+--------------------------
+
+.. include:: loc.rst
+
 
 Errors
 ======
@@ -111,6 +116,34 @@ two solutions:
    image between runs) and/or stability (if there are multiple application
    processes and one writes a file in the image that another is reading or
    writing).
+
+:code:`ch-image` fails with "certificate verify failed"
+-------------------------------------------------------
+
+When :code:`ch-image` interacts with a remote registry (e.g., via :code:`push`
+or :code:`pull` subcommands), it will verify the registry's HTTPS certificate.
+If this fails, :code:`ch-image` will exit with the error "certificate verify
+failed".
+
+This situation tends to arise with self-signed or institutionally-signed
+certificates, even if the OS is configured to trust them. We use the Python
+HTTP library Requests, which on many platforms `includes its own CA
+certificates bundle
+<https://docs.python-requests.org/en/master/user/advanced/#ca-certificates>`_,
+ignoring the bundle installed by the OS.
+
+Requests can be directed to use an alternate bundle of trusted CAs by setting
+environment variable :code:`REQUESTS_CA_BUNDLE` to the bundle path. (See `the
+Requests documentation
+<https://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification>`_
+for details.) For example::
+
+  $ export REQUESTS_CA_BUNDLE=/usr/local/share/ca-certificates/registry.crt
+  $ ch-image pull registry.example.com/image:tag
+
+Alternatively, certificate verification can be disabled entirely with the
+:code:`--tls-no-verify` flag. However, users should enable this option only if
+they have other means to be confident in the registry's identity.
 
 
 Unexpected behavior
@@ -278,15 +311,18 @@ happy.
 
 .. _faq_docker2tar-size:
 
-:code:`ch-builder2tar` gives incorrect image sizes
---------------------------------------------------
+:code:`ch-convert` from Docker incorrect image sizes
+----------------------------------------------------
 
-:code:`ch-builder2tar` often finishes before the progress bar is complete. For
-example::
+When converting from Docker, :code:`ch-convert` often finishes before the
+progress bar is complete. For example::
 
-  $ ch-builder2tar mpihello /var/tmp
+  $ ch-convert -i docker mpihello /var/tmp/mpihello.tar.gz
+  input:   docker    mpihello
+  output:  tar       /var/tmp/mpihello.tar.gz
+  exporting ...
    373MiB 0:00:21 [============================>                 ] 65%
-  146M /var/tmp/mpihello.tar.gz
+  [...]
 
 In this case, the :code:`.tar.gz` contains 392 MB uncompressed::
 
@@ -301,9 +337,12 @@ But Docker thinks the image is 597 MB::
 
 We've also seen cases where the Docker-reported size is an *under*\ estimate::
 
-  $ ch-builder2tar spack /var/tmp
+  $ ch-convert -i docker spack /var/tmp/spack.tar.gz
+  input:   docker    spack
+  output:  tar       /var/tmp/spack.tar.gz
+  exporting ...
    423MiB 0:00:22 [============================================>] 102%
-  162M /var/tmp/spack.tar.gz
+  [...]
   $ zcat /var/tmp/spack.tar.gz | wc
   4181186 20317858 444212736
   $ sudo docker image inspect spack | fgrep -i size
@@ -326,13 +365,13 @@ We cannot reliably prevent device files from being included in the tar,
 because often that is outside our control, e.g. :code:`docker export` produces
 a tarball. Thus, we must exclude them at unpacking time.
 
-An additional complication is that :code:`ch-tar2dir` can handle tarballs both
+An additional complication is that :code:`ch-convert` can read tarballs both
 with a single top-level directory and without, i.e. “tarbombs”. For example,
 best practice use of :code:`tar` on the command line produces the former,
-while :code:`docker export` (perhaps via :code:`ch-builder2tar`) produces a
-tarbomb.
+while :code:`docker export` (invoked by :code:`ch-convert` when converting
+from Docker) produces a tarbomb.
 
-Thus, :code:`ch-tar2dir` uses :code:`tar --exclude` to exclude from unpacking
+Thus, :code:`ch-convert` uses :code:`tar --exclude` to exclude from unpacking
 everything under :code:`./dev` and :code:`*/dev`, i.e., directory :code:`dev`
 appearing at either the first or second level are forced to be empty.
 
@@ -603,7 +642,7 @@ These references parse into the following components, in this order:
 
 5. If path given, a slash.
 
-6. The image name, which matches :code:`[a-z0-9_.-]+`. Required; here
+6. The image name (tag), which matches :code:`[a-z0-9_.-]+`. Required; here
    :code:`hello-world`.
 
 7. Zero or one of:
@@ -678,3 +717,243 @@ Alpine 3.9 image pulled from Docker hub::
   dev  home  media  opt  root  sbin  sys  usr
   $ ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
   3.9.5
+
+How do I authenticate with SSH during :code:`ch-image` build?
+-------------------------------------------------------------
+
+The simplest approach is to run the `SSH agent
+<https://man.openbsd.org/ssh-agent>`_ on the host. :code:`ch-image` then
+leverages this with two steps:
+
+  1. pass environment variable :code:`SSH_AUTH_SOCK` into the build, with no
+     need to put :code:`ARG` in the Dockerfile or specify :code:`--build-arg`
+     on the command line; and
+
+  2. bind-mount host :code:`/tmp` to guest :code:`/tmp`, which is where the
+     SSH agent's listening socket usually resides.
+
+Thus, SSH within the container will use this existing SSH agent on the host to
+authenticate without further intervention.
+
+For example, after making :code:`ssh-agent` available on the host, which is OS
+and site-specific::
+
+  $ echo $SSH_AUTH_SOCK
+  /tmp/ssh-rHsFFqwwqh/agent.49041
+  $ ssh-add
+  Enter passphrase for /home/charlie/.ssh/id_rsa:
+  Identity added: /home/charlie/.ssh/id_rsa (/home/charlie/.ssh/id_rsa)
+  $ ssh-add -l
+  4096 SHA256:aN4n2JeMah2ekwhyHnb0Ug9bYMASmY+5uGg6MrieaQ /home/charlie/.ssh/id_rsa (RSA)
+  $ cat ./Dockerfile
+  FROM alpine:latest
+  RUN apk add openssh
+  RUN echo $SSH_AUTH_SOCK
+  RUN ssh git@github.com
+  $ ch-image build -t foo -f ./Dockerfile .
+  [...]
+    3 RUN ['/bin/sh', '-c', 'echo $SSH_AUTH_SOCK']
+    /tmp/ssh-rHsFFqwwqh/agent.49041
+    4 RUN ['/bin/sh', '-c', 'ssh git@github.com']
+  [...]
+  Hi charlie! You've successfully authenticated, but GitHub does not provide shell access.
+
+Note this example is rather contrived — bare SSH sessions in a Dockerfile
+rarely make sense. In practice, SSH is used as a transport to fetch something,
+e.g. with :code:`scp(1)` or :code:`git(1)`. See the next entry for a more
+realistic example.
+
+SSH stops :code:`ch-image` build with interactive queries
+---------------------------------------------------------
+
+This often occurs during an SSH-based Git clone. For example:
+
+.. code-block:: docker
+
+  FROM alpine:latest
+  RUN apk add git openssh
+  RUN git clone git@github.com:hpc/charliecloud.git
+
+.. code-block:: console
+
+  $ ch-image build -t foo -f ./Dockerfile .
+  [...]
+  3 RUN ['/bin/sh', '-c', 'git clone git@github.com:hpc/charliecloud.git']
+  Cloning into 'charliecloud'...
+  The authenticity of host 'github.com (140.82.113.3)' can't be established.
+  RSA key fingerprint is SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8.
+  Are you sure you want to continue connecting (yes/no/[fingerprint])?
+
+At this point, the build stops while SSH waits for input.
+
+This happens even if you have :code:`github.com` in your
+:code:`~/.ssh/known_hosts`. This file is not available to the build because
+:code:`ch-image` runs :code:`ch-run` with :code:`--no-home`, so :code:`RUN`
+instructions can't see anything in your home directory.
+
+Solutions include:
+
+  1. Change to anonymous HTTPS clone, if available. Most public repositories
+     will support this. For example:
+
+     .. code-block:: docker
+
+       FROM alpine:latest
+       RUN apk add git
+       RUN git clone https://github.com/hpc/charliecloud.git
+
+  2. Approve the connection interactively by typing :code:`yes`. Note this
+     will record details of the connection within the image, including IP
+     address and the fingerprint. The build also remains interactive.
+
+  3. Edit the image's system `SSH config
+     <https://man.openbsd.org/ssh_config>`_ to turn off host key checking.
+     Note this can be rather hairy, because the SSH config language is quite
+     flexible and the first instance of a directive is the one used. However,
+     often the changes can be simply appended:
+
+     .. code-block:: docker
+
+       FROM alpine:latest
+       RUN apk add git openssh
+       RUN printf 'StrictHostKeyChecking=no\nUserKnownHostsFile=/dev/null\n' \
+           >> /etc/ssh/ssh_config
+       RUN git clone git@github.com:hpc/charliecloud.git
+
+     Check your institutional policy on whether this is permissible, though
+     it's worth noting that users `almost never
+     <https://www.usenix.org/system/files/login/articles/105484-Gutmann.pdf>`_
+     verify the host fingerprints anyway.
+
+     This will not record details of the connection in the image.
+
+  4. Turn off host key checking on the SSH command line. (See caveats in the
+     previous item.) The wrapping tool should provide a way to configure this
+     command line. For example, for Git:
+
+     .. code-block:: docker
+
+       FROM alpine:latest
+       RUN apk add git openssh
+       ARG GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+       RUN git clone git@github.com:hpc/charliecloud.git
+
+  5. Add the remote host to the system known hosts file, e.g.:
+
+     .. code-block:: docker
+
+       FROM alpine:latest
+       RUN apk add git openssh
+       RUN echo 'github.com,140.82.112.4 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==' >> /etc/ssh/ssh_known_hosts
+       RUN git clone git@github.com:hpc/charliecloud.git
+
+     This records connection details in both the Dockerfile and the image.
+
+Other approaches could be found with web searches such as "automate unattended
+SSH" or "SSH in cron jobs".
+
+How do I use Docker to build Charliecloud images?
+-------------------------------------------------
+
+The short version is to run Docker commands like :code:`docker build` and
+:code:`docker pull` like usual, and then use :code:`ch-convert` to copy the
+image from Docker storage to a SquashFS archive, tarball, or directory. If you
+are behind an HTTP proxy, that requires some extra setup for Docker; see
+below.
+
+Security implications of Docker
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Because Docker (a) makes installing random crap from the internet simple and
+(b) is easy to deploy insecurely, you should take care. Some of the
+implications are below. This list should not be considered comprehensive nor a
+substitute for appropriate expertise; adhere to your ethical and institutional
+responsibilities.
+
+* **Docker equals root.** Anyone who can run the :code:`docker` command or
+  interact with the Docker daemon can `trivially escalate to root
+  <http://web.archive.org/web/20170614013206/http://www.reventlov.com/advisories/using-the-docker-command-to-root-the-host>`_.
+  This is considered a feature.
+
+  For this reason, don't create the :code:`docker` group, as this will allow
+  passwordless, unlogged escalation for anyone in the group. Run it with
+  :code:`sudo docker`.
+
+  Also, Docker runs container processes as root by default. In addition to
+  being poor hygiene, this can be an escalation path, e.g. if you bind-mount
+  host directories.
+
+* **Docker alters your network configuration.** To see what it did::
+
+    $ ifconfig    # note docker0 interface
+    $ brctl show  # note docker0 bridge
+    $ route -n
+
+* **Docker installs services.** If you don't want the Docker service starting
+  automatically at boot, e.g.::
+
+    $ systemctl is-enabled docker
+    enabled
+    $ systemctl disable docker
+    $ systemctl is-enabled docker
+    disabled
+
+Configuring for a proxy
+~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, Docker does not work if you are behind a proxy, and it fails in
+two different ways.
+
+The first problem is that Docker itself must be told to use a proxy. This
+manifests as::
+
+  $ sudo docker run hello-world
+  Unable to find image 'hello-world:latest' locally
+  Pulling repository hello-world
+  Get https://index.docker.io/v1/repositories/library/hello-world/images: dial tcp 54.152.161.54:443: connection refused
+
+If you have a systemd system, the `Docker documentation
+<https://docs.docker.com/engine/admin/systemd/#http-proxy>`_ explains how to
+configure this. If you don't have a systemd system, then
+:code:`/etc/default/docker` might be the place to go?
+
+The second problem is that programs executed during build (:code:`RUN`
+instructions) need to know about the proxy as well. This manifests as images
+failing to build because they can't download stuff from the internet.
+
+One fix is to configure your :code:`.bashrc` or equivalent to:
+
+1. Set the proxy environment variables:
+
+   .. code-block:: sh
+
+     export HTTP_PROXY=http://proxy.example.com:8088
+     export http_proxy=$HTTP_PROXY
+     export HTTPS_PROXY=$HTTP_PROXY
+     export https_proxy=$HTTP_PROXY
+     export NO_PROXY='localhost,127.0.0.1,.example.com'
+     export no_proxy=$NO_PROXY
+
+2. Configure a :code:`docker build` wrapper:
+
+   .. code-block:: sh
+
+     # Run "docker build" with specified arguments, adding proxy variables if
+     # set. Assumes "sudo" is needed to run "docker".
+     function docker-build () {
+         if [[ -z $HTTP_PROXY ]]; then
+             sudo docker build "$@"
+         else
+             sudo docker build --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                               --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                               --build-arg NO_PROXY="$NO_PROXY" \
+                               --build-arg http_proxy="$http_proxy" \
+                               --build-arg https_proxy="$https_proxy" \
+                               --build-arg no_proxy="$no_proxy" \
+                               "$@"
+         fi
+     }
+
+
+..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello
+..  LocalWords:  VirtualSize

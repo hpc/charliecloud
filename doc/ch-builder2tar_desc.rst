@@ -8,6 +8,9 @@ Synopsis
 Description
 ===========
 
+.. warning:: This script is deprecated in favor of :code:`ch-convert`. It will
+             be removed in the next release.
+
 Flatten the builder image tagged :code:`IMAGE` into a Charliecloud tarball in
 directory :code:`OUTDIR`.
 

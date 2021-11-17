@@ -46,10 +46,19 @@ common distributions should be sufficient.
 
   * Automake
   * Autoconf
+  * Python's :code:`pip3` package installer and its :code:`wheel` extension
 
 Create :code:`configure` with::
 
   $ ./autogen.sh
+
+This script has a few options; see its :code:`--help`.
+
+Note that Charliecloud disables Automake's "maintainer mode" by default, so
+the build system (Makefiles, :code:`configure`, etc.) will never automatically
+be rebuilt. You must run :code:`autogen.sh` manually if you need this. You can
+also re-enable maintainer mode with :code:`configure` if you like, though this
+is not a tested configuration.
 
 :code:`configure` options
 -------------------------
@@ -57,8 +66,8 @@ Create :code:`configure` with::
 Charliecloud's :code:`configure` has the following options in addition to the
 standard ones.
 
-Feature selection
-~~~~~~~~~~~~~~~~~
+Feature selection: :code:`--disable-FOO`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, all features that can be built will be built and installed. You
 can exclude some features with:
@@ -75,26 +84,50 @@ can exclude some features with:
 You can also say :code:`--enable-FOO` to fail the build if :code:`FOO` can't
 be built.
 
-Dependency selection
-~~~~~~~~~~~~~~~~~~~~
+Dependency selection: :code:`--with-FOO`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Some dependencies can be specified as follows. Note that :code:`--without-FOO`
-is not supported; use the feature selectors above.
+Some dependencies can be specified as follows. Note only some of these support
+:code:`--with-FOO=no`, as listed.
 
-:code:`--with-python`
+:code:`--with-libsquashfuse={yes,no,PATH}`
+  Whether to link with :code:`libsquashfuse`. Options:
+
+  * If not specified: Look for :code:`libsquashfuse` in standard install
+    locations and link with it if found. Otherwise disable internal SquashFS
+    mount, with no warning or error.
+
+  * :code:`yes`: Look for :code:`libsquashfuse` in standard locations and link
+    with it if found; otherwise, error.
+
+  * :code:`no`: Disable :code:`libsquashfuse` linking and internal SquashFS
+    mounting, even if it's installed.
+
+  * Path to :code:`libsquashfuse` install prefix: Link with
+    :code:`libsquashfuse` found there, or error if not found, and add it to
+    :code:`ch-run`'s RPATH. (Note this argument is *not* the directory
+    containing the shared library or header file.)
+
+  **Note:** A very specific version and configuration of SquashFUSE is
+  required. See below for details.
+
+:code:`--with-python=SHEBANG`
   Shebang line to use for Python scripts. Default:
   :code:`/usr/bin/env python3`.
 
-:code:`--with-sphinx-build`
+:code:`--with-sphinx-build=PATH`
   Path to :code:`sphinx-build` executable. Default: the :code:`sphinx-build`
   found first in :code:`$PATH`.
 
-:code:`--with-sphinx-python`
+:code:`--with-sphinx-python=PATH`
   Path to Python used by :code:`sphinx-build`. Default: shebang of
   :code:`sphinx-build`.
 
-Less strict build
-~~~~~~~~~~~~~~~~~
+Less strict build: :code:`--enable-buggy-build`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Please do not use this option routinely, as that hides bugs that we cannot
+find otherwise.*
 
 By default, Charliecloud builds with :code:`CFLAGS` including :code:`-Wall
 -Werror`. The principle here is that we prefer diagnostics that are as noisy
@@ -131,8 +164,34 @@ Don't hesitate to use it. But if you do, we would very much appreciate if you:
   1. File a bug explaining why! We'll fix it.
   2. Remove it from your package or procedure once we fix that bug.
 
-**Please do not use this option routinely, as that hides bugs that we cannot
-find otherwise.**
+Disable bundled Lark package: :code:`--disable-bundled-lark`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*This option is minimally supported and not recommended. Use only if you
+really know what you are doing.*
+
+Charliecloud uses the Python package `Lark
+<https://lark-parser.readthedocs.io/en/latest/>`_ for parsing Dockerfiles and
+image references. Because this package is developed rapidly, and recent
+versions have important features and bug fixes not yet available in common
+distributions, we bundle the package with Charliecloud.
+
+If you prefer a separately-installed Lark, either via system packages or
+:code:`pip`, you can use :code:`./configure --disable-bundled-lark`. This
+excludes the bundled Lark from being installed or placed in :code:`make dist`
+tarballs. It *does not* remove the bundled Lark from the source directory; if
+you run from the source directory (i.e., without installing), the bundled Lark
+will be used if present regardless of this option.
+
+Bundled Lark is included in the tarballs we distribute. You can remove it and
+re-build :code:`configure` with :code:`./autogen.sh --rm-lark --no-lark`. If
+you are starting from a Git checkout, bundled Lark is installed by default by
+:code:`./autogen.sh`, but you can prevent this with :code:`./autogen.sh
+--no-lark`.
+
+The main use case for these options is to support package maintainers. If this
+is you and does not meet your needs, please get in touch with us and we will
+help.
 
 Install with package manager
 ============================
@@ -319,89 +378,6 @@ Intel :code:`icc` is not supported because it links extra shared libraries
 that our test suite can't deal with. See `PR #481
 <https://github.com/hpc/charliecloud/pull/481>`_.
 
-Docker
-~~~~~~
-
-Security implications of Docker
-...............................
-
-Because Docker (a) makes installing random crap from the internet really easy
-and (b) is easy to deploy insecurely, you should take care. Some of the
-implications are below. This list should not be considered comprehensive nor a
-substitute for appropriate expertise; adhere to your moral and institutional
-responsibilities.
-
-* **Docker equals root.** Anyone who can run the :code:`docker` command or
-  interact with the Docker daemon can `trivially escalate to root
-  <http://web.archive.org/web/20170614013206/http://www.reventlov.com/advisories/using-the-docker-command-to-root-the-host>`_.
-  This is considered a feature.
-
-  For this reason, don't create the :code:`docker` group, as this will allow
-  passwordless, unlogged escalation for anyone in the group. Our scripts
-  expect to run Docker as :code:`sudo docker`.
-
-  Also, Docker runs container processes as root by default. In addition to
-  being poor hygiene, this can be an escalation path, e.g. if you bind-mount
-  host directories.
-
-* **Docker alters your network configuration.** To see what it did::
-
-    $ ifconfig    # note docker0 interface
-    $ brctl show  # note docker0 bridge
-    $ route -n
-
-* **Docker installs services.** If you don't want the Docker service starting
-  automatically at boot, e.g.::
-
-    $ systemctl is-enabled docker
-    enabled
-    $ systemctl disable docker
-    $ systemctl is-enabled docker
-    disabled
-
-Configuring for a proxy
-.......................
-
-By default, Docker does not work if you have a proxy, and it fails in two
-different ways.
-
-The first problem is that Docker itself must be told to use a proxy. This
-manifests as::
-
-  $ sudo docker run hello-world
-  Unable to find image 'hello-world:latest' locally
-  Pulling repository hello-world
-  Get https://index.docker.io/v1/repositories/library/hello-world/images: dial tcp 54.152.161.54:443: connection refused
-
-If you have a systemd system, the `Docker documentation
-<https://docs.docker.com/engine/admin/systemd/#http-proxy>`_ explains how to
-configure this. If you don't have a systemd system, then
-:code:`/etc/default/docker` might be the place to go?
-
-The second problem is that programs executed during build (:code:`RUN`
-instructions) need to know about the proxy as well. This manifests as images
-failing to build because they can't download stuff from the internet.
-
-The fix is usually to set the proxy variables in your environment, e.g.::
-
-  export HTTP_PROXY=http://proxy.example.com:8088
-  export http_proxy=$HTTP_PROXY
-  export HTTPS_PROXY=$HTTP_PROXY
-  export https_proxy=$HTTP_PROXY
-  export ALL_PROXY=$HTTP_PROXY
-  export all_proxy=$HTTP_PROXY
-  export NO_PROXY='localhost,127.0.0.1,.example.com'
-  export no_proxy=$NO_PROXY
-
-You also need to teach :code:`sudo` to retain them. Add the following to
-:code:`/etc/sudoers`::
-
-  Defaults env_keep+="HTTP_PROXY http_proxy HTTPS_PROXY https_proxy ALL_PROXY all_proxy NO_PROXY no_proxy"
-
-Because different programs use different subsets of these variables, and to
-avoid a situation where some things work and others don't, the Charliecloud
-test suite will fail if some but not all of the above variables are set.
-
 image repository access
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -418,13 +394,6 @@ Options include:
 
   * Filesystem directory, for builders that support this (e.g.,
     :code:`ch-image`).
-
-"lark-parser" Python package
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-PyPI has two incompatible packages that provide the module :code:`lark`,
-"`lark-parser <https://pypi.org/project/lark-parser/>`_" and "lark". You want
-"lark-parser".
 
 Python
 ~~~~~~
@@ -467,15 +436,35 @@ matches previous :code:`pip` behavior.) See Debian bugs `725848
 <https://bugs.debian.org/725848>`_ and `820856
 <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856>`_.
 
-SquashFS
-~~~~~~~~
+SquashFS and SquashFUSE
+~~~~~~~~~~~~~~~~~~~~~~~
 
 The SquashFS workflow requires `SquashFS Tools
-<https://github.com/plougher/squashfs-tools>`_ and/or `SquashFUSE
-<https://github.com/vasi/squashfuse>`_. Note that distribution packages of
-SquashFUSE often provide only the "high level" executables; the "low level"
-executables have better performance. These can be installed from source on any
-distribution.
+<https://github.com/plougher/squashfs-tools>`_ to create SquashFS archives.
+
+To mount these archives using :code:`ch-run`'s internal code, you need:
+
+* `libfuse3 <https://github.com/libfuse/libfuse>`_ including development
+  files, which is probably available in your distribution (e.g.,
+  :code:`libfuse3-dev`), and
+
+* a very recent version of `SquashFUSE <https://github.com/vasi/squashfuse>`_
+  that has the :code:`libsquashfuse_ll` shared library. At the time of this
+  writing (August 2021), this is probably `commit 56a24f6
+  <https://github.com/vasi/squashfuse/commit/56a24f6c7f6e5cfd0ce5185f175da223d00dc1ca>`_
+  or newer, and there is no versioned release yet. This must be installed,
+  though it can be a non-standard location; :code:`ch-run` can't link with
+  :code:`libsquashfuse` in the latter's build directory.
+
+Without these, you can still use a SquashFS workflow but must mount and
+unmount the filesystem archives manually. You can do this using the
+executables that come with SquashFUSE, and the version requirement is much
+less stringent.
+
+.. note:: If :code:`libfuse2` development files are available but those for
+   :code:`libfuse3` are not, SquashFUSE will still build and install, but the
+   proper components will not be available, so Charliecloud's
+   :code:`configure` will say it's not found.
 
 sudo, generic
 ~~~~~~~~~~~~~
@@ -494,202 +483,4 @@ Wget is used to demonstrate building an image without a builder (the main test
 image used to exercise Charliecloud itself).
 
 
-Pre-installed virtual machine image
-===================================
-
-This section explains how to create and use a single-node virtual machine with
-Charliecloud and all three builders pre-installed. This lets you use
-Charliecloud on Macs and Windows, and/or obtain a pre-configured Charliecloud
-environment without installing anything.
-
-You can use this CentOS VM either with `Vagrant <https://www.vagrantup.com>`_
-or with `VirtualBox <https://www.virtualbox.org/>`_ alone. Various settings
-are specified, but in most cases we have not done any particular tuning, so
-use your judgement, and feedback is welcome.
-
-.. warning::
-
-   These instructions provide for an SSH server in the virtual machine guest
-   that is accessible to anyone logged into the host. It is your
-   responsibility to ensure this is safe and compliant with your
-   organization's policies, or modify the procedure accordingly.
-
-Import and use an :code:`ova` appliance file with plain VirtualBox
-------------------------------------------------------------------
-
-This procedure imports a :code:`.ova` file into VirtualBox and walks you
-through logging in and running a brief Hello World in Charliecloud. You will
-act as user :code:`charlie`, who has passwordless :code:`sudo`.
-
-The Charliecloud developers do not distribute a :code:`.ova` file. You will
-need to get it from your site, a third party, or build it yourself with
-Vagrant using the :ref:`instructions <build-ova>` in the Contributor's guide.
-
-Prerequisite: Installed and working VirtualBox. (You do not need Vagrant to
-use the :code:`.ova`, only to create it.)
-
-Configure VirtualBox
-~~~~~~~~~~~~~~~~~~~~
-
-1. Set *Preferences* → *Proxy* if needed at your site.
-
-Import the appliance
-~~~~~~~~~~~~~~~~~~~~
-
-1. Download :code:`charliecloud_centos7.ova`, or whatever your site
-   has called it.
-2. *File* → *Import appliance*. Choose :code:`charliecloud_centos7.ova` and
-   click *Continue*.
-3. Review the settings.
-
-   * CPU should match the number of cores in your system.
-   * RAM should be reasonable. Anywhere from 2GiB to half your system RAM will
-     probably work.
-   * Tick *Reinitialize the MAC address of all network cards*.
-
-4. Click *Import*.
-5. Verify that the appliance's port forwarding is acceptable to you and your
-   site: *Details* → *Network* → *Adapter 1* → *Advanced* → *Port
-   Forwarding*.
-
-Log in and try Charliecloud
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-1. Start the VM by clicking the green arrow.
-
-2. Wait for it to boot.
-
-3. Click on the console window, where user :code:`charlie` is logged in. If
-   the VM "captures" your mouse pointer, type the key combination listed in
-   the lower-right corner of the window to release it. You can avoid capture
-   by clicking the title bar instead of window content.
-
-4. Change your password. You must use :code:`sudo` because you have
-   passwordless :code:`sudo` but don't know your password.
-
-   ::
-
-     $ sudo passwd charlie
-
-5. SSH (from terminal on the host) into the VM using the password you just
-   set. Accessing the VM using SSH rather than the console is generally more
-   pleasant, because you have a nice terminal with native copy-and-paste, etc.
-
-   ::
-
-     $ ssh -p 2222 charlie@localhost
-
-6. Build and run a container:
-
-   ::
-
-     $ ch-build -t hello -f /usr/local/src/charliecloud/examples/serial/hello \
-                /usr/local/src/charliecloud
-     $ ch-builder2tar hello /var/tmp
-     57M /var/tmp/hello.tar.gz
-     $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
-     creating new image /var/tmp/hello
-     /var/tmp/hello unpacked ok
-     $ cat /etc/redhat-release
-     CentOS Linux release 7.3.1611 (Core)
-     $ ch-run /var/tmp/hello -- /bin/bash
-     > cat /etc/debian_version
-     8.9
-     > exit
-
-Congratulations! You've successfully used Charliecloud. Now all of your
-wildest dreams will come true.
-
-Shut down the VM at your leisure.
-
-Possible next steps:
-
-  * Follow the :doc:`tutorial <tutorial>`.
-  * Run :ref:`ch-test <ch-test>` (Note that the environment variables are
-    already configured for you in this appliance.)
-  * Configure :code:`/var/tmp` to be a :code:`tmpfs`, if you have enough RAM,
-    for better performance.
-
-Build and use the VM with Vagrant
----------------------------------
-
-This procedure builds and provisions an idiomatic Vagrant virtual machine. You
-should also read the Vagrantfile in :code:`packaging/vagrant` before
-proceeding. This contains the specific details on build and provisioning,
-which are not repeated here.
-
-Prerequisite: You already know how to use Vagrant.
-
-Caveats and gotchas
-~~~~~~~~~~~~~~~~~~~
-
-In no particular order:
-
-* While Vagrant supports a wide variety of host and virtual machine providers,
-  this procedure is tested only on VirtualBox on a Mac. Current Vagrant
-  versions should work, but we don't track specifically which ones. (Anyone
-  who wants to help us broaden this support, please get in touch.)
-
-* Switching between proxy and no-proxy environments is not currently
-  supported. If you have a mixed environment (e.g. laptops that travel between
-  a corporate network and the wild), you may want to provide two separate
-  images.
-
-* Provisioning is not idempotent. Running the provisioners again will have
-  undefined results.
-
-* The documentation is not built. Use the web documentation instead of man
-  pages.
-
-* Only the most recent release of Charliecloud is supported.
-
-Install Vagrant and plugins
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can install VirtualBox and Vagrant either manually using website downloads
-or with Homebrew::
-
-  $ brew cask install virtualbox virtualbox-extension-pack vagrant
-
-Sanity check::
-
-  $ vagrant version
-  Installed Version: 2.1.2
-  Latest Version: 2.1.2
-
-  You're running an up-to-date version of Vagrant!
-
-Then, install the needed plugins::
-
-  $ vagrant plugin install vagrant-disksize \
-                           vagrant-proxyconf \
-                           vagrant-reload \
-                           vagrant-vbguest
-
-Build and provision
-~~~~~~~~~~~~~~~~~~~
-
-To build the VM and install Docker, Charliecloud, etc.::
-
-  $ cd packaging/vagrant
-  $ vagrant up
-
-By default, this uses the newest release of Charliecloud. If you want
-something different, set the :code:`CH_VERSION` variable, e.g.::
-
-  $ CH_VERSION=v0.10 vagrant up
-  $ CH_VERSION=master vagrant up
-
-Then, optionally run the Charliecloud tests::
-
-  $ vagrant provision --provision-with=test
-
-This runs the Charliecloud test suite in standard scope.
-
-Note that the test output does not have a TTY, so you will not have the tidy
-checkmarks. The last test printed is the last one that completed, not the one
-currently running.
-
-If the tests don't pass, that's a bug. Please report it!
-
-Now you can :code:`vagrant ssh` and do all the usual Vagrant stuff.
+..  LocalWords:  Werror Flameeyes plougher

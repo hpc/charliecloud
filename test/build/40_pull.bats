@@ -175,31 +175,37 @@ EOF
     # invalid character in image name
     cat <<'EOF' | image_ref_parse 'name*' 1
 error: image ref syntax, char 5: name*
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # missing port number
     cat <<'EOF' | image_ref_parse 'example.com:/path1/name' 1
 error: image ref syntax, char 13: example.com:/path1/name
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # path with leading slash
     cat <<'EOF' | image_ref_parse '/path1/name' 1
 error: image ref syntax, char 1: /path1/name
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # path but no name
     cat <<'EOF' | image_ref_parse 'path1/' 1
 error: image ref syntax, at end: path1/
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # bad digest algorithm
     cat <<'EOF' | image_ref_parse 'name@sha512:feeddad' 1
 error: image ref syntax, char 5: name@sha512:feeddad
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # both tag and digest
     cat <<'EOF' | image_ref_parse 'name:tag@sha512:feeddad' 1
 error: image ref syntax, char 9: name:tag@sha512:feeddad
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 }
 
@@ -240,24 +246,34 @@ EOF
     cd -
 }
 
-@test 'pull image with manifest schema v1' {
-    # Verify we handle images with manifest schema version one (v1).
+@test 'pull images with uncommon manifests' {
+    if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
+        # Manifests seem to vary by registry; we need Docker Hub.
+        skip 'default registry host set'
+    fi
 
-    unpack=$BATS_TMPDIR
-    cache=$unpack/dlcache
-    # We target debian:squeeze because 1) it always returns a v1 manifest
-    # schema (regardless of media type specified), and 2) it isn't very large,
-    # thus keeps test time down.
+    storage="${BATS_TMPDIR}/tmp"
+    cache=$storage/dlcache
+    export CH_IMAGE_STORAGE=$storage
+
+    # OCI manifest; see issue #1184.
+    img=charliecloud/ocimanifest:2021-10-12
+    ch-image pull "$img"
+
+    # Manifest schema version one (v1); see issue #814. Use debian:squeeze
+    # because 1) it always returns a v1 manifest schema (regardless of media
+    # type specified), and 2) it isn't very large, thus keeps test time down.
     img=debian:squeeze
+    ch-image pull "$img"
+    grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
 
-    ch-image pull --storage="$unpack" \
-                  --no-cache \
-                  "$img"
-    [[ $status -eq 0 ]]
-    grep -F '"schemaVersion": 1' "${cache}/${img}.manifest.json"
+    rm -Rf --one-file-system "$storage"
 }
 
 @test 'pull from public repos' {
+    if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
+        skip 'default registry host set'  # avoid Docker Hub
+    fi
     if [[ -z $CI ]]; then
         # Verify we can reach the public internet, except on CI, where we
         # insist this should work.
@@ -281,13 +297,22 @@ EOF
     # Google Container Registry:
     # https://console.cloud.google.com/gcr/images/google-containers/GLOBAL
     # FIXME: "latest" tags do not work, but they do in Docker (issue #896)
-    ch-image pull gcr.io/google-containers/busybox:1.27
+    # FIXME: arch-aware pull does not work either (issue #1100)
+    ch-image pull --arch=yolo gcr.io/google-containers/busybox:1.27
 
     # nVidia NGC: https://ngc.nvidia.com
     # FIXME: 96 MiB unpacked; also kind of slow
     # FIXME: Can't pull this image with LC_ALL=C (issue #970).
     LC_ALL=en_US.utf-8 \
     ch-image pull nvcr.io/hpc/foldingathome/fah-gpu:7.6.21
+
+    # Red Hat registry: https://catalog.redhat.com/software/containers/explore
+    # FIXME: 77 MiB unpacked, should find a smaller public image
+    ch-image pull registry.access.redhat.com/ubi7-minimal:latest
+
+    # Microsoft Container Registry:
+    # https://github.com/microsoft/containerregistry
+    ch-image pull mcr.microsoft.com/mcr/hello-world:latest
 
     # Things not here (yet?):
     #
@@ -363,4 +388,65 @@ EOF
   ]
 }
 EOF
+}
+
+
+@test 'pull by arch' {
+    # Has fat manifest; requested arch exists. There's not much simple to look
+    # for in the output, so just see if it works.
+    ch-image --arch=yolo pull alpine:latest
+    ch-image --arch=host pull alpine:latest
+    ch-image --arch=amd64 pull alpine:latest
+    ch-image --arch=arm64/v8 pull alpine:latest
+
+    # Has fat manifest, but requested arch does not exist.
+    run ch-image --arch=doesnotexist pull alpine:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'requested arch unavailable:'*'available:'* ]]
+
+    # Delete it so we don't try to use a non-matching arch for other testing.
+    ch-image delete alpine:latest
+
+    # No fat manifest.
+    ch-image --arch=yolo pull charliecloud/metadata:2021-01-15
+    ch-image --arch=amd64 pull charliecloud/metadata:2021-01-15
+    if [[ $(uname -m) == 'x86_64' ]]; then
+        ch-image --arch=host pull charliecloud/metadata:2021-01-15
+        run ch-image --arch=arm64/v8 pull charliecloud/metadata:2021-01-15
+        echo "$output"
+        [[ $status -eq 1 ]]
+        [[ $output = *'image is architecture-unaware'*'consider --arch=yolo' ]]
+    fi
+}
+
+
+@test 'pull images that do not exist' {
+    if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
+        skip 'default registry host set'  # errors are Docker Hub specific
+    fi
+
+    # name does not exist remotely, in library
+    run ch-image pull doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/library/doesnotexist:latest'* ]]
+
+    # tag does not exist remotely, in library
+    run ch-image pull alpine:doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/library/alpine:doesnotexist'* ]]
+
+    # name does not exist remotely, not in library
+    run ch-image pull charliecloud/doesnotexist:latest
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/charliecloud/doesnotexist:latest'* ]]
+
+    # tag does not exist remotely, not in library
+    run ch-image pull charliecloud/metadata:doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'registry-1.docker.io:443/charliecloud/metadata:doesnotexist'* ]]
 }

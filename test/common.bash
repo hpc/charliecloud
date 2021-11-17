@@ -101,11 +101,6 @@ multiprocess_ok () {
     true
 }
 
-need_squashfs () {
-    command -v mksquashfs > /dev/null 2>&1 || skip "no squashfs-tools found"
-    command -v squashfuse > /dev/null 2>&1 || skip "no squashfuse found"
-}
-
 pedantic_fail () {
     msg=$1
     if [[ -n $ch_pedantic ]]; then
@@ -136,7 +131,7 @@ run () {
 scope () {
     if [[ -n $ch_one_test ]]; then
         # Ignore scope if a single test is given.
-        if [[ $ch_one_test != "$BATS_TEST_DESCRIPTION" ]]; then
+        if [[ $BATS_TEST_DESCRIPTION != *"$ch_one_test"* ]]; then
             skip 'per --file'
         else
             return 0
@@ -161,13 +156,6 @@ scope () {
         *)
             exit 1
     esac
-}
-
-squashfs_ready () {
-    if [[ $CH_PACK_FMT != squashfs ]]; then
-        exit 1
-    fi
-    command -v mksquashfs && command -v squashfuse
 }
 
 unpack_img_all_nodes () {
@@ -206,6 +194,8 @@ ch_lib=$(ch-build --_lib-path)
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
+# shellcheck disable=SC2034
+ch_version_base=$(echo "$ch_version" | sed -E 's/~.+//')
 # shellcheck disable=SC2034
 ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 

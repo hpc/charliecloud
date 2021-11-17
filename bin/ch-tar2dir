@@ -12,6 +12,7 @@ Unpack an image tarball into a directory.
 Usage:
 
   $ $(basename "$0") TARBALL DIR
+${deprecated_convert}
 EOF
 )
 
@@ -125,10 +126,21 @@ if [ "$(echo "$files" | wc -l)" -eq 1 ]; then
     rmdir "${newroot}/${files}"
 fi
 
-# Ensure directories that ch-run needs exist.
+# Ensure mount points that ch-run needs exist. Do nothing if something already
+# exists, without dereferencing, in case it's a symlink, which will work for
+# bind-mount later but won't resolve correctly now outside the container (e.g.
+# linuxcontainers.org images; issue #1015).
+#
+# WARNING: Keep in sync with other shell scripts & Image.unpack_init().
 echo 'This directory is a Charliecloud image.' > "${newroot}/${sentinel}"
-mkdir -p "${newroot}/dev" "${newroot}/etc" "${newroot}/proc" "${newroot}/sys"
-touch "${newroot}/etc/hosts" "${newroot}/etc/resolv.conf"
-for i in $(seq 0 9); do mkdir -p "${newroot}/mnt/${i}"; done
+for i in bin dev etc mnt proc usr \
+         mnt/0 mnt/1 mnt/2 mnt/3 mnt/4 mnt/5 mnt/6 mnt/7 mnt/8 mnt/9; do
+    exist_p "${newroot}/${i}" || mkdir "${newroot}/${i}"
+done
+for i in etc/hosts etc/resolv.conf; do
+    exist_p "${newroot}/${i}" || touch "${newroot}/${i}"
+done
 
 echo "${newroot} unpacked ok"
+
+deprecated_convert_warn

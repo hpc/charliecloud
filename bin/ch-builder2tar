@@ -10,6 +10,7 @@ Flatten a builder image into a Charliecloud image tarball.
 Usage:
 
   $ $(basename "$0") [-b BUILDER] [--nocompress] IMAGE OUTDIR
+${deprecated_convert}
 EOF
 )
 
@@ -159,10 +160,12 @@ EOF
     ;;
 
 ch-image)
-
-    echo "exporting"
     storage=$("${ch_bin}/ch-image" storage-path)/img/$(tag_to_path "$image")
-    echo "$storage"
+    if [ ! -d "$storage" ]; then
+        echo "$image not found in builder storage" 1>&2
+        exit 1
+    fi
+    echo "exporting"
     ( cd "$storage" && tar cf - . ) | pv_ > "$tar"
 
     ;;
@@ -232,3 +235,5 @@ else
     rm "$tar"
     ls -lh "$tar_gzipped"
 fi
+
+deprecated_convert_warn

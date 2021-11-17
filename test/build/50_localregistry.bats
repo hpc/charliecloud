@@ -11,9 +11,9 @@ tag='ch-image push'
 setup () {
     scope standard
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
-    # Skip unless CI or there is a listener on localhost:5000.
-    if [[ -z $CI ]] && ! (   command -v ss > /dev/null 2>&1 \
-                          && ss -lnt | grep -F :5000); then
+    # Skip unless GitHub Actions or there is a listener on localhost:5000.
+    if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
+                                      && ss -lnt | grep -F :5000); then
         skip 'no local registry'
     fi
 
@@ -90,4 +90,18 @@ setup () {
     [[ $(stat -c '%A' "$img2"/setgid_file) = -rw-r----- ]]
     [[ $(stat -c '%A' "$img2"/setuid_dir) =  drwxr-x--- ]]
     [[ $(stat -c '%A' "$img2"/setgid_dir) =  drwxr-x--- ]]
+}
+
+@test "${tag}: consistent layer hash" {
+    run ch-image push --tls-no-verify 00_tiny localhost:5000/00_tiny
+    echo "$output"
+    [[ $status -eq 0 ]]
+    push1=$(echo "$output" | grep -E 'layer 1/1: .+: checking')
+
+    run ch-image push --tls-no-verify 00_tiny localhost:5000/00_tiny
+    echo "$output"
+    [[ $status -eq 0 ]]
+    push2=$(echo "$output" | grep -E 'layer 1/1: .+: checking')
+
+    diff -u <(echo "$push1") <(echo "$push2")
 }

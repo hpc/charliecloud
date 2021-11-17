@@ -14,6 +14,9 @@ Usage:
 BUILDER is "ch-image" or "docker"
         (or experimentally: "buildah", "buildah-runc", "buildah-setuid")
 ARGS are passed unchanged to the underlying builder.
+
+Warning: This script is deprecated; instead, run desired builder directly. It
+will be removed in the next release. See the FAQ for tips.
 EOF
 )
 

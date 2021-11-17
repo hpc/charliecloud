@@ -10,6 +10,40 @@ lib="${ch_bin}/../lib/charliecloud"
 . "${lib}/version.sh"
 
 
+# Verbosity level; works the same as the Python code.
+verbose=0
+
+DEBUG () {
+    if [ "$verbose" -ge 2 ]; then
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
+}
+
+FATAL () {
+    printf 'error: ' 1>&2
+    # shellcheck disable=SC2059
+    printf "$@" 1>&2
+    printf '\n' 1>&2
+    exit 1
+}
+
+INFO () {
+    # shellcheck disable=SC2059
+    printf "$@" 1>&2
+    printf '\n' 1>&2
+}
+
+VERBOSE () {
+    if [ "$verbose" -ge 1 ]; then
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
+}
+
+
 # Don't call in a subshell or the selection will be lost.
 builder_choose () {
     if [ -z "$CH_BUILDER" ]; then
@@ -31,36 +65,43 @@ builder_choose () {
     esac
 }
 
-pack_fmt_valid () {
-    case $1 in
-    squash)
-        if ! command -v mksquashfs > /dev/null 2>&1; then
-            echo "can't use squash for packed images: no mksquashfs found" 1>&2
-            exit 1
-        fi
-        ;;
-    tar)
-        if ! command -v tar > /dev/null 2>&1; then
-            echo "can't use tar for packed images: no tar found" 1>&2
-            exit 1
-        fi
-        ;;
-    *)
-        echo "unknown packed image format: $1" 1>&2
-        exit 1
-        ;;
-    esac
+deprecated_convert=$(cat <<EOF
+
+warning: This script is deprecated in favor of ch-convert.
+warning: It will be removed in the next release.
+EOF
+)
+deprecated_convert_warn () {
+    echo "$deprecated_convert" 1>&2
 }
 
-pack_fmt_choose () {
-    if [ -z "$CH_PACK_FMT" ]; then
-        if command -v mksquashfs > /dev/null 2>&1; then
-            export CH_PACK_FMT=squash
-        else
-            export CH_PACK_FMT=tar
-        fi
-    fi
-    pack_fmt_valid "$CH_PACK_FMT"
+# Return success if path $1 exists, without dereferencing links, failure
+# otherwise. ("test -e" dereferences.)
+exist_p () {
+    stat "$1" > /dev/null 2>&1
+}
+
+# Try to parse $1 as a common argument. If accepted, either exit (for things
+# like --help) or return success; otherwise, return failure (i.e., not a
+# common argument).
+parse_basic_arg () {
+    case $1 in
+        --_lib-path)  # undocumented
+            echo "$lib"
+            exit 0
+            ;;
+        --help)
+            usage 0   # exits
+            ;;
+        -v|--verbose)
+            verbose=$((verbose+1))
+            return 0
+            ;;
+        --version)
+            version   # exits
+            ;;
+    esac
+    return 1  # not a basic arg
 }
 
 parse_basic_args () {
@@ -68,16 +109,7 @@ parse_basic_args () {
         usage 1
     fi
     for i in "$@"; do
-        if [ "$i" = --_lib-path ]; then  # undocumented
-            echo "$lib"
-            exit 0
-        fi
-        if [ "$i" = --help ]; then
-            usage 0
-        fi
-        if [ "$1" = --version ]; then
-            version
-        fi
+        parse_basic_arg "$i" || true
     done
 }
 
@@ -86,7 +118,7 @@ parse_basic_args () {
 # NOTE: This is used both to name user-visible stuff like tarballs as well as
 # dig around in the ch-image storage directory.
 tag_to_path () {
-    echo "$1" | sed 's/\//%/g'
+    echo "$1" | tr '/' '%'
 }
 
 usage () {
@@ -166,24 +198,6 @@ if command -v pigz > /dev/null 2>&1; then
 else
     gzip_ () {
         gzip "$@"
-    }
-fi
-
-# Use fuse low-level API if it's available.
-if command -v squashfuse_ll > /dev/null 2>&1; then
-    squashfuse_ () {
-        squashfuse_ll "$@"
-    }
-elif command -v squashfuse > /dev/null 2>&1; then
-    squashfuse_ () {
-        echo "WARNING:" 1>&2
-        echo "Low-level FUSE API unavailable; squashfuse will be slower" 1>&2
-        squashfuse "$@"
-    }
-else
-    squashfuse_ () {
-        echo "can't mount: no squashfuse or squashfuse_ll command found" 1>&2
-        exit 1
     }
 fi
 

@@ -42,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Charliecloud'
-copyright = u'2014–2020, Triad National Security, LLC'
+copyright = u'2014–2021, Triad National Security, LLC'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -238,6 +238,10 @@ latex_documents = [
 
 # -- Options for manual page output --------------------------------------------
 
+# Put all man pages in one directory regardless of section. Default changes to
+# True in Sphinx 4.0, which broke our builds (#1060).
+man_make_section_directory = False
+
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
@@ -256,8 +260,11 @@ man_pages = [
    ("ch-builder2tar", "ch-builder2tar",
     "Flatten a builder image into a Charliecloud image tarball",
     [], 1),
-    ("ch-checkns", "ch-checkns",
-     'Check "ch-run" prerequisites, e.g., namespaces and "pivot_root(2)"',
+   ("ch-checkns", "ch-checkns",
+    'Check "ch-run" prerequisites, e.g., namespaces and "pivot_root(2)"',
+    [], 1),
+   ("ch-convert", "ch-convert",
+    'Convert an image from one format to another',
     [], 1),
    ("ch-dir2squash", "ch-dir2squash",
     "Create a SquashFS file from an image directory",
@@ -267,9 +274,6 @@ man_pages = [
     [], 1),
    ("ch-image", "ch-image",
     "Build and manage images; completely unprivileged",
-    [], 1),
-   ("ch-mount", "ch-mount",
-    "Mount a SquashFS image file using FUSE",
     [], 1),
    ("ch-pull2dir", "ch-pull2dir",
     "Pull image from a Docker Hub and unpack into directory",
@@ -290,9 +294,6 @@ man_pages = [
     [], 1),
    ("ch-test", "ch-test",
     "Run some or all of the Charliecloud test suite",
-    [], 1),
-   ("ch-umount", "ch-umount",
-    "Unmount a FUSE mounted squash filesystem and remove the mount point",
     [], 1),
 ]
 

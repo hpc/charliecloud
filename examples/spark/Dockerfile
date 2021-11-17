@@ -16,7 +16,7 @@ RUN apt-get update \
                     default-jre-headless \
                     less \
                     procps \
-                    python \
+                    python3 \
                     wget \
  && rm -rf /var/lib/apt/lists/*
 
@@ -29,11 +29,8 @@ RUN touch /usr/bin/ch-ssh
 #    applications.
 #
 # 2. Spark is installed to /opt/spark, which is Spark's new default location.
-#
-# 3. We disapprove of Spark's master/slave terminology, but it's what the
-#    scripts are called, so we don't see a way to avoid it currently.
-ARG URLPATH=https://archive.apache.org/dist/spark/spark-3.0.1/
-ARG DIR=spark-3.0.1-bin-hadoop2.7
+ARG URLPATH=https://archive.apache.org/dist/spark/spark-3.2.0/
+ARG DIR=spark-3.2.0-bin-hadoop3.2
 ARG TAR=$DIR.tgz
 RUN wget -nv $URLPATH/$TAR \
  && tar xf $TAR \

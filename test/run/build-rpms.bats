@@ -2,6 +2,7 @@ load ../common
 
 setup () {
     scope standard
+    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'need writeable image'
     [[ $CHTEST_GITWD ]] || skip "not in Git working directory"
     if     ! command -v sphinx-build > /dev/null 2>&1 \
         && ! command -v sphinx-build-3.6 > /dev/null 2>&1; then
@@ -28,6 +29,7 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
+    [[ $output = *'charliecloud-builder'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
     [[ $output = *'charliecloud-doc'* ]]
     [[ $output = *'charliecloud-test-'* ]]
@@ -35,9 +37,13 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/bin/ch-run'* ]]
-    [[ $output = *'/usr/lib64/charliecloud/base.sh'* ]]
-    [[ $output = *'/usr/share/doc/charliecloud-'*'/examples/lammps/Dockerfile'* ]]
+    [[ $output = *'/usr/lib/charliecloud/base.sh'* ]]
     [[ $output = *'/usr/share/man/man7/charliecloud.7.gz'* ]]
+    run ch-run "$img" -- rpm -ql "charliecloud-builder"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'/usr/bin/ch-image'* ]]
+    [[ $output = *'/usr/lib/charliecloud/charliecloud.py'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud-debuginfo"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -52,6 +58,7 @@ setup () {
     run ch-run "$img" -- rpm -ql "charliecloud-doc"
     echo "$output"
     [[ $output = *'/usr/share/doc/charliecloud-'*'/html'* ]]
+    [[ $output = *'/usr/share/doc/charliecloud-'*'/examples/lammps/Dockerfile'* ]]
 }
 
 @test 'remove el7 RPMs' {
@@ -61,6 +68,7 @@ setup () {
     run ch-run -w "$img" -- rpm -v --erase charliecloud-test \
                                            charliecloud-debuginfo \
                                            charliecloud-doc \
+                                           charliecloud-builder \
                                            charliecloud
     echo "$output"
     [[ $status -eq 0 ]]
@@ -95,15 +103,20 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'charliecloud-'* ]]
+    [[ $output = *'charliecloud-builder'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
     [[ $output = *'charliecloud-doc'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/bin/ch-run'* ]]
-    [[ $output = *'/usr/lib64/charliecloud/base.sh'* ]]
-    [[ $output = *'/usr/share/doc/charliecloud/examples/lammps/Dockerfile'* ]]
+    [[ $output = *'/usr/lib/charliecloud/base.sh'* ]]
     [[ $output = *'/usr/share/man/man7/charliecloud.7.gz'* ]]
+    run ch-run "$img" -- rpm -ql "charliecloud-builder"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'/usr/bin/ch-image'* ]]
+    [[ $output = *'/usr/lib/charliecloud/charliecloud.py'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud-debuginfo"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -111,6 +124,7 @@ setup () {
     run ch-run "$img" -- rpm -ql "charliecloud-doc"
     echo "$output"
     [[ $output = *'/usr/share/doc/charliecloud/html'* ]]
+    [[ $output = *'/usr/share/doc/charliecloud/examples/lammps/Dockerfile'* ]]
 }
 
 @test 'remove el8 RPMs' {
@@ -119,6 +133,7 @@ setup () {
     # Uninstall to avoid interfering with the rest of the test suite.
     run ch-run -w "$img" -- rpm -v --erase charliecloud-debuginfo \
                                            charliecloud-doc \
+                                           charliecloud-builder \
                                            charliecloud
     echo "$output"
     [[ $status -eq 0 ]]

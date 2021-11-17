@@ -22,17 +22,21 @@ a.out
 /doc/man/*.[17]
 /lib/charliecloud
 /lib/contributors.bash
+/lib/lark
+/lib/lark-stubs
+/lib/lark*.dist-info
 /lib/version.py
 /lib/version.sh
 /lib/version.txt
+/test/build/61_force-auto.bats
 /test/docs-sane
 /test/fixtures/symlink-to-tmp
+/test/force-auto
 /test/make-perms-test
 /test/sotest/*.so*
 /test/sotest/sotest
 /test/sotest/bin/
 /test/sotest/lib/
-/packaging/vagrant/.vagrant
 
 # perhaps-unpacked tarballs at root of working directory
 /charliecloud-*.tar*

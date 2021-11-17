@@ -8,14 +8,22 @@
 
 /** Types **/
 
+enum bind_dep {
+   BD_REQUIRED,  // both source and destination must exist
+   BD_OPTIONAL,  // if either source or destination missing, do nothing
+   BD_MAKE_DST,  // source must exist, try to create destination if it doesn't
+};
+
 struct bind {
    char *src;
    char *dst;
+   enum bind_dep dep;
 };
 
-enum bind_dep {
-   BD_REQUIRED,  // both source and destination must exist
-   BD_OPTIONAL   // if either source or destination missing, do nothing
+enum img_type {
+   IMG_DIRECTORY,  // normal directory, perhaps an external mount of some kind
+   IMG_SQUASH,     // SquashFS archive file (not yet mounted)
+   IMG_NONE,       // image type is not set yet
 };
 
 struct container {
@@ -23,6 +31,8 @@ struct container {
    bool ch_ssh;          // bind /usr/bin/ch-ssh?
    gid_t container_gid;  // GID to use in container
    uid_t container_uid;  // UID to use in container
+   bool env_expand;      // expand variables in --set-env
+   char *img_path;       // path to image
    char *newroot;        // path to new root directory
    bool join;            // is this a synchronized join?
    int join_ct;          // number of peers in a synchronized join
@@ -32,11 +42,13 @@ struct container {
    bool private_passwd;  // don't bind custom /etc/{passwd,group}
    bool private_tmp;     // don't bind host's /tmp
    char *old_home;       // host path to user's home directory (i.e. $HOME)
-   bool writable;
+   enum img_type type;   // directory, SquashFS, etc.
+   bool writable;        // re-mount image read-write
 };
 
 
 /** Function prototypes **/
 
 void containerize(struct container *c);
+enum img_type img_type_get(const char *path);
 void run_user_command(char *argv[], const char *initial_dir);

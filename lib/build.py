@@ -53,10 +53,12 @@ ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
                  "https_proxy": os.environ.get("https_proxy"),
                  "ftp_proxy": os.environ.get("ftp_proxy"),
                  "no_proxy": os.environ.get("no_proxy"),
+                 "SSH_AUTH_SOCK": os.environ.get("SSH_AUTH_SOCK"),
                  "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                  # GNU tar, when it thinks it's running as root, tries to
                  # chown(2) and chgrp(2) files to whatever's in the tarball.
-                 "TAR_OPTIONS": "--no-same-owner" }
+                 "TAR_OPTIONS": "--no-same-owner",
+                 "USER": os.environ.get("USER") }
 
 
 ## Main ##
@@ -77,13 +79,28 @@ def main(cli_):
 
    # Infer image name if needed.
    if (cli.tag is None):
-      m = re.search(r"(([^/]+)/)?Dockerfile(\.(.+))?$",
-                    os.path.abspath(cli.file))
-      if (m is not None):
-         if m.group(4):    # extension
-            cli.tag = m.group(4)
-         elif m.group(2):  # containing directory
-            cli.tag = m.group(2)
+      path = os.path.basename(cli.file)
+      if ("." in path):
+         (base, ext_all) = str(path).split(".", maxsplit=1)
+         (base_all, ext_last) = str(path).rsplit(".", maxsplit=1)
+      else:
+         base = None
+         ext_last = None
+      if (base == "Dockerfile"):
+         cli.tag = ext_all
+         ch.VERBOSE("inferring name from Dockerfile extension: %s" % cli.tag)
+      elif (ext_last == "dockerfile"):
+         cli.tag = base_all
+         ch.VERBOSE("inferring name from Dockerfile basename: %s" % cli.tag)
+      elif (os.path.abspath(cli.context) != "/"):
+         cli.tag = os.path.basename(os.path.abspath(cli.context))
+         ch.VERBOSE("inferring name from context directory: %s" % cli.tag)
+      else:
+         assert (os.path.abspath(cli.context) == "/")
+         cli.tag = "root"
+         ch.VERBOSE("inferring name with root context directory: %s" % cli.tag)
+      cli.tag = re.sub(r"[^a-z0-9_.-]", "", cli.tag.lower())
+      ch.INFO("inferred image name: %s" % cli.tag)
 
    # Deal with build arguments.
    def build_arg_get(arg):
@@ -96,10 +113,7 @@ def main(cli_):
             ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
          return (kv[0], v)
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
-
-   # Finish CLI initialization.
    ch.DEBUG(cli)
-   ch.dependencies_check()
 
    # Guess whether the context is a URL, and error out if so. This can be a
    # typical looking URL e.g. "https://..." or also something like
@@ -135,7 +149,8 @@ def main(cli_):
       tree = parser.parse(text)
    except lark.exceptions.UnexpectedInput as x:
       ch.VERBOSE(x)  # noise about what was expected in the grammar
-      ch.FATAL("can't parse: %s:%d,%d\n\n%s" % (cli.file, x.line, x.column, x.get_context(text, 39)))
+      ch.FATAL("can't parse: %s:%d,%d\n\n%s"
+               % (cli.file, x.line, x.column, x.get_context(text, 39)))
    ch.VERBOSE(tree.pretty())
 
    # Sometimes we exit after parsing.
@@ -356,11 +371,17 @@ class I_copy(Instruction):
          paths = [variables_sub(i, env.env_build)
                   for i in ch.tree_child_terminals(self.tree, "copy_shell",
                                                    "WORD")]
-         self.srcs = paths[:-1]
-         self.dst = paths[-1]
+      elif (ch.tree_child(self.tree, "copy_list") is not None):
+         paths = [variables_sub(i, env.env_build)
+                  for i in ch.tree_child_terminals(self.tree, "copy_list",
+                                                   "STRING_QUOTED")]
+         for i in range(len(paths)):
+            paths[i] = paths[i][1:-1] #strip quotes
       else:
-         assert (ch.tree_child(self.tree, "copy_list") is not None)
-         self.unsupported_yet_fatal("list form", 784)
+         assert False, "unreachable code reached"
+
+      self.srcs = paths[:-1]
+      self.dst = paths[-1]
 
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
@@ -373,7 +394,7 @@ class I_copy(Instruction):
          must exist already and be a directory. Unlike subdirectories, the
          metadata of dst will not be altered to match src."""
       def onerror(x):
-         ch.FATAL("error scanning directory: %s: %s" % (x.filename, x.strerror))
+         ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
       src = ch.Path(os.path.realpath(src))
@@ -484,6 +505,8 @@ class I_copy(Instruction):
       return dst_canon
 
    def execute_(self):
+      if (len(self.srcs) < 1):
+         ch.FATAL("can't COPY: must specify at least one source")
       # Complain about unsupported stuff.
       if (self.options.pop("chown", False)):
          self.unsupported_forever_warn("--chown")
@@ -512,11 +535,12 @@ class I_copy(Instruction):
       # Expand source wildcards.
       srcs = list()
       for src in self.srcs:
-         for i in glob.glob("%s/%s" % (context, src)):  # glob can't take Path
+         matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
+         if (len(matches) == 0):
+            ch.FATAL("can't copy: not found: %s" % src)
+         for i in matches:
             srcs.append(i)
             ch.VERBOSE("source: %s" % i)
-      if (len(srcs) == 0):
-         ch.FATAL("can't COPY: no sources found")
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
       for src in srcs:
@@ -579,10 +603,10 @@ class I_env_equals(Env):
    def __init__(self, *args):
       super().__init__(*args)
       self.key = ch.tree_terminal(self.tree, "WORD", 0)
-      self.value = ch.tree_terminal(self.tree, "WORD", 1)
-      if (self.value is None):
-         self.value = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
-      self.value = variables_sub(self.value, env.env_build)
+      v = ch.tree_terminal(self.tree, "WORD", 1)
+      if (v is None):
+         v = ch.tree_terminal(self.tree, "STRING_QUOTED")
+      self.value = variables_sub(unescape(v), env.env_build)
 
 
 class I_env_space(Env):
@@ -590,11 +614,8 @@ class I_env_space(Env):
    def __init__(self, *args):
       super().__init__(*args)
       self.key = ch.tree_terminal(self.tree, "WORD")
-      value = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
-      if (not value.startswith('"')):
-         value = '"' + value + '"'
-      self.value = unescape(value)
-      self.value = variables_sub(self.value, env.env_build)
+      v = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
+      self.value = variables_sub(unescape(v), env.env_build)
 
 
 class I_from_(Instruction):
@@ -636,12 +657,14 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
       self.base_image = ch.Image(self.base_ref)
-      if (not os.path.isdir(self.base_image.unpack_path)):
-         ch.VERBOSE("image not found, pulling: %s"
-                    % self.base_image.unpack_path)
+      if (os.path.isdir(self.base_image.unpack_path)):
+         ch.VERBOSE("base image found: %s" % self.base_image.unpack_path)
+      else:
+         ch.VERBOSE("base image not found, pulling")
          # a young hen, especially one less than one year old.
-         pullet = pull.Image_Puller(self.base_image)
+         pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
          pullet.pull_to_unpacked()
+         pullet.done()
       image.copy_unpacked(self.base_image)
       image.metadata_load()
       env.reset()
@@ -842,6 +865,8 @@ def unescape(sl):
    # guessing it's the Go rules. You will note that we are using Python rules.
    # This is wrong but close enough for now (see also gripe in previous
    # paragraph).
-   if (not (sl.startswith('"') and sl.endswith('"'))):
-      ch.FATAL("string literal not quoted")
+   if (    not sl.startswith('"')                          # no start quote
+       and (not sl.endswith('"') or sl.endswith('\\"'))):  # no end quote
+      sl = '"%s"' % sl
+   assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
    return ast.literal_eval(sl)

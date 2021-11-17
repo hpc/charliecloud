@@ -80,6 +80,8 @@ def args_parse():
    sp.add_argument("cid", metavar="CONTAINER_ID")
 
    args_ = ap.parse_args()
+   args_.arch = "yolo"
+   args_.password_many = False
    args_.storage = None
    args_.tls_no_verify = False
    ch.init(args_)
@@ -91,13 +93,13 @@ def args_parse():
    bundle_ = bundle_from_cid(args_.cid)
    if ("bundle" in args_ and args_.bundle != bundle_):
       ch.FATAL("bundle argument \"%s\" differs from inferred bundle \"%s\""
-            % (args_.bundle, bundle_))
+               % (args_.bundle, bundle_))
    args_.bundle = bundle_
 
    pid_file_ = pid_file_from_bundle(args_.bundle)
    if ("pid_file" in args_ and args_.pid_file != pid_file_):
       ch.FATAL("pid_file argument \"%s\" differs from inferred \"%s\""
-            % (args_.pid_file, pid_file_))
+               % (args_.pid_file, pid_file_))
    args_.pid_file = pid_file_
 
    return args_

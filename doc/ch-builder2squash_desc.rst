@@ -8,6 +8,9 @@ Synopsis
 Description
 ===========
 
+.. warning:: This script is deprecated in favor of :code:`ch-convert`. It will
+             be removed in the next release.
+
 Flattens the builder image tagged :code:`IMAGE` into a SquashFS file in
 :code:`OUTDIR`.
 

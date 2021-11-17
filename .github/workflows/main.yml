@@ -15,15 +15,18 @@ jobs:
       fail-fast: true  # if any job fails, cancel the rest immediately
       matrix:
         builder: [none, docker, ch-image]
-        keep_sudo:  # if false, remove self from sudoers after install/setup
+        pack_fmt: [squash-mount, tar-unpack, squash-unpack]
+        keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
         include:
           - builder: docker
+            pack_fmt: squash-mount
             keep_sudo: true
     env:
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
       CH_TEST_IMGDIR: /mnt/images
+      CH_TEST_PACK_FMT: ${{ matrix.pack_fmt }}
       CH_TEST_PERMDIRS: /mnt/perms_test /run/perms_test
       ch_prefix: /var/tmp
 
@@ -56,6 +59,9 @@ jobs:
 
       - name: print starting environment
         run: |
+          echo builder: ${{ matrix.builder }}
+          echo pack_fmt: ${{ matrix.pack_fmt }}
+          echo keep_sudo: ${{ matrix.keep_sudo }}
           env | egrep '^(PATH|USER)='
           env | egrep '^(ch|CH)_'
           [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
@@ -107,7 +113,22 @@ jobs:
           [[ $(command -v pip3) == /usr/local/bin/pip3 ]]
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
-          sudo sh -c 'umask 0022 && pip3 install lark-parser requests'
+          sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
+
+      - name: install libsquashfuse
+        if: ${{ matrix.pack_fmt == 'squash-mount' }}
+        run: |
+          set -x
+          sudo apt-get install -y libfuse3-dev
+          # Currently we need the master branch of SquashFUSE.
+          cd /usr/local/src
+          git clone https://github.com/vasi/squashfuse.git
+          cd squashfuse
+          ./autogen.sh
+          ./configure --prefix=/usr/local
+          make
+          sudo sh -c 'umask 0022 && make install'
+          sudo ldconfig
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -136,9 +157,43 @@ jobs:
           # configure doesn't tell us about these.
           sudo apt-get install pigz pv
           # configure does tell us about these.
-          sudo apt-get install squashfs-tools squashfuse
+          sudo apt-get install squashfs-tools
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
+          # Use newest shellcheck.
+          cd /usr/local/src
+          wget -nv https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz
+          tar xf shellcheck-stable.linux.x86_64.tar.xz
+          mv shellcheck-stable/shellcheck /usr/local/bin
+          which shellcheck
+          shellcheck --version
+
+      - name: disable bundled lark, ch-image
+        if: ${{ matrix.builder == 'ch-image' }}
+        run: |
+          set -x
+          # no install, disable
+          ./autogen.sh --no-lark
+          ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
+          fgrep '"lark" module ... external' config.log
+          ! test -f ./lib/lark/lark.py
+          make $ch_makej
+          sudo make $ch_makej install
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          make clean
+          # install, disable
+          ./autogen.sh
+          ./configure --disable-bundled-lark --prefix=$ch_prefix/from-git
+          fgrep '"lark" module ... bundled' config.log
+          test -f ./lib/lark/lark.py
+          make $ch_makej
+          sudo make $ch_makej install
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          make clean
+          # no install, enable: build fails, untested
+          # install, enable: normal configuration, remainder of CI
 
       - name: build/install from Git
         run: |
@@ -151,7 +206,16 @@ jobs:
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
           [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
+          if [[ $CH_BUILDER = ch-image ]]; then
+              fgrep 'with ch-image(1): yes' config.log
+              fgrep '"lark" module ... bundled' config.log
+              test -f ./lib/lark/lark.py
+          fi
+          if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
+              fgrep 'internal mount with libsquashfuse ... yes' config.log
+          else
+              fgrep 'internal mount with libsquashfuse ... no' config.log
+          fi
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'complete test suite: yes' config.log
@@ -159,13 +223,22 @@ jobs:
           # Build and install.
           make $ch_makej
           sudo make $ch_makej install
+          ldd bin/ch-run
           bin/ch-run --version
+          ldd $ch_prefix/from-git/bin/ch-run
           $ch_prefix/from-git/bin/ch-run --version
+          # Ensure bundled Lark in tarball.
+          make $ch_makej dist
+          tar tf charliecloud-*.tar.gz | fgrep /lib/lark/lark.py
 
       - name: late setup & validation, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
+          set -x
           [[ $(bin/ch-image python-path) = /usr/local/bin/python3 ]]
+          [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py" ]]
+          [[ $($ch_prefix/from-git/bin/ch-image python-path) = /usr/local/bin/python3 ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git/lib/charliecloud/lark/__init__.py" ]]
 
       - name: late setup & validation, all
         run: |
@@ -241,24 +314,24 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-tarball/bin/ch-run --version
 
-      - name: run test suite (Git WD, quick, squash)
+      - name: run test suite (Git WD, quick)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
-          bin/ch-test --scope=quick --pack-fmt=squash all
+          bin/ch-test --scope=quick all
 
-      - name: run test suite (Git WD, standard, squash)
+      - name: run test suite (Git WD, standard)
         run: |
-          bin/ch-test --pack-fmt=squash all
+          bin/ch-test all
 
-      - name: run test suite (installed from Git WD, standard, squash)
+      - name: run test suite (installed from Git WD, standard)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
-          $ch_prefix/from-git/bin/ch-test --pack-fmt=squash all
+          $ch_prefix/from-git/bin/ch-test all
 
-      - name: run test suite (installed from tarball, standard, squash)
+      - name: run test suite (installed from tarball, standard)
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
-          $ch_prefix/from-tarball/bin/ch-test --pack-fmt=squash all
+          $ch_prefix/from-tarball/bin/ch-test all
 
       - name: rebuild with most things --disable’d
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
@@ -280,13 +353,13 @@ jobs:
           make $ch_makej
           bin/ch-run --version
 
-      - name: run test suite (Git WD, standard, squash)
+      - name: run test suite (Git WD, standard)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
         run: |
-          bin/ch-test --pack-fmt=squash all
+          bin/ch-test all
 
       - name: remove non-essential dependencies
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
         run: |
           set -x
           # This breaks lots of dependencies unrelated to our build but YOLO.
@@ -295,22 +368,24 @@ jobs:
                     pv \
                     python3-requests \
                     squashfs-tools \
-                    squashfuse
           sudo pip3 uninstall -y sphinx sphinx-rtd-theme
+          if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
+              ( cd /usr/local/src/squashfuse && make uninstall )
+          fi
           ! python3 -c 'import requests'
           ! python3 -c 'import lark'
           test -e bin/ch-image
           bin/ch-test -f test/build/10_sanity.bats  # issue #806
 
       - name: rebuild
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
         run: |
           make distclean
           ./configure --prefix=/doesnotexist
           set -x
           fgrep 'documentation: no' config.log
+          fgrep 'internal mount with libsquashfuse ... no' config.log
           fgrep 'with Docker: yes' config.log
-          fgrep 'with ch-image(1): no' config.log
           fgrep 'at least one builder ... yes' config.log
           fgrep 'ch-run(1): yes' config.log
           fgrep 'recommended tests with tarballs: yes' config.log
@@ -320,10 +395,10 @@ jobs:
           make $ch_makej
           bin/ch-run --version
 
-      - name: run test suite (Git WD, standard, tarballs)
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+      - name: run test suite (Git WD, standard)
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
         run: |
-          bin/ch-test --pack-fmt=tar all
+          bin/ch-test all
 
       - name: print ending environment
         if: ${{ always() }}
