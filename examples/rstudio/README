@@ -4,5 +4,5 @@ runs an RStudio Server instance and then tests that it can be accessed by a
 headless Firefox automated using geckodriver and Selenium.
 
 At present, we haven't yet figured out how to do an R computation in RStudio
-using Selenium (issue #XXXX), so we just test logging into RStudio, with a
+using Selenium (issue #1238), so we just test logging into RStudio, with a
 separate test that R works.

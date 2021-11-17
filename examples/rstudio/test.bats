@@ -41,11 +41,10 @@ setup () {
 #
 #   $ ch-run $CH_TEST_IMGDIR/rstudio -- \
 #            /usr/lib/rstudio-server/bin/rserver --help
-@test "${ch_tag}/start rstudio-server" {
-    # Generate a random password for logging into RStudio; read by
-    # rserver-auth.sh. This basic measure prevents other users on the system
-    # from connecting. We use a file rather than an environment variable so
-    # later tests can use it.
+@test "${ch_tag}/rstudio-server start" {
+    # Generate a random password for logging into RStudio. This basic measure
+    # prevents other users on the system from connecting. We use a file rather
+    # than an environment variable so later tests can use it.
     openssl rand -base64 18 > "$pw_file"
     # Cleanup possibly left-over files from previous run.
     rm -Rf --one-file-system "$pid_file" \
@@ -72,10 +71,18 @@ setup () {
         sleep 1
     done
     [[ $i -lt 10 ]]
+    # FIXME: add a short sleep here then make sure the process in the PID file
+    # is still running
 }
 
 
-@test "${ch_tag}/stop rstudio-server" {
+@test "${ch_tag}/rstudio-server login" {
+    skip
+    ch-run "$ch_img" -- /tmp/login.py "$pw_file"
+}
+
+
+@test "${ch_tag}/rstudio-server stop" {
     [[ -f $pid_file ]]
     pid=$(cat $pid_file)
     kill "$pid"
