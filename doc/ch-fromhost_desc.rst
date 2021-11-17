@@ -250,56 +250,19 @@ Inject the Cray-enabled MPI libraries into the image, and then run
   /sbin/ldconfig: Can't stat /libx32: No such file or directory
   /sbin/ldconfig: Can't stat /usr/libx32: No such file or directory
   shared library destination: /usr/lib64//bind9-export
-  found shared library: [...]/openmpi/3.1.6-intel-19.1.3/lib/libmpi.so
   found shared library: /usr/lib64/liblustreapi.so.1
-  found shared library: [...]/openmpi/3.1.6-intel-19.1.3/lib/libopen-rte.so.40
-  found shared library: [...]/openmpi/3.1.6-intel-19.1.3/lib/libopen-pal.so.40
   found shared library: /opt/cray/xpmem/default/lib64/libxpmem.so.0
-  found shared library: /opt/cray/ugni/default/lib64/libugni.so.0
-  found shared library: /usr/lib64/libnuma.so.1
-  found shared library: /usr/lib64/libpciaccess.so.0
-  found shared library: /opt/cray/pe/lib64/libpmi.so.0
-  found shared library: /opt/cray/alps/default/lib64/libalpslli.so.0
-  found shared library: /opt/cray/alps/default/lib64/libalpsutil.so.0
-  found shared library: /opt/cray/wlm_detect/default/lib64/libwlm_detect.so.0
-  found shared library: /opt/cray/udreg/default/lib64/libudreg.so.0
-  found shared library: /usr/lib64/libnl-3.so.200
-  found shared library: /usr/lib64/libnl-route-3.so.200
-  found shared library: /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libimf.so
-  found shared library: /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libsvml.so
-  found shared library: /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libirng.so
-  found shared library: /opt/gcc/9.3.0/snos/lib64/libgcc_s.so.1
-  found shared library: /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libintlc.so.5
+  [...]
   injecting into image: /var/tmp/baz
     rm -f /var/tmp/openmpi/usr/lib64//bind9-export/libopen-rte.so.40
     rm -f /var/tmp/openmpi/usr/lib64/bind9-export/libopen-rte.so.40
-    rm -f /var/tmp/openmpi/usr/lib64//bind9-export/libopen-pal.so.40
-    rm -f /var/tmp/openmpi/usr/lib64/bind9-export/libopen-pal.so.40
-    rm -f /var/tmp/openmpi/usr/lib64//bind9-export/libmpi.so.40
-    rm -f /var/tmp/openmpi/usr/lib64/bind9-export/libmpi.so
+  [...]
     mkdir -p /var/tmp/openmpi/var/opt/cray/alps/spool
     mkdir -p /var/tmp/openmpi/etc/opt/cray/wlm_detect
-    mkdir -p /var/tmp/openmpi/var/opt/cray/hugetlbfs
-    [...]/openmpi/3.1.6-intel-19.1.3/lib/libmpi.so -> /usr/lib64//bind9-export (inferred)
+  [...]
     /usr/lib64/liblustreapi.so.1 -> /usr/lib64//bind9-export (inferred)
-    [...]/openmpi/3.1.6-intel-19.1.3/lib/libopen-rte.so.40 -> /usr/lib64//bind9-export (inferred)
-    [...]/openmpi/3.1.6-intel-19.1.3/lib/libopen-pal.so.40 -> /usr/lib64//bind9-export (inferred)
     /opt/cray/xpmem/default/lib64/libxpmem.so.0 -> /usr/lib64//bind9-export (inferred)
-    /opt/cray/ugni/default/lib64/libugni.so.0 -> /usr/lib64//bind9-export (inferred)
-    /usr/lib64/libnuma.so.1 -> /usr/lib64//bind9-export (inferred)
-    /usr/lib64/libpciaccess.so.0 -> /usr/lib64//bind9-export (inferred)
-    /opt/cray/pe/lib64/libpmi.so.0 -> /usr/lib64//bind9-export (inferred)
-    /opt/cray/alps/default/lib64/libalpslli.so.0 -> /usr/lib64//bind9-export (inferred)
-    /opt/cray/alps/default/lib64/libalpsutil.so.0 -> /usr/lib64//bind9-export (inferred)
-    /opt/cray/wlm_detect/default/lib64/libwlm_detect.so.0 -> /usr/lib64//bind9-export (inferred)
-    /opt/cray/udreg/default/lib64/libudreg.so.0 -> /usr/lib64//bind9-export (inferred)
-    /usr/lib64/libnl-3.so.200 -> /usr/lib64//bind9-export (inferred)
-    /usr/lib64/libnl-route-3.so.200 -> /usr/lib64//bind9-export (inferred)
-    /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libimf.so -> /usr/lib64//bind9-export (inferred)
-    /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libsvml.so -> /usr/lib64//bind9-export (inferred)
-    /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libirng.so -> /usr/lib64//bind9-export (inferred)
-    /opt/gcc/9.3.0/snos/lib64/libgcc_s.so.1 -> /usr/lib64//bind9-export (inferred)
-    /opt/intel/2020.4.912/compilers_and_libraries_2020.4.304/linux/compiler/lib/intel64_lin/libintlc.so.5 -> /usr/lib64//bind9-export (inferred)
+  [...]
     /etc/opt/cray/wlm_detect/active_wlm -> /etc/opt/cray/wlm_detect
   running ldconfig
 
