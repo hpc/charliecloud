@@ -181,7 +181,6 @@ DEFAULT_CONFIGS = {
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
                 "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm; "
-                "ls -lh /etc/yum.repos.d; "
                 "dnf install -y fakeroot; "
                 "dnf remove -y epel-release; "
                 "else "
