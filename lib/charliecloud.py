@@ -489,12 +489,6 @@ class Image:
          hist[i]["empty_layer"] = True
       return hist
 
-   def metadata_history_remove(self):
-       if (self.metadata is None):
-          path = self.metadata_path // "config.pulled.json"
-          self.metadata_merge_from_config(json_from_file(path, "config"))
-       self.metadata["history"] = []
-
    def metadata_replace(self, config_json):
       self.metadata_init()
       if (config_json is None):
