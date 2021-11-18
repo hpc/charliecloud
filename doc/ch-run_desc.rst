@@ -5,6 +5,7 @@ Synopsis
 
   $ ch-run [OPTION...] IMAGE -- CMD [ARG...]
 
+
 Description
 ===========
 
@@ -122,6 +123,7 @@ container. This does not reduce functionality but is a "belt and suspenders"
 precaution to reduce the attack surface should bugs in these system calls or
 elsewhere arise.
 
+
 Image format
 ============
 
@@ -162,6 +164,7 @@ value-add over the standard, unwrapped commands.
    unmounted from underneath them. In this case, the workaround is to
    mount/unmount using external tools. We expect to remove this limitation in
    a future version.
+
 
 Host files and directories available in container via bind mounts
 =================================================================
@@ -211,6 +214,7 @@ above.
 
   * temporary files at :code:`/etc/passwd` and :code:`/etc/group`. Usernames
     and group names need to be customized for each container run.
+
 
 Multiple processes in the same container with :code:`--join`
 =============================================================
@@ -272,6 +276,7 @@ Caveats:
 
 * Many of the arguments given to the race losers, such as the image path and
   :code:`--bind`, will be ignored in favor of what was given to the winner.
+
 
 Environment variables
 =====================
@@ -538,6 +543,7 @@ if started with no init files::
   _=/usr/bin/env
   $
 
+
 Examples
 ========
 
@@ -550,5 +556,16 @@ unpacked image at :code:`/data/foo`::
 Run an MPI job that can use CMA to communicate::
 
     $ srun ch-run --join /data/foo -- bar
+
+
+Exit status
+===========
+
+If there is an error during containerization, :code:`ch-run` exits with status
+non-zero. If the user command is started successfully, the exit status is that
+of the user command, with one exception: if the image is an internally mounted
+SquashFS filesystem and the user command is killed by a signal, the exit
+status is 1 regardless of the signal value.
+
 
 ..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount
