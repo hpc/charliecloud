@@ -225,6 +225,7 @@ class Main_Loop(lark.Visitor):
             images[image_i].metadata_save()
          self.instruction_ct += inst.execute_increment
 
+
 ## Instruction classes ##
 
 class Instruction(abc.ABC):
@@ -273,7 +274,6 @@ class Instruction(abc.ABC):
    def metadata_history_remove(self):
       images[image_i].metadata_history_remove()
 
-   # overriden when instruction is FROM
    def metadata_history_update(self, inst_ct):
      hist = images[image_i].metadata_history_return()
      images[image_i].metadata_history_replace(hist)
@@ -686,11 +686,6 @@ class I_from_(Instruction):
       global fakeroot_config
       fakeroot_config = fakeroot.detect(image.unpack_path,
                                         cli.force, cli.no_force_detect)
-
-   def metadata_history_update(self, inst_ct):
-      base_hist = images[image_i].metadata_history_return()
-      images[image_i].metadata_history_replace(base_hist)
-      self.metadata_history_add(inst_ct)
 
    def str_(self):
       alias = " AS %s" % self.alias if self.alias else ""
