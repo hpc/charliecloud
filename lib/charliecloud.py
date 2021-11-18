@@ -456,7 +456,7 @@ class Image:
       hist = self.metadata_empty_layer_history(hist)
       try:
          hist[-1].pop("empty_layer")
-      except KeyError:
+      except (IndexError, KeyError):
          pass
       self.metadata["history"] = hist
       # labels
