@@ -447,13 +447,18 @@ class Image:
             except AttributeError:
                FATAL("can't parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
-      # history
+      # History. Set the empty_layer value of each non-final history entry to
+      # true.
       try:
          hist = config["history"]
       except AttributeError:
          FATAL("config missing key 'history'")
-      for k in hist:
-         self.metadata["history"].append(k)
+      hist = self.metadata_empty_layer_history(hist)
+      try:
+         hist[-1].pop("empty_layer")
+      except KeyError:
+         pass
+      self.metadata["history"] = hist
       # labels
       set_("labels", "config", "Labels")  # copy reference
       # shell
@@ -466,18 +471,16 @@ class Image:
 
    def metadata_append(self, data):
       DEBUG("appending metadata: %s" % data)
-      if (self.metadata is None):
-         path = self.metadata_path // "config.pulled.json"
-         self.metadata_merge_from_config(json_from_file(path, "config"))
       for k in data:
          if (k in self.metadata.keys()):
             self.metadata[k] += data[k]
          else:
             FATAL("config has no key '%s'" % k)
-      # The builder setinel tells push if the target image was built with
-      # ch-image, in which case config history needs to be modified.
-      self.metadata.update({"builder": "ch-image"})
-      self.metadata_save()
+
+   def metadata_empty_layer_history(self, hist):
+      for i in range(len(hist)):
+         hist[i]["empty_layer"] = True
+      return hist
 
    def metadata_history_replace(self, hist):
       self.metadata["history"] = hist
@@ -485,9 +488,7 @@ class Image:
    def metadata_history_return(self):
       "Return config history with all entires having empty_layer set to True"
       hist = self.metadata["history"]
-      for i in range(len(hist)):
-         hist[i]["empty_layer"] = True
-      return hist
+      return self.metadata_empty_layer_history(hist)
 
    def metadata_replace(self, config_json):
       self.metadata_init()

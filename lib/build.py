@@ -267,8 +267,7 @@ class Instruction(abc.ABC):
 
    def metadata_history_add(self, inst_ct):
       hist = { "history": [ { "created": ch.now_utc_iso8601(),
-                              "created_by": "%s %s" % (self.str_name(), self.str_()),
-                              "empty_layer": True}]}
+                              "created_by": "%s %s" % (self.str_name(), self.str_())}]}
       images[image_i].metadata_append(hist)
 
    def metadata_history_remove(self):
@@ -276,6 +275,8 @@ class Instruction(abc.ABC):
 
    # overriden when instruction is FROM
    def metadata_history_update(self, inst_ct):
+     hist = images[image_i].metadata_history_return()
+     images[image_i].metadata_history_replace(hist)
      self.metadata_history_add(inst_ct)
 
    def options_assert_empty(self):

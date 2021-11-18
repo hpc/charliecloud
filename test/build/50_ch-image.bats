@@ -396,10 +396,9 @@ ch_foo=foo-ev
 EOF
 
     # /ch/metadata.json contents
-     diff -u -I '^.*"created":.*,$' - "${img}/ch/metadata.json" <<'EOF'
+    diff -u -I '^.*"created":.*,$' - "${img}/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
-  "builder": "ch-image",
   "cwd": "/usr",
   "env": {
     "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
@@ -526,8 +525,7 @@ EOF
       "empty_layer": true
     },
     {
-      "created_by": "RUN ['/bin/sh', '-v', '-c', 'echo \"shell2: $0\"']",
-      "empty_layer": true
+      "created_by": "RUN ['/bin/sh', '-v', '-c', 'echo \"shell2: $0\"']"
     }
   ],
   "labels": {
