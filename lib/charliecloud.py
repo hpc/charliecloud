@@ -478,8 +478,9 @@ class Image:
             FATAL("config has no key '%s'" % k)
 
    def metadata_empty_layer_history(self, hist):
-      for i in range(len(hist)):
-         hist[i]["empty_layer"] = True
+      if (len(hist) > 0 ):
+         for i in range(len(hist)):
+            hist[i]["empty_layer"] = True
       return hist
 
    def metadata_history_replace(self, hist):
@@ -487,7 +488,10 @@ class Image:
 
    def metadata_history_return(self):
       "Return config history with all entires having empty_layer set to True"
-      hist = self.metadata["history"]
+      try:
+         hist = self.metadata["history"]
+      except KeyError:
+         return []
       return self.metadata_empty_layer_history(hist)
 
    def metadata_replace(self, config_json):
