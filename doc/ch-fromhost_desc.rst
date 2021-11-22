@@ -260,7 +260,7 @@ then run :code:`ldconfig`::
 
 .. note::
 
-    ldconfig stat errors are typically are non-fatal an occur when trying to
+    ldconfig stat errors are typically non-fatal and often occur when trying to
     probe common library paths. See #732.
 
 Inject the Cray-enabled MPI libraries into the image, and then run
