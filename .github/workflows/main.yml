@@ -316,15 +316,15 @@ jobs:
           # Verify uninstall works.
           sudo make uninstall
           diff -u - <(find $ch_prefix/from-tarball | sort) <<'EOF'
-          /var/tmp/from-tarball/
+          /var/tmp/from-tarball
           /var/tmp/from-tarball/bin
           /var/tmp/from-tarball/lib
           /var/tmp/from-tarball/libexec
           /var/tmp/from-tarball/share
           /var/tmp/from-tarball/share/doc
           /var/tmp/from-tarball/share/man
-          /var/tmp/from-tarball/share/man1
-          /var/tmp/from-tarball/share/man7
+          /var/tmp/from-tarball/share/man/man1
+          /var/tmp/from-tarball/share/man/man7
           EOF
 
       - name: run test suite (Git WD, quick)
