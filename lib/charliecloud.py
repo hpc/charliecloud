@@ -262,8 +262,7 @@ class Credentials:
             try:
                username = input("\nUsername: ")
             except KeyboardInterrupt:
-               INFO('')
-               FATAL("keyboard interrupt")
+               FATAL("authentication cancelled")
             password = getpass.getpass("Password: ")
          if (not password_many):
             # Remember the credentials.
