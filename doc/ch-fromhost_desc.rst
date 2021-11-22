@@ -266,6 +266,11 @@ Inject the Cray-enabled MPI libraries into the image, and then run
     /etc/opt/cray/wlm_detect/active_wlm -> /etc/opt/cray/wlm_detect
   running ldconfig
 
+.. note::
+
+    ldconfig stat errors are typically non-fatal and often occur when trying to
+    probe common library paths. See #732.
+
 Acknowledgements
 ================
 
