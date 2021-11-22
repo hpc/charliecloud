@@ -1028,7 +1028,10 @@ EOF
     "org.label-schema.schema-version": "1.0",
     "org.label-schema.vendor": "CentOS"
   },
-  "shell": ["/bin/bash"],
+  "shell": [
+    "/bin/sh",
+    "-c"
+  ],
   "volumes": []
 }
 EOF
