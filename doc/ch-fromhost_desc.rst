@@ -271,6 +271,11 @@ then run :code:`ldconfig`::
     /usr/lib64/libGLESv1_CM_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
   running ldconfig
 
+.. note::
+
+    ldconfig stat errors are typically are non-fatal an occur when trying to
+    probe common library paths. See #732.
+
 Inject the Cray-enabled MPI libraries into the image, and then run
 :code:`ldconfig`::
 
