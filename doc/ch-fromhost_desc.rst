@@ -241,6 +241,27 @@ Inject the executables and libraries recommended by nVidia into the image, and
 then run :code:`ldconfig`::
 
   $ ch-fromhost --nvidia /var/tmp/baz
+  asking ldconfig for shared library destination
+  /sbin/ldconfig: Can't stat /libx32: No such file or directory
+  /sbin/ldconfig: Can't stat /usr/libx32: No such file or directory
+  shared library destination: /usr/lib64//bind9-export
+  injecting into image: /var/tmp/baz
+    /usr/bin/nvidia-smi -> /usr/bin (inferred)
+    /usr/bin/nvidia-debugdump -> /usr/bin (inferred)
+    /usr/bin/nvidia-persistenced -> /usr/bin (inferred)
+    /usr/bin/nvidia-cuda-mps-control -> /usr/bin (inferred)
+    /usr/bin/nvidia-cuda-mps-server -> /usr/bin (inferred)
+    /usr/lib64/libnvidia-ml.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-cfg.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+  [...]
+    /usr/lib64/libGLESv2_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libGLESv1_CM_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+  running ldconfig
+
+.. note::
+
+    ldconfig stat errors are typically non-fatal and often occur when trying to
+    probe common library paths. See #732.
 
 Inject the Cray-enabled MPI libraries into the image, and then run
 :code:`ldconfig`::
