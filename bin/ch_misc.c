@@ -51,6 +51,15 @@ char *username = NULL;
 
 /** Functions **/
 
+/* Return true if buffer buf of length size is all zeros, false otherwise. */
+bool buf_zero_p(void *buf, size_t size)
+{
+   for (size_t i = 0; i < size; i++)
+      if (((char *)buf)[i] != 0)
+         return false;
+   return true;
+}
+
 /* Concatenate strings a and b, then return the result. */
 char *cat(const char *a, const char *b)
 {
@@ -61,6 +70,55 @@ char *cat(const char *a, const char *b)
        b = "";
    T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
+}
+
+/* Copy the buffer of size size pointed to by new into the last position in
+   the zero-terminated array of elements with the same size on the heap
+   pointed to by *ar, reallocating it to hold one more element and setting
+   list to the new location. *list can be NULL to initialize a new list.
+   Return the new array size.
+
+   Note: ar must be cast, e.g. "list_append((void **)&foo, ...)".
+
+   Warning: This function relies on all pointers having the same
+   representation, which is true on most modern machines but is not guaranteed
+   by the standard [1]. We could instead return the new value of ar rather
+   than using an out parameter, which would avoid the double pointer and
+   associated non-portability but make it easy for callers to create dangling
+   pointers, i.e., after "a = list_append(b, ...)", b will dangle. That
+   problem could in turn be avoided by returning a *copy* of the array rather
+   than a modified array, but then the caller has to deal with the original
+   array itself. It seemed to me the present behavior was the best trade-off.
+
+   [1]: http://www.c-faq.com/ptrs/genericpp.html */
+void list_append(void **ar, void *new, size_t size)
+{
+   int ct;
+   T_ (new != NULL);
+
+   // count existing elements
+   if (*ar == NULL)
+      ct = 0;
+   else
+      for (ct = 0; !buf_zero_p((char *)*ar + ct*size, size); ct++)
+         ;
+
+   T_ (*ar = realloc(*ar, (ct+2)*size));        // existing + new + terminator
+   memcpy((char *)*ar + ct*size, new, size);    // append new (no overlap)
+   memset((char *)*ar + (ct+1)*size, 0, size);  // set new terminator
+}
+
+/* Return a pointer to a new, empty zero-terminated array containing elements
+   of size size, with room for ct elements without re-allocation. The latter
+   allows to pre-allocate an arbitrary number of slots in the list, which can
+   then be filled directly without testing the list's length for each one.
+   (The list is completely filled with zeros, so every position has a
+   terminator after it.) */
+void *list_new(size_t size, size_t ct)
+{
+   void *list;
+   T_ (list = calloc(ct+1, size));
+   return list;
 }
 
 /* If verbose, print uids and gids on stderr prefixed with where. */
@@ -94,21 +152,24 @@ void log_ids(const char *func, int line)
    wrong. For example, mkdirs("/foo", "/bar/baz") will create directories
    /foo/bar and /foo/bar/baz if they don't already exist, but /foo must exist
    already. Symlinks are followed. path must remain under base, i.e. you can't
-   use symlinks or ".." to climb out. */
-void mkdirs(const char *base, const char *path,
-            char **denylist, size_t denylist_ct)
+   use symlinks or ".." to climb out. denylist is a null-terminated array of
+   paths under which no directories may be created, or NULL if none. */
+void mkdirs(const char *base, const char *path, char **denylist)
 {
    char *basec, *component, *next, *nextc, *pathw, *saveptr;
+   char *denylist_null[] = { NULL };
    struct stat sb;
 
    T_ (base[0] != 0   && path[0] != 0);      // no empty paths
    T_ (base[0] == '/' && path[0] == '/');    // absolute paths only
+   if (denylist == NULL)
+      denylist = denylist_null;  // literal here causes intermittent segfaults
 
    basec = realpath_safe(base);
 
    DEBUG("mkdirs: base: %s", basec);
    DEBUG("mkdirs: path: %s", path);
-   for (size_t i = 0; i < denylist_ct; i++)
+   for (size_t i = 0; denylist[i] != NULL; i++)
       DEBUG("mkdirs: deny: %s", denylist[i]);
 
    pathw = cat(path, "");  // writeable copy
@@ -135,7 +196,7 @@ void mkdirs(const char *base, const char *path,
       } else {
          Te (path_subdir_p(basec, next),
              "can't mkdir: %s not subdirectory of %s", next, basec);
-         for (size_t i = 0; i < denylist_ct; i++)
+         for (size_t i = 0; denylist[i] != NULL; i++)
             Ze (path_subdir_p(denylist[i], next),
                 "can't mkdir: %s under existing bind-mount %s",
                 next, denylist[i]);

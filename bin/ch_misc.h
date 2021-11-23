@@ -73,10 +73,12 @@ extern char *username;
 
 /** Function prototypes **/
 
+bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
+void list_append(void **ar, void *new, size_t size);
+void *list_new(size_t size, size_t ct);
 void log_ids(const char *func, int line);
-void mkdirs(const char *base, const char *path,
-            char **denylist, size_t denylist_ct);
+void mkdirs(const char *base, const char *path, char **denylist);
 void msg(int level, const char *file, int line, int errno_,
          const char *fmt, ...);
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink);

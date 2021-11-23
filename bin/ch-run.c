@@ -80,9 +80,7 @@ struct args {
 
 /** Function prototypes **/
 
-void env_delta_append(struct env_delta **ds, enum env_action act, char *arg);
-void envs_set(char **lines, const int line_ct, const char *filename,
-              const bool expand);
+void envs_set(char **lines, const char *filename, const bool expand);
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
@@ -105,32 +103,31 @@ int main(int argc, char *argv[])
    bool argp_help_fmt_set;
    struct args args;
    int arg_next;
-   int c_argc;
    char ** c_argv;
 
    privs_verify_invoking();
 
    verbose = 1;  // in charliecloud.h
-   args = (struct args){ .c = (struct container){ .ch_ssh = false,
-                                                  .container_gid = getegid(),
-                                                  .container_uid = geteuid(),
-                                                  .env_expand = true,
-                                                  .img_path = NULL,
-                                                  .newroot = NULL,
-                                                  .join = false,
-                                                  .join_ct = 0,
-                                                  .join_pid = 0,
-                                                  .join_tag = NULL,
-                                                  .private_home = false,
-                                                  .private_passwd = false,
-                                                  .private_tmp = false,
-                                                  .old_home = getenv("HOME"),
-                                                  .type = IMG_NONE,
-                                                  .writable = false },
-                         .initial_dir = NULL };
-   // These need to be on the heap because we realloc(3) them later.
-   T_ (args.c.binds = calloc(1, sizeof(struct bind)));
-   T_ (args.env_deltas = calloc(1, sizeof(struct env_delta)));
+   args = (struct args){
+      .c = (struct container){ .binds = list_new(sizeof(struct bind), 0),
+                               .ch_ssh = false,
+                               .container_gid = getegid(),
+                               .container_uid = geteuid(),
+                               .env_expand = true,
+                               .img_path = NULL,
+                               .newroot = NULL,
+                               .join = false,
+                               .join_ct = 0,
+                               .join_pid = 0,
+                               .join_tag = NULL,
+                               .private_home = false,
+                               .private_passwd = false,
+                               .private_tmp = false,
+                               .old_home = getenv("HOME"),
+                               .type = IMG_NONE,
+                               .writable = false },
+      .env_deltas = list_new(sizeof(struct env_delta), 0),
+      .initial_dir = NULL };
 
    /* I couldn't find a way to set argp help defaults other than this
       environment variable. Kludge sets/unsets only if not already set. */
@@ -177,9 +174,8 @@ int main(int argc, char *argv[])
    username = getenv("USER");
    Te (username != NULL, "$USER not set");
 
-   c_argc = argc - arg_next;
-   T_ (c_argv = calloc(c_argc + 1, sizeof(char *)));
-   for (int i = 0; i < c_argc; i++)
+   c_argv = list_new(sizeof(char *), argc - arg_next);
+   for (int i = 0; i < argc - arg_next; i++)
       c_argv[i] = argv[i + arg_next];
 
    INFO("verbosity: %d", verbose);
@@ -200,29 +196,15 @@ int main(int argc, char *argv[])
 
 /** Supporting functions **/
 
-/* Append a new env_delta to an existing null-terminated list. */
-void env_delta_append(struct env_delta **ds, enum env_action act, char *arg)
-{
-   int i;
-
-   for (i = 0; (*ds)[i].action != ENV_END; i++) // count existing
-         ;
-   T_ (*ds = realloc(*ds, (i+2) * sizeof(struct env_delta)));
-   (*ds)[i+1].action = ENV_END;
-   (*ds)[i].action = act;
-   (*ds)[i].arg = arg;
-}
-
 /* Set environment variables as specified in the array lines, which has length
    line_ct. filename is the source filename, or NULL if source was not a file;
    in that case, omit line number from any error messages. If expand, then
    expand variable notation as described in the man page. */
-void envs_set(char **lines, const int line_ct, const char *filename,
-              const bool expand)
+void envs_set(char **lines, const char *filename, const bool expand)
 {
    char *name, *value_old, *value_new, *lineno_str, *item;
 
-   for (int i = 0; i < line_ct; i++) {
+   for (int i = 0; lines[i] != NULL; i++) {
       bool first_written;
 
       // Skip blank lines.
@@ -298,35 +280,33 @@ void fix_environment(struct args *args)
    Z_ (unsetenv("TMPDIR"));
 
    // --set-env and --unset-env.
-   for (int i = 0; args->env_deltas[i].action != ENV_END; i++) {
+   for (int i = 0; args->env_deltas[i].action != 0; i++) {
       char *arg = args->env_deltas[i].arg;
       if (args->env_deltas[i].action == ENV_SET) {  // --set-env
          if (strchr(arg, '=') != NULL) {
             // argument is variable name & value
-            envs_set((char *[]){ arg }, 1, NULL, args->c.env_expand);
+            envs_set((char *[]){ arg, NULL }, NULL, args->c.env_expand);
          } else {
             // argument is filename
-            char **lines = NULL;
-            int line_ct = 0;
+            char **lines = list_new(sizeof(char *), 0);
             FILE *fp;
             Tf (fp = fopen(arg, "r"), "--set-env: can't open: %s", arg);
-            for (line_ct = 0; true; line_ct++) {
+            for (int line_ct = 0; true; line_ct++) {
                char *line;
                size_t line_len = 0;  // don't care but getline(3) must write
                errno = 0;
                if (-1 == getline(&line, &line_len, fp)) {
                   if (errno == 0)  // EOF
-                     break;        // note: line_ct not incremented
+                     break;
                   else
                      Tf (0, "--set-env: can't read: %s", arg);
                }
                if (line[strlen(line) - 1] == '\n')  // rm newline if present
                   line[strlen(line) - 1] = 0;
-               T_ (lines = realloc(lines, (line_ct + 1) * sizeof(char *)));
-               lines[line_ct] = line;
+               list_append((void **)&lines, &line, sizeof(line));
             }
             Zf (fclose(fp), "--set-env: can't close: %s", arg);
-            envs_set(lines, line_ct, arg, args->c.env_expand);
+            envs_set(lines, arg, args->c.env_expand);
          }
       } else {  // --unset-env
          T_ (args->env_deltas[i].action == ENV_UNSET);
@@ -341,12 +321,8 @@ void fix_environment(struct args *args)
 
             [1]: https://unix.stackexchange.com/a/302987
             [2]: http://man7.org/linux/man-pages/man3/exec.3p.html */
-         char **new_environ;
-         int old_i, new_i;
-         for (old_i = 0; environ[old_i] != NULL; old_i++)
-            ;
-         T_ (new_environ = calloc(old_i + 1, sizeof(char *)));
-         for (old_i = 0, new_i = 0; environ[old_i] != NULL; old_i++) {
+         char **new_environ = list_new(sizeof(char *), 0);
+         for (int old_i = 0; environ[old_i] != NULL; old_i++) {
             int matchp;
             split(&name, &old_value, environ[old_i], '=');
             T_ (name != NULL);          // env lines should always have equals
@@ -356,7 +332,7 @@ void fix_environment(struct args *args)
             } else {
                T_ (matchp == FNM_NOMATCH);
                *(old_value - 1) = '=';  // rejoin line
-               new_environ[new_i++] = name;
+               list_append((void **)&new_environ, &name, sizeof(name));
             }
          }
          environ = new_environ;
@@ -476,11 +452,15 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join_pid = parse_int(arg, false, "--join-pid");
       break;
    case -6: // --set-env
-      env_delta_append(&(args->env_deltas), ENV_SET, arg);
+      list_append((void **)&(args->env_deltas),
+                  &((struct env_delta){ ENV_SET, arg }),
+                  sizeof(struct env_delta));
       break;
    case -7: // --unset-env
       Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
-      env_delta_append(&(args->env_deltas), ENV_UNSET, arg);
+      list_append((void **)&(args->env_deltas),
+                  &((struct env_delta){ ENV_UNSET, arg }),
+                  sizeof(struct env_delta));
       break;;
    case -8: // --ch-ssh
       args->c.ch_ssh = true;
