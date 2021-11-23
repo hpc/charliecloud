@@ -497,6 +497,7 @@ EOF
     fi
 
     # old valid and needs upgrade
+    [[ -d "$old_parent" ]] || mkdir "$old_parent"
     mkdir "$old"
     mkdir "$old"/{dlcache,img,ulcache}
     echo 1 > "$old"/version
