@@ -201,6 +201,10 @@ Bugs
 
 File paths may not contain colons or newlines.
 
+:code:`ldconfig` tends to print :code:`stat` errors; these are typically
+non-fatal and occur when trying to probe common library paths. See `issue #732
+<https://github.com/hpc/charliecloud/issues/732>`_.
+
 
 Examples
 ========
@@ -258,11 +262,6 @@ then run :code:`ldconfig`::
     /usr/lib64/libGLESv1_CM_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
   running ldconfig
 
-.. note::
-
-    ldconfig stat errors are typically non-fatal and often occur when trying to
-    probe common library paths. See #732.
-
 Inject the Cray-enabled MPI libraries into the image, and then run
 :code:`ldconfig`::
 
@@ -287,10 +286,6 @@ Inject the Cray-enabled MPI libraries into the image, and then run
     /etc/opt/cray/wlm_detect/active_wlm -> /etc/opt/cray/wlm_detect
   running ldconfig
 
-.. note::
-
-    ldconfig stat errors are typically non-fatal and often occur when trying to
-    probe common library paths. See #732.
 
 Acknowledgements
 ================
