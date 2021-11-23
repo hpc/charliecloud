@@ -1498,7 +1498,7 @@ class Storage:
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
-      self.init_move_old()  # see issues #1160 and #FIXME
+      self.init_move_old()  # see issues #1160 and #1243
       if (not os.path.isdir(self.root)):
          op = "initializing"
          v_found = None
@@ -1525,9 +1525,7 @@ class Storage:
 
    def init_move_old(self):
       """If appropriate, move storage directory from old default path to new.
-         See issues #1160 and #FIXME."""
-      # Move storage directory from old default path to new, if appropriate.
-      # See issues #1160 and #FIXME.
+         See issues #1160 and #1243."""
       old = Storage("/var/tmp/%s/ch-image" % user())
       moves = ( "dlcache", "img", "ulcache", "version" )
       if (self.root != self.root_default()):
