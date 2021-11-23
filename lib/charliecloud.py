@@ -259,7 +259,10 @@ class Credentials:
          except KeyError:
             # Finally, prompt the user.
             # FIXME: This hangs in Bats despite sys.stdin.isatty() == True.
-            username = input("\nUsername: ")
+            try:
+               username = input("\nUsername: ")
+            except KeyboardInterrupt:
+               FATAL("authentication cancelled")
             password = getpass.getpass("Password: ")
          if (not password_many):
             # Remember the credentials.
