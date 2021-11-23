@@ -1467,6 +1467,13 @@ class Storage:
       return self.root // "ulcache"
 
    @property
+   def valid_p(self):
+      # FIXME: require version file too when appropriate (#1147)
+      """Return True if storage present and seems valid, False otherwise."""
+      return (os.path.isdir(self.unpack_base) and
+              os.path.isdir(self.download_cache))
+
+   @property
    def version_file(self):
       return self.root // "version"
 
@@ -1476,11 +1483,7 @@ class Storage:
       # environment variable? It seems a lot more robust. But, (1) we'd have
       # to match it in some scripts and (2) it makes the documentation less
       # clear becase we have to explain the fallback behavior.
-      try:
-         username = os.environ["USER"]
-      except KeyError:
-         FATAL("can't get username: $USER not set")
-      return "/var/tmp/%s/ch-image" % username
+      return Path("/var/tmp/%s.ch" % user())
 
    @staticmethod
    def root_env():
@@ -1495,6 +1498,7 @@ class Storage:
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
+      self.init_move_old()  # see issues #1160 and #FIXME
       if (not os.path.isdir(self.root)):
          op = "initializing"
          v_found = None
@@ -1510,7 +1514,7 @@ class Storage:
          VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
       elif (v_found in {None, 1}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
-         mkdirs(self.root)  # FIXME: use mkdir() when don't need two levels
+         mkdir(self.root)
          mkdir(self.download_cache)
          mkdir(self.unpack_base)
          mkdir(self.upload_cache)
@@ -1518,6 +1522,52 @@ class Storage:
       else:                         # can't upgrade
          FATAL("incompatible storage directory v%d: %s" % (v_found, self.root),
                'you can delete and re-initialize with "ch-image reset"')
+
+   def init_move_old(self):
+      """If appropriate, move storage directory from old default path to new.
+         See issues #1160 and #FIXME."""
+      # Move storage directory from old default path to new, if appropriate.
+      # See issues #1160 and #FIXME.
+      old = Storage("/var/tmp/%s/ch-image" % user())
+      moves = ( "dlcache", "img", "ulcache", "version" )
+      if (self.root != self.root_default()):
+         return  # do nothing silently unless using default storage dir
+      if (not os.path.exists(old.root)):
+         return  # do nothing silently unless old default storage dir exists
+      if (not old.valid_p):
+         WARNING("storage dir: invalid at old default, ignoring: %s" % old.root)
+         return
+      INFO("storage dir: valid at old default: %s" % old.root)
+      if (not os.path.exists(self.root)):
+         mkdir(self.root)
+      elif (self.valid_p):
+         WARNING("storage dir: also valid at new default: %s" % old.root,
+                 hint="consider deleting the old one")
+         return
+      elif (not os.path.isdir(self.root)):
+         return  # new isn't a directory; init/upgrade code will error later
+      elif (any(os.path.exists(self.root // i) for i in moves)):
+         return  # new is broken; init/upgrade should error later
+      # Now we know (1) the old storage exists and is valid and (2) the new
+      # storage exists, is a directory, and contains none of the files we'd
+      # move. However, it *may* contain subdirectories other parts of
+      # Charliecloud care about, e.g. "mnt" for ch-run.
+      INFO("storage dir: moving to new default path: %s" % self.root)
+      for i in moves:
+         src = old.root // i
+         dst = self.root // i
+         if (os.path.exists(src)):
+            DEBUG("moving: %s -> %s" % (src, dst))
+            try:
+               shutil.move(src, dst)
+            except OSError as x:
+               FATAL("can't move: %s -> %s: %s"
+                     % (x.filename, x.filename2, x.strerror))
+      ossafe(os.rmdir, "can't rmdir: %s" % old.root, old.root)
+      if (len(ossafe(os.listdir, "can't list: %s" % old.root.parent,
+                     old.root.parent)) == 0):
+         WARNING("storage dir: parent of old now empty: %s" % old.root.parent,
+                 hint="consider deleting it")
 
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
@@ -1529,7 +1579,7 @@ class Storage:
       return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
    def reset(self):
-      if (self.valid_p()):
+      if (self.valid_p):
          rmtree(self.root)
          self.init()  # largely for debugging
       else:
@@ -1537,12 +1587,6 @@ class Storage:
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
-
-   def valid_p(self):
-      # FIXME: require version file too when appropriate (#1147)
-      "Return True if storage present and seems valid, False otherwise."
-      return (os.path.isdir(self.unpack_base) and
-              os.path.isdir(self.download_cache))
 
 
 class TarFile(tarfile.TarFile):
@@ -1752,7 +1796,7 @@ def digest_trim(d):
       FATAL("no algorithm tag: %s" % d)
 
 def done_notify():
-   if (os.environ.get("USER", None) == "jogas"):
+   if (user() == "jogas"):
       INFO("!!! KOBE !!!")
    else:
       INFO("done")
@@ -2032,3 +2076,10 @@ def tree_terminals_cat(tree, tname):
 def unlink(path, *args, **kwargs):
    "Error-checking wrapper for os.unlink()."
    ossafe(os.unlink, "can't unlink: %s" % path, path)
+
+def user():
+   "Return the current username; exit with error if it can't be obtained."
+   try:
+      return os.environ["USER"]
+   except KeyError:
+      FATAL("can't get username: $USER not set")

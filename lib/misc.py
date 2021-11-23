@@ -65,7 +65,7 @@ def list_(cli):
       # list all images
       if (not os.path.isdir(ch.storage.root)):
          ch.FATAL("does not exist: %s" % ch.storage.root)
-      if (not ch.storage.valid_p()):
+      if (not ch.storage.valid_p):
          ch.FATAL("not a storage directory: %s" % ch.storage.root)
       imgs = ch.ossafe(os.listdir, "can't list directory: %s" % ch.storage.root, imgdir)
       for img in sorted(imgs):
