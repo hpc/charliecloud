@@ -139,8 +139,10 @@ In descending order of priority, this directory is located at:
   :code:`$CH_IMAGE_STORAGE`
     Environment variable.
 
-  :code:`/var/tmp/$USER/ch-image`
-    Default.
+  :code:`/var/tmp/$USER.ch`
+    Default. (Previously, the default was :code:`/var/tmp/$USER/ch-image`. If
+    a valid storage directory is found at the old default path,
+    :code:`ch-image` tries to move it to the new default path.)
 
 Unlike many container implementations, there is no notion of storage drivers,
 graph drivers, etc., to select and/or configure.
