@@ -594,6 +594,7 @@ EOF
     [[ -d ${new}/img ]]
     [[ ! -e ${new}/ulcache ]]
     [[ ! -e ${new}/version ]]
+    rm -Rfv --one-file-system "$old"
     rm -Rfv --one-file-system "$new"
 
     # put real storage dir back
@@ -601,5 +602,4 @@ EOF
         rm -Rfv --one-file-system "$new"
         mv -v "$new_bak" "$new"
     fi
-    false
 }

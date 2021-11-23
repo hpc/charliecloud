@@ -1539,7 +1539,7 @@ class Storage:
       if (not os.path.exists(self.root)):
          mkdir(self.root)
       elif (self.valid_p):
-         WARNING("storage dir: also valid at new default: %s" % old.root,
+         WARNING("storage dir: also valid at new default: %s" % self.root,
                  hint="consider deleting the old one")
          return
       elif (not os.path.isdir(self.root)):
