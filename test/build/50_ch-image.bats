@@ -489,14 +489,14 @@ EOF
          pedantic_fail 'old default storage dir exists'
     fi
 
-    # move real storage dir out of the way
+    printf '\n*** move real storage dir out of the way\n'
     echo 'WARNING: If this test fails, your storage directory may be broken'
     if [[ -e $new ]]; then
         [[ ! -e $new_bak ]]
         mv -v "$new" "$new_bak"
     fi
 
-    # old valid and needs upgrade
+    printf '\n*** old valid and needs upgrade\n'
     [[ -d "$old_parent" ]] || mkdir "$old_parent"
     mkdir "$old"
     mkdir "$old"/{dlcache,img,ulcache}
@@ -510,7 +510,7 @@ EOF
     [[ $output = *"moving: ${old}/img -> ${new}/img"* ]]
     [[ $output = *"moving: ${old}/ulcache -> ${new}/ulcache"* ]]
     [[ $output = *"moving: ${old}/version -> ${new}/version"* ]]
-    [[ $output = *"warning: storage dir: parent of old now empty: ${old_parent}"* ]]
+    [[ $output = *"warning: parent of old storage dir now empty: ${old_parent}"* ]]
     [[ $output = *'hint: consider deleting it'* ]]
     [[ $output = *"upgrading storage directory: v2 ${new}"* ]]
     [[ ! -e $old ]]
@@ -519,13 +519,17 @@ EOF
     [[ -d ${new}/ulcache ]]
     [[ -f ${new}/version ]]
 
-    # old and new both valid
+    printf '\n*** old and new both valid\n'
     mkdir "$old"
     mkdir "$old"/{dlcache,img,ulcache}
     echo 2 > "$old"/version
     run ch-image -vv list
     echo "$output"
     [[ $status -eq 0 ]]
+    [[ $output = *"storage dir: valid at old default: ${old}"* ]]
+    [[ $output = *"warning: storage dir: also valid at new default: ${new}"* ]]
+    [[ $output = *'hint: consider deleting the old one'* ]]
+    [[ $output = *"found storage dir v2: ${new}"* ]]
     [[ -d $old ]]
     [[ -d ${new}/dlcache ]]
     [[ -d ${new}/img ]]
@@ -533,7 +537,7 @@ EOF
     [[ -f ${new}/version ]]
     rm -Rfv --one-file-system "$new"
 
-    # old is invalid, new absent
+    printf '\n*** old is invalid, new absent\n'
     rmdir "$old"/img
     run ch-image -vv list
     echo "$output"
@@ -547,7 +551,7 @@ EOF
     [[ -f ${new}/version ]]
     rm -Rfv --one-file-system "$new"
 
-    # old is valid, new exists but is regular file
+    printf '\n*** old is valid, new exists but is regular file\n'
     mkdir "$old"/img
     echo weirdal > "$new"
     run ch-image -vv list
@@ -560,7 +564,7 @@ EOF
     [[ -f $new ]]
     rm -v "$new"
 
-    # old is valid, new exists and is empty directory
+    printf '\n*** old is valid, new exists and is empty directory\n'
     run ch-image -vv list
     echo "$output"
     [[ $status -eq 0 ]]
@@ -570,7 +574,7 @@ EOF
     [[ $output = *"moving: ${old}/img -> ${new}/img"* ]]
     [[ $output = *"moving: ${old}/ulcache -> ${new}/ulcache"* ]]
     [[ $output = *"moving: ${old}/version -> ${new}/version"* ]]
-    [[ $output = *"warning: storage dir: parent of old now empty: ${old_parent}"* ]]
+    [[ $output = *"warning: parent of old storage dir now empty: ${old_parent}"* ]]
     [[ $output = *'hint: consider deleting it'* ]]
     [[ $output = *"found storage dir v2: ${new}"* ]]
     [[ ! -e $old ]]
@@ -579,7 +583,7 @@ EOF
     [[ -d ${new}/ulcache ]]
     [[ -f ${new}/version ]]
 
-    # old is valid, new exists and is invalid but has one of the moved items
+    printf '\n*** old is valid, new exists, is invalid with one moved item\n'
     mkdir "$old"
     mkdir "$old"/{dlcache,img,ulcache}
     echo 2 > "$old"/version
@@ -597,7 +601,7 @@ EOF
     rm -Rfv --one-file-system "$old"
     rm -Rfv --one-file-system "$new"
 
-    # put real storage dir back
+    printf '\n*** put real storage dir back\n'
     if [[ -e $new_bak ]]; then
         rm -Rfv --one-file-system "$new"
         mv -v "$new_bak" "$new"

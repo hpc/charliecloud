@@ -1564,7 +1564,7 @@ class Storage:
       ossafe(os.rmdir, "can't rmdir: %s" % old.root, old.root)
       if (len(ossafe(os.listdir, "can't list: %s" % old.root.parent,
                      old.root.parent)) == 0):
-         WARNING("storage dir: parent of old now empty: %s" % old.root.parent,
+         WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
 
    def manifest_for_download(self, image_ref, digest):
