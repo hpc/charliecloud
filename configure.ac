@@ -210,7 +210,7 @@ AC_DEFUN([CH_CHECK_VERSION], [
 AC_PROG_CC
 
 # Set up CFLAGS.
-ch_cflags='-std=c99 -Wpedantic -Wall'
+ch_cflags='-std=c99 -Wall'
 AS_IF([test -n "$lib_libsquashfuse"],
       [ch_cflags+=" -I$inc_libsquashfuse -L$lib_libsquashfuse"])
 AS_IF([test $use_werror = yes],
