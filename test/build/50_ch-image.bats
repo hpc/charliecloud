@@ -409,8 +409,7 @@ EOF
   "history": [
     {
       "created": "2020-04-24T01:05:35.458457398Z",
-      "created_by": "/bin/sh -c #(nop) ADD file:a0afd0b0db7f9ee9496186ead087ec00edd1386ea8c018557d15720053f7308e in / ",
-      "empty_layer": true
+      "created_by": "/bin/sh -c #(nop) ADD file:a0afd0b0db7f9ee9496186ead087ec00edd1386ea8c018557d15720053f7308e in / "
     },
     {
       "created": "2020-04-24T01:05:35.807646609Z",
@@ -507,52 +506,43 @@ EOF
       "empty_layer": true
     },
     {
-      "created": "2021-11-19T20:52:01Z",
-      "created_by": "FROM charliecloud/metadata:2021-01-15",
-      "empty_layer": true
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "FROM charliecloud/metadata:2021-01-15"
     },
     {
-      "created": "2021-11-19T20:52:01Z",
-      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd1: $PWD\"']",
-      "empty_layer": true
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd1: $PWD\"']"
     },
     {
-      "created": "2021-11-19T20:52:01Z",
-      "created_by": "WORKDIR /usr",
-      "empty_layer": true
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "WORKDIR /usr"
     },
     {
-      "created": "2021-11-19T20:52:01Z",
-      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd2: $PWD\"']",
-      "empty_layer": true
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd2: $PWD\"']"
     },
     {
-      "created": "2021-11-19T20:52:01Z",
-      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env1: /' | sort\"]",
-      "empty_layer": true
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env1: /' | sort\"]"
     },
     {
-      "created": "2021-11-19T20:52:01Z",
-      "created_by": "ENV ch_baz='baz-ev'",
-      "empty_layer": true
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "ENV ch_baz='baz-ev'"
     },
     {
-      "created": "2021-11-19T20:52:01Z",
-      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env2: /' | sort\"]",
-      "empty_layer": true
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env2: /' | sort\"]"
     },
     {
-      "created": "2021-11-19T20:52:01Z",
-      "created_by": "RUN ['/bin/ash', '-c', 'echo \"shell1: $0\"']",
-      "empty_layer": true
+      "created": "2021-11-30T20:40:25Z",
+      "created_by": "RUN ['/bin/ash', '-c', 'echo \"shell1: $0\"']"
     },
     {
-      "created": "2021-11-19T20:52:01Z",
-      "created_by": "SHELL ['/bin/sh', '-v', '-c']",
-      "empty_layer": true
+      "created": "2021-11-30T20:40:25Z",
+      "created_by": "SHELL ['/bin/sh', '-v', '-c']"
     },
     {
-      "created": "2021-11-19T20:52:01Z",
+      "created": "2021-11-30T20:40:25Z",
       "created_by": "RUN ['/bin/sh', '-v', '-c', 'echo \"shell2: $0\"']"
     }
   ],

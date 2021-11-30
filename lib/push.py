@@ -115,7 +115,11 @@ class Image_Pusher:
       # Prepare metadata.
       ch.INFO("preparing metadata")
       self.image.metadata_load()
-      config["history"] = self.image.metadata["history"]
+      hist = self.image.metadata["history"]
+      for i in range(len(hist)):
+         hist[i]["empty_layer"] = True
+      hist[-1].pop("empty_layer")
+      config["history"] = hist
       config_bytes = json.dumps(config, indent=2).encode("UTF-8")
       config_hash = ch.bytes_hash(config_bytes)
       manifest["config"]["size"] = len(config_bytes)

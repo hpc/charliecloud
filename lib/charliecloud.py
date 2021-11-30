@@ -447,17 +447,11 @@ class Image:
             except AttributeError:
                FATAL("can't parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
-      # History. Set the empty_layer value of each non-final history entry to
-      # true.
+      # History.
       try:
          hist = config["history"]
       except AttributeError:
-         FATAL("config missing key 'history'")
-      hist = self.metadata_empty_layer_history(hist)
-      try:
-         hist[-1].pop("empty_layer")
-      except (IndexError, KeyError):
-         pass
+         hist = []
       self.metadata["history"] = hist
       # labels
       set_("labels", "config", "Labels")  # copy reference
@@ -469,30 +463,16 @@ class Image:
          for k in config["config"]["Volumes"].keys():
             self.metadata["volumes"].append(k)
 
-   def metadata_append(self, data):
-      DEBUG("appending metadata: %s" % data)
-      for k in data:
-         if (k in self.metadata.keys()):
-            self.metadata[k] += data[k]
-         else:
-            FATAL("config has no key '%s'" % k)
+   def metadata_history_append(self, hist):
+      DEBUG("appending history: %s" % hist)
+      for i in hist:
+         self.metadata['history'].append(i)
 
    def metadata_empty_layer_history(self, hist):
       if (len(hist) > 0 ):
          for i in range(len(hist)):
             hist[i]["empty_layer"] = True
       return hist
-
-   def metadata_history_replace(self, hist):
-      self.metadata["history"] = hist
-
-   def metadata_history_return(self):
-      "Return config history with all entires having empty_layer set to True"
-      try:
-         hist = self.metadata["history"]
-      except KeyError:
-         return []
-      return self.metadata_empty_layer_history(hist)
 
    def metadata_replace(self, config_json):
       self.metadata_init()

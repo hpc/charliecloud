@@ -377,8 +377,7 @@ EOF
   "history": [
     {
       "created": "2020-04-24T01:05:35.458457398Z",
-      "created_by": "/bin/sh -c #(nop) ADD file:a0afd0b0db7f9ee9496186ead087ec00edd1386ea8c018557d15720053f7308e in / ",
-      "empty_layer": true
+      "created_by": "/bin/sh -c #(nop) ADD file:a0afd0b0db7f9ee9496186ead087ec00edd1386ea8c018557d15720053f7308e in / "
     },
     {
       "created": "2020-04-24T01:05:35.807646609Z",
@@ -471,7 +470,8 @@ EOF
     {
       "author": "charlie@example.com",
       "created": "2021-01-16T00:12:14.042791834Z",
-      "created_by": "/bin/ash -c #(nop)  VOLUME [/mnt/foo /mnt/bar /mnt/foo]"
+      "created_by": "/bin/ash -c #(nop)  VOLUME [/mnt/foo /mnt/bar /mnt/foo]",
+      "empty_layer": true
     }
   ],
   "labels": {
