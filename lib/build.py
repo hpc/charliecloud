@@ -260,8 +260,9 @@ class Instruction(abc.ABC):
          self.execute_()
       hist = [ { "created": ch.now_utc_iso8601(),
                  "created_by": "%s %s" % (self.str_name(), self.str_())}]
-      images[image_i].metadata_history_append(hist)
-      images[image_i].metadata_save()
+      if (images_i > -1):
+         images[image_i].metadata_history_append(hist)
+         images[image_i].metadata_save()
 
    @abc.abstractmethod
    def execute_(self):

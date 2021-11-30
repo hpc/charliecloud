@@ -468,12 +468,6 @@ class Image:
       for i in hist:
          self.metadata['history'].append(i)
 
-   def metadata_empty_layer_history(self, hist):
-      if (len(hist) > 0 ):
-         for i in range(len(hist)):
-            hist[i]["empty_layer"] = True
-      return hist
-
    def metadata_replace(self, config_json):
       self.metadata_init()
       if (config_json is None):
