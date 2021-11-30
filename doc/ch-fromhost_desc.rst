@@ -201,6 +201,10 @@ Bugs
 
 File paths may not contain colons or newlines.
 
+:code:`ldconfig` tends to print :code:`stat` errors; these are typically
+non-fatal and occur when trying to probe common library paths. See `issue #732
+<https://github.com/hpc/charliecloud/issues/732>`_.
+
 
 Examples
 ========
@@ -241,11 +245,46 @@ Inject the executables and libraries recommended by nVidia into the image, and
 then run :code:`ldconfig`::
 
   $ ch-fromhost --nvidia /var/tmp/baz
+  asking ldconfig for shared library destination
+  /sbin/ldconfig: Can't stat /libx32: No such file or directory
+  /sbin/ldconfig: Can't stat /usr/libx32: No such file or directory
+  shared library destination: /usr/lib64//bind9-export
+  injecting into image: /var/tmp/baz
+    /usr/bin/nvidia-smi -> /usr/bin (inferred)
+    /usr/bin/nvidia-debugdump -> /usr/bin (inferred)
+    /usr/bin/nvidia-persistenced -> /usr/bin (inferred)
+    /usr/bin/nvidia-cuda-mps-control -> /usr/bin (inferred)
+    /usr/bin/nvidia-cuda-mps-server -> /usr/bin (inferred)
+    /usr/lib64/libnvidia-ml.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libnvidia-cfg.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+  [...]
+    /usr/lib64/libGLESv2_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+    /usr/lib64/libGLESv1_CM_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
+  running ldconfig
 
 Inject the Cray-enabled MPI libraries into the image, and then run
 :code:`ldconfig`::
 
   $ ch-fromhost --cray-mpi /var/tmp/baz
+  asking ldconfig for shared library destination
+  /sbin/ldconfig: Can't stat /libx32: No such file or directory
+  /sbin/ldconfig: Can't stat /usr/libx32: No such file or directory
+  shared library destination: /usr/lib64//bind9-export
+  found shared library: /usr/lib64/liblustreapi.so.1
+  found shared library: /opt/cray/xpmem/default/lib64/libxpmem.so.0
+  [...]
+  injecting into image: /var/tmp/baz
+    rm -f /var/tmp/openmpi/usr/lib64//bind9-export/libopen-rte.so.40
+    rm -f /var/tmp/openmpi/usr/lib64/bind9-export/libopen-rte.so.40
+  [...]
+    mkdir -p /var/tmp/openmpi/var/opt/cray/alps/spool
+    mkdir -p /var/tmp/openmpi/etc/opt/cray/wlm_detect
+  [...]
+    /usr/lib64/liblustreapi.so.1 -> /usr/lib64//bind9-export (inferred)
+    /opt/cray/xpmem/default/lib64/libxpmem.so.0 -> /usr/lib64//bind9-export (inferred)
+  [...]
+    /etc/opt/cray/wlm_detect/active_wlm -> /etc/opt/cray/wlm_detect
+  running ldconfig
 
 
 Acknowledgements
