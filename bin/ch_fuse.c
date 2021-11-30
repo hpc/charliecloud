@@ -183,9 +183,21 @@ int sq_loop(void)
       exit_code = 0;
    else {
       Tf (wait(&child_status) >= 0, "can't wait for child");
-      Te (WIFEXITED(child_status), "child terminated abnormally");
-      exit_code = WEXITSTATUS(child_status);
-      INFO("child terminated normally with exit code %d", exit_code);
+      if (WIFEXITED(child_status)) {
+         exit_code = WEXITSTATUS(child_status);
+         INFO("child terminated normally with exit code %d", exit_code);
+      } else {
+         // We now know that the child did not exit normally; the two
+         // remaining options are (a) killed by signal and (b) stopped [1].
+         // Because we didn't call waitpid(2) with WUNTRACED, we don't get
+         // notified if the child is stopped [2], so it must have been
+         // signaled, and we need not call WIFSIGNALED().
+         //
+         // [1]: https://codereview.stackexchange.com/a/109349
+         // [2]: https://man7.org/linux/man-pages/man2/wait.2.html
+         exit_code = 1;
+         INFO("child terminated by signal %d", WTERMSIG(child_status))
+      }
    }
 
    // Clean up SquashFS mount. These functions have no error reporting.
