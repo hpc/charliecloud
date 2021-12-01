@@ -75,7 +75,7 @@ setup () {
 {
    "history": [ {"created_by": "ch-test" } ]
 }
-    EOF
+EOF
 
     # Push the image
     run ch-image -v --tls-no-verify push --image "$img" \
