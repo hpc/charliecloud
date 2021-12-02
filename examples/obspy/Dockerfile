@@ -1,4 +1,5 @@
 # ch-test-scope: standard
+# ch-test-arch-exclude: aarch64  # no obspy Conda package
 FROM debian:buster
 
 RUN    apt-get update \

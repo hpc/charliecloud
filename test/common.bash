@@ -1,5 +1,10 @@
 # shellcheck shell=bash
 
+arch_exclude () {
+    # Skip the test if architecture (from "uname -m") matches $1.
+    [[ $(uname -m) != "$1" ]] || skip "arch ${1}"
+}
+
 archive_grep () {
     image="$1"
     case $image in

@@ -152,7 +152,9 @@ class Image_Puller:
              set to None."""
       self.architectures = None
       if (str(self.image.ref) in manifests_internal):
-         raise ch.No_Fatman_Error()  # no fat manifests for internal library
+         # cheat; internal manifest library matches every architecture
+         self.architectures = { ch.arch_host: None }
+         return
       if (os.path.exists(self.fatman_path) and self.use_cache):
          ch.INFO("manifest list: using existing file")
       else:
@@ -297,11 +299,11 @@ class Image_Puller:
       arch_image = self.image.metadata["arch"] or "unknown"
       arch_short = ch.arch.split("/")[0]
       arch_host_short = ch.arch_host.split("/")[0]
-      if (arch_image != "unknown" and arch_image != arch_host_short):
+      if (arch_image != "unknown" and arch_short != arch_host_short):
          host_mismatch = " (may not match host %s)" % ch.arch_host
       else:
          host_mismatch = ""
       ch.INFO("image arch: %s%s" % (arch_image, host_mismatch))
       if (ch.arch != "yolo" and arch_short != arch_image):
          ch.WARNING("image architecture does not match requested: %s ≠ %s"
-                    % (ch.arch, image_arch))
+                    % (ch.arch, arch_image))

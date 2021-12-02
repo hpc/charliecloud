@@ -54,6 +54,7 @@ class Run(enum.Enum):
 
 class Test(abc.ABC):
 
+   arch_excludes = []
    base = None
    config = None
    scope = Scope.FULL
@@ -116,6 +117,9 @@ class Test(abc.ABC):
          scope = "standard"
       else:
          scope = "full"
+      # architecture excludes
+      arch_excludes = "\n".join("arch_exclude %s" % i
+                                for i in self.arch_excludes)
       # build 1 to make prep-prepped image (e.g. install EPEL) if needed
       if (not self.preprep):
          build1 = "# skipped: no separate prep"
@@ -165,6 +169,7 @@ echo "$output"
       print(f"""
 @test "ch-image --force: {self}" {{
 scope {scope}
+{arch_excludes}
 
 # build 1: intermediate image for preparatory commands
 {build1}
@@ -228,8 +233,10 @@ class CentOS_8_Stream(_RHEL8):
    # pulling from quay.io per the CentOS wiki
    # https://wiki.centos.org/FAQ/CentOSStream#What_artifacts_are_built.3F
    base = "quay.io/centos/centos:stream8"
+   arch_excludes = ["aarch64"]  # issue #1249
 class RHEL_UBI_8(_RHEL8):
    base = "registry.access.redhat.com/ubi8/ubi"
+   arch_excludes = ["aarch64"]  # issue #1249
 
 
 class _Fedora(_RHEL8):
@@ -256,6 +263,7 @@ class Debian_Latest(_Debian):
    base = "debian:latest"
 class Ubuntu_16(_Debian):
    base = "ubuntu:16.04"
+   arch_excludes = ["aarch64"]  # no pseudo package
 class Ubuntu_18(_Debian):
    base = "ubuntu:18.04"
 class Ubuntu_Latest(_Debian):
