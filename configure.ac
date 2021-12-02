@@ -212,7 +212,10 @@ AC_PROG_CC
 # Set up CFLAGS.
 ch_cflags='-std=c99 -Wall'
 AS_IF([test -n "$lib_libsquashfuse"],
-      [ch_cflags+=" -I$inc_libsquashfuse -L$lib_libsquashfuse"])
+      [ch_cflags+=" -I$inc_libsquashfuse -L$lib_libsquashfuse"
+       # Without this, clang fails with "error: argument unused during
+       # compilation" on the -L. GCC ignores it.
+       ch_cflags+=' -Wno-unused-command-line-argument'])
 AS_IF([test $use_werror = yes],
       [ch_cflags+=' -Werror'])
 
