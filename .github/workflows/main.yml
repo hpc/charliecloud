@@ -326,6 +326,9 @@ jobs:
           /var/tmp/from-tarball/share/man/man1
           /var/tmp/from-tarball/share/man/man7
           EOF
+          # Install again.
+          sudo make $ch_makej install
+          $ch_prefix/from-tarball/bin/ch-run --version
 
       - name: run test suite (Git WD, quick)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
