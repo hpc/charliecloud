@@ -299,7 +299,7 @@ class Image_Puller:
       arch_image = self.image.metadata["arch"] or "unknown"
       arch_short = ch.arch.split("/")[0]
       arch_host_short = ch.arch_host.split("/")[0]
-      if (arch_image != "unknown" and arch_short != arch_host_short):
+      if (arch_image != "unknown" and arch_image != arch_host_short):
          host_mismatch = " (may not match host %s)" % ch.arch_host
       else:
          host_mismatch = ""

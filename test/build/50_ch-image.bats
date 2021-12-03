@@ -343,6 +343,7 @@ EOF
 
 @test 'ch-image build: metadata carry-forward' {
     arch_exclude aarch64  # test image not available
+    arch_exclude ppc64le  # test image not available
     img=$CH_IMAGE_STORAGE/img/tmpimg
 
     # Print out current metadata, then update it.

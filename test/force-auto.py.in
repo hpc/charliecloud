@@ -258,6 +258,7 @@ class _Debian(Test):
    runs = { **Test.runs, **{ Run.NEEDED:      "apt-get update && apt-get install -y openssh-client" } }
 class Debian_9(_Debian):
    base = "debian:9"
+   arch_excludes = ["ppc64le"]  # base image unavailable
 class Debian_Latest(_Debian):
    scope = Scope.STANDARD
    base = "debian:latest"
