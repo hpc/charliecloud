@@ -221,6 +221,16 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'first instruction must be ARG or FROM'* ]]
+
+    # No context with stdin
+    run ch-build -t tmpimg - <<'EOF'
+FROM 00_tiny
+COPY fixtures/README .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    [[ $output = *'need valid context'* ]]
+
 }
 
 
@@ -887,16 +897,6 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not found'* ]]
-
-    # No context with stdin
-    run ch-image build -t tmpimg - <<'EOF'
-FROM 00_tiny
-COPY fixtures/empty-file .
-EOF
-   echo "$output"
-   [[ $status -ne 0 ]]
-   [[ $output = *'need valid context'* ]]
-
 }
 
 
