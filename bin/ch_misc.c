@@ -72,6 +72,70 @@ char *cat(const char *a, const char *b)
    return ret;
 }
 
+/* Read the file listing environment variables at path, and return a
+   corresponding list of struct env_var. If there is a problem reading the
+   file, or with any individual variable, exit with error. */
+void env_file_read(const char *path)
+{
+   struct env_var *vars;
+   FILE *fp;
+
+   Tf (fp = fopen(path, "r"), "can't open: %s", path);
+
+   vars = list_new(sizeof(struct env_var), 0);
+   for (size_t line_no = 1; true; line_no++) {
+      struct env_var var;
+      char *line, *name, *value;
+      size_t line_len = 0;  // don't care but required by getline(3)
+      errno = 0;
+      if (-1 == getline(&line, &line_len, fp)) {
+         if (errno == 0)    // EOF
+            break;
+         else
+            Tf (0, "can't read: %s", path);
+      }
+      if (line[strlen(line) - 1] == '\n')  // rm newline if present
+         line[strlen(line) - 1] = 0;
+      if (line[0] == 0)                    // skip blank lines
+         continue;
+      var = env_var_parse(line, path, line_no);
+      list_append((void **)&vars, &var, sizeof(var));
+   }
+
+   Zf (fclose(fp), "can't close: %s", path);
+   return vars;
+}
+
+/* Parse the environment variable in line and return it as a struct env_var.
+   Exit with error on syntax error; if path is non-NULL, attribute the problem
+   to that path at line_no. Note: Trailing whitespace such as newline is
+   *included* in the value. */
+struct env_var env_var_parse(const char *line, const char *path,
+                             size_t lineno)
+{
+   char *name, *value, *where;
+
+   if (path == NULL)
+      where = line;
+   else
+      T_ (1 <= asprintf(&where, "%s:%u", path, lineno));
+
+   // Split line into variable name and value.
+   split(&name, &value, line, '=');
+   Te (name != NULL, "can't parse variable: no delimiter: %s", where);
+   Te (name[0] != 0, "can't parse variable: empty name: %s", where);
+
+   // Strip leading and trailing single quotes from value, if both present.
+   if (   strlen(value) >= 2
+       && value[0] == '\''
+       && value[strlen(value) - 1] == '\'') {
+      value[strlen(value) - 1] = 0;
+      value++;
+   }
+
+   return (struct env_var){ name, value };
+}
+
 /* Copy the buffer of size size pointed to by new into the last position in
    the zero-terminated array of elements with the same size on the heap
    pointed to by *ar, reallocating it to hold one more element and setting
