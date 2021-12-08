@@ -5,7 +5,6 @@
 
 #define _GNU_SOURCE
 #include <argp.h>
-#include <fnmatch.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -66,23 +65,8 @@ const struct argp_option options[] = {
    { 0 }
 };
 
-enum env_action { ENV_END = 0,       // terminate list of environment changes
-                  ENV_SET_DEFAULT,   // set by /ch/environment within image
-                  ENV_SET_VARS,      // set by list of variables
-                  ENV_UNSET_GLOB };  // unset glob matches
 
-struct env_var {
-   char *name;
-   char *value;
-}
-
-struct env_delta {
-   enum env_action action;
-   union {
-      struct env_var *vars;  // ENV_SET_VARS
-      char *glob;            // ENV_UNSET_GLOB
-   } arg;
-};
+/** Types **/
 
 struct args {
    struct container c;
@@ -90,9 +74,9 @@ struct args {
    char *initial_dir;
 };
 
+
 /** Function prototypes **/
 
-void env_set(const char *name, const char *value, const bool expand);
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
 int join_ct(int cli_ct);
@@ -208,75 +192,11 @@ int main(int argc, char *argv[])
 
 /** Supporting functions **/
 
-/* Set environment variable name to value. If expand, then further expand
-   variables in value marked with "$" as described in the man page. */
-void env_set(const char *name, const char *value, const bool *expand)
-{
-   char*value_expanded;
-   bool first_written;
-
-   // Walk through value fragments separated by colon and expand variables.
-   value_expanded = "";
-   first_written = false;
-   while (true) {                               // loop executes ≥ once
-      char *fgmt = strsep(&value, ":");         // NULL -> no more items
-      if (fgmt == NULL)
-         break;
-      if (expand && item[0] == '$' && fgmt[1] != 0) {
-         fgmt = getenv(++fgmt);                 // NULL if unset
-         if (fgmt != NULL && fgmt[0] == 0)
-            fgmt = NULL;                        // convert empty to unset
-      }
-      if (fgmt != NULL) {                       // NULL -> omit from output
-         if (first_written)
-            value_expanded = cat(value_expanded, ":");
-         value_expanded = cat(value_expanded, fgmt);
-         first_written = true;
-      }
-   }
-
-   // Save results.
-   INFO("environment: %s=%s", name, value_expanded);
-   Z_ (setenv(name, value_new, 1));
-}
-
-/* Remove variables matching glob from the environment. This is tricky,
-   because there is no standard library function to iterate through the
-   environment, and the environ global array can be re-ordered after
-   unsetenv(3) [1]. Thus, the only safe way without additional storage is an
-   O(n^2) search until no matches remain.
-
-   Our approach is O(n): we build up a copy of environ, skipping variables
-   that match the glob, and then assign environ to the copy. (This is a valid
-   thing to do [2].)
-
-   [1]: https://unix.stackexchange.com/a/302987
-   [2]: http://man7.org/linux/man-pages/man3/exec.3p.html */
-void env_unset(const char *glob)
-{
-   char **new_environ = list_new(sizeof(char *), 0);
-   for (size_t i = 0; environ[i] != NULL; i++) {
-      char *name, *value;
-      int matchp;
-      split(&name, &value, environ[i], '=');
-      T_ (name != NULL);          // environ entries must always have equals
-      matchp = fnmatch(glob, name, 0);
-      if (matchp == 0)
-         INFO("environment: unset %s", name);
-      else {
-         T_ (matchp == FNM_NOMATCH);
-         *(value - 1) = '=';  // rejoin line
-         list_append((void **)&new_environ, &name, sizeof(name));
-      }
-   }
-   environ = new_environ;
-}
-
 /* Adjust environment variables. Call once containerized, i.e., already
    pivoted into new root. */
 void fix_environment(struct args *args)
 {
-   char *name, *old_value, *new_value;
+   char *old_value, *new_value;
 
    // $HOME: Set to /home/$USER unless --no-home specified.
    if (!args->c.private_home)
@@ -300,6 +220,9 @@ void fix_environment(struct args *args)
    for (size_t i = 0; args->env_deltas[i].action != ENV_END; i++) {
       struct env_delta ed = args->env_deltas[i];
       switch (ed.action) {
+      case ENV_END:
+         Te (false, "unreachable code reached");
+         break;
       case ENV_SET_DEFAULT:
          ed.arg.vars = env_file_read("/ch/environment");
          // fall through
@@ -406,6 +329,7 @@ int parse_int(char *s, bool extra_ok, char *error_tag)
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
    struct args *args = state->input;
+   struct env_delta ed;
    int i;
 
    switch (key) {
@@ -427,7 +351,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join_pid = parse_int(arg, false, "--join-pid");
       break;
    case -6: // --set-env
-      struct env_delta ed;
       if (arg == NULL)
          ed.action = ENV_SET_DEFAULT;
       else {
@@ -435,18 +358,17 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
          if (strchr(arg, '=') == NULL)
             ed.arg.vars = env_file_read(arg);
          else {
-            ed.arg.vars = list_new(sizeof(struct var), 1);
+            ed.arg.vars = list_new(sizeof(struct env_var), 1);
             ed.arg.vars[0] = env_var_parse(arg, NULL, 0);
          }
       }
       list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
       break;
    case -7: // --unset-env
-      struct env_delta ed;
       Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
       ed.action = ENV_UNSET_GLOB;
       ed.arg.glob = arg;
-      list_append((void **)&(args->env_deltas), ed, sizeof(struct env_delta));
+      list_append((void **)&(args->env_deltas), &ed, sizeof(struct env_delta));
       break;;
    case -8: // --ch-ssh
       args->c.ch_ssh = true;

@@ -64,6 +64,27 @@
 #define DEBUG(...)   msg(4, __FILE__, __LINE__, 0, __VA_ARGS__);
 
 
+/** Types **/
+
+enum env_action { ENV_END = 0,       // terminate list of environment changes
+                  ENV_SET_DEFAULT,   // set by /ch/environment within image
+                  ENV_SET_VARS,      // set by list of variables
+                  ENV_UNSET_GLOB };  // unset glob matches
+
+struct env_var {
+   char *name;
+   char *value;
+};
+
+struct env_delta {
+   enum env_action action;
+   union {
+      struct env_var *vars;  // ENV_SET_VARS
+      char *glob;            // ENV_UNSET_GLOB
+   } arg;
+};
+
+
 /** External variables **/
 
 extern int verbose;
@@ -75,6 +96,10 @@ extern char *username;
 
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
+struct env_var *env_file_read(const char *path);
+void env_set(const char *name, const char *value, const bool expand);
+void env_unset(const char *glob);
+struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 void list_append(void **ar, void *new, size_t size);
 void *list_new(size_t size, size_t ct);
 void log_ids(const char *func, int line);
