@@ -131,9 +131,7 @@ def main(cli_):
    env = Environment()
 
    # Read input file.
-   if (cli.file == "-"):
-      text = ch.ossafe(sys.stdin.read, "can't read stdin")
-   elif (cli.context == "-"):
+   if (cli.file == "-" or cli.context == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
    else:
       fp = ch.open_(cli.file, "rt")
@@ -506,6 +504,8 @@ class I_copy(Instruction):
       return dst_canon
 
    def execute_(self):
+      if (cli.context == "-"):
+         ch.FATAL("can't COPY: no context because \"-\" given")
       if (len(self.srcs) < 1):
          ch.FATAL("can't COPY: must specify at least one source")
       # Complain about unsupported stuff.
@@ -533,8 +533,6 @@ class I_copy(Instruction):
          context = images[self.from_].unpack_path
       context_canon = os.path.realpath(context)
       ch.VERBOSE("context: %s" % context)
-      if (context == "-"): # fails with no context with stdin
-         ch.FATAL("can't copy: need valid context: %s" % context)
       # Expand source wildcards.
       srcs = list()
       for src in self.srcs:

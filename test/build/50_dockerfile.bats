@@ -221,16 +221,6 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'first instruction must be ARG or FROM'* ]]
-
-    # No context with stdin
-    run ch-build -t tmpimg - <<'EOF'
-FROM 00_tiny
-COPY fixtures/README .
-EOF
-    echo "$output"
-    [[ $status -ne 0 ]]
-    [[ $output = *'need valid context'* ]]
-
 }
 
 
@@ -897,6 +887,19 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not found'* ]]
+
+    # No context with Dockerfile on stdin by context "-"
+    run ch-build -t tmpimg - <<'EOF'
+FROM 00_tiny
+COPY fixtures/README .
+EOF
+    echo "$output"
+    [[ $status -ne 0 ]]
+    if [[ $CH_BUILDER = ch-image ]]; then
+        [[ $output = *"error: can't COPY: no context because \"-\" given"* ]]
+    else
+        [[ $output = *'COPY failed: file not found in build context or'* ]]
+    fi
 }
 
 
