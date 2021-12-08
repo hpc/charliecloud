@@ -368,7 +368,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
       ed.action = ENV_UNSET_GLOB;
       ed.arg.glob = arg;
-      list_append((void **)&(args->env_deltas), &ed, sizeof(struct env_delta));
+      list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
       break;;
    case -8: // --ch-ssh
       args->c.ch_ssh = true;

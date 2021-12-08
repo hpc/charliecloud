@@ -123,7 +123,7 @@ void env_set(const char *name, const char *value, const bool expand)
       if (fgmt == NULL)
          break;
       if (expand && fgmt[0] == '$' && fgmt[1] != 0) {
-         fgmt = getenv(++fgmt);                 // NULL if unset
+         fgmt = getenv(fgmt + 1);               // NULL if unset
          if (fgmt != NULL && fgmt[0] == 0)
             fgmt = NULL;                        // convert empty to unset
       }
