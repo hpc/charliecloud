@@ -4,6 +4,7 @@ import collections
 import collections.abc
 import copy
 import datetime
+import enum
 import getpass
 import hashlib
 import http.client
@@ -20,11 +21,12 @@ import stat
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 import types
-
 import version
 
+from abc import ABC, abstractmethod
 
 ## Imports not in standard library ##
 
@@ -42,6 +44,10 @@ LARK_MAX = (0, 12, 0)
 lark_version = tuple(int(i) for i in lark.__version__.split("."))
 if (not LARK_MIN <= lark_version <= LARK_MAX):
    depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
+
+# Required git range for build cache.
+GIT_MIN = (2, 34, 1)
+GIT_MAX = (2, 34, 1)
 
 # Requests is not bundled, so this noise makes the file parse and
 # --version/--help work even if it's not installed.
@@ -81,6 +87,9 @@ ARCH_MAP = { "x86_64":    "amd64",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
+
+# Build cache root ID.
+CACHE_ROOT_ID = "5745495244414c59414e4b4f56494300" #bytestring?
 
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
@@ -216,6 +225,10 @@ STORAGE_VERSION = 2
 arch = None       # requested by user
 arch_host = None  # of host
 
+# Active build and download cache.
+cache_bu = None
+cache_dl = None
+
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
@@ -229,6 +242,16 @@ log_fp = sys.stderr  # File object to print logs to.
 tls_verify = True
 
 
+## Enums ##
+
+# Cache mode.
+class Mode(enum.Enum):
+   ENABLED    = "enable"
+   DISABLED   = "disable"
+   REBUILD    = "rebuild"
+   WRITE_ONLY = "write-only"
+
+
 ## Exceptions ##
 
 class No_Fatman_Error(Exception): pass
@@ -236,6 +259,153 @@ class Not_In_Registry_Error(Exception): pass
 
 
 ## Classes ##
+
+class Cache(ABC):
+   __slots__ = ("mode",
+                "cache_path",
+                "set_by")
+
+   def __init__(self, mode, path):
+      if (mode is None):
+         self.mode = self.mode_default()
+         self.set_by = "default"
+      else:
+         self.mode = self.mode_check(mode)
+         self.set_by = "command line"
+      assert(path is not None)
+      self.cache_path = path
+
+   @property
+   def cache_mode(self):
+      return self.mode.value
+
+   @cache_mode.setter
+   def cache_mode(self, m):
+      self.mode = m
+
+   @property
+   def cache_mode_set_by(self):
+      return self.set_by
+
+   @cache_mode_set_by.setter
+   def cache_mode_set_by(self, s):
+      self.method = s
+
+   @property
+   def storage_path(self):
+      return self.cache_path
+
+   @abstractmethod
+   def mode_check(self):
+      pass
+
+   @abstractmethod
+   def mode_default(self):
+      pass
+
+
+class Cache_dl(Cache):
+   def mode_check(self, mode):
+      valid_modes = [Mode.ENABLED, Mode.WRITE_ONLY]
+      if (Mode(mode) in valid_modes):
+         return Mode(mode)
+      FATAL("invalid download cache mode: %s" % mode)
+
+   def mode_default(self):
+      return Mode.ENABLED
+
+   def use_cache(self):
+      if (self.mode == Mode.ENABLED):
+         return True
+      return False
+
+
+class Cache_bu(Cache):
+   @staticmethod
+   def storage_sane(path_):
+      "Return True if build cache path appears sane; otherwise return false"
+      # Typical porcelain commands that ensure sanity do not work on our bare
+      # repo; check for the standard files and directories created when a bare
+      # repository is initiated.
+      if (    os.path.exists(path_ // "HEAD")
+          and os.path.isdir(path_  // "hooks")
+          and os.path.isdir(path_  // "info")
+          and os.path.isdir(path_  // "objects")):
+         return True
+      return False
+
+   def mode_check(self, mode):
+      valid_modes = [Mode.ENABLED, Mode.DISABLED, Mode.REBUILD]
+      if (Mode(mode) in valid_modes):
+         return Mode(mode)
+      FATAL("invalid build cache mode: %s" % mode)
+
+   def mode_default(self):
+      # cmd() doesn't give us a good way to return output to operate on, so we
+      # just use vanilla subprocess without a wrapper here.
+      cp = subprocess.run(["git", "--version"], encoding="utf-8",
+                          stdin=subprocess.DEVNULL,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+      if (cp.returncode):
+         self.set_by("no git installed")
+         return Mode.DISABLED
+      out = cp.stdout.split(" ")[-1]
+      git_version = tuple(int(i) for i in out.strip().split("."))
+      if (not GIT_MIN <= git_version <= GIT_MAX):
+         self.set_by("git too old")
+         return Mode.DISABLED
+      return Mode.ENABLED
+
+   def storage_init(self):
+      """Create build cache storage dir, initialize bare git repo, and set
+         upstream origin to root; fail otherwise"""
+      VERBOSE("build cache storage: %s" % self.storage_path)
+      try:
+         mkdirs(self.storage_path, False)
+      except FileExistsError:
+         FATAL("build-cache exists")
+      VERBOSE("initialize bare git repo")
+      # init bare repo
+      cmd_git(["init", "--bare", "--initial-branch=root", self.storage_path])
+      # set bare repo upstream origin to "root"
+      with tempfile.TemporaryDirectory(dir=self.storage_path) as tmpdir:
+         VERBOSE("setting upstream origin root")
+         init_dir = Path(os.path.join(tmpdir, "init"))
+         cmd_git(["clone", self.storage_path, init_dir])
+         cmd_git(["checkout", "-b", "root"], cwd=init_dir)
+         cmd(["touch", ".root"], cwd=init_dir)
+         cmd_git(["add", ".root"], cwd=init_dir)
+         cmd_git(["commit", "-m", CACHE_ROOT_ID], cwd=init_dir)
+         cmd_git(["push", "--set-upstream", "origin", "root"], cwd=init_dir)
+
+      if (not self.storage_sane(self.storage_path)):
+         FATAL("failed to initilize build cache")
+
+   def storage_prune(self):
+      cmd_git(["gc", "--prune=now"], self.storage_path)
+
+   def storage_reset(self):
+      "Remove and re-initialize storage directory."
+      if (os.path.isdir(self.storage_path)):
+         VERBOSE("removing build cache storage: %s" % self.storage_path)
+         rmtree(self.storage_path)
+      self.storage_init()
+
+   def storage_tree_print(self):
+      self.storage_sane(self.storage_path)
+      args = ["git", "--no-pager", "log", "--graph", "--all",
+              "--format='%C(auto)%d %h %Cblue%al%Creset %s'"]
+      cp = subprocess.run(args, cwd=self.storage_path, encoding="utf=8",
+                          stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
+      INFO(cp.stdout)
+      if (cp.returncode):
+         exit(1)
+
+   def storage_tree_dot(self):
+      pass
+
 
 class Credentials:
 
@@ -1458,6 +1628,10 @@ class Storage:
       self.root = Path(self.root)
 
    @property
+   def build_cache(self):
+      return self.root // "bucache"
+
+   @property
    def download_cache(self):
       return self.root // "dlcache"
 
@@ -1742,13 +1916,20 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + [img, "--"] + args)
    return cmd(args, env, fail_ok)
 
-def cmd(args, env=None, fail_ok=False):
+def cmd(args, cwd=None, env=None, fail_ok=False):
    VERBOSE("environment: %s" % env)
    VERBOSE("executing: %s" % args)
-   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
+   cp = subprocess.run(args, cwd=cwd, env=env, stdin=subprocess.DEVNULL)
    if (not fail_ok and cp.returncode):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
+
+def cmd_git(args, fail_ok=False, cwd=None):
+   args.insert(0, "git")
+   cp = subprocess.run(args, encoding="utf-8", cwd=cwd,
+                       stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT)
+   VERBOSE("%s" % cp.stdout)
 
 def color_reset(*fps):
    for fp in fps:
@@ -1919,6 +2100,27 @@ def init(cli):
       arch = arch_host
    else:
       arch = cli.arch
+   # cache configuration
+   # FIXME: unclear how to make --no-cache mutually exclusive with both
+   # --download-cache and --build-cache in ch-image.py.in considering how we
+   # hande common options.
+   if (   (cli.no_cache and cli.build_cache) \
+       or (cli.no_cache and cli.download_cache)):
+      FATAL("--no-cache cannot be used with --build-cache or --download-cache")
+   global cache_dl, cache_bu
+   if (cli.no_cache):
+      # --no-cache is just shorthand for --build-cache=disable and
+      # --download-cache=write-only, so we can't make use of the convenient enum
+      # conversion.
+      cache_bu = Cache_bu(Mode.REBUILD, storage.build_cache)
+      cache_dl = Cache_dl(Mode.WRITE_ONLY, storage.download_cache)
+   else:
+      cache_bu = Cache_bu(cli.build_cache, storage.build_cache)
+      cache_dl = Cache_dl(cli.download_cache, storage.download_cache)
+   VERBOSE("build cache: %s (%s)" % (cache_bu.cache_mode,
+                                     cache_bu.cache_mode_set_by))
+   VERBOSE("download cache: %s (%s)" % (cache_dl.cache_mode,
+                                        cache_dl.cache_mode_set_by))
    # misc
    global password_many, tls_verify
    password_many = cli.password_many
@@ -1962,10 +2164,10 @@ def mkdir(path):
    except OSError as x:
       FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
 
-def mkdirs(path):
+def mkdirs(path, exist_ok=True):
    TRACE("ensuring directories: %s" % path)
    try:
-      os.makedirs(path, exist_ok=True)
+      os.makedirs(path, exist_ok=exist_ok)
    except OSError as x:
       FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
 

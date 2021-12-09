@@ -31,7 +31,7 @@ def main(cli):
       ch.INFO("destination:      %s" % image.unpack_path)
    else:
       ch.VERBOSE("destination:      %s" % image.unpack_path)
-   pullet = Image_Puller(image, not cli.no_cache)
+   pullet = Image_Puller(image, ch.cache_dl.use_cache())
    pullet.pull_to_unpacked(cli.last_layer)
    pullet.done()
    ch.done_notify()
@@ -46,15 +46,15 @@ class Image_Puller:
                 "image",
                 "layer_hashes",
                 "registry",
-                "use_cache")
+                "use_dlcache")
 
-   def __init__(self, image, use_cache):
+   def __init__(self, image, use_cache=False):
       self.architectures = None
       self.image = image
       self.registry = ch.Registry_HTTP(image.ref)
       self.config_hash = None
       self.layer_hashes = None
-      self.use_cache = use_cache
+      self.use_dlcache = use_cache
 
    @property
    def config_path(self):
@@ -111,7 +111,7 @@ class Image_Puller:
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
-         if (os.path.exists(self.config_path) and self.use_cache):
+         if (os.path.exists(self.config_path) and self.use_dlcache):
             ch.INFO("config: using existing file")
          else:
             self.registry.blob_to_file(self.config_hash, self.config_path,
@@ -121,7 +121,7 @@ class Image_Puller:
          path = self.layer_path(lh)
          ch.VERBOSE("layer path: %s" % path)
          msg = "layer %d/%d: %s" % (i, len(self.layer_hashes), lh[:7])
-         if (os.path.exists(path) and self.use_cache):
+         if (os.path.exists(path) and self.use_dlcache):
             ch.INFO("%s: using existing file" % msg)
          else:
             self.registry.blob_to_file(lh, path, "%s: downloading" % msg)
@@ -153,7 +153,7 @@ class Image_Puller:
       self.architectures = None
       if (str(self.image.ref) in manifests_internal):
          raise ch.No_Fatman_Error()  # no fat manifests for internal library
-      if (os.path.exists(self.fatman_path) and self.use_cache):
+      if (os.path.exists(self.fatman_path) and self.use_dlcache):
          ch.INFO("manifest list: using existing file")
       else:
          # raises Not_In_Registry_Error if needed
@@ -216,7 +216,7 @@ class Image_Puller:
          else:
             digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
-         if (os.path.exists(self.manifest_path) and self.use_cache):
+         if (os.path.exists(self.manifest_path) and self.use_dlcache):
             ch.INFO("manifest: using existing file")
          else:
             self.registry.manifest_to_file(self.manifest_path,

@@ -79,12 +79,18 @@ def main():
          { "metavar": "ARCH",
            "default": "host",
            "help": "architecture for image registries (default: host)"}],
+       [ ["--build-cache"],
+         { "metavar": "MODE",
+           "help": "build cache mode: enable (default), disable, rebuild"}],
+       [ ["--download-cache"],
+         { "metavar": "MODE",
+           "help": "download cache mode: enable (default), disable"}],
        [ ["--dependencies"],
          { "action": misc.Dependencies,
            "help": "print any missing dependencies and exit" }],
        [ ["--no-cache"],
          { "action": "store_true",
-           "help": "download everything needed, ignoring the cache" }],
+           "help": "disable build and download cache reading" }],
        [ ["--password-many"],
          { "action": "store_true",
            "help": "re-prompt each time a registry password is needed" }],
@@ -97,7 +103,7 @@ def main():
        [ ["-v", "--verbose"],
          { "action": "count",
            "default": 0,
-           "help": "print extra chatter (can be repeated)" } ],
+           "help": "print extra chatter (can be repeated)" }],
        [ ["--version"],
          { "action": misc.Version,
            "help": "print version and exit" } ]]
@@ -151,6 +157,25 @@ def main():
                    help="name (tag) of image to create (default: inferred)")
    sp.add_argument("context", metavar="CONTEXT",
                    help="context directory")
+
+   # build-cache
+   help="build cache information and options"
+   sp = sps.add_parser("build-cache", help=help, description=help,
+                  formatter_class=ch.HelpFormatter)
+   add_opts(sp, misc.build_cache, deps_check=True, stog_init=True)
+   grp = sp.add_mutually_exclusive_group()
+   grp.add_argument("--gc",
+                   action="store_true",
+                   help="run garbage collection on cache")
+   grp.add_argument("--reset",
+                   action="store_true",
+                   help="clear and re-initialize build cache")
+   grp.add_argument("--tree-text",
+                   action="store_true",
+                   help="print a text tree of the cache storage")
+   grp.add_argument("--tree-dot",
+                   action="store_true",
+                   help="create a DOT and PDF export of the tree in CWD")
 
    # delete
    help="delete image from internal storage"
