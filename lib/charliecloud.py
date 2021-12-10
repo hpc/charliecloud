@@ -465,7 +465,7 @@ class Image:
 
    def metadata_history_append(self, hist):
       DEBUG("appending history: %s" % hist)
-      self.metadata['history'].append(i)
+      self.metadata['history'].append(hist)
 
    def metadata_replace(self, config_json):
       self.metadata_init()
