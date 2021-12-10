@@ -73,6 +73,7 @@ extern char *username;
 
 /** Function prototypes **/
 
+char *argv_to_string(char **argv);
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
 void list_append(void **ar, void *new, size_t size);
