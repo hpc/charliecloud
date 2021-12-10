@@ -880,19 +880,23 @@ OCI technical notes
 ===================
 
 This section describes our analysis of the Open Container Initiative (OCI)
-specification and implications for our implementation in :code:`ch-run-oci`.
-Anything relevant for users goes in that man page; here is for technical
-details. The main goals are to guide Charliecloud development and provide and
-opportunity for peer-review of our work.
+specification and implications for our implementations of :code:`ch-image`, and
+:code:`ch-run-oci`. Anything relevant for users goes in the respective man
+page; here is for technical details. The main goals are to guide Charliecloud
+development and provide and opportunity for peer-review of our work.
+
+
+ch-run-oci
+----------
 
 Currently, :code:`ch-run-oci` is only tested with Buildah. These notes
 describe what we are seeing from Buildah's runtime expectations.
 
 Gotchas
--------
+~~~~~~~
 
 Namespaces
-~~~~~~~~~~
+""""""""""
 
 Buildah sets up its own user and mount namespaces before invoking the runtime,
 though it does not change the root directory. We do not understand why. In
@@ -907,15 +911,13 @@ provides without joining those namespaces. To do so:
 #. :code:`$ nsenter -U -m -t $PID bash`
 
 Supervisor process and maintaining state
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+""""""""""""""""""""""""""""""""""""""""
 
 OCI (and thus Buildah) expects a process that exists throughout the life of
 the container. This conflicts with Charliecloud's lack of a supervisor process.
 
-**FIXME**
-
 Bundle directory
-----------------
+~~~~~~~~~~~~~~~~
 
 * OCI documentation (very incomplete): https://github.com/opencontainers/runtime-spec/blob/master/bundle.md
 
@@ -969,7 +971,7 @@ Observations:
    No other new filesystems are mounted within the namespaces.
 
 :code:`config.json`
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 * OCI documentation:
 
@@ -1263,7 +1265,7 @@ protects us.)
 End of example.
 
 State
------
+~~~~~
 
 The OCI spec does not say how the JSON document describing state should be
 given to the caller. Buildah is happy to get it on the runtime's standard
@@ -1275,13 +1277,185 @@ essentially a no-op, and annotations are not supported, so the
 :code:`annotations` key will never be given.
 
 Additional sources
-------------------
+~~~~~~~~~~~~~~~~~~
 
 * :code:`buildah` man page: https://github.com/containers/buildah/blob/master/docs/buildah.md
 * :code:`buildah bud` man page: https://github.com/containers/buildah/blob/master/docs/buildah-bud.md
 * :code:`runc create` man page: https://raw.githubusercontent.com/opencontainers/runc/master/man/runc-create.8.md
 * https://github.com/opencontainers/runtime-spec/blob/master/runtime.md
 
+
+ch-image
+--------
+
+pull
+~~~~
+
+Images pulled from a registry have their OCI metadata stored in two different
+files. First, the original contents of :code:`config.json` are stored as
+:code:`/ch/config.pulled.json` in the image filesystem. Second, the metadata we
+care about, e.g., a subset of :code:`config.json`, is stored as
+:code:`/ch/metadata.json` in the image filsystem.
+
+Below are the subset of keys we are interested in from :code:`config.json`
+
+.. code-block:: javascript
+
+   {
+     "arch": "",
+     "cwd": "",
+     "env": {},
+     "history": [],
+     "labels": {},
+     "shell": [],
+     "volumes": [],
+   }
+
+push
+~~~~
+
+Image registries expect a configuration blob :code:`config.json` at push time.
+This blob consists of both OCI run-time and image specification information.
+
+* OCI run-time and image documentation:
+
+  * https://github.com/opencontainers/image-spec/blob/master/config.md
+  * https://github.com/opencontainers/image-spec/blob/master/config.md
+
+Since various OCI features are unsupported by Charliecloud we push only what is
+necessary to satisfy general image registry requirements.
+
+The :code:`config.json` not stored locally, rather it is created at push time
+referencing the image's :code:`/ch/metadata.json` file and layer tar hash. Below
+is an example :code:`config.json` along with commentary.
+
+
+.. code-block:: javascript
+
+    {
+      "architecture": "amd64",
+      "charliecloud_version": "0.26~pre+confighistory1002.fa53754.dirty",
+      "comment": "pushed with Charliecloud",
+      "config": {},
+      "container_config": {},
+      "created": "2021-12-10T20:39:56Z",
+      "os": "linux",
+      "rootfs": {
+        "diff_ids": [
+          "sha256:607c737779a53d3a04cbd6e59cae1259ce54081d9bafb4a7ab0bc863add22be8"
+        ],
+        "type": "layers"
+      },
+      "weirdal": "yankovic"
+
+With exception to :code:`charliecloud_version` and :code:`weirdal`, the fields
+above are expected in the :code:`config.json` at push time.
+
+.. code-block:: javascript
+
+      "history": [
+
+        {
+          "created": "2021-11-17T02:20:51.334553938Z",
+          "created_by": "/bin/sh -c #(nop) ADD file:cb5ed7070880d4c0177fbe6dd278adb7926e38cd73e6abd582fd8d67e4bbf06c in / ",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-17T02:20:51.921052716Z",
+          "created_by": "/bin/sh -c #(nop)  CMD [\"bash\"]",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:08Z",
+          "created_by": "FROM debian:buster",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:19Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'apt-get update     && apt-get install -y        bzip2        wget     && rm -rf /var/lib/apt/lists/*']",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:19Z",
+          "created_by": "WORKDIR /usr/local/src",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:19Z",
+          "created_by": "ARG MC_VERSION='latest'",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:19Z",
+          "created_by": "ARG MC_FILE='Miniconda3-latest-Linux-x86_64.sh'",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:21Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'wget -nv https://repo.anaconda.com/miniconda/$MC_FILE']",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:33Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'bash $MC_FILE -bf -p /usr/local']",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:33Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'rm -Rf $MC_FILE']",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:33Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'which conda && conda --version']",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:34Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'conda config --set auto_update_conda False']",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:14:34Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'conda config --add channels conda-forge']",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:15:07Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'conda install --yes obspy']",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:15:07Z",
+          "created_by": "WORKDIR /",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:15:08Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'wget -nv http://examples.obspy.org/RJOB_061005_072159.ehz.new']",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:15:08Z",
+          "created_by": "COPY ['hello.py'] -> '.'",
+          "empty_layer": true
+        },
+        {
+          "created": "2021-11-30T20:15:08Z",
+          "created_by": "RUN ['/bin/sh', '-c', 'chmod 755 ./hello.py']"
+        }
+      ],
+    }
+
+The history section is collected from the image's :code:`ch/metadata.json` file
+and edited to represent a single layer image. This is achieved by changing all
+but the final history entry's :code:`empty_layer` key value's to :code:`true`.
+
+We do this because Quay checks that the number of non-empty history entries
+match the number of pushed layers.
+
+Since we have no other use for the optional history field, we leave it in the
+OCI format.
 
 Miscellaneous notes
 ===================

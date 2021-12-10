@@ -258,9 +258,9 @@ class Instruction(abc.ABC):
    def execute(self):
       if (not cli.dry_run):
          self.execute_()
-      hist = [ { "created": ch.now_utc_iso8601(),
-                 "created_by": "%s %s" % (self.str_name(), self.str_())}]
       if (image_i != -1):
+         hist = { "created": ch.now_utc_iso8601(),
+                  "created_by": "%s %s" % (self.str_name(), self.str_())}
          images[image_i].metadata_history_append(hist)
          images[image_i].metadata_save()
 

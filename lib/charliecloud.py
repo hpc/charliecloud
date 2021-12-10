@@ -450,8 +450,8 @@ class Image:
       # History.
       try:
          hist = config["history"]
-      except AttributeError:
-         hist = []
+      except KeyError:
+         FATAL("invalid config: missing history")
       self.metadata["history"] = hist
       # labels
       set_("labels", "config", "Labels")  # copy reference
@@ -465,8 +465,7 @@ class Image:
 
    def metadata_history_append(self, hist):
       DEBUG("appending history: %s" % hist)
-      for i in hist:
-         self.metadata['history'].append(i)
+      self.metadata['history'].append(i)
 
    def metadata_replace(self, config_json):
       self.metadata_init()
