@@ -1291,13 +1291,14 @@ ch-image
 pull
 ~~~~
 
-Images pulled from a registry have their OCI metadata stored in two different
-files. First, the original contents of :code:`config.json` are stored as
-:code:`/ch/config.pulled.json` in the image filesystem. Second, the metadata we
-care about, e.g., a subset of :code:`config.json`, is stored as
-:code:`/ch/metadata.json` in the image filsystem.
+Images pulled from registries have their OCI metadata, i.e., contents of
+:code:`config.json`, stored in two different files. First, the original
+:code:`config.json` is stored as :code:`/ch/config.pulled.json` in the image
+filesystem. Second, the metadata we care about, a subset of
+:code:`config.json`, is stored as :code:`/ch/metadata.json` in the image
+filsystem.
 
-Below are the subset of keys we are interested in from :code:`config.json`
+The subset of key value pairs we are interested in are as follows.
 
 .. code-block:: javascript
 
@@ -1315,7 +1316,7 @@ push
 ~~~~
 
 Image registries expect a configuration blob :code:`config.json` at push time.
-This blob consists of both OCI run-time and image specification information.
+This blob consists of both OCI runtime and image specification information.
 
 * OCI run-time and image documentation:
 
@@ -1450,9 +1451,8 @@ above are expected by the registry in the :code:`config.json` at push time.
 The history section is collected from the image's :code:`ch/metadata.json` file
 and edited to represent a single layer image. This is achieved by changing all
 but the final history entry's :code:`empty_layer` key value to :code:`true`.
-
-We do this because Quay checks that the number of non-empty history entries
-match the number of pushed layers.
+This is needed because Quay checks that the number of non-empty history entries
+match the number of pushed layers at push time.
 
 Since we have no other use for the optional history field, we leave it in the
 OCI format.
