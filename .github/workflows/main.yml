@@ -390,7 +390,7 @@ jobs:
               ( cd /usr/local/src/squashfuse && make uninstall )
           fi
           ! python3 -c 'import requests'
-          ! python3 - 'import lark'
+          ! python3 -c 'import lark'
           test -e bin/ch-image
           bin/ch-test -f test/build/10_sanity.bats  # issue #806
 
