@@ -79,7 +79,6 @@ uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
 	rmdir $$(find $(pkglibexecdir) -type d | sort -r)
-
 endif
 EXTRA_DIST = $(testfiles) $(testfiles_exec) \
              docs-sane.py.in force-auto.py.in make-perms-test.py.in
