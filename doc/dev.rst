@@ -1319,13 +1319,13 @@ This blob consists of both OCI run-time and image specification information.
 
 * OCI run-time and image documentation:
 
-  * https://github.com/opencontainers/image-spec/blob/master/config.md
+  * https://github.com/opencontainers/runtime-spec/blob/master/config.md
   * https://github.com/opencontainers/image-spec/blob/master/config.md
 
 Since various OCI features are unsupported by Charliecloud we push only what is
 necessary to satisfy general image registry requirements.
 
-The :code:`config.json` not stored locally, rather it is created at push time
+The :code:`config.json` is not stored locally, rather it is created at push time
 referencing the image's :code:`/ch/metadata.json` file and layer tar hash. Below
 is an example :code:`config.json` along with commentary.
 
@@ -1349,7 +1349,7 @@ is an example :code:`config.json` along with commentary.
       "weirdal": "yankovic"
 
 With exception to :code:`charliecloud_version` and :code:`weirdal`, the fields
-above are expected in the :code:`config.json` at push time.
+above are expected by the registry in the :code:`config.json` at push time.
 
 .. code-block:: javascript
 
@@ -1449,7 +1449,7 @@ above are expected in the :code:`config.json` at push time.
 
 The history section is collected from the image's :code:`ch/metadata.json` file
 and edited to represent a single layer image. This is achieved by changing all
-but the final history entry's :code:`empty_layer` key value's to :code:`true`.
+but the final history entry's :code:`empty_layer` key value to :code:`true`.
 
 We do this because Quay checks that the number of non-empty history entries
 match the number of pushed layers.
