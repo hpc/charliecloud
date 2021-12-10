@@ -78,7 +78,7 @@ install-data-hook:
 uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
-	rm -rf --one-file-system $(pkglibexecdir)
+	rmdir $$(find $(pkglibexecdir) -type d | sort -r)
 
 endif
 EXTRA_DIST = $(testfiles) $(testfiles_exec) \

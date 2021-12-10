@@ -313,22 +313,6 @@ jobs:
           sudo make $ch_makej install
           bin/ch-run --version
           $ch_prefix/from-tarball/bin/ch-run --version
-          # Verify uninstall works.
-          sudo make uninstall
-          diff -u - <(find $ch_prefix/from-tarball | sort) <<'EOF'
-          /var/tmp/from-tarball
-          /var/tmp/from-tarball/bin
-          /var/tmp/from-tarball/lib
-          /var/tmp/from-tarball/libexec
-          /var/tmp/from-tarball/share
-          /var/tmp/from-tarball/share/doc
-          /var/tmp/from-tarball/share/man
-          /var/tmp/from-tarball/share/man/man1
-          /var/tmp/from-tarball/share/man/man7
-          EOF
-          # Install again.
-          sudo make $ch_makej install
-          $ch_prefix/from-tarball/bin/ch-run --version
 
       - name: run test suite (Git WD, quick)
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
@@ -348,6 +332,23 @@ jobs:
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
           $ch_prefix/from-tarball/bin/ch-test all
+
+      - name: ensure make uninstall works
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        run: |
+          # Verify uninstall works.
+          sudo make uninstall
+          diff -u - <(find $ch_prefix/from-tarball | sort) <<'EOF'
+          /var/tmp/from-tarball
+          /var/tmp/from-tarball/bin
+          /var/tmp/from-tarball/lib
+          /var/tmp/from-tarball/libexec
+          /var/tmp/from-tarball/share
+          /var/tmp/from-tarball/share/doc
+          /var/tmp/from-tarball/share/man
+          /var/tmp/from-tarball/share/man/man1
+          /var/tmp/from-tarball/share/man/man7
+          EOF
 
       - name: rebuild with most things --disable’d
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
@@ -389,7 +390,7 @@ jobs:
               ( cd /usr/local/src/squashfuse && make uninstall )
           fi
           ! python3 -c 'import requests'
-          ! python3 -c 'import lark'
+          ! python3 - 'import lark'
           test -e bin/ch-image
           bin/ch-test -f test/build/10_sanity.bats  # issue #806
 

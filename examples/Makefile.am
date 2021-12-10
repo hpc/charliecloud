@@ -156,5 +156,5 @@ uninstall-local:
 	rm -f $(DESTDIR)$(examplesdir)/copy/symlink-to-fileB-B
 
 uninstall-hook:
-	rm -rf --one-file-system $(docdir)
+	rmdir $$(find $(docdir) -type d | sort -r)
 

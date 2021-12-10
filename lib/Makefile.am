@@ -100,7 +100,7 @@ contributors.bash: ../README.rst
 
 # Remove empty charliecloud directories after uninstallation.
 uninstall-hook:
-	rm -rf --one-file-system $(pkglibdir)
+	rmdir $$(find $(pkglibdir) -type d | sort -r)
 
 version.txt: ../configure
 	printf '@PACKAGE_VERSION@\n' > $@
