@@ -55,27 +55,7 @@ char *username = NULL;
 /* Serialize the null-terminated vector of arguments argv and return the
    result as a newly allocated string. The purpose is to provide a
    human-readable reconstruction of a command line where each argument can
-   also be recovered byte-for-byte.
-
-   Note the verbatim command line typed in the shell cannot be recovered,
-   because not enough information is provided to the program. For example,
-   "echo  'foo'" is given to programs as a sequence of two arguments, "echo"
-   and "foo"; the two spaces and single quotes are removed by the shell.
-
-   The basic serialization algorithm is:
-
-     1. If an argument contains only printable ASCII bytes that are not
-        whitespace, shell metacharacters, double quote (", ASCII 34 decimal)
-        or backslash (\, ASCII 92), then copy it unchanged.
-
-     2. Otherwise, (a) enclose the argument in double quotes and (b)
-        backslash-escape double quotes, backslashes, and characters
-        interpreted by the shell within double quotes.
-
-     3. Join the possibly-transformed arguments with a single space.
-
-   Note that the zero byte, ASCII NUL, cannot appear in arguments because it
-   would terminate the string. */
+   also be recovered byte-for-byte; see ch-run(1) for details. */
 char *argv_to_string(char **argv)
 {
    char *s = NULL;
