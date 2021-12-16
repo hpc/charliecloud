@@ -40,27 +40,30 @@ class Version(Action_Exit):
 # because caller manages that.
 
 def build_cache(cli):
-   # reset and init
-   if (cli.reset):
-      ch.INFO("resetting build cache storage directory.")
-      ch.cache_bu.storage_reset()
-   # run garbage collection
-   if (cli.gc):
-      ch.INFO('running garbage collection ...')
-      ch.cache_bu.storage_prune()
-   # print text tree
-   if (cli.tree_text):
-      ch.cache_bu.storage_tree_print()
-   # create tree files
-   if (cli.tree_dot):
-      ch.INFO('TODO: create pretty tree files')
-   # print general info
-   if (os.path.isdir(ch.storage.build_cache)):
-      ch.INFO("""
+   if (ch.cache_bu.usable()):
+      # reset and init
+      if (cli.reset):
+         ch.INFO("resetting build cache storage directory.")
+         ch.cache_bu.storage_reset()
+      # run garbage collection
+      if (cli.gc):
+         ch.INFO('running garbage collection ...')
+         ch.cache_bu.storage_prune()
+      # print text tree
+      if (cli.tree_text):
+         ch.cache_bu.storage_tree_print()
+      # create tree files
+      if (cli.tree_dot):
+         ch.INFO('TODO: create pretty tree files')
+      # print general info
+      if (os.path.isdir(ch.storage.build_cache)):
+         ch.INFO("""
 print number of entries (commits), number of files, disk space used,
 number of named and unammed branches, number of state IDs.""")
+      else:
+         ch.INFO("cache is emtpy")
    else:
-      ch.INFO("cache is emtpy")
+      ch.INFO("build cache is disabled (%s)" % ch.cache_bu.cache_set)
    ch.done_notify()
 
 def delete(cli):

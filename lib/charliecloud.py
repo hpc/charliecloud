@@ -89,7 +89,7 @@ ARCH_MAP = { "x86_64":    "amd64",
              "s390x":     "s390x" }  # a.k.a. IBM Z
 
 # Build cache root ID.
-CACHE_ROOT_ID = "5745495244414c59414e4b4f56494300" #bytestring?
+CACHE_ROOT_ID = "5455504143205348414b5552"
 
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
@@ -251,6 +251,10 @@ class Mode(enum.Enum):
    REBUILD    = "rebuild"
    WRITE_ONLY = "write-only"
 
+class Cache_Type(enum.Enum):
+   BUILD = "build"
+   DOWNLOAD = "download"
+
 
 ## Exceptions ##
 
@@ -261,63 +265,78 @@ class Not_In_Registry_Error(Exception): pass
 ## Classes ##
 
 class Cache(ABC):
-   __slots__ = ("mode",
-                "cache_path",
-                "set_by")
+   """Cache object.
+
+        cache_path .... Directory the cache is stored.
+        cache_set...... String explaining what determined cache mode.
+        mode .......... The state (enum Mode) the cache is in."""
+
+   __slots__ = ("cache_path",
+                "cache_set",
+                "mode")
 
    def __init__(self, mode, path):
-      if (mode is None):
-         self.mode = self.mode_default()
-         self.set_by = "default"
-      else:
-         self.mode = self.mode_check(mode)
-         self.set_by = "command line"
       assert(path is not None)
       self.cache_path = path
+      self.cache_set = None
+      if (mode is None):
+         self.mode = self.default_mode()
+      else:
+         if (Mode(mode) in self.valid_modes()):
+            self.mode = mode
+         else:
+            FATAL("invalid %s cache mode: %s" % (self.cache_type, mode))
+         self.cache_set = "command line"
 
    @property
    def cache_mode(self):
-      return self.mode.value
+      return Mode(self.mode)
 
    @cache_mode.setter
    def cache_mode(self, m):
+      assert(isinstance(m, Mode))
       self.mode = m
 
    @property
-   def cache_mode_set_by(self):
-      return self.set_by
+   def cache_set_from(self):
+      return self.cache_set
 
-   @cache_mode_set_by.setter
-   def cache_mode_set_by(self, s):
-      self.method = s
+   @cache_set_from.setter
+   def cache_set_from(self, s):
+      self.cache_set = s
 
    @property
    def storage_path(self):
       return self.cache_path
 
    @abstractmethod
-   def mode_check(self):
+   def cache_type(self):
       pass
 
    @abstractmethod
-   def mode_default(self):
+   def default_mode(self):
+      pass
+
+   @abstractmethod
+   def valid_modes(self):
       pass
 
 
 class Cache_dl(Cache):
-   def mode_check(self, mode):
-      valid_modes = [Mode.ENABLED, Mode.WRITE_ONLY]
-      if (Mode(mode) in valid_modes):
-         return Mode(mode)
-      FATAL("invalid download cache mode: %s" % mode)
+   def cache_type(self):
+      return Cache_Type(DOWNLOAD).value
 
-   def mode_default(self):
+   def default_mode(self):
+      self.cache_set_from = "default"
       return Mode.ENABLED
 
    def use_cache(self):
       if (self.mode == Mode.ENABLED):
          return True
       return False
+
+   def valid_modes(self):
+      return [Mode.ENABLED, Mode.WRITE_ONLY]
 
 
 class Cache_bu(Cache):
@@ -334,13 +353,10 @@ class Cache_bu(Cache):
          return True
       return False
 
-   def mode_check(self, mode):
-      valid_modes = [Mode.ENABLED, Mode.DISABLED, Mode.REBUILD]
-      if (Mode(mode) in valid_modes):
-         return Mode(mode)
-      FATAL("invalid build cache mode: %s" % mode)
+   def cache_type(self):
+      return Cache_Type(BUILD).value
 
-   def mode_default(self):
+   def default_mode(self):
       # cmd() doesn't give us a good way to return output to operate on, so we
       # just use vanilla subprocess without a wrapper here.
       cp = subprocess.run(["git", "--version"], encoding="utf-8",
@@ -348,13 +364,14 @@ class Cache_bu(Cache):
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
       if (cp.returncode):
-         self.set_by("no git installed")
+         self.cache_set_from = "no git installed"
          return Mode.DISABLED
       out = cp.stdout.split(" ")[-1]
       git_version = tuple(int(i) for i in out.strip().split("."))
       if (not GIT_MIN <= git_version <= GIT_MAX):
-         self.set_by("git too old")
+         self.cache_set_from = "git too old"
          return Mode.DISABLED
+      self.cache_set_from = "default"
       return Mode.ENABLED
 
    def storage_init(self):
@@ -406,6 +423,13 @@ class Cache_bu(Cache):
    def storage_tree_dot(self):
       pass
 
+   def usable(self):
+      if (self.cache_mode != Mode.DISABLED):
+         return True
+      return False
+
+   def valid_modes(self):
+      return [Mode.ENABLED, Mode.DISABLED, Mode.REBUILD]
 
 class Credentials:
 
@@ -2118,9 +2142,9 @@ def init(cli):
       cache_bu = Cache_bu(cli.build_cache, storage.build_cache)
       cache_dl = Cache_dl(cli.download_cache, storage.download_cache)
    VERBOSE("build cache: %s (%s)" % (cache_bu.cache_mode,
-                                     cache_bu.cache_mode_set_by))
+                                     cache_bu.cache_set))
    VERBOSE("download cache: %s (%s)" % (cache_dl.cache_mode,
-                                        cache_dl.cache_mode_set_by))
+                                        cache_dl.cache_set))
    # misc
    global password_many, tls_verify
    password_many = cli.password_many
