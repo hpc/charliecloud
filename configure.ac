@@ -108,6 +108,10 @@ AC_ARG_ENABLE([man],
   AS_HELP_STRING([--disable-man], [man pages]),
   [], [enable_man=yes])
 
+AC_ARG_ENABLE([syslog],
+  AS_HELP_STRING([--disable-syslog], [logging to syslog]),
+  [], [enable_syslog=yes])
+
 AC_ARG_ENABLE([test],
   AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
@@ -571,11 +575,13 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #
 # Below are all the variables we want available outside configure.
 
-AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
-AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
-AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
+AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_LARK], [test $enable_bundled_lark = yes])
+AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
+AS_IF([test $enable_syslog = yes],
+      [AC_DEFINE([ENABLE_SYSLOG], [1], [log to syslog])])
+AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 
 AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
@@ -719,10 +725,11 @@ Building Charliecloud
 ~~~~~~~~~~~~~~~~~~~~~
 
   will build and install:
+    ch-image(1) ... ${enable_ch_image}
     HTML documentation ... ${enable_html}
     man pages ... ${enable_man}
+    syslog ... ${enable_syslog}
     test suite ... ${enable_test}
-    ch-image(1) ... ${enable_ch_image}
 
   required:
     C99 compiler ... ${CC} ${CC_VERSION}

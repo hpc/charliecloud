@@ -108,8 +108,10 @@ int main(int argc, char *argv[])
 
    privs_verify_invoking();
 
+#ifdef ENABLE_SYSLOG
    syslog(LOG_USER|LOG_INFO, "uid=%u args=%d: %s", getuid(), argc,
           argv_to_string(argv));
+#endif
 
    verbose = 1;  // in charliecloud.h
    args = (struct args){
