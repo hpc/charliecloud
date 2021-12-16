@@ -1015,6 +1015,7 @@ EOF
     # it on GitHub Actions.
     #[[ -n $GITHUB_ACTIONS ]] || skip 'GitHub Actions only'
     [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
+    #shellcheck disable=SC2016
     ch-run "$ch_timg" -- echo foo  'b a}$r'
     expected="ch-run: uid=$(id -u) args=6: ch-run ${ch_timg} -- echo foo \"b a}\\\$r\""
     echo "$expected"
