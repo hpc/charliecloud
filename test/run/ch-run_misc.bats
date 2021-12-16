@@ -1013,11 +1013,11 @@ EOF
 @test 'syslog' {
     # This test depends on a fairly specific syslog configuration, so just do
     # it on GitHub Actions.
-    #[[ -n $GITHUB_ACTIONS ]] || skip 'GitHub Actions only'
+    [[ -n $GITHUB_ACTIONS ]] || skip 'GitHub Actions only'
     [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
-    #shellcheck disable=SC2016
-    ch-run "$ch_timg" -- echo foo  'b a}$r'
     expected="ch-run: uid=$(id -u) args=6: ch-run ${ch_timg} -- echo foo \"b a}\\\$r\""
     echo "$expected"
-    sudo tail -n 10 /var/log/messages | grep -F "$expected"
+    #shellcheck disable=SC2016
+    ch-run "$ch_timg" -- echo foo  'b a}$r'
+    sudo tail -n 10 /var/log/syslog | grep -F "$expected"
 }
