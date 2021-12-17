@@ -89,7 +89,7 @@ ARCH_MAP = { "x86_64":    "amd64",
              "s390x":     "s390x" }  # a.k.a. IBM Z
 
 # Build cache root ID.
-CACHE_ROOT_ID = "5455504143205348414b5552"
+CACHE_ROOT_ID = '54 55 50 41 43 20 53 48 41 4b 55 52'
 
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
