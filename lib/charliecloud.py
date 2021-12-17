@@ -399,7 +399,7 @@ class Image:
    def metadata_init(self):
       "Initialize empty metadata structure."
       # Elsewhere can assume the existence and types of everything here.
-      self.metadata = { "arch": None,
+      self.metadata = { "arch": arch_host.split("/")[0],  # no variant
                         "cwd": "/",
                         "env": dict(),
                         "labels": dict(),
