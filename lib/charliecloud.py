@@ -49,6 +49,10 @@ if (not LARK_MIN <= lark_version <= LARK_MAX):
 GIT_MIN = (2, 34, 1)
 GIT_MAX = (2, 34, 1)
 
+# Required git2dot range for .dot graphing.
+DOT_MIN = (0, 8, 3)
+DOT_MAX = (0, 8, 3)
+
 # Requests is not bundled, so this noise makes the file parse and
 # --version/--help work even if it's not installed.
 try:
@@ -357,12 +361,7 @@ class Cache_bu(Cache):
       return Cache_Type(BUILD).value
 
    def default_mode(self):
-      # cmd() doesn't give us a good way to return output to operate on, so we
-      # just use vanilla subprocess without a wrapper here.
-      cp = subprocess.run(["git", "--version"], encoding="utf-8",
-                          stdin=subprocess.DEVNULL,
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
+      cp = cmd_return(["git", "--version"])
       if (cp.returncode):
          self.cache_set_from = "no git installed"
          return Mode.DISABLED
@@ -413,15 +412,34 @@ class Cache_bu(Cache):
       self.storage_sane(self.storage_path)
       args = ["git", "--no-pager", "log", "--graph", "--all",
               "--format='%C(auto)%d %h %Cblue%al%Creset %s'"]
-      cp = subprocess.run(args, cwd=self.storage_path, encoding="utf=8",
-                          stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT)
+      cp = cmd_return(args, cwd=self.storage_path)
       INFO(cp.stdout)
-      if (cp.returncode):
-         exit(1)
 
    def storage_tree_dot(self):
-      pass
+      "Generate build-cache .dot graph and add PDF rendering."
+      # do we have git2dot?
+      try:
+         cp = cmd_return(["git2dot.py", "--version"])
+      except FileNotFoundError:
+         FATAL("git2dot.py not in path")
+      out = cp.stdout.split(" ")[-1]
+      git2dot_version = tuple(int(i) for i in out.strip().split("."))
+      if (not DOT_MIN <= git2dot_version <= DOT_MAX):
+         FATAL("git2dot %s too old" % git2dot_version)
+      # generate .dot graph
+      INFO("creating build-cache.dot")
+      cmd(["git2dot.py", "%s/build-cache.dot" % os.getcwd()],
+           cwd=self.storage_path)
+      # graphviz
+      cp = cmd_return(["dot", "-?"])
+      if (cp.returncode):
+         FATAL("dot (graphviz) not in path.")
+      INFO("creating build-cache.pdf")
+      args = ["dot", "-Tpdf", "build-cache.dot", "-o", "build-cache.pdf"]
+      cp = cmd_return(args)
+      DEBUG(cp.stdout)
+      if (cp.returncode):
+         FATAL("dot (graphviz): error rendering pdf.")
 
    def usable(self):
       if (self.cache_mode != Mode.DISABLED):
@@ -430,6 +448,7 @@ class Cache_bu(Cache):
 
    def valid_modes(self):
       return [Mode.ENABLED, Mode.DISABLED, Mode.REBUILD]
+
 
 class Credentials:
 
@@ -1948,12 +1967,17 @@ def cmd(args, cwd=None, env=None, fail_ok=False):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
 
-def cmd_git(args, fail_ok=False, cwd=None):
+def cmd_git(args, cwd=None):
    args.insert(0, "git")
-   cp = subprocess.run(args, encoding="utf-8", cwd=cwd,
+   cp = cmd_return(args, cwd=cwd)
+   VERBOSE("%s" % cp.stdout)
+   if (not fail_ok and cp.returncode):
+      FATAL("git command failed with code %d: %s" % (cp.returncode, args[0]))
+
+def cmd_return(args, cwd=None):
+   return subprocess.run(args, cwd=cwd, encoding="utf-8",
                        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT)
-   VERBOSE("%s" % cp.stdout)
 
 def color_reset(*fps):
    for fp in fps:

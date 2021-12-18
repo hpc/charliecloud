@@ -54,7 +54,7 @@ def build_cache(cli):
          ch.cache_bu.storage_tree_print()
       # create tree files
       if (cli.tree_dot):
-         ch.INFO('TODO: create pretty tree files')
+         ch.cache_bu.storage_tree_dot()
       # print general info
       if (os.path.isdir(ch.storage.build_cache)):
          ch.INFO("""
