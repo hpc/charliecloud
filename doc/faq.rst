@@ -666,10 +666,14 @@ Detail-oriented readers may have noticed the following gotchas:
   contains a dot, assume it's a hostname; otherwise, assume it's a path
   component.
 
-* The only character than cannot go in a POSIX filename is slash. Thus,
+* The only character that cannot go in a POSIX filename is slash. Thus,
   Charliecloud uses image references in filenames, replacing slash with
   percent (:code:`%`). Because this character cannot appear in image
   references, the transformation is reversible.
+
+  Git branch names do not allow a colon. Thus, to maintain the image reference
+  as both the image filename and git branch in storage, we replace the colon
+  with plus (:code:`+`).
 
   An alternate approach would be to replicate the reference path in the
   filesystem, i.e., path components in the reference would correspond directly

@@ -220,7 +220,7 @@ STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 # Storage directory format version. We refuse to operate on storage
 # directories with non-matching versions. Increment this number when the
 # format changes non-trivially.
-STORAGE_VERSION = 2
+STORAGE_VERSION = 3
 
 
 ## Globals ##
@@ -1001,6 +1001,8 @@ class Image_Ref:
                                    parser="earley", propagate_positions=True)
       if ("%" in s):
          s = s.replace("%", "/")
+      if ("+" in s):
+         s = s.replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       try:
          tree = class_.parser.parse(s)
@@ -1046,7 +1048,7 @@ fields:
 
    @property
    def for_path(self):
-      return str(self).replace("/", "%")
+      return str(self).replace("/", "%").replace(":", "+")
 
    @property
    def path_full(self):
@@ -1971,7 +1973,7 @@ def cmd_git(args, cwd=None):
    args.insert(0, "git")
    cp = cmd_return(args, cwd=cwd)
    VERBOSE("%s" % cp.stdout)
-   if (not fail_ok and cp.returncode):
+   if (cp.returncode):
       FATAL("git command failed with code %d: %s" % (cp.returncode, args[0]))
 
 def cmd_return(args, cwd=None):
