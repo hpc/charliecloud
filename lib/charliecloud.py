@@ -45,11 +45,11 @@ lark_version = tuple(int(i) for i in lark.__version__.split("."))
 if (not LARK_MIN <= lark_version <= LARK_MAX):
    depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
 
-# Required git range for build cache.
+# Git version range for build cache.
 GIT_MIN = (2, 34, 1)
 GIT_MAX = (2, 34, 1)
 
-# Required git2dot range for .dot graphing.
+# git2dot version range for build cache .dot file generation.
 DOT_MIN = (0, 8, 3)
 DOT_MAX = (0, 8, 3)
 
@@ -230,8 +230,8 @@ arch = None       # requested by user
 arch_host = None  # of host
 
 # Active build and download cache.
-cache_bu = None
-cache_dl = None
+cache = None
+cache_reqs = None
 
 # FIXME: currently set in ch-image :P
 CH_BIN = None
@@ -255,10 +255,6 @@ class Mode(enum.Enum):
    REBUILD    = "rebuild"
    WRITE_ONLY = "write-only"
 
-class Cache_Type(enum.Enum):
-   BUILD = "build"
-   DOWNLOAD = "download"
-
 
 ## Exceptions ##
 
@@ -267,187 +263,231 @@ class Not_In_Registry_Error(Exception): pass
 
 
 ## Classes ##
+class Cache:
+   """The primary Cache object to interact with.
 
-class Cache(ABC):
-   """Cache object.
+      Attributes:
 
-        cache_path .... Directory the cache is stored.
-        cache_set...... String explaining what determined cache mode.
-        mode .......... The state (enum Mode) the cache is in."""
+         build ...... Build cache subclass object (enabled, rebuild, or disabled).
+         download ... Download cache subclass object (enabled, write-only).
+         git ........ Boolean. Do we have the right git?
 
-   __slots__ = ("cache_path",
-                "cache_set",
-                "mode")
+      Constructor arguments:
 
-   def __init__(self, mode, path):
-      assert(path is not None)
-      self.cache_path = path
-      self.cache_set = None
+        bu_mode ... String. (cli input)
+        dl_mode ... String. (cli input)"""
+   def __init__(self, bu_mode, dl_mode, bu_path):
+      self.git = self.init_git()
+      self.build = Build_Cache(self.init_bmode(bu_mode), self.git_ok, bu_path)
+      self.download = Download_Cache(self.init_dlmode(dl_mode))
+
+   @property
+   def git_ok(self):
+      return self.git
+
+   ## Constructor helpers ##
+
+   def init_bmode(self, mode):
+      "Return canonical build cache Mode enum from value."
+      if (not self.git_ok):
+         return Mode.DISABLED
       if (mode is None):
-         self.mode = self.default_mode()
-      else:
-         if (Mode(mode) in self.valid_modes()):
-            self.mode = mode
-         else:
-            FATAL("invalid %s cache mode: %s" % (self.cache_type, mode))
-         self.cache_set = "command line"
+         return Mode.ENABLED
+      assert(Mode(mode) in [Mode.ENABLED, Mode.DISABLED, Mode.REBUILD])
+      return Mode(bu_mode)
+
+   def init_dlmode(self, mode):
+      "Return the canonical download Mode enum from value."
+      if (mode is None):
+         return Mode.ENABLED
+      assert(Mode(mode) in [Mode.ENABLED, Mode.WRITE_ONLY])
+      return Mode(mode)
+
+   def init_git(self):
+      "Return True if the right git is installed; otherwise return False."
+      cp = cmd_return(["git", "--version"])
+      if (cp.returncode):
+         return False
+      out = cp.stdout.split(" ")[-1]
+      git_version = tuple(int(i) for i in out.strip().split("."))
+      global GIT_MIN, GIT_MAX
+      if (not GIT_MIN <= git_version <= GIT_MAX):
+         return False
+      return True
+
+
+class Build_Cache(Cache):
+   """The build cache factory. Instantiate a subclass build object based on
+      mode, e.g., enabled, rebuild, disabled.
+
+      Constructor arguments:
+
+      cls ...... Parent class namespace.
+      mode ..... Build cache Mode enum."""
+   def __new__(cls, mode, git, storage_path):
+      class_ = "Build_" + mode.value
+      subclass_map = {subclass.__name__: subclass for subclass in cls.__subclasses__()}
+      subclass = subclass_map[class_]
+      instance = super(Build_Cache, subclass).__new__(subclass)
+      return instance
+
+   def __init__(self, mode, git, storage_path):
+      self.git = git
+      self.dot = self.init_dot()
+      self.pdf = self.init_pdf()
+      self.storage_path_ = storage_path
 
    @property
-   def cache_mode(self):
-      return Mode(self.mode)
-
-   @cache_mode.setter
-   def cache_mode(self, m):
-      assert(isinstance(m, Mode))
-      self.mode = m
+   def dot_ok(self):
+      return self.dot
 
    @property
-   def cache_set_from(self):
-      return self.cache_set
-
-   @cache_set_from.setter
-   def cache_set_from(self, s):
-      self.cache_set = s
+   def pdf_ok(self):
+      return self.pdf
 
    @property
    def storage_path(self):
-      return self.cache_path
+      return self.storage_path_
 
-   @abstractmethod
-   def cache_type(self):
-      pass
+   ## Constructor helpers ##
 
-   @abstractmethod
-   def default_mode(self):
-      pass
-
-   @abstractmethod
-   def valid_modes(self):
-      pass
-
-
-class Cache_dl(Cache):
-   def cache_type(self):
-      return Cache_Type(DOWNLOAD).value
-
-   def default_mode(self):
-      self.cache_set_from = "default"
-      return Mode.ENABLED
-
-   def use_cache(self):
-      if (self.mode == Mode.ENABLED):
-         return True
-      return False
-
-   def valid_modes(self):
-      return [Mode.ENABLED, Mode.WRITE_ONLY]
-
-
-class Cache_bu(Cache):
-   @staticmethod
-   def storage_sane(path_):
-      "Return True if build cache path appears sane; otherwise return false"
-      # Typical porcelain commands that ensure sanity do not work on our bare
-      # repo; check for the standard files and directories created when a bare
-      # repository is initiated.
-      if (    os.path.exists(path_ // "HEAD")
-          and os.path.isdir(path_  // "hooks")
-          and os.path.isdir(path_  // "info")
-          and os.path.isdir(path_  // "objects")):
-         return True
-      return False
-
-   def cache_type(self):
-      return Cache_Type(BUILD).value
-
-   def default_mode(self):
-      cp = cmd_return(["git", "--version"])
-      if (cp.returncode):
-         self.cache_set_from = "no git installed"
-         return Mode.DISABLED
+   def init_dot(self):
+      """Return True if git2dot.py is in PATH and is the right version; otherwise
+      return False."""
+      try:
+         cp = cmd_return(["git2dot.py", "--version"])
+      except FileNotFoundError:
+         return False
       out = cp.stdout.split(" ")[-1]
-      git_version = tuple(int(i) for i in out.strip().split("."))
-      if (not GIT_MIN <= git_version <= GIT_MAX):
-         self.cache_set_from = "git too old"
-         return Mode.DISABLED
-      self.cache_set_from = "default"
-      return Mode.ENABLED
+      git2dot_version = tuple(int(i) for i in out.strip().split("."))
+      global DOT_MIN, DOT_MAX
+      if (not DOT_MIN <= git2dot_version <= DOT_MAX):
+         return False
+      return True
+
+   def init_pdf(self):
+      "Return True if dot is in PATH; otherwise return False."
+      cp = cmd_return(["dot", "-?"])
+      if (cp.returncode):
+         return False
+      return True
+
+
+   ## Tree printing and debugging ##
+
+   def dump_dot(self):
+      if (not self.git_ok):
+         FATAL("no git in path")
+      if (self.dot_ok):
+         INFO("creating build-cache.dot")
+         # FIXME: if git2dot.py isn't in your path we get a file not found.
+         cmd(["git2dot", "%s/build-cache.dot" % os.getcwd()],
+             cwd=self.storage_path)
+      if (self.pdf_ok):
+         INFO("creating build-cache.pdf")
+         args = ["dot", "-Tpdf", "build-cache.dot", "-o", "build-cache.pdf"]
+         cmd(args)
+      else:
+         WARNING("graphviz (dot) not in path; skipping pdf render")
+
+   def print_storage(self):
+      #FIXME:
+      INFO("commits: ")
+      INFO("files: ")
+      INFO("disk used (GiB): ")
+      INFO("named branches: ")
+      INFO("unamed branches: ")
+      INFO("state IDs: ")
+
+   def print_tree(self):
+      if (self.git_ok):
+         args = ["git", "--no-pager", "log", "--graph", "--all",
+                 "--format='%C(auto)%d %h %Cblue%al%Creset %s'"]
+         cmd(args, cwd=self.storage_path)
+      else:
+         FATAL("can't print tree; wrong or not git in path")
+
+
+   ## Storage operations ##
 
    def storage_init(self):
-      """Create build cache storage dir, initialize bare git repo, and set
-         upstream origin to root; fail otherwise"""
-      VERBOSE("build cache storage: %s" % self.storage_path)
-      try:
-         mkdirs(self.storage_path, False)
-      except FileExistsError:
-         FATAL("build-cache exists")
+      """Initialize bare git repo and set upstream origin to root; fail
+         otherwise"""
+      path = self.storage_path
+      mkdirs(self.storage_path)
+      if (os.listdir(path)):
+         return
+      VERBOSE("build cache storage: %s" % path)
       VERBOSE("initialize bare git repo")
       # init bare repo
-      cmd_git(["init", "--bare", "--initial-branch=root", self.storage_path])
+      cmd_git(["init", "--bare", "--initial-branch=root", path])
       # set bare repo upstream origin to "root"
-      with tempfile.TemporaryDirectory(dir=self.storage_path) as tmpdir:
+      with tempfile.TemporaryDirectory(dir=path) as tmpdir:
          VERBOSE("setting upstream origin root")
          init_dir = Path(os.path.join(tmpdir, "init"))
-         cmd_git(["clone", self.storage_path, init_dir])
+         cmd_git(["clone", path, init_dir])
          cmd_git(["checkout", "-b", "root"], cwd=init_dir)
          cmd(["touch", ".root"], cwd=init_dir)
          cmd_git(["add", ".root"], cwd=init_dir)
          cmd_git(["commit", "-m", CACHE_ROOT_ID], cwd=init_dir)
          cmd_git(["push", "--set-upstream", "origin", "root"], cwd=init_dir)
 
-      if (not self.storage_sane(self.storage_path)):
+      if (not (os.path.exists(path // "HEAD")
+          and  os.path.isdir(path  // "hooks")
+          and  os.path.isdir(path  // "info")
+          and  os.path.isdir(path  // "objects"))):
          FATAL("failed to initilize build cache")
 
-   def storage_prune(self):
-      cmd_git(["gc", "--prune=now"], self.storage_path)
+   def prune(self):
+      if (not self.git_ok):
+         FATAL("build cache: git tree: no git")
+      cmd_git(["gc", "--prune=now"], cwd=self.storage_path)
 
-   def storage_reset(self):
+   def reset(self):
       "Remove and re-initialize storage directory."
       if (os.path.isdir(self.storage_path)):
-         VERBOSE("removing build cache storage: %s" % self.storage_path)
+         INFO("resetting build cache storage.")
          rmtree(self.storage_path)
       self.storage_init()
 
-   def storage_tree_print(self):
-      self.storage_sane(self.storage_path)
-      args = ["git", "--no-pager", "log", "--graph", "--all",
-              "--format='%C(auto)%d %h %Cblue%al%Creset %s'"]
-      cp = cmd_return(args, cwd=self.storage_path)
-      INFO(cp.stdout)
 
-   def storage_tree_dot(self):
-      "Generate build-cache .dot graph and add PDF rendering."
-      # do we have git2dot?
-      try:
-         cp = cmd_return(["git2dot.py", "--version"])
-      except FileNotFoundError:
-         FATAL("git2dot.py not in path")
-      out = cp.stdout.split(" ")[-1]
-      git2dot_version = tuple(int(i) for i in out.strip().split("."))
-      if (not DOT_MIN <= git2dot_version <= DOT_MAX):
-         FATAL("git2dot %s too old" % git2dot_version)
-      # generate .dot graph
-      INFO("creating build-cache.dot")
-      cmd(["git2dot.py", "%s/build-cache.dot" % os.getcwd()],
-           cwd=self.storage_path)
-      # graphviz
-      cp = cmd_return(["dot", "-?"])
-      if (cp.returncode):
-         FATAL("dot (graphviz) not in path.")
-      INFO("creating build-cache.pdf")
-      args = ["dot", "-Tpdf", "build-cache.dot", "-o", "build-cache.pdf"]
-      cp = cmd_return(args)
-      DEBUG(cp.stdout)
-      if (cp.returncode):
-         FATAL("dot (graphviz): error rendering pdf.")
+class Build_enable(Build_Cache):
+   pass
 
-   def usable(self):
-      if (self.cache_mode != Mode.DISABLED):
-         return True
-      return False
 
-   def valid_modes(self):
-      return [Mode.ENABLED, Mode.DISABLED, Mode.REBUILD]
+class Build_disable(Build_Cache):
+   pass
+
+
+class Build_rebuild(Build_Cache):
+   pass
+
+
+class Download_Cache(Cache):
+   """The download cache factory. Instantiate a download subclass object based on
+      mode, e.g., enabled, write-only.
+
+      Constructor arguments:
+
+        cls ...... parent class namespace.
+        mode ..... Mode enum."""
+   def __new__(cls, mode):
+      class_ = "Download_" + mode.value.replace("-", "_")
+      subclass_map = {subclass.__name__: subclass for subclass in cls.__subclasses__()}
+      subclass = subclass_map[class_]
+      instance = super(Download_Cache, subclass).__new__(subclass)
+      return instance
+
+   def __init__(self, mode):
+      pass
+
+
+class Download_enable(Download_Cache):
+   use_cache = True
+
+
+class Download_write_only(Download_Cache):
+   use_cache = False
 
 
 class Credentials:
@@ -1693,6 +1733,7 @@ class Storage:
       # FIXME: require version file too when appropriate (#1147)
       """Return True if storage present and seems valid, False otherwise."""
       return (os.path.isdir(self.unpack_base) and
+              os.path.isdir(self.build_cache) and
               os.path.isdir(self.download_cache))
 
    @property
@@ -1738,6 +1779,7 @@ class Storage:
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
          mkdir(self.root)
          mkdir(self.download_cache)
+         mkdir(self.build_cache)
          mkdir(self.unpack_base)
          mkdir(self.upload_cache)
          file_write(self.version_file, "%d\n" % STORAGE_VERSION)
@@ -1959,9 +2001,10 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
-   return cmd(args, env, fail_ok)
+   return cmd(args, env=env, fail_ok=fail_ok)
 
 def cmd(args, cwd=None, env=None, fail_ok=False):
+   "Run subprocess without stdout or stderr redirection. Return exit code"
    VERBOSE("environment: %s" % env)
    VERBOSE("executing: %s" % args)
    cp = subprocess.run(args, cwd=cwd, env=env, stdin=subprocess.DEVNULL)
@@ -1970,6 +2013,7 @@ def cmd(args, cwd=None, env=None, fail_ok=False):
    return cp.returncode
 
 def cmd_git(args, cwd=None):
+   "Run git subprocess redirecting stderr to stdout and capturing it."
    args.insert(0, "git")
    cp = cmd_return(args, cwd=cwd)
    VERBOSE("%s" % cp.stdout)
@@ -1977,6 +2021,9 @@ def cmd_git(args, cwd=None):
       FATAL("git command failed with code %d: %s" % (cp.returncode, args[0]))
 
 def cmd_return(args, cwd=None):
+   """Run subprocess redireting stderr to stdout and capturing it. Return
+   subprocess object"""
+   VERBOSE("executing: %s" % args)
    return subprocess.run(args, cwd=cwd, encoding="utf-8",
                        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT)
@@ -2152,25 +2199,20 @@ def init(cli):
       arch = cli.arch
    # cache configuration
    # FIXME: unclear how to make --no-cache mutually exclusive with both
-   # --download-cache and --build-cache in ch-image.py.in considering how we
-   # hande common options.
-   if (   (cli.no_cache and cli.build_cache) \
-       or (cli.no_cache and cli.download_cache)):
-      FATAL("--no-cache cannot be used with --build-cache or --download-cache")
-   global cache_dl, cache_bu
+   # --download-cache and --build-cache in ch-image.py.in considering how
+   # common options are handled.
+   if (cli.no_cache and cli.build_cache):
+      FATAL("--no-cache cannot be used with --build-cache")
+   if (cli.no_cache and cli.download_cache):
+      FATAL("--no-cache cannot be used with --download-cache")
+   global cache
    if (cli.no_cache):
-      # --no-cache is just shorthand for --build-cache=disable and
-      # --download-cache=write-only, so we can't make use of the convenient enum
+      # --no-cache is shorthand for --build-cache=disable and
+      # --download-cache=write-only, thus we can't make use of the convenient enum
       # conversion.
-      cache_bu = Cache_bu(Mode.REBUILD, storage.build_cache)
-      cache_dl = Cache_dl(Mode.WRITE_ONLY, storage.download_cache)
+      cache = Cache(Mode.REBUILD, Mode.WRITE_ONLY, storage.build_cache)
    else:
-      cache_bu = Cache_bu(cli.build_cache, storage.build_cache)
-      cache_dl = Cache_dl(cli.download_cache, storage.download_cache)
-   VERBOSE("build cache: %s (%s)" % (cache_bu.cache_mode,
-                                     cache_bu.cache_set))
-   VERBOSE("download cache: %s (%s)" % (cache_dl.cache_mode,
-                                        cache_dl.cache_set))
+      cache = Cache(cli.build_cache, cli.download_cache, storage.build_cache)
    # misc
    global password_many, tls_verify
    password_many = cli.password_many
