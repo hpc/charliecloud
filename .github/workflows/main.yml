@@ -157,7 +157,6 @@ jobs:
           cd /usr/local/src
           # configure doesn't tell us about these.
           sudo apt-get install musl-tools pigz pv
-          dpkg -L musl-dev
           # configure does tell us about these.
           sudo apt-get install squashfs-tools
           # Track newest Sphinx in case it breaks things.
@@ -183,9 +182,11 @@ jobs:
           patch -p1 < ../gnu89-inline.patch
           ./configure
           make $ch_makej
-          sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
+          sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/Argp.h
           sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
           cd -
+          ls -lh /usr/include/x86_64-linux-musl
+          ls -lh /usr/lib/x86_64-linux-musl
 
       - name: disable bundled lark, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
