@@ -242,7 +242,7 @@ CH_RUN_LIBS=
 # the function with no arguments. This causes a warning for asprintf() for
 # some compilers (and I have no clue why others accept it); see issue #798.
 # Instead, try to build a small test program that calls asprintf() correctly.
-AC_MSG_CHECKING([for asprintf])
+AC_MSG_CHECKING([for asprintf in libc])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
     #define _GNU_SOURCE
     #include <stdio.h>
@@ -258,28 +258,25 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
   ]])],
   [AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no])
-   AC_MSG_ERROR([asprintf() not found, and we have no workaround; see config.log.])])
+   AC_MSG_ERROR([asprintf(3) not found; please report this bug])])
 
-# argp_parse, needed externally from libargp / argp_standalone e.g. with musl.
-# First, check if available in used libc out of the box.
-AC_LINK_IFELSE(
-  [AC_LANG_PROGRAM(
-    [#include <argp.h>],
-    [int argc=1; char **argv=NULL; argp_parse(0,argc,argv,0,0,0); return 0;]
-  )],
-  [libc_provides_argp="true"],
-  [libc_provides_argp="false"]
-)
-# If libc doesn't provide argp, test for libargp
-if test "$libc_provides_argp" = "false" ; then
-  AC_MSG_WARN("libc does not provide argp")
-  AC_CHECK_LIB([argp], [argp_parse], [have_largp="true"], [have_largp="false"])
-  if test "$have_largp" = "false"; then
-    AC_MSG_ERROR([*** argp functions not found - install libargp or argp_standalone])
-  else
-    CH_RUN_LIBS="-largp $CH_RUN_LIBS"
-  fi
-fi
+# argp_parse(3), which is included with glibc but not other libc’s, e.g. musl.
+AC_MSG_CHECKING([for argp_parse in libc])
+AC_LINK_IFELSE([AC_LANG_SOURCE([[
+    #include <argp.h>
+
+    int main(void)
+    {
+        argp_parse(0, 1, NULL, 0, 0, 0);
+        return 0;
+    }
+  ]])],
+  [AC_MSG_RESULT([yes])],  # built-in, no further action
+  [AC_MSG_RESULT([no])     # try external libargp
+   AC_CHECK_LIB(
+     [argp], [argp_parse],
+     [CH_RUN_LIBS="-largp $CH_RUN_LIBS"],
+     [AC_MSG_ERROR([argp_parse(3) not found; please report this bug])])])
 
 # pthreads; needed for "ch-run --join".
 AX_PTHREAD
