@@ -177,6 +177,8 @@ jobs:
           make $ch_makej
           sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
           sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
+          ls -lh /usr/include/x86_64-linux-musl
+          ls -lh /usr/lib/x86_64-linux-musl
           cd -
 
       - name: disable bundled lark, ch-image
@@ -216,7 +218,7 @@ jobs:
           # is a FTBFS for musl). Other build steps in this file use glibc. We
           # assume that whether the build happens in a Git WD vs. tarball
           # unpack is orthogonal to which libc we build against.
-          CC=musl-gcc ./configure --prefix=$ch_prefix/from-git
+          CC=musl-gcc ./configure --prefix=$ch_prefix/from-git || cat config.log
           set -x
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
