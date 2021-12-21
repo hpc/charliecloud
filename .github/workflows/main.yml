@@ -239,9 +239,9 @@ jobs:
           # Build and install.
           make $ch_makej
           sudo make $ch_makej install
-          ldd bin/ch-run
+          /lib/ld-musl-x86_64.so.1 --list bin/ch-run
           bin/ch-run --version
-          ldd $ch_prefix/from-git/bin/ch-run
+          /lib/ld-musl-x86_64.so.1 --list $ch_prefix/from-git/bin/ch-run
           $ch_prefix/from-git/bin/ch-run --version
           # Ensure bundled Lark in tarball.
           make $ch_makej dist
