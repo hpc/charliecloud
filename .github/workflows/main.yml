@@ -157,6 +157,7 @@ jobs:
           cd /usr/local/src
           # configure doesn't tell us about these.
           sudo apt-get install musl-tools pigz pv
+          dpkg -L musl-dev
           # configure does tell us about these.
           sudo apt-get install squashfs-tools
           # Track newest Sphinx in case it breaks things.
