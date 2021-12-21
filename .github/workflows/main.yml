@@ -154,6 +154,7 @@ jobs:
 
       - name: install/configure dependencies, all
         run: |
+          cd /usr/local/src
           # configure doesn't tell us about these.
           sudo apt-get install musl-tools pigz pv
           # configure does tell us about these.
@@ -161,12 +162,29 @@ jobs:
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
           # Use newest shellcheck.
-          cd /usr/local/src
           wget -nv https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz
           tar xf shellcheck-stable.linux.x86_64.tar.xz
           mv shellcheck-stable/shellcheck /usr/local/bin
           which shellcheck
           shellcheck --version
+          # At present we use argp [1] to parse command line arguments. This
+          # is not portable; it's a glibc extension (see #1260). Here we
+          # install a standalone argp to support building with musl, following
+          # the recipe in the Alpine package [2] to patch and install.
+          # [1]: https://www.gnu.org/software/libc/manual/html_node/Argp.html
+          # [2]: https://pkgs.alpinelinux.org/package/v3.15/main/x86_64/argp-standalone
+          wget -nv http://www.lysator.liu.se/~nisse/misc/argp-standalone-1.3.tar.gz
+          wget -nv -O 001-throw-in-funcdef.patch 'https://git.alpinelinux.org/aports/plain/main/argp-standalone/001-throw-in-funcdef.patch?h=3.15-stable'
+          wget -nv -O gnu89-inline.patch 'https://git.alpinelinux.org/aports/plain/main/argp-standalone/gnu89-inline.patch?h=3.15-stable'
+          tar xf argp-standalone-1.3
+          cd argp-standalone-1.3
+          patch -p1 < ../001-throw-in-funcdef.patch
+          patch -p1 < ../gnu89-inline.patch
+          ./configure
+          make $ch_makej
+          sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
+          sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
+          cd -
 
       - name: disable bundled lark, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
