@@ -155,7 +155,7 @@ jobs:
       - name: install/configure dependencies, all
         run: |
           # configure doesn't tell us about these.
-          sudo apt-get install pigz pv
+          sudo apt-get install musl-tools pigz pv
           # configure does tell us about these.
           sudo apt-get install squashfs-tools
           # Track newest Sphinx in case it breaks things.
@@ -200,8 +200,12 @@ jobs:
           ./autogen.sh
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
-          # Configure and verify output.
-          ./configure --prefix=$ch_prefix/from-git
+          # Configure and verify output. Here we build with musl, not glibc,
+          # because we want to support any standard libc. (See PR #1258, which
+          # is a FTBFS for musl). Other build steps in this file use glibc. We
+          # assume that whether the build happens in a Git WD vs. tarball
+          # unpack is orthogonal to which libc we build against.
+          CC=musl-gcc ./configure --prefix=$ch_prefix/from-git
           set -x
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
