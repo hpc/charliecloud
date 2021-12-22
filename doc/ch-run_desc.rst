@@ -363,7 +363,7 @@ takes an optional argument with two possible forms:
 
    Single straight quotes around the value (:code:`'`, ASCII 39) are stripped,
    though be aware that both single and double quotes are also interpreted by
-   the shell. For example, this example is equivalent to the prior one; the
+   the shell. For example, this example is similar to the prior one; the
    double quotes are removed by the shell and the single quotes are removed by
    :code:`ch-run`::
 
