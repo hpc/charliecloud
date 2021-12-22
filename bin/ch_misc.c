@@ -164,7 +164,7 @@ struct env_var *env_file_read(const char *path)
    vars = list_new(sizeof(struct env_var), 0);
    for (size_t line_no = 1; true; line_no++) {
       struct env_var var;
-      char *line;
+      char *line = NULL;
       size_t line_len = 0;  // don't care but required by getline(3)
       errno = 0;
       if (-1 == getline(&line, &line_len, fp)) {

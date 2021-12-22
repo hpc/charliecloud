@@ -325,11 +325,12 @@ int parse_int(char *s, bool extra_ok, char *error_tag)
 
    errno = 0;
    l = strtol(s, &end, 10);
-   Tf (errno == 0, error_tag);
    Ze (end == s, "%s: no digits found", error_tag);
+   Ze (errno == ERANGE || l < INT_MIN || l > INT_MAX,
+       "%s: out of range", error_tag);
+   Tf (errno == 0, error_tag);
    if (!extra_ok)
       Te (*end == 0, "%s: extra characters after digits", error_tag);
-   Te (l >= INT_MIN && l <= INT_MAX, "%s: out of range", error_tag);
    return (int)l;
 }
 
