@@ -149,6 +149,10 @@ jobs:
           make $ch_makej
           sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
           sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
+          # GNU ldd(1) doesn't work on musl binaries, so create an alias per
+          # the musl FAQ [1]. (This breaks ldd for the rest of the system!)
+          # [1]: https://wiki.musl-libc.org/faq.html
+          sudo ln -s /lib/ld-musl-x86_64.so.1 /usr/local/bin
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -227,11 +231,8 @@ jobs:
           # libsquashfuse and libfuse3 were built with glibc. (See PR #1258,
           # which is a FTBFS for musl). Other build steps in this file also
           # still use glibc.
-          if [[ $CH_TEST_PACK_FMT = squash-mount ]]; then
-              LDD=ldd
-          else
+          if [[ $CH_TEST_PACK_FMT != squash-mount ]]; then
               export CC=musl-gcc
-              LDD='/lib/ld-musl-x86_64.so.1 --list'
           fi
           ./configure --prefix=$ch_prefix/from-git
           set -x
@@ -256,9 +257,9 @@ jobs:
           # Build and install.
           make $ch_makej
           sudo make $ch_makej install
-          $LDD bin/ch-run
+          ldd bin/ch-run
           bin/ch-run --version
-          $LDD $ch_prefix/from-git/bin/ch-run
+          ldd $ch_prefix/from-git/bin/ch-run
           $ch_prefix/from-git/bin/ch-run --version
           # Ensure bundled Lark in tarball.
           make $ch_makej dist
