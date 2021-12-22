@@ -376,7 +376,7 @@ SquashFS:
   > cat /mnt/1/bar
   world
 
-TAR Archive:
+tarball:
 ::
 
   $ mkdir /var/tmp/foo0
@@ -907,7 +907,7 @@ SquashFS:
   $ pdsh -R ssh squashfuse mpihello-openmpi.sqfs /var/tmp/mpihello-openmpi
   
 
-TAR Archive:
+tarball:
 ::
 
   $ srun ch-convert mpihello-openmpi.tar.gz /var/tmp/mpihello-openmpi
@@ -1003,7 +1003,7 @@ SquashFS:
   $ srun mkdir /var/tmp/spark
   $ pdsh -R ssh squashfuse spark.sqfs /var/tmp/spark
 
-TAR Archive:
+tarball:
 ::
 
   $ srun ch-convert spark.tar.gz /var/tmp/spark
