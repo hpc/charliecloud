@@ -130,6 +130,22 @@ jobs:
           sudo sh -c 'umask 0022 && make install'
           sudo ldconfig
 
+      - name: install musl and friends
+        if: ${{ matrix.pack_fmt != 'squash-mount' }}
+        run: |
+          sudo apt-get install -y musl-tools
+          # At present we use argp to parse command line arguments. This is
+          # not portable; it's a glibc extension (see #1260). Thus, install a
+          # standalone argp.
+          cd /usr/local/src
+          git clone --depth=1 https://github.com/ericonr/argp-standalone.git
+          cd argp-standalone
+          autoreconf --force --install
+          CC=musl-gcc ./configure
+          make $ch_makej
+          sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
+          sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
+
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
         run: |
@@ -154,30 +170,19 @@ jobs:
 
       - name: install/configure dependencies, all
         run: |
-          cd /usr/local/src
           # configure doesn't tell us about these.
-          sudo apt-get install musl-tools pigz pv
+          sudo apt-get install pigz pv
           # configure does tell us about these.
           sudo apt-get install squashfs-tools
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme'
           # Use newest shellcheck.
+          cd /usr/local/src
           wget -nv https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz
           tar xf shellcheck-stable.linux.x86_64.tar.xz
           mv shellcheck-stable/shellcheck /usr/local/bin
           which shellcheck
           shellcheck --version
-          # At present we use argp to parse command line arguments. This is
-          # not portable; it's a glibc extension (see #1260). Here we install
-          # a standalone argp to support building with musl below.
-          git clone --depth=1 https://github.com/ericonr/argp-standalone.git
-          cd argp-standalone
-          autoreconf --force --install
-          CC=musl-gcc ./configure
-          make $ch_makej
-          sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
-          sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
-          cd -
 
       - name: disable bundled lark, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
@@ -211,12 +216,18 @@ jobs:
           ./autogen.sh
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
-          # Configure and verify output. Here we build with musl, not glibc,
-          # because we want to support any standard libc. (See PR #1258, which
-          # is a FTBFS for musl). Other build steps in this file use glibc. We
-          # assume that whether the build happens in a Git WD vs. tarball
-          # unpack is orthogonal to which libc we build against.
-          CC=musl-gcc ./configure --prefix=$ch_prefix/from-git || cat config.log
+          # Configure and verify output.
+          #
+          # If we're not linking with libsquashfuse, build with musl, because
+          # we want to support any standard libc; otherwise, use glibc because
+          # libsquashfuse and libfuse3 were built with glibc. (See PR #1258,
+          # which is a FTBFS for musl). Other build steps in this file also
+          # still use glibc.
+          if [[ $CH_TEST_PACK_FMT != squash-mount ]]; then
+              export CC=musl-gcc
+              alias ldd='/lib/ld-musl-x86_64.so.1 --list'
+          fi
+          ./configure --prefix=$ch_prefix/from-git
           set -x
           fgrep 'documentation: yes' config.log
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
@@ -228,7 +239,7 @@ jobs:
           fi
           fgrep 'recommended tests, tar-unpack mode: yes' config.log
           fgrep 'recommended tests, squash-unpack mode: yes' config.log
-          if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
+          if [[ $CH_TEST_PACK_FMT = squash-mount ]]; then
               fgrep 'recommended tests, squash-mount mode: yes' config.log
               fgrep 'internal SquashFS mounting ... yes' config.log
           else
@@ -239,9 +250,9 @@ jobs:
           # Build and install.
           make $ch_makej
           sudo make $ch_makej install
-          /lib/ld-musl-x86_64.so.1 --list bin/ch-run
+          ldd bin/ch-run
           bin/ch-run --version
-          /lib/ld-musl-x86_64.so.1 --list $ch_prefix/from-git/bin/ch-run
+          ldd $ch_prefix/from-git/bin/ch-run
           $ch_prefix/from-git/bin/ch-run --version
           # Ensure bundled Lark in tarball.
           make $ch_makej dist
