@@ -108,6 +108,10 @@ AC_ARG_ENABLE([man],
   AS_HELP_STRING([--disable-man], [man pages]),
   [], [enable_man=yes])
 
+AC_ARG_ENABLE([syslog],
+  AS_HELP_STRING([--disable-syslog], [logging to syslog]),
+  [], [enable_syslog=yes])
+
 AC_ARG_ENABLE([test],
   AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
@@ -210,9 +214,12 @@ AC_DEFUN([CH_CHECK_VERSION], [
 AC_PROG_CC
 
 # Set up CFLAGS.
-ch_cflags='-std=c99 -Wpedantic -Wall'
+ch_cflags='-std=c99 -Wall'
 AS_IF([test -n "$lib_libsquashfuse"],
-      [ch_cflags+=" -I$inc_libsquashfuse -L$lib_libsquashfuse"])
+      [ch_cflags+=" -I$inc_libsquashfuse -L$lib_libsquashfuse"
+       # Without this, clang fails with "error: argument unused during
+       # compilation" on the -L. GCC ignores it.
+       ch_cflags+=' -Wno-unused-command-line-argument'])
 AS_IF([test $use_werror = yes],
       [ch_cflags+=' -Werror'])
 
@@ -568,11 +575,13 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #
 # Below are all the variables we want available outside configure.
 
-AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
-AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
-AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
+AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_LARK], [test $enable_bundled_lark = yes])
+AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
+AS_IF([test $enable_syslog = yes],
+      [AC_DEFINE([ENABLE_SYSLOG], [1], [log to syslog])])
+AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 
 AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
@@ -644,29 +653,34 @@ AS_IF([   test -n "$NVIDIA_CLI" \
 
 AS_IF([   test $enable_test = yes \
        && test $have_ch_run = yes \
+       && test $have_any_builder = yes \
        && test -n "$_BASH" \
        && test -n "$BATS" \
-       && test -n "$WGET"],
+       && test -n "$WGET"],         # assume access to Docker Hub or mirror
       [have_tests_basic=yes],
       [have_tests_basic=no])
 
 AS_IF([   test $have_tests_basic = yes \
-       && test $have_any_builder = yes],
+       && test $have_docs = yes \
+       && test -n "$SHELLCHECK" ],  # assume we do have generic sudo
+       [have_tests_more=yes],
+       [have_tests_more=no])
+
+AS_IF([   test $have_tests_basic = yes \
+       && test $have_tests_more = yes],
       [have_tests_tar=yes],
       [have_tests_tar=no])
 
-AS_IF([   test $have_tests_tar = yes \
-       && test $have_pack_squash = yes],
-      [have_tests_squash=yes],
-      [have_tests_squash=no])
+AS_IF([   test $have_tests_basic = yes \
+       && test $have_tests_more = yes \
+       && test $have_pack_squash = yes ],
+       [have_tests_squashunpack=yes],
+       [have_tests_squashunpack=no])
 
-# assumes we do have generic sudo
-AS_IF([   test $have_tests_squash = yes \
-       && test -n "$SPHINX" \
-       && test -n "$SHELLCHECK" \
-       && test $have_docs = yes],
-      [have_tests_all=yes],
-      [have_tests_all=no])
+AS_IF([   test $have_tests_squashunpack = yes \
+       && test $have_libsquashfuse = yes],
+       [have_tests_squashmount=yes],
+       [have_tests_squashmount=no])
 
 
 ### Write output files #######################################################
@@ -711,10 +725,11 @@ Building Charliecloud
 ~~~~~~~~~~~~~~~~~~~~~
 
   will build and install:
+    ch-image(1) ... ${enable_ch_image}
     HTML documentation ... ${enable_html}
     man pages ... ${enable_man}
+    syslog ... ${enable_syslog}
     test suite ... ${enable_test}
-    ch-image(1) ... ${enable_ch_image}
 
   required:
     C99 compiler ... ${CC} ${CC_VERSION}
@@ -783,26 +798,31 @@ Running containers
 Test suite
 ~~~~~~~~~~
 
-  basic tests: ${have_tests_basic}
+  basic tests, all stages: ${have_tests_basic}
     test suite enabled ... ${enable_test}
     ch-run(1) ... ${have_ch_run}
+    any builder above ... ${have_any_builder}
+    access to Docker Hub or mirror ... assumed yes
     Bats ≥ $vmin_bats ... ${BATS_VERSION_NOTE}
     Bash ≥ $vmin_bash ... ${_BASH_VERSION_NOTE}
     wget(1) ≥ $vmin_wget ... ${WGET_VERSION_NOTE}
 
-  recommended tests with tarballs: ${have_tests_tar}
+  more complete tests: ${have_tests_more}
     basic tests ... ${have_tests_basic}
-    any builder above ... ${have_any_builder}
-    access to Docker Hub or mirror ... assumed yes
-
-  recommended tests with SquashFS: ${have_tests_squash}
-    recommended tests with tar ... ${have_tests_tar}
-    pack images with SquashFS ... ${have_pack_squash}
-    internal SquashFS mounting ... ${have_libsquashfuse}
-
-  complete test suite: ${have_tests_all}
-    recommended tests with SquashFS ... ${have_tests_squash}
-    documentation ... ${have_docs}
+    documentation built ... ${have_docs}
     ShellCheck ≥ $vmin_shellcheck ... ${SHELLCHECK_VERSION_NOTE}
     generic sudo ... assumed yes
+
+  recommended tests, tar-unpack mode: ${have_tests_tar}
+    basic tests ... ${have_tests_basic}
+    more tests ... ${have_tests_more}
+
+  recommended tests, squash-unpack mode: ${have_tests_squashunpack}
+    basic tests ... ${have_tests_basic}
+    more tests ... ${have_tests_more}
+    pack/unpack SquashFS images ... ${have_pack_squash}
+
+  recommended tests, squash-mount mode: ${have_tests_squashmount}
+    recommended, squash-unpack mode: ${have_tests_squashunpack}
+    internal SquashFS mounting ... ${have_libsquashfuse}
 ])

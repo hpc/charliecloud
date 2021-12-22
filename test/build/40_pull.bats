@@ -210,6 +210,8 @@ EOF
 }
 
 @test 'pull image with quirky files' {
+    arch_exclude aarch64  # test image not available
+    arch_exclude ppc64le  # test image not available
     # Validate that layers replace symlinks correctly. See
     # test/Dockerfile.symlink and issues #819 & #825.
 
@@ -247,6 +249,8 @@ EOF
 }
 
 @test 'pull images with uncommon manifests' {
+    arch_exclude aarch64  # test image not available
+    arch_exclude ppc64le  # test image not available
     if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
         # Manifests seem to vary by registry; we need Docker Hub.
         skip 'default registry host set'
@@ -277,7 +281,7 @@ EOF
     if [[ -z $CI ]]; then
         # Verify we can reach the public internet, except on CI, where we
         # insist this should work.
-        ping -c3 8.8.8.8 || skip "no public internet (can't ping 8.8.8.8)"
+        ping -c3 8.8.8.8 || skip "can't ping 8.8.8.8"
     fi
 
     # These images are selected to be official-ish and small. My rough goal is
@@ -339,6 +343,8 @@ EOF
 }
 
 @test 'pull image with metadata' {
+    arch_exclude aarch64  # test image not available
+    arch_exclude ppc64le  # test image not available
     tag=2021-01-15
     name=charliecloud/metadata:$tag
     img=$CH_IMAGE_STORAGE/img/charliecloud%metadata:$tag

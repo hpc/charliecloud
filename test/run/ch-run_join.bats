@@ -364,7 +364,7 @@ unset_vars () {
     grep -Fq "join: 0 0 (null) 0" "${BATS_TMPDIR}/join.1.err"
 
     # PID of ch-run/printns above.
-    pid=$(sed -En 's/^ch-run\[([0-9]+)\]: argv 0:.+$/\1/p' \
+    pid=$(sed -En 's/^ch-run\[([0-9]+)\]: executing:.+$/\1/p' \
               "${BATS_TMPDIR}/join.1.err")
     echo "found pid: ${pid}"
     [[ -n $pid ]]

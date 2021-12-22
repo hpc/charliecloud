@@ -94,6 +94,7 @@ extern char *username;
 
 /** Function prototypes **/
 
+char *argv_to_string(char **argv);
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
 struct env_var *env_file_read(const char *path);

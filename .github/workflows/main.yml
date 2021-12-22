@@ -35,8 +35,9 @@ jobs:
 
       - name: early setup & validation
         run: |
-          sudo chmod 1777 /mnt /usr/local/src
           [[ -n $CH_BUILDER ]]
+          sudo timedatectl set-timezone America/Denver
+          sudo chmod 1777 /mnt /usr/local/src
           echo "ch_makej=-j$(getconf _NPROCESSORS_ONLN)" >> $GITHUB_ENV
           # Remove sbin directories from $PATH (see issue #43). Assume none of
           # these are the first entry in $PATH.
@@ -62,19 +63,22 @@ jobs:
           echo builder: ${{ matrix.builder }}
           echo pack_fmt: ${{ matrix.pack_fmt }}
           echo keep_sudo: ${{ matrix.keep_sudo }}
-          env | egrep '^(PATH|USER)='
-          env | egrep '^(ch|CH)_'
-          [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
+          uname -a
+          lsb_release -a
           id
-          printf 'umask for %s: ' $USER && umask
-          printf 'umask under sudo: ' && sudo sh -c umask
-          [[ $(umask) = 0022 ]]
-          [[ $(sudo sh -c umask) = 0077 ]]
           pwd
           getconf _NPROCESSORS_ONLN
           free -m
           df -h
           locale -a
+          timedatectl
+          env | egrep '^(PATH|USER)='
+          env | egrep '^(ch|CH)_'
+          [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
+          printf 'umask for %s: ' $USER && umask
+          printf 'umask under sudo: ' && sudo sh -c umask
+          [[ $(umask) = 0022 ]]
+          [[ $(sudo sh -c umask) = 0077 ]]
 
       - name: lines of code
         if: ${{ matrix.builder == 'none' }}
@@ -211,14 +215,15 @@ jobs:
               fgrep '"lark" module ... bundled' config.log
               test -f ./lib/lark/lark.py
           fi
+          fgrep 'recommended tests, tar-unpack mode: yes' config.log
+          fgrep 'recommended tests, squash-unpack mode: yes' config.log
           if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
-              fgrep 'internal mount with libsquashfuse ... yes' config.log
+              fgrep 'recommended tests, squash-mount mode: yes' config.log
+              fgrep 'internal SquashFS mounting ... yes' config.log
           else
-              fgrep 'internal mount with libsquashfuse ... no' config.log
+              fgrep 'recommended tests, squash-mount mode: no' config.log
+              fgrep 'internal SquashFS mounting ... no' config.log
           fi
-          fgrep 'at least one builder ... yes' config.log
-          fgrep 'ch-run(1): yes' config.log
-          fgrep 'complete test suite: yes' config.log
           set +x
           # Build and install.
           make $ch_makej
@@ -304,9 +309,15 @@ jobs:
           [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
           [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
           [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
-          fgrep 'at least one builder ... yes' config.log
-          fgrep 'ch-run(1): yes' config.log
-          fgrep 'complete test suite: yes' config.log
+          fgrep 'recommended tests, tar-unpack mode: yes' config.log
+          fgrep 'recommended tests, squash-unpack mode: yes' config.log
+          if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
+              fgrep 'recommended tests, squash-mount mode: yes' config.log
+              fgrep 'internal SquashFS mounting ... yes' config.log
+          else
+              fgrep 'recommended tests, squash-mount mode: no' config.log
+              fgrep 'internal SquashFS mounting ... no' config.log
+          fi
           set +x
           # Build and install.
           make $ch_makej
@@ -345,9 +356,8 @@ jobs:
           fgrep 'ch-image(1) ... no' config.log
           fgrep 'with Docker: yes' config.log
           fgrep 'with ch-image(1): no' config.log
-          fgrep 'at least one builder ... yes' config.log
-          fgrep 'ch-run(1): yes' config.log
-          fgrep 'complete test suite: no' config.log
+          fgrep 'basic tests, all stages: yes' config.log
+          fgrep 'more complete tests: no' config.log
           set +x
           # Build.
           make $ch_makej
@@ -384,12 +394,10 @@ jobs:
           ./configure --prefix=/doesnotexist
           set -x
           fgrep 'documentation: no' config.log
-          fgrep 'internal mount with libsquashfuse ... no' config.log
           fgrep 'with Docker: yes' config.log
-          fgrep 'at least one builder ... yes' config.log
-          fgrep 'ch-run(1): yes' config.log
-          fgrep 'recommended tests with tarballs: yes' config.log
-          fgrep 'complete test suite: no' config.log
+          fgrep 'basic tests, all stages: yes' config.log
+          fgrep 'more complete tests: no' config.log
+          fgrep 'recommended tests, squash-mount mode: no' config.log
           set +x
           # Build and install.
           make $ch_makej

@@ -116,7 +116,6 @@ EOF
     [[ $output = *"importing:    ${fixtures}/tricky.tar.gz"* ]]
     [[ $output != *'layers: single enclosing directory, using its contents'* ]]
     [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
-    grep -F '"arch": null' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
     ch-image delete imptest
 
     # empty, uncompressed tarfile
@@ -127,7 +126,6 @@ EOF
     [[ $output = *"importing:    ${fixtures}/empty.tar"* ]]
     [[ $output = *'layers: single enclosing directory, using its contents'* ]]
     [[ $output = *'warning: no metadata to load; using defaults'* ]]
-    grep -F '"arch": null' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
     ch-image delete imptest
 
     ## Directories
@@ -149,7 +147,6 @@ EOF
     [[ $output = *"importing:    ${fixtures}/empty"* ]]
     [[ $output = *"copying image: ${fixtures}/empty -> ${CH_IMAGE_STORAGE}/img/imptest"* ]]
     [[ $output = *'warning: no metadata to load; using defaults'* ]]
-    grep -F '"arch": null' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
     ch-image delete imptest
 
     # symlink to directory
@@ -272,8 +269,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'available remotely:  yes'* ]]
-    [[ $output = *'remote arch-aware:   no'* ]]
-    [[ $output = *'archs available:     unknown'* ]]
+    [[ $output = *'remote arch-aware:   yes'* ]]
 }
 
 @test 'ch-image reset' {
@@ -346,6 +342,8 @@ EOF
 }
 
 @test 'ch-image build: metadata carry-forward' {
+    arch_exclude aarch64  # test image not available
+    arch_exclude ppc64le  # test image not available
     img=$CH_IMAGE_STORAGE/img/tmpimg
 
     # Print out current metadata, then update it.

@@ -132,7 +132,7 @@ def main(cli_):
    env = Environment()
 
    # Read input file.
-   if (cli.file == "-"):
+   if (cli.file == "-" or cli.context == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
    else:
       fp = ch.open_(cli.file, "rt")
@@ -505,6 +505,8 @@ class I_copy(Instruction):
       return dst_canon
 
    def execute_(self):
+      if (cli.context == "-"):
+         ch.FATAL("can't COPY: no context because \"-\" given")
       if (len(self.srcs) < 1):
          ch.FATAL("can't COPY: must specify at least one source")
       # Complain about unsupported stuff.

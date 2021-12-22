@@ -79,6 +79,7 @@ load ../common
     #  SC2154  variable referenced but not assigned
     #
     scope standard
+    arch_exclude ppc64le  # no ShellCheck pre-built
     # Only do this test in build directory; the reasoning is that we don't
     # alter the shell scripts during install enough to re-test, and it means
     # we only have to find everything in one path.

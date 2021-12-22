@@ -77,6 +77,8 @@ cv_dir_docker () {
 }
 
 cv_dir_squash () {
+    # FIXME: mksquashfs(1) is incredibly noisy. This can be mitigated with
+    # -quiet, but that's not available until version 4.4 (2019).
     dir_in_validate "$1"
     squash_out_validate "$2"
     pflist=${tmpdir}/pseudofiles
@@ -84,8 +86,11 @@ cv_dir_squash () {
     touch "$pflist"
     mount_points_ensure "$1" "$pflist"
     # 64kiB block size based on Shane's experiments.
-    # FIXME: mksquashfs(1) is incredibly noisy
-    mksquashfs "$1" "$2" -b 65536 -noappend -all-root -fstime 0 -pf "$pflist"
+    mksquashfs "$1" "$2" -b 65536 -noappend -all-root -pf "$pflist"
+    # Zero the archive's internal modification time at bytes 8–11, 0-indexed
+    # [1]. Newer SquashFS-Tools ≥4.3 have option "-fstime 0" to do this, but
+    # CentOS 7 comes with 4.2.  [1]: https://dr-emann.github.io/squashfs/
+    printf '\x00\x00\x00\x00' | dd of="$2" bs=1 count=4 seek=8 conv=notrunc
     rm "$pflist"
 }
 

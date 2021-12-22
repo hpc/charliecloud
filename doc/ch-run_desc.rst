@@ -602,6 +602,44 @@ Run an MPI job that can use CMA to communicate::
     $ srun ch-run --join /data/foo -- bar
 
 
+Syslog
+======
+
+By default, :code:`ch-run` logs its command line to `syslog
+<https://en.wikipedia.org/wiki/Syslog>`_. (This can be disabled by configuring
+with :code:`--disable-syslog`.) This includes: (1) the invoking real UID, (2)
+the number of command line arguments, and (3) the arguments, separated by
+spaces. For example::
+
+  Dec 10 18:19:08 mybox ch-run: uid=1000 args=7: ch-run -v /var/tmp/00_tiny -- echo hello "wor l}\$d"
+
+Logging is one of the first things done during program initialization, even
+before command line parsing. That is, almost all command lines are logged,
+even if erroneous, and there is no logging of program success or failure.
+
+Arguments are serialized with the following procedure. The purpose is to
+provide a human-readable reconstruction of the command line while also
+allowing each argument to be recovered byte-for-byte.
+
+  .. Note: The next paragraph contains ​U+200B ZERO WIDTH SPACE after the
+     backslash because backslash by itself won't build and two backslashes
+     renders as two backslashes.
+
+  * If an argument contains only printable ASCII bytes that are not
+    whitespace, shell metacharacters, double quote (:code:`"`, ASCII 34
+    decimal), or backslash (:code:`\​`, ASCII 92), then log it unchanged.
+
+  * Otherwise, (a) enclose the argument in double quotes and
+    (b) backslash-escape double quotes, backslashes, and characters
+    interpreted by Bash (including POSIX shells) within double quotes.
+
+The verbatim command line typed in the shell cannot be recovered, because not
+enough information is provided to UNIX programs. For example,
+:code:`echo  'foo'` is given to programs as a sequence of two arguments,
+:code:`echo` and :code:`foo`; the two spaces and single quotes are removed by
+the shell. The zero byte, ASCII NUL, cannot appear in arguments because it
+would terminate the string.
+
 Exit status
 ===========
 
@@ -612,4 +650,4 @@ SquashFS filesystem and the user command is killed by a signal, the exit
 status is 1 regardless of the signal value.
 
 
-..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount IMG HOSTPATH
+..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount mybox IMG HOSTPATH

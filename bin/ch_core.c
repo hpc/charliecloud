@@ -363,8 +363,7 @@ void run_user_command(char *argv[], const char *initial_dir)
    if (initial_dir != NULL)
       Zf (chdir(initial_dir), "can't cd to %s", initial_dir);
 
-   for (int i = 0; argv[i] != NULL; i++)
-      INFO("argv %d: %s", i, argv[i]);
+   INFO("executing: %s", argv_to_string(argv));
 
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    execvp(argv[0], argv);  // only returns if error
