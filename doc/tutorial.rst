@@ -138,7 +138,7 @@ Sharing images
 -------------------------------------------
 
 Charliecloud images in builder storage are just directories and can be
-exported as squash or tar archives via :code:`ch-convert`.
+exported as SquashFS filesystems or tar archives via :code:`ch-convert`.
 
 SquashFS:
 ::
@@ -152,7 +152,7 @@ SquashFS:
   $ ls -ld /var/tmp/hello.sqfs 
   -rw-r--r-- 1 root root 83288064 Nov 15 12:07 /var/tmp/hello.sqfs
     
-TAR Archive:
+tarball:
 ::
 
   $ ch-convert hello /var/tmp/hello.tgz
@@ -162,6 +162,27 @@ TAR Archive:
   done
   $ ls -ld /var/tmp/hello.tgz
   -rw-rw-r-- 1 heasterday heasterday 86122450 Nov 15 15:23 /var/tmp/hello.tgz
+
+Charliecloud can also convert images between the two formats.
+
+SquashFS to tarball:
+::
+$ ch-convert hello.sqfs hello.tgz
+input:   tar       hello.tgz
+output:  squash    hello.sqfs
+unpacking ...
+[...]
+done
+
+tarball to SquashFS:
+::
+$ charliecloud/bin/ch-convert hello.sqfs hello.tgz
+input:   squash    hello.sqfs
+output:  tar       hello.tgz
+Parallel unsquashfs: Using 8 processors
+[...]
+done
+
 
 Charliecloud also supports "pushing" images from its internal storage as a
 :code:`ch-image` subcommand:
@@ -196,7 +217,7 @@ SquashFS:
   $ mkdir /var/tmp/hello
   $ squashfuse /var/tmp/hello.sqfs /var/tmp/hello
 
-TAR Archive:
+tarball:
 ::
 
   $ ch-convert /var/tmp/hello.tar.gz /var/tmp/hello
@@ -334,7 +355,7 @@ image the target mount directory will be automatically created:
 
 .. warning::
 
-  As SquashFS archives are read-only you need to provide a destination that
+  As SquashFS filesystems are read-only you need to provide a destination that
   already exists like those created under :code:`/mnt`, this is demonstrated
   below.
 
@@ -875,18 +896,20 @@ the mount process is killed by Slurm. For more details see
 Charliecloud issue `#230 <https://github.com/hpc/charliecloud/issues/230>`_.
 
 .. warning::
-  Attempts to use :code:`srun` to mount SquashFS archives will result in a
+  Attempts to use :code:`srun` to mount SquashFS filesystems will result in a
   "Transport endpoint is not connected" error.
 
 
 SquashFS:
 ::
+
   $ srun mkdir /var/tmp/mpihello-openmpi
   $ pdsh -R ssh squashfuse mpihello-openmpi.sqfs /var/tmp/mpihello-openmpi
   
 
 TAR Archive:
 ::
+
   $ srun ch-convert mpihello-openmpi.tar.gz /var/tmp/mpihello-openmpi
   input:   tar       mpihello-openmpi.tar.gz
   output:  dir       /var/tmp/mpihello-openmpi
@@ -920,7 +943,7 @@ We can now activate the image and run our program::
   0: finalize ok
 
 .. note::
-   Don't forget to unmount your SquashFS images with:
+   Don't forget to unmount your SquashFS filesystems with:
    :code:`$srun fusermount -u /var/tmp/mpihello-openmpi` 
 
 
@@ -976,11 +999,13 @@ Once you have an interactive job, prepare the image.
 
 SquashFS:
 ::
+
   $ srun mkdir /var/tmp/spark
   $ pdsh -R ssh squashfuse spark.sqfs /var/tmp/spark
 
 TAR Archive:
 ::
+
   $ srun ch-convert spark.tar.gz /var/tmp/spark
   input:   tar       spark.tar.gz
   output:  dir       /var/tmp/spark
