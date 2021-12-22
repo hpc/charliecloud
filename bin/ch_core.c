@@ -267,8 +267,8 @@ void join_begin(const char *join_tag)
 {
    int fd;
 
-   join.sem_name = cat("/ch-run_", join_tag);
-   join.shm_name = cat("/ch-run_", join_tag);
+   join.sem_name = cat("/ch-run_sem-", join_tag);
+   join.shm_name = cat("/ch-run_shm-", join_tag);
 
    // Serialize.
    join.sem = sem_open(join.sem_name, O_CREAT, 0600, 1);
