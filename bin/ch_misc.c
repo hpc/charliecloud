@@ -287,6 +287,16 @@ unsigned long path_mount_flags(const char *path)
                                | ST_RDONLY     | ST_RELATIME | ST_SYNCHRONOUS;
 
    Z_ (statvfs(path, &sv));
+
+   // Flag 0x20 is ST_VALID according to the kernel [1], which clashes with
+   // MS_REMOUNT, so inappropriate to pass through. Glibc deletes it from the
+   // flags returned by statvfs(2) [2], but musl doesn’t [3], so delete it.
+   //
+   // [1]: https://github.com/torvalds/linux/blob/3644286f/include/linux/statfs.h#L27
+   // [2]: https://sourceware.org/git?p=glibc.git;a=blob;f=sysdeps/unix/sysv/linux/internal_statvfs.c;h=b1b8dfefe6be909339520d120473bd67e4bece57
+   // [3]: https://git.musl-libc.org/cgit/musl/tree/src/stat/statvfs.c?h=v1.2.2
+   sv.f_flag ^= 0x20;
+
    Ze (sv.f_flag & ~known_flags, "unknown mount flags: 0x%lx %s",
        sv.f_flag & ~known_flags, path);
 
