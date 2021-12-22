@@ -317,21 +317,21 @@ happy.
 When converting from Docker, :code:`ch-convert` often finishes before the
 progress bar is complete. For example::
 
-  $ ch-convert -i docker mpihello /var/tmp/mpihello.tar.gz
-  input:   docker    mpihello
-  output:  tar       /var/tmp/mpihello.tar.gz
+  $ ch-convert -i docker mpihello-openmpi /var/tmp/mpihello-openmpi.tar.gz
+  input:   docker    mpihello-openmpi
+  output:  tar       /var/tmp/mpihello-openmpi.tar.gz
   exporting ...
    373MiB 0:00:21 [============================>                 ] 65%
   [...]
 
 In this case, the :code:`.tar.gz` contains 392 MB uncompressed::
 
-  $ zcat /var/tmp/mpihello.tar.gz | wc
+  $ zcat /var/tmp/mpihello-openmpi.tar.gz | wc
   2740966 14631550 392145408
 
 But Docker thinks the image is 597 MB::
 
-  $ sudo docker image inspect mpihello | fgrep -i size
+  $ sudo docker image inspect mpihello-openmpi | fgrep -i size
           "Size": 596952928,
           "VirtualSize": 596952928,
 
@@ -440,7 +440,7 @@ MPI can be finicky. This section documents some of the problems we’ve seen.
 
 For example, you might see::
 
-  $ mpirun -np 1 ch-run /var/tmp/mpihello -- /hello/hello
+  $ mpirun -np 1 ch-run /var/tmp/mpihello-openmpi -- /hello/hello
   App launch reported: 2 (out of 2) daemons - 0 (out of 1) procs
   [cn001:27101] PMIX ERROR: BAD-PARAM in file src/dstore/pmix_esh.c at line 996
 
@@ -533,7 +533,7 @@ I get a bunch of independent rank-0 processes when launching with :code:`srun`
 
 For example, you might be seeing this::
 
-  $ srun ch-run /var/tmp/mpihello -- /hello/hello
+  $ srun ch-run /var/tmp/mpihello-openmpi -- /hello/hello
   0: init ok cn036.localdomain, 1 ranks, userns 4026554634
   0: send/receive ok
   0: finalize ok
@@ -571,7 +571,7 @@ PMI2 support. If it is in the list, but you're seeing this problem, that means
 it is not the default, and you need to tell Slurm you want it. Try::
 
   $ export SLURM_MPI_TYPE=pmi2
-  $ srun ch-run /var/tmp/mpihello -- /hello/hello
+  $ srun ch-run /var/tmp/mpihello-openmpi -- /hello/hello
   0: init ok wc035.localdomain, 2 ranks, userns 4026554634
   1: init ok wc036.localdomain, 2 ranks, userns 4026554634
   0: send/receive ok
@@ -851,6 +851,8 @@ Solutions include:
 
 Other approaches could be found with web searches such as "automate unattended
 SSH" or "SSH in cron jobs".
+
+.. _faq_building-with-docker:
 
 How do I use Docker to build Charliecloud images?
 -------------------------------------------------

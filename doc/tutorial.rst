@@ -6,8 +6,10 @@ both examples included with the source code as well as new ones you create
 from scratch.
 
 This tutorial assumes that: (a) the Charliecloud executables are in your path,
-(b) Docker is installed on the build system, and (c) the Charliecloud source
-code is available at :code:`/usr/local/src/charliecloud`.
+including Charliecloud's fully unprivileged image builder :code:`ch-image`,
+(b) Squashfuse is installed, and (c) the Charliecloud source code is available
+at :code:`/usr/local/src/charliecloud`. If you wish to use Docker to build
+images see the :ref:`FAQ <faq_building-with-docker>`
 
 .. contents::
    :depth: 2
@@ -31,21 +33,27 @@ Charliecloud for your own applications.
 ::
 
   $ cd /usr/local/share/doc/charliecloud/examples/hello
-  $ ch-build -t hello .
-  Sending build context to Docker daemon  5.632kB
+  $ ch-image build --force .
+  inferred image name: hello
   [...]
-  Successfully built eb5f42d5bb54
-  $ ch-builder2tar hello /var/tmp
-   114MiB 0:00:03 [=============================================] 103%
-  -rw-r----- 1 reidpr reidpr 49M Nov 21 14:05 /var/tmp/hello.tar.gz
-  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
-  creating new image /var/tmp/hello
-  /var/tmp/hello unpacked ok
+  grown in 4 instructions: hello
+  $ ch-convert hello /var/tmp/hello.sqfs
+  input:   ch-image  hello
+  output:  squash    /var/tmp/hello.sqfs
+  packing ...
+  Parallel mksquashfs: Using 8 processors
+  Creating 4.0 filesystem on /var/tmp/hello.sqfs, block size 65536.
+  [=============================================|] 10411/10411 100%
+  [...]
+  done
+  $ mkdir /var/tmp/hello
+  $ squashfuse /var/tmp/hello.sqfs /var/tmp/hello
   $ ch-run /var/tmp/hello -- echo "I'm in a container"
   I'm in a container
+  $ fusermount -u /var/tmp/hello
 
-(See the :ref:`FAQ <faq_docker2tar-size>` for why the progress bar goes over
-100%.)
+(See the :ref:`FAQ <faq_docker2tar-size>` for why the progress bar can
+sometimes go over 100%.)
 
 Getting help
 ============
@@ -59,7 +67,7 @@ Charliecloud you have (if not, please report a bug). For example::
   Run a command in a Charliecloud container.
   [...]
   $ ch-run --version
-  0.2.0+4836ac1
+  0.26~pre+1018updatetutorial.479750b.dirty
 
 A description of all commands is also collected later in this documentation; see
 :doc:`command-usage`. In addition, each executable has a man page.
@@ -89,117 +97,119 @@ We will use the following very simple Dockerfile:
 This creates a minimal CentOS 8 image with :code:`ssh` installed. We
 will encounter more complex Dockerfiles later in this tutorial.
 
-.. note::
+Build Charliecloud image
+------------------------
 
-   Docker does not update the base image unless asked to. Specific images can
-   be updated manually; in this case::
-
-     $ sudo docker pull centos:8
-
-   There are various resources and scripts online to help automate this
-   process, as well as :code:`misc/docker-clean.sh`.
-
-Build Docker image
-------------------
-
-Charliecloud provides a convenience wrapper :code:`ch-build` around
-:code:`docker build` that mitigates some of the latter's more irritating
-characteristics. In particular, it passes through any HTTP proxy variables,
-and by default it uses the Dockerfile in the current directory, rather than at
-the root of the Docker context directory. (We will address the context
-directory in more detail later.)
-
-The two arguments here are a tag for the Docker image and the context
-directory, which in this case is the current directory.
+The three arguments here are the :code:`ch-image` subcommand :code:`build`,
+the option to enable unprivileged build workarounds :code:`--force`, and the
+context directory :code:`.`, which in this case is the current directory.
 
 ::
 
-   $ ch-build -t hello .
-   Sending build context to Docker daemon  5.632kB
-   Step 1/4 : FROM centos:8
-    ---> 0d120b6ccaa8
-   [...]
-   Step 4/4 : RUN touch /usr/bin/ch-ssh
-    ---> eb5f42d5bb54
-   Successfully built eb5f42d5bb54
-   Successfully tagged hello:latest
+  $ ch-image build --force .
+  inferred image name: hello
+  2 FROM centos:8
+  will use --force: rhel8: CentOS/RHEL 8+
+  [...]
+  7 COPY ['.'] -> 'hello'
+  9 RUN ['/bin/sh', '-c', 'touch /usr/bin/ch-ssh']
+  --force: init OK & modified 1 RUN instructions
+  grown in 4 instructions: hello
 
-Note that Docker prints each step of the Dockerfile as it's executed.
+.. note::
+   :code:`ch-image` prints information about the build process while in
+   progress. While not demonstrated above, yellow is used for :code:`ch-image`
+   internal chatter.
 
-:code:`ch-build` and many other Charliecloud commands wrap various privileged
-:code:`docker` commands. Thus, you will be prompted for a password to escalate
-as needed. Note however that most configurations of :code:`sudo` don't require
-a password on every invocation, so privileged commands may be running even if
-you're not prompted for a password.
+This image and the :code:`centos:8` base image used to build it are now
+visible in Charliecloud's builder storage:
 
-Share image and other standard Docker stuff
+::
+
+  $ ch-image list
+  centos:8
+  hello
+
+.. note::
+   Charliecloud uses image :code:`name:tag` to refer to images instead
+   of a computed hash like some other image builders.
+
+Sharing images
 -------------------------------------------
 
-If needed, the Docker image can be manipulated with standard Docker commands.
-In particular, image sharing using a public or private Docker Hub repository
-can be very useful.
+Charliecloud images in builder storage are just directories and can be
+exported as squash or tar archives via :code:`ch-convert`.
 
+SquashFS:
 ::
 
-  $ sudo docker images
-  REPOSITORY  TAG      IMAGE ID      CREATED        SIZE
-  centos      8        0d120b6ccaa8  2 months ago   215MB MB
-  hello       latest   eb5f42d5bb54  5 minutes ago  235MB MB
-  $ sudo docker push  # FIXME
-
-Running the image with Docker is not generally useful, because Docker's
-run-time environment is significantly different than Charliecloud's, but it
-can have value when debugging Charliecloud.
-
+  $ ch-convert hello /var/tmp/hello.sqfs
+  input:   ch-image  hello
+  output:  squash    /var/tmp/hello.sqfs
+  packing ...
+  [...]
+  done
+  $ ls -ld /var/tmp/hello.sqfs 
+  -rw-r--r-- 1 root root 83288064 Nov 15 12:07 /var/tmp/hello.sqfs
+    
+TAR Archive:
 ::
 
-  $ sudo docker run -it hello /bin/bash
-  # ls /
-  bin   dev  hello  lib    media  opt   root  sbin  sys  usr
-  boot  etc  home   lib64  mnt    proc  run   srv   tmp  var
-  # exit
-  exit
+  $ ch-convert hello /var/tmp/hello.tgz
+  input:   ch-image  hello
+  output:  tar       /var/tmp/hello.tgz
+  exporting ...
+  done
+  $ ls -ld /var/tmp/hello.tgz
+  -rw-rw-r-- 1 heasterday heasterday 86122450 Nov 15 15:23 /var/tmp/hello.tgz
 
-Flatten image
--------------
-
-Next, we flatten the Docker image into a tarball, which is then a plain file
-amenable to standard file manipulation commands. This tarball is placed in an
-arbitrary directory, here :code:`/var/tmp`.
+Charliecloud also supports "pushing" images from its internal storage as a
+:code:`ch-image` subcommand:
 
 ::
+    
+  $ ch-image push NAME:TAG REMOTE
 
-  $ ch-builder2tar hello /var/tmp
-  74M /var/tmp/hello.tar.gz
 
-Distribute tarball
+Distribute images
 ------------------
 
 Thus far, the workflow has taken place on the build system. The next step is
-to copy the tarball to the run system. This can use any appropriate method for
+to copy the built image to the run system. This can use any appropriate method for
 moving files: :code:`scp`, :code:`rsync`, something integrated with the
 scheduler, etc.
 
 If the build and run systems are the same, then no copy is needed. This is a
 typical use case for development and testing.
 
-Unpack tarball
+Prepping image
 --------------
 
-Charliecloud runs out of a normal directory rather than a filesystem image. In
-order to create this directory, we unpack the image tarball. This will replace
-the image directory if it already exists.
+Charliecloud can either run out of a normal directory or a mounted SquashFS
+with the latter being the recommended route. In the case of the TAR archive
+be aware that the process of unpacking it will overwrite an existing
+directory.
 
+SquashFS:
 ::
 
-  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
-  creating new image /var/tmp/hello
-  /var/tmp/hello unpacked ok
+  $ mkdir /var/tmp/hello
+  $ squashfuse /var/tmp/hello.sqfs /var/tmp/hello
 
-Generally, you should avoid unpacking into shared filesystems such as NFS and
-Lustre, in favor of local storage such as :code:`tmpfs` and local hard disks.
-This will yield better performance for you and anyone else on the shared
-filesystem.
+TAR Archive:
+::
+
+  $ ch-convert /var/tmp/hello.tar.gz /var/tmp/hello
+  input:   tar       /var/tmp/hello.tar.gz
+  output:  dir       /var/tmp/hello
+  unpacking ...
+  [...]
+  done
+
+Generally, you should avoid unpacking TAR archives onto shared filesystems
+such as NFS and Lustre, in favor of local storage such as :code:`tmpfs` and
+local hard disks. This will yield better performance for you and anyone else
+on the shared filesystem.
 
 .. One potential gotcha is the tarball including special files such as
    devices. Because :code:`tar` is running unprivileged, these will not be
@@ -319,13 +329,25 @@ available in the container as well.
 
 In addition to the default bind mounts, arbitrary user-specified directories
 can be added using the :code:`--bind` or :code:`-b` switch. By default,
-:code:`/mnt/0`, :code:`/mnt/1`, etc., are used for the destination in the guest::
+mounts use the same path as provided from the host. In the case of writeable
+image the target mount directory will be automatically created:
+
+.. warning::
+
+  As SquashFS archives are read-only you need to provide a destination that
+  already exists like those created under :code:`/mnt`, this is demonstrated
+  below.
+
+SquashFS:
+::
 
   $ mkdir /var/tmp/foo0
   $ echo hello > /var/tmp/foo0/bar
   $ mkdir /var/tmp/foo1
   $ echo world > /var/tmp/foo1/bar
   $ ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
+  ch-run[1184427]: error: can't mkdir: /var/tmp/hello/var/tmp/foo0: Read-only file system (ch_misc.c:142 30)
+  $ ch-run -b /var/tmp/foo0:/mnt/0 -b /var/tmp/foo1:/mnt/1 /var/tmp/hello -- bash
   > ls /mnt
   0  1  2  3  4  5  6  7  8  9
   > cat /mnt/0/bar
@@ -333,13 +355,19 @@ can be added using the :code:`--bind` or :code:`-b` switch. By default,
   > cat /mnt/1/bar
   world
 
-Explicit destinations are also possible::
+TAR Archive:
+::
 
-  $ ch-run -b /var/tmp/foo0:/mnt /var/tmp/hello -- bash
-  > ls /mnt
-  bar
-  > cat /mnt/bar
+  $ mkdir /var/tmp/foo0
+  $ echo hello > /var/tmp/foo0/bar
+  $ mkdir /var/tmp/foo1
+  $ echo world > /var/tmp/foo1/bar
+  $ ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
+  > cat /var/tmp/foo0/bar
   hello
+  > cat /var/tmp/foo1/bar
+  world
+
 
 Network
 -------
@@ -620,7 +648,7 @@ So what is going on here?
       appropriate parallel build.
 
 4. Clean up, in order to reduce the size of layers as well as the resulting
-   Charliecloud tarball (:code:`rm -Rf`).
+   Charliecloud image (:code:`rm -Rf`).
 
 .. Finally, because it's a container image, you can be less tidy than you
    might be on a normal system. For example, the above downloads and builds in
@@ -638,14 +666,14 @@ code under active development.
 The general approach is the same as installing third-party software from
 source, but you use the :code:`COPY` instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
-:code:`examples/mpi/mpihello/Dockerfile.openmpi` uses this approach:
+:code:`examples/mpihello/Dockerfile.openmpi` uses this approach:
 
 .. literalinclude:: ../examples/mpihello/Dockerfile.openmpi
    :language: docker
 
 These Dockerfile instructions:
 
-1. Copy the host directory :code:`examples/mpi/mpihello` to the image at path
+1. Copy the host directory :code:`examples/mpihello` to the image at path
    :code:`/hello`. The host path is relative to the *context directory*, which
    is tarred up and sent to the Docker daemon. Docker builds have no access to
    the host filesystem outside the context directory.
@@ -668,7 +696,7 @@ Once the image is built, we can see the results. (Install the image into
 
 ::
 
-  $ ch-run /var/tmp/mpihello -- ls -lh /hello
+  $ ch-run /var/tmp/mpihello-openmpi -- ls -lh /hello
   total 32K
   -rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 22:37 Makefile
@@ -692,7 +720,7 @@ demonstrate this.
 
 ::
 
-  $ cd examples/mpi/mpihello
+  $ cd examples/mpihello
   $ ls -l
   total 20
   -rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile
@@ -748,7 +776,7 @@ For example, using Slurm :code:`srun` and the :code:`mpihello` example above::
 
   $ stat -L --format='%i' /proc/self/ns/user
   4026531837
-  $ ch-run /var/tmp/mpihello -- mpirun --version
+  $ ch-run /var/tmp/mpihello-openmpi -- mpirun --version
   mpirun (Open MPI) 2.1.5
   $ srun -n4 ch-run /var/tmp/mpihello -- /hello/hello
   0: init ok cn001, 4 ranks, userns 4026554650
@@ -778,7 +806,7 @@ such as Slurm configuration.
 
 For example::
 
-  $ ch-run /var/tmp/mpihello -- mpirun -np 4 /hello/hello
+  $ ch-run /var/tmp/mpihello-openmpi -- mpirun -np 4 /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532256
   2: init ok cn001, 4 ranks, userns 4026532256
@@ -819,7 +847,7 @@ worked out how to do this yet. (See `issue #5
 
    The image directory is mounted read-only by default so it can be shared by
    multiple Charliecloud containers in the same or different jobs. It can be
-   mounted read-write with :code:`ch-run -w`.
+   mounted read-write with :code:`ch-run -w` if you are not using SquashFS.
 
 .. warning::
 
@@ -839,22 +867,48 @@ one of those nodes. For example::
 
   $ salloc -N4
 
-The next step is to distribute the image tarball to the compute nodes. To do
-so, we run one instance of :code:`ch-tar2dir` on each node::
+The next step is to distribute the image tarball to the compute nodes. For 
+tarballs, we run one instance of :code:`ch-convert` on each node using
+:code:`srun` and for SquashFS archives we use :code:`pdsh`. In the SquashFS
+case we can't use :code:`srun` to run the mount command because once it exits
+the mount process is killed by Slurm. For more details see
+Charliecloud issue `#230 <https://github.com/hpc/charliecloud/issues/230>`_.
 
-  $ srun ch-tar2dir mpihello.tar.gz /var/tmp
-  creating new image /tmp/mpihello
-  creating new image /tmp/mpihello
-  creating new image /tmp/mpihello
-  creating new image /tmp/mpihello
-  /tmp/mpihello unpacked ok
-  /tmp/mpihello unpacked ok
-  /tmp/mpihello unpacked ok
-  /tmp/mpihello unpacked ok
+.. warning::
+  Attempts to use :code:`srun` to mount SquashFS archives will result in a
+  "Transport endpoint is not connected" error.
+
+
+SquashFS:
+::
+  $ srun mkdir /var/tmp/mpihello-openmpi
+  $ pdsh -R ssh squashfuse mpihello-openmpi.sqfs /var/tmp/mpihello-openmpi
+  
+
+TAR Archive:
+::
+  $ srun ch-convert mpihello-openmpi.tar.gz /var/tmp/mpihello-openmpi
+  input:   tar       mpihello-openmpi.tar.gz
+  output:  dir       /var/tmp/mpihello-openmpi
+  unpacking ...
+  input:   tar       mpihello-openmpi.tar.gz
+  output:  dir       /var/tmp/mpihello-openmpi
+  unpacking ...
+  input:   tar       mpihello-openmpi.tar.gz
+  output:  dir       /var/tmp/mpihello-openmpi
+  unpacking ...
+  input:   tar       mpihello-openmpi.tar.gz
+  output:  dir       /var/tmp/mpihello-openmpi
+  unpacking ...
+  done
+  done
+  done
+  done
+
 
 We can now activate the image and run our program::
 
-  $ srun --cpus-per-task=1 ch-run /var/tmp/mpihello -- /hello/hello
+  $ srun --cpus-per-task=1 ch-run /var/tmp/mpihello-openmpi -- /hello/hello
   2: init ok cn001, 64 ranks, userns 4026532567
   4: init ok cn001, 64 ranks, userns 4026532571
   8: init ok cn001, 64 ranks, userns 4026532579
@@ -864,6 +918,11 @@ We can now activate the image and run our program::
   55: init ok cn004, 64 ranks, userns 4026532577
   0: send/receive ok
   0: finalize ok
+
+.. note::
+   Don't forget to unmount your SquashFS images with:
+   :code:`$srun fusermount -u /var/tmp/mpihello-openmpi` 
+
 
 Success!
 
@@ -883,19 +942,19 @@ Note that this script both unpacks the image and runs it.
 
 Submit it with something like::
 
-  $ sbatch -N4 slurm.sh ~/mpihello.tar.gz /var/tmp
+  $ sbatch -N4 slurm.sh ~/mpihello-openmpi.tar.gz /var/tmp
   207745
 
 When the job is complete, look at the output::
 
   $ cat slurm-207745.out
-  tarball:   /home/reidpr/mpihello.tar.gz
-  image:     /var/tmp/mpihello
-  creating new image /var/tmp/mpihello
-  creating new image /var/tmp/mpihello
+  tarball:   /home/reidpr/mpihello-openmpi.tar.gz
+  image:     /var/tmp/mpihello-openmpi
+  creating new image /var/tmp/mpihello-openmpi
+  creating new image /var/tmp/mpihello-openmpi
   [...]
-  /var/tmp/mpihello unpacked ok
-  /var/tmp/mpihello unpacked ok
+  /var/tmp/mpihello-openmpi unpacked ok
+  /var/tmp/mpihello-openmpi unpacked ok
   container: mpirun (Open MPI) 2.1.5
   0: init ok cn001.localdomain, 144 ranks, userns 4026554766
   37: init ok cn002.localdomain, 144 ranks, userns 4026554800
@@ -913,16 +972,25 @@ Interactive Apache Spark
 This example is in :code:`examples/spark`. Build a tarball and upload it to
 your cluster.
 
-Once you have an interactive job, unpack the tarball.
+Once you have an interactive job, prepare the image.
 
+SquashFS:
 ::
+  $ srun mkdir /var/tmp/spark
+  $ pdsh -R ssh squashfuse spark.sqfs /var/tmp/spark
 
-  $ srun ch-tar2dir spark.tar.gz /var/tmp
-  creating new image /var/tmp/spark
-  creating new image /var/tmp/spark
-  [...]
-  /var/tmp/spark unpacked ok
-  /var/tmp/spark unpacked ok
+TAR Archive:
+::
+  $ srun ch-convert spark.tar.gz /var/tmp/spark
+  input:   tar       spark.tar.gz
+  output:  dir       /var/tmp/spark
+  unpacking ...
+  input:   tar       spark.tar.gz
+  output:  dir       /var/tmp/spark
+  unpacking ...
+  done
+  done
+
 
 We need to first create a basic configuration for Spark, as the defaults in
 the Dockerfile are insufficient. (For real jobs, you'll want to also configure
