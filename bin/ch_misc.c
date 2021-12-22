@@ -2,6 +2,7 @@
 
 #define _GNU_SOURCE
 #include <ctype.h>
+#include <fnmatch.h>
 #include <libgen.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -148,6 +149,136 @@ char *cat(const char *a, const char *b)
        b = "";
    T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
+}
+
+/* Read the file listing environment variables at path, and return a
+   corresponding list of struct env_var. If there is a problem reading the
+   file, or with any individual variable, exit with error. */
+struct env_var *env_file_read(const char *path)
+{
+   struct env_var *vars;
+   FILE *fp;
+
+   Tf (fp = fopen(path, "r"), "can't open: %s", path);
+
+   vars = list_new(sizeof(struct env_var), 0);
+   for (size_t line_no = 1; true; line_no++) {
+      struct env_var var;
+      char *line;
+      size_t line_len = 0;  // don't care but required by getline(3)
+      errno = 0;
+      if (-1 == getline(&line, &line_len, fp)) {
+         if (errno == 0)    // EOF
+            break;
+         else
+            Tf (0, "can't read: %s", path);
+      }
+      if (line[strlen(line) - 1] == '\n')  // rm newline if present
+         line[strlen(line) - 1] = 0;
+      if (line[0] == 0)                    // skip blank lines
+         continue;
+      var = env_var_parse(line, path, line_no);
+      list_append((void **)&vars, &var, sizeof(var));
+   }
+
+   Zf (fclose(fp), "can't close: %s", path);
+   return vars;
+}
+
+/* Set environment variable name to value. If expand, then further expand
+   variables in value marked with "$" as described in the man page. */
+void env_set(const char *name, const char *value, const bool expand)
+{
+   char *value_, *value_expanded;
+   bool first_written;
+
+   // Walk through value fragments separated by colon and expand variables.
+   T_ (value_ = strdup(value));
+   value_expanded = "";
+   first_written = false;
+   while (true) {                               // loop executes ≥ once
+      char *fgmt = strsep(&value_, ":");        // NULL -> no more items
+      if (fgmt == NULL)
+         break;
+      if (expand && fgmt[0] == '$' && fgmt[1] != 0) {
+         fgmt = getenv(fgmt + 1);               // NULL if unset
+         if (fgmt != NULL && fgmt[0] == 0)
+            fgmt = NULL;                        // convert empty to unset
+      }
+      if (fgmt != NULL) {                       // NULL -> omit from output
+         if (first_written)
+            value_expanded = cat(value_expanded, ":");
+         value_expanded = cat(value_expanded, fgmt);
+         first_written = true;
+      }
+   }
+
+   // Save results.
+   INFO("environment: %s=%s", name, value_expanded);
+   Z_ (setenv(name, value_expanded, 1));
+}
+
+/* Remove variables matching glob from the environment. This is tricky,
+   because there is no standard library function to iterate through the
+   environment, and the environ global array can be re-ordered after
+   unsetenv(3) [1]. Thus, the only safe way without additional storage is an
+   O(n^2) search until no matches remain.
+
+   Our approach is O(n): we build up a copy of environ, skipping variables
+   that match the glob, and then assign environ to the copy. (This is a valid
+   thing to do [2].)
+
+   [1]: https://unix.stackexchange.com/a/302987
+   [2]: http://man7.org/linux/man-pages/man3/exec.3p.html */
+void env_unset(const char *glob)
+{
+   char **new_environ = list_new(sizeof(char *), 0);
+   for (size_t i = 0; environ[i] != NULL; i++) {
+      char *name, *value;
+      int matchp;
+      split(&name, &value, environ[i], '=');
+      T_ (name != NULL);          // environ entries must always have equals
+      matchp = fnmatch(glob, name, 0);
+      if (matchp == 0) {
+         INFO("environment: unset %s", name);
+      } else {
+         T_ (matchp == FNM_NOMATCH);
+         *(value - 1) = '=';  // rejoin line
+         list_append((void **)&new_environ, &name, sizeof(name));
+      }
+   }
+   environ = new_environ;
+}
+
+/* Parse the environment variable in line and return it as a struct env_var.
+   Exit with error on syntax error; if path is non-NULL, attribute the problem
+   to that path at line_no. Note: Trailing whitespace such as newline is
+   *included* in the value. */
+struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
+{
+   char *name, *value, *where;
+
+   if (path == NULL) {
+      T_ (where = strdup(line));
+   } else {
+      T_ (1 <= asprintf(&where, "%s:%lu", path, lineno));
+   }
+
+   // Split line into variable name and value.
+   split(&name, &value, line, '=');
+   Te (name != NULL, "can't parse variable: no delimiter: %s", where);
+   Te (name[0] != 0, "can't parse variable: empty name: %s", where);
+   free(where);  // for Tim
+
+   // Strip leading and trailing single quotes from value, if both present.
+   if (   strlen(value) >= 2
+       && value[0] == '\''
+       && value[strlen(value) - 1] == '\'') {
+      value[strlen(value) - 1] = 0;
+      value++;
+   }
+
+   return (struct env_var){ name, value };
 }
 
 /* Copy the buffer of size size pointed to by new into the last position in
