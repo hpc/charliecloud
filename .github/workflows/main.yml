@@ -227,9 +227,11 @@ jobs:
           # libsquashfuse and libfuse3 were built with glibc. (See PR #1258,
           # which is a FTBFS for musl). Other build steps in this file also
           # still use glibc.
-          if [[ $CH_TEST_PACK_FMT != squash-mount ]]; then
+          if [[ $CH_TEST_PACK_FMT = squash-mount ]]; then
+              LDD=ldd
+          else
               export CC=musl-gcc
-              alias ldd='/lib/ld-musl-x86_64.so.1 --list'
+              LDD='/lib/ld-musl-x86_64.so.1 --list'
           fi
           ./configure --prefix=$ch_prefix/from-git
           set -x
@@ -254,9 +256,9 @@ jobs:
           # Build and install.
           make $ch_makej
           sudo make $ch_makej install
-          ldd bin/ch-run
+          $LDD bin/ch-run
           bin/ch-run --version
-          ldd $ch_prefix/from-git/bin/ch-run
+          $LDD $ch_prefix/from-git/bin/ch-run
           $ch_prefix/from-git/bin/ch-run --version
           # Ensure bundled Lark in tarball.
           make $ch_makej dist
