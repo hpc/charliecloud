@@ -549,7 +549,6 @@ EOF
 @test 'ch-run --set-env from Dockerfile' {
     scope standard
     prerequisites_ok argenv
-    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'directory only: issue #1219'
     img=${ch_imgdir}/argenv
 
     output_expected=$(cat <<'EOF'
@@ -558,8 +557,7 @@ chse_env2_df=env2 env1
 EOF
 )
 
-    run ch-run --set-env="${img}/ch/environment" "$img" -- \
-               sh -c 'env | grep -E "^chse_"'
+    run ch-run --set-env "$img" -- sh -c 'env | grep -E "^chse_"'
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$output_expected") <(echo "$output")
@@ -574,7 +572,13 @@ EOF
     run ch-run --set-env=doesnotexist.txt "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"--set-env: can't open:"* ]]
+    [[ $output = *"can't open: doesnotexist.txt: No such file or directory"* ]]
+
+    # /ch/environment missing
+    run ch-run --set-env "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"can't open: /ch/environment: No such file or directory"* ]]
 
     # Note: I'm not sure how to test an error during reading, i.e., getline(3)
     # rather than fopen(3). Hence no test for "error reading".
@@ -584,14 +588,14 @@ EOF
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"--set-env: no delimiter: ${f_in}:1"* ]]
+    [[ $output = *"can't parse variable: no delimiter: ${f_in}:1"* ]]
 
     # invalid line: no name
     echo '=bar' > "$f_in"
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"--set-env: empty name: ${f_in}:1"* ]]
+    [[ $output = *"can't parse variable: empty name: ${f_in}:1"* ]]
 }
 
 # shellcheck disable=SC2016
@@ -1008,4 +1012,16 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
+}
+
+@test 'syslog' {
+    # This test depends on a fairly specific syslog configuration, so just do
+    # it on GitHub Actions.
+    [[ -n $GITHUB_ACTIONS ]] || skip 'GitHub Actions only'
+    [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
+    expected="ch-run: uid=$(id -u) args=6: ch-run ${ch_timg} -- echo foo \"b a}\\\$r\""
+    echo "$expected"
+    #shellcheck disable=SC2016
+    ch-run "$ch_timg" -- echo foo  'b a}$r'
+    sudo tail -n 10 /var/log/syslog | grep -F "$expected"
 }

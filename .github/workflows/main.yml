@@ -35,8 +35,9 @@ jobs:
 
       - name: early setup & validation
         run: |
-          sudo chmod 1777 /mnt /usr/local/src
           [[ -n $CH_BUILDER ]]
+          sudo timedatectl set-timezone America/Denver
+          sudo chmod 1777 /mnt /usr/local/src
           echo "ch_makej=-j$(getconf _NPROCESSORS_ONLN)" >> $GITHUB_ENV
           # Remove sbin directories from $PATH (see issue #43). Assume none of
           # these are the first entry in $PATH.
@@ -62,19 +63,22 @@ jobs:
           echo builder: ${{ matrix.builder }}
           echo pack_fmt: ${{ matrix.pack_fmt }}
           echo keep_sudo: ${{ matrix.keep_sudo }}
-          env | egrep '^(PATH|USER)='
-          env | egrep '^(ch|CH)_'
-          [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
+          uname -a
+          lsb_release -a
           id
-          printf 'umask for %s: ' $USER && umask
-          printf 'umask under sudo: ' && sudo sh -c umask
-          [[ $(umask) = 0022 ]]
-          [[ $(sudo sh -c umask) = 0077 ]]
           pwd
           getconf _NPROCESSORS_ONLN
           free -m
           df -h
           locale -a
+          timedatectl
+          env | egrep '^(PATH|USER)='
+          env | egrep '^(ch|CH)_'
+          [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
+          printf 'umask for %s: ' $USER && umask
+          printf 'umask under sudo: ' && sudo sh -c umask
+          [[ $(umask) = 0022 ]]
+          [[ $(sudo sh -c umask) = 0077 ]]
 
       - name: lines of code
         if: ${{ matrix.builder == 'none' }}
