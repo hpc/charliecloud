@@ -152,7 +152,7 @@ jobs:
           # GNU ldd(1) doesn't work on musl binaries, so create an alias per
           # the musl FAQ [1]. (This breaks ldd for the rest of the system!)
           # [1]: https://wiki.musl-libc.org/faq.html
-          sudo ln -s /lib/ld-musl-x86_64.so.1 /usr/local/bin
+          sudo ln -s /lib/ld-musl-x86_64.so.1 /usr/local/bin/ldd
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
