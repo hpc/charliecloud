@@ -1,6 +1,7 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
+#include <ctype.h>
 #include <libgen.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -50,6 +51,83 @@ char *username = NULL;
 
 
 /** Functions **/
+
+/* Serialize the null-terminated vector of arguments argv and return the
+   result as a newly allocated string. The purpose is to provide a
+   human-readable reconstruction of a command line where each argument can
+   also be recovered byte-for-byte; see ch-run(1) for details. */
+char *argv_to_string(char **argv)
+{
+   char *s = NULL;
+
+   for (size_t i = 0; argv[i] != NULL; i++) {
+      char *argv_, *x;
+      bool quote_p = false;
+
+      // Max length is escape every char plus two quotes and terminating zero.
+      T_ (argv_ = calloc(2 * strlen(argv[i]) + 3, 1));
+
+      // Copy to new string, escaping as we go. Note lots of fall-through. I'm
+      // not sure where this list of shell meta-characters came from; I just
+      // had it on hand already from when we were deciding on the image
+      // reference transformation for filesystem paths.
+      for (size_t ji = 0, jo = 0; argv[i][ji] != 0; ji++) {
+         char c = argv[i][ji];
+         if (isspace(c) || !isascii(c) || !isprint(c))
+            quote_p = true;
+         switch (c) {
+         case '!':   // history expansion
+         case '"':   // string delimiter
+         case '$':   // variable expansion
+         case '\\':  // escape character
+         case '`':   // output expansion
+            argv_[jo++] = '\\';
+         case '#':   // comment
+         case '%':   // job ID
+         case '&':   // job control
+         case '\'':  // string delimiter
+         case '(':   // subshell grouping
+         case ')':   // subshell grouping
+         case '*':   // globbing
+         case ';':   // command separator
+         case '<':   // redirect
+         case '=':   // globbing
+         case '>':   // redirect
+         case '?':   // globbing
+         case '[':   // globbing
+         case ']':   // globbing
+         case '^':   // command “quick substitution”
+         case '{':   // command grouping
+         case '|':   // pipe
+         case '}':   // command grouping
+         case '~':   // home directory expansion
+            quote_p = true;
+         default:
+            argv_[jo++] = c;
+            break;
+         }
+      }
+
+      if (quote_p) {
+         x = argv_;
+         T_ (1 <= asprintf(&argv_, "\"%s\"", argv_));
+         free(x);
+      }
+
+      if (i != 0) {
+         x = s;
+         s = cat(s, " ");
+         free(x);
+      }
+
+      x = s;
+      s = cat(s, argv_);
+      free(x);
+      free(argv_);
+   }
+
+   return s;
+}
 
 /* Return true if buffer buf of length size is all zeros, false otherwise. */
 bool buf_zero_p(void *buf, size_t size)
