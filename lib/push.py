@@ -116,12 +116,8 @@ class Image_Pusher:
       ch.INFO("preparing metadata")
       self.image.metadata_load()
       hist = self.image.metadata["history"]
-      for i in range(len(hist)):
+      for i in range(len(hist) - 1):
          hist[i]["empty_layer"] = True
-      try:
-         hist[-1].pop("empty_layer")
-      except IndexError:
-         ch.FATAL("metadata: missing history")
       config["history"] = hist
       config_bytes = json.dumps(config, indent=2).encode("UTF-8")
       config_hash = ch.bytes_hash(config_bytes)

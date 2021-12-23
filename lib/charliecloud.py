@@ -413,6 +413,7 @@ class Image:
          self.metadata_init()
          return
       self.metadata = json_from_file(path, "metadata")
+      self.metadata.setdefault("history", list())  # upgrade pre-PR #1215
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
@@ -448,11 +449,9 @@ class Image:
                FATAL("can't parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
       # History.
-      try:
-         hist = config["history"]
-      except KeyError:
+      if ("history" not in config):
          FATAL("invalid config: missing history")
-      self.metadata["history"] = hist
+      self.metadata["history"] = config["history"]
       # labels
       set_("labels", "config", "Labels")  # copy reference
       # shell
@@ -462,10 +461,6 @@ class Image:
       if (vols is not None):
          for k in config["config"]["Volumes"].keys():
             self.metadata["volumes"].append(k)
-
-   def metadata_history_append(self, hist):
-      DEBUG("appending history: %s" % hist)
-      self.metadata['history'].append(hist)
 
    def metadata_replace(self, config_json):
       self.metadata_init()

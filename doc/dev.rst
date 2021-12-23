@@ -1291,32 +1291,16 @@ ch-image
 pull
 ~~~~
 
-Images pulled from registries have their OCI metadata, i.e., contents of
-:code:`config.json`, stored in two different files. First, the original
-:code:`config.json` is stored as :code:`/ch/config.pulled.json` in the image
-filesystem. Second, the metadata we care about, a subset of
-:code:`config.json`, is stored as :code:`/ch/metadata.json` in the image
-filsystem.
-
-The subset of key value pairs we are interested in are as follows.
-
-.. code-block:: javascript
-
-   {
-     "arch": "",
-     "cwd": "",
-     "env": {},
-     "history": [],
-     "labels": {},
-     "shell": [],
-     "volumes": [],
-   }
+Images pulled from registries come with OCI metadata, i.e. a "config blob".
+This is stored verbatim in :code:`/ch/config.pulled.json` for debugging.
+Charliecloud metadata, which includes a translated subset of the OCI config,
+is kept up to date in :code:`/ch/metadata.json`.
 
 push
 ~~~~
 
-Image registries expect a configuration blob :code:`config.json` at push time.
-This blob consists of both OCI runtime and image specification information.
+Image registries expect a config blob at push time. This blob consists of both
+OCI runtime and image specification information.
 
 * OCI run-time and image documentation:
 
@@ -1326,16 +1310,14 @@ This blob consists of both OCI runtime and image specification information.
 Since various OCI features are unsupported by Charliecloud we push only what is
 necessary to satisfy general image registry requirements.
 
-The :code:`config.json` is not stored locally, rather it is created at push time
-referencing the image's :code:`/ch/metadata.json` file and layer tar hash. Below
-is an example :code:`config.json` along with commentary.
-
+The pushed config is created on the fly, referencing the image's metadata
+and layer tar hash. For example, including commentary:
 
 .. code-block:: javascript
 
     {
       "architecture": "amd64",
-      "charliecloud_version": "0.26~pre+confighistory1002.fa53754.dirty",
+      "charliecloud_version": "0.26",
       "comment": "pushed with Charliecloud",
       "config": {},
       "container_config": {},
@@ -1349,13 +1331,13 @@ is an example :code:`config.json` along with commentary.
       },
       "weirdal": "yankovic"
 
-With exception to :code:`charliecloud_version` and :code:`weirdal`, the fields
-above are expected by the registry in the :code:`config.json` at push time.
+The fields above are expected by the registry at push time, with the exception
+of :code:`charliecloud_version` and :code:`weirdal`, which are Charliecloud
+extensions.
 
 .. code-block:: javascript
 
       "history": [
-
         {
           "created": "2021-11-17T02:20:51.334553938Z",
           "created_by": "/bin/sh -c #(nop) ADD file:cb5ed7070880d4c0177fbe6dd278adb7926e38cd73e6abd582fd8d67e4bbf06c in / ",
@@ -1448,14 +1430,10 @@ above are expected by the registry in the :code:`config.json` at push time.
       ],
     }
 
-The history section is collected from the image's :code:`ch/metadata.json` file
-and edited to represent a single layer image. This is achieved by changing all
-but the final history entry's :code:`empty_layer` key value to :code:`true`.
-This is needed because Quay checks that the number of non-empty history entries
-match the number of pushed layers at push time.
-
-Since we have no other use for the optional history field, we leave it in the
-OCI format.
+The history section is collected from the image's metadata and
+:code:`empty_layer` added to all entries except the last to represent a
+single-layer image. This is needed because Quay checks that the number of
+non-empty history entries match the number of pushed layers.
 
 Miscellaneous notes
 ===================
@@ -1474,3 +1452,5 @@ What to do in each location should either be obvious or commented.
 
 
 ..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg
+..  LocalWords:  rootfs cbd cae ce bafb bc weirdal yankovic nop cb fbe adb fd
+..  LocalWords:  abd bbf

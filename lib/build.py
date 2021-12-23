@@ -259,9 +259,11 @@ class Instruction(abc.ABC):
       if (not cli.dry_run):
          self.execute_()
       if (image_i != -1):
-         hist = { "created": ch.now_utc_iso8601(),
-                  "created_by": "%s %s" % (self.str_name(), self.str_())}
-         images[image_i].metadata_history_append(hist)
+         # We have no use for the history fields other than upload them back
+         # to the registry at push time, so leave it in the OCI format.
+         images[image_i].metadata["history"].append(
+            { "created": ch.now_utc_iso8601(),
+              "created_by": "%s %s" % (self.str_name(), self.str_()) })
          images[image_i].metadata_save()
 
    @abc.abstractmethod
