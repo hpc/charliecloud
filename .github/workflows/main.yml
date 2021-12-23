@@ -235,7 +235,7 @@ jobs:
           #
           # See PR #1258, which is a FTBFS for musl. Other build steps in this
           # workflow also use glibc.
-          if [[ $CH_TEST_PACK_FMT != tar-unpack ]]; then
+          if [[ $CH_TEST_PACK_FMT == tar-unpack ]]; then
               export CC=musl-gcc
           fi
           ./configure --prefix=$ch_prefix/from-git
