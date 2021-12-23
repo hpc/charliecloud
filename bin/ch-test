@@ -680,10 +680,10 @@ fi
 # Some tests have specific libc requirements.
 case $(readelf -p .interp "${ch_bin}/ch-run") in
     *musl*)            # e.g. /lib/ld-musl-x86_64.so.1
-        ch_libc=musl
+        export ch_libc=musl
         ;;
     *)                 # e.g. /lib64/ld-linux-x86-64.so.2
-        ch_libc=glibc
+        export ch_libc=glibc
         ;;
 esac
 
