@@ -677,6 +677,16 @@ if ! "${ch_bin}/ch-run" --version > /dev/null 2>&1; then
     fatal "no working ch-run found in $ch_bin"
 fi
 
+# Some tests have specific libc requirements.
+case $(readelf -p .interp "${ch_bin}/ch-run") in
+    *musl*)            # e.g. /lib/ld-musl-x86_64.so.1
+        ch_libc=musl
+        ;;
+    *)                 # e.g. /lib64/ld-linux-x86-64.so.2
+        ch_libc=glibc
+        ;;
+esac
+
 # Ensure we have Bash 4.1 or higher
 if /bin/bash -c 'set -e; [[ 1 = 0 ]]; exit 0'; then
     # Bash bug: [[ ... ]] expression doesn't exit with set -e
@@ -865,7 +875,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-printf 'ch-run:       %s\n' "${ch_bin}/ch-run"
+printf 'ch-run:       %s (%s)\n' "${ch_bin}/ch-run" "$ch_libc"
 printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
 printf 'tests:        %s\n' "$CHTEST_DIR"
 printf 'installed:    %s\n' "${CHTEST_INSTALLED:-no}"

@@ -2,6 +2,7 @@ load ../common
 
 setup () {
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'need writeable image'
+    [[ $ch_libc = glibc ]] || skip 'glibc only'
 }
 
 fromhost_clean () {

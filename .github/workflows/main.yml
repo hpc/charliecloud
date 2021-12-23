@@ -135,7 +135,7 @@ jobs:
           sudo ldconfig
 
       - name: install musl and friends
-        if: ${{ matrix.pack_fmt != 'squash-mount' }}
+        if: ${{ matrix.pack_fmt == 'tar-unpack' }}
         run: |
           sudo apt-get install -y musl-tools
           # At present we use argp to parse command line arguments. This is
@@ -226,12 +226,16 @@ jobs:
           sudo apt-get remove autoconf automake
           # Configure and verify output.
           #
-          # If we're not linking with libsquashfuse, build with musl, because
-          # we want to support any standard libc; otherwise, use glibc because
-          # libsquashfuse and libfuse3 were built with glibc. (See PR #1258,
-          # which is a FTBFS for musl). Other build steps in this file also
-          # still use glibc.
-          if [[ $CH_TEST_PACK_FMT != squash-mount ]]; then
+          # We want to support any standard libc, so build against musl for
+          # some cases:
+          #
+          #   squash-mount: glibc; libsquashfuse and libfuse3 are built with it
+          #   squash-unpack: glibc; to test ch-fromhost which assumes glibc
+          #   tar-unpack: musl
+          #
+          # See PR #1258, which is a FTBFS for musl. Other build steps in this
+          # workflow also use glibc.
+          if [[ $CH_TEST_PACK_FMT != tar-unpack ]]; then
               export CC=musl-gcc
           fi
           ./configure --prefix=$ch_prefix/from-git
