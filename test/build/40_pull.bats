@@ -306,8 +306,7 @@ EOF
 
     # nVidia NGC: https://ngc.nvidia.com
     # FIXME: 96 MiB unpacked; also kind of slow
-    # FIXME: Can't pull this image with LC_ALL=C (issue #970).
-    LC_ALL=en_US.utf-8 \
+    # Note: Can't pull this image with LC_ALL=C under Python 3.6 (issue #970).
     ch-image pull nvcr.io/hpc/foldingathome/fah-gpu:7.6.21
 
     # Red Hat registry: https://catalog.redhat.com/software/containers/explore
