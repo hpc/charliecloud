@@ -171,9 +171,6 @@ unpack_img_all_nodes () {
     fi
 }
 
-# Predictable sorting and collation
-export LC_ALL=C
-
 # Do we have what we need?
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
