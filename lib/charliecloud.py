@@ -1695,11 +1695,8 @@ def DEBUG(*args, **kwargs):
    if (verbose >= 2):
       log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
 
-def ERROR(*args, **kwargs):
-   log(*args, color="1;31m", prefix="error: ", **kwargs)  # bold red
-
 def FATAL(*args, **kwargs):
-   ERROR(*args, **kwargs)
+   log(*args, color="1;31m", prefix="error: ", **kwargs)  # bold red
    sys.exit(1)
 
 def INFO(*args, **kwargs):
