@@ -221,7 +221,7 @@ CH_BIN = None
 CH_RUN = None
 
 # Logging; set using init() below.
-verbose = 0          # Verbosity level. Can be 0, 1, or 2.
+verbose = 0          # Verbosity level.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 
@@ -1904,7 +1904,7 @@ def init(cli):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
-      verbose = max(verbose_, 1)
+      verbose = max(verbose, 1)
       log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
