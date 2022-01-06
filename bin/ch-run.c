@@ -60,7 +60,7 @@ const struct argp_option options[] = {
      "set environment variables per ARG"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
    { "unset-env",      -7, "GLOB", 0, "unset environment variable(s)" },
-   { "verbose",       'v', 0,      0, "be more verbose (debug if repeated)" },
+   { "verbose",       'v', 0,      0, "be more verbose (can be repeated)" },
    { "version",       'V', 0,      0, "print version and exit" },
    { "write",         'w', 0,      0, "mount image read-write"},
    { 0 }
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
           argv_to_string(argv));
 #endif
 
-   verbose = 1;  // in charliecloud.h
+   verbose = LL_INFO;  // in ch_misc.c
    args = (struct args){
       .c = (struct container){ .binds = list_new(sizeof(struct bind), 0),
                                .ch_ssh = false,
@@ -432,7 +432,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case 'v':
       verbose++;
-      Te(verbose <= 4, "--verbose can be specified at most thrice");
+      Te(verbose <= 3, "--verbose can be specified at most thrice");
       break;
    case 'w':
       args->c.writable = true;

@@ -260,8 +260,8 @@ enum img_type img_type_get(const char *path)
       return IMG_SQUASH;
 
    FATAL("unknown image type: %s", path);
-   return IMG_NONE;  // unreachable, avoid warning; see issue #1158
 }
+
 /* Begin coordinated section of namespace joining. */
 void join_begin(const char *join_tag)
 {

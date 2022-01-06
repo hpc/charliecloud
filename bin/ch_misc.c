@@ -24,20 +24,10 @@
 #define SUPP_GIDS_MAX 128
 
 
-/** Constants **/
-
-/* Names of verbosity levels. */
-const char *VERBOSE_LEVELS[] = { "error",
-                                 "warning",
-                                 "info",
-                                 "verbose",
-                                 "debug" };
-
-
 /** External variables **/
 
-/* Level of chatter on stderr desired (0-3). */
-int verbose;
+/* Level of chatter on stderr. */
+enum log_level verbose;
 
 /* Path to host temporary directory. Set during command line processing. */
 char *host_tmp = NULL;
@@ -48,7 +38,8 @@ char *username = NULL;
 
 /** Function prototypes (private) **/
 
-// none
+void msgv(enum log_level level, const char *file, int line, int errno_,
+          const char *fmt, va_list ap);
 
 
 /** Functions **/
@@ -417,42 +408,62 @@ void mkdirs(const char *base, const char *path, char **denylist)
    DEBUG("mkdirs: done");
 }
 
-/* Print a formatted message on stderr if the level warrants it. Levels:
-
-     0 : "error"   : always print; exit unsuccessfully afterwards
-     1 : "warning" : always print
-     2 : "info"    : print if verbose >= 2
-     3 : "verbose" : print if verbose >= 3
-     4 : "debug"   : print if verbose >= 4 */
-void msg(int level, const char *file, int line, int errno_,
+/* Print a formatted message on stderr if the level warrants it. */
+void msg(enum log_level level, const char *file, int line, int errno_,
          const char *fmt, ...)
 {
    va_list ap;
 
+   va_start(ap, fmt);
+   msgv(level, file, line, errno_, fmt, ap);
+   va_end(ap);
+}
+
+noreturn void msg_fatal(const char *file, int line, int errno_,
+                       const char *fmt, ...)
+{
+   va_list ap;
+
+   va_start(ap, fmt);
+   msgv(LL_FATAL, file, line, errno_, fmt, ap);
+   va_end(ap);
+
+   exit(EXIT_FAILURE);
+}
+
+/* va_list form of msg(). */
+void msgv(enum log_level level, const char *file, int line, int errno_,
+          const char *fmt, va_list ap)
+{
    if (level > verbose)
       return;
 
    fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
 
-   if (level <= 1 && fmt != NULL)
-      fprintf(stderr, "%s: ", VERBOSE_LEVELS[level]);
-
-   if (fmt == NULL)
-      fputs(VERBOSE_LEVELS[level], stderr);
-   else {
-      va_start(ap, fmt);
-      vfprintf(stderr, fmt, ap);
-      va_end(ap);
+   // Prefix for the more urgent levels.
+   switch (level) {
+   case LL_FATAL:
+      fprintf(stderr, "error: ");  // "fatal" too morbid for users
+      break;
+   case LL_WARNING:
+      fprintf(stderr, "warning: ");
+      break;
+   default:
+      break;
    }
 
+   // Default message if not specified. Users should not see this.
+   if (fmt == NULL)
+      fmt = "please report this bug";
+
+   vfprintf(stderr, fmt, ap);
    if (errno_)
       fprintf(stderr, ": %s (%s:%d %d)\n",
               strerror(errno_), file, line, errno_);
    else
       fprintf(stderr, " (%s:%d)\n", file, line);
-
-   if (level == 0)
-      exit(EXIT_FAILURE);
+   if (fflush(stderr))
+      abort();  // can't print an error b/c already trying to do that
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. If
