@@ -963,22 +963,22 @@ named by level. The main error can be accompanied by a hint. The levels are:
      INFO logging.
 
   4. **VERBOSE**; printed if :code:`-v` or more. Diagnostic information useful
-     for debugging installations and Charliecloud itself. Examples:
-     :code:`ch-run --join` coordination progress, :code:`ch-image` internal
-     paths, Dockerfile parse tree.
+     for debugging user containers, the Charliecloud installation, and
+     Charliecloud itself. Examples: :code:`ch-run --join` coordination
+     progress, :code:`ch-image` internal paths, Dockerfile parse tree.
 
   5. **DEBUG**; printed if :code:`-vv` or more. More detailed diagnostic
-     information useful for debugging Charliecloud. Examples:
-     component-by-component progress of bind-mount target directory
-     analysis/creation, data structures unserialized from image registry
-     metadata JSON, image reference parse tree.
+     information useful for debugging Charliecloud. Examples: data structures
+     unserialized from image registry metadata JSON, image reference parse
+     tree.
 
   6. **TRACE**; printed if :code:`-vvv`. Grotesquely detailed diagnostic
      information for debugging Charliecloud, to the extent it interferes with
      normal use. A sensible person might use a `debugger
      <https://twitter.com/wesamo__/status/1464764461831663626>`_ instead.
-     Examples: text of image registry JSON, every single file unpacked from
-     image layers.
+     Examples: component-by-component progress of bind-mount target directory
+     analysis/creation, text of image registry JSON, every single file
+     unpacked from image layers.
 
 There is no level ERROR; anything important the user needs to know about is
 WARNING if we can safely proceed or FATAL if not.

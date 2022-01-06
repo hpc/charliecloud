@@ -118,7 +118,7 @@ void sq_fork(struct container *c)
       char *subdir;
       T_ (asprintf(&subdir, "/%s.ch/mnt", username) > 0);
       c->newroot = cat("/var/tmp", subdir);
-      INFO("using default mount point: %s", c->newroot);
+      VERBOSE("using default mount point: %s", c->newroot);
       mkdirs("/var/tmp", subdir, NULL);
    }
 
@@ -176,7 +176,7 @@ int sq_loop(void)
       errno = -looped;  // restore encoded errno so our logging finds it
       Tf (0, "FUSE session failed");
    }
-   INFO("FUSE loop terminated successfully");
+   VERBOSE("FUSE loop terminated successfully");
 
    // Clean up zombie child if exit signal was SIGCHLD.
    if (!sigchld_received)
@@ -185,7 +185,7 @@ int sq_loop(void)
       Tf (wait(&child_status) >= 0, "can't wait for child");
       if (WIFEXITED(child_status)) {
          exit_code = WEXITSTATUS(child_status);
-         INFO("child terminated normally with exit code %d", exit_code);
+         VERBOSE("child terminated normally with exit code %d", exit_code);
       } else {
          // We now know that the child did not exit normally; the two
          // remaining options are (a) killed by signal and (b) stopped [1].
@@ -196,16 +196,16 @@ int sq_loop(void)
          // [1]: https://codereview.stackexchange.com/a/109349
          // [2]: https://man7.org/linux/man-pages/man2/wait.2.html
          exit_code = 1;
-         INFO("child terminated by signal %d", WTERMSIG(child_status))
+         VERBOSE("child terminated by signal %d", WTERMSIG(child_status))
       }
    }
 
    // Clean up SquashFS mount. These functions have no error reporting.
-   INFO("unmounting: %s", sq.mountpt);
+   VERBOSE("unmounting: %s", sq.mountpt);
    sqfs_ll_destroy(sq.ll);
    sqfs_ll_unmount(sq.chan, sq.mountpt);
 
-   INFO("FUSE loop done");
+   VERBOSE("FUSE loop done");
    return exit_code;
 }
 

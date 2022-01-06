@@ -205,7 +205,7 @@ void env_set(const char *name, const char *value, const bool expand)
    }
 
    // Save results.
-   INFO("environment: %s=%s", name, value_expanded);
+   VERBOSE("environment: %s=%s", name, value_expanded);
    Z_ (setenv(name, value_expanded, 1));
 }
 
@@ -231,7 +231,7 @@ void env_unset(const char *glob)
       T_ (name != NULL);          // environ entries must always have equals
       matchp = fnmatch(glob, name, 0);
       if (matchp == 0) {
-         INFO("environment: unset %s", name);
+         VERBOSE("environment: unset %s", name);
       } else {
          T_ (matchp == FNM_NOMATCH);
          *(value - 1) = '=';  // rejoin line
@@ -367,10 +367,10 @@ void mkdirs(const char *base, const char *path, char **denylist)
 
    basec = realpath_safe(base);
 
-   DEBUG("mkdirs: base: %s", basec);
-   DEBUG("mkdirs: path: %s", path);
+   TRACE("mkdirs: base: %s", basec);
+   TRACE("mkdirs: path: %s", path);
    for (size_t i = 0; denylist[i] != NULL; i++)
-      DEBUG("mkdirs: deny: %s", denylist[i]);
+      TRACE("mkdirs: deny: %s", denylist[i]);
 
    pathw = cat(path, "");  // writeable copy
    saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
@@ -379,7 +379,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
    while (component != NULL) {
       next = cat(nextc, "/");
       next = cat(next, component);  // canonical except for last component
-      DEBUG("mkdirs: next: %s", next)
+      TRACE("mkdirs: next: %s", next)
       component = strtok_r(NULL, "/", &saveptr);  // next NULL if current last
       if (path_exists(next, &sb, false)) {
          if (S_ISLNK(sb.st_mode)) {
@@ -392,7 +392,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
          Tf (S_ISDIR(sb.st_mode) || !component,   // last component not dir OK
              "can't mkdir: exists but not a directory: %s", next);
          nextc = realpath_safe(next);
-         DEBUG("mkdirs: exists, canonical: %s", nextc);
+         TRACE("mkdirs: exists, canonical: %s", nextc);
       } else {
          Te (path_subdir_p(basec, next),
              "can't mkdir: %s not subdirectory of %s", next, basec);
@@ -402,10 +402,10 @@ void mkdirs(const char *base, const char *path, char **denylist)
                 next, denylist[i]);
          Zf (mkdir(next, 0777), "can't mkdir: %s", next);
          nextc = next;  // canonical b/c we just created last component as dir
-         DEBUG("mkdirs: created: %s", nextc)
+         TRACE("mkdirs: created: %s", nextc)
       }
    }
-   DEBUG("mkdirs: done");
+   TRACE("mkdirs: done");
 }
 
 /* Print a formatted message on stderr if the level warrants it. */

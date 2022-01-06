@@ -180,14 +180,14 @@ int main(int argc, char *argv[])
    for (int i = 0; i < argc - arg_next; i++)
       c_argv[i] = argv[i + arg_next];
 
-   INFO("verbosity: %d", verbose);
-   INFO("image: %s", args.c.img_path);
-   INFO("newroot: %s", args.c.newroot);
-   INFO("container uid: %u", args.c.container_uid);
-   INFO("container gid: %u", args.c.container_gid);
-   INFO("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag,
-        args.c.join_pid);
-   INFO("private /tmp: %d", args.c.private_tmp);
+   VERBOSE("verbosity: %d", verbose);
+   VERBOSE("image: %s", args.c.img_path);
+   VERBOSE("newroot: %s", args.c.newroot);
+   VERBOSE("container uid: %u", args.c.container_uid);
+   VERBOSE("container gid: %u", args.c.container_gid);
+   VERBOSE("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag,
+           args.c.join_pid);
+   VERBOSE("private /tmp: %d", args.c.private_tmp);
 
    containerize(&args.c);
    fix_environment(&args);
@@ -216,7 +216,7 @@ void fix_environment(struct args *args)
               && !strstr(old_value, ":/bin")) {
       T_ (1 <= asprintf(&new_value, "%s:/bin", old_value));
       Z_ (setenv("PATH", new_value, 1));
-      INFO("new $PATH: %s", new_value);
+      VERBOSE("new $PATH: %s", new_value);
    }
 
    // $TMPDIR: Unset.
@@ -270,13 +270,13 @@ int join_ct(int cli_ct)
    char *ev_name, *ev_value;
 
    if (cli_ct != 0) {
-      INFO("join: peer group size from command line");
+      VERBOSE("join: peer group size from command line");
       j = cli_ct;
       goto end;
    }
 
    if (get_first_env(JOIN_CT_ENV, &ev_name, &ev_value)) {
-      INFO("join: peer group size from %s", ev_name);
+      VERBOSE("join: peer group size from %s", ev_name);
       j = parse_int(ev_value, true, ev_name);
       goto end;
    }
@@ -294,18 +294,18 @@ char *join_tag(char *cli_tag)
    char *ev_name, *ev_value;
 
    if (cli_tag != NULL) {
-      INFO("join: peer group tag from command line");
+      VERBOSE("join: peer group tag from command line");
       tag = cli_tag;
       goto end;
    }
 
    if (get_first_env(JOIN_TAG_ENV, &ev_name, &ev_value)) {
-      INFO("join: peer group tag from %s", ev_name);
+      VERBOSE("join: peer group tag from %s", ev_name);
       tag = ev_value;
       goto end;
    }
 
-   INFO("join: peer group tag from getppid(2)");
+   VERBOSE("join: peer group tag from getppid(2)");
    T_ (1 <= asprintf(&tag, "%d", getppid()));
 
 end:
