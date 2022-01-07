@@ -36,6 +36,8 @@ image_alias = None
 # Number of stages.
 image_ct = None
 
+#FIXME:
+state_ids = list()
 
 ## Imports not in standard library ##
 
@@ -657,15 +659,23 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
       self.base_image = ch.Image(self.base_ref)
-      if (os.path.isdir(self.base_image.unpack_path)):
-         ch.VERBOSE("base image found: %s" % self.base_image.unpack_path)
+      # Initiliaze image puller.
+      pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
+
+      # Get build cache FROM state id.
+      global state_ids
+      cache = ch.cache.build
+      sid = cache.op_FROM(self.base_image.unpack_path, pullet)
+      state_ids.append(sid)
+
+      # Initialize image TAG branch
+      if (sid is not None):
+         if (cache.branch_exists(image.unpack_path)):
+            pass
+         else:
+            cache.branch_add(image.unpack_path, self.base_image.unpack_path)
       else:
-         ch.VERBOSE("base image not found, pulling")
-         # a young hen, especially one less than one year old.
-         pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
-         pullet.pull_to_unpacked()
-         pullet.done()
-      image.copy_unpacked(self.base_image)
+         image.copy_unpacked(self.base_image)
       image.metadata_load()
       env.reset()
       # Find fakeroot configuration, if any.

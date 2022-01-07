@@ -264,18 +264,19 @@ class Not_In_Registry_Error(Exception): pass
 
 ## Classes ##
 class Cache:
-   """The primary Cache object to interact with.
+   """The source of Cache operations for both building and downloading.
 
       Attributes:
 
-         build ...... Build cache subclass object (enabled, rebuild, or disabled).
-         download ... Download cache subclass object (enabled, write-only).
-         git ........ Boolean. Do we have the right git?
+         build ...... Build cache subclass object.
+         download ... Download cache subclass object.
+         git ........ Boolean.
 
       Constructor arguments:
 
         bu_mode ... String. (cli input)
-        dl_mode ... String. (cli input)"""
+        dl_mode ... String. (cli input)
+        bu_path ... Build cache storage path."""
    def __init__(self, bu_mode, dl_mode, bu_path):
       self.git = self.init_git()
       self.build = Build_Cache(self.init_bmode(bu_mode), self.git_ok, bu_path)
@@ -294,7 +295,7 @@ class Cache:
       if (mode is None):
          return Mode.ENABLED
       assert(Mode(mode) in [Mode.ENABLED, Mode.DISABLED, Mode.REBUILD])
-      return Mode(bu_mode)
+      return Mode(mode)
 
    def init_dlmode(self, mode):
       "Return the canonical download Mode enum from value."
@@ -317,13 +318,15 @@ class Cache:
 
 
 class Build_Cache(Cache):
-   """The build cache factory. Instantiate a subclass build object based on
-      mode, e.g., enabled, rebuild, disabled.
+   """The build cache factory. Instantiate a build object based on mode, e.g.,
+      enabled, rebuild, or disabled.
 
       Constructor arguments:
 
-      cls ...... Parent class namespace.
-      mode ..... Build cache Mode enum."""
+         cls ............ Class.
+         mode ........... Build cache Mode.
+         git ............ Boolean.
+         storage_path ... Build cache storage path."""
    def __new__(cls, mode, git, storage_path):
       class_ = "Build_" + mode.value
       subclass_map = {subclass.__name__: subclass for subclass in cls.__subclasses__()}
@@ -352,10 +355,10 @@ class Build_Cache(Cache):
    ## Constructor helpers ##
 
    def init_dot(self):
-      """Return True if git2dot.py is in PATH and is the right version; otherwise
-      return False."""
+      """Return True if git2dot.py is in PATH and is the right version;
+         otherwise return False."""
       try:
-         cp = cmd_return(["git2dot.py", "--version"])
+         cp = cmd_return(["git2dot", "--version"])
       except FileNotFoundError:
          return False
       out = cp.stdout.split(" ")[-1]
@@ -407,7 +410,6 @@ class Build_Cache(Cache):
       else:
          FATAL("can't print tree; wrong or not git in path")
 
-
    ## Storage operations ##
 
    def storage_init(self):
@@ -417,6 +419,7 @@ class Build_Cache(Cache):
       mkdirs(self.storage_path)
       if (os.listdir(path)):
          return
+      VERBOSE("initializing build cache.")
       VERBOSE("build cache storage: %s" % path)
       VERBOSE("initialize bare git repo")
       # init bare repo
@@ -450,18 +453,126 @@ class Build_Cache(Cache):
          rmtree(self.storage_path)
       self.storage_init()
 
+   ## Operations ##
+
+   def branch_add(self, worktree, checkout=None):
+      "Add a new branch (worktree) to the build cache."
+      VERBOSE("adding worktree %s" % worktree)
+      cmd_git(["worktree", "add", "%s" % worktree], cwd=self.storage_path)
+      if (checkout is not None):
+         br = str(checkout).split("/")[-1]
+         cmd_git(["rebase", "%s" % br], cwd=worktree)
+
+   def branch_ammend(self, worktree, msg):
+      "Ammend the worktree commit tip message."
+      cmd_git(["commit", "--amend", "-m", '%s' % msg], cwd=worktree)
+
+   def branch_commit(self, worktree):
+      "Prep all files in a worktree and then commit with non-ready message."
+      self.branch_fixup(worktree)
+      cmd_git(["add", "--all"], cwd=worktree)
+      cmd_git(["commit", "-m", "n:"], cwd=worktree)
+      self.branch_fixdown(worktree)
+
+   def branch_exists(self, unpack_path):
+      "Return True if branch exists; otherwise return false"
+      branch = str(unpack_path).split("/")[-1]
+      cp = cmd_return(["git", "branch", "--list", "%s" % branch],
+                      cwd=self.storage_path)
+      if (cp.stdout is ''):
+         return False
+      return True
+
+   def branch_fixdown(self, worktree):
+      return True
+
+   def branch_fixup(self, worktree):
+      return True
+
+   def branch_id(self, br):
+      "Return hex state id parsed from branch commit message."
+      return self.branch_msg(br).split(":")[-1]
+
+   def branch_msg(self, unpack_path):
+      "Return branch tip commit messsage."
+      branch = str(unpack_path).split("/")[-1]
+      cp = cmd_return(["git", "show", "--format=%B", "-s", "%s" % branch],
+                 cwd=self.storage_path)
+      VERBOSE(cp.stdout)
+      return cp.stdout
+
+   def branch_ready(self, worktree):
+      "Return true if commit message is marked ready; otherwise false."
+      out = self.branch_msg(worktree)
+      if (out.split(":")[0] == "r"):
+         return True
+      return False
+
+   def bytes_from_file(self, f):
+      "Return bytes read from a file."
+      with open(f, "rb")  as fp:
+         return fp.read()
+
+   def bytes_from_root(self):
+      global CACHE_ROOT_ID
+      return bytes.fromhex(CACHE_ROOT_ID)
+
+   def op_EXECUTE(self, inst, parent_id):
+      "Return state id of EXECUTE instruction"
+      pass
+
+   def op_FROM(self, base, puller):
+      """Handle FROM instruction. If the base image branch referenced by FROM
+         exists and is marked ready return the state id. If the branch does not
+         exist pull the base and add the branch. Otherwise fail."""
+      from_id = None
+      if (not self.branch_exists(base)):
+         # Note you cannot add an existing directory as a new git worktree. As
+         # such we have to first commit a new branch, pull the base image,
+         # fix it up and then commit.
+         VERBOSE("build cache: FROM: miss")
+         self.branch_add(base)
+         self.pull_base(base, puller)
+         self.branch_commit(base)
+         # Compute state id
+         c = self.bytes_from_file(puller.config_path)
+         m = self.bytes_from_file(puller.manifest_path)
+         r = self.bytes_from_root()
+         from_id = hashlib.md5(r + c + m).hexdigest()
+         self.branch_ammend(base, "r:%s" % from_id)
+      else:
+         VERBOSE("build cache: FROM: hit")
+         from_id = self.branch_id(base)
+      if (not self.branch_ready(base)):
+         FATAL("build-cache: build of base %s failed" % base)
+      return from_id
+
+   def pull_base(self, base, puller):
+      "Pull base image using initilaized image puller."
+      puller.pull_to_unpacked()
+      puller.done()
+
 
 class Build_enable(Build_Cache):
    pass
 
 
 class Build_disable(Build_Cache):
-   pass
+   def id_FROM(self, img_path, base_path, base_puller):
+      "Return state id of FROM instruction using base image path."
+      if (os.path.isdir(base_path)):
+         ch.VERBOSE("base image found: %s" % self.base_image.unpack_path)
+      else:
+         VERBOSE("base image not found, pulling")
+         base_puller.pull_to_unpacked()
+         base_puller.done()
+      return None
 
+   def id_EXECUTE(self, inst, parent_id):
+      return None
 
 class Build_rebuild(Build_Cache):
    pass
-
 
 class Download_Cache(Cache):
    """The download cache factory. Instantiate a download subclass object based on
@@ -770,12 +881,14 @@ class Image:
       """Unpack config_json (path to JSON config file) and layer_tars
          (sequence of paths to tarballs, with lowest layer first) into the
          unpack directory, validating layer contents and dealing with
-         whiteouts. Empty layers are ignored. Overwrite any existing image in
-         the unpack directory."""
+         whiteouts. Empty layers are ignored. Overwrite any existing non-bare
+         image in the unpack directory."""
       if (last_layer is None):
          last_layer = sys.maxsize
       INFO("flattening image")
-      self.unpack_clear()
+      imgdir = self.unpack_path
+      if (os.path.isdir(imgdir) and ['.git', '.root'] != os.listdir(imgdir)):
+         self.unpack_clear()
       self.unpack_layers(layer_tars, last_layer)
       self.unpack_init()
 
