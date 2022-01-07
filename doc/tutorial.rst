@@ -5,11 +5,11 @@ This tutorial will teach you how to create and run Charliecloud images, using
 both examples included with the source code as well as new ones you create
 from scratch.
 
-This tutorial assumes that: (a) the Charliecloud executables are in your path,
-including Charliecloud's fully unprivileged image builder :code:`ch-image`,
-(b) Squashfuse is installed, and (c) the Charliecloud source code is available
-at :code:`/usr/local/src/charliecloud`. If you wish to use Docker to build
-images see the :ref:`FAQ <faq_building-with-docker>`
+This tutorial assumes that: (a) Charliecloud was linked with libsquashfuse and
+is in your path, including Charliecloud's fully unprivileged image builder
+:code:`ch-image`, (b) Squashfuse is installed, and (c) the Charliecloud source
+code is available at :code:`/usr/local/src/charliecloud`. If you wish to use
+Docker to build images see the :ref:`FAQ <faq_building-with-docker>`
 
 .. contents::
    :depth: 2
@@ -46,14 +46,23 @@ Charliecloud for your own applications.
   [=============================================|] 10411/10411 100%
   [...]
   done
+  $ ch-run /var/tmp/hello -- echo "I'm in a container"
+  I'm in a container
+
+
+.. note::
+  If your build of Charliecloud doesn't support internal SquashFS mounting
+  here is how that mounting/unmount process can be done:
+
+::
+
   $ mkdir /var/tmp/hello
   $ squashfuse /var/tmp/hello.sqfs /var/tmp/hello
   $ ch-run /var/tmp/hello -- echo "I'm in a container"
   I'm in a container
   $ fusermount -u /var/tmp/hello
 
-(See the :ref:`FAQ <faq_docker2tar-size>` for why the progress bar can
-sometimes go over 100%.)
+
 
 Getting help
 ============
@@ -67,7 +76,7 @@ Charliecloud you have (if not, please report a bug). For example::
   Run a command in a Charliecloud container.
   [...]
   $ ch-run --version
-  0.26~pre+1018updatetutorial.479750b.dirty
+  0.26
 
 A description of all commands is also collected later in this documentation; see
 :doc:`command-usage`. In addition, each executable has a man page.
@@ -130,15 +139,12 @@ visible in Charliecloud's builder storage:
   centos:8
   hello
 
-.. note::
-   Charliecloud uses image :code:`name:tag` to refer to images instead
-   of a computed hash like some other image builders.
 
 Sharing images
 -------------------------------------------
 
 Charliecloud images in builder storage are just directories and can be
-exported as SquashFS filesystems or tar archives via :code:`ch-convert`.
+exported as SquashFS filesystems or tarballs via :code:`ch-convert`.
 
 SquashFS:
 ::
@@ -167,29 +173,27 @@ Charliecloud can also convert images between the two formats.
 
 SquashFS to tarball:
 ::
-$ ch-convert hello.sqfs hello.tgz
-input:   tar       hello.tgz
-output:  squash    hello.sqfs
-unpacking ...
-[...]
-done
+
+  $ ch-convert hello.sqfs hello.tgz
+  input:   tar       hello.tgz
+  output:  squash    hello.sqfs
+  unpacking ...
+  [...]
+  done
 
 tarball to SquashFS:
 ::
-$ charliecloud/bin/ch-convert hello.sqfs hello.tgz
-input:   squash    hello.sqfs
-output:  tar       hello.tgz
-Parallel unsquashfs: Using 8 processors
-[...]
-done
+
+ $ charliecloud/bin/ch-convert hello.sqfs hello.tgz
+ input:   squash    hello.sqfs
+ output:  tar       hello.tgz
+ Parallel unsquashfs: Using 8 processors
+ [...]
+ done
 
 
 Charliecloud also supports "pushing" images from its internal storage as a
-:code:`ch-image` subcommand:
-
-::
-    
-  $ ch-image push NAME:TAG REMOTE
+:code:`ch-image` subcommand.
 
 
 Distribute images
@@ -206,10 +210,9 @@ typical use case for development and testing.
 Prepping image
 --------------
 
-Charliecloud can either run out of a normal directory or a mounted SquashFS
-with the latter being the recommended route. In the case of the TAR archive
-be aware that the process of unpacking it will overwrite an existing
-directory.
+Charliecloud can either run out of a normal directory or an internally mounted
+SquashFS (recommended). In the case of the tarball be aware that the process
+of unpacking it will overwrite an existing directory.
 
 SquashFS:
 ::
@@ -227,10 +230,10 @@ tarball:
   [...]
   done
 
-Generally, you should avoid unpacking TAR archives onto shared filesystems
-such as NFS and Lustre, in favor of local storage such as :code:`tmpfs` and
-local hard disks. This will yield better performance for you and anyone else
-on the shared filesystem.
+Generally, you should avoid unpacking tarballs onto shared filesystems such as
+NFS and Lustre, in favor of local storage such as :code:`tmpfs` and local hard
+disks. This will yield better performance for you and anyone else on the
+shared filesystem.
 
 .. One potential gotcha is the tarball including special files such as
    devices. Because :code:`tar` is running unprivileged, these will not be
@@ -888,24 +891,11 @@ one of those nodes. For example::
 
   $ salloc -N4
 
-The next step is to distribute the image tarball to the compute nodes. For 
+The next step is to distribute the image to the compute nodes. For 
 tarballs, we run one instance of :code:`ch-convert` on each node using
-:code:`srun` and for SquashFS archives we use :code:`pdsh`. In the SquashFS
-case we can't use :code:`srun` to run the mount command because once it exits
-the mount process is killed by Slurm. For more details see
-Charliecloud issue `#230 <https://github.com/hpc/charliecloud/issues/230>`_.
+:code:`srun` and for SquashFS archives this is handled by the internal
+mounting process.
 
-.. warning::
-  Attempts to use :code:`srun` to mount SquashFS filesystems will result in a
-  "Transport endpoint is not connected" error.
-
-
-SquashFS:
-::
-
-  $ srun mkdir /var/tmp/mpihello-openmpi
-  $ pdsh -R ssh squashfuse mpihello-openmpi.sqfs /var/tmp/mpihello-openmpi
-  
 
 tarball:
 ::
@@ -929,6 +919,15 @@ tarball:
   done
 
 
+.. note::
+  If your build of Charliecloud doesn't support internal SquashFS mounting you
+  will want to use :code:`pdsh` to mount the image. You can't use :code:`srun`
+  to run the mount command because once it exits the mount process is killed
+  by Slurm and you will get a "Transport endpoint is not connected" error. For
+  more details see Charliecloud issue
+  `#230 <https://github.com/hpc/charliecloud/issues/230>`_.
+
+
 We can now activate the image and run our program::
 
   $ srun --cpus-per-task=1 ch-run /var/tmp/mpihello-openmpi -- /hello/hello
@@ -941,10 +940,6 @@ We can now activate the image and run our program::
   55: init ok cn004, 64 ranks, userns 4026532577
   0: send/receive ok
   0: finalize ok
-
-.. note::
-   Don't forget to unmount your SquashFS filesystems with:
-   :code:`$srun fusermount -u /var/tmp/mpihello-openmpi` 
 
 
 Success!
@@ -995,13 +990,8 @@ Interactive Apache Spark
 This example is in :code:`examples/spark`. Build a tarball and upload it to
 your cluster.
 
-Once you have an interactive job, prepare the image.
-
-SquashFS:
-::
-
-  $ srun mkdir /var/tmp/spark
-  $ pdsh -R ssh squashfuse spark.sqfs /var/tmp/spark
+Once you have an interactive job, prepare the image. Recall that for the
+SquashFS workflow this is handled by the internal mounting process.
 
 tarball:
 ::

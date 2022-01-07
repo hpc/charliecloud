@@ -317,35 +317,35 @@ happy.
 When converting from Docker, :code:`ch-convert` often finishes before the
 progress bar is complete. For example::
 
-  $ ch-convert -i docker mpihello-openmpi /var/tmp/mpihello-openmpi.tar.gz
-  input:   docker    mpihello-openmpi
-  output:  tar       /var/tmp/mpihello-openmpi.tar.gz
+  $ ch-convert -i docker foo /var/tmp/foo.tar.gz
+  input:   docker    foo
+  output:  tar       /var/tmp/foo.tar.gz
   exporting ...
    373MiB 0:00:21 [============================>                 ] 65%
   [...]
 
 In this case, the :code:`.tar.gz` contains 392 MB uncompressed::
 
-  $ zcat /var/tmp/mpihello-openmpi.tar.gz | wc
+  $ zcat /var/tmp/foo.tar.gz | wc
   2740966 14631550 392145408
 
 But Docker thinks the image is 597 MB::
 
-  $ sudo docker image inspect mpihello-openmpi | fgrep -i size
+  $ sudo docker image inspect foo | fgrep -i size
           "Size": 596952928,
           "VirtualSize": 596952928,
 
 We've also seen cases where the Docker-reported size is an *under*\ estimate::
 
-  $ ch-convert -i docker spack /var/tmp/spack.tar.gz
-  input:   docker    spack
-  output:  tar       /var/tmp/spack.tar.gz
+  $ ch-convert -i docker bar /var/tmp/bar.tar.gz
+  input:   docker    bar
+  output:  tar       /var/tmp/bar.tar.gz
   exporting ...
    423MiB 0:00:22 [============================================>] 102%
   [...]
-  $ zcat /var/tmp/spack.tar.gz | wc
+  $ zcat /var/tmp/bar.tar.gz | wc
   4181186 20317858 444212736
-  $ sudo docker image inspect spack | fgrep -i size
+  $ sudo docker image inspect bar | fgrep -i size
           "Size": 433812403,
           "VirtualSize": 433812403,
 
