@@ -16,6 +16,9 @@ import pull
 
 ## Globals ##
 
+# Build cache object.
+cache = None
+
 # Namespace from command line arguments. FIXME: be more tidy about this ...
 cli = None
 
@@ -36,7 +39,9 @@ image_alias = None
 # Number of stages.
 image_ct = None
 
-#FIXME:
+# FIXME: build cache stuff that probably belongs in the cache class
+hit_ct = 0
+hit_record = None
 state_ids = list()
 
 ## Imports not in standard library ##
@@ -159,6 +164,9 @@ def main(cli_):
    if (cli.parse_only):
       sys.exit(0)
 
+   global cache
+   cache = ch.cache.build
+
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
    image_ct = sum(1 for i in ch.tree_children(tree, "from_"))
@@ -264,6 +272,10 @@ class Instruction(abc.ABC):
          self.execute_()
 
    @abc.abstractmethod
+   def cache_exe_(self):
+      ...
+
+   @abc.abstractmethod
    def execute_(self):
       ...
 
@@ -303,6 +315,9 @@ class Instruction_Supported_Never(Instruction):
    def str_(self):
       return "(unsupported)"
 
+   def cache_exe_(self):
+      pass
+
    def execute_(self):
       pass
 
@@ -325,6 +340,10 @@ class Arg(Instruction):
          return self.key
       else:
          return "%s='%s'" % (self.key, self.value)
+
+   def cache_exe_(self):
+      # FIXME:
+      pass
 
    def execute_(self):
       if (self.value is not None):
@@ -387,6 +406,10 @@ class I_copy(Instruction):
 
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
+
+   def cache_exe_(self):
+      #FIXME
+      pass
 
    def copy_src_dir(self, src, dst):
       """Copy the contents of directory src, named by COPY, either explicitly
@@ -592,6 +615,10 @@ class Env(Instruction):
    def str_(self):
       return "%s='%s'" % (self.key, self.value)
 
+   def cache_exe_(self):
+      # FIXME
+      pass
+
    def execute_(self):
       env.env[self.key] = self.value
       with ch.open_(images[image_i].unpack_path // "/ch/environment", "wt") \
@@ -628,6 +655,29 @@ class I_from_(Instruction):
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
 
+   def cache_exe_(self, image, base_puller):
+      # FIXME: this function could go inside the cache object tbh.
+      global cache, state_ids
+      rootfs = image.unpack_path
+      basefs = self.base_image.unpack_path
+      sid = cache.id_for_from(basefs, base_puller)
+      state_ids.append(sid)
+      if (sid is not None):
+         if (not cache.branch_exists(rootfs)):
+            cache.worktree_add(rootfs, basefs)
+            # We don't need to fixup here since we are checking out an existing
+            # branch.
+            cache.branch_commit(sid, rootfs)
+            cache.branch_fixdown(rootfs)
+      else:
+         if (os.path.isdir(basefs)):
+            VERBOSE("base image found: %s" % basefs)
+         else:
+            VERBOSE("base image not found, pulling")
+            pullet.pull_to_unpacked()
+            pullet.done()
+         image.copy_unpacked(self.base_image)
+
    def execute_(self):
       # Complain about unsupported stuff.
       if (self.options.pop("platform", False)):
@@ -661,21 +711,11 @@ class I_from_(Instruction):
       self.base_image = ch.Image(self.base_ref)
       # Initiliaze image puller.
       pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
+      # Execute cache operation.
+      self.cache_exe_(image, pullet)
 
-      # Get build cache FROM state id.
-      global state_ids
-      cache = ch.cache.build
-      sid = cache.op_FROM(self.base_image.unpack_path, pullet)
-      state_ids.append(sid)
-
-      # Initialize image TAG branch
-      if (sid is not None):
-         if (cache.branch_exists(image.unpack_path)):
-            pass
-         else:
-            cache.branch_add(image.unpack_path, self.base_image.unpack_path)
-      else:
-         image.copy_unpacked(self.base_image)
+      # FIXME: perhaps medata_load and metadata_save should be called from
+      # the build cache to ensure the img directory git trees don't get dirty.
       image.metadata_load()
       env.reset()
       # Find fakeroot configuration, if any.
@@ -690,8 +730,70 @@ class I_from_(Instruction):
 
 class Run(Instruction):
 
+   def cache_exe_(self):
+      global cache, state_ids, hit_ct
+      # sid caclutation variables
+      inst_action = self.cmd
+      inst_name   = self.str_name()
+      inst_opts   = self.options
+      pid         = state_ids[-1]
+
+      # state id
+      sid = cache.id_for_exec(pid, inst_name, inst_opts, inst_action)
+      state_ids.append(sid)
+      ch.CACHE_V("computed state id: %s" % sid)
+
+      # commit from id
+      rootfs  = images[image_i].unpack_path
+      commit = cache.hit_commit(sid, rootfs)
+
+      # hit
+      if (commit):
+         hit_ct =+ 1
+         return
+
+      # miss; get commit from parent
+      ch.CACHE_V("miss: instruction not cached.")
+
+      # get commit from parent id
+      ch.CACHE_V("parent id: %s" % pid)
+      commit = cache.hit_commit(pid, rootfs, parent_search=True)
+      if (not commit):
+         ch.FATAL("error finding parent commit")
+
+      cache.branch_checkout(commit.commit, rootfs)
+      cache.branch_fixdown(rootfs)
+
+      # execute instruction
+      fakeroot_config.init_maybe(rootfs, self.cmd, env.env_build)
+      cmd = fakeroot_config.inject_run(self.cmd)
+      exit_code = ch.ch_run_modify(rootfs, cmd, env.env_build, env.workdir,
+                                   cli.bind, fail_ok=True)
+      if (exit_code != 0):
+         if (cli.force):
+            if (isinstance(fakeroot_config, fakeroot.Fakeroot_Noop)):
+               ch.ERROR("build failed: --force specified, but no suitable config found")
+            else:
+               pass  # we did init --force OK but the build still failed
+         elif (not cli.no_force_detect):
+            if (fakeroot_config.init_done):
+               ch.ERROR("build failed: --force may fix it")
+            else:
+               ch.ERROR("build failed: current version of --force wouldn't help")
+         ch.FATAL("build failed: RUN command exited with %d" % exit_code)
+
+      # clean up, commit, and restore.
+      cache.branch_fixup(rootfs)
+      cache.branch_commit(sid, rootfs)
+      cache.branch_fixdown(rootfs)
+
    def execute_(self):
-      rootfs = images[image_i].unpack_path
+      global cache
+      if (cache.mode == ch.Mode.ENABLED or cache.mode == ch.Mode.REBUILD):
+         self.cache_exe_()
+         return
+
+      # execute instruction
       fakeroot_config.init_maybe(rootfs, self.cmd, env.env_build)
       cmd = fakeroot_config.inject_run(self.cmd)
       exit_code = ch.ch_run_modify(rootfs, cmd, env.env_build, env.workdir,

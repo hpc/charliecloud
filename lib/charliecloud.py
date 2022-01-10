@@ -11,6 +11,7 @@ import http.client
 import io
 import json
 import os
+import operator
 import getpass
 import pathlib
 import platform
@@ -267,13 +268,11 @@ class Cache:
    """The source of Cache operations for both building and downloading.
 
       Attributes:
-
          build ...... Build cache subclass object.
          download ... Download cache subclass object.
          git ........ Boolean.
 
       Constructor arguments:
-
         bu_mode ... String. (cli input)
         dl_mode ... String. (cli input)
         bu_path ... Build cache storage path."""
@@ -306,7 +305,9 @@ class Cache:
 
    def init_git(self):
       "Return True if the right git is installed; otherwise return False."
+      CACHE_V("checking for git")
       cp = cmd_return(["git", "--version"])
+      CACHE_D(cp.stdout)
       if (cp.returncode):
          return False
       out = cp.stdout.split(" ")[-1]
@@ -318,25 +319,24 @@ class Cache:
 
 
 class Build_Cache(Cache):
-   """The build cache factory. Instantiate a build object based on mode, e.g.,
-      enabled, rebuild, or disabled.
+   """The build cache.
+
+      Attribute:
+         git ............ Boolean. Do we have the right git?
+         dot ............ Boolean. Do we have git2dot.py in our path?
+         mode ........... Mode enum.
+         pdf ............ Boolean. Do we have graphviz?
+         state_ids ...... List. List of all computed state ids.
+         storage_path ... Path. Build cache storage directory.
 
       Constructor arguments:
-
-         cls ............ Class.
          mode ........... Build cache Mode.
          git ............ Boolean.
          storage_path ... Build cache storage path."""
-   def __new__(cls, mode, git, storage_path):
-      class_ = "Build_" + mode.value
-      subclass_map = {subclass.__name__: subclass for subclass in cls.__subclasses__()}
-      subclass = subclass_map[class_]
-      instance = super(Build_Cache, subclass).__new__(subclass)
-      return instance
-
    def __init__(self, mode, git, storage_path):
       self.git = git
       self.dot = self.init_dot()
+      self.mode_ = mode
       self.pdf = self.init_pdf()
       self.storage_path_ = storage_path
 
@@ -349,16 +349,22 @@ class Build_Cache(Cache):
       return self.pdf
 
    @property
+   def mode(self):
+      return self.mode_
+
+   @property
    def storage_path(self):
       return self.storage_path_
+
 
    ## Constructor helpers ##
 
    def init_dot(self):
       """Return True if git2dot.py is in PATH and is the right version;
          otherwise return False."""
+      CACHE_V("checking path for git2dot.py")
       try:
-         cp = cmd_return(["git2dot", "--version"])
+         cp = cmd_return(["git2dot.py", "--version"])
       except FileNotFoundError:
          return False
       out = cp.stdout.split(" ")[-1]
@@ -370,22 +376,24 @@ class Build_Cache(Cache):
 
    def init_pdf(self):
       "Return True if dot is in PATH; otherwise return False."
+      CACHE_V("checking path for dot (graphviz)")
       cp = cmd_return(["dot", "-?"])
       if (cp.returncode):
          return False
       return True
 
-
-   ## Tree printing and debugging ##
+   ## Log printing and debugging ##
 
    def dump_dot(self):
       if (not self.git_ok):
          FATAL("no git in path")
-      if (self.dot_ok):
-         INFO("creating build-cache.dot")
-         # FIXME: if git2dot.py isn't in your path we get a file not found.
-         cmd(["git2dot", "%s/build-cache.dot" % os.getcwd()],
-             cwd=self.storage_path)
+      if (not self.dot_ok):
+         FATAL("git2dot.py not in path")
+      INFO("creating build-cache.dot")
+      # The following args show commit message.
+      # args = ["git2dot", "-l %h|%s", "%s/build-cache.dot" % os.getcwd()]
+      args = ["git2dot.py", "%s/build-cache.dot" % os.getcwd()]
+      cmd(args, cwd=self.storage_path)
       if (self.pdf_ok):
          INFO("creating build-cache.pdf")
          args = ["dot", "-Tpdf", "build-cache.dot", "-o", "build-cache.pdf"]
@@ -419,14 +427,15 @@ class Build_Cache(Cache):
       mkdirs(self.storage_path)
       if (os.listdir(path)):
          return
-      VERBOSE("initializing build cache.")
-      VERBOSE("build cache storage: %s" % path)
-      VERBOSE("initialize bare git repo")
+      CACHE_V("initializing build cache.")
+      CACHE_V("build cache storage: %s" % path)
+      CACHE_V("initialize bare git repo")
       # init bare repo
       cmd_git(["init", "--bare", "--initial-branch=root", path])
-      # set bare repo upstream origin to "root"
+      # You can't use regular git commands on a bare repo. So we set bare repo
+      # upstream origin to the first commit "root" via temp dir.
       with tempfile.TemporaryDirectory(dir=path) as tmpdir:
-         VERBOSE("setting upstream origin root")
+         CACHE_V("setting upstream origin root")
          init_dir = Path(os.path.join(tmpdir, "init"))
          cmd_git(["clone", path, init_dir])
          cmd_git(["checkout", "-b", "root"], cwd=init_dir)
@@ -435,6 +444,7 @@ class Build_Cache(Cache):
          cmd_git(["commit", "-m", CACHE_ROOT_ID], cwd=init_dir)
          cmd_git(["push", "--set-upstream", "origin", "root"], cwd=init_dir)
 
+      # Verify the bare repo exists and has files we expect.
       if (not (os.path.exists(path // "HEAD")
           and  os.path.isdir(path  // "hooks")
           and  os.path.isdir(path  // "info")
@@ -442,6 +452,7 @@ class Build_Cache(Cache):
          FATAL("failed to initilize build cache")
 
    def prune(self):
+      CACHE_V("running git prune.")
       if (not self.git_ok):
          FATAL("build cache: git tree: no git")
       cmd_git(["gc", "--prune=now"], cwd=self.storage_path)
@@ -453,126 +464,260 @@ class Build_Cache(Cache):
          rmtree(self.storage_path)
       self.storage_init()
 
-   ## Operations ##
+   ## Cache and Git operations ##
 
-   def branch_add(self, worktree, checkout=None):
-      "Add a new branch (worktree) to the build cache."
-      VERBOSE("adding worktree %s" % worktree)
-      cmd_git(["worktree", "add", "%s" % worktree], cwd=self.storage_path)
-      if (checkout is not None):
-         br = str(checkout).split("/")[-1]
-         cmd_git(["rebase", "%s" % br], cwd=worktree)
+   def branch_checkout(self, commit, worktree):
+      "Checkout commit, delete branch, make new branch."
+      br = os.path.basename(worktree)
+      CACHE_V("checking out branch: %s in %s" %(br, worktree))
+      cmd_git(["checkout", "%s" % commit], cwd=worktree)
+      CACHE_V("deleting branch: %s" % br)
+      cmd_git(["branch", "-D", br], cwd=worktree)
+      CACHE_V("checking out branch: %s" % br)
+      cmd_git(["checkout", "-b", br], cwd=worktree)
 
-   def branch_ammend(self, worktree, msg):
-      "Ammend the worktree commit tip message."
-      cmd_git(["commit", "--amend", "-m", '%s' % msg], cwd=worktree)
-
-   def branch_commit(self, worktree):
-      "Prep all files in a worktree and then commit with non-ready message."
-      self.branch_fixup(worktree)
+   def branch_commit(self, sid, worktree):
+      "Add all files in worktree and commit."
+      CACHE_V("adding and commiting files in %s" % worktree)
       cmd_git(["add", "--all"], cwd=worktree)
-      cmd_git(["commit", "-m", "n:"], cwd=worktree)
-      self.branch_fixdown(worktree)
+      # Allow empty, e.g., RUN echo foo
+      cmd_git(["commit", "--allow-empty", "-m", "%s" % sid], cwd=worktree)
 
-   def branch_exists(self, unpack_path):
+   def branch_exists(self, worktree):
       "Return True if branch exists; otherwise return false"
-      branch = str(unpack_path).split("/")[-1]
-      cp = cmd_return(["git", "branch", "--list", "%s" % branch],
+      br = os.path.basename(worktree)
+      CACHE_V("checking if branch '%s' exists" % br)
+      cp = cmd_return(["git", "branch", "--list", "%s" % br],
                       cwd=self.storage_path)
+      CACHE_D(cp.stdout)
       if (cp.stdout is ''):
          return False
       return True
 
    def branch_fixdown(self, worktree):
-      return True
+      """Walk the filesystem tree restoring metadata, empty directories,
+         hardlink groups, sockets and fifos, and renamed files."""
+      meta = json_from_file(os.path.join(worktree, "ch/build-cache.metadata.json"), "fixme")
+      curr = os.getcwd()
+      os.chdir(worktree)
+      CACHE_V("restoring %s for execution commands" % worktree)
+      for d in meta["build-cache"]["empty_dirs"]:
+         CACHE_D("creating empty dir: %s" % d)
+         m = meta["build-cache"]["meta"][d]
+         if (not os.path.isdir(d) and not os.path.islink(d)):
+            # FIXME: makedirs handles the edge case of creating a parent dir
+            # with an empty subdir (something git doesn't track); however, this
+            # creates the parent directory with the same metadata as the empty
+            # child.
+            os.makedirs(d, mode=m["mode"], exist_ok=True)
+            os.chown(d, m["uid"], m["gid"])
+            os.utime(d, (m["atime"], m["mtime"]))
+      # FIXME: restore hardlink groups
+      # FIXME: restore fifos
+      # FIXME: restore sockets
+      # FIXME: restore each file metadata?
+      os.chdir(curr)
 
    def branch_fixup(self, worktree):
-      return True
+      """Walk the filesystem tree recording file metadata, empty directories,
+         hardlinks, and sockets and FIFOs. Rename .git files."""
+      empty_dirs = list()
+      sockets = list()
+      fifos = list()
+      fs_meta = dict()
+      # Image tagged FOO that is from BAR checks out BAR's /ch/metadata.json.
+      # Thus, Using absolute paths here would mean we need to update every
+      # single path in FOO's metadata.json copy. So we use relative paths.
+      curr = os.getcwd()
+      os.chdir(worktree)
+      CACHE_V("fixing up %s ..." % worktree)
+      for root, dirs, files in os.walk(".", followlinks=False):
+         for d in dirs:
+            dir_path = os.path.join(root, d)
+            if (not os.listdir(dir_path)):
+               empty_dirs.append(dir_path)
+               st = os.lstat(dir_path)
+               fs_meta.update({dir_path: {"mode": st.st_mode,
+                                          "uid": st.st_uid,
+                                          "gid": st.st_gid,
+                                          "atime": st.st_atime,
+                                          "mtime": st.st_mtime}})
+            for f in files:
+               file_path = os.path.join(root, f)
+               st = os.lstat(file_path)
+               if (stat.S_ISFIFO(st.st_mode)):
+                  fifos.append(file_path)
+               if (stat.S_ISSOCK(st.st_mode)):
+                  sockets.append(file_path)
+               # FIXME: handle hardlink
+               # FIXME: rename .git file? Unclear, worktree branch
+               # directories have a .git referencing their corresponding
+               # bucache ref. In other words renaming this would mean we can't
+               # commit changes.(?)
+               fs_meta.update({file_path: {"mode": st.st_mode,
+                                           "uid": st.st_uid,
+                                           "gid": st.st_gid,
+                                           "atime": st.st_atime,
+                                           "mtime": st.st_mtime}})
+      meta_path = os.path.join(worktree, "ch/build-cache.metadata.json")
+      # FIXME:
+      # Writing build-cache metadata to ch/metadata.json is problematic.
+      # 1. Writing every file, including metadata, of a filesystem tree
+      #    makes the ch/metada.json monsterous and hard to debug.
+      # 2. In build.py after every instruction completes image metadata
+      #    is saved to ch/metadata.json, which occurs after our commits,
+      #    resulting in a dirty branch and possibly lost data.
+      # So for now we just save it to a unique path.
+      data = dict()
+      if (os.path.exists(meta_path)):
+         data = json_from_file(meta_path, "fixme")
+      data.update({"build-cache": {"empty_dirs": empty_dirs,
+                                   "fifos": fifos,
+                                   "sockets": sockets,
+                                   "meta": fs_meta}})
 
-   def branch_id(self, br):
-      "Return hex state id parsed from branch commit message."
-      return self.branch_msg(br).split(":")[-1]
+      data = json.dumps(data)
+      file_write(meta_path, data)
+      os.chdir(curr)
 
-   def branch_msg(self, unpack_path):
+   def branch_id(self, path):
+      "Return state id parsed from branch commit message."
+      CACHE_V("getting worktree %s most recent state id" % path)
+      return self.branch_msg(path).split(":")[-1].strip()
+
+   def branch_msg(self, path):
       "Return branch tip commit messsage."
-      branch = str(unpack_path).split("/")[-1]
-      cp = cmd_return(["git", "show", "--format=%B", "-s", "%s" % branch],
-                 cwd=self.storage_path)
-      VERBOSE(cp.stdout)
-      return cp.stdout
+      CACHE_V("getting commit msg of %s" % path)
+      cp = cmd_return(["git", "log", "--format=%B", "-n", "1"],
+                       cwd=path)
+      CACHE_D(cp.stdout)
+      return cp.stdout.strip()
 
    def branch_ready(self, worktree):
       "Return true if commit message is marked ready; otherwise false."
-      out = self.branch_msg(worktree)
-      if (out.split(":")[0] == "r"):
-         return True
-      return False
+      # FIXME: unclear how to mark a branch ready.
+      # Things considered but dismissed:
+      #   1. make each commit message prefaced with "ready" or "not ready"
+      #      deliminated by a colon. The thought here was that each initial
+      #      would always be, "not ready:$HASH", and would need to later be
+      #      ammended. However, it didn't appear to catch any issues and it
+      #      uglied up git commit messages and the tree.
+      #   2. change the branch name to something that indicated status.
+      #      for example, "BRANCH@ready". Operations on git output is pretty
+      #      ugly and this is worse to implement than #1.
+      return True
 
    def bytes_from_file(self, f):
       "Return bytes read from a file."
       with open(f, "rb")  as fp:
          return fp.read()
 
+   def bytes_from_hex(self, s):
+      # FIXME: The git output is gnarly. Despite my best efforts to sanitize it
+      # we still find newlines... The following shouldn't be necessary but at
+      # this point I'm afraid to remove it.
+      return bytes.fromhex(s.strip())
+
    def bytes_from_root(self):
       global CACHE_ROOT_ID
       return bytes.fromhex(CACHE_ROOT_ID)
 
-   def op_EXECUTE(self, inst, parent_id):
-      "Return state id of EXECUTE instruction"
-      pass
+   def commit_from_id(self, sid, worktree):
+      "Return time sorted list of cached commit tuples from state id."
+      CACHE_V("searhcing commits for id %s" % sid)
+      cp = cmd_return(["git", "log", "--grep=%s" % sid, "--format=%D:%ct:%H", "--all"],
+                      cwd=self.storage_path)
+      # The git output always has two empty lines (--porcelain is not an
+      # option for 'git log'). The following mess gets rid of them.
+      CACHE_D(cp.stdout)
+      cp_out = cp.stdout.strip('HEAD ->').split('\n')
+      raw = [cp_out for cp_out in cp_out if cp_out.strip() != ""]
+      tup = collections.namedtuple("cached", "branch timestamp commit")
+      commits = list()
+      for c in raw:
+         c = c.split(":")
+         commits.append(tup(c[0], c[1], c[2]))
+      return sorted(commits, key=operator.attrgetter('timestamp'))
 
-   def op_FROM(self, base, puller):
-      """Handle FROM instruction. If the base image branch referenced by FROM
-         exists and is marked ready return the state id. If the branch does not
-         exist pull the base and add the branch. Otherwise fail."""
+   def hit_commit(self, sid, worktree, parent_search=False):
+      "Return commit of matching sid."
+      # instructions ids are always a miss when rebuilding except for when
+      # searching for the parent.
+      if (self.mode == Mode.REBUILD and not parent_search):
+         return None
+
+      hits = self.commit_from_id(sid, worktree)
+      if (not hits):
+         return None
+
+      tag = os.path.basename(worktree)
+      if (self.mode == Mode.REBUILD):
+         # matching branch has priority
+         for h in hits:
+            if (h.branch == tag):
+               CACHE_V("hit (branch): %s" % str(h))
+               return h
+      # otherwise most recent
+      CACHE_V("hit (most recent): %s" % str(hits))
+      return hits[0]
+
+   def encode(self, str_):
+      "Return santized UTF-8 encoded bytes"
+      return str(str_).strip().encode("utf-8")
+
+   def id_for_exec(self, parent_id, name, options, action):
+      "Return state id of RUN instruction"
+      pid = self.bytes_from_hex(parent_id)
+      name = self.encode(name)
+      options = self.encode(options)
+      action = self.encode(action)
+      return hashlib.md5(pid + name + options + action).hexdigest()
+
+   def id_for_from(self, base, puller):
+      """Return state id for FROM instruction. State id can be None.
+
+         If the build-cache is enabled and (1) the base branch TAG exists, and
+         (2) the base branch TAG is marked ready, then compute FROM state id
+         and return it; otherwise if (a) the branch TAG exists but is marked
+         not-ready, or (b) the branch TAG doesn't exit, then pull the base
+         image, compute state id, and return it."""
       from_id = None
-      if (not self.branch_exists(base)):
-         # Note you cannot add an existing directory as a new git worktree. As
-         # such we have to first commit a new branch, pull the base image,
-         # fix it up and then commit.
-         VERBOSE("build cache: FROM: miss")
-         self.branch_add(base)
-         self.pull_base(base, puller)
-         self.branch_commit(base)
-         # Compute state id
-         c = self.bytes_from_file(puller.config_path)
-         m = self.bytes_from_file(puller.manifest_path)
-         r = self.bytes_from_root()
-         from_id = hashlib.md5(r + c + m).hexdigest()
-         self.branch_ammend(base, "r:%s" % from_id)
-      else:
-         VERBOSE("build cache: FROM: hit")
-         from_id = self.branch_id(base)
-      if (not self.branch_ready(base)):
-         FATAL("build-cache: build of base %s failed" % base)
+      br_exists = self.branch_exists(base) # variable to avoid multiple git ops.
+      if (self.mode == Mode.ENABLED or self.mode == Mode.REBUILD):
+         if (not br_exists or (br_exists and not self.branch_ready(base))):
+            # Note you cannot add an existing directory as a new git worktree.
+            CACHE_V("miss: base not in cache")
+            self.worktree_add(base)
+            self.pull_base(base, puller)
+            self.branch_fixup(base)
+            # Compute state id
+            c = self.bytes_from_file(puller.config_path)
+            m = self.bytes_from_file(puller.manifest_path)
+            r = self.bytes_from_root()
+            from_id = hashlib.md5(r + c + m).hexdigest()
+            self.branch_commit(from_id, base)
+            self.branch_fixdown(base)
+         else:
+            CACHE_V("hit: base image in cache")
+            from_id = self.branch_id(base)
+         if (not self.branch_ready(base)):
+            FATAL("build-cache: build of base %s failed" % base)
+      CACHE_V("FROM state id: %s" % from_id)
       return from_id
 
    def pull_base(self, base, puller):
       "Pull base image using initilaized image puller."
+      CACHE_V("pulling base %s" % base)
       puller.pull_to_unpacked()
       puller.done()
 
+   def worktree_add(self, worktree, branch=None):
+      "Add a new worktree to the build cache."
+      if (branch is None):
+         branch=self.storage_path # root
+      CACHE_V("adding new worktree: %s" % worktree)
+      cmd_git(["worktree", "add", worktree], cwd=branch)
 
-class Build_enable(Build_Cache):
-   pass
-
-
-class Build_disable(Build_Cache):
-   def id_FROM(self, img_path, base_path, base_puller):
-      "Return state id of FROM instruction using base image path."
-      if (os.path.isdir(base_path)):
-         ch.VERBOSE("base image found: %s" % self.base_image.unpack_path)
-      else:
-         VERBOSE("base image not found, pulling")
-         base_puller.pull_to_unpacked()
-         base_puller.done()
-      return None
-
-   def id_EXECUTE(self, inst, parent_id):
-      return None
-
-class Build_rebuild(Build_Cache):
-   pass
 
 class Download_Cache(Cache):
    """The download cache factory. Instantiate a download subclass object based on
@@ -2065,6 +2210,18 @@ class TarFile(tarfile.TarFile):
 
 ## Supporting functions ##
 
+def CACHE_V(*args, **kwargs):
+   # FIXME: Temporary Cache debug printing. VERBOSE is flooded with json
+   # metadata from filesytem walking and editing.
+   if (cache_verbose >= 1):
+      log(*args, color="0;96m", **kwargs)
+
+def CACHE_D(*args, **kwargs):
+   # FIXME: Temporary Cache debug printing. DEBUG is flooded with json
+   # metadata from filesytem walking and editing.
+   if (cache_verbose >= 2):
+      log(*args, color="3;91m", **kwargs)
+
 def DEBUG(*args, **kwargs):
    if (verbose >= 2):
       log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
@@ -2129,14 +2286,14 @@ def cmd_git(args, cwd=None):
    "Run git subprocess redirecting stderr to stdout and capturing it."
    args.insert(0, "git")
    cp = cmd_return(args, cwd=cwd)
-   VERBOSE("%s" % cp.stdout)
+   CACHE_D("%s" % cp.stdout)
    if (cp.returncode):
       FATAL("git command failed with code %d: %s" % (cp.returncode, args[0]))
 
 def cmd_return(args, cwd=None):
    """Run subprocess redireting stderr to stdout and capturing it. Return
    subprocess object"""
-   VERBOSE("executing: %s" % args)
+   CACHE_D("executing: %s" % args)
    return subprocess.run(args, cwd=cwd, encoding="utf-8",
                        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT)
@@ -2288,9 +2445,11 @@ def grep_p(path, rx):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, verbose
+   global log_festoon, log_fp, verbose, cache_verbose
    assert (0 <= cli.verbose <= 3)
+   assert (0 <= cli.cache_verbose <= 2)
    verbose = cli.verbose
+   cache_verbose = cli.cache_verbose
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
