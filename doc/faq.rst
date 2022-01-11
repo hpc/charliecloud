@@ -448,6 +448,8 @@ We’re not yet sure why this happens — it may be a mismatch between the OpenM
 builds inside and outside the container — but in our experience launching with
 :code:`srun` often works when :code:`mpirun` doesn’t, so try that.
 
+.. _faq_join:
+
 Communication between ranks on the same node fails
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
