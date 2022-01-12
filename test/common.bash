@@ -116,6 +116,34 @@ pedantic_fail () {
     fi
 }
 
+# If the two images (graphics, not container) are not "almost equal", fail.
+# The first argument is the reference image; the second is the test image. The
+# third argument, if given, is the maximum number of differing pixels (default
+# zero). Also produce a diff image, which highlights the differing pixels in
+# red, based on the sample, e.g. foo.png -> foo.diff.png.
+pict_assert_equal () {
+    ref=$1
+    sample=$2
+    pixel_max_ct=${3:-0}
+    sample_base=${sample%.*}
+    sample_ext=${sample##*.}
+    diff_=${sample_base}.diff.${sample_ext}
+    echo "reference:   ${ref}"
+    echo "sample:      ${sample}"
+    echo "diff image:  ${diff_}"
+    # See: https://imagemagick.org/script/command-line-options.php#metric
+    pixel_ct=$(compare -metric AE "$ref" "$sample" "$diff_" 2>&1 || true)
+    echo "diff count:  ${pixel_ct} pixels, max ${pixel_max_ct}"
+    [[ $pixel_ct -le $pixel_max_ct ]]
+}
+
+# Check if the pict_ functions are usable; if not, pedantic-fail.
+pict_ok () {
+    if ! command -v compare > /dev/null 2>&1; then
+        pedantic_fail 'need ImageMagick'
+    fi
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
