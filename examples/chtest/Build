@@ -121,6 +121,13 @@ ln -s ../.. img/mnt/link-bad-rel
 mv img/etc/resolv.conf img/etc/resolv.conf.real
 ln -s /etc/resolv.conf.real img/etc/resolv.conf
 
+# Fixtures to validate permissions are retained on export (issue #1241).
+# Setuid and setgid bits are stripped in various scenarios, so don't set them.
+touch img/maxperms_file
+chmod 1777 img/maxperms_file
+mkdir img/maxperms_dir
+chmod 1777 img/maxperms_dir
+
 
 ## Tar it up.
 
