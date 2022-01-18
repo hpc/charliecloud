@@ -71,7 +71,7 @@ chtest_fixtures_ok () {
     # Are permissions still good?
     ls -ld "$1"/maxperms_*
     [[ $(stat -c %a "${1}/maxperms_dir") = 1777 ]]
-    [[ $(stat -c %a "${1}/maxperms_file") = 1777 ]]
+    [[ $(stat -c %a "${1}/maxperms_file") = 777 ]]
 }
 
 crayify_mpi_or_skip () {

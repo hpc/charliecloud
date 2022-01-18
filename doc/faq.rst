@@ -389,6 +389,26 @@ password fields give no feedback, not even whether a character has been typed.
 Try using the number row instead, toggling Num Lock key, or SSHing into the
 virtual machine.
 
+Mode bits (permission bits) are lost
+------------------------------------
+
+Charliecloud preserves only some mode bits, specifically user, group, and
+world permissions, and the `restricted deletion flag
+<https://man7.org/linux/man-pages/man1/chmod.1.html#RESTRICTED_DELETION_FLAG_OR_STICKY_BIT>`_
+on directories; i.e. 777 on files and 1777 on directories.
+
+The setuid (4000) and setgid (2000) bits are not preserved because ownership
+of files within Charliecloud images is that of the user who unpacks the image.
+Leaving these bits set could therefore surprise that user by unexpectedly
+creating files and directories setuid/gid to them.
+
+The sticky bit (1000) is not preserved for files because :code:`unsquashfs(1)`
+unsets it even with umask 000. However, this is bit is largely obsolete for
+files.
+
+Note the non-preserved bits may *sometimes* be retained, but this is undefined
+behavior. The specified behavior is that they may be zeroed at any time.
+
 
 How do I ...
 ============

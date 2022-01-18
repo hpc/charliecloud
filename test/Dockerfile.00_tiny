@@ -4,9 +4,9 @@
 
 FROM alpine:3.9
 
-# For testing that permissions are retained on export (issue #1241). Setuid
-# and setgid bits are stripped in various scenarios, so don't set them.
+# For testing that permissions are retained on export (issue #1241). See FAQ
+# for why these aren't 7777.
 RUN touch /maxperms_file \
- && chmod 1777 /maxperms_file \
+ && chmod 0777 /maxperms_file \
  && mkdir /maxperms_dir \
  && chmod 1777 /maxperms_dir

@@ -162,10 +162,19 @@ cv_squash_chimage () {
 cv_squash_dir () {
     squash_in_validate "$1"
     dir_out_validate "$2"
-    # Note: unsquashfs(1) has no exclude filter, only include, so if the
-    # archive includes bad files like devices, this will fail. I don't know to
-    # what degree this will be a problem.
+    # Notes about unsquashfs(1):
+    #
+    # 1. It has no exclude filter, only include, so if the archive includes
+    #    bad files like devices, this will fail. I don't know to what degree
+    #    this will be a problem.
+    #
+    # 2. It has no option analagous to tar(1)'s -p, so we have to rely on the
+    #    umask to get correct permissions. (Weirdly, it seems to respect umask
+    #    for files but not directories.)
+    umask_=$(umask)
+    umask 0000
     unsquashfs -d "$2" -user-xattrs "$1"
+    umask "$umask_"
     dir_fixup "$2"
 }
 
@@ -226,7 +235,7 @@ cv_tar_dir () {
     # * matching multiple directories; tar default differs from sh behavior.
     #shellcheck disable=SC2094
       pv_ -s "$(stat -c%s "$1")" < "$1" \
-    | tar x$decompress -C "$2" -f - \
+    | tar x$decompress -p -C "$2" -f - \
           --anchored --no-wildcards-match-slash \
           --exclude='dev/*' --exclude='*/dev/*'
     dir_fixup "$2"

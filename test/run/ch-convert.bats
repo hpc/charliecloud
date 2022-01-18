@@ -319,7 +319,7 @@ test_from () {
     ch-convert 00_tiny "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
-    [[ $(stat -c %a "${out}/maxperms_file") = 1777 ]]
+    [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
 }
 
 @test 'ch-convert: permissions retained (squash)' {
@@ -329,7 +329,7 @@ test_from () {
     ch-convert "$squishy" "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
-    [[ $(stat -c %a "${out}/maxperms_file") = 1777 ]]
+    [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
 }
 
 @test 'ch-convert: permissions retained (tar)' {
@@ -339,7 +339,7 @@ test_from () {
     ch-convert "$tarball" "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
-    [[ $(stat -c %a "${out}/maxperms_file") = 1777 ]]
+    [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
 }
 
 
