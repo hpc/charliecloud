@@ -631,42 +631,45 @@ class Build_Cache(Cache):
       root_id = self.translate_id(CACHE_ROOT_ID)
       return bytes.fromhex(root_id)
 
-   def commit_from_id(self, sid, worktree):
-      "Return time sorted list of cached commit tuples from state id."
-      CACHE_V("searching commits for id %s" % sid)
-      cp = cmd_return(["git", "log", "--grep=%s" % sid, "--format=%D:%ct:%H", "--all"],
-                      cwd=self.storage_path)
+   def commit_from_id(self, sid, worktree, branch="--all"):
+      """Search all commits for state id and return time sorted list of cached
+         commit tuples"""
+      CACHE_V("searching (%s) for id %s" % (branch, sid))
+      args = ["git", "log", "--grep=%s" % sid, "--format=%ct:%H", branch]
+      cp = cmd_return(args, cwd=self.storage_path)
       # The git output always has two empty lines (--porcelain is not an
       # option for 'git log'). The following mess gets rid of them.
       CACHE_D(cp.stdout)
       cp_out = cp.stdout.strip('HEAD ->').split('\n')
       raw = [cp_out for cp_out in cp_out if cp_out.strip() != ""]
-      tup = collections.namedtuple("cached", "branch timestamp commit")
+      tup = collections.namedtuple("cached", "timestamp commit")
       commits = list()
       for c in raw:
          c = c.split(":")
-         commits.append(tup(c[0], c[1], c[2]))
+         commits.append(tup(c[0], c[1]))
       return sorted(commits, key=operator.attrgetter('timestamp'))
 
-   def cached_from_commit(self, sid, worktree, parent_search=False):
-      "Return commit of matching sid."
-      if (self.mode == Mode.REBUILD and not parent_search):
-         return None
+   def cached_from_id(self, sid, worktree):
+      """Search cache for commit via state id as follows:
 
-      hits = self.commit_from_id(sid, worktree)
-      if (not hits):
-         return None
+           1. search within the image branch for state id sid. If a match is
+              found return the commit; otherwise proceed to step 2.
+           2. search all git branches for state id. If one or more macthes are
+              found, return the most recent; otherwise return None."""
+      branch = os.path.basename(worktree)
+      branch_cache = self.commit_from_id(sid, worktree, branch)
+      if (branch_cache):
+         if (len(branch_cache) != 1):
+            FATAL("multiple unique state ids on image branch")
+         CACHE_V("search result (branch): %s" % str(branch_cache[0]))
+         return branch_cache[0]
 
-      tag = os.path.basename(worktree)
-      if (self.mode == Mode.REBUILD):
-         # matching branch has priority
-         for h in hits:
-            if (h.branch == tag):
-               CACHE_V("hit (branch): %s" % str(h))
-               return h
-      # otherwise most recent
-      CACHE_V("hit (most recent): %s" % str(hits))
-      return hits[0]
+      all_cache = self.commit_from_id(sid, worktree)
+      if (not all_cache):
+         CACHE_V("no cache results found for %s" % sid)
+         return None
+      CACHE_V("search result (all): %s" % str(all_cache[0]))
+      return all_cache[0]
 
    def encode(self, str_):
       "Return santized UTF-8 encoded bytes"
@@ -680,38 +683,18 @@ class Build_Cache(Cache):
       action = self.encode(action)
       return self.translate_id(hashlib.md5(pid + name + options + action).hexdigest())
 
-   def id_for_from(self, base, puller):
-      """Return state id for FROM instruction. State id can be None.
-
-         If the build-cache is enabled and (1) the base branch TAG exists, and
-         (2) the base branch TAG is marked ready, then compute FROM state id
-         and return it; otherwise if (a) the branch TAG exists but is marked
-         not-ready, or (b) the branch TAG doesn't exit, then pull the base
-         image, compute state id, and return it."""
-      from_id = None
-      br_exists = self.branch_exists(base) # variable to avoid multiple git ops.
-      if (not br_exists or (br_exists and not self.branch_ready(base))
-          or self.mode == Mode.REBUILD):
-         # Note you cannot add an existing directory as a new git worktree.
-         CACHE_V("cache miss")
-         # Pull and add base image.
-         self.worktree_add(base)
-         self.pull_base(base, puller)
-         self.branch_fixup(base)
-         # Compute base image FROM state id.
-         c = self.bytes_from_file(puller.config_path)
-         m = self.bytes_from_file(puller.manifest_path)
-         r = self.bytes_from_root()
-         from_id = self.translate_id(hashlib.md5(r + c + m).hexdigest())
-         # Commit the FROM id to base image.
-         self.branch_commit(from_id, base, "FROM %s" % os.path.basename(base)) # FIXME
-         self.branch_fixdown(base)
-      else:
-         CACHE_V("cache hit")
-         from_id = self.branch_id(base)
+   def id_for_from(self, base):
+      if (not self.branch_exists(base)):
+         return None
       if (not self.branch_ready(base)):
-         FATAL("build-cache: build of base %s failed" % base)
-      return from_id
+         return None
+      return self.branch_id(base)
+
+   def id_for_base(self, puller):
+      c = self.bytes_from_file(puller.config_path)
+      m = self.bytes_from_file(puller.manifest_path)
+      r = self.bytes_from_root()
+      return self.translate_id(hashlib.md5(r + c + m).hexdigest())
 
    def prep_note(self, name, actions):
       """Return a human readible string from build.py instruction class

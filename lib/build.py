@@ -40,9 +40,8 @@ image_alias = None
 image_ct = None
 
 # FIXME: build cache stuff that probably belongs in the cache class
-hit_ct = 0
-hit_record = None
 state_ids = list()
+cache_hits = list()
 
 ## Imports not in standard library ##
 
@@ -657,27 +656,37 @@ class I_from_(Instruction):
 
    def cache_exe_(self, image, base_puller):
       # FIXME: this function could go inside the cache object tbh.
-      global cache, state_ids
+      global cache, state_ids, cache_hits
       rootfs = image.unpack_path
       basefs = self.base_image.unpack_path
-      sid = cache.id_for_from(basefs, base_puller)
+
+      # check base state id; can be None.
+      sid = cache.id_for_from(basefs)
       ch.CACHE_V("instruction id: %s" % sid)
-      state_ids.append(sid)
-      if (sid is not None):
-         ch.CACHE_V("cache hit")
-         if (not cache.branch_exists(rootfs)):
-            cache.worktree_add(rootfs, basefs)
-            # We don't need to fixup here since we are checking out an existing
-            # branch.
-            cache.branch_fixdown(rootfs)
+      if (not sid or cache.mode == ch.Mode.REBUILD):
+         ch.CACHE_V("base miss")
+         cache_hits.append(False)
+         # pull and add base image.
+         cache.worktree_add(basefs)
+         base_puller.pull_to_unpacked()
+         base_puller.done()
+         # compute base id and commit to cache.
+         sid = cache.id_for_base(base_puller)
+         cache.branch_fixup(basefs)
+         cache.branch_commit(sid, basefs, "FROM %s" % os.path.basename(basefs)) # FIXME
+         # checkout image to base commit.
+         cache.worktree_add(rootfs, basefs)
       else:
-         if (os.path.isdir(basefs)):
-            VERBOSE("base image found: %s" % basefs)
-         else:
-            VERBOSE("base image not found, pulling")
-            pullet.pull_to_unpacked()
-            pullet.done()
-         image.copy_unpacked(self.base_image)
+         ch.CACHE_V("base hit")
+         cache_hits.append(True)
+
+      # add image
+      if (not cache.branch_exists(rootfs)):
+         cache.worktree_add(rootfs, basefs)
+      else:
+         commit = cache.cached_from_id(sid, rootfs).commit
+         cache.branch_checkout(commit, rootfs)
+      state_ids.append(sid)
 
    def execute_(self):
       # Complain about unsupported stuff.
@@ -713,8 +722,18 @@ class I_from_(Instruction):
       # Initiliaze image puller.
       pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
 
-      # Execute cache operation.
-      self.cache_exe_(image, pullet)
+      # cache stuff
+      global cache
+      if (cache.mode == ch.Mode.ENABLED or cache.mode == ch.Mode.REBUILD):
+         self.cache_exe_(image, pullet)
+      else:
+         if (os.path.isdir(basefs)):
+            VERBOSE("base image found: %s" % basefs)
+         else:
+            VERBOSE("base image not found, pulling")
+            pullet.pull_to_unpacked()
+            pullet.done()
+         image.copy_unpacked(self.base_image)
 
       # FIXME: perhaps medata_load and metadata_save should be called from
       # the build cache to ensure the img directory git trees don't get dirty.
@@ -733,12 +752,13 @@ class I_from_(Instruction):
 class Run(Instruction):
 
    def cache_exe_(self):
-      global cache, state_ids, cache_exec_hits
+      global cache, state_ids, cache_hits
       # state id caclutation variables
       inst_action = self.cmd
       inst_name   = self.str_name()
       inst_opts   = self.options
       pid         = state_ids[-1]
+      rootfs  = images[image_i].unpack_path
 
       ch.CACHE_V("list of ids: %s " % state_ids)
 
@@ -747,25 +767,25 @@ class Run(Instruction):
       state_ids.append(sid)
       ch.CACHE_V("instruction id: %s" % sid)
 
-      # if last execution instruction, i.e., non-FROM, was a miss we know
-      # all checks going forward are a miss.
-      #if (cache_exec_hits[-1]):
+      # if last instruction was a miss or cache mode is rebuild, we know all
+      # checks going forward miss.
+      if (cache_hits[-1] and cache.mode != ch.Mode.REBUILD):
+         # search for commit from state id
+         commit = cache.cached_from_id(sid, rootfs)
 
-         # commit from id
-      rootfs  = images[image_i].unpack_path
-      commit = cache.cached_from_commit(sid, rootfs)
-
-      # hit
-      if (commit):
-         ch.CACHE_V("cache hit: %s" % str(commit))
-         return
+         # hit
+         if (commit):
+            ch.CACHE_V("cache hit: %s" % str(commit))
+            cache_hits.append(True)
+            return
 
       # miss; get commit from parent
       ch.CACHE_V("cache miss")
+      cache_hits.append(False)
 
       # get commit from parent id
       ch.CACHE_V("parent instruction id: %s" % pid)
-      commit = cache.cached_from_commit(pid, rootfs, parent_search=True)
+      commit = cache.cached_from_id(pid, rootfs)
       if (not commit):
          ch.FATAL("error finding parent commit")
 
@@ -777,7 +797,6 @@ class Run(Instruction):
       # clean up, commit, and restore.
       cache.branch_fixup(rootfs)
       cache.branch_commit(sid, rootfs, cache.prep_note(inst_name, inst_action))
-      cache.branch_fixdown(rootfs)
 
    def execute_inst(self, rootfs):
       fakeroot_config.init_maybe(rootfs, self.cmd, env.env_build)
