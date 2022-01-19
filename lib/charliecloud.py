@@ -94,7 +94,7 @@ ARCH_MAP = { "x86_64":    "amd64",
              "s390x":     "s390x" }  # a.k.a. IBM Z
 
 # Build cache root ID.
-CACHE_ROOT_ID = '4a 4f 53 45 00 43 41 50 41 42 4c 41 4e 43 41 00'
+CACHE_ROOT_ID = '4a4f-5345-0043-4150-4142-4c41-4e43-4100'
 
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
@@ -391,8 +391,8 @@ class Build_Cache(Cache):
          FATAL("git2dot.py not in path")
       INFO("creating build-cache.dot")
       # The following args show commit message.
-      # args = ["git2dot", "-l %h|%s", "%s/build-cache.dot" % os.getcwd()]
-      args = ["git2dot.py", "%s/build-cache.dot" % os.getcwd()]
+      args = ["git2dot", "-l %h|%N", "%s/build-cache.dot" % os.getcwd()]
+      #args = ["git2dot.py", "%s/build-cache.dot" % os.getcwd()]
       cmd(args, cwd=self.storage_path)
       if (self.pdf_ok):
          INFO("creating build-cache.pdf")
@@ -412,8 +412,9 @@ class Build_Cache(Cache):
 
    def print_tree(self):
       if (self.git_ok):
-         args = ["git", "--no-pager", "log", "--graph", "--all",
-                 "--format='%C(auto)%d %h %Cblue%al%Creset %s'"]
+         args = ["git", "--no-pager", "log", "--graph",
+                 "--exclude=refs/notes/*", "--all",
+                 "--format=%C(auto)%d %s%n %>(10) %C(blue)%N%Creset"]
          cmd(args, cwd=self.storage_path)
       else:
          FATAL("can't print tree; wrong or not git in path")
@@ -470,18 +471,21 @@ class Build_Cache(Cache):
       "Checkout commit, delete branch, make new branch."
       br = os.path.basename(worktree)
       CACHE_V("checking out branch: %s in %s" %(br, worktree))
-      cmd_git(["checkout", "%s" % commit], cwd=worktree)
+      cmd_git(["-c", "advice.detachedHead=false", "checkout", "%s" % commit],
+               cwd=worktree)
       CACHE_V("deleting branch: %s" % br)
       cmd_git(["branch", "-D", br], cwd=worktree)
       CACHE_V("checking out branch: %s" % br)
       cmd_git(["checkout", "-b", br], cwd=worktree)
 
-   def branch_commit(self, sid, worktree):
+   def branch_commit(self, sid, worktree, note=None):
       "Add all files in worktree and commit."
       CACHE_V("adding and commiting files in %s" % worktree)
       cmd_git(["add", "--all"], cwd=worktree)
       # Allow empty, e.g., RUN echo foo
       cmd_git(["commit", "--allow-empty", "-m", "%s" % sid], cwd=worktree)
+      if (note is not None):
+         cmd_git(["notes", "add", "-m", note], cwd=worktree)
 
    def branch_exists(self, worktree):
       "Return True if branch exists; otherwise return false"
@@ -502,7 +506,7 @@ class Build_Cache(Cache):
       os.chdir(worktree)
       CACHE_V("restoring %s for execution commands" % worktree)
       for d in meta["build-cache"]["empty_dirs"]:
-         CACHE_D("creating empty dir: %s" % d)
+         #CACHE_D("creating empty dir: %s" % d)
          m = meta["build-cache"]["meta"][d]
          if (not os.path.isdir(d) and not os.path.islink(d)):
             # FIXME: makedirs handles the edge case of creating a parent dir
@@ -616,15 +620,20 @@ class Build_Cache(Cache):
       # FIXME: The git output is gnarly. Despite my best efforts to sanitize it
       # we still find newlines... The following shouldn't be necessary but at
       # this point I'm afraid to remove it.
-      return bytes.fromhex(s.strip())
+      try:
+         b = bytes.fromhex(s.strip())
+      except ValueError:
+         FATAL("malformed hex: %s" % s)
+      return b
 
    def bytes_from_root(self):
       global CACHE_ROOT_ID
-      return bytes.fromhex(CACHE_ROOT_ID)
+      root_id = self.translate_id(CACHE_ROOT_ID)
+      return bytes.fromhex(root_id)
 
    def commit_from_id(self, sid, worktree):
       "Return time sorted list of cached commit tuples from state id."
-      CACHE_V("searhcing commits for id %s" % sid)
+      CACHE_V("searching commits for id %s" % sid)
       cp = cmd_return(["git", "log", "--grep=%s" % sid, "--format=%D:%ct:%H", "--all"],
                       cwd=self.storage_path)
       # The git output always has two empty lines (--porcelain is not an
@@ -639,10 +648,8 @@ class Build_Cache(Cache):
          commits.append(tup(c[0], c[1], c[2]))
       return sorted(commits, key=operator.attrgetter('timestamp'))
 
-   def hit_commit(self, sid, worktree, parent_search=False):
+   def cached_from_commit(self, sid, worktree, parent_search=False):
       "Return commit of matching sid."
-      # instructions ids are always a miss when rebuilding except for when
-      # searching for the parent.
       if (self.mode == Mode.REBUILD and not parent_search):
          return None
 
@@ -667,11 +674,11 @@ class Build_Cache(Cache):
 
    def id_for_exec(self, parent_id, name, options, action):
       "Return state id of RUN instruction"
-      pid = self.bytes_from_hex(parent_id)
+      pid = self.bytes_from_hex(self.translate_id(parent_id))
       name = self.encode(name)
       options = self.encode(options)
       action = self.encode(action)
-      return hashlib.md5(pid + name + options + action).hexdigest()
+      return self.translate_id(hashlib.md5(pid + name + options + action).hexdigest())
 
    def id_for_from(self, base, puller):
       """Return state id for FROM instruction. State id can be None.
@@ -683,33 +690,56 @@ class Build_Cache(Cache):
          image, compute state id, and return it."""
       from_id = None
       br_exists = self.branch_exists(base) # variable to avoid multiple git ops.
-      if (self.mode == Mode.ENABLED or self.mode == Mode.REBUILD):
-         if (not br_exists or (br_exists and not self.branch_ready(base))):
-            # Note you cannot add an existing directory as a new git worktree.
-            CACHE_V("miss: base not in cache")
-            self.worktree_add(base)
-            self.pull_base(base, puller)
-            self.branch_fixup(base)
-            # Compute state id
-            c = self.bytes_from_file(puller.config_path)
-            m = self.bytes_from_file(puller.manifest_path)
-            r = self.bytes_from_root()
-            from_id = hashlib.md5(r + c + m).hexdigest()
-            self.branch_commit(from_id, base)
-            self.branch_fixdown(base)
-         else:
-            CACHE_V("hit: base image in cache")
-            from_id = self.branch_id(base)
-         if (not self.branch_ready(base)):
-            FATAL("build-cache: build of base %s failed" % base)
-      CACHE_V("FROM state id: %s" % from_id)
+      if (not br_exists or (br_exists and not self.branch_ready(base))
+          or self.mode == Mode.REBUILD):
+         # Note you cannot add an existing directory as a new git worktree.
+         CACHE_V("cache miss")
+         # Pull and add base image.
+         self.worktree_add(base)
+         self.pull_base(base, puller)
+         self.branch_fixup(base)
+         # Compute base image FROM state id.
+         c = self.bytes_from_file(puller.config_path)
+         m = self.bytes_from_file(puller.manifest_path)
+         r = self.bytes_from_root()
+         from_id = self.translate_id(hashlib.md5(r + c + m).hexdigest())
+         # Commit the FROM id to base image.
+         self.branch_commit(from_id, base, "FROM %s" % os.path.basename(base)) # FIXME
+         self.branch_fixdown(base)
+      else:
+         CACHE_V("cache hit")
+         from_id = self.branch_id(base)
+      if (not self.branch_ready(base)):
+         FATAL("build-cache: build of base %s failed" % base)
       return from_id
+
+   def prep_note(self, name, actions):
+      """Return a human readible string from build.py instruction class
+         attributes name and actions"""
+      if (name == 'RUN'):
+         l = actions[2:]
+         l.insert(0, name)
+         return ' '.join(l)
+      elif (name == 'FROM'):
+         return name + ' ' + actions
+      FATAL("fixme: not implemented yet")
 
    def pull_base(self, base, puller):
       "Pull base image using initilaized image puller."
       CACHE_V("pulling base %s" % base)
       puller.pull_to_unpacked()
       puller.done()
+
+   def translate_id(self, sid):
+      "Return human readable sid if canonical; otherwise return canonical."
+      cnt = sid.count("-")
+      if (cnt):
+         if (cnt != 7):
+            FATAL("malformed SID" % sid)
+         return sid.replace("-",'')
+      if (len(sid) != 32):
+         FATAL("malformed SID: %s" % sid)
+      return '-'.join(sid[i:i+4] for i in range(0, len(sid), 4))
 
    def worktree_add(self, worktree, branch=None):
       "Add a new worktree to the build cache."

@@ -661,13 +661,14 @@ class I_from_(Instruction):
       rootfs = image.unpack_path
       basefs = self.base_image.unpack_path
       sid = cache.id_for_from(basefs, base_puller)
+      ch.CACHE_V("instruction id: %s" % sid)
       state_ids.append(sid)
       if (sid is not None):
+         ch.CACHE_V("cache hit")
          if (not cache.branch_exists(rootfs)):
             cache.worktree_add(rootfs, basefs)
             # We don't need to fixup here since we are checking out an existing
             # branch.
-            cache.branch_commit(sid, rootfs)
             cache.branch_fixdown(rootfs)
       else:
          if (os.path.isdir(basefs)):
@@ -711,6 +712,7 @@ class I_from_(Instruction):
       self.base_image = ch.Image(self.base_ref)
       # Initiliaze image puller.
       pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
+
       # Execute cache operation.
       self.cache_exe_(image, pullet)
 
@@ -731,40 +733,53 @@ class I_from_(Instruction):
 class Run(Instruction):
 
    def cache_exe_(self):
-      global cache, state_ids, hit_ct
-      # sid caclutation variables
+      global cache, state_ids, cache_exec_hits
+      # state id caclutation variables
       inst_action = self.cmd
       inst_name   = self.str_name()
       inst_opts   = self.options
       pid         = state_ids[-1]
 
-      # state id
+      ch.CACHE_V("list of ids: %s " % state_ids)
+
+      # compute state id
       sid = cache.id_for_exec(pid, inst_name, inst_opts, inst_action)
       state_ids.append(sid)
-      ch.CACHE_V("computed state id: %s" % sid)
+      ch.CACHE_V("instruction id: %s" % sid)
 
-      # commit from id
+      # if last execution instruction, i.e., non-FROM, was a miss we know
+      # all checks going forward are a miss.
+      #if (cache_exec_hits[-1]):
+
+         # commit from id
       rootfs  = images[image_i].unpack_path
-      commit = cache.hit_commit(sid, rootfs)
+      commit = cache.cached_from_commit(sid, rootfs)
 
       # hit
       if (commit):
-         hit_ct =+ 1
+         ch.CACHE_V("cache hit: %s" % str(commit))
          return
 
       # miss; get commit from parent
-      ch.CACHE_V("miss: instruction not cached.")
+      ch.CACHE_V("cache miss")
 
       # get commit from parent id
-      ch.CACHE_V("parent id: %s" % pid)
-      commit = cache.hit_commit(pid, rootfs, parent_search=True)
+      ch.CACHE_V("parent instruction id: %s" % pid)
+      commit = cache.cached_from_commit(pid, rootfs, parent_search=True)
       if (not commit):
          ch.FATAL("error finding parent commit")
 
+      # checkout parent, execute
       cache.branch_checkout(commit.commit, rootfs)
       cache.branch_fixdown(rootfs)
+      self.execute_inst(rootfs)
 
-      # execute instruction
+      # clean up, commit, and restore.
+      cache.branch_fixup(rootfs)
+      cache.branch_commit(sid, rootfs, cache.prep_note(inst_name, inst_action))
+      cache.branch_fixdown(rootfs)
+
+   def execute_inst(self, rootfs):
       fakeroot_config.init_maybe(rootfs, self.cmd, env.env_build)
       cmd = fakeroot_config.inject_run(self.cmd)
       exit_code = ch.ch_run_modify(rootfs, cmd, env.env_build, env.workdir,
@@ -782,34 +797,13 @@ class Run(Instruction):
                ch.ERROR("build failed: current version of --force wouldn't help")
          ch.FATAL("build failed: RUN command exited with %d" % exit_code)
 
-      # clean up, commit, and restore.
-      cache.branch_fixup(rootfs)
-      cache.branch_commit(sid, rootfs)
-      cache.branch_fixdown(rootfs)
 
    def execute_(self):
       global cache
       if (cache.mode == ch.Mode.ENABLED or cache.mode == ch.Mode.REBUILD):
          self.cache_exe_()
          return
-
-      # execute instruction
-      fakeroot_config.init_maybe(rootfs, self.cmd, env.env_build)
-      cmd = fakeroot_config.inject_run(self.cmd)
-      exit_code = ch.ch_run_modify(rootfs, cmd, env.env_build, env.workdir,
-                                   cli.bind, fail_ok=True)
-      if (exit_code != 0):
-         if (cli.force):
-            if (isinstance(fakeroot_config, fakeroot.Fakeroot_Noop)):
-               ch.ERROR("build failed: --force specified, but no suitable config found")
-            else:
-               pass  # we did init --force OK but the build still failed
-         elif (not cli.no_force_detect):
-            if (fakeroot_config.init_done):
-               ch.ERROR("build failed: --force may fix it")
-            else:
-               ch.ERROR("build failed: current version of --force wouldn't help")
-         ch.FATAL("build failed: RUN command exited with %d" % exit_code)
+      self.execute_inst()
 
    def str_(self):
       return str(self.cmd)
