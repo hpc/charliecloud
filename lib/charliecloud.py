@@ -2299,6 +2299,22 @@ def cmd(args, cwd=None, env=None, fail_ok=False):
       FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
    return cp.returncode
 
+
+# FIXME: the following wrappers are a mess. The issue is that cmd doesn't
+# cover our use cases for git. The following two methods were put in to address
+# that, however, it clear looking at the code that they are messy.
+#
+#   In short, we need to run a git command(s) and be able to do zero or
+#   more the following depending on the git operation, e.g., commit, log,
+#   worktree, etc.:
+#
+#     - print args
+#     - process stdout/stderr
+#     - print stdout/stderr (debug, verbose etc.)
+#     - exit on failure
+#     - don't exit on failure
+#     - specify cwd
+
 def cmd_git(args, cwd=None):
    "Run git subprocess redirecting stderr to stdout and capturing it."
    args.insert(0, "git")

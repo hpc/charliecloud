@@ -784,7 +784,7 @@ class Run(Instruction):
             cache_hits.append(True)
             return
 
-      # miss; get commit from parent
+      # miss
       ch.CACHE_V("cache miss")
       cache_hits.append(False)
 
