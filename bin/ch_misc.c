@@ -24,20 +24,10 @@
 #define SUPP_GIDS_MAX 128
 
 
-/** Constants **/
-
-/* Names of verbosity levels. */
-const char *VERBOSE_LEVELS[] = { "error",
-                                 "warning",
-                                 "info",
-                                 "verbose",
-                                 "debug" };
-
-
 /** External variables **/
 
-/* Level of chatter on stderr desired (0-3). */
-int verbose;
+/* Level of chatter on stderr. */
+enum log_level verbose;
 
 /* Path to host temporary directory. Set during command line processing. */
 char *host_tmp = NULL;
@@ -48,7 +38,8 @@ char *username = NULL;
 
 /** Function prototypes (private) **/
 
-// none
+void msgv(enum log_level level, const char *file, int line, int errno_,
+          const char *fmt, va_list ap);
 
 
 /** Functions **/
@@ -214,7 +205,7 @@ void env_set(const char *name, const char *value, const bool expand)
    }
 
    // Save results.
-   INFO("environment: %s=%s", name, value_expanded);
+   VERBOSE("environment: %s=%s", name, value_expanded);
    Z_ (setenv(name, value_expanded, 1));
 }
 
@@ -240,7 +231,7 @@ void env_unset(const char *glob)
       T_ (name != NULL);          // environ entries must always have equals
       matchp = fnmatch(glob, name, 0);
       if (matchp == 0) {
-         INFO("environment: unset %s", name);
+         VERBOSE("environment: unset %s", name);
       } else {
          T_ (matchp == FNM_NOMATCH);
          *(value - 1) = '=';  // rejoin line
@@ -376,10 +367,10 @@ void mkdirs(const char *base, const char *path, char **denylist)
 
    basec = realpath_safe(base);
 
-   DEBUG("mkdirs: base: %s", basec);
-   DEBUG("mkdirs: path: %s", path);
+   TRACE("mkdirs: base: %s", basec);
+   TRACE("mkdirs: path: %s", path);
    for (size_t i = 0; denylist[i] != NULL; i++)
-      DEBUG("mkdirs: deny: %s", denylist[i]);
+      TRACE("mkdirs: deny: %s", denylist[i]);
 
    pathw = cat(path, "");  // writeable copy
    saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
@@ -388,7 +379,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
    while (component != NULL) {
       next = cat(nextc, "/");
       next = cat(next, component);  // canonical except for last component
-      DEBUG("mkdirs: next: %s", next)
+      TRACE("mkdirs: next: %s", next)
       component = strtok_r(NULL, "/", &saveptr);  // next NULL if current last
       if (path_exists(next, &sb, false)) {
          if (S_ISLNK(sb.st_mode)) {
@@ -401,7 +392,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
          Tf (S_ISDIR(sb.st_mode) || !component,   // last component not dir OK
              "can't mkdir: exists but not a directory: %s", next);
          nextc = realpath_safe(next);
-         DEBUG("mkdirs: exists, canonical: %s", nextc);
+         TRACE("mkdirs: exists, canonical: %s", nextc);
       } else {
          Te (path_subdir_p(basec, next),
              "can't mkdir: %s not subdirectory of %s", next, basec);
@@ -411,48 +402,68 @@ void mkdirs(const char *base, const char *path, char **denylist)
                 next, denylist[i]);
          Zf (mkdir(next, 0777), "can't mkdir: %s", next);
          nextc = next;  // canonical b/c we just created last component as dir
-         DEBUG("mkdirs: created: %s", nextc)
+         TRACE("mkdirs: created: %s", nextc)
       }
    }
-   DEBUG("mkdirs: done");
+   TRACE("mkdirs: done");
 }
 
-/* Print a formatted message on stderr if the level warrants it. Levels:
-
-     0 : "error"   : always print; exit unsuccessfully afterwards
-     1 : "warning" : always print
-     2 : "info"    : print if verbose >= 2
-     3 : "verbose" : print if verbose >= 3
-     4 : "debug"   : print if verbose >= 4 */
-void msg(int level, const char *file, int line, int errno_,
+/* Print a formatted message on stderr if the level warrants it. */
+void msg(enum log_level level, const char *file, int line, int errno_,
          const char *fmt, ...)
 {
    va_list ap;
 
+   va_start(ap, fmt);
+   msgv(level, file, line, errno_, fmt, ap);
+   va_end(ap);
+}
+
+noreturn void msg_fatal(const char *file, int line, int errno_,
+                       const char *fmt, ...)
+{
+   va_list ap;
+
+   va_start(ap, fmt);
+   msgv(LL_FATAL, file, line, errno_, fmt, ap);
+   va_end(ap);
+
+   exit(EXIT_FAILURE);
+}
+
+/* va_list form of msg(). */
+void msgv(enum log_level level, const char *file, int line, int errno_,
+          const char *fmt, va_list ap)
+{
    if (level > verbose)
       return;
 
    fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
 
-   if (level <= 1 && fmt != NULL)
-      fprintf(stderr, "%s: ", VERBOSE_LEVELS[level]);
-
-   if (fmt == NULL)
-      fputs(VERBOSE_LEVELS[level], stderr);
-   else {
-      va_start(ap, fmt);
-      vfprintf(stderr, fmt, ap);
-      va_end(ap);
+   // Prefix for the more urgent levels.
+   switch (level) {
+   case LL_FATAL:
+      fprintf(stderr, "error: ");  // "fatal" too morbid for users
+      break;
+   case LL_WARNING:
+      fprintf(stderr, "warning: ");
+      break;
+   default:
+      break;
    }
 
+   // Default message if not specified. Users should not see this.
+   if (fmt == NULL)
+      fmt = "please report this bug";
+
+   vfprintf(stderr, fmt, ap);
    if (errno_)
       fprintf(stderr, ": %s (%s:%d %d)\n",
               strerror(errno_), file, line, errno_);
    else
       fprintf(stderr, " (%s:%d)\n", file, line);
-
-   if (level == 0)
-      exit(EXIT_FAILURE);
+   if (fflush(stderr))
+      abort();  // can't print an error b/c already trying to do that
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. If

@@ -16,7 +16,7 @@ load ../common
     run "$ch_run_tmp" --version
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *': error ('* ]]
+    [[ $output = *': please report this bug ('* ]]
     rm "$ch_run_tmp"
 }
 
@@ -33,7 +33,7 @@ load ../common
     run "$ch_run_tmp" --version
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *': error ('* ]]
+    [[ $output = *': please report this bug ('* ]]
     sudo rm "$ch_run_tmp"
 }
 
@@ -72,5 +72,5 @@ load ../common
     run sudo -u root -g "$(id -gn)" "$ch_runfile" -v --version
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'error ('* ]]
+    [[ $output = *'please report this bug ('* ]]
 }
