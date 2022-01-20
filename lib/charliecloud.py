@@ -391,7 +391,7 @@ class Build_Cache(Cache):
          FATAL("git2dot.py not in path")
       INFO("creating build-cache.dot")
       # The following args show commit message.
-      args = ["git2dot", "-l %h|%N", "%s/build-cache.dot" % os.getcwd()]
+      args = ["git2dot", "-l", "[%h] %s|%N", "-w", "20", "%s/build-cache.dot" % os.getcwd()]
       #args = ["git2dot.py", "%s/build-cache.dot" % os.getcwd()]
       cmd(args, cwd=self.storage_path)
       if (self.pdf_ok):
@@ -414,7 +414,8 @@ class Build_Cache(Cache):
       if (not self.git_ok):
          FATAL("can't print tree; wrong git or not in path")
       if (debug):
-         pformat = "%C(auto)%d%<(11,trunc)% s%C(blue)% N%Creset"
+         # FIXME: the git note, %N, has a newline and I can't get rid of it.
+         pformat = "%C(auto)%d%C(yellow)% h%Creset%C(blue)% N%Creset%<(11,trunc)% s%n"
       else:
          pformat = "%C(auto)%d%C(blue)% N%Creset"
       args = ["git", "--no-pager", "log", "--graph", "--exclude=refs/notes/*",
