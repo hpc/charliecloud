@@ -660,29 +660,38 @@ class I_from_(Instruction):
       rootfs = image.unpack_path
       basefs = self.base_image.unpack_path
 
+      # 1. get state id of base
+
       # check base state id; can be None.
-      sid = cache.id_for_from(basefs)
-      if (not sid):
-         ch.CACHE_V("FROM instruction id: %s (miss)" % sid)
+      base_id = cache.id_for_from(basefs)
+      if (not base_id):
+         ch.CACHE_V("FROM instruction id: %s (miss)" % base_id)
          cache_hits.append(False)
          # pull and add base image.
          cache.worktree_add(basefs)
          base_puller.pull_to_unpacked()
          base_puller.done()
          # compute base id and commit to cache.
-         sid = cache.id_for_base(base_puller)
+         base_id = cache.id_for_base(base_puller)
          cache.branch_fixup(basefs)
-         cache.branch_commit(sid, basefs, "FROM %s" % os.path.basename(basefs)) # FIXME
+         cache.branch_commit(base_id, basefs, "FROM %s" % os.path.basename(basefs)) # FIXME
          # checkout image to base commit.
          cache.worktree_add(rootfs, basefs)
       else:
-         ch.CACHE_V("FROM instruction id: %s (hit)" % sid)
+         ch.CACHE_V("FROM instruction id: %s (hit)" % base_id)
          cache_hits.append(True)
 
-      # does image TAG exist?
+      # 2. prepare image
+
+      if (cache.mode == ch.Mode.REBUILD and cache.branch_exists(rootfs)):
+         # reset image branch to base tip; this is neccessary for our id search
+         # algorithm, which will prefer ids in an existing branch.
+         commit = cache.cached_from_id(base_id, basefs).commit
+         cache.branch_checkout(commit, rootfs)
+
       if (not cache.branch_exists(rootfs)):
          cache.worktree_add(rootfs, basefs)
-      state_ids.append(sid)
+      state_ids.append(base_id)
 
    def execute_(self):
       # Complain about unsupported stuff.
