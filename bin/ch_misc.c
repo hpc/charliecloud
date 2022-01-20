@@ -164,7 +164,7 @@ struct env_var *env_file_read(const char *path)
    vars = list_new(sizeof(struct env_var), 0);
    for (size_t line_no = 1; true; line_no++) {
       struct env_var var;
-      char *line;
+      char *line = NULL;
       size_t line_len = 0;  // don't care but required by getline(3)
       errno = 0;
       if (-1 == getline(&line, &line_len, fp)) {
@@ -496,6 +496,16 @@ unsigned long path_mount_flags(const char *path)
                                | ST_RDONLY     | ST_RELATIME | ST_SYNCHRONOUS;
 
    Z_ (statvfs(path, &sv));
+
+   // Flag 0x20 is ST_VALID according to the kernel [1], which clashes with
+   // MS_REMOUNT, so inappropriate to pass through. Glibc unsets it from the
+   // flag bits returned by statvfs(2) [2], but musl doesn’t [3], so unset it.
+   //
+   // [1]: https://github.com/torvalds/linux/blob/3644286f/include/linux/statfs.h#L27
+   // [2]: https://sourceware.org/git?p=glibc.git;a=blob;f=sysdeps/unix/sysv/linux/internal_statvfs.c;h=b1b8dfefe6be909339520d120473bd67e4bece57
+   // [3]: https://git.musl-libc.org/cgit/musl/tree/src/stat/statvfs.c?h=v1.2.2
+   sv.f_flag &= ~0x20;
+
    Ze (sv.f_flag & ~known_flags, "unknown mount flags: 0x%lx %s",
        sv.f_flag & ~known_flags, path);
 
