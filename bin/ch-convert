@@ -227,6 +227,8 @@ cv_tar_dir () {
             ;;
     esac
     dir_out_validate "$2"
+    INFO 'checking if tarbomb ...'
+    strip_ct=$(tar_root_depth "$1")
     INFO 'unpacking ...'
     mkdir "$2"
     # Use a pipe because PV ignores arguments if it's cat rather than PV.
