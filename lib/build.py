@@ -662,7 +662,7 @@ class I_from_(Instruction):
 
       # check base state id; can be None.
       sid = cache.id_for_from(basefs)
-      if (not sid or cache.mode == ch.Mode.REBUILD):
+      if (not sid):
          ch.CACHE_V("FROM instruction id: %s (miss)" % sid)
          cache_hits.append(False)
          # pull and add base image.
