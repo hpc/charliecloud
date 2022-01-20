@@ -416,7 +416,7 @@ class Build_Cache(Cache):
       if (debug):
          pformat = "%C(auto)%d%<(11,trunc)% s%C(blue)% N%Creset"
       else:
-         pformat = "%C(auto)% d%C(blue)% N%Creset"
+         pformat = "%C(auto)%d%C(blue)% N%Creset"
       args = ["git", "--no-pager", "log", "--graph", "--exclude=refs/notes/*",
               "--all", "--format=%s" % pformat]
       cmd(args, cwd=self.storage_path)

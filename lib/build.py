@@ -662,9 +662,8 @@ class I_from_(Instruction):
 
       # check base state id; can be None.
       sid = cache.id_for_from(basefs)
-      ch.CACHE_V("instruction id: %s" % sid)
       if (not sid or cache.mode == ch.Mode.REBUILD):
-         ch.CACHE_V("base miss")
+         ch.CACHE_V("FROM instruction id: %s (miss)" % sid)
          cache_hits.append(False)
          # pull and add base image.
          cache.worktree_add(basefs)
@@ -677,15 +676,12 @@ class I_from_(Instruction):
          # checkout image to base commit.
          cache.worktree_add(rootfs, basefs)
       else:
-         ch.CACHE_V("base hit")
+         ch.CACHE_V("FROM instruction id: %s (hit)" % sid)
          cache_hits.append(True)
 
-      # add image
+      # does image TAG exist?
       if (not cache.branch_exists(rootfs)):
          cache.worktree_add(rootfs, basefs)
-      else:
-         commit = cache.cached_from_id(sid, rootfs).commit
-         cache.branch_checkout(commit, rootfs)
       state_ids.append(sid)
 
    def execute_(self):

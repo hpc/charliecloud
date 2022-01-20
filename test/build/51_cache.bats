@@ -10,7 +10,7 @@ setup () {
     [[ $status -eq 0 ]]
 
     blessed_out=$(cat << 'EOF'
-*  (HEAD -> root) 
+*  (HEAD -> root)
 EOF
 )
     run ch-image build-cache --tree-text
@@ -22,7 +22,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (alpine+latest) FROM alpine+latest
 | 
-*  (HEAD -> root) 
+*  (HEAD -> root)
 EOF
 )
     ch-image pull alpine:latest
@@ -39,7 +39,7 @@ EOF
 | 
 *  (alpine+latest) FROM alpine+latest
 | 
-*  (HEAD -> root) 
+*  (HEAD -> root)
 EOF
 )
     ch-image build -t img_a -f - . <<'EOF'
@@ -63,7 +63,7 @@ EOF
 | 
 *  (alpine+latest) FROM alpine+latest
 | 
-*  (HEAD -> root) 
+*  (HEAD -> root)
 EOF
 )
     ch-image build -t img_b -f - . <<'EOF'
@@ -76,7 +76,6 @@ EOF
 }
 
 @test 'build-cache example C' {
-    # 
     blessed_out=$(cat << 'EOF'
 *  (img_c) RUN echo qux
 | 
@@ -89,7 +88,7 @@ EOF
 | 
 *  (alpine+latest) FROM alpine+latest
 | 
-*  (HEAD -> root) 
+*  (HEAD -> root)
 EOF
 )
     ch-image build -t img_c -f - . <<'EOF'
