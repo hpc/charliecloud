@@ -26,6 +26,13 @@ Build a Charliecloud image from Dockerfile and unpack it into a directory.
 
 .. include:: ./ch-build2dir_desc.rst
 
+ch-builder2squash
++++++++++++++++++
+
+Flatten a builder image into a Charliecloud SquashFS file.
+
+.. include:: ./ch-builder2squash_desc.rst
+
 ch-builder2tar
 ++++++++++++++
 
@@ -40,19 +47,19 @@ Check :code:`ch-run` prerequisites, e.g., namespaces and :code:`pivot_root(2)`.
 
 .. include:: ./ch-checkns_desc.rst
 
+ch-convert
+++++++++++
+
+Convert an image from one format to another.
+
+.. include:: ./ch-convert_desc.rst
+
 ch-dir2squash
 +++++++++++++
 
 Create a SquashFS file from an image directory.
 
 .. include:: ./ch-dir2squash_desc.rst
-
-ch-builder2squash
-+++++++++++++++++
-
-Flatten a builder image into a Charliecloud SquashFS file.
-
-.. include:: ./ch-builder2squash_desc.rst
 
 ch-fromhost
 +++++++++++
@@ -67,13 +74,6 @@ ch-image
 Build and manage images; completely unprivileged.
 
 .. include:: ./ch-image_desc.rst
-
-ch-mount
-++++++++
-
-Mount a SquashFS image file using FUSE.
-
-.. include:: ./ch-mount_desc.rst
 
 ch-pull2dir
 +++++++++++
@@ -127,10 +127,3 @@ ch-test
 Run some or all of the Charliecloud test suite.
 
 .. include:: ./ch-test_desc.rst
-
-ch-umount
-+++++++++
-
-Unmount a FUSE mounted squash filesystem and remove the mount point.
-
-.. include:: ./ch-umount_desc.rst

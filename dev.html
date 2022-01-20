@@ -3,22 +3,27 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>5. Contributor’s guide &mdash; Charliecloud 0.25 documentation</title>
+  <title>5. Contributor’s guide &mdash; Charliecloud 0.26 documentation</title>
   
 
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
 
   
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -28,10 +33,10 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -51,7 +56,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Charliecloud
+            <a href="index.html" class="icon icon-home"> Charliecloud
           
 
           
@@ -64,7 +69,7 @@
             
             
               <div class="version">
-                0.25
+                0.26
               </div>
             
           
@@ -136,43 +141,36 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#build-ova-appliance-file-with-vagrant-and-virtualbox">5.4. Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#remove-old-virtual-machine">5.4.1. Remove old virtual machine</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#build-and-provision">5.4.2. Build and provision</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#snapshot-for-distribution">5.4.3. Snapshot for distribution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#test-charliecloud">5.4.4. Test Charliecloud</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#export-appliance-ova-file">5.4.5. Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#style-hints">5.4. Style hints</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#writing-english">5.4.1. Writing English</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation">5.4.2. Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dependency-policy">5.4.3. Dependency policy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#generally">5.4.3.1. Generally</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#curl-vs-wget">5.4.3.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#style-hints">5.5. Style hints</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#writing-english">5.5.1. Writing English</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#documentation">5.5.2. Documentation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#dependency-policy">5.5.3. Dependency policy</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#generally">5.5.3.1. Generally</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#curl-vs-wget">5.5.3.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">5.5.4. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#c-code">5.5.5. C code</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#const">5.5.5.1. <code class="code docutils literal notranslate"><span class="pre">const</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">5.4.4. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c-code">5.4.5. C code</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#const">5.4.5.1. <code class="code docutils literal notranslate"><span class="pre">const</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lists">5.4.5.2. Lists</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#oci-technical-notes">5.6. OCI technical notes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#gotchas">5.6.1. Gotchas</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#namespaces">5.6.1.1. Namespaces</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#supervisor-process-and-maintaining-state">5.6.1.2. Supervisor process and maintaining state</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oci-technical-notes">5.5. OCI technical notes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#gotchas">5.5.1. Gotchas</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#namespaces">5.5.1.1. Namespaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#supervisor-process-and-maintaining-state">5.5.1.2. Supervisor process and maintaining state</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#bundle-directory">5.6.2. Bundle directory</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#config-json">5.6.3. <code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#state">5.6.4. State</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#additional-sources">5.6.5. Additional sources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bundle-directory">5.5.2. Bundle directory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#config-json">5.5.3. <code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#state">5.5.4. State</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-sources">5.5.5. Additional sources</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#miscellaneous-notes">5.7. Miscellaneous notes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#updating-bundled-lark-parser">5.7.1. Updating bundled Lark parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#miscellaneous-notes">5.6. Miscellaneous notes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#updating-bundled-lark-parser">5.6.1. Updating bundled Lark parser</a></li>
 </ul>
 </li>
 </ul>
@@ -217,6 +215,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -228,7 +228,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
         
       </li>
     
@@ -273,36 +273,27 @@ consult the internal documentation and other resources.</p>
 <li><p><a class="reference internal" href="#gotchas-and-quirks" id="id17">Gotchas and quirks</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#build-ova-appliance-file-with-vagrant-and-virtualbox" id="id18">Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a></p>
+<li><p><a class="reference internal" href="#style-hints" id="id18">Style hints</a></p>
 <ul>
-<li><p><a class="reference internal" href="#remove-old-virtual-machine" id="id19">Remove old virtual machine</a></p></li>
-<li><p><a class="reference internal" href="#build-and-provision" id="id20">Build and provision</a></p></li>
-<li><p><a class="reference internal" href="#snapshot-for-distribution" id="id21">Snapshot for distribution</a></p></li>
-<li><p><a class="reference internal" href="#test-charliecloud" id="id22">Test Charliecloud</a></p></li>
-<li><p><a class="reference internal" href="#export-appliance-ova-file" id="id23">Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a></p></li>
+<li><p><a class="reference internal" href="#writing-english" id="id19">Writing English</a></p></li>
+<li><p><a class="reference internal" href="#documentation" id="id20">Documentation</a></p></li>
+<li><p><a class="reference internal" href="#dependency-policy" id="id21">Dependency policy</a></p></li>
+<li><p><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id22">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></p></li>
+<li><p><a class="reference internal" href="#c-code" id="id23">C code</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#style-hints" id="id24">Style hints</a></p>
+<li><p><a class="reference internal" href="#oci-technical-notes" id="id24">OCI technical notes</a></p>
 <ul>
-<li><p><a class="reference internal" href="#writing-english" id="id25">Writing English</a></p></li>
-<li><p><a class="reference internal" href="#documentation" id="id26">Documentation</a></p></li>
-<li><p><a class="reference internal" href="#dependency-policy" id="id27">Dependency policy</a></p></li>
-<li><p><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id28">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></p></li>
-<li><p><a class="reference internal" href="#c-code" id="id29">C code</a></p></li>
+<li><p><a class="reference internal" href="#gotchas" id="id25">Gotchas</a></p></li>
+<li><p><a class="reference internal" href="#bundle-directory" id="id26">Bundle directory</a></p></li>
+<li><p><a class="reference internal" href="#config-json" id="id27"><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></p></li>
+<li><p><a class="reference internal" href="#state" id="id28">State</a></p></li>
+<li><p><a class="reference internal" href="#additional-sources" id="id29">Additional sources</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#oci-technical-notes" id="id30">OCI technical notes</a></p>
+<li><p><a class="reference internal" href="#miscellaneous-notes" id="id30">Miscellaneous notes</a></p>
 <ul>
-<li><p><a class="reference internal" href="#gotchas" id="id31">Gotchas</a></p></li>
-<li><p><a class="reference internal" href="#bundle-directory" id="id32">Bundle directory</a></p></li>
-<li><p><a class="reference internal" href="#config-json" id="id33"><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></p></li>
-<li><p><a class="reference internal" href="#state" id="id34">State</a></p></li>
-<li><p><a class="reference internal" href="#additional-sources" id="id35">Additional sources</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference internal" href="#miscellaneous-notes" id="id36">Miscellaneous notes</a></p>
-<ul>
-<li><p><a class="reference internal" href="#updating-bundled-lark-parser" id="id37">Updating bundled Lark parser</a></p></li>
+<li><p><a class="reference internal" href="#updating-bundled-lark-parser" id="id31">Updating bundled Lark parser</a></p></li>
 </ul>
 </li>
 </ul>
@@ -861,15 +852,18 @@ environment.</p></li>
 (default: <code class="code docutils literal notranslate"><span class="pre">~/rpmbuild</span></code>).</p></li>
 </ul>
 </div></blockquote>
-<p>For example, to build a version 0.9.7 RPM from the CentOS 7 image provided with
-the test suite, on any system, and leave the results in <code class="code docutils literal notranslate"><span class="pre">~/rpmbuild/RPMS</span></code>
-(note that the test suite would also build the necessary image diretory:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples <span class="nv">$CH_TEST_IMGDIR</span>
-<span class="gp">$</span> packaging/fedora/build <span class="si">${</span><span class="nv">CH_TEST_IMGDIR</span><span class="si">}</span>/centos7 <span class="m">0</span>.9.7-1
+<p>For example, to build a version 0.9.7 RPM from the CentOS 7 image provided
+with the test suite, on any system, and leave the results in
+<code class="code docutils literal notranslate"><span class="pre">~/rpmbuild/RPMS</span></code> (note the test suite would also build the
+necessary image directory):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-image build -t centos7 -f ./examples/Dockerfile.centos7 ./examples
+<span class="gp">$</span> bin/ch-convert centos7 <span class="nv">$CH_TEST_IMGDIR</span>/centos7
+<span class="gp">$</span> packaging/fedora/build <span class="nv">$CH_TEST_IMGDIR</span>/centos7 <span class="m">0</span>.9.7-1
 </pre></div>
 </div>
 <p>To build a pre-release RPM of Git HEAD using the CentOS 7 image:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-build2dir -t centos7 -f ./examples/Dockerfile.centos7 ./examples <span class="nv">$CH_TEST_IMGDIR</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-image build -t centos7 -f ./examples/Dockerfile.centos7 ./examples
+<span class="gp">$</span> bin/ch-convert centos7 <span class="nv">$CH_TEST_IMGDIR</span>/centos7
 <span class="gp">$</span> packaging/fedora/build <span class="si">${</span><span class="nv">CH_TEST_IMGDIR</span><span class="si">}</span>/centos7 HEAD
 </pre></div>
 </div>
@@ -908,90 +902,8 @@ with the appropriate version stating that it’s a pre-release RPM.</p>
 </div>
 </div>
 </div>
-<div class="section" id="build-ova-appliance-file-with-vagrant-and-virtualbox">
-<span id="build-ova"></span><h2><a class="toc-backref" href="#id18"><span class="section-number">5.4. </span>Build <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> appliance file with Vagrant and VirtualBox</a><a class="headerlink" href="#build-ova-appliance-file-with-vagrant-and-virtualbox" title="Permalink to this headline">¶</a></h2>
-<p>This section uses Vagrant and the VirtualBox GUI to create a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file
-that you can provide to end users as described in Installation. You should
-read the section on building the VM with Vagrant there as well.</p>
-<div class="section" id="remove-old-virtual-machine">
-<h3><a class="toc-backref" href="#id19"><span class="section-number">5.4.1. </span>Remove old virtual machine</a><a class="headerlink" href="#remove-old-virtual-machine" title="Permalink to this headline">¶</a></h3>
-<p>Each time we create a new image to distribute, we start from scratch rather
-than updating the old image. Therefore, we must remove the old image:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> packaging/vagrant
-<span class="gp">$</span> vagrant destroy
-</pre></div>
-</div>
-</div>
-<div class="section" id="build-and-provision">
-<h3><a class="toc-backref" href="#id20"><span class="section-number">5.4.2. </span>Build and provision</a><a class="headerlink" href="#build-and-provision" title="Permalink to this headline">¶</a></h3>
-<p>The most important differences with this build procedure have to do with
-login. A second user <code class="code docutils literal notranslate"><span class="pre">charlie</span></code> is created and endowed with passwordless
-<code class="code docutils literal notranslate"><span class="pre">sudo</span></code>; SSH will allow login with password; and the console will
-automatically log in <code class="code docutils literal notranslate"><span class="pre">charlie</span></code>. You need to reboot for the latter to
-take effect (which is done in the next step).</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant up
-<span class="gp">$</span> vagrant provision --provision-with<span class="o">=</span>ova
-</pre></div>
-</div>
-</div>
-<div class="section" id="snapshot-for-distribution">
-<h3><a class="toc-backref" href="#id21"><span class="section-number">5.4.3. </span>Snapshot for distribution</a><a class="headerlink" href="#snapshot-for-distribution" title="Permalink to this headline">¶</a></h3>
-<p>We want to distribute a small appliance file, but one that passes the tests.
-Running the tests greatly bloats the appliance. Therefore, we’ll take a
-snapshot of the powered-off VM named <code class="code docutils literal notranslate"><span class="pre">exportme</span></code>, run the tests, and then
-roll back to the snapshot before exporting.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant halt
-<span class="gp">$</span> VBoxManage modifyvm charliebox --defaultfrontend default
-<span class="gp">$</span> vagrant snapshot save exportme
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you wish to use the appliance yourself, and you prefer to use plain
-VirtualBox instead of Vagrant, now is a good time to clone the VM in the
-GUI. The clone will be protected from Vagrant’s attentions later.</p>
-</div>
-</div>
-<div class="section" id="test-charliecloud">
-<h3><a class="toc-backref" href="#id22"><span class="section-number">5.4.4. </span>Test Charliecloud</a><a class="headerlink" href="#test-charliecloud" title="Permalink to this headline">¶</a></h3>
-<p>Restart and test:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> vagrant up --provision-with<span class="o">=</span><span class="nb">test</span>
-</pre></div>
-</div>
-<p>Also: Show the console in the VirtualBox GUI and make sure <code class="code docutils literal notranslate"><span class="pre">charlie</span></code> is
-logged in.</p>
-</div>
-<div class="section" id="export-appliance-ova-file">
-<h3><a class="toc-backref" href="#id23"><span class="section-number">5.4.5. </span>Export appliance <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file</a><a class="headerlink" href="#export-appliance-ova-file" title="Permalink to this headline">¶</a></h3>
-<p>This creates a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> file, which is a standard way to package a virtual
-machine image with metadata. Some else can then import it into their own
-VirtualBox, as described above. (In principle, other virtual machine emulators
-should work as well, but we haven’t tried.)</p>
-<p>These steps are done in the VirtualBox GUI because I haven’t figured
-out a way to produce a <code class="code docutils literal notranslate"><span class="pre">.ova</span></code> in Vagrant, only Vagrant “boxes”.</p>
-<ol class="arabic simple">
-<li><p>Shut down the VM (you can just power it off).</p></li>
-<li><p>Restore the snapshot <em>exportme</em>. (Don’t use <code class="code docutils literal notranslate"><span class="pre">vagrant</span> <span class="pre">shapshot</span>
-<span class="pre">restore</span></code> because it boots the snapshot and runs the provisioners again.)</p></li>
-<li><p><em>File</em> → <em>Export appliance</em>.</p></li>
-<li><p>Select your VM, <em>charliebox</em>. Click <em>Continue</em>.</p></li>
-<li><p>Configure the export:</p>
-<ul class="simple">
-<li><p><em>Format</em>: OVF 2.0. (Note: Changing this menu resets the filename.)</p></li>
-<li><p><em>File</em>: Directory and filename you want. (The install procedure above
-uses <code class="code docutils literal notranslate"><span class="pre">charliecloud_centos7.ova</span></code>.)</p></li>
-<li><p><em>Write manifest file</em>: unchecked</p></li>
-</ul>
-</li>
-<li><p>Click <em>Continue</em>.</p></li>
-<li><p>Check the descriptive information and click <em>Export</em>. (For example, maybe
-you want to put the Charliecloud version in the <em>Version</em> field.)</p></li>
-<li><p>Distribute the resulting file, which should be about 800–900MiB.</p></li>
-</ol>
-</div>
-</div>
 <div class="section" id="style-hints">
-<h2><a class="toc-backref" href="#id24"><span class="section-number">5.5. </span>Style hints</a><a class="headerlink" href="#style-hints" title="Permalink to this headline">¶</a></h2>
+<span id="build-ova"></span><h2><a class="toc-backref" href="#id18"><span class="section-number">5.4. </span>Style hints</a><a class="headerlink" href="#style-hints" title="Permalink to this headline">¶</a></h2>
 <p>We haven’t written down a comprehensive style guide. Generally, follow the
 style of the surrounding code, think in rectangles rather than lines of code
 or text, and avoid CamelCase.</p>
@@ -999,7 +911,7 @@ or text, and avoid CamelCase.</p>
 complains (or even updates this section based on your patch!). He tries to be
 nice about it.</p>
 <div class="section" id="writing-english">
-<h3><a class="toc-backref" href="#id25"><span class="section-number">5.5.1. </span>Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19"><span class="section-number">5.4.1. </span>Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p>When describing what something does (e.g., your PR or a command), use the
 <a class="reference external" href="https://chris.beams.io/posts/git-commit/#imperative">imperative mood</a>,
@@ -1026,7 +938,7 @@ filled with false positives.</p></li>
 </ul>
 </div>
 <div class="section" id="documentation">
-<h3><a class="toc-backref" href="#id26"><span class="section-number">5.5.2. </span>Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20"><span class="section-number">5.4.2. </span>Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
 <p>Heading underline characters:</p>
 <blockquote>
 <div><ol class="arabic simple">
@@ -1038,12 +950,12 @@ filled with false positives.</p></li>
 </div></blockquote>
 </div>
 <div class="section" id="dependency-policy">
-<span id="id1"></span><h3><a class="toc-backref" href="#id27"><span class="section-number">5.5.3. </span>Dependency policy</a><a class="headerlink" href="#dependency-policy" title="Permalink to this headline">¶</a></h3>
+<span id="id1"></span><h3><a class="toc-backref" href="#id21"><span class="section-number">5.4.3. </span>Dependency policy</a><a class="headerlink" href="#dependency-policy" title="Permalink to this headline">¶</a></h3>
 <p>Specific dependencies (prerequisites) are stated elsewhere in the
 documentation. This section describes our policy on which dependencies are
 acceptable.</p>
 <div class="section" id="generally">
-<h4><span class="section-number">5.5.3.1. </span>Generally<a class="headerlink" href="#generally" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.4.3.1. </span>Generally<a class="headerlink" href="#generally" title="Permalink to this headline">¶</a></h4>
 <p>All dependencies must be stated and justified in the documentation.</p>
 <p>We want Charliecloud to run on as many systems as practical, so we work hard
 to keep dependencies minimal. However, because Charliecloud depends on new-ish
@@ -1072,7 +984,7 @@ enough to support Charliecloud. You might need to install additional packages
 (but not from third-party repositories).</p>
 </div>
 <div class="section" id="curl-vs-wget">
-<h4><span class="section-number">5.5.3.2. </span><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.4.3.2. </span><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h4>
 <p>For URL downloading in shell code, including Dockerfiles, use <code class="code docutils literal notranslate"><span class="pre">wget</span> <span class="pre">-nv</span></code>.</p>
 <p>Both work fine for our purposes, and we need to use one or the other
 consistently. According to Debian’s popularity contest, 99.88% of reporting
@@ -1083,7 +995,7 @@ other hand, <code class="code docutils literal notranslate"><span class="pre">cu
 </div>
 </div>
 <div class="section" id="variable-conventions-in-shell-scripts-and-bats-files">
-<h3><a class="toc-backref" href="#id28"><span class="section-number">5.5.4. </span>Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22"><span class="section-number">5.4.4. </span>Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p>Separate words with underscores.</p></li>
 <li><p>User-configured environment variables: all uppercase, <code class="code docutils literal notranslate"><span class="pre">CH_TEST_</span></code>
@@ -1118,9 +1030,9 @@ foo=&quot;${bar}/baz&quot;  # no
 </ul>
 </div>
 <div class="section" id="c-code">
-<h3><a class="toc-backref" href="#id29"><span class="section-number">5.5.5. </span>C code</a><a class="headerlink" href="#c-code" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id23"><span class="section-number">5.4.5. </span>C code</a><a class="headerlink" href="#c-code" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="const">
-<h4><span class="section-number">5.5.5.1. </span><code class="code docutils literal notranslate"><span class="pre">const</span></code><a class="headerlink" href="#const" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.4.5.1. </span><code class="code docutils literal notranslate"><span class="pre">const</span></code><a class="headerlink" href="#const" title="Permalink to this headline">¶</a></h4>
 <p>The <code class="code docutils literal notranslate"><span class="pre">const</span></code> keyword is used to indicate that variables are read-only. It
 has a variety of uses; in Charliecloud, we use it for <a class="reference external" href="https://softwareengineering.stackexchange.com/a/204720">function pointer
 arguments</a> to state
@@ -1142,10 +1054,63 @@ to point to it), because so far those are all out-arguments and C has
 <a class="reference external" href="http://c-faq.com/ansi/constmismatch.html">confusing rules</a> about double
 pointers and <code class="code docutils literal notranslate"><span class="pre">const</span></code>.</p>
 </div>
+<div class="section" id="lists">
+<h4><span class="section-number">5.4.5.2. </span>Lists<a class="headerlink" href="#lists" title="Permalink to this headline">¶</a></h4>
+<p>The general convention is to use an array of elements terminated by an element
+containing all zeros (i.e., every byte is zero). While this precludes zero
+elements within the list, it makes it easy to iterate:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">foo</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">a</span><span class="p">;</span> <span class="kt">float</span> <span class="n">b</span><span class="p">;</span> <span class="p">};</span>
+<span class="k">struct</span> <span class="n">foo</span> <span class="o">*</span><span class="n">bar</span> <span class="o">=</span> <span class="p">...;</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">bar</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">a</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+   <span class="n">do_stuff</span><span class="p">(</span><span class="n">bar</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</pre></div>
+</div>
+<p>Note that the conditional checks that only one field of the struct (<code class="code docutils literal notranslate"><span class="pre">a</span></code>)
+is zero; this loop leverages knowledge of this specific data structure that
+checking only <code class="code docutils literal notranslate"><span class="pre">a</span></code> is sufficient.</p>
+<p>Lists can be set either as literals:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">foo</span> <span class="n">bar</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">},</span> <span class="p">{</span><span class="mi">3</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">},</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">}</span> <span class="p">};</span>
+</pre></div>
+</div>
+<p>or built up from scratch on the heap; the contents of this list are
+equivalent (note the C99 trick to avoid create a <code class="code docutils literal notranslate"><span class="pre">struct</span> <span class="pre">foo</span></code> variable):</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="n">foo</span> <span class="n">baz</span><span class="p">;</span>
+<span class="k">struct</span> <span class="n">foo</span> <span class="o">*</span><span class="n">qux</span> <span class="o">=</span> <span class="n">list_new</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">foo</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">baz</span><span class="p">.</span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="n">baz</span><span class="p">.</span><span class="n">b</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">;</span>
+<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span> <span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">qux</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">baz</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">foo</span><span class="p">));</span>
+<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span> <span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">qux</span><span class="p">,</span> <span class="o">&amp;</span><span class="p">((</span><span class="k">struct</span> <span class="n">foo</span><span class="p">){</span><span class="mi">3</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">}),</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">foo</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>This form of list should be used unless some API requires something else.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Taking the address of an array in C yields the address of the first element,
+which is the same thing. For example, consider this list of strings, i.e.
+pointers to <code class="code docutils literal notranslate"><span class="pre">char</span></code>:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="n">foo</span><span class="p">[]</span> <span class="o">=</span> <span class="s">&quot;hello&quot;</span><span class="p">;</span>
+<span class="kt">char</span> <span class="o">**</span><span class="n">list</span> <span class="o">=</span> <span class="n">list_new</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span> <span class="o">**</span><span class="p">)</span><span class="n">list</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">foo</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">));</span>  <span class="c1">// error!</span>
+</pre></div>
+</div>
+<p>Because <code class="code docutils literal notranslate"><span class="pre">foo</span> <span class="pre">==</span> <span class="pre">&amp;foo</span></code>, this will add to the list not a pointer to
+<code class="code docutils literal notranslate"><span class="pre">foo</span></code> but the <em>contents</em> of <code class="code docutils literal notranslate"><span class="pre">foo</span></code>, i.e. (on a machine with
+64-bit pointers) <code class="code docutils literal notranslate"><span class="pre">'h'</span></code>, <code class="code docutils literal notranslate"><span class="pre">'e'</span></code>, <code class="code docutils literal notranslate"><span class="pre">'l'</span></code>, <code class="code docutils literal notranslate"><span class="pre">'l'</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">'o'</span></code>, <code class="code docutils literal notranslate"><span class="pre">'\0'</span></code> followed by two bytes of whatever follows
+<code class="code docutils literal notranslate"><span class="pre">foo</span></code> in memory.</p>
+<p>This would work because <code class="code docutils literal notranslate"><span class="pre">bar</span> <span class="pre">!=</span> <span class="pre">&amp;bar</span></code>:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="n">foo</span><span class="p">[]</span> <span class="o">=</span> <span class="s">&quot;hello&quot;</span><span class="p">;</span>
+<span class="kt">char</span> <span class="n">bar</span> <span class="o">=</span> <span class="n">foo</span><span class="p">;</span>
+<span class="kt">char</span> <span class="o">**</span><span class="n">list</span> <span class="o">=</span> <span class="n">list_new</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span> <span class="o">**</span><span class="p">)</span><span class="n">list</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bar</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">));</span>  <span class="c1">// OK</span>
+</pre></div>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="section" id="oci-technical-notes">
-<h2><a class="toc-backref" href="#id30"><span class="section-number">5.6. </span>OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id24"><span class="section-number">5.5. </span>OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
 <p>This section describes our analysis of the Open Container Initiative (OCI)
 specification and implications for our implementation in <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code>.
 Anything relevant for users goes in that man page; here is for technical
@@ -1154,9 +1119,9 @@ opportunity for peer-review of our work.</p>
 <p>Currently, <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> is only tested with Buildah. These notes
 describe what we are seeing from Buildah’s runtime expectations.</p>
 <div class="section" id="gotchas">
-<h3><a class="toc-backref" href="#id31"><span class="section-number">5.6.1. </span>Gotchas</a><a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25"><span class="section-number">5.5.1. </span>Gotchas</a><a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="namespaces">
-<h4><span class="section-number">5.6.1.1. </span>Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.5.1.1. </span>Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h4>
 <p>Buildah sets up its own user and mount namespaces before invoking the runtime,
 though it does not change the root directory. We do not understand why. In
 particular, this means that you cannot see the container root filesystem it
@@ -1171,14 +1136,14 @@ provides without joining those namespaces. To do so:</p>
 </ol>
 </div>
 <div class="section" id="supervisor-process-and-maintaining-state">
-<h4><span class="section-number">5.6.1.2. </span>Supervisor process and maintaining state<a class="headerlink" href="#supervisor-process-and-maintaining-state" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">5.5.1.2. </span>Supervisor process and maintaining state<a class="headerlink" href="#supervisor-process-and-maintaining-state" title="Permalink to this headline">¶</a></h4>
 <p>OCI (and thus Buildah) expects a process that exists throughout the life of
 the container. This conflicts with Charliecloud’s lack of a supervisor process.</p>
 <p><strong>FIXME</strong></p>
 </div>
 </div>
 <div class="section" id="bundle-directory">
-<h3><a class="toc-backref" href="#id32"><span class="section-number">5.6.2. </span>Bundle directory</a><a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id26"><span class="section-number">5.5.2. </span>Bundle directory</a><a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>OCI documentation (very incomplete): <a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/bundle.md">https://github.com/opencontainers/runtime-spec/blob/master/bundle.md</a></p></li>
 </ul>
@@ -1228,7 +1193,7 @@ No other new filesystems are mounted within the namespaces.</p></li>
 </ol>
 </div>
 <div class="section" id="config-json">
-<h3><a class="toc-backref" href="#id33"><span class="section-number">5.6.3. </span><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27"><span class="section-number">5.5.3. </span><code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>OCI documentation:</p>
 <ul>
@@ -1491,7 +1456,7 @@ protects us.)</p>
 <p>End of example.</p>
 </div>
 <div class="section" id="state">
-<h3><a class="toc-backref" href="#id34"><span class="section-number">5.6.4. </span>State</a><a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id28"><span class="section-number">5.5.4. </span>State</a><a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h3>
 <p>The OCI spec does not say how the JSON document describing state should be
 given to the caller. Buildah is happy to get it on the runtime’s standard
 output.</p>
@@ -1501,7 +1466,7 @@ essentially a no-op, and annotations are not supported, so the
 <code class="code docutils literal notranslate"><span class="pre">annotations</span></code> key will never be given.</p>
 </div>
 <div class="section" id="additional-sources">
-<h3><a class="toc-backref" href="#id35"><span class="section-number">5.6.5. </span>Additional sources</a><a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id29"><span class="section-number">5.5.5. </span>Additional sources</a><a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah.md">https://github.com/containers/buildah/blob/master/docs/buildah.md</a></p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span> <span class="pre">bud</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah-bud.md">https://github.com/containers/buildah/blob/master/docs/buildah-bud.md</a></p></li>
@@ -1511,9 +1476,9 @@ essentially a no-op, and annotations are not supported, so the
 </div>
 </div>
 <div class="section" id="miscellaneous-notes">
-<h2><a class="toc-backref" href="#id36"><span class="section-number">5.7. </span>Miscellaneous notes</a><a class="headerlink" href="#miscellaneous-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id30"><span class="section-number">5.6. </span>Miscellaneous notes</a><a class="headerlink" href="#miscellaneous-notes" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="updating-bundled-lark-parser">
-<h3><a class="toc-backref" href="#id37"><span class="section-number">5.7.1. </span>Updating bundled Lark parser</a><a class="headerlink" href="#updating-bundled-lark-parser" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id31"><span class="section-number">5.6.1. </span>Updating bundled Lark parser</a><a class="headerlink" href="#updating-bundled-lark-parser" title="Permalink to this headline">¶</a></h3>
 <p>In order to change the version of the bundled lark parser you must modify
 multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
 catch both dot notation and tuples, but not the list of filenames in
@@ -1531,27 +1496,20 @@ catch both dot notation and tuples, but not the list of filenames in
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-      
-        <a href="faq.html" class="btn btn-neutral float-left" title="4. Frequently asked questions (FAQ)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="faq.html" class="btn btn-neutral float-left" title="4. Frequently asked questions (FAQ)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2014–2021, Triad National Security, LLC
+        &#169; Copyright 2014–2021, Triad National Security, LLC.
 
     </p>
   </div> 
 
 </footer>
-
         </div>
       </div>
 
