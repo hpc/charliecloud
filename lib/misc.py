@@ -41,21 +41,21 @@ class Version(Action_Exit):
 
 def build_cache(cli):
    # reset and init
-   cache = ch.cache
+   cache = ch.cache.build
    storage_path = ch.storage.build_cache
    if (cli.reset):
-      cache.build.reset()
+      cache.reset()
    # run garbage collection
    if (cli.gc):
-      cache.build.prune()
+      cache.prune()
    # print text tree
-   if (cli.tree_text):
-      cache.build.print_tree()
+   if (cli.tree_text or cli.tree_debug):
+      cache.print_tree(cli.tree_debug)
    # create tree files
    if (cli.tree_dot):
-      cache.build.dump_dot()
+      cache.dump_dot()
    # print general info
-   cache.build.print_storage()
+   cache.print_storage()
    ch.done_notify()
 
 def delete(cli):

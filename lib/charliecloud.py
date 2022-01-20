@@ -410,14 +410,17 @@ class Build_Cache(Cache):
       INFO("unamed branches: ")
       INFO("state IDs: ")
 
-   def print_tree(self):
-      if (self.git_ok):
-         args = ["git", "--no-pager", "log", "--graph",
-                 "--exclude=refs/notes/*", "--all",
-                 "--format=%C(auto)%d %s%n %>(10) %C(blue)%N%Creset"]
-         cmd(args, cwd=self.storage_path)
+   def print_tree(self, debug=False):
+      if (not self.git_ok):
+         FATAL("can't print tree; wrong git or not in path")
+      if (debug):
+         pformat = "%C(auto)%d%<(11,trunc)% s%C(blue)% N%Creset"
       else:
-         FATAL("can't print tree; wrong or not git in path")
+         pformat = "%C(auto)% d%C(blue)% N%Creset"
+      args = ["git", "--no-pager", "log", "--graph", "--exclude=refs/notes/*",
+              "--all", "--format=%s" % pformat]
+      cmd(args, cwd=self.storage_path)
+      sys.exit(0)
 
    ## Storage operations ##
 

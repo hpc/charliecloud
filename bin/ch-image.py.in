@@ -175,6 +175,9 @@ def main():
    grp.add_argument("--reset",
                    action="store_true",
                    help="clear and re-initialize build cache")
+   grp.add_argument("--tree-debug",
+                   action="store_true",
+                   help="print a text tree of the cache storage")
    grp.add_argument("--tree-text",
                    action="store_true",
                    help="print a text tree of the cache storage")

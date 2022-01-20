@@ -5,65 +5,99 @@ setup () {
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
-# Use new file so we can test cache delettion without disturbing the the rest
-# of the ch-image tests in 50_ch-image.bats
+@test 'build-cache initial state' {
+    run ch-image reset
+    [[ $status -eq 0 ]]
 
-@test 'ch-image build-cache' {
-    # FIXME
-    run ch-image build-cache
-    [[ $status -eq 0 ]]
-    run ch-image build-cache --gc
-    [[ $status -eq 0 ]]
+    blessed_out=$(cat << 'EOF'
+*  (HEAD -> root) 
+EOF
+)
     run ch-image build-cache --tree-text
     [[ $status -eq 0 ]]
-    run ch-image build-cache --tree-dot
-    [[ $status -eq 0 ]]
-    run ch-image build-cache --reset
-    [[ $status -eq 0 ]]
+    diff -u <(echo "$output") <(echo "$blessed_out")
 }
 
-@test 'ch-image (cache modes)'{
-    # FIXME: make sure github workflow has correct git
-    run ch-image -vv list
-    echo "$output"
+@test 'build-cache pull state' {
+    blessed_out=$(cat << 'EOF'
+*  (alpine+latest) FROM alpine+latest
+| 
+*  (HEAD -> root) 
+EOF
+)
+    ch-image pull alpine:latest
+    run ch-image build-cache --tree-text
     [[ $status -eq 0 ]]
-    [[ $output = *'build cache: enable (default)'* ]]
-    [[ $output = *'download cache: enable (default)'* ]]
+    diff -u <(echo "$output") <(echo "$blessed_out")
+}
 
-    run ch-image --no-cache -vv list
-    echo "$output"
+@test 'build-cache example A' {
+    blessed_out=$(cat << 'EOF'
+*  (img_a) RUN echo bar
+| 
+*  RUN echo foo
+| 
+*  (alpine+latest) FROM alpine+latest
+| 
+*  (HEAD -> root) 
+EOF
+)
+    ch-image build -t img_a -f - . <<'EOF'
+FROM alpine:latest
+RUN echo foo
+RUN echo bar
+EOF
+    run ch-image build-cache --tree-text
     [[ $status -eq 0 ]]
-    [[ $output = *'build cache: rebuild (command line)'* ]]
-    [[ $output = *'download cache: write-only (command line)'* ]]
+    diff -u <(echo "$output") <(echo "$blessed_out")
+}
 
-    # bu rebuild, dl default
-    run ch-image --build-cache=rebuild -vv list
-    echo "$output"
+@test 'build-cache example B' {
+    # image B state, i.e., a1, b2, c3, d4, and e5 commits
+    blessed_out=$(cat << 'EOF'
+*  (img_b) RUN echo baz
+| 
+*  (img_a) RUN echo bar
+| 
+*  RUN echo foo
+| 
+*  (alpine+latest) FROM alpine+latest
+| 
+*  (HEAD -> root) 
+EOF
+)
+    ch-image build -t img_b -f - . <<'EOF'
+FROM img_a
+RUN echo baz
+EOF
+    run ch-image build-cache --tree-text
     [[ $status -eq 0 ]]
-    [[ $output = *'build cache: rebuild (command line)'* ]]
+    diff -u <(echo "$output") <(echo "$blessed_out")
+}
 
-    # bu enable, dl default
-    run ch-image --build-cache=enable -vv list
-    echo "$output"
+@test 'build-cache example C' {
+    # 
+    blessed_out=$(cat << 'EOF'
+*  (img_c) RUN echo qux
+| 
+| *  (img_b) RUN echo baz
+| | 
+| *  (img_a) RUN echo bar
+|/  
+|   
+*  RUN echo foo
+| 
+*  (alpine+latest) FROM alpine+latest
+| 
+*  (HEAD -> root) 
+EOF
+)
+    ch-image build -t img_c -f - . <<'EOF'
+FROM alpine:latest
+RUN echo foo
+RUN echo qux
+EOF
+    run ch-image build-cache --tree-text
     [[ $status -eq 0 ]]
-    [[ $output = *'build cache: enable (command line)'* ]]
-
-    # bu disable, dl default
-    run ch-image --build-cache=disable -vv list
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'build cache: disable (command line)'* ]]
-
-    # dl write-only, bu default
-    run ch-image --download-cache=write-only -vv list
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'build cache:'*'(default'* ]]
-    [[ $output = *'download cache: write-only (command line)'* ]]
-
-    # dl enable, bu default
-    run ch-image --download-cache=enable -vv list
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'download cache: enable (command line)'* ]]
+    diff -u <(echo "$output") <(echo "$blessed_out")
 }

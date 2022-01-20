@@ -4,6 +4,9 @@ import sys
 
 import charliecloud as ch
 
+## Globals ##
+cache = None
+
 ## Constants ##
 
 # Internal library of manifests, e.g. for "FROM scratch" (issue #1013).
@@ -25,15 +28,31 @@ def main(cli):
       print(ref.as_verbose_str)
       sys.exit(0)
    image = ch.Image(ref, cli.image_dir)
+   cache_dl = ch.cache.download
    ch.INFO("pulling image:    %s" % ref)
    ch.INFO("requesting arch:  %s" % ch.arch)
    if (cli.image_dir is not None):
       ch.INFO("destination:      %s" % image.unpack_path)
    else:
       ch.VERBOSE("destination:      %s" % image.unpack_path)
-   pullet = Image_Puller(image, ch.cache_dl.use_cache())
-   pullet.pull_to_unpacked(cli.last_layer)
-   pullet.done()
+
+   global cache
+   dl = ch.cache.download
+   bu = ch.cache.build
+   pullet = Image_Puller(image, dl.use_cache)
+   if (bu.mode == ch.Mode.ENABLED):
+      rootfs = image.unpack_path
+      if (not bu.branch_exists(rootfs)
+          or  bu.mode == ch.Mode.REBUILD):
+         bu.worktree_add(rootfs)
+         pullet.pull_to_unpacked(cli.last_layer)
+         pullet.done()
+         sid = bu.id_for_base(pullet)
+         bu.branch_fixup(rootfs)
+         bu.branch_commit(sid, rootfs, "FROM %s" % os.path.basename(rootfs))
+   else:
+      pullet.pull_to_unpacked(cli.last_layer)
+      pullet.done()
    ch.done_notify()
 
 
