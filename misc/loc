@@ -188,6 +188,7 @@ EOF
         grep -F '(unknown)' "$catfile" || true
         echo
         echo "🚨🚨🚨 cloc ignoring wrong number of files; expected ${ignore_ct} 🚨🚨🚨"
+        cat /tmp/loc.ignored.out
         exit 1
     fi
 }
