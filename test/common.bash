@@ -12,7 +12,7 @@ archive_grep () {
             unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
             ;;
         *)
-            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
+            tar -tf "$image" | grep -E '^([^/]*/)?ch/environment$'
             ;;
     esac
 }
