@@ -353,32 +353,6 @@ We think that this is because Docker is computing size based on the size of
 the layers rather than the unpacked image. We do not currently have a fix; see
 `issue #165 <https://github.com/hpc/charliecloud/issues/165>`_.
 
-My second-level directory :code:`dev` is empty
-----------------------------------------------
-
-Some image tarballs, such as official Ubuntu Docker images, put device files
-in :code:`/dev`. These files prevent unpacking the tarball, because
-unprivileged users cannot create device files. Further, these files are not
-needed because :code:`ch-run` overmounts :code:`/dev` anyway.
-
-We cannot reliably prevent device files from being included in the tar,
-because often that is outside our control, e.g. :code:`docker export` produces
-a tarball. Thus, we must exclude them at unpacking time.
-
-An additional complication is that :code:`ch-convert` can read tarballs both
-with a single top-level directory and without, i.e. “tarbombs”. For example,
-best practice use of :code:`tar` on the command line produces the former,
-while :code:`docker export` (invoked by :code:`ch-convert` when converting
-from Docker) produces a tarbomb.
-
-Thus, :code:`ch-convert` uses :code:`tar --exclude` to exclude from unpacking
-everything under :code:`./dev` and :code:`*/dev`, i.e., directory :code:`dev`
-appearing at either the first or second level are forced to be empty.
-
-This yields false positives if you have a tarbomb image with a directory
-:code:`dev` at the second level containing stuff you care about. Hopefully
-this is rare, but please let us know if it is your use case.
-
 My password that contains digits doesn't work in VirtualBox console
 -------------------------------------------------------------------
 
