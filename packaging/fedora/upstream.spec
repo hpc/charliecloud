@@ -188,7 +188,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 
 %changelog
-* Mon Jan 24 2021 Jordan Ogas <jogas@lanl.gov 0.26-1
+* Mon Jan 24 2022 Jordan Ogas <jogas@lanl.gov 0.26-1
 - add ch-convert script
 - new version 0.26
 * Mon Sep 20 2021 Jordan Ogas <jogas@lanl.gov 0.25-1
