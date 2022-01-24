@@ -10,7 +10,7 @@
 %{?el7:%global __python %__python3}
 
 Name:          charliecloud
-Version:       0.25
+Version:       0.26
 Release:       1%{?dist}
 Summary:       Lightweight user-defined software stacks for high-performance computing
 License:       ASL 2.0
@@ -130,31 +130,29 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_bindir}/ch-builder2squash
 %{_bindir}/ch-builder2tar
 %{_bindir}/ch-checkns
+%{_bindir}/ch-convert
 %{_bindir}/ch-dir2squash
 %{_bindir}/ch-fromhost
-%{_bindir}/ch-mount
 %{_bindir}/ch-pull2dir
 %{_bindir}/ch-pull2tar
 %{_bindir}/ch-run
 %{_bindir}/ch-run-oci
 %{_bindir}/ch-ssh
-%{_bindir}/ch-umount
 %{_bindir}/ch-tar2dir
 %{_mandir}/man1/ch-build.1*
 %{_mandir}/man1/ch-build2dir.1*
 %{_mandir}/man1/ch-builder2squash.1*
 %{_mandir}/man1/ch-builder2tar.1*
 %{_mandir}/man1/ch-checkns.1*
+%{_mandir}/man1/ch-convert.1*
 %{_mandir}/man1/ch-dir2squash.1*
 %{_mandir}/man1/ch-fromhost.1*
-%{_mandir}/man1/ch-mount.1*
 %{_mandir}/man1/ch-pull2dir.1*
 %{_mandir}/man1/ch-pull2tar.1*
 %{_mandir}/man1/ch-run.1*
 %{_mandir}/man1/ch-run-oci.1*
 %{_mandir}/man1/ch-ssh.1*
 %{_mandir}/man1/ch-tar2dir.1*
-%{_mandir}/man1/ch-umount.1*
 %{_mandir}/man7/charliecloud.7*
 %{_prefix}/lib/%{name}/base.sh
 %{_prefix}/lib/%{name}/contributors.bash
@@ -190,6 +188,9 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 
 %changelog
+* Mon Jan 24 2021 Jordan Ogas <jogas@lanl.gov 0.26-1
+- add ch-convert script
+- new version 0.26
 * Mon Sep 20 2021 Jordan Ogas <jogas@lanl.gov 0.25-1
 - bundle python lark parser
 - new version
