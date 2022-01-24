@@ -63,6 +63,7 @@ setup () {
 # round-trip through the various formats; the surprising directories (e.g.
 # /dev) are because modification times seem to change.
 compare () {
+    echo "COMPARING ${1} to ${2}"
     out=$(  rsync -nv -aAX --delete "${1}/" "$2" \
           | sed -E -e '/^$/d' \
                    -e '/^sending incremental file list/d' \
@@ -70,9 +71,6 @@ compare () {
                    -e '/^total size is/d' \
                    -e '\|^deleting ch/|d' \
                    -e '\|^deleting .dockerenv$|d' \
-                   -e '\|^deleting dev/console$|d' \
-                   -e '\|^deleting dev/pts/$|d' \
-                   -e '\|^deleting dev/shm/$|d' \
                    -e '\|^./$|d' \
                    -e '\|^WEIRD_AL_YANKOVIC$|d' \
                    -e '\|^dev/$|d' \
@@ -86,7 +84,7 @@ compare () {
 }
 
 # Kludge to cook up the right input and output descriptors for ch-convert.
-convert () {
+convert-img () {
     ct=$1
     in_fmt=$2
     out_fmt=$3;
@@ -172,14 +170,14 @@ delete () {
 test_from () {
     end=${BATS_TMPDIR}/convert.dir
     ct=1
-    convert "$ct" dir "$1"
+    convert-img "$ct" dir "$1"
     for j in ch-image docker squash tar; do
         if [[ $1 != "$j" ]]; then
             ct=$((ct+1))
-            convert "$ct" "$1" "$j"
+            convert-img "$ct" "$1" "$j"
         fi
         ct=$((ct+1))
-        convert "$ct" "$1" dir
+        convert-img "$ct" "$j" dir
         image_ok "$end"
         compare "$ch_timg" "$end"
         chtest_fixtures_ok "$end"

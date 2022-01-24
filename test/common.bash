@@ -60,13 +60,15 @@ builder_tag_p () {
 }
 
 chtest_fixtures_ok () {
+    echo "checking chtest fixtures in: ${1}"
     # Did we raise hidden files correctly?
     [[ -e ${1}/.hiddenfile1 ]]
     [[ -e ${1}/..hiddenfile2 ]]
     [[ -e ${1}/...hiddenfile3 ]]
     # Did we remove the right /dev stuff?
     [[ -e ${1}/mnt/dev/dontdeleteme ]]
-    [[ $(ls -Aq "${1}/dev") -eq 0 ]]
+    ls -Aq "${1}/dev"
+    [[ $(ls -Aq "${1}/dev") = '' ]]
     ch-run "$1" -- test -e /mnt/dev/dontdeleteme
     # Are permissions still good?
     ls -ld "$1"/maxperms_*

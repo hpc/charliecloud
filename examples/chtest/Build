@@ -146,11 +146,6 @@ fi
 # directory for this one.
 tar cf "$tarball_uncompressed" -- img
 
-# Add in the /dev fixtures in a couple more places. Note that this will cause
-# the tarball to no longer have a single root directory, but they'll be
-# removed during unpacking, restoring that condition.
-( cd img && tar rf "$tarball_uncompressed" ./dev/deleteme dev/deleteme )
-
 # Finalize the tarball.
 $gzip_cmd -f "$tarball_uncompressed"
 [[ -f $tarball ]]

@@ -54,9 +54,8 @@ cv_chimage_tar () {
     tar_out_validate "$2"
     img=$(chimage_path "$1")
     INFO 'exporting ...'
-    parent=$(dirname "$img")
-    root=$(basename "$img")
-    ( cd "$parent" && tar czf - "$root" ) | pv_ > "$2"
+    # have to make tarbomb because Docker requires tarbombs
+    ( cd "$img" && tar czf - . ) | pv_ > "$2"
 }
 
 cv_dir_chimage () {
@@ -102,9 +101,8 @@ cv_dir_tar () {
     # Don't add essential files & directories because that will happen later
     # when converted to dir or squash.
     INFO 'packing ...'
-    parent=$(dirname "$1")
-    root=$(basename "$1")
-    ( cd "$parent" && tar czf - "$root" ) | pv_ > "$2"
+    # have to make tarbomb because Docker requires tarbombs
+    ( cd "$1" && tar czf - . ) | pv_ > "$2"
 }
 
 cv_docker_chimage () {
@@ -258,11 +256,12 @@ cv_tar_dir () {
     else
         strip_ct=1  # not tarbomb
         # Escape tar glob wildcards; printf avoids echo's trailing newline.
-        root_escaped=$(printf "%s" "$2" | sed -E 's|([[*?])|\\\1|g')
+        root_escaped=$(printf "%s" "$root" | sed -E 's|([[*?])|\\\1|g')
         ex1="${root_escaped}/dev/*"
     fi
     ex2="/${ex1}"
     ex3="./${ex1}"
+    VERBOSE "exclude patterns: ${ex1} ${ex2} ${ex3}"
     #shellcheck disable=SC2094
       pv_ -s "$(stat -c%s "$1")" < "$1" \
     | tar x$decompress -p -C "$2" -f - \
