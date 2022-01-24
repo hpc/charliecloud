@@ -19,6 +19,7 @@ Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{n
 BuildRequires: gcc rsync bash
 Requires:      squashfuse squashfs-tools
 Patch1:        el7-pkgdir.patch
+Patch2:        printf.patch
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -75,6 +76,8 @@ Test fixtures for %{name}.
 %if 0%{?el7}
 %patch1 -p1
 %endif
+
+%patch2 -p1
 
 %build
 # Use old inlining behavior, see:
@@ -180,17 +183,20 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_pkgdocdir}/html
 %{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
-
 %files test
 %{_bindir}/ch-test
 %{_libexecdir}/%{name}/test
 %{_mandir}/man1/ch-test.1*
 
-
 %changelog
 * Mon Jan 24 2022 Jordan Ogas <jogas@lanl.gov 0.26-1
+- add printf patch for 32-bit
 - add ch-convert script
 - new version 0.26
+
+* Wed Jan 19 2022 Fedora Release Engineering <releng@fedoraproject.org> - 0.25-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
+
 * Mon Sep 20 2021 Jordan Ogas <jogas@lanl.gov 0.25-1
 - bundle python lark parser
 - new version
