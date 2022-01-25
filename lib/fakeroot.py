@@ -139,6 +139,9 @@ DEFAULT_CONFIGS = {
    #      seems a maintenance headache, :latest changes.
    #
    #    * grep the same file for each distro: No standardized file for this.
+   #      [Fixme: /etc/os-release is sufficiently standardized and
+   #       covers derivatives (but see Arch below)?
+   #       https://www.freedesktop.org/software/systemd/man/os-release.html]
    #
    #    * Ask lsb_release(1): Not always installed, requires executing ch-run.
 
@@ -180,6 +183,7 @@ DEFAULT_CONFIGS = {
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
+                # Fixme: Wrong for EPEL9
                 "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm; "
                 "dnf install -y fakeroot; "
                 "dnf remove -y epel-release; "
@@ -212,8 +216,8 @@ DEFAULT_CONFIGS = {
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
    "debderiv":
-   { "name": "Debian 9+ or Ubuntu 14+",
-     "match": ("/etc/os-release", r"Debian GNU/Linux (?![0-8] )|Ubuntu (?![0-9]\.|1[0-3]\.)"),
+   { "name": "Debian 9+, Ubuntu 14+, or other recent Debian derivative",
+     "match": ("/etc/os-release", r"Debian GNU/Linux (?![0-8] )|Ubuntu (?![0-9]\.|1[0-3]\.)|ID_LIKE=debian"),
      "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
                 " || ! fgrep -q _apt /etc/passwd",
                 "echo 'APT::Sandbox::User \"root\";'"
@@ -233,13 +237,49 @@ DEFAULT_CONFIGS = {
    #    not required.
 
    "fedora":
-   { "name": "Fedora 24+,",
+   { "name": "Fedora 24+",
      "match":  ("/etc/fedora-release", r"release (?!1?[0-9] |2[0-3] )"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "dnf install -y fakeroot") ],
      "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 
+   # Assume we always have fakeroot
+
+   "suse":
+   { "name": "(Open)SUSE",
+     # I don't know if there are OpenSUSE derivatives
+     "match": ("/etc/os-release", r"ID_LIKE=.*suse"),
+     "init": [ ("command -v fakeroot > /dev/null",
+                # fakeroot seems to have a missing dependency, otherwise
+                # failing with missing getopt in the fakeroot script.
+                "zypper refresh; zypper install -y fakeroot /usr/bin/getopt") ],
+     "cmds": ["zypper", "rpm"],
+     "each": ["fakeroot"] },
+
+   # If I use a recent image, it fails (on Debian 11) to find the
+   # packages mirror, which looks like
+   # https://gitlab.archlinux.org/archlinux/archlinux-docker/-/issues/56
+   # Tested with base-20210307.0.16708 on Debian 11.  Recent Arch might
+   # work under current Fedora.
+   "archlinux":
+   { "name": "Arch Linux",
+     # /etc/arch-release is empty
+     # /etc/os-release is a link to /usr/lib/os-release (not ../... as
+     # in other dostros), which is confused with the host's in the check.
+     "match": ("/usr/lib/os-release", r"Arch Linux"),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "pacman -Syq --noconfirm fakeroot") ],
+     "cmds": ["pacman"],
+     "each": ["fakeroot"] },
+
+   "alpine":
+   { "name": "Alpine",
+     "match": ("/etc/alpine-release", r"[0-9]\.[0-9]+\.[0-9]+"),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "apk update; apk add fakeroot") ],
+     "cmds": ["apk"],
+     "each": ["fakeroot"] },
 }
 
 
