@@ -116,8 +116,29 @@ class Image_Pusher:
       ch.INFO("preparing metadata")
       self.image.metadata_load()
       hist = self.image.metadata["history"]
+      # Some registries, e.g., Quay, use history metadata for simple sanity
+      # checks. For example, when an image's number of "empty_layer" history
+      # entries doesn't match the number of layers being uploaded, Quay will
+      # reject the image upload.
+      #
+      # This type of error checking is odd as the empty_layer key is optional
+      # (https://github.com/opencontainers/image-spec/blob/main/config.md).
+      #
+      # Thus, to push images built (or pulled) with Charliecloud we ensure the
+      # the total number of non-empty layers always totals one (1). To do this
+      # we iterate over the history entires backward searching for the first
+      # non-empty entry and preserve it; all others are set to empty.
+      non_empty_winner = None
+      for i in range(len(hist) - 1, -1, -1):
+         if (   "empty_layer" not in hist[i].keys()
+             or (    "empty_layer" in hist[i].keys()
+                 and hist[i]["empty_layer"] == 'false')):
+            non_empty_winner = i
+            break
+      assert(non_empty_winner is not None)
       for i in range(len(hist) - 1):
-         hist[i]["empty_layer"] = True
+         if (i != non_empty_winner):
+            hist[i]["empty_layer"] = True
       config["history"] = hist
       config_bytes = json.dumps(config, indent=2).encode("UTF-8")
       config_hash = ch.bytes_hash(config_bytes)
