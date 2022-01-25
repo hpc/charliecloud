@@ -336,6 +336,7 @@ jobs:
       - name: make uninstall
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
+          cd $ch_prefix/charliecloud-*
           sudo make uninstall
           diff -u - <(find $ch_prefix/from-tarball | sort) <<'EOF'
           /var/tmp/from-tarball
