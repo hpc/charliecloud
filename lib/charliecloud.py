@@ -2052,7 +2052,7 @@ class Storage:
             v_found = 1
       if (v_found == STORAGE_VERSION):
          VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
-      elif (v_found in {None, 1}):  # initialize/upgrade
+      elif (v_found in {None, 1, 2}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
          mkdir(self.root)
          mkdir(self.download_cache)
