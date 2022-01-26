@@ -140,9 +140,10 @@ unset_vars () {
       grep -Fq 'join: I won' "${BATS_TMPDIR}/join.1.err"
     ! grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.1.err"
 
-    # IPC resources present?
-    test -e /dev/shm/ch-run_foo
-    test -e /dev/shm/sem.ch-run_foo
+    # IPC resources present? (glibc and musl naming patterns are different)
+    ls -lh /dev/shm
+    [[ -e /dev/shm/ch-run_shm-foo ]]
+    [[ -e /dev/shm/ch-run_sem-foo || -e /dev/shm/sem.ch-run_sem-foo ]]
 
     # second peer (loser)
     run ch-run -v --join-ct=2 --join-tag=foo "$ch_timg" -- \
@@ -195,8 +196,9 @@ unset_vars () {
     ! grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.2.err"
 
     # IPC resources present?
-    test -e /dev/shm/ch-run_foo
-    test -e /dev/shm/sem.ch-run_foo
+    ls -lh /dev/shm
+    [[ -e /dev/shm/ch-run_shm-foo ]]
+    [[ -e /dev/shm/ch-run_sem-foo || -e /dev/shm/sem.ch-run_sem-foo ]]
 
     # third peer (loser, cleanup)
     ch-run -v --join-ct=3 --join-tag=foo "$ch_timg" -- \
@@ -364,7 +366,7 @@ unset_vars () {
     grep -Fq "join: 0 0 (null) 0" "${BATS_TMPDIR}/join.1.err"
 
     # PID of ch-run/printns above.
-    pid=$(sed -En 's/^ch-run\[([0-9]+)\]: argv 0:.+$/\1/p' \
+    pid=$(sed -En 's/^ch-run\[([0-9]+)\]: executing:.+$/\1/p' \
               "${BATS_TMPDIR}/join.1.err")
     echo "found pid: ${pid}"
     [[ -n $pid ]]

@@ -138,7 +138,7 @@ def main(cli_):
    env = Environment()
 
    # Read input file.
-   if (cli.file == "-"):
+   if (cli.file == "-" or cli.context == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
    else:
       fp = ch.open_(cli.file, "rt")
@@ -529,6 +529,8 @@ class I_copy(Instruction):
       return dst_canon
 
    def execute_(self):
+      if (cli.context == "-"):
+         ch.FATAL("can't COPY: no context because \"-\" given")
       if (len(self.srcs) < 1):
          ch.FATAL("can't COPY: must specify at least one source")
       # Complain about unsupported stuff.
@@ -809,17 +811,18 @@ class Run(Instruction):
       exit_code = ch.ch_run_modify(rootfs, cmd, env.env_build, env.workdir,
                                    cli.bind, fail_ok=True)
       if (exit_code != 0):
+         msg = "build failed: RUN command exited with %d" % exit_code
          if (cli.force):
             if (isinstance(fakeroot_config, fakeroot.Fakeroot_Noop)):
-               ch.ERROR("build failed: --force specified, but no suitable config found")
+               ch.FATAL(msg, "--force specified, but no suitable config found")
             else:
-               pass  # we did init --force OK but the build still failed
+               ch.FATAL(msg)  # --force inited OK but the build still failed
          elif (not cli.no_force_detect):
             if (fakeroot_config.init_done):
-               ch.ERROR("build failed: --force may fix it")
+               ch.FATAL(msg, "--force may fix it")
             else:
-               ch.ERROR("build failed: current version of --force wouldn't help")
-         ch.FATAL("build failed: RUN command exited with %d" % exit_code)
+               ch.FATAL(msg, "current version of --force wouldn't help")
+         assert False, "unreachable code reached"
 
 
    def execute_(self):

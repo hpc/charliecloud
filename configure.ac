@@ -108,6 +108,10 @@ AC_ARG_ENABLE([man],
   AS_HELP_STRING([--disable-man], [man pages]),
   [], [enable_man=yes])
 
+AC_ARG_ENABLE([syslog],
+  AS_HELP_STRING([--disable-syslog], [logging to syslog]),
+  [], [enable_syslog=yes])
+
 AC_ARG_ENABLE([test],
   AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
@@ -242,7 +246,7 @@ CH_RUN_LIBS=
 # the function with no arguments. This causes a warning for asprintf() for
 # some compilers (and I have no clue why others accept it); see issue #798.
 # Instead, try to build a small test program that calls asprintf() correctly.
-AC_MSG_CHECKING([for asprintf])
+AC_MSG_CHECKING([for asprintf in libc])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
     #define _GNU_SOURCE
     #include <stdio.h>
@@ -258,7 +262,25 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
   ]])],
   [AC_MSG_RESULT([yes])],
   [AC_MSG_RESULT([no])
-   AC_MSG_ERROR([asprintf() not found, and we have no workaround; see config.log.])])
+   AC_MSG_ERROR([asprintf(3) not found; please report this bug])])
+
+# argp_parse(3), which is included with glibc but not other libc’s, e.g. musl.
+AC_MSG_CHECKING([for argp_parse in libc])
+AC_LINK_IFELSE([AC_LANG_SOURCE([[
+    #include <argp.h>
+
+    int main(void)
+    {
+        argp_parse(0, 1, NULL, 0, 0, 0);
+        return 0;
+    }
+  ]])],
+  [AC_MSG_RESULT([yes])],  # built-in, no further action
+  [AC_MSG_RESULT([no])     # try external libargp
+   AC_CHECK_LIB(
+     [argp], [argp_parse],
+     [CH_RUN_LIBS="-largp $CH_RUN_LIBS"],
+     [AC_MSG_ERROR([argp_parse(3) not found; please report this bug])])])
 
 # pthreads; needed for "ch-run --join".
 AX_PTHREAD
@@ -571,11 +593,13 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #
 # Below are all the variables we want available outside configure.
 
-AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
-AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
-AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 AM_CONDITIONAL([ENABLE_CH_IMAGE], [test $enable_ch_image = yes])
+AM_CONDITIONAL([ENABLE_HTML], [test $enable_html = yes])
 AM_CONDITIONAL([ENABLE_LARK], [test $enable_bundled_lark = yes])
+AM_CONDITIONAL([ENABLE_MAN], [test $enable_man = yes])
+AS_IF([test $enable_syslog = yes],
+      [AC_DEFINE([ENABLE_SYSLOG], [1], [log to syslog])])
+AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 
 AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
@@ -719,10 +743,11 @@ Building Charliecloud
 ~~~~~~~~~~~~~~~~~~~~~
 
   will build and install:
+    ch-image(1) ... ${enable_ch_image}
     HTML documentation ... ${enable_html}
     man pages ... ${enable_man}
+    syslog ... ${enable_syslog}
     test suite ... ${enable_test}
-    ch-image(1) ... ${enable_ch_image}
 
   required:
     C99 compiler ... ${CC} ${CC_VERSION}

@@ -88,9 +88,22 @@ proper support is enabled, a SquashFS archive.
     bind-mounted at container :code:`/tmp`. If this is specified, a new
     :code:`tmpfs` is mounted on the container's :code:`/tmp` instead.
 
-  :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
-    Set environment variable(s), either as specified in host path :code:`FILE`,
-    or set variable :code:`VAR` to :code:`VALUE`
+  :code:`--set-env`, :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
+    Set environment variable(s). With:
+
+       * no argument: as listed in file :code:`/ch/environment` within the
+         image. It is an error if the file does not exist or cannot be read.
+         (Note that with SquashFS images, it is not currently possible to use
+         other files within the image.)
+
+       * :code:`FILE` (i.e., no equals in argument): as specified in file at
+         host path :code:`FILE`. Again, it is an error if the file cannot be
+         read.
+
+       * :code:`NAME=VALUE` (i.e., equals sign in argument): set variable
+         :code:`NAME` to :code:`VALUE`.
+
+    See below for details on how environment variables work in :code:`ch-run`.
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
@@ -291,10 +304,11 @@ environment is passed through unaltered, except:
 
 This section describes these features.
 
-The default tweaks happen first, and then :code:`--set-env` and
-:code:`--unset-env` in the order specified on the command line. The latter two
-can be repeated arbitrarily many times, e.g. to add/remove multiple variable
-sets or add only some variables in a file.
+The default tweaks happen first, then :code:`--set-env` and
+:code:`--unset-env` in the order specified on the command line, and then
+:code:`CH_RUNNING`. The two options can be repeated arbitrarily many times,
+e.g. to add/remove multiple variable sets or add only some variables in a
+file.
 
 Default behavior
 ----------------
@@ -303,17 +317,16 @@ By default, :code:`ch-run` makes the following environment variable changes:
 
 * :code:`$CH_RUNNING`: Set to :code:`Weird Al Yankovic`. While a process can
   figure out that it's in an unprivileged container and what namespaces are
-  active without this hint, the checks can be messy, and there is no way to
-  tell that it's a *Charliecloud* container specifically. This variable makes
-  such a test simple and well-defined. (**Note:** This variable is unaffected
-  by :code:`--unset-env`.)
+  active without this hint, that can be messy, and there is no way to tell
+  that it's a *Charliecloud* container specifically. This variable makes such
+  a test simple and well-defined. (**Note:** This variable is unaffected by
+  :code:`--unset-env`.)
 
 * :code:`$HOME`: If the path to your home directory is not :code:`/home/$USER`
   on the host, then an inherited :code:`$HOME` will be incorrect inside the
-  guest. This confuses some software, such as Spack.
-
-  Thus, we change :code:`$HOME` to :code:`/home/$USER`, unless
-  :code:`--no-home` is specified, in which case it is left unchanged.
+  guest. This confuses some software, such as Spack. Thus, we change
+  :code:`$HOME` to :code:`/home/$USER`, unless :code:`--no-home` is specified,
+  in which case it is left unchanged.
 
 * :code:`$PATH`: Newer Linux distributions replace some root-level
   directories, such as :code:`/bin`, with symlinks to their counterparts in
@@ -337,65 +350,96 @@ By default, :code:`ch-run` makes the following environment variable changes:
 Setting variables with :code:`--set-env`
 ----------------------------------------
 
-The purpose of :code:`--set-env` is to set environment variables in addition
-to (or instead of) those inherited from the host shell.
+The purpose of :code:`--set-env` is to set environment variables within the
+container. Values given replace any already in the environment (i.e.,
+inherited from the host shell) or set by earlier :code:`--set-env`. This flag
+takes an optional argument with two possible forms:
 
-If the argument contains an equals character, then it is interpreted as a
-variable name and value; otherwise, it is a host path to a file with one
-variable name/value per line (guest paths can be specified by prepending the
-image path). Values given replace any already set (i.e., if a variable is
-repeated, the last value wins). Environment variables in the value are
-expanded unless :code:`--env-no-expand` is given, though see below for
-syntax differences from the shell.
+1. **If the argument contains an equals sign** (:code:`=`, ASCII 61), that
+   sets an environment variable directly. For example, to set :code:`FOO` to
+   the string value :code:`bar`::
 
-For example, to prepend :code:`/opt/bin` to the current shell's path (note
-protecting expansion of :code:`$PATH` by the shell, though here the results
-would be equivalent if we let the shell do it)::
+     $ ch-run --set-env=FOO=bar ...
+
+   Single straight quotes around the value (:code:`'`, ASCII 39) are stripped,
+   though be aware that both single and double quotes are also interpreted by
+   the shell. For example, this example is similar to the prior one; the
+   double quotes are removed by the shell and the single quotes are removed by
+   :code:`ch-run`::
+
+     $ ch-run --set-env="'BAZ=qux'" ...
+
+2. **If the argument does not contain an equals sign**, it is a host path to a
+   file containing zero or more variables using the same syntax as above
+   (except with no prior shell processing). This file contains a sequence of
+   assignments separated by newlines. Empty lines are ignored, and no comments
+   are interpreted. (This syntax is designed to accept the output of
+   :code:`printenv` and be easily produced by other simple mechanisms.) For
+   example::
+
+     $ cat /tmp/env.txt
+     FOO=bar
+     BAZ='qux'
+     $ ch-run --set-env=/tmp/env.txt ...
+
+   For directory images only (because the file is read before containerizing),
+   guest paths can be given by prepending the image path.
+
+3. **If there is no argument**, the file :code:`/ch/environment` within the
+   image is used. This file is commonly populated by :code:`ENV` instructions
+   in the Dockerfile. For example, equivalently to form 2::
+
+     $ cat Dockerfile
+     [...]
+     ENV FOO=bar
+     ENV BAZ=qux
+     [...]
+     $ ch-image build -t foo .
+     $ ch-convert foo /var/tmp/foo.sqfs
+     $ ch-run --set-env /var/tmp/foo.sqfs -- ...
+
+   (Note the image path is interpreted correctly, not as the :code:`--set-env`
+   argument.)
+
+   At present, there is no way to use files other than :code:`/ch/environment`
+   within SquashFS images.
+
+Environment variables are expanded for values that look like search paths,
+unless :code:`--env-no-expand` is given prior to :code:`--set-env`. In this
+case, the value is a sequence of zero or more possibly-empty items separated
+by colon (:code:`:`, ASCII 58). If an item begins with dollar sign (:code:`$`,
+ASCII 36), then the rest of the item is the name of an environment variable.
+If this variable is set to a non-empty value, that value is substituted for
+the item; otherwise (i.e., the variable is unset or the empty string), the
+item is deleted, including a delimiter colon. The purpose of omitting empty
+expansions is to avoid surprising behavior such as an empty element in
+:code:`$PATH` meaning `the current directory
+<https://devdocs.io/bash/bourne-shell-variables#PATH>`_.
+
+For example, to set :code:`HOSTPATH` to the search path in the current shell
+(this is expanded by :code:`ch-run`, though letting the shell do it happens to
+be equivalent)::
+
+  $ ch-run --set-env='HOSTPATH=$PATH' ...
+
+To prepend :code:`/opt/bin` to this current search path::
 
   $ ch-run --set-env='PATH=/opt/bin:$PATH' ...
 
-To add variables set by Dockerfile :code:`ENV` instructions to the current
-environment::
+To prepend :code:`/opt/bin` to the search path set by the Dockerfile, as
+retrieved from guest file :code:`/ch/environment` (here we really cannot let
+the shell expand :code:`$PATH`)::
 
-  $ ch-run --set-env=$IMG/ch/environment ...
+  $ ch-run --set-env --set-env='PATH=/opt/bin:$PATH' ...
 
-To prepend :code:`/opt/bin` to the path set by the Dockerfile (here we really
-can't let the shell expand :code:`$PATH`)::
-
-  $ ch-run --set-env=$IMG/ch/environment --set-env='PATH=/opt/bin:$PATH' ...
-
-The syntax of the argument is a key-value pair separated by the first equals
-character (:code:`=`, ASCII 61), with optional single straight quotes
-(:code:`'`, ASCII 39) around the value, though be aware that quotes are also
-interpreted by the shell. Newlines (ASCII 10) are not permitted in either key
-or value. The value may be empty, but not the key.
-
-Environment variables in the value are expanded unless :code:`--env-no-expand`
-is given. In this case, the value is a sequence of possibly-empty items
-separated by colon (:code:`:`, ASCII 58). If an item begins with dollar sign
-(:code:`$`, ASCII 36), then the rest of the item the name of an environment
-variable. If this variable is set to a non-empty value, that value is
-substituted for the item; otherwise (i.e., the variable is unset or the empty
-string), the item is deleted, including a delimiter colon. The purpose of
-omitting empty expansions is to avoid surprising behavior such as an empty
-element in :code:`$PATH` meaning `the current directory
-<https://devdocs.io/bash/bourne-shell-variables#PATH>`_. If no expansions
-happen, this paragraph is a no-op.
-
-If a file is given instead, it is a sequence of such arguments, one per line.
-Empty lines are ignored. No comments are interpreted. (This syntax is designed
-to accept the output of :code:`printenv` and be easily produced by other
-simple mechanisms.)
-
-Examples of valid arguments, assuming that environment variable :code:`$BAR`
-is set to :code:`bar` and :code:`$UNSET` is unset (or set to the empty
-string):
+Examples of valid assignment, assuming that environment variable :code:`BAR`
+is set to :code:`bar` and :code:`UNSET` is unset or set to the empty string:
 
 .. list-table::
    :header-rows: 1
 
-   * - Line
-     - Key
+   * - Assignment
+     - Name
      - Value
    * - :code:`FOO=bar`
      - :code:`FOO`
@@ -417,10 +461,10 @@ string):
      - :code:`bar:baz`
    * - :code:`FOO=`
      - :code:`FOO`
-     - empty string (not unset)
+     - empty string
    * - :code:`FOO=$UNSET`
      - :code:`FOO`
-     - empty string (not unset or :code:`$UNSET`)
+     - empty string
    * - :code:`FOO=baz:$UNSET:qux`
      - :code:`FOO`
      - :code:`baz:qux` (not :code:`baz::qux`)
@@ -429,24 +473,24 @@ string):
      - :code:`:bar:baz::`
    * - :code:`FOO=''`
      - :code:`FOO`
-     - empty string (not unset)
+     - empty string
    * - :code:`FOO=''''`
      - :code:`FOO`
      - :code:`''` (two single quotes)
 
-Example invalid lines:
+Example invalid assignments:
 
 .. list-table::
    :header-rows: 1
 
-   * - Line
+   * - Assignment
      - Problem
    * - :code:`FOO bar`
-     - no separator
+     - no equals separator
    * - :code:`=bar`
-     - key cannot be empty
+     - name cannot be empty
 
-Example valid lines that are probably not what you want:
+Example valid assignments that are probably not what you want:
 
 .. Note: Plain leading space screws up ReST parser. We use ZERO WIDTH SPACE
    U+200B, then plain space. This will copy and paste incorrectly, but that
@@ -455,8 +499,8 @@ Example valid lines that are probably not what you want:
 .. list-table::
    :header-rows: 1
 
-   * - Line
-     - Key
+   * - Assignment
+     - Name
      - Value
      - Problem
    * - :code:`FOO="bar"`
@@ -558,6 +602,44 @@ Run an MPI job that can use CMA to communicate::
     $ srun ch-run --join /data/foo -- bar
 
 
+Syslog
+======
+
+By default, :code:`ch-run` logs its command line to `syslog
+<https://en.wikipedia.org/wiki/Syslog>`_. (This can be disabled by configuring
+with :code:`--disable-syslog`.) This includes: (1) the invoking real UID, (2)
+the number of command line arguments, and (3) the arguments, separated by
+spaces. For example::
+
+  Dec 10 18:19:08 mybox ch-run: uid=1000 args=7: ch-run -v /var/tmp/00_tiny -- echo hello "wor l}\$d"
+
+Logging is one of the first things done during program initialization, even
+before command line parsing. That is, almost all command lines are logged,
+even if erroneous, and there is no logging of program success or failure.
+
+Arguments are serialized with the following procedure. The purpose is to
+provide a human-readable reconstruction of the command line while also
+allowing each argument to be recovered byte-for-byte.
+
+  .. Note: The next paragraph contains ​U+200B ZERO WIDTH SPACE after the
+     backslash because backslash by itself won't build and two backslashes
+     renders as two backslashes.
+
+  * If an argument contains only printable ASCII bytes that are not
+    whitespace, shell metacharacters, double quote (:code:`"`, ASCII 34
+    decimal), or backslash (:code:`\​`, ASCII 92), then log it unchanged.
+
+  * Otherwise, (a) enclose the argument in double quotes and
+    (b) backslash-escape double quotes, backslashes, and characters
+    interpreted by Bash (including POSIX shells) within double quotes.
+
+The verbatim command line typed in the shell cannot be recovered, because not
+enough information is provided to UNIX programs. For example,
+:code:`echo  'foo'` is given to programs as a sequence of two arguments,
+:code:`echo` and :code:`foo`; the two spaces and single quotes are removed by
+the shell. The zero byte, ASCII NUL, cannot appear in arguments because it
+would terminate the string.
+
 Exit status
 ===========
 
@@ -568,4 +650,4 @@ SquashFS filesystem and the user command is killed by a signal, the exit
 status is 1 regardless of the signal value.
 
 
-..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount
+..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount mybox IMG HOSTPATH

@@ -5,9 +5,12 @@ This tutorial will teach you how to create and run Charliecloud images, using
 both examples included with the source code as well as new ones you create
 from scratch.
 
-This tutorial assumes that: (a) the Charliecloud executables are in your path,
-(b) Docker is installed on the build system, and (c) the Charliecloud source
-code is available at :code:`/usr/local/src/charliecloud`.
+This tutorial assumes that: (a) Charliecloud is in your path, including
+Charliecloud's fully unprivileged image builder :code:`ch-image` and (b) the
+Charliecloud source code is available at :code:`/usr/local/src/charliecloud`.
+Optionally, (c) :code:`ch-run` is linked with SquashFUSE to provide internal
+SquashFS image mounting. (If you wish to use Docker to build images, see the
+:ref:`FAQ <faq_building-with-docker>`.)
 
 .. contents::
    :depth: 2
@@ -28,24 +31,43 @@ This section is for the impatient. It shows you how to quickly build and run a
 with the rest of the tutorial to understand what is happening and how to use
 Charliecloud for your own applications.
 
+The preferred workflow uses our internal SquashFS mounting code. Your sysadmin
+should be able to tell you if this is linked in.
+
 ::
 
   $ cd /usr/local/share/doc/charliecloud/examples/hello
-  $ ch-build -t hello .
-  Sending build context to Docker daemon  5.632kB
+  $ ch-image build --force .
+  inferred image name: hello
   [...]
-  Successfully built eb5f42d5bb54
-  $ ch-builder2tar hello /var/tmp
-   114MiB 0:00:03 [=============================================] 103%
-  -rw-r----- 1 reidpr reidpr 49M Nov 21 14:05 /var/tmp/hello.tar.gz
-  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
-  creating new image /var/tmp/hello
-  /var/tmp/hello unpacked ok
+  grown in 4 instructions: hello
+  $ ch-convert hello /var/tmp/hello.sqfs
+  input:   ch-image  hello
+  output:  squash    /var/tmp/hello.sqfs
+  packing ...
+  Parallel mksquashfs: Using 8 processors
+  Creating 4.0 filesystem on /var/tmp/hello.sqfs, block size 65536.
+  [=============================================|] 10411/10411 100%
+  [...]
+  done
+  $ ch-run /var/tmp/hello.sqfs -- echo "I'm in a container"
+  I'm in a container
+
+If not, you can create image in plain directory format instead::
+
+  $ cd /usr/local/share/doc/charliecloud/examples/hello
+  $ ch-image build --force .
+  inferred image name: hello
+  [...]
+  grown in 4 instructions: hello
+  $ ch-convert hello /var/tmp/hello
+  input:   ch-image  hello
+  output:  dir       /var/tmp/hello
+  exporting ...
+  done
   $ ch-run /var/tmp/hello -- echo "I'm in a container"
   I'm in a container
 
-(See the :ref:`FAQ <faq_docker2tar-size>` for why the progress bar goes over
-100%.)
 
 Getting help
 ============
@@ -59,7 +81,7 @@ Charliecloud you have (if not, please report a bug). For example::
   Run a command in a Charliecloud container.
   [...]
   $ ch-run --version
-  0.2.0+4836ac1
+  0.26
 
 A description of all commands is also collected later in this documentation; see
 :doc:`command-usage`. In addition, each executable has a man page.
@@ -81,7 +103,7 @@ consult the `Dockerfile documentation
 this. Note that run-time functionality such as :code:`ENTRYPOINT` is not
 supported.
 
-We will use the following very simple Dockerfile:
+We will use the following simple Dockerfile:
 
 .. literalinclude:: ../examples/hello/Dockerfile
    :language: docker
@@ -89,122 +111,140 @@ We will use the following very simple Dockerfile:
 This creates a minimal CentOS 8 image with :code:`ssh` installed. We
 will encounter more complex Dockerfiles later in this tutorial.
 
+Build Charliecloud image
+------------------------
+
+The three arguments here are the :code:`ch-image` subcommand :code:`build`,
+the option to enable unprivileged build workarounds :code:`--force`, and the
+context directory :code:`.`, which in this case is the current directory.
+
+::
+
+  $ ch-image build --force .
+  inferred image name: hello
+  2 FROM centos:8
+  will use --force: rhel8: CentOS/RHEL 8+
+  [...]
+  7 COPY ['.'] -> 'hello'
+  9 RUN ['/bin/sh', '-c', 'touch /usr/bin/ch-ssh']
+  --force: init OK & modified 1 RUN instructions
+  grown in 4 instructions: hello
+
 .. note::
 
-   Docker does not update the base image unless asked to. Specific images can
-   be updated manually; in this case::
+   :code:`ch-image` prints information about the build process while in
+   progress. While not shown above, it uses yellow for this chatter, while
+   build command output remains in the default color (e.g., white).
 
-     $ sudo docker pull centos:8
-
-   There are various resources and scripts online to help automate this
-   process, as well as :code:`misc/docker-clean.sh`.
-
-Build Docker image
-------------------
-
-Charliecloud provides a convenience wrapper :code:`ch-build` around
-:code:`docker build` that mitigates some of the latter's more irritating
-characteristics. In particular, it passes through any HTTP proxy variables,
-and by default it uses the Dockerfile in the current directory, rather than at
-the root of the Docker context directory. (We will address the context
-directory in more detail later.)
-
-The two arguments here are a tag for the Docker image and the context
-directory, which in this case is the current directory.
+This image and the :code:`centos:8` base image used to build it are now
+visible in Charliecloud's builder storage:
 
 ::
 
-   $ ch-build -t hello .
-   Sending build context to Docker daemon  5.632kB
-   Step 1/4 : FROM centos:8
-    ---> 0d120b6ccaa8
-   [...]
-   Step 4/4 : RUN touch /usr/bin/ch-ssh
-    ---> eb5f42d5bb54
-   Successfully built eb5f42d5bb54
-   Successfully tagged hello:latest
+  $ ch-image list
+  centos:8
+  hello
 
-Note that Docker prints each step of the Dockerfile as it's executed.
 
-:code:`ch-build` and many other Charliecloud commands wrap various privileged
-:code:`docker` commands. Thus, you will be prompted for a password to escalate
-as needed. Note however that most configurations of :code:`sudo` don't require
-a password on every invocation, so privileged commands may be running even if
-you're not prompted for a password.
+Sharing images
+--------------
 
-Share image and other standard Docker stuff
--------------------------------------------
+Charliecloud images in internal storage can be converted to multiple formats
+via :code:`ch-convert`, e.g. SquashFS (if SquashFUSE is installed)::
 
-If needed, the Docker image can be manipulated with standard Docker commands.
-In particular, image sharing using a public or private Docker Hub repository
-can be very useful.
+  $ ch-convert hello /var/tmp/hello.sqfs
+  input:   ch-image  hello
+  output:  squash    /var/tmp/hello.sqfs
+  packing ...
+  [...]
+  done
+  $ ls -l /var/tmp/hello.sqfs
+  -rw-rw-r-- 1 heasterday heasterday 83288064 Nov 15 12:07 /var/tmp/hello.sqfs
 
-::
+Tarball::
 
-  $ sudo docker images
-  REPOSITORY  TAG      IMAGE ID      CREATED        SIZE
-  centos      8        0d120b6ccaa8  2 months ago   215MB MB
-  hello       latest   eb5f42d5bb54  5 minutes ago  235MB MB
-  $ sudo docker push  # FIXME
+  $ ch-convert hello /var/tmp/hello.tar.gz
+  input:   ch-image  hello
+  output:  tar       /var/tmp/hello.tar.gz
+  exporting ...
+  done
+  $ ls -l /var/tmp/hello.tar.gz
+  -rw-rw-r-- 1 heasterday heasterday 86122450 Nov 15 15:23 /var/tmp/hello.tar.gz
 
-Running the image with Docker is not generally useful, because Docker's
-run-time environment is significantly different than Charliecloud's, but it
-can have value when debugging Charliecloud.
+Directory::
 
-::
+  $ ch-convert hello /var/tmp/hello
+  input:   ch-image  hello
+  output:  dir       /var/tmp/hello
+  exporting ...
+  done
+  $ ls /var/tmp/hello
+  bin  dev  hello  lib    lost+found  mnt  proc  run   srv  tmp  var
+  ch   etc  home   lib64  media       opt  root  sbin  sys  usr
 
-  $ sudo docker run -it hello /bin/bash
-  # ls /
-  bin   dev  hello  lib    media  opt   root  sbin  sys  usr
-  boot  etc  home   lib64  mnt    proc  run   srv   tmp  var
-  # exit
-  exit
+:code:`ch-convert` can also convert images between any two supported formats,
+e.g. SquashFS to tarball::
 
-Flatten image
--------------
+  $ ch-convert hello.sqfs hello.tar.gz
+  input:   tar       hello.tar.gz
+  output:  squash    hello.sqfs
+  unpacking ...
+  [...]
+  done
 
-Next, we flatten the Docker image into a tarball, which is then a plain file
-amenable to standard file manipulation commands. This tarball is placed in an
-arbitrary directory, here :code:`/var/tmp`.
+Tarball to directory::
 
-::
+  $ ch-convert /var/tmp/hello.tar.gz /var/tmp/hello
+  input:   tar       /var/tmp/hello.tar.gz
+  output:  dir       /var/tmp/hello
+  unpacking ...
+  [...]
+  done
 
-  $ ch-builder2tar hello /var/tmp
-  74M /var/tmp/hello.tar.gz
+Charliecloud also supports "pushing" images from its internal storage to a
+registry using :code:`ch-image push` and "pulling" images in the reverse
+direction with :code:`ch-image pull`.
 
-Distribute tarball
-------------------
+
+Distributing images
+-------------------
 
 Thus far, the workflow has taken place on the build system. The next step is
-to copy the tarball to the run system. This can use any appropriate method for
-moving files: :code:`scp`, :code:`rsync`, something integrated with the
-scheduler, etc.
+to copy the built image to the run system. This can use any appropriate method
+for moving files: :code:`scp`, :code:`rsync`, something integrated with the
+scheduler, etc. (The purpose of the tarball image format is to put images in a
+single file that's easy to move around with traditional UNIX commands.)
 
 If the build and run systems are the same, then no copy is needed. This is a
 typical use case for development and testing.
 
-Unpack tarball
+If you are using the SquashFS workflow, copy the :code:`.sqfs` file you
+created above to the run system; otherwise, copy the :code:`.tar.gz`, then
+unpack it on the run system using :code:`ch-convert` as above.
+
+.. warning::
+
+   Generally, you should avoid directory-format images on shared filesystems
+   such as NFS and Lustre, in favor of local storage such as :code:`tmpfs` and
+   local hard disks. This will yield better performance for you and anyone
+   else on the shared filesystem. In contrast, SquashFS images should work
+   fine on shared filesystems.
+
+
+Running images
 --------------
 
-Charliecloud runs out of a normal directory rather than a filesystem image. In
-order to create this directory, we unpack the image tarball. This will replace
-the image directory if it already exists.
+We are now ready to run programs inside a Charliecloud container. This is done
+with the :code:`ch-run` command::
 
-::
+  $ ch-run /var/tmp/hello.sqfs -- echo hello
+  hello
 
-  $ ch-tar2dir /var/tmp/hello.tar.gz /var/tmp
-  creating new image /var/tmp/hello
-  /var/tmp/hello unpacked ok
+or::
 
-Generally, you should avoid unpacking into shared filesystems such as NFS and
-Lustre, in favor of local storage such as :code:`tmpfs` and local hard disks.
-This will yield better performance for you and anyone else on the shared
-filesystem.
+  $ ch-run /var/tmp/hello -- echo hello
+  hello
 
-.. One potential gotcha is the tarball including special files such as
-   devices. Because :code:`tar` is running unprivileged, these will not be
-   unpacked, and they can cause the extraction to fail. The fix is to delete
-   them in the Dockerfile.
 
 .. note::
 
@@ -212,15 +252,6 @@ filesystem.
    bind-mounted automatically, the image root will then appear in multiple
    locations in the container's filesystem tree. This can cause confusion for
    both users and programs.
-
-Activate image
---------------
-
-We are now ready to run programs inside a Charliecloud container. This is done
-with the :code:`ch-run` command::
-
-  $ ch-run /var/tmp/hello -- echo hello
-  hello
 
 Symbolic links in :code:`/proc` tell us the current namespaces, which are
 identified by long ID numbers::
@@ -247,10 +278,11 @@ Notice that the container has different mount (:code:`mnt`) and user
 host. This highlights Charliecloud's focus on functionality (make your UDSS
 run), rather than isolation (protect the host from your UDSS).
 
-Each invocation of :code:`ch-run` creates a new container, so if you have
-multiple simultaneous invocations, they will not share containers. However,
-container overhead is minimal, and containers communicate without hassle, so
-this is generally of peripheral interest.
+Normally, each invocation of :code:`ch-run` creates a new container, so if you
+have multiple simultaneous invocations, they will not share containers. In
+some cases this can cause problems with MPI programs. However, there is an
+option :code:`--join` that can solve them; see the :ref:`FAQ <faq_join>` for
+details.
 
 .. note::
 
@@ -269,7 +301,7 @@ number::
 
 You can also run interactive commands, such as a shell::
 
-  $ ch-run /var/tmp/hello -- /bin/bash
+  $ ch-run /var/tmp/hello.sqfs -- /bin/bash
   > stat -L --format='%i' /proc/self/ns/user
   4026532256
   > exit
@@ -280,13 +312,13 @@ sub-shell. For example::
 
   $ ls /usr/bin/oldfind
   ls: cannot access '/usr/bin/oldfind': No such file or directory
-  $ ch-run /var/tmp/hello -- ls /usr/bin/oldfind
+  $ ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldfind
   /usr/bin/oldfind
   $ ls /usr/bin/oldf*
   ls: cannot access '/usr/bin/oldf*': No such file or directory
-  $ ch-run /var/tmp/hello -- ls /usr/bin/oldf*
+  $ ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldf*
   ls: cannot access /usr/bin/oldf*: No such file or directory
-  $ ch-run /var/tmp/hello -- sh -c 'ls /usr/bin/oldf*'
+  $ ch-run /var/tmp/hello.sqfs -- sh -c 'ls /usr/bin/oldf*'
   /usr/bin/oldfind
 
 You have now successfully run commands within a single-node Charliecloud
@@ -318,14 +350,31 @@ variety of sub-filesystems under :code:`/sys`, as Ubuntu does, these will be
 available in the container as well.
 
 In addition to the default bind mounts, arbitrary user-specified directories
-can be added using the :code:`--bind` or :code:`-b` switch. By default,
-:code:`/mnt/0`, :code:`/mnt/1`, etc., are used for the destination in the guest::
+can be added using the :code:`--bind` or :code:`-b` switch. By default, mounts
+use the same path as provided from the host. In the case of directory images,
+which are writeable, the target mount directory will be automatically created
+before the container is started::
 
   $ mkdir /var/tmp/foo0
   $ echo hello > /var/tmp/foo0/bar
   $ mkdir /var/tmp/foo1
   $ echo world > /var/tmp/foo1/bar
   $ ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
+  > cat /var/tmp/foo0/bar
+  hello
+  > cat /var/tmp/foo1/bar
+  world
+
+However, as SquashFS filesystems are read-only, in this case you must provide
+a destination that already exists, like those created under :code:`/mnt`::
+
+  $ mkdir /var/tmp/foo0
+  $ echo hello > /var/tmp/foo0/bar
+  $ mkdir /var/tmp/foo1
+  $ echo world > /var/tmp/foo1/bar
+  $ ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
+  ch-run[1184427]: error: can't mkdir: /var/tmp/hello/var/tmp/foo0: Read-only file system (ch_misc.c:142 30)
+  $ ch-run -b /var/tmp/foo0:/mnt/0 -b /var/tmp/foo1:/mnt/1 /var/tmp/hello -- bash
   > ls /mnt
   0  1  2  3  4  5  6  7  8  9
   > cat /mnt/0/bar
@@ -333,13 +382,7 @@ can be added using the :code:`--bind` or :code:`-b` switch. By default,
   > cat /mnt/1/bar
   world
 
-Explicit destinations are also possible::
 
-  $ ch-run -b /var/tmp/foo0:/mnt /var/tmp/hello -- bash
-  > ls /mnt
-  bar
-  > cat /mnt/bar
-  hello
 
 Network
 -------
@@ -355,7 +398,7 @@ container, even if :code:`ssh` was initiated from a container::
   4026531837
   $ ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026531837
-  $ ch-run /var/tmp/hello -- /bin/bash
+  $ ch-run /var/tmp/hello.sqfs -- /bin/bash
   > stat -L --format='%i' /proc/self/ns/user
   4026532256
   > ssh localhost stat -L --format='%i' /proc/self/ns/user
@@ -365,7 +408,7 @@ There are several ways to SSH to a remote node and run commands inside a
 container. The simplest is to manually invoke :code:`ch-run` in the
 :code:`ssh` command::
 
-  $ ssh localhost ch-run /var/tmp/hello -- stat -L --format='%i' /proc/self/ns/user
+  $ ssh localhost ch-run /var/tmp/hello.sqfs -- stat -L --format='%i' /proc/self/ns/user
   4026532256
 
 .. note::
@@ -380,7 +423,7 @@ Another is to use the :code:`ch-ssh` wrapper program, which adds
 :code:`ch-run` arguments from the environment variable :code:`CH_RUN_ARGS`,
 making it mostly a drop-in replacement for :code:`ssh`. For example::
 
-  $ export CH_RUN_ARGS="/var/tmp/hello --"
+  $ export CH_RUN_ARGS="/var/tmp/hello.sqfs --"
   $ ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026532256
   $ ch-ssh -t localhost /bin/bash
@@ -390,14 +433,14 @@ making it mostly a drop-in replacement for :code:`ssh`. For example::
 :code:`ch-ssh` is available inside containers as well (in :code:`/usr/bin` via
 bind-mount)::
 
-  $ export CH_RUN_ARGS="/var/tmp/hello --"
-  $ ch-run /var/tmp/hello -- /bin/bash
+  $ export CH_RUN_ARGS="/var/tmp/hello.sqfs --"
+  $ ch-run /var/tmp/hello.sqfs -- /bin/bash
   > stat -L --format='%i' /proc/self/ns/user
   4026532256
   > ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026532258
 
-This also demonstrates that :code:`ch-run` does not alter your environment
+This also demonstrates that :code:`ch-run` does not alter most environment
 variables.
 
 .. warning::
@@ -421,14 +464,14 @@ User and group IDs
 
 Unlike Docker and some other container systems, Charliecloud tries to make the
 container's users and groups look the same as the host's. (This is
-accomplished by bind-mounting :code:`/etc/passwd` and :code:`/etc/group` into
-the container.) For example::
+accomplished by bind-mounting a custom :code:`/etc/passwd` and
+:code:`/etc/group` into the container.) For example::
 
   $ id -u
   901
   $ whoami
   reidpr
-  $ ch-run /var/tmp/hello -- bash
+  $ ch-run /var/tmp/hello.sqfs -- bash
   > id -u
   901
   > whoami
@@ -440,7 +483,7 @@ Charliecloud does, lets you map any container UID to your host UID.
 you can tell Charliecloud you want to be root, and it will tell you that
 you're root::
 
-  $ ch-run --uid 0 /var/tmp/hello -- bash
+  $ ch-run --uid 0 /var/tmp/hello.sqfs -- bash
   > id -u
   0
   > whoami
@@ -462,7 +505,7 @@ looks normal::
   drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/reidpr
   $ ls -ld ~
   drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 12:12 /home/reidpr
-  $ ch-run /var/tmp/hello -- bash
+  $ ch-run /var/tmp/hello.sqfs -- bash
   > ls -nd ~
   drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld ~
@@ -470,7 +513,7 @@ looks normal::
 
 But if :code:`--uid` is provided, things can seem odd. For example::
 
-  $ ch-run --uid 0 /var/tmp/hello -- bash
+  $ ch-run --uid 0 /var/tmp/hello.sqfs -- bash
   > ls -nd /home/reidpr
   drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/reidpr
   > ls -ld /home/reidpr
@@ -484,7 +527,7 @@ up as :code:`nobody`::
   -rw-rw---- 1 902 902 0 Sep 28 15:40 /tmp/foo
   $ ls -l /tmp/foo
   -rw-rw---- 1 sig sig 0 Sep 28 15:40 /tmp/foo
-  $ ch-run /var/tmp/hello -- bash
+  $ ch-run /var/tmp/hello.sqfs -- bash
   > ls -n /tmp/foo
   -rw-rw---- 1 65534 65534 843 Sep 28 21:40 /tmp/foo
   > ls -l /tmp/foo
@@ -497,9 +540,9 @@ mapped in any given container. All the rest become :code:`nogroup`::
 
   $ id
   uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),903(nerds),904(losers)
-  $ ch-run /var/tmp/hello -- id
+  $ ch-run /var/tmp/hello.sqfs -- id
   uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),65534(nogroup)
-  $ ch-run --gid 903 /var/tmp/hello -- id
+  $ ch-run --gid 903 /var/tmp/hello.sqfs -- id
   uid=901(reidpr) gid=903(nerds) groups=903(nerds),65534(nogroup)
 
 However, this doesn't affect access. The container process retains the same
@@ -509,7 +552,7 @@ access::
   $ ls -l /tmp/primary /tmp/supplemental
   -rw-rw---- 1 sig reidpr 0 Sep 28 15:47 /tmp/primary
   -rw-rw---- 1 sig nerds  0 Sep 28 15:48 /tmp/supplemental
-  $ ch-run /var/tmp/hello -- bash
+  $ ch-run /var/tmp/hello.sqfs -- bash
   > cat /tmp/primary > /dev/null
   > cat /tmp/supplemental > /dev/null
 
@@ -519,11 +562,11 @@ group is a no-op because it's mapped back to the host GID::
 
   $ ls -l /tmp/bar
   rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar
-  $ ch-run /var/tmp/hello -- chgrp nerds /tmp/bar
+  $ ch-run /var/tmp/hello.sqfs -- chgrp nerds /tmp/bar
   chgrp: changing group of '/tmp/bar': Invalid argument
-  $ ch-run /var/tmp/hello -- chgrp nogroup /tmp/bar
+  $ ch-run /var/tmp/hello.sqfs -- chgrp nogroup /tmp/bar
   chgrp: changing group of '/tmp/bar': Invalid argument
-  $ ch-run --gid 903 /var/tmp/hello -- chgrp nerds /tmp/bar
+  $ ch-run --gid 903 /var/tmp/hello.sqfs -- chgrp nerds /tmp/bar
   $ ls -l /tmp/bar
   -rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar
 
@@ -535,7 +578,7 @@ directories::
   $ chmod 2770 /tmp/baz
   $ ls -ld /tmp/baz
   drwxrws--- 2 reidpr nerds 40 Sep 28 16:19 /tmp/baz
-  $ ch-run /var/tmp/hello -- touch /tmp/baz/foo
+  $ ch-run /var/tmp/hello.sqfs -- touch /tmp/baz/foo
   $ ls -l /tmp/baz/foo
   -rw-rw---- 1 reidpr nerds 0 Sep 28 16:21 /tmp/baz/foo
 
@@ -620,7 +663,7 @@ So what is going on here?
       appropriate parallel build.
 
 4. Clean up, in order to reduce the size of layers as well as the resulting
-   Charliecloud tarball (:code:`rm -Rf`).
+   Charliecloud image (:code:`rm -Rf`).
 
 .. Finally, because it's a container image, you can be less tidy than you
    might be on a normal system. For example, the above downloads and builds in
@@ -638,14 +681,14 @@ code under active development.
 The general approach is the same as installing third-party software from
 source, but you use the :code:`COPY` instruction to transfer files from the
 host filesystem (rather than the network via HTTP) to the image. For example,
-:code:`examples/mpi/mpihello/Dockerfile.openmpi` uses this approach:
+:code:`examples/mpihello/Dockerfile.openmpi` uses this approach:
 
 .. literalinclude:: ../examples/mpihello/Dockerfile.openmpi
    :language: docker
 
 These Dockerfile instructions:
 
-1. Copy the host directory :code:`examples/mpi/mpihello` to the image at path
+1. Copy the host directory :code:`examples/mpihello` to the image at path
    :code:`/hello`. The host path is relative to the *context directory*, which
    is tarred up and sent to the Docker daemon. Docker builds have no access to
    the host filesystem outside the context directory.
@@ -668,7 +711,7 @@ Once the image is built, we can see the results. (Install the image into
 
 ::
 
-  $ ch-run /var/tmp/mpihello -- ls -lh /hello
+  $ ch-run /var/tmp/mpihello-openmpi.sqfs -- ls -lh /hello
   total 32K
   -rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 22:37 Makefile
@@ -692,14 +735,14 @@ demonstrate this.
 
 ::
 
-  $ cd examples/mpi/mpihello
+  $ cd examples/mpihello
   $ ls -l
   total 20
   -rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile
   -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
   -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
   -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
-  $ ch-run -b . --cd /mnt/0 /var/tmp/mpihello -- make
+  $ ch-run -b .:/mnt/0 --cd /mnt/0 /var/tmp/mpihello.sqfs -- make
   mpicc -std=gnu11 -Wall hello.c -o hello
   $ ls -l
   total 32
@@ -748,9 +791,9 @@ For example, using Slurm :code:`srun` and the :code:`mpihello` example above::
 
   $ stat -L --format='%i' /proc/self/ns/user
   4026531837
-  $ ch-run /var/tmp/mpihello -- mpirun --version
+  $ ch-run /var/tmp/mpihello-openmpi.sqfs -- mpirun --version
   mpirun (Open MPI) 2.1.5
-  $ srun -n4 ch-run /var/tmp/mpihello -- /hello/hello
+  $ srun -n4 ch-run /var/tmp/mpihello-openmpi.sqfs -- /hello/hello
   0: init ok cn001, 4 ranks, userns 4026554650
   1: init ok cn001, 4 ranks, userns 4026554652
   3: init ok cn002, 4 ranks, userns 4026554652
@@ -778,7 +821,7 @@ such as Slurm configuration.
 
 For example::
 
-  $ ch-run /var/tmp/mpihello -- mpirun -np 4 /hello/hello
+  $ ch-run /var/tmp/mpihello-openmpi.sqfs -- mpirun -np 4 /hello/hello
   0: init ok cn001, 4 ranks, userns 4026532256
   1: init ok cn001, 4 ranks, userns 4026532256
   2: init ok cn001, 4 ranks, userns 4026532256
@@ -819,16 +862,13 @@ worked out how to do this yet. (See `issue #5
 
    The image directory is mounted read-only by default so it can be shared by
    multiple Charliecloud containers in the same or different jobs. It can be
-   mounted read-write with :code:`ch-run -w`.
+   mounted read-write with :code:`ch-run -w` if you are not using SquashFS.
 
 .. warning::
 
    The image can reside on most filesystems, but be aware of metadata impact.
    A non-trivial Charliecloud job may overwhelm a network filesystem, earning
    you the ire of your sysadmins and colleagues.
-
-   NFS sometimes does not work for read-only images; see `issue #9
-   <https://github.com/hpc/charliecloud/issues/9>`_.
 
 Interactive MPI hello world
 ---------------------------
@@ -839,22 +879,31 @@ one of those nodes. For example::
 
   $ salloc -N4
 
-The next step is to distribute the image tarball to the compute nodes. To do
-so, we run one instance of :code:`ch-tar2dir` on each node::
+The next step is to distribute the image to the compute nodes. For SquashFS
+images, this is handled by the internal mounting process; for tarballs, we run
+one instance of :code:`ch-convert` on each node using :code:`srun`::
 
-  $ srun ch-tar2dir mpihello.tar.gz /var/tmp
-  creating new image /tmp/mpihello
-  creating new image /tmp/mpihello
-  creating new image /tmp/mpihello
-  creating new image /tmp/mpihello
-  /tmp/mpihello unpacked ok
-  /tmp/mpihello unpacked ok
-  /tmp/mpihello unpacked ok
-  /tmp/mpihello unpacked ok
+  $ srun ch-convert mpihello-openmpi.tar.gz /var/tmp/mpihello-openmpi
+  input:   tar       mpihello-openmpi.tar.gz
+  output:  dir       /var/tmp/mpihello-openmpi
+  unpacking ...
+  input:   tar       mpihello-openmpi.tar.gz
+  output:  dir       /var/tmp/mpihello-openmpi
+  unpacking ...
+  input:   tar       mpihello-openmpi.tar.gz
+  output:  dir       /var/tmp/mpihello-openmpi
+  unpacking ...
+  input:   tar       mpihello-openmpi.tar.gz
+  output:  dir       /var/tmp/mpihello-openmpi
+  unpacking ...
+  done
+  done
+  done
+  done
 
 We can now activate the image and run our program::
 
-  $ srun --cpus-per-task=1 ch-run /var/tmp/mpihello -- /hello/hello
+  $ srun --cpus-per-task=1 ch-run /var/tmp/mpihello-openmpi.sqfs -- /hello/hello
   2: init ok cn001, 64 ranks, userns 4026532567
   4: init ok cn001, 64 ranks, userns 4026532571
   8: init ok cn001, 64 ranks, userns 4026532579
@@ -883,19 +932,19 @@ Note that this script both unpacks the image and runs it.
 
 Submit it with something like::
 
-  $ sbatch -N4 slurm.sh ~/mpihello.tar.gz /var/tmp
+  $ sbatch -N4 slurm.sh ~/mpihello-openmpi.tar.gz /var/tmp
   207745
 
 When the job is complete, look at the output::
 
   $ cat slurm-207745.out
-  tarball:   /home/reidpr/mpihello.tar.gz
-  image:     /var/tmp/mpihello
-  creating new image /var/tmp/mpihello
-  creating new image /var/tmp/mpihello
+  tarball:   /home/reidpr/mpihello-openmpi.tar.gz
+  image:     /var/tmp/mpihello-openmpi
+  creating new image /var/tmp/mpihello-openmpi
+  creating new image /var/tmp/mpihello-openmpi
   [...]
-  /var/tmp/mpihello unpacked ok
-  /var/tmp/mpihello unpacked ok
+  /var/tmp/mpihello-openmpi unpacked ok
+  /var/tmp/mpihello-openmpi unpacked ok
   container: mpirun (Open MPI) 2.1.5
   0: init ok cn001.localdomain, 144 ranks, userns 4026554766
   37: init ok cn002.localdomain, 144 ranks, userns 4026554800
@@ -910,19 +959,25 @@ Success!
 Interactive Apache Spark
 ------------------------
 
-This example is in :code:`examples/spark`. Build a tarball and upload it to
-your cluster.
+This example is in :code:`examples/spark`. Build a tarball or SquashFS and
+upload it to your cluster.
 
-Once you have an interactive job, unpack the tarball.
+Once you have an interactive job, prepare the image. Recall that for the
+SquashFS workflow this is handled by the internal mounting process.
 
+tarball:
 ::
 
-  $ srun ch-tar2dir spark.tar.gz /var/tmp
-  creating new image /var/tmp/spark
-  creating new image /var/tmp/spark
-  [...]
-  /var/tmp/spark unpacked ok
-  /var/tmp/spark unpacked ok
+  $ srun ch-convert spark.tar.gz /var/tmp/spark
+  input:   tar       spark.tar.gz
+  output:  dir       /var/tmp/spark
+  unpacking ...
+  input:   tar       spark.tar.gz
+  output:  dir       /var/tmp/spark
+  unpacking ...
+  done
+  done
+
 
 We need to first create a basic configuration for Spark, as the defaults in
 the Dockerfile are insufficient. (For real jobs, you'll want to also configure
@@ -958,7 +1013,7 @@ you know. Edit to match your system; in particular, use local disks instead of
 
 We can now start the Spark master::
 
-  $ ch-run -b ~/sparkconf /var/tmp/spark -- /spark/sbin/start-master.sh
+  $ ch-run -b ~/sparkconf /var/tmp/spark.sqfs -- /spark/sbin/start-master.sh
 
 Look at the log in :code:`/tmp/spark/log` to see that the master started
 correctly::
@@ -997,7 +1052,7 @@ tests (:code:`examples/other/spark/test.bats`), or a simple for loop of
 
 ::
 
-  $ srun sh -c "   ch-run -b ~/sparkconf /var/tmp/spark -- \
+  $ srun sh -c "   ch-run -b ~/sparkconf /var/tmp/spark.sqfs -- \
                           spark/sbin/start-slave.sh $MASTER_URL \
                 && sleep infinity" &
 
@@ -1027,7 +1082,7 @@ on each compute node. For example (note single quotes)::
 
 We can now start an interactive shell to do some Spark computing::
 
-  $ ch-run -b ~/sparkconf /var/tmp/spark -- /spark/bin/pyspark --master $MASTER_URL
+  $ ch-run -b ~/sparkconf /var/tmp/spark.sqfs -- /spark/bin/pyspark --master $MASTER_URL
 
 Let's use this shell to estimate 𝜋 (this is adapted from one of the Spark
 `examples <http://spark.apache.org/examples.html>`_):
@@ -1056,7 +1111,7 @@ omitted.)
 
 ::
 
-  $ ch-run -b ~/sparkconf /var/tmp/spark -- \
+  $ ch-run -b ~/sparkconf /var/tmp/spark.sqfs -- \
            /spark/bin/spark-submit --master $MASTER_URL \
            /spark/examples/src/main/python/pi.py 1024
   [...]
@@ -1089,3 +1144,7 @@ Output::
   Pi is roughly 3.141393
 
 Success! (to four significant digits)
+
+..  LocalWords:  NEWROOT rhel oldfind oldf mem drwxr xr sig drwxrws mpihello
+..  LocalWords:  openmpi rwxr rwxrwx cn cpus sparkconf MasterWebUI MasterUI
+..  LocalWords:  StandaloneRestServer MYSECRET TransportClientFactory sc

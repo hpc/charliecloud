@@ -98,6 +98,10 @@ contributors.bash: ../README.rst
 	printf 'declare -a ch_contributors\n' >> $@
 	sed -En 's/^\*.+<(.+@.+)>.*$$/ch_contributors+=('"'"'\1'"'"')/p' < $< >> $@
 
+# Remove empty charliecloud directories after uninstallation.
+uninstall-hook:
+	rmdir $$(find $(pkglibdir) -type d | sort -r)
+
 version.txt: ../configure
 	printf '@PACKAGE_VERSION@\n' > $@
 

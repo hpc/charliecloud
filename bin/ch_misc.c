@@ -1,6 +1,8 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
+#include <ctype.h>
+#include <fnmatch.h>
 #include <libgen.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -22,20 +24,10 @@
 #define SUPP_GIDS_MAX 128
 
 
-/** Constants **/
-
-/* Names of verbosity levels. */
-const char *VERBOSE_LEVELS[] = { "error",
-                                 "warning",
-                                 "info",
-                                 "verbose",
-                                 "debug" };
-
-
 /** External variables **/
 
-/* Level of chatter on stderr desired (0-3). */
-int verbose;
+/* Level of chatter on stderr. */
+enum log_level verbose;
 
 /* Path to host temporary directory. Set during command line processing. */
 char *host_tmp = NULL;
@@ -46,10 +38,88 @@ char *username = NULL;
 
 /** Function prototypes (private) **/
 
-// none
+void msgv(enum log_level level, const char *file, int line, int errno_,
+          const char *fmt, va_list ap);
 
 
 /** Functions **/
+
+/* Serialize the null-terminated vector of arguments argv and return the
+   result as a newly allocated string. The purpose is to provide a
+   human-readable reconstruction of a command line where each argument can
+   also be recovered byte-for-byte; see ch-run(1) for details. */
+char *argv_to_string(char **argv)
+{
+   char *s = NULL;
+
+   for (size_t i = 0; argv[i] != NULL; i++) {
+      char *argv_, *x;
+      bool quote_p = false;
+
+      // Max length is escape every char plus two quotes and terminating zero.
+      T_ (argv_ = calloc(2 * strlen(argv[i]) + 3, 1));
+
+      // Copy to new string, escaping as we go. Note lots of fall-through. I'm
+      // not sure where this list of shell meta-characters came from; I just
+      // had it on hand already from when we were deciding on the image
+      // reference transformation for filesystem paths.
+      for (size_t ji = 0, jo = 0; argv[i][ji] != 0; ji++) {
+         char c = argv[i][ji];
+         if (isspace(c) || !isascii(c) || !isprint(c))
+            quote_p = true;
+         switch (c) {
+         case '!':   // history expansion
+         case '"':   // string delimiter
+         case '$':   // variable expansion
+         case '\\':  // escape character
+         case '`':   // output expansion
+            argv_[jo++] = '\\';
+         case '#':   // comment
+         case '%':   // job ID
+         case '&':   // job control
+         case '\'':  // string delimiter
+         case '(':   // subshell grouping
+         case ')':   // subshell grouping
+         case '*':   // globbing
+         case ';':   // command separator
+         case '<':   // redirect
+         case '=':   // globbing
+         case '>':   // redirect
+         case '?':   // globbing
+         case '[':   // globbing
+         case ']':   // globbing
+         case '^':   // command “quick substitution”
+         case '{':   // command grouping
+         case '|':   // pipe
+         case '}':   // command grouping
+         case '~':   // home directory expansion
+            quote_p = true;
+         default:
+            argv_[jo++] = c;
+            break;
+         }
+      }
+
+      if (quote_p) {
+         x = argv_;
+         T_ (1 <= asprintf(&argv_, "\"%s\"", argv_));
+         free(x);
+      }
+
+      if (i != 0) {
+         x = s;
+         s = cat(s, " ");
+         free(x);
+      }
+
+      x = s;
+      s = cat(s, argv_);
+      free(x);
+      free(argv_);
+   }
+
+   return s;
+}
 
 /* Return true if buffer buf of length size is all zeros, false otherwise. */
 bool buf_zero_p(void *buf, size_t size)
@@ -70,6 +140,136 @@ char *cat(const char *a, const char *b)
        b = "";
    T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
+}
+
+/* Read the file listing environment variables at path, and return a
+   corresponding list of struct env_var. If there is a problem reading the
+   file, or with any individual variable, exit with error. */
+struct env_var *env_file_read(const char *path)
+{
+   struct env_var *vars;
+   FILE *fp;
+
+   Tf (fp = fopen(path, "r"), "can't open: %s", path);
+
+   vars = list_new(sizeof(struct env_var), 0);
+   for (size_t line_no = 1; true; line_no++) {
+      struct env_var var;
+      char *line = NULL;
+      size_t line_len = 0;  // don't care but required by getline(3)
+      errno = 0;
+      if (-1 == getline(&line, &line_len, fp)) {
+         if (errno == 0)    // EOF
+            break;
+         else
+            Tf (0, "can't read: %s", path);
+      }
+      if (line[strlen(line) - 1] == '\n')  // rm newline if present
+         line[strlen(line) - 1] = 0;
+      if (line[0] == 0)                    // skip blank lines
+         continue;
+      var = env_var_parse(line, path, line_no);
+      list_append((void **)&vars, &var, sizeof(var));
+   }
+
+   Zf (fclose(fp), "can't close: %s", path);
+   return vars;
+}
+
+/* Set environment variable name to value. If expand, then further expand
+   variables in value marked with "$" as described in the man page. */
+void env_set(const char *name, const char *value, const bool expand)
+{
+   char *value_, *value_expanded;
+   bool first_written;
+
+   // Walk through value fragments separated by colon and expand variables.
+   T_ (value_ = strdup(value));
+   value_expanded = "";
+   first_written = false;
+   while (true) {                               // loop executes ≥ once
+      char *fgmt = strsep(&value_, ":");        // NULL -> no more items
+      if (fgmt == NULL)
+         break;
+      if (expand && fgmt[0] == '$' && fgmt[1] != 0) {
+         fgmt = getenv(fgmt + 1);               // NULL if unset
+         if (fgmt != NULL && fgmt[0] == 0)
+            fgmt = NULL;                        // convert empty to unset
+      }
+      if (fgmt != NULL) {                       // NULL -> omit from output
+         if (first_written)
+            value_expanded = cat(value_expanded, ":");
+         value_expanded = cat(value_expanded, fgmt);
+         first_written = true;
+      }
+   }
+
+   // Save results.
+   VERBOSE("environment: %s=%s", name, value_expanded);
+   Z_ (setenv(name, value_expanded, 1));
+}
+
+/* Remove variables matching glob from the environment. This is tricky,
+   because there is no standard library function to iterate through the
+   environment, and the environ global array can be re-ordered after
+   unsetenv(3) [1]. Thus, the only safe way without additional storage is an
+   O(n^2) search until no matches remain.
+
+   Our approach is O(n): we build up a copy of environ, skipping variables
+   that match the glob, and then assign environ to the copy. (This is a valid
+   thing to do [2].)
+
+   [1]: https://unix.stackexchange.com/a/302987
+   [2]: http://man7.org/linux/man-pages/man3/exec.3p.html */
+void env_unset(const char *glob)
+{
+   char **new_environ = list_new(sizeof(char *), 0);
+   for (size_t i = 0; environ[i] != NULL; i++) {
+      char *name, *value;
+      int matchp;
+      split(&name, &value, environ[i], '=');
+      T_ (name != NULL);          // environ entries must always have equals
+      matchp = fnmatch(glob, name, 0);
+      if (matchp == 0) {
+         VERBOSE("environment: unset %s", name);
+      } else {
+         T_ (matchp == FNM_NOMATCH);
+         *(value - 1) = '=';  // rejoin line
+         list_append((void **)&new_environ, &name, sizeof(name));
+      }
+   }
+   environ = new_environ;
+}
+
+/* Parse the environment variable in line and return it as a struct env_var.
+   Exit with error on syntax error; if path is non-NULL, attribute the problem
+   to that path at line_no. Note: Trailing whitespace such as newline is
+   *included* in the value. */
+struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
+{
+   char *name, *value, *where;
+
+   if (path == NULL) {
+      T_ (where = strdup(line));
+   } else {
+      T_ (1 <= asprintf(&where, "%s:%zu", path, lineno));
+   }
+
+   // Split line into variable name and value.
+   split(&name, &value, line, '=');
+   Te (name != NULL, "can't parse variable: no delimiter: %s", where);
+   Te (name[0] != 0, "can't parse variable: empty name: %s", where);
+   free(where);  // for Tim
+
+   // Strip leading and trailing single quotes from value, if both present.
+   if (   strlen(value) >= 2
+       && value[0] == '\''
+       && value[strlen(value) - 1] == '\'') {
+      value[strlen(value) - 1] = 0;
+      value++;
+   }
+
+   return (struct env_var){ name, value };
 }
 
 /* Copy the buffer of size size pointed to by new into the last position in
@@ -167,10 +367,10 @@ void mkdirs(const char *base, const char *path, char **denylist)
 
    basec = realpath_safe(base);
 
-   DEBUG("mkdirs: base: %s", basec);
-   DEBUG("mkdirs: path: %s", path);
+   TRACE("mkdirs: base: %s", basec);
+   TRACE("mkdirs: path: %s", path);
    for (size_t i = 0; denylist[i] != NULL; i++)
-      DEBUG("mkdirs: deny: %s", denylist[i]);
+      TRACE("mkdirs: deny: %s", denylist[i]);
 
    pathw = cat(path, "");  // writeable copy
    saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
@@ -179,7 +379,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
    while (component != NULL) {
       next = cat(nextc, "/");
       next = cat(next, component);  // canonical except for last component
-      DEBUG("mkdirs: next: %s", next)
+      TRACE("mkdirs: next: %s", next)
       component = strtok_r(NULL, "/", &saveptr);  // next NULL if current last
       if (path_exists(next, &sb, false)) {
          if (S_ISLNK(sb.st_mode)) {
@@ -192,7 +392,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
          Tf (S_ISDIR(sb.st_mode) || !component,   // last component not dir OK
              "can't mkdir: exists but not a directory: %s", next);
          nextc = realpath_safe(next);
-         DEBUG("mkdirs: exists, canonical: %s", nextc);
+         TRACE("mkdirs: exists, canonical: %s", nextc);
       } else {
          Te (path_subdir_p(basec, next),
              "can't mkdir: %s not subdirectory of %s", next, basec);
@@ -202,48 +402,68 @@ void mkdirs(const char *base, const char *path, char **denylist)
                 next, denylist[i]);
          Zf (mkdir(next, 0777), "can't mkdir: %s", next);
          nextc = next;  // canonical b/c we just created last component as dir
-         DEBUG("mkdirs: created: %s", nextc)
+         TRACE("mkdirs: created: %s", nextc)
       }
    }
-   DEBUG("mkdirs: done");
+   TRACE("mkdirs: done");
 }
 
-/* Print a formatted message on stderr if the level warrants it. Levels:
-
-     0 : "error"   : always print; exit unsuccessfully afterwards
-     1 : "warning" : always print
-     2 : "info"    : print if verbose >= 2
-     3 : "verbose" : print if verbose >= 3
-     4 : "debug"   : print if verbose >= 4 */
-void msg(int level, const char *file, int line, int errno_,
+/* Print a formatted message on stderr if the level warrants it. */
+void msg(enum log_level level, const char *file, int line, int errno_,
          const char *fmt, ...)
 {
    va_list ap;
 
+   va_start(ap, fmt);
+   msgv(level, file, line, errno_, fmt, ap);
+   va_end(ap);
+}
+
+noreturn void msg_fatal(const char *file, int line, int errno_,
+                       const char *fmt, ...)
+{
+   va_list ap;
+
+   va_start(ap, fmt);
+   msgv(LL_FATAL, file, line, errno_, fmt, ap);
+   va_end(ap);
+
+   exit(EXIT_FAILURE);
+}
+
+/* va_list form of msg(). */
+void msgv(enum log_level level, const char *file, int line, int errno_,
+          const char *fmt, va_list ap)
+{
    if (level > verbose)
       return;
 
    fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
 
-   if (level <= 1 && fmt != NULL)
-      fprintf(stderr, "%s: ", VERBOSE_LEVELS[level]);
-
-   if (fmt == NULL)
-      fputs(VERBOSE_LEVELS[level], stderr);
-   else {
-      va_start(ap, fmt);
-      vfprintf(stderr, fmt, ap);
-      va_end(ap);
+   // Prefix for the more urgent levels.
+   switch (level) {
+   case LL_FATAL:
+      fprintf(stderr, "error: ");  // "fatal" too morbid for users
+      break;
+   case LL_WARNING:
+      fprintf(stderr, "warning: ");
+      break;
+   default:
+      break;
    }
 
+   // Default message if not specified. Users should not see this.
+   if (fmt == NULL)
+      fmt = "please report this bug";
+
+   vfprintf(stderr, fmt, ap);
    if (errno_)
       fprintf(stderr, ": %s (%s:%d %d)\n",
               strerror(errno_), file, line, errno_);
    else
       fprintf(stderr, " (%s:%d)\n", file, line);
-
-   if (level == 0)
-      exit(EXIT_FAILURE);
+   if (fflush(stderr))
+      abort();  // can't print an error b/c already trying to do that
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. If
@@ -287,6 +507,16 @@ unsigned long path_mount_flags(const char *path)
                                | ST_RDONLY     | ST_RELATIME | ST_SYNCHRONOUS;
 
    Z_ (statvfs(path, &sv));
+
+   // Flag 0x20 is ST_VALID according to the kernel [1], which clashes with
+   // MS_REMOUNT, so inappropriate to pass through. Glibc unsets it from the
+   // flag bits returned by statvfs(2) [2], but musl doesn’t [3], so unset it.
+   //
+   // [1]: https://github.com/torvalds/linux/blob/3644286f/include/linux/statfs.h#L27
+   // [2]: https://sourceware.org/git?p=glibc.git;a=blob;f=sysdeps/unix/sysv/linux/internal_statvfs.c;h=b1b8dfefe6be909339520d120473bd67e4bece57
+   // [3]: https://git.musl-libc.org/cgit/musl/tree/src/stat/statvfs.c?h=v1.2.2
+   sv.f_flag &= ~0x20;
+
    Ze (sv.f_flag & ~known_flags, "unknown mount flags: 0x%lx %s",
        sv.f_flag & ~known_flags, path);
 

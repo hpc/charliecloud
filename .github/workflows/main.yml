@@ -35,8 +35,9 @@ jobs:
 
       - name: early setup & validation
         run: |
-          sudo chmod 1777 /mnt /usr/local/src
           [[ -n $CH_BUILDER ]]
+          sudo timedatectl set-timezone America/Denver
+          sudo chmod 1777 /mnt /usr/local/src
           echo "ch_makej=-j$(getconf _NPROCESSORS_ONLN)" >> $GITHUB_ENV
           # Remove sbin directories from $PATH (see issue #43). Assume none of
           # these are the first entry in $PATH.
@@ -62,19 +63,22 @@ jobs:
           echo builder: ${{ matrix.builder }}
           echo pack_fmt: ${{ matrix.pack_fmt }}
           echo keep_sudo: ${{ matrix.keep_sudo }}
-          env | egrep '^(PATH|USER)='
-          env | egrep '^(ch|CH)_'
-          [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
+          uname -a
+          lsb_release -a
           id
-          printf 'umask for %s: ' $USER && umask
-          printf 'umask under sudo: ' && sudo sh -c umask
-          [[ $(umask) = 0022 ]]
-          [[ $(sudo sh -c umask) = 0077 ]]
           pwd
           getconf _NPROCESSORS_ONLN
           free -m
           df -h
           locale -a
+          timedatectl
+          env | egrep '^(PATH|USER)='
+          env | egrep '^(ch|CH)_'
+          [[ $PATH != */usr/local/sbin* ]]  # verify sbin removal; see above
+          printf 'umask for %s: ' $USER && umask
+          printf 'umask under sudo: ' && sudo sh -c umask
+          [[ $(umask) = 0022 ]]
+          [[ $(sudo sh -c umask) = 0077 ]]
 
       - name: lines of code
         if: ${{ matrix.builder == 'none' }}
@@ -129,6 +133,22 @@ jobs:
           make
           sudo sh -c 'umask 0022 && make install'
           sudo ldconfig
+
+      - name: install musl and friends
+        if: ${{ matrix.pack_fmt == 'tar-unpack' }}
+        run: |
+          sudo apt-get install -y musl-tools
+          # At present we use argp to parse command line arguments. This is
+          # not portable; it's a glibc extension (see #1260). Thus, install a
+          # standalone argp.
+          cd /usr/local/src
+          git clone --depth=1 https://github.com/ericonr/argp-standalone.git
+          cd argp-standalone
+          autoreconf --force --install
+          CC=musl-gcc ./configure
+          make $ch_makej
+          sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
+          sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
@@ -201,6 +221,23 @@ jobs:
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
           # Configure and verify output.
+          #
+          # We want to support any standard libc, so build against musl for
+          # some cases:
+          #
+          #   squash-mount: glibc; libsquashfuse and libfuse3 are built with it
+          #   squash-unpack: glibc; to test ch-fromhost which assumes glibc
+          #   tar-unpack: musl
+          #
+          # See PR #1258, which is a FTBFS for musl. Other build steps in this
+          # workflow also use glibc.
+          if [[ $CH_TEST_PACK_FMT == tar-unpack ]]; then
+              export CC=musl-gcc
+              # GNU ldd(1) doesn't work on musl binaries.
+              LDD='/lib/ld-musl-x86_64.so.1 --list'
+          else
+              LDD=ldd
+          fi
           ./configure --prefix=$ch_prefix/from-git
           set -x
           fgrep 'documentation: yes' config.log
@@ -213,7 +250,7 @@ jobs:
           fi
           fgrep 'recommended tests, tar-unpack mode: yes' config.log
           fgrep 'recommended tests, squash-unpack mode: yes' config.log
-          if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
+          if [[ $CH_TEST_PACK_FMT = squash-mount ]]; then
               fgrep 'recommended tests, squash-mount mode: yes' config.log
               fgrep 'internal SquashFS mounting ... yes' config.log
           else
@@ -224,9 +261,9 @@ jobs:
           # Build and install.
           make $ch_makej
           sudo make $ch_makej install
-          ldd bin/ch-run
+          $LDD bin/ch-run
           bin/ch-run --version
-          ldd $ch_prefix/from-git/bin/ch-run
+          $LDD $ch_prefix/from-git/bin/ch-run
           $ch_prefix/from-git/bin/ch-run --version
           # Ensure bundled Lark in tarball.
           make $ch_makej dist
@@ -339,6 +376,23 @@ jobs:
         if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
           $ch_prefix/from-tarball/bin/ch-test all
+
+      - name: make uninstall
+        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        run: |
+          cd $ch_prefix/charliecloud-*
+          sudo make uninstall
+          diff -u - <(find $ch_prefix/from-tarball | sort) <<'EOF'
+          /var/tmp/from-tarball
+          /var/tmp/from-tarball/bin
+          /var/tmp/from-tarball/lib
+          /var/tmp/from-tarball/libexec
+          /var/tmp/from-tarball/share
+          /var/tmp/from-tarball/share/doc
+          /var/tmp/from-tarball/share/man
+          /var/tmp/from-tarball/share/man/man1
+          /var/tmp/from-tarball/share/man/man7
+          EOF
 
       - name: rebuild with most things --disable’d
         if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}

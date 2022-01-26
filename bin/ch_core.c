@@ -251,7 +251,8 @@ enum img_type img_type_get(const char *path)
    Tf (fp != NULL, "can't open: %s", path);
    Tf (fread(magic, sizeof(char), 4, fp) == 4, "can't read: %s", path);
    Zf (fclose(fp), "can't close: %s", path);
-   INFO("image file magic expected: 6873 7173; actual: %x%x %x%x", magic[0], magic[1], magic[2], magic[3]);
+   VERBOSE("image file magic expected: 6873 7173; actual: %x%x %x%x",
+           magic[0], magic[1], magic[2], magic[3]);
 
    // SquashFS magic number is 6873 7173, i.e. "hsqs". I think "sqsh" was
    // intended but the superblock designers were confused about endianness.
@@ -260,15 +261,15 @@ enum img_type img_type_get(const char *path)
       return IMG_SQUASH;
 
    FATAL("unknown image type: %s", path);
-   return IMG_NONE;  // unreachable, avoid warning; see issue #1158
 }
+
 /* Begin coordinated section of namespace joining. */
 void join_begin(const char *join_tag)
 {
    int fd;
 
-   join.sem_name = cat("/ch-run_", join_tag);
-   join.shm_name = cat("/ch-run_", join_tag);
+   join.sem_name = cat("/ch-run_sem-", join_tag);
+   join.shm_name = cat("/ch-run_shm-", join_tag);
 
    // Serialize.
    join.sem = sem_open(join.sem_name, O_CREAT, 0600, 1);
@@ -278,11 +279,11 @@ void join_begin(const char *join_tag)
    // Am I the winner?
    fd = shm_open(join.shm_name, O_CREAT|O_EXCL|O_RDWR, 0600);
    if (fd > 0) {
-      INFO("join: I won");
+      VERBOSE("join: I won");
       join.winner_p = true;
       Z_ (ftruncate(fd, sizeof(*join.shared)));
    } else if (errno == EEXIST) {
-      INFO("join: I lost");
+      VERBOSE("join: I lost");
       join.winner_p = false;
       fd = shm_open(join.shm_name, O_RDWR, 0);
       T_ (fd > 0);
@@ -304,17 +305,17 @@ void join_begin(const char *join_tag)
 void join_end(int join_ct)
 {
    if (join.winner_p) {                                // winner still serial
-      INFO("join: winner initializing shared data");
+      VERBOSE("join: winner initializing shared data");
       join.shared->winner_pid = getpid();
       join.shared->proc_left_ct = join_ct;
    } else                                              // losers serialize
       sem_timedwait_relative(join.sem, JOIN_TIMEOUT);
 
    join.shared->proc_left_ct--;
-   INFO("join: %d peers left excluding myself", join.shared->proc_left_ct);
+   VERBOSE("join: %d peers left excluding myself", join.shared->proc_left_ct);
 
    if (join.shared->proc_left_ct <= 0) {
-      INFO("join: cleaning up IPC resources");
+      VERBOSE("join: cleaning up IPC resources");
       Te (join.shared->proc_left_ct == 0, "expected 0 peers left but found %d",
           join.shared->proc_left_ct);
       Zf (sem_unlink(join.sem_name), "can't unlink sem: %s", join.sem_name);
@@ -326,7 +327,7 @@ void join_end(int join_ct)
    Z_ (munmap(join.shared, sizeof(*join.shared)));
    Z_ (sem_close(join.sem));
 
-   INFO("join: done");
+   VERBOSE("join: done");
 }
 
 /* Join a specific namespace. */
@@ -350,7 +351,7 @@ void join_namespace(pid_t pid, const char *ns)
 /* Join the existing namespaces created by the join winner. */
 void join_namespaces(pid_t pid)
 {
-   INFO("joining namespaces of pid %d", pid);
+   VERBOSE("joining namespaces of pid %d", pid);
    join_namespace(pid, "user");
    join_namespace(pid, "mnt");
 }
@@ -363,8 +364,7 @@ void run_user_command(char *argv[], const char *initial_dir)
    if (initial_dir != NULL)
       Zf (chdir(initial_dir), "can't cd to %s", initial_dir);
 
-   for (int i = 0; argv[i] != NULL; i++)
-      INFO("argv %d: %s", i, argv[i]);
+   VERBOSE("executing: %s", argv_to_string(argv));
 
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    execvp(argv[0], argv);  // only returns if error
@@ -463,7 +463,7 @@ void setup_passwd(const struct container *c)
       if (errno) {
          Tf (0, "getpwuid(3) failed");
       } else {
-         INFO("UID %d not found; using dummy info", c->container_uid);
+         VERBOSE("UID %d not found; using dummy info", c->container_uid);
          T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
                           "charlie", c->container_uid, c->container_gid,
                           "Charliecloud User", "charlie"));
@@ -488,7 +488,7 @@ void setup_passwd(const struct container *c)
       if (errno) {
          Tf (0, "getgrgid(3) failed");
       } else {
-         INFO("GID %d not found; using dummy info", c->container_gid);
+         VERBOSE("GID %d not found; using dummy info", c->container_gid);
          T_ (1 <= dprintf(fd, "%s:x:%u:\n", "charliegroup", c->container_gid));
       }
    }
