@@ -2005,10 +2005,12 @@ class Storage:
 
    @property
    def valid_p(self):
-      # FIXME: require version file too when appropriate (#1147)
-      """Return True if storage present and seems valid, False otherwise."""
+      """Return True if storage present and seems valid, even if old, False
+         otherwise. This answers “is the storage directory real”, not “can
+         this storage directory be used”; it should return True for more or
+         less any Charliecloud storage directory we might feasibly come
+         across, even if it can't be upgraded. See also #1147."""
       return (os.path.isdir(self.unpack_base) and
-              os.path.isdir(self.build_cache) and
               os.path.isdir(self.download_cache))
 
    @property
