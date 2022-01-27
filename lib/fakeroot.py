@@ -257,11 +257,6 @@ DEFAULT_CONFIGS = {
      "cmds": ["zypper", "rpm"],
      "each": ["fakeroot"] },
 
-   # If I use a recent image, it fails (on Debian 11) to find the
-   # packages mirror, which looks like
-   # https://gitlab.archlinux.org/archlinux/archlinux-docker/-/issues/56
-   # Tested with base-20210307.0.16708 on Debian 11.  Recent Arch might
-   # work under current Fedora.
    "archlinux":
    { "name": "Arch Linux",
      # /etc/arch-release is empty
