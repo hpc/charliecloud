@@ -7,6 +7,7 @@ import sys
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../lib/charliecloud"))
+import build_cache as bu
 import charliecloud as ch
 import build
 import misc
@@ -30,13 +31,13 @@ def main():
    if (not os.path.exists(ch.CH_RUN)):
       ch.depfails.append(("missing", ch.CH_RUN))
 
-   ap = argparse.ArgumentParser(formatter_class=ch.HelpFormatter,
+   ap = ch.ArgumentParser(
       description="Build and manage images; completely unprivileged.",
       epilog="""Storage directory is used for caching and temporary images.
                 Location: first defined of --storage, $CH_IMAGE_STORAGE, and
-                %s.""" % ch.Storage.root_default())
-   ap._optionals.title = "options"  # https://stackoverflow.com/a/16981688
-   sps = ap.add_subparsers(title="subcommands", metavar="CMD")
+                %s.""" % ch.Storage.root_default(),
+      sub_title="subcommands",
+      sub_metavar="CMD")
 
    # Common options.
    #
@@ -79,18 +80,19 @@ def main():
          { "metavar": "ARCH",
            "default": "host",
            "help": "architecture for image registries (default: host)"}],
-       [ ["--build-cache"],
+       [ ["--bucache"],
          { "metavar": "MODE",
-           "help": "build cache mode: enable (default), disable, rebuild"}],
-       [ ["--download-cache"],
+           "type": ch.Build_Mode,
+           "help": "build cache mode: enabled, disabled, rebuild"}],
+       [ ["--dlcache"],
          { "metavar": "MODE",
-           "help": "download cache mode: enable (default), disable"}],
+           "help": "download cache mode: enabled, disabled"}],
        [ ["--dependencies"],
          { "action": misc.Dependencies,
            "help": "print any missing dependencies and exit" }],
        [ ["--no-cache"],
          { "action": "store_true",
-           "help": "disable build and download cache reading" }],
+           "help": "shorthand for --bucache=rebuild --dlcache=write-only" }],
        [ ["--password-many"],
          { "action": "store_true",
            "help": "re-prompt each time a registry password is needed" }],
@@ -138,9 +140,7 @@ def main():
       ap.add_argument(*args, **kwargs)
 
    # build
-   help="build image from Dockerfile"
-   sp = sps.add_parser("build", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("build", "build image from Dockerfile")
    add_opts(sp, build.main, deps_check=True, stog_init=True)
    sp.add_argument("-b", "--bind", metavar="SRC[:DST]",
                    action="append", default=[],
@@ -164,38 +164,28 @@ def main():
                    help="context directory")
 
    # build-cache
-   help="build cache information and options"
-   sp = sps.add_parser("build-cache", help=help, description=help,
-                  formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("build-cache", "print build cache information")
    add_opts(sp, misc.build_cache, deps_check=True, stog_init=True)
-   grp = sp.add_mutually_exclusive_group()
-   grp.add_argument("--gc",
+   sp.add_argument("--gc",
                    action="store_true",
-                   help="run garbage collection on cache")
-   grp.add_argument("--reset",
+                   help="run garbage collection first")
+   sp.add_argument("--reset",
                    action="store_true",
-                   help="clear and re-initialize build cache")
-   grp.add_argument("--tree-debug",
+                   help="clear and re-initialize first")
+   sp.add_argument("--text",
                    action="store_true",
-                   help="print a text tree of the cache storage")
-   grp.add_argument("--tree-text",
+                   help="print a text tree summary")
+   sp.add_argument("--tree-dot",
                    action="store_true",
-                   help="print a text tree of the cache storage")
-   grp.add_argument("--tree-dot",
-                   action="store_true",
-                   help="create a DOT and PDF export of the tree in CWD")
+                   help="write DOT and PDF tree summaries")
 
    # delete
-   help="delete image from internal storage"
-   sp = sps.add_parser("delete", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("delete", "delete image from internal storage")
    add_opts(sp, misc.delete, deps_check=True, stog_init=True)
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
 
    # import
-   help="copy external image into storage"
-   sp = sps.add_parser("import", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("import", "copy external image into storage")
    add_opts(sp, misc.import_, deps_check=True, stog_init=True)
    sp.add_argument("path", metavar="PATH",
                    help="directory or tarball to import")
@@ -203,17 +193,14 @@ def main():
                    help="destination image name (tag)")
 
    # list
-   help="print information about image(s)"
-   sp = sps.add_parser("list", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("list", "print information about image(s)")
    add_opts(sp, misc.list_, deps_check=True, stog_init=True)
    sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
 
    # pull
-   help="pull image from remote repository to local filesystem"
-   sp = sps.add_parser("pull", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("pull",
+                      "copy image from remote repository to local filesystem")
    add_opts(sp, pull.main, deps_check=True, stog_init=True)
    sp.add_argument("--last-layer", metavar="N", type=int,
                    help="stop after unpacking N layers")
@@ -224,9 +211,8 @@ def main():
                    help="unpacked image path (default: opaque path in storage dir)")
 
    # push
-   help="push image from local filesystem to remote repository"
-   sp = sps.add_parser("push", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("push",
+                      "copy image from local filesystem to remote repository")
    add_opts(sp, push.main, deps_check=True, stog_init=True)
    sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("--image", metavar="DIR",
@@ -235,21 +221,15 @@ def main():
                    help="destination image reference (default: IMAGE_REF)")
 
    # python-path
-   help="print path to python interpreter in use"
-   sp = sps.add_parser("python-path", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("python-path", "print path to python interpreter in use")
    add_opts(sp, misc.python_path, deps_check=False, stog_init=False)
 
    # reset
-   help="delete everything in ch-image builder storage"
-   sp = sps.add_parser("reset", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("reset", "delete everything in ch-image builder storage")
    add_opts(sp, misc.reset, deps_check=True, stog_init=False)
 
    # storage-path
-   help="print storage directory path"
-   sp = sps.add_parser("storage-path", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("storage-path", "print storage directory path")
    add_opts(sp, misc.storage_path, deps_check=False, stog_init=False)
 
    # Parse it up!
@@ -264,7 +244,7 @@ def main():
       ch.dependencies_check()
    if (storage_init[cli.func]):
       ch.storage.init()
-      ch.cache.build.storage_init()
+      bu.init(cli)
    cli.func(cli)
 
 

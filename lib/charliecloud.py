@@ -46,14 +46,6 @@ lark_version = tuple(int(i) for i in lark.__version__.split("."))
 if (not LARK_MIN <= lark_version <= LARK_MAX):
    depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
 
-# Git version range for build cache.
-GIT_MIN = (2, 34, 1)
-GIT_MAX = (2, 34, 1)
-
-# git2dot version range for build cache .dot file generation.
-DOT_MIN = (0, 8, 3)
-DOT_MAX = (0, 8, 3)
-
 # Requests is not bundled, so this noise makes the file parse and
 # --version/--help work even if it's not installed.
 try:
@@ -66,6 +58,15 @@ except ImportError:
    requests = types.ModuleType("requests")
    requests.auth = types.ModuleType("requests.auth")
    requests.auth.AuthBase = object
+
+
+## Enums ##
+
+# Build cache mode.
+class Build_Mode(enum.Enum):
+   ENABLED = "enabled"
+   DISABLED = "disabled"
+   REBUILD = "rebuild"
 
 
 ## Constants ##
@@ -92,9 +93,6 @@ ARCH_MAP = { "x86_64":    "amd64",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
-
-# Build cache root ID.
-CACHE_ROOT_ID = '4a4f-5345-0043-4150-4142-4c41-4e43-4100'
 
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
@@ -247,16 +245,6 @@ log_fp = sys.stderr  # File object to print logs to.
 tls_verify = True
 
 
-## Enums ##
-
-# Cache mode.
-class Mode(enum.Enum):
-   ENABLED    = "enable"
-   DISABLED   = "disable"
-   REBUILD    = "rebuild"
-   WRITE_ONLY = "write-only"
-
-
 ## Exceptions ##
 
 class No_Fatman_Error(Exception): pass
@@ -264,6 +252,56 @@ class Not_In_Registry_Error(Exception): pass
 
 
 ## Classes ##
+
+class ArgumentParser(argparse.ArgumentParser):
+
+   class HelpFormatter(argparse.HelpFormatter):
+
+      def __init__(self, *args, **kwargs):
+         # max_help_position os undocumented but I don't know another way.
+         super().__init__(max_help_position=26, *args, **kwargs)
+
+      # Suppress duplicate metavar printing when option has both short and
+      # long flavors. E.g., instead of:
+      #
+      #   -s DIR, --storage DIR  set builder internal storage directory to DIR
+      #
+      # print:
+      #
+      #   -s, --storage DIR      set builder internal storage directory to DIR
+      #
+      # From https://stackoverflow.com/a/31124505.
+      def _format_action_invocation(self, action):
+         if (not action.option_strings or action.nargs == 0):
+            return super()._format_action_invocation(action)
+         default = self._get_default_metavar_for_optional(action)
+         args_string = self._format_args(action, default)
+         return ', '.join(action.option_strings) + ' ' + args_string
+
+   def __init__(self, sub_title=None, sub_metavar=None, *args, **kwargs):
+      super().__init__(formatter_class=self.HelpFormatter, *args, **kwargs)
+      self._optionals.title = "options"  # https://stackoverflow.com/a/16981688
+      if (sub_title is not None):
+         self.subs = self.add_subparsers(title=sub_title, metavar=sub_metavar)
+
+   def add_parser(self, title, desc, *args, **kwargs):
+      return self.subs.add_parser(title, help=desc, description=desc,
+                                  *args, **kwargs)
+
+   def parse_args(self, *args, **kwargs):
+      cli = super().parse_args(*args, **kwargs)
+      # Incompatible arguments inexpressible by standard means.
+      if (cli.no_cache and cli.bucache is not None):
+         self.error("--no-cache incompatible with --bucache")
+      if (cli.no_cache and cli.dlcache is not None):
+         self.error("--no-cache incompatible with --dlcache")
+      # Unpack shorthand options.
+      if (cli.no_cache):
+         cli.bucache = Build_Mode.REBUILD
+         cli.dlcache = None  # FIXME
+      return cli
+
+
 class Cache:
    """The source of Cache operations for both building and downloading.
 
@@ -281,20 +319,7 @@ class Cache:
       self.build = Build_Cache(self.init_bmode(bu_mode), self.git_ok, bu_path)
       self.download = Download_Cache(self.init_dlmode(dl_mode))
 
-   @property
-   def git_ok(self):
-      return self.git
-
    ## Constructor helpers ##
-
-   def init_bmode(self, mode):
-      "Return canonical build cache Mode enum from value."
-      if (not self.git_ok):
-         return Mode.DISABLED
-      if (mode is None):
-         return Mode.ENABLED
-      assert(Mode(mode) in [Mode.ENABLED, Mode.DISABLED, Mode.REBUILD])
-      return Mode(mode)
 
    def init_dlmode(self, mode):
       "Return the canonical download Mode enum from value."
@@ -302,20 +327,6 @@ class Cache:
          return Mode.ENABLED
       assert(Mode(mode) in [Mode.ENABLED, Mode.WRITE_ONLY])
       return Mode(mode)
-
-   def init_git(self):
-      "Return True if the right git is installed; otherwise return False."
-      CACHE_V("checking for git")
-      cp = cmd_return(["git", "--version"])
-      CACHE_D(cp.stdout)
-      if (cp.returncode):
-         return False
-      out = cp.stdout.split(" ")[-1]
-      git_version = tuple(int(i) for i in out.strip().split("."))
-      global GIT_MIN, GIT_MAX
-      if (not GIT_MIN <= git_version <= GIT_MAX):
-         return False
-      return True
 
 
 class Build_Cache(Cache):
@@ -795,31 +806,6 @@ class Credentials:
             self.username = username
             self.password = password
       return (username, password)
-
-
-class HelpFormatter(argparse.HelpFormatter):
-
-   def __init__(self, *args, **kwargs):
-      # max_help_position is undocumented but I don't know how else to do this.
-      #kwargs["max_help_position"] = 26
-      super().__init__(max_help_position=26, *args, **kwargs)
-
-   # Suppress duplicate metavar printing when option has both short and long
-   # flavors. E.g., instead of:
-   #
-   #   -s DIR, --storage DIR  set builder internal storage directory to DIR
-   #
-   # print:
-   #
-   #   -s, --storage DIR      set builder internal storage directory to DIR
-   #
-   # From https://stackoverflow.com/a/31124505.
-   def _format_action_invocation(self, action):
-      if (not action.option_strings or action.nargs == 0):
-         return super()._format_action_invocation(action)
-      default = self._get_default_metavar_for_optional(action)
-      args_string = self._format_args(action, default)
-      return ', '.join(action.option_strings) + ' ' + args_string
 
 
 class Image:
@@ -2289,46 +2275,56 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + [img, "--"] + args)
    return cmd(args, env=env, fail_ok=fail_ok)
 
-def cmd(args, cwd=None, env=None, fail_ok=False):
-   "Run subprocess without stdout or stderr redirection. Return exit code"
-   VERBOSE("environment: %s" % env)
-   VERBOSE("executing: %s" % args)
-   cp = subprocess.run(args, cwd=cwd, env=env, stdin=subprocess.DEVNULL)
-   if (not fail_ok and cp.returncode):
-      FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
+def cmd(argv, fail_ok=False, **kwargs):
+   """Run command using cmd_base(). If fail_ok, return the exit code whether
+      or not the process succeeded; otherwise, return (zero) only if the
+      process succeeded and exit with fatal error if it failed."""
+   cp = cmd_base(argv, **kwargs)
    return cp.returncode
 
+def cmd_base(argv, fail_ok=False, **kwargs):
+   """Run a command to completion. If not fail_ok, exit with a fatal error if
+      the command does not exit with code zero. If logging is verbose or
+      higher, first print the command line arguments; if debug or higher, the
+      environment as well (if given). Return the CompletedProcess object."""
+   VERBOSE("executing: %s" % argv)
+   if ("env" in kwargs):
+      VERBOSE("environment: %s" % env)
+   cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
+   if (not fail_ok and cp.returncode != 0):
+      FATAL("command failed with code %d: %s" % (cp.returncode, argv[0]))
+   return cp
 
-# FIXME: the following wrappers are a mess. The issue is that cmd doesn't
-# cover our use cases for git. The following two methods were put in to address
-# that, however, it clear looking at the code that they are messy.
-#
-#   In short, we need to run a git command(s) and be able to do zero or
-#   more the following depending on the git operation, e.g., commit, log,
-#   worktree, etc.:
-#
-#     - print args
-#     - process stdout/stderr
-#     - print stdout/stderr (debug, verbose etc.)
-#     - exit on failure
-#     - don't exit on failure
-#     - specify cwd
+def cmd_stdout(argv, **kwargs):
+   """Run command using cmd_base(), capturing its standard output. Return the
+      CompletedProcess object (its stdout is available in the "stdout"
+      attribute). If logging is info, discard stderr; otherwise send it to the
+      existing stderr. If logging is debug or higher, print stdout."""
+   if (verbose >= 1):  # verbose or higher
+      stderr = None
+   else:
+      stderr = subprocess.DEVNULL
+   cp = cmd_base(argv, encoding="UTF-8", stdout=subprocess.PIPE, stderr=stderr,
+                 **kwargs)
+   if (verbose >= 2):  # debug or higher
+      # just dump to stdout rather than using DEBUG() to match cmd_quiet
+      sys.stdout.write(cp.stdout)
+      sys.stdout.flush()
+   return cp
 
-def cmd_git(args, cwd=None):
-   "Run git subprocess redirecting stderr to stdout and capturing it."
-   args.insert(0, "git")
-   cp = cmd_return(args, cwd=cwd)
-   CACHE_D("%s" % cp.stdout)
-   if (cp.returncode):
-      FATAL("git command failed with code %d: %s" % (cp.returncode, args[0]))
-
-def cmd_return(args, cwd=None):
-   """Run subprocess redireting stderr to stdout and capturing it. Return
-   subprocess object"""
-   CACHE_D("executing: %s" % args)
-   return subprocess.run(args, cwd=cwd, encoding="utf-8",
-                       stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                       stderr=subprocess.STDOUT)
+def cmd_quiet(argv, **kwargs):
+   """Run command using cmd() and return the exit code. If logging is info,
+      discard both stdout and stderr; if it's verbose, discard stdout only; if
+      it's debug or higher, discard nothing."""
+   if (verbose >= 2):  # debug or higher
+      stdout=None
+   else:
+      stdout=subprocess.DEVNULL
+   if (verbose >= 1):  # verbose or higher
+      stderr=None
+   else:
+      stderr=subprocess.DEVNULL
+   return cmd(argv, stdout=stdout, stderr=stderr, **kwargs)
 
 def color_reset(*fps):
    for fp in fps:
@@ -2477,11 +2473,9 @@ def grep_p(path, rx):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, verbose, cache_verbose
+   global log_festoon, log_fp, verbose
    assert (0 <= cli.verbose <= 3)
-   assert (0 <= cli.cache_verbose <= 2)
    verbose = cli.verbose
-   cache_verbose = cli.cache_verbose
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
@@ -2501,22 +2495,6 @@ def init(cli):
       arch = arch_host
    else:
       arch = cli.arch
-   # cache configuration
-   # FIXME: unclear how to make --no-cache mutually exclusive with both
-   # --download-cache and --build-cache in ch-image.py.in considering how
-   # common options are handled.
-   if (cli.no_cache and cli.build_cache):
-      FATAL("--no-cache cannot be used with --build-cache")
-   if (cli.no_cache and cli.download_cache):
-      FATAL("--no-cache cannot be used with --download-cache")
-   global cache
-   if (cli.no_cache):
-      # --no-cache is shorthand for --build-cache=disable and
-      # --download-cache=write-only, thus we can't make use of the convenient enum
-      # conversion.
-      cache = Cache(Mode.REBUILD, Mode.WRITE_ONLY, storage.build_cache)
-   else:
-      cache = Cache(cli.build_cache, cli.download_cache, storage.build_cache)
    # misc
    global password_many, tls_verify
    password_many = cli.password_many

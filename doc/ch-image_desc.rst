@@ -573,21 +573,24 @@ Print basic information about the cache: number of entries (commits), number of
 files, disk space used, number of named and unnamed branches, number of state
 IDs, etc.
 
-Options:
+If any of the following options are given, do the corresponding operation
+before printing. Multiple options can be given, in which case they happen in
+this order.
+
+  :code:`--reset`
+    Clear and re-initialize the build cache.
 
   :code:`--gc`
     Run Git garbage collection on the cache. Among other things, this will
     remove all cache entries not currently reachable from a named branch.
 
-  :code:`--reset`
-    Clear and re-initialize the build cache.
+  :code:`--text`
+    Print a text tree of the cache using Git's :code:`git log --graph`
+    feature. If :code:`-v` is also given, the tree has more detail.
 
-  :code:`--tree-text`
-    Print a text tree of the cache using Git's :code:`git log --graph` feature.
-
-  :code:`--tree-dot`
-    Create a DOT export of the tree and a PDF rendering in the current working
-    directory, :code:`./build-cache.dot` and a `./build-cache.pdf` respectively.
+  :code:`--dot`
+    Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
+    rendering :code:`./build-cache.pdf`. FIXME required tools
 
 :code:`delete`
 ==============
