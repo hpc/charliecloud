@@ -270,6 +270,23 @@ class Ubuntu_18(_Debian):
 class Ubuntu_Latest(_Debian):
    base = "ubuntu:latest"
 
+# This looks as if it has worked for some value of "forever".
+class _SUSE (Test):
+   config = "suse"
+   runs = { **Test.runs, **{ Run.NEEDED:      "zypper install -y openssh-clients" } }
+class _OpenSUSE_leap (_SUSE):
+   base = "opensuse/leap"
+
+# I don't know how far these go back.
+class _Arch (Test):
+   config = "archlinux"
+   base = "archlinux"
+   runs = { **Test.runs, **{ Run.NEEDED:      "pacman -Syq openssh" } }
+
+class _Alpine (Test):
+   config = "alpine"
+   base = "alpine"
+   runs = { **Test.runs, **{ Run.NEEDED:      "apk add openssh" } }
 
 # main loop
 
