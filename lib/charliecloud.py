@@ -17,6 +17,7 @@ import pathlib
 import platform
 import pprint
 import re
+import shlex
 import shutil
 import stat
 import subprocess
@@ -315,7 +316,6 @@ class Cache:
         dl_mode ... String. (cli input)
         bu_path ... Build cache storage path."""
    def __init__(self, bu_mode, dl_mode, bu_path):
-      self.git = self.init_git()
       self.build = Build_Cache(self.init_bmode(bu_mode), self.git_ok, bu_path)
       self.download = Download_Cache(self.init_dlmode(dl_mode))
 
@@ -412,15 +412,6 @@ class Build_Cache(Cache):
       else:
          WARNING("graphviz (dot) not in path; skipping pdf render")
 
-   def print_storage(self):
-      #FIXME:
-      INFO("commits: ")
-      INFO("files: ")
-      INFO("disk used (GiB): ")
-      INFO("named branches: ")
-      INFO("unamed branches: ")
-      INFO("state IDs: ")
-
    def print_tree(self, debug=False):
       if (not self.git_ok):
          FATAL("can't print tree; wrong git or not in path")
@@ -435,37 +426,6 @@ class Build_Cache(Cache):
       sys.exit(0)
 
    ## Storage operations ##
-
-   def storage_init(self):
-      """Initialize bare git repo and set upstream origin to root; fail
-         otherwise"""
-      path = self.storage_path
-      mkdirs(self.storage_path)
-      if (os.listdir(path)):
-         return
-      CACHE_V("initializing build cache.")
-      CACHE_V("build cache storage: %s" % path)
-      CACHE_V("initialize bare git repo")
-      # init bare repo
-      cmd_git(["init", "--bare", "--initial-branch=root", path])
-      # You can't use regular git commands on a bare repo. So we set bare repo
-      # upstream origin to the first commit "root" via temp dir.
-      with tempfile.TemporaryDirectory(dir=path) as tmpdir:
-         CACHE_V("setting upstream origin root")
-         init_dir = Path(os.path.join(tmpdir, "init"))
-         cmd_git(["clone", path, init_dir])
-         cmd_git(["checkout", "-b", "root"], cwd=init_dir)
-         cmd(["touch", ".root"], cwd=init_dir)
-         cmd_git(["add", ".root"], cwd=init_dir)
-         cmd_git(["commit", "-m", CACHE_ROOT_ID], cwd=init_dir)
-         cmd_git(["push", "--set-upstream", "origin", "root"], cwd=init_dir)
-
-      # Verify the bare repo exists and has files we expect.
-      if (not (os.path.exists(path // "HEAD")
-          and  os.path.isdir(path  // "hooks")
-          and  os.path.isdir(path  // "info")
-          and  os.path.isdir(path  // "objects"))):
-         FATAL("failed to initilize build cache")
 
    def prune(self):
       CACHE_V("running git prune.")
@@ -553,7 +513,7 @@ class Build_Cache(Cache):
       for root, dirs, files in os.walk(".", followlinks=False):
          for d in dirs:
             dir_path = os.path.join(root, d)
-            if (not os.listdir(dir_path)):
+            if (not ch.listdir(dir_path)):
                empty_dirs.append(dir_path)
                st = os.lstat(dir_path)
                fs_meta.update({dir_path: {"mode": st.st_mode,
@@ -630,21 +590,6 @@ class Build_Cache(Cache):
       "Return bytes read from a file."
       with open(f, "rb")  as fp:
          return fp.read()
-
-   def bytes_from_hex(self, s):
-      # FIXME: The git output is gnarly. Despite my best efforts to sanitize it
-      # we still find newlines... The following shouldn't be necessary but at
-      # this point I'm afraid to remove it.
-      try:
-         b = bytes.fromhex(s.strip())
-      except ValueError:
-         FATAL("malformed hex: %s" % s)
-      return b
-
-   def bytes_from_root(self):
-      global CACHE_ROOT_ID
-      root_id = self.translate_id(CACHE_ROOT_ID)
-      return bytes.fromhex(root_id)
 
    def commit_from_id(self, sid, worktree, branch="--all"):
       """Search all commits for state id and return time sorted list of cached
@@ -1035,7 +980,7 @@ class Image:
          last_layer = sys.maxsize
       INFO("flattening image")
       imgdir = self.unpack_path
-      if (os.path.isdir(imgdir) and ['.git', '.root'] != os.listdir(imgdir)):
+      if (os.path.isdir(imgdir) and { '.git', '.root' } != ch.listdir(imgdir)):
          self.unpack_clear()
       self.unpack_layers(layer_tars, last_layer)
       self.unpack_init()
@@ -2089,8 +2034,7 @@ class Storage:
                FATAL("can't move: %s -> %s: %s"
                      % (x.filename, x.filename2, x.strerror))
       ossafe(os.rmdir, "can't rmdir: %s" % old.root, old.root)
-      if (len(ossafe(os.listdir, "can't list: %s" % old.root.parent,
-                     old.root.parent)) == 0):
+      if (len(listdir(old.root.parent)) == 0):
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
 
@@ -2267,6 +2211,12 @@ def bytes_hash(data):
    h.update(data)
    return h.hexdigest()
 
+def chdir(path):
+   "Change CWD to path and return previous CWD. Exit on error."
+   old = ossafe(os.getcwd, "can't getcwd(2)")
+   ossafe(os.chdir, "can't chdir: %s" % path, path)
+   return old
+
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
@@ -2287,7 +2237,8 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       the command does not exit with code zero. If logging is verbose or
       higher, first print the command line arguments; if debug or higher, the
       environment as well (if given). Return the CompletedProcess object."""
-   VERBOSE("executing: %s" % argv)
+   argv = [str(i) for i in argv]
+   VERBOSE("executing: %s" % " ".join(shlex.quote(i) for i in argv))
    if ("env" in kwargs):
       VERBOSE("environment: %s" % env)
    cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
@@ -2371,6 +2322,25 @@ def digest_trim(d):
       FATAL("not a string: %s" % repr(d))
    except IndexError:
       FATAL("no algorithm tag: %s" % d)
+
+def disk_bytes(path):
+   """Return the number of disk bytes consumed by path. Note this is probably
+      different from the file size."""
+   return os.lstat(path).st_blocks * 512
+
+def du(path):
+   """Return a tuple (number of files, total bytes on disk) for everything
+      under path. Warning: double-counts files with multiple hard links."""
+   file_ct = 1
+   byte_ct = disk_bytes(path)
+   for (dir_, subdirs, files) in os.walk(path):
+      file_ct += len(subdirs) + len(files)
+      byte_ct += sum(disk_bytes(dir_ + "/" + i) for i in subdirs + files)
+   return (file_ct, byte_ct)
+
+def listdir(path):
+   "Return set of entries in directory path, without self (.) and parent (..)."
+   return set(ossafe(os.listdir, "can't list: %s" % path, path))
 
 def done_notify():
    if (user() == "jogas"):
@@ -2585,6 +2555,23 @@ def rmtree(path):
                % (path, x.filename, x.strerror))
    else:
       assert False, "unimplemented"
+
+def si_binary_bytes(ct):
+   # FIXME: varies between 1 and 3 significant figures
+   ct = float(ct)
+   for suffix in ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB"):
+      if (ct < 1024):
+         return (ct, suffix)
+      ct /= 1024
+   assert False, "unreachable"
+
+def si_decimal(ct):
+   ct = float(ct)
+   for suffix in ("", "K", "M", "G", "T", "P", "E", "Z"):
+      if (ct < 1000):
+         return (ct, suffix)
+      ct /= 1000
+   assert False, "unreachable"
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):

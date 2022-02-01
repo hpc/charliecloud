@@ -6,6 +6,7 @@ import os
 import os.path
 import sys
 
+import build_cache as bu
 import charliecloud as ch
 import pull
 import version
@@ -40,22 +41,22 @@ class Version(Action_Exit):
 # because caller manages that.
 
 def build_cache(cli):
-   # reset and init
-   cache = ch.cache.build
-   storage_path = ch.storage.build_cache
-   if (cli.reset):
-      cache.reset()
+   if (cli.bucache == ch.Build_Mode.DISABLED):
+      ch.FATAL("build-cache subcommand invalid with build cache disabled")
+   #
+   #if (cli.reset):
+   #   cache.reset()
    # run garbage collection
-   if (cli.gc):
-      cache.prune()
+   #if (cli.gc):
+   #   cache.prune()
    # print text tree
-   if (cli.tree_text or cli.tree_debug):
-      cache.print_tree(cli.tree_debug)
+   #if (cli.tree_text or cli.tree_debug):
+   #   cache.print_tree(cli.tree_debug)
    # create tree files
-   if (cli.tree_dot):
-      cache.dump_dot()
+   #if (cli.tree_dot):
+   #   cache.dump_dot()
    # print general info
-   cache.print_storage()
+   bu.cache.print_summary()
    ch.done_notify()
 
 def delete(cli):
@@ -86,8 +87,7 @@ def list_(cli):
          ch.FATAL("does not exist: %s" % ch.storage.root)
       if (not ch.storage.valid_p):
          ch.FATAL("not a storage directory: %s" % ch.storage.root)
-      imgs = ch.ossafe(os.listdir, "can't list directory: %s" % ch.storage.root, imgdir)
-      for img in sorted(imgs):
+      for img in sorted(ch.listdir(imgdir)):
          print(ch.Image_Ref(img))
    else:
       # list specified image
