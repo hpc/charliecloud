@@ -175,7 +175,7 @@ def main():
    sp.add_argument("--text",
                    action="store_true",
                    help="print a text tree summary")
-   sp.add_argument("--tree-dot",
+   sp.add_argument("--dot",
                    action="store_true",
                    help="write DOT and PDF tree summaries")
 

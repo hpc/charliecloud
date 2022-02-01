@@ -393,53 +393,6 @@ class Build_Cache(Cache):
          return False
       return True
 
-   ## Log printing and debugging ##
-
-   def dump_dot(self):
-      if (not self.git_ok):
-         FATAL("no git in path")
-      if (not self.dot_ok):
-         FATAL("git2dot.py not in path")
-      INFO("creating build-cache.dot")
-      # The following args show commit message.
-      args = ["git2dot", "-l", "[%h] %s|%N", "-w", "20", "%s/build-cache.dot" % os.getcwd()]
-      #args = ["git2dot.py", "%s/build-cache.dot" % os.getcwd()]
-      cmd(args, cwd=self.storage_path)
-      if (self.pdf_ok):
-         INFO("creating build-cache.pdf")
-         args = ["dot", "-Tpdf", "build-cache.dot", "-o", "build-cache.pdf"]
-         cmd(args)
-      else:
-         WARNING("graphviz (dot) not in path; skipping pdf render")
-
-   def print_tree(self, debug=False):
-      if (not self.git_ok):
-         FATAL("can't print tree; wrong git or not in path")
-      if (debug):
-         # FIXME: the git note, %N, has a newline and I can't get rid of it.
-         pformat = "%C(auto)%d%C(yellow)% h%Creset%C(blue)% N%Creset%<(11,trunc)% s%n"
-      else:
-         pformat = "%C(auto)%d%C(blue)% N%Creset"
-      args = ["git", "--no-pager", "log", "--graph", "--exclude=refs/notes/*",
-              "--all", "--format=%s" % pformat]
-      cmd(args, cwd=self.storage_path)
-      sys.exit(0)
-
-   ## Storage operations ##
-
-   def prune(self):
-      CACHE_V("running git prune.")
-      if (not self.git_ok):
-         FATAL("build cache: git tree: no git")
-      cmd_git(["gc", "--prune=now"], cwd=self.storage_path)
-
-   def reset(self):
-      "Remove and re-initialize storage directory."
-      if (os.path.isdir(self.storage_path)):
-         INFO("resetting build cache storage.")
-         rmtree(self.storage_path)
-      self.storage_init()
-
    ## Cache and Git operations ##
 
    def branch_checkout(self, commit, worktree):
@@ -2215,7 +2168,7 @@ def chdir(path):
    "Change CWD to path and return previous CWD. Exit on error."
    old = ossafe(os.getcwd, "can't getcwd(2)")
    ossafe(os.chdir, "can't chdir: %s" % path, path)
-   return old
+   return Path(old)
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
@@ -2241,7 +2194,18 @@ def cmd_base(argv, fail_ok=False, **kwargs):
    VERBOSE("executing: %s" % " ".join(shlex.quote(i) for i in argv))
    if ("env" in kwargs):
       VERBOSE("environment: %s" % env)
-   cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
+   try:
+      cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
+   except OSError as x:
+      VERBOSE("can't execute %s: %s" % (argv[0], x.strerror))
+      # Most common reason we are here is that the command isn't found, which
+      # generates a FileNotFoundError. Use fake return value 127; this is
+      # consistent with the shell [1]. This is a kludge, but we assume the
+      # caller doesn't care about the distinction between some problem within
+      # the subprocess and inability to start the subprocess.
+      #
+      # [1]: https://devdocs.io/bash/exit-status#Exit-Status
+      cp = subprocess.CompletedProcess(argv, 127)
    if (not fail_ok and cp.returncode != 0):
       FATAL("command failed with code %d: %s" % (cp.returncode, argv[0]))
    return cp
@@ -2251,12 +2215,9 @@ def cmd_stdout(argv, **kwargs):
       CompletedProcess object (its stdout is available in the "stdout"
       attribute). If logging is info, discard stderr; otherwise send it to the
       existing stderr. If logging is debug or higher, print stdout."""
-   if (verbose >= 1):  # verbose or higher
-      stderr = None
-   else:
-      stderr = subprocess.DEVNULL
-   cp = cmd_base(argv, encoding="UTF-8", stdout=subprocess.PIPE, stderr=stderr,
-                 **kwargs)
+   if (verbose == 0 and "stderr" not in kwargs):  # info or lower
+      kwargs["stderr"] = subprocess.DEVNULL
+   cp = cmd_base(argv, encoding="UTF-8", stdout=subprocess.PIPE, **kwargs)
    if (verbose >= 2):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
       sys.stdout.write(cp.stdout)
@@ -2647,3 +2608,37 @@ def user():
       return os.environ["USER"]
    except KeyError:
       FATAL("can't get username: $USER not set")
+
+def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
+   """Return True if the version number of program exected as argv is at least
+      min_. Otherwise, including if execution fails, exit with error if
+      required is False, otherwise return False. Use regex to extract the
+      version number from output."""
+   if (required):
+      too_old = FATAL
+      bad_parse = FATAL
+   else:
+      too_old = VERBOSE
+      bad_parse = WARNING
+   prog = argv[0]
+   cp = cmd_stdout(argv, fail_ok=True, stderr=subprocess.STDOUT)
+   if (cp.returncode != 0):
+      too_old("%s failed with exit code %d, assuming not present"
+              % (prog, cp.returncode))
+      return False
+   m = re.search(regex, cp.stdout)
+   if (m is None):
+      bad_parse("can't parse %s version, assuming not present: %s"
+                % (prog, cp.stdout))
+      return False
+   try:
+      v = tuple(int(i) for i in m.groups())
+   except ValueError:
+      bad_parse("can't parse %s version part, assuming not present: %s"
+                % (prog, cp.stdout))
+      return False
+   if (min_ > v):
+      too_old("%s is too old: %d.%d.%d < %d.%d.%d" % ((prog,) + v + min_))
+      return False
+   VERBOSE("%s version OK: %d.%d.%d ≥ %d.%d.%d" % ((prog,) + v + min_))
+   return True

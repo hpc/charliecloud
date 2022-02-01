@@ -43,21 +43,15 @@ class Version(Action_Exit):
 def build_cache(cli):
    if (cli.bucache == ch.Build_Mode.DISABLED):
       ch.FATAL("build-cache subcommand invalid with build cache disabled")
-   #
-   #if (cli.reset):
-   #   cache.reset()
-   # run garbage collection
-   #if (cli.gc):
-   #   cache.prune()
-   # print text tree
-   #if (cli.tree_text or cli.tree_debug):
-   #   cache.print_tree(cli.tree_debug)
-   # create tree files
-   #if (cli.tree_dot):
-   #   cache.dump_dot()
-   # print general info
-   bu.cache.print_summary()
-   ch.done_notify()
+   if (cli.reset):
+      bu.cache.reset()
+   if (cli.gc):
+      bu.cache.garbageinate()
+   if (cli.text):
+      bu.cache.tree_print()
+   if (cli.dot):
+      bu.cache.tree_dot()
+   bu.cache.summary_print()
 
 def delete(cli):
    img_ref = ch.Image_Ref(cli.image_ref)

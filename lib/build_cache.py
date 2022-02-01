@@ -9,7 +9,8 @@ import charliecloud as ch
 ## Constants ##
 
 # Required versions.
-GIT_MIN = ( 2, 34, 1)
+DOT_MIN = (2, 40, 1)
+GIT_MIN = (2, 34, 1)
 GIT2DOT_MIN = (0, 8, 3)
 
 
@@ -26,23 +27,8 @@ def have_deps():
       otherwise. Note this does not include the --dot debugging option; that
       checks its own dependencies when invoked."""
    # As of 2.34.1, we get: "git version 2.34.1\n".
-   cp = ch.cmd_stdout(["git", "--version"], fail_ok=True)
-   if (cp.returncode != 0):
-      ch.VERBOSE("can't obtain Git version, assuming not present")
+   if (not ch.version_check(["git", "--version"], GIT_MIN, required=False)):
       return False
-   m = re.search(r".*(\d+)\.(\d+)\.(\d+)\s+", cp.stdout)
-   if (m is None):
-      ch.WARNING("can't parse Git version, assuming no Git: %s", cp.stdout)
-      return False
-   try:
-      gv = tuple(int(i) for i in m.groups())
-   except ValueError:
-      ch.WARNING("can't parse Git version part, assuming no Git: %s", cp.stdout)
-      return False
-   if (GIT_MIN > gv):
-      ch.VERBOSE("Git is too old: %d.%d.%d < %d.%d.%d" % (gv + GIT_MIN))
-      return False
-   ch.VERBOSE("Git version is OK: %d.%d.%d ≥ %d.%d.%d" % (gv + GIT_MIN))
    return True
 
 
@@ -112,9 +98,10 @@ class Enabled_Cache:
 
    root_id = State_ID("4A6F:73C3:A9204361:7061626C:616E6361")
 
-   __slots__ = ()
+   __slots__ = ("bootstrap_ct")
 
    def __init__(self):
+      self.bootstrap_ct = 0
       if (not os.path.isdir(self.root)):
          ch.mkdir(self.root)
       ls = ch.listdir(self.root)
@@ -131,6 +118,7 @@ class Enabled_Cache:
 
    def bootstrap(self):
       ch.INFO("initializing empty build cache")
+      self.bootstrap_ct += 1
       # Initialize bare repo
       ch.cmd_quiet(["git", "init", "--bare", "-b", "root", self.root])
       # Create empty root commit. There is probably a way to do this directly
@@ -147,7 +135,20 @@ class Enabled_Cache:
          FATAL("can't create or delete temporary directory: %s: %s"
                % (x.filename, x.strerror))
 
-   def print_summary(self):
+   def garbageinate(self):
+      ch.INFO("collecting cache garbage")
+      ch.cmd_quiet(["git", "gc", "--prune=now"], cwd=self.root)
+
+   def reset(self):
+      if (self.bootstrap_ct >= 1):
+         ch.WARNING("not resetting brand-new cache")
+      else:
+         ch.INFO("deleting build cache")
+         ch.rmtree(self.root)
+         ch.mkdir(self.root)
+         self.bootstrap()
+
+   def summary_print(self):
       cwd = ch.chdir(self.root)
       # state IDs
       msgs = ch.cmd_stdout(["git", "log",
@@ -170,3 +171,24 @@ class Enabled_Cache:
       print("commits:        %4d" % commit_ct)
       print("files:          %4d %s" % (file_ct, file_suffix))
       print("disk used:      %4d %s" % (byte_ct, byte_suffix))
+
+   def tree_print(self):
+      # Note the percent codes are interpreted by Git.
+      # See: https://git-scm.com/docs/git-log#_pretty_formats
+      # FIXME: the git note, %N, has a newline and I can't get rid of it.
+      if (ch.verbose == 0):
+         fmt = "%C(auto)%d%C(blue)% N%Creset"
+      else:
+         fmt = "%C(auto)%d%C(yellow)% h%Creset%C(blue)% N%Creset%<(11,trunc)% s%n"
+      ch.cmd_base(["git", "log", "--graph", "--all", "--reflog",
+                   "--format=%s" % fmt], cwd=self.root)
+      print()
+
+   def tree_dot(self):
+      ch.version_check(["git2dot.py", "--version"], GIT2DOT_MIN)
+      ch.version_check(["dot", "-V"], DOT_MIN)
+      ch.INFO("writing ./build-cache.gv")
+      ch.cmd_quiet(["git2dot.py", "-l", "[%h] %s|%N", "-w", "20",
+                    "%s/build-cache.gv" % os.getcwd()], cwd=self.root)
+      ch.INFO("writing ./build-cache.pdf")
+      ch.cmd_quiet(["dot", "-Tpdf", "-obuild-cache.pdf", "build-cache.gv"])
