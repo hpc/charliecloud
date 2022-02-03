@@ -227,7 +227,7 @@ class _RHEL8(Test):
                              Run.NEEDED:      "dnf install -y --setopt=install_weak_deps=false openssh" } }
 
 class CentOS_Latest(_RHEL8, _EPEL_Mixin):
-   base = "centos:latest"
+   base = "quay.io/centos/centos:latest"
    prep_run = "dnf install -y epel-release"
 class CentOS_8_Stream(_RHEL8):
    # pulling from quay.io per the CentOS wiki
