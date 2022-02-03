@@ -39,6 +39,7 @@ setup () {
 }
 
 @test "${ch_tag}/cone serial" {
+    [[ -z $ch_cray ]] || skip 'serial launches unsupported on Cray'
     # shellcheck disable=SC2086
     ch-run $ch_unslurm -b "$inbind" -b "$outbind" "$ch_img" -- \
            pvbatch /mnt/0/cone.py /mnt/1

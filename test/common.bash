@@ -193,7 +193,22 @@ scope () {
 
 unpack_img_all_nodes () {
     if [[ $1 ]]; then
-        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
+        case $CH_TEST_PACK_FMT in
+            squash-mount)
+                # Lots of things expect no extension here, so go with that even
+                # though it's a file, not a directory.
+                $ch_mpirun_node ln -s "${ch_tardir}/%(tag)s.sqfs" "${ch_imgdir}/%(tag)s"
+                ;;
+            squash-unpack)
+                $ch_mpirun_node ch-convert -o dir "${ch_tardir}/%(tag)s.sqfs" "${ch_imgdir}/%(tag)s"
+                ;;
+            tar-unpack)
+                $ch_mpirun_node ch-convert -o dir "${ch_tardir}/%(tag)s.tar.gz" "${ch_imgdir}/%(tag)s"
+                ;;
+            *)
+                false  # unknown format
+                ;;
+        esac
     else
         skip 'not needed'
     fi
