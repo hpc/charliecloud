@@ -197,13 +197,13 @@ unpack_img_all_nodes () {
             squash-mount)
                 # Lots of things expect no extension here, so go with that even
                 # though it's a file, not a directory.
-                $ch_mpirun_node ln -s "${ch_tardir}/%(tag)s.sqfs" "${ch_imgdir}/%(tag)s"
+                $ch_mpirun_node ln -s "${ch_tardir}/${ch_tag}.sqfs" "${ch_imgdir}/${ch_tag}"
                 ;;
             squash-unpack)
-                $ch_mpirun_node ch-convert -o dir "${ch_tardir}/%(tag)s.sqfs" "${ch_imgdir}/%(tag)s"
+                $ch_mpirun_node ch-convert -o dir "${ch_tardir}/${ch_tag}.sqfs" "${ch_imgdir}/${ch_tag}"
                 ;;
             tar-unpack)
-                $ch_mpirun_node ch-convert -o dir "${ch_tardir}/%(tag)s.tar.gz" "${ch_imgdir}/%(tag)s"
+                $ch_mpirun_node ch-convert -o dir "${ch_tardir}/${ch_tag}.tar.gz" "${ch_imgdir}/${ch_tag}"
                 ;;
             *)
                 false  # unknown format
