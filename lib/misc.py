@@ -47,7 +47,7 @@ def build_cache(cli):
       bu.cache.reset()
    if (cli.gc):
       bu.cache.garbageinate()
-   if (cli.text):
+   if (cli.tree):
       bu.cache.tree_print()
    if (cli.dot):
       bu.cache.tree_dot()
@@ -115,6 +115,25 @@ def list_(cli):
       print("remote arch-aware:   %s" % arch_aware)
       print("host architecture:   %s" % ch.arch_host)
       print("archs available:     %s" % arch_avail)
+
+def pull(cli):
+   # Set things up.
+   ref = ch.Image_Ref(cli.image_ref)
+   if (cli.parse_only):
+      print(ref.as_verbose_str)
+      sys.exit(0)
+   assert cli.image_dir is None  # FIXME
+   image = ch.Image(ref, cli.image_dir)
+   ch.INFO("pulling image:    %s" % ref)
+   ch.INFO("requesting arch:  %s" % ch.arch)
+   if (cli.image_dir is not None):
+      ch.INFO("destination:      %s" % image.unpack_path)
+   else:
+      ch.VERBOSE("destination:      %s" % image.unpack_path)
+   # Pull.
+   bu.cache.pull(image, cli.dlcache == ch.Download_Mode.ENABLED, cli.last_layer)
+   ch.done_notify()
+
 
 def python_path(cli):
    print(sys.executable)

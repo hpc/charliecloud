@@ -84,9 +84,14 @@ def main():
          { "metavar": "MODE",
            "type": ch.Build_Mode,
            "help": "build cache mode: enabled, disabled, rebuild"}],
+       [ ["--debug"],
+         { "action": "store_true",
+           "help": "add short traceback to fatal error hints" }],
        [ ["--dlcache"],
          { "metavar": "MODE",
-           "help": "download cache mode: enabled, disabled"}],
+           "type": ch.Download_Mode,
+           "default": ch.Download_Mode.ENABLED,
+           "help": "download cache mode: enabled, write-only"}],
        [ ["--dependencies"],
          { "action": misc.Dependencies,
            "help": "print any missing dependencies and exit" }],
@@ -172,7 +177,7 @@ def main():
    sp.add_argument("--reset",
                    action="store_true",
                    help="clear and re-initialize first")
-   sp.add_argument("--text",
+   sp.add_argument("--tree",
                    action="store_true",
                    help="print a text tree summary")
    sp.add_argument("--dot",
@@ -201,7 +206,7 @@ def main():
    # pull
    sp = ap.add_parser("pull",
                       "copy image from remote repository to local filesystem")
-   add_opts(sp, pull.main, deps_check=True, stog_init=True)
+   add_opts(sp, misc.pull, deps_check=True, stog_init=True)
    sp.add_argument("--last-layer", metavar="N", type=int,
                    help="stop after unpacking N layers")
    sp.add_argument("--parse-only", action="store_true",

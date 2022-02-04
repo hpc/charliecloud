@@ -4,8 +4,6 @@ import sys
 
 import charliecloud as ch
 
-## Globals ##
-cache = None
 
 ## Constants ##
 
@@ -19,43 +17,6 @@ manifests_internal = {
 }
 
 
-## Main ##
-
-def main(cli):
-   # Set things up.
-   ref = ch.Image_Ref(cli.image_ref)
-   if (cli.parse_only):
-      print(ref.as_verbose_str)
-      sys.exit(0)
-   image = ch.Image(ref, cli.image_dir)
-   cache_dl = ch.cache.download
-   ch.INFO("pulling image:    %s" % ref)
-   ch.INFO("requesting arch:  %s" % ch.arch)
-   if (cli.image_dir is not None):
-      ch.INFO("destination:      %s" % image.unpack_path)
-   else:
-      ch.VERBOSE("destination:      %s" % image.unpack_path)
-
-   global cache
-   dl = ch.cache.download
-   bu = ch.cache.build
-   pullet = Image_Puller(image, dl.use_cache)
-   if (bu.mode == ch.Mode.ENABLED):
-      rootfs = image.unpack_path
-      if (not bu.branch_exists(rootfs)
-          or  bu.mode == ch.Mode.REBUILD):
-         bu.worktree_add(rootfs)
-         pullet.pull_to_unpacked(cli.last_layer)
-         pullet.done()
-         sid = bu.id_for_base(pullet)
-         bu.branch_fixup(rootfs)
-         bu.branch_commit(sid, rootfs, "FROM %s" % os.path.basename(rootfs))
-   else:
-      pullet.pull_to_unpacked(cli.last_layer)
-      pullet.done()
-   ch.done_notify()
-
-
 ## Classes ##
 
 class Image_Puller:
@@ -65,14 +26,16 @@ class Image_Puller:
                 "image",
                 "layer_hashes",
                 "registry",
+                "sid_input",
                 "use_dlcache")
 
    def __init__(self, image, use_cache=False):
       self.architectures = None
-      self.image = image
-      self.registry = ch.Registry_HTTP(image.ref)
       self.config_hash = None
+      self.image = image
       self.layer_hashes = None
+      self.registry = ch.Registry_HTTP(image.ref)
+      self.sid_input = None
       self.use_dlcache = use_cache
 
    @property
@@ -282,6 +245,9 @@ class Image_Puller:
          self.layer_hashes.append(ch.digest_trim(i[key2]))
       if (version == 1):
          self.layer_hashes.reverse()
+      # Remember State_ID input. We can't rely on the manifest existing in
+      # serialized form (e.g. for internal manifests), so re-serialize.
+      self.sid_input = json.dumps(manifest, sort_keys=True)
 
    def manifest_digest_by_arch(self):
       "Return skinny manifest digest for target architecture."

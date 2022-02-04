@@ -25,10 +25,12 @@ import sys
 import tarfile
 import tempfile
 import time
+import traceback
 import types
-import version
 
 from abc import ABC, abstractmethod
+
+import version
 
 ## Imports not in standard library ##
 
@@ -68,6 +70,11 @@ class Build_Mode(enum.Enum):
    ENABLED = "enabled"
    DISABLED = "disabled"
    REBUILD = "rebuild"
+
+# Download cache mode.
+class Download_Mode(enum.Enum):
+   ENABLED = "enabled"
+   WRITE_ONLY = "write-only"
 
 
 ## Constants ##
@@ -229,10 +236,6 @@ STORAGE_VERSION = 3
 arch = None       # requested by user
 arch_host = None  # of host
 
-# Active build and download cache.
-cache = None
-cache_reqs = None
-
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
@@ -241,6 +244,7 @@ CH_RUN = None
 verbose = 0          # Verbosity level.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
+trace_fatal = False  # Add abbreviated traceback to fatal error hint.
 
 # Verify TLS certificates? Passed to requests.
 tls_verify = True
@@ -299,37 +303,11 @@ class ArgumentParser(argparse.ArgumentParser):
       # Unpack shorthand options.
       if (cli.no_cache):
          cli.bucache = Build_Mode.REBUILD
-         cli.dlcache = None  # FIXME
+         cli.dlcache = Download_Mode.WRITE_ONLY
       return cli
 
 
-class Cache:
-   """The source of Cache operations for both building and downloading.
-
-      Attributes:
-         build ...... Build cache subclass object.
-         download ... Download cache subclass object.
-         git ........ Boolean.
-
-      Constructor arguments:
-        bu_mode ... String. (cli input)
-        dl_mode ... String. (cli input)
-        bu_path ... Build cache storage path."""
-   def __init__(self, bu_mode, dl_mode, bu_path):
-      self.build = Build_Cache(self.init_bmode(bu_mode), self.git_ok, bu_path)
-      self.download = Download_Cache(self.init_dlmode(dl_mode))
-
-   ## Constructor helpers ##
-
-   def init_dlmode(self, mode):
-      "Return the canonical download Mode enum from value."
-      if (mode is None):
-         return Mode.ENABLED
-      assert(Mode(mode) in [Mode.ENABLED, Mode.WRITE_ONLY])
-      return Mode(mode)
-
-
-class Build_Cache(Cache):
+class Build_Cache:
    """The build cache.
 
       Attribute:
@@ -352,46 +330,12 @@ class Build_Cache(Cache):
       self.storage_path_ = storage_path
 
    @property
-   def dot_ok(self):
-      return self.dot
-
-   @property
-   def pdf_ok(self):
-      return self.pdf
-
-   @property
    def mode(self):
       return self.mode_
 
    @property
    def storage_path(self):
       return self.storage_path_
-
-
-   ## Constructor helpers ##
-
-   def init_dot(self):
-      """Return True if git2dot.py is in PATH and is the right version;
-         otherwise return False."""
-      CACHE_V("checking path for git2dot.py")
-      try:
-         cp = cmd_return(["git2dot.py", "--version"])
-      except FileNotFoundError:
-         return False
-      out = cp.stdout.split(" ")[-1]
-      git2dot_version = tuple(int(i) for i in out.strip().split("."))
-      global DOT_MIN, DOT_MAX
-      if (not DOT_MIN <= git2dot_version <= DOT_MAX):
-         return False
-      return True
-
-   def init_pdf(self):
-      "Return True if dot is in PATH; otherwise return False."
-      CACHE_V("checking path for dot (graphviz)")
-      cp = cmd_return(["dot", "-?"])
-      if (cp.returncode):
-         return False
-      return True
 
    ## Cache and Git operations ##
 
@@ -448,68 +392,6 @@ class Build_Cache(Cache):
       # FIXME: restore fifos
       # FIXME: restore sockets
       # FIXME: restore each file metadata?
-      os.chdir(curr)
-
-   def branch_fixup(self, worktree):
-      """Walk the filesystem tree recording file metadata, empty directories,
-         hardlinks, and sockets and FIFOs. Rename .git files."""
-      empty_dirs = list()
-      sockets = list()
-      fifos = list()
-      fs_meta = dict()
-      # Image tagged FOO that is from BAR checks out BAR's /ch/metadata.json.
-      # Thus, Using absolute paths here would mean we need to update every
-      # single path in FOO's metadata.json copy. So we use relative paths.
-      curr = os.getcwd()
-      os.chdir(worktree)
-      CACHE_V("fixing up %s ..." % worktree)
-      for root, dirs, files in os.walk(".", followlinks=False):
-         for d in dirs:
-            dir_path = os.path.join(root, d)
-            if (not ch.listdir(dir_path)):
-               empty_dirs.append(dir_path)
-               st = os.lstat(dir_path)
-               fs_meta.update({dir_path: {"mode": st.st_mode,
-                                          "uid": st.st_uid,
-                                          "gid": st.st_gid,
-                                          "atime": st.st_atime,
-                                          "mtime": st.st_mtime}})
-            for f in files:
-               file_path = os.path.join(root, f)
-               st = os.lstat(file_path)
-               if (stat.S_ISFIFO(st.st_mode)):
-                  fifos.append(file_path)
-               if (stat.S_ISSOCK(st.st_mode)):
-                  sockets.append(file_path)
-               # FIXME: handle hardlink
-               # FIXME: rename .git file? Unclear, worktree branch
-               # directories have a .git referencing their corresponding
-               # bucache ref. In other words renaming this would mean we can't
-               # commit changes.(?)
-               fs_meta.update({file_path: {"mode": st.st_mode,
-                                           "uid": st.st_uid,
-                                           "gid": st.st_gid,
-                                           "atime": st.st_atime,
-                                           "mtime": st.st_mtime}})
-      meta_path = os.path.join(worktree, "ch/build-cache.metadata.json")
-      # FIXME:
-      # Writing build-cache metadata to ch/metadata.json is problematic.
-      # 1. Writing every file, including metadata, of a filesystem tree
-      #    makes the ch/metada.json monsterous and hard to debug.
-      # 2. In build.py after every instruction completes image metadata
-      #    is saved to ch/metadata.json, which occurs after our commits,
-      #    resulting in a dirty branch and possibly lost data.
-      # So for now we just save it to a unique path.
-      data = dict()
-      if (os.path.exists(meta_path)):
-         data = json_from_file(meta_path, "fixme")
-      data.update({"build-cache": {"empty_dirs": empty_dirs,
-                                   "fifos": fifos,
-                                   "sockets": sockets,
-                                   "meta": fs_meta}})
-
-      data = json.dumps(data)
-      file_write(meta_path, data)
       os.chdir(curr)
 
    def branch_id(self, path):
@@ -603,12 +485,6 @@ class Build_Cache(Cache):
          return None
       return self.branch_id(base)
 
-   def id_for_base(self, puller):
-      c = self.bytes_from_file(puller.config_path)
-      m = self.bytes_from_file(puller.manifest_path)
-      r = self.bytes_from_root()
-      return self.translate_id(hashlib.md5(r + c + m).hexdigest())
-
    def prep_note(self, name, actions):
       """Return a human readible string from build.py instruction class
          attributes name and actions"""
@@ -625,51 +501,6 @@ class Build_Cache(Cache):
       CACHE_V("pulling base %s" % base)
       puller.pull_to_unpacked()
       puller.done()
-
-   def translate_id(self, sid):
-      "Return human readable sid if canonical; otherwise return canonical."
-      cnt = sid.count("-")
-      if (cnt):
-         if (cnt != 7):
-            FATAL("malformed SID" % sid)
-         return sid.replace("-",'')
-      if (len(sid) != 32):
-         FATAL("malformed SID: %s" % sid)
-      return '-'.join(sid[i:i+4] for i in range(0, len(sid), 4))
-
-   def worktree_add(self, worktree, branch=None):
-      "Add a new worktree to the build cache."
-      if (branch is None):
-         branch=self.storage_path # root
-      CACHE_V("adding new worktree: %s" % worktree)
-      cmd_git(["worktree", "add", worktree], cwd=branch)
-
-
-class Download_Cache(Cache):
-   """The download cache factory. Instantiate a download subclass object based on
-      mode, e.g., enabled, write-only.
-
-      Constructor arguments:
-
-        cls ...... parent class namespace.
-        mode ..... Mode enum."""
-   def __new__(cls, mode):
-      class_ = "Download_" + mode.value.replace("-", "_")
-      subclass_map = {subclass.__name__: subclass for subclass in cls.__subclasses__()}
-      subclass = subclass_map[class_]
-      instance = super(Download_Cache, subclass).__new__(subclass)
-      return instance
-
-   def __init__(self, mode):
-      pass
-
-
-class Download_enable(Download_Cache):
-   use_cache = True
-
-
-class Download_write_only(Download_Cache):
-   use_cache = False
 
 
 class Credentials:
@@ -927,14 +758,11 @@ class Image:
       """Unpack config_json (path to JSON config file) and layer_tars
          (sequence of paths to tarballs, with lowest layer first) into the
          unpack directory, validating layer contents and dealing with
-         whiteouts. Empty layers are ignored. Overwrite any existing non-bare
-         image in the unpack directory."""
+         whiteouts. Empty layers are ignored. The unpack directory must exist,
+         and either be empty or contain only a single entry called “.git”."""
       if (last_layer is None):
          last_layer = sys.maxsize
       INFO("flattening image")
-      imgdir = self.unpack_path
-      if (os.path.isdir(imgdir) and { '.git', '.root' } != ch.listdir(imgdir)):
-         self.unpack_clear()
       self.unpack_layers(layer_tars, last_layer)
       self.unpack_init()
 
@@ -952,6 +780,36 @@ class Image:
                   % self.unpack_path)
          VERBOSE("removing existing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
+
+   def unpack_create_ok(self):
+      """Ensure the unpack directory can be created. If the unpack directory
+         is already an image, remove it."""
+      if (not self.unpack_exist_p):
+         VERBOSE("creating new image: %s" % self.unpack_path)
+      else:
+         if (not os.path.isdir(self.unpack_path)):
+            FATAL("can't flatten: %s exists but is not a directory"
+                  % self.unpack_path)
+         if (not self.unpacked_p(self.unpack_path)):
+            FATAL("can't flatten: %s exists but does not appear to be an image"
+                  % self.unpack_path)
+         VERBOSE("replacing existing image: %s" % self.unpack_path)
+         rmtree(self.unpack_path)
+
+   def unpack_create(self):
+      "Ensure the unpack directory exists, replacing or creating if needed."
+      self.unpack_create_ok()
+      mkdir(self.unpack_path)
+
+   def unpack_delete(self):
+      VERBOSE("unpack path: %s" % self.unpack_path)
+      if (not self.unpack_exist_p):
+         FATAL("%s image not found" % self.ref)
+      if (self.unpacked_p(self.unpack_path)):
+         INFO("deleting image: %s" % self.ref)
+         rmtree(self.unpack_path)
+      else:
+         FATAL("storage directory seems broken: not an image: %s" % self.ref)
 
    def unpack_init(self):
       """Initialize the unpack directory, which must exist. Any setup already
@@ -1098,36 +956,6 @@ class Image:
          if (wo_ct > 0):
             VERBOSE("layer %d/%d: %s: %d whiteouts; %d members ignored"
                     % (i, len(layers), lh[:7], wo_ct, ig_ct))
-
-   def unpack_create_ok(self):
-      """Ensure the unpack directory can be created. If the unpack directory
-         is already an image, remove it."""
-      if (not self.unpack_exist_p):
-         VERBOSE("creating new image: %s" % self.unpack_path)
-      else:
-         if (not os.path.isdir(self.unpack_path)):
-            FATAL("can't flatten: %s exists but is not a directory"
-                  % self.unpack_path)
-         if (not self.unpacked_p(self.unpack_path)):
-            FATAL("can't flatten: %s exists but does not appear to be an image"
-                  % self.unpack_path)
-         VERBOSE("replacing existing image: %s" % self.unpack_path)
-         rmtree(self.unpack_path)
-
-   def unpack_delete(self):
-      VERBOSE("unpack path: %s" % self.unpack_path)
-      if (not self.unpack_exist_p):
-         FATAL("%s image not found" % self.ref)
-      if (self.unpacked_p(self.unpack_path)):
-         INFO("deleting image: %s" % self.ref)
-         rmtree(self.unpack_path)
-      else:
-         FATAL("storage directory seems broken: not an image: %s" % self.ref)
-
-   def unpack_create(self):
-      "Ensure the unpack directory exists, replacing or creating if needed."
-      self.unpack_create_ok()
-      mkdir(self.unpack_path)
 
 
 class Image_Ref:
@@ -2109,6 +1937,16 @@ class TarFile(tarfile.TarFile):
       self.clobber(targetpath, regulars=True, symlinks=True, dirs=True)
       super().makelink(tarinfo, targetpath)
 
+class Timer:
+
+   __slots__ = ("start")
+
+   def __init__(self):
+      self.start = time.time()
+
+   def log(self, msg):
+      VERBOSE("%s in %.3fs" % (msg, time.time() - self.start))
+
 
 ## Supporting functions ##
 
@@ -2129,6 +1967,15 @@ def DEBUG(*args, **kwargs):
       log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
 
 def FATAL(*args, **kwargs):
+   if (trace_fatal):
+      # One-line traceback, skipping top entry (which is always bootstrap code
+      # calling ch-image.main()) and last entry (this function).
+      hint = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
+                                     f.lineno, f.name)
+                       for f in reversed(traceback.extract_stack()[1:-1]))
+      if "hint" in kwargs:
+         hint = "%s: %s" % (kwargs["hint"], hint)
+      kwargs["hint"] = hint
    log(*args, color="1;31m", prefix="error: ", **kwargs)  # bold red
    sys.exit(1)
 
@@ -2191,7 +2038,8 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       higher, first print the command line arguments; if debug or higher, the
       environment as well (if given). Return the CompletedProcess object."""
    argv = [str(i) for i in argv]
-   VERBOSE("executing: %s" % " ".join(shlex.quote(i) for i in argv))
+   VERBOSE("executing: %s"
+           % " ".join(shlex.quote(i).replace("\n", "\\n") for i in argv))
    if ("env" in kwargs):
       VERBOSE("environment: %s" % env)
    try:
@@ -2404,9 +2252,10 @@ def grep_p(path, rx):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, verbose
+   global log_festoon, log_fp, trace_fatal, verbose
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
+   trace_fatal = cli.debug
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
@@ -2505,6 +2354,10 @@ def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.
        Assume that prefix and path are strings."""
    return prefix == path or (prefix + '/' == path[:len(prefix) + 1])
+
+def rename(name_old, name_new):
+   if (os.path.exists(name_new)):
+      ch.FATAL("can't rename: destination exists: %s" % name_new)
 
 def rmtree(path):
    if (os.path.isdir(path)):
