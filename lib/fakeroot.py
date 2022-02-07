@@ -145,7 +145,7 @@ DEFAULT_CONFIGS = {
    #
    #    * Ask lsb_release(1): Not always installed, requires executing ch-run.
 
-   # CentOS/RHEL notes:
+   # EL (RHEL and rebuilds like CentOS, Alma, Springdale, Rocky) notes:
    #
    # 1. CentOS seems to have only fakeroot, which is in EPEL, not the standard
    #    repos.
@@ -157,14 +157,16 @@ DEFAULT_CONFIGS = {
    #    version of things in the base repo that breaks other things. Thus,
    #    when we are done with EPEL, we uninstall it. Existing EPEL
    #    installations are left alone.
+   #    [Fixme: Any breakage like that is a bug, and should be fixed
+   #    soon after any new RHEL release.]
    #
    # 4. "yum repolist" has a lot of side effects, e.g. locking the RPM
    #    database and asking configured repos for something or other.
 
 
    "rhel7":
-   { "name": "CentOS/RHEL 7",
-     "match": ("/etc/redhat-release", r"(Red Hat|CentOS).*release 7\."),
+   { "name": "EL 7",
+     "match": ("/etc/redhat-release", r"release 7\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
@@ -178,13 +180,14 @@ DEFAULT_CONFIGS = {
      "each": ["fakeroot"] },
 
    "rhel8":
-   { "name": "CentOS/RHEL 8+",
-     "match":  ("/etc/redhat-release", r"(Red Hat|CentOS).*release (?![0-7]\.)"),
+   { "name": "EL 8+",
+     "match":  ("/etc/redhat-release", r"release (?![0-7]\.)"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
-                # Fixme: Wrong for EPEL9
-                "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm; "
+                "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-"
+                # I don't know if this is the best way to get the major version
+                  "$(rpm -E %rhel)" ".noarch.rpm; "
                 "dnf install -y fakeroot; "
                 "dnf remove -y epel-release; "
                 "else "
