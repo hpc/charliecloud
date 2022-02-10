@@ -26,17 +26,15 @@ class Image_Puller:
                 "image",
                 "layer_hashes",
                 "registry",
-                "sid_input",
-                "use_dlcache")
+                "sid_input")
 
-   def __init__(self, image, use_cache=False):
+   def __init__(self, image):
       self.architectures = None
       self.config_hash = None
       self.image = image
       self.layer_hashes = None
       self.registry = ch.Registry_HTTP(image.ref)
       self.sid_input = None
-      self.use_dlcache = use_cache
 
    @property
    def config_path(self):
@@ -93,7 +91,7 @@ class Image_Puller:
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
-         if (os.path.exists(self.config_path) and self.use_dlcache):
+         if (os.path.exists(self.config_path) and ch.dlcache_p):
             ch.INFO("config: using existing file")
          else:
             self.registry.blob_to_file(self.config_hash, self.config_path,
@@ -103,7 +101,7 @@ class Image_Puller:
          path = self.layer_path(lh)
          ch.VERBOSE("layer path: %s" % path)
          msg = "layer %d/%d: %s" % (i, len(self.layer_hashes), lh[:7])
-         if (os.path.exists(path) and self.use_dlcache):
+         if (os.path.exists(path) and ch.dlcache_p):
             ch.INFO("%s: using existing file" % msg)
          else:
             self.registry.blob_to_file(lh, path, "%s: downloading" % msg)
@@ -137,7 +135,7 @@ class Image_Puller:
          # cheat; internal manifest library matches every architecture
          self.architectures = { ch.arch_host: None }
          return
-      if (os.path.exists(self.fatman_path) and self.use_dlcache):
+      if (os.path.exists(self.fatman_path) and ch.dlcache_p):
          ch.INFO("manifest list: using existing file")
       else:
          # raises Not_In_Registry_Error if needed
@@ -200,7 +198,7 @@ class Image_Puller:
          else:
             digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
-         if (os.path.exists(self.manifest_path) and self.use_dlcache):
+         if (os.path.exists(self.manifest_path) and ch.dlcache_p):
             ch.INFO("manifest: using existing file")
          else:
             self.registry.manifest_to_file(self.manifest_path,

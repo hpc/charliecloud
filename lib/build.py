@@ -10,14 +10,12 @@ import shutil
 import sys
 
 import charliecloud as ch
+import build_cache as bu
 import fakeroot
 import pull
 
 
 ## Globals ##
-
-# Build cache object.
-cache = None
 
 # Namespace from command line arguments. FIXME: be more tidy about this ...
 cli = None
@@ -39,9 +37,6 @@ image_alias = None
 # Number of stages.
 image_ct = None
 
-# FIXME: build cache stuff that probably belongs in the cache class
-state_ids = list()
-cache_hits = list()
 
 ## Imports not in standard library ##
 
@@ -163,9 +158,6 @@ def main(cli_):
    if (cli.parse_only):
       sys.exit(0)
 
-   global cache
-   cache = ch.cache.build
-
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
    image_ct = sum(1 for i in ch.tree_children(tree, "from_"))
@@ -190,13 +182,15 @@ def main(cli_):
       ml.visit_topdown(tree)
    else:
       ml.visit(tree)
+   if (ml.miss_ct == 0):
+      bu.cache.checkout(images[image_i])
 
    # Check that all build arguments were consumed.
    if (len(cli.build_arg) != 0):
       ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
 
    # Print summary & we're done.
-   if (ml.instruction_ct == 0):
+   if (ml.instruction_total_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
    assert (image_i + 1 == image_ct)  # should have errored already if not
    if (cli.force):
@@ -207,31 +201,43 @@ def main(cli_):
          ch.INFO("--force: init OK & modified %d RUN instructions"
                  % fakeroot_config.inject_ct)
    ch.INFO("grown in %d instructions: %s"
-           % (ml.instruction_ct, images[image_i]))
+           % (ml.instruction_total_ct, images[image_i]))
+
 
 class Main_Loop(lark.Visitor):
 
+   __slots__ = ("instruction_total_ct",
+                "miss_ct",    # number of misses during this stage
+                "inst_last")  # last instruction executed
+
    def __init__(self, *args, **kwargs):
-      self.instruction_ct = 0
+      self.miss_ct = 0
+      self.inst_prev = None
+      self.instruction_total_ct = 0
       super().__init__(*args, **kwargs)
 
    def __default__(self, tree):
       class_ = "I_" + tree.data
       if (class_ in globals()):
          inst = globals()[class_](tree)
-         inst.announce()
-         if (self.instruction_ct == 0):
+         if (self.instruction_total_ct == 0):
             if (   isinstance(inst, I_directive)
                 or isinstance(inst, I_from_)):
                pass
-            elif (isinstance(inst, Arg)):
+            elif ( isinstance(inst, Arg)):
                ch.WARNING("ARG before FROM not yet supported; see issue #779")
             else:
                ch.FATAL("first instruction must be ARG or FROM")
-         inst.execute()
-         if (image_i != -1):
-            images[image_i].metadata_save()
-         self.instruction_ct += inst.execute_increment
+         self.miss_ct = inst.prepare(self.inst_prev, self.miss_ct)
+         if (inst.miss):
+            if (self.miss_ct == 1):
+               checkout_for_build(image)
+            inst.execute()
+            if (image_i != -1):
+               images[image_i].metadata_save()
+            inst.commit()
+         self.inst_prev = inst
+         self.instruction_total_ct += inst.execute_increment
 
 
 ## Instruction classes ##
@@ -239,6 +245,13 @@ class Main_Loop(lark.Visitor):
 class Instruction(abc.ABC):
 
    execute_increment = 1
+
+   __slots__ = ("lineno",
+                "miss",
+                "options",      # consumed
+                "options_str",  # saved at instantiation
+                "sid",
+                "tree")
 
    def __init__(self, tree):
       self.lineno = tree.meta.line
@@ -248,71 +261,72 @@ class Instruction(abc.ABC):
          v = ch.tree_terminal(st, "OPTION_VALUE")
          if (k in self.options):
             ch.FATAL("%3d %s: repeated option --%s"
-                     % (self.lineno, self.str_name(), k))
+                     % (self.lineno, self.str_name, k))
          self.options[k] = v
-      # Save original options string because instructions pop() from the dict
-      # to process them.
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())
       self.tree = tree
 
-   def __str__(self):
+   @property
+   @abc.abstractmethod
+   def str_(self):
+      ...
+
+   @property
+   def str_name(self):
+      return self.__class__.__name__.split("_")[1].upper()
+
+   @property
+   def str_log(self):
       options = self.options_str
       if (options != ""):
          options = " " + options
-      return ("%3s %s%s %s"
-              % (self.lineno, self.str_name(), options, self.str_()))
+      return ("%3s%s %s%s %s"
+              % (self.lineno, bu.cache.status_char(self.miss), self.str_name,
+                 options, self.str_))
 
-   def announce(self):
-      ch.INFO(self)
-
+   @abc.abstractmethod
    def execute(self):
-      if (not cli.dry_run):
-         self.execute_()
-
-   @abc.abstractmethod
-   def cache_exe_(self):
-      ...
-
-   @abc.abstractmethod
-   def execute_(self):
       ...
 
    def options_assert_empty(self):
       try:
          k = next(iter(self.options.keys()))
-         ch.FATAL("%s: invalid option --%s" % (self.str_name(), k))
+         ch.FATAL("%s: invalid option --%s" % (self.str_name, k))
       except StopIteration:
          pass
 
-   @abc.abstractmethod
-   def str_(self):
+   def prepare(self, parent, miss_ct):
+      """Set up for execution; parent is the parent instruction and miss_ct is
+         the number of misses in this stage so far. Returns the new number of
+         misses; usually miss_ct if this instruction hit or miss_ct + 1 if it
+         missed. Some instructions (e.g., FROM) resets the miss count.
+         Announce self as soon as hit/miss status is known (i.e., before error
+         checking)."""
       ...
 
-   def str_name(self):
-      return self.__class__.__name__.split("_")[1].upper()
-
    def unsupported_forever_warn(self, msg):
-      ch.WARNING("not supported, ignored: %s %s" % (self.str_name(), msg))
+      ch.WARNING("not supported, ignored: %s %s" % (self.str_name, msg))
 
    def unsupported_yet_warn(self, msg, issue_no):
       ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
-                 % (issue_no, self.str_name(), msg))
+                 % (issue_no, self.str_name, msg))
 
    def unsupported_yet_fatal(self, msg, issue_no):
       ch.FATAL("not yet supported: issue #%d: %s %s"
-               % (issue_no, self.str_name(), msg))
+               % (issue_no, self.str_name, msg))
 
 
 class Instruction_Supported_Never(Instruction):
 
    execute_increment = 0
 
-   def announce(self):
-      self.unsupported_forever_warn("instruction")
-
+   @property
    def str_(self):
       return "(unsupported)"
+
+   def announce(self):
+      self.unsupported_forever_warn("instruction")
 
    def cache_exe_(self):
       pass
@@ -334,6 +348,7 @@ class Arg(Instruction):
       if (self.value is not None):
          self.value = variables_sub(self.value, env.env_build)
 
+   @property
    def str_(self):
       if (self.value is None):
          return self.key
@@ -403,6 +418,7 @@ class I_copy(Instruction):
       self.srcs = paths[:-1]
       self.dst = paths[-1]
 
+   @property
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
 
@@ -613,6 +629,7 @@ class I_directive(Instruction_Supported_Never):
 
 class Env(Instruction):
 
+   @property
    def str_(self):
       return "%s='%s'" % (self.key, self.value)
 
@@ -656,51 +673,23 @@ class I_from_(Instruction):
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
 
-   def cache_exe_(self, image, base_puller):
-      # FIXME: this function could go inside the cache object tbh.
-      global cache, state_ids, cache_hits
-      rootfs = image.unpack_path
-      basefs = self.base_image.unpack_path
+   @property
+   def str_(self):
+      alias = " AS %s" % self.alias if self.alias else ""
+      return "%s%s" % (self.base_ref, alias)
 
-      # 1. get state id of base
-
-      # check base state id; can be None.
-      base_id = cache.id_for_from(basefs)
-      if (not base_id):
-         ch.CACHE_V("FROM instruction id: %s (miss)" % base_id)
-         cache_hits.append(False)
-         # pull and add base image.
-         cache.worktree_add(basefs)
-         base_puller.pull_to_unpacked()
-         base_puller.done()
-         # compute base id and commit to cache.
-         base_id = cache.id_for_base(base_puller)
-         cache.branch_fixup(basefs)
-         cache.branch_commit(base_id, basefs, "FROM %s" % os.path.basename(basefs)) # FIXME
-         # checkout image to base commit.
-         cache.worktree_add(rootfs, basefs)
-      else:
-         ch.CACHE_V("FROM instruction id: %s (hit)" % base_id)
-         cache_hits.append(True)
-
-      # 2. prepare image
-
-      if (cache.mode == ch.Mode.REBUILD and cache.branch_exists(rootfs)):
-         # reset image branch to base tip; this is neccessary for our id search
-         # algorithm, which will prefer ids in an existing branch.
-         commit = cache.cached_from_id(base_id, basefs).commit
-         cache.branch_checkout(commit, rootfs)
-
-      if (not cache.branch_exists(rootfs)):
-         cache.worktree_add(rootfs, basefs)
-      state_ids.append(base_id)
-
-   def execute_(self):
-      # Complain about unsupported stuff.
+   def prepare(self, parent, miss_ct):
+      # FROM is special because its preparation involves opening a new stage
+      # and closing the previous if there was one. Because of this, the actual
+      # parent is the base image.
+      #
+      # Validate instruction.
       if (self.options.pop("platform", False)):
          self.unsupported_yet_fatal("--platform", 778)
-      # Any remaining options are invalid.
       self.options_assert_empty()
+      # Close previous stage if needed.
+      if (parent is not None and miss_ct == 0):
+         parent.checkout()
       # Update image globals.
       global image_i
       image_i += 1
@@ -721,48 +710,39 @@ class I_from_(Instruction):
       if (self.alias is not None):
          images[self.alias] = image
       ch.VERBOSE("image path: %s" % image.unpack_path)
-      # Other error checking.
-      if (str(image.ref) == str(self.base_ref)):
-         ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Initialize image.
       self.base_image = ch.Image(self.base_ref)
-      # Initiliaze image puller.
-      pullet = pull.Image_Puller(self.base_image, not cli.no_cache)
+      # More error checking.
+      if (str(image.ref) == str(self.base_ref)):
+         ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
+      # Pull base image if needed.
+      self.sid = bu.cache.image_sid(self.base_image)
+      self.miss = True if self.sid is None else False
+      ch.INFO(self.str_log)  # announce before we start pulling
+      if (self.miss):
+         bu.cache.pull(self.base_image)  # fix the miss
+         self.miss = False
+      # Set up new branch.
+      bu.cache.branch(image.ref.for_path, self.base_image.ref.for_path)
+      # Done.
+      return 0
 
-      # cache stuff
-      global cache
-      if (cache.mode == ch.Mode.ENABLED or cache.mode == ch.Mode.REBUILD):
-         self.cache_exe_(image, pullet)
-      else:
-         if (os.path.isdir(basefs)):
-            VERBOSE("base image found: %s" % basefs)
-         else:
-            VERBOSE("base image not found, pulling")
-            pullet.pull_to_unpacked()
-            pullet.done()
-         image.copy_unpacked(self.base_image)
-
-      # FIXME: perhaps medata_load and metadata_save should be called from
-      # the build cache to ensure the img directory git trees don't get dirty.
-      image.metadata_load()
-      env.reset()
-      # Find fakeroot configuration, if any.
-      global fakeroot_config
-      fakeroot_config = fakeroot.detect(image.unpack_path,
-                                        cli.force, cli.no_force_detect)
-
-   def str_(self):
-      alias = " AS %s" % self.alias if self.alias else ""
-      return "%s%s" % (self.base_ref, alias)
+   def execute(self):
+      # Everything happens in prepare().
+      pass
 
 
 class Run(Instruction):
+
+   @property
+   def str_(self):
+      return str(self.cmd)
 
    def cache_exe_(self):
       global cache, state_ids, cache_hits
       # state id caclutation variables
       inst_action = self.cmd
-      inst_name   = self.str_name()
+      inst_name   = self.str_name
       inst_opts   = self.options
       pid         = state_ids[-1]
       rootfs  = images[image_i].unpack_path
@@ -832,9 +812,6 @@ class Run(Instruction):
          return
       self.execute_inst()
 
-   def str_(self):
-      return str(self.cmd)
-
 
 class I_run_exec(Run):
 
@@ -862,6 +839,7 @@ class I_shell(Instruction):
       self.shell = [variables_sub(unescape(i), env.env_build)
                     for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
 
+   @property
    def str_(self):
       return str(self.shell)
 
@@ -875,6 +853,7 @@ class I_workdir(Instruction):
       self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
                                 env.env_build)
 
+   @property
    def str_(self):
       return self.path
 
@@ -889,6 +868,7 @@ class I_uns_forever(Instruction_Supported_Never):
       super().__init__(*args)
       self.name = ch.tree_terminal(self.tree, "UNS_FOREVER")
 
+   @property
    def str_name(self):
       return self.name
 
@@ -906,14 +886,16 @@ class I_uns_yet(Instruction):
                         "LABEL":       781,
                         "ONBUILD":     788 }[self.name]
 
-   def announce(self):
-      self.unsupported_yet_warn("instruction", self.issue_no)
-
+   @property
    def str_(self):
       return "(unsupported)"
 
+   @property
    def str_name(self):
       return self.name
+
+   def announce(self):
+      self.unsupported_yet_warn("instruction", self.issue_no)
 
    def execute_(self):
       pass
@@ -976,6 +958,15 @@ class Environment:
 
 
 ## Supporting functions ###
+
+def checkout_for_build(image):
+   # This function is here instead of the cache object b/c the messy globals.
+   bu.cache.checkout(image)
+   image.metadata_load()
+   env.reset()  # also global
+   global fakeroot_config
+   fakeroot_config = fakeroot.detect(image.unpack_path,
+                                     cli.force, cli.no_force_detect)
 
 def variables_sub(s, variables):
    # FIXME: This should go in the grammar rather than being a regex kludge.

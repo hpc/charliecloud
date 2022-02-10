@@ -67,9 +67,12 @@ def init(cli):
 
 class File_Metadata:
 
+   # Note: ctime cannot be restored [1].
+   #
+   # [1]: https://unix.stackexchange.com/a/36105
+
    __slots__ = ('atime_ns',
                 'children',
-                'ctime_ns',
                 'mtime_ns',
                 'mode',
                 'name')
@@ -78,16 +81,29 @@ class File_Metadata:
       self.name = name
       self.atime_ns = st.st_atime_ns
       self.children = list()  # so we can keep it sorted
-      self.ctime_ns = st.st_ctime_ns
       self.mtime_ns = st.st_mtime_ns
       self.mode = st.st_mode
 
+   @property
+   def empty_dir_p(self):
+      """True if I represent either an empty directory, or a directory that
+         contains only children where empty_dir_p is true. E.g., the root of a
+         directory tree containing only empty directories returns true."""
+      # In principle this could do a lot of recursion, but in practice I'm
+      # guessing it's not too much.
+      if (not stat.S_ISDIR(self.mode)):
+         return False  # not a directory
+      # True if no children (truly empty directory) or each child is
+      # empty_dir_p (recursively empty directory tree).
+      return all(child.empty_dir_p for child in self.children)
 
 class State_ID:
 
    __slots__ = ('id_')
 
    def __init__(self, id_):
+      # Constructor should only be called internally, so verify id_ type.
+      assert (isinstance(id_, bytes))
       self.id_ = id_
 
    @classmethod
@@ -166,25 +182,35 @@ class Enabled_Cache:
             ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
             ch.chdir(cwd)
       except OSError as x:
-         FATAL("can't create or delete temporary directory: %s: %s"
-               % (x.filename, x.strerror))
+         ch.FATAL("can't create or delete temporary directory: %s: %s"
+                  % (x.filename, x.strerror))
+
+   def branch(self, new, base):
+      "Create branch new pointing to base, replacing any existing branch new."
+      ch.cmd_quiet(["git", "branch", "-f", new, base], cwd=self.root)
+
+   def checkout(self, image):
+      self.worktree_add(image, image.ref.for_path)
+      self.git_restore(image.unpack_path)
 
    def commit(self, path, sid, msg):
-      met = self.git_prepare(path)
+      fm = self.git_prepare(path)
       cwd = ch.chdir(path)
       t = ch.Timer()
       ch.cmd_quiet(["git", "add", "-A"])
       t.log("prepared index")
       t = ch.Timer()
-      ch.cmd_quiet(["git", "commit", "--allow-empty",
+      ch.cmd_quiet(["git", "commit", "-q", "--allow-empty",
                     "-m", "%s\n\n%s" % (msg, sid)])
       t.log("committed")
       ch.chdir(cwd)
-      self.git_restore(self, path, met)
+      self.git_restore(path, fm)
 
    def garbageinate(self):
       ch.INFO("collecting cache garbage")
+      t = ch.Timer()
       ch.cmd_quiet(["git", "gc", "--prune=now"], cwd=self.root)
+      t.log("collected garbage")
 
    def git_prepare(self, unpack_path):
       """Recursively walk the given unpack path and prepare it for a Git
@@ -225,27 +251,19 @@ class Enabled_Cache:
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       t = ch.Timer()
       cwd = ch.chdir(unpack_path)
-      met = self.git_walk(None, ".", os.lstat("."))
+      met = self.git_prepare_walk(None, ".", os.lstat("."))
       ch.file_write("ch/git.pickle", pickle.dumps(met, protocol=4))
       ch.chdir(cwd)
       t.log("gathered metadata")
       return met
 
-   def git_restore(self, unpack_path, metadata, lite=False):
-      """Opposite of git_prepare. If lite, only restore things that we broke
-         in git_prepare() (e.g., renaming .git files), and don’t restore
-         things that Git breaks (e.g., file permissions). Does not delete
-         ch/git.pickle, to avoid making the diretory dirty."""
-      assert lite  # FIXME
-      ...
-
-   def git_walk(self, parent, name, st):
+   def git_prepare_walk(self, parent, name, st):
       """Return a File_Metadata object describing file name and its children
          (if name is a directory), and rename files as described in
          git_preserve(). Changes CWD during operation but does restore it."""
       # While the standard library provides a similar function os.walk() that
       # is internally recursive, it must be used iteratively.
-      met = File_Metadata(name, st)
+      fm = File_Metadata(name, st)
       path = name if parent is None else "%s/%s" % (parent, name)
       # Validate file type and recurse if necessary.
       if   (   stat.S_ISREG(st.st_mode)
@@ -256,13 +274,13 @@ class Enabled_Cache:
          ch.WARNING("socket in image, will be ignored: %s" % path)
       elif (   stat.S_ISCHR(st.st_mode)
             or stat.S_ISBLK(st.st_mode)):
-         ch.FATAL("device files invalid in mage: %s" % path)
+         ch.FATAL("device files invalid in image: %s" % path)
       elif (   stat.S_ISDIR(st.st_mode)):
          entries = sorted(ch.listdir(name))
          cwd = ch.chdir(name)
          for i in entries:
             if (not (parent is None and i.startswith(".git"))):
-               met.children.append(self.git_walk(path, i, os.lstat(i)))
+               fm.children.append(self.git_prepare_walk(path, i, os.lstat(i)))
          ch.chdir(cwd)
       else:
          ch.FATAL("unexpected file type in image: %x: %s"
@@ -278,18 +296,82 @@ class Enabled_Cache:
          ch.VERBOSE("renaming: %s -> %s" % (name, name_new))
          ch.rename(name, name_new)
       # Done.
-      return met
+      return fm
 
-   def pull(self, image, use_dlcache, last_layer=None):
-      image.unpack_clear()
-      self.worktree_add(image.unpack_path, image.ref.for_path, "root")
+   def git_restore(self, unpack_path, fm=None):
+      """Opposite of git_prepare. If fm is non-None, do a quick restore,
+         assuming that unpack_path is unchanged since fm was returned from
+         git_prepare, rather than the directory being checked out from Git.
+         I.e. only restore things that we broke in git_prepare() (e.g.,
+         renaming .git files), not things that Git breaks (e.g., file
+         permissions). Otherwise (i.e., fm is None), read the File_Metadata
+         tree from “ch/git.pickle” under unpack_path and do a full restore.
+         This method will dirty the Git working directory."""
+      t = ch.Timer()
+      cwd = ch.chdir(unpack_path)
+      if (fm is not None):
+         quick=True
+      else:
+         quick=False
+         fm = pickle.loads(ch.file_read("ch/git.pickle", text=False))
+      self.git_restore_walk(None, fm, quick)
+      ch.chdir(cwd)
+      t.log("restored metadata (%s)" % ("quick" if quick else "full"))
+
+   def git_restore_walk(self, parent, fm, quick):
+      "Changes CWD but restores it."
+      assert (parent is not None or fm.name == ".")
+      path = fm.name if parent is None else "%s/%s" % (parent, fm.name)
+      # Restore self.
+      if (not quick):
+         if (fm.name.startswith(".git")):
+            # re-create with escaped name so renaming need not be conditional
+            name = fm.name.replace(".git", ".weirdal_")
+         else:
+            name = fm.name
+         if (fm.empty_dir_p):
+            ch.ossafe(os.mkdir, "can't mkdir: %s" % path, name)
+         elif (stat.S_ISFIFO(fm.mode)):
+            ch.ossafe(os.mkfifo, "can't make FIFO: %s" % path, name)
+      if (fm.name.startswith(".git")):
+         ch.rename(fm.name.replace(".git", ".weirdal_"), fm.name)
+      if (not quick):
+         if (stat.S_ISSOCK(fm.mode)):
+            ch.WARNING("ignoring socket in image: %s" % path)
+         if (os.utime in os.supports_follow_symlinks):
+            ch.ossafe(os.utime, "can't restore times: %s" % path, fm.name,
+                      ns=(fm.atime_ns, fm.mtime_ns), follow_symlinks=False)
+         if (os.chmod in os.supports_follow_symlinks):
+            ch.ossafe(os.chmod, "can't restore mode: %s" % path, fm.name,
+                      stat.S_IMODE(fm.mode), follow_symlinks=False)
+      # Recurse children.
+      if (len(fm.children) > 0):
+         cwd = ch.chdir(fm.name)  # works at top level b/c fm.name is "."
+         for child in fm.children:
+            self.git_restore_walk(path, child, quick)
+         ch.chdir(cwd)
+
+   def image_sid(self, image):
+      "Return state ID of branch tip for image, or None if no such branch."
+      cp = ch.cmd_stdout(["git", "log", "--format=%B", "-n", "1",
+                          image.ref.for_path], fail_ok=True, cwd=self.root)
+      if (cp.returncode == 0):  # branch exists
+         sid = State_ID.from_text(cp.stdout)
+      else:
+         sid = None
+      ch.VERBOSE("found branch: %s: %s" % (image.ref.for_path, sid))
+      return sid
+
+   def pull(self, image, last_layer=None):
+      self.worktree_add(image, "root")
       # a young hen, especially one less than one year old
-      pullet = pull.Image_Puller(image, use_dlcache)
+      pullet = pull.Image_Puller(image)
       pullet.pull_to_unpacked(last_layer)
       sid = State_ID.from_parent(self.root_id, pullet.sid_input)
       pullet.done()
       self.commit(image.unpack_path, sid, 'PULL %s' % image.ref)
       self.ready(image)
+      return sid
 
    def ready(self, image):
       ... # FIXME
@@ -303,6 +385,10 @@ class Enabled_Cache:
          ch.mkdir(self.root)
          self.bootstrap()
 
+   def status_char(self, miss):
+      "Return single character to indicate whether miss is true or not."
+      return "." if miss else "*"
+
    def summary_print(self):
       cwd = ch.chdir(self.root)
       # state IDs
@@ -313,7 +399,7 @@ class Enabled_Cache:
          if (msg != ""):
             states.append(State_ID.from_text(msg))
       # branches (FIXME: how to count unnamed branch tips?)
-      image_ct = ch.cmd_stdout(["git", "branch"]).stdout.count("\n")
+      image_ct = ch.cmd_stdout(["git", "branch", "--list"]).stdout.count("\n")
       # file count and size on disk
       (file_ct, byte_ct) = ch.du(self.root)
       commit_ct = int(ch.cmd_stdout(["git", "rev-list",
@@ -355,6 +441,20 @@ class Enabled_Cache:
       ch.INFO("writing ./build-cache.pdf")
       ch.cmd_quiet(["dot", "-Tpdf", "-obuild-cache.pdf", "build-cache.gv"])
 
-   def worktree_add(self, dir_, branch, base_branch):
-      ch.cmd_quiet(["git", "worktree", "add",
-                    "-B", branch, dir_, base_branch], cwd=self.root)
+   def worktree_add(self, image, base):
+      t = ch.Timer()
+      image.unpack_clear()
+      ch.cmd_quiet(["git", "worktree", "add", "-f", "-B", image.ref.for_path,
+                    image.unpack_path, base], cwd=self.root)
+      t.log("created worktree")
+
+
+class Rebuild_Cache(Enabled_Cache):
+
+   ...
+
+
+class Disabled_Cache(Rebuild_Cache):
+
+   def status_char(self, miss):
+      return " "

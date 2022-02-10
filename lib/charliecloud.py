@@ -249,6 +249,9 @@ trace_fatal = False  # Add abbreviated traceback to fatal error hint.
 # Verify TLS certificates? Passed to requests.
 tls_verify = True
 
+# True if the download cache is enabled.
+dlcache_p = None
+
 
 ## Exceptions ##
 
@@ -394,19 +397,6 @@ class Build_Cache:
       # FIXME: restore each file metadata?
       os.chdir(curr)
 
-   def branch_id(self, path):
-      "Return state id parsed from branch commit message."
-      CACHE_V("getting worktree %s most recent state id" % path)
-      return self.branch_msg(path).split(":")[-1].strip()
-
-   def branch_msg(self, path):
-      "Return branch tip commit messsage."
-      CACHE_V("getting commit msg of %s" % path)
-      cp = cmd_return(["git", "log", "--format=%B", "-n", "1"],
-                       cwd=path)
-      CACHE_D(cp.stdout)
-      return cp.stdout.strip()
-
    def branch_ready(self, worktree):
       "Return true if commit message is marked ready; otherwise false."
       # FIXME: unclear how to mark a branch ready.
@@ -477,13 +467,6 @@ class Build_Cache:
       options = self.encode(options)
       action = self.encode(action)
       return self.translate_id(hashlib.md5(pid + name + options + action).hexdigest())
-
-   def id_for_from(self, base):
-      if (not self.branch_exists(base)):
-         return None
-      if (not self.branch_ready(base)):
-         return None
-      return self.branch_id(base)
 
    def prep_note(self, name, actions):
       """Return a human readible string from build.py instruction class
@@ -1759,7 +1742,7 @@ class Storage:
          if (not self.valid_p):
             FATAL("storage directory seems invalid: %s" % self.root)
          if (os.path.isfile(self.version_file)):
-            v_found = int(file_read_all(self.version_file))
+            v_found = int(file_read(self.version_file))
          else:
             v_found = 1
       if (v_found == STORAGE_VERSION):
@@ -2208,7 +2191,7 @@ def file_hash(path):
    ossafe(fp.close, "can't close: %s" % path)
    return h.hexdigest()
 
-def file_read_all(path, text=True):
+def file_read(path, text=True):
    """Return the contents of file at path, or exit with error. If text, read
       in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
    if (text):
@@ -2275,6 +2258,9 @@ def init(cli):
       arch = arch_host
    else:
       arch = cli.arch
+   # download cache
+   global dlcache_p
+   dlcache_p = (cli.dlcache == Download_Mode.ENABLED)
    # misc
    global password_many, tls_verify
    password_many = cli.password_many
@@ -2285,7 +2271,7 @@ def init(cli):
 
 def json_from_file(path, msg):
    DEBUG("loading JSON: %s: %s" % (msg, path))
-   text = file_read_all(path)
+   text = file_read(path)
    TRACE("text:\n%s" % text)
    try:
       data = json.loads(text)

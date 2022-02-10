@@ -129,9 +129,9 @@ def pull(cli):
    if (cli.image_dir is not None):
       ch.INFO("destination:      %s" % image.unpack_path)
    else:
-      ch.VERBOSE("destination:      %s" % image.unpack_path)
+      ch.VERBOSE("destination: %s" % image.unpack_path)
    # Pull.
-   bu.cache.pull(image, cli.dlcache == ch.Download_Mode.ENABLED, cli.last_layer)
+   bu.cache.pull(image, cli.last_layer)
    ch.done_notify()
 
 
