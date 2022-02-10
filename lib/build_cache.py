@@ -31,9 +31,7 @@ def have_deps():
       otherwise. Note this does not include the --dot debugging option; that
       checks its own dependencies when invoked."""
    # As of 2.34.1, we get: "git version 2.34.1\n".
-   if (not ch.version_check(["git", "--version"], GIT_MIN, required=False)):
-      return False
-   return True
+   return ch.version_check(["git", "--version"], GIT_MIN, required=False)
 
 def init(cli):
    # At this point --bucache is what the user wanted, either directly or via
@@ -45,7 +43,7 @@ def init(cli):
          cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
          ch.VERBOSE("using default build cache mode")
       if (cli.bucache != ch.Build_Mode.DISABLED and not ok):
-         ch.FATAL("no Git or insufficient Git for build cache mode: %s"
+         ch.FATAL("insufficient Git for build cache mode: %s"
                   % cli.bucache.value)
    ch.VERBOSE("build cache mode: %s" % cli.bucache.value)
    # Set cache appropriately. We could also do this with a factory method, but
@@ -54,11 +52,9 @@ def init(cli):
    if (cli.bucache == ch.Build_Mode.ENABLED):
       cache = Enabled_Cache()
    elif (cli.bucache == ch.Build_Mode.REBUILD):
-      ...
-      #cache = Rebuild_Cache()
+      cache = Rebuild_Cache()
    elif (cli.bucache == ch.Build_Mode.DISABLED):
-      ...
-      #cache = Disabled_Cache()
+      cache = Disabled_Cache()
    else:
       assert False, "unreachable"
 
@@ -67,9 +63,7 @@ def init(cli):
 
 class File_Metadata:
 
-   # Note: ctime cannot be restored [1].
-   #
-   # [1]: https://unix.stackexchange.com/a/36105
+   # Note: ctime cannot be restored: https://unix.stackexchange.com/a/36105
 
    __slots__ = ('atime_ns',
                 'children',

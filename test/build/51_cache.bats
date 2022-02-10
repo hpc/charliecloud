@@ -283,6 +283,6 @@ EOF
 # needed tests:
 # --gc
 # --dot
-# FROM that pulls
 # various difficult files (see git_prepare)
 # pull twice in row (should replace directory in img)
+# all hits, new name

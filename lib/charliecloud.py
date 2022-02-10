@@ -266,7 +266,7 @@ class ArgumentParser(argparse.ArgumentParser):
    class HelpFormatter(argparse.HelpFormatter):
 
       def __init__(self, *args, **kwargs):
-         # max_help_position os undocumented but I don't know another way.
+         # max_help_position is undocumented but I don't know another way.
          super().__init__(max_help_position=26, *args, **kwargs)
 
       # Suppress duplicate metavar printing when option has both short and
@@ -373,30 +373,6 @@ class Build_Cache:
          return False
       return True
 
-   def branch_fixdown(self, worktree):
-      """Walk the filesystem tree restoring metadata, empty directories,
-         hardlink groups, sockets and fifos, and renamed files."""
-      meta = json_from_file(os.path.join(worktree, "ch/build-cache.metadata.json"), "fixme")
-      curr = os.getcwd()
-      os.chdir(worktree)
-      CACHE_V("restoring %s for execution commands" % worktree)
-      for d in meta["build-cache"]["empty_dirs"]:
-         #CACHE_D("creating empty dir: %s" % d)
-         m = meta["build-cache"]["meta"][d]
-         if (not os.path.isdir(d) and not os.path.islink(d)):
-            # FIXME: makedirs handles the edge case of creating a parent dir
-            # with an empty subdir (something git doesn't track); however, this
-            # creates the parent directory with the same metadata as the empty
-            # child.
-            os.makedirs(d, mode=m["mode"], exist_ok=True)
-            os.chown(d, m["uid"], m["gid"])
-            os.utime(d, (m["atime"], m["mtime"]))
-      # FIXME: restore hardlink groups
-      # FIXME: restore fifos
-      # FIXME: restore sockets
-      # FIXME: restore each file metadata?
-      os.chdir(curr)
-
    def branch_ready(self, worktree):
       "Return true if commit message is marked ready; otherwise false."
       # FIXME: unclear how to mark a branch ready.
@@ -410,11 +386,6 @@ class Build_Cache:
       #      for example, "BRANCH@ready". Operations on git output is pretty
       #      ugly and this is worse to implement than #1.
       return True
-
-   def bytes_from_file(self, f):
-      "Return bytes read from a file."
-      with open(f, "rb")  as fp:
-         return fp.read()
 
    def commit_from_id(self, sid, worktree, branch="--all"):
       """Search all commits for state id and return time sorted list of cached
@@ -456,10 +427,6 @@ class Build_Cache:
       CACHE_V("search result (all): %s" % str(all_cache[0]))
       return all_cache[0]
 
-   def encode(self, str_):
-      "Return santized UTF-8 encoded bytes"
-      return str(str_).strip().encode("utf-8")
-
    def id_for_exec(self, parent_id, name, options, action):
       "Return state id of RUN instruction"
       pid = self.bytes_from_hex(self.translate_id(parent_id))
@@ -478,12 +445,6 @@ class Build_Cache:
       elif (name == 'FROM'):
          return name + ' ' + actions
       FATAL("fixme: not implemented yet")
-
-   def pull_base(self, base, puller):
-      "Pull base image using initilaized image puller."
-      CACHE_V("pulling base %s" % base)
-      puller.pull_to_unpacked()
-      puller.done()
 
 
 class Credentials:
@@ -1009,10 +970,7 @@ class Image_Ref:
       if (class_.parser is None):
          class_.parser = lark.Lark("?start: image_ref\n" + GRAMMAR,
                                    parser="earley", propagate_positions=True)
-      if ("%" in s):
-         s = s.replace("%", "/")
-      if ("+" in s):
-         s = s.replace("+", ":")
+      s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       try:
          tree = class_.parser.parse(s)
@@ -2451,8 +2409,8 @@ def user():
 def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
    """Return True if the version number of program exected as argv is at least
       min_. Otherwise, including if execution fails, exit with error if
-      required is False, otherwise return False. Use regex to extract the
-      version number from output."""
+      required, otherwise return False. Use regex to extract the version
+      number from output."""
    if (required):
       too_old = FATAL
       bad_parse = FATAL

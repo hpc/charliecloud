@@ -224,7 +224,7 @@ class Main_Loop(lark.Visitor):
             if (   isinstance(inst, I_directive)
                 or isinstance(inst, I_from_)):
                pass
-            elif ( isinstance(inst, Arg)):
+            elif (isinstance(inst, Arg)):
                ch.WARNING("ARG before FROM not yet supported; see issue #779")
             else:
                ch.FATAL("first instruction must be ARG or FROM")
@@ -720,7 +720,7 @@ class I_from_(Instruction):
       self.miss = True if self.sid is None else False
       ch.INFO(self.str_log)  # announce before we start pulling
       if (self.miss):
-         bu.cache.pull(self.base_image)  # fix the miss
+         self.sid = bu.cache.pull(self.base_image)  # fix the miss
          self.miss = False
       # Set up new branch.
       bu.cache.branch(image.ref.for_path, self.base_image.ref.for_path)
