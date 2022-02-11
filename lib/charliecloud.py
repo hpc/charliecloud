@@ -604,6 +604,14 @@ class Image:
          dev_ct = 0
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
+            if len(m.name) == 0 and m.isdir():
+               WARNING("skipping root entry in %s" % fp.name)
+               members.remove(m)
+               continue
+            if m.islnk() and len(m.linkname) > 0 and m.linkname[0] == "/":
+               WARNING("fixing absolute hard link target: %s: %s -> %s"
+                     % (fp.name, m.name, m.linkname))
+               m.linkname = m.linkname[1:]
             TarFile.fix_member_path(m, fp.name)
             if (m.isdev()):
                # Device or FIFO: Ignore.
