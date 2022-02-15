@@ -605,13 +605,10 @@ class Image:
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
             if len(m.name) == 0 and m.isdir():
+               # Ignore absolute root directory entry
                WARNING("skipping root entry in %s" % fp.name)
                members.remove(m)
                continue
-            if m.islnk() and len(m.linkname) > 0 and m.linkname[0] == "/":
-               WARNING("fixing absolute hard link target: %s: %s -> %s"
-                     % (fp.name, m.name, m.linkname))
-               m.linkname = m.linkname[1:]
             TarFile.fix_member_path(m, fp.name)
             if (m.isdev()):
                # Device or FIFO: Ignore.
@@ -622,6 +619,11 @@ class Image:
                # Symlink: Nothing to change, but accept it.
                pass
             elif (m.islnk()):
+               if len(m.linkname) > 0 and m.linkname[0] == "/":
+                  # Make absolute hard link targets relative to image root
+                  WARNING("fixing absolute hard link target: %s: %s -> %s"
+                          % (fp.name, m.name, m.linkname))
+                  m.linkname = m.linkname[1:]
                # Hard link: Fail if pointing outside top level. (Note that we
                # let symlinks point wherever they want, because they aren't
                # interpreted until run time in a container.)
@@ -642,9 +644,6 @@ class Image:
    def validate_tar_link(self, filename, path, target):
       """Reject hard link targets outside the tar top level by aborting the
          program."""
-      if (len(target) > 0 and target[0] == "/"):
-         FATAL("rejecting absolute hard link target: %s: %s -> %s"
-               % (filename, path, target))
       if (".." in os.path.normpath(path + "/" + target).split("/")):
          FATAL("rejecting too many up-levels: %s: %s -> %s"
                % (filename, path, target))
