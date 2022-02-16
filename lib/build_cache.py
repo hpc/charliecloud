@@ -183,8 +183,8 @@ class Enabled_Cache:
       "Create branch new pointing to base, replacing any existing branch new."
       ch.cmd_quiet(["git", "branch", "-f", new, base], cwd=self.root)
 
-   def checkout(self, image):
-      self.worktree_add(image, image.ref.for_path)
+   def checkout(self, image, git_hash):
+      self.worktree_add(image, git_hash)
       self.git_restore(image.unpack_path)
 
    def commit(self, path, sid, msg):
@@ -197,8 +197,59 @@ class Enabled_Cache:
       ch.cmd_quiet(["git", "commit", "-q", "--allow-empty",
                     "-m", "%s\n\n%s" % (msg, sid)])
       t.log("committed")
+      # "git commit" does print the new commit's hash without "-q", but it
+      # also prints every file commited, which is rather enormous for us.
+      # Therefore, retrieve the hash separately.
+      cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
+      git_hash = cp.stdout.strip()
       ch.chdir(cwd)
       self.git_restore(path, fm)
+      return git_hash
+
+   def find_image(self, image):
+      """Return (state ID, commit) of branch tip for image, or (None, None) if
+         no such branch."""
+      # Note abbreviated commit hash %h is automatically long enough to avoid
+      # collisions.
+      cp = ch.cmd_stdout(["git", "log", "--format=%h%n%B", "-n", "1",
+                          image.ref.for_path], fail_ok=True, cwd=self.root)
+      if (cp.returncode == 0):  # branch exists
+         sid = State_ID.from_text(cp.stdout)
+         commit = cp.stdout.split("\n", maxsplit=1)[0]
+         commit_short = commit[:7]
+      else:
+         sid = None
+         commit = None
+         commit_short = 'lol'
+      ch.VERBOSE("branch: %s: %s %s" % (image.ref.for_path, commit_short, sid))
+      return (sid, commit)
+
+   def find_sid(self, sid, branch):
+      """Return the hash of the commit matching State_ID, or None if no such
+         commit exists. First search branch branch, then if not found, the
+         entire repo including commits not reachable from any branch."""
+      commit = self.find_sid_(sid, branch)
+      if (commit is None):
+         commit = self.find_sid_(sid)
+      ch.VERBOSE("commit for %s: %s" % (sid, commit))
+      return commit
+
+   def find_sid_(self, sid, branch=None):
+      """Return the hash of the most recent commit matching State_ID sid, or
+         None if no such commit exists. If branch is given, search only that
+         branch; otherwise, search the entire repo, including commits not
+         reachable from any branch."""
+      if (branch is not None):
+         fail_ok = True
+      else:
+         branch = "--all"
+         fail_ok = False
+      cp = ch.cmd_stdout(["git", "log", "--grep", sid, "-F", "--format=%h",
+                          "-n", "1", branch], fail_ok=fail_ok, cwd=self.root)
+      if (cp.returncode != 0 or len(cp.stdout) == 0):
+         return None
+      else:
+         return cp.stdout.split(maxsplit=1)[0]
 
    def garbageinate(self):
       ch.INFO("collecting cache garbage")
@@ -345,17 +396,6 @@ class Enabled_Cache:
             self.git_restore_walk(path, child, quick)
          ch.chdir(cwd)
 
-   def image_sid(self, image):
-      "Return state ID of branch tip for image, or None if no such branch."
-      cp = ch.cmd_stdout(["git", "log", "--format=%B", "-n", "1",
-                          image.ref.for_path], fail_ok=True, cwd=self.root)
-      if (cp.returncode == 0):  # branch exists
-         sid = State_ID.from_text(cp.stdout)
-      else:
-         sid = None
-      ch.VERBOSE("found branch: %s: %s" % (image.ref.for_path, sid))
-      return sid
-
    def pull(self, image, last_layer=None):
       self.worktree_add(image, "root")
       # a young hen, especially one less than one year old
@@ -363,9 +403,9 @@ class Enabled_Cache:
       pullet.pull_to_unpacked(last_layer)
       sid = State_ID.from_parent(self.root_id, pullet.sid_input)
       pullet.done()
-      self.commit(image.unpack_path, sid, 'PULL %s' % image.ref)
+      commit = self.commit(image.unpack_path, sid, 'PULL %s' % image.ref)
       self.ready(image)
-      return sid
+      return (sid, commit)
 
    def ready(self, image):
       ... # FIXME

@@ -93,7 +93,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
 
-    # FROM doesn't pull (same target name)
+    # FROM doesn't pull (different target name)
     run ch-image build -v -t from2 -f - . <<'EOF'
 FROM alpine:3.9
 EOF
@@ -112,7 +112,6 @@ EOF
 }
 
 @test "${tag}/build A" {
-    skip
     ch-image build -t img_a -f - . <<'EOF'
 FROM alpine:3.9
 RUN echo foo
@@ -120,16 +119,16 @@ RUN echo bar
 EOF
 
     blessed_out=$(cat << 'EOF'
-*  (img_a) RUN echo bar
-*  RUN echo foo
-*  (alpine+3.9) FROM alpine:3.9
-*  (HEAD -> root)
+*  (img_a) RUN ["/bin/sh", "-c", "echo bar"]
+*  RUN ["/bin/sh", "-c", "echo foo"]
+*  (from2, from1, alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
 EOF
 )
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | tree-only)
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
 @test 'build cache B' {
@@ -286,3 +285,4 @@ EOF
 # various difficult files (see git_prepare)
 # pull twice in row (should replace directory in img)
 # all hits, new name
+# multi-stage build

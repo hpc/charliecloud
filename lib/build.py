@@ -3,6 +3,7 @@
 import abc
 import ast
 import glob
+import json
 import os
 import os.path
 import re
@@ -183,7 +184,7 @@ def main(cli_):
    else:
       ml.visit(tree)
    if (ml.miss_ct == 0):
-      bu.cache.checkout(images[image_i])
+      ml.inst_prev.checkout()
 
    # Check that all build arguments were consumed.
    if (len(cli.build_arg) != 0):
@@ -208,7 +209,7 @@ class Main_Loop(lark.Visitor):
 
    __slots__ = ("instruction_total_ct",
                 "miss_ct",    # number of misses during this stage
-                "inst_last")  # last instruction executed
+                "inst_prev")  # last instruction executed
 
    def __init__(self, *args, **kwargs):
       self.miss_ct = 0
@@ -219,7 +220,7 @@ class Main_Loop(lark.Visitor):
    def __default__(self, tree):
       class_ = "I_" + tree.data
       if (class_ in globals()):
-         inst = globals()[class_](tree)
+         inst = globals()[class_](tree)   # FIXME: YOU ARE HERE: should instructions remember inst_prev as their parent?
          if (self.instruction_total_ct == 0):
             if (   isinstance(inst, I_directive)
                 or isinstance(inst, I_from_)):
@@ -231,7 +232,7 @@ class Main_Loop(lark.Visitor):
          self.miss_ct = inst.prepare(self.inst_prev, self.miss_ct)
          if (inst.miss):
             if (self.miss_ct == 1):
-               checkout_for_build(image)
+               inst.checkout_for_build(self.inst_prev)
             inst.execute()
             if (image_i != -1):
                images[image_i].metadata_save()
@@ -246,8 +247,8 @@ class Instruction(abc.ABC):
 
    execute_increment = 1
 
-   __slots__ = ("lineno",
-                "miss",
+   __slots__ = ("git_hash",     # Git commit where sid was found
+                "lineno",
                 "options",      # consumed
                 "options_str",  # saved at instantiation
                 "sid",
@@ -267,6 +268,20 @@ class Instruction(abc.ABC):
                                   for (k,v) in self.options.items())
       self.tree = tree
 
+   def __str__(self):
+      options = self.options_str
+      if (options != ""):
+         options = " " + options
+      return "%s%s %s" % (self.str_name, options, self.str_)
+
+   @property
+   def miss(self):
+      return (self.git_hash is None)
+
+   @property
+   def sid_input(self):
+      return str(self)
+
    @property
    @abc.abstractmethod
    def str_(self):
@@ -278,15 +293,28 @@ class Instruction(abc.ABC):
 
    @property
    def str_log(self):
-      options = self.options_str
-      if (options != ""):
-         options = " " + options
-      return ("%3s%s %s%s %s"
-              % (self.lineno, bu.cache.status_char(self.miss), self.str_name,
-                 options, self.str_))
+      return ("%3s%s %s" % (self.lineno, bu.cache.status_char(self.miss), self))
+
+   def checkout(self):
+      bu.cache.checkout(images[image_i], self.git_hash)
+
+   def checkout_for_build(self, parent):
+      # Note messy globals.
+      parent.checkout()
+      images[image_i].metadata_load()
+      env.reset()
+      global fakeroot_config
+      fakeroot_config = fakeroot.detect(images[image_i].unpack_path,
+                                        cli.force, cli.no_force_detect)
+
+   def commit(self):
+      path = images[image_i].unpack_path
+      self.git_hash = bu.cache.commit(path, self.sid, str(self))
 
    @abc.abstractmethod
    def execute(self):
+      """Do what the instruction says. At this point, the unpack directory is
+         all ready to go. Thus, the method is cache-ignorant."""
       ...
 
    def options_assert_empty(self):
@@ -301,9 +329,15 @@ class Instruction(abc.ABC):
          the number of misses in this stage so far. Returns the new number of
          misses; usually miss_ct if this instruction hit or miss_ct + 1 if it
          missed. Some instructions (e.g., FROM) resets the miss count.
-         Announce self as soon as hit/miss status is known (i.e., before error
-         checking)."""
-      ...
+         Announce self as soon as hit/miss status is known, hopefully before
+         doing anything complicated or time-consuming.
+
+         Typically, subclasses will set up enough state for self.sid_input to
+         be valid, then call super().prepare()."""
+      self.sid = bu.State_ID.from_parent(parent.sid, self.sid_input)
+      self.git_hash = bu.cache.find_sid(self.sid, images[image_i].ref.for_path)
+      ch.INFO(self.str_log)
+      return miss_ct + int(self.miss)
 
    def unsupported_forever_warn(self, msg):
       ch.WARNING("not supported, ignored: %s %s" % (self.str_name, msg))
@@ -355,11 +389,7 @@ class Arg(Instruction):
       else:
          return "%s='%s'" % (self.key, self.value)
 
-   def cache_exe_(self):
-      # FIXME:
-      pass
-
-   def execute_(self):
+   def execute(self):
       if (self.value is not None):
          env.arg[self.key] = self.value
 
@@ -421,10 +451,6 @@ class I_copy(Instruction):
    @property
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
-
-   def cache_exe_(self):
-      #FIXME
-      pass
 
    def copy_src_dir(self, src, dst):
       """Copy the contents of directory src, named by COPY, either explicitly
@@ -544,7 +570,7 @@ class I_copy(Instruction):
             dst_parts.extend(reversed(target.parts))
       return dst_canon
 
-   def execute_(self):
+   def execute(self):
       if (cli.context == "-"):
          ch.FATAL("can't COPY: no context because \"-\" given")
       if (len(self.srcs) < 1):
@@ -633,11 +659,7 @@ class Env(Instruction):
    def str_(self):
       return "%s='%s'" % (self.key, self.value)
 
-   def cache_exe_(self):
-      # FIXME
-      pass
-
-   def execute_(self):
+   def execute(self):
       env.env[self.key] = self.value
       with ch.open_(images[image_i].unpack_path // "/ch/environment", "wt") \
            as fp:
@@ -673,6 +695,9 @@ class I_from_(Instruction):
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
 
+   # Not meaningful for FROM.
+   sid_input = None
+
    @property
    def str_(self):
       alias = " AS %s" % self.alias if self.alias else ""
@@ -689,7 +714,7 @@ class I_from_(Instruction):
       self.options_assert_empty()
       # Close previous stage if needed.
       if (parent is not None and miss_ct == 0):
-         parent.checkout()
+         assert False, "unimplemented"  # don't actually need to check it out??
       # Update image globals.
       global image_i
       image_i += 1
@@ -716,14 +741,10 @@ class I_from_(Instruction):
       if (str(image.ref) == str(self.base_ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
       # Pull base image if needed.
-      self.sid = bu.cache.image_sid(self.base_image)
-      self.miss = True if self.sid is None else False
+      (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
       ch.INFO(self.str_log)  # announce before we start pulling
       if (self.miss):
-         self.sid = bu.cache.pull(self.base_image)  # fix the miss
-         self.miss = False
-      # Set up new branch.
-      bu.cache.branch(image.ref.for_path, self.base_image.ref.for_path)
+         (self.sid, self.git_hash) = bu.cache.pull(self.base_image)  # fix miss
       # Done.
       return 0
 
@@ -734,58 +755,13 @@ class I_from_(Instruction):
 
 class Run(Instruction):
 
+   # FIXME: YOU ARE HERE: Log shell-form with less noise?
    @property
    def str_(self):
-      return str(self.cmd)
+      return json.dumps(self.cmd)  # double quotes, shlex.quote is less verbose
 
-   def cache_exe_(self):
-      global cache, state_ids, cache_hits
-      # state id caclutation variables
-      inst_action = self.cmd
-      inst_name   = self.str_name
-      inst_opts   = self.options
-      pid         = state_ids[-1]
-      rootfs  = images[image_i].unpack_path
-
-      ch.CACHE_V("list of ids: %s " % state_ids)
-
-      # compute state id
-      sid = cache.id_for_exec(pid, inst_name, inst_opts, inst_action)
-      state_ids.append(sid)
-      ch.CACHE_V("instruction id: %s" % sid)
-
-      # if last instruction was a miss or cache mode is rebuild, we know all
-      # checks going forward miss.
-      if (cache_hits[-1] and cache.mode != ch.Mode.REBUILD):
-         # search for commit from state id
-         commit = cache.cached_from_id(sid, rootfs)
-
-         # hit
-         if (commit):
-            ch.CACHE_V("cache hit: %s" % str(commit))
-            cache_hits.append(True)
-            return
-
-      # miss
-      ch.CACHE_V("cache miss")
-      cache_hits.append(False)
-
-      # get commit from parent id
-      ch.CACHE_V("parent instruction id: %s" % pid)
-      commit = cache.cached_from_id(pid, rootfs)
-      if (not commit):
-         ch.FATAL("error finding parent commit")
-
-      # checkout parent, execute
-      cache.branch_checkout(commit.commit, rootfs)
-      cache.branch_fixdown(rootfs)
-      self.execute_inst(rootfs)
-
-      # clean up, commit, and restore.
-      cache.branch_fixup(rootfs)
-      cache.branch_commit(sid, rootfs, cache.prep_note(inst_name, inst_action))
-
-   def execute_inst(self, rootfs):
+   def execute(self):
+      rootfs = images[image_i].unpack_path
       fakeroot_config.init_maybe(rootfs, self.cmd, env.env_build)
       cmd = fakeroot_config.inject_run(self.cmd)
       exit_code = ch.ch_run_modify(rootfs, cmd, env.env_build, env.workdir,
@@ -803,14 +779,6 @@ class Run(Instruction):
             else:
                ch.FATAL(msg, "current version of --force wouldn't help")
          assert False, "unreachable code reached"
-
-
-   def execute_(self):
-      global cache
-      if (cache.mode == ch.Mode.ENABLED or cache.mode == ch.Mode.REBUILD):
-         self.cache_exe_()
-         return
-      self.execute_inst()
 
 
 class I_run_exec(Run):
@@ -832,6 +800,7 @@ class I_run_shell(Run):
       cmd = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
       self.cmd = env.shell + [cmd]
 
+
 class I_shell(Instruction):
 
    def __init__(self, *args):
@@ -843,8 +812,9 @@ class I_shell(Instruction):
    def str_(self):
       return str(self.shell)
 
-   def execute_(self):
-      env.shell = list(self.shell) #copy
+   def execute(self):
+      env.shell = list(self.shell)  # copy
+
 
 class I_workdir(Instruction):
 
@@ -857,7 +827,7 @@ class I_workdir(Instruction):
    def str_(self):
       return self.path
 
-   def execute_(self):
+   def execute(self):
       env.chdir(self.path)
       ch.mkdirs(images[image_i].unpack_path // env.workdir)
 
@@ -897,7 +867,7 @@ class I_uns_yet(Instruction):
    def announce(self):
       self.unsupported_yet_warn("instruction", self.issue_no)
 
-   def execute_(self):
+   def execute(self):
       pass
 
 
@@ -958,15 +928,6 @@ class Environment:
 
 
 ## Supporting functions ###
-
-def checkout_for_build(image):
-   # This function is here instead of the cache object b/c the messy globals.
-   bu.cache.checkout(image)
-   image.metadata_load()
-   env.reset()  # also global
-   global fakeroot_config
-   fakeroot_config = fakeroot.detect(image.unpack_path,
-                                     cli.force, cli.no_force_detect)
 
 def variables_sub(s, variables):
    # FIXME: This should go in the grammar rather than being a regex kludge.
