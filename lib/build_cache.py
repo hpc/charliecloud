@@ -239,13 +239,14 @@ class Enabled_Cache:
          None if no such commit exists. If branch is given, search only that
          branch; otherwise, search the entire repo, including commits not
          reachable from any branch."""
+      argv = ["git", "log", "--grep", sid, "-F", "--format=%h", "-n", "1"]
       if (branch is not None):
          fail_ok = True
+         argv += [branch]
       else:
-         branch = "--all"
          fail_ok = False
-      cp = ch.cmd_stdout(["git", "log", "--grep", sid, "-F", "--format=%h",
-                          "-n", "1", branch], fail_ok=fail_ok, cwd=self.root)
+         argv += ["--all", "--reflog"]
+      cp = ch.cmd_stdout(argv, fail_ok=fail_ok, cwd=self.root)
       if (cp.returncode != 0 or len(cp.stdout) == 0):
          return None
       else:
@@ -428,10 +429,10 @@ class Enabled_Cache:
       # state IDs
       msgs = ch.cmd_stdout(["git", "log",
                             "--all", "--reflog", "--format=format:%b"]).stdout
-      states = list()
+      states = set()
       for msg in msgs.splitlines():
          if (msg != ""):
-            states.append(State_ID.from_text(msg))
+            states.add(State_ID.from_text(msg))
       # branches (FIXME: how to count unnamed branch tips?)
       image_ct = ch.cmd_stdout(["git", "branch", "--list"]).stdout.count("\n")
       # file count and size on disk
@@ -441,12 +442,11 @@ class Enabled_Cache:
       (file_ct, file_suffix) = ch.si_decimal(file_ct)
       (byte_ct, byte_suffix) = ch.si_binary_bytes(byte_ct)
       # print it
-      print("named images:   %4d" % image_ct)
-      print("states:         %4d" % len(states))
-      print("unique states:  %4d" % len(set(states)))
-      print("commits:        %4d" % commit_ct)
-      print("files:          %4d %s" % (file_ct, file_suffix))
-      print("disk used:      %4d %s" % (byte_ct, byte_suffix))
+      print("named images:  %4d" % image_ct)
+      print("state IDs:     %4d" % len(states))
+      print("commits:       %4d" % commit_ct)
+      print("files:         %4d %s" % (file_ct, file_suffix))
+      print("disk used:     %4d %s" % (byte_ct, byte_suffix))
 
    def tree_print(self):
       # Note the percent codes are interpreted by Git.
@@ -460,7 +460,7 @@ class Enabled_Cache:
          # to remove.
          fmt = "%C(auto)%d%C(yellow) %h %Creset%s %b"
       ch.cmd_base(["git", "log", "--graph", "--all", "--reflog",
-                   "--format=%s" % fmt], cwd=self.root)
+                   "--topo-order", "--format=%s" % fmt], cwd=self.root)
       print()  # blank line to separate from summary
 
    def tree_dot(self):

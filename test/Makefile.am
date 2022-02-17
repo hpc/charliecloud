@@ -6,6 +6,10 @@ testfiles = \
 Dockerfile.00_tiny \
 Dockerfile.argenv \
 Dockerfile.build2dir \
+bucache/a.df \
+bucache/b.df \
+bucache/c.df \
+bucache/from.df \
 build/10_sanity.bats \
 build/40_pull.bats \
 build/50_ch-image.bats \

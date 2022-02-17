@@ -755,11 +755,6 @@ class I_from_(Instruction):
 
 class Run(Instruction):
 
-   # FIXME: YOU ARE HERE: Log shell-form with less noise?
-   @property
-   def str_(self):
-      return json.dumps(self.cmd)  # double quotes, shlex.quote is less verbose
-
    def execute(self):
       rootfs = images[image_i].unpack_path
       fakeroot_config.init_maybe(rootfs, self.cmd, env.env_build)
@@ -788,6 +783,10 @@ class I_run_exec(Run):
       self.cmd = [    variables_sub(unescape(i), env.env_build)
                   for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
 
+   @property
+   def str_(self):
+      return json.dumps(self.cmd)  # double quotes, shlex.quote is less verbose
+
 
 class I_run_shell(Run):
 
@@ -799,6 +798,11 @@ class I_run_shell(Run):
       super().__init__(*args)
       cmd = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
       self.cmd = env.shell + [cmd]
+      self._str_ = cmd
+
+   @property
+   def str_(self):
+      return self._str_  # can't replace abstract property with attribute
 
 
 class I_shell(Instruction):

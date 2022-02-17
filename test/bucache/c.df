@@ -1,0 +1,3 @@
+FROM alpine:3.9
+RUN echo foo
+RUN echo qux

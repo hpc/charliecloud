@@ -1906,6 +1906,9 @@ def arch_host_get():
    VERBOSE("host architecture for registry: %s" % arch_registry)
    return arch_registry
 
+def argv_to_string(argv):
+   return " ".join(shlex.quote(i).replace("\n", "\\n") for i in argv)
+
 def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
    h = hashlib.sha256()
@@ -1939,8 +1942,7 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       higher, first print the command line arguments; if debug or higher, the
       environment as well (if given). Return the CompletedProcess object."""
    argv = [str(i) for i in argv]
-   VERBOSE("executing: %s"
-           % " ".join(shlex.quote(i).replace("\n", "\\n") for i in argv))
+   VERBOSE("executing: %s" % argv_to_string(argv))
    if ("env" in kwargs):
       VERBOSE("environment: %s" % kwargs["env"])
    try:
