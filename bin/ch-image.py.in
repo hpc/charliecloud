@@ -111,11 +111,6 @@ def main():
          { "action": "count",
            "default": 0,
            "help": "print extra chatter (can be repeated)" }],
-       # FIXME: temp cache debugging option.
-       [ ["-x", "--cache-verbose"],
-         { "action": "count",
-           "default": 0,
-           "help": "print extra chatter (can be repeated)" }],
        [ ["--version"],
          { "action": misc.Version,
            "help": "print version and exit" } ]]

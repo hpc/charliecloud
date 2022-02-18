@@ -7,12 +7,9 @@ import datetime
 import enum
 import getpass
 import hashlib
-import http.client
 import io
 import json
 import os
-import operator
-import getpass
 import pathlib
 import platform
 import pprint
@@ -23,7 +20,6 @@ import stat
 import subprocess
 import sys
 import tarfile
-import tempfile
 import time
 import traceback
 import types
@@ -308,103 +304,6 @@ class ArgumentParser(argparse.ArgumentParser):
          cli.bucache = Build_Mode.REBUILD
          cli.dlcache = Download_Mode.WRITE_ONLY
       return cli
-
-
-class Build_Cache:
-   """The build cache.
-
-      Attribute:
-         git ............ Boolean. Do we have the right git?
-         dot ............ Boolean. Do we have git2dot.py in our path?
-         mode ........... Mode enum.
-         pdf ............ Boolean. Do we have graphviz?
-         state_ids ...... List. List of all computed state ids.
-         storage_path ... Path. Build cache storage directory.
-
-      Constructor arguments:
-         mode ........... Build cache Mode.
-         git ............ Boolean.
-         storage_path ... Build cache storage path."""
-   def __init__(self, mode, git, storage_path):
-      self.git = git
-      self.dot = self.init_dot()
-      self.mode_ = mode
-      self.pdf = self.init_pdf()
-      self.storage_path_ = storage_path
-
-   @property
-   def mode(self):
-      return self.mode_
-
-   @property
-   def storage_path(self):
-      return self.storage_path_
-
-   ## Cache and Git operations ##
-
-   def branch_checkout(self, commit, worktree):
-      "Checkout commit, delete branch, make new branch."
-      br = os.path.basename(worktree)
-      CACHE_V("checking out branch: %s in %s" %(br, worktree))
-      cmd_git(["-c", "advice.detachedHead=false", "checkout", "%s" % commit],
-               cwd=worktree)
-      CACHE_V("deleting branch: %s" % br)
-      cmd_git(["branch", "-D", br], cwd=worktree)
-      CACHE_V("checking out branch: %s" % br)
-      cmd_git(["checkout", "-b", br], cwd=worktree)
-
-   def branch_commit(self, sid, worktree, note=None):
-      "Add all files in worktree and commit."
-      CACHE_V("adding and commiting files in %s" % worktree)
-      cmd_git(["add", "--all"], cwd=worktree)
-      # Allow empty, e.g., RUN echo foo
-      cmd_git(["commit", "--allow-empty", "-m", "%s" % sid], cwd=worktree)
-      if (note is not None):
-         cmd_git(["notes", "add", "-m", note], cwd=worktree)
-
-   def branch_exists(self, worktree):
-      "Return True if branch exists; otherwise return false"
-      br = os.path.basename(worktree)
-      CACHE_V("checking if branch '%s' exists" % br)
-      cp = cmd_return(["git", "branch", "--list", "%s" % br],
-                      cwd=self.storage_path)
-      CACHE_D(cp.stdout)
-      if (cp.stdout is ''):
-         return False
-      return True
-
-   def branch_ready(self, worktree):
-      "Return true if commit message is marked ready; otherwise false."
-      # FIXME: unclear how to mark a branch ready.
-      # Things considered but dismissed:
-      #   1. make each commit message prefaced with "ready" or "not ready"
-      #      deliminated by a colon. The thought here was that each initial
-      #      would always be, "not ready:$HASH", and would need to later be
-      #      ammended. However, it didn't appear to catch any issues and it
-      #      uglied up git commit messages and the tree.
-      #   2. change the branch name to something that indicated status.
-      #      for example, "BRANCH@ready". Operations on git output is pretty
-      #      ugly and this is worse to implement than #1.
-      return True
-
-   def id_for_exec(self, parent_id, name, options, action):
-      "Return state id of RUN instruction"
-      pid = self.bytes_from_hex(self.translate_id(parent_id))
-      name = self.encode(name)
-      options = self.encode(options)
-      action = self.encode(action)
-      return self.translate_id(hashlib.md5(pid + name + options + action).hexdigest())
-
-   def prep_note(self, name, actions):
-      """Return a human readible string from build.py instruction class
-         attributes name and actions"""
-      if (name == 'RUN'):
-         l = actions[2:]
-         l.insert(0, name)
-         return ' '.join(l)
-      elif (name == 'FROM'):
-         return name + ' ' + actions
-      FATAL("fixme: not implemented yet")
 
 
 class Credentials:
@@ -1850,18 +1749,6 @@ class Timer:
 
 
 ## Supporting functions ##
-
-def CACHE_V(*args, **kwargs):
-   # FIXME: Temporary Cache debug printing. VERBOSE is flooded with json
-   # metadata from filesytem walking and editing.
-   if (cache_verbose >= 1):
-      log(*args, color="0;96m", **kwargs)
-
-def CACHE_D(*args, **kwargs):
-   # FIXME: Temporary Cache debug printing. DEBUG is flooded with json
-   # metadata from filesytem walking and editing.
-   if (cache_verbose >= 2):
-      log(*args, color="3;91m", **kwargs)
 
 def DEBUG(*args, **kwargs):
    if (verbose >= 2):

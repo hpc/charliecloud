@@ -714,7 +714,9 @@ class I_from_(Instruction):
       self.options_assert_empty()
       # Close previous stage if needed.
       if (parent is not None and miss_ct == 0):
-         assert False, "unimplemented"  # don't actually need to check it out??
+         assert False, "unimplemented"  # don't actually need to check it
+                                        # out?? but if we don't how do we
+                                        # support COPY from previous stage?
       # Update image globals.
       global image_i
       image_i += 1
