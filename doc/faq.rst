@@ -353,32 +353,6 @@ We think that this is because Docker is computing size based on the size of
 the layers rather than the unpacked image. We do not currently have a fix; see
 `issue #165 <https://github.com/hpc/charliecloud/issues/165>`_.
 
-My second-level directory :code:`dev` is empty
-----------------------------------------------
-
-Some image tarballs, such as official Ubuntu Docker images, put device files
-in :code:`/dev`. These files prevent unpacking the tarball, because
-unprivileged users cannot create device files. Further, these files are not
-needed because :code:`ch-run` overmounts :code:`/dev` anyway.
-
-We cannot reliably prevent device files from being included in the tar,
-because often that is outside our control, e.g. :code:`docker export` produces
-a tarball. Thus, we must exclude them at unpacking time.
-
-An additional complication is that :code:`ch-convert` can read tarballs both
-with a single top-level directory and without, i.e. “tarbombs”. For example,
-best practice use of :code:`tar` on the command line produces the former,
-while :code:`docker export` (invoked by :code:`ch-convert` when converting
-from Docker) produces a tarbomb.
-
-Thus, :code:`ch-convert` uses :code:`tar --exclude` to exclude from unpacking
-everything under :code:`./dev` and :code:`*/dev`, i.e., directory :code:`dev`
-appearing at either the first or second level are forced to be empty.
-
-This yields false positives if you have a tarbomb image with a directory
-:code:`dev` at the second level containing stuff you care about. Hopefully
-this is rare, but please let us know if it is your use case.
-
 My password that contains digits doesn't work in VirtualBox console
 -------------------------------------------------------------------
 
@@ -388,6 +362,26 @@ password fields give no feedback, not even whether a character has been typed.
 
 Try using the number row instead, toggling Num Lock key, or SSHing into the
 virtual machine.
+
+Mode bits (permission bits) are lost
+------------------------------------
+
+Charliecloud preserves only some mode bits, specifically user, group, and
+world permissions, and the `restricted deletion flag
+<https://man7.org/linux/man-pages/man1/chmod.1.html#RESTRICTED_DELETION_FLAG_OR_STICKY_BIT>`_
+on directories; i.e. 777 on files and 1777 on directories.
+
+The setuid (4000) and setgid (2000) bits are not preserved because ownership
+of files within Charliecloud images is that of the user who unpacks the image.
+Leaving these bits set could therefore surprise that user by unexpectedly
+creating files and directories setuid/gid to them.
+
+The sticky bit (1000) is not preserved for files because :code:`unsquashfs(1)`
+unsets it even with umask 000. However, this is bit is largely obsolete for
+files.
+
+Note the non-preserved bits may *sometimes* be retained, but this is undefined
+behavior. The specified behavior is that they may be zeroed at any time.
 
 
 How do I ...

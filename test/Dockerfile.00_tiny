@@ -4,5 +4,9 @@
 
 FROM alpine:3.9
 
-# Base image has no default command; we need one to build.
-CMD ["true"]
+# For testing that permissions are retained on export (issue #1241). See FAQ
+# for why these aren't 7777.
+RUN touch /maxperms_file \
+ && chmod 0777 /maxperms_file \
+ && mkdir /maxperms_dir \
+ && chmod 1777 /maxperms_dir
