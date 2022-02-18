@@ -342,10 +342,3 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
-
-# needed tests:
-# --gc
-# --dot
-# various difficult files (see git_prepare)
-# all hits, new name
-# multi-stage build

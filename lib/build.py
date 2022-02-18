@@ -220,7 +220,7 @@ class Main_Loop(lark.Visitor):
    def __default__(self, tree):
       class_ = "I_" + tree.data
       if (class_ in globals()):
-         inst = globals()[class_](tree)   # FIXME: YOU ARE HERE: should instructions remember inst_prev as their parent?
+         inst = globals()[class_](tree)
          if (self.instruction_total_ct == 0):
             if (   isinstance(inst, I_directive)
                 or isinstance(inst, I_from_)):
