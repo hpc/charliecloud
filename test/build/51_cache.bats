@@ -19,9 +19,10 @@ setup () {
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
     # Use a separate storage directory so we don't mess up the main one.
     export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest
+    dot_base=$BATS_TMPDIR/bu_
 }
 
-@test "${tag}/initial state" {
+@test "${tag}/§3.1 empty cache" {
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
     blessed_tree=$(cat << EOF
@@ -30,7 +31,7 @@ initializing empty build cache
 *  (HEAD -> root) root
 EOF
 )
-    run ch-image build-cache --tree
+    run ch-image build-cache --tree --dot="${dot_base}empty"
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
@@ -59,7 +60,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    run ch-image build-cache --tree
+    run ch-image build-cache --tree --dot="${dot_base}initial-pull"
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
@@ -77,7 +78,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    run ch-image build-cache --tree
+    run ch-image build-cache --tree --dot="${dot_base}from"
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
@@ -125,7 +126,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    run ch-image build-cache --tree
+    run ch-image build-cache --tree --dot="${dot_base}a"
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -145,7 +146,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    run ch-image build-cache --tree
+    run ch-image build-cache --tree --dot="${dot_base}b"
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -169,7 +170,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    run ch-image build-cache --tree
+    run ch-image build-cache --tree --dot="${dot_base}c"
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -319,7 +320,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    run ch-image build-cache --tree
+    run ch-image build-cache --tree --dot="${dot_base}revert1"
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -336,7 +337,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    run ch-image build-cache --tree
+    run ch-image build-cache --tree --dot="${dot_base}revert2"
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)

@@ -23,6 +23,9 @@ GIT2DOT_MIN = (0, 8, 3)
 # The active build cache.
 cache = None
 
+# Path to DOT output (.gv and .pdf will be appended)
+dot_base = None
+
 
 ## Functions ##
 
@@ -57,6 +60,12 @@ def init(cli):
       cache = Disabled_Cache()
    else:
       assert False, "unreachable"
+   # DOT path
+   try:
+      global dot_base
+      dot_base = cli.dot
+   except AttributeError:
+      pass
 
 
 ## Supporting classes ##
@@ -466,14 +475,26 @@ class Enabled_Cache:
    def tree_dot(self):
       ch.version_check(["git2dot.py", "--version"], GIT2DOT_MIN)
       ch.version_check(["dot", "-V"], DOT_MIN)
-      ch.INFO("writing ./build-cache.gv")
-      ch.cmd_quiet(["git2dot.py",
-                    "--cnode", '[label="{label}", color="bisque", shape="box"]',
-                    "-d", 'graph[rankdir="TB", fontsize=10.0, bgcolor="white"]',
-                    "-l", "%h|%s",
-                    "%s/build-cache.gv" % os.getcwd()], cwd=self.root)
-      ch.INFO("writing ./build-cache.pdf")
-      ch.cmd_quiet(["dot", "-Tpdf", "-obuild-cache.pdf", "build-cache.gv"])
+      path_gv = ch.Path(dot_base + ".gv")
+      path_pdf = ch.Path(dot_base + ".pdf")
+      if (not path_gv.is_absolute()):
+         path_gv = os.getcwd() // path_gv
+         path_pdf = os.getcwd() // path_pdf
+      ch.VERBOSE("writing %s" % path_gv)
+      ch.cmd_quiet(
+["git2dot.py",
+ "--range", "--all --reflog --topo-order",
+ "--font-name", "Nimbus Mono",
+ "-d", 'graph[rankdir="TB", bgcolor="white"]',
+ "-d", 'edge[dir=forward, arrowsize=0.5]',
+ "--bedge", '[color=gray80, dir=none]',
+ "--bnode", '[label="{label}", shape=box, height=0.20, color=gray80]',
+ "--cnode", '[label="{label}", shape=box, color=black, fillcolor=white]',
+ "--mnode", '[label="{label}", shape=box, color=black, fillcolor=white]',
+ "-D", "@SID@", "([0-9A-F]{4}):",
+ "-l", "@SID@|%s", str(path_gv)], cwd=self.root)
+      ch.VERBOSE("writing %s" % path_pdf)
+      ch.cmd_quiet(["dot", "-Tpdf", "-o%s" % path_pdf, str(path_gv)])
 
    def worktree_add(self, image, base):
       t = ch.Timer()

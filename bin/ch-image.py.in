@@ -175,8 +175,7 @@ def main():
    sp.add_argument("--tree",
                    action="store_true",
                    help="print a text tree summary")
-   sp.add_argument("--dot",
-                   action="store_true",
+   sp.add_argument("--dot", nargs="?", metavar="PATH", const="build-cache",
                    help="write DOT and PDF tree summaries")
 
    # delete
