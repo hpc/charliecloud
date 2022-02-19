@@ -207,6 +207,16 @@ def main():
                        formatter_class=ch.HelpFormatter)
    add_opts(sp, misc.python_path, deps_check=False, stog_init=False)
 
+   # rename
+   help="rename image"
+   sp = sps.add_parser("rename", help=help, description=help,
+                       formatter_class=ch.HelpFormatter)
+   add_opts(sp, misc.rename, deps_check=True, stog_init=True)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
+                   help="image to rename")
+   sp.add_argument("new_ref", metavar="NEW_REF", nargs="?",
+                   help="new image name")
+
    # reset
    help="delete everything in ch-image builder storage"
    sp = sps.add_parser("reset", help=help, description=help,

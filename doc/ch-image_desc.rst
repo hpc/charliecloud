@@ -12,6 +12,7 @@ Synopsis
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
+   $ ch-image [...] rename IMAGE_REF NEW_REF
    $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
@@ -833,6 +834,17 @@ in the remote registry, so we don't upload it again.)
    $ ch-image [...] reset
 
 Delete all images and cache from ch-image builder storage.
+
+:code:`rename`
+==============
+
+::
+
+   $ ch-image [...] rename amd64/debian:latest debian
+   rename 'amd64/debian:bullseye' to 'debian'
+   done
+
+Rename image code:`amd64/debian:latest` in storage to :code:`debian`.
 
 
 :code:`storage-path`

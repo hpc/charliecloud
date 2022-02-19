@@ -109,5 +109,22 @@ def python_path(cli):
 def reset(cli):
    ch.storage.reset()
 
+def rename(cli):
+   imgdir = ch.storage.unpack_base
+   if (not cli.image_ref):
+      ch.FATAL("missing image ref")
+   if (not cli.new_ref):
+      ch.FATAL("missing new image ref")
+   old = ch.Image(ch.Image_Ref(cli.image_ref))
+   new = ch.Image(ch.Image_Ref(cli.new_ref))
+   ch.INFO("rename %s to %s" % (old.ref, new.ref))
+   if (not old.unpack_exist_p):
+      ch.FATAL("image '%s' not in storage" % cli.image_ref)
+   if (new.unpack_exist_p):
+      ch.FATAL("rename: %s already exists in storage" % cli.new_ref)
+   ch.ossafe(os.rename, "can't rename %s" % old.unpack_path, old.unpack_path,
+             new.unpack_path)
+   ch.done_notify()
+
 def storage_path(cli):
    print(ch.storage.root)

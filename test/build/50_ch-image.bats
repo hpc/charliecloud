@@ -319,6 +319,40 @@ EOF
    [[ $output = *"$CH_IMAGE_STORAGE not a builder storage"* ]]
 }
 
+@test 'ch-image rename' {
+   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/rename
+   ch-image pull alpine:3.9
+   run ch-image rename alpine:3.9 alpacino
+   [[ $status -eq 0 ]]
+   echo "$output"
+   [[ $output == *"rename alpine:3.9 to alpacino"* ]]
+   # Image refs not specified.
+   run ch-image rename
+   [[ $status -eq 1 ]]
+   echo "$output"
+   [[ $output == *'error: missing image ref'* ]]
+   output=''
+   # Image ref doesn't exist.
+   run ch-image rename joseraulcapablanca weirdalyanvovick
+   [[ $status -eq 1 ]]
+   echo "$output"
+   [[ $output == *"error: image 'joseraulcapablanca' not in storage"* ]]
+   output=''
+   # New image ref not specified.
+   run ch-image rename alpacino
+   [[ $status -eq 1 ]]
+   echo "$output"
+   [[ $output == *'error: missing new image ref'* ]]
+   output=''
+   # New image ref already exists in storage.
+   run ch-image rename alpacino alpacino
+   [[ $status -eq 1 ]]
+   echo "$output"
+   [[ $output == *'already exists in storage'* ]]
+   # Remove storage directory.
+   # rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
+}
+
 @test 'ch-image storage-path' {
     run ch-image storage-path
     echo "$output"
