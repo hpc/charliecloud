@@ -841,7 +841,7 @@ Delete all images and cache from ch-image builder storage.
 ::
 
    $ ch-image [...] rename amd64/debian:latest debian
-   rename 'amd64/debian:bullseye' to 'debian'
+   rename amd64/debian:bullseye to debian
    done
 
 Rename image code:`amd64/debian:latest` in storage to :code:`debian`.
