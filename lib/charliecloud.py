@@ -1818,7 +1818,7 @@ def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
       or not the process succeeded; otherwise, return (zero) only if the
       process succeeded and exit with fatal error if it failed."""
-   cp = cmd_base(argv, **kwargs)
+   cp = cmd_base(argv, fail_ok=fail_ok, **kwargs)
    return cp.returncode
 
 def cmd_base(argv, fail_ok=False, **kwargs):

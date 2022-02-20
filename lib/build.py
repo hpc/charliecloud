@@ -194,7 +194,7 @@ def main(cli_):
    if (ml.instruction_total_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
    assert (image_i + 1 == image_ct)  # should have errored already if not
-   if (cli.force):
+   if (cli.force and ml.miss_ct != 0):
       if (fakeroot_config.inject_ct == 0):
          assert (not fakeroot_config.init_done)
          ch.WARNING("--force specified, but nothing to do")

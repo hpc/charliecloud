@@ -147,8 +147,7 @@ class State_ID:
 ## Main classes ##
 
 class Enabled_Cache:
-
-   root_id = State_ID.from_text("4A6F:73C3:A9204361:7061626C:616E6361")
+   root_id = State_ID.from_text("4A6F:73E9:20436170:61626C61:6E636121")
 
    __slots__ = ("bootstrap_ct")
 
