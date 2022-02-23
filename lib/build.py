@@ -230,7 +230,11 @@ class Main_Loop(lark.Visitor):
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          self.miss_ct = inst.prepare(self.inst_prev, self.miss_ct)
-         if (inst.miss):
+         if (   inst.miss
+             or isinstance(inst, I_arg_bare)
+             or isinstance(inst, I_arg_equals)
+             or isinstance(inst, I_env_equals)
+             or isinstance(inst, I_env_space)):
             if (self.miss_ct == 1):
                inst.checkout_for_build(self.inst_prev)
             inst.execute()
