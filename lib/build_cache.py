@@ -234,7 +234,7 @@ class Enabled_Cache:
 
    def find_sid(self, sid, branch):
       """Return the hash of the commit matching State_ID, or None if no such
-         commit exists. First search branch branch, then if not found, the
+         commit exists. First search branch, then if not found, the
          entire repo including commits not reachable from any branch."""
       commit = self.find_sid_(sid, branch)
       if (commit is None):
@@ -505,7 +505,8 @@ class Enabled_Cache:
 
 class Rebuild_Cache(Enabled_Cache):
 
-   ...
+   def find_sid(self, sid, branch):
+      return None
 
 
 class Disabled_Cache(Rebuild_Cache):
