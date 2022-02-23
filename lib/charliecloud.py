@@ -402,6 +402,7 @@ class Image:
       self.metadata = { "arch": arch_host.split("/")[0],  # no variant
                         "cwd": "/",
                         "env": dict(),
+                        "history": list(),
                         "labels": dict(),
                         "shell": ["/bin/sh", "-c"],
                         "volumes": list() }  # set isn't JSON-serializable
@@ -415,6 +416,7 @@ class Image:
          self.metadata_init()
          return
       self.metadata = json_from_file(path, "metadata")
+      self.metadata.setdefault("history", list())  # upgrade pre-PR #1215
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
@@ -449,6 +451,10 @@ class Image:
             except AttributeError:
                FATAL("can't parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
+      # History.
+      if ("history" not in config):
+         FATAL("invalid config: missing history")
+      self.metadata["history"] = config["history"]
       # labels
       set_("labels", "config", "Labels")  # copy reference
       # shell
