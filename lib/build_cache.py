@@ -263,6 +263,8 @@ class Enabled_Cache:
    def garbageinate(self):
       ch.INFO("collecting cache garbage")
       t = ch.Timer()
+      ch.cmd_quiet(["git", "reflog", "expire",
+                    "--expire-unreachable=now", "--all"], cwd=self.root)
       ch.cmd_quiet(["git", "gc", "--prune=now"], cwd=self.root)
       t.log("collected garbage")
 
