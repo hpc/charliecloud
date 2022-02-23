@@ -367,12 +367,6 @@ class Instruction_Supported_Never(Instruction):
    def announce(self):
       self.unsupported_forever_warn("instruction")
 
-   def cache_exe_(self):
-      pass
-
-   def execute_(self):
-      pass
-
 
 class Arg(Instruction):
 
