@@ -240,7 +240,8 @@ class Main_Loop(lark.Visitor):
             inst.execute()
             if (image_i != -1):
                images[image_i].metadata_save()
-            inst.commit()
+            if (inst.miss):
+               inst.commit()
          self.inst_prev = inst
          self.instruction_total_ct += inst.execute_increment
 
