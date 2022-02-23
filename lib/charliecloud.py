@@ -2149,6 +2149,7 @@ def prefix_path(prefix, path):
 def rename(name_old, name_new):
    if (os.path.exists(name_new)):
       FATAL("can't rename: destination exists: %s" % name_new)
+   os.rename(name_old, name_new)
 
 def rmtree(path):
    if (os.path.isdir(path)):
