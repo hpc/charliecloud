@@ -20,6 +20,13 @@ setup () {
     # Use a separate storage directory so we don't mess up the main one.
     export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest
     dot_base=$BATS_TMPDIR/bu_
+    if [[ -z $git_version ]]; then
+        pedantic_fail "git not in path"
+    fi
+    if [[ $(  printf '%s\n%s\n' "2.28.1" "$git_version" \
+            | sort -V | head -n1) != "2.28.1" ]]; then
+        pedantic_fail "git version '$git_version' < 2.28.1"
+    fi
 }
 
 @test "${tag}/§3.1 empty cache" {
