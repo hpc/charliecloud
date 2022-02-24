@@ -184,7 +184,7 @@ EOF
 }
 
 @test "${tag}/§3.4.1 two pulls, same" {
-    skip  # FIXME
+    skip  "developer skip" # FIXME
     ch-image build-cache --reset
 
     ch-image pull alpine:3.9
@@ -202,7 +202,7 @@ EOF
 }
 
 @test "${tag}/§3.4.2 two pulls, different" {
-    skip  # FIXME
+    skip  "developer skip" # FIXME
 
     # This test is tricky because there's no good way to ensure the repository
     # image changes. I thought we could simulate it by pulling e.g.
@@ -211,103 +211,81 @@ EOF
     # filesystem directory.)
 }
 
-@test "${tag}/§3.6.1 A --build-cache=rebuild" {
-    skip
+@test "${tag}/§3.6.1 rebuild A" {
     # Forcing a rebuild show produce a new pair of FOO and BAR commits from
     # from the alpine branch.
     blessed_out=$(cat << 'EOF'
-*  (img_a) RUN echo bar
-| 
+*  (a) RUN echo bar
 *  RUN echo foo
-| 
-| *  (img_c) RUN echo qux
-| | 
-| | *  (img_b) RUN echo baz
-| | | 
+| *  (c) RUN echo qux
+| | *  (b) RUN echo baz
 | | *  RUN echo bar
-| |/  
-| |   
+| |/
 | *  RUN echo foo
-|/  
-|   
-*  (alpine+latest) FROM alpine+latest
-| 
-*  (HEAD -> root)
+|/
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
 EOF
 )
-    ch-image --build-cache=rebuild build -t img_a -f - . <<'EOF'
-FROM alpine:latest
-RUN echo foo
-RUN echo bar
-EOF
-    run ch-image build-cache --tree-text
+    ch-image --bucache=rebuild build -t a -f bucache/a.df .
+    run ch-image build-cache --tree
     [[ $status -eq 0 ]]
-    diff -u <(echo "$output") <(echo "$blessed_out")
-
+    echo "$output"
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/§3.6.2 build B again" {
-    skip
-    # Rebuild of B. Since img_a was rebuilt in the last test, and because
+@test "${tag}/§3.6.2 rebuild B" {
+    # Rebuild of B. Since A was rebuilt in the last test, and because
     # the rebuild behavior only forces misses on non-FROM instructions, it
-    # should now be based on img_a's new commits.
+    # should now be based on A's new commits.
     blessed_out=$(cat << 'EOF'
-*  (img_b) RUN echo baz
-| 
-*  (img_a) RUN echo bar
-| 
+*  (b) RUN echo baz
+*  (a) RUN echo bar
 *  RUN echo foo
-| 
-| *  (img_c) RUN echo qux
-| | 
+| *  (c) RUN echo qux
+| | *  RUN echo baz
+| | *  RUN echo bar
+| |/
 | *  RUN echo foo
-|/  
-|   
-*  (alpine+latest) FROM alpine+latest
-| 
-*  (HEAD -> root)
+|/
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
 EOF
 )
-    ch-image --build-cache=rebuild build -t img_b -f - . <<'EOF'
-FROM img_a
-RUN echo baz
-EOF
-    run ch-image build-cache --tree-text
+    ch-image --bucache=rebuild build -t b -f bucache/b.df .
+    run ch-image build-cache --tree
     [[ $status -eq 0 ]]
-    diff -u <(echo "$output") <(echo "$blessed_out")
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/§3.6.3 build C again" {
-    skip
+@test "${tag}/§3.6.3 rebuild C" {
     # Rebuild C. Since C doesn't reference img_a (like img_b does) rebuilding
     # causes a miss on FOO. Thus C makes new FOO and QUX commits.
     #
     # Shouldn't FOO hit? --reidpr 2/16
+    #  - No! Rebuild forces misses; since c.df has it's own FOO it should miss.
+    #     --jogas 2/24
     blessed_out=$(cat << 'EOF'
-*  (img_c) RUN echo qux
-| 
+*  (c) RUN echo qux
 *  RUN echo foo
-| 
-| *  (img_b) RUN echo baz
-| | 
-| *  (img_a) RUN echo bar
-| | 
+| *  (b) RUN echo baz
+| *  (a) RUN echo bar
 | *  RUN echo foo
-|/  
-|   
-*  (alpine+latest) FROM alpine+latest
-| 
-*  (HEAD -> root)
+|/
+| *  RUN echo qux
+| | *  RUN echo baz
+| | *  RUN echo bar
+| |/
+| *  RUN echo foo
+|/
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
 EOF
 )
-    ch-image --build-cache=rebuild build -t img_c -f - . <<'EOF'
-FROM alpine:latest
-RUN echo foo
-RUN echo qux
-EOF
-    run ch-image build-cache --tree-text
+    ch-image --bucache=rebuild build -t c -f bucache/c.df .
+    run ch-image build-cache --tree
     [[ $status -eq 0 ]]
-    diff -u <(echo "$output") <(echo "$blessed_out")
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
 @test "${tag}/§3.7 change then revert" {
