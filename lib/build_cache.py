@@ -14,7 +14,7 @@ import pull
 
 # Required versions.
 DOT_MIN = (2, 30, 1)
-GIT_MIN = (2, 34, 1)
+GIT_MIN = (2, 28, 1)
 GIT2DOT_MIN = (0, 8, 3)
 
 
