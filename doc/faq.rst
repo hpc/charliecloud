@@ -953,5 +953,62 @@ One fix is to configure your :code:`.bashrc` or equivalent to:
      }
 
 
+.. _faq_foreign-images:
+
+How can I build images for a foreign architecture?
+--------------------------------------------------
+
+QEMU
+~~~~
+
+Suppose you want to build Charliecloud containers on a system which
+has a different architecture from the target system for some reason.
+
+It's straightforward as long as you can install suitable packages on
+the build system (your personal computer?).  You just need the magic
+of QEMU via a distribution package with a name like Debian's
+:code:`qemu-user-static`.  For use in an image root this needs to be
+the :code:`-static` version, not plain :code:`qemu-user`, and contain
+a :code:`qemu-...-static` binary for your target architecture.  In
+case it doesn't install ‘binfmt’ hooks (telling Linux how to run
+foreign binaries) you'll need to make that work — perhaps it's in
+another package.
+
+That's all you need to make building with :code:`ch-image` work with a
+base foreign architecture image and the :code:`--arch` option.  It's
+significantly slower than native, but quite usable — about half the
+speed of native for the ppc64le target with a build taking minutes on
+a laptop with a magnetic disc.  There's a catch that images in the
+local store aren't distinguished by architecture except by any name
+you give them, i.e. a base image like :code:`debian:11` pulled with
+:code:`--arch ppc64le` will overwrite a native x86 one.
+
+PRoot
+~~~~~
+
+Another way to build a foreign image, which works even without
+installation privilege, is to populate a chroot for it with the `PRoot
+<https://proot-me.github.io/>`_ tool, whose :code:`-q` option allows
+specifying a :code:`qemu-...-static` binary (perhaps obtained by
+unpacking a distribution package).
+
+How can I build an image missing a base in a repository like Docker hub?
+------------------------------------------------------------------------
+
+If you can't find an image repository from which to pull for the
+distribution and architecture of interest, it is worth looking at the
+extensive collection of root archives under `linuxcontainers.org
+<https://uk.lxd.images.canonical.com/images/>`_.  They are meant for
+LXC, but are fine as a basis for Charliecloud.  For example, this
+would leave a :code:`ppc64le/centos:8` image du jour in the registry
+for possible use in a Dockerfile :code:`FROM` line:
+
+.. code-block::
+
+  $ wget \
+  https://images.linuxcontainers.org/images/centos/8/ppc64el/default/\
+  20220113_07:08/rootfs.tar.xz
+  $ ch-image import rootfs.tar.xz ppc64le/centos:8
+
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello
 ..  LocalWords:  VirtualSize
