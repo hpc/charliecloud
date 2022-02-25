@@ -121,6 +121,13 @@ ln -s ../.. img/mnt/link-bad-rel
 mv img/etc/resolv.conf img/etc/resolv.conf.real
 ln -s /etc/resolv.conf.real img/etc/resolv.conf
 
+# Fixtures to validate permissions are retained on export (issue #1241). See
+# FAQ for why this isn't 7777.
+touch img/maxperms_file
+chmod 0777 img/maxperms_file
+mkdir img/maxperms_dir
+chmod 1777 img/maxperms_dir
+
 
 ## Tar it up.
 
@@ -138,11 +145,6 @@ fi
 # (because that's what "docker export" gives us), so use a containing
 # directory for this one.
 tar cf "$tarball_uncompressed" -- img
-
-# Add in the /dev fixtures in a couple more places. Note that this will cause
-# the tarball to no longer have a single root directory, but they'll be
-# removed during unpacking, restoring that condition.
-( cd img && tar rf "$tarball_uncompressed" ./dev/deleteme dev/deleteme )
 
 # Finalize the tarball.
 $gzip_cmd -f "$tarball_uncompressed"

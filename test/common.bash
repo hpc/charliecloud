@@ -12,7 +12,7 @@ archive_grep () {
             unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
             ;;
         *)
-            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
+            tar -tf "$image" | grep -E '^([^/]*/)?ch/environment$'
             ;;
     esac
 }
@@ -57,6 +57,23 @@ builder_tag_p () {
     esac
     echo 'not found'
     return 1
+}
+
+chtest_fixtures_ok () {
+    echo "checking chtest fixtures in: ${1}"
+    # Did we raise hidden files correctly?
+    [[ -e ${1}/.hiddenfile1 ]]
+    [[ -e ${1}/..hiddenfile2 ]]
+    [[ -e ${1}/...hiddenfile3 ]]
+    # Did we remove the right /dev stuff?
+    [[ -e ${1}/mnt/dev/dontdeleteme ]]
+    ls -Aq "${1}/dev"
+    [[ $(ls -Aq "${1}/dev") = '' ]]
+    ch-run "$1" -- test -e /mnt/dev/dontdeleteme
+    # Are permissions still good?
+    ls -ld "$1"/maxperms_*
+    [[ $(stat -c %a "${1}/maxperms_dir") = 1777 ]]
+    [[ $(stat -c %a "${1}/maxperms_file") = 777 ]]
 }
 
 crayify_mpi_or_skip () {

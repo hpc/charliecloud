@@ -28,7 +28,6 @@ run/ch-run_isolation.bats \
 run/ch-run_join.bats \
 run/ch-run_misc.bats \
 run/ch-run_uidgid.bats \
-run/ch-tar2dir.bats \
 run_first.bats \
 sotest/files_inferrable.txt \
 sotest/libsotest.c \
