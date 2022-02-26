@@ -231,17 +231,20 @@ class Main_Loop(lark.Visitor):
                ch.FATAL("first instruction must be ARG or FROM")
          self.miss_ct = inst.prepare(self.inst_prev, self.miss_ct)
          if (   inst.miss
+             # ARG and ENV cache hits still need to assign variable values.
              or isinstance(inst, I_arg_bare)
              or isinstance(inst, I_arg_equals)
              or isinstance(inst, I_env_equals)
              or isinstance(inst, I_env_space)):
             if (self.miss_ct == 1):
                inst.checkout_for_build(self.inst_prev)
+            inst.unready()
             inst.execute()
             if (image_i != -1):
                images[image_i].metadata_save()
             if (inst.miss):
                inst.commit()
+            inst.ready()
          self.inst_prev = inst
          self.instruction_total_ct += inst.execute_increment
 
@@ -315,6 +318,12 @@ class Instruction(abc.ABC):
    def commit(self):
       path = images[image_i].unpack_path
       self.git_hash = bu.cache.commit(path, self.sid, str(self))
+
+   def unready(self):
+      bu.cache.unready(images[image_i])
+
+   def ready(self):
+      bu.cache.ready(images[image_i])
 
    @abc.abstractmethod
    def execute(self):

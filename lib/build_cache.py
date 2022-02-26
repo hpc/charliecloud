@@ -415,11 +415,11 @@ class Enabled_Cache:
       sid = State_ID.from_parent(self.root_id, pullet.sid_input)
       pullet.done()
       commit = self.commit(image.unpack_path, sid, 'PULL %s' % image.ref)
-      self.ready(image)
       return (sid, commit)
 
    def ready(self, image):
-      ... # FIXME
+      ch.cmd_quiet(["git", "branch", "-m", "%s+NR" % image.ref.for_path,
+                    image.ref.for_path], cwd=image.unpack_path)
 
    def reset(self):
       if (self.bootstrap_ct >= 1):
@@ -496,6 +496,12 @@ class Enabled_Cache:
  "-l", "@SID@|%s", str(path_gv)], cwd=self.root)
       ch.VERBOSE("writing %s" % path_pdf)
       ch.cmd_quiet(["dot", "-Tpdf", "-o%s" % path_pdf, str(path_gv)])
+
+   def unready(self, image):
+      ch.cmd_quiet(["git", "branch", "-D", "%s+NR" % image.ref.for_path],
+                   cwd=self.root, fail_ok=True)
+      ch.cmd_quiet(["git", "branch", "-m", image.ref.for_path,
+                    "%s+NR" % image.ref.for_path], cwd=image.unpack_path)
 
    def worktree_add(self, image, base):
       t = ch.Timer()

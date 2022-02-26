@@ -327,3 +327,59 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
+
+@test "${tag}/branch readiness" {
+    ch-image build-cache --reset
+
+    blessed_out=$(cat << 'EOF'
+*  RUN echo bar
+*  (a+NR) RUN echo foo
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    # Build A, then introduce a failure to A's Dockerfile and build again.
+    # The first instruction FOO hits; the the second instruction fails leaving
+    # the A branch in a not ready state pointing to FOO.
+    ch-image build -t a -f bucache/a.df .
+    run ch-image build -t a -f ./bucache/a2.df .
+    [[ $status -ne 0 ]]
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Build original A again. Since no A instruction needs to be
+    # re-executed (all hits) there are now two branches: a ready and not ready.
+    blessed_out=$(cat << 'EOF'
+*  (a) RUN echo bar
+*  (a+NR) RUN echo foo
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    ch-image build -t a -f ./bucache/a.df .
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Add new working instructions to A. Since we now have a miss, the not-ready
+    # branch is replaced with a new not-ready branch (pointing to the last
+    # successful parent commit of A), and marked ready when the build succeeds.
+    # Thus there should be zero not-ready branches.
+    blessed_out=$(cat << 'EOF'
+*  (a) RUN echo wordle
+*  RUN echo bar
+*  RUN echo foo
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    ch-image build -t a -f ./bucache/a3.df .
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+}
