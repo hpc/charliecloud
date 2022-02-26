@@ -383,3 +383,37 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 
 }
+
+@test "${tag}/ARG" {
+    ch-image build-cache --reset
+
+    # Ensure ARG works.
+    blessed_out=$(cat << 'EOF'
+*  (arg) RUN $cmd
+*  ARG cmd='/bin/true'
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    ch-image build -t arg -f ./bucache/arg.df .
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Ensure that a cached ARG hit still sets the variable and doesn't mess with
+    # the cache in unexpected ways.
+    blessed_out=$(cat << 'EOF'
+*  (arg) RUN $cmd && $cmd
+*  RUN $cmd
+*  ARG cmd='/bin/true'
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    ch-image build -t arg -f ./bucache/arg2.df .
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
