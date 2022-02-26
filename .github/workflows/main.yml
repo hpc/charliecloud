@@ -14,6 +14,7 @@ jobs:
     strategy:
       fail-fast: true  # if any job fails, cancel the rest immediately
       matrix:
+        bucache: [enabled, disabled]
         builder: [none, docker, ch-image]
         pack_fmt: [squash-mount, tar-unpack, squash-unpack]
         keep_sudo:   # if false, remove self from sudoers post-install/setup
@@ -22,7 +23,9 @@ jobs:
           - builder: docker
             pack_fmt: squash-mount
             keep_sudo: true
+
     env:
+      CH_BUCACHE_MODE: ${{ matrix.bucache }}
       CH_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
       CH_TEST_IMGDIR: /mnt/images
@@ -118,6 +121,26 @@ jobs:
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
+          # Build minimum git for build cache.
+          cd /usr/local/src
+          git clone https://github.com/git/git
+          cd ./git
+          git checkout v2.28.1
+          autogen
+          ./configure --prefix=/usr/local
+          make $ch_makej
+          sudo make install
+          command -v git
+          git --version
+          # Install git2dot
+          cd /usr/local/src
+          git clone https://github.com/jlinoff/git2dot.git
+          cd ./git2dot
+          git checkout v0.8.3
+          export PATH=$PATH:$(pwd)
+          command -v git2dot.py
+          # Install graphviz
+          sudo apt-get install -y graphviz
 
       - name: install libsquashfuse
         if: ${{ matrix.pack_fmt == 'squash-mount' }}
