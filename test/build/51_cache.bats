@@ -407,34 +407,38 @@ EOF
 
 }
 
-@test "${tag}/ARG" {
+@test "${tag}/ARG and ENV" {
     ch-image build-cache --reset
 
-    # Ensure ARG works.
+    # Ensure ARG and ENV work.
     blessed_out=$(cat << 'EOF'
-*  (arg) RUN $cmd
-*  ARG cmd='/bin/true'
+*  (ae) RUN $env_
+*  RUN $arg_
+*  ENV env_='/bin/true'
+*  ARG arg_='/bin/true'
 *  (alpine+3.9) PULL alpine:3.9
 *  (HEAD -> root) root
 EOF
 )
-    ch-image build -t arg -f ./bucache/arg.df .
+    ch-image build -t ae -f ./bucache/ae.df .
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 
-    # Ensure that a cached ARG hit still sets the variable and doesn't mess with
-    # the cache in unexpected ways.
+    # Ensure that a cached ARG and ENV hits still set their variables and do not
+    # alter the cache.
     blessed_out=$(cat << 'EOF'
-*  (arg) RUN $cmd && $cmd
-*  RUN $cmd
-*  ARG cmd='/bin/true'
+*  (ae) RUN $arg && $env_
+*  RUN $env_
+*  RUN $arg_
+*  ENV env_='/bin/true'
+*  ARG arg_='/bin/true'
 *  (alpine+3.9) PULL alpine:3.9
 *  (HEAD -> root) root
 EOF
 )
-    ch-image build -t arg -f ./bucache/arg2.df .
+    ch-image build -t ae -f ./bucache/ae2.df .
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
