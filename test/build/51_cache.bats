@@ -346,8 +346,6 @@ EOF
               | grep "commits" | awk '{print $2}') <(echo 8)
 
     # Number of commits after garbage collecting.
-    diff -u <(  ch-image build-cache \
-              | grep "commits" | awk '{print $2}') <(echo 8)
     ch-image build-cache --gc
     diff -u <(  ch-image build-cache \
               | grep "commits" | awk '{print $2}') <(echo 4)
