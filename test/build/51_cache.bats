@@ -418,6 +418,24 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
+@test "${tag}/all hits, new name" {
+    ch-image build-cache --reset
+
+    blessed_out=$(cat << 'EOF'
+*  (a2, a) RUN echo bar
+*  RUN echo foo
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    ch-image build -t a -f ./bucache/a.df .
+    ch-image build -t a2 -f ./bucache/a.df .
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
+
 @test "${tag}/§3.4.1 two pulls, same" {
     skip  "developer skip" # FIXME
     ch-image build-cache --reset
