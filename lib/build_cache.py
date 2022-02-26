@@ -37,6 +37,11 @@ def have_deps():
    return ch.version_check(["git", "--version"], GIT_MIN, required=False)
 
 def init(cli):
+   # Undocumented variable for CI testing.
+   try:
+      cli.bucache = ch.Build_Mode(os.environ['CH_BUCACHE_MODE'])
+   except:
+      pass
    # At this point --bucache is what the user wanted, either directly or via
    # --no-cache. If it's None, chose the right default; otherwise, try what
    # the user asked for and fail if we can't do it.

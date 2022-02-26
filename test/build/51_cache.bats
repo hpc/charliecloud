@@ -17,6 +17,7 @@ treeonly () {
 setup () {
     scope standard
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_BUCACHE_MODE == "disabled" ]] && skip "developer disabled"
     # Use a separate storage directory so we don't mess up the main one.
     export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest
     dot_base=$BATS_TMPDIR/bu_
@@ -181,34 +182,6 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-}
-
-@test "${tag}/§3.4.1 two pulls, same" {
-    skip  "developer skip" # FIXME
-    ch-image build-cache --reset
-
-    ch-image pull alpine:3.9
-    ch-image pull alpine:3.9
-
-    blessed_out=$(cat << 'EOF'
-*  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
-EOF
-)
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-}
-
-@test "${tag}/§3.4.2 two pulls, different" {
-    skip  "developer skip" # FIXME
-
-    # This test is tricky because there's no good way to ensure the repository
-    # image changes. I thought we could simulate it by pulling e.g.
-    # alpine:latest but calling it alpine:3.9, but pull doesn't let you state
-    # a different destination reference. (The second argument is currently a
-    # filesystem directory.)
 }
 
 @test "${tag}/§3.6.1 rebuild A" {
@@ -443,4 +416,32 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
+
+@test "${tag}/§3.4.1 two pulls, same" {
+    skip  "developer skip" # FIXME
+    ch-image build-cache --reset
+
+    ch-image pull alpine:3.9
+    ch-image pull alpine:3.9
+
+    blessed_out=$(cat << 'EOF'
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
+
+@test "${tag}/§3.4.2 two pulls, different" {
+    skip  "developer skip" # FIXME
+
+    # This test is tricky because there's no good way to ensure the repository
+    # image changes. I thought we could simulate it by pulling e.g.
+    # alpine:latest but calling it alpine:3.9, but pull doesn't let you state
+    # a different destination reference. (The second argument is currently a
+    # filesystem directory.)
 }
