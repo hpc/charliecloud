@@ -328,6 +328,31 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
+@test "${tag}/gc" {
+    ch-image build-cache --reset
+    # Initial number of commits.
+    diff -u <(  ch-image build-cache \
+              | grep "commits" | awk '{print $2}') <(echo 1)
+
+    # Number of commits after A.
+    ch-image build -t a -f ./bucache/a.df .
+    diff -u <(  ch-image build-cache \
+              | grep "commits" | awk '{print $2}') <(echo 4)
+
+    # Number of commits after 2x forced rebuilds of A (4 dangling)
+    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
+    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
+    diff -u <(  ch-image build-cache \
+              | grep "commits" | awk '{print $2}') <(echo 8)
+
+    # Number of commits after garbage collecting.
+    diff -u <(  ch-image build-cache \
+              | grep "commits" | awk '{print $2}') <(echo 8)
+    ch-image build-cache --gc
+    diff -u <(  ch-image build-cache \
+              | grep "commits" | awk '{print $2}') <(echo 4)
+}
+
 @test "${tag}/branch readiness" {
     ch-image build-cache --reset
 
