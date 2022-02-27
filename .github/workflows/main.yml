@@ -14,7 +14,6 @@ jobs:
     strategy:
       fail-fast: true  # if any job fails, cancel the rest immediately
       matrix:
-        bucache: [enabled, disabled]
         builder: [none, docker, ch-image]
         pack_fmt: [squash-mount, tar-unpack, squash-unpack]
         keep_sudo:   # if false, remove self from sudoers post-install/setup
@@ -126,6 +125,7 @@ jobs:
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
           # Build minimum git for build cache.
+          sudo apt-get install -y autogen
           cd /usr/local/src
           git clone https://github.com/git/git
           cd ./git

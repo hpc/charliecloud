@@ -183,7 +183,9 @@ if [[ $CH_BUILDER == ch-image ]]; then
     env_require CH_IMAGE_STORAGE
 fi
 
+# Git version for build cache.
 # FIXME: use regex?
+# shellcheck disable=SC2034
 git_version=$(git --version | awk '{print $3}')
 
 # User-private temporary directory in case multiple users are running the

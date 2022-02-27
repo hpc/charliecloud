@@ -1,4 +1,6 @@
 load ../common
+
+# shellcheck disable=SC2034
 tag=bucache
 
 # WARNING: Git timestamp precision is only one second [1]. This can cause
