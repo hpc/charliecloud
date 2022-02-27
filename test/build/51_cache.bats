@@ -14,6 +14,16 @@ treeonly () {
     sed -E -e '/^$/Q' -e 's/\s+$//'
 }
 
+version_check () {
+    cmd=$1
+    min=$2
+    ver=$3
+    if [[ $(  printf '%s\n%s\n' "$min" "$ver" \
+            | sort -V | head -n1) != "$min" ]]; then
+        pedantic_fail "$cmd '$ver' < $min"
+    fi
+}
+
 setup () {
     scope standard
     [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
@@ -24,10 +34,12 @@ setup () {
     if [[ -z $git_version ]]; then
         pedantic_fail "git not in path"
     fi
-    if [[ $(  printf '%s\n%s\n' "2.28.1" "$git_version" \
-            | sort -V | head -n1) != "2.28.1" ]]; then
-        pedantic_fail "git version '$git_version' < 2.28.1"
-    fi
+    version_check 'git' '2.28.1' "$git_version"
+    [[ $(command -v git2dot.py) ]] || pedantic_fail 'git2dot.py not in path'
+    version_check 'git2dot.py' '0.8.3' <(git2dot.py -V | awk '{print $3}')
+    [[ $(command -v dot) ]] || pedantic_fail 'dot not in path'
+    # FIXME: use regex
+    version_check 'dot' '2.30.1' <(dot -V | awk '{print $5}')
 }
 
 @test "${tag}/§3.1 empty cache" {
