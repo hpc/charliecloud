@@ -240,9 +240,15 @@ class Main_Loop(lark.Visitor):
                inst.checkout_for_build(self.inst_prev)
             inst.unready()
             inst.execute()
-            if (image_i != -1):
-               images[image_i].metadata_save()
             if (inst.miss):
+               if (image_i != -1):
+                  # We have no use for the history fields other than upload
+                  # them back to the registry at push time, so leave it in OCI
+                  # format.
+                  images[image_i].metadata["history"].append(
+                     { "created": ch.now_utc_iso8601(),
+                       "created_by": "%s %s" % (inst.str_name, inst.str_)})
+                  images[image_i].metadata_save()
                inst.commit()
             inst.ready()
          self.inst_prev = inst
