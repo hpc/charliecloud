@@ -1,5 +1,5 @@
 # ch-test-scope: full
-FROM centos:8
+FROM quay.io/centos/centos:stream8
 
 # Note: Spack is a bit of an odd duck testing wise. Because it's a package
 # manager, the key tests we want are to install stuff (this includes the Spack

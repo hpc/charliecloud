@@ -226,14 +226,12 @@ class _RHEL8(Test):
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "dnf install -y --setopt=install_weak_deps=false ed",
                              Run.NEEDED:      "dnf install -y --setopt=install_weak_deps=false openssh" } }
 
-class CentOS_Latest(_RHEL8, _EPEL_Mixin):
-   base = "centos:latest"
-   prep_run = "dnf install -y epel-release"
-class CentOS_8_Stream(_RHEL8):
+class CentOS_8_Stream(_RHEL8, _EPEL_Mixin):
    # pulling from quay.io per the CentOS wiki
    # https://wiki.centos.org/FAQ/CentOSStream#What_artifacts_are_built.3F
    base = "quay.io/centos/centos:stream8"
    arch_excludes = ["aarch64"]  # issue #1249
+   prep_run = "dnf install -y epel-release"
 class RHEL_UBI_8(_RHEL8):
    base = "registry.access.redhat.com/ubi8/ubi"
    arch_excludes = ["aarch64"]  # issue #1249
@@ -284,7 +282,6 @@ setup () {
 """)
 
 for test in [CentOS_7,
-             CentOS_Latest,
              CentOS_8_Stream,
              RHEL_UBI_8,
              Fedora_26,

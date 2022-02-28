@@ -1,7 +1,7 @@
 # ch-test-scope: full
 # ch-test-arch-exclude: aarch64  # No lustre RPMS for aarch64
 
-FROM centos:8
+FROM quay.io/centos/centos:stream8
 
 # Install lustre-client dependencies
 RUN dnf install -y --setopt=install_weak_deps=false \
