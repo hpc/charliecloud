@@ -139,33 +139,30 @@ DEFAULT_CONFIGS = {
    #      seems a maintenance headache, :latest changes.
    #
    #    * grep the same file for each distro: No standardized file for this.
-   #      [Fixme: /etc/os-release is sufficiently standardized and
-   #       covers derivatives (but see Arch below)?
-   #       https://www.freedesktop.org/software/systemd/man/os-release.html]
+   #      [FIXME: This may be wrong; see issue #1292.]
    #
    #    * Ask lsb_release(1): Not always installed, requires executing ch-run.
 
-   # EL (RHEL and rebuilds like CentOS, Alma, Springdale, Rocky) notes:
+   # RHEL (and rebuilds like CentOS, Alma, Springdale, Rocky) notes:
    #
-   # 1. CentOS seems to have only fakeroot, which is in EPEL, not the standard
+   # 1. These seem to have only fakeroot, which is in EPEL, not the standard
    #    repos.
    #
-   # 2. Unlike on CentOS, RHEL doesn't have the epel-release rpm in the
-   #    standard repos, install via rpm for both to be consistent.
+   # 2. Unlike some derivatives, RHEL itself doesn't have the epel-release rpm
+   #    in the standard repos; install via rpm for both to be consistent.
    #
    # 3. Enabling EPEL can have undesirable side effects, e.g. different
    #    version of things in the base repo that breaks other things. Thus,
    #    when we are done with EPEL, we uninstall it. Existing EPEL
-   #    installations are left alone.
-   #    [Fixme: Any breakage like that is a bug, and should be fixed
-   #    soon after any new RHEL release.]
+   #    installations are left alone. (Such breakage is an EPEL bug, but we do
+   #    commonly encounter it.)
    #
    # 4. "yum repolist" has a lot of side effects, e.g. locking the RPM
    #    database and asking configured repos for something or other.
 
 
    "rhel7":
-   { "name": "EL 7",
+   { "name": "RHEL 7 and derivatives",
      "match": ("/etc/redhat-release", r"release 7\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
@@ -180,14 +177,14 @@ DEFAULT_CONFIGS = {
      "each": ["fakeroot"] },
 
    "rhel8":
-   { "name": "EL 8+",
+   { "name": "RHEL 8+ and derivatives",
      "match":  ("/etc/redhat-release", r"release (?![0-7]\.)"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
-                "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-"
-                # I don't know if this is the best way to get the major version
-                  "$(rpm -E %rhel)" ".noarch.rpm; "
+                # Macro %rhel from *-release* RPM, e.g. redhat-release-server
+                # or centos-linux-release; thus reliable.
+                "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm; "
                 "dnf install -y fakeroot; "
                 "dnf remove -y epel-release; "
                 "else "
@@ -219,7 +216,7 @@ DEFAULT_CONFIGS = {
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
    "debderiv":
-   { "name": "Debian 9+, Ubuntu 14+, or other recent Debian derivative",
+   { "name": "Debian 9+, Ubuntu 14+, or other derivative",
      "match": ("/etc/os-release", r"Debian GNU/Linux (?![0-8] )|Ubuntu (?![0-9]\.|1[0-3]\.)|ID_LIKE=debian"),
      "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
                 " || ! fgrep -q _apt /etc/passwd",
@@ -233,8 +230,8 @@ DEFAULT_CONFIGS = {
 
    # Fedora notes:
    #
-   # 1. The minimum supported version was chosen somewhat arbitrarily based on the
-   #    release versions available for testing (what was on Docker Hub).
+   # 1. The minimum supported version was chosen somewhat arbitrarily based on
+   #    versions available for testing, i.e., what was on Docker Hub.
    #
    # 2. The fakeroot package is in the base repository set so enabling EPEL is
    #    not required.
@@ -247,10 +244,8 @@ DEFAULT_CONFIGS = {
      "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 
-   # Assume we always have fakeroot
-
    "suse":
-   { "name": "(Open)SUSE",
+   { "name": "(Open)SUSE 42.2+",  # no fakeroot before this
      # I don't know if there are OpenSUSE derivatives
      "match": ("/etc/os-release", r"ID_LIKE=.*suse"),
      "init": [ ("command -v fakeroot > /dev/null",
@@ -260,19 +255,16 @@ DEFAULT_CONFIGS = {
      "cmds": ["zypper", "rpm"],
      "each": ["fakeroot"] },
 
-   "archlinux":
+   "arch":
    { "name": "Arch Linux",
-     # /etc/arch-release is empty
-     # /etc/os-release is a link to /usr/lib/os-release (not ../... as
-     # in other dostros), which is confused with the host's in the check.
-     "match": ("/usr/lib/os-release", r"Arch Linux"),
+     "match": ("/etc/os-release", r"ID=arch"),  # /etc/arch-release empty
      "init": [ ("command -v fakeroot > /dev/null",
                 "pacman -Syq --noconfirm fakeroot") ],
      "cmds": ["pacman"],
      "each": ["fakeroot"] },
 
    "alpine":
-   { "name": "Alpine",
+   { "name": "Alpine, any version",
      "match": ("/etc/alpine-release", r"[0-9]\.[0-9]+\.[0-9]+"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "apk update; apk add fakeroot") ],
