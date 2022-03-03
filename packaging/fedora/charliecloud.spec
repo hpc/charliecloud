@@ -163,6 +163,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_bindir}/ch-image
 %{_mandir}/man1/ch-image.1*
 %{_prefix}/lib/%{name}/build.py
+%{_prefix}/lib/%{name}/build_cache.py
 %{_prefix}/lib/%{name}/charliecloud.py
 %{_prefix}/lib/%{name}/fakeroot.py
 %{_prefix}/lib/%{name}/lark
