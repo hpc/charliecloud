@@ -414,12 +414,14 @@ class Enabled_Cache:
 
    def pull(self, image, last_layer=None):
       self.worktree_add(image, "root")
+      self.unready(image)
       # a young hen, especially one less than one year old
       pullet = pull.Image_Puller(image)
       pullet.pull_to_unpacked(last_layer)
       sid = State_ID.from_parent(self.root_id, pullet.sid_input)
       pullet.done()
       commit = self.commit(image.unpack_path, sid, 'PULL %s' % image.ref)
+      self.ready(image)
       return (sid, commit)
 
    def ready(self, image):

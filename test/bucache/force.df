@@ -1,0 +1,3 @@
+FROM debian
+RUN apt-get -y upgrade
+RUN apt-get install -y git

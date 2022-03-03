@@ -450,6 +450,31 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
+@test "${tag}/force" {
+    ch-image build-cache --reset
+
+    blessed_out=$(cat << 'EOF'
+*  (yes_f) [force] RUN apt-get install -y git
+*  [force] RUN apt-get -y upgrade
+| *  (no_f+NR) RUN apt-get -y upgrade
+|/
+*  (debian) PULL debian
+*  (HEAD -> root) root
+EOF
+)
+    # Build debian image without force; both "apt-get update" and "install git"
+    # fail without force. The asoociated branch is marked not ready.
+    run ch-image build -t no_f -f ./bucache/force.df .
+    [[ $status -ne 0 ]]
+    # Build same image with different tag using force; this will succeed and
+    # thus we should have two branches in the cache.
+    ch-image build --force -t yes_f -f ./bucache/force.df .
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
+
 @test "${tag}/§3.4.1 two pulls, same" {
     skip  "developer skip" # FIXME
     ch-image build-cache --reset

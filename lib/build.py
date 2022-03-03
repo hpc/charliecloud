@@ -266,7 +266,8 @@ class Instruction(abc.ABC):
                 "options",      # consumed
                 "options_str",  # saved at instantiation
                 "sid",
-                "tree")
+                "tree",
+                "force")        # Does the instruction need force injection?
 
    def __init__(self, tree):
       self.lineno = tree.meta.line
@@ -281,12 +282,16 @@ class Instruction(abc.ABC):
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())
       self.tree = tree
+      self.force = None
 
    def __str__(self):
       options = self.options_str
       if (options != ""):
          options = " " + options
-      return "%s%s %s" % (self.str_name, options, self.str_)
+      force = ""
+      if (self.force):
+         force = "[force] "
+      return "%s%s %s%s" % (force, self.str_name, options, self.str_)
 
    @property
    def miss(self):
@@ -319,7 +324,7 @@ class Instruction(abc.ABC):
       env.reset()
       global fakeroot_config
       fakeroot_config = fakeroot.detect(images[image_i].unpack_path,
-                                        cli.force, cli.no_force_detect)
+                                           cli.force, cli.no_force_detect)
 
    def commit(self):
       path = images[image_i].unpack_path
@@ -770,6 +775,10 @@ class I_from_(Instruction):
 
 
 class Run(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.force = cli.force
 
    def execute(self):
       rootfs = images[image_i].unpack_path

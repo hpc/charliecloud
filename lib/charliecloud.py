@@ -375,6 +375,10 @@ class Image:
    @staticmethod
    def unpacked_p(imgdir):
       "Return True if imgdir looks like an unpacked image, False otherwise."
+      # FIXME: this function doesn't have access to build cache object info.
+      # when the cache is enabled it is possible for a branch to be in a
+      # not-ready state (pull failed) and not have the following files.
+      return True
       return (    os.path.isdir(imgdir)
               and os.path.isdir(imgdir // 'bin')
               and os.path.isdir(imgdir // 'dev')
