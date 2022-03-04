@@ -373,16 +373,14 @@ class Image:
       return str(self.ref)
 
    @staticmethod
-   def unpacked_p(imgdir):
-      "Return True if imgdir looks like an unpacked image, False otherwise."
-      # FIXME: this function doesn't have access to build cache object info.
-      # when the cache is enabled it is possible for a branch to be in a
-      # not-ready state (pull failed) and not have the following files.
-      return True
+   def unpacked_p(img):
+      """Return True if imgdir looks like it exists within a sane storage
+         directory, False otherwise"""
+      imgdir = Path(os.path.dirname(img))
+      rootdir = Path(os.path.dirname(imgdir))
       return (    os.path.isdir(imgdir)
-              and os.path.isdir(imgdir // 'bin')
-              and os.path.isdir(imgdir // 'dev')
-              and os.path.isdir(imgdir // 'usr'))
+              and os.path.isdir(rootdir // 'dlcache')
+              and os.path.isfile(rootdir // 'version'))
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
