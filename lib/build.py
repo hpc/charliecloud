@@ -230,21 +230,14 @@ class Main_Loop(lark.Visitor):
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          self.miss_ct = inst.prepare(self.inst_prev, self.miss_ct)
-         if (   inst.miss
-             # ARG and ENV cache hits still need to assign variable values.
-             or isinstance(inst, I_arg_bare)
-             or isinstance(inst, I_arg_equals)
-             or isinstance(inst, I_env_equals)
-             or isinstance(inst, I_env_space)):
-            if (self.miss_ct == 1):
+         if (inst.miss or inst.hit_act):
+            if (self.miss_ct == 1 or inst.hit_act):
                inst.checkout_for_build(self.inst_prev)
             inst.unready()
             inst.execute()
             if (inst.miss):
                if (image_i != -1):
-                  # We have no use for the history fields other than upload
-                  # them back to the registry at push time, so leave it in OCI
-                  # format.
+                  # add instruction history
                   images[image_i].metadata["history"].append(
                      { "created": ch.now_utc_iso8601(),
                        "created_by": "%s %s" % (inst.str_name, inst.str_)})
@@ -262,14 +255,17 @@ class Instruction(abc.ABC):
    execute_increment = 1
 
    __slots__ = ("git_hash",     # Git commit where sid was found
+                "force",        # Does the instruction need force injection?
+                "hit_act",      # Does the command need to execute even if hit?
                 "lineno",
                 "options",      # consumed
                 "options_str",  # saved at instantiation
                 "sid",
-                "tree",
-                "force")        # Does the instruction need force injection?
+                "tree")
 
    def __init__(self, tree):
+      self.force = None
+      self.hit_act = None
       self.lineno = tree.meta.line
       self.options = {}
       for st in ch.tree_children(tree, "option"):
@@ -282,7 +278,6 @@ class Instruction(abc.ABC):
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())
       self.tree = tree
-      self.force = None
 
    def __str__(self):
       options = self.options_str
@@ -392,6 +387,7 @@ class Arg(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
+      self.hit_act = True
       self.key = ch.tree_terminal(self.tree, "WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
@@ -674,6 +670,10 @@ class I_directive(Instruction_Supported_Never):
 
 class Env(Instruction):
 
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.hit_act = True
+
    @property
    def str_(self):
       return "%s='%s'" % (self.key, self.value)
@@ -849,6 +849,7 @@ class I_workdir(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
+      self.hit_act = True
       self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
                                 env.env_build)
 
