@@ -39,12 +39,18 @@ setup () {
 }
 
 @test "${ch_tag}/cone serial" {
+    [[ -z $ch_cray ]] || skip 'serial launches unsupported on Cray'
     # shellcheck disable=SC2086
     ch-run $ch_unslurm -b "$inbind" -b "$outbind" "$ch_img" -- \
            pvbatch /mnt/0/cone.py /mnt/1
+    mv "$outdir"/cone.png "$outdir"/cone.serial.png
     ls -l "$outdir"/cone*
     diff -u "${indir}/cone.serial.vtk" "${outdir}/cone.vtk"
-    cmp "${indir}/cone.png" "${outdir}/cone.png"
+}
+
+@test "${ch_tag}/cone serial PNG" {
+    pict_ok
+    pict_assert_equal "${indir}/cone.png" "${outdir}/cone.serial.png" 100
 }
 
 @test "${ch_tag}/cone ranks=2" {
@@ -52,9 +58,15 @@ setup () {
     # shellcheck disable=SC2086
     $ch_mpirun_2 ch-run --join -b "$inbind" -b "$outbind" "$ch_img" -- \
               pvbatch /mnt/0/cone.py /mnt/1
+    mv "$outdir"/cone.png "$outdir"/cone.2ranks.png
     ls -l "$outdir"/cone*
     diff -u "${indir}/cone.2ranks.vtk" "${outdir}/cone.vtk"
-    cmp "${indir}/cone.png" "${outdir}/cone.png"
+}
+
+@test "${ch_tag}/cone ranks=2 PNG" {
+    multiprocess_ok
+    pict_ok
+    pict_assert_equal "${indir}/cone.png" "${outdir}/cone.2ranks.png" 100
 }
 
 @test "${ch_tag}/cone ranks=N" {
@@ -62,9 +74,15 @@ setup () {
     # shellcheck disable=SC2086
     $ch_mpirun_core ch-run --join -b "$inbind" -b "$outbind" "$ch_img" -- \
                  pvbatch /mnt/0/cone.py /mnt/1
+    mv "$outdir"/cone.png "$outdir"/cone.nranks.png
     ls -l "$outdir"/cone*
     diff -u "${indir}/cone.nranks.vtk" "${outdir}/cone.vtk"
-    cmp "${indir}/cone.png" "${outdir}/cone.png"
+}
+
+@test "${ch_tag}/cone ranks=N PNG" {
+    multiprocess_ok
+    pict_ok
+    pict_assert_equal "${indir}/cone.png" "${outdir}/cone.nranks.png" 100
 }
 
 @test "${ch_tag}/revert image" {

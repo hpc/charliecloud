@@ -3,7 +3,15 @@
 ### Setup we need right away
 
 set -e
-export LC_ALL=C  # predictable sorting
+# Set the locale so we have predictable sorting. However, ch-image crashes on
+# Python 3.6 in locale "C" (see issues #970 and #1262), which is the only
+# locale guaranteed to be available, so use a UTF-8 locale if available. This
+# means tests will fail on Python 3.6 systems without this UTF-8 locale.
+if [[ $(locale -a) = *en_US.utf8* ]]; then
+    export LC_ALL=en_US.utf8
+else
+    export LC_ALL=C
+fi
 
 
 ### Functions we need right away
@@ -879,6 +887,7 @@ printf 'ch-run:       %s (%s)\n' "${ch_bin}/ch-run" "$ch_libc"
 printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
 printf 'tests:        %s\n' "$CHTEST_DIR"
 printf 'installed:    %s\n' "${CHTEST_INSTALLED:-no}"
+printf 'locale:       %s\n' "$LC_ALL"
 printf 'git workdir:  %s\n' "${CHTEST_GITWD:-no}"
 if [[ -n $ch_contributor ]]; then
     ch_contributor_note="yes; $email in README.rst"

@@ -446,6 +446,7 @@ class Image:
       self.metadata = { "arch": arch_host.split("/")[0],  # no variant
                         "cwd": "/",
                         "env": dict(),
+                        "history": list(),
                         "labels": dict(),
                         "shell": ["/bin/sh", "-c"],
                         "volumes": list() }  # set isn't JSON-serializable
@@ -459,6 +460,7 @@ class Image:
          self.metadata_init()
          return
       self.metadata = json_from_file(path, "metadata")
+      self.metadata.setdefault("history", list())  # upgrade pre-PR #1215
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
@@ -493,6 +495,10 @@ class Image:
             except AttributeError:
                FATAL("can't parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
+      # History.
+      if ("history" not in config):
+         FATAL("invalid config: missing history")
+      self.metadata["history"] = config["history"]
       # labels
       set_("labels", "config", "Labels")  # copy reference
       # shell
@@ -681,6 +687,7 @@ class Image:
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
+               VERBOSE("ignoring device file: %s" % m.name)
                members.remove(m)
                continue
             elif (m.issym()):
@@ -699,6 +706,13 @@ class Image:
                m.mode |= 0o600
             else:
                FATAL("unknown member type: %s" % m.name)
+            # Discard anything under /dev. Docker puts regular files and
+            # directories in here on "docker export". Note leading slashes
+            # already taken care of in TarFile.fix_member_path() above.
+            if (re.search(r"^(\./)?dev/.", m.name)):
+               VERBOSE("ignoring member under /dev: %s" % m.name)
+               members.remove(m)
+               continue
             TarFile.fix_member_uidgid(m)
          if (dev_ct > 0):
             INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"

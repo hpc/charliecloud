@@ -7,6 +7,7 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope standard
     prerequisites_ok hello
+    LC_ALL=C  # no other locales installed in container
 }
 
 @test "${ch_tag}/hello" {
