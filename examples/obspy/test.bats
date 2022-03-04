@@ -14,8 +14,10 @@ setup () {
     rm -f "$BATS_TMPDIR"/obspy.png
 
     ch-run -b "$BATS_TMPDIR":/mnt "$ch_img" -- /hello.py /mnt/obspy.png
+}
 
-    # Compare reference image to generated image.
-    # FIXME: Bitwise comparison is unreliable; see #1171 and #1172.
-    #cmp "$CHTEST_EXAMPLES_DIR"/obspy/obspy.png "$BATS_TMPDIR"/obspy.png
+@test "${ch_tag}/hello PNG" {
+    pict_ok
+    pict_assert_equal "$CHTEST_EXAMPLES_DIR"/obspy/obspy.png \
+                      "$BATS_TMPDIR"/obspy.png
 }

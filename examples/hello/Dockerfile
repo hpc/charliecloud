@@ -1,5 +1,5 @@
 # ch-test-scope: standard
-FROM centos:8
+FROM quay.io/centos/centos:stream8
 
 RUN dnf install -y --setopt=install_weak_deps=false openssh-clients \
  && dnf clean all
