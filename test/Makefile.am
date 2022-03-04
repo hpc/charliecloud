@@ -7,9 +7,17 @@ Dockerfile.00_tiny \
 Dockerfile.argenv \
 Dockerfile.build2dir \
 bucache/a.df \
+bucache/a2.df \
+bucache/a3.df \
+bucache/ae.df \
+bucache/ae2.df \
 bucache/b.df \
 bucache/c.df \
+bucache/force.df \
 bucache/from.df \
+bucache/workdir.df \
+bucache/workdir2.df \
+bucache/workdir3.df \
 build/10_sanity.bats \
 build/40_pull.bats \
 build/50_ch-image.bats \
