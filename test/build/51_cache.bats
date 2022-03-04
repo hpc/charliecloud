@@ -198,7 +198,7 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/§3.6.1 rebuild A" {
+@test "${tag}/rebuild A" {
     # Forcing a rebuild show produce a new pair of FOO and BAR commits from
     # from the alpine branch.
     blessed_out=$(cat << 'EOF'
@@ -221,7 +221,7 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/§3.6.2 rebuild B" {
+@test "${tag}/rebuild B" {
     # Rebuild of B. Since A was rebuilt in the last test, and because
     # the rebuild behavior only forces misses on non-FROM instructions, it
     # should now be based on A's new commits.
@@ -245,7 +245,7 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/§3.6.3 rebuild C" {
+@test "${tag}/rebuild C" {
     # Rebuild C. Since C doesn't reference img_a (like img_b does) rebuilding
     # causes a miss on FOO. Thus C makes new FOO and QUX commits.
     #
@@ -413,8 +413,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 
-    # Ensure that a cached ARG and ENV hits still set their variables and do not
-    # alter the cache.
+    # Same name. Miss. Ensure ARG and ENV hits still set their variables.
     blessed_out=$(cat << 'EOF'
 *  (ae) RUN $arg && $env_
 *  RUN $env_
@@ -501,4 +500,47 @@ EOF
     # alpine:latest but calling it alpine:3.9, but pull doesn't let you state
     # a different destination reference. (The second argument is currently a
     # filesystem directory.)
+}
+
+@test "${tag}/WORKDIR" {
+    ch-image build-cache --reset
+    ch-image build -f wd1 -f ./bucache/workdir.df .
+
+    # Same name. Miss. Last instruction is a cached hit WORKDIR.
+    blessed_out=$(cat << 'EOF'
+*  (wd1) RUN [[ -e ./foo ]]
+| *  RUN pwd
+|/
+*  WORKDIR /wd
+*  RUN touch wd/foo
+*  RUN mkdir wd
+*  (alpine+latest) PULL alpine:latest
+*  (HEAD -> root) root
+EOF
+)
+    ch-image build -f wd1 -f ./bucache/workdir2.df .
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # New name. Miss. Last instruction is a cached hit WORKDIR.
+    blessed_out=$(cat << 'EOF'
+*  (wd2) RUN [[ -e ./foo ]] && [[ -e ./foo ]]
+| *  (wd1) RUN [[ -e ./foo ]]
+|/
+| *  RUN pwd
+|/
+*  WORKDIR /wd
+*  RUN touch wd/foo
+*  RUN mkdir wd
+*  (alpine+latest) PULL alpine:latest
+*  (HEAD -> root) root
+EOF
+)
+    ch-image build -f wd2 -f ./bucache/workdir3.dr .
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
