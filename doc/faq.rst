@@ -953,62 +953,72 @@ One fix is to configure your :code:`.bashrc` or equivalent to:
      }
 
 
-.. _faq_foreign-images:
-
 How can I build images for a foreign architecture?
 --------------------------------------------------
 
 QEMU
 ~~~~
 
-Suppose you want to build Charliecloud containers on a system which
-has a different architecture from the target system for some reason.
+Suppose you want to build Charliecloud containers on a system which has a
+different architecture from the target system.
 
-It's straightforward as long as you can install suitable packages on
-the build system (your personal computer?).  You just need the magic
-of QEMU via a distribution package with a name like Debian's
-:code:`qemu-user-static`.  For use in an image root this needs to be
-the :code:`-static` version, not plain :code:`qemu-user`, and contain
-a :code:`qemu-...-static` binary for your target architecture.  In
-case it doesn't install ‘binfmt’ hooks (telling Linux how to run
-foreign binaries) you'll need to make that work — perhaps it's in
+It's straightforward as long as you can install suitable packages on the build
+system (your personal computer?). You just need the magic of QEMU via a
+distribution package with a name like Debian's :code:`qemu-user-static`. For
+use in an image root this needs to be the :code:`-static` version, not plain
+:code:`qemu-user`, and contain a :code:`qemu-*-static` executable for your
+target architecture. In case it doesn't install “binfmt” hooks (telling Linux
+how to run foreign binaries), you'll need to make that work — perhaps it's in
 another package.
 
-That's all you need to make building with :code:`ch-image` work with a
-base foreign architecture image and the :code:`--arch` option.  It's
-significantly slower than native, but quite usable — about half the
-speed of native for the ppc64le target with a build taking minutes on
-a laptop with a magnetic disc.  There's a catch that images in the
-local store aren't distinguished by architecture except by any name
-you give them, i.e. a base image like :code:`debian:11` pulled with
-:code:`--arch ppc64le` will overwrite a native x86 one.
+That's all you need to make building with :code:`ch-image` work with a base
+foreign architecture image and the :code:`--arch` option. It's significantly
+slower than native, but quite usable — about half the speed of native for the
+ppc64le target with a build taking minutes on a laptop with a magnetic disc.
+There's a catch that images in :code:`ch-image` storage aren't distinguished
+by architecture except by any name you give them, e.g., a base image like
+:code:`debian:11` pulled with :code:`--arch ppc64le` will overwrite a native
+x86 one.
+
+For example, to build a ppc64le image on a Debian Buster amd64 host::
+
+  $ uname -m
+  x86_64
+  $ sudo apt install qemu-user-static
+  $ ch-image pull --arch ppc64le alpine:3.15
+  $ printf 'FROM alpine:3.15\nRUN apk add coreutils\n' | ch-image build -t foo -
+  $ ch-convert alpine:3.15 /var/tmp/foo
+  $ ch-run /var/tmp/foo -- uname -m
+  ppc64le
 
 PRoot
 ~~~~~
 
-Another way to build a foreign image, which works even without
-installation privilege, is to populate a chroot for it with the `PRoot
+Another way to build a foreign image, which works even without :code:`sudo` to
+install :code:`qemu-*-static`, is to populate a chroot for it with the `PRoot
 <https://proot-me.github.io/>`_ tool, whose :code:`-q` option allows
-specifying a :code:`qemu-...-static` binary (perhaps obtained by
-unpacking a distribution package).
+specifying a :code:`qemu-*-static` binary (perhaps obtained by unpacking a
+distribution package).
 
-How can I build an image missing a base in a repository like Docker hub?
-------------------------------------------------------------------------
 
-If you can't find an image repository from which to pull for the
-distribution and architecture of interest, it is worth looking at the
-extensive collection of root archives under `linuxcontainers.org
-<https://uk.lxd.images.canonical.com/images/>`_.  They are meant for
-LXC, but are fine as a basis for Charliecloud.  For example, this
-would leave a :code:`ppc64le/centos:8` image du jour in the registry
-for possible use in a Dockerfile :code:`FROM` line:
+How can I use tarball base images from e.g. linuxcontainers.org?
+----------------------------------------------------------------
 
-.. code-block::
+If you can't find an image repository from which to pull for the distribution
+and architecture of interest, it is worth looking at the extensive collection
+of rootfs archives `maintained by linuxcontainers.org
+<https://uk.lxd.images.canonical.com/images/>`_. They are meant for LXC, but
+are fine as a basis for Charliecloud.
 
-  $ wget \
-  https://images.linuxcontainers.org/images/centos/8/ppc64el/default/\
-  20220113_07:08/rootfs.tar.xz
-  $ ch-image import rootfs.tar.xz ppc64le/centos:8
+For example, this would leave a :code:`ppc64le/alpine:3.15` image du jour in
+the registry for use in a Dockerfile :code:`FROM` line. Note that
+linuxcontainers.org uses the opposite order for “le” in the architecture name.
 
-..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello
-..  LocalWords:  VirtualSize
+::
+
+  $ wget https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
+  $ ch-image import rootfs.tar.xz ppc64le/alpine:3.15
+
+
+..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
+..  LocalWords:  VirtualSize linuxcontainers jour uk lxd
