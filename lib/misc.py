@@ -122,14 +122,10 @@ def pull(cli):
    if (cli.parse_only):
       print(ref.as_verbose_str)
       sys.exit(0)
-   assert cli.image_dir is None  # FIXME
-   image = ch.Image(ref, cli.image_dir)
+   image = ch.Image(ref)
    ch.INFO("pulling image:    %s" % ref)
    ch.INFO("requesting arch:  %s" % ch.arch)
-   if (cli.image_dir is not None):
-      ch.INFO("destination:      %s" % image.unpack_path)
-   else:
-      ch.VERBOSE("destination: %s" % image.unpack_path)
+   ch.VERBOSE("destination: %s" % image.unpack_path)
    # Pull.
    bu.cache.pull(image, cli.last_layer)
    ch.done_notify()

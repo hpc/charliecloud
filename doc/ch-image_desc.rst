@@ -677,19 +677,12 @@ Synopsis
 
 ::
 
-   $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-image [...] pull [...] IMAGE_REF
 
 See the FAQ for the gory details on specifying image references.
 
 Description
 -----------
-
-Destination:
-
-  :code:`IMAGE_DIR`
-    If specified, place the unpacked image at this path; it is then ready for
-    use by :code:`ch-run` or other tools. The storage directory will not
-    contain a copy of the image, i.e., it is only unpacked once.
 
 Options:
 
@@ -763,14 +756,6 @@ Same, specifying the architecture explicitly::
    resolving whiteouts
    layer 1/1: 8947560: extracting
    image arch: arm (may not match host arm64/v8)
-
-Download the same image and place it in :code:`/tmp/buster`::
-
-   $ ch-image pull debian:buster /tmp/buster
-   [...]
-   $ ls /tmp/buster
-   bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
-   boot  etc  lib   media  opt  root  sbin  sys  usr
 
 
 :code:`push`

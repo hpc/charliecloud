@@ -82,7 +82,7 @@ EOF
     # host with dot, with port
     cat <<'EOF' | image_ref_parse example.com:8080/name 0
 as string:    example.com:8080/name
-for filename: example.com:8080%name
+for filename: example.com+8080%name
 fields:
   host    'example.com'
   port    8080
@@ -95,7 +95,7 @@ EOF
     # host without dot, with port
     cat <<'EOF' | image_ref_parse examplecom:8080/name 0
 as string:    examplecom:8080/name
-for filename: examplecom:8080%name
+for filename: examplecom+8080%name
 fields:
   host    'examplecom'
   port    8080
@@ -108,7 +108,7 @@ EOF
     # no path, tag
     cat <<'EOF' | image_ref_parse name:tag 0
 as string:    name:tag
-for filename: name:tag
+for filename: name+tag
 fields:
   host    None
   port    None
@@ -121,7 +121,7 @@ EOF
     # no path, digest
     cat <<'EOF' | image_ref_parse name@sha256:feeddad 0
 as string:    name@sha256:feeddad
-for filename: name@sha256:feeddad
+for filename: name@sha256+feeddad
 fields:
   host    None
   port    None
@@ -134,7 +134,7 @@ EOF
     # everything, tagged
     cat <<'EOF' | image_ref_parse example.com:8080/path1/path2/name:tag 0
 as string:    example.com:8080/path1/path2/name:tag
-for filename: example.com:8080%path1%path2%name:tag
+for filename: example.com+8080%path1%path2%name+tag
 fields:
   host    'example.com'
   port    8080
@@ -147,7 +147,7 @@ EOF
     # everything, tagged, filename component
     cat <<'EOF' | image_ref_parse example.com:8080%path1%path2%name:tag 0
 as string:    example.com:8080/path1/path2/name:tag
-for filename: example.com:8080%path1%path2%name:tag
+for filename: example.com+8080%path1%path2%name+tag
 fields:
   host    'example.com'
   port    8080
@@ -160,7 +160,7 @@ EOF
     # everything, digest
     cat <<'EOF' | image_ref_parse example.com:8080/path1/path2/name@sha256:feeddad 0
 as string:    example.com:8080/path1/path2/name@sha256:feeddad
-for filename: example.com:8080%path1%path2%name@sha256:feeddad
+for filename: example.com+8080%path1%path2%name@sha256+feeddad
 fields:
   host    'example.com'
   port    8080
@@ -215,28 +215,32 @@ EOF
     # Validate that layers replace symlinks correctly. See
     # test/Dockerfile.symlink and issues #819 & #825.
 
-    img=$BATS_TMPDIR/charliecloud%file-quirks
-
-    ch-image pull charliecloud/file-quirks:2020-10-21 "$img"
+    CH_IMAGE_STORAGE=$BATS_TMPDIR/pull/quirky_files
+    # make ch-image happy with the storage
+    mkdir -p "${CH_IMAGE_STORAGE}"/{bucache,dlcache,ulcache,img}
+    echo 3 > "$CH_IMAGE_STORAGE/version"
+    ch-image list
+    img="${CH_IMAGE_STORAGE}/img/charliecloud%file-quirks+2020-10-21"
+    ch-image pull charliecloud/file-quirks:2020-10-21
     ls -lh "${img}/test"
 
     output_expected=$(cat <<'EOF'
-regular file   'df_member'
-symbolic link  'ds_link' -> 'ds_target'
-regular file   'ds_target'
-directory      'fd_member'
-symbolic link  'fs_link' -> 'fs_target'
-regular file   'fs_target'
-symbolic link  'link_b0rken' -> 'doesnotexist'
-symbolic link  'link_imageonly' -> '/test'
-symbolic link  'link_self' -> 'link_self'
-directory      'sd_link'
-regular file   'sd_target'
-regular file   'sf_link'
-regular file   'sf_target'
-symbolic link  'ss_link' -> 'ss_target2'
-regular file   'ss_target1'
-regular file   'ss_target2'
+regular file   ‘df_member’
+symbolic link  ‘ds_link’ -> ‘ds_target’
+regular file   ‘ds_target’
+directory      ‘fd_member’
+symbolic link  ‘fs_link’ -> ‘fs_target’
+regular file   ‘fs_target’
+symbolic link  ‘link_b0rken’ -> ‘doesnotexist’
+symbolic link  ‘link_imageonly’ -> ‘/test’
+symbolic link  ‘link_self’ -> ‘link_self’
+directory      ‘sd_link’
+regular file   ‘sd_target’
+regular file   ‘sf_link’
+regular file   ‘sf_target’
+symbolic link  ‘ss_link’ -> ‘ss_target2’
+regular file   ‘ss_target1’
+regular file   ‘ss_target2’
 EOF
 )
 
@@ -267,7 +271,7 @@ EOF
     # Manifest schema version one (v1); see issue #814. Use debian:squeeze
     # because 1) it always returns a v1 manifest schema (regardless of media
     # type specified), and 2) it isn't very large, thus keeps test time down.
-    img=debian:squeeze
+    img=debian+squeeze
     ch-image pull "$img"
     grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
 
@@ -346,7 +350,7 @@ EOF
     arch_exclude ppc64le  # test image not available
     tag=2021-01-15
     name=charliecloud/metadata:$tag
-    img=$CH_IMAGE_STORAGE/img/charliecloud%metadata:$tag
+    img=$CH_IMAGE_STORAGE/img/charliecloud%metadata+$tag
 
     ch-image pull "$name"
 
@@ -495,7 +499,6 @@ EOF
 EOF
 }
 
-
 @test 'pull by arch' {
     # Has fat manifest; requested arch exists. There's not much simple to look
     # for in the output, so just see if it works.
@@ -524,7 +527,6 @@ EOF
         [[ $output = *'image is architecture-unaware'*'consider --arch=yolo' ]]
     fi
 }
-
 
 @test 'pull images that do not exist' {
     if [[ -n $CH_REGY_DEFAULT_HOST ]]; then
