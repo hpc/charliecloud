@@ -219,6 +219,9 @@ class Enabled_Cache:
       self.git_restore(path, fm)
       return git_hash
 
+   def delete(self, image):
+      ch.cmd_quiet(["git", "branch", "-D", image.ref.for_path], cwd=self.root)
+
    def find_image(self, image):
       """Return (state ID, commit) of branch tip for image, or (None, None) if
          no such branch."""
@@ -270,7 +273,7 @@ class Enabled_Cache:
       t = ch.Timer()
       ch.cmd_quiet(["git", "reflog", "expire",
                     "--expire-unreachable=now", "--all"], cwd=self.root)
-      ch.cmd_quiet(["git", "gc", "--prune=now"], cwd=self.root)
+      ch.cmd_quiet(["git", "gc", "--force", "--prune=now"], cwd=self.root)
       t.log("collected garbage")
 
    def git_prepare(self, unpack_path):
@@ -412,6 +415,27 @@ class Enabled_Cache:
             self.git_restore_walk(path, child, quick)
          ch.chdir(cwd)
 
+   def pull_(self, image, last_layer):
+      (sid, git_hash) = self.find_image(image)
+      if (sid and ch.dlcache_p):
+         pullet = pull.Image_Puller(image)
+         pullet.download() # all dlcache hits
+         existing_sid = State_ID.from_parent(self.root_id, pullet.sid_input)
+         # does what exists in storage match what we have? If not, then the
+         # existing image in storage is newer or modified (miss) due to a
+         # --dlcache=disabled pull.
+         if (sid == existing_sid):
+            return
+         else:
+            ch.WARNING("cached image stale; re-pulling")
+      ch.INFO("pulling image:    %s" % image.ref)
+      ch.INFO("requesting arch:  %s" % ch.arch)
+      ch.VERBOSE("destination:      %s" % image.unpack_path)
+      if (not ch.dlcache_p): # write-only
+         self.worktree_remove(image)
+         self.delete(image)
+      self.pull(image, last_layer)
+
    def pull(self, image, last_layer=None):
       self.worktree_add(image, "root")
       self.unready(image)
@@ -433,6 +457,7 @@ class Enabled_Cache:
          ch.WARNING("not resetting brand-new cache")
       else:
          ch.INFO("deleting build cache")
+         self.garbageinate()
          ch.rmtree(self.root)
          ch.mkdir(self.root)
          self.bootstrap()
@@ -517,6 +542,12 @@ class Enabled_Cache:
                     image.unpack_path, base], cwd=self.root)
       t.log("created worktree")
 
+   def worktree_remove(self, image):
+      t = ch.Timer()
+      image.unpack_clear()
+      ch.cmd_quiet(["git", "worktree", "remove", "-f", image.unpack_path],
+                   cwd=self.root)
+      t.log("removed worktree")
 
 class Rebuild_Cache(Enabled_Cache):
 
@@ -525,6 +556,16 @@ class Rebuild_Cache(Enabled_Cache):
 
 
 class Disabled_Cache(Rebuild_Cache):
+   def pull_(self, image, last_layer):
+      self.pull(self, image, last_layer)
+
+   def pull(self, image, last_layer):
+      ch.INFO("pulling image:    %s" % ref)
+      ch.INFO("requesting arch:  %s" % ch.arch)
+      ch.VERBOSE("destination:      %s" % image.unpack_path)
+      pullet = pull.Image_Puller(image)
+      pullet.pull_to_unpacked(last_layer)
+      pullet.done()
 
    def status_char(self, miss):
       return " "

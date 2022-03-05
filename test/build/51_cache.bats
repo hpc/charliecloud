@@ -475,9 +475,7 @@ EOF
 }
 
 @test "${tag}/§3.4.1 two pulls, same" {
-    skip  "developer skip" # FIXME
     ch-image build-cache --reset
-
     ch-image pull alpine:3.9
     ch-image pull alpine:3.9
 
@@ -493,13 +491,22 @@ EOF
 }
 
 @test "${tag}/§3.4.2 two pulls, different" {
-    skip  "developer skip" # FIXME
 
-    # This test is tricky because there's no good way to ensure the repository
-    # image changes. I thought we could simulate it by pulling e.g.
-    # alpine:latest but calling it alpine:3.9, but pull doesn't let you state
-    # a different destination reference. (The second argument is currently a
-    # filesystem directory.)
+    # We simulate a repository change by manually editing the skinny manifest in
+    # local storage. This would occur in the wild as follows:
+    #    1. pull alpine:3.9
+    #    2. a change occurs to the image in the repository
+    #    3. run pull --no-cache alpine:3.9
+    # Now the existing SID of the image will differ from the SID in
+    # the build-cache, resulting in a warning stating that the image is stale
+    # and a fresh pull.
+    ch-image build-cache --reset
+    ch-image pull alpine:3.9
+    sed -i 's/json/fson/' "${CH_IMAGE_STORAGE}/dlcache/alpine+3.9"*manifest.json
+    run ch-image pull alpine:3.9
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output == *"warning: cached image stale; re-pulling"* ]]
 }
 
 @test "${tag}/WORKDIR" {
@@ -538,7 +545,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    ch-image build -t wd2 -f ./bucache/workdir3.dr .
+    ch-image build -t wd2 -f ./bucache/workdir3.df .
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]

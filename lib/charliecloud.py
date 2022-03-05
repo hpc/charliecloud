@@ -2080,10 +2080,13 @@ def init(cli):
    else:
       arch = cli.arch
    # download cache
-   try:
-      dlcache_p = (cli.dlcache == Download_Mode.ENABLED)
-   except:
-      pass # ch-run-oci doesn't care.
+   if (cli.no_cache or cli.dlcache == Download_Mode.WRITE_ONLY):
+      dlcache = Download_Mode.WRITE_ONLY
+   else:
+      dlcache = Download_Mode.ENABLED
+   global dlcache_p
+   dlcache_p = (dlcache == Download_Mode.ENABLED)
+
    # misc
    global password_many, tls_verify
    password_many = cli.password_many

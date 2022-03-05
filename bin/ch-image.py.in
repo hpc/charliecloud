@@ -90,7 +90,6 @@ def main():
        [ ["--dlcache"],
          { "metavar": "MODE",
            "type": ch.Download_Mode,
-           "default": ch.Download_Mode.ENABLED,
            "help": "download cache mode: enabled, write-only"}],
        [ ["--dependencies"],
          { "action": misc.Dependencies,

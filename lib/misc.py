@@ -123,11 +123,8 @@ def pull(cli):
       print(ref.as_verbose_str)
       sys.exit(0)
    image = ch.Image(ref)
-   ch.INFO("pulling image:    %s" % ref)
-   ch.INFO("requesting arch:  %s" % ch.arch)
-   ch.VERBOSE("destination: %s" % image.unpack_path)
    # Pull.
-   bu.cache.pull(image, cli.last_layer)
+   bu.cache.pull_(image, cli.last_layer)
    ch.done_notify()
 
 
