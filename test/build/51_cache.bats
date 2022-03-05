@@ -504,7 +504,7 @@ EOF
 
 @test "${tag}/WORKDIR" {
     ch-image build-cache --reset
-    ch-image build -f wd1 -f ./bucache/workdir.df .
+    ch-image build -t wd1 -f ./bucache/workdir.df .
 
     # Same name. Miss. Last instruction is a cached hit WORKDIR.
     blessed_out=$(cat << 'EOF'
@@ -518,7 +518,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    ch-image build -f wd1 -f ./bucache/workdir2.df .
+    ch-image build -t wd1 -f ./bucache/workdir2.df .
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
@@ -538,7 +538,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    ch-image build -f wd2 -f ./bucache/workdir3.dr .
+    ch-image build -t wd2 -f ./bucache/workdir3.dr .
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
