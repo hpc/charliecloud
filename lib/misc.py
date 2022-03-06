@@ -96,7 +96,7 @@ def list_(cli):
       print("in local storage:    %s" % stored)
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
-      pullet = pull.Image_Puller(img, not cli.no_cache)
+      pullet = bu.pull.Image_Puller(img)
       try:
          pullet.fatman_load()
          remote = "yes"
