@@ -2080,12 +2080,17 @@ def init(cli):
    else:
       arch = cli.arch
    # download cache
-   if (cli.no_cache or cli.dlcache == Download_Mode.WRITE_ONLY):
-      dlcache = Download_Mode.WRITE_ONLY
-   else:
-      dlcache = Download_Mode.ENABLED
-   global dlcache_p
-   dlcache_p = (dlcache == Download_Mode.ENABLED)
+   #FIXME ch-run-oci doesn't have these arguments. dlcache having a default
+   # setting of enabled clashes with `--no-cache`.
+   try:
+      if (cli.no_cache or cli.dlcache == Download_Mode.WRITE_ONLY):
+         dlcache = Download_Mode.WRITE_ONLY
+      else:
+         dlcache = Download_Mode.ENABLED
+      global dlcache_p
+      dlcache_p = (dlcache == Download_Mode.ENABLED)
+   except AttributeError:
+      pass
 
    # misc
    global password_many, tls_verify
