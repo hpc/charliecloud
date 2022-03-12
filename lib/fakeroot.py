@@ -255,21 +255,23 @@ DEFAULT_CONFIGS = {
      "cmds": ["zypper", "rpm"],
      "each": ["fakeroot"] },
 
-   "arch":
-   { "name": "Arch Linux",
-     "match": ("/etc/os-release", r"ID=arch"),  # /etc/arch-release empty
-     "init": [ ("command -v fakeroot > /dev/null",
-                "pacman -Syq --noconfirm fakeroot") ],
-     "cmds": ["pacman"],
-     "each": ["fakeroot"] },
+   # no worky; see #1295
+   #"arch":
+   #{ "name": "Arch Linux",
+   #  "match": ("/etc/os-release", r"ID=arch"),  # /etc/arch-release empty
+   #  "init": [ ("command -v fakeroot > /dev/null",
+   #             "pacman -Syq --noconfirm fakeroot") ],
+   #  "cmds": ["pacman"],
+   #  "each": ["fakeroot"] },
 
-   "alpine":
-   { "name": "Alpine, any version",
-     "match": ("/etc/alpine-release", r"[0-9]\.[0-9]+\.[0-9]+"),
-     "init": [ ("command -v fakeroot > /dev/null",
-                "apk update; apk add fakeroot") ],
-     "cmds": ["apk"],
-     "each": ["fakeroot"] },
+   # no worky; see #1296
+   #"alpine":
+   #{ "name": "Alpine, any version",
+   #  "match": ("/etc/alpine-release", r"[0-9]\.[0-9]+\.[0-9]+"),
+   #  "init": [ ("command -v fakeroot > /dev/null",
+   #             "apk update; apk add fakeroot") ],
+   #  "cmds": ["apk"],
+   #  "each": ["fakeroot"] },
 }
 
 

@@ -293,7 +293,7 @@ class T_OpenSUSE_Leap_Latest(SUSE):
 
 # Arch has tons of old tags, versioned by date, on Docker Hub. However, only
 # :latest (or equivalently :base) is documented.
-# FIXME: does not currently work; still gets fchownat() errors.
+# FIXME: does not currently work; still gets fchownat() errors. See #1295
 class Arch_Latest(Test):
    config = "arch"
    base = "archlinux:latest"
@@ -303,7 +303,7 @@ class Arch_Latest(Test):
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "pacman -Syq --noconfirm ed; ! fgrep failed: /var/log/pacman.log",
                              Run.NEEDED:      "pacman -Syq --noconfirm openssh; ! fgrep failed: /var/log/pacman.log" } }
 
-# FIXME: does not currently work; still gets "failed to set ownership"
+# FIXME: no worky; still gets "failed to set ownership". See #1296
 class Alpine(Test):
    config = "alpine"
    # openssh does not need --force on Alpine
