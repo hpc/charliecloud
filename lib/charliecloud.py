@@ -582,16 +582,21 @@ class Image:
       INFO("validating tarball members")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          dev_ct = 0
+         link_fix_ct = 0
+         for m in list(members):   # copy b/c we remove items from the set
+            if (len(m.name) == 0):
+               WARNING("layer %d/%d: %s: skipping member with empty path"
+                       % (i, len(layers), lh[:7]))
+               members.remove(m)
          TarFile.fix_member_paths(members, fp.name)
-         members2 = list(members)  # copy b/c we'll alter during iteration
-         for m in members2:
+         for m in list(members):  # ditto
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
                members.remove(m)
                continue
             elif (m.issym() or m.islnk()):
-               TarFile.fix_link_target(m, fp.name)
+               link_fix_ct += TarFile.fix_link_target(m, fp.name)
             elif (m.isdir()):
                # Directory: Fix bad permissions (hello, Red Hat).
                m.mode |= 0o700
@@ -602,8 +607,12 @@ class Image:
                FATAL("unknown member type: %s" % m.name)
             TarFile.fix_member_uidgid(m)
          if (dev_ct > 0):
-            INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
-                 % (i, len(layers), lh[:7], dev_ct))
+            WARNING("layer %d/%d: %s: ignored %d devices and/or FIFOs"
+                    % (i, len(layers), lh[:7], dev_ct))
+         if (link_fix_ct > 0):
+            WARNING(("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
+                     % (i, len(layers), lh[:7], link_fix_ct)),
+                    "specify -v for details")
 
    def whiteout_rm_prefix(self, layers, max_i, prefix):
       """Ignore members of all layers from 1 to max_i inclusive that have path
@@ -1619,20 +1628,34 @@ class TarFile(tarfile.TarFile):
          fixed, fix it; if not, abort the program."""
       src = Path(ti.name)
       tgt = Path(ti.linkname)
-      # empty target not allowed; have to check string b/c "" -> Path(".")
+      fix_ct = 0
+      # Empty target not allowed; have to check string b/c "" -> Path(".").
       if (len(ti.linkname) == 0):
          FATAL("rejecting link with empty target: %s: %s" % (tb, ti.name))
-      # convert absolute to relative (so it works inside or outside container)
+      # Fix absolute link targets.
       if (tgt.is_absolute()):
-         new = Path(*(("..",) * (len(src.parts) - 1))) // Path(*(tgt.parts[1:]))
-         WARNING("absolute link: %s -> %s: changing target to: %s"
-                 % (src, tgt, new))
+         if (ti.issym()):
+            # Change symlinks to relative for correct interpretation inside or
+            # outside the container.
+            kind = "symlink"
+            new = (  Path(*(("..",) * (len(src.parts) - 1)))
+                   // Path(*(tgt.parts[1:])))
+         elif (ti.islnk()):
+            # Hard links refer to tar member paths; just strip leading slash.
+            kind = "hard link"
+            new = tgt.relative_to("/")
+         else:
+            assert False, "not a link"
+         VERBOSE("absolute %s: %s -> %s: changing target to: %s"
+                 % (kind, src, tgt, new))
          tgt = new
-      # reject links that climb out of image (FIXME: repair instead)
+         fix_ct = 1
+      # Reject links that climb out of image (FIXME: repair instead).
       if (".." in os.path.normpath(src // tgt).split("/")):
          FATAL("rejecting too many up-levels: %s: %s -> %s" % (tb, src, tgt))
-      # done
+      # Done.
       ti.linkname = str(tgt)
+      return fix_ct
 
    @staticmethod
    def fix_member_paths(tis, tar_path):
@@ -1640,14 +1663,11 @@ class TarFile(tarfile.TarFile):
          of TarInfo objects tis, modifying in-place. The resulting paths
          comprise a tarbomb, and no paths start with dot, except possibly the
          useless member "."."""
-      # Zero-length path check at string level.
-      for ti in tis:
-         if (len(ti.name) == 0):
-            FATAL("rejecting zero-length member path: %s" % (tar_path))
       # Convert paths to Path objects for easier processing. Note: In my
       # testing, parsing a string into a Path object took about 2.5µs, so this
       # should be plenty fast.
       for ti in tis:
+         assert (len(ti.name) > 0)
          ti.name = Path(ti.name)
       # Member-specific path fixes.
       abs_warned = False
@@ -1669,8 +1689,6 @@ class TarFile(tarfile.TarFile):
       # Convert back to strings to avoid confusing other code.
       for ti in tis:
          ti.name = str(ti.name)
-      # Done.
-      return tis
 
    @staticmethod
    def fix_member_uidgid(ti):
