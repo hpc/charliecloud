@@ -28,7 +28,6 @@ run/ch-run_isolation.bats \
 run/ch-run_join.bats \
 run/ch-run_misc.bats \
 run/ch-run_uidgid.bats \
-run/ch-tar2dir.bats \
 run_first.bats \
 sotest/files_inferrable.txt \
 sotest/libsotest.c \
@@ -78,6 +77,7 @@ install-data-hook:
 uninstall-hook:
 	rm -f $(DESTDIR)$(testdir)/fixtures/symlink-to-tmp
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
+	rmdir $$(find $(pkglibexecdir) -type d | sort -r)
 endif
 EXTRA_DIST = $(testfiles) $(testfiles_exec) \
              docs-sane.py.in force-auto.py.in make-perms-test.py.in

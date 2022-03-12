@@ -306,8 +306,7 @@ EOF
 
     # nVidia NGC: https://ngc.nvidia.com
     # FIXME: 96 MiB unpacked; also kind of slow
-    # FIXME: Can't pull this image with LC_ALL=C (issue #970).
-    LC_ALL=en_US.utf-8 \
+    # Note: Can't pull this image with LC_ALL=C under Python 3.6 (issue #970).
     ch-image pull nvcr.io/hpc/foldingathome/fah-gpu:7.6.21
 
     # Red Hat registry: https://catalog.redhat.com/software/containers/explore
@@ -371,7 +370,7 @@ ch_foo=foo-ev
 EOF
 
     # /ch/metadata.json contents
-    diff -u - "${img}/ch/metadata.json" <<'EOF'
+    diff -u -I '^.*"created":.*,$' - "${img}/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
   "cwd": "/mnt",
@@ -380,6 +379,106 @@ EOF
     "ch_bar": "bar-ev",
     "ch_foo": "foo-ev"
   },
+  "history": [
+    {
+      "created": "2020-04-24T01:05:35.458457398Z",
+      "created_by": "/bin/sh -c #(nop) ADD file:a0afd0b0db7f9ee9496186ead087ec00edd1386ea8c018557d15720053f7308e in / "
+    },
+    {
+      "created": "2020-04-24T01:05:35.807646609Z",
+      "created_by": "/bin/sh -c #(nop)  CMD [\"/bin/sh\"]",
+      "empty_layer": true
+    },
+    {
+      "created": "2020-12-10T18:26:16.62246537Z",
+      "created_by": "/bin/sh -c #(nop)  CMD [\"true\"]",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-08T00:57:33.450706788Z",
+      "created_by": "/bin/sh -c #(nop)  CMD [\"bar\" \"baz\"]",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-08T00:57:33.675120552Z",
+      "created_by": "/bin/sh -c #(nop)  ENTRYPOINT [\"/bin/echo\" \"foo\"]",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-16T00:12:10.147564398Z",
+      "created_by": "/bin/sh -c #(nop)  ENV ch_foo=foo-ev ch_bar=bar-ev",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-16T00:12:10.340268945Z",
+      "created_by": "/bin/sh -c #(nop)  EXPOSE 5309/udp 867",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-16T00:12:10.590808975Z",
+      "created_by": "/bin/sh -c #(nop)  HEALTHCHECK &{[\"CMD\" \"/bin/true\"] \"1m0s\" \"5s\" \"0s\" '\\x00'}",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-16T00:12:10.749205247Z",
+      "created_by": "/bin/sh -c #(nop)  LABEL ch_foo=foo-label ch_bar=bar-label",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:10.919558634Z",
+      "created_by": "/bin/sh -c #(nop)  MAINTAINER charlie@example.com",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:11.080200702Z",
+      "created_by": "/bin/sh -c #(nop)  ONBUILD RUN echo hello",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:11.900757214Z",
+      "created_by": "/bin/sh -c echo hello",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:12.868439691Z",
+      "created_by": "/bin/echo world",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:13.055783024Z",
+      "created_by": "/bin/ash -c #(nop)  SHELL [/bin/ash -c]",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:13.473299627Z",
+      "created_by": "/bin/ash -c #(nop)  STOPSIGNAL SIGWINCH",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:13.644005108Z",
+      "created_by": "/bin/ash -c #(nop)  USER charlie:chargrp",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:13.83546594Z",
+      "created_by": "/bin/ash -c #(nop) WORKDIR /mnt",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:14.042791834Z",
+      "created_by": "/bin/ash -c #(nop)  VOLUME [/mnt/foo /mnt/bar /mnt/foo]",
+      "empty_layer": true
+    }
+  ],
   "labels": {
     "ch_bar": "bar-label",
     "ch_foo": "foo-label"

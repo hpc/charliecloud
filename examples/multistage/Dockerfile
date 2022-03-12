@@ -6,7 +6,7 @@
 # ch-test-scope: standard
 
 
-FROM centos:8 AS buildstage
+FROM quay.io/centos/centos:stream8 AS buildstage
 
 # Build environment
 RUN dnf install -y \
@@ -25,7 +25,7 @@ RUN tar xf hello-2.10.tar.gz \
 RUN ls -ld /hello/usr/local/*/*
 
 
-FROM centos:8
+FROM quay.io/centos/centos:stream8
 
 RUN dnf install -y man
 

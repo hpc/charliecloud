@@ -19,9 +19,6 @@ Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{n
 BuildRequires: gcc rsync bash
 Requires:      squashfuse squashfs-tools
 Patch1:        el7-pkgdir.patch
-# Suggests:    name-builder docker buildah
-Obsoletes:     %{name}-runtime
-Obsoletes:     %{name}-common
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -39,11 +36,12 @@ Summary:       Charliecloud container image building tools
 License:       ASL 2.0 and MIT
 BuildArch:     noarch
 BuildRequires: python3-devel
+BuildRequires: python%{python3_pkgversion}-lark-parser
 BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
+Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
-Obsoletes:     %{name}-builders
 Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 0.11.3
 
 %description builder

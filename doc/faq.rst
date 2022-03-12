@@ -353,32 +353,6 @@ We think that this is because Docker is computing size based on the size of
 the layers rather than the unpacked image. We do not currently have a fix; see
 `issue #165 <https://github.com/hpc/charliecloud/issues/165>`_.
 
-My second-level directory :code:`dev` is empty
-----------------------------------------------
-
-Some image tarballs, such as official Ubuntu Docker images, put device files
-in :code:`/dev`. These files prevent unpacking the tarball, because
-unprivileged users cannot create device files. Further, these files are not
-needed because :code:`ch-run` overmounts :code:`/dev` anyway.
-
-We cannot reliably prevent device files from being included in the tar,
-because often that is outside our control, e.g. :code:`docker export` produces
-a tarball. Thus, we must exclude them at unpacking time.
-
-An additional complication is that :code:`ch-convert` can read tarballs both
-with a single top-level directory and without, i.e. “tarbombs”. For example,
-best practice use of :code:`tar` on the command line produces the former,
-while :code:`docker export` (invoked by :code:`ch-convert` when converting
-from Docker) produces a tarbomb.
-
-Thus, :code:`ch-convert` uses :code:`tar --exclude` to exclude from unpacking
-everything under :code:`./dev` and :code:`*/dev`, i.e., directory :code:`dev`
-appearing at either the first or second level are forced to be empty.
-
-This yields false positives if you have a tarbomb image with a directory
-:code:`dev` at the second level containing stuff you care about. Hopefully
-this is rare, but please let us know if it is your use case.
-
 My password that contains digits doesn't work in VirtualBox console
 -------------------------------------------------------------------
 
@@ -388,6 +362,26 @@ password fields give no feedback, not even whether a character has been typed.
 
 Try using the number row instead, toggling Num Lock key, or SSHing into the
 virtual machine.
+
+Mode bits (permission bits) are lost
+------------------------------------
+
+Charliecloud preserves only some mode bits, specifically user, group, and
+world permissions, and the `restricted deletion flag
+<https://man7.org/linux/man-pages/man1/chmod.1.html#RESTRICTED_DELETION_FLAG_OR_STICKY_BIT>`_
+on directories; i.e. 777 on files and 1777 on directories.
+
+The setuid (4000) and setgid (2000) bits are not preserved because ownership
+of files within Charliecloud images is that of the user who unpacks the image.
+Leaving these bits set could therefore surprise that user by unexpectedly
+creating files and directories setuid/gid to them.
+
+The sticky bit (1000) is not preserved for files because :code:`unsquashfs(1)`
+unsets it even with umask 000. However, this is bit is largely obsolete for
+files.
+
+Note the non-preserved bits may *sometimes* be retained, but this is undefined
+behavior. The specified behavior is that they may be zeroed at any time.
 
 
 How do I ...
@@ -959,5 +953,72 @@ One fix is to configure your :code:`.bashrc` or equivalent to:
      }
 
 
-..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello
-..  LocalWords:  VirtualSize
+How can I build images for a foreign architecture?
+--------------------------------------------------
+
+QEMU
+~~~~
+
+Suppose you want to build Charliecloud containers on a system which has a
+different architecture from the target system.
+
+It's straightforward as long as you can install suitable packages on the build
+system (your personal computer?). You just need the magic of QEMU via a
+distribution package with a name like Debian's :code:`qemu-user-static`. For
+use in an image root this needs to be the :code:`-static` version, not plain
+:code:`qemu-user`, and contain a :code:`qemu-*-static` executable for your
+target architecture. In case it doesn't install “binfmt” hooks (telling Linux
+how to run foreign binaries), you'll need to make that work — perhaps it's in
+another package.
+
+That's all you need to make building with :code:`ch-image` work with a base
+foreign architecture image and the :code:`--arch` option. It's significantly
+slower than native, but quite usable — about half the speed of native for the
+ppc64le target with a build taking minutes on a laptop with a magnetic disc.
+There's a catch that images in :code:`ch-image` storage aren't distinguished
+by architecture except by any name you give them, e.g., a base image like
+:code:`debian:11` pulled with :code:`--arch ppc64le` will overwrite a native
+x86 one.
+
+For example, to build a ppc64le image on a Debian Buster amd64 host::
+
+  $ uname -m
+  x86_64
+  $ sudo apt install qemu-user-static
+  $ ch-image pull --arch ppc64le alpine:3.15
+  $ printf 'FROM alpine:3.15\nRUN apk add coreutils\n' | ch-image build -t foo -
+  $ ch-convert alpine:3.15 /var/tmp/foo
+  $ ch-run /var/tmp/foo -- uname -m
+  ppc64le
+
+PRoot
+~~~~~
+
+Another way to build a foreign image, which works even without :code:`sudo` to
+install :code:`qemu-*-static`, is to populate a chroot for it with the `PRoot
+<https://proot-me.github.io/>`_ tool, whose :code:`-q` option allows
+specifying a :code:`qemu-*-static` binary (perhaps obtained by unpacking a
+distribution package).
+
+
+How can I use tarball base images from e.g. linuxcontainers.org?
+----------------------------------------------------------------
+
+If you can't find an image repository from which to pull for the distribution
+and architecture of interest, it is worth looking at the extensive collection
+of rootfs archives `maintained by linuxcontainers.org
+<https://uk.lxd.images.canonical.com/images/>`_. They are meant for LXC, but
+are fine as a basis for Charliecloud.
+
+For example, this would leave a :code:`ppc64le/alpine:3.15` image du jour in
+the registry for use in a Dockerfile :code:`FROM` line. Note that
+linuxcontainers.org uses the opposite order for “le” in the architecture name.
+
+::
+
+  $ wget https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
+  $ ch-image import rootfs.tar.xz ppc64le/alpine:3.15
+
+
+..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
+..  LocalWords:  VirtualSize linuxcontainers jour uk lxd

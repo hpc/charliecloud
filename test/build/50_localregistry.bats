@@ -69,6 +69,14 @@ setup () {
     [[ $(stat -c '%A' "$img"/setuid_dir) =  drwsr-x--- ]]
     [[ $(stat -c '%A' "$img"/setgid_dir) =  drwxr-s--- ]]
 
+    # Create fake history.
+    mkdir -p "$img"/ch
+    cat <<'EOF' >> "$img"/ch/metadata.json
+{
+   "history": [ {"created_by": "ch-test" } ]
+}
+EOF
+
     # Push the image
     run ch-image -v --tls-no-verify push --image "$img" \
                                          localhost:5000/foo/bar:weirdal

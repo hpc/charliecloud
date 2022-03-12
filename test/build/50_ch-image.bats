@@ -394,7 +394,7 @@ ch_foo=foo-ev
 EOF
 
     # /ch/metadata.json contents
-    diff -u - "${img}/ch/metadata.json" <<'EOF'
+    diff -u -I '^.*"created":.*,$' - "${img}/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
   "cwd": "/usr",
@@ -404,6 +404,146 @@ EOF
     "ch_baz": "baz-ev",
     "ch_foo": "foo-ev"
   },
+  "history": [
+    {
+      "created": "2020-04-24T01:05:35.458457398Z",
+      "created_by": "/bin/sh -c #(nop) ADD file:a0afd0b0db7f9ee9496186ead087ec00edd1386ea8c018557d15720053f7308e in / "
+    },
+    {
+      "created": "2020-04-24T01:05:35.807646609Z",
+      "created_by": "/bin/sh -c #(nop)  CMD [\"/bin/sh\"]",
+      "empty_layer": true
+    },
+    {
+      "created": "2020-12-10T18:26:16.62246537Z",
+      "created_by": "/bin/sh -c #(nop)  CMD [\"true\"]",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-08T00:57:33.450706788Z",
+      "created_by": "/bin/sh -c #(nop)  CMD [\"bar\" \"baz\"]",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-08T00:57:33.675120552Z",
+      "created_by": "/bin/sh -c #(nop)  ENTRYPOINT [\"/bin/echo\" \"foo\"]",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-16T00:12:10.147564398Z",
+      "created_by": "/bin/sh -c #(nop)  ENV ch_foo=foo-ev ch_bar=bar-ev",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-16T00:12:10.340268945Z",
+      "created_by": "/bin/sh -c #(nop)  EXPOSE 5309/udp 867",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-16T00:12:10.590808975Z",
+      "created_by": "/bin/sh -c #(nop)  HEALTHCHECK &{[\"CMD\" \"/bin/true\"] \"1m0s\" \"5s\" \"0s\" '\\x00'}",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-01-16T00:12:10.749205247Z",
+      "created_by": "/bin/sh -c #(nop)  LABEL ch_foo=foo-label ch_bar=bar-label",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:10.919558634Z",
+      "created_by": "/bin/sh -c #(nop)  MAINTAINER charlie@example.com",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:11.080200702Z",
+      "created_by": "/bin/sh -c #(nop)  ONBUILD RUN echo hello",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:11.900757214Z",
+      "created_by": "/bin/sh -c echo hello",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:12.868439691Z",
+      "created_by": "/bin/echo world",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:13.055783024Z",
+      "created_by": "/bin/ash -c #(nop)  SHELL [/bin/ash -c]",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:13.473299627Z",
+      "created_by": "/bin/ash -c #(nop)  STOPSIGNAL SIGWINCH",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:13.644005108Z",
+      "created_by": "/bin/ash -c #(nop)  USER charlie:chargrp",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:13.83546594Z",
+      "created_by": "/bin/ash -c #(nop) WORKDIR /mnt",
+      "empty_layer": true
+    },
+    {
+      "author": "charlie@example.com",
+      "created": "2021-01-16T00:12:14.042791834Z",
+      "created_by": "/bin/ash -c #(nop)  VOLUME [/mnt/foo /mnt/bar /mnt/foo]",
+      "empty_layer": true
+    },
+    {
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "FROM charliecloud/metadata:2021-01-15"
+    },
+    {
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd1: $PWD\"']"
+    },
+    {
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "WORKDIR /usr"
+    },
+    {
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd2: $PWD\"']"
+    },
+    {
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env1: /' | sort\"]"
+    },
+    {
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "ENV ch_baz='baz-ev'"
+    },
+    {
+      "created": "2021-11-30T20:40:24Z",
+      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env2: /' | sort\"]"
+    },
+    {
+      "created": "2021-11-30T20:40:25Z",
+      "created_by": "RUN ['/bin/ash', '-c', 'echo \"shell1: $0\"']"
+    },
+    {
+      "created": "2021-11-30T20:40:25Z",
+      "created_by": "SHELL ['/bin/sh', '-v', '-c']"
+    },
+    {
+      "created": "2021-11-30T20:40:25Z",
+      "created_by": "RUN ['/bin/sh', '-v', '-c', 'echo \"shell2: $0\"']"
+    }
+  ],
   "labels": {
     "ch_bar": "bar-label",
     "ch_foo": "foo-label"

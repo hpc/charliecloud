@@ -54,6 +54,7 @@ cv_chimage_tar () {
     tar_out_validate "$2"
     img=$(chimage_path "$1")
     INFO 'exporting ...'
+    # have to make tarbomb because Docker requires tarbombs
     ( cd "$img" && tar czf - . ) | pv_ > "$2"
 }
 
@@ -100,6 +101,7 @@ cv_dir_tar () {
     # Don't add essential files & directories because that will happen later
     # when converted to dir or squash.
     INFO 'packing ...'
+    # have to make tarbomb because Docker requires tarbombs
     ( cd "$1" && tar czf - . ) | pv_ > "$2"
 }
 
@@ -162,10 +164,19 @@ cv_squash_chimage () {
 cv_squash_dir () {
     squash_in_validate "$1"
     dir_out_validate "$2"
-    # Note: unsquashfs(1) has no exclude filter, only include, so if the
-    # archive includes bad files like devices, this will fail. I don't know to
-    # what degree this will be a problem.
+    # Notes about unsquashfs(1):
+    #
+    # 1. It has no exclude filter, only include, so if the archive includes
+    #    bad files like devices, this will fail. I don't know to what degree
+    #    this will be a problem.
+    #
+    # 2. It has no option analagous to tar(1)'s -p, so we have to rely on the
+    #    umask to get correct permissions. (Weirdly, it seems to respect umask
+    #    for files but not directories.)
+    umask_=$(umask)
+    umask 0000
     unsquashfs -d "$2" -user-xattrs "$1"
+    umask "$umask_"
     dir_fixup "$2"
 }
 
@@ -218,17 +229,45 @@ cv_tar_dir () {
             ;;
     esac
     dir_out_validate "$2"
+    INFO 'checking if tarbomb ...'
+    root=$(tar_root "$1")
     INFO 'unpacking ...'
     mkdir "$2"
-    # Use a pipe because PV ignores arguments if it's cat rather than PV.
+    # Unpack the tarball. There's a lot going on here.
     #
-    # See FAQ on /dev exclusion. --no-wildcards-match-slash needed to prevent
-    # * matching multiple directories; tar default differs from sh behavior.
+    #   1. Use a pipe b/c PV ignores arguments if it's cat rather than PV.
+    #
+    #   2. Use --strip-components to turn non-tarbombs into tarbombs so we can
+    #      just provide our own root directory and not need to clean up later.
+    #
+    #   3. Use --xform to strip leading "./" so --strip-components gets the
+    #      right number. (Leading "/" is always stripped and does not count as
+    #      a component.) The trailing "x" gets extended regular expressions,
+    #      like "sed -E".
+    #
+    #   4. Use --exclude to ignore the contents of "/dev", because
+    #      unprivileged users can't make device files and we overmount that
+    #      directory anyway. The order appears to be: --exclude, --xform,
+    #      --strip-components, so we have to specify it thrice to account for
+    #      for leading "/" and "./".
+    if [ -z "$root" ]; then
+        strip_ct=0  # tarbomb
+        ex1='dev/*'
+    else
+        strip_ct=1  # not tarbomb
+        # Escape tar glob wildcards; printf avoids echo's trailing newline.
+        root_escaped=$(printf "%s" "$root" | sed -E 's|([[*?])|\\\1|g')
+        ex1="${root_escaped}/dev/*"
+    fi
+    ex2="/${ex1}"
+    ex3="./${ex1}"
+    VERBOSE "exclude patterns: ${ex1} ${ex2} ${ex3}"
     #shellcheck disable=SC2094
       pv_ -s "$(stat -c%s "$1")" < "$1" \
-    | tar x$decompress -C "$2" -f - \
+    | tar x$decompress -p -C "$2" -f - \
+          --xform 's|^\./||x' --strip-components=$strip_ct \
           --anchored --no-wildcards-match-slash \
-          --exclude='dev/*' --exclude='*/dev/*'
+          --exclude="$ex1" --exclude="$ex2" --exclude="$ex3"
     dir_fixup "$2"
 }
 
@@ -366,17 +405,6 @@ dir_fixup () {
     DEBUG "fixing up: $1"
     # Make all directories writeable so we can delete later (hello, Red Hat).
     find "$1" -type d -a ! -perm /200 -exec chmod u+w {} +
-    # If tarball had a single containing directory, move the contents up a
-    # level and remove the containing directory. It is non-trivial in POSIX sh
-    # to deal with hidden files; see https://unix.stackexchange.com/a/6397.
-    files=$(ls -Aq "$1")
-    if [ "$(echo "$files" | wc -l)" -eq 1 ]; then
-        ( cd "${1}/${files}" || FATAL "cd failed: ${1}/${files}"
-          for f in * .[!.]* ..?*; do
-              if [ -e "$f" ]; then mv -- "$f" ..; fi
-          done )
-        rmdir "${1}/${files}"
-    fi
     # Ensure mount points are present.
     mount_points_ensure "$1"
 }
@@ -480,6 +508,51 @@ parent_validate () {
 path_noclobber () {
     if [ -e "$1" ] && [ -n "$no_clobber" ]; then
         FATAL "exists, not deleting per --no-clobber: ${1}"
+    fi
+}
+
+# Print the name of the root directory of tarball $1 on stdout, if there is
+# one. If not, i.e. $1 is a tarbomb, return the empty string.
+#
+# We don't use pv(1) for this and therefore let tar infer the compression.
+#
+# This is rather messy because:
+#
+#   1. Archive members can start with "/" (slash) or "./" (dot, slash), both
+#      of which are ignored on unpacking. For example, the root directory as
+#      listed in the tarball might be "foo", "/foo", or "./foo"; in all three
+#      cases this function prints "foo".
+#
+#   2. Tarballs have no index, so listing all the members requires reading the
+#      entire archive (and unpacking it would be a second full read).
+#      Therefore, we list only the first N members, and if there's no siblings
+#      at the root level by then, we assume there are none later either.
+#      Stripping this erroneous “root” directory at unpack time will yield a
+#      broken image but won't make a mess because Charliecloud provides a new
+#      root directory.
+#
+#   3. GNU tar lists members newline-separated. This still works for member
+#      names containing newline, because it's escaped as "\n". Some other
+#      characters are escaped too, e.g. tab is "\t". I am assuming this case
+#      is unlikely for container image tarballs, so this function has not been
+#      tested with such members.
+#
+# See also: https://unix.stackexchange.com/a/242712
+tar_root () {
+    # The three commands in this sed script are: (1) remove leading "/" or
+    # "./" if present; (2) delete from the first slash to the end of the line
+    # inclusive, i.e. everything except the first component; (3) delete blank
+    # lines, because the first component often appears alone. We use sed
+    # because --xform does not apply to listing.
+    sed_='s|^\.?/||;s|/.*$||;/^$/d'
+    # Get the first path component of the first file in the tarball.
+    root1=$(tar tf "$1" | head -n 2 | sed -E "$sed_" | head -n 1)
+    # List first N members; keep only first real path component of each;
+    # search for any such component that doesn't match the first member's.
+    if tar tf "$1" | head -n 1024 | sed -E "$sed_" | grep -Fxvq "$root1"; then
+        echo ''
+    else
+        echo "$root1"
     fi
 }
 

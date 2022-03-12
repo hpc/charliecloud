@@ -231,8 +231,10 @@ class RHEL8(Test):
                                  " --setopt=install_weak_deps=false ed",
                 Run.NEEDED:      "dnf install -y"
                                  " --setopt=install_weak_deps=false openssh" } }
+
 class T_RHEL_UBI_8(RHEL8):
    base = "registry.access.redhat.com/ubi8/ubi"
+
 class CentOS_8(RHEL8, EPEL_Mixin):
    prep_run = "dnf install -y epel-release"
 class T_CentOS_8_Stream(CentOS_8):
@@ -241,6 +243,7 @@ class T_CentOS_8_Stream(CentOS_8):
    base = "quay.io/centos/centos:stream8"
 #class T_CentOS_9_Stream(CentOS_8):   # FIXME: fails importing GPG key
 #   base = "quay.io/centos/centos:stream9"
+
 class T_Alma_8(CentOS_8):
    base = "almalinux:8"  # :latest same as :8 as of 2022-03-01
 class T_Rocky_8(CentOS_8):

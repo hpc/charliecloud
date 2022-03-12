@@ -252,7 +252,7 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
    if (path == NULL) {
       T_ (where = strdup(line));
    } else {
-      T_ (1 <= asprintf(&where, "%s:%lu", path, lineno));
+      T_ (1 <= asprintf(&where, "%s:%zu", path, lineno));
    }
 
    // Split line into variable name and value.

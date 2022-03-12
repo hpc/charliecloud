@@ -12,7 +12,7 @@ archive_grep () {
             unsquashfs -l "$image" | grep 'squashfs-root/ch/environment'
             ;;
         *)
-            tar -tf "$image" | grep -E '^(\./)?ch/environment$'
+            tar -tf "$image" | grep -E '^([^/]*/)?ch/environment$'
             ;;
     esac
 }
@@ -57,6 +57,23 @@ builder_tag_p () {
     esac
     echo 'not found'
     return 1
+}
+
+chtest_fixtures_ok () {
+    echo "checking chtest fixtures in: ${1}"
+    # Did we raise hidden files correctly?
+    [[ -e ${1}/.hiddenfile1 ]]
+    [[ -e ${1}/..hiddenfile2 ]]
+    [[ -e ${1}/...hiddenfile3 ]]
+    # Did we remove the right /dev stuff?
+    [[ -e ${1}/mnt/dev/dontdeleteme ]]
+    ls -Aq "${1}/dev"
+    [[ $(ls -Aq "${1}/dev") = '' ]]
+    ch-run "$1" -- test -e /mnt/dev/dontdeleteme
+    # Are permissions still good?
+    ls -ld "$1"/maxperms_*
+    [[ $(stat -c %a "${1}/maxperms_dir") = 1777 ]]
+    [[ $(stat -c %a "${1}/maxperms_file") = 777 ]]
 }
 
 crayify_mpi_or_skip () {
@@ -116,6 +133,34 @@ pedantic_fail () {
     fi
 }
 
+# If the two images (graphics, not container) are not "almost equal", fail.
+# The first argument is the reference image; the second is the test image. The
+# third argument, if given, is the maximum number of differing pixels (default
+# zero). Also produce a diff image, which highlights the differing pixels in
+# red, based on the sample, e.g. foo.png -> foo.diff.png.
+pict_assert_equal () {
+    ref=$1
+    sample=$2
+    pixel_max_ct=${3:-0}
+    sample_base=${sample%.*}
+    sample_ext=${sample##*.}
+    diff_=${sample_base}.diff.${sample_ext}
+    echo "reference:   ${ref}"
+    echo "sample:      ${sample}"
+    echo "diff image:  ${diff_}"
+    # See: https://imagemagick.org/script/command-line-options.php#metric
+    pixel_ct=$(compare -metric AE "$ref" "$sample" "$diff_" 2>&1 || true)
+    echo "diff count:  ${pixel_ct} pixels, max ${pixel_max_ct}"
+    [[ $pixel_ct -le $pixel_max_ct ]]
+}
+
+# Check if the pict_ functions are usable; if not, pedantic-fail.
+pict_ok () {
+    if ! command -v compare > /dev/null 2>&1; then
+        pedantic_fail 'need ImageMagick'
+    fi
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
@@ -165,14 +210,26 @@ scope () {
 
 unpack_img_all_nodes () {
     if [[ $1 ]]; then
-        $ch_mpirun_node ch-tar2dir "${ch_tardir}/${ch_tag}.tar.gz" "$ch_imgdir"
+        case $CH_TEST_PACK_FMT in
+            squash-mount)
+                # Lots of things expect no extension here, so go with that even
+                # though it's a file, not a directory.
+                $ch_mpirun_node ln -s "${ch_tardir}/${ch_tag}.sqfs" "${ch_imgdir}/${ch_tag}"
+                ;;
+            squash-unpack)
+                $ch_mpirun_node ch-convert -o dir "${ch_tardir}/${ch_tag}.sqfs" "${ch_imgdir}/${ch_tag}"
+                ;;
+            tar-unpack)
+                $ch_mpirun_node ch-convert -o dir "${ch_tardir}/${ch_tag}.tar.gz" "${ch_imgdir}/${ch_tag}"
+                ;;
+            *)
+                false  # unknown format
+                ;;
+        esac
     else
         skip 'not needed'
     fi
 }
-
-# Predictable sorting and collation
-export LC_ALL=C
 
 # Do we have what we need?
 env_require CH_TEST_TARDIR

@@ -41,7 +41,7 @@ load ../common
 # that runs for two minutes.
 
 
-# This is a little goofy, because several of the texts need *all* the
+# This is a little goofy, because several of the tests need *all* the
 # builders. Thus, we (a) run only for builder ch-image but (b)
 # pedantic-require Docker to also be installed.
 setup () {
@@ -63,6 +63,7 @@ setup () {
 # round-trip through the various formats; the surprising directories (e.g.
 # /dev) are because modification times seem to change.
 compare () {
+    echo "COMPARING ${1} to ${2}"
     out=$(  rsync -nv -aAX --delete "${1}/" "$2" \
           | sed -E -e '/^$/d' \
                    -e '/^sending incremental file list/d' \
@@ -70,9 +71,6 @@ compare () {
                    -e '/^total size is/d' \
                    -e '\|^deleting ch/|d' \
                    -e '\|^deleting .dockerenv$|d' \
-                   -e '\|^deleting dev/console$|d' \
-                   -e '\|^deleting dev/pts/$|d' \
-                   -e '\|^deleting dev/shm/$|d' \
                    -e '\|^./$|d' \
                    -e '\|^WEIRD_AL_YANKOVIC$|d' \
                    -e '\|^dev/$|d' \
@@ -86,7 +84,7 @@ compare () {
 }
 
 # Kludge to cook up the right input and output descriptors for ch-convert.
-convert () {
+convert-img () {
     ct=$1
     in_fmt=$2
     out_fmt=$3;
@@ -172,16 +170,17 @@ delete () {
 test_from () {
     end=${BATS_TMPDIR}/convert.dir
     ct=1
-    convert "$ct" dir "$1"
+    convert-img "$ct" dir "$1"
     for j in ch-image docker squash tar; do
         if [[ $1 != "$j" ]]; then
             ct=$((ct+1))
-            convert "$ct" "$1" "$j"
+            convert-img "$ct" "$1" "$j"
         fi
         ct=$((ct+1))
-        convert "$ct" "$1" dir
+        convert-img "$ct" "$j" dir
         image_ok "$end"
         compare "$ch_timg" "$end"
+        chtest_fixtures_ok "$end"
     done
 }
 
@@ -296,7 +295,7 @@ test_from () {
 
 
 @test 'ch-convert: pathological tarballs' {
-    [[ $CH_PACK_FMT = tar ]] || skip 'tar mode only'
+    [[ $CH_PACK_FMT = tar-unpack ]] || skip 'tar mode only'
     out=${BATS_TMPDIR}/convert.dir
     # Are /dev fixtures present in tarball? (issue #157)
     present=$(tar tf "$ch_ttar" | grep -F deleteme)
@@ -308,14 +307,37 @@ test_from () {
     # Convert to dir.
     ch-convert "$ch_ttar" "$out"
     image_ok "$out"
-    # Did we raise hidden files correctly?
-    [[ -e ${out}/.hiddenfile1 ]]
-    [[ -e ${out}/..hiddenfile2 ]]
-    [[ -e ${out}/...hiddenfile3 ]]
-    # Did we remove the right /dev stuff?
-    [[ -e ${out}/mnt/dev/dontdeleteme ]]
-    [[ $(ls -Aq "${out}/dev") -eq 0 ]]
-    ch-run "$out" -- test -e /mnt/dev/dontdeleteme
+    chtest_fixtures_ok "$out"
+}
+
+
+# The next three tests are for issue #1241.
+@test 'ch-convert: permissions retained (dir)' {
+    out=${BATS_TMPDIR}/convert.dir
+    ch-convert 00_tiny "$out"
+    ls -ld "$out"/maxperms_*
+    [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
+    [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
+}
+
+@test 'ch-convert: permissions retained (squash)' {
+    squishy=${BATS_TMPDIR}/convert.sqfs
+    out=${BATS_TMPDIR}/convert.dir
+    ch-convert 00_tiny "$squishy"
+    ch-convert "$squishy" "$out"
+    ls -ld "$out"/maxperms_*
+    [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
+    [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
+}
+
+@test 'ch-convert: permissions retained (tar)' {
+    tarball=${BATS_TMPDIR}/convert.tar.gz
+    out=${BATS_TMPDIR}/convert.dir
+    ch-convert 00_tiny "$tarball"
+    ch-convert "$tarball" "$out"
+    ls -ld "$out"/maxperms_*
+    [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
+    [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
 }
 
 
