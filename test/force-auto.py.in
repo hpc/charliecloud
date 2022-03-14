@@ -259,7 +259,8 @@ class T_Fedora_26(Fedora):
    base = "fedora:26"
 class T_Fedora_34(Fedora):
    base = "fedora:34"
-class T_Fedora_Latest(Fedora):
+# No worky as of Fedora 35; see issue #1163.
+class Fedora_Latest(Fedora):
    base = "fedora:latest"
 
 

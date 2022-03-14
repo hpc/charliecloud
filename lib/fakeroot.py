@@ -143,6 +143,24 @@ DEFAULT_CONFIGS = {
    #
    #    * Ask lsb_release(1): Not always installed, requires executing ch-run.
 
+   # Fedora notes:
+   #
+   # 1. The minimum supported version was chosen somewhat arbitrarily based on
+   #    versions available for testing, i.e., what was on Docker Hub.
+   #
+   # 2. The fakeroot package is in the base repository set so enabling EPEL is
+   #    not required.
+   #
+   # 3. Must be before “rhel8” because that matches Fedora too.
+
+   "fedora":
+   { "name": "Fedora 24+",
+     "match":  ("/etc/fedora-release", r"release (?!1?[0-9] |2[0-3] )"),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "dnf install -y fakeroot") ],
+     "cmds": ["dnf", "rpm", "yum"],
+     "each": ["fakeroot"] },
+
    # RHEL (and rebuilds like CentOS, Alma, Springdale, Rocky) notes:
    #
    # 1. These seem to have only fakeroot, which is in EPEL, not the standard
@@ -159,7 +177,6 @@ DEFAULT_CONFIGS = {
    #
    # 4. "yum repolist" has a lot of side effects, e.g. locking the RPM
    #    database and asking configured repos for something or other.
-
 
    "rhel7":
    { "name": "RHEL 7 and derivatives",
@@ -226,22 +243,6 @@ DEFAULT_CONFIGS = {
                  # update b/c base image ships with no package indexes
                  "apt-get update && apt-get install -y pseudo") ],
      "cmds": ["apt", "apt-get", "dpkg"],
-     "each": ["fakeroot"] },
-
-   # Fedora notes:
-   #
-   # 1. The minimum supported version was chosen somewhat arbitrarily based on
-   #    versions available for testing, i.e., what was on Docker Hub.
-   #
-   # 2. The fakeroot package is in the base repository set so enabling EPEL is
-   #    not required.
-
-   "fedora":
-   { "name": "Fedora 24+",
-     "match":  ("/etc/fedora-release", r"release (?!1?[0-9] |2[0-3] )"),
-     "init": [ ("command -v fakeroot > /dev/null",
-                "dnf install -y fakeroot") ],
-     "cmds": ["dnf", "rpm", "yum"],
      "each": ["fakeroot"] },
 
    "suse":
