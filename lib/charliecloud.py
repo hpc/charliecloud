@@ -1522,7 +1522,10 @@ class Storage:
       else:
          op = "upgrading"
          if (not self.valid_p):
-            FATAL("storage directory seems invalid: %s" % self.root)
+            hint=None
+            if (os.path.exists(self.root) and not os.listdir(self.root)):
+               hint="%s already exists, remove it" % os.path.basename(self.root)
+            FATAL("storage directory seems invalid: %s" % self.root, hint=hint)
          if (os.path.isfile(self.version_file)):
             v_found = int(file_read_all(self.version_file))
          else:
