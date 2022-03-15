@@ -586,16 +586,49 @@ class Image:
 
    def validate_members(self, layers):
       INFO("validating tarball members")
+      top_dirs = set()
+      VERBOSE("pass 1: canonicalizing member paths")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
-         dev_ct = 0
-         link_fix_ct = 0
+         abs_ct = 0
          for m in list(members):   # copy b/c we remove items from the set
+            # Remove members with empty paths.
             if (len(m.name) == 0):
                WARNING("layer %d/%d: %s: skipping member with empty path"
                        % (i, len(layers), lh[:7]))
                members.remove(m)
-         TarFile.fix_member_paths(members, fp.name)
-         for m in list(members):  # ditto
+            # Convert member paths to Path objects for easier processing.
+            # Note: In my testing, parsing a string into a Path object took
+            # about 2.5µs, so this should be plenty fast.
+            m.name = Path(m.name)
+            # Reject members with up-levels.
+            if (".." in m.name.parts):
+               FATAL("rejecting up-level member: %s: %s" % (fp.name, m.name))
+            # Correct absolute paths.
+            if (m.name.is_absolute()):
+               m.name = m.name.relative_to("/")
+            # Record top-level directory.
+            top_dirs.add(m.name.first)
+         if (abs_ct > 0):
+            WARNING("layer %d/%d: %s: fixed %d absolute member paths"
+                    % (i, len(layers), lh[:7], abs_ct))
+      top_dirs.discard(None)  # ignore “.”
+      # Convert to tarbomb if (1) there is a single enclosing directory and
+      # (2) that directory is not one of the standard directories, e.g. to
+      # allow images containing just “/bin/fooprog”.
+      if (len(top_dirs) > 1 or not top_dirs.isdisjoint(STANDARD_DIRS)):
+         VERBOSE("pass 2: conversion to tarbomb not needed")
+      else:
+         VERBOSE("pass 2: converting to tarbomb")
+         for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+            for m in members:
+               if (len(m.name.parts) > 0):  # ignore “.”
+                  m.name = Path(*m.name.parts[1:])  # strip first component
+      VERBOSE("pass 3: analyzing members")
+      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         dev_ct = 0
+         link_fix_ct = 0
+         for m in list(members):  # copy again
+            m.name = str(m.name)  # other code assumes strings
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
@@ -626,7 +659,7 @@ class Image:
          if (link_fix_ct > 0):
             WARNING(("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
                      % (i, len(layers), lh[:7], link_fix_ct)),
-                    "specify -v for details")
+                    "specify -vv for details")
 
    def whiteout_rm_prefix(self, layers, max_i, prefix):
       """Ignore members of all layers from 1 to max_i inclusive that have path
@@ -1660,8 +1693,8 @@ class TarFile(tarfile.TarFile):
             new = tgt.relative_to("/")
          else:
             assert False, "not a link"
-         VERBOSE("absolute %s: %s -> %s: changing target to: %s"
-                 % (kind, src, tgt, new))
+         DEBUG("absolute %s: %s -> %s: changing target to: %s"
+               % (kind, src, tgt, new))
          tgt = new
          fix_ct = 1
       # Reject links that climb out of image (FIXME: repair instead).
@@ -1670,39 +1703,6 @@ class TarFile(tarfile.TarFile):
       # Done.
       ti.linkname = str(tgt)
       return fix_ct
-
-   @staticmethod
-   def fix_member_paths(tis, tar_path):
-      """Repair or reject (by aborting the program) member paths in sequence
-         of TarInfo objects tis, modifying in-place. The resulting paths
-         comprise a tarbomb, and no paths start with dot, except possibly the
-         useless member "."."""
-      # Convert paths to Path objects for easier processing. Note: In my
-      # testing, parsing a string into a Path object took about 2.5µs, so this
-      # should be plenty fast.
-      for ti in tis:
-         assert (len(ti.name) > 0)
-         ti.name = Path(ti.name)
-      # Member-specific path fixes.
-      abs_warned = False
-      for ti in tis:
-         if (".." in ti.name.parts):
-            FATAL("rejecting up-level member: %s: %s" % (tar_path, ti.name))
-         if (ti.name.is_absolute()):
-            ti.name = ti.name.relative_to("/")
-            if (not abs_warned):
-               WARNING("fixing absolute member paths: %s" % tar_path)
-               abs_warned = True
-      # Figure out if it's a tarbomb.
-      top_dirs = { ti.name.first for ti in tis } - { None }  # ignore "."
-      # If not, convert to tarbomb.
-      if (len(top_dirs) == 1):
-         for ti in tis:
-            if (len(ti.name.parts) > 0):  # ignore "."
-               ti.name = Path(*ti.name.parts[1:])  # strip first component
-      # Convert back to strings to avoid confusing other code.
-      for ti in tis:
-         ti.name = str(ti.name)
 
    @staticmethod
    def fix_member_uidgid(ti):
