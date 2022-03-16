@@ -607,7 +607,8 @@ class Image:
             if (m.name.is_absolute()):
                m.name = m.name.relative_to("/")
             # Record top-level directory.
-            top_dirs.add(m.name.first)
+            if (len(m.name.parts) > 1 or m.isdir()):
+               top_dirs.add(m.name.first)
          if (abs_ct > 0):
             WARNING("layer %d/%d: %s: fixed %d absolute member paths"
                     % (i, len(layers), lh[:7], abs_ct))
@@ -615,7 +616,7 @@ class Image:
       # Convert to tarbomb if (1) there is a single enclosing directory and
       # (2) that directory is not one of the standard directories, e.g. to
       # allow images containing just “/bin/fooprog”.
-      if (len(top_dirs) > 1 or not top_dirs.isdisjoint(STANDARD_DIRS)):
+      if (len(top_dirs) != 1 or not top_dirs.isdisjoint(STANDARD_DIRS)):
          VERBOSE("pass 2: conversion to tarbomb not needed")
       else:
          VERBOSE("pass 2: converting to tarbomb")
