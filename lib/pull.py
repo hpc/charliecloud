@@ -208,7 +208,7 @@ class Image_Puller:
          manifest = manifests_internal[str(self.image.ref)]
          ch.INFO("manifest: using internal library")
       except KeyError:
-         # download the file, then parse it
+         # download the file and parse it
          if (ch.arch == "yolo" or self.architectures is None):
             digest = None
          else:
