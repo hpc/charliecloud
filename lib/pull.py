@@ -31,7 +31,7 @@ def main(cli):
       ch.INFO("destination:      %s" % image.unpack_path)
    else:
       ch.VERBOSE("destination:      %s" % image.unpack_path)
-   pullet = Image_Puller(image, not cli.no_cache)
+   pullet = Image_Puller(image, False)
    pullet.pull_to_unpacked(cli.last_layer)
    pullet.done()
    ch.done_notify()
