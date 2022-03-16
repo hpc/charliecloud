@@ -257,25 +257,27 @@ DEFAULT_CONFIGS = {
      "each": ["fakeroot"] },
 
    # no worky; see #1295
+   #
    # [It seems to me (Dave Love) that it works sufficiently well, just
    # failing to set filesystem ownership/permissions that presumably
    # aren't necessary for what Charliecloud addresses.  Perhaps the spec
    # could be extended to allow showing a message about such things.
    # However, at least mostly, --force seems not to be necessary.]
-
+   #
    # pacman doesn't seem to have proper dependencies like dpkg and
    # rpm.  It happens that fakeroot can fail because the downloaded
    # version is linked against a newer glibc (at least) than is in the
    # base image. Thus update that too, and for safety also the
    # util-linux dependency.  We could add -u to update all installed
    # packages, but that may not be what a user wants.
-   # "arch":
-   # { "name": "Arch Linux",
-   #  "match": ("/etc/os-release", r"ID=arch"),  # /etc/arch-release empty
-   #  "init": [ ("command -v fakeroot > /dev/null",
-   #             "pacman -Syq --noconfirm glibc util-linux fakeroot") ],
-   #  "cmds": ["pacman"],
-   #  "each": ["fakeroot"] },
+   #
+   #"arch":
+   #{ "name": "Arch Linux",
+   # "match": ("/etc/os-release", r"ID=arch"),  # /etc/arch-release empty
+   # "init": [ ("command -v fakeroot > /dev/null",
+   #            "pacman -Syq --noconfirm glibc util-linux fakeroot") ],
+   # "cmds": ["pacman"],
+   # "each": ["fakeroot"] },
 
    # no worky; see #1296
    #"alpine":
