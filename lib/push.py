@@ -115,6 +115,7 @@ class Image_Pusher:
       # Prepare metadata.
       ch.INFO("preparing metadata")
       self.image.metadata_load()
+      config['config']['Env'] = [f"{k}={v}" for k,v in self.image.metadata.get("env",{}).items()]
       hist = self.image.metadata["history"]
       # Some registries, e.g., Quay, use history metadata for simple sanity
       # checks. For example, when an image's number of "empty_layer" history
