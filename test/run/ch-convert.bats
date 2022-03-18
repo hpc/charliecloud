@@ -106,6 +106,8 @@ compare () {
 #
 #   3. Symlink timestamps seem not to be stable, so remove them.
 #
+#   4. Directory sizes also seem not to be stable.
+#
 compare-ls () {
     cd "$1" || exit  # to make -path reasonable
       find . -mindepth 1 \
@@ -122,6 +124,7 @@ compare-ls () {
     | sed -E -e 's|(\.\./)+|/|' \
              -e 's/ l[0-9]{1,3}/ lXX/' \
              -e 's/ l[0-9_:-]{16}/ lXXXX-XX-XX_XX:XX/' \
+             -e 's/ d[0-9]{2,5}/ dXXXXX/' \
     | LC_ALL=C sort
     cd -
 }
