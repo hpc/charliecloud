@@ -229,7 +229,7 @@ void env_unset(const char *glob)
       int matchp;
       split(&name, &value, environ[i], '=');
       T_ (name != NULL);          // environ entries must always have equals
-      matchp = fnmatch(glob, name, 0);
+      matchp = fnmatch(glob, name, FNM_EXTMATCH);
       if (matchp == 0) {
          VERBOSE("environment: unset %s", name);
       } else {
