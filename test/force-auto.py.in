@@ -245,6 +245,7 @@ class T_CentOS_8_Stream(CentOS_8):
 #   base = "quay.io/centos/centos:stream9"
 
 class T_Alma_8(CentOS_8):
+   scope = Scope.STANDARD
    base = "almalinux:8"  # :latest same as :8 as of 2022-03-01
 class T_Rocky_8(CentOS_8):
    base = "rockylinux:8"  # :latest same as :8 as of 2022-03-01
