@@ -107,7 +107,7 @@ compare () {
 #   3. Symlink timestamps seem not to be stable, so remove them.
 #
 compare-ls () {
-    cd "$1"  # to make -path reasonable
+    cd "$1" || exit  # to make -path reasonable
       find . -mindepth 1 \
               \(    -path ./.dockerenv \
                  -o -path ./ch \) -prune \
