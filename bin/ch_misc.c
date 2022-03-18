@@ -17,6 +17,9 @@
 #include "config.h"
 #include "ch_misc.h"
 
+#if !defined(FNM_EXTMATCH)
+#define FNM_EXTMATCH 0
+#endif
 
 /** Macros **/
 
