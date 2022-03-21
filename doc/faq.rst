@@ -145,6 +145,21 @@ Alternatively, certificate verification can be disabled entirely with the
 :code:`--tls-no-verify` flag. However, users should enable this option only if
 they have other means to be confident in the registry's identity.
 
+"storage directory seems invalid"
+---------------------------------
+
+Charliecloud uses its *storage directory* (:code:`/var/tmp/$USER.sh` by
+default) for various internal uses. As such, Charliecloud needs complete
+control over this directory's contents. This error happens when the storage
+directory exists but its contents do not match what's expected, including if
+it's an empty directory, which is to protect against using common temporary
+directories like :code:`/tmp` or :code:`/var/tmp` as the storage directory.
+
+Let Charliecloud create the storage directory. For example, if you want to use
+:code:`/big/containers/$USER/charlie` for the storage directory (e.g., by
+setting :code:`CH_IMAGE_STORAGE`), ensure :code:`/big/containers/$USER` exists
+but do not create the final directory :code:`charlie`.
+
 
 Unexpected behavior
 ===================
