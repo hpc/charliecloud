@@ -17,7 +17,7 @@ addresses needs such as:
 * portability of environments between resources, including workstations and
   other test and development system not managed by the center;
 
-* consistent environments, even archivally so, that can be easily, reliabily,
+* consistent environments, even archivally so, that can be easily, reliably,
   and verifiably reproduced in the future; and/or
 
 * usability and comprehensibility.
@@ -105,7 +105,7 @@ code. Please instead use the current number in the FAQ.
 Copyright and license
 ---------------------
 
-Charliecloud is copyright © 2014–2021 Triad National Security, LLC.
+Charliecloud is copyright © 2014–2022 Triad National Security, LLC and others.
 
 This software was produced under U.S. Government contract 89233218CNA000001
 for Los Alamos National Laboratory (LANL), which is operated by Triad National
@@ -130,4 +130,4 @@ should be clearly marked, so as not to confuse it with the version available
 from LANL.
 
 
-..  LocalWords:  USENIX's
+..  LocalWords:  USENIX's CNA

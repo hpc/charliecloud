@@ -139,29 +139,48 @@ DEFAULT_CONFIGS = {
    #      seems a maintenance headache, :latest changes.
    #
    #    * grep the same file for each distro: No standardized file for this.
+   #      [FIXME: This may be wrong; see issue #1292.]
    #
    #    * Ask lsb_release(1): Not always installed, requires executing ch-run.
 
-   # CentOS/RHEL notes:
+   # Fedora notes:
    #
-   # 1. CentOS seems to have only fakeroot, which is in EPEL, not the standard
+   # 1. The minimum supported version was chosen somewhat arbitrarily based on
+   #    versions available for testing, i.e., what was on Docker Hub.
+   #
+   # 2. The fakeroot package is in the base repository set so enabling EPEL is
+   #    not required.
+   #
+   # 3. Must be before “rhel8” because that matches Fedora too.
+
+   "fedora":
+   { "name": "Fedora 24+",
+     "match":  ("/etc/fedora-release", r"release (?!1?[0-9] |2[0-3] )"),
+     "init": [ ("command -v fakeroot > /dev/null",
+                "dnf install -y fakeroot") ],
+     "cmds": ["dnf", "rpm", "yum"],
+     "each": ["fakeroot"] },
+
+   # RHEL (and rebuilds like CentOS, Alma, Springdale, Rocky) notes:
+   #
+   # 1. These seem to have only fakeroot, which is in EPEL, not the standard
    #    repos.
    #
-   # 2. Unlike on CentOS, RHEL doesn't have the epel-release rpm in the
-   #    standard repos, install via rpm for both to be consistent.
+   # 2. Unlike some derivatives, RHEL itself doesn't have the epel-release rpm
+   #    in the standard repos; install via rpm for both to be consistent.
    #
    # 3. Enabling EPEL can have undesirable side effects, e.g. different
    #    version of things in the base repo that breaks other things. Thus,
    #    when we are done with EPEL, we uninstall it. Existing EPEL
-   #    installations are left alone.
+   #    installations are left alone. (Such breakage is an EPEL bug, but we do
+   #    commonly encounter it.)
    #
    # 4. "yum repolist" has a lot of side effects, e.g. locking the RPM
    #    database and asking configured repos for something or other.
 
-
    "rhel7":
-   { "name": "CentOS/RHEL 7",
-     "match": ("/etc/redhat-release", r"(Red Hat|CentOS).*release 7\."),
+   { "name": "RHEL 7 and derivatives",
+     "match": ("/etc/redhat-release", r"release 7\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
@@ -175,12 +194,14 @@ DEFAULT_CONFIGS = {
      "each": ["fakeroot"] },
 
    "rhel8":
-   { "name": "CentOS/RHEL 8+",
-     "match":  ("/etc/redhat-release", r"(Red Hat|CentOS).*release (?![0-7]\.)"),
+   { "name": "RHEL 8+ and derivatives",
+     "match":  ("/etc/redhat-release", r"release (?![0-7]\.)"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -ex; "
                 "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
-                "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm; "
+                # Macro %rhel from *-release* RPM, e.g. redhat-release-server
+                # or centos-linux-release; thus reliable.
+                "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm; "
                 "dnf install -y fakeroot; "
                 "dnf remove -y epel-release; "
                 "else "
@@ -212,8 +233,8 @@ DEFAULT_CONFIGS = {
    #      | egrep '^(fakeroot|fakeroot-ng|pseudo)$'
 
    "debderiv":
-   { "name": "Debian 9+ or Ubuntu 14+",
-     "match": ("/etc/os-release", r"Debian GNU/Linux (?![0-8] )|Ubuntu (?![0-9]\.|1[0-3]\.)"),
+   { "name": "Debian 9+, Ubuntu 14+, or other derivative",
+     "match": ("/etc/os-release", r"Debian GNU/Linux (?![0-8] )|Ubuntu (?![0-9]\.|1[0-3]\.)|ID_LIKE=debian"),
      "init": [ ("apt-config dump | fgrep -q 'APT::Sandbox::User \"root\"'"
                 " || ! fgrep -q _apt /etc/passwd",
                 "echo 'APT::Sandbox::User \"root\";'"
@@ -224,22 +245,48 @@ DEFAULT_CONFIGS = {
      "cmds": ["apt", "apt-get", "dpkg"],
      "each": ["fakeroot"] },
 
-   # Fedora notes:
-   #
-   # 1. The minimum supported version was chosen somewhat arbitrarily based on the
-   #    release versions available for testing (what was on Docker Hub).
-   #
-   # 2. The fakeroot package is in the base repository set so enabling EPEL is
-   #    not required.
-
-   "fedora":
-   { "name": "Fedora 24+,",
-     "match":  ("/etc/fedora-release", r"release (?!1?[0-9] |2[0-3] )"),
+   "suse":
+   { "name": "(Open)SUSE 42.2+",  # no fakeroot before this
+     # I don't know if there are OpenSUSE derivatives
+     "match": ("/etc/os-release", r"ID_LIKE=.*suse"),
      "init": [ ("command -v fakeroot > /dev/null",
-                "dnf install -y fakeroot") ],
-     "cmds": ["dnf", "rpm", "yum"],
+                # fakeroot seems to have a missing dependency, otherwise
+                # failing with missing getopt in the fakeroot script.
+                "zypper refresh; zypper install -y fakeroot /usr/bin/getopt") ],
+     "cmds": ["zypper", "rpm"],
      "each": ["fakeroot"] },
 
+   # no worky; see #1295
+   #
+   # [It seems to me (Dave Love) that it works sufficiently well, just
+   # failing to set filesystem ownership/permissions that presumably
+   # aren't necessary for what Charliecloud addresses.  Perhaps the spec
+   # could be extended to allow showing a message about such things.
+   # However, at least mostly, --force seems not to be necessary.]
+   #
+   # pacman doesn't seem to have proper dependencies like dpkg and
+   # rpm.  It happens that fakeroot can fail because the downloaded
+   # version is linked against a newer glibc (at least) than is in the
+   # base image. Thus update that too, and for safety also the
+   # util-linux dependency.  We could add -u to update all installed
+   # packages, but that may not be what a user wants.
+   #
+   #"arch":
+   #{ "name": "Arch Linux",
+   # "match": ("/etc/os-release", r"ID=arch"),  # /etc/arch-release empty
+   # "init": [ ("command -v fakeroot > /dev/null",
+   #            "pacman -Syq --noconfirm glibc util-linux fakeroot") ],
+   # "cmds": ["pacman"],
+   # "each": ["fakeroot"] },
+
+   # no worky; see #1296
+   #"alpine":
+   #{ "name": "Alpine, any version",
+   #  "match": ("/etc/alpine-release", r"[0-9]\.[0-9]+\.[0-9]+"),
+   #  "init": [ ("command -v fakeroot > /dev/null",
+   #             "apk update; apk add fakeroot") ],
+   #  "cmds": ["apk"],
+   #  "each": ["fakeroot"] },
 }
 
 
