@@ -17,6 +17,8 @@
 #include "config.h"
 #include "ch_misc.h"
 
+/* FNM_EXTMATCH is a GNU extension to support extended globs in fnmatch(3).
+   Define as 0 to ignore this flag where not available. */
 #if !defined(FNM_EXTMATCH)
 #define FNM_EXTMATCH 0
 #endif
@@ -232,7 +234,7 @@ void env_unset(const char *glob)
       int matchp;
       split(&name, &value, environ[i], '=');
       T_ (name != NULL);          // environ entries must always have equals
-      matchp = fnmatch(glob, name, FNM_EXTMATCH);
+      matchp = fnmatch(glob, name, FNM_EXTMATCH); // extglobs if available
       if (matchp == 0) {
          VERBOSE("environment: unset %s", name);
       } else {

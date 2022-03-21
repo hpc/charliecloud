@@ -655,6 +655,19 @@ EOF
     [[ $status -eq 0 ]]
     [[ $(echo "$output" | grep -E '^chue_') = '' ]]
 
+    printf '\n# With extended globs to select\n\n'
+    run ch-run --unset-env='chue_@(1|2)' "$ch_timg" -- env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -E '^chue_') = '' ]]
+
+    printf '\n# With extended globs to deselect\n\n'
+    run ch-run --unset-env='!(chue_*)' "$ch_timg" -- env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(printf 'chue_1=foo\nchue_2=bar\nCH_RUNNING=Weird Al Yankovic\n' | sort) \
+            <(echo "$output" | sort)
+
     printf '\n# Empty string\n\n'
     run ch-run --unset-env= "$ch_timg" -- env
     echo "$output"
