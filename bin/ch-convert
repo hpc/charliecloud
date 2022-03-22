@@ -55,7 +55,7 @@ cv_chimage_tar () {
     img=$(chimage_path "$1")
     INFO 'exporting ...'
     # have to make tarbomb because Docker requires tarbombs
-    ( cd "$img" && tar czf - . ) | pv_ > "$2"
+    ( cd "$img" && tar cf - . ) | pv_ | gzip_ > "$2"
 }
 
 cv_dir_chimage () {
@@ -102,7 +102,7 @@ cv_dir_tar () {
     # when converted to dir or squash.
     INFO 'packing ...'
     # have to make tarbomb because Docker requires tarbombs
-    ( cd "$1" && tar czf - . ) | pv_ > "$2"
+    ( cd "$1" && tar cf - . ) | pv_ | gzip_ > "$2"
 }
 
 cv_docker_chimage () {

@@ -23,7 +23,7 @@ jobs:
             pack_fmt: squash-mount
             keep_sudo: true
     env:
-      CH_BUILDER: ${{ matrix.builder }}
+      CH_TEST_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
       CH_TEST_IMGDIR: /mnt/images
       CH_TEST_PACK_FMT: ${{ matrix.pack_fmt }}
@@ -35,7 +35,7 @@ jobs:
 
       - name: early setup & validation
         run: |
-          [[ -n $CH_BUILDER ]]
+          [[ -n $CH_TEST_BUILDER ]]
           sudo timedatectl set-timezone America/Denver
           sudo chmod 1777 /mnt /usr/local/src
           echo "ch_makej=-j$(getconf _NPROCESSORS_ONLN)" >> $GITHUB_ENV
@@ -241,9 +241,9 @@ jobs:
           ./configure --prefix=$ch_prefix/from-git
           set -x
           fgrep 'documentation: yes' config.log
-          [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          if [[ $CH_BUILDER = ch-image ]]; then
+          [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
+          [[ $CH_TEST_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          if [[ $CH_TEST_BUILDER = ch-image ]]; then
               fgrep 'with ch-image(1): yes' config.log
               fgrep '"lark" module ... bundled' config.log
               test -f ./lib/lark/lark.py
@@ -339,9 +339,9 @@ jobs:
           ./configure --prefix=$ch_prefix/from-tarball
           set -x
           fgrep 'documentation: yes' config.log
-          [[ $CH_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
-          [[ $CH_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
+          [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
+          [[ $CH_TEST_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_TEST_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
           fgrep 'recommended tests, tar-unpack mode: yes' config.log
           fgrep 'recommended tests, squash-unpack mode: yes' config.log
           if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then

@@ -12,7 +12,7 @@
             ;;
     esac
     archive=${ch_tardir}/%(tag)s.${ext}
-    ch-convert -i "$CH_BUILDER" '%(tag)s' "$archive"
+    ch-convert -i "$CH_TEST_BUILDER" '%(tag)s' "$archive"
     archive_grep "$archive"
     archive_ok "$archive"
 }

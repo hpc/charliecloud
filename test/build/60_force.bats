@@ -4,7 +4,7 @@ load ../common
 tag='ch-image --force'
 
 setup () {
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
 @test "${tag}: no matching distro" {

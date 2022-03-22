@@ -128,34 +128,18 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %files
 %license LICENSE
 %doc README.rst %{?el7:README.EL7}
-%{_bindir}/ch-build
-%{_bindir}/ch-build2dir
-%{_bindir}/ch-builder2squash
-%{_bindir}/ch-builder2tar
 %{_bindir}/ch-checkns
 %{_bindir}/ch-convert
-%{_bindir}/ch-dir2squash
 %{_bindir}/ch-fromhost
-%{_bindir}/ch-pull2dir
-%{_bindir}/ch-pull2tar
 %{_bindir}/ch-run
 %{_bindir}/ch-run-oci
 %{_bindir}/ch-ssh
-%{_bindir}/ch-tar2dir
-%{_mandir}/man1/ch-build.1*
-%{_mandir}/man1/ch-build2dir.1*
-%{_mandir}/man1/ch-builder2squash.1*
-%{_mandir}/man1/ch-builder2tar.1*
 %{_mandir}/man1/ch-checkns.1*
 %{_mandir}/man1/ch-convert.1*
-%{_mandir}/man1/ch-dir2squash.1*
 %{_mandir}/man1/ch-fromhost.1*
-%{_mandir}/man1/ch-pull2dir.1*
-%{_mandir}/man1/ch-pull2tar.1*
 %{_mandir}/man1/ch-run.1*
 %{_mandir}/man1/ch-run-oci.1*
 %{_mandir}/man1/ch-ssh.1*
-%{_mandir}/man1/ch-tar2dir.1*
 %{_mandir}/man7/charliecloud.7*
 %{_prefix}/lib/%{name}/base.sh
 %{_prefix}/lib/%{name}/contributors.bash

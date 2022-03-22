@@ -21,7 +21,7 @@ The purpose of this command is to inject files into a container image that are
 necessary to run the container on a specific host; e.g., GPU libraries that
 are tied to a specific kernel version. **It is not a general copy-to-image
 tool**; see further discussion on use cases below. It should be run after
-:code:`ch-tar2dir` and before :code:`ch-run`. After invocation, the image is
+:code:`ch-convert` and before :code:`ch-run`. After invocation, the image is
 no longer portable to other hosts.
 
 Injection is not atomic; if an error occurs partway through injection, the

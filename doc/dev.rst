@@ -460,7 +460,9 @@ Summary
 The Charliecloud test suite has a workflow that can build images by two
 methods:
 
-1. From a Dockerfile, using :code:`ch-build`.
+1. From a Dockerfile, using :code:`ch-image` or another builder (see
+   :code:`common.bash:build_()`).
+
 2. By running a custom script.
 
 To create an image that will be built and unpacked and/or mounted, create a
@@ -1566,4 +1568,4 @@ What to do in each location should either be obvious or commented.
 
 ..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg
 ..  LocalWords:  rootfs cbd cae ce bafb bc weirdal yankovic nop cb fbe adb fd
-..  LocalWords:  abd bbf
+..  LocalWords:  abd bbf LOGFILE logfile

@@ -6,7 +6,7 @@ load ../common
     # it, so re-use the same one.
 
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only' # FIXME: other builders?
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only' # FIXME: other builders?
 
     # No newline at end of file.
       printf 'FROM 00_tiny\nRUN echo hello' \
@@ -159,7 +159,7 @@ EOF
 
 @test 'Dockerfile: syntax errors' {
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # Bad instruction. Also, -v should give interal blabber about the grammar.
     run ch-image -v build -t tmpimg -f - . <<'EOF'
@@ -226,7 +226,7 @@ EOF
 
 @test 'Dockerfile: semantic errors' {
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # Repeated instruction option.
     run ch-image build -t tmpimg -f - . <<'EOF'
@@ -260,7 +260,7 @@ EOF
     # This test also creates images we don't care about.
 
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # ARG before FROM
     run ch-image build -t tmpimg -f - . <<'EOF'
@@ -347,7 +347,7 @@ EOF
     # This test also creates images we don't care about.
 
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # parser directives
     run ch-image build -t tmpimg -f - . <<'EOF'
@@ -398,7 +398,7 @@ EOF
 
 @test 'Dockerfile: ENV parsing' {
     scope standard
-    [[ $CH_BUILDER = none ]] && skip 'no builder'
+    [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
 
     env_expected=$(cat <<'EOF'
 ('chse_0a', 'value 0a')
@@ -417,7 +417,7 @@ EOF
 ('chse_6b', 'value6b')
 EOF
 )
-    run ch-build --no-cache -t tmpimg -f - . <<'EOF'
+    run build_ --no-cache -t tmpimg -f - . <<'EOF'
 FROM centos8
 
 # FIXME: make this more comprehensive, e.g. space-separate vs.
@@ -478,11 +478,11 @@ EOF
 
 @test 'Dockerfile: SHELL' {
    scope standard
-   [[ $CH_BUILDER = none ]] && skip 'no builder'
-   [[ $CH_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
+   [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
+   [[ $CH_TEST_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
 
    # test that SHELL command can change executables and parameters
-   run ch-build -t tmpimg --no-cache -f - . <<'EOF'
+   run build_ -t tmpimg --no-cache -f - . <<'EOF'
 FROM 00_tiny
 RUN echo default: $0
 SHELL ["/bin/ash", "-c"]
@@ -497,21 +497,21 @@ EOF
    [[ $output = *"sh-v: /bin/sh"* ]]
 
    # test that it fails if shell doesn't exist
-   run ch-build -t tmpimg -f - . <<'EOF'
+   run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 SHELL ["/doesnotexist", "-c"]
 RUN print("hello")
 EOF
    echo "$output"
    [[ $status -eq 1 ]]
-   if [[ $CH_BUILDER = ch-image ]]; then
+   if [[ $CH_TEST_BUILDER = ch-image ]]; then
       [[ $output = *"/doesnotexist: No such file or directory"* ]]
    else
       [[ $output = *"/doesnotexist: no such file or directory"* ]]
    fi
 
    # test that it fails if no paramaters
-   run ch-build -t tmpimg -f - . <<'EOF'
+   run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 SHELL ["/bin/sh"]
 RUN true
@@ -521,14 +521,14 @@ EOF
    [[ $output = *"/bin/sh: can't open 'true': No such file or directory"* ]]
 
    # test that it works with python3
-   run ch-build -t tmpimg -f - . <<'EOF'
+   run build_ -t tmpimg -f - . <<'EOF'
 FROM centos7
 SHELL ["/usr/bin/python3", "-c"]
 RUN print ("hello")
 EOF
    echo "$output"
    [[ $status -eq 0 ]]
-   if [[ $CH_BUILDER = ch-image ]]; then
+   if [[ $CH_TEST_BUILDER = ch-image ]]; then
       [[ $output = *"grown in 3 instructions: tmpimg"* ]]
    else
       [[ $output = *"Successfully built"* ]]
@@ -541,9 +541,9 @@ EOF
     # ch-image, we are responsible for --build-arg being implemented correctly
     # and (2) Docker and Buildah take a full minute for this test, vs. three
     # seconds for ch-image.
-    if [[ $CH_BUILDER = ch-image ]]; then
+    if [[ $CH_TEST_BUILDER = ch-image ]]; then
         scope standard
-    elif [[ $CH_BUILDER = none ]]; then
+    elif [[ $CH_TEST_BUILDER = none ]]; then
         skip 'no builder'
     else
         scope full
@@ -562,7 +562,7 @@ chse_env1_df=env1
 chse_env2_df=env2 env1
 EOF
 )
-    run ch-build --no-cache -t tmpimg -f ./Dockerfile.argenv .
+    run build_ --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -577,8 +577,8 @@ chse_env1_df=env1
 chse_env2_df=env2 env1
 EOF
 )
-    run ch-build --build-arg chse_arg1_df=foo1 \
-                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
+    run build_ --build-arg chse_arg1_df=foo1 \
+               --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -592,15 +592,15 @@ chse_env1_df=env1
 chse_env2_df=env2 env1
 EOF
 )
-    run ch-build --build-arg chse_arg2_df=foo2 \
-                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
+    run build_ --build-arg chse_arg2_df=foo2 \
+               --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** one --build-arg from environment'
-    if [[ $CH_BUILDER == ch-image ]]; then
+    if [[ $CH_TEST_BUILDER == ch-image ]]; then
         env_expected=$(cat <<'EOF'
 chse_arg1_df=foo1
 chse_arg2_df=arg2
@@ -623,8 +623,8 @@ EOF
 )
     fi
     chse_arg1_df=foo1 \
-    run ch-build --build-arg chse_arg1_df \
-                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
+    run build_ --build-arg chse_arg1_df \
+               --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -640,8 +640,8 @@ chse_env2_df=env2 env1
 EOF
 )
     chse_arg1_df=foo1 \
-    run ch-build --build-arg chse_arg1_df= \
-                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
+    run build_ --build-arg chse_arg1_df= \
+               --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
     env_actual=$(echo "$output" | grep -E '^chse_')
@@ -655,8 +655,8 @@ chse_env1_df=env1
 chse_env2_df=env2 env1
 EOF
 )
-    run ch-build --build-arg chse_arg2_df=bar2 \
-                 --build-arg chse_arg3_df=bar3 \
+    run build_ --build-arg chse_arg2_df=bar2 \
+               --build-arg chse_arg3_df=bar3 \
                  --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
@@ -671,8 +671,8 @@ chse_env1_df=env1
 chse_env2_df=env2 env1
 EOF
 )
-    run ch-build --build-arg chse_arg2_df=FOO \
-                 --build-arg chse_arg2_df=bar2 \
+    run build_ --build-arg chse_arg2_df=FOO \
+               --build-arg chse_arg2_df=bar2 \
                  --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
@@ -680,7 +680,7 @@ EOF
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** two --build-arg with substitution'
-    if [[ $CH_BUILDER == ch-image ]]; then
+    if [[ $CH_TEST_BUILDER == ch-image ]]; then
         env_expected=$(cat <<'EOF'
 chse_arg2_df=bar2
 chse_arg3_df=bar3 bar2
@@ -699,8 +699,8 @@ EOF
 )
     fi
     # shellcheck disable=SC2016
-    run ch-build --build-arg chse_arg2_df=bar2 \
-                 --build-arg chse_arg3_df='bar3 ${chse_arg2_df}' \
+    run build_ --build-arg chse_arg2_df=bar2 \
+               --build-arg chse_arg3_df='bar3 ${chse_arg2_df}' \
                  --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
@@ -710,10 +710,10 @@ EOF
     echo '*** ARG not in Dockerfile'
     # Note: We don't test it, but for Buildah, the variable does show up in
     # the build environment.
-    run ch-build --build-arg chse_doesnotexist=foo \
-                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
+    run build_ --build-arg chse_doesnotexist=foo \
+               --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
-    if [[ $CH_BUILDER = ch-image ]]; then
+    if [[ $CH_TEST_BUILDER = ch-image ]]; then
         [[ $status -eq 1 ]]
     else
         [[ $status -eq 0 ]]
@@ -722,10 +722,10 @@ EOF
     [[ $output = *'chse_doesnotexist'* ]]
 
     echo '*** ARG not in environment'
-    run ch-build --build-arg chse_arg1_df \
-                 --no-cache -t tmpimg -f ./Dockerfile.argenv .
+    run build_ --build-arg chse_arg1_df \
+               --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
-    if [[ $CH_BUILDER = ch-image ]]; then
+    if [[ $CH_TEST_BUILDER = ch-image ]]; then
         [[ $status -eq 1 ]]
         [[ $output = *'--build-arg: chse_arg1_df: no value and not in environment'* ]]
     else
@@ -735,7 +735,7 @@ EOF
 
 @test 'Dockerfile: COPY list form' {
     scope standard
-    [[ $CH_BUILDER == ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
 
     # single source
     run ch-image build -t tmpimg -f - . <<'EOF'
@@ -761,30 +761,28 @@ EOF
 
 @test 'Dockerfile: COPY errors' {
     scope standard
-    [[ $CH_BUILDER = none ]] && skip 'no builder'
-    [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
+    [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
+    [[ $CH_TEST_BUILDER = buildah* ]] && skip 'Buildah untested'
 
     # Dockerfile on stdin, so no context directory.
-    if [[ $CH_BUILDER != ch-image ]]; then  # ch-image doesn't support this yet
-        run ch-build -t tmpimg - <<'EOF'
+    run build_ -t tmpimg - <<'EOF'
 FROM 00_tiny
 COPY doesnotexist .
 EOF
-        echo "$output"
-        [[ $status -ne 0 ]]
-        if [[ $CH_BUILDER = docker ]]; then
-            # This error message seems wrong. I was expecting something about
-            # no context, so COPY not allowed.
-            [[ $output = *'file does not exist'* ]]
-        else
-            false  # unimplemented
-        fi
+    echo "$output"
+    [[ $status -ne 0 ]]
+    if [[ $CH_TEST_BUILDER = docker ]]; then
+        # This error message seems wrong. I was expecting something about
+        # no context, so COPY not allowed.
+        [[ $output = *'file does not exist'* ]]
+    else
+        [[ $output = *'no context'* ]]
     fi
 
     # SRC not inside context directory.
     #
     # Case 1: leading "..".
-    run ch-build -t tmpimg -f - sotest <<'EOF'
+    run build_ -t tmpimg -f - sotest <<'EOF'
 FROM 00_tiny
 COPY ../common.bash .
 EOF
@@ -792,7 +790,7 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
     # Case 2: ".." inside path.
-    run ch-build -t tmpimg -f - sotest <<'EOF'
+    run build_ -t tmpimg -f - sotest <<'EOF'
 FROM 00_tiny
 COPY lib/../../common.bash .
 EOF
@@ -800,45 +798,45 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
     # Case 3: symlink leading outside context directory.
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY fixtures/symlink-to-tmp .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = docker ]]; then
+    if [[ $CH_TEST_BUILDER = docker ]]; then
         [[ $output = *'file does not exist'* ]]
     else
         [[ $output = *'outside'*'context'* ]]
     fi
 
     # Multiple sources and non-directory destination.
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY Build.missing common.bash /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
-    run ch-build -t foo -f - . <<'EOF'
+    run build_ -t foo -f - . <<'EOF'
 FROM 00_tiny
 COPY Build.missing common.bash /etc/fstab
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = docker ]]; then
+    if [[ $CH_TEST_BUILDER = docker ]]; then
         [[ $output = *'must be a directory'* ]]
     else
         [[ $output = *'not a directory'* ]]
     fi
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY run /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY run /etc/fstab
 EOF
@@ -847,31 +845,31 @@ EOF
     [[ $output = *'not a directory'* ]]
 
     # No sources given.
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = ch-image ]]; then
+    if [[ $CH_TEST_BUILDER = ch-image ]]; then
         [[ $output = *"error: can't parse: -:2,7"* ]]
     else
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY ["."]
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = ch-image ]]; then
+    if [[ $CH_TEST_BUILDER = ch-image ]]; then
         [[ $output = *"error: can't COPY: must specify at least one source"* ]]
     else
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
 
     # No sources found.
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY doesnotexist .
 EOF
@@ -880,7 +878,7 @@ EOF
     [[ $output = *'not found'* ]]
 
     # Some sources found.
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY fixtures/README doesnotexist .
 EOF
@@ -889,13 +887,13 @@ EOF
     [[ $output = *'not found'* ]]
 
     # No context with Dockerfile on stdin by context "-"
-    run ch-build -t tmpimg - <<'EOF'
+    run build_ -t tmpimg - <<'EOF'
 FROM 00_tiny
 COPY fixtures/README .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_BUILDER = ch-image ]]; then
+    if [[ $CH_TEST_BUILDER = ch-image ]]; then
         [[ $output = *"error: can't COPY: no context because \"-\" given"* ]]
     else
         [[ $output = *'COPY failed: file not found in build context or'* ]]
@@ -905,15 +903,15 @@ EOF
 
 @test 'Dockerfile: COPY --from errors' {
     scope standard
-    [[ $CH_BUILDER = none ]] && skip 'no builder'
-    [[ $CH_BUILDER = buildah* ]] && skip 'Buildah untested'
+    [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
+    [[ $CH_TEST_BUILDER = buildah* ]] && skip 'Buildah untested'
 
     # Note: Docker treats several types of erroneous --from names as another
     # image and tries to pull it. To avoid clashes with real, pullable images,
     # we use the random name "uhigtsbjmfps" (https://www.random.org/strings/).
 
     # current index
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=0 /etc/fstab /
 EOF
@@ -922,13 +920,13 @@ EOF
     [[ $output = *'current'*'stage'* ]]
 
     # current name
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny AS uhigtsbjmfps
 COPY --from=uhigtsbjmfps /etc/fstab /
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_BUILDER in
+    case $CH_TEST_BUILDER in
         ch-image)
             [[ $output = *'current stage'* ]]
             ;;
@@ -941,13 +939,13 @@ EOF
     esac
 
     # index does not exist
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=1 /etc/fstab /
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_BUILDER in
+    case $CH_TEST_BUILDER in
         ch-image)
             [[ $output = *'does not exist'* ]]
             ;;
@@ -960,13 +958,13 @@ EOF
     esac
 
     # name does not exist
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=uhigtsbjmfps /etc/fstab /
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_BUILDER in
+    case $CH_TEST_BUILDER in
         ch-image)
             [[ $output = *'does not exist'* ]]
             ;;
@@ -979,14 +977,14 @@ EOF
     esac
 
     # index exists, but is later
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=1 /etc/fstab /
 FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_BUILDER in
+    case $CH_TEST_BUILDER in
         ch-image)
             [[ $output = *'does not exist yet'* ]]
             ;;
@@ -999,14 +997,14 @@ EOF
     esac
 
     # name is later
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=uhigtsbjmfps /etc/fstab /
 FROM 00_tiny AS uhigtsbjmfps
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_BUILDER in
+    case $CH_TEST_BUILDER in
         ch-image)
             [[ $output = *'does not exist'* ]]
             [[ $output != *'does not exist yet'* ]]  # so we review test
@@ -1020,14 +1018,14 @@ EOF
     esac
 
     # negative index
-    run ch-build -t tmpimg -f - . <<'EOF'
+    run build_ -t tmpimg -f - . <<'EOF'
 FROM 00_tiny
 COPY --from=-1 /etc/fstab /
 FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_BUILDER in
+    case $CH_TEST_BUILDER in
         ch-image)
             [[ $output = *'invalid negative stage index'* ]]
             ;;
@@ -1043,7 +1041,7 @@ EOF
 
 @test 'Dockerfile: FROM scratch' {
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
     # pull it; validate special handling
     run ch-image pull -v scratch
