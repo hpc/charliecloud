@@ -1538,7 +1538,11 @@ class Storage:
       else:
          op = "upgrading"
          if (not self.valid_p):
-            FATAL("storage directory seems invalid: %s" % self.root)
+            if (os.path.exists(self.root) and not listdir(self.root)):
+               hint = "let Charliecloud create %s; see FAQ" % self.root.name
+            else:
+               hint = None
+            FATAL("storage directory seems invalid: %s" % self.root, hint=hint)
          if (os.path.isfile(self.version_file)):
             v_found = int(file_read_all(self.version_file))
          else:
@@ -1595,8 +1599,7 @@ class Storage:
                FATAL("can't move: %s -> %s: %s"
                      % (x.filename, x.filename2, x.strerror))
       ossafe(os.rmdir, "can't rmdir: %s" % old.root, old.root)
-      if (len(ossafe(os.listdir, "can't list: %s" % old.root.parent,
-                     old.root.parent)) == 0):
+      if (not listdir(old.root.parent)):
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
 
@@ -1985,6 +1988,9 @@ def json_from_file(path, msg):
    except json.JSONDecodeError as x:
       FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
    return data
+
+def listdir(path):
+   return ossafe(os.listdir, "can't list: %s" % path, path)
 
 def log(msg, hint=None, color=None, prefix="", end="\n"):
    if (color is not None):
