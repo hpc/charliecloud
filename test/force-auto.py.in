@@ -328,7 +328,7 @@ print("""\
 load ../common
 
 setup () {
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 """)
 

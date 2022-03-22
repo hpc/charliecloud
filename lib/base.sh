@@ -43,38 +43,6 @@ VERBOSE () {
     fi
 }
 
-
-# Don't call in a subshell or the selection will be lost.
-builder_choose () {
-    if [ -z "$CH_BUILDER" ]; then
-        if command -v docker > /dev/null 2>&1; then
-            export CH_BUILDER=docker
-        elif "${ch_bin}/ch-image" --dependencies > /dev/null 2>&1; then
-            export CH_BUILDER=ch-image
-        else
-            export CH_BUILDER=none
-        fi
-    fi
-    case $CH_BUILDER in
-        buildah|buildah-runc|buildah-setuid|ch-image|docker|none)
-            ;;
-        *)
-            echo "unknown builder: $CH_BUILDER" 1>&2
-            exit 1
-            ;;
-    esac
-}
-
-deprecated_convert=$(cat <<EOF
-
-warning: This script is deprecated in favor of ch-convert.
-warning: It will be removed in the next release.
-EOF
-)
-deprecated_convert_warn () {
-    echo "$deprecated_convert" 1>&2
-}
-
 # Return success if path $1 exists, without dereferencing links, failure
 # otherwise. ("test -e" dereferences.)
 exist_p () {

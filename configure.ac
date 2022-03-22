@@ -648,8 +648,8 @@ AS_IF([   test $have_buildah = yes \
       [have_any_builder=no])
 
 AS_IF([   test $have_any_builder = yes],
-      [have_ch_build=yes],
-      [have_ch_build=no])
+      [have_dockerfile_build=yes],
+      [have_dockerfile_build=no])
 
 AS_IF([   test $have_any_builder = yes],
       [have_builder_to_tar=yes],
@@ -764,10 +764,10 @@ Building Charliecloud
     "docutils" module ≥ $vmin_docutils ... ${DOCUTILS_VERSION_NOTE}
     "sphinx-rtd-theme" module ≥ $vmin_rtd ... ${RTD_VERSION_NOTE}
 
-Building images via our wrappers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Building images
+~~~~~~~~~~~~~~~
 
-  with Buildah: ${have_buildah}
+  with Buildah (warning: not tested; see issue #990): ${have_buildah}
     Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
   with ch-image(1): ${have_ch_image}
@@ -785,7 +785,7 @@ Building images via our wrappers
 Managing container images
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  build from Dockerfile with ch-build(1): ${have_ch_build}
+  build from Dockerfile: ${have_dockerfile_build}
     at least one builder ... ${have_any_builder}
     access to an image repository ... assumed yes
 
