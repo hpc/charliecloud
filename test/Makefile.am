@@ -5,7 +5,6 @@ testfiles = \
 .dockerignore \
 Dockerfile.00_tiny \
 Dockerfile.argenv \
-Dockerfile.build2dir \
 build/10_sanity.bats \
 build/40_pull.bats \
 build/50_ch-image.bats \

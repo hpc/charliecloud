@@ -1,12 +1,12 @@
-@test 'ch-build %(tag)s' {
+@test 'build %(tag)s' {
     scope %(scope)s
-    if [[ $CH_BUILDER = ch-image ]]; then
+    if [[ $CH_TEST_BUILDER = ch-image ]]; then
         force=--force
     else
         force=
     fi
     # shellcheck disable=SC2086
-    ch-build $force -t %(tag)s --file="%(path)s" "%(dirname)s"
+    build_ $force -t %(tag)s --file="%(path)s" "%(dirname)s"
     #sudo docker tag %(tag)s "%(tag)s:$ch_version_docker"
     builder_ok %(tag)s
 }

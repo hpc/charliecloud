@@ -21,36 +21,20 @@
 EXTRA_DIST = \
 bugs.rst \
 charliecloud.rst \
-ch-build2dir_desc.rst \
-ch-build2dir.rst \
-ch-build_desc.rst \
-ch-builder2squash_desc.rst \
-ch-builder2squash.rst \
-ch-builder2tar_desc.rst \
-ch-builder2tar.rst \
-ch-build.rst \
 ch-checkns_desc.rst \
 ch-checkns.rst \
 ch-convert_desc.rst \
 ch-convert.rst \
-ch-dir2squash_desc.rst \
-ch-dir2squash.rst \
 ch-fromhost_desc.rst \
 ch-fromhost.rst \
 ch-image_desc.rst \
 ch-image.rst \
-ch-pull2dir_desc.rst \
-ch-pull2dir.rst \
-ch-pull2tar_desc.rst \
-ch-pull2tar.rst \
 ch-run_desc.rst \
 ch-run-oci_desc.rst \
 ch-run-oci.rst \
 ch-run.rst \
 ch-ssh_desc.rst \
 ch-ssh.rst \
-ch-tar2dir_desc.rst \
-ch-tar2dir.rst \
 ch-test_desc.rst \
 ch-test.rst \
 command-usage.rst \
@@ -72,21 +56,13 @@ tutorial.rst
 if ENABLE_MAN
 man_MANS = \
 man/charliecloud.7 \
-man/ch-build.1 \
-man/ch-build2dir.1 \
-man/ch-builder2squash.1 \
-man/ch-builder2tar.1 \
 man/ch-checkns.1 \
 man/ch-convert.1 \
-man/ch-dir2squash.1 \
 man/ch-fromhost.1 \
 man/ch-image.1 \
-man/ch-pull2dir.1 \
-man/ch-pull2tar.1 \
 man/ch-run.1 \
 man/ch-run-oci.1 \
 man/ch-ssh.1 \
-man/ch-tar2dir.1 \
 man/ch-test.1
 endif
 

@@ -21,16 +21,8 @@ ch_ssh_SOURCES = ch-ssh.c ch_misc.h ch_misc.c
 
 ## Shell scripts - distributed as-is
 
-dist_bin_SCRIPTS = ch-build \
-                   ch-build2dir \
-                   ch-builder2squash \
-                   ch-builder2tar \
-                   ch-convert \
-                   ch-dir2squash \
+dist_bin_SCRIPTS = ch-convert \
                    ch-fromhost \
-                   ch-pull2dir \
-                   ch-pull2tar \
-                   ch-tar2dir \
                    ch-test
 
 

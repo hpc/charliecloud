@@ -80,24 +80,6 @@ There is a lot of information here, and it comes in this order:
 *Note:* Despite the structured format, the error messages are not guaranteed
 to be machine-readable.
 
-Tarball build fails with “No command specified”
------------------------------------------------
-
-The full error from :code:`ch-builder2tar` or :code:`ch-build2dir` is::
-
-  docker: Error response from daemon: No command specified.
-
-You will also see it with various plain Docker commands.
-
-This happens when there is no default command specified in the Dockerfile or
-any of its ancestors. Some base images specify one (e.g., Debian) and others
-don’t (e.g., Alpine). Docker requires this even for commands that don’t seem
-like they should need it, such as :code:`docker create` (which is what trips
-up Charliecloud).
-
-The solution is to add a default command to your Dockerfile, such as
-:code:`CMD ["true"]`.
-
 :code:`ch-run` fails with “can't re-mount image read-only”
 ----------------------------------------------------------
 

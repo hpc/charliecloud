@@ -23,6 +23,29 @@ archive_ok () {
     test -s "$1"
 }
 
+build_ () {
+    case $CH_TEST_BUILDER in
+        ch-image)
+            "$ch_bin"/ch-image build "$@"
+            ;;
+        docker)
+            # Coordinate this list with test "build.bats/proxy variables".
+            # shellcheck disable=SC2154
+            docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
+                          --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
+                          --build-arg NO_PROXY="$NO_PROXY" \
+                          --build-arg http_proxy="$http_proxy" \
+                          --build-arg https_proxy="$https_proxy" \
+                          --build-arg no_proxy="$no_proxy" \
+                          "$@"
+            ;;
+        *)
+            printf 'invalid builder: %s\n' "$CH_TEST_BUILDER" >&2
+            exit 1
+            ;;
+    esac
+}
+
 builder_ok () {
     # FIXME: Currently we make fairly limited tagging for some builders.
     # Uncomment below when they can be supported by all the builders.
@@ -33,7 +56,7 @@ builder_ok () {
 
 builder_tag_p () {
     printf 'image tag %s ... ' "$1"
-    case $CH_BUILDER in
+    case $CH_TEST_BUILDER in
         buildah*)
             hash_=$(buildah images -q "$1" | sort -u)
             if [[ $hash_ ]]; then
@@ -235,8 +258,8 @@ unpack_img_all_nodes () {
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
 env_require CH_TEST_PERMDIRS
-env_require CH_BUILDER
-if [[ $CH_BUILDER == ch-image ]]; then
+env_require CH_TEST_BUILDER
+if [[ $CH_TEST_BUILDER == ch-image ]]; then
     env_require CH_IMAGE_STORAGE
 fi
 
@@ -252,7 +275,7 @@ export BATS_TMPDIR=$btnew
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 # shellcheck disable=SC2034
-ch_lib=$(ch-build --_lib-path)
+ch_lib=$(ch-convert --_lib-path)
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
