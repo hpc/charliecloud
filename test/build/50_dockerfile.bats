@@ -418,7 +418,7 @@ EOF
 EOF
 )
     run build_ --no-cache -t tmpimg -f - . <<'EOF'
-FROM centos8
+FROM almalinux8
 
 # FIXME: make this more comprehensive, e.g. space-separate vs.
 # equals-separated for everything.

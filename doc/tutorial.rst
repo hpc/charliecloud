@@ -108,7 +108,7 @@ We will use the following simple Dockerfile:
 .. literalinclude:: ../examples/hello/Dockerfile
    :language: docker
 
-This creates a minimal CentOS 8 image with :code:`ssh` installed. We
+This creates a minimal AlmaLinux 8 image with :code:`ssh` installed. We
 will encounter more complex Dockerfiles later in this tutorial.
 
 Build Charliecloud image
@@ -122,7 +122,7 @@ context directory :code:`.`, which in this case is the current directory.
 
   $ ch-image build --force .
   inferred image name: hello
-  2 FROM centos:8
+  2 FROM almalinux:8
   will use --force: rhel8: CentOS/RHEL 8+
   [...]
   7 COPY ['.'] -> 'hello'
@@ -136,13 +136,13 @@ context directory :code:`.`, which in this case is the current directory.
    progress. While not shown above, it uses yellow for this chatter, while
    build command output remains in the default color (e.g., white).
 
-This image and the :code:`centos:8` base image used to build it are now
+This image and the :code:`almalinux:8` base image used to build it are now
 visible in Charliecloud's builder storage:
 
 ::
 
   $ ch-image list
-  centos:8
+  almalinux:8
   hello
 
 
@@ -631,9 +631,9 @@ Third-party software compiled from source
 Under this method, one uses :code:`RUN` commands to fetch the desired software
 using :code:`curl` or :code:`wget`, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic CentOS image
-(:code:`examples/Dockerfile.centos8`):
+(:code:`examples/Dockerfile.almalinux8`):
 
-.. literalinclude:: ../examples/Dockerfile.centos8
+.. literalinclude:: ../examples/Dockerfile.almalinux8
    :language: docker
    :lines: 2-
 
@@ -648,7 +648,7 @@ useful to show a real example.
 
 So what is going on here?
 
-1. Use the latest CentOS 8 as the base image.
+1. Use the latest AlmaLinux 8 as the base image.
 
 2. Install a basic build system using the OS package manager.
 

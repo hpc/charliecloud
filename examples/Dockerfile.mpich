@@ -6,7 +6,7 @@
 #
 # ch-test-scope: full
 
-FROM centos8
+FROM almalinux8
 
 RUN dnf install -y --setopt=install_weak_deps=false \
                 automake \
