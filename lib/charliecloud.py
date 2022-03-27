@@ -1172,14 +1172,21 @@ class Registry_HTTP:
 
    # https://stackoverflow.com/a/58055668
    class Bearer_Auth(requests.auth.AuthBase):
-      __slots__ = ("token",)
-      def __init__(self, token):
+      __slots__ = ("token","auth_d")
+
+      # For tokens obtained anonymously, store the dictionary of the parsed
+      # WWW-Authenticate header in auth_d, so we can later obtain an
+      # authenticated token if the anonymous token is not authorized.
+      def __init__(self, token, auth_d=None):
          self.token = token
+         self.auth_d = auth_d
+      def is_anon(self):
+         return self.auth_d is not None
       def __call__(self, req):
          req.headers["Authorization"] = "Bearer %s" % self.token
          return req
       def __str__(self):
-         return ("Bearer %s" % self.token[:32])
+         return ("Bearer (Anon: %s) %s" % (self.is_anon(), self.token[:32]))
 
    class Null_Auth(requests.auth.AuthBase):
       def __call__(self, req):
@@ -1212,7 +1219,7 @@ class Registry_HTTP:
       (username, password) = self.creds.get()
       self.auth = requests.auth.HTTPBasicAuth(username, password)
 
-   def authenticate_bearer(self, res, auth_d):
+   def authenticate_bearer(self, res, auth_d, force_auth=False):
       VERBOSE("authenticating using Bearer")
       # Registries vary in what they put in WWW-Authenticate. Specifically,
       # for everything except NGC, we get back realm, service, and scope. NGC
@@ -1230,16 +1237,19 @@ class Registry_HTTP:
       # 13.6.3-ee will hand out an anonymous token, but that token is rejected
       # with ‘error="insufficient_scope"’ when the request is re-tried.
       token = None
-      if (res.request.method not in ("GET", "HEAD")):
+      if force_auth:
+         VERBOSE("forcing retrieval of authenticated token")
+      elif (res.request.method not in ("GET", "HEAD")):
          VERBOSE("won't request anonymous token for %s" % res.request.method)
       else:
          VERBOSE("requesting anonymous auth token")
          res = self.request_raw("GET", auth_d["realm"], {200,401,403},
-                                params=params)
+                              params=params)
          if (res.status_code != 200):
             VERBOSE("anonymous access rejected")
          else:
             token = res.json()["token"]
+            self.auth = self.Bearer_Auth(token, auth_d)
       # If that failed or was inappropriate, try for an authenticated token.
       if (token is None):
          (username, password) = self.creds.get()
@@ -1247,8 +1257,8 @@ class Registry_HTTP:
          res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
                                 params=params)
          token = res.json()["token"]
-      VERBOSE("received auth token: %s" % (token[:32]))
-      self.auth = self.Bearer_Auth(token)
+         self.auth = self.Bearer_Auth(token)
+      VERBOSE("received auth token: %s" % self.auth)
 
    def authorize(self, res):
       "Authorize using the WWW-Authenticate header in failed response res."
@@ -1427,6 +1437,13 @@ class Registry_HTTP:
          self.authorize(res)
          VERBOSE("retrying with auth: %s" % self.auth)
          res = self.request_raw(method, url, statuses, **kwargs)
+         if (res.status_code == 401
+               and isinstance(self.auth, self.Bearer_Auth)
+               and self.auth.is_anon()):
+            VERBOSE("HTTP 401 unauthorized with anonymous token")
+            self.authenticate_bearer(res, self.auth.auth_d, force_auth=True)
+            VERBOSE("retrying with auth: %s" % self.auth)
+            res = self.request_raw(method, url, statuses, **kwargs)
       if (out is not None and res.status_code == 200):
          try:
             length = int(res.headers["Content-Length"])
