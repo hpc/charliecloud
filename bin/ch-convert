@@ -207,29 +207,8 @@ cv_tar_chimage () {
 
 cv_tar_dir () {
     tar_in_validate "$1"
-    # Infer decompression argument because GNU tar is unable to do so if input
-    # is a pipe, and we want to keep pv(1). See:
-    # https://www.gnu.org/software/tar/manual/tar.html#gzip
-    case $1 in
-        *.tar)
-            decompress=
-            ;;
-        *.tar.gz)
-            decompress=z
-            ;;
-        *.tar.xz)
-            decompress=J
-            ;;
-        *.tgz)
-            decompress=z
-            ;;
-        *)
-            echo "unknown extension: ${tarball}" 1>&2
-            exit 1
-            ;;
-    esac
     dir_out_validate "$2"
-    INFO 'checking if tarbomb ...'
+    INFO 'analyzing ...'
     root=$(tar_root "$1")
     INFO 'unpacking ...'
     mkdir "$2"
@@ -264,7 +243,7 @@ cv_tar_dir () {
     VERBOSE "exclude patterns: ${ex1} ${ex2} ${ex3}"
     #shellcheck disable=SC2094
       pv_ -s "$(stat -c%s "$1")" < "$1" \
-    | tar x$decompress -p -C "$2" -f - \
+    | tar x"$(tar_decompress_arg "$1")" -p -C "$2" -f - \
           --xform 's|^\./||x' --strip-components=$strip_ct \
           --anchored --no-wildcards-match-slash \
           --exclude="$ex1" --exclude="$ex2" --exclude="$ex3"
@@ -511,6 +490,31 @@ path_noclobber () {
     fi
 }
 
+# Print the appropriate tar(1) decompression argument for file named $1, which
+# may be the empty string, because GNU tar is unable to infer it if input is a
+# pipe [1], and we want to keep pv(1).
+#
+# [1]: https://www.gnu.org/software/tar/manual/tar.html#gzip
+tar_decompress_arg () {
+    case $1 in
+        *.tar)
+            echo
+            ;;
+        *.tar.gz)
+            echo z
+            ;;
+        *.tar.xz)
+            echo J
+            ;;
+        *.tgz)
+            echo z
+            ;;
+        *)
+            FATAL "unknown extension: ${tarball}"
+            ;;
+    esac
+}
+
 # Print the name of the root directory of tarball $1 on stdout, if there is
 # one. If not, i.e. $1 is a tarbomb, return the empty string.
 #
@@ -523,13 +527,20 @@ path_noclobber () {
 #      listed in the tarball might be "foo", "/foo", or "./foo"; in all three
 #      cases this function prints "foo".
 #
-#   2. Tarballs have no index, so listing all the members requires reading the
-#      entire archive (and unpacking it would be a second full read).
-#      Therefore, we list only the first N members, and if there's no siblings
-#      at the root level by then, we assume there are none later either.
-#      Stripping this erroneous “root” directory at unpack time will yield a
-#      broken image but won't make a mess because Charliecloud provides a new
-#      root directory.
+#   2. Tarballs have no index, so listing all members requires reading and
+#      decompressing the entire archive (and unpacking is a second full read).
+#      I have not found a way to detect a tarbomb without listing all members;
+#      doing so is issue #1325.
+#
+#      I have not tested decompressing once and then reading the decompressed
+#      version twice. Some quick testing suggests that we spend almost all the
+#      read time in gzip, but this approach adds time to write the
+#      uncompressed tarball in addition to space to store it, so it's not an
+#      appealing approach to me.
+#
+#      Previously, we listed only the first N members, but this breaks on
+#      Spack images if /spack is first in the archive because that directory
+#      can contain tens of thousands of files (maybe more).
 #
 #   3. GNU tar lists members newline-separated. This still works for member
 #      names containing newline, because it's escaped as "\n". Some other
@@ -544,14 +555,18 @@ tar_root () {
     # inclusive, i.e. everything except the first component; (3) delete blank
     # lines, because the first component often appears alone. We use sed
     # because --xform does not apply to listing.
-    sed_='s|^\.?/||;s|/.*$||;/^$/d'
+    #shellcheck disable=SC2094
+    list=$(  pv_ -s "$(stat -c%s "$1")" < "$1" \
+           | tar t"$(tar_decompress_arg "$1")" -f - \
+           | sed -E 's|^\.?/||; s|/.*$||; /^$/d')
     # Get the first path component of the first file in the tarball.
-    root1=$(tar tf "$1" | head -n 2 | sed -E "$sed_" | head -n 1)
-    # List first N members; keep only first real path component of each;
-    # search for any such component that doesn't match the first member's.
-    if tar tf "$1" | head -n 1024 | sed -E "$sed_" | grep -Fxvq "$root1"; then
+    root1=$(echo "$list" | head -n 1)
+    # Find members whose first component does not match the first member's.
+    if echo "$list" | grep -Fxvq "^$root1\$"; then
+        VERBOSE 'tarbomb: yes'
         echo ''
     else
+        VERBOSE 'tarbomb: no'
         echo "$root1"
     fi
 }
