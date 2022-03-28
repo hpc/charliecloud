@@ -562,7 +562,7 @@ tar_root () {
     # Get the first path component of the first file in the tarball.
     root1=$(echo "$list" | head -n 1)
     # Find members whose first component does not match the first member's.
-    if echo "$list" | grep -Fxvq "^$root1\$"; then
+    if echo "$list" | grep -Fxvq "$root1"; then
         VERBOSE 'tarbomb: yes'
         echo ''
     else
