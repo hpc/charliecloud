@@ -169,8 +169,10 @@ else
     }
 fi
 
-# Use pv to show a progress bar, if it's available. (We also don't want a
-# progress bar if stdin is not a terminal, but pv takes care of that.)
+# Use pv(1) to show a progress bar, if it's available, otherwise cat(1).
+# WARNING: You must pipe in the file because arguments are ignored if this is
+# cat(1). (We also don't want a progress bar if stdin is not a terminal, but
+# pv takes care of that.)
 if command -v pv > /dev/null 2>&1; then
     pv_ () {
         pv -pteb "$@"
