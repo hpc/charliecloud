@@ -107,7 +107,8 @@ class Image_Puller:
          # manifest
          self.manifest_load()
       except ch.Not_In_Registry_Error:
-         ch.FATAL("not in registry: %s" % self.registry.ref)
+         ch.FATAL("unauthorized or image not in registry : %s"
+                  % self.registry.ref)
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
