@@ -532,7 +532,8 @@ EOF
     fi
 
     # name does not exist remotely, in library
-    run ch-image pull doesnotexist:latest
+    # set bogus creds in env vars so we're not prompted
+    CH_IMAGE_USERNAME="" CH_IMAGE_PASSWORD="" run ch-image pull doesnotexist:latest
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'registry-1.docker.io:443/library/doesnotexist:latest'* ]]
@@ -544,7 +545,8 @@ EOF
     [[ $output = *'registry-1.docker.io:443/library/alpine:doesnotexist'* ]]
 
     # name does not exist remotely, not in library
-    run ch-image pull charliecloud/doesnotexist:latest
+    # set bogus creds in env vars so we're not prompted
+    CH_IMAGE_USERNAME="" CH_IMAGE_PASSWORD="" run ch-image pull charliecloud/doesnotexist:latest
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'registry-1.docker.io:443/charliecloud/doesnotexist:latest'* ]]

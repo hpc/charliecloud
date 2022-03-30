@@ -1254,11 +1254,15 @@ class Registry_HTTP:
       if (token is None):
          (username, password) = self.creds.get()
          auth = requests.auth.HTTPBasicAuth(username, password)
-         res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
-                                params=params)
-         token = res.json()["token"]
-         self.auth = self.Bearer_Auth(token)
-      VERBOSE("received auth token: %s" % self.auth)
+         res = self.request_raw("GET", auth_d["realm"], {200,401,403},
+                                auth=auth, params=params)
+         if (res.status_code != 200):
+            VERBOSE("authenticated access rejected")
+         else:
+            token = res.json()["token"]
+            self.auth = self.Bearer_Auth(token)
+      if token:
+         VERBOSE("received auth token: %s" % self.auth)
 
    def authorize(self, res):
       "Authorize using the WWW-Authenticate header in failed response res."

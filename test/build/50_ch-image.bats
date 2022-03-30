@@ -193,7 +193,8 @@ EOF
     [[ $output = *"00_tiny"* ]]
 
     # name does not exist remotely, in library
-    run ch-image list doesnotexist:latest
+    # set bogus creds in env vars so we're not prompted
+    CH_IMAGE_USERNAME="" CH_IMAGE_PASSWORD="" run ch-image list doesnotexist:latest
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'in local storage:    no'* ]]
@@ -211,7 +212,8 @@ EOF
     [[ $output = *'archs available:     n/a'* ]]
 
     # name does not exist remotely, not in library
-    run ch-image list charliecloud/doesnotexist:latest
+    # set bogus creds in env vars so we're not prompted
+    CH_IMAGE_USERNAME="" CH_IMAGE_PASSWORD="" run ch-image list charliecloud/doesnotexist:latest
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'in local storage:    no'* ]]
@@ -229,7 +231,8 @@ EOF
     [[ $output = *'archs available:     n/a'* ]]
 
     # in storage, does not exist remotely
-    run ch-image list 00_tiny
+    # set bogus creds in env vars so we're not prompted
+    CH_IMAGE_USERNAME="" CH_IMAGE_PASSWORD="" run ch-image list 00_tiny
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'in local storage:    yes'* ]]
