@@ -92,7 +92,7 @@ for oldtar in "$@"; do
     ch-image list
 
     INFO "testing"
-    ch-test -b ch-image -s "$scope" all
+    ch-test -b ch-image --pedantic=no -s "$scope" all
 
     INFO "deleting: $storage"
     rm -Rf --one-file-system "$storage"
