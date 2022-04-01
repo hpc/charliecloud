@@ -17,7 +17,7 @@ and run the test suite.
 
 Usage:
 
-  $ old-storage.sh WORKDIR TAR1 [TAR2 ...]
+  $ old-storage.sh SCOPE WORKDIR TAR1 [TAR2 ...]
 
 WORKDIR is where ch-image storage are unpacked. It must be empty and have
 enough space for one storage directory.
@@ -28,16 +28,18 @@ certain properties:
   1. Named storage-$VERSION.$ARCH.tar.gz, e.g. “storage-0.27.x86_64.tar.gz”.
      (Note: $ARCH is not currently validated but may be in the future.)
 
-  2. Single enclosing directory (i.e., not a tarbomb) that matches the tarball
-     name, e.g.:
+  2. Is a tarbomb, e.g.:
 
        $ tar tf storage-0.26.x86_64.tar.gz | head -3
-       storage-0.26/
-       storage-0.26/dlcache/
-       storage-0.26/dlcache/alpine:3.9.fat.json
+       ./
+       ./dlcache/
+       ./dlcache/alpine:3.9.fat.json
 
-  3. The result of “ch-image reset && ch-test -b ch-image build” or
-     equivalent, though mostly rather than fully successful tests are fine.
+  3. The result of:
+
+       $ rm -Rf $(ch-image storage-path) && ch-test -b ch-image build
+
+     or equivalent, though mostly rather than fully successful tests are fine.
 
      Note: Best practice is to generate the tarball at the time of release,
      because old test suites often don’t pass due to changing source images.
@@ -55,14 +57,16 @@ if [[ $1 = --help || $1 = -? ]]; then
     usage
     exit 0
 fi
-if [[ $# -lt 2 ]]; then
+if [[ $# -lt 3 ]]; then
     usage
     exit 1
 fi
+scope=$1; shift
 workdir=$1; shift
 
 trap 'fatal_msg "command failed on line $LINENO"' ERR
-export PATH=$(cd "$(dirname "$0")" && pwd)/../bin:$PATH
+PATH=$(cd "$(dirname "$0")" && pwd)/../bin:$PATH
+export PATH
 
 
 ### Main loop
@@ -76,17 +80,19 @@ for oldtar in "$@"; do
     storage=${workdir}/${base}
 
     INFO "unpacking: $oldtar -> $storage"
+    [[ -d $workdir ]]
     [[ ! -d $storage ]]
-    tar xf "$oldtar" -C "$workdir"
+    mkdir "$storage"
+    tar xf "$oldtar" -C "$storage"
     [[ -d $storage ]]
     export CH_IMAGE_STORAGE=$storage
-    INFO "unpacked: $(du -sh $storage | cut -f1) bytes in $(du --inodes -sh $storage | cut -f1) inodes"
+    INFO "unpacked: $(du -sh "$storage" | cut -f1) bytes in $(du --inodes -sh "$storage" | cut -f1) inodes"
 
     INFO "upgrading"
     ch-image list
 
     INFO "testing"
-    ch-test -b ch-image all
+    ch-test -b ch-image -s "$scope" all
 
     INFO "deleting: $storage"
     rm -Rf --one-file-system "$storage"
