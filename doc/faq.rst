@@ -142,6 +142,18 @@ Let Charliecloud create the storage directory. For example, if you want to use
 setting :code:`CH_IMAGE_STORAGE`), ensure :code:`/big/containers/$USER` exists
 but do not create the final directory :code:`charlie`.
 
+"Transport endpoint is not connected"
+-------------------------------------
+
+This error likely means that the SquashFS mount process has exited or been
+killed and you’re attempting to access the mount location. This is most often
+seen when a parallel launcher like :code:`srun` is used to run the mount
+command. :code:`srun` will see that the mount command has exited successfully
+and clean up all child processes, including that of the active mount. A
+workaround is to use a tool like :code:`pdsh`. For more details see
+Charliecloud issue
+`#230 <https://github.com/hpc/charliecloud/issues/230>`_.
+
 
 Unexpected behavior
 ===================
