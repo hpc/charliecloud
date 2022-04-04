@@ -78,6 +78,10 @@ Common options placed before the sub-command:
         architecture as a simple string and converts to/from the registry view
         transparently.
 
+  :code:`--auth MODE`
+    Set authentication mode to :code:`MODE`, which is one of **[FIXME]** or
+    :code:`auto` (the default). See section "Authentication" below.
+
   :code:`--no-cache`
     Download everything needed, ignoring the cache.
 
@@ -98,16 +102,55 @@ Common options placed before the sub-command:
 Authentication
 ==============
 
-If the remote repository needs authentication, Charliecloud will prompt you
-for a username and password. Note that some repositories call the secret
-something other than "password"; e.g., GitLab calls it a "personal access
-token (PAT)".
+There is no separate :code:`login` subcommand like some other container
+implementations. If the remote repository needs authentication, Charliecloud
+will prompt you for a username and password. Note that some repositories call
+the secret something other than "password"; e.g., GitLab calls it a "personal
+access token (PAT)".
 
-These values are remembered for the life of the process and silently
-re-offered to the registry if needed. One case when this happens is on push to
-a private registry: many registries will first offer a read-only token when
-:code:`ch-image` checks if something exists, then re-authenticate when
-upgrading the token to read-write for upload. If your site uses one-time
+For non-interactive authentication, you can use environment variables
+:code:`CH_IMAGE_USERNAME` and :code:`CH_IMAGE_PASSWORD`. Only do this if you
+fully understand the implications for your specific use case, because it is
+difficult to securely store secrets in environment variables.
+
+A complication is that some registries respond ambiguously to anonymous (i.e.,
+not authenticated) requests: if a resource exists but requires authentication
+to access (e.g., to pull a private image), these registries tell Charliecloud
+it is not found. Thus, an second authenticated request is needed, to either
+access the resource or determine that is really does not exist. Also, it can
+be useful to always authenticate for registries that have private rate limits
+if logged in, such as `Docker Hub
+<https://docs.docker.com/docker-hub/download-rate-limit/>`_.
+
+However, sometimes you do not have a registry account or don't want to log in
+for whatever reason; in these cases, prompting for a password to attempt an
+authenticated request is simply an annoyance. Therefore, :code:`ch-image`
+provides three authentication modes, set with the :code:`--auth=MODE` common
+option:
+
+   * :code:`always`: Try to authenticate with the registry immediately after
+     connection. If this fails, exit with an error, i.e., anonymous access is
+     not possible.
+
+   * :code:`never`: Only access the registry anonymously.
+
+   * :code:`lazy`: Start with anonymous access, but try to upgrade to
+     authenticated if it seems necessary, e.g. anonymously determine if layers
+     in a public image exist but authenticate before uploading. Note that the
+     heuristic is unreliable, e.g. with nVidia NGC, :code:`ch-image` cannot
+     pull images that require authentication because it thinks they do not
+     exist (issue `#1318 <https://github.com/hpc/charliecloud/issues/1318>`_).
+     This was the only mode before 0.28.
+
+   * :code:`auto` (the default): Use mode :code:`always` if
+     :code:`CH_IMAGE_USERNAME` and :code:`CH_IMAGE_PASSWORD` are non-empty;
+     otherwise :code:`lazy`.
+
+The username and password are remembered for the life of the process and
+silently re-offered to the registry if needed. One case when this happens is
+on push to a private registry: many registries will first offer a read-only
+token when :code:`ch-image` checks if something exists, then re-authenticate
+when upgrading the token to read-write for upload. If your site uses one-time
 passwords such as provided by a security device, you can specify
 :code:`--password-many` to provide a new secret each time.
 
@@ -116,12 +159,6 @@ normal Python variables for this information, without pinning them into
 physical RAM with `mlock(2)
 <https://man7.org/linux/man-pages/man2/mlock.2.html>`_ or any other special
 treatment, so we cannot guarantee they will never reach non-volatile storage.
-
-There is no separate :code:`login` subcommand like Docker. For non-interactive
-authentication, you can use environment variables :code:`CH_IMAGE_USERNAME`
-and :code:`CH_IMAGE_PASSWORD`. Only do this if you fully understand the
-implications for your specific use case, because it is difficult to securely
-store secrets in environment variables.
 
 
 Storage directory
@@ -855,4 +892,4 @@ Environment variables
 .. include:: py_env.rst
 
 
-..  LocalWords:  tmpfs'es bigvendor AUTH Aimage
+..  LocalWords:  tmpfs'es bigvendor AUTH Aimage auth
