@@ -1627,9 +1627,6 @@ class Storage:
          nothing unexpected may be present. However, it is not comprehensive.
          The main purpose is to check for bad upgrades and other programming
          errors, not meddling."""
-      #def ensure_file(path):
-      #   if (not os.path.isfile(path)):
-      #     FATAL("%s file missing: %s" % (msg_prefix, path))
       DEBUG("validating storage directory: %s" % self.root)
       msg_prefix = "invalid storage directory"
       # Check that all expected files exist, and no others. Note that we don't

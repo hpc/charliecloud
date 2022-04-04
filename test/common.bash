@@ -127,12 +127,13 @@ env_require () {
 }
 
 image_ok () {
-    ls -ld "$1" "${1}/WEIRD_AL_YANKOVIC" || true
     test -d "$1"
     ls -ld "$1" || true
     byte_ct=$(du -s -B1 "$1" | cut -f1)
     echo "$byte_ct"
     [[ $byte_ct -ge 3145728 ]]  # image is at least 3MiB
+    [[ -d $1/bin && -d $1/dev && -d $1/usr ]]
+
 }
 
 multiprocess_ok () {
