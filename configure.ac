@@ -316,6 +316,15 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
 AC_MSG_RESULT($have_userns)
 
 
+### ch-run optional ##########################################################
+
+# FNM_EXTMATCH is a GNU extension to support extended globs in fnmatch(3).
+AC_CHECK_DECL(FNM_EXTMATCH,
+              [have_fnm_extmatch=yes],
+              [have_fnm_extmatch=no],
+              [[#include <fnmatch.h>]])
+
+
 ### SquashFS #################################################################
 
 # SquashFS Tools
@@ -605,9 +614,12 @@ AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
 AC_SUBST([SPHINX])
 
+AS_IF([test $have_fnm_extmatch = yes],
+      [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
 AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
 AS_IF([test $have_libsquashfuse = yes],
       [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
+
 
 
 ### Prepare report ###########################################################
@@ -751,6 +763,9 @@ Building Charliecloud
 
   required:
     C99 compiler ... ${CC} ${CC_VERSION}
+
+  optional:
+    extended glob patterns in --unset-env ... ${have_fnm_extmatch}
 
   ch-run(1) internal SquashFS mounting: ${have_libsquashfuse}
     enabled ... ${want_libsquashfuse}

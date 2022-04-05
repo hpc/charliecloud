@@ -17,13 +17,14 @@
 #include "config.h"
 #include "ch_misc.h"
 
-/* FNM_EXTMATCH is a GNU extension to support extended globs in fnmatch(3).
-   Define as 0 to ignore this flag where not available. */
-#if !defined(FNM_EXTMATCH)
-#define FNM_EXTMATCH 0
-#endif
 
 /** Macros **/
+
+/* FNM_EXTMATCH is a GNU extension to support extended globs in fnmatch(3).
+   If not available, define as 0 to ignore this flag. */
+#ifndef HAVE_FNM_EXTMATCH
+#define FNM_EXTMATCH 0
+#endif
 
 /* Number of supplemental GIDs we can deal with. */
 #define SUPP_GIDS_MAX 128

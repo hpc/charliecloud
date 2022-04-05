@@ -609,11 +609,11 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'environment: foo=$test:app'* ]]
 
-   # missing environment variable
-   run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
-   echo "$output"
-   [[ $status -eq 1 ]]
-   [[ $output = *'$PATH:foo: No such file or directory'* ]]
+    # missing environment variable
+    run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
 
 @test 'ch-run --unset-env' {
@@ -655,6 +655,21 @@ EOF
     [[ $status -eq 0 ]]
     [[ $(echo "$output" | grep -E '^chue_') = '' ]]
 
+    printf '\n# Empty string\n\n'
+    run ch-run --unset-env= "$ch_timg" -- env
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'--unset-env: GLOB must have non-zero length'* ]]
+}
+
+
+@test 'ch-run --unset-env extglobs' {
+    scope standard
+    ch-run --feature extglob || skip 'extended globs not available'
+
+    export chue_1=foo
+    export chue_2=bar
+
     printf '\n# With extended globs to select\n\n'
     run ch-run --unset-env='chue_@(1|2)' "$ch_timg" -- env
     echo "$output"
@@ -665,14 +680,13 @@ EOF
     run ch-run --unset-env='!(chue_*)' "$ch_timg" -- env
     echo "$output"
     [[ $status -eq 0 ]]
-    diff -u <(printf 'chue_1=foo\nchue_2=bar\nCH_RUNNING=Weird Al Yankovic\n' | sort) \
-            <(echo "$output" | sort)
-
-    printf '\n# Empty string\n\n'
-    run ch-run --unset-env= "$ch_timg" -- env
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'--unset-env: GLOB must have non-zero length'* ]]
+    output_expected=$(cat <<'EOF'
+CH_RUNNING=Weird Al Yankovic
+chue_1=foo
+chue_2=bar
+EOF
+)
+    diff -u <(echo "$output_expected") <(echo "$output" | LC_ALL=C sort)
 }
 
 
