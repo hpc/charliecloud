@@ -71,7 +71,7 @@ setup () {
 
     # Create fake history.
     mkdir -p "$img"/ch
-    cat <<'EOF' >> "$img"/ch/metadata.json
+    cat <<'EOF' > "$img"/ch/metadata.json
 {
    "history": [ {"created_by": "ch-test" } ]
 }
@@ -112,4 +112,19 @@ EOF
     push2=$(echo "$output" | grep -E 'layer 1/1: .+: checking')
 
     diff -u <(echo "$push1") <(echo "$push2")
+}
+
+@test "${tag}: environment variables round-trip" {
+    cat <<'EOF' | ch-image build -t tmpimg -
+FROM 00_tiny
+ENV weird="al yankovic"
+EOF
+
+    ch-image push --tls-no-verify tmpimg localhost:5000/tmpimg
+    ch-image pull --tls-no-verify localhost:5000/tmpimg $BATS_TMPDIR/tmpimg
+
+    run ch-run $BATS_TMPDIR/tmpimg --unset-env='*' --set-env -- env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'weird=al yankovic'* ]]
 }
