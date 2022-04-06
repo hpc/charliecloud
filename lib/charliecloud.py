@@ -5,6 +5,8 @@ import collections.abc
 import copy
 import datetime
 import enum
+import errno
+import fcntl
 import getpass
 import hashlib
 import io
@@ -26,7 +28,8 @@ import types
 
 import version
 
-## Imports not in standard library ##
+
+## Hairy imports ##
 
 # List of dependency problems.
 depfails = []
@@ -1133,7 +1136,7 @@ class Progress_Reader:
    def close(self):
       if (self.progress is not None):
          self.progress.done()
-         ossafe(self.fp.close, "can't close: %s" % self.fp.name)
+         close_(self.fp)
 
    def read(self, size=-1):
      data = ossafe(self.fp.read, "can't read: %s" % self.fp.name, size)
@@ -1170,7 +1173,7 @@ class Progress_Writer:
    def close(self):
       if (self.progress is not None):
          self.progress.done()
-         ossafe(self.fp.close, "can't close: %s" % self.path)
+         close_(self.fp)
 
    def start(self, length):
       self.progress = Progress(self.msg, "MiB", 2**20, length)
@@ -1405,7 +1408,7 @@ class Registry_HTTP:
       VERBOSE("layer tarball: %s" % path)
       fp = open_(path, "rb")  # open file avoids reading it all into memory
       self.blob_upload(digest, fp, note)
-      ossafe(fp.close, "can't close: %s" % path)
+      close_(fp)
 
    def manifest_to_file(self, path, msg, digest=None):
       """GET manifest for the image and save it at path. If digest is given,
@@ -1503,7 +1506,8 @@ class Storage:
    """Source of truth for all paths within the storage directory. Do not
       compute any such paths elsewhere!"""
 
-   __slots__ = ("root",)
+   __slots__ = ("lockfile_fp",
+                "root")
 
    def __init__(self, storage_cli):
       self.root = storage_cli
@@ -1520,6 +1524,10 @@ class Storage:
    @property
    def download_cache(self):
       return self.root // "dlcache"
+
+   @property
+   def lockfile(self):
+      return self.root // "lock"
 
    @property
    def unpack_base(self):
@@ -1564,6 +1572,10 @@ class Storage:
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
+      # WARNING: This function contains multiple calls to self.lock(). The
+      # point is to lock as soon as we know the storage directory exists, and
+      # definitely before writing anything, to reduce the race conditions that
+      # surely exist. Ensure new code paths also call self.lock().
       self.init_move_old()  # see issues #1160 and #1243
       if (not os.path.isdir(self.root)):
          op = "initializing"
@@ -1578,9 +1590,11 @@ class Storage:
             v_found = 1
       if (v_found == STORAGE_VERSION):
          VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
+         self.lock()
       elif (v_found in {None, 1, 2}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
          mkdir(self.root)
+         self.lock()
          mkdir(self.download_cache)
          mkdir(self.build_cache)
          mkdir(self.unpack_base)
@@ -1633,6 +1647,27 @@ class Storage:
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
 
+   def lock(self):
+      """Lock the storage directory. Charliecloud does not at present support
+         concurrent use of ch-image(1) against the same storage directory."""
+      # File locking on Linux is a disaster [1, 2]. Currently, we use POSIX
+      # fcntl(2) locking, which has major pitfalls but should be fine for our
+      # use case. It apparently works on NFS [3] and does not require
+      # cleanup/stealing like a lock file would.
+      #
+      # [1]: https://apenwarr.ca/log/20101213
+      # [2]: http://0pointer.de/blog/projects/locking.html
+      # [3]: https://stackoverflow.com/a/22411531
+      self.lockfile_fp = open_(self.lockfile, "w")
+      try:
+         fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+      except OSError as x:
+         if (x.errno in { errno.EACCES, errno.EAGAIN }):
+            FATAL("storage directory is already in use",
+                  "concurrent instances of ch-image cannot share the same storage directory")
+         else:
+            FATAL("can't lock storage directory: %s" % x.strerror)
+
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
          digest = "skinny"
@@ -1648,6 +1683,9 @@ class Storage:
          self.init()  # largely for debugging
       else:
          FATAL("%s not a builder storage" % (self.root));
+
+   def unlock(self):
+      close_(self.lockfile_fp)
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
@@ -1830,6 +1868,13 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + [img, "--"] + args)
    return cmd(args, env=env, fail_ok=fail_ok)
 
+def close_(fp):
+   try:
+      path = fp.name
+   except AttributeError:
+      path = "(no path)"
+   ossafe(fp.close, "can't close: %s" % path)
+
 def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
       or not the process succeeded; otherwise, return (zero) only if the
@@ -1966,7 +2011,7 @@ def file_ensure_exists(path):
       symlink), do nothing; otherwise, create it as an empty regular file."""
    if (not os.path.lexists(path)):
       fp = open_(path, "w")
-      fp.close()
+      close_(fp)
 
 def file_gzip(path, args=[]):
    """Run pigz if it's available, otherwise gzip, on file at path and return
@@ -1996,7 +2041,7 @@ def file_gzip(path, args=[]):
    fp = open_(path_c, "r+b")
    ossafe(fp.seek, "can't seek: %s" % fp, 4)
    ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
-   ossafe(fp.close, "can't close: %s" % fp)
+   close_(fp)
    return path_c
 
 def file_hash(path):
@@ -2009,7 +2054,7 @@ def file_hash(path):
       if (len(data) == 0):
          break  # EOF
       h.update(data)
-   ossafe(fp.close, "can't close: %s" % path)
+   close_(fp.close)
    return h.hexdigest()
 
 def file_read(path, text=True):
@@ -2023,7 +2068,7 @@ def file_read(path, text=True):
       encoding = None
    fp = open_(path, mode, encoding=encoding)
    data = ossafe(fp.read, "can't read: %s" % path)
-   ossafe(fp.close, "can't close: %s" % path)
+   close_(fp)
    return data
 
 def file_size(path, follow_symlinks=False):
@@ -2039,7 +2084,7 @@ def file_write(path, content, mode=None):
    ossafe(fp.write, "can't write: %s" % path, content)
    if (mode is not None):
       ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
-   ossafe(fp.close, "can't close: %s" % path)
+   close_(fp)
 
 def grep_p(path, rx):
    """Return True if file at path contains a line matching regular expression

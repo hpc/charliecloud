@@ -139,7 +139,7 @@ def main(cli_):
    else:
       fp = ch.open_(cli.file, "rt")
       text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
-      fp.close()
+      ch.close_(fp)
 
    # Parse it.
    parser = lark.Lark("?start: dockerfile\n" + ch.GRAMMAR,
