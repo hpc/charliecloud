@@ -121,9 +121,9 @@ ENV weird="al yankovic"
 EOF
 
     ch-image push --tls-no-verify tmpimg localhost:5000/tmpimg
-    ch-image pull --tls-no-verify localhost:5000/tmpimg $BATS_TMPDIR/tmpimg
+    ch-image pull --tls-no-verify localhost:5000/tmpimg "$BATS_TMPDIR"/tmpimg
 
-    run ch-run $BATS_TMPDIR/tmpimg --unset-env='*' --set-env -- env
+    run ch-run "$BATS_TMPDIR"/tmpimg --unset-env='*' --set-env -- env
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'weird=al yankovic'* ]]
