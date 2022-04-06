@@ -48,6 +48,7 @@ const struct argp_option options[] = {
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
    { "ch-ssh",         -8, 0,      0, "bind ch-ssh into image"},
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
+   { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },
    { "join",          'j', 0,      0, "use same container as peer ch-run" },
    { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
@@ -341,9 +342,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    int i;
 
    switch (key) {
-   case -10: // --env-no-expand
-      args->c.env_expand = false;
-      break;
    case -2: // --private-home
       args->c.private_home = true;
       break;
@@ -384,8 +382,18 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case -9: // --no-passwd
       args->c.private_passwd = true;
       break;
-   case 'c':
-      args->initial_dir = arg;
+   case -10: // --env-no-expand
+      args->c.env_expand = false;
+      break;
+   case -11: // --feature
+      if (!strcmp(arg, "extglob")) {
+#ifdef HAVE_FNM_EXTMATCH
+         exit(0);
+#else
+         exit(1);
+#endif
+      } else
+         FATAL("unknown feature: %s", arg);
       break;
    case 'b': {
          char *src, *dst;
@@ -407,6 +415,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
          Te (dst[0] == '/', "--bind: destination must be absolute");
          args->c.binds[i].dst = dst;
       }
+      break;
+   case 'c':
+      args->initial_dir = arg;
       break;
    case 'g':
       i = parse_int(arg, false, "--gid");
