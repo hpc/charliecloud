@@ -119,8 +119,9 @@ class Image_Pusher:
       # a list of name/value pairs separated by equals [1], with no quoting.
       #
       # [1]: https://github.com/opencontainers/image-spec/blob/main/config.md
-      config['config']['Env'] = \
-         ["%s=%s" % (k, v) for k, v in self.image.metadata["env"].items()]
+      config['config']['Env'] = ["%s=%s" % (k, v)
+                                 for k, v
+                                 in self.image.metadata.get("env", {}).items()]
       # History. Some registries, e.g., Quay, use history metadata for simple
       # sanity checks. For example, when an image's number of "empty_layer"
       # history entries doesn't match the number of layers being uploaded,
