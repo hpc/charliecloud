@@ -5,7 +5,6 @@ testfiles = \
 .dockerignore \
 Dockerfile.00_tiny \
 Dockerfile.argenv \
-Dockerfile.build2dir \
 bucache/a.df \
 bucache/a2.df \
 bucache/a3.df \

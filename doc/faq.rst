@@ -80,24 +80,6 @@ There is a lot of information here, and it comes in this order:
 *Note:* Despite the structured format, the error messages are not guaranteed
 to be machine-readable.
 
-Tarball build fails with “No command specified”
------------------------------------------------
-
-The full error from :code:`ch-builder2tar` or :code:`ch-build2dir` is::
-
-  docker: Error response from daemon: No command specified.
-
-You will also see it with various plain Docker commands.
-
-This happens when there is no default command specified in the Dockerfile or
-any of its ancestors. Some base images specify one (e.g., Debian) and others
-don’t (e.g., Alpine). Docker requires this even for commands that don’t seem
-like they should need it, such as :code:`docker create` (which is what trips
-up Charliecloud).
-
-The solution is to add a default command to your Dockerfile, such as
-:code:`CMD ["true"]`.
-
 :code:`ch-run` fails with “can't re-mount image read-only”
 ----------------------------------------------------------
 
@@ -144,6 +126,33 @@ for details.) For example::
 Alternatively, certificate verification can be disabled entirely with the
 :code:`--tls-no-verify` flag. However, users should enable this option only if
 they have other means to be confident in the registry's identity.
+
+"storage directory seems invalid"
+---------------------------------
+
+Charliecloud uses its *storage directory* (:code:`/var/tmp/$USER.sh` by
+default) for various internal uses. As such, Charliecloud needs complete
+control over this directory's contents. This error happens when the storage
+directory exists but its contents do not match what's expected, including if
+it's an empty directory, which is to protect against using common temporary
+directories like :code:`/tmp` or :code:`/var/tmp` as the storage directory.
+
+Let Charliecloud create the storage directory. For example, if you want to use
+:code:`/big/containers/$USER/charlie` for the storage directory (e.g., by
+setting :code:`CH_IMAGE_STORAGE`), ensure :code:`/big/containers/$USER` exists
+but do not create the final directory :code:`charlie`.
+
+"Transport endpoint is not connected"
+-------------------------------------
+
+This error likely means that the SquashFS mount process has exited or been
+killed and you’re attempting to access the mount location. This is most often
+seen when a parallel launcher like :code:`srun` is used to run the mount
+command. :code:`srun` will see that the mount command has exited successfully
+and clean up all child processes, including that of the active mount. A
+workaround is to use a tool like :code:`pdsh`. For more details see
+Charliecloud issue
+`#230 <https://github.com/hpc/charliecloud/issues/230>`_.
 
 
 Unexpected behavior
@@ -957,5 +966,72 @@ One fix is to configure your :code:`.bashrc` or equivalent to:
      }
 
 
-..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello
-..  LocalWords:  VirtualSize
+How can I build images for a foreign architecture?
+--------------------------------------------------
+
+QEMU
+~~~~
+
+Suppose you want to build Charliecloud containers on a system which has a
+different architecture from the target system.
+
+It's straightforward as long as you can install suitable packages on the build
+system (your personal computer?). You just need the magic of QEMU via a
+distribution package with a name like Debian's :code:`qemu-user-static`. For
+use in an image root this needs to be the :code:`-static` version, not plain
+:code:`qemu-user`, and contain a :code:`qemu-*-static` executable for your
+target architecture. In case it doesn't install “binfmt” hooks (telling Linux
+how to run foreign binaries), you'll need to make that work — perhaps it's in
+another package.
+
+That's all you need to make building with :code:`ch-image` work with a base
+foreign architecture image and the :code:`--arch` option. It's significantly
+slower than native, but quite usable — about half the speed of native for the
+ppc64le target with a build taking minutes on a laptop with a magnetic disc.
+There's a catch that images in :code:`ch-image` storage aren't distinguished
+by architecture except by any name you give them, e.g., a base image like
+:code:`debian:11` pulled with :code:`--arch ppc64le` will overwrite a native
+x86 one.
+
+For example, to build a ppc64le image on a Debian Buster amd64 host::
+
+  $ uname -m
+  x86_64
+  $ sudo apt install qemu-user-static
+  $ ch-image pull --arch ppc64le alpine:3.15
+  $ printf 'FROM alpine:3.15\nRUN apk add coreutils\n' | ch-image build -t foo -
+  $ ch-convert alpine:3.15 /var/tmp/foo
+  $ ch-run /var/tmp/foo -- uname -m
+  ppc64le
+
+PRoot
+~~~~~
+
+Another way to build a foreign image, which works even without :code:`sudo` to
+install :code:`qemu-*-static`, is to populate a chroot for it with the `PRoot
+<https://proot-me.github.io/>`_ tool, whose :code:`-q` option allows
+specifying a :code:`qemu-*-static` binary (perhaps obtained by unpacking a
+distribution package).
+
+
+How can I use tarball base images from e.g. linuxcontainers.org?
+----------------------------------------------------------------
+
+If you can't find an image repository from which to pull for the distribution
+and architecture of interest, it is worth looking at the extensive collection
+of rootfs archives `maintained by linuxcontainers.org
+<https://uk.lxd.images.canonical.com/images/>`_. They are meant for LXC, but
+are fine as a basis for Charliecloud.
+
+For example, this would leave a :code:`ppc64le/alpine:3.15` image du jour in
+the registry for use in a Dockerfile :code:`FROM` line. Note that
+linuxcontainers.org uses the opposite order for “le” in the architecture name.
+
+::
+
+  $ wget https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
+  $ ch-image import rootfs.tar.xz ppc64le/alpine:3.15
+
+
+..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
+..  LocalWords:  VirtualSize linuxcontainers jour uk lxd

@@ -135,8 +135,8 @@ Image format is specified with:
 Additional arguments:
 
   :code:`-b`, :code:`--builder BUILDER`
-    Image builder to use. See :code:`ch-build(1)` for how the default is
-    selected.
+    Image builder to use. Default: :code:`$CH_TEST_BUILDER` if set, otherwise
+    :code:`ch-image`.
 
   :code:`--dry-run`
     Print summary of what would be tested and then exit.
@@ -264,4 +264,4 @@ Output has been omitted.
    (cn001)$ ch-test examples
 
 
-..  LocalWords:  fmt img
+..  LocalWords:  fmt img LUSTREDIR

@@ -10,16 +10,12 @@ tag='ch-image push'
 
 setup () {
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
     # Skip unless GitHub Actions or there is a listener on localhost:5000.
     if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
                                       && ss -lnt | grep -F :5000); then
         skip 'no local registry'
     fi
-
-    # WARNING: If you came here looking for a way to non-interactively
-    # authenticate with ch-image, be aware that these environment variables
-    # are currently undocumented and unsupported.
     export CH_IMAGE_USERNAME=charlie
     export CH_IMAGE_PASSWORD=test
 }
@@ -71,7 +67,7 @@ setup () {
 
     # Create fake history.
     mkdir -p "$img"/ch
-    cat <<'EOF' >> "$img"/ch/metadata.json
+    cat <<'EOF' > "$img"/ch/metadata.json
 {
    "history": [ {"created_by": "ch-test" } ]
 }
@@ -112,4 +108,19 @@ EOF
     push2=$(echo "$output" | grep -E 'layer 1/1: .+: checking')
 
     diff -u <(echo "$push1") <(echo "$push2")
+}
+
+@test "${tag}: environment variables round-trip" {
+    cat <<'EOF' | ch-image build -t tmpimg -
+FROM 00_tiny
+ENV weird="al yankovic"
+EOF
+
+    ch-image push --tls-no-verify tmpimg localhost:5000/tmpimg
+    ch-image pull --tls-no-verify localhost:5000/tmpimg "$BATS_TMPDIR"/tmpimg
+
+    run ch-run "$BATS_TMPDIR"/tmpimg --unset-env='*' --set-env -- env
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'weird=al yankovic'* ]]
 }

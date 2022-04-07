@@ -38,6 +38,9 @@
 
 import abc
 import enum
+import inspect
+import sys
+
 
 @enum.unique
 class Scope(enum.Enum):
@@ -187,7 +190,7 @@ echo "$output"
 """, end="")
 
 
-class _EPEL_Mixin:
+class EPEL_Mixin:
 
    # Mixin class for RPM distros where we want to pre-install EPEL. I think
    # this should maybe go away and just go into a _Red_Hat base class, i.e.
@@ -210,63 +213,111 @@ class _EPEL_Mixin:
          self.as_grep_files(self.epel_greps, "tmpimg2", not self.preprep)])
 
 
-class _RHEL7(Test):
+class RHEL7(Test):
    config = "rhel7"
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "yum install -y ed",
                              Run.NEEDED:      "yum install -y openssh" } }
-
-class CentOS_7(_RHEL7, _EPEL_Mixin):
+class T_CentOS_7(RHEL7, EPEL_Mixin):
    scope = Scope.STANDARD
    base = "centos:7"
    prep_run = "yum install -y epel-release"
 
 
-class _RHEL8(Test):
+class RHEL8(Test):
    config = "rhel8"
-   runs = { **Test.runs, **{ Run.FAKE_NEEDED: "dnf install -y --setopt=install_weak_deps=false ed",
-                             Run.NEEDED:      "dnf install -y --setopt=install_weak_deps=false openssh" } }
+   arch_excludes = ["aarch64"]  # issue #1249
+   runs = { **Test.runs,
+            **{ Run.FAKE_NEEDED: "dnf install -y"
+                                 " --setopt=install_weak_deps=false ed",
+                Run.NEEDED:      "dnf install -y"
+                                 " --setopt=install_weak_deps=false openssh" } }
 
-class CentOS_8_Stream(_RHEL8, _EPEL_Mixin):
-   # pulling from quay.io per the CentOS wiki
+class T_RHEL_UBI_8(RHEL8):
+   base = "registry.access.redhat.com/ubi8/ubi"
+
+class CentOS_8(RHEL8, EPEL_Mixin):
+   prep_run = "dnf install -y epel-release"
+class T_CentOS_8_Stream(CentOS_8):
+   # CentOS Stream pulls from quay.io per the CentOS wiki:
    # https://wiki.centos.org/FAQ/CentOSStream#What_artifacts_are_built.3F
    base = "quay.io/centos/centos:stream8"
-   arch_excludes = ["aarch64"]  # issue #1249
-   prep_run = "dnf install -y epel-release"
-class RHEL_UBI_8(_RHEL8):
-   base = "registry.access.redhat.com/ubi8/ubi"
-   arch_excludes = ["aarch64"]  # issue #1249
+#class T_CentOS_9_Stream(CentOS_8):   # FIXME: fails importing GPG key
+#   base = "quay.io/centos/centos:stream9"
+
+class T_Alma_8(CentOS_8):
+   scope = Scope.STANDARD
+   base = "almalinux:8"  # :latest same as :8 as of 2022-03-01
+class T_Rocky_8(CentOS_8):
+   base = "rockylinux:8"  # :latest same as :8 as of 2022-03-01
 
 
-class _Fedora(_RHEL8):
+class Fedora(RHEL8):
    config = "fedora"
-
-class Fedora_26(_Fedora):
+class T_Fedora_26(Fedora):
    # We would prefer to test the lowest supported --force version, 24,
    # but the ancient version of dnf it has doesn't fail the transaction when
    # a package fails so we test with 26 instead.
    base = "fedora:26"
-class Fedora_34(_Fedora):
+class T_Fedora_34(Fedora):
    base = "fedora:34"
-class Fedora_Latest(_Fedora):
+# No worky as of Fedora 35; see issue #1163.
+class Fedora_Latest(Fedora):
    base = "fedora:latest"
 
 
-class _Debian(Test):
+class Debian(Test):
    config = "debderiv"
-   runs = { **Test.runs, **{ Run.NEEDED:      "apt-get update && apt-get install -y openssh-client" } }
-class Debian_9(_Debian):
+   runs = { **Test.runs,
+            **{ Run.NEEDED: "    apt-get update"
+                            " && apt-get install -y openssh-client" } }
+class T_Debian_9(Debian):
    base = "debian:9"
    arch_excludes = ["ppc64le"]  # base image unavailable
-class Debian_Latest(_Debian):
+class T_Debian_Latest(Debian):
    scope = Scope.STANDARD
    base = "debian:latest"
-class Ubuntu_16(_Debian):
+class T_Ubuntu_16(Debian):
    base = "ubuntu:16.04"
    arch_excludes = ["aarch64"]  # no pseudo package
-class Ubuntu_18(_Debian):
+class T_Ubuntu_18(Debian):
    base = "ubuntu:18.04"
-class Ubuntu_Latest(_Debian):
+class T_Ubuntu_Latest(Debian):
    base = "ubuntu:latest"
+
+class SUSE(Test):
+   config = "suse"
+   runs = { **Test.runs,
+            # No openssh packages seem to need --force.
+            **{ Run.FAKE_NEEDED: "zypper install -y ed",
+                Run.NEEDED:      "zypper install -y dbus-1" } }
+class T_OpenSUSE_42(SUSE):
+   base = "opensuse/archive:42.3"
+   arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
+class T_OpenSUSE_Leap_Latest(SUSE):
+   base = "opensuse/leap:latest"
+
+# Arch has tons of old tags, versioned by date, on Docker Hub. However, only
+# :latest (or equivalently :base) is documented.
+# FIXME: does not currently work; still gets fchownat() errors. See #1295
+class Arch_Latest(Test):
+   config = "arch"
+   base = "archlinux:latest"
+   arch_exclues = ["aarch64", "ppc64le"]  # base only amd64 pacman does not
+   # exit non-zero when installing openssh fails; work around this bug by
+   # grepping the pacman log.
+   runs = { **Test.runs, **{ Run.FAKE_NEEDED: "pacman -Syq --noconfirm ed; ! fgrep failed: /var/log/pacman.log",
+                             Run.NEEDED:      "pacman -Syq --noconfirm openssh; ! fgrep failed: /var/log/pacman.log" } }
+
+# FIXME: no worky; still gets "failed to set ownership". See #1296
+class Alpine(Test):
+   config = "alpine"
+   # openssh does not need --force on Alpine
+   runs = { **Test.runs, **{ Run.FAKE_NEEDED: "apk add ed",
+                             Run.NEEDED:      "apk add dbus" } }
+class Alpine_39(Alpine):
+   base = "alpine:3.9"
+class Alpine_Latest(Alpine):
+   base = "alpine:latest"
 
 
 # main loop
@@ -277,20 +328,14 @@ print("""\
 load ../common
 
 setup () {
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 """)
 
-for test in [CentOS_7,
-             CentOS_8_Stream,
-             RHEL_UBI_8,
-             Fedora_26,
-             Fedora_34,  #Fedora_Latest,  # issue #1163
-             Debian_9,
-             Debian_Latest,
-             Ubuntu_16,
-             Ubuntu_18,
-             Ubuntu_Latest]:
+
+# All classes starting with T_ get turned into a test.
+for (name, test) in (i for i in inspect.getmembers(sys.modules[__name__])
+                     if i[0].startswith("T_")):
    for run in Run:
       for forced in (False, True):
          for preprep in (False, True):

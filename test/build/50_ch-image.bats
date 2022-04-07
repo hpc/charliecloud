@@ -2,7 +2,7 @@ load ../common
 
 setup () {
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
 @test 'ch-image common options' {
@@ -92,7 +92,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"importing:    ${fixtures}/bomb.tar.gz"* ]]
-    [[ $output != *'layers: single enclosing directory, using its contents'* ]]
+    [[ $output = *'conversion to tarbomb not needed'* ]]
     [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
     grep -F '"arch": "corn"' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
     ch-image delete imptest
@@ -103,7 +103,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"importing:    ${fixtures}/standard.tar.gz"* ]]
-    [[ $output = *'layers: single enclosing directory, using its contents'* ]]
+    [[ $output = *'converting to tarbomb'* ]]
     [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
     grep -F '"arch": "corn"' "${CH_IMAGE_STORAGE}/img/imptest/ch/metadata.json"
     ch-image delete imptest
@@ -114,7 +114,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"importing:    ${fixtures}/tricky.tar.gz"* ]]
-    [[ $output != *'layers: single enclosing directory, using its contents'* ]]
+    [[ $output = *'conversion to tarbomb not needed'* ]]
     [[ -f "${CH_IMAGE_STORAGE}/img/imptest/bin/foo" ]]
     ch-image delete imptest
 
@@ -124,7 +124,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"importing:    ${fixtures}/empty.tar"* ]]
-    [[ $output = *'layers: single enclosing directory, using its contents'* ]]
+    [[ $output = *'converting to tarbomb'* ]]
     [[ $output = *'warning: no metadata to load; using defaults'* ]]
     ch-image delete imptest
 

@@ -46,41 +46,87 @@ load ../common
 # pedantic-require Docker to also be installed.
 setup () {
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs directory images'
     if ! command -v docker > /dev/null 2>&1; then
         pedantic_fail 'docker not found'
     fi
 }
 
-
 # Return success if directories $1 and $2 are recursively the same, failure
 # otherwise. This compares only metadata. False positives are possible if a
-# file's content changes but the size and all other metadata stays the same;
-# this seems unlikely. We could also use "diff -qr --no-dereference", which
-# would also compare file conttent, but diff's --exclude only accepts basename
-# patterns, not paths. The long list of excludes is things that don't
-# round-trip through the various formats; the surprising directories (e.g.
-# /dev) are because modification times seem to change.
+# file’s content changes but the size and all other metadata stays the same;
+# this seems unlikely.
+#
+# We use a text diff of the two directory listings. Alternatives include:
+#
+#   1. “diff -qr --no-dereference”: compares file content, which we probably
+#      don’t need, and I’m not sure about metadata.
+#
+#   2. “rsync -nv -aAX --delete "${1}/" "$2"”: does compare only metadata, but
+#      hard to filter for symlink destination changes.
+#
+# The listings are retained for examination later if the test fails.
 compare () {
     echo "COMPARING ${1} to ${2}"
-    out=$(  rsync -nv -aAX --delete "${1}/" "$2" \
-          | sed -E -e '/^$/d' \
-                   -e '/^sending incremental file list/d' \
-                   -e '/^sent [0-9,]+ bytes/d' \
-                   -e '/^total size is/d' \
-                   -e '\|^deleting ch/|d' \
-                   -e '\|^deleting .dockerenv$|d' \
-                   -e '\|^./$|d' \
-                   -e '\|^WEIRD_AL_YANKOVIC$|d' \
-                   -e '\|^dev/$|d' \
-                   -e '\|^etc/$|d' \
-                   -e '\|^etc/hostname$|d' \
-                   -e '\|^etc/hosts$|d' \
-                   -e '\|^etc/resolv.conf -> /etc/resolv.conf.real$|d' \
-                   -e '\|^mnt/dev/dontdeleteme$|d' )
-    echo "$out"
-    [ -z "$out" ]
+    compare-ls "$1" > "$BATS_TMPDIR"/compare-ls.1
+    compare-ls "$2" > "$BATS_TMPDIR"/compare-ls.2
+    diff -u "$BATS_TMPDIR"/compare-ls.1 "$BATS_TMPDIR"/compare-ls.2
+}
+
+# This prints a not very nicely formatted recursive directory listing, with
+# metadata including xattrs. ACLs are included in the xattrs but are encoded
+# somehow, so you can see if they change but what exactly changed is an
+# exercise for the reader. We don’t use simple “ls -lR” because it only lists
+# the presence of ACLs and xattrs (+ or @ after the mode respectively); we
+# don’t use getfacl(1) because I couldn’t make it not follow symlinks and
+# getfattr(1) does the job, just more messily.
+#
+# Notes/Gotchas:
+#
+#   1. Seconds are omitted from timestamp because I couldn’t figure out how to
+#      not include fractional seconds, which is often not preserved.
+#
+#   2. The image root directory tends to be volatile (e.g., number of links,
+#      size), and it doesn’t matter much, so exclude it with “-mindepth 1”.
+#
+#   3. Also exclude several paths which are expected not to round-trip.
+#
+#   4. %n (number of links) is omitted from -printf format because ch-convert
+#      does not round-trip hard links correctly. (They are split into multiple
+#      independent files.) See issue #1310.
+#
+# sed(1) modifications (-e in order below):
+#
+#   1. Because ch-image changes absolute symlinks to relative using a sequence
+#      of up-dirs (“..”), remove these sequences.
+#
+#   2. For the same reason, remove symlink file sizes (symlinks contain the
+#      destination path).
+#
+#   3. Symlink timestamps seem not to be stable, so remove them.
+#
+#   4. Directory sizes also seem not to be stable.
+#
+compare-ls () {
+    cd "$1" || exit  # to make -path reasonable
+      find . -mindepth 1 \
+              \(    -path ./.dockerenv \
+                 -o -path ./ch \) -prune \
+           -o -not \(    -path ./dev \
+                      -o -path ./etc \
+                      -o -path ./etc/hostname \
+                      -o -path ./etc/hosts \
+                      -o -path ./etc/resolv.conf \
+                      -o -path ./etc/resolv.conf.real \) \
+           -printf '/%P %y%s %g:%u %M %y%TF_%TH:%TM %l\n' \
+           -exec getfattr -dhm - {} \; \
+    | sed -E -e 's|(\.\./)+|/|' \
+             -e 's/ l[0-9]{1,3}/ lXX/' \
+             -e 's/ l[0-9_:-]{16}/ lXXXX-XX-XX_XX:XX/' \
+             -e 's/ d[0-9]{2,5}/ dXXXXX/' \
+    | LC_ALL=C sort
+    cd -
 }
 
 # Kludge to cook up the right input and output descriptors for ch-convert.
@@ -295,14 +341,13 @@ test_from () {
 
 
 @test 'ch-convert: pathological tarballs' {
-    [[ $CH_PACK_FMT = tar-unpack ]] || skip 'tar mode only'
+    [[ $CH_TEST_PACK_FMT = tar-unpack ]] || skip 'tar mode only'
     out=${BATS_TMPDIR}/convert.dir
     # Are /dev fixtures present in tarball? (issue #157)
     present=$(tar tf "$ch_ttar" | grep -F deleteme)
-    [[ $(echo "$present" | wc -l) -eq 4 ]]
+    echo "$present"
+    [[ $(echo "$present" | wc -l) -eq 2 ]]
     echo "$present" | grep -E '^img/dev/deleteme$'
-    echo "$present" | grep -E '^./dev/deleteme$'
-    echo "$present" | grep -E '^dev/deleteme$'
     echo "$present" | grep -E '^img/mnt/dev/dontdeleteme$'
     # Convert to dir.
     ch-convert "$ch_ttar" "$out"

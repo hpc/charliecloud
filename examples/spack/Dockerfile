@@ -1,5 +1,5 @@
 # ch-test-scope: full
-FROM quay.io/centos/centos:stream8
+FROM almalinux:8
 
 # Note: Spack is a bit of an odd duck testing wise. Because it's a package
 # manager, the key tests we want are to install stuff (this includes the Spack
@@ -7,20 +7,16 @@ FROM quay.io/centos/centos:stream8
 # care about is here in the Dockerfile, and test.bats just has a few
 # trivialities.
 #
-# Spack does document use in Docker [2]. We do things somewhat differently,
-# but worth reviewing those docs.
-#
-# [1]: https://spack.readthedocs.io/en/latest/getting_started.html
-# [2]: https://spack.readthedocs.io/en/latest/workflows.html#using-spack-to-create-docker-images
-
-# Packages needed to install Spack [1].
-#
 # bzip, file, patch, unzip, and which are packages needed to install
 # Charliecloud with Spack. These are in Spack's Docker example [2] but are not
 # documented as prerequisites [1]. texinfo is an undocumented dependency of
-# Spack's m4, and that package is in PowerTools.
+# Spack's m4, and that package is in PowerTools, which we enable using sed(1)
+# to avoid installing the config-manager DNF plugin.
+#
+# [1]: https://spack.readthedocs.io/en/latest/getting_started.html
+# [2]: https://spack.readthedocs.io/en/latest/workflows.html#using-spack-to-create-docker-images
 RUN sed -Ei 's/enabled=0/enabled=1/' \
-        /etc/yum.repos.d/CentOS-Linux-PowerTools.repo
+        /etc/yum.repos.d/almalinux-powertools.repo
 RUN dnf install -y --setopt=install_weak_deps=false \
                 bzip2 \
                 gcc \

@@ -2,7 +2,7 @@ load ../common
 
 setup () {
     scope standard
-    [[ $CH_BUILDER = ch-image ]] || skip 'ch-image only'
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
 image_ref_parse () {
@@ -217,30 +217,30 @@ EOF
 
     CH_IMAGE_STORAGE=$BATS_TMPDIR/pull/quirky_files
     # make ch-image happy with the storage
-    mkdir -p "${CH_IMAGE_STORAGE}"/{bucache,dlcache,ulcache,img}
-    echo 3 > "$CH_IMAGE_STORAGE/version"
-    ch-image list
-    img="${CH_IMAGE_STORAGE}/img/charliecloud%file-quirks+2020-10-21"
+    #mkdir -p "${CH_IMAGE_STORAGE}"/{bucache,dlcache,ulcache,img}
+    #echo 3 > "$CH_IMAGE_STORAGE/version"
+    #ch-image list
+    #img="${CH_IMAGE_STORAGE}/img/charliecloud%file-quirks+2020-10-21"
     ch-image pull charliecloud/file-quirks:2020-10-21
     ls -lh "${img}/test"
 
     output_expected=$(cat <<'EOF'
-regular file   ‘df_member’
-symbolic link  ‘ds_link’ -> ‘ds_target’
-regular file   ‘ds_target’
-directory      ‘fd_member’
-symbolic link  ‘fs_link’ -> ‘fs_target’
-regular file   ‘fs_target’
-symbolic link  ‘link_b0rken’ -> ‘doesnotexist’
-symbolic link  ‘link_imageonly’ -> ‘/test’
-symbolic link  ‘link_self’ -> ‘link_self’
-directory      ‘sd_link’
-regular file   ‘sd_target’
-regular file   ‘sf_link’
-regular file   ‘sf_target’
-symbolic link  ‘ss_link’ -> ‘ss_target2’
-regular file   ‘ss_target1’
-regular file   ‘ss_target2’
+regular file   'df_member'
+symbolic link  'ds_link' -> 'ds_target'
+regular file   'ds_target'
+directory      'fd_member'
+symbolic link  'fs_link' -> 'fs_target'
+regular file   'fs_target'
+symbolic link  'link_b0rken' -> 'doesnotexist'
+symbolic link  'link_imageonly' -> '../test'
+symbolic link  'link_self' -> 'link_self'
+directory      'sd_link'
+regular file   'sd_target'
+regular file   'sf_link'
+regular file   'sf_target'
+symbolic link  'ss_link' -> 'ss_target2'
+regular file   'ss_target1'
+regular file   'ss_target2'
 EOF
 )
 

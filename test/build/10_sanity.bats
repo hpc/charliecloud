@@ -132,7 +132,7 @@ load ../common
     # that if one of the proxy variables are set, then they all should be, in
     # order to prepare for diverse internet access at build time.
     #
-    # Coordinate this test with bin/ch-build.
+    # Coordinate this test with common.bash:build_().
     #
     # Note: ALL_PROXY and all_proxy aren't currently included, because they
     # cause image builds to fail until Docker 1.13

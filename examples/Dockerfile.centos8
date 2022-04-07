@@ -1,5 +1,5 @@
 # ch-test-scope: standard
-FROM quay.io/centos/centos:stream8
+FROM almalinux:8
 
 # This image has two purposes: (1) demonstrate we can build a CentOS 8 image
 # and (2) provide a build environment for Charliecloud EPEL 8 RPMs.

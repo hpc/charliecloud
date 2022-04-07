@@ -73,7 +73,7 @@ EOF
 
 builder_check () {
     printf 'checking builder ...\n'
-    case $CH_BUILDER in
+    case $CH_TEST_BUILDER in
     ch-image)
         if ! "${ch_bin}/ch-image" --dependencies; then
             fatal 'builder: ch-image: missing dependencies'
@@ -105,7 +105,7 @@ builder_check () {
         bv=
         ;;
     *)
-        fatal "builder: $CH_BUILDER: not supported"
+        fatal "builder: $CH_TEST_BUILDER: not supported"
         ;;
     esac
     printf 'found: %s %s\n\n' "$bl" "$bv"
@@ -115,19 +115,20 @@ builder_check () {
 builder_set () {
     width=$1
     if [[ -n $builder ]]; then
-        export CH_BUILDER=$builder
+        CH_TEST_BUILDER=$builder
         method='command line'
-    elif [[ -n $CH_BUILDER ]]; then
+    elif [[ -n $CH_TEST_BUILDER ]]; then
         method='environment'
     else
-        builder_choose
+        CH_TEST_BUILDER=ch-image
         method='default'
     fi
-    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_BUILDER" "$method"
-    if [[ $CH_BUILDER == ch-image ]]; then
+    printf "%-*s %s (%s)\n" "$width" 'builder:' "$CH_TEST_BUILDER" "$method"
+    if [[ $CH_TEST_BUILDER == ch-image ]]; then
         vset CH_IMAGE_STORAGE '' "$CH_IMAGE_STORAGE" "/var/tmp/${USER}.ch" \
                               "$width" 'ch-image storage'
     fi
+    export CH_TEST_BUILDER
 }
 
 # Create CH_TEST_IMGDIR, avoiding #347.
@@ -500,27 +501,27 @@ test_make_check_image () {
 
     if [[ $phase == 'build' ]]; then
         # Exclude Dockerfiles if we have no builder.
-        if [[ $CH_BUILDER == none && $img == *Dockerfile* ]]; then
+        if [[ $CH_TEST_BUILDER == none && $img == *Dockerfile* ]]; then
             pq_missing "$img" 'builder required'
             img_ok=
         fi
-        # Exclude if included builders are given and $CH_BUILDER isn't one.
+        # Exclude if included builders are given and $CH_TEST_BUILDER isn't one.
         if [[ -n $builder_include ]]; then
             builder_ok=
             for b in $builder_include; do
-                if [[ $b == "$CH_BUILDER" ]]; then
+                if [[ $b == "$CH_TEST_BUILDER" ]]; then
                     builder_ok=yes
                 fi
             done
             if [[ -z $builder_ok ]]; then
-                pq_missing "$img" "builder not included: ${CH_BUILDER}"
+                pq_missing "$img" "builder not included: ${CH_TEST_BUILDER}"
                 img_ok=
             fi
         fi
-        # Exclude images that are not compatible with CH_BUILDER.
+        # Exclude images that are not compatible with CH_TEST_BUILDER.
         for b in $builder_exclude; do
-            if [[ $b == "$CH_BUILDER" ]]; then
-                pq_missing "$img" "builder excluded: ${CH_BUILDER}"
+            if [[ $b == "$CH_TEST_BUILDER" ]]; then
+                pq_missing "$img" "builder excluded: ${CH_TEST_BUILDER}"
                 img_ok=
             fi
         done

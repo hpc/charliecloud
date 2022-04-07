@@ -12,33 +12,6 @@ Charliecloud commands. Its content is identical to the commands' man pages.
    still use double underscores as their top-level headers. You will also find
    this in the man page .rst files.
 
-ch-build
-++++++++
-
-Build an image and place it in the builder's back-end storage.
-
-.. include:: ./ch-build_desc.rst
-
-ch-build2dir
-++++++++++++
-
-Build a Charliecloud image from Dockerfile and unpack it into a directory.
-
-.. include:: ./ch-build2dir_desc.rst
-
-ch-builder2squash
-+++++++++++++++++
-
-Flatten a builder image into a Charliecloud SquashFS file.
-
-.. include:: ./ch-builder2squash_desc.rst
-
-ch-builder2tar
-++++++++++++++
-
-Flatten a builder image into a Charliecloud image tarball.
-
-.. include:: ./ch-builder2tar_desc.rst
 
 ch-checkns
 ++++++++++
@@ -54,13 +27,6 @@ Convert an image from one format to another.
 
 .. include:: ./ch-convert_desc.rst
 
-ch-dir2squash
-+++++++++++++
-
-Create a SquashFS file from an image directory.
-
-.. include:: ./ch-dir2squash_desc.rst
-
 ch-fromhost
 +++++++++++
 
@@ -74,20 +40,6 @@ ch-image
 Build and manage images; completely unprivileged.
 
 .. include:: ./ch-image_desc.rst
-
-ch-pull2dir
-+++++++++++
-
-Pull image from a Docker Hub and unpack into directory.
-
-.. include:: ./ch-pull2dir_desc.rst
-
-ch-pull2tar
-+++++++++++
-
-Pull image from a Docker Hub and flatten into tarball.
-
-.. include:: ./ch-pull2tar_desc.rst
 
 .. _man_ch-run:
 
@@ -111,15 +63,6 @@ ch-ssh
 Run a remote command in a Charliecloud container.
 
 .. include:: ./ch-ssh_desc.rst
-
-ch-tar2dir
-++++++++++
-
-Unpack an image tarball into a directory.
-
-.. include:: ./ch-tar2dir_desc.rst
-
-.. _ch-test:
 
 ch-test
 +++++++

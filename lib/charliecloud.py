@@ -648,7 +648,6 @@ class Image:
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
       mkdir(self.unpack_path)  # create directory in case no layers
-      top_dirs = set()
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
          if (i > last_layer):
@@ -660,47 +659,61 @@ class Image:
                fp.extractall(path=self.unpack_path, members=members)
             except OSError as x:
                FATAL("can't extract layer %d: %s" % (i, x.strerror))
-            top_dirs.update(path_first(i.name) for i in members)
-      # If standard tarball with enclosing directory, raise everything out of
-      # that directory, unless it's one of the standard directories (e.g., an
-      # image containing just "/bin/fooprog" won't be raised). This supports
-      # "ch-image import", which may be used on manually-created tarballs
-      # where best practice is not to do a tarbomb.
-      top_dirs -= { None }  # some tarballs contain entry for "."; ignore
-      if (len(top_dirs) == 1):
-         top_dir = top_dirs.pop()
-         if (    (self.unpack_path // top_dir).is_dir()
-             and str(top_dir) not in STANDARD_DIRS):
-            top_dir = self.unpack_path // top_dir  # make absolute
-            INFO("layers: single enclosing directory, using its contents")
-            for src in list(top_dir.iterdir()):
-               dst = self.unpack_path // src.parts[-1]
-               DEBUG("moving: %s -> %s" % (src, dst))
-               ossafe(src.rename, "can't move: %s -> %s" % (src, dst), dst)
-            DEBUG("removing empty directory: %s" % top_dir)
-            ossafe(top_dir.rmdir, "can't rmdir: %s" % top_dir)
 
    def validate_members(self, layers):
       INFO("validating tarball members")
+      top_dirs = set()
+      VERBOSE("pass 1: canonicalizing member paths")
+      for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+         abs_ct = 0
+         for m in list(members):   # copy b/c we remove items from the set
+            # Remove members with empty paths.
+            if (len(m.name) == 0):
+               WARNING("layer %d/%d: %s: skipping member with empty path"
+                       % (i, len(layers), lh[:7]))
+               members.remove(m)
+            # Convert member paths to Path objects for easier processing.
+            # Note: In my testing, parsing a string into a Path object took
+            # about 2.5µs, so this should be plenty fast.
+            m.name = Path(m.name)
+            # Reject members with up-levels.
+            if (".." in m.name.parts):
+               FATAL("rejecting up-level member: %s: %s" % (fp.name, m.name))
+            # Correct absolute paths.
+            if (m.name.is_absolute()):
+               m.name = m.name.relative_to("/")
+            # Record top-level directory.
+            if (len(m.name.parts) > 1 or m.isdir()):
+               top_dirs.add(m.name.first)
+         if (abs_ct > 0):
+            WARNING("layer %d/%d: %s: fixed %d absolute member paths"
+                    % (i, len(layers), lh[:7], abs_ct))
+      top_dirs.discard(None)  # ignore “.”
+      # Convert to tarbomb if (1) there is a single enclosing directory and
+      # (2) that directory is not one of the standard directories, e.g. to
+      # allow images containing just “/bin/fooprog”.
+      if (len(top_dirs) != 1 or not top_dirs.isdisjoint(STANDARD_DIRS)):
+         VERBOSE("pass 2: conversion to tarbomb not needed")
+      else:
+         VERBOSE("pass 2: converting to tarbomb")
+         for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
+            for m in members:
+               if (len(m.name.parts) > 0):  # ignore “.”
+                  m.name = Path(*m.name.parts[1:])  # strip first component
+      VERBOSE("pass 3: analyzing members")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          dev_ct = 0
-         members2 = list(members)  # copy b/c we'll alter members
-         for m in members2:
-            TarFile.fix_member_path(m, fp.name)
+         link_fix_ct = 0
+         for m in list(members):  # copy again
+            m.name = str(m.name)  # other code assumes strings
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
                VERBOSE("ignoring device file: %s" % m.name)
                members.remove(m)
                continue
-            elif (m.issym()):
-               # Symlink: Nothing to change, but accept it.
-               pass
-            elif (m.islnk()):
-               # Hard link: Fail if pointing outside top level. (Note that we
-               # let symlinks point wherever they want, because they aren't
-               # interpreted until run time in a container.)
-               self.validate_tar_link(fp.name, m.name, m.linkname)
+            elif (m.issym() or m.islnk()):
+               link_fix_ct += TarFile.fix_link_target(m, fp.name)
             elif (m.isdir()):
                # Directory: Fix bad permissions (hello, Red Hat).
                m.mode |= 0o700
@@ -718,18 +731,12 @@ class Image:
                continue
             TarFile.fix_member_uidgid(m)
          if (dev_ct > 0):
-            INFO("layer %d/%d: %s: ignored %d devices and/or FIFOs"
-                 % (i, len(layers), lh[:7], dev_ct))
-
-   def validate_tar_link(self, filename, path, target):
-      """Reject hard link targets outside the tar top level by aborting the
-         program."""
-      if (len(target) > 0 and target[0] == "/"):
-         FATAL("rejecting absolute hard link target: %s: %s -> %s"
-               % (filename, path, target))
-      if (".." in os.path.normpath(path + "/" + target).split("/")):
-         FATAL("rejecting too many up-levels: %s: %s -> %s"
-               % (filename, path, target))
+            WARNING("layer %d/%d: %s: ignored %d devices and/or FIFOs"
+                    % (i, len(layers), lh[:7], dev_ct))
+         if (link_fix_ct > 0):
+            WARNING(("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
+                     % (i, len(layers), lh[:7], link_fix_ct)),
+                    "specify -vv for details")
 
    def whiteout_rm_prefix(self, layers, max_i, prefix):
       """Ignore members of all layers from 1 to max_i inclusive that have path
@@ -1034,6 +1041,15 @@ class Path(pathlib.PosixPath):
 
    def __rtruediv__(self, left):
       return NotImplemented
+
+   @property
+   def first(self):
+      """Return my first component, or if I have no components (i.e.,
+         Path(".")), return None."""
+      try:
+         return self.parts[0]
+      except IndexError:
+         return None
 
    def joinpath_posix(self, *others):
       others2 = list()
@@ -1583,7 +1599,11 @@ class Storage:
       else:
          op = "upgrading"
          if (not self.valid_p):
-            FATAL("storage directory seems invalid: %s" % self.root)
+            if (os.path.exists(self.root) and not listdir(self.root)):
+               hint = "let Charliecloud create %s; see FAQ" % self.root.name
+            else:
+               hint = None
+            FATAL("storage directory seems invalid: %s" % self.root, hint=hint)
          if (os.path.isfile(self.version_file)):
             v_found = int(file_read(self.version_file))
          else:
@@ -1643,7 +1663,7 @@ class Storage:
                FATAL("can't move: %s -> %s: %s"
                      % (x.filename, x.filename2, x.strerror))
       ossafe(os.rmdir, "can't rmdir: %s" % old.root, old.root)
-      if (len(listdir(old.root.parent)) == 0):
+      if (not listdir(old.root.parent)):
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
 
@@ -1742,18 +1762,39 @@ class TarFile(tarfile.TarFile):
                   % (stat.S_IFMT(st.st_mode), targetpath))
 
    @staticmethod
-   def fix_member_path(ti, tarball_path):
-      """Repair or reject (by aborting the program) ti.name (member path) if
-         it climbs outside the top level or has some other problem."""
-      old_name = ti.name
-      if (len(ti.name) == 0):
-         FATAL("rejecting zero-length member path: %s" % (tarball_path))
-      if (".." in ti.name.split("/")):
-         FATAL("rejecting member path with up-level: %s: %s" % (filename, path))
-      if (ti.name[0] == "/"):
-         ti.name = "." + old_name  # add dot so we don't have to count slashes
-      if (ti.name != old_name):
-         WARNING("fixed member path: %s -> %s" % (old_name, ti.name))
+   def fix_link_target(ti, tb):
+      """Deal with link (symbolic or hard) weirdness or breakage. If it can be
+         fixed, fix it; if not, abort the program."""
+      src = Path(ti.name)
+      tgt = Path(ti.linkname)
+      fix_ct = 0
+      # Empty target not allowed; have to check string b/c "" -> Path(".").
+      if (len(ti.linkname) == 0):
+         FATAL("rejecting link with empty target: %s: %s" % (tb, ti.name))
+      # Fix absolute link targets.
+      if (tgt.is_absolute()):
+         if (ti.issym()):
+            # Change symlinks to relative for correct interpretation inside or
+            # outside the container.
+            kind = "symlink"
+            new = (  Path(*(("..",) * (len(src.parts) - 1)))
+                   // Path(*(tgt.parts[1:])))
+         elif (ti.islnk()):
+            # Hard links refer to tar member paths; just strip leading slash.
+            kind = "hard link"
+            new = tgt.relative_to("/")
+         else:
+            assert False, "not a link"
+         DEBUG("absolute %s: %s -> %s: changing target to: %s"
+               % (kind, src, tgt, new))
+         tgt = new
+         fix_ct = 1
+      # Reject links that climb out of image (FIXME: repair instead).
+      if (".." in os.path.normpath(src // tgt).split("/")):
+         FATAL("rejecting too many up-levels: %s: %s -> %s" % (tb, src, tgt))
+      # Done.
+      ti.linkname = str(tgt)
+      return fix_ct
 
    @staticmethod
    def fix_member_uidgid(ti):
@@ -2156,6 +2197,9 @@ def json_from_file(path, msg):
       FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
    return data
 
+def listdir(path):
+   return ossafe(os.listdir, "can't list: %s" % path, path)
+
 def log(msg, hint=None, color=None, prefix="", end="\n"):
    if (color is not None):
       color_set(color, log_fp)
@@ -2202,15 +2246,6 @@ def ossafe(f, msg, *args, **kwargs):
       return f(*args, **kwargs)
    except OSError as x:
       FATAL("%s: %s" % (msg, x.strerror))
-
-def path_first(path):
-   """Return first component of path, skipping no-op dot components. If path
-      contains *only* no-ops, return None. (Note: In my testing, parsing a
-      string into a Path object took about 2.5µs, so this is plenty fast.)"""
-   try:
-      return Path(path).parts[0]
-   except IndexError:
-      return None
 
 def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.

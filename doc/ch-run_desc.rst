@@ -538,8 +538,8 @@ Removing variables with :code:`--unset-env`
 The purpose of :code:`--unset-env=GLOB` is to remove unwanted environment
 variables. The argument :code:`GLOB` is a glob pattern (`dialect
 <http://man7.org/linux/man-pages/man3/fnmatch.3.html>`_ :code:`fnmatch(3)`
-with no flags); all variables with matching names are removed from the
-environment.
+with the :code:`FNM_EXTMATCH` flag where supported); all variables with
+matching names are removed from the environment.
 
 .. warning::
 
@@ -576,6 +576,17 @@ want to do this to test an MPI program with one rank and no launcher::
 Example 3: Clear the environment completely (remove all variables)::
 
   $ ch-run --unset-env='*' $CH_TEST_IMGDIR/chtest -- env
+  $
+
+Example 4: Remove all environment variables *except* for those prefixed with
+either :code:`WANTED_` or :code:`ALSO_WANTED_`::
+
+  $ export WANTED_1=yes
+  $ export ALSO_WANTED_2=yes
+  $ export NOT_WANTED_1=no
+  $ ch-run --unset-env='!(WANTED_*|ALSO_WANTED_*)' $CH_TEST_IMGDIR/chtest -- env
+  WANTED_1=yes
+  ALSO_WANTED_2=yes
   $
 
 Note that some programs, such as shells, set some environment variables even

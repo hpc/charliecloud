@@ -316,6 +316,15 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
 AC_MSG_RESULT($have_userns)
 
 
+### ch-run optional ##########################################################
+
+# FNM_EXTMATCH is a GNU extension to support extended globs in fnmatch(3).
+AC_CHECK_DECL(FNM_EXTMATCH,
+              [have_fnm_extmatch=yes],
+              [have_fnm_extmatch=no],
+              [[#include <fnmatch.h>]])
+
+
 ### SquashFS #################################################################
 
 # SquashFS Tools
@@ -605,9 +614,12 @@ AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
 AC_SUBST([SPHINX])
 
+AS_IF([test $have_fnm_extmatch = yes],
+      [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
 AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
 AS_IF([test $have_libsquashfuse = yes],
       [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
+
 
 
 ### Prepare report ###########################################################
@@ -648,8 +660,8 @@ AS_IF([   test $have_buildah = yes \
       [have_any_builder=no])
 
 AS_IF([   test $have_any_builder = yes],
-      [have_ch_build=yes],
-      [have_ch_build=no])
+      [have_dockerfile_build=yes],
+      [have_dockerfile_build=no])
 
 AS_IF([   test $have_any_builder = yes],
       [have_builder_to_tar=yes],
@@ -752,6 +764,9 @@ Building Charliecloud
   required:
     C99 compiler ... ${CC} ${CC_VERSION}
 
+  optional:
+    extended glob patterns in --unset-env ... ${have_fnm_extmatch}
+
   ch-run(1) internal SquashFS mounting: ${have_libsquashfuse}
     enabled ... ${want_libsquashfuse}
     libfuse3 ... ${have_libfuse3}
@@ -764,10 +779,10 @@ Building Charliecloud
     "docutils" module ≥ $vmin_docutils ... ${DOCUTILS_VERSION_NOTE}
     "sphinx-rtd-theme" module ≥ $vmin_rtd ... ${RTD_VERSION_NOTE}
 
-Building images via our wrappers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Building images
+~~~~~~~~~~~~~~~
 
-  with Buildah: ${have_buildah}
+  with Buildah (warning: not tested; see issue #990): ${have_buildah}
     Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
   with ch-image(1): ${have_ch_image}
@@ -785,7 +800,7 @@ Building images via our wrappers
 Managing container images
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  build from Dockerfile with ch-build(1): ${have_ch_build}
+  build from Dockerfile: ${have_dockerfile_build}
     at least one builder ... ${have_any_builder}
     access to an image repository ... assumed yes
 
