@@ -154,6 +154,46 @@ workaround is to use a tool like :code:`pdsh`. For more details see
 Charliecloud issue
 `#230 <https://github.com/hpc/charliecloud/issues/230>`_.
 
+"fatal: :code:`$HOME` not set" from Git, or similar
+---------------------------------------------------
+
+For example::
+
+  $ cat Dockerfile
+  FROM alpine:3.9
+  RUN apk add git
+  RUN git config --global http.sslVerify false
+  $ ch-image build -t foo -f Dockerfile .
+    1 FROM alpine:3.9
+    2 RUN ['/bin/sh', '-c', 'apk add git']
+  [...]
+    3 RUN ['/bin/sh', '-c', 'git config --global http.sslVerify false']
+  fatal: $HOME not set
+  error: build failed: RUN command exited with 128
+
+The reason this happens is that :code:`ch-image build` executes :code:`RUN`
+instructions with :code:`ch-run` options including :code:`--no-home`, under
+which the environment variable :code:`$HOME` is unset. Thus, tools like Git
+that try to use it will fail.
+
+The reasoning for leaving the variable unset is that because Charliecloud runs
+unprivileged, it isn't really meaningful for a container to have multiple
+users, and thus building images with things in the home directory is an
+antipattern. In fact, by default (i.e., without :code:`--no-home`),
+:code:`ch-run` sets :code:`$HOME` to :code:`/home/$USER` and bind-mounts the
+user's host home directory at that path.
+
+The concern with setting :code:`$HOME` to some default value during build is
+that it could simply hide the problem until runtime later, where it would be
+even more confusing. (That said, if this pattern is desired, it can be
+implemented with an :code:`ARG` or :code:`ENV` instruction.)
+
+The recommended workaround and best practice is to put configuration at the
+system level, not the user level. In the example above, this means changing
+:code:`git config --global` to :code:`git config --system`.
+
+See the man page for :code:`ch-run` for more on environment variable
+handling.
 
 Unexpected behavior
 ===================
