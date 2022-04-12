@@ -65,7 +65,7 @@ today_fmt = '%Y-%m-%d %H:%M %Z'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["doctrees", "html", "man"]
+exclude_patterns = ["doctrees", "html", "man", "**/_*.rst"]
 
 # FIXME: Workaround for older Sphinx that barf with:
 #
@@ -73,7 +73,7 @@ exclude_patterns = ["doctrees", "html", "man"]
 #
 # on files included via ".. include::'. I believe this was fixed in 1.4.3 and
 # the relevant issue is: https://github.com/sphinx-doc/sphinx/issues/2603
-exclude_patterns += ["*_desc.rst", "_deps.rst", "bugs.rst", "py_env.rst",
+exclude_patterns += ["*_desc.rst", "_*.rst", "bugs.rst", "py_env.rst",
                      "see_also.rst"]
 
 # The reST default role (used for this markup: `text`) to use for all documents.

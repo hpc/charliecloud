@@ -27,7 +27,7 @@ is, *Charlie Cloud* and *CharlieCloud* are both incorrect.
 How large is Charliecloud?
 --------------------------
 
-.. include:: loc.rst
+.. include:: _loc.rst
 
 
 Errors
