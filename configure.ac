@@ -422,6 +422,21 @@ AS_IF([   test $enable_bundled_lark = yes \
        && test $lark_status != bundled],
        [AC_MSG_ERROR([bundled Lark not found; see docs])])
 
+# Git
+vmin_git=2.28.1
+AC_CHECK_PROG([GIT], [git], [git])
+CH_CHECK_VERSION([GIT], [$vmin_git], [--version | cut -d' ' -f3])
+
+# DOT
+vmin_dot=2.30.1
+AC_CHECK_PROG([DOT], [dot], [dot])
+CH_CHECK_VERSION([DOT], [$vmin_dot], [dot -V |& cut -d' ' -f5])
+
+# git2dot
+vmin_git2dot=0.8.3
+AC_CHECK_PROG([GIT2DOT], [git2dot.py], [git2dot.py])
+CH_CHECK_VERSION([GIT2DOT], [$vmin_git2dot], [--version | cut -d' ' -f3])
+
 
 ### Docs #####################################################################
 
@@ -646,6 +661,11 @@ AS_IF([   test $enable_ch_image = yes \
       [have_ch_image=yes],
       [have_ch_image=no])
 
+AS_IF([   test $have_ch_image = yes \
+       && test -n "$GIT"],
+      [have_ch_image_bu=yes],
+      [have_ch_image_bu=no])
+
 AS_IF([   test -n "$DOCKER" \
        && test -n "$MKTEMP"],
       [have_docker=yes],
@@ -692,7 +712,9 @@ AS_IF([   test $enable_test = yes \
 
 AS_IF([   test $have_tests_basic = yes \
        && test $have_docs = yes \
-       && test -n "$SHELLCHECK" ],  # assume we do have generic sudo
+       && test -n "$SHELLCHECK" \
+       && test -n "$DOT" \
+       && test -n "$GIT2DOT" ],  # assume we do have generic sudo
        [have_tests_more=yes],
        [have_tests_more=no])
 
@@ -793,6 +815,10 @@ Building images
     "requests" module ≥ $vmin_requests ... ${REQUESTS_VERSION_NOTE}
     ch-run(1) ... ${have_ch_run}
 
+  with ch-image(1) using build cache: ${have_ch_image_bu}
+    ch-image(1): ... ${have_ch_image}
+    Git ≥ $vmin_git ... ${GIT_VERSION_NOTE}
+
   with Docker: ${have_docker}
     Docker ≥ $vmin_docker ... ${DOCKER_VERSION_NOTE}
     mktemp(1) ... ${MKTEMP:-not found}
@@ -844,6 +870,8 @@ Test suite
     basic tests ... ${have_tests_basic}
     documentation built ... ${have_docs}
     ShellCheck ≥ $vmin_shellcheck ... ${SHELLCHECK_VERSION_NOTE}
+    DOT ≥ $vmin_dot ... ${DOT_VERSION_NOTE}
+    git2dot ≥ $vmin_git2dot ... ${GIT2DOT_VERSION_NOTE}
     generic sudo ... assumed yes
 
   recommended tests, tar-unpack mode: ${have_tests_tar}
