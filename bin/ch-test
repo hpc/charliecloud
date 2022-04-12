@@ -794,6 +794,14 @@ while [[ $# -gt 0 ]]; do
         require_unset builder
         builder=${opt#*=}
         ;;
+    -c|--bucache-mode)
+        require_unset bucache_mode
+        bucache_mode=$1; shift
+        ;;
+    --bucache-mode=*)
+        require_unset bucache_mode
+        bucache_mode=${opt#*=}
+        ;;
     --dry-run)
         dry=true
         ;;
@@ -934,6 +942,8 @@ vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
 vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
 pack_fmt_set 21
+vset CH_BUCACHE_MODE  "$bucache_mode"  "$CH_BUCACHE_MODE"  disabled \
+                      21 'build cache mode'
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \

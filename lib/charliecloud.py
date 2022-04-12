@@ -262,10 +262,6 @@ class ArgumentParser(argparse.ArgumentParser):
 
    class HelpFormatter(argparse.HelpFormatter):
 
-      def __init__(self, *args, **kwargs):
-         # max_help_position is undocumented but I don't know another way.
-         super().__init__(max_help_position=26, *args, **kwargs)
-
       # Suppress duplicate metavar printing when option has both short and
       # long flavors. E.g., instead of:
       #

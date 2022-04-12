@@ -6,13 +6,14 @@ Synopsis
 ::
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
+   $ ch-image [...] build-cache [...]
    $ ch-image [...] delete IMAGE_REF
+   $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [IMAGE_REF]
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
-   $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
 
@@ -602,6 +603,33 @@ this order.
 Delete the image described by the image reference :code:`IMAGE_REF` from the
 storage directory.
 
+:code:`gestalt`
+===============
+
+::
+
+   $ ch-image [...] gestalt [SELECTOR]
+
+Provide information about the `configuration and available features
+<https://apple.fandom.com/wiki/Gestalt>`_ of :code:`ch-image`. End users
+generally will not need this; it is intended for testing and debugging.
+
+:code:`SELECTOR` is one of:
+
+   * :code:`bucache`. Exit successfully if the build cache is available,
+     unsuccessfully with an error message otherwise. With :code:`-v`, also
+     print version information about dependencies.
+
+   * :code:`bucache-dot`. Exit successfully if build cache DOT trees can be
+     written, unsuccessfully with an error message otherwise. With :code:`-v`,
+     also print version information about dependencies.
+
+   * :code:`python-path`. Print the path to the Python interpreter in use and
+     exit successfully.
+
+   * :code:`storage-path`. Print the storage directory path and exit
+     successfully.
+
 
 :code:`list`
 ============
@@ -870,16 +898,6 @@ in the remote registry, so we don't upload it again.)
 Delete all images and cache from ch-image builder storage.
 
 
-:code:`storage-path`
-====================
-
-::
-
-   $ ch-image [...] storage-path
-
-Print the storage directory path and exit.
-
-
 Environment variables
 =====================
 
@@ -890,4 +908,4 @@ Environment variables
 .. include:: py_env.rst
 
 
-..  LocalWords:  tmpfs'es bigvendor AUTH Aimage
+..  LocalWords:  tmpfs'es bigvendor AUTH Aimage bucache buc

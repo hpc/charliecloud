@@ -126,7 +126,7 @@ def main():
    # arguments to be called by keyword, for clarity.
    def add_opts(p, dispatch, *, deps_check, stog_init):
       assert (not stog_init or deps_check)  # can't init storage w/o deps
-      sp.set_defaults(func=dispatch)
+      p.set_defaults(func=dispatch)
       dependencies_check[dispatch] = deps_check
       storage_init[dispatch] = stog_init
       for (args, kwargs) in common_opts:
@@ -182,6 +182,23 @@ def main():
    add_opts(sp, misc.delete, deps_check=True, stog_init=True)
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
 
+   # gestalt (has sub-subcommands)
+   sp = ap.add_parser("gestalt", "query debugging configuration",
+                      sub_title="subsubcommands", sub_metavar="CMD")
+   add_opts(sp, lambda x: False, deps_check=False, stog_init=False)
+   # bucache
+   tp = sp.add_parser("bucache", "exit successfully if build cache available")
+   add_opts(tp, misc.gestalt_bucache, deps_check=True, stog_init=False)
+   # bucache-dot
+   tp = sp.add_parser("bucache-dot", "exit success if can produce DOT trees")
+   add_opts(tp, misc.gestalt_bucache_dot, deps_check=True, stog_init=False)
+   # storage-path
+   tp = sp.add_parser("storage-path", "print storage directory path")
+   add_opts(tp, misc.gestalt_storage_path, deps_check=False, stog_init=False)
+   # python-path
+   tp = sp.add_parser("python-path", "print path to python interpreter in use")
+   add_opts(tp, misc.gestalt_python_path, deps_check=False, stog_init=False)
+
    # import
    sp = ap.add_parser("import", "copy external image into storage")
    add_opts(sp, misc.import_, deps_check=True, stog_init=True)
@@ -216,17 +233,9 @@ def main():
    sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
                    help="destination image reference (default: IMAGE_REF)")
 
-   # python-path
-   sp = ap.add_parser("python-path", "print path to python interpreter in use")
-   add_opts(sp, misc.python_path, deps_check=False, stog_init=False)
-
    # reset
    sp = ap.add_parser("reset", "delete everything in ch-image builder storage")
    add_opts(sp, misc.reset, deps_check=True, stog_init=False)
-
-   # storage-path
-   sp = ap.add_parser("storage-path", "print storage directory path")
-   add_opts(sp, misc.storage_path, deps_check=False, stog_init=False)
 
    # Parse it up!
    if (len(sys.argv) < 2):

@@ -58,6 +58,19 @@ def delete(cli):
    img = ch.Image(img_ref)
    img.unpack_delete()
 
+def gestalt_bucache(cli):
+   bu.have_deps()
+
+def gestalt_bucache_dot(cli):
+   bu.have_deps()
+   bu.have_dot()
+
+def gestalt_python_path(cli):
+   print(sys.executable)
+
+def gestalt_storage_path(cli):
+   print(ch.storage.root)
+
 def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can't copy: not found: %s" % cli.path)
@@ -127,12 +140,6 @@ def pull(cli):
    bu.cache.pull_(image, cli.last_layer)
    ch.done_notify()
 
-
-def python_path(cli):
-   print(sys.executable)
-
 def reset(cli):
    ch.storage.reset()
 
-def storage_path(cli):
-   print(ch.storage.root)

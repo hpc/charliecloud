@@ -29,12 +29,16 @@ dot_base = None
 
 ## Functions ##
 
-def have_deps():
+def have_deps(required=True):
    """Return True if dependencies for the build cache are present, False
       otherwise. Note this does not include the --dot debugging option; that
       checks its own dependencies when invoked."""
    # As of 2.34.1, we get: "git version 2.34.1\n".
-   return ch.version_check(["git", "--version"], GIT_MIN, required=False)
+   return ch.version_check(["git", "--version"], GIT_MIN, required=required)
+
+def have_dot():
+   ch.version_check(["git2dot.py", "--version"], GIT2DOT_MIN)
+   ch.version_check(["dot", "-V"], DOT_MIN)
 
 def init(cli):
    # Undocumented variable for CI testing.
@@ -46,7 +50,7 @@ def init(cli):
    # --no-cache. If it's None, chose the right default; otherwise, try what
    # the user asked for and fail if we can't do it.
    if (cli.bucache != ch.Build_Mode.DISABLED):
-      ok = have_deps()
+      ok = have_deps(False)
       if (cli.bucache is None):
          cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
          ch.VERBOSE("using default build cache mode")
@@ -506,8 +510,7 @@ class Enabled_Cache:
       print()  # blank line to separate from summary
 
    def tree_dot(self):
-      ch.version_check(["git2dot.py", "--version"], GIT2DOT_MIN)
-      ch.version_check(["dot", "-V"], DOT_MIN)
+      have_dot()
       path_gv = ch.Path(dot_base + ".gv")
       path_pdf = ch.Path(dot_base + ".pdf")
       if (not path_gv.is_absolute()):

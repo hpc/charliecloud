@@ -123,13 +123,13 @@ vset () {
     var_desc=$6
     quiet=$7
     if   [ "$cli_value" ]; then
-         export "$var_name"="$cli_value"
-         value=$cli_value
-         method='command line'
+        export "$var_name"="$cli_value"
+        value=$cli_value
+        method='command line'
     elif [ "$env_value" ]; then
-         export "$var_name"="$env_value"
-         value=$env_value
-         method='environment'
+        export "$var_name"="$env_value"
+        value=$env_value
+        method='environment'
     else
         export "$var_name"="$def_value"
         value=$def_value
