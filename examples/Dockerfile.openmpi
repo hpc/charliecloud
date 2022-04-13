@@ -1,5 +1,5 @@
 # ch-test-scope: full
-FROM centos8
+FROM almalinux8
 
 # A key goal of this Dockerfile is to demonstrate best practices for building
 # OpenMPI for use inside a container.
@@ -59,8 +59,6 @@ FROM centos8
 
 # OS packages needed to build this stuff.
 #
-# As of 2019-10-07, CentOS 8 provides version 22.2 of libibverbs. This is
-# quite new but works for our test systems.
 # Note that libpsm2 is x86-64 only so we skip if missing
 RUN dnf install -y --setopt=install_weak_deps=false \
                 automake \
@@ -91,8 +89,8 @@ RUN dnf install -y --setopt=install_weak_deps=false \
 
 WORKDIR /usr/local/src
 
-# UCX. There is a package for CentOS 8 but we want control over build options,
-# specifically multithreaded support.
+# UCX. There is a package but we want control over build options, specifically
+# multithreaded support.
 ARG UCX_VERSION=1.11.2
 RUN git clone --branch v${UCX_VERSION} --depth 1 \
               https://github.com/openucx/ucx.git \
@@ -104,7 +102,7 @@ RUN git clone --branch v${UCX_VERSION} --depth 1 \
 
 # PMI2.
 #
-# CentOS doesn't have a package with the Slurm PMI2 libraries we need, so
+# There isn't a package available with the Slurm PMI2 libraries we need, so
 # build them from Slurm's release.
 ARG SLURM_VERSION=19-05-3-2
 RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz \
