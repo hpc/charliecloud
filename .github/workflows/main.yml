@@ -28,7 +28,7 @@ jobs:
             bucache: enabled
 
     env:
-      CH_BUCACHE_MODE: ${{ matrix.bucache }}
+      CH_IMAGE_BUCACHE: ${{ matrix.bucache }}
       CH_TEST_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
       CH_TEST_IMGDIR: /mnt/images
@@ -398,7 +398,7 @@ jobs:
         run: |
           command -v git
           git --version
-          echo $CH_BUCACHE_MODE
+          echo $CH_IMAGE_BUCACHE
           bin/ch-image build-cache -vvv || true
           bin/ch-test all
 
@@ -407,7 +407,7 @@ jobs:
         run: |
           command -v git
           git --version
-          echo $CH_BUCACHE_MODE
+          echo $CH_IMAGE_BUCACHE
           bin/ch-image build-cache -vvv
           bin/ch-test all
 

@@ -185,6 +185,7 @@ def main(cli_):
       ml.visit(tree)
    if (ml.miss_ct == 0):
       ml.inst_prev.checkout()
+   ml.inst_prev.ready()
 
    # Check that all build arguments were consumed.
    if (len(cli.build_arg) != 0):
@@ -233,7 +234,6 @@ class Main_Loop(lark.Visitor):
          if (inst.miss or inst.hit_act):
             if (self.miss_ct == 1 or inst.hit_act):
                inst.checkout_for_build(self.inst_prev)
-            inst.unready()
             inst.execute()
             if (inst.miss):
                if (image_i != -1):
@@ -243,7 +243,6 @@ class Main_Loop(lark.Visitor):
                        "created_by": "%s %s" % (inst.str_name, inst.str_)})
                   images[image_i].metadata_save()
                inst.commit()
-            inst.ready()
          self.inst_prev = inst
          self.instruction_total_ct += inst.execute_increment
 
@@ -324,9 +323,6 @@ class Instruction(abc.ABC):
    def commit(self):
       path = images[image_i].unpack_path
       self.git_hash = bu.cache.commit(path, self.sid, str(self))
-
-   def unready(self):
-      bu.cache.unready(images[image_i])
 
    def ready(self):
       bu.cache.ready(images[image_i])

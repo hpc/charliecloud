@@ -1,4 +1,4 @@
 FROM alpine:3.9
 RUN echo foo
+RUN false
 RUN echo bar
-RUN echo wordle

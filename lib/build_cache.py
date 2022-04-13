@@ -41,11 +41,6 @@ def have_dot():
    ch.version_check(["dot", "-V"], DOT_MIN)
 
 def init(cli):
-   # Undocumented variable for CI testing.
-   try:
-      cli.bucache = ch.Build_Mode(os.environ['CH_BUCACHE_MODE'])
-   except:
-      pass
    # At this point --bucache is what the user wanted, either directly or via
    # --no-cache. If it's None, chose the right default; otherwise, try what
    # the user asked for and fail if we can't do it.
@@ -109,6 +104,7 @@ class File_Metadata:
       # empty_dir_p (recursively empty directory tree).
       return all(child.empty_dir_p for child in self.children)
 
+
 class State_ID:
 
    __slots__ = ('id_')
@@ -156,6 +152,7 @@ class State_ID:
 ## Main classes ##
 
 class Enabled_Cache:
+
    root_id = State_ID.from_text("4A6F:73E9:20436170:61626C61:6E636121")
 
    __slots__ = ("bootstrap_ct")
@@ -175,6 +172,14 @@ class Enabled_Cache:
    @property
    def root(self):
       return ch.storage.build_cache
+
+   @staticmethod
+   def branch_name_ready(ref):
+      return ref.for_path
+
+   @staticmethod
+   def branch_name_unready(ref):
+      return ref.for_path + "#"
 
    def bootstrap(self):
       ch.INFO("initializing empty build cache")
@@ -196,9 +201,9 @@ class Enabled_Cache:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
 
-   def branch(self, new, base):
-      "Create branch new pointing to base, replacing any existing branch new."
-      ch.cmd_quiet(["git", "branch", "-f", new, base], cwd=self.root)
+#   def branch(self, new, base):
+#      "Create branch new pointing to base, replacing any existing branch new."
+#      ch.cmd_quiet(["git", "branch", "-f", new, base], cwd=self.root)
 
    def checkout(self, image, git_hash):
       self.worktree_add(image, git_hash)
@@ -222,9 +227,6 @@ class Enabled_Cache:
       ch.chdir(cwd)
       self.git_restore(path, fm)
       return git_hash
-
-   def delete(self, image):
-      ch.cmd_quiet(["git", "branch", "-D", image.ref.for_path], cwd=self.root)
 
    def find_image(self, image):
       """Return (state ID, commit) of branch tip for image, or (None, None) if
@@ -442,7 +444,6 @@ class Enabled_Cache:
 
    def pull(self, image, last_layer=None):
       self.worktree_add(image, "root")
-      self.unready(image)
       # a young hen, especially one less than one year old
       pullet = pull.Image_Puller(image)
       pullet.pull_to_unpacked(last_layer)
@@ -453,8 +454,10 @@ class Enabled_Cache:
       return (sid, commit)
 
    def ready(self, image):
-      ch.cmd_quiet(["git", "branch", "-m", "%s+NR" % image.ref.for_path,
-                    image.ref.for_path], cwd=image.unpack_path)
+      ch.cmd_quiet(["git", "checkout", "-B", self.branch_name_ready(image.ref)],
+                   cwd=image.unpack_path)
+      ch.cmd_quiet(["git", "branch", "-D", self.branch_name_unready(image.ref)],
+                   cwd=self.root)
 
    def reset(self):
       if (self.bootstrap_ct >= 1):
@@ -532,16 +535,11 @@ class Enabled_Cache:
       ch.VERBOSE("writing %s" % path_pdf)
       ch.cmd_quiet(["dot", "-Tpdf", "-o%s" % path_pdf, str(path_gv)])
 
-   def unready(self, image):
-      ch.cmd_quiet(["git", "branch", "-D", "%s+NR" % image.ref.for_path],
-                   cwd=self.root, fail_ok=True)
-      ch.cmd_quiet(["git", "branch", "-m", image.ref.for_path,
-                    "%s+NR" % image.ref.for_path], cwd=image.unpack_path)
-
    def worktree_add(self, image, base):
       t = ch.Timer()
       image.unpack_clear()
-      ch.cmd_quiet(["git", "worktree", "add", "-f", "-B", image.ref.for_path,
+      ch.cmd_quiet(["git", "worktree", "add", "-f",
+                    "-B", self.branch_name_unready(image.ref),
                     image.unpack_path, base], cwd=self.root)
       t.log("created worktree")
 
@@ -551,6 +549,7 @@ class Enabled_Cache:
       ch.cmd_quiet(["git", "worktree", "remove", "-f", image.unpack_path],
                    cwd=self.root)
       t.log("removed worktree")
+
 
 class Rebuild_Cache(Enabled_Cache):
 

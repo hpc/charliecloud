@@ -942,7 +942,7 @@ vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
 vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
 pack_fmt_set 21
-vset CH_BUCACHE_MODE  "$bucache_mode"  "$CH_BUCACHE_MODE"  disabled \
+vset CH_IMAGE_BUCACHE "$bucache_mode"  "$CH_IMAGE_BUCACHE" disabled \
                       21 'build cache mode'
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'

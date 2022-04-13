@@ -21,6 +21,7 @@ setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
     [[ $CH_BUCACHE_MODE = enabled ]] || skip 'build cache enabled only'
     export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest  # don't mess up main storage
+    dot_base=$BATS_TMPDIR/bu_
     ch-image gestalt bucache-dot
 }
 
@@ -318,60 +319,47 @@ EOF
               | grep "commits" | awk '{print $2}') <(echo 4)
 }
 
-@test "${tag}/branch readiness" {
+@test "${tag}/branch ready" {
     ch-image build-cache --reset
 
+    # Build A as “foo”.
+    ch-image build -t foo -f bucache/a.df ./bucache
+
+    # Rebuild A, except this is a broken version; the second instruction fails
+    # leaving the new branch in a not-ready state pointing to “echo foo”.
+    # The old branch remains.
+    run ch-image build -t foo -f ./bucache/a-fail.df ./bucache
+    sleep 1
+    echo "$output"
+    [[ $status -eq 1 ]]
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
     blessed_out=$(cat << 'EOF'
-*  RUN echo bar
-*  (a+NR) RUN echo foo
+*  (foo) RUN echo bar
+*  (foo#) RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
 *  (HEAD -> root) root
 EOF
 )
-    # Build A, then introduce a failure to A's Dockerfile and build again.
-    # The first instruction FOO hits; the the second instruction fails leaving
-    # the A branch in a not ready state pointing to FOO.
-    ch-image build -t a -f bucache/a.df .
-    run ch-image build -t a -f ./bucache/a2.df .
-    [[ $status -ne 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Build C as “foo”. Now branch “foo” points to the completed build of the
+    # new Dockerfile, and the not-ready branch is gone.
+    ch-image build -t foo -f ./bucache/c.df ./bucache
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-
-    # Build original A again. Since no A instruction needs to be
-    # re-executed (all hits) there are now two branches: a ready and not ready.
     blessed_out=$(cat << 'EOF'
-*  (a) RUN echo bar
-*  (a+NR) RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
-EOF
-)
-    ch-image build -t a -f ./bucache/a.df .
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-
-    # Add new working instructions to A. Since we now have a miss, the not-ready
-    # branch is replaced with a new not-ready branch (pointing to the last
-    # successful parent commit of A), and marked ready when the build succeeds.
-    # Thus there should be zero not-ready branches.
-    blessed_out=$(cat << 'EOF'
-*  (a) RUN echo wordle
-*  RUN echo bar
+*  (foo) RUN echo qux
+| *  RUN echo bar
+|/
 *  RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
 *  (HEAD -> root) root
 EOF
 )
-    ch-image build -t a -f ./bucache/a3.df .
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-
 }
 
 @test "${tag}/ARG and ENV" {

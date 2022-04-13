@@ -291,6 +291,13 @@ class ArgumentParser(argparse.ArgumentParser):
 
    def parse_args(self, *args, **kwargs):
       cli = super().parse_args(*args, **kwargs)
+      # Bring in environment variables that set options.
+      if (cli.bucache is None and "CH_IMAGE_BUCACHE" in os.environ):
+         try:
+            cli.bucache = Build_Mode(os.environ["CH_IMAGE_BUCACHE"])
+         except ValueError:
+            FATAL("$CH_IMAGE_BUCACHE: invalid build cache mode: %s"
+                  % os.environ["CH_IMAGE_BUCACHE"])
       # Incompatible arguments inexpressible by standard means.
       if (cli.no_cache and cli.bucache is not None):
          self.error("--no-cache incompatible with --bucache")
@@ -2033,10 +2040,6 @@ def du(path):
       byte_ct += sum(disk_bytes(dir_ + "/" + i) for i in subdirs + files)
    return (file_ct, byte_ct)
 
-def listdir(path):
-   "Return set of entries in directory path, without self (.) and parent (..)."
-   return set(ossafe(os.listdir, "can't list: %s" % path, path))
-
 def done_notify():
    if (user() == "jogas"):
       INFO("!!! KOBE !!!")
@@ -2194,7 +2197,8 @@ def json_from_file(path, msg):
    return data
 
 def listdir(path):
-   return ossafe(os.listdir, "can't list: %s" % path, path)
+   "Return set of entries in directory path, without self (.) and parent (..)."
+   return set(ossafe(os.listdir, "can't list: %s" % path, path))
 
 def log(msg, hint=None, color=None, prefix="", end="\n"):
    if (color is not None):
