@@ -418,6 +418,7 @@ EOF
 }
 
 @test "${tag}/force" {
+    skip
     ch-image build-cache --reset
 
     blessed_out=$(cat << 'EOF'

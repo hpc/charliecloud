@@ -368,6 +368,19 @@ class Image:
       self.metadata_init()
 
    @property
+   def deleteable(self):
+      """True if it's OK to delete me, either my unpack directory (a) is at
+         the expected location within the storage directory xor (b) is not not
+         but it looks like an image; False otherwise."""
+      if (self.unpack_path == storage.unpack_base // self.unpack_path.name):
+         return True
+      else:
+         if (all(os.path.isdir(self.unpack_path // i)
+                for i in ("bin", "dev", "usr"))):
+            return True
+      return False
+
+   @property
    def metadata_path(self):
       return self.unpack_path // "ch"
 
@@ -377,16 +390,6 @@ class Image:
 
    def __str__(self):
       return str(self.ref)
-
-   @staticmethod
-   def unpacked_p(img):
-      """Return True if imgdir looks like it exists within a sane storage
-         directory, False otherwise"""
-      imgdir = Path(os.path.dirname(img))
-      rootdir = Path(os.path.dirname(imgdir))
-      return (    os.path.isdir(imgdir)
-              and os.path.isdir(rootdir // 'dlcache')
-              and os.path.isfile(rootdir // 'version'))
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -590,7 +593,7 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (not self.unpacked_p(self.unpack_path)):
+         if (not self.deleteable):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("removing existing image: %s" % self.unpack_path)
@@ -605,7 +608,7 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (not self.unpacked_p(self.unpack_path)):
+         if (not self.deleteable):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("replacing existing image: %s" % self.unpack_path)
@@ -620,7 +623,7 @@ class Image:
       VERBOSE("unpack path: %s" % self.unpack_path)
       if (not self.unpack_exist_p):
          FATAL("%s image not found" % self.ref)
-      if (self.unpacked_p(self.unpack_path)):
+      if (self.deleteable):
          INFO("deleting image: %s" % self.ref)
          rmtree(self.unpack_path)
       else:

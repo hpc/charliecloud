@@ -32,7 +32,7 @@ setup () {
 }
 
 @test 'ch-image delete' {
-    # verify delete/test image doesn't exist
+    # Verify image doesn't exist.
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
@@ -48,12 +48,58 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"delete/test"* ]]
 
-    # delete image
+    # Delete image.
     ch-image delete delete/test
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *"delete/test"* ]]
+}
+
+@test 'broken image delete' {
+    # Verify image doesn't exist.
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"deletetest"* ]]
+
+    # Build image.
+    ch-image build -t deletetest -f - . << 'EOF'
+FROM 00_tiny
+EOF
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"deletetest"* ]]
+
+    # Break image.
+    rmdir "$CH_IMAGE_STORAGE"/img/deletetest/dev
+
+    # Delete image.
+    ch-image delete deletetest
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"deletetest"* ]]
+}
+
+@test 'broken image overwrite' {
+    # Build image.
+    ch-image build -t tmpimg -f - . << 'EOF'
+FROM 00_tiny
+EOF
+
+    # Break image.
+    rmdir "$CH_IMAGE_STORAGE"/img/tmpimg/dev
+
+    # Rebuild image.
+    ch-image build -t tmpimg -f - . << 'EOF'
+FROM 00_tiny
+EOF
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"tmpimg"* ]]
 }
 
 @test 'ch-image import' {
