@@ -254,7 +254,6 @@ class Instruction(abc.ABC):
    execute_increment = 1
 
    __slots__ = ("git_hash",     # Git commit where sid was found
-                "force",        # Does the instruction need force injection?
                 "hit_act",      # Does the command need to execute even if hit?
                 "lineno",
                 "options",      # consumed
@@ -282,10 +281,7 @@ class Instruction(abc.ABC):
       options = self.options_str
       if (options != ""):
          options = " " + options
-      force = ""
-      if (self.force):
-         force = "[force] "
-      return "%s%s %s%s" % (force, self.str_name, options, self.str_)
+      return "%s %s%s" % (self.str_name, options, self.str_)
 
    @property
    def miss(self):
@@ -318,7 +314,7 @@ class Instruction(abc.ABC):
       env.reset()
       global fakeroot_config
       fakeroot_config = fakeroot.detect(images[image_i].unpack_path,
-                                           cli.force, cli.no_force_detect)
+                                        cli.force, cli.no_force_detect)
 
    def commit(self):
       path = images[image_i].unpack_path
@@ -774,7 +770,15 @@ class Run(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.force = cli.force
+
+   # FIXME: This causes spurious misses because it adds the force bit to *all*
+   # RUN instructions, not just those that actually were modified (i.e, *all*
+   # RUN instructions will miss the equivalent RUN with --force inverted). But
+   # we don't know know if an instruction needs modifications until the result
+   # is checked out, which happens after we check the cache. See issue #FIXME.
+   @property
+   def str_name(self):
+      return super().str_name + (".F" if cli.force else "")
 
    def execute(self):
       rootfs = images[image_i].unpack_path

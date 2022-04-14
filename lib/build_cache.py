@@ -206,6 +206,7 @@ class Enabled_Cache:
 #      ch.cmd_quiet(["git", "branch", "-f", new, base], cwd=self.root)
 
    def checkout(self, image, git_hash):
+      ch.INFO("checking out image from cache ...")
       self.worktree_add(image, git_hash)
       self.git_restore(image.unpack_path)
 
@@ -464,7 +465,6 @@ class Enabled_Cache:
          ch.WARNING("not resetting brand-new cache")
       else:
          ch.INFO("deleting build cache")
-         self.garbageinate()
          ch.rmtree(self.root)
          ch.mkdir(self.root)
          self.bootstrap()

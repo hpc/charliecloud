@@ -19,7 +19,7 @@ treeonly () {
 setup () {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    [[ $CH_BUCACHE_MODE = enabled ]] || skip 'build cache enabled only'
+    [[ $CH_IMAGE_BUCACHE = enabled ]] || skip 'build cache enabled only'
     export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest  # don't mess up main storage
     dot_base=$BATS_TMPDIR/bu_
     ch-image gestalt bucache-dot
@@ -417,29 +417,50 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/force" {
-    skip
+@test "${tag}/--force" {
     ch-image build-cache --reset
 
-    blessed_out=$(cat << 'EOF'
-*  (yes_f) [force] RUN apt-get install -y git
-*  [force] RUN apt-get -y upgrade
-| *  (no_f+NR) RUN apt-get -y upgrade
-|/
-*  (debian) PULL debian
-*  (HEAD -> root) root
-EOF
-)
-    # Build debian image without force; both "apt-get update" and "install git"
-    # fail without force. The asoociated branch is marked not ready.
-    run ch-image build -t no_f -f ./bucache/force.df .
-    [[ $status -ne 0 ]]
-    # Build same image with different tag using force; this will succeed and
-    # thus we should have two branches in the cache.
-    ch-image build --force -t yes_f -f ./bucache/force.df .
+    # Use a centos:7 image because it can install some RPMs without --force.
+
+    # First build, without --force.
+    ch-image build -t force -f ./bucache/force.df ./bucache
+
+    # Second build, with --force. This should diverge after the first WORKDIR.
+    sleep 1
+    ch-image build --force -t force -f ./bucache/force.df ./bucache
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
+    blessed_out=$(cat << 'EOF'
+*  (force) WORKDIR /usr
+*  RUN.F yum install -y ed  # doesn’t need --force
+| *  WORKDIR /usr
+| *  RUN yum install -y ed  # doesn’t need --force
+|/
+*  WORKDIR /
+*  (centos+7) PULL centos:7
+*  (HEAD -> root) root
+EOF
+)
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Third build, without --force. This should re-use the first build.
+    sleep 1
+    ch-image build -t force -f ./bucache/force.df ./bucache
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    blessed_out=$(cat << 'EOF'
+*  WORKDIR /usr
+*  RUN.F yum install -y ed  # doesn’t need --force
+| *  (force) WORKDIR /usr
+| *  RUN yum install -y ed  # doesn’t need --force
+|/
+*  WORKDIR /
+*  (centos+7) PULL centos:7
+*  (HEAD -> root) root
+EOF
+)
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
