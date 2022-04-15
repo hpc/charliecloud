@@ -624,28 +624,8 @@ class Image:
          if (not self.deleteable):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
-         VERBOSE("removing existing image: %s" % self.unpack_path)
+         VERBOSE("removing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
-
-   def unpack_create_ok(self):
-      """Ensure the unpack directory can be created. If the unpack directory
-         is already an image, remove it."""
-      if (not self.unpack_exist_p):
-         VERBOSE("creating new image: %s" % self.unpack_path)
-      else:
-         if (not os.path.isdir(self.unpack_path)):
-            FATAL("can't flatten: %s exists but is not a directory"
-                  % self.unpack_path)
-         if (not self.deleteable):
-            FATAL("can't flatten: %s exists but does not appear to be an image"
-                  % self.unpack_path)
-         VERBOSE("replacing existing image: %s" % self.unpack_path)
-         rmtree(self.unpack_path)
-
-   def unpack_create(self):
-      "Ensure the unpack directory exists, replacing or creating if needed."
-      self.unpack_create_ok()
-      mkdir(self.unpack_path)
 
    def unpack_delete(self):
       VERBOSE("unpack path: %s" % self.unpack_path)
