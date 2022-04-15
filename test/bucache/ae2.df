@@ -1,6 +1,0 @@
-FROM alpine:3.9
-ARG arg_=/bin/true
-ENV env_=/bin/true
-RUN $arg_
-RUN $env_
-RUN $arg && $env_

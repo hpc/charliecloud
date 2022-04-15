@@ -1,0 +1,5 @@
+FROM alpine:3.9
+ARG argA=vargA
+ARG argB=vargB
+ENV envA=venvA envB=venvB
+RUN echo 1 $argA $argB $envA $envB

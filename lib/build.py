@@ -45,24 +45,6 @@ image_ct = None
 lark = ch.lark
 
 
-## Constants ##
-
-ARG_DEFAULTS = { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
-                 "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
-                 "FTP_PROXY": os.environ.get("FTP_PROXY"),
-                 "NO_PROXY": os.environ.get("NO_PROXY"),
-                 "http_proxy": os.environ.get("http_proxy"),
-                 "https_proxy": os.environ.get("https_proxy"),
-                 "ftp_proxy": os.environ.get("ftp_proxy"),
-                 "no_proxy": os.environ.get("no_proxy"),
-                 "SSH_AUTH_SOCK": os.environ.get("SSH_AUTH_SOCK"),
-                 "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-                 # GNU tar, when it thinks it's running as root, tries to
-                 # chown(2) and chgrp(2) files to whatever's in the tarball.
-                 "TAR_OPTIONS": "--no-same-owner",
-                 "USER": ch.user() }
-
-
 ## Main ##
 
 def main(cli_):
@@ -231,8 +213,8 @@ class Main_Loop(lark.Visitor):
             else:
                ch.FATAL("first instruction must be ARG or FROM")
          self.miss_ct = inst.prepare(self.inst_prev, self.miss_ct)
-         if (inst.miss or inst.hit_act):
-            if (self.miss_ct == 1 or inst.hit_act):
+         if (inst.miss):
+            if (self.miss_ct == 1):
                inst.checkout_for_build(self.inst_prev)
             inst.execute()
             if (inst.miss):
@@ -254,7 +236,6 @@ class Instruction(abc.ABC):
    execute_increment = 1
 
    __slots__ = ("git_hash",     # Git commit where sid was found
-                "hit_act",      # Does the command need to execute even if hit?
                 "lineno",
                 "options",      # consumed
                 "options_str",  # saved at instantiation
@@ -263,7 +244,6 @@ class Instruction(abc.ABC):
 
    def __init__(self, tree):
       self.force = None
-      self.hit_act = None
       self.lineno = tree.meta.line
       self.options = {}
       for st in ch.tree_children(tree, "option"):
@@ -311,7 +291,6 @@ class Instruction(abc.ABC):
       # Note messy globals.
       parent.checkout()
       images[image_i].metadata_load()
-      env.reset()
       global fakeroot_config
       fakeroot_config = fakeroot.detect(images[image_i].unpack_path,
                                         cli.force, cli.no_force_detect)
@@ -379,7 +358,6 @@ class Arg(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.hit_act = True
       self.key = ch.tree_terminal(self.tree, "WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
@@ -664,7 +642,6 @@ class Env(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.hit_act = True
 
    @property
    def str_(self):
@@ -849,7 +826,6 @@ class I_workdir(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.hit_act = True
       self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
                                 env.env_build)
 
@@ -907,10 +883,14 @@ class Environment:
    """The state we are in: environment variables, working directory, etc. Most
       of this is just passed through from the image metadata."""
 
-   __slots__ = ("arg",)
+   __slots__ = tuple()
 
-   def __init__(self):
-      self.reset()
+   @property
+   def arg(self):
+      if (image_i == -1):
+         return dict()
+      else:
+         return images[image_i].metadata["arg"]
 
    @property
    def env(self):
@@ -918,10 +898,6 @@ class Environment:
          return dict()
       else:
          return images[image_i].metadata["env"]
-
-   @env.setter
-   def env(self, x):
-      images[image_i].metadata["env"] = x
 
    @property
    def env_build(self):
@@ -951,10 +927,6 @@ class Environment:
          self.workdir = ch.Path(path)
       else:
          self.workdir //= path
-
-   def reset(self):
-      # This resets only things that aren't part of the image metadata.
-      self.arg = { k: v for (k, v) in ARG_DEFAULTS.items() if v is not None }
 
 
 ## Supporting functions ###

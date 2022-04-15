@@ -99,6 +99,28 @@ ARCH_MAP = { "x86_64":    "amd64",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
 
+# ARGs that are “magic”: always available, don’t cause cache misses, not saved
+# with the image.
+ARG_DEFAULTS_MAGIC = { k: v for (k,v) in
+   { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
+     "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
+     "FTP_PROXY": os.environ.get("FTP_PROXY"),
+     "NO_PROXY": os.environ.get("NO_PROXY"),
+     "http_proxy": os.environ.get("http_proxy"),
+     "https_proxy": os.environ.get("https_proxy"),
+     "ftp_proxy": os.environ.get("ftp_proxy"),
+     "no_proxy": os.environ.get("no_proxy"),
+     "SSH_AUTH_SOCK": os.environ.get("SSH_AUTH_SOCK"),
+     # FIXME: user() not yet defined
+     "USER": os.environ.get("USER") }.items() if v is not None }
+
+# ARGs with pre-defined default values that *are* saved with the image.
+ARG_DEFAULTS = \
+   { "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+     # GNU tar, when it thinks it’s running as root, tries to chown(2) and
+     # chgrp(2) files to whatever is in the tarball.
+     "TAR_OPTIONS": "--no-same-owner" }
+
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
 
@@ -453,6 +475,7 @@ class Image:
       "Initialize empty metadata structure."
       # Elsewhere can assume the existence and types of everything here.
       self.metadata = { "arch": arch_host.split("/")[0],  # no variant
+                        "arg": { **ARG_DEFAULTS_MAGIC, **ARG_DEFAULTS },
                         "cwd": "/",
                         "env": dict(),
                         "history": list(),
@@ -470,6 +493,7 @@ class Image:
          return
       self.metadata = json_from_file(path, "metadata")
       self.metadata.setdefault("history", list())  # upgrade pre-PR #1215
+      self.metadata["env"].update({ **ARG_DEFAULTS_MAGIC, **ARG_DEFAULTS })
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
@@ -533,9 +557,13 @@ class Image:
    def metadata_save(self):
       """Dump image's metadata to disk, including the main data structure but
          also all auxiliary files, e.g. ch/environment."""
+      # Adjust since we don't save everything.
+      metadata = copy.deepcopy(self.metadata)
+      for k in ARG_DEFAULTS_MAGIC:
+         metadata["arg"].pop(k, None)
       # Serialize. We take care to pretty-print this so it can (sometimes) be
       # parsed by simple things like grep and sed.
-      out = json.dumps(self.metadata, indent=2, sort_keys=True)
+      out = json.dumps(metadata, indent=2, sort_keys=True)
       DEBUG("metadata:\n%s" % out)
       # Main metadata file.
       path = self.metadata_path // "metadata.json"
@@ -545,11 +573,11 @@ class Image:
       path = self.metadata_path // "environment"
       VERBOSE("writing environment file: %s" % path)
       file_write(path, (  "\n".join("%s=%s" % (k,v) for (k,v)
-                                    in sorted(self.metadata["env"].items()))
+                                    in sorted(metadata["env"].items()))
                         + "\n"))
       # mkdir volumes
       VERBOSE("ensuring volume directories exist")
-      for path in self.metadata["volumes"]:
+      for path in metadata["volumes"]:
          mkdirs(self.unpack_path // path)
 
    def tarballs_write(self, tarball_dir):

@@ -365,39 +365,74 @@ EOF
 @test "${tag}/ARG and ENV" {
     ch-image build-cache --reset
 
-    # Ensure ARG and ENV work.
-    blessed_out=$(cat << 'EOF'
-*  (ae) RUN $env_
-*  RUN $arg_
-*  ENV env_='/bin/true'
-*  ARG arg_='/bin/true'
-*  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
-EOF
-)
-    ch-image build -t ae -f ./bucache/ae.df .
-    run ch-image build-cache --tree
+    # Build.
+    run ch-image build -t ae1 -f ./bucache/argenv.df ./bucache
     echo "$output"
     [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+    [[ $output = *'1 vargA vargB venvA venvB'* ]]
 
-    # Same name. Miss. Ensure ARG and ENV hits still set their variables.
+    # Re-build, with partial hits. ARG and ENV from first build should pass
+    # through with correct values.
+    sleep 1
+    run ch-image build -t ae2 -f ./bucache/argenv2.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'2 vargA vargB venvA venvB'* ]]
+
+    # Re-build, setting ARG from the command line. This should miss.
+    sleep 1
+    run ch-image build --build-arg=argB=foo \
+                       -t ae3 -f ./bucache/argenv.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"3. ARG argB='foo'"* ]]
+
+    # Re-build, setting ARG from the command line to the same. Should hit.
+    sleep 1
+    run ch-image build --build-arg=argB=foo \
+                       -t ae4 -f ./bucache/argenv.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"3* ARG argB='foo'"* ]]
+
+    # Re-build, setting ARG from the command line to thing different. Miss.
+    sleep 1
+    run ch-image build --build-arg=argB=bar \
+                       -t ae5 -f ./bucache/argenv.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"3. ARG argB='bar'"* ]]
+    [[ $output = *'1 vargA bar venvA venvB'* ]]
+
+    # Check for expected tree.
+    run ch-image build-cache --tree --dot="${dot_base}argenv"
+    echo "$output"
+    [[ $status -eq 0 ]]
     blessed_out=$(cat << 'EOF'
-*  (ae) RUN $arg && $env_
-*  RUN $env_
-*  RUN $arg_
-*  ENV env_='/bin/true'
-*  ARG arg_='/bin/true'
+*  (ae5) RUN echo 1 $argA $argB $envA $envB
+*  ENV envB='venvB'
+*  ENV envA='venvA'
+*  ARG argB='bar'
+| *  (ae4, ae3) RUN echo 1 $argA $argB $envA $envB
+| *  ENV envB='venvB'
+| *  ENV envA='venvA'
+| *  ARG argB='foo'
+|/
+| *  (ae2) RUN echo 2 $argA $argB $envA $envB
+| | *  (ae1) RUN echo 1 $argA $argB $envA $envB
+| |/
+| *  ENV envB='venvB'
+| *  ENV envA='venvA'
+| *  ARG argB='vargB'
+|/
+*  ARG argA='vargA'
 *  (alpine+3.9) PULL alpine:3.9
 *  (HEAD -> root) root
 EOF
 )
-    ch-image build -t ae -f ./bucache/ae2.df .
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
+
 
 @test "${tag}/all hits, new name" {
     ch-image build-cache --reset
