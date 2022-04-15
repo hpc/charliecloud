@@ -1,5 +1,0 @@
-FROM alpine:latest
-RUN mkdir wd
-RUN touch wd/foo
-WORKDIR /wd
-RUN [[ -e ./foo ]]
