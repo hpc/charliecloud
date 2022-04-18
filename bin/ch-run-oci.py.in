@@ -83,6 +83,8 @@ def args_parse():
 
    args_ = ap.parse_args()
    args_.arch = "yolo"
+   # dummy args to make charliecloud.init() happy
+   args_.dlcache = None
    args_.password_many = False
    args_.storage = None
    args_.tls_no_verify = False
