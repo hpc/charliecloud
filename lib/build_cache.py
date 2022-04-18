@@ -80,6 +80,7 @@ class File_Metadata:
 
    __slots__ = ('atime_ns',
                 'children',
+                'hardlink_to',
                 'mtime_ns',
                 'mode',
                 'name')
@@ -87,9 +88,18 @@ class File_Metadata:
    def __init__(self, name, st):
       self.name = name
       self.atime_ns = st.st_atime_ns
+      self.hardlink_to = None
       self.children = list()  # so we can keep it sorted
       self.mtime_ns = st.st_mtime_ns
       self.mode = st.st_mode
+
+   @property
+   def unstored(self):
+      """True if I represent something not stored, either ignored by Git or
+         deleted by us before committing."""
+      return (   stat.S_ISFIFO(self.mode)
+              or stat.S_ISSOCK(self.mode)
+              or self.hardlink_to is not None)
 
    @property
    def empty_dir_p(self):
@@ -100,9 +110,10 @@ class File_Metadata:
       # guessing it's not too much.
       if (not stat.S_ISDIR(self.mode)):
          return False  # not a directory
-      # True if no children (truly empty directory) or each child is
-      # empty_dir_p (recursively empty directory tree).
-      return all(child.empty_dir_p for child in self.children)
+      # True if no children (truly empty directory), or each child is unstored
+      # or empty_dir_p (recursively empty directory tree).
+      return all((c.hardlink_to is not None or c.empty_dir_p)
+                 for c in self.children)
 
 
 class State_ID:
@@ -289,7 +300,7 @@ class Enabled_Cache:
 
            1. Record file metadata, specifically mode and timestamps, because
               Git does not save metadata beyond a limited executable bit.
-              (More may be saved in the future; see issue #FIXME.)
+              (More may be saved in the future; see issue #1287.)
 
               This captures FIFOs (named pipes), which are ignored by Git.
 
@@ -306,12 +317,11 @@ class Enabled_Cache:
               unprivileged container images, so their presence means something
               is wrong.
 
-           4. For non-directories with link count greater than 1, print a
-              warning. They will become multiple separate files when the
-              cached state is restored. (This may change in the future; see
-              issue #FIXME.)
-
-              Note: Directories cannot be hard-linked [1].
+           4. For non-directories with link count greater than 1 (i.e., hard
+              links), do nothing when the first link is encountered, but
+              second and subsequent links are deleted, to be restored on
+              checkout. (Git splits multiply-linked files into separate
+              files, and directories cannot be hard-linked [1].)
 
            5. Filenames starting in “.git” are special to Git. Therefore,
               except at the root where “.git” files support the cache’s Git
@@ -322,16 +332,16 @@ class Enabled_Cache:
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       t = ch.Timer()
       cwd = ch.chdir(unpack_path)
-      met = self.git_prepare_walk(None, ".", os.lstat("."))
+      met = self.git_prepare_walk(dict(), None, ".", os.lstat("."))
       ch.file_write("ch/git.pickle", pickle.dumps(met, protocol=4))
       ch.chdir(cwd)
       t.log("gathered metadata")
       return met
 
-   def git_prepare_walk(self, parent, name, st):
+   def git_prepare_walk(self, hardlinks, parent, name, st):
       """Return a File_Metadata object describing file name and its children
          (if name is a directory), and rename files as described in
-         git_preserve(). Changes CWD during operation but does restore it."""
+         git_prepare(). Changes CWD during operation but does restore it."""
       # While the standard library provides a similar function os.walk() that
       # is internally recursive, it must be used iteratively.
       fm = File_Metadata(name, st)
@@ -351,14 +361,23 @@ class Enabled_Cache:
          cwd = ch.chdir(name)
          for i in entries:
             if (not (parent is None and i.startswith(".git"))):
-               fm.children.append(self.git_prepare_walk(path, i, os.lstat(i)))
+               fm.children.append(self.git_prepare_walk(hardlinks, path,
+                                                        i, os.lstat(i)))
          ch.chdir(cwd)
       else:
          ch.FATAL("unexpected file type in image: %x: %s"
                   % (stat.IFMT(st.st_mode), path))
-      # Validate link count.
+      # Deal with hard links.
       if (not stat.S_ISDIR(st.st_mode) and st.st_nlink > 1):
-         ch.WARNING("hard links may become multiple files: %s" % name)
+         if ((st.st_dev, st.st_ino) in hardlinks):
+            ch.TRACE("hard link: deleting subsequent: %d %d %s"
+                     % (st.st_dev, st.st_ino, path))
+            fm.hardlink_to = hardlinks[(st.st_dev, st.st_ino)]
+            ch.unlink(name)
+         else:
+            ch.TRACE("hard link: recording first: %d %d %s"
+                     % (st.st_dev, st.st_ino, path))
+            hardlinks[(st.st_dev, st.st_ino)] = path
       # Rename if necessary.
       if (name.startswith(".weirdal_")):
          ch.WARNING("file starts with sentinel, will be renamed: %s" % name)
@@ -385,11 +404,11 @@ class Enabled_Cache:
       else:
          quick=False
          fm = pickle.loads(ch.file_read("ch/git.pickle", text=False))
-      self.git_restore_walk(None, fm, quick)
+      self.git_restore_walk(unpack_path, None, fm, quick)
       ch.chdir(cwd)
       t.log("restored metadata (%s)" % ("quick" if quick else "full"))
 
-   def git_restore_walk(self, parent, fm, quick):
+   def git_restore_walk(self, root, parent, fm, quick):
       "Changes CWD but restores it."
       assert (parent is not None or fm.name == ".")
       path = fm.name if parent is None else "%s/%s" % (parent, fm.name)
@@ -404,11 +423,20 @@ class Enabled_Cache:
             ch.ossafe(os.mkdir, "can't mkdir: %s" % path, name)
          elif (stat.S_ISFIFO(fm.mode)):
             ch.ossafe(os.mkfifo, "can't make FIFO: %s" % path, name)
+      if (fm.hardlink_to is not None):
+         # This relies on prepare and restore having the same traversal order,
+         # so the first (stored) link is always available by the time we get
+         # to subsequent (unstored) links.
+         target = root // fm.hardlink_to
+         ch.TRACE("hard link: restoring: %s -> %s" % (path, target))
+         ch.ossafe(os.link, "can't hardlink: %s -> %s" % (path, target),
+                   target, fm.name, follow_symlinks=False)
       if (fm.name.startswith(".git")):
          ch.rename(fm.name.replace(".git", ".weirdal_"), fm.name)
       if (not quick):
          if (stat.S_ISSOCK(fm.mode)):
             ch.WARNING("ignoring socket in image: %s" % path)
+      if (not quick or fm.hardlink_to is not None):
          if (os.utime in os.supports_follow_symlinks):
             ch.ossafe(os.utime, "can't restore times: %s" % path, fm.name,
                       ns=(fm.atime_ns, fm.mtime_ns), follow_symlinks=False)
@@ -419,7 +447,7 @@ class Enabled_Cache:
       if (len(fm.children) > 0):
          cwd = ch.chdir(fm.name)  # works at top level b/c fm.name is "."
          for child in fm.children:
-            self.git_restore_walk(path, child, quick)
+            self.git_restore_walk(root, path, child, quick)
          ch.chdir(cwd)
 
    def pull_(self, image, last_layer):
