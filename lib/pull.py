@@ -3,6 +3,7 @@ import os.path
 import sys
 
 import charliecloud as ch
+import build_cache as bu
 
 
 ## Constants ##
@@ -15,6 +16,22 @@ manifests_internal = {
       "layers": []
    }
 }
+
+
+
+## Main ##
+
+def main(cli):
+   # Set things up.
+   ref = ch.Image_Ref(cli.image_ref)
+   if (cli.parse_only):
+      print(ref.as_verbose_str)
+      sys.exit(0)
+   img = ch.Image(ref)
+   ch.INFO("pulling image:    %s" % img.ref)
+   ch.INFO("requesting arch:  %s" % ch.arch)
+   bu.cache.pull_eager(img, cli.last_layer)
+   ch.done_notify()
 
 
 ## Classes ##
@@ -271,9 +288,7 @@ class Image_Puller:
                   'try "ch-image list IMAGE_REF"')
       return digest
 
-   def pull_to_unpacked(self, last_layer=None):
-      "Pull and flatten image."
-      self.download()
+   def unpack(self, last_layer=None):
       layer_paths = [self.layer_path(h) for h in self.layer_hashes]
       self.image.unpack(layer_paths, last_layer)
       self.image.metadata_replace(self.config_path)

@@ -25,6 +25,9 @@ setup () {
     ch-image gestalt bucache-dot
 }
 
+
+### Test cases that go in the paper ###
+
 @test "${tag}/§3.1 empty cache" {
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
@@ -40,20 +43,6 @@ EOF
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/reset" {
-    # re-init
-    run ch-image build-cache --reset
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'deleting build cache'* ]]
-    [[ $output = *'initializing empty build cache'* ]]
-
-    # fail if build cache disabled
-    run ch-image build-cache --bucache=disabled --reset
-    [[ $status -eq 1 ]]
-    echo "$output"
-    [[ $output = *'build-cache subcommand invalid with build cache disabled'* ]]
-}
 
 @test "${tag}/§3.2.1 initial pull" {
     ch-image pull alpine:3.9
@@ -68,6 +57,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
 }
+
 
 @test "${tag}/§3.5 FROM" {
     # FROM pulls
@@ -117,6 +107,7 @@ EOF
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
 }
 
+
 @test "${tag}/§3.3.1 Dockerfile A" {
     ch-image build-cache --reset
 
@@ -134,6 +125,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
+
 
 @test "${tag}/§3.3.2 Dockerfile B" {
     ch-image build-cache --reset
@@ -154,6 +146,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
+
 
 @test "${tag}/§3.3.3 Dockerfile C" {
     ch-image build-cache --reset
@@ -179,6 +172,7 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
+
 @test "${tag}/rebuild A" {
     # Forcing a rebuild show produce a new pair of FOO and BAR commits from
     # from the alpine branch.
@@ -201,6 +195,7 @@ EOF
     echo "$output"
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
+
 
 @test "${tag}/rebuild B" {
     # Rebuild of B. Since A was rebuilt in the last test, and because
@@ -225,6 +220,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
+
 
 @test "${tag}/rebuild C" {
     # Rebuild C. Since C doesn't reference img_a (like img_b does) rebuilding
@@ -296,28 +292,43 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/gc" {
+
+@test "${tag}/§3.4.1 two pulls, same" {
     ch-image build-cache --reset
-    # Initial number of commits.
-    diff -u <(  ch-image build-cache \
-              | grep "commits" | awk '{print $2}') <(echo 1)
+    ch-image pull alpine:3.9
+    ch-image pull alpine:3.9
 
-    # Number of commits after A.
-    ch-image build -t a -f ./bucache/a.df .
-    diff -u <(  ch-image build-cache \
-              | grep "commits" | awk '{print $2}') <(echo 4)
-
-    # Number of commits after 2x forced rebuilds of A (4 dangling)
-    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
-    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
-    diff -u <(  ch-image build-cache \
-              | grep "commits" | awk '{print $2}') <(echo 8)
-
-    # Number of commits after garbage collecting.
-    ch-image build-cache --gc
-    diff -u <(  ch-image build-cache \
-              | grep "commits" | awk '{print $2}') <(echo 4)
+    blessed_out=$(cat << 'EOF'
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
+
+
+@test "${tag}/§3.4.2 two pulls, different" {
+
+    # We simulate a repository change by manually editing the skinny manifest in
+    # local storage. This would occur in the wild as follows:
+    #    1. pull alpine:3.9
+    #    2. a change occurs to the image in the repository
+    #    3. run pull --no-cache alpine:3.9
+    # Now the existing SID of the image will differ from the SID in
+    # the build-cache, resulting in a warning stating that the image is stale
+    # and a fresh pull.
+    ch-image build-cache --reset
+    ch-image pull alpine:3.9
+    sed -i 's/json/fson/' "${CH_IMAGE_STORAGE}/dlcache/alpine+3.9"*manifest.json
+    run ch-image pull alpine:3.9
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output == *"warning: cached image stale; re-pulling"* ]]
+}
+
 
 @test "${tag}/branch ready" {
     ch-image build-cache --reset
@@ -360,6 +371,96 @@ EOF
 EOF
 )
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
+
+
+@test "${tag}/--force" {
+    ch-image build-cache --reset
+
+    # Use a centos:7 image because it can install some RPMs without --force.
+
+    # First build, without --force.
+    ch-image build -t force -f ./bucache/force.df ./bucache
+
+    # Second build, with --force. This should diverge after the first WORKDIR.
+    sleep 1
+    ch-image build --force -t force -f ./bucache/force.df ./bucache
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    blessed_out=$(cat << 'EOF'
+*  (force) WORKDIR /usr
+*  RUN.F yum install -y ed  # doesn’t need --force
+| *  WORKDIR /usr
+| *  RUN yum install -y ed  # doesn’t need --force
+|/
+*  WORKDIR /
+*  (centos+7) PULL centos:7
+*  (HEAD -> root) root
+EOF
+)
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Third build, without --force. This should re-use the first build.
+    sleep 1
+    ch-image build -t force -f ./bucache/force.df ./bucache
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    blessed_out=$(cat << 'EOF'
+*  WORKDIR /usr
+*  RUN.F yum install -y ed  # doesn’t need --force
+| *  (force) WORKDIR /usr
+| *  RUN yum install -y ed  # doesn’t need --force
+|/
+*  WORKDIR /
+*  (centos+7) PULL centos:7
+*  (HEAD -> root) root
+EOF
+)
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
+
+
+### Additional test cases for correctness ###
+
+@test "${tag}/reset" {
+    # re-init
+    run ch-image build-cache --reset
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'deleting build cache'* ]]
+    [[ $output = *'initializing empty build cache'* ]]
+
+    # fail if build cache disabled
+    run ch-image build-cache --bucache=disabled --reset
+    [[ $status -eq 1 ]]
+    echo "$output"
+    [[ $output = *'build-cache subcommand invalid with build cache disabled'* ]]
+}
+
+
+@test "${tag}/gc" {
+    ch-image build-cache --reset
+    # Initial number of commits.
+    diff -u <(  ch-image build-cache \
+              | grep "commits" | awk '{print $2}') <(echo 1)
+
+    # Number of commits after A.
+    ch-image build -t a -f ./bucache/a.df .
+    diff -u <(  ch-image build-cache \
+              | grep "commits" | awk '{print $2}') <(echo 4)
+
+    # Number of commits after 2x forced rebuilds of A (4 dangling)
+    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
+    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
+    diff -u <(  ch-image build-cache \
+              | grep "commits" | awk '{print $2}') <(echo 8)
+
+    # Number of commits after garbage collecting.
+    ch-image build-cache --gc
+    diff -u <(  ch-image build-cache \
+              | grep "commits" | awk '{print $2}') <(echo 4)
 }
 
 @test "${tag}/ARG and ENV" {
@@ -452,84 +553,90 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/--force" {
+
+@test "${tag}/pull" {
     ch-image build-cache --reset
 
-    # Use a centos:7 image because it can install some RPMs without --force.
-
-    # First build, without --force.
-    ch-image build -t force -f ./bucache/force.df ./bucache
-
-    # Second build, with --force. This should diverge after the first WORKDIR.
-    sleep 1
-    ch-image build --force -t force -f ./bucache/force.df ./bucache
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    blessed_out=$(cat << 'EOF'
-*  (force) WORKDIR /usr
-*  RUN.F yum install -y ed  # doesn’t need --force
-| *  WORKDIR /usr
-| *  RUN yum install -y ed  # doesn’t need --force
-|/
-*  WORKDIR /
-*  (centos+7) PULL centos:7
-*  (HEAD -> root) root
-EOF
-)
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-
-    # Third build, without --force. This should re-use the first build.
-    sleep 1
-    ch-image build -t force -f ./bucache/force.df ./bucache
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    blessed_out=$(cat << 'EOF'
-*  WORKDIR /usr
-*  RUN.F yum install -y ed  # doesn’t need --force
-| *  (force) WORKDIR /usr
-| *  RUN yum install -y ed  # doesn’t need --force
-|/
-*  WORKDIR /
-*  (centos+7) PULL centos:7
-*  (HEAD -> root) root
-EOF
-)
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-}
-
-@test "${tag}/§3.4.1 two pulls, same" {
-    ch-image build-cache --reset
-    ch-image pull alpine:3.9
-    ch-image pull alpine:3.9
-
-    blessed_out=$(cat << 'EOF'
-*  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
-EOF
-)
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-}
-
-@test "${tag}/§3.4.2 two pulls, different" {
-
-    # We simulate a repository change by manually editing the skinny manifest in
-    # local storage. This would occur in the wild as follows:
-    #    1. pull alpine:3.9
-    #    2. a change occurs to the image in the repository
-    #    3. run pull --no-cache alpine:3.9
-    # Now the existing SID of the image will differ from the SID in
-    # the build-cache, resulting in a warning stating that the image is stale
-    # and a fresh pull.
-    ch-image build-cache --reset
-    ch-image pull alpine:3.9
-    sed -i 's/json/fson/' "${CH_IMAGE_STORAGE}/dlcache/alpine+3.9"*manifest.json
+    printf '\n*** Case 1: Not in build cache\n\n'
     run ch-image pull alpine:3.9
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output == *"warning: cached image stale; re-pulling"* ]]
+    [[ $output = *'pulling image:    alpine:3.9'* ]]
+    [[ $output != *'image found in build cache; no action needed'* ]]   # C2
+    [[ $output != *'image found in build cache; updating pointers'* ]]  # C3
+    [[ $output != *'updating build cache with newer image'* ]]          # C4
+
+    printf '\n*** Case 2: In build cache, up to date\n\n'
+    run ch-image pull alpine:3.9
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'pulling image:    alpine:3.9'* ]]
+    [[ $output = *'image found in build cache; no action needed'* ]]    # C2
+    [[ $output != *'image found in build cache; updating pointers'* ]]  # C3
+    [[ $output != *'updating build cache with newer image'* ]]          # C4
+
+    printf '\n*** Case 3: In build cache, not UTD, UTD commit present\n\n'
+    printf 'FROM alpine:3.9\n' | ch-image build -t foo -
+    printf 'FROM foo\nRUN echo foo\n' | ch-image build -t alpine:3.9 -
+    blessed_out=$(cat << 'EOF'
+*  (alpine+3.9) RUN echo foo
+*  (foo) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+    sleep 1
+    run ch-image pull alpine:3.9
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'pulling image:    alpine:3.9'* ]]
+    [[ $output != *'build cache is up to date; no action needed'* ]]    # C2
+    [[ $output = *'image found in build cache; updating pointer'* ]]    # C3
+    [[ $output != *'updating build cache with newer image'* ]]          # C4
+    blessed_out=$(cat << 'EOF'
+*  RUN echo foo
+*  (foo, alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    printf '\n*** Case 4: In build cache, not UTD, UTD commit absent\n\n'
+    sleep 1
+    printf 'FROM alpine:3.9\n' | ch-image build -t alpine:3.10 -
+    blessed_out=$(cat << 'EOF'
+*  RUN echo foo
+*  (foo, alpine+3.9, alpine+3.10) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+    run ch-image pull alpine:3.10
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'pulling image:    alpine:3.10'* ]]
+    [[ $output != *'build cache is up to date; no action needed'* ]]    # C2
+    [[ $output != *'image found in build cache; updating pointer'* ]]   # C3
+    [[ $output = *'updating build cache with newer image'* ]]           # C4
+    blessed_out=$(cat << 'EOF'
+*  (alpine+3.10) PULL alpine:3.10
+| *  RUN echo foo
+| *  (foo, alpine+3.9) PULL alpine:3.9
+|/
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }

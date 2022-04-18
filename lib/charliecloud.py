@@ -748,9 +748,8 @@ class Image:
             WARNING("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                     % (i, len(layers), lh[:7], dev_ct))
          if (link_fix_ct > 0):
-            INFO(("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
-                  % (i, len(layers), lh[:7], link_fix_ct)),
-                 "specify -vv for details")
+            INFO("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
+                 % (i, len(layers), lh[:7], link_fix_ct))
 
    def whiteout_rm_prefix(self, layers, max_i, prefix):
       """Ignore members of all layers from 1 to max_i inclusive that have path

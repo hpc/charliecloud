@@ -64,7 +64,7 @@ def init(cli):
       cache = Disabled_Cache()
    else:
       assert False, "unreachable"
-   # DOT path
+   # DOT output path
    try:
       global dot_base
       dot_base = cli.dot
@@ -211,10 +211,6 @@ class Enabled_Cache:
       except OSError as x:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
-
-#   def branch(self, new, base):
-#      "Create branch new pointing to base, replacing any existing branch new."
-#      ch.cmd_quiet(["git", "branch", "-f", new, base], cwd=self.root)
 
    def checkout(self, image, git_hash):
       ch.INFO("checking out image from cache ...")
@@ -450,32 +446,45 @@ class Enabled_Cache:
             self.git_restore_walk(root, path, child, quick)
          ch.chdir(cwd)
 
-   def pull_(self, image, last_layer):
-      (sid, git_hash) = self.find_image(image)
-      if (sid and ch.dlcache_p):
-         pullet = pull.Image_Puller(image)
-         pullet.download() # all dlcache hits
-         existing_sid = State_ID.from_parent(self.root_id, pullet.sid_input)
-         # does what exists in storage match what we have? If not, then the
-         # existing image in storage is newer or modified (miss) due to a
-         # --dlcache=disabled pull.
-         if (sid == existing_sid):
+   def pull_eager(self, img, last_layer=None):
+      """Pull image, always checking if the repository version is newer. This
+         is the pull operation invoked from the command line."""
+      pullet = pull.Image_Puller(img)
+      pullet.download()  # will use dlcache if appropriate
+      (bu_sid, _) = self.find_image(img)
+      if (bu_sid is not None):
+         # The image is in the build cache, but possibly not up to date.
+         dl_sid = State_ID.from_parent(self.root_id, pullet.sid_input)
+         if (bu_sid == dl_sid):
+            ch.INFO("image found in build cache; no action needed")
+            pullet.done()
             return
          else:
-            ch.WARNING("cached image stale; re-pulling")
-      ch.INFO("pulling image:    %s" % image.ref)
-      ch.INFO("requesting arch:  %s" % ch.arch)
-      ch.VERBOSE("destination:      %s" % image.unpack_path)
-      if (not ch.dlcache_p): # write-only
-         self.worktree_remove(image)
-         self.delete(image)
-      self.pull(image, last_layer)
+            bu_git_hash = self.find_sid(dl_sid, img.ref.for_path)
+            if (bu_git_hash is None):
+               ch.INFO("updating build cache with newer image")
+            else:
+               ch.INFO("image found in build cache; updating pointer")
+               ch.cmd_quiet(["git", "branch", "-f", img.ref.for_path,
+                             bu_git_hash], cwd=self.root)
+               pullet.done()
+               return
+      # Image is either (a) in cache but stale, or (b) not in cache at all, so
+      # we need to unpack and commit what we just downloaded.
+      self.pull_lazy(img, last_layer, pullet)
 
-   def pull(self, image, last_layer=None):
+   def pull_lazy(self, image, last_layer=None, pullet=None):
+      """Pull image if it does not exist in the build cache, i.e., do not ask
+         the registry if there is a newer version. This is the pull operation
+         invoked by FROM. If pullet is not None, use that Image_Puller and do
+         not download anything (i.e., assume Image_Puller.download() has
+         already been called)."""
+      if (pullet is None):
+         # a young hen, especially one less than one year old
+         pullet = pull.Image_Puller(image)
+         pullet.download()
       self.worktree_add(image, "root")
-      # a young hen, especially one less than one year old
-      pullet = pull.Image_Puller(image)
-      pullet.pull_to_unpacked(last_layer)
+      pullet.unpack(last_layer)
       sid = State_ID.from_parent(self.root_id, pullet.sid_input)
       pullet.done()
       commit = self.commit(image.unpack_path, sid, 'PULL %s' % image.ref)

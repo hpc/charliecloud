@@ -734,7 +734,7 @@ class I_from_(Instruction):
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
       ch.INFO(self.str_log)  # announce before we start pulling
       if (self.miss):
-         (self.sid, self.git_hash) = bu.cache.pull(self.base_image)  # fix miss
+         (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image)
       # Done.
       return 0
 

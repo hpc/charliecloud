@@ -8,7 +8,6 @@ import sys
 
 import build_cache as bu
 import charliecloud as ch
-import pull
 import version
 
 
@@ -109,7 +108,7 @@ def list_(cli):
       print("in local storage:    %s" % stored)
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
-      pullet = bu.pull.Image_Puller(img)
+      pullet = pull.Image_Puller(img)
       try:
          pullet.fatman_load()
          remote = "yes"
@@ -128,17 +127,6 @@ def list_(cli):
       print("remote arch-aware:   %s" % arch_aware)
       print("host architecture:   %s" % ch.arch_host)
       print("archs available:     %s" % arch_avail)
-
-def pull(cli):
-   # Set things up.
-   ref = ch.Image_Ref(cli.image_ref)
-   if (cli.parse_only):
-      print(ref.as_verbose_str)
-      sys.exit(0)
-   image = ch.Image(ref)
-   # Pull.
-   bu.cache.pull_(image, cli.last_layer)
-   ch.done_notify()
 
 def reset(cli):
    ch.storage.reset()
