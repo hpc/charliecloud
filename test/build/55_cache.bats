@@ -535,6 +535,118 @@ EOF
 }
 
 
+@test "${tag}/COPY" {
+    ch-image build-cache --reset
+
+    # Prepare fixtures. These need various manipulating during the test, which
+    # is why they're built here on the fly.
+    fixtures=${BATS_TMPDIR}/copy-cache
+    mkdir -p "$fixtures"
+    echo hello > "$fixtures"/file1
+    rm -f "$fixtures"/file1a
+    mkdir -p "$fixtures"/dir1
+    touch "$fixtures"/dir1/file1 "$fixtures"/dir1/file2
+
+    printf '\n*** Build; all misses.\n\n'
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'. FROM'* ]]
+    [[ $output = *'. COPY'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* COPY'* ]]
+
+    printf '\n*** Add remove file in directory; should miss b/c dir mtime.\n\n'
+    touch "$fixtures"/dir1/file2
+    rm "$fixtures"/dir1/file2
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. COPY'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* COPY'* ]]
+
+    printf '\n*** Touch file; should miss because file mtime.\n\n'
+    touch "$fixtures"/file1
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. COPY'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* COPY'* ]]
+
+    printf '\n*** Rename file; should miss because filename.\n\n'
+    mv "$fixtures"/file1 "$fixtures"/file1a
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. COPY'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* COPY'* ]]
+
+    printf '\n*** Rename file back; still miss b/c ctime.\n\n'
+    stat "$fixtures"/file1a
+    mv "$fixtures"/file1a "$fixtures"/file1
+    stat "$fixtures"/file1
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. COPY'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* COPY'* ]]
+
+    printf '\n*** Update content, same length, reset mtime; miss b/c ctime.\n\n'
+    cat "$fixtures"/file1
+    stat "$fixtures"/file1
+    mtime=$(stat -c %y "$fixtures"/file1)
+    echo world > "$fixtures"/file1
+    touch -d "$mtime" "$fixtures"/file1
+    cat "$fixtures"/file1
+    stat "$fixtures"/file1
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. COPY'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* COPY'* ]]
+}
+
+
 @test "${tag}/all hits, new name" {
     ch-image build-cache --reset
 

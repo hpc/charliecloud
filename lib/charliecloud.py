@@ -2038,7 +2038,7 @@ def digest_trim(d):
 def disk_bytes(path):
    """Return the number of disk bytes consumed by path. Note this is probably
       different from the file size."""
-   return os.lstat(path).st_blocks * 512
+   return stat_(path).st_blocks * 512
 
 def du(path):
    """Return a tuple (number of files, total bytes on disk) for everything
@@ -2289,6 +2289,9 @@ def si_decimal(ct):
          return (ct, suffix)
       ct /= 1000
    assert False, "unreachable"
+
+def stat_(path, links=False):
+   return ossafe(os.stat, "can't stat: %s" % path, path, follow_symlinks=links)
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):

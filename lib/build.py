@@ -8,6 +8,7 @@ import os
 import os.path
 import re
 import shutil
+import struct
 import sys
 
 import charliecloud as ch
@@ -269,7 +270,7 @@ class Instruction(abc.ABC):
 
    @property
    def sid_input(self):
-      return str(self)
+      return str(self).encode("UTF-8")
 
    @property
    @abc.abstractmethod
@@ -434,6 +435,10 @@ class I_copy(Instruction):
       self.dst = paths[-1]
 
    @property
+   def sid_input(self):
+      return super().sid_input + self.src_metadata
+
+   @property
    def str_(self):
       return "%s -> %s" % (self.srcs, repr(self.dst))
 
@@ -556,6 +561,42 @@ class I_copy(Instruction):
       return dst_canon
 
    def execute(self):
+      # Locate the destination.
+      unpack_canon = os.path.realpath(images[image_i].unpack_path)
+      if (self.dst.startswith("/")):
+         dst = ch.Path(self.dst)
+      else:
+         dst = env.workdir // self.dst
+      ch.VERBOSE("destination, as given: %s" % dst)
+      dst_canon = self.dest_realpath(unpack_canon, dst) # strips trailing slash
+      ch.VERBOSE("destination, canonical: %s" % dst_canon)
+      if (not os.path.commonpath([dst_canon, unpack_canon])
+              .startswith(unpack_canon)):
+         ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
+      # Create the destination directory if needed.
+      if (self.dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
+         if (not os.path.exists(dst_canon)):
+            ch.mkdirs(dst_canon)
+         elif (not os.path.isdir(dst_canon)):  # not symlink b/c realpath()
+            ch.FATAL("can't COPY: not a directory: %s" % dst_canon)
+      # Copy each source.
+      for src in self.srcs:
+         if (os.path.isfile(src)):
+            self.copy_src_file(src, dst_canon)
+         elif (os.path.isdir(src)):
+            self.copy_src_dir(src, dst_canon)
+         else:
+            ch.FATAL("can't COPY: unknown file type: %s" % src)
+
+   def prepare(self, parent, miss_ct):
+      def stat_bytes(path, links=False):
+         st = ch.stat_(path, links=links)
+         return path.encode("UTF-8") + struct.pack("=HQQQ",
+                                                   st.st_mode,
+                                                   st.st_size,
+                                                   st.st_mtime_ns,
+                                                   st.st_ctime_ns)
+      # Error checking.
       if (cli.context == "-"):
          ch.FATAL("can't COPY: no context because \"-\" given")
       if (len(self.srcs) < 1):
@@ -586,47 +627,35 @@ class I_copy(Instruction):
       context_canon = os.path.realpath(context)
       ch.VERBOSE("context: %s" % context)
       # Expand source wildcards.
-      srcs = list()
-      for src in self.srcs:
+      srcs = self.srcs
+      self.srcs = list()
+      for src in srcs:
          matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
          if (len(matches) == 0):
             ch.FATAL("can't copy: not found: %s" % src)
          for i in matches:
-            srcs.append(i)
+            self.srcs.append(i)
             ch.VERBOSE("source: %s" % i)
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
-      for src in srcs:
+      for src in self.srcs:
          src_canon = os.path.realpath(src)
          if (not os.path.commonpath([src_canon, context_canon])
                  .startswith(context_canon)):
             ch.FATAL("can't COPY from outside context: %s" % src)
-      # Locate the destination.
-      unpack_canon = os.path.realpath(images[image_i].unpack_path)
-      if (self.dst.startswith("/")):
-         dst = ch.Path(self.dst)
-      else:
-         dst = env.workdir // self.dst
-      ch.VERBOSE("destination, as given: %s" % dst)
-      dst_canon = self.dest_realpath(unpack_canon, dst) # strips trailing slash
-      ch.VERBOSE("destination, canonical: %s" % dst_canon)
-      if (not os.path.commonpath([dst_canon, unpack_canon])
-              .startswith(unpack_canon)):
-         ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
-      # Create the destination directory if needed.
-      if (self.dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
-         if (not os.path.exists(dst_canon)):
-            ch.mkdirs(dst_canon)
-         elif (not os.path.isdir(dst_canon)):  # not symlink b/c realpath()
-            ch.FATAL("can't COPY: not a directory: %s" % dst_canon)
-      # Copy each source.
-      for src in srcs:
-         if (os.path.isfile(src)):
-            self.copy_src_file(src, dst_canon)
-         elif (os.path.isdir(src)):
-            self.copy_src_dir(src, dst_canon)
-         else:
-            ch.FATAL("can't COPY: unknown file type: %s" % src)
+      # Gather metadata for hashing.
+      # FIXME: Locale issues related to sorting?
+      self.src_metadata = bytearray()
+      for src in self.srcs:
+         self.src_metadata += stat_bytes(src, links=True)
+         if (os.path.isdir(src)):
+            for (dir_, dirs, files) in os.walk(src):
+               self.src_metadata += stat_bytes(dir_)
+               for f in sorted(files):
+                  self.src_metadata += stat_bytes(os.path.join(dir_, f))
+               dirs.sort()
+      # Pass on to superclass.
+      return super().prepare(parent, miss_ct)
 
 
 class I_directive(Instruction_Supported_Never):

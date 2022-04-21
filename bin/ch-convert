@@ -351,7 +351,7 @@ tar_out_validate () {
 
 # Return the path to image $1 in ch-image storage.
 chimage_path () {
-    echo "$(ch-image storage-path)/img/$(tag_to_path "$1")"
+    echo "$(ch-image gestalt storage-path)/img/$(tag_to_path "$1")"
 }
 
 # Return basename of $2 (format $1) with no extension and filesystem-invalid
