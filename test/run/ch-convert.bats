@@ -72,6 +72,9 @@ compare () {
     compare-ls "$1" > "$BATS_TMPDIR"/compare-ls.1
     compare-ls "$2" > "$BATS_TMPDIR"/compare-ls.2
     diff -u "$BATS_TMPDIR"/compare-ls.1 "$BATS_TMPDIR"/compare-ls.2
+    # Ensure build cache metadata is not in $2.
+    [[ ! -e ./.git ]]
+    [[ ! -e ./ch/git.pickle ]]
 }
 
 # This prints a not very nicely formatted recursive directory listing, with
@@ -113,7 +116,9 @@ compare-ls () {
       find . -mindepth 1 \
               \(    -path ./.dockerenv \
                  -o -path ./ch \) -prune \
-           -o -not \(    -path ./dev \
+           -o -not \(    -path ./.git \
+                      -o -path ./ch/git.pickle \
+                      -o -path ./dev \
                       -o -path ./etc \
                       -o -path ./etc/hostname \
                       -o -path ./etc/hosts \
