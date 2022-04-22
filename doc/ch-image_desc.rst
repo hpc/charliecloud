@@ -22,8 +22,8 @@ Description
 
 :code:`ch-image` is a tool for building and manipulating container images, but
 not running them (for that you want :code:`ch-run`). It is completely
-unprivileged, with no setuid/setgid/setcap helpers. The action to take is
-specified by a sub-command.
+unprivileged, with no setuid/setgid/setcap helpers. Many operations can use
+caching for speed. The action to take is specified by a sub-command.
 
 Options that print brief information and then exit:
 
@@ -79,26 +79,18 @@ Common options placed before the sub-command:
         architecture as a simple string and converts to/from the registry view
         transparently.
 
-  :code:`--build-cache`
-     There are three modes for the build cache:
-
-     1. :code:`enable`: The cache may be both read and written. This is the
-        default if Git version 2.30.1 or higher is installed.
-
-     2. :code:`rebuild`: Reading from the cache is disabled, except for obtaining the
-        base image with FROM, which is read from the cache if it exists. (This
-        exception is why it's not called write-only.) Writing is enabled.
-
-     3. :code:`disable`: The cache may be neither read nor written. Default if
-        the required Git is not installed.
+  :code:`--bucache`
+     Set the build cache mode: :code:`enabled`, :code:`disabled`, or
+     :code:`rebuild`, which uses the cache for :code:`FROM` instructions but
+     no others. See section "Build cache" below for details, including the
+     default.
 
   :code:`--download-cache`
-     There are two modes for the download cache:
-
-     1. :code:`enabled`: The cache may be both read and written. This is the
-        default.
-
-     2. :code:`write-only`: Reading is disabled; writing is enabled.
+     Set the download cache mode: :code:`enabled` (default) or
+     :code:`write-only`, which adds new downloaded files to the cache but does
+     not re-use existing files. (:code:`ch-image` needs to read downloaded
+     files in order to work, which is why the download cache cannot be
+     disabled.)
 
   :code:`--no-cache`
     Shorthand for :code:`--build-cache=rebuild --download-cache=write-only`
@@ -194,6 +186,113 @@ directory with :code:`ch-image reset`.
    storage directory. This is a site-specific question and your local support
    will likely have strong opinions.
 
+
+Build cache
+===========
+
+Subcommands that create images, such as :code:`build` and :code:`pull`, use a
+build cache to speed repeated operations. That is, an image is created by
+starting from the empty image and executing a sequence of instructions,
+largely Dockerfile instructions but also some others like "pull" and "import".
+Some instructions are expensive to execute (e.g., :code:`RUN wget
+http://slow.example.com/bigfile` or transferring data billed by the byte), so
+it's often cheaper to retrieve their results from cache instead.
+
+The build cache uses Git under the hood; see the installation instructions for
+version requirements. Charliecloud implements workarounds for Git's various
+storage limitations, so things like file metadata and Git repositories within
+the image should work. **Important exception**: No files named :code:`.git*`
+or other Git metadata are permitted in the image's root directory.
+
+The cache has three modes, :code:`enabled`, :code:`disabled`, and a hybrid
+mode called :code:`rebuild` where the cache is enabled for :code:`FROM`
+instructions but nothing else. (The purpose is to do a clean rebuild of a
+Dockerfile atop a known-good base image.) The mode is selected with the
+:code:`--bucache` or :code:`--no-cache` options, or the
+:code:`CH_IMAGE_BUCACHE` environment variable.
+
+In 0.28, the default mode is :code:`disabled`. In 0.29, the default will be
+:code:`enabled` if an appropriate Git is installed, otherwise
+:code:`disabled`.
+
+For example, suppose we have this Dockerfile::
+
+  $ cat a.df
+  FROM alpine:3.9
+  RUN echo foo
+  RUN echo bar
+
+On our first build, we get::
+
+  $ ch-image --bucache=enabled build -t foo -f a.df .
+    1. FROM alpine:3.9
+  [ ... pull chatter omitted ... ]
+    2. RUN echo foo
+  checking out image from cache ...
+  foo
+    3. RUN echo bar
+  bar
+  grown in 3 instructions: foo
+
+Note the dot after each instruction's line number. This means that the
+instruction was executed. You can also see this by the output of the two
+:code:`echo` commands.
+
+But on our second build, we get::
+
+  $ ch-image --bucache=enabled build -t foo -f a.df .
+    1* FROM alpine:3.9
+    2* RUN echo foo
+    3* RUN echo bar
+  checking out image from cache ...
+  grown in 3 instructions: foo
+
+Here, instead of being executed, each instruction's results were retrieved
+from cache. (In fact, Charliecloud uses a lazy retrieval, so nothing was
+actually retrieved until the end, as seen by the "checking out" message.)
+Cache hit for each instruction is indicated by a star after the line number.
+Even for such a small and short Dockerfile, this build is noticeably faster
+than the first.
+
+We can also try a second, slightly different Dockerfile. Note that the first
+three instructions are the same, but the third is different::
+
+  $ cat c.df
+  FROM alpine:3.9
+  RUN echo foo
+  RUN echo qux
+  $ ch-image --bucache=enabled build -t c -f c.df .
+    1* FROM alpine:3.9
+    2* RUN echo foo
+    3. RUN echo qux
+  checking out image from cache ...
+  qux
+  grown in 3 instructions: c
+
+Here, the first two instructions are hits from the first Dockerfile, but the
+third is a miss, so Charliecloud retrieves that state and continues building.
+
+We can also inspect the cache::
+
+  $ ch-image --bucache=enabled build-cache --tree
+  *  (c) RUN echo qux
+  | *  (a) RUN echo bar
+  |/
+  *  RUN echo foo
+  *  (alpine+3.9) PULL alpine:3.9
+  *  (HEAD -> root) root
+
+  named images:     4
+  state IDs:        5
+  commits:          5
+  files:          317
+  disk used:        3 MiB
+
+Here there are four named images: :code:`a` and :code:`c` that we build, the
+base image :code:`alpine:3.9` (written as :code:`alpine+3.9` because colon is
+not allowed in Git branch names), and the empty base of everything
+:code:`root`. Also note how :code:`a` and :code:`c` diverge after the last
+common instruction :code:`RUN echo foo`.
 
 :code:`build`
 =============
@@ -908,4 +1007,4 @@ Environment variables
 .. include:: py_env.rst
 
 
-..  LocalWords:  tmpfs'es bigvendor AUTH Aimage bucache buc
+..  LocalWords:  tmpfs'es bigvendor AUTH Aimage bucache buc bigfile df
