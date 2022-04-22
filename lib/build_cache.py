@@ -418,11 +418,11 @@ class Enabled_Cache:
             name = fm.name.replace(".git", ".weirdal_")
          else:
             name = fm.name
-         if (fm.empty_dir_p):
+         if (fm.empty_dir_p and not os.path.isdir(fm.name)):
             ch.ossafe(os.mkdir, "can't mkdir: %s" % path, name)
-         elif (stat.S_ISFIFO(fm.mode)):
+         elif (stat.S_ISFIFO(fm.mode) and not os.path.isfifo(fm.name)):
             ch.ossafe(os.mkfifo, "can't make FIFO: %s" % path, name)
-      if (fm.hardlink_to is not None):
+      if (fm.hardlink_to is not None and not os.path.exists(fm.name)):
          # This relies on prepare and restore having the same traversal order,
          # so the first (stored) link is always available by the time we get
          # to subsequent (unstored) links.
@@ -577,18 +577,20 @@ class Enabled_Cache:
 
    def worktree_add(self, image, base):
       t = ch.Timer()
-      image.unpack_clear()
-      ch.cmd_quiet(["git", "worktree", "add", "-f",
-                    "-B", self.branch_name_unready(image.ref),
-                    image.unpack_path, base], cwd=self.root)
-      t.log("created worktree")
-
-   def worktree_remove(self, image):
-      t = ch.Timer()
-      image.unpack_clear()
-      ch.cmd_quiet(["git", "worktree", "remove", "-f", image.unpack_path],
-                   cwd=self.root)
-      t.log("removed worktree")
+      if (    os.path.isdir(image.unpack_path)
+          and os.path.exists(image.unpack_path // ".git")):
+         self.git_prepare(image.unpack_path)  # clean Git directory
+         ch.cmd_quiet(["git", "checkout",
+                       "-B", self.branch_name_unready(image.ref), base],
+                      cwd=image.unpack_path)
+         op = "adjusted"
+      else:
+         image.unpack_clear()
+         ch.cmd_quiet(["git", "worktree", "add", "-f",
+                       "-B", self.branch_name_unready(image.ref),
+                       image.unpack_path, base], cwd=self.root)
+         op = "created"
+      t.log("%s worktree" % op)
 
 
 class Rebuild_Cache(Enabled_Cache):
