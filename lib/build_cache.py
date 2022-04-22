@@ -204,8 +204,11 @@ class Enabled_Cache:
             ch.cmd_quiet(["git", "clone", "-q", self.root, td])
             cwd = ch.chdir(td)
             ch.cmd_quiet(["git", "checkout", "-q", "-b", "root"])
-            ch.cmd_quiet(["git", "commit", "--allow-empty",
-                          "-m", "root\n\n%s" % self.root_id])
+            # Git has no default gitignore, but cancel any global gitignore
+            # rules the user might have. https://stackoverflow.com/a/26681066
+            ch.file_write(".gitignore", "!*\n")
+            ch.cmd_quiet(["git", "add", ".gitignore"])
+            ch.cmd_quiet(["git", "commit", "-m", "root\n\n%s" % self.root_id])
             ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
             ch.chdir(cwd)
       except OSError as x:
