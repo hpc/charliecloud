@@ -8,6 +8,7 @@ import sys
 
 import build_cache as bu
 import charliecloud as ch
+import pull
 import version
 
 
@@ -110,6 +111,19 @@ def list_(cli):
          img.metadata_load()
          stored = "yes (%s)" % img.metadata["arch"]
       print("in local storage:    %s" % stored)
+      # in cache?
+      (sid, commit) = bu.cache.find_image(img)
+      if (sid is None):
+         cached = "no"
+      else:
+         cached = "yes (state ID %s, commit %s)" % (sid.short, commit[:7])
+         if (os.path.exists(img.unpack_path)):
+            wdc = bu.cache.worktree_get_head(img)
+            if (wdc is None):
+               ch.WARNING("stored image not connected to build cache")
+            elif (wdc != commit):
+               ch.WARNING("stored image doesn't match build cache: %s" % wdc)
+      print("in build cache:      %s" % cached)
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
       pullet = pull.Image_Puller(img)

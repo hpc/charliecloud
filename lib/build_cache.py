@@ -149,6 +149,10 @@ class State_ID:
          ch.FATAL("state ID: malformed hex: %s" % text);
       return class_(b)
 
+   @property
+   def short(self):
+      return str(self)[:4]
+
    def __eq__(self, other):
       return self.id_ == other.id_
 
@@ -615,6 +619,14 @@ class Enabled_Cache:
       ch.ossafe(os.rmdir, "can't rmdir(2): %s" % image.unpack_path,
                 image.unpack_path)
       ch.rename(ch.storage.image_tmp, image.unpack_path)
+
+   def worktree_get_head(self, image):
+      cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"],
+                         cwd=image.unpack_path, fail_ok=True)
+      if (cp.returncode != 0):
+         return None
+      else:
+         return cp.stdout.strip()
 
 
 class Rebuild_Cache(Enabled_Cache):
