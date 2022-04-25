@@ -752,3 +752,52 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
+
+
+@test "${tag}/rebuild mode" {
+    ch-image build-cache --reset
+
+    # Build. Mode should not matter here, but we use enabled because that's
+    # more lifelike.
+    ch-image build -t a -f ./bucache/a.df ./bucache
+
+    # Re-build in "rebuild" mode. FROM should hit, others miss, and we should
+    # have two branches.
+    sleep 1
+    run ch-image build --bucache=rebuild -t a -f ./bucache/a.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. RUN echo foo'* ]]
+    [[ $output = *'. RUN echo bar'* ]]
+    blessed_out=$(cat << 'EOF'
+*  (a) RUN echo bar
+*  RUN echo foo
+| *  RUN echo bar
+| *  RUN echo foo
+|/
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Re-build again in "rebuild" mode. The branch pointer should move to the
+    # newer execution.
+    run ch-image build-cache -v --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    commit_before=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
+    echo "before: ${commit_before}"
+    sleep 1
+    ch-image build --bucache=rebuild -t a -f ./bucache/a.df ./bucache
+    run ch-image build-cache -v --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    commit_after=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
+    echo "after: ${commit_after}"
+    [[ $commit_before != $commit_after ]]
+}

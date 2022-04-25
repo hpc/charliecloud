@@ -293,7 +293,7 @@ class Enabled_Cache:
       ch.cmd_quiet(["git", "gc", "--prune=now"], cwd=self.root)
       t.log("collected garbage")
 
-   def git_prepare(self, unpack_path):
+   def git_prepare(self, unpack_path, write=True):
       """Recursively walk the given unpack path and prepare it for a Git
          commit. For each file, in this order:
 
@@ -326,13 +326,15 @@ class Enabled_Cache:
               except at the root where “.git” files support the cache’s Git
               worktree, rename them to begin with “.weirdal_” instead.
 
-         Return the File_Metadata tree and also save it in “ch/git.pickle”.
+         Return the File_Metadata tree, and if write is True, also save it in
+         “ch/git.pickle”.
 
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       t = ch.Timer()
       cwd = ch.chdir(unpack_path)
       met = self.git_prepare_walk(dict(), None, ".", os.lstat("."))
-      ch.file_write("ch/git.pickle", pickle.dumps(met, protocol=4))
+      if (write):
+         ch.file_write("ch/git.pickle", pickle.dumps(met, protocol=4))
       ch.chdir(cwd)
       t.log("gathered metadata")
       return met
@@ -506,6 +508,13 @@ class Enabled_Cache:
       else:
          ch.INFO("deleting build cache")
          ch.rmtree(self.root)
+         # Un-git images that are worktrees referring back to the build cache.
+         for img in ch.listdir(ch.storage.unpack_base):
+            dotgit = ch.storage.unpack_base // img // ".git"
+            if (os.path.exists(dotgit)):
+               ch.VERBOSE("disconnecting image from build cache: %s" % img)
+               ch.unlink(dotgit)
+         # Create new build cache.
          ch.mkdir(self.root)
          self.bootstrap()
 
@@ -579,7 +588,7 @@ class Enabled_Cache:
       t = ch.Timer()
       if (    os.path.isdir(image.unpack_path)
           and os.path.exists(image.unpack_path // ".git")):
-         self.git_prepare(image.unpack_path)  # clean Git directory
+         self.git_prepare(image.unpack_path, write=False)  # clean worktree
          ch.cmd_quiet(["git", "checkout",
                        "-B", self.branch_name_unready(image.ref), base],
                       cwd=image.unpack_path)

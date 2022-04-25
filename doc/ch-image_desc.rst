@@ -81,9 +81,9 @@ Common options placed before the sub-command:
 
   :code:`--bucache`
      Set the build cache mode: :code:`enabled`, :code:`disabled`, or
-     :code:`rebuild`, which uses the cache for :code:`FROM` instructions but
-     no others. See section "Build cache" below for details, including the
-     default.
+     :code:`rebuild`, which writes the cache for all operations but reads only
+     :code:`FROM` instructions. See section "Build cache" below for details,
+     including the default.
 
   :code:`--download-cache`
      Set the download cache mode: :code:`enabled` (default) or
@@ -205,11 +205,11 @@ the image should work. **Important exception**: No files named :code:`.git*`
 or other Git metadata are permitted in the image's root directory.
 
 The cache has three modes, :code:`enabled`, :code:`disabled`, and a hybrid
-mode called :code:`rebuild` where the cache is enabled for :code:`FROM`
-instructions but nothing else. (The purpose is to do a clean rebuild of a
-Dockerfile atop a known-good base image.) The mode is selected with the
-:code:`--bucache` or :code:`--no-cache` options, or the
-:code:`CH_IMAGE_BUCACHE` environment variable.
+mode called :code:`rebuild` where the cache is fully enabled for :code:`FROM`
+instructions, but all other operations re-execute and re-cache their results.
+(The purpose is to do a clean rebuild of a Dockerfile atop a known-good base
+image.) The mode is selected with the :code:`--bucache` or :code:`--no-cache`
+options, or the :code:`CH_IMAGE_BUCACHE` environment variable.
 
 In 0.28, the default mode is :code:`disabled`. In 0.29, the default will be
 :code:`enabled` if an appropriate Git is installed, otherwise
