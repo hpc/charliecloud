@@ -702,6 +702,10 @@ this order.
 Delete the image described by the image reference :code:`IMAGE_REF` from the
 storage directory.
 
+.. note::
+
+   This sub-command does not also remove the image from the build cache.
+
 :code:`gestalt`
 ===============
 
