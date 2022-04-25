@@ -164,9 +164,10 @@ class State_ID:
 
 class Enabled_Cache:
 
-   root_id = State_ID.from_text("4A6F:73E9:20436170:61626C61:6E636121")
+   root_id =   State_ID.from_text("4A6F:73C3:A9204361:7061626C:616E6361")
+   import_id = State_ID.from_text("5061:756C:204D6F72:70687900:00000000")
 
-   __slots__ = ("bootstrap_ct")
+   __Slots__ = ("bootstrap_ct")
 
    def __init__(self):
       self.bootstrap_ct = 0
@@ -492,7 +493,7 @@ class Enabled_Cache:
       pullet.unpack(last_layer)
       sid = State_ID.from_parent(self.root_id, pullet.sid_input)
       pullet.done()
-      commit = self.commit(image.unpack_path, sid, 'PULL %s' % image.ref)
+      commit = self.commit(image.unpack_path, sid, "PULL %s" % image.ref)
       self.ready(image)
       return (sid, commit)
 
@@ -600,6 +601,20 @@ class Enabled_Cache:
                        image.unpack_path, base], cwd=self.root)
          op = "created"
       t.log("%s worktree" % op)
+
+   def worktree_adopt(self, image, base):
+      """Create a new worktree with the contents of existing directory
+         image.unpack_path. This function is present because “git worktree
+         add” *cannot* use an existing directory but shutil.copytree *must*
+         create its own directory (until Python 3.8, and we have to support
+         3.6). So we use some renaming shenanigans."""
+      ch.rename(image.unpack_path, ch.storage.image_tmp)
+      self.worktree_add(image, base)
+      for i in { ".git", ".gitignore" }:
+         ch.rename(image.unpack_path // i, ch.storage.image_tmp // i)
+      ch.ossafe(os.rmdir, "can't rmdir(2): %s" % image.unpack_path,
+                image.unpack_path)
+      ch.rename(ch.storage.image_tmp, image.unpack_path)
 
 
 class Rebuild_Cache(Enabled_Cache):

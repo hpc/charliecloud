@@ -76,13 +76,17 @@ def import_(cli):
    dst = ch.Image(ch.Image_Ref(cli.image_ref))
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
+   dst.unpack_clear()
    if (os.path.isdir(cli.path)):
       dst.copy_unpacked(cli.path)
    else:  # tarball, hopefully
       dst.unpack([cli.path])
+   bu.cache.worktree_adopt(dst, "root")
    # initialize metadata if needed
    dst.metadata_load()
    dst.metadata_save()
+   bu.cache.commit(dst.unpack_path, bu.cache.import_id, "IMPORT %s" % dst.ref)
+   bu.cache.ready(dst)
    ch.done_notify()
 
 def list_(cli):

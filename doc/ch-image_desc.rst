@@ -792,6 +792,11 @@ If the imported image contains Charliecloud metadata, that will be imported
 unchanged, i.e., images exported from :code:`ch-image` builder storage will be
 functionally identical when re-imported.
 
+.. note::
+
+   Every import creates a new cache entry, even if the file or directory has
+   already been imported.
+
 
 :code:`pull`
 ============

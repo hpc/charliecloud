@@ -418,17 +418,24 @@ class Image:
       assert False, "unimplemented"
 
    def copy_unpacked(self, other):
-      """Copy image other to my unpack directory. other can be either a path
-         (string or Path object) or an Image object; in the latter case
-         other.unpack_pach is used. other need not be a valid image; the
-         essentials will be created if needed."""
+      """Copy image other to my unpack directory, which may not exist. other
+         can be either a path (string or Path object) or an Image object; in
+         the latter case other.unpack_path is used. other need not be a valid
+         image; the essentials will be created if needed."""
+      def ignore(path, names):
+         ignore = list()
+         if (path == src_path):
+            for name in names:
+               if (name.startswith(".git")):
+                  WARNING("ignoring from source image: /%s" % name)
+                  ignore.append(name)
+         return ignore
       if (isinstance(other, str) or isinstance(other, Path)):
          src_path = other
       else:
          src_path = other.unpack_path
-      self.unpack_clear()
       VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
-      copytree(src_path, self.unpack_path, symlinks=True)
+      copytree(src_path, self.unpack_path, symlinks=True, ignore=ignore)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
@@ -736,6 +743,11 @@ class Image:
                m.mode |= 0o600
             else:
                FATAL("unknown member type: %s" % m.name)
+            # Discard Git metadata (files that begin with “.git”).
+            if (re.search(r"^(\./)?\.git", m.name)):
+               WARNING("ignoring member: %s" % m.name)
+               members.remove(m)
+               continue
             # Discard anything under /dev. Docker puts regular files and
             # directories in here on "docker export". Note leading slashes
             # already taken care of in TarFile.fix_member_path() above.
@@ -1555,6 +1567,10 @@ class Storage:
       return self.root // "dlcache"
 
    @property
+   def image_tmp(self):
+      return self.root // "imgtmp"
+
+   @property
    def lockfile(self):
       return self.root // "lock"
 
@@ -2260,7 +2276,8 @@ def prefix_path(prefix, path):
 def rename(name_old, name_new):
    if (os.path.exists(name_new)):
       FATAL("can't rename: destination exists: %s" % name_new)
-   os.rename(name_old, name_new)
+   ossafe(os.rename, "can't rename: %s -> %s" % (name_old, name_new),
+          name_old, name_new)
 
 def rmtree(path):
    if (os.path.isdir(path)):
