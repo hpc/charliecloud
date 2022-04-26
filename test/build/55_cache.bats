@@ -535,6 +535,44 @@ EOF
 }
 
 
+@test "${tag}/ARG special variables" {
+    ch-image build-cache --reset
+    unset SSH_AUTH_SOCK
+
+    # Build. Should miss.
+    run ch-image build -t foo -f ./bucache/argenv-special.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'1. FROM'* ]]
+    [[ $output = *'2. ARG'* ]]
+    [[ $output = *'3. ARG'* ]]
+    [[ $output = *'4. RUN'* ]]
+    [[ $output = *'vargA sockA'* ]]
+
+    # Re-build. All hits.
+    run ch-image build -t foo -f ./bucache/argenv-special.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'1* FROM'* ]]
+    [[ $output = *'2* ARG'* ]]
+    [[ $output = *'3* ARG'* ]]
+    [[ $output = *'4* RUN'* ]]
+    [[ $output != *'vargA sockA'* ]]
+
+    # Re-build with new value from command line. All hits again.
+    run ch-image build --build-arg=SSH_AUTH_SOCK=sockB \
+                       -t foo -f ./bucache/argenv-special.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'1* FROM'* ]]
+    [[ $output = *'2* ARG'* ]]
+    [[ $output = *'3* ARG'* ]]
+    [[ $output = *'4* RUN'* ]]
+    [[ $output != *'vargA sockA'* ]]
+    [[ $output != *'vargA sockB'* ]]
+}
+
+
 @test "${tag}/COPY" {
     ch-image build-cache --reset
 

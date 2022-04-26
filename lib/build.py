@@ -371,11 +371,20 @@ class Arg(Instruction):
          self.value = variables_sub(self.value, env.env_build)
 
    @property
-   def str_(self):
-      if (self.value is None):
-         return self.key
+   def sid_input(self):
+      if (self.key in ch.ARGS_MAGIC):
+         return (self.str_name + self.key).encode("UTF-8")
       else:
-         return "%s='%s'" % (self.key, self.value)
+         return super().sid_input
+
+   @property
+   def str_(self):
+      s = "%s=" % self.key
+      if (self.value is not None):
+         s += "'%s'" % self.value
+      if (self.key in ch.ARGS_MAGIC):
+         s += " [special]"
+      return s
 
    def execute(self):
       if (self.value is not None):

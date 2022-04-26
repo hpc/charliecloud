@@ -8,6 +8,7 @@ Dockerfile.argenv \
 bucache/a.df \
 bucache/a-fail.df \
 bucache/argenv.df \
+bucache/argenv-special.df \
 bucache/argenv2.df \
 bucache/b.df \
 bucache/c.df \

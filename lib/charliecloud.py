@@ -101,18 +101,13 @@ ARCH_MAP = { "x86_64":    "amd64",
 
 # ARGs that are “magic”: always available, don’t cause cache misses, not saved
 # with the image.
-ARG_DEFAULTS_MAGIC = { k: v for (k,v) in
-   { "HTTP_PROXY": os.environ.get("HTTP_PROXY"),
-     "HTTPS_PROXY": os.environ.get("HTTPS_PROXY"),
-     "FTP_PROXY": os.environ.get("FTP_PROXY"),
-     "NO_PROXY": os.environ.get("NO_PROXY"),
-     "http_proxy": os.environ.get("http_proxy"),
-     "https_proxy": os.environ.get("https_proxy"),
-     "ftp_proxy": os.environ.get("ftp_proxy"),
-     "no_proxy": os.environ.get("no_proxy"),
-     "SSH_AUTH_SOCK": os.environ.get("SSH_AUTH_SOCK"),
-     # FIXME: user() not yet defined
-     "USER": os.environ.get("USER") }.items() if v is not None }
+ARGS_MAGIC = { "HTTP_PROXY", "HTTPS_PROXY", "FTP_PROXY", "NO_PROXY",
+               "http_proxy", "https_proxy", "ftp_proxy", "no_proxy",
+               "SSH_AUTH_SOCK", "USER" }
+# FIXME: user() not yet defined
+ARG_DEFAULTS_MAGIC = { k:v for (k,v) in ((m, os.environ.get(m))
+                                          for m in ARGS_MAGIC)
+                       if v is not None }
 
 # ARGs with pre-defined default values that *are* saved with the image.
 ARG_DEFAULTS = \
@@ -566,7 +561,7 @@ class Image:
          also all auxiliary files, e.g. ch/environment."""
       # Adjust since we don't save everything.
       metadata = copy.deepcopy(self.metadata)
-      for k in ARG_DEFAULTS_MAGIC:
+      for k in ARGS_MAGIC:
          metadata["arg"].pop(k, None)
       # Serialize. We take care to pretty-print this so it can (sometimes) be
       # parsed by simple things like grep and sed.
