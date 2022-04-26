@@ -218,14 +218,13 @@ class Main_Loop(lark.Visitor):
             if (self.miss_ct == 1):
                inst.checkout_for_build(self.inst_prev)
             inst.execute()
-            if (inst.miss):
-               if (image_i != -1):
-                  # add instruction history
-                  images[image_i].metadata["history"].append(
-                     { "created": ch.now_utc_iso8601(),
-                       "created_by": "%s %s" % (inst.str_name, inst.str_)})
-                  images[image_i].metadata_save()
-               inst.commit()
+            if (image_i != -1):
+               # add instruction history
+               images[image_i].metadata["history"].append(
+                  { "created": ch.now_utc_iso8601(),
+                    "created_by": "%s %s" % (inst.str_name, inst.str_)})
+               images[image_i].metadata_save()
+            inst.commit()
          self.inst_prev = inst
          self.instruction_total_ct += inst.execute_increment
 
@@ -244,7 +243,6 @@ class Instruction(abc.ABC):
                 "tree")
 
    def __init__(self, tree):
-      self.force = None
       self.lineno = tree.meta.line
       self.options = {}
       for st in ch.tree_children(tree, "option"):
@@ -285,12 +283,12 @@ class Instruction(abc.ABC):
    def str_log(self):
       return ("%3s%s %s" % (self.lineno, bu.cache.status_char(self.miss), self))
 
-   def checkout(self):
-      bu.cache.checkout(images[image_i], self.git_hash)
+   def checkout(self, base_image=None):
+      bu.cache.checkout(images[image_i], self.git_hash, base_image)
 
-   def checkout_for_build(self, parent):
+   def checkout_for_build(self, parent, base_image=None):
       # Note messy globals.
-      parent.checkout()
+      parent.checkout(base_image)
       images[image_i].metadata_load()
       global fakeroot_config
       fakeroot_config = fakeroot.detect(images[image_i].unpack_path,
@@ -326,7 +324,7 @@ class Instruction(abc.ABC):
 
          Typically, subclasses will set up enough state for self.sid_input to
          be valid, then call super().prepare()."""
-      self.sid = bu.State_ID.from_parent(parent.sid, self.sid_input)
+      self.sid = bu.cache.sid_from_parent(parent.sid, self.sid_input)
       self.git_hash = bu.cache.find_sid(self.sid, images[image_i].ref.for_path)
       ch.INFO(self.str_log)
       return miss_ct + int(self.miss)
@@ -706,9 +704,13 @@ class I_env_space(Env):
 
 class I_from_(Instruction):
 
+   __slots__ = ("alias",
+                "base_image")
+
    def __init__(self, *args):
       super().__init__(*args)
-      self.base_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"))
+      self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree,
+                                                            "image_ref")))
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
 
@@ -718,7 +720,13 @@ class I_from_(Instruction):
    @property
    def str_(self):
       alias = " AS %s" % self.alias if self.alias else ""
-      return "%s%s" % (self.base_ref, alias)
+      return "%s%s" % (self.base_image.ref, alias)
+
+   def checkout_for_build(self, parent):
+      # FROM doesn't have a meaningful parent because it's opening a new
+      # stage, so check out me instead.
+      assert (isinstance(bu.cache, bu.Disabled_Cache))
+      super().checkout_for_build(self, base_image=self.base_image)
 
    def prepare(self, parent, miss_ct):
       # FROM is special because its preparation involves opening a new stage
@@ -754,18 +762,16 @@ class I_from_(Instruction):
       if (self.alias is not None):
          images[self.alias] = image
       ch.VERBOSE("image path: %s" % image.unpack_path)
-      # Initialize image.
-      self.base_image = ch.Image(self.base_ref)
       # More error checking.
-      if (str(image.ref) == str(self.base_ref)):
-         ch.FATAL("output image ref same as FROM: %s" % self.base_ref)
+      if (str(image.ref) == str(self.base_image.ref)):
+         ch.FATAL("output image ref same as FROM: %s" % self.base_image.ref)
       # Pull base image if needed.
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
       ch.INFO(self.str_log)  # announce before we start pulling
       if (self.miss):
          (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image)
       # Done.
-      return 0
+      return int(self.miss)  # will still miss in disabled mode
 
    def execute(self):
       # Everything happens in prepare().

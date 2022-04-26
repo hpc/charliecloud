@@ -72,6 +72,7 @@ def gestalt_storage_path(cli):
    print(ch.storage.root)
 
 def import_(cli):
+   ### FIXME: YOU ARE HERE ###
    if (not os.path.exists(cli.path)):
       ch.FATAL("can't copy: not found: %s" % cli.path)
    dst = ch.Image(ch.Image_Ref(cli.image_ref))

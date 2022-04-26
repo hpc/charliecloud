@@ -220,7 +220,7 @@ class Enabled_Cache:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
 
-   def checkout(self, image, git_hash):
+   def checkout(self, image, git_hash, base_image):
       ch.INFO("checking out image from cache ...")
       self.worktree_add(image, git_hash)
       self.git_restore(image.unpack_path)
@@ -464,7 +464,7 @@ class Enabled_Cache:
       (bu_sid, _) = self.find_image(img)
       if (bu_sid is not None):
          # The image is in the build cache, but possibly not up to date.
-         dl_sid = State_ID.from_parent(self.root_id, pullet.sid_input)
+         dl_sid = self.sid_from_parent(self.root_id, pullet.sid_input)
          if (bu_sid == dl_sid):
             ch.INFO("image found in build cache; no action needed")
             pullet.done()
@@ -495,7 +495,7 @@ class Enabled_Cache:
          pullet.download()
       self.worktree_add(image, "root")
       pullet.unpack(last_layer)
-      sid = State_ID.from_parent(self.root_id, pullet.sid_input)
+      sid = self.sid_from_parent(self.root_id, pullet.sid_input)
       pullet.done()
       commit = self.commit(image.unpack_path, sid, "PULL %s" % image.ref)
       self.ready(image)
@@ -522,6 +522,10 @@ class Enabled_Cache:
          # Create new build cache.
          ch.mkdir(self.root)
          self.bootstrap()
+
+   def sid_from_parent(self, *args):
+      # This lets us intercept the call and return None in disabled mode.
+      return State_ID.from_parent(*args)
 
    def status_char(self, miss):
       "Return single character to indicate whether miss is true or not."
@@ -636,16 +640,38 @@ class Rebuild_Cache(Enabled_Cache):
 
 
 class Disabled_Cache(Rebuild_Cache):
-   def pull_(self, image, last_layer):
-      self.pull(self, image, last_layer)
 
-   def pull(self, image, last_layer):
-      ch.INFO("pulling image:    %s" % ref)
-      ch.INFO("requesting arch:  %s" % ch.arch)
-      ch.VERBOSE("destination:      %s" % image.unpack_path)
-      pullet = pull.Image_Puller(image)
-      pullet.pull_to_unpacked(last_layer)
-      pullet.done()
+   def checkout(self, image, git_hash, base_image):
+      ch.INFO("copying base image ...")
+      image.unpack_clear()
+      image.copy_unpacked(base_image)
 
-   def status_char(self, miss):
-      return " "
+   def commit(self, *args):
+      return None
+
+   def find_image(self, *args):
+      return (None, None)
+
+   def pull_lazy(self, image, last_layer=None, pullet=None):
+      if (pullet is None and os.path.exists(image.unpack_path)):
+         ch.INFO("base image already exists, skipping pull")
+      else:
+         if (pullet is None):
+            pullet = pull.Image_Puller(image)
+            pullet.download()
+         image.unpack_clear()
+         pullet.unpack(last_layer)
+         pullet.done()
+      return (None, None)
+
+   def ready(self, *args):
+      pass
+
+   def sid_from_parent(self, *args):
+      return None
+
+   def worktree_add(self, *args):
+      pass
+
+   def worktree_adopt(self, *args):
+      pass
