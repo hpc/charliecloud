@@ -190,19 +190,20 @@ directory with :code:`ch-image reset`.
 Build cache
 ===========
 
-Subcommands that create images, such as :code:`build` and :code:`pull`, use a
-build cache to speed repeated operations. That is, an image is created by
-starting from the empty image and executing a sequence of instructions,
+Subcommands that create images, such as :code:`build` and :code:`pull`, can
+use a build cache to speed repeated operations. That is, an image is created
+by starting from the empty image and executing a sequence of instructions,
 largely Dockerfile instructions but also some others like "pull" and "import".
 Some instructions are expensive to execute (e.g., :code:`RUN wget
 http://slow.example.com/bigfile` or transferring data billed by the byte), so
 it's often cheaper to retrieve their results from cache instead.
 
-The build cache uses Git under the hood; see the installation instructions for
-version requirements. Charliecloud implements workarounds for Git's various
-storage limitations, so things like file metadata and Git repositories within
-the image should work. **Important exception**: No files named :code:`.git*`
-or other Git metadata are permitted in the image's root directory.
+The build cache uses a relatively new Git under the hood; see the installation
+instructions for version requirements. Charliecloud implements workarounds for
+Git's various storage limitations, so things like file metadata and Git
+repositories within the image should work. **Important exception**: No files
+named :code:`.git*` or other Git metadata are permitted in the image's root
+directory.
 
 The cache has three modes, :code:`enabled`, :code:`disabled`, and a hybrid
 mode called :code:`rebuild` where the cache is fully enabled for :code:`FROM`

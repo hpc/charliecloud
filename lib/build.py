@@ -187,6 +187,10 @@ def main(cli_):
                  % fakeroot_config.inject_ct)
    ch.INFO("grown in %d instructions: %s"
            % (ml.instruction_total_ct, images[image_i]))
+   # FIXME: remove when we're done encouraging people to use the build cache.
+   if (isinstance(bu.cache, bu.Disabled_Cache)):
+      ch.INFO("build slow? consider enabling the experimental build cache",
+              "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
 
 
 class Main_Loop(lark.Visitor):
