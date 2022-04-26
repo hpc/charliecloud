@@ -1764,7 +1764,14 @@ class TarFile(tarfile.TarFile):
    # Need new method name because add() is called recursively and we don't
    # want those internal calls to get our special sauce.
    def add_(self, name, **kwargs):
-      kwargs["filter"] = self.fix_member_uidgid
+      def filter_(ti):
+         assert (ti.name == "." or ti.name[:2] == "./")
+         if (ti.name.startswith("./.git") or ti.name == "./ch/git.pickle"):
+            DEBUG("omitting from push: %s" % ti.name)
+            return None
+         self.fix_member_uidgid(ti)
+         return ti
+      kwargs["filter"] = filter_
       super().add(name, **kwargs)
 
    def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
@@ -1842,7 +1849,6 @@ class TarFile(tarfile.TarFile):
       if (ti.mode & stat.S_ISGID):
          VERBOSE("stripping unsafe setgid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISGID
-      return ti
 
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path
@@ -2122,7 +2128,7 @@ def file_hash(path):
       if (len(data) == 0):
          break  # EOF
       h.update(data)
-   close_(fp.close)
+   close_(fp)
    return h.hexdigest()
 
 def file_read(path, text=True):
