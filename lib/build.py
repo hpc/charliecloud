@@ -780,9 +780,19 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_image.ref)
       # Pull base image if needed.
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
+      unpack_no_git = (    self.base_image.unpack_exist_p
+                       and not self.base_image.unpack_cache_linked)
       ch.INFO(self.str_log)  # announce before we start pulling
       if (self.miss):
-         (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image)
+         if (unpack_no_git):
+            # Use case is mostly images built by old ch-image still in storage.
+            ch.WARNING("base image only exists non-cached; adding to cache")
+            (self.sid, self.git_hash) = bu.cache.adopt(self.base_image)
+
+         else:
+            (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image)
+      elif (unpack_no_git):
+         ch.WARNING("base image also exists non-cached; using cache")
       # Done.
       return int(self.miss)  # will still miss in disabled mode
 

@@ -72,7 +72,6 @@ def gestalt_storage_path(cli):
    print(ch.storage.root)
 
 def import_(cli):
-   ### FIXME: YOU ARE HERE ###
    if (not os.path.exists(cli.path)):
       ch.FATAL("can't copy: not found: %s" % cli.path)
    dst = ch.Image(ch.Image_Ref(cli.image_ref))
@@ -83,12 +82,7 @@ def import_(cli):
       dst.copy_unpacked(cli.path)
    else:  # tarball, hopefully
       dst.unpack([cli.path])
-   bu.cache.worktree_adopt(dst, "root")
-   # initialize metadata if needed
-   dst.metadata_load()
-   dst.metadata_save()
-   bu.cache.commit(dst.unpack_path, bu.cache.import_id, "IMPORT %s" % dst.ref)
-   bu.cache.ready(dst)
+   bu.cache.adopt(dst)
    ch.done_notify()
 
 def list_(cli):

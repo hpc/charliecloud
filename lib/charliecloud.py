@@ -405,6 +405,10 @@ class Image:
    def unpack_exist_p(self):
       return os.path.exists(self.unpack_path)
 
+   @property
+   def unpack_cache_linked(self):
+      return self.unpack_exist_p and os.path.exists(self.unpack_path // ".git")
+
    def __str__(self):
       return str(self.ref)
 
@@ -613,6 +617,9 @@ class Image:
       INFO("flattening image")
       self.unpack_layers(layer_tars, last_layer)
       self.unpack_init()
+
+   def unpack_cache_unlink(self):
+      unlink(self.unpack_path // ".git")
 
    def unpack_clear(self):
       """If the unpack directory does not exist, do nothing. If the unpack

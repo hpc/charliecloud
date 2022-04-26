@@ -197,6 +197,14 @@ class Enabled_Cache:
    def branch_name_unready(ref):
       return ref.for_path + "#"
 
+   def adopt(self, img):
+      self.worktree_adopt(img, "root")
+      img.metadata_load()
+      img.metadata_save()
+      gh = self.commit(img.unpack_path, self.import_id, "IMPORT %s" % img.ref)
+      self.ready(img)
+      return (self.import_id, gh)
+
    def bootstrap(self):
       ch.INFO("initializing empty build cache")
       self.bootstrap_ct += 1
@@ -514,10 +522,10 @@ class Enabled_Cache:
          ch.INFO("deleting build cache")
          ch.rmtree(self.root)
          # Un-git images that are worktrees referring back to the build cache.
-         for img in ch.listdir(ch.storage.unpack_base):
-            dotgit = ch.storage.unpack_base // img // ".git"
+         for d in ch.listdir(ch.storage.unpack_base):
+            dotgit = ch.storage.unpack_base // d // ".git"
             if (os.path.exists(dotgit)):
-               ch.VERBOSE("disconnecting image from build cache: %s" % img)
+               ch.VERBOSE("disconnecting image from build cache: %s" % d)
                ch.unlink(dotgit)
          # Create new build cache.
          ch.mkdir(self.root)
@@ -595,8 +603,7 @@ class Enabled_Cache:
 
    def worktree_add(self, image, base):
       t = ch.Timer()
-      if (    os.path.isdir(image.unpack_path)
-          and os.path.exists(image.unpack_path // ".git")):
+      if (image.unpack_cache_linked):
          self.git_prepare(image.unpack_path, write=False)  # clean worktree
          ch.cmd_quiet(["git", "checkout",
                        "-B", self.branch_name_unready(image.ref), base],
@@ -612,10 +619,10 @@ class Enabled_Cache:
 
    def worktree_adopt(self, image, base):
       """Create a new worktree with the contents of existing directory
-         image.unpack_path. This function is present because “git worktree
-         add” *cannot* use an existing directory but shutil.copytree *must*
-         create its own directory (until Python 3.8, and we have to support
-         3.6). So we use some renaming shenanigans."""
+         image.unpack_path. Note shenanigans because “git worktree add”
+         *cannot* use an existing directory but shutil.copytree *must* create
+         its own directory (until Python 3.8, and we have to support 3.6). So
+         we use some renaming."""
       ch.rename(image.unpack_path, ch.storage.image_tmp)
       self.worktree_add(image, base)
       for i in { ".git", ".gitignore" }:

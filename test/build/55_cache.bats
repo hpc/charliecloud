@@ -685,6 +685,38 @@ EOF
 }
 
 
+@test "${tag}/FROM non-cached base image" {
+    ch-image build-cache --reset
+
+    # Pull base image w/o cache.
+    ch-image pull --bucache=disabled alpine:3.9
+    [[ ! -e $CH_IMAGE_STORAGE/img/alpine+3.9/.git ]]
+
+    # Build child image.
+    run ch-image build -t foo - <<'EOF'
+FROM alpine:3.9
+RUN echo foo
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'. FROM'* ]]
+    [[ $output = *'base image only exists non-cached; adding to cache'* ]]
+    [[ $output = *'. RUN'* ]]
+
+    # Check tree.
+    blessed_out=$(cat << 'EOF'
+*  (foo) RUN echo foo
+*  (alpine+3.9) IMPORT alpine:3.9
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
+
+
 @test "${tag}/all hits, new name" {
     ch-image build-cache --reset
 
