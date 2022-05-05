@@ -1638,10 +1638,7 @@ class Storage:
             else:
                hint = None
             FATAL("storage directory seems invalid: %s" % self.root, hint=hint)
-         if (os.path.isfile(self.version_file)):
-            v_found = int(file_read(self.version_file))
-         else:
-            v_found = 1
+         v_found = self.version_read()
       if (v_found == STORAGE_VERSION):
          VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
@@ -1657,6 +1654,7 @@ class Storage:
       else:                         # can't upgrade
          FATAL("incompatible storage directory v%d: %s" % (v_found, self.root),
                'you can delete and re-initialize with "ch-image reset"')
+      self.validate_strict()
 
    def init_move_old(self):
       """If appropriate, move storage directory from old default path to new.
@@ -1743,6 +1741,52 @@ class Storage:
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
+
+   def validate_strict(self):
+      """Validate storage directory structure; if something is wrong, exit
+         with an error message. This is a strict validation; the version must
+         be current, the structure of the directory must be current, and
+         nothing unexpected may be present. However, it is not comprehensive.
+         The main purpose is to check for bad upgrades and other programming
+         errors, not meddling."""
+      DEBUG("validating storage directory: %s" % self.root)
+      msg_prefix = "invalid storage directory"
+      # Check that all expected files exist, and no others. Note that we don't
+      # verify file *type*, assuming that kind of error is rare.
+      entries = listdir(self.root)
+      for entry in (self.download_cache,
+                    self.unpack_base,
+                    self.upload_cache,
+                    self.version_file):
+         entry = entry.name
+         try:
+            entries.remove(entry)
+         except KeyError:
+            FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+      if (len(entries) > 0):
+         FATAL("%s: extraneous file(s): %s"
+               % (msg_prefix, " ".join(i for i in sorted(entries))))
+      # check version
+      v_found = self.version_read()
+      if (v_found != STORAGE_VERSION):
+         FATAL("%s: version mismatch: %d expected, %d found"
+               % (msg_prefix, STORAGE_VERSION, v_found))
+      # check that no image directories have + in filename
+      imgs = listdir(self.unpack_base)
+      imgs_bad = set()
+      for img in imgs:
+         if ("+" in img):  # bad char check b/c problem here is bad upgrade
+            FATAL("%s: invalid image directory name: %s" % (msg_prefix, img))
+
+   def version_read(self):
+      if (os.path.isfile(self.version_file)):
+         text = file_read_all(self.version_file)
+         try:
+            return int(text)
+         except ValueError:
+            FATAL('malformed storage version: "%s"' % text)
+      else:
+         return 1
 
 
 class TarFile(tarfile.TarFile):

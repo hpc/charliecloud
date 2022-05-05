@@ -19,6 +19,7 @@
 .NOTPARALLEL:
 
 EXTRA_DIST = \
+_loc.rst \
 bugs.rst \
 charliecloud.rst \
 ch-checkns_desc.rst \
@@ -44,7 +45,6 @@ faq.rst \
 favicon.ico \
 index.rst \
 install.rst \
-loc.rst \
 logo-sidebar.png \
 make-deps-overview \
 man/README \
@@ -150,7 +150,7 @@ if ENABLE_HTML
 	      $(BUILDDIR)/html/charliecloud.html \
 	      $(BUILDDIR)/html/ch-*.html \
 	      $(BUILDDIR)/html/bugs.html \
-	      $(BUILDDIR)/html/loc.html \
+	      $(BUILDDIR)/html/_loc.html \
 	      $(BUILDDIR)/html/objects.inv \
 	      $(BUILDDIR)/html/see_also.html
 endif

@@ -48,7 +48,8 @@ Build.centos7xz \
 Build.docker_pull \
 Build.missing \
 docs-sane \
-make-perms-test
+make-perms-test \
+old-storage
 
 # Program and shared library used for testing shared library injection. It's
 # built according to the rules below. In principle, we could use libtool for
