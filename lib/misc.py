@@ -54,8 +54,7 @@ def build_cache(cli):
    bu.cache.summary_print()
 
 def delete(cli):
-   img_ref = ch.Image_Ref(cli.image_ref)
-   img = ch.Image(img_ref)
+   img = ch.Image(ch.Image_Ref(cli.image_ref))
    img.unpack_delete()
 
 def gestalt_bucache(cli):

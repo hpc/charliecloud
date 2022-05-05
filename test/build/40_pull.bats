@@ -215,12 +215,8 @@ EOF
     # Validate that layers replace symlinks correctly. See
     # test/Dockerfile.symlink and issues #819 & #825.
 
-    CH_IMAGE_STORAGE=$BATS_TMPDIR/pull/quirky_files
-    # make ch-image happy with the storage
-    #mkdir -p "${CH_IMAGE_STORAGE}"/{bucache,dlcache,ulcache,img}
-    #echo 3 > "$CH_IMAGE_STORAGE/version"
-    #ch-image list
-    #img="${CH_IMAGE_STORAGE}/img/charliecloud%file-quirks+2020-10-21"
+    CH_IMAGE_STORAGE=$BATS_TMPDIR/pull-quirks
+    img="${CH_IMAGE_STORAGE}/img/charliecloud%file-quirks+2020-10-21"
     ch-image pull charliecloud/file-quirks:2020-10-21
     ls -lh "${img}/test"
 
@@ -377,6 +373,10 @@ EOF
     diff -u -I '^.*"created":.*,$' - "${img}/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
+  "arg": {
+    "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "TAR_OPTIONS": "--no-same-owner"
+  },
   "cwd": "/mnt",
   "env": {
     "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",

@@ -4,16 +4,17 @@ load ../common
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
     # it, so re-use the same one.
+    export CH_IMAGE_BUCACHE=disabled
 
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only' # FIXME: other builders?
 
     # No newline at end of file.
       printf 'FROM 00_tiny\nRUN echo hello' \
-    | ch-image build -t syntax-quirks -f - .
+    | ch-image build -t tmpimg -f - .
 
     # Newline before FROM.
-    ch-image build -t syntax-quirks -f - . <<'EOF'
+    ch-image build -t tmpimg -f - . <<'EOF'
 
 FROM 00_tiny
 RUN echo hello
@@ -120,37 +121,41 @@ EOF
     [[ $status -eq 0 ]]
     output_expected=$(cat <<'EOF'
 warning: not yet supported, ignored: issue #777: .dockerignore file
-  1 FROM 00_tiny
-  4 RUN ['/bin/sh', '-c', 'true ']
- 13 RUN ['/bin/sh', '-c', 'echo test1a']
+  1. FROM 00_tiny
+base image already exists, skipping pull
+copying base image ...
+  4. RUN true 
+ 13. RUN echo test1a
 test1a
- 16 RUN ['/bin/sh', '-c', 'echo test1bc']
+ 16. RUN echo test1bc
 test1bc
- 21 RUN ['/bin/sh', '-c', 'echo test2  a']
+ 21. RUN echo test2  a
 test2 a
- 24 RUN ['/bin/sh', '-c', 'echo test2  b  c']
+ 24. RUN echo test2  b  c
 test2 b c
- 29 RUN ['/bin/sh', '-c', 'echo test3a']
+ 29. RUN echo test3a
 test3a
- 32 RUN ['/bin/sh', '-c', 'echo test3bc']
+ 32. RUN echo test3bc
 test3bc
- 37 RUN ['/bin/sh', '-c', 'echo test4   a']
+ 37. RUN echo test4   a
 test4 a
- 40 RUN ['/bin/sh', '-c', 'echo test4   b   c']
+ 40. RUN echo test4   b   c
 test4 b c
- 45 RUN ['/bin/sh', '-c', 'echo test5  a']
+ 45. RUN echo test5  a
 test5 a
- 48 RUN ['/bin/sh', '-c', 'echo test5  b  c']
+ 48. RUN echo test5  b  c
 test5 b c
- 53 RUN ['/bin/sh', '-c', 'echo test6  a']
+ 53. RUN echo test6  a
 test6 a
- 57 RUN ['/bin/sh', '-c', 'echo test6    b']
+ 57. RUN echo test6    b
 test6 b
- 63 RUN ['/bin/sh', '-c', 'echo test\\ 7a']
+ 63. RUN echo test\ 7a
 test 7a
- 66 RUN ['/bin/sh', '-c', 'echo test\\ 7\\ b']
+ 66. RUN echo test\ 7\ b
 test 7 b
 grown in 16 instructions: tmpimg
+build slow? consider enabling the new build cache
+hint: https://hpc.github.io/charliecloud/command-usage.html#build-cache
 EOF
 )
     diff -u <(echo "$output_expected") <(echo "$output")
@@ -417,7 +422,7 @@ EOF
 ('chse_6b', 'value6b')
 EOF
 )
-    run build_ --no-cache -t tmpimg -f - . <<'EOF'
+    run build_ -v --no-cache -t tmpimg -f - . <<'EOF'
 FROM centos8
 
 # FIXME: make this more comprehensive, e.g. space-separate vs.
@@ -1060,12 +1065,11 @@ FROM scratch
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'base image not found, pulling'* ]]
     [[ $output = *'manifest: using internal library'* ]]
     [[ $output = *'no config found; initializing empty metadata'* ]]
     [[ $output != *'layer 1'* ]]  # no layers
     ls -lha "${CH_IMAGE_STORAGE}/img/foo/usr"
-    [[ $(find /tmp/foo -mindepth 1 "${CH_IMAGE_STORAGE}/img/foo/usr") = '' ]]
+    [[ $(find "${CH_IMAGE_STORAGE}/img/foo/usr" -mindepth 1) = '' ]]
 
     # build 2; validate not pulled
     run ch-image build -v -t tmpimg -f - . <<'EOF'
@@ -1073,5 +1077,6 @@ FROM scratch
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"base image found: ${CH_IMAGE_STORAGE}/img/scratch"* ]]
+    [[ $output != *'manifest: using internal library'* ]]
+    [[ $output != *'no config found; initializing empty metadata'* ]]
 }

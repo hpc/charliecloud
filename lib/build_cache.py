@@ -47,7 +47,8 @@ def init(cli):
    if (cli.bucache != ch.Build_Mode.DISABLED):
       ok = have_deps(False)
       if (cli.bucache is None):
-         cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
+         #cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
+         cli.bucache = ch.Build_Mode.DISABLED
          ch.VERBOSE("using default build cache mode")
       if (cli.bucache != ch.Build_Mode.DISABLED and not ok):
          ch.FATAL("insufficient Git for build cache mode: %s"
@@ -521,12 +522,12 @@ class Enabled_Cache:
       else:
          ch.INFO("deleting build cache")
          ch.rmtree(self.root)
-         # Un-git images that are worktrees referring back to the build cache.
+         # Delete images that are worktrees referring back to the build cache.
          for d in ch.listdir(ch.storage.unpack_base):
             dotgit = ch.storage.unpack_base // d // ".git"
             if (os.path.exists(dotgit)):
-               ch.VERBOSE("disconnecting image from build cache: %s" % d)
-               ch.unlink(dotgit)
+               ch.VERBOSE("deleting cached image: %s" % d)
+               ch.rmtree(ch.storage.unpack_base // d)
          # Create new build cache.
          ch.mkdir(self.root)
          self.bootstrap()
@@ -537,7 +538,12 @@ class Enabled_Cache:
 
    def status_char(self, miss):
       "Return single character to indicate whether miss is true or not."
-      return "." if miss else "*"
+      if (miss is None):
+         return " "
+      elif (miss):
+         return "."
+      else:
+         return "*"
 
    def summary_print(self):
       cwd = ch.chdir(self.root)
@@ -623,6 +629,10 @@ class Enabled_Cache:
          *cannot* use an existing directory but shutil.copytree *must* create
          its own directory (until Python 3.8, and we have to support 3.6). So
          we use some renaming."""
+      if (os.path.isdir(ch.storage.image_tmp)):
+         ch.WARNING("temporary image still exists, deleting",
+                    "maybe a previous command crashed?")
+         ch.rmtree(ch.storage.image_tmp)
       ch.rename(image.unpack_path, ch.storage.image_tmp)
       self.worktree_add(image, base)
       for i in { ".git", ".gitignore" }:

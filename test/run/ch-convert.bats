@@ -73,7 +73,8 @@ compare () {
     compare-ls "$2" > "$BATS_TMPDIR"/compare-ls.2
     diff -u "$BATS_TMPDIR"/compare-ls.1 "$BATS_TMPDIR"/compare-ls.2
     # Ensure build cache metadata is not in $2.
-    [[ ! -e ./.git* ]]
+    [[ ! -e ./.git ]]
+    [[ ! -e ./.gitignore ]]
     [[ ! -e ./ch/git.pickle ]]
 }
 

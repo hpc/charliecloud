@@ -166,9 +166,10 @@ def main(cli_):
       ml.visit_topdown(tree)
    else:
       ml.visit(tree)
-   if (ml.miss_ct == 0):
-      ml.inst_prev.checkout()
-   ml.inst_prev.ready()
+   if (ml.instruction_total_ct > 0):
+      if (ml.miss_ct == 0):
+         ml.inst_prev.checkout()
+      ml.inst_prev.ready()
 
    # Check that all build arguments were consumed.
    if (len(cli.build_arg) != 0):
@@ -189,7 +190,7 @@ def main(cli_):
            % (ml.instruction_total_ct, images[image_i]))
    # FIXME: remove when we're done encouraging people to use the build cache.
    if (isinstance(bu.cache, bu.Disabled_Cache)):
-      ch.INFO("build slow? consider enabling the experimental build cache",
+      ch.INFO("build slow? consider enabling the new build cache",
               "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
 
 
@@ -215,9 +216,13 @@ class Main_Loop(lark.Visitor):
                pass
             elif (isinstance(inst, Arg)):
                ch.WARNING("ARG before FROM not yet supported; see issue #779")
+               return
             else:
                ch.FATAL("first instruction must be ARG or FROM")
-         self.miss_ct = inst.prepare(self.inst_prev, self.miss_ct)
+         try:
+            self.miss_ct = inst.prepare(self.inst_prev, self.miss_ct)
+         except Instruction_Ignored:
+            return
          if (inst.miss):
             if (self.miss_ct == 1):
                inst.checkout_for_build(self.inst_prev)
@@ -305,11 +310,14 @@ class Instruction(abc.ABC):
    def ready(self):
       bu.cache.ready(images[image_i])
 
-   @abc.abstractmethod
    def execute(self):
       """Do what the instruction says. At this point, the unpack directory is
          all ready to go. Thus, the method is cache-ignorant."""
-      ...
+      pass
+
+   def ignore(self):
+      ch.INFO(self.str_log)
+      raise Instruction_Ignored()
 
    def options_assert_empty(self):
       try:
@@ -345,7 +353,11 @@ class Instruction(abc.ABC):
                % (issue_no, self.str_name, msg))
 
 
-class Instruction_Supported_Never(Instruction):
+class Instruction_Ignored(Exception):
+   pass
+
+
+class Instruction_Unsupported(Instruction):
 
    execute_increment = 0
 
@@ -353,8 +365,16 @@ class Instruction_Supported_Never(Instruction):
    def str_(self):
       return "(unsupported)"
 
-   def announce(self):
+   @property
+   def miss(self):
+      return None
+
+
+class Instruction_Supported_Never(Instruction_Unsupported):
+
+   def prepare(self, *args):
       self.unsupported_forever_warn("instruction")
+      self.ignore()
 
 
 class Arg(Instruction):
@@ -421,6 +441,12 @@ class I_copy(Instruction):
    # Because of these weird semantics, none of this abstracted into a general
    # copy function. I don't want people calling it except from here.
 
+   __slots__ = ("dst",
+                "from_",
+                "src_metadata",
+                "srcs",
+                "srcs_raw")
+
    def __init__(self, *args):
       super().__init__(*args)
       self.from_ = self.options.pop("from", None)
@@ -442,7 +468,7 @@ class I_copy(Instruction):
       else:
          assert False, "unreachable code reached"
 
-      self.srcs = paths[:-1]
+      self.srcs_raw = paths[:-1]
       self.dst = paths[-1]
 
    @property
@@ -451,7 +477,7 @@ class I_copy(Instruction):
 
    @property
    def str_(self):
-      return "%s -> %s" % (self.srcs, repr(self.dst))
+      return "%s -> %s" % (self.srcs_raw, repr(self.dst))
 
    def copy_src_dir(self, src, dst):
       """Copy the contents of directory src, named by COPY, either explicitly
@@ -585,7 +611,9 @@ class I_copy(Instruction):
               .startswith(unpack_canon)):
          ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
       # Create the destination directory if needed.
-      if (self.dst.endswith("/") or len(srcs) > 1 or os.path.isdir(srcs[0])):
+      if (   self.dst.endswith("/")
+          or len(self.srcs) > 1
+          or os.path.isdir(self.srcs[0])):
          if (not os.path.exists(dst_canon)):
             ch.mkdirs(dst_canon)
          elif (not os.path.isdir(dst_canon)):  # not symlink b/c realpath()
@@ -610,7 +638,7 @@ class I_copy(Instruction):
       # Error checking.
       if (cli.context == "-"):
          ch.FATAL("can't COPY: no context because \"-\" given")
-      if (len(self.srcs) < 1):
+      if (len(self.srcs_raw) < 1):
          ch.FATAL("can't COPY: must specify at least one source")
       # Complain about unsupported stuff.
       if (self.options.pop("chown", False)):
@@ -638,9 +666,8 @@ class I_copy(Instruction):
       context_canon = os.path.realpath(context)
       ch.VERBOSE("context: %s" % context)
       # Expand source wildcards.
-      srcs = self.srcs
       self.srcs = list()
-      for src in srcs:
+      for src in self.srcs_raw:
          matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
          if (len(matches) == 0):
             ch.FATAL("can't copy: not found: %s" % src)
@@ -674,8 +701,13 @@ class I_directive(Instruction_Supported_Never):
    def __init__(self, *args):
       super().__init__(*args)
 
-   def announce(self):
+   @property
+   def str_name(self):
+      return "#%s" % ch.tree_terminal(self.tree, "DIRECTIVE_NAME")
+
+   def prepare(self, *args):
       ch.WARNING("not supported, ignored: parser directives")
+      self.ignore()
 
 
 class Env(Instruction):
@@ -783,12 +815,13 @@ class I_from_(Instruction):
       unpack_no_git = (    self.base_image.unpack_exist_p
                        and not self.base_image.unpack_cache_linked)
       ch.INFO(self.str_log)  # announce before we start pulling
+      # FIXME: shouldn't know or care whether build cache is enabled here.
       if (self.miss):
          if (unpack_no_git):
             # Use case is mostly images built by old ch-image still in storage.
-            ch.WARNING("base image only exists non-cached; adding to cache")
+            if (not isinstance(bu.cache, bu.Disabled_Cache)):
+               ch.WARNING("base image only exists non-cached; adding to cache")
             (self.sid, self.git_hash) = bu.cache.adopt(self.base_image)
-
          else:
             (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image)
       elif (unpack_no_git):
@@ -907,7 +940,7 @@ class I_uns_forever(Instruction_Supported_Never):
       return self.name
 
 
-class I_uns_yet(Instruction):
+class I_uns_yet(Instruction_Unsupported):
 
    execute_increment = 0
 
@@ -921,18 +954,12 @@ class I_uns_yet(Instruction):
                         "ONBUILD":     788 }[self.name]
 
    @property
-   def str_(self):
-      return "(unsupported)"
-
-   @property
    def str_name(self):
       return self.name
 
-   def announce(self):
+   def prepare(self, *args):
       self.unsupported_yet_warn("instruction", self.issue_no)
-
-   def execute(self):
-      pass
+      self.ignore()
 
 
 ## Supporting classes ##

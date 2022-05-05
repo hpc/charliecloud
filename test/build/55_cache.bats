@@ -28,7 +28,7 @@ setup () {
 
 ### Test cases that go in the paper ###
 
-@test "${tag}/§3.1 empty cache" {
+@test "${tag}: §3.1 empty cache" {
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
     blessed_tree=$(cat << EOF
@@ -44,7 +44,7 @@ EOF
 }
 
 
-@test "${tag}/§3.2.1 initial pull" {
+@test "${tag}: §3.2.1 initial pull" {
     ch-image pull alpine:3.9
 
     blessed_tree=$(cat << 'EOF'
@@ -59,7 +59,7 @@ EOF
 }
 
 
-@test "${tag}/§3.5 FROM" {
+@test "${tag}: §3.5 FROM" {
     # FROM pulls
     ch-image build-cache --reset
     run ch-image build -v -t d -f bucache/from.df .
@@ -108,7 +108,7 @@ EOF
 }
 
 
-@test "${tag}/§3.3.1 Dockerfile A" {
+@test "${tag}: §3.3.1 Dockerfile A" {
     ch-image build-cache --reset
 
     ch-image build -t a -f bucache/a.df .
@@ -127,7 +127,7 @@ EOF
 }
 
 
-@test "${tag}/§3.3.2 Dockerfile B" {
+@test "${tag}: §3.3.2 Dockerfile B" {
     ch-image build-cache --reset
 
     ch-image build -t a -f bucache/a.df .
@@ -148,7 +148,7 @@ EOF
 }
 
 
-@test "${tag}/§3.3.3 Dockerfile C" {
+@test "${tag}: §3.3.3 Dockerfile C" {
     ch-image build-cache --reset
 
     ch-image build -t a -f bucache/a.df .
@@ -173,7 +173,7 @@ EOF
 }
 
 
-@test "${tag}/rebuild A" {
+@test "${tag}: rebuild A" {
     # Forcing a rebuild show produce a new pair of FOO and BAR commits from
     # from the alpine branch.
     blessed_out=$(cat << 'EOF'
@@ -197,7 +197,7 @@ EOF
 }
 
 
-@test "${tag}/rebuild B" {
+@test "${tag}: rebuild B" {
     # Rebuild of B. Since A was rebuilt in the last test, and because
     # the rebuild behavior only forces misses on non-FROM instructions, it
     # should now be based on A's new commits.
@@ -222,7 +222,7 @@ EOF
 }
 
 
-@test "${tag}/rebuild C" {
+@test "${tag}: rebuild C" {
     # Rebuild C. Since C doesn't reference img_a (like img_b does) rebuilding
     # causes a miss on FOO. Thus C makes new FOO and QUX commits.
     #
@@ -252,7 +252,7 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}/§3.7 change then revert" {
+@test "${tag}: §3.7 change then revert" {
     ch-image build-cache --reset
 
     ch-image build -t e -f bucache/a.df .
@@ -293,7 +293,7 @@ EOF
 }
 
 
-@test "${tag}/§3.4.1 two pulls, same" {
+@test "${tag}: §3.4.1 two pulls, same" {
     ch-image build-cache --reset
     ch-image pull alpine:3.9
     ch-image pull alpine:3.9
@@ -310,7 +310,7 @@ EOF
 }
 
 
-@test "${tag}/§3.4.2 two pulls, different" {
+@test "${tag}: §3.4.2 two pulls, different" {
 
     # We simulate a repository change by manually editing the skinny manifest in
     # local storage. This would occur in the wild as follows:
@@ -326,11 +326,11 @@ EOF
     run ch-image pull alpine:3.9
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output == *"warning: cached image stale; re-pulling"* ]]
+    [[ $output == *"updating build cache with newer image"* ]]
 }
 
 
-@test "${tag}/branch ready" {
+@test "${tag}: branch ready" {
     ch-image build-cache --reset
 
     # Build A as “foo”.
@@ -374,7 +374,7 @@ EOF
 }
 
 
-@test "${tag}/--force" {
+@test "${tag}: --force" {
     ch-image build-cache --reset
 
     # Use a centos:7 image because it can install some RPMs without --force.
@@ -424,7 +424,7 @@ EOF
 
 ### Additional test cases for correctness ###
 
-@test "${tag}/reset" {
+@test "${tag}: reset" {
     # re-init
     run ch-image build-cache --reset
     echo "$output"
@@ -440,7 +440,7 @@ EOF
 }
 
 
-@test "${tag}/gc" {
+@test "${tag}: gc" {
     ch-image build-cache --reset
     # Initial number of commits.
     diff -u <(  ch-image build-cache \
@@ -463,7 +463,7 @@ EOF
               | grep "commits" | awk '{print $2}') <(echo 4)
 }
 
-@test "${tag}/ARG and ENV" {
+@test "${tag}: ARG and ENV" {
     ch-image build-cache --reset
 
     # Build.
@@ -535,7 +535,7 @@ EOF
 }
 
 
-@test "${tag}/ARG special variables" {
+@test "${tag}: ARG special variables" {
     ch-image build-cache --reset
     unset SSH_AUTH_SOCK
 
@@ -573,7 +573,7 @@ EOF
 }
 
 
-@test "${tag}/COPY" {
+@test "${tag}: COPY" {
     ch-image build-cache --reset
 
     # Prepare fixtures. These need various manipulating during the test, which
@@ -685,7 +685,19 @@ EOF
 }
 
 
-@test "${tag}/FROM non-cached base image" {
+@test "${tag}: ENV in rebuild mode" {
+    ch-image build-cache --reset
+
+    ch-image pull alpine:3.9
+    ch-image build --bucache=rebuild -t foo - <<'EOF'
+FROM alpine:3.9
+ENV foo=bar
+EOF
+false
+}
+
+
+@test "${tag}: FROM non-cached base image" {
     ch-image build-cache --reset
 
     # Pull base image w/o cache.
@@ -717,7 +729,7 @@ EOF
 }
 
 
-@test "${tag}/all hits, new name" {
+@test "${tag}: all hits, new name" {
     ch-image build-cache --reset
 
     blessed_out=$(cat << 'EOF'
@@ -736,7 +748,7 @@ EOF
 }
 
 
-@test "${tag}/pull" {
+@test "${tag}: pull" {
     ch-image build-cache --reset
 
     printf '\n*** Case 1: Not in build cache\n\n'
@@ -824,7 +836,7 @@ EOF
 }
 
 
-@test "${tag}/rebuild mode" {
+@test "${tag}: rebuild mode" {
     ch-image build-cache --reset
 
     # Build. Mode should not matter here, but we use enabled because that's
@@ -869,5 +881,5 @@ EOF
     [[ $status -eq 0 ]]
     commit_after=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
     echo "after: ${commit_after}"
-    [[ $commit_before != $commit_after ]]
+    [[ $commit_before != "$commit_after" ]]
 }

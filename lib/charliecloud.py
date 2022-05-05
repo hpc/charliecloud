@@ -308,13 +308,6 @@ class ArgumentParser(argparse.ArgumentParser):
 
    def parse_args(self, *args, **kwargs):
       cli = super().parse_args(*args, **kwargs)
-      # Bring in environment variables that set options.
-      if (cli.bucache is None and "CH_IMAGE_BUCACHE" in os.environ):
-         try:
-            cli.bucache = Build_Mode(os.environ["CH_IMAGE_BUCACHE"])
-         except ValueError:
-            FATAL("$CH_IMAGE_BUCACHE: invalid build cache mode: %s"
-                  % os.environ["CH_IMAGE_BUCACHE"])
       # Incompatible arguments inexpressible by standard means.
       if (cli.no_cache and cli.bucache is not None):
          self.error("--no-cache incompatible with --bucache")
@@ -322,8 +315,15 @@ class ArgumentParser(argparse.ArgumentParser):
          self.error("--no-cache incompatible with --dlcache")
       # Unpack shorthand options.
       if (cli.no_cache):
-         cli.bucache = Build_Mode.REBUILD
+         cli.bucache = Build_Mode.DISABLED
          cli.dlcache = Download_Mode.WRITE_ONLY
+      # Bring in environment variables that set options.
+      if (cli.bucache is None and "CH_IMAGE_BUCACHE" in os.environ):
+         try:
+            cli.bucache = Build_Mode(os.environ["CH_IMAGE_BUCACHE"])
+         except ValueError:
+            FATAL("$CH_IMAGE_BUCACHE: invalid build cache mode: %s"
+                  % os.environ["CH_IMAGE_BUCACHE"])
       return cli
 
 
@@ -498,8 +498,11 @@ class Image:
          self.metadata_init()
          return
       self.metadata = json_from_file(path, "metadata")
-      self.metadata.setdefault("history", list())  # upgrade pre-PR #1215
-      self.metadata["env"].update({ **ARG_DEFAULTS_MAGIC, **ARG_DEFAULTS })
+      # upgrade old metadata
+      self.metadata.setdefault("arg", dict() )
+      self.metadata.setdefault("history", list())
+      # add default ARG variables
+      self.metadata["arg"].update({ **ARG_DEFAULTS_MAGIC, **ARG_DEFAULTS })
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
