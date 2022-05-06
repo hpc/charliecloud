@@ -712,11 +712,15 @@ AS_IF([   test $enable_test = yes \
 
 AS_IF([   test $have_tests_basic = yes \
        && test $have_docs = yes \
-       && test -n "$SHELLCHECK" \
+       && test -n "$SHELLCHECK" ],  # assume we do have generic sudo
+      [have_tests_more=yes],
+      [have_tests_more=no])
+
+AS_IF([   test $have_tests_more = yes \
        && test -n "$DOT" \
-       && test -n "$GIT2DOT" ],  # assume we do have generic sudo
-       [have_tests_more=yes],
-       [have_tests_more=no])
+       && test -n "$GIT2DOT" ],
+      [have_tests_debug=yes],
+      [have_tests_debug=no])
 
 AS_IF([   test $have_tests_basic = yes \
        && test $have_tests_more = yes],
@@ -870,9 +874,12 @@ Test suite
     basic tests ... ${have_tests_basic}
     documentation built ... ${have_docs}
     ShellCheck ≥ $vmin_shellcheck ... ${SHELLCHECK_VERSION_NOTE}
+    generic sudo ... assumed yes
+
+  debugging tests: ${have_tests_debug}
+    more tests ... ${have_tests_more}
     DOT ≥ $vmin_dot ... ${DOT_VERSION_NOTE}
     git2dot ≥ $vmin_git2dot ... ${GIT2DOT_VERSION_NOTE}
-    generic sudo ... assumed yes
 
   recommended tests, tar-unpack mode: ${have_tests_tar}
     basic tests ... ${have_tests_basic}

@@ -228,11 +228,7 @@ class Main_Loop(lark.Visitor):
                inst.checkout_for_build(self.inst_prev)
             inst.execute()
             if (image_i != -1):
-               # add instruction history
-               images[image_i].metadata["history"].append(
-                  { "created": ch.now_utc_iso8601(),
-                    "created_by": "%s %s" % (inst.str_name, inst.str_)})
-               images[image_i].metadata_save()
+               inst.metadata_update(images[image_i])
             inst.commit()
          self.inst_prev = inst
          self.instruction_total_ct += inst.execute_increment
@@ -318,6 +314,12 @@ class Instruction(abc.ABC):
    def ignore(self):
       ch.INFO(self.str_log)
       raise Instruction_Ignored()
+
+   def metadata_update(self, img):
+      img.metadata["history"].append(
+         { "created": ch.now_utc_iso8601(),
+           "created_by": "%s %s" % (self.str_name, self.str_)})
+      img.metadata_save()
 
    def options_assert_empty(self):
       try:
@@ -768,10 +770,16 @@ class I_from_(Instruction):
       return "%s%s" % (self.base_image.ref, alias)
 
    def checkout_for_build(self, parent):
-      # FROM doesn't have a meaningful parent because it's opening a new
+      # FROM doesn’t have a meaningful parent because it’s opening a new
       # stage, so check out me instead.
       assert (isinstance(bu.cache, bu.Disabled_Cache))
       super().checkout_for_build(self, base_image=self.base_image)
+
+   def metadata_update(self, img):
+      # FROM doesn’t update metadata because it never misses when the cache is
+      # enabled, so this would never be called, and we want disabled results
+      # to be the same. In particular, FROM does not generate history entries.
+      pass
 
    def prepare(self, parent, miss_ct):
       # FROM is special because its preparation involves opening a new stage
@@ -784,9 +792,12 @@ class I_from_(Instruction):
       self.options_assert_empty()
       # Close previous stage if needed.
       if (parent is not None and miss_ct == 0):
-         assert False, "unimplemented"  # don't actually need to check it
-                                        # out?? but if we don't how do we
-                                        # support COPY from previous stage?
+         # While there haven't been any misses so far, we do need to check out
+         # the previous stage in case there's a COPY later. This will still be
+         # fast most of the time since the correct branch is likely to be
+         # checked out already.
+         parent.checkout()
+         parent.ready()
       # Update image globals.
       global image_i
       image_i += 1

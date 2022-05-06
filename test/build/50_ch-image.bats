@@ -395,7 +395,7 @@ EOF
     img=$CH_IMAGE_STORAGE/img/tmpimg
 
     # Print out current metadata, then update it.
-    run ch-image build -t tmpimg -f - . <<'EOF'
+    run ch-image build -v -t tmpimg -f - . <<'EOF'
 FROM charliecloud/metadata:2021-01-15
 RUN echo "cwd1: $PWD"
 WORKDIR /usr
@@ -422,13 +422,6 @@ EOF
         [[ $output = *'shell1: /bin/ash'* ]]
         [[ $output = *'shell2: /bin/sh'* ]]
     fi
-
-    # Correct files?
-    diff -u - <(ls "${img}/ch") <<'EOF'
-config.pulled.json
-environment
-metadata.json
-EOF
 
     # Volume mount points exist?
     ls -lh "${img}/mnt"
@@ -556,10 +549,6 @@ EOF
       "created": "2021-01-16T00:12:14.042791834Z",
       "created_by": "/bin/ash -c #(nop)  VOLUME [/mnt/foo /mnt/bar /mnt/foo]",
       "empty_layer": true
-    },
-    {
-      "created": "2021-11-30T20:40:24Z",
-      "created_by": "FROM charliecloud/metadata:2021-01-15"
     },
     {
       "created": "2021-11-30T20:40:24Z",

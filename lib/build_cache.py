@@ -230,7 +230,7 @@ class Enabled_Cache:
                   % (x.filename, x.strerror))
 
    def checkout(self, image, git_hash, base_image):
-      ch.INFO("checking out image from cache ...")
+      ch.INFO("copying image ...")
       self.worktree_add(image, git_hash)
       self.git_restore(image.unpack_path)
 
@@ -350,7 +350,7 @@ class Enabled_Cache:
       if (write):
          ch.file_write("ch/git.pickle", pickle.dumps(met, protocol=4))
       ch.chdir(cwd)
-      t.log("gathered metadata")
+      t.log("gathered file metadata")
       return met
 
    def git_prepare_walk(self, hardlinks, parent, name, st):
@@ -418,10 +418,10 @@ class Enabled_Cache:
          quick=True
       else:
          quick=False
-         fm = pickle.loads(ch.file_read("ch/git.pickle", text=False))
+         fm = pickle.loads(ch.file_read_all("ch/git.pickle", text=False))
       self.git_restore_walk(unpack_path, None, fm, quick)
       ch.chdir(cwd)
-      t.log("restored metadata (%s)" % ("quick" if quick else "full"))
+      t.log("restored file metadata (%s)" % ("quick" if quick else "full"))
 
    def git_restore_walk(self, root, parent, fm, quick):
       "Changes CWD but restores it."
@@ -659,7 +659,7 @@ class Rebuild_Cache(Enabled_Cache):
 class Disabled_Cache(Rebuild_Cache):
 
    def checkout(self, image, git_hash, base_image):
-      ch.INFO("copying base image ...")
+      ch.INFO("copying image ...")
       image.unpack_clear()
       image.copy_unpacked(base_image)
 
@@ -671,7 +671,7 @@ class Disabled_Cache(Rebuild_Cache):
 
    def pull_lazy(self, image, last_layer=None, pullet=None):
       if (pullet is None and os.path.exists(image.unpack_path)):
-         ch.INFO("base image already exists, skipping pull")
+         ch.VERBOSE("base image already exists, skipping pull")
       else:
          if (pullet is None):
             pullet = pull.Image_Puller(image)

@@ -4,6 +4,7 @@ load ../common
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
     # it, so re-use the same one.
+
     export CH_IMAGE_BUCACHE=disabled
 
     scope standard
@@ -122,8 +123,7 @@ EOF
     output_expected=$(cat <<'EOF'
 warning: not yet supported, ignored: issue #777: .dockerignore file
   1. FROM 00_tiny
-base image already exists, skipping pull
-copying base image ...
+copying image ...
   4. RUN true 
  13. RUN echo test1a
 test1a
@@ -422,7 +422,7 @@ EOF
 ('chse_6b', 'value6b')
 EOF
 )
-    run build_ -v --no-cache -t tmpimg -f - . <<'EOF'
+    run build_ --no-cache -t tmpimg -f - . <<'EOF'
 FROM centos8
 
 # FIXME: make this more comprehensive, e.g. space-separate vs.
@@ -1048,35 +1048,13 @@ EOF
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
-    # pull it; validate special handling
+    # remove if it exists
+    ch-image delete scratch || true
+
+    # pull and validate special handling
     run ch-image pull -v scratch
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest: using internal library'* ]]
-    [[ $output = *'no config found; initializing empty metadata'* ]]
     [[ $output != *'layer 1'* ]]  # no layers
-
-    # remove
-    ch-image delete scratch
-
-    # build 1; validate pulled with special handling
-    run ch-image build -v -t foo -f - . <<'EOF'
-FROM scratch
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'manifest: using internal library'* ]]
-    [[ $output = *'no config found; initializing empty metadata'* ]]
-    [[ $output != *'layer 1'* ]]  # no layers
-    ls -lha "${CH_IMAGE_STORAGE}/img/foo/usr"
-    [[ $(find "${CH_IMAGE_STORAGE}/img/foo/usr" -mindepth 1) = '' ]]
-
-    # build 2; validate not pulled
-    run ch-image build -v -t tmpimg -f - . <<'EOF'
-FROM scratch
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output != *'manifest: using internal library'* ]]
-    [[ $output != *'no config found; initializing empty metadata'* ]]
 }

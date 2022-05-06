@@ -350,13 +350,6 @@ EOF
 
     ch-image pull "$name"
 
-    # Correct files?
-    diff -u - <(ls "${img}/ch") <<'EOF'
-config.pulled.json
-environment
-metadata.json
-EOF
-
     # Volume mount points exist?
     ls -lh "${img}/mnt"
     test -d "${img}/mnt/foo"
@@ -514,7 +507,7 @@ EOF
     [[ $output = *'requested arch unavailable:'*'available:'* ]]
 
     # Delete it so we don't try to use a non-matching arch for other testing.
-    ch-image delete alpine:latest
+    ch-image delete alpine:latest || true
 
     # No fat manifest.
     ch-image --arch=yolo pull charliecloud/metadata:2021-01-15

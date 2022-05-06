@@ -422,11 +422,12 @@ class Image:
          the latter case other.unpack_path is used. other need not be a valid
          image; the essentials will be created if needed."""
       def ignore(path, names):
+         path = Path(path)  # match type of src_path
          ignore = list()
          if (path == src_path):
             for name in names:
                if (name.startswith(".git")):
-                  WARNING("ignoring from source image: /%s" % name)
+                  VERBOSE("ignoring from source image: /%s" % name)
                   ignore.append(name)
          return ignore
       if (isinstance(other, str) or isinstance(other, Path)):
@@ -493,13 +494,15 @@ class Image:
       """Load metadata file, replacing the existing metadata object. If
          metadata doesn't exist, warn and use defaults."""
       path = self.metadata_path // "metadata.json"
-      if (not path.exists()):
+      if (path.exists()):
+         VERBOSE("loading metadata")
+      else:
          WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
       self.metadata = json_from_file(path, "metadata")
       # upgrade old metadata
-      self.metadata.setdefault("arg", dict() )
+      self.metadata.setdefault("arg", dict())
       self.metadata.setdefault("history", list())
       # add default ARG variables
       self.metadata["arg"].update({ **ARG_DEFAULTS_MAGIC, **ARG_DEFAULTS })
@@ -1754,15 +1757,16 @@ class Storage:
       # Check that all expected files exist, and no others. Note that we don't
       # verify file *type*, assuming that kind of error is rare.
       entries = listdir(self.root)
-      for entry in (self.download_cache,
-                    self.unpack_base,
-                    self.upload_cache,
-                    self.version_file):
-         entry = entry.name
+      for entry in { i.name for i in (self.build_cache,
+                                      self.download_cache,
+                                      self.unpack_base,
+                                      self.upload_cache,
+                                      self.version_file) }:
          try:
             entries.remove(entry)
          except KeyError:
             FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+      entries -= { i.name for i in (self.lockfile,) }
       if (len(entries) > 0):
          FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(i for i in sorted(entries))))
@@ -1771,11 +1775,11 @@ class Storage:
       if (v_found != STORAGE_VERSION):
          FATAL("%s: version mismatch: %d expected, %d found"
                % (msg_prefix, STORAGE_VERSION, v_found))
-      # check that no image directories have + in filename
+      # check that no image directories have “:” in filename
       imgs = listdir(self.unpack_base)
       imgs_bad = set()
       for img in imgs:
-         if ("+" in img):  # bad char check b/c problem here is bad upgrade
+         if (":" in img):  # bad char check b/c problem here is bad upgrade
             FATAL("%s: invalid image directory name: %s" % (msg_prefix, img))
 
    def version_read(self):
@@ -2178,7 +2182,7 @@ def file_hash(path):
    close_(fp)
    return h.hexdigest()
 
-def file_read(path, text=True):
+def file_read_all(path, text=True):
    """Return the contents of file at path, or exit with error. If text, read
       in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
    if (text):
@@ -2263,7 +2267,7 @@ def init(cli):
 
 def json_from_file(path, msg):
    DEBUG("loading JSON: %s: %s" % (msg, path))
-   text = file_read(path)
+   text = file_read_all(path)
    TRACE("text:\n%s" % text)
    try:
       data = json.loads(text)
