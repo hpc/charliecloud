@@ -522,7 +522,7 @@ SHELL ["/bin/sh"]
 RUN true
 EOF
    echo "$output"
-   [[ $status -ne 0 ]] # different builders use different error exit codes
+   [[ $status -ne 0 ]]  # different builders use different error exit codes
    [[ $output = *"/bin/sh: can't open 'true': No such file or directory"* ]]
 
    # test that it works with python3

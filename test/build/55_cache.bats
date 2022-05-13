@@ -470,7 +470,13 @@ EOF
     run ch-image build -t ae1 -f ./bucache/argenv.df ./bucache
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'1 vargA vargB venvA venvB'* ]]
+    [[ $output = *'1 vargA vargBvargA venvA venvBvargA'* ]]
+
+    # Rebuild; this should hit and print the correct values.
+    run ch-image build -t ae1 -f ./bucache/argenv.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'5* RUN'* ]]
 
     # Re-build, with partial hits. ARG and ENV from first build should pass
     # through with correct values.
@@ -478,7 +484,7 @@ EOF
     run ch-image build -t ae2 -f ./bucache/argenv2.df ./bucache
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'2 vargA vargB venvA venvB'* ]]
+    [[ $output = *'2 vargA vargBvargA venvA venvBvargA'* ]]
 
     # Re-build, setting ARG from the command line. This should miss.
     sleep 1
@@ -511,20 +517,20 @@ EOF
     [[ $status -eq 0 ]]
     blessed_out=$(cat << 'EOF'
 *  (ae5) RUN echo 1 $argA $argB $envA $envB
-*  ENV envB='venvB'
+*  ENV envB='venvBvargA'
 *  ENV envA='venvA'
 *  ARG argB='bar'
 | *  (ae4, ae3) RUN echo 1 $argA $argB $envA $envB
-| *  ENV envB='venvB'
+| *  ENV envB='venvBvargA'
 | *  ENV envA='venvA'
 | *  ARG argB='foo'
 |/
 | *  (ae2) RUN echo 2 $argA $argB $envA $envB
 | | *  (ae1) RUN echo 1 $argA $argB $envA $envB
 | |/
-| *  ENV envB='venvB'
+| *  ENV envB='venvBvargA'
 | *  ENV envA='venvA'
-| *  ARG argB='vargB'
+| *  ARG argB='vargBvargA'
 |/
 *  ARG argA='vargA'
 *  (alpine+3.9) PULL alpine:3.9

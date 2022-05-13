@@ -490,10 +490,15 @@ class Image:
                         "shell": ["/bin/sh", "-c"],
                         "volumes": list() }  # set isn't JSON-serializable
 
-   def metadata_load(self):
+   def metadata_load(self, target_img=None):
       """Load metadata file, replacing the existing metadata object. If
-         metadata doesn't exist, warn and use defaults."""
-      path = self.metadata_path // "metadata.json"
+         metadata doesn't exist, warn and use defaults. If target_img is
+         non-None, use that image's metadata instead of self's."""
+      if (target_img is not None):
+         path = target_img.metadata_path
+      else:
+         path = self.metadata_path
+      path //= "metadata.json"
       if (path.exists()):
          VERBOSE("loading metadata")
       else:

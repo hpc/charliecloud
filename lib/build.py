@@ -22,9 +22,6 @@ import pull
 # Namespace from command line arguments. FIXME: be more tidy about this ...
 cli = None
 
-# Environment object.
-env = None
-
 # Fakeroot configuration (initialized during FROM).
 fakeroot_config = None
 
@@ -33,10 +30,8 @@ fakeroot_config = None
 # an int key counting stages up from zero. Images with a name (e.g., "FROM ...
 # AS foo") have a second string key of the name.
 images = dict()
-# Current stage. Incremented by FROM instructions; the first will set it to 0.
-image_i = -1
-image_alias = None
-# Number of stages.
+# Number of stages. This is obtained by counting FROM instructions in the
+# parse tree, so we can use it for error checking.
 image_ct = None
 
 
@@ -112,10 +107,6 @@ def main(cli_):
    if (os.path.exists(cli.context + "/.dockerignore")):
       ch.WARNING("not yet supported, ignored: issue #777: .dockerignore file")
 
-   # Set up build environment.
-   global env
-   env = Environment()
-
    # Read input file.
    if (cli.file == "-" or cli.context == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
@@ -178,7 +169,7 @@ def main(cli_):
    # Print summary & we're done.
    if (ml.instruction_total_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
-   assert (image_i + 1 == image_ct)  # should have errored already if not
+   assert (ml.inst_prev.image_i + 1 == image_ct)  # should’ve errored already
    if (cli.force and ml.miss_ct != 0):
       if (fakeroot_config.inject_ct == 0):
          assert (not fakeroot_config.init_done)
@@ -187,7 +178,7 @@ def main(cli_):
          ch.INFO("--force: init OK & modified %d RUN instructions"
                  % fakeroot_config.inject_ct)
    ch.INFO("grown in %d instructions: %s"
-           % (ml.instruction_total_ct, images[image_i]))
+           % (ml.instruction_total_ct, ml.inst_prev.image))
    # FIXME: remove when we're done encouraging people to use the build cache.
    if (isinstance(bu.cache, bu.Disabled_Cache)):
       ch.INFO("build slow? consider enabling the new build cache",
@@ -219,35 +210,41 @@ class Main_Loop(lark.Visitor):
                return
             else:
                ch.FATAL("first instruction must be ARG or FROM")
+         inst.init(self.inst_prev)
          try:
-            self.miss_ct = inst.prepare(self.inst_prev, self.miss_ct)
+            self.miss_ct = inst.prepare(self.miss_ct)
          except Instruction_Ignored:
             return
          if (inst.miss):
             if (self.miss_ct == 1):
-               inst.checkout_for_build(self.inst_prev)
+               inst.checkout_for_build()
             inst.execute()
-            if (image_i != -1):
-               inst.metadata_update(images[image_i])
+            if (inst.image_i >= 0):
+               inst.metadata_update()
             inst.commit()
          self.inst_prev = inst
-         self.instruction_total_ct += inst.execute_increment
+         self.instruction_total_ct += 1
 
 
 ## Instruction classes ##
 
 class Instruction(abc.ABC):
 
-   execute_increment = 1
-
    __slots__ = ("git_hash",     # Git commit where sid was found
+                "image",
+                "image_alias",
+                "image_i",
                 "lineno",
                 "options",      # consumed
                 "options_str",  # saved at instantiation
+                "parent",
                 "sid",
                 "tree")
 
    def __init__(self, tree):
+      """Note: When this is called, all we know about the instruction is
+         what's in the parse tree. In particular, you must not call
+         variables_sub() here."""
       self.lineno = tree.meta.line
       self.options = {}
       for st in ch.tree_children(tree, "option"):
@@ -260,16 +257,51 @@ class Instruction(abc.ABC):
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())
       self.tree = tree
+      # These are set in init().
+      self.image = None
+      self.parent = None
+      self.image_alias = None
+      self.image_i = None
 
-   def __str__(self):
-      options = self.options_str
-      if (options != ""):
-         options = " " + options
-      return "%s %s%s" % (self.str_name, options, self.str_)
+   @property
+   def env_arg(self):
+      if (self.image is None):
+         assert False, "unimplemented"  # return dict()
+      else:
+         return self.image.metadata["arg"]
+
+   @property
+   def env_build(self):
+      return { **self.env_arg, **self.env_env }
+
+   @property
+   def env_env(self):
+      if (self.image is None):
+         assert False, "unimplemented"  # return dict()
+      else:
+         return self.image.metadata["env"]
+
+   @property
+   def first_p(self):
+      """Return True if the first instruction, False otherwise. WARNING: Do
+         not just check that attribute “parent” is None, because some first
+         instructions do set their parent."""
+      return (self.parent is None or self.parent is self)
 
    @property
    def miss(self):
       return (self.git_hash is None)
+
+   @property
+   def shell(self):
+      if (self.image is None):
+         assert False, "unimplemented"  # return ["/bin/false"]
+      else:
+         return self.image.metadata["shell"]
+
+   @shell.setter
+   def shell(self, x):
+      self.image.metadata["shell"] = x
 
    @property
    def sid_input(self):
@@ -288,23 +320,41 @@ class Instruction(abc.ABC):
    def str_log(self):
       return ("%3s%s %s" % (self.lineno, bu.cache.status_char(self.miss), self))
 
-   def checkout(self, base_image=None):
-      bu.cache.checkout(images[image_i], self.git_hash, base_image)
+   @property
+   def workdir(self):
+      return ch.Path(self.image.metadata["cwd"])
 
-   def checkout_for_build(self, parent, base_image=None):
-      # Note messy globals.
-      parent.checkout(base_image)
-      images[image_i].metadata_load()
+   @workdir.setter
+   def workdir(self, x):
+      self.image.metadata["cwd"] = str(x)
+
+   def __str__(self):
+      options = self.options_str
+      if (options != ""):
+         options = " " + options
+      return "%s %s%s" % (self.str_name, options, self.str_)
+
+   def chdir(self, path):
+      if (path.startswith("/")):
+         self.workdir = ch.Path(path)
+      else:
+         self.workdir //= path
+
+   def checkout(self, base_image=None):
+      bu.cache.checkout(self.image, self.git_hash, base_image)
+
+   def checkout_for_build(self, base_image=None):
+      self.parent.checkout(base_image)
       global fakeroot_config
-      fakeroot_config = fakeroot.detect(images[image_i].unpack_path,
+      fakeroot_config = fakeroot.detect(self.image.unpack_path,
                                         cli.force, cli.no_force_detect)
 
    def commit(self):
-      path = images[image_i].unpack_path
+      path = self.image.unpack_path
       self.git_hash = bu.cache.commit(path, self.sid, str(self))
 
    def ready(self):
-      bu.cache.ready(images[image_i])
+      bu.cache.ready(self.image)
 
    def execute(self):
       """Do what the instruction says. At this point, the unpack directory is
@@ -315,11 +365,28 @@ class Instruction(abc.ABC):
       ch.INFO(self.str_log)
       raise Instruction_Ignored()
 
-   def metadata_update(self, img):
-      img.metadata["history"].append(
+   def init(self, parent):
+      """Initialize attributes defining this instruction's context, much of
+         which is not available until the previous instruction is processed.
+         After this is called, the instruction has a valid image and parent
+         instruction, unless it's the first instruction, in which case
+         prepare() does the initialization."""
+      # Separate from prepare() because subclasses shouldn't need to override
+      # it. If a subclass doesn't like the result, it can just change things
+      # in prepare().
+      self.parent = parent
+      if (self.parent is None):
+         self.image_i = -1
+      else:
+         self.image = self.parent.image
+         self.image_alias = self.parent.image_alias
+         self.image_i = self.parent.image_i
+
+   def metadata_update(self):
+      self.image.metadata["history"].append(
          { "created": ch.now_utc_iso8601(),
            "created_by": "%s %s" % (self.str_name, self.str_)})
-      img.metadata_save()
+      self.image.metadata_save()
 
    def options_assert_empty(self):
       try:
@@ -328,7 +395,7 @@ class Instruction(abc.ABC):
       except StopIteration:
          pass
 
-   def prepare(self, parent, miss_ct):
+   def prepare(self, miss_ct):
       """Set up for execution; parent is the parent instruction and miss_ct is
          the number of misses in this stage so far. Returns the new number of
          misses; usually miss_ct if this instruction hit or miss_ct + 1 if it
@@ -337,9 +404,13 @@ class Instruction(abc.ABC):
          doing anything complicated or time-consuming.
 
          Typically, subclasses will set up enough state for self.sid_input to
-         be valid, then call super().prepare()."""
-      self.sid = bu.cache.sid_from_parent(parent.sid, self.sid_input)
-      self.git_hash = bu.cache.find_sid(self.sid, images[image_i].ref.for_path)
+         be valid, then call super().prepare().
+
+         WARNING: Instructions that modify image metadata (at this writing,
+         ARG ENV FROM SHELL WORKDIR) must do so here, not in execute(), so
+         that metadata is available to late instructions even on cache hit."""
+      self.sid = bu.cache.sid_from_parent(self.parent.sid, self.sid_input)
+      self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
       ch.INFO(self.str_log)
       return miss_ct + int(self.miss)
 
@@ -356,12 +427,13 @@ class Instruction(abc.ABC):
 
 
 class Instruction_Ignored(Exception):
+   __slots__ = ()
    pass
 
 
 class Instruction_Unsupported(Instruction):
 
-   execute_increment = 0
+   __slots__ = ()
 
    @property
    def str_(self):
@@ -374,12 +446,17 @@ class Instruction_Unsupported(Instruction):
 
 class Instruction_Supported_Never(Instruction_Unsupported):
 
+   __slots__ = ()
+
    def prepare(self, *args):
       self.unsupported_forever_warn("instruction")
       self.ignore()
 
 
 class Arg(Instruction):
+
+   __slots__ = ("key",
+                "value")
 
    def __init__(self, *args):
       super().__init__(*args)
@@ -389,8 +466,6 @@ class Arg(Instruction):
          del cli.build_arg[self.key]
       else:
          self.value = self.value_default()
-      if (self.value is not None):
-         self.value = variables_sub(self.value, env.env_build)
 
    @property
    def sid_input(self):
@@ -408,15 +483,16 @@ class Arg(Instruction):
          s += " [special]"
       return s
 
-   def execute(self):
+   def prepare(self, *args):
       if (self.value is not None):
-         env.arg[self.key] = self.value
+         self.value = variables_sub(self.value, self.env_build)
+         self.env_arg[self.key] = self.value
+      return super().prepare(*args)
 
 
 class I_arg_bare(Arg):
 
-   def __init__(self, *args):
-      super().__init__(*args)
+   __slots__ = ()
 
    def value_default(self):
       return None
@@ -424,8 +500,7 @@ class I_arg_bare(Arg):
 
 class I_arg_equals(Arg):
 
-   def __init__(self, *args):
-      super().__init__(*args)
+   __slots__ = ()
 
    def value_default(self):
       v = ch.tree_terminal(self.tree, "WORD", 1)
@@ -444,6 +519,7 @@ class I_copy(Instruction):
    # copy function. I don't want people calling it except from here.
 
    __slots__ = ("dst",
+                "dst_raw",
                 "from_",
                 "src_metadata",
                 "srcs",
@@ -457,21 +533,18 @@ class I_copy(Instruction):
             self.from_ = int(self.from_)
          except ValueError:
             pass
+      # No subclasses, so check what parse tree matched.
       if (ch.tree_child(self.tree, "copy_shell") is not None):
-         paths = [variables_sub(i, env.env_build)
-                  for i in ch.tree_child_terminals(self.tree, "copy_shell",
-                                                   "WORD")]
+         args = list(ch.tree_child_terminals(self.tree, "copy_shell", "WORD"))
       elif (ch.tree_child(self.tree, "copy_list") is not None):
-         paths = [variables_sub(i, env.env_build)
-                  for i in ch.tree_child_terminals(self.tree, "copy_list",
-                                                   "STRING_QUOTED")]
-         for i in range(len(paths)):
-            paths[i] = paths[i][1:-1] #strip quotes
+         args = list(ch.tree_child_terminals(self.tree, "copy_list",
+                                             "STRING_QUOTED"))
+         for i in range(len(args)):
+            args[i] = args[i][1:-1]  # strip quotes
       else:
          assert False, "unreachable code reached"
-
-      self.srcs_raw = paths[:-1]
-      self.dst = paths[-1]
+      self.srcs_raw = args[:-1]
+      self.dst_raw = args[-1]
 
    @property
    def sid_input(self):
@@ -601,11 +674,11 @@ class I_copy(Instruction):
 
    def execute(self):
       # Locate the destination.
-      unpack_canon = os.path.realpath(images[image_i].unpack_path)
+      unpack_canon = os.path.realpath(self.image.unpack_path)
       if (self.dst.startswith("/")):
          dst = ch.Path(self.dst)
       else:
-         dst = env.workdir // self.dst
+         dst = self.workdir // self.dst
       ch.VERBOSE("destination, as given: %s" % dst)
       dst_canon = self.dest_realpath(unpack_canon, dst) # strips trailing slash
       ch.VERBOSE("destination, canonical: %s" % dst_canon)
@@ -629,7 +702,7 @@ class I_copy(Instruction):
          else:
             ch.FATAL("can't COPY: unknown file type: %s" % src)
 
-   def prepare(self, parent, miss_ct):
+   def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
          st = ch.stat_(path, links=links)
          return path.encode("UTF-8") + struct.pack("=HQQQ",
@@ -651,7 +724,7 @@ class I_copy(Instruction):
       if (self.from_ is None):
          context = cli.context
       else:
-         if (self.from_ == image_i or self.from_ == image_alias):
+         if (self.from_ == self.image_i or self.from_ == self.image_alias):
             ch.FATAL("COPY --from: stage %s is the current stage" % self.from_)
          if (not self.from_ in images):
             # FIXME: Would be nice to also report if a named stage is below.
@@ -667,15 +740,17 @@ class I_copy(Instruction):
          context = images[self.from_].unpack_path
       context_canon = os.path.realpath(context)
       ch.VERBOSE("context: %s" % context)
-      # Expand source wildcards.
+      # Expand sources.
       self.srcs = list()
-      for src in self.srcs_raw:
+      for src in [variables_sub(i, self.env_build) for i in self.srcs_raw]:
          matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
          if (len(matches) == 0):
             ch.FATAL("can't copy: not found: %s" % src)
          for i in matches:
             self.srcs.append(i)
             ch.VERBOSE("source: %s" % i)
+      # Expand destination.
+      self.dst = variables_sub(self.dst_raw, self.env_build)
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
       for src in self.srcs:
@@ -695,13 +770,12 @@ class I_copy(Instruction):
                   self.src_metadata += stat_bytes(os.path.join(dir_, f))
                dirs.sort()
       # Pass on to superclass.
-      return super().prepare(parent, miss_ct)
+      return super().prepare(miss_ct)
 
 
 class I_directive(Instruction_Supported_Never):
 
-   def __init__(self, *args):
-      super().__init__(*args)
+   __slots__ = ()
 
    @property
    def str_name(self):
@@ -714,39 +788,45 @@ class I_directive(Instruction_Supported_Never):
 
 class Env(Instruction):
 
-   def __init__(self, *args):
-      super().__init__(*args)
+   __slots__ = ("key",
+                "value")
 
    @property
    def str_(self):
       return "%s='%s'" % (self.key, self.value)
 
    def execute(self):
-      env.env[self.key] = self.value
-      with ch.open_(images[image_i].unpack_path // "/ch/environment", "wt") \
+      with ch.open_(self.image.unpack_path // "/ch/environment", "wt") \
            as fp:
-         for (k, v) in env.env.items():
+         for (k, v) in self.env_env.items():
             print("%s=%s" % (k, v), file=fp)
+
+   def prepare(self, *args):
+      self.value = variables_sub(unescape(self.value), self.env_build)
+      self.env_env[self.key] = self.value
+      return super().prepare(*args)
 
 
 class I_env_equals(Env):
 
+   __slots__ = ()
+
    def __init__(self, *args):
       super().__init__(*args)
       self.key = ch.tree_terminal(self.tree, "WORD", 0)
-      v = ch.tree_terminal(self.tree, "WORD", 1)
-      if (v is None):
-         v = ch.tree_terminal(self.tree, "STRING_QUOTED")
-      self.value = variables_sub(unescape(v), env.env_build)
+      self.value = ch.tree_terminal(self.tree, "WORD", 1)
+      if (self.value is None):
+         self.value = ch.tree_terminal(self.tree, "STRING_QUOTED")
 
 
 class I_env_space(Env):
 
+   __slots__ = ()
+
    def __init__(self, *args):
       super().__init__(*args)
       self.key = ch.tree_terminal(self.tree, "WORD")
-      v = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
-      self.value = variables_sub(unescape(v), env.env_build)
+      self.value = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
 
 
 class I_from_(Instruction):
@@ -769,58 +849,57 @@ class I_from_(Instruction):
       alias = " AS %s" % self.alias if self.alias else ""
       return "%s%s" % (self.base_image.ref, alias)
 
-   def checkout_for_build(self, parent):
-      # FROM doesn’t have a meaningful parent because it’s opening a new
-      # stage, so check out me instead.
+   def checkout_for_build(self):
       assert (isinstance(bu.cache, bu.Disabled_Cache))
-      super().checkout_for_build(self, base_image=self.base_image)
+      super().checkout_for_build(self.base_image)
 
-   def metadata_update(self, img):
+   def metadata_update(self, *args):
       # FROM doesn’t update metadata because it never misses when the cache is
       # enabled, so this would never be called, and we want disabled results
       # to be the same. In particular, FROM does not generate history entries.
       pass
 
-   def prepare(self, parent, miss_ct):
+   def prepare(self, miss_ct):
       # FROM is special because its preparation involves opening a new stage
       # and closing the previous if there was one. Because of this, the actual
-      # parent is the base image.
+      # parent is the last instruction of the base image.
       #
       # Validate instruction.
       if (self.options.pop("platform", False)):
          self.unsupported_yet_fatal("--platform", 778)
       self.options_assert_empty()
-      # Close previous stage if needed.
-      if (parent is not None and miss_ct == 0):
-         # While there haven't been any misses so far, we do need to check out
-         # the previous stage in case there's a COPY later. This will still be
-         # fast most of the time since the correct branch is likely to be
-         # checked out already.
-         parent.checkout()
-         parent.ready()
-      # Update image globals.
-      global image_i
-      image_i += 1
-      global image_alias
-      image_alias = self.alias
-      if (image_i == image_ct - 1):
+      # Update context.
+      self.image_i += 1
+      self.image_alias = self.alias
+      if (self.image_i == image_ct - 1):
          # Last image; use tag unchanged.
          tag = cli.tag
-      elif (image_i > image_ct - 1):
+      elif (self.image_i > image_ct - 1):
          # Too many images!
          ch.FATAL("expected %d stages but found at least %d"
-                  % (image_ct, image_i + 1))
+                  % (image_ct, self.image_i + 1))
       else:
          # Not last image; append stage index to tag.
-         tag = "%s/_stage%d" % (cli.tag, image_i)
-      image = ch.Image(ch.Image_Ref(tag))
-      images[image_i] = image
-      if (self.alias is not None):
-         images[self.alias] = image
-      ch.VERBOSE("image path: %s" % image.unpack_path)
+         tag = "%s/_stage%d" % (cli.tag, self.image_i)
+      self.image = ch.Image(ch.Image_Ref(tag))
+      images[self.image_i] = self.image
+      if (self.image_alias is not None):
+         images[self.image_alias] = self.image
+      ch.VERBOSE("image path: %s" % self.image.unpack_path)
+      # FROM doesn’t have a meaningful parent because it’s opening a new
+      # stage, so act as own parent.
+      self.parent = self
       # More error checking.
-      if (str(image.ref) == str(self.base_image.ref)):
+      if (str(self.image.ref) == str(self.base_image.ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_image.ref)
+      # Close previous stage if needed.
+      if (not self.first_p and miss_ct == 0):
+         # While there haven't been any misses so far, we do need to check out
+         # the previous stage (a) to read its metadata and (b) in case there's
+         # a COPY later. This will still be fast most of the time since the
+         # correct branch is likely to be checked out already.
+         self.parent.checkout()
+         self.parent.ready()
       # Pull base image if needed.
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
       unpack_no_git = (    self.base_image.unpack_exist_p
@@ -837,6 +916,8 @@ class I_from_(Instruction):
             (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image)
       elif (unpack_no_git):
          ch.WARNING("base image also exists non-cached; using cache")
+      # Load metadata
+      self.image.metadata_load(self.base_image)
       # Done.
       return int(self.miss)  # will still miss in disabled mode
 
@@ -847,12 +928,11 @@ class I_from_(Instruction):
 
 class Run(Instruction):
 
-   def __init__(self, *args):
-      super().__init__(*args)
+   __slots__ = ("cmd")
 
    # FIXME: This causes spurious misses because it adds the force bit to *all*
-   # RUN instructions, not just those that actually were modified (i.e, *all*
-   # RUN instructions will miss the equivalent RUN with --force inverted). But
+   # RUN instructions, not just those that actually were modified (i.e, any
+   # RUN instruction will miss the equivalent RUN with --force inverted). But
    # we don't know know if an instruction needs modifications until the result
    # is checked out, which happens after we check the cache. See issue #FIXME.
    @property
@@ -860,10 +940,10 @@ class Run(Instruction):
       return super().str_name + (".F" if cli.force else "")
 
    def execute(self):
-      rootfs = images[image_i].unpack_path
-      fakeroot_config.init_maybe(rootfs, self.cmd, env.env_build)
+      rootfs = self.image.unpack_path
+      fakeroot_config.init_maybe(rootfs, self.cmd, self.env_build)
       cmd = fakeroot_config.inject_run(self.cmd)
-      exit_code = ch.ch_run_modify(rootfs, cmd, env.env_build, env.workdir,
+      exit_code = ch.ch_run_modify(rootfs, cmd, self.env_build, self.workdir,
                                    cli.bind, fail_ok=True)
       if (exit_code != 0):
          msg = "build failed: RUN command exited with %d" % exit_code
@@ -882,14 +962,16 @@ class Run(Instruction):
 
 class I_run_exec(Run):
 
-   def __init__(self, *args):
-      super().__init__(*args)
-      self.cmd = [    variables_sub(unescape(i), env.env_build)
-                  for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
+   __slots__ = ()
 
    @property
    def str_(self):
       return json.dumps(self.cmd)  # double quotes, shlex.quote is less verbose
+
+   def prepare(self, *args):
+      self.cmd = [    variables_sub(unescape(i), self.env_build)
+                  for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
+      return super().prepare(*args)
 
 
 class I_run_shell(Run):
@@ -898,49 +980,52 @@ class I_run_shell(Run):
    # backslash is passed verbatim to the shell, while the newline and any
    # whitespace between the newline and baskslash are deleted.
 
-   def __init__(self, *args):
-      super().__init__(*args)
-      cmd = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
-      self.cmd = env.shell + [cmd]
-      self._str_ = cmd
+   __slots__ = ("_str_")
 
    @property
    def str_(self):
       return self._str_  # can't replace abstract property with attribute
 
+   def prepare(self, *args):
+      cmd = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
+      self.cmd = self.shell + [cmd]
+      self._str_ = cmd
+      return super().prepare(*args)
+
 
 class I_shell(Instruction):
-
-   def __init__(self, *args):
-      super().__init__(*args)
-      self.shell = [variables_sub(unescape(i), env.env_build)
-                    for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
 
    @property
    def str_(self):
       return str(self.shell)
 
-   def execute(self):
-      env.shell = list(self.shell)  # copy
+   def prepare(self, *args):
+      self.shell = [variables_sub(unescape(i), self.env_build)
+                    for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
+      return super().prepare(*args)
 
 
 class I_workdir(Instruction):
 
-   def __init__(self, *args):
-      super().__init__(*args)
-      self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
-                                env.env_build)
+   __slots__ = ("path")
 
    @property
    def str_(self):
       return self.path
 
    def execute(self):
-      env.chdir(self.path)
-      ch.mkdirs(images[image_i].unpack_path // env.workdir)
+      ch.mkdirs(self.image.unpack_path // self.workdir)
+
+   def prepare(self, *args):
+      self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
+                                self.env_build)
+      self.chdir(self.path)
+      return super().prepare(*args)
 
 
 class I_uns_forever(Instruction_Supported_Never):
+
+   __slots__ = ("name")
 
    def __init__(self, *args):
       super().__init__(*args)
@@ -953,7 +1038,8 @@ class I_uns_forever(Instruction_Supported_Never):
 
 class I_uns_yet(Instruction_Unsupported):
 
-   execute_increment = 0
+   __slots__ = ("issue_no",
+                "name")
 
    def __init__(self, *args):
       super().__init__(*args)
@@ -979,50 +1065,22 @@ class Environment:
    """The state we are in: environment variables, working directory, etc. Most
       of this is just passed through from the image metadata."""
 
-   __slots__ = tuple()
-
-   @property
-   def arg(self):
-      if (image_i == -1):
-         return dict()
-      else:
-         return images[image_i].metadata["arg"]
-
-   @property
-   def env(self):
-      if (image_i == -1):
-         return dict()
-      else:
-         return images[image_i].metadata["env"]
-
-   @property
-   def env_build(self):
-      return { **self.arg, **self.env }
-
-   @property
-   def shell(self):
-      if (image_i == -1):
-         return ["/bin/false"]
-      else:
-         return images[image_i].metadata["shell"]
-
-   @shell.setter
-   def shell(self, x):
-      images[image_i].metadata["shell"] = x
-
-   @property
-   def workdir(self):
-      return ch.Path(images[image_i].metadata["cwd"])
-
-   @workdir.setter
-   def workdir(self, x):
-      images[image_i].metadata["cwd"] = str(x)
-
-   def chdir(self, path):
-      if (path.startswith("/")):
-         self.workdir = ch.Path(path)
-      else:
-         self.workdir //= path
+   # FIXME:
+   # - problem:
+   #   1. COPY (at least) needs a valid build environment to figure out if it's
+   #      a hit or miss, which happens in prepare()
+   #   2. no files from the image are available in prepare(), so we can't read
+   #      image metadata then
+   #      - could get it from Git if needed, but that seems complicated
+   # - valid during prepare() and execute() but not __init__()
+   #   - in particular, don't variables_sub() in __init__()
+   # - instructions that update it need to change the env object in prepare()
+   #   - WORKDIR SHELL ARG ENV
+   #   - FROM
+   #     - global images and image_i makes this harder because we need to read
+   #       the metadata of image_i - 1
+   #       - solution: remove those two globals? instructions grow image and
+   #         image_i attributes?
 
 
 ## Supporting functions ###
