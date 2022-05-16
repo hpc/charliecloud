@@ -23,15 +23,15 @@ setup () {
 @test "${tag}: without destination reference" {
     # FIXME: This test sets up an alias tag manually so we can use it to push.
     # Remove when we have real aliasing support for images.
-    ln -vfns 00_tiny "$CH_IMAGE_STORAGE"/img/localhost:5000%00_tiny
+    ln -vfns 00_tiny "$CH_IMAGE_STORAGE"/img/localhost+5000%00_tiny
 
     run ch-image -v --tls-no-verify push localhost:5000/00_tiny
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pushing image:   localhost:5000/00_tiny'* ]]
-    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost:5000%00_tiny"* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost+5000%00_tiny"* ]]
 
-    rm "$CH_IMAGE_STORAGE"/img/localhost:5000%00_tiny
+    rm "$CH_IMAGE_STORAGE"/img/localhost+5000%00_tiny
 }
 
 @test "${tag}: with destination reference" {
@@ -86,9 +86,10 @@ EOF
     [[ $output = *'stripping unsafe setuid bit: ./setuid_file'* ]]
 
     # Pull it back
-    run ch-image -v --tls-no-verify pull localhost:5000/foo/bar:weirdal "$img2"
+    run ch-image -v --tls-no-verify pull localhost:5000/foo/bar:weirdal
     echo "$output"
     [[ $status -eq 0 ]]
+    img2=$CH_IMAGE_STORAGE/img/localhost+5000%foo%bar+weirdal
     ls -l "$img2"
     [[ $(stat -c '%A' "$img2"/setuid_file) = -rw-r----- ]]
     [[ $(stat -c '%A' "$img2"/setgid_file) = -rw-r----- ]]
@@ -117,7 +118,8 @@ ENV weird="al yankovic"
 EOF
 
     ch-image push --tls-no-verify tmpimg localhost:5000/tmpimg
-    ch-image pull --tls-no-verify localhost:5000/tmpimg "$BATS_TMPDIR"/tmpimg
+    ch-image pull --tls-no-verify localhost:5000/tmpimg
+    ch-convert localhost:5000/tmpimg "$BATS_TMPDIR"/tmpimg
 
     run ch-run "$BATS_TMPDIR"/tmpimg --unset-env='*' --set-env -- env
     echo "$output"
