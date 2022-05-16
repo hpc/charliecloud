@@ -2207,13 +2207,11 @@ def file_size(path, follow_symlinks=False):
                path, follow_symlinks=follow_symlinks)
    return st.st_size
 
-def file_write(path, content, mode=None):
+def file_write(path, content):
    if (isinstance(content, str)):
       content = content.encode("UTF-8")
    fp = open_(path, "wb")
    ossafe(fp.write, "can't write: %s" % path, content)
-   if (mode is not None):
-      ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
    close_(fp)
 
 def grep_p(path, rx):

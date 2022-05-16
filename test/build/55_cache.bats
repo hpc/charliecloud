@@ -390,9 +390,11 @@ EOF
     [[ $status -eq 0 ]]
     blessed_out=$(cat << 'EOF'
 *  (force) WORKDIR /usr
-*  RUN.F yum install -y ed  # doesn’t need --force
+*  RUN.F yum install -y ed         # doesn't need --force
+*  RUN.F rm -f /var/lib/rpm/__db*  # work around RPM BDB bug
 | *  WORKDIR /usr
-| *  RUN yum install -y ed  # doesn’t need --force
+| *  RUN yum install -y ed         # doesn't need --force
+| *  RUN rm -f /var/lib/rpm/__db*  # work around RPM BDB bug
 |/
 *  WORKDIR /
 *  (centos+7) PULL centos:7
@@ -409,9 +411,11 @@ EOF
     [[ $status -eq 0 ]]
     blessed_out=$(cat << 'EOF'
 *  WORKDIR /usr
-*  RUN.F yum install -y ed  # doesn’t need --force
+*  RUN.F yum install -y ed         # doesn't need --force
+*  RUN.F rm -f /var/lib/rpm/__db*  # work around RPM BDB bug
 | *  (force) WORKDIR /usr
-| *  RUN yum install -y ed  # doesn’t need --force
+| *  RUN yum install -y ed         # doesn't need --force
+| *  RUN rm -f /var/lib/rpm/__db*  # work around RPM BDB bug
 |/
 *  WORKDIR /
 *  (centos+7) PULL centos:7
@@ -688,18 +692,6 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'* FROM'* ]]
     [[ $output = *'* COPY'* ]]
-}
-
-
-@test "${tag}: ENV in rebuild mode" {
-    ch-image build-cache --reset
-
-    ch-image pull alpine:3.9
-    ch-image build --bucache=rebuild -t foo - <<'EOF'
-FROM alpine:3.9
-ENV foo=bar
-EOF
-false
 }
 
 

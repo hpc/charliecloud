@@ -361,6 +361,19 @@ class Enabled_Cache:
       # is internally recursive, it must be used iteratively.
       fm = File_Metadata(name, st)
       path = name if parent is None else "%s/%s" % (parent, name)
+      # Ensure minimum permissions. Some tools like to make files with mode
+      # 000, because root ignores the permissions bits. Only do this for
+      # non-symlinks, because we don't want to follow symlinks and
+      # follow_symlinks=False (or os.lchmod) is not supported on some (all?)
+      # Linux. (Also, symlink permissions are ignored on Linux, so it doesn't
+      # matter anyway.)
+      mode_min = 0o500 if stat.S_ISDIR(st.st_mode) else 0o400
+      if (not stat.S_ISLNK(st.st_mode) and st.st_mode & mode_min != mode_min):
+         mode = stat.S_IMODE(st.st_mode) | mode_min
+         ch.VERBOSE("fixing permissions: %s: 0%03o -> 0%03o"
+                    % (path, stat.S_IMODE(st.st_mode), mode))
+         ch.ossafe(os.chmod, "can't chmod 0%03o: %s" % (mode, path),
+                   name, mode)
       # Validate file type and recurse if necessary.
       if   (   stat.S_ISREG(st.st_mode)
             or stat.S_ISLNK(st.st_mode)

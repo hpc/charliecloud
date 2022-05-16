@@ -329,6 +329,9 @@ load ../common
 
 setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+    # FIXME: Would be good to test with build cache enabled, but there are
+    # lots of assumptions about output that are not valid in that case.
+    [[ $CH_IMAGE_BUCACHE = disabled ]] || skip 'bucache disabled only'
 }
 """)
 
