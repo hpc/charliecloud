@@ -80,20 +80,22 @@ Common options placed before the sub-command:
         transparently.
 
   :code:`--bucache`
-     Set the build cache mode: :code:`enabled`, :code:`disabled`, or
-     :code:`rebuild`, which writes the cache for all operations but reads only
-     :code:`FROM` instructions. See section "Build cache" below for details,
-     including the default.
+    Set the build cache mode: :code:`enabled`, :code:`disabled`, or
+    :code:`rebuild`, which writes the cache for all operations but reads only
+    :code:`FROM` instructions. See section "Build cache" below for details,
+    including the default.
 
-  :code:`--download-cache`
-     Set the download cache mode: :code:`enabled` (default) or
-     :code:`write-only`, which adds new downloaded files to the cache but does
-     not re-use existing files. (:code:`ch-image` needs to read downloaded
-     files in order to work, which is why the download cache cannot be
-     disabled.)
+  :code:`--dlcache`
+    Set the download cache mode: :code:`enabled` (default) or
+    :code:`write-only`, which adds new downloaded files to the cache but does
+    not re-use existing files. (:code:`ch-image` needs to read downloaded
+    files to work, which is why the download cache cannot be disabled.)
 
   :code:`--no-cache`
-    Shorthand for :code:`--build-cache=rebuild --download-cache=write-only`
+    Shorthand for :code:`--bucache=disabled --dlcache=write-only`. *Note:* If
+    you simply want to re-execute a Dockerfile in its entirety, use
+    :code:`--bucache=rebuild` instead, as that will avoid re-caching the base
+    image specified in :code:`FROM`.
 
   :code:`--password-many`
     Re-prompt the user every time a registry password is needed.
@@ -212,8 +214,8 @@ instructions, but all other operations re-execute and re-cache their results.
 image.) The mode is selected with the :code:`--bucache` or :code:`--no-cache`
 options, or the :code:`CH_IMAGE_BUCACHE` environment variable.
 
-In 0.28, the default mode is :code:`disabled`. In 0.29, the default will be
-:code:`enabled` if an appropriate Git is installed, otherwise
+In 0.28, the default mode is :code:`disabled`. In 0.29, we expect the default
+to be :code:`enabled` if an appropriate Git is installed, otherwise
 :code:`disabled`.
 
 For example, suppose we have this Dockerfile::
@@ -229,7 +231,7 @@ On our first build, we get::
     1. FROM alpine:3.9
   [ ... pull chatter omitted ... ]
     2. RUN echo foo
-  checking out image from cache ...
+  copying image ...
   foo
     3. RUN echo bar
   bar
@@ -245,12 +247,12 @@ But on our second build, we get::
     1* FROM alpine:3.9
     2* RUN echo foo
     3* RUN echo bar
-  checking out image from cache ...
+  copying image ...
   grown in 3 instructions: foo
 
 Here, instead of being executed, each instruction's results were retrieved
 from cache. (In fact, Charliecloud uses a lazy retrieval, so nothing was
-actually retrieved until the end, as seen by the "checking out" message.)
+actually retrieved until the end, as seen by the "copying image" message.)
 Cache hit for each instruction is indicated by a star after the line number.
 Even for such a small and short Dockerfile, this build is noticeably faster
 than the first.
@@ -266,7 +268,7 @@ three instructions are the same, but the third is different::
     1* FROM alpine:3.9
     2* RUN echo foo
     3. RUN echo qux
-  checking out image from cache ...
+  copying image ...
   qux
   grown in 3 instructions: c
 
@@ -289,11 +291,12 @@ We can also inspect the cache::
   files:          317
   disk used:        3 MiB
 
-Here there are four named images: :code:`a` and :code:`c` that we build, the
+Here there are four named images: :code:`a` and :code:`c` that we built, the
 base image :code:`alpine:3.9` (written as :code:`alpine+3.9` because colon is
 not allowed in Git branch names), and the empty base of everything
 :code:`root`. Also note how :code:`a` and :code:`c` diverge after the last
 common instruction :code:`RUN echo foo`.
+
 
 :code:`build`
 =============
@@ -1018,3 +1021,4 @@ Environment variables
 
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH Aimage bucache buc bigfile df
+..  LocalWords:  dlcache
