@@ -144,11 +144,25 @@ jobs:
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
-          # Configure Git for build cache.
-          command -v git
-          git --version
-          git config --global user.name 'Judit Polgár'
-          git config --global user.email judit@example.com
+          # Configure Git and friends for build cache.
+          if [[ $CH_IMAGE_BUCACHE = enabled ]]; then
+              # Git
+              command -v git
+              git --version
+              git config --global user.name 'Judit Polgár'
+              git config --global user.email judit@example.com
+              # Graphviz
+              sudo apt-get install -y graphviz
+              dot -V
+              # git2dot
+              sudo sh -c 'umask 0022 && pip install python-dateutil'
+              git clone https://github.com/jlinoff/git2dot.git
+              cd ./git2dot
+              git checkout $(git tag | sort -Vr | head -1)
+              sudo cp -a git2dot.py /usr/local/bin
+              command -v git2dot.py
+              git2dot.py --version
+          fi
 
       - name: install libsquashfuse
         if: ${{ matrix.pack_fmt == 'squash-mount' }}
