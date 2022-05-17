@@ -172,7 +172,7 @@ class Enabled_Cache:
    root_id =   State_ID.from_text("4A6F:73C3:A9204361:7061626C:616E6361")
    import_id = State_ID.from_text("5061:756C:204D6F72:70687900:00000000")
 
-   __Slots__ = ("bootstrap_ct")
+   __slots__ = ("bootstrap_ct")
 
    def __init__(self):
       self.bootstrap_ct = 0
@@ -497,6 +497,11 @@ class Enabled_Cache:
                ch.INFO("updating build cache with newer image")
             else:
                ch.INFO("image found in build cache; updating pointer")
+               # Some versions of Git won't let us update a branch that's
+               # already checked out, so detach that worktree if it exists.
+               if (os.path.exists(img.unpack_exist_p)):
+                  ch.cmd_quiet(["git", "checkout", "--detach"],
+                               cwd=img.unpack_path)
                ch.cmd_quiet(["git", "branch", "-f", img.ref.for_path,
                              bu_git_hash], cwd=self.root)
                pullet.done()
@@ -670,6 +675,9 @@ class Rebuild_Cache(Enabled_Cache):
 
 
 class Disabled_Cache(Rebuild_Cache):
+
+   def __init__(self):
+      pass
 
    def checkout(self, image, git_hash, base_image):
       ch.INFO("copying image ...")

@@ -1588,6 +1588,10 @@ class Storage:
       return self.root // "lock"
 
    @property
+   def mount_point(self):
+      return self.root // "mnt"
+
+   @property
    def unpack_base(self):
       return self.root // "img"
 
@@ -1771,7 +1775,7 @@ class Storage:
             entries.remove(entry)
          except KeyError:
             FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
-      entries -= { i.name for i in (self.lockfile,) }
+      entries -= { i.name for i in (self.lockfile, self.mount_point) }
       if (len(entries) > 0):
          FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(i for i in sorted(entries))))
@@ -2038,7 +2042,8 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       # [1]: https://devdocs.io/bash/exit-status#Exit-Status
       cp = subprocess.CompletedProcess(argv, 127)
    if (not fail_ok and cp.returncode != 0):
-      FATAL("command failed with code %d: %s" % (cp.returncode, argv[0]))
+      FATAL("command failed with code %d: %s"
+            % (cp.returncode, argv_to_string(argv)))
    return cp
 
 def cmd_stdout(argv, **kwargs):
