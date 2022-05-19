@@ -326,7 +326,7 @@ EOF
     run ch-image pull alpine:3.9
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output == *"updating build cache with newer image"* ]]
+    [[ $output == *"pulled image: adding to build cache"* ]]
 }
 
 
@@ -754,18 +754,16 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pulling image:    alpine:3.9'* ]]
-    [[ $output != *'image found in build cache; no action needed'* ]]   # C2
-    [[ $output != *'image found in build cache; updating pointers'* ]]  # C3
-    [[ $output != *'updating build cache with newer image'* ]]          # C4
+    [[ $output  = *'pulled image: adding to build cache'* ]]  # C1, C4
+    [[ $output != *'pulled image: found in build cache'* ]]   # C2, C3
 
     printf '\n*** Case 2: In build cache, up to date\n\n'
     run ch-image pull alpine:3.9
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pulling image:    alpine:3.9'* ]]
-    [[ $output = *'image found in build cache; no action needed'* ]]    # C2
-    [[ $output != *'image found in build cache; updating pointers'* ]]  # C3
-    [[ $output != *'updating build cache with newer image'* ]]          # C4
+    [[ $output != *'pulled image: adding to build cache'* ]]  # C1, C4
+    [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
 
     printf '\n*** Case 3: In build cache, not UTD, UTD commit present\n\n'
     printf 'FROM alpine:3.9\n' | ch-image build -t foo -
@@ -785,9 +783,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pulling image:    alpine:3.9'* ]]
-    [[ $output != *'build cache is up to date; no action needed'* ]]    # C2
-    [[ $output = *'image found in build cache; updating pointer'* ]]    # C3
-    [[ $output != *'updating build cache with newer image'* ]]          # C4
+    [[ $output != *'pulled image: adding to build cache'* ]]  # C1, C4
+    [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
 *  (foo, alpine+3.9) PULL alpine:3.9
@@ -816,9 +813,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pulling image:    alpine:3.10'* ]]
-    [[ $output != *'build cache is up to date; no action needed'* ]]    # C2
-    [[ $output != *'image found in build cache; updating pointer'* ]]   # C3
-    [[ $output = *'updating build cache with newer image'* ]]           # C4
+    [[ $output  = *'pulled image: adding to build cache'* ]]  # C1, C4
+    [[ $output != *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.10) PULL alpine:3.10
 | *  RUN echo foo
@@ -880,4 +876,21 @@ EOF
     commit_after=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
     echo "after: ${commit_after}"
     [[ $commit_before != "$commit_after" ]]
+}
+
+
+@test "${tag}: empty dir persistence" {
+    ch-image build-cache --reset
+    ch-image delete tmpimg || true
+
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.9
+RUN mkdir /foo && mkdir /foo/bar
+EOF
+    sleep 1
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.9
+RUN true        # miss
+RUN mkdir /foo  # should not collide with leftover /foo from above
+EOF
 }

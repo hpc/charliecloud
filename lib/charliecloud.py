@@ -1706,7 +1706,7 @@ class Storage:
             except OSError as x:
                FATAL("can't move: %s -> %s: %s"
                      % (x.filename, x.filename2, x.strerror))
-      ossafe(os.rmdir, "can't rmdir: %s" % old.root, old.root)
+      rmdir(old.root)
       if (not listdir(old.root.parent)):
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
@@ -2345,6 +2345,9 @@ def rename(name_old, name_new):
       FATAL("can't rename: destination exists: %s" % name_new)
    ossafe(os.rename, "can't rename: %s -> %s" % (name_old, name_new),
           name_old, name_new)
+
+def rmdir(path):
+   ossafe(os.rmdir, "can't rmdir: %s" % path, path)
 
 def rmtree(path):
    if (os.path.isdir(path)):

@@ -33,7 +33,7 @@ cv_chimage_dir () {
     # (2) it allows a progress meter (issue #1332). A very quick, very dirty,
     # completely half-assed performance test suggests that's about the same.
     mkdir "$2"
-    tar_ "$img" | tar xf - -C "$2"
+    tar_ "$img" | tar xf - -pC "$2"
     dir_fixup "$2"
 }
 
@@ -247,7 +247,7 @@ cv_tar_dir () {
     VERBOSE "exclude patterns: ${ex1} ${ex2} ${ex3}"
     #shellcheck disable=SC2094
       pv_ -s "$(stat -c%s "$1")" < "$1" \
-    | tar x"$(tar_decompress_arg "$1")" -p -C "$2" -f - \
+    | tar x"$(tar_decompress_arg "$1")" -pC "$2" -f - \
           --xform 's|^\./||x' --strip-components=$strip_ct \
           --anchored --no-wildcards-match-slash \
           --exclude="$ex1" --exclude="$ex2" --exclude="$ex3"

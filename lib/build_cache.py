@@ -5,6 +5,7 @@ import pickle
 import re
 import stat
 import tempfile
+import time
 
 import charliecloud as ch
 import pull
@@ -230,6 +231,7 @@ class Enabled_Cache:
                   % (x.filename, x.strerror))
 
    def checkout(self, image, git_hash, base_image):
+      # base_image used in other subclasses
       ch.INFO("copying image ...")
       self.worktree_add(image, git_hash)
       self.git_restore(image.unpack_path)
@@ -406,6 +408,11 @@ class Enabled_Cache:
             ch.TRACE("hard link: recording first: %d %d %s"
                      % (st.st_dev, st.st_ino, path))
             hardlinks[(st.st_dev, st.st_ino)] = path
+      # Remove empty directories. Git will ignore them, including leaving them
+      # there if switch the worktree to a different branch, which is bad.
+      if (fm.empty_dir_p):
+         ch.rmdir(fm.name)
+         return fm  # can't do anything else after it's gone
       # Rename if necessary.
       if (name.startswith(".weirdal_")):
          ch.WARNING("file starts with sentinel, will be renamed: %s" % name)
@@ -440,17 +447,17 @@ class Enabled_Cache:
       "Changes CWD but restores it."
       assert (parent is not None or fm.name == ".")
       path = fm.name if parent is None else "%s/%s" % (parent, fm.name)
-      # Restore self.
+      # Make sure I exist, and with the correct name.
       if (not quick):
          if (fm.name.startswith(".git")):
             # re-create with escaped name so renaming need not be conditional
             name = fm.name.replace(".git", ".weirdal_")
          else:
             name = fm.name
-         if (fm.empty_dir_p and not os.path.isdir(fm.name)):
-            ch.ossafe(os.mkdir, "can't mkdir: %s" % path, name)
-         elif (stat.S_ISFIFO(fm.mode) and not os.path.isfifo(fm.name)):
-            ch.ossafe(os.mkfifo, "can't make FIFO: %s" % path, name)
+      if (fm.empty_dir_p):
+         ch.ossafe(os.mkdir, "can't mkdir: %s" % path, fm.name)
+      if (not quick and stat.S_ISFIFO(fm.mode)):
+         ch.ossafe(os.mkfifo, "can't make FIFO: %s" % path, fm.name)
       if (fm.hardlink_to is not None and not os.path.exists(fm.name)):
          # This relies on prepare and restore having the same traversal order,
          # so the first (stored) link is always available by the time we get
@@ -464,51 +471,40 @@ class Enabled_Cache:
       if (not quick):
          if (stat.S_ISSOCK(fm.mode)):
             ch.WARNING("ignoring socket in image: %s" % path)
-      if (not quick or fm.hardlink_to is not None):
-         if (os.utime in os.supports_follow_symlinks):
-            ch.ossafe(os.utime, "can't restore times: %s" % path, fm.name,
-                      ns=(fm.atime_ns, fm.mtime_ns), follow_symlinks=False)
-         if (os.chmod in os.supports_follow_symlinks):
-            ch.ossafe(os.chmod, "can't restore mode: %s" % path, fm.name,
-                      stat.S_IMODE(fm.mode), follow_symlinks=False)
       # Recurse children.
       if (len(fm.children) > 0):
          cwd = ch.chdir(fm.name)  # works at top level b/c fm.name is "."
          for child in fm.children:
             self.git_restore_walk(root, path, child, quick)
          ch.chdir(cwd)
+      # Restore my metadata.
+      if ((   not quick                     # Git broke metadata
+           or fm.hardlink_to is not None    # we just made the hardlink
+           or stat.S_ISDIR(fm.mode))        # maybe just created / new hardlink
+          and not stat.S_ISLNK(fm.mode)):   # can't not follow symlinks
+         ch.ossafe(os.utime, "can't restore times: %s" % path, fm.name,
+                   ns=(fm.atime_ns, fm.mtime_ns))
+         #if (fm.name == "setuid_dir"):
+         #   print("restoring mode: %s 0o%05o" % (fm.name, fm.mode))
+         ch.ossafe(os.chmod, "can't restore mode: %s" % path, fm.name,
+                   stat.S_IMODE(fm.mode))
 
    def pull_eager(self, img, last_layer=None):
       """Pull image, always checking if the repository version is newer. This
          is the pull operation invoked from the command line."""
       pullet = pull.Image_Puller(img)
       pullet.download()  # will use dlcache if appropriate
-      (bu_sid, _) = self.find_image(img)
-      if (bu_sid is not None):
-         # The image is in the build cache, but possibly not up to date.
-         dl_sid = self.sid_from_parent(self.root_id, pullet.sid_input)
-         if (bu_sid == dl_sid):
-            ch.INFO("image found in build cache; no action needed")
-            pullet.done()
-            return
-         else:
-            bu_git_hash = self.find_sid(dl_sid, img.ref.for_path)
-            if (bu_git_hash is None):
-               ch.INFO("updating build cache with newer image")
-            else:
-               ch.INFO("image found in build cache; updating pointer")
-               # Some versions of Git won't let us update a branch that's
-               # already checked out, so detach that worktree if it exists.
-               if (os.path.exists(img.unpack_exist_p)):
-                  ch.cmd_quiet(["git", "checkout", "--detach"],
-                               cwd=img.unpack_path)
-               ch.cmd_quiet(["git", "branch", "-f", img.ref.for_path,
-                             bu_git_hash], cwd=self.root)
-               pullet.done()
-               return
-      # Image is either (a) in cache but stale, or (b) not in cache at all, so
-      # we need to unpack and commit what we just downloaded.
-      self.pull_lazy(img, last_layer, pullet)
+      dl_sid = self.sid_from_parent(self.root_id, pullet.sid_input)
+      dl_git_hash = self.find_sid(dl_sid, img.ref.for_path)
+      if (dl_git_hash is not None):
+         # Downloaded image is in cache, check it out.
+         ch.INFO("pulled image: found in build cache")
+         self.checkout(img, dl_git_hash, None)
+         self.ready(img)
+      else:
+         # Unpack and commit downloaded image. This also creates the worktree.
+         ch.INFO("pulled image: adding to build cache")
+         self.pull_lazy(img, last_layer, pullet)
 
    def pull_lazy(self, image, last_layer=None, pullet=None):
       """Pull image if it does not exist in the build cache, i.e., do not ask
@@ -655,8 +651,7 @@ class Enabled_Cache:
       self.worktree_add(image, base)
       for i in { ".git", ".gitignore" }:
          ch.rename(image.unpack_path // i, ch.storage.image_tmp // i)
-      ch.ossafe(os.rmdir, "can't rmdir(2): %s" % image.unpack_path,
-                image.unpack_path)
+      ch.rmdir(image.unpack_path)
       ch.rename(ch.storage.image_tmp, image.unpack_path)
 
    def worktree_get_head(self, image):

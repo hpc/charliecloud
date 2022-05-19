@@ -86,10 +86,8 @@ EOF
     [[ $output = *'stripping unsafe setuid bit: ./setuid_file'* ]]
 
     # Pull it back
-    run ch-image -v --tls-no-verify pull localhost:5000/foo/bar:weirdal
-    echo "$output"
-    [[ $status -eq 0 ]]
-    img2=$CH_IMAGE_STORAGE/img/localhost+5000%foo%bar+weirdal
+    ch-image -v --tls-no-verify pull localhost:5000/foo/bar:weirdal
+    ch-convert localhost:5000/foo/bar:weirdal "$img2"
     ls -l "$img2"
     [[ $(stat -c '%A' "$img2"/setuid_file) = -rw-r----- ]]
     [[ $(stat -c '%A' "$img2"/setgid_file) = -rw-r----- ]]
