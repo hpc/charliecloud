@@ -587,8 +587,8 @@ class Enabled_Cache:
       # Note the percent codes are interpreted by Git.
       # See: https://git-scm.com/docs/git-log#_pretty_formats
       if (ch.verbose == 0):
-         # ref names, subject (instruction)
-         fmt = "%C(auto)%d %Creset%s"
+         # ref names, subject (instruction);
+         fmt = "%C(auto)%d %Creset%<(50,trunc)%s"
       else:
          # ref names, short commit hash, subject (instruction), body (state ID)
          # FIXME: The body contains a trailing newline I can't figure out how
