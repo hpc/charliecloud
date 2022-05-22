@@ -96,7 +96,7 @@ def main():
            "help": "print any missing dependencies and exit" }],
        [ ["--no-cache"],
          { "action": "store_true",
-           "help": "shorthand for --bucache=rebuild --dlcache=write-only" }],
+           "help": "shorthand for --bucache=disabled --dlcache=write-only" }],
        [ ["--password-many"],
          { "action": "store_true",
            "help": "re-prompt each time a registry password is needed" }],

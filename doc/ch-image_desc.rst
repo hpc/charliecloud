@@ -92,9 +92,9 @@ Common options placed before the sub-command:
     files to work, which is why the download cache cannot be disabled.)
 
   :code:`--no-cache`
-    Shorthand for :code:`--bucache=disabled --dlcache=write-only`. *Note:* If
+    Shorthand for :code:`--bucache=rebuild --dlcache=write-only`. *Note:* If
     you simply want to re-execute a Dockerfile in its entirety, use
-    :code:`--bucache=rebuild` instead, as that will avoid re-caching the base
+    :code:`--bucache=rebuild` instead, as this will re-cache the base
     image specified in :code:`FROM`.
 
   :code:`--password-many`
@@ -251,11 +251,11 @@ But on our second build, we get::
   grown in 3 instructions: foo
 
 Here, instead of being executed, each instruction's results were retrieved
-from cache. (In fact, Charliecloud uses a lazy retrieval, so nothing was
+from cache. (Charliecloud uses an indolent retrieval; nothing is
 actually retrieved until the end, as seen by the "copying image" message.)
-Cache hit for each instruction is indicated by a star after the line number.
-Even for such a small and short Dockerfile, this build is noticeably faster
-than the first.
+Cache hit for each instruction is indicated by an asterisk :code:`*` after the
+line number. Even for such a small and short Dockerfile, this build is
+noticeably faster than the first.
 
 We can also try a second, slightly different Dockerfile. Note that the first
 three instructions are the same, but the third is different::
@@ -694,7 +694,9 @@ this order.
 
   :code:`--dot`
     Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
-    rendering :code:`./build-cache.pdf`. FIXME required tools
+    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` version
+    :code:`2.30.1` or higher and :code:`git2dot` version :code:`2.28.1` or
+    higher.
 
 :code:`delete`
 ==============
