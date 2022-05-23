@@ -92,9 +92,9 @@ Common options placed before the sub-command:
     files to work, which is why the download cache cannot be disabled.)
 
   :code:`--no-cache`
-    Shorthand for :code:`--bucache=rebuild --dlcache=write-only`. *Note:* If
+    Shorthand for :code:`--bucache=disabled --dlcache=write-only`. *Note:* If
     you simply want to re-execute a Dockerfile in its entirety, use
-    :code:`--bucache=rebuild` instead, as this will re-cache the base
+    :code:`--bucache=rebuild` instead, as that will avoid re-caching the base
     image specified in :code:`FROM`.
 
   :code:`--password-many`
