@@ -251,11 +251,11 @@ But on our second build, we get::
   grown in 3 instructions: foo
 
 Here, instead of being executed, each instruction's results were retrieved
-from cache. (Charliecloud uses an indolent retrieval; nothing is
-actually retrieved until the end, as seen by the "copying image" message.)
-Cache hit for each instruction is indicated by an asterisk :code:`*` after the
-line number. Even for such a small and short Dockerfile, this build is
-noticeably faster than the first.
+from cache. (Charliecloud uses lazy retrieval; nothing is actually retrieved
+until the end, as seen by the "copying image" message.) Cache hit for each
+instruction is indicated by an asterisk (:code:`*`) after the line number.
+Even for such a small and short Dockerfile, this build is noticeably faster
+than the first.
 
 We can also try a second, slightly different Dockerfile. Note that the first
 three instructions are the same, but the third is different::
@@ -694,9 +694,8 @@ this order.
 
   :code:`--dot`
     Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
-    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` version
-    :code:`2.30.1` or higher and :code:`git2dot` version :code:`2.28.1` or
-    higher.
+    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` and
+    :code:`git2dot`.
 
 :code:`delete`
 ==============
@@ -1023,4 +1022,4 @@ Environment variables
 
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH Aimage bucache buc bigfile df
-..  LocalWords:  dlcache
+..  LocalWords:  dlcache graphviz

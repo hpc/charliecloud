@@ -1789,8 +1789,8 @@ class Storage:
       imgs_bad = set()
       for img in imgs:
          if (":" in img):  # bad char check b/c problem here is bad upgrade
-            FATAL("%s: invalid image directory name: %s" % (msg_prefix, img),
-                  hint="set a new storage directory or reset it.")
+            FATAL("%s: storage directory broken: bad image dir name: %s"
+                  % (msg_prefix, img), BUG_REPORT_PLZ)
 
    def version_read(self):
       if (os.path.isfile(self.version_file)):
