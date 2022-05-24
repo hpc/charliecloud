@@ -56,6 +56,7 @@ def build_cache(cli):
 def delete(cli):
    img = ch.Image(ch.Image_Ref(cli.image_ref))
    img.unpack_delete()
+   bu.cache.worktrees_prune()
 
 def gestalt_bucache(cli):
    bu.have_deps()

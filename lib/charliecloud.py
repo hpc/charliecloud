@@ -653,6 +653,11 @@ class Image:
          FATAL("%s image not found" % self.ref)
       if (self.deleteable):
          INFO("deleting image: %s" % self.ref)
+         chmod_min(self.unpack_path, 0o700)
+         for (dir_, subdirs, _) in os.walk(self.unpack_path):
+            # must fix as subdirs so we can traverse into them
+            for subdir in subdirs:
+               chmod_min(Path(dir_) // subdir, 0o700)
          rmtree(self.unpack_path)
       else:
          FATAL("storage directory seems broken: not an image: %s" % self.ref)
@@ -1998,6 +2003,22 @@ def chdir(path):
    old = ossafe(os.getcwd, "can't getcwd(2)")
    ossafe(os.chdir, "can't chdir: %s" % path, path)
    return Path(old)
+
+def chmod_min(path, mode, st=None):
+   """Set permissions on path so they are at least mode. For symlinks, do
+      nothing, because we don't want to follow symlinks and
+      follow_symlinks=False (or os.lchmod) is not supported on some (all?)
+      Linux. (Also, symlink permissions are ignored on Linux, so it doesn't
+      matter anyway.)"""
+   if (st is None):
+      st = os.lstat(path)
+   if (stat.S_ISLNK(st.st_mode)):
+      return
+   mode_old = stat.S_IMODE(st.st_mode)
+   if (mode & mode_old != mode):
+      mode |= mode_old
+      VERBOSE("fixing permisssions: %s: %03o -> %03o" % (path, mode_old, mode))
+      ossafe(os.chmod, "can't chmod: %s" % path, path, mode)
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
