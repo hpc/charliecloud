@@ -830,7 +830,7 @@ EOF
 }
 
 
-@test "${tag}: rebuild mode" {
+@test "${tag}: §3.6 rebuild" {
     ch-image build-cache --reset
 
     # Build. Mode should not matter here, but we use enabled because that's
@@ -856,7 +856,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    run ch-image build-cache --tree
+    run ch-image build-cache --tree --dot="${dot_base}rebuild"
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
