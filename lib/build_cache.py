@@ -702,3 +702,6 @@ class Disabled_Cache(Rebuild_Cache):
 
    def worktree_adopt(self, *args):
       pass
+
+   def worktrees_prune(self, *args):
+      pass
