@@ -76,6 +76,7 @@ conf-like
 Dockerfile
     filter remove_matches ^\s*#
     filter remove_inline #.*$
+    extension df
     filename Dockerfile
     filename Dockerfile.00_tiny
     filename Dockerfile.argenv
@@ -223,6 +224,7 @@ find ./.github ./examples ./test -type f -a \( \
         -name '*.bats' \
      -o -name '*.bats.in' \
      -o -name '*.c' \
+     -o -name '*.df' \
      -o -name '*.patch' \
      -o -name '*.py' \
      -o -name '*.py.in' \

@@ -6,13 +6,14 @@ Synopsis
 ::
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
+   $ ch-image [...] build-cache [...]
    $ ch-image [...] delete IMAGE_REF
+   $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [IMAGE_REF]
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
-   $ ch-image [...] storage-path
    $ ch-image { --help | --version | --dependencies }
 
 
@@ -21,8 +22,8 @@ Description
 
 :code:`ch-image` is a tool for building and manipulating container images, but
 not running them (for that you want :code:`ch-run`). It is completely
-unprivileged, with no setuid/setgid/setcap helpers. The action to take is
-specified by a sub-command.
+unprivileged, with no setuid/setgid/setcap helpers. Many operations can use
+caching for speed. The action to take is specified by a sub-command.
 
 Options that print brief information and then exit:
 
@@ -78,8 +79,23 @@ Common options placed before the sub-command:
         architecture as a simple string and converts to/from the registry view
         transparently.
 
+  :code:`--bucache`
+    Set the build cache mode: :code:`enabled`, :code:`disabled`, or
+    :code:`rebuild`, which writes the cache for all operations but reads only
+    :code:`FROM` instructions. See section "Build cache" below for details,
+    including the default.
+
+  :code:`--dlcache`
+    Set the download cache mode: :code:`enabled` (default) or
+    :code:`write-only`, which adds new downloaded files to the cache but does
+    not re-use existing files. (:code:`ch-image` needs to read downloaded
+    files to work, which is why the download cache cannot be disabled.)
+
   :code:`--no-cache`
-    Download everything needed, ignoring the cache.
+    Shorthand for :code:`--bucache=disabled --dlcache=write-only`. *Note:* If
+    you simply want to re-execute a Dockerfile in its entirety, use
+    :code:`--bucache=rebuild` instead, as that will avoid re-caching the base
+    image specified in :code:`FROM`.
 
   :code:`--password-many`
     Re-prompt the user every time a registry password is needed.
@@ -171,6 +187,115 @@ directory with :code:`ch-image reset`.
    Network filesystems, especially Lustre, are typically bad choices for the
    storage directory. This is a site-specific question and your local support
    will likely have strong opinions.
+
+
+Build cache
+===========
+
+Subcommands that create images, such as :code:`build` and :code:`pull`, can
+use a build cache to speed repeated operations. That is, an image is created
+by starting from the empty image and executing a sequence of instructions,
+largely Dockerfile instructions but also some others like "pull" and "import".
+Some instructions are expensive to execute (e.g., :code:`RUN wget
+http://slow.example.com/bigfile` or transferring data billed by the byte), so
+it's often cheaper to retrieve their results from cache instead.
+
+The build cache uses a relatively new Git under the hood; see the installation
+instructions for version requirements. Charliecloud implements workarounds for
+Git's various storage limitations, so things like file metadata and Git
+repositories within the image should work. **Important exception**: No files
+named :code:`.git*` or other Git metadata are permitted in the image's root
+directory.
+
+The cache has three modes, :code:`enabled`, :code:`disabled`, and a hybrid
+mode called :code:`rebuild` where the cache is fully enabled for :code:`FROM`
+instructions, but all other operations re-execute and re-cache their results.
+(The purpose is to do a clean rebuild of a Dockerfile atop a known-good base
+image.) The mode is selected with the :code:`--bucache` or :code:`--no-cache`
+options, or the :code:`CH_IMAGE_BUCACHE` environment variable.
+
+In 0.28, the default mode is :code:`disabled`. In 0.29, we expect the default
+to be :code:`enabled` if an appropriate Git is installed, otherwise
+:code:`disabled`.
+
+For example, suppose we have this Dockerfile::
+
+  $ cat a.df
+  FROM alpine:3.9
+  RUN echo foo
+  RUN echo bar
+
+On our first build, we get::
+
+  $ ch-image --bucache=enabled build -t foo -f a.df .
+    1. FROM alpine:3.9
+  [ ... pull chatter omitted ... ]
+    2. RUN echo foo
+  copying image ...
+  foo
+    3. RUN echo bar
+  bar
+  grown in 3 instructions: foo
+
+Note the dot after each instruction's line number. This means that the
+instruction was executed. You can also see this by the output of the two
+:code:`echo` commands.
+
+But on our second build, we get::
+
+  $ ch-image --bucache=enabled build -t foo -f a.df .
+    1* FROM alpine:3.9
+    2* RUN echo foo
+    3* RUN echo bar
+  copying image ...
+  grown in 3 instructions: foo
+
+Here, instead of being executed, each instruction's results were retrieved
+from cache. (Charliecloud uses lazy retrieval; nothing is actually retrieved
+until the end, as seen by the "copying image" message.) Cache hit for each
+instruction is indicated by an asterisk (:code:`*`) after the line number.
+Even for such a small and short Dockerfile, this build is noticeably faster
+than the first.
+
+We can also try a second, slightly different Dockerfile. Note that the first
+three instructions are the same, but the third is different::
+
+  $ cat c.df
+  FROM alpine:3.9
+  RUN echo foo
+  RUN echo qux
+  $ ch-image --bucache=enabled build -t c -f c.df .
+    1* FROM alpine:3.9
+    2* RUN echo foo
+    3. RUN echo qux
+  copying image ...
+  qux
+  grown in 3 instructions: c
+
+Here, the first two instructions are hits from the first Dockerfile, but the
+third is a miss, so Charliecloud retrieves that state and continues building.
+
+We can also inspect the cache::
+
+  $ ch-image --bucache=enabled build-cache --tree
+  *  (c) RUN echo qux
+  | *  (a) RUN echo bar
+  |/
+  *  RUN echo foo
+  *  (alpine+3.9) PULL alpine:3.9
+  *  (HEAD -> root) root
+
+  named images:     4
+  state IDs:        5
+  commits:          5
+  files:          317
+  disk used:        3 MiB
+
+Here there are four named images: :code:`a` and :code:`c` that we built, the
+base image :code:`alpine:3.9` (written as :code:`alpine+3.9` because colon is
+not allowed in Git branch names), and the empty base of everything
+:code:`root`. Also note how :code:`a` and :code:`c` diverge after the last
+common instruction :code:`RUN echo foo`.
 
 
 :code:`build`
@@ -541,6 +666,36 @@ installing into the image::
    RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround
    RUN ldconfig
 
+:code:`build-cache`
+===================
+
+::
+
+   $ ch-image [...] build-cache [...]
+
+Print basic information about the cache: number of entries (commits), number of
+files, disk space used, number of named and unnamed branches, number of state
+IDs, etc.
+
+If any of the following options are given, do the corresponding operation
+before printing. Multiple options can be given, in which case they happen in
+this order.
+
+  :code:`--reset`
+    Clear and re-initialize the build cache.
+
+  :code:`--gc`
+    Run Git garbage collection on the cache. Among other things, this will
+    remove all cache entries not currently reachable from a named branch.
+
+  :code:`--text`
+    Print a text tree of the cache using Git's :code:`git log --graph`
+    feature. If :code:`-v` is also given, the tree has more detail.
+
+  :code:`--dot`
+    Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
+    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` and
+    :code:`git2dot`.
 
 :code:`delete`
 ==============
@@ -551,6 +706,37 @@ installing into the image::
 
 Delete the image described by the image reference :code:`IMAGE_REF` from the
 storage directory.
+
+.. note::
+
+   This sub-command does not also remove the image from the build cache.
+
+:code:`gestalt`
+===============
+
+::
+
+   $ ch-image [...] gestalt [SELECTOR]
+
+Provide information about the `configuration and available features
+<https://apple.fandom.com/wiki/Gestalt>`_ of :code:`ch-image`. End users
+generally will not need this; it is intended for testing and debugging.
+
+:code:`SELECTOR` is one of:
+
+   * :code:`bucache`. Exit successfully if the build cache is available,
+     unsuccessfully with an error message otherwise. With :code:`-v`, also
+     print version information about dependencies.
+
+   * :code:`bucache-dot`. Exit successfully if build cache DOT trees can be
+     written, unsuccessfully with an error message otherwise. With :code:`-v`,
+     also print version information about dependencies.
+
+   * :code:`python-path`. Print the path to the Python interpreter in use and
+     exit successfully.
+
+   * :code:`storage-path`. Print the storage directory path and exit
+     successfully.
 
 
 :code:`list`
@@ -615,6 +801,11 @@ If the imported image contains Charliecloud metadata, that will be imported
 unchanged, i.e., images exported from :code:`ch-image` builder storage will be
 functionally identical when re-imported.
 
+.. note::
+
+   Every import creates a new cache entry, even if the file or directory has
+   already been imported.
+
 
 :code:`pull`
 ============
@@ -627,19 +818,12 @@ Synopsis
 
 ::
 
-   $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-image [...] pull [...] IMAGE_REF
 
 See the FAQ for the gory details on specifying image references.
 
 Description
 -----------
-
-Destination:
-
-  :code:`IMAGE_DIR`
-    If specified, place the unpacked image at this path; it is then ready for
-    use by :code:`ch-run` or other tools. The storage directory will not
-    contain a copy of the image, i.e., it is only unpacked once.
 
 Options:
 
@@ -713,14 +897,6 @@ Same, specifying the architecture explicitly::
    resolving whiteouts
    layer 1/1: 8947560: extracting
    image arch: arm (may not match host arm64/v8)
-
-Download the same image and place it in :code:`/tmp/buster`::
-
-   $ ch-image pull debian:buster /tmp/buster
-   [...]
-   $ ls /tmp/buster
-   bin   dev  home  lib64  mnt  proc  run   srv  tmp  var
-   boot  etc  lib   media  opt  root  sbin  sys  usr
 
 
 :code:`push`
@@ -835,16 +1011,6 @@ in the remote registry, so we don't upload it again.)
 Delete all images and cache from ch-image builder storage.
 
 
-:code:`storage-path`
-====================
-
-::
-
-   $ ch-image [...] storage-path
-
-Print the storage directory path and exit.
-
-
 Environment variables
 =====================
 
@@ -855,4 +1021,5 @@ Environment variables
 .. include:: py_env.rst
 
 
-..  LocalWords:  tmpfs'es bigvendor AUTH Aimage
+..  LocalWords:  tmpfs'es bigvendor AUTH Aimage bucache buc bigfile df
+..  LocalWords:  dlcache graphviz

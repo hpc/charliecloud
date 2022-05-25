@@ -328,7 +328,8 @@ def detect(image, force, no_force_detect):
 class Config_Aint_Matched(Exception):
    pass
 
-class Fakeroot_Noop():
+
+class Fakeroot_Noop:
 
    __slots__ = ("init_done",
                 "inject_ct")
@@ -343,7 +344,8 @@ class Fakeroot_Noop():
    def inject_run(self, args):
       return args
 
-class Fakeroot():
+
+class Fakeroot:
 
    __slots__ = ("tag",
                 "name",

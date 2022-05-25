@@ -29,7 +29,11 @@ cv_chimage_dir () {
     chimage_in_validate "$1"
     dir_out_validate "$2"
     INFO 'exporting ...'
-    cp -a "$img" "$2"  # FIXME: no progress meter
+    # Use tar(1) instead of cp(1) because (1) it supports file exclusions and
+    # (2) it allows a progress meter (issue #1332). A very quick, very dirty,
+    # completely half-assed performance test suggests that's about the same.
+    mkdir "$2"
+    tar_ "$img" | tar xf - -pC "$2"
     dir_fixup "$2"
 }
 
@@ -54,8 +58,7 @@ cv_chimage_tar () {
     tar_out_validate "$2"
     img=$(chimage_path "$1")
     INFO 'exporting ...'
-    # have to make tarbomb because Docker requires tarbombs
-    ( cd "$img" && tar cf - . ) | pv_ | gzip_ > "$2"
+    tar_ "$img" | gzip_ > "$2"
 }
 
 cv_dir_chimage () {
@@ -86,8 +89,10 @@ cv_dir_squash () {
     INFO 'packing ...'
     touch "$pflist"
     mount_points_ensure "$1" "$pflist"
-    # 64kiB block size based on Shane's experiments.
-    mksquashfs "$1" "$2" -b 65536 -noappend -all-root -pf "$pflist"
+    # Exclude build cache metadata. 64kiB block size based on Shane's
+    # experiments.
+    mksquashfs "$1" "$2" -b 65536 -noappend -all-root -pf "$pflist" \
+                         -e "$1"/.git -e "$1"/.gitignore -e "$1"/ch/git.pickle
     # Zero the archive's internal modification time at bytes 8–11, 0-indexed
     # [1]. Newer SquashFS-Tools ≥4.3 have option "-fstime 0" to do this, but
     # CentOS 7 comes with 4.2.  [1]: https://dr-emann.github.io/squashfs/
@@ -101,8 +106,7 @@ cv_dir_tar () {
     # Don't add essential files & directories because that will happen later
     # when converted to dir or squash.
     INFO 'packing ...'
-    # have to make tarbomb because Docker requires tarbombs
-    ( cd "$1" && tar cf - . ) | pv_ | gzip_ > "$2"
+    tar_ "$1" | gzip_ > "$2"
 }
 
 cv_docker_chimage () {
@@ -243,7 +247,7 @@ cv_tar_dir () {
     VERBOSE "exclude patterns: ${ex1} ${ex2} ${ex3}"
     #shellcheck disable=SC2094
       pv_ -s "$(stat -c%s "$1")" < "$1" \
-    | tar x"$(tar_decompress_arg "$1")" -p -C "$2" -f - \
+    | tar x"$(tar_decompress_arg "$1")" -pC "$2" -f - \
           --xform 's|^\./||x' --strip-components=$strip_ct \
           --anchored --no-wildcards-match-slash \
           --exclude="$ex1" --exclude="$ex2" --exclude="$ex3"
@@ -351,7 +355,7 @@ tar_out_validate () {
 
 # Return the path to image $1 in ch-image storage.
 chimage_path () {
-    echo "$(ch-image storage-path)/img/$(tag_to_path "$1")"
+    echo "$(ch-image gestalt storage-path)/img/$(tag_to_path "$1")"
 }
 
 # Return basename of $2 (format $1) with no extension and filesystem-invalid
@@ -488,6 +492,14 @@ path_noclobber () {
     if [ -e "$1" ] && [ -n "$no_clobber" ]; then
         FATAL "exists, not deleting per --no-clobber: ${1}"
     fi
+}
+
+# Tar $1 and emit the result on stdout, excluding build cache metadata.
+# Produce a tarbomb because Docker requires tarbombs.
+tar_ () {
+    ( cd "$1" && tar cf - --exclude=./.git \
+                          --exclude=./.gitignore \
+                          --exclude=./ch/git.pickle . ) | pv_
 }
 
 # Print the appropriate tar(1) decompression argument for file named $1, which

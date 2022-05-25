@@ -50,6 +50,8 @@ def args_parse():
    ap = argparse.ArgumentParser(description='OCI wrapper for "ch-run".')
    ap.add_argument("-v", "--verbose", action="count", default=0,
                    help="print extra chatter (can be repeated)")
+   ap.add_argument("--debug", action="store_true",
+                   help="add short traceback to fatal error hints")
    ap.add_argument("--version", action=misc.Version,
                    help="print version and exit")
    sps = ap.add_subparsers()
@@ -81,6 +83,9 @@ def args_parse():
 
    args_ = ap.parse_args()
    args_.arch = "yolo"
+   # dummy args to make charliecloud.init() happy
+   args_.dlcache = None
+   args_.no_cache = None
    args_.password_many = False
    args_.storage = None
    args_.tls_no_verify = False

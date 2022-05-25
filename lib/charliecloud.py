@@ -4,29 +4,32 @@ import collections
 import collections.abc
 import copy
 import datetime
+import enum
+import errno
+import fcntl
 import getpass
 import hashlib
-import http.client
 import io
 import json
 import os
-import getpass
 import pathlib
 import platform
 import pprint
 import re
+import shlex
 import shutil
 import stat
 import subprocess
 import sys
 import tarfile
 import time
+import traceback
 import types
 
 import version
 
 
-## Imports not in standard library ##
+## Hairy imports ##
 
 # List of dependency problems.
 depfails = []
@@ -57,6 +60,20 @@ except ImportError:
    requests.auth.AuthBase = object
 
 
+## Enums ##
+
+# Build cache mode.
+class Build_Mode(enum.Enum):
+   ENABLED = "enabled"
+   DISABLED = "disabled"
+   REBUILD = "rebuild"
+
+# Download cache mode.
+class Download_Mode(enum.Enum):
+   ENABLED = "enabled"
+   WRITE_ONLY = "write-only"
+
+
 ## Constants ##
 
 # Architectures. This maps the "machine" field returned by uname(2), also
@@ -81,6 +98,23 @@ ARCH_MAP = { "x86_64":    "amd64",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
+
+# ARGs that are “magic”: always available, don’t cause cache misses, not saved
+# with the image.
+ARGS_MAGIC = { "HTTP_PROXY", "HTTPS_PROXY", "FTP_PROXY", "NO_PROXY",
+               "http_proxy", "https_proxy", "ftp_proxy", "no_proxy",
+               "SSH_AUTH_SOCK", "USER" }
+# FIXME: user() not yet defined
+ARG_DEFAULTS_MAGIC = { k:v for (k,v) in ((m, os.environ.get(m))
+                                          for m in ARGS_MAGIC)
+                       if v is not None }
+
+# ARGs with pre-defined default values that *are* saved with the image.
+ARG_DEFAULTS = \
+   { "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+     # GNU tar, when it thinks it’s running as root, tries to chown(2) and
+     # chgrp(2) files to whatever is in the tarball.
+     "TAR_OPTIONS": "--no-same-owner" }
 
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
@@ -207,7 +241,7 @@ STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 # Storage directory format version. We refuse to operate on storage
 # directories with non-matching versions. Increment this number when the
 # format changes non-trivially.
-STORAGE_VERSION = 2
+STORAGE_VERSION = 3
 
 
 ## Globals ##
@@ -224,9 +258,13 @@ CH_RUN = None
 verbose = 0          # Verbosity level.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
+trace_fatal = False  # Add abbreviated traceback to fatal error hint.
 
 # Verify TLS certificates? Passed to requests.
 tls_verify = True
+
+# True if the download cache is enabled.
+dlcache_p = None
 
 
 ## Exceptions ##
@@ -236,6 +274,58 @@ class Not_In_Registry_Error(Exception): pass
 
 
 ## Classes ##
+
+class ArgumentParser(argparse.ArgumentParser):
+
+   class HelpFormatter(argparse.HelpFormatter):
+
+      # Suppress duplicate metavar printing when option has both short and
+      # long flavors. E.g., instead of:
+      #
+      #   -s DIR, --storage DIR  set builder internal storage directory to DIR
+      #
+      # print:
+      #
+      #   -s, --storage DIR      set builder internal storage directory to DIR
+      #
+      # From https://stackoverflow.com/a/31124505.
+      def _format_action_invocation(self, action):
+         if (not action.option_strings or action.nargs == 0):
+            return super()._format_action_invocation(action)
+         default = self._get_default_metavar_for_optional(action)
+         args_string = self._format_args(action, default)
+         return ', '.join(action.option_strings) + ' ' + args_string
+
+   def __init__(self, sub_title=None, sub_metavar=None, *args, **kwargs):
+      super().__init__(formatter_class=self.HelpFormatter, *args, **kwargs)
+      self._optionals.title = "options"  # https://stackoverflow.com/a/16981688
+      if (sub_title is not None):
+         self.subs = self.add_subparsers(title=sub_title, metavar=sub_metavar)
+
+   def add_parser(self, title, desc, *args, **kwargs):
+      return self.subs.add_parser(title, help=desc, description=desc,
+                                  *args, **kwargs)
+
+   def parse_args(self, *args, **kwargs):
+      cli = super().parse_args(*args, **kwargs)
+      # Incompatible arguments inexpressible by standard means.
+      if (cli.no_cache and cli.bucache is not None):
+         self.error("--no-cache incompatible with --bucache")
+      if (cli.no_cache and cli.dlcache is not None):
+         self.error("--no-cache incompatible with --dlcache")
+      # Unpack shorthand options.
+      if (cli.no_cache):
+         cli.bucache = Build_Mode.DISABLED
+         cli.dlcache = Download_Mode.WRITE_ONLY
+      # Bring in environment variables that set options.
+      if (cli.bucache is None and "CH_IMAGE_BUCACHE" in os.environ):
+         try:
+            cli.bucache = Build_Mode(os.environ["CH_IMAGE_BUCACHE"])
+         except ValueError:
+            FATAL("$CH_IMAGE_BUCACHE: invalid build cache mode: %s"
+                  % os.environ["CH_IMAGE_BUCACHE"])
+      return cli
+
 
 class Credentials:
 
@@ -271,31 +361,6 @@ class Credentials:
       return (username, password)
 
 
-class HelpFormatter(argparse.HelpFormatter):
-
-   def __init__(self, *args, **kwargs):
-      # max_help_position is undocumented but I don't know how else to do this.
-      #kwargs["max_help_position"] = 26
-      super().__init__(max_help_position=26, *args, **kwargs)
-
-   # Suppress duplicate metavar printing when option has both short and long
-   # flavors. E.g., instead of:
-   #
-   #   -s DIR, --storage DIR  set builder internal storage directory to DIR
-   #
-   # print:
-   #
-   #   -s, --storage DIR      set builder internal storage directory to DIR
-   #
-   # From https://stackoverflow.com/a/31124505.
-   def _format_action_invocation(self, action):
-      if (not action.option_strings or action.nargs == 0):
-         return super()._format_action_invocation(action)
-      default = self._get_default_metavar_for_optional(action)
-      args_string = self._format_args(action, default)
-      return ', '.join(action.option_strings) + ' ' + args_string
-
-
 class Image:
    """Container image object.
 
@@ -320,6 +385,19 @@ class Image:
       self.metadata_init()
 
    @property
+   def deleteable(self):
+      """True if it's OK to delete me, either my unpack directory (a) is at
+         the expected location within the storage directory xor (b) is not not
+         but it looks like an image; False otherwise."""
+      if (self.unpack_path == storage.unpack_base // self.unpack_path.name):
+         return True
+      else:
+         if (all(os.path.isdir(self.unpack_path // i)
+                for i in ("bin", "dev", "usr"))):
+            return True
+      return False
+
+   @property
    def metadata_path(self):
       return self.unpack_path // "ch"
 
@@ -327,33 +405,37 @@ class Image:
    def unpack_exist_p(self):
       return os.path.exists(self.unpack_path)
 
+   @property
+   def unpack_cache_linked(self):
+      return self.unpack_exist_p and os.path.exists(self.unpack_path // ".git")
+
    def __str__(self):
       return str(self.ref)
-
-   @staticmethod
-   def unpacked_p(imgdir):
-      "Return True if imgdir looks like an unpacked image, False otherwise."
-      return (    os.path.isdir(imgdir)
-              and os.path.isdir(imgdir // 'bin')
-              and os.path.isdir(imgdir // 'dev')
-              and os.path.isdir(imgdir // 'usr'))
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
       assert False, "unimplemented"
 
    def copy_unpacked(self, other):
-      """Copy image other to my unpack directory. other can be either a path
-         (string or Path object) or an Image object; in the latter case
-         other.unpack_pach is used. other need not be a valid image; the
-         essentials will be created if needed."""
+      """Copy image other to my unpack directory, which may not exist. other
+         can be either a path (string or Path object) or an Image object; in
+         the latter case other.unpack_path is used. other need not be a valid
+         image; the essentials will be created if needed."""
+      def ignore(path, names):
+         path = Path(path)  # match type of src_path
+         ignore = list()
+         if (path == src_path):
+            for name in names:
+               if (name.startswith(".git")):
+                  VERBOSE("ignoring from source image: /%s" % name)
+                  ignore.append(name)
+         return ignore
       if (isinstance(other, str) or isinstance(other, Path)):
          src_path = other
       else:
          src_path = other.unpack_path
-      self.unpack_clear()
       VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
-      copytree(src_path, self.unpack_path, symlinks=True)
+      copytree(src_path, self.unpack_path, symlinks=True, ignore=ignore)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
@@ -400,6 +482,7 @@ class Image:
       "Initialize empty metadata structure."
       # Elsewhere can assume the existence and types of everything here.
       self.metadata = { "arch": arch_host.split("/")[0],  # no variant
+                        "arg": { **ARG_DEFAULTS_MAGIC, **ARG_DEFAULTS },
                         "cwd": "/",
                         "env": dict(),
                         "history": list(),
@@ -407,16 +490,27 @@ class Image:
                         "shell": ["/bin/sh", "-c"],
                         "volumes": list() }  # set isn't JSON-serializable
 
-   def metadata_load(self):
+   def metadata_load(self, target_img=None):
       """Load metadata file, replacing the existing metadata object. If
-         metadata doesn't exist, warn and use defaults."""
-      path = self.metadata_path // "metadata.json"
-      if (not path.exists()):
+         metadata doesn't exist, warn and use defaults. If target_img is
+         non-None, use that image's metadata instead of self's."""
+      if (target_img is not None):
+         path = target_img.metadata_path
+      else:
+         path = self.metadata_path
+      path //= "metadata.json"
+      if (path.exists()):
+         VERBOSE("loading metadata")
+      else:
          WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
       self.metadata = json_from_file(path, "metadata")
-      self.metadata.setdefault("history", list())  # upgrade pre-PR #1215
+      # upgrade old metadata
+      self.metadata.setdefault("arg", dict())
+      self.metadata.setdefault("history", list())
+      # add default ARG variables
+      self.metadata["arg"].update({ **ARG_DEFAULTS_MAGIC, **ARG_DEFAULTS })
 
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is meaingful
@@ -480,9 +574,13 @@ class Image:
    def metadata_save(self):
       """Dump image's metadata to disk, including the main data structure but
          also all auxiliary files, e.g. ch/environment."""
+      # Adjust since we don't save everything.
+      metadata = copy.deepcopy(self.metadata)
+      for k in ARGS_MAGIC:
+         metadata["arg"].pop(k, None)
       # Serialize. We take care to pretty-print this so it can (sometimes) be
       # parsed by simple things like grep and sed.
-      out = json.dumps(self.metadata, indent=2, sort_keys=True)
+      out = json.dumps(metadata, indent=2, sort_keys=True)
       DEBUG("metadata:\n%s" % out)
       # Main metadata file.
       path = self.metadata_path // "metadata.json"
@@ -492,11 +590,11 @@ class Image:
       path = self.metadata_path // "environment"
       VERBOSE("writing environment file: %s" % path)
       file_write(path, (  "\n".join("%s=%s" % (k,v) for (k,v)
-                                    in sorted(self.metadata["env"].items()))
+                                    in sorted(metadata["env"].items()))
                         + "\n"))
       # mkdir volumes
       VERBOSE("ensuring volume directories exist")
-      for path in self.metadata["volumes"]:
+      for path in metadata["volumes"]:
          mkdirs(self.unpack_path // path)
 
    def tarballs_write(self, tarball_dir):
@@ -523,14 +621,16 @@ class Image:
       """Unpack config_json (path to JSON config file) and layer_tars
          (sequence of paths to tarballs, with lowest layer first) into the
          unpack directory, validating layer contents and dealing with
-         whiteouts. Empty layers are ignored. Overwrite any existing image in
-         the unpack directory."""
+         whiteouts. Empty layers are ignored. The unpack directory must exist,
+         and either be empty or contain only a single entry called “.git”."""
       if (last_layer is None):
          last_layer = sys.maxsize
       INFO("flattening image")
-      self.unpack_clear()
       self.unpack_layers(layer_tars, last_layer)
       self.unpack_init()
+
+   def unpack_cache_unlink(self):
+      unlink(self.unpack_path // ".git")
 
    def unpack_clear(self):
       """If the unpack directory does not exist, do nothing. If the unpack
@@ -541,11 +641,26 @@ class Image:
          if (not os.path.isdir(self.unpack_path)):
             FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
-         if (not self.unpacked_p(self.unpack_path)):
+         if (not self.deleteable):
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
-         VERBOSE("removing existing image: %s" % self.unpack_path)
+         VERBOSE("removing image: %s" % self.unpack_path)
          rmtree(self.unpack_path)
+
+   def unpack_delete(self):
+      VERBOSE("unpack path: %s" % self.unpack_path)
+      if (not self.unpack_exist_p):
+         FATAL("%s image not found" % self.ref)
+      if (self.deleteable):
+         INFO("deleting image: %s" % self.ref)
+         chmod_min(self.unpack_path, 0o700)
+         for (dir_, subdirs, _) in os.walk(self.unpack_path):
+            # must fix as subdirs so we can traverse into them
+            for subdir in subdirs:
+               chmod_min(Path(dir_) // subdir, 0o700)
+         rmtree(self.unpack_path)
+      else:
+         FATAL("storage directory seems broken: not an image: %s" % self.ref)
 
    def unpack_init(self):
       """Initialize the unpack directory, which must exist. Any setup already
@@ -646,6 +761,11 @@ class Image:
                m.mode |= 0o600
             else:
                FATAL("unknown member type: %s" % m.name)
+            # Discard Git metadata (files that begin with “.git”).
+            if (re.search(r"^(\./)?\.git", m.name)):
+               WARNING("ignoring member: %s" % m.name)
+               members.remove(m)
+               continue
             # Discard anything under /dev. Docker puts regular files and
             # directories in here on "docker export". Note leading slashes
             # already taken care of in TarFile.fix_member_path() above.
@@ -658,9 +778,8 @@ class Image:
             WARNING("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                     % (i, len(layers), lh[:7], dev_ct))
          if (link_fix_ct > 0):
-            WARNING(("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
-                     % (i, len(layers), lh[:7], link_fix_ct)),
-                    "specify -vv for details")
+            INFO("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
+                 % (i, len(layers), lh[:7], link_fix_ct))
 
    def whiteout_rm_prefix(self, layers, max_i, prefix):
       """Ignore members of all layers from 1 to max_i inclusive that have path
@@ -707,36 +826,6 @@ class Image:
          if (wo_ct > 0):
             VERBOSE("layer %d/%d: %s: %d whiteouts; %d members ignored"
                     % (i, len(layers), lh[:7], wo_ct, ig_ct))
-
-   def unpack_create_ok(self):
-      """Ensure the unpack directory can be created. If the unpack directory
-         is already an image, remove it."""
-      if (not self.unpack_exist_p):
-         VERBOSE("creating new image: %s" % self.unpack_path)
-      else:
-         if (not os.path.isdir(self.unpack_path)):
-            FATAL("can't flatten: %s exists but is not a directory"
-                  % self.unpack_path)
-         if (not self.unpacked_p(self.unpack_path)):
-            FATAL("can't flatten: %s exists but does not appear to be an image"
-                  % self.unpack_path)
-         VERBOSE("replacing existing image: %s" % self.unpack_path)
-         rmtree(self.unpack_path)
-
-   def unpack_delete(self):
-      VERBOSE("unpack path: %s" % self.unpack_path)
-      if (not self.unpack_exist_p):
-         FATAL("%s image not found" % self.ref)
-      if (self.unpacked_p(self.unpack_path)):
-         INFO("deleting image: %s" % self.ref)
-         rmtree(self.unpack_path)
-      else:
-         FATAL("storage directory seems broken: not an image: %s" % self.ref)
-
-   def unpack_create(self):
-      "Ensure the unpack directory exists, replacing or creating if needed."
-      self.unpack_create_ok()
-      mkdir(self.unpack_path)
 
 
 class Image_Ref:
@@ -807,8 +896,7 @@ class Image_Ref:
       if (class_.parser is None):
          class_.parser = lark.Lark("?start: image_ref\n" + GRAMMAR,
                                    parser="earley", propagate_positions=True)
-      if ("%" in s):
-         s = s.replace("%", "/")
+      s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       try:
          tree = class_.parser.parse(s)
@@ -854,7 +942,7 @@ fields:
 
    @property
    def for_path(self):
-      return str(self).replace("/", "%")
+      return str(self).replace("/", "%").replace(":", "+")
 
    @property
    def path_full(self):
@@ -1107,7 +1195,7 @@ class Progress_Reader:
    def close(self):
       if (self.progress is not None):
          self.progress.done()
-         ossafe(self.fp.close, "can't close: %s" % self.fp.name)
+         close_(self.fp)
 
    def read(self, size=-1):
      data = ossafe(self.fp.read, "can't read: %s" % self.fp.name, size)
@@ -1144,7 +1232,7 @@ class Progress_Writer:
    def close(self):
       if (self.progress is not None):
          self.progress.done()
-         ossafe(self.fp.close, "can't close: %s" % self.path)
+         close_(self.fp)
 
    def start(self, length):
       self.progress = Progress(self.msg, "MiB", 2**20, length)
@@ -1379,7 +1467,7 @@ class Registry_HTTP:
       VERBOSE("layer tarball: %s" % path)
       fp = open_(path, "rb")  # open file avoids reading it all into memory
       self.blob_upload(digest, fp, note)
-      ossafe(fp.close, "can't close: %s" % path)
+      close_(fp)
 
    def manifest_to_file(self, path, msg, digest=None):
       """GET manifest for the image and save it at path. If digest is given,
@@ -1477,7 +1565,8 @@ class Storage:
    """Source of truth for all paths within the storage directory. Do not
       compute any such paths elsewhere!"""
 
-   __slots__ = ("root",)
+   __slots__ = ("lockfile_fp",
+                "root")
 
    def __init__(self, storage_cli):
       self.root = storage_cli
@@ -1488,8 +1577,24 @@ class Storage:
       self.root = Path(self.root)
 
    @property
+   def build_cache(self):
+      return self.root // "bucache"
+
+   @property
    def download_cache(self):
       return self.root // "dlcache"
+
+   @property
+   def image_tmp(self):
+      return self.root // "imgtmp"
+
+   @property
+   def lockfile(self):
+      return self.root // "lock"
+
+   @property
+   def mount_point(self):
+      return self.root // "mnt"
 
    @property
    def unpack_base(self):
@@ -1501,8 +1606,11 @@ class Storage:
 
    @property
    def valid_p(self):
-      # FIXME: require version file too when appropriate (#1147)
-      """Return True if storage present and seems valid, False otherwise."""
+      """Return True if storage present and seems valid, even if old, False
+         otherwise. This answers “is the storage directory real”, not “can
+         this storage directory be used”; it should return True for more or
+         less any Charliecloud storage directory we might feasibly come
+         across, even if it can't be upgraded. See also #1147."""
       return (os.path.isdir(self.unpack_base) and
               os.path.isdir(self.download_cache))
 
@@ -1531,6 +1639,10 @@ class Storage:
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
+      # WARNING: This function contains multiple calls to self.lock(). The
+      # point is to lock as soon as we know the storage directory exists, and
+      # definitely before writing anything, to reduce the race conditions that
+      # surely exist. Ensure new code paths also call self.lock().
       self.init_move_old()  # see issues #1160 and #1243
       if (not os.path.isdir(self.root)):
          op = "initializing"
@@ -1546,10 +1658,13 @@ class Storage:
          v_found = self.version_read()
       if (v_found == STORAGE_VERSION):
          VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
-      elif (v_found in {None, 1}):  # initialize/upgrade
+         self.lock()
+      elif (v_found in {None, 1, 2}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
          mkdir(self.root)
+         self.lock()
          mkdir(self.download_cache)
+         mkdir(self.build_cache)
          mkdir(self.unpack_base)
          mkdir(self.upload_cache)
          file_write(self.version_file, "%d\n" % STORAGE_VERSION)
@@ -1596,10 +1711,31 @@ class Storage:
             except OSError as x:
                FATAL("can't move: %s -> %s: %s"
                      % (x.filename, x.filename2, x.strerror))
-      ossafe(os.rmdir, "can't rmdir: %s" % old.root, old.root)
+      rmdir(old.root)
       if (not listdir(old.root.parent)):
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
+
+   def lock(self):
+      """Lock the storage directory. Charliecloud does not at present support
+         concurrent use of ch-image(1) against the same storage directory."""
+      # File locking on Linux is a disaster [1, 2]. Currently, we use POSIX
+      # fcntl(2) locking, which has major pitfalls but should be fine for our
+      # use case. It apparently works on NFS [3] and does not require
+      # cleanup/stealing like a lock file would.
+      #
+      # [1]: https://apenwarr.ca/log/20101213
+      # [2]: http://0pointer.de/blog/projects/locking.html
+      # [3]: https://stackoverflow.com/a/22411531
+      self.lockfile_fp = open_(self.lockfile, "w")
+      try:
+         fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+      except OSError as x:
+         if (x.errno in { errno.EACCES, errno.EAGAIN }):
+            FATAL("storage directory is already in use",
+                  "concurrent instances of ch-image cannot share the same storage directory")
+         else:
+            FATAL("can't lock storage directory: %s" % x.strerror)
 
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
@@ -1617,6 +1753,9 @@ class Storage:
       else:
          FATAL("%s not a builder storage" % (self.root));
 
+   def unlock(self):
+      close_(self.lockfile_fp)
+
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
 
@@ -1632,15 +1771,16 @@ class Storage:
       # Check that all expected files exist, and no others. Note that we don't
       # verify file *type*, assuming that kind of error is rare.
       entries = listdir(self.root)
-      for entry in (self.download_cache,
-                    self.unpack_base,
-                    self.upload_cache,
-                    self.version_file):
-         entry = entry.name
+      for entry in { i.name for i in (self.build_cache,
+                                      self.download_cache,
+                                      self.unpack_base,
+                                      self.upload_cache,
+                                      self.version_file) }:
          try:
             entries.remove(entry)
          except KeyError:
             FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+      entries -= { i.name for i in (self.lockfile, self.mount_point) }
       if (len(entries) > 0):
          FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(i for i in sorted(entries))))
@@ -1649,12 +1789,13 @@ class Storage:
       if (v_found != STORAGE_VERSION):
          FATAL("%s: version mismatch: %d expected, %d found"
                % (msg_prefix, STORAGE_VERSION, v_found))
-      # check that no image directories have + in filename
+      # check that no image directories have “:” in filename
       imgs = listdir(self.unpack_base)
       imgs_bad = set()
       for img in imgs:
-         if ("+" in img):  # bad char check b/c problem here is bad upgrade
-            FATAL("%s: invalid image directory name: %s" % (msg_prefix, img))
+         if (":" in img):  # bad char check b/c problem here is bad upgrade
+            FATAL("%s: storage directory broken: bad image dir name: %s"
+                  % (msg_prefix, img), BUG_REPORT_PLZ)
 
    def version_read(self):
       if (os.path.isfile(self.version_file)):
@@ -1689,7 +1830,14 @@ class TarFile(tarfile.TarFile):
    # Need new method name because add() is called recursively and we don't
    # want those internal calls to get our special sauce.
    def add_(self, name, **kwargs):
-      kwargs["filter"] = self.fix_member_uidgid
+      def filter_(ti):
+         assert (ti.name == "." or ti.name[:2] == "./")
+         if (ti.name.startswith("./.git") or ti.name == "./ch/git.pickle"):
+            DEBUG("omitting from push: %s" % ti.name)
+            return None
+         self.fix_member_uidgid(ti)
+         return ti
+      kwargs["filter"] = filter_
       super().add(name, **kwargs)
 
    def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
@@ -1767,7 +1915,6 @@ class TarFile(tarfile.TarFile):
       if (ti.mode & stat.S_ISGID):
          VERBOSE("stripping unsafe setgid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISGID
-      return ti
 
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path
@@ -1786,6 +1933,16 @@ class TarFile(tarfile.TarFile):
       self.clobber(targetpath, regulars=True, symlinks=True, dirs=True)
       super().makelink(tarinfo, targetpath)
 
+class Timer:
+
+   __slots__ = ("start")
+
+   def __init__(self):
+      self.start = time.time()
+
+   def log(self, msg):
+      VERBOSE("%s in %.3fs" % (msg, time.time() - self.start))
+
 
 ## Supporting functions ##
 
@@ -1794,6 +1951,15 @@ def DEBUG(*args, **kwargs):
       log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
 
 def FATAL(*args, **kwargs):
+   if (trace_fatal):
+      # One-line traceback, skipping top entry (which is always bootstrap code
+      # calling ch-image.main()) and last entry (this function).
+      hint = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
+                                     f.lineno, f.name)
+                       for f in reversed(traceback.extract_stack()[1:-1]))
+      if "hint" in kwargs:
+         hint = "%s: %s" % (kwargs["hint"], hint)
+      kwargs["hint"] = hint
    log(*args, color="1;31m", prefix="error: ", **kwargs)  # bold red
    sys.exit(1)
 
@@ -1823,11 +1989,36 @@ def arch_host_get():
    VERBOSE("host architecture for registry: %s" % arch_registry)
    return arch_registry
 
+def argv_to_string(argv):
+   return " ".join(shlex.quote(i).replace("\n", "\\n") for i in argv)
+
 def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
    h = hashlib.sha256()
    h.update(data)
    return h.hexdigest()
+
+def chdir(path):
+   "Change CWD to path and return previous CWD. Exit on error."
+   old = ossafe(os.getcwd, "can't getcwd(2)")
+   ossafe(os.chdir, "can't chdir: %s" % path, path)
+   return Path(old)
+
+def chmod_min(path, mode, st=None):
+   """Set permissions on path so they are at least mode. For symlinks, do
+      nothing, because we don't want to follow symlinks and
+      follow_symlinks=False (or os.lchmod) is not supported on some (all?)
+      Linux. (Also, symlink permissions are ignored on Linux, so it doesn't
+      matter anyway.)"""
+   if (st is None):
+      st = os.lstat(path)
+   if (stat.S_ISLNK(st.st_mode)):
+      return
+   mode_old = stat.S_IMODE(st.st_mode)
+   if (mode & mode_old != mode):
+      mode |= mode_old
+      VERBOSE("fixing permisssions: %s: %03o -> %03o" % (path, mode_old, mode))
+      ossafe(os.chmod, "can't chmod: %s" % path, path, mode)
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
@@ -1835,15 +2026,75 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
-   return cmd(args, env, fail_ok)
+   return cmd(args, env=env, fail_ok=fail_ok)
 
-def cmd(args, env=None, fail_ok=False):
-   VERBOSE("environment: %s" % env)
-   VERBOSE("executing: %s" % args)
-   cp = subprocess.run(args, env=env, stdin=subprocess.DEVNULL)
-   if (not fail_ok and cp.returncode):
-      FATAL("command failed with code %d: %s" % (cp.returncode, args[0]))
+def close_(fp):
+   try:
+      path = fp.name
+   except AttributeError:
+      path = "(no path)"
+   ossafe(fp.close, "can't close: %s" % path)
+
+def cmd(argv, fail_ok=False, **kwargs):
+   """Run command using cmd_base(). If fail_ok, return the exit code whether
+      or not the process succeeded; otherwise, return (zero) only if the
+      process succeeded and exit with fatal error if it failed."""
+   cp = cmd_base(argv, fail_ok=fail_ok, **kwargs)
    return cp.returncode
+
+def cmd_base(argv, fail_ok=False, **kwargs):
+   """Run a command to completion. If not fail_ok, exit with a fatal error if
+      the command does not exit with code zero. If logging is verbose or
+      higher, first print the command line arguments; if debug or higher, the
+      environment as well (if given). Return the CompletedProcess object."""
+   argv = [str(i) for i in argv]
+   VERBOSE("executing: %s" % argv_to_string(argv))
+   if ("env" in kwargs):
+      VERBOSE("environment: %s" % kwargs["env"])
+   try:
+      cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
+   except OSError as x:
+      VERBOSE("can't execute %s: %s" % (argv[0], x.strerror))
+      # Most common reason we are here is that the command isn't found, which
+      # generates a FileNotFoundError. Use fake return value 127; this is
+      # consistent with the shell [1]. This is a kludge, but we assume the
+      # caller doesn't care about the distinction between some problem within
+      # the subprocess and inability to start the subprocess.
+      #
+      # [1]: https://devdocs.io/bash/exit-status#Exit-Status
+      cp = subprocess.CompletedProcess(argv, 127)
+   if (not fail_ok and cp.returncode != 0):
+      FATAL("command failed with code %d: %s"
+            % (cp.returncode, argv_to_string(argv)))
+   return cp
+
+def cmd_stdout(argv, **kwargs):
+   """Run command using cmd_base(), capturing its standard output. Return the
+      CompletedProcess object (its stdout is available in the "stdout"
+      attribute). If logging is info, discard stderr; otherwise send it to the
+      existing stderr. If logging is debug or higher, print stdout."""
+   if (verbose == 0 and "stderr" not in kwargs):  # info or lower
+      kwargs["stderr"] = subprocess.DEVNULL
+   cp = cmd_base(argv, encoding="UTF-8", stdout=subprocess.PIPE, **kwargs)
+   if (verbose >= 2):  # debug or higher
+      # just dump to stdout rather than using DEBUG() to match cmd_quiet
+      sys.stdout.write(cp.stdout)
+      sys.stdout.flush()
+   return cp
+
+def cmd_quiet(argv, **kwargs):
+   """Run command using cmd() and return the exit code. If logging is info,
+      discard both stdout and stderr; if it's verbose, discard stdout only; if
+      it's debug or higher, discard nothing."""
+   if (verbose >= 2):  # debug or higher
+      stdout=None
+   else:
+      stdout=subprocess.DEVNULL
+   if (verbose >= 1):  # verbose or higher
+      stderr=None
+   else:
+      stderr=subprocess.DEVNULL
+   return cmd(argv, stdout=stdout, stderr=stderr, **kwargs)
 
 def color_reset(*fps):
    for fp in fps:
@@ -1891,6 +2142,21 @@ def digest_trim(d):
    except IndexError:
       FATAL("no algorithm tag: %s" % d)
 
+def disk_bytes(path):
+   """Return the number of disk bytes consumed by path. Note this is probably
+      different from the file size."""
+   return stat_(path).st_blocks * 512
+
+def du(path):
+   """Return a tuple (number of files, total bytes on disk) for everything
+      under path. Warning: double-counts files with multiple hard links."""
+   file_ct = 1
+   byte_ct = disk_bytes(path)
+   for (dir_, subdirs, files) in os.walk(path):
+      file_ct += len(subdirs) + len(files)
+      byte_ct += sum(disk_bytes(dir_ + "/" + i) for i in subdirs + files)
+   return (file_ct, byte_ct)
+
 def done_notify():
    if (user() == "jogas"):
       INFO("!!! KOBE !!!")
@@ -1902,7 +2168,7 @@ def file_ensure_exists(path):
       symlink), do nothing; otherwise, create it as an empty regular file."""
    if (not os.path.lexists(path)):
       fp = open_(path, "w")
-      fp.close()
+      close_(fp)
 
 def file_gzip(path, args=[]):
    """Run pigz if it's available, otherwise gzip, on file at path and return
@@ -1932,7 +2198,7 @@ def file_gzip(path, args=[]):
    fp = open_(path_c, "r+b")
    ossafe(fp.seek, "can't seek: %s" % fp, 4)
    ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
-   ossafe(fp.close, "can't close: %s" % fp)
+   close_(fp)
    return path_c
 
 def file_hash(path):
@@ -1945,7 +2211,7 @@ def file_hash(path):
       if (len(data) == 0):
          break  # EOF
       h.update(data)
-   ossafe(fp.close, "can't close: %s" % path)
+   close_(fp)
    return h.hexdigest()
 
 def file_read_all(path, text=True):
@@ -1959,7 +2225,7 @@ def file_read_all(path, text=True):
       encoding = None
    fp = open_(path, mode, encoding=encoding)
    data = ossafe(fp.read, "can't read: %s" % path)
-   ossafe(fp.close, "can't close: %s" % path)
+   close_(fp)
    return data
 
 def file_size(path, follow_symlinks=False):
@@ -1968,14 +2234,12 @@ def file_size(path, follow_symlinks=False):
                path, follow_symlinks=follow_symlinks)
    return st.st_size
 
-def file_write(path, content, mode=None):
+def file_write(path, content):
    if (isinstance(content, str)):
       content = content.encode("UTF-8")
    fp = open_(path, "wb")
    ossafe(fp.write, "can't write: %s" % path, content)
-   if (mode is not None):
-      ossafe(os.chmod, "can't chmod 0%o: %s" % (mode, path))
-   ossafe(fp.close, "can't close: %s" % path)
+   close_(fp)
 
 def grep_p(path, rx):
    """Return True if file at path contains a line matching regular expression
@@ -1992,9 +2256,10 @@ def grep_p(path, rx):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, verbose
+   global log_festoon, log_fp, trace_fatal, verbose
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
+   trace_fatal = cli.debug
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
@@ -2014,6 +2279,14 @@ def init(cli):
       arch = arch_host
    else:
       arch = cli.arch
+   # download cache
+   if (cli.no_cache or cli.dlcache == Download_Mode.WRITE_ONLY):
+      dlcache = Download_Mode.WRITE_ONLY
+   else:
+      dlcache = Download_Mode.ENABLED
+   global dlcache_p
+   dlcache_p = (dlcache == Download_Mode.ENABLED)
+
    # misc
    global password_many, tls_verify
    password_many = cli.password_many
@@ -2034,6 +2307,7 @@ def json_from_file(path, msg):
    return data
 
 def listdir(path):
+   "Return set of entries in directory path, without self (.) and parent (..)."
    return set(ossafe(os.listdir, "can't list: %s" % path, path))
 
 def log(msg, hint=None, color=None, prefix="", end="\n"):
@@ -2060,10 +2334,10 @@ def mkdir(path):
    except OSError as x:
       FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
 
-def mkdirs(path):
+def mkdirs(path, exist_ok=True):
    TRACE("ensuring directories: %s" % path)
    try:
-      os.makedirs(path, exist_ok=True)
+      os.makedirs(path, exist_ok=exist_ok)
    except OSError as x:
       FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
 
@@ -2088,6 +2362,15 @@ def prefix_path(prefix, path):
        Assume that prefix and path are strings."""
    return prefix == path or (prefix + '/' == path[:len(prefix) + 1])
 
+def rename(name_old, name_new):
+   if (os.path.exists(name_new)):
+      FATAL("can't rename: destination exists: %s" % name_new)
+   ossafe(os.rename, "can't rename: %s -> %s" % (name_old, name_new),
+          name_old, name_new)
+
+def rmdir(path):
+   ossafe(os.rmdir, "can't rmdir: %s" % path, path)
+
 def rmtree(path):
    if (os.path.isdir(path)):
       TRACE("deleting directory: %s" % path)
@@ -2098,6 +2381,26 @@ def rmtree(path):
                % (path, x.filename, x.strerror))
    else:
       assert False, "unimplemented"
+
+def si_binary_bytes(ct):
+   # FIXME: varies between 1 and 3 significant figures
+   ct = float(ct)
+   for suffix in ("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB"):
+      if (ct < 1024):
+         return (ct, suffix)
+      ct /= 1024
+   assert False, "unreachable"
+
+def si_decimal(ct):
+   ct = float(ct)
+   for suffix in ("", "K", "M", "G", "T", "P", "E", "Z"):
+      if (ct < 1000):
+         return (ct, suffix)
+      ct /= 1000
+   assert False, "unreachable"
+
+def stat_(path, links=False):
+   return ossafe(os.stat, "can't stat: %s" % path, path, follow_symlinks=links)
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):
@@ -2173,3 +2476,37 @@ def user():
       return os.environ["USER"]
    except KeyError:
       FATAL("can't get username: $USER not set")
+
+def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
+   """Return True if the version number of program exected as argv is at least
+      min_. Otherwise, including if execution fails, exit with error if
+      required, otherwise return False. Use regex to extract the version
+      number from output."""
+   if (required):
+      too_old = FATAL
+      bad_parse = FATAL
+   else:
+      too_old = VERBOSE
+      bad_parse = WARNING
+   prog = argv[0]
+   cp = cmd_stdout(argv, fail_ok=True, stderr=subprocess.STDOUT)
+   if (cp.returncode != 0):
+      too_old("%s failed with exit code %d, assuming not present"
+              % (prog, cp.returncode))
+      return False
+   m = re.search(regex, cp.stdout)
+   if (m is None):
+      bad_parse("can't parse %s version, assuming not present: %s"
+                % (prog, cp.stdout))
+      return False
+   try:
+      v = tuple(int(i) for i in m.groups())
+   except ValueError:
+      bad_parse("can't parse %s version part, assuming not present: %s"
+                % (prog, cp.stdout))
+      return False
+   if (min_ > v):
+      too_old("%s is too old: %d.%d.%d < %d.%d.%d" % ((prog,) + v + min_))
+      return False
+   VERBOSE("%s version OK: %d.%d.%d ≥ %d.%d.%d" % ((prog,) + v + min_))
+   return True

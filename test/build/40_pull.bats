@@ -82,7 +82,7 @@ EOF
     # host with dot, with port
     cat <<'EOF' | image_ref_parse example.com:8080/name 0
 as string:    example.com:8080/name
-for filename: example.com:8080%name
+for filename: example.com+8080%name
 fields:
   host    'example.com'
   port    8080
@@ -95,7 +95,7 @@ EOF
     # host without dot, with port
     cat <<'EOF' | image_ref_parse examplecom:8080/name 0
 as string:    examplecom:8080/name
-for filename: examplecom:8080%name
+for filename: examplecom+8080%name
 fields:
   host    'examplecom'
   port    8080
@@ -108,7 +108,7 @@ EOF
     # no path, tag
     cat <<'EOF' | image_ref_parse name:tag 0
 as string:    name:tag
-for filename: name:tag
+for filename: name+tag
 fields:
   host    None
   port    None
@@ -121,7 +121,7 @@ EOF
     # no path, digest
     cat <<'EOF' | image_ref_parse name@sha256:feeddad 0
 as string:    name@sha256:feeddad
-for filename: name@sha256:feeddad
+for filename: name@sha256+feeddad
 fields:
   host    None
   port    None
@@ -134,7 +134,7 @@ EOF
     # everything, tagged
     cat <<'EOF' | image_ref_parse example.com:8080/path1/path2/name:tag 0
 as string:    example.com:8080/path1/path2/name:tag
-for filename: example.com:8080%path1%path2%name:tag
+for filename: example.com+8080%path1%path2%name+tag
 fields:
   host    'example.com'
   port    8080
@@ -147,7 +147,7 @@ EOF
     # everything, tagged, filename component
     cat <<'EOF' | image_ref_parse example.com:8080%path1%path2%name:tag 0
 as string:    example.com:8080/path1/path2/name:tag
-for filename: example.com:8080%path1%path2%name:tag
+for filename: example.com+8080%path1%path2%name+tag
 fields:
   host    'example.com'
   port    8080
@@ -160,7 +160,7 @@ EOF
     # everything, digest
     cat <<'EOF' | image_ref_parse example.com:8080/path1/path2/name@sha256:feeddad 0
 as string:    example.com:8080/path1/path2/name@sha256:feeddad
-for filename: example.com:8080%path1%path2%name@sha256:feeddad
+for filename: example.com+8080%path1%path2%name@sha256+feeddad
 fields:
   host    'example.com'
   port    8080
@@ -215,9 +215,9 @@ EOF
     # Validate that layers replace symlinks correctly. See
     # test/Dockerfile.symlink and issues #819 & #825.
 
-    img=$BATS_TMPDIR/charliecloud%file-quirks
-
-    ch-image pull charliecloud/file-quirks:2020-10-21 "$img"
+    CH_IMAGE_STORAGE=$BATS_TMPDIR/pull-quirks
+    img="${CH_IMAGE_STORAGE}/img/charliecloud%file-quirks+2020-10-21"
+    ch-image pull charliecloud/file-quirks:2020-10-21
     ls -lh "${img}/test"
 
     output_expected=$(cat <<'EOF'
@@ -267,7 +267,7 @@ EOF
     # Manifest schema version one (v1); see issue #814. Use debian:squeeze
     # because 1) it always returns a v1 manifest schema (regardless of media
     # type specified), and 2) it isn't very large, thus keeps test time down.
-    img=debian:squeeze
+    img=debian+squeeze
     ch-image pull "$img"
     grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
 
@@ -346,16 +346,9 @@ EOF
     arch_exclude ppc64le  # test image not available
     tag=2021-01-15
     name=charliecloud/metadata:$tag
-    img=$CH_IMAGE_STORAGE/img/charliecloud%metadata:$tag
+    img=$CH_IMAGE_STORAGE/img/charliecloud%metadata+$tag
 
     ch-image pull "$name"
-
-    # Correct files?
-    diff -u - <(ls "${img}/ch") <<'EOF'
-config.pulled.json
-environment
-metadata.json
-EOF
 
     # Volume mount points exist?
     ls -lh "${img}/mnt"
@@ -373,6 +366,10 @@ EOF
     diff -u -I '^.*"created":.*,$' - "${img}/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
+  "arg": {
+    "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "TAR_OPTIONS": "--no-same-owner"
+  },
   "cwd": "/mnt",
   "env": {
     "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
@@ -495,7 +492,6 @@ EOF
 EOF
 }
 
-
 @test 'pull by arch' {
     # Has fat manifest; requested arch exists. There's not much simple to look
     # for in the output, so just see if it works.
@@ -511,7 +507,7 @@ EOF
     [[ $output = *'requested arch unavailable:'*'available:'* ]]
 
     # Delete it so we don't try to use a non-matching arch for other testing.
-    ch-image delete alpine:latest
+    ch-image delete alpine:latest || true
 
     # No fat manifest.
     ch-image --arch=yolo pull charliecloud/metadata:2021-01-15
@@ -524,7 +520,6 @@ EOF
         [[ $output = *'image is architecture-unaware'*'consider --arch=yolo' ]]
     fi
 }
-
 
 @test 'pull images that do not exist' {
     if [[ -n $CH_REGY_DEFAULT_HOST ]]; then

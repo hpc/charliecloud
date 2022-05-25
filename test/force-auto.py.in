@@ -281,8 +281,10 @@ class T_Ubuntu_16(Debian):
    arch_excludes = ["aarch64"]  # no pseudo package
 class T_Ubuntu_18(Debian):
    base = "ubuntu:18.04"
-class T_Ubuntu_Latest(Debian):
-   base = "ubuntu:latest"
+class T_Ubuntu_21(Debian):
+   base = "ubuntu:21.10"
+#class T_Ubuntu_Latest(Debian):  # no worky; see issue #1348
+#   base = "ubuntu:latest"
 
 class SUSE(Test):
    config = "suse"
@@ -329,6 +331,9 @@ load ../common
 
 setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+    # FIXME: Would be good to test with build cache enabled, but there are
+    # lots of assumptions about output that are not valid in that case.
+    [[ $CH_IMAGE_BUCACHE = disabled ]] || skip 'bucache disabled only'
 }
 """)
 

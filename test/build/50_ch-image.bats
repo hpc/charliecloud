@@ -7,32 +7,32 @@ setup () {
 
 @test 'ch-image common options' {
     # no common options
-    run ch-image storage-path
+    run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *'verbose level'* ]]
 
     # before only
-    run ch-image -vv storage-path
+    run ch-image -vv list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'verbose level: 2'* ]]
 
     # after only
-    run ch-image storage-path -vv
+    run ch-image list -vv
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'verbose level: 2'* ]]
 
     # before and after; after wins
-    run ch-image -vv storage-path -v
+    run ch-image -vv list -v
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'verbose level: 1'* ]]
 }
 
 @test 'ch-image delete' {
-    # verify delete/test image doesn't exist
+    # Verify image doesn't exist.
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
@@ -48,12 +48,58 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"delete/test"* ]]
 
-    # delete image
+    # Delete image.
     ch-image delete delete/test
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *"delete/test"* ]]
+}
+
+@test 'broken image delete' {
+    # Verify image doesn't exist.
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"deletetest"* ]]
+
+    # Build image.
+    ch-image build -t deletetest -f - . << 'EOF'
+FROM 00_tiny
+EOF
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"deletetest"* ]]
+
+    # Break image.
+    rmdir "$CH_IMAGE_STORAGE"/img/deletetest/dev
+
+    # Delete image.
+    ch-image delete deletetest
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"deletetest"* ]]
+}
+
+@test 'broken image overwrite' {
+    # Build image.
+    ch-image build -t tmpimg -f - . << 'EOF'
+FROM 00_tiny
+EOF
+
+    # Break image.
+    rmdir "$CH_IMAGE_STORAGE"/img/tmpimg/dev
+
+    # Rebuild image.
+    ch-image build -t tmpimg -f - . << 'EOF'
+FROM 00_tiny
+EOF
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"tmpimg"* ]]
 }
 
 @test 'ch-image import' {
@@ -294,10 +340,14 @@ EOF
    # Image storage directory should be empty now.
    expected=$(cat <<'EOF'
 .:
+bucache
 dlcache
 img
+lock
 ulcache
 version
+
+./bucache:
 
 ./dlcache:
 
@@ -320,16 +370,16 @@ EOF
 }
 
 @test 'ch-image storage-path' {
-    run ch-image storage-path
+    run ch-image gestalt storage-path
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = /* ]]                                        # absolute path
-    [[ $CH_IMAGE_STORAGE && $output = "$CH_IMAGE_STORAGE" ]]  # match what we set
+    [[ $CH_IMAGE_STORAGE && $output = "$CH_IMAGE_STORAGE" ]]  # what we set
 }
 
 @test 'ch-image build --bind' {
-    run ch-image --no-cache build -t tmpimg -f - \
-                -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
+    ch-image --bucache=disabled build -t tmpimg -f - \
+             -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
 FROM 00_tiny
 RUN mount
 RUN ls -lR '${PWD}/fixtures'
@@ -337,8 +387,6 @@ RUN test -f '${PWD}/fixtures/empty-file'
 RUN ls -lR /mnt/0
 RUN test -f /mnt/0/empty-file
 EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
 }
 
 @test 'ch-image build: metadata carry-forward' {
@@ -347,7 +395,7 @@ EOF
     img=$CH_IMAGE_STORAGE/img/tmpimg
 
     # Print out current metadata, then update it.
-    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
+    run ch-image build -v -t tmpimg -f - . <<'EOF'
 FROM charliecloud/metadata:2021-01-15
 RUN echo "cwd1: $PWD"
 WORKDIR /usr
@@ -361,24 +409,19 @@ RUN echo "shell2: $0"
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'cwd1: /mnt'* ]]
-    [[ $output = *'cwd2: /usr'* ]]
-    [[ $output = *'env1: PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'* ]]
-    [[ $output = *'env1: ch_bar=bar-ev'* ]]
-    [[ $output = *'env1: ch_foo=foo-ev'* ]]
-    [[ $output = *'env2: PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'* ]]
-    [[ $output = *'env2: ch_bar=bar-ev'* ]]
-    [[ $output = *'env2: ch_baz=baz-ev'* ]]
-    [[ $output = *'env2: ch_foo=foo-ev'* ]]
-    [[ $output = *'shell1: /bin/ash'* ]]
-    [[ $output = *'shell2: /bin/sh'* ]]
-
-    # Correct files?
-    diff -u - <(ls "${img}/ch") <<'EOF'
-config.pulled.json
-environment
-metadata.json
-EOF
+    if [[ $CH_IMAGE_BUCACHE = disabled ]]; then
+        [[ $output = *'cwd1: /mnt'* ]]
+        [[ $output = *'cwd2: /usr'* ]]
+        [[ $output = *'env1: PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'* ]]
+        [[ $output = *'env1: ch_bar=bar-ev'* ]]
+        [[ $output = *'env1: ch_foo=foo-ev'* ]]
+        [[ $output = *'env2: PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'* ]]
+        [[ $output = *'env2: ch_bar=bar-ev'* ]]
+        [[ $output = *'env2: ch_baz=baz-ev'* ]]
+        [[ $output = *'env2: ch_foo=foo-ev'* ]]
+        [[ $output = *'shell1: /bin/ash'* ]]
+        [[ $output = *'shell2: /bin/sh'* ]]
+    fi
 
     # Volume mount points exist?
     ls -lh "${img}/mnt"
@@ -397,6 +440,10 @@ EOF
     diff -u -I '^.*"created":.*,$' - "${img}/ch/metadata.json" <<'EOF'
 {
   "arch": "amd64",
+  "arg": {
+    "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "TAR_OPTIONS": "--no-same-owner"
+  },
   "cwd": "/usr",
   "env": {
     "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
@@ -505,11 +552,7 @@ EOF
     },
     {
       "created": "2021-11-30T20:40:24Z",
-      "created_by": "FROM charliecloud/metadata:2021-01-15"
-    },
-    {
-      "created": "2021-11-30T20:40:24Z",
-      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd1: $PWD\"']"
+      "created_by": "RUN echo \"cwd1: $PWD\""
     },
     {
       "created": "2021-11-30T20:40:24Z",
@@ -517,11 +560,11 @@ EOF
     },
     {
       "created": "2021-11-30T20:40:24Z",
-      "created_by": "RUN ['/bin/ash', '-c', 'echo \"cwd2: $PWD\"']"
+      "created_by": "RUN echo \"cwd2: $PWD\""
     },
     {
       "created": "2021-11-30T20:40:24Z",
-      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env1: /' | sort\"]"
+      "created_by": "RUN env | egrep '^(PATH=|ch_)' | sed -E 's/^/env1: /' | sort"
     },
     {
       "created": "2021-11-30T20:40:24Z",
@@ -529,11 +572,11 @@ EOF
     },
     {
       "created": "2021-11-30T20:40:24Z",
-      "created_by": "RUN ['/bin/ash', '-c', \"env | egrep '^(PATH=|ch_)' | sed -E 's/^/env2: /' | sort\"]"
+      "created_by": "RUN env | egrep '^(PATH=|ch_)' | sed -E 's/^/env2: /' | sort"
     },
     {
       "created": "2021-11-30T20:40:25Z",
-      "created_by": "RUN ['/bin/ash', '-c', 'echo \"shell1: $0\"']"
+      "created_by": "RUN echo \"shell1: $0\""
     },
     {
       "created": "2021-11-30T20:40:25Z",
@@ -541,7 +584,7 @@ EOF
     },
     {
       "created": "2021-11-30T20:40:25Z",
-      "created_by": "RUN ['/bin/sh', '-v', '-c', 'echo \"shell2: $0\"']"
+      "created_by": "RUN echo \"shell2: $0\""
     }
   ],
   "labels": {
@@ -650,7 +693,7 @@ EOF
     [[ $output = *"moving: ${old}/version -> ${new}/version"* ]]
     [[ $output = *"warning: parent of old storage dir now empty: ${old_parent}"* ]]
     [[ $output = *'hint: consider deleting it'* ]]
-    [[ $output = *"upgrading storage directory: v2 ${new}"* ]]
+    [[ $output = *"upgrading storage directory: v3 ${new}"* ]]
     [[ ! -e $old ]]
     [[ -d ${new}/dlcache ]]
     [[ -d ${new}/img ]]
@@ -667,7 +710,7 @@ EOF
     [[ $output = *"storage dir: valid at old default: ${old}"* ]]
     [[ $output = *"warning: storage dir: also valid at new default: ${new}"* ]]
     [[ $output = *'hint: consider deleting the old one'* ]]
-    [[ $output = *"found storage dir v2: ${new}"* ]]
+    [[ $output = *"found storage dir v3: ${new}"* ]]
     [[ -d $old ]]
     [[ -d ${new}/dlcache ]]
     [[ -d ${new}/img ]]
@@ -681,7 +724,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"warning: storage dir: invalid at old default, ignoring: ${old}"* ]]
-    [[ $output = *"initializing storage directory: v2 ${new}"* ]]
+    [[ $output = *"initializing storage directory: v3 ${new}"* ]]
     [[ -d $old ]]
     [[ -d ${new}/dlcache ]]
     [[ -d ${new}/img ]]
@@ -696,7 +739,7 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"storage dir: valid at old default: ${old}"* ]]
-    [[ $output = *"initializing storage directory: v2 ${new}"* ]]
+    [[ $output = *"initializing storage directory: v3 ${new}"* ]]
     [[ $output = *"error: can't mkdir: exists and not a directory: ${new}"* ]]
     [[ -d $old ]]
     [[ -f $new ]]
@@ -714,7 +757,7 @@ EOF
     [[ $output = *"moving: ${old}/version -> ${new}/version"* ]]
     [[ $output = *"warning: parent of old storage dir now empty: ${old_parent}"* ]]
     [[ $output = *'hint: consider deleting it'* ]]
-    [[ $output = *"found storage dir v2: ${new}"* ]]
+    [[ $output = *"upgrading storage directory: v3 ${new}"* ]]
     [[ ! -e $old ]]
     [[ -d ${new}/dlcache ]]
     [[ -d ${new}/img ]]

@@ -7,6 +7,7 @@ mylibdir = $(pkglibdir)
 
 dist_mylib_DATA = base.sh \
                   build.py \
+                  build_cache.py \
                   charliecloud.py \
                   fakeroot.py \
                   misc.py \
