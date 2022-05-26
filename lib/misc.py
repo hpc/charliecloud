@@ -121,7 +121,7 @@ def list_(cli):
       print("in build cache:      %s" % cached)
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
-      pullet = pull.Image_Puller(img)
+      pullet = pull.Image_Puller(img, img.ref)
       try:
          pullet.fatman_load()
          remote = "yes"

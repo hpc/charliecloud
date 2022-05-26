@@ -913,7 +913,8 @@ class I_from_(Instruction):
                ch.WARNING("base image only exists non-cached; adding to cache")
             (self.sid, self.git_hash) = bu.cache.adopt(self.base_image)
          else:
-            (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image)
+            (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image,
+                                                           self.base_image.ref)
       elif (unpack_no_git):
          ch.WARNING("base image also exists non-cached; using cache")
       # Load metadata

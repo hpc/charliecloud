@@ -699,7 +699,7 @@ class Disabled_Cache(Rebuild_Cache):
          ch.VERBOSE("base image already exists, skipping pull")
       else:
          if (pullet is None):
-            pullet = pull.Image_Puller(img)
+            pullet = pull.Image_Puller(img, src_ref)
             pullet.download()
          img.unpack_clear()
          pullet.unpack(last_layer)
