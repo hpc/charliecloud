@@ -12,7 +12,7 @@ obspy/hello.py
 
 noexecs = \
 Dockerfile.centos7 \
-Dockerfile.centos8 \
+Dockerfile.almalinux8 \
 Dockerfile.debian9 \
 Dockerfile.mpich \
 Dockerfile.nvidia \

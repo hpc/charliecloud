@@ -81,7 +81,7 @@ Dockerfile
     filename Dockerfile.00_tiny
     filename Dockerfile.argenv
     filename Dockerfile.centos7
-    filename Dockerfile.centos8
+    filename Dockerfile.almalinux8
     filename Dockerfile.debian9
     filename Dockerfile.file-quirks
     filename Dockerfile.metadata
