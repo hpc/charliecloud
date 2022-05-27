@@ -269,7 +269,7 @@ class Enabled_Cache:
       else:
          sid = None
          commit = None
-         commit_short = 'lol'
+         commit_short = 'nada'
       ch.VERBOSE("branch: %s: %s %s" % (image.ref.for_path, commit_short, sid))
       return (sid, commit)
 
