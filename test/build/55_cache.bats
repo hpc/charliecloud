@@ -894,3 +894,138 @@ RUN true        # miss
 RUN mkdir /foo  # should not collide with leftover /foo from above
 EOF
 }
+
+@test "${tag}: detect upstream base changes" {
+    # Skip unless GitHub Actions or there is a listener on localhost:5000.
+    if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
+                                      && ss -lnt | grep -F :5000); then
+        skip 'no local registry'
+    fi
+    export CH_IMAGE_USERNAME=charlie
+    export CH_IMAGE_PASSWORD=test
+
+    # Simulate a change in base image from remote repo using two different
+    # CH_IMAGE_STORAGE directories and a local resgistry.
+    #
+    # The first storage, write, is used to stage changes to the test image
+    # and push them to the local registry. The second storage, read, represents
+    # a normal user pulling and using the test image in a typical user workflow.
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/write
+    ch-image reset
+    ch-image build-cache --reset
+
+    #### REMOTE WRITE ####
+
+    # Initial state: create a base image, and push to localhost, and reset.
+    ch-image build -t capablanca -f - . <<EOF
+FROM alpine:3.9
+RUN echo "jose" > /worldchampion
+EOF
+    ch-image --tls-no-verify push capablanca localhost:5000/world:champion
+
+
+    #### LOCAL READ ####
+
+    # Pull the image and use it in it's initial state.
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/read
+    ch-image reset
+    ch-image bucache --reset
+    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
+FROM localhost:5000/world:champion
+RUN cat /worldchampion
+EOF
+    [[ $status -eq 0 ]]
+    [[ $output = *'2. RUN cat /worldchampion'* ]]
+    blessed_out=$(cat << 'EOF'
+*  (worldchamp) RUN cat /worldchampion
+*  (localhost+5000%world+champion) PULL localhost:5000/world:champion
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    #### REMOTE WRITE ####
+
+    # Make a change and ensure the user's cache and storage pick it up.
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/write
+    ch-image build -t fischer -f - . <<EOF
+FROM alpine:3.9
+RUN echo "bobby" > /worldchampion
+EOF
+    ch-image --tls-no-verify push fischer localhost:5000/world:champion
+
+    #### LOCAL READ ####
+
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/read
+    blessed_out=$(cat << 'EOF'
+*  (worldchamp) RUN echo "bobby" > /worldchampion
+*  (localhost+5000%world+champion) PULL localhost:5000/world:champion
+| *  RUN cat /worldchampion
+| *  PULL PULL localhost:5000/world:champion
+|/
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
+FROM localhost:5000/world:champion
+RUN cat /worldchampion
+EOF
+    [[ $status -eq 0 ]]
+    # Config should download.
+    [[ $output = *'config: downloading'* ]]
+    # Line 2 RUN should not be cached as a change in the base was detected.
+    [[ $output = *'2. RUN cat /worldchampion'* ]]
+    run ch-image build-cache --tree
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Run again. This time config should be reused and the instruction should
+    # be cached.
+    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
+FROM localhost:5000/world:champion
+RUN cat /worldchampion
+EOF
+    [[ $status -eq 0 ]]
+    # Config should be reused.
+    [[ $output = *'config: using existing file'* ]]
+    [[ $output = *'2* RUN cat /worldchampion'* ]]
+
+
+    #### REMOTE WRITE ####
+
+    # Revert the original image in the local registry and ensure the user
+    # registry cache still hits.
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/write
+    ch-image build -t capablanca -f - . <<EOF
+FROM alpine:3.9
+RUN echo "jose" > /worldchampion
+EOF
+    ch-image --tls-no-verify push capablanca localhost:5000/world:champion
+
+
+    #### LOCAL READ ####
+
+    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
+FROM localhost:5000/world:champion
+RUN cat /worldchampion
+EOF
+    [[ $status -eq 0 ]]
+    # Config should be reused.
+    [[ $output = *'config: using existing file'* ]]
+    # Run instruction should be cached.
+    [[ $output = *'2* RUN cat /worldchampion'* ]]
+    blessed_out=$(cat << 'EOF'
+*  RUN cat /worldchampion
+*  PULL PULL localhost:5000/world:champion
+| *  (worldchamp) RUN cat /worldchampion
+| *  (localhost+5000%world+champion) PULL localhost:5000/world:champion
+|/
+*  (HEAD -> root) root
+EOF
+)
+    run ch-image build-cache --tree
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
