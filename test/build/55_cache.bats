@@ -189,6 +189,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
+    # Use long form of argument so it appears at least once in the test suite.
     ch-image --bucache=rebuild build -t a -f bucache/a.df .
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
@@ -215,7 +216,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    ch-image --bucache=rebuild build -t b -f bucache/b.df .
+    ch-image --rebuild build -t b -f bucache/b.df .
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -246,7 +247,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    ch-image --bucache=rebuild build -t c -f bucache/c.df .
+    ch-image --rebuild build -t c -f bucache/c.df .
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -456,8 +457,8 @@ EOF
               | grep "commits" | awk '{print $2}') <(echo 4)
 
     # Number of commits after 2x forced rebuilds of A (4 dangling)
-    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
-    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
+    ch-image build --rebuild -t a -f ./bucache/a.df .
+    ch-image build --rebuild -t a -f ./bucache/a.df .
     diff -u <(  ch-image build-cache \
               | grep "commits" | awk '{print $2}') <(echo 8)
 
@@ -840,7 +841,7 @@ EOF
     # Re-build in "rebuild" mode. FROM should hit, others miss, and we should
     # have two branches.
     sleep 1
-    run ch-image build --bucache=rebuild -t a -f ./bucache/a.df ./bucache
+    run ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'* FROM'* ]]
@@ -869,7 +870,7 @@ EOF
     commit_before=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
     echo "before: ${commit_before}"
     sleep 1
-    ch-image build --bucache=rebuild -t a -f ./bucache/a.df ./bucache
+    ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
     run ch-image build-cache -v --tree
     echo "$output"
     [[ $status -eq 0 ]]

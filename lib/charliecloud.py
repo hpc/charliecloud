@@ -313,10 +313,16 @@ class ArgumentParser(argparse.ArgumentParser):
          self.error("--no-cache incompatible with --bucache")
       if (cli.no_cache and cli.dlcache is not None):
          self.error("--no-cache incompatible with --dlcache")
+      if (cli.rebuild and cli.bucache is not None):
+         self.error("--rebuild incompatible with --bucache")
+      if (cli.no_cache and cli.rebuild):
+         self.error("--no-cache incompatible with --rebuild")
       # Unpack shorthand options.
       if (cli.no_cache):
          cli.bucache = Build_Mode.DISABLED
          cli.dlcache = Download_Mode.WRITE_ONLY
+      if (cli.rebuild):
+         cli.bucache = Build_Mode.REBUILD
       # Bring in environment variables that set options.
       if (cli.bucache is None and "CH_IMAGE_BUCACHE" in os.environ):
          try:
@@ -2286,7 +2292,6 @@ def init(cli):
       dlcache = Download_Mode.ENABLED
    global dlcache_p
    dlcache_p = (dlcache == Download_Mode.ENABLED)
-
    # misc
    global password_many, tls_verify
    password_many = cli.password_many
