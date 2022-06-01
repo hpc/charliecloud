@@ -108,9 +108,7 @@ class Image_Puller:
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
-         if (     os.path.exists(self.config_path)
-             and (ch.file_hash(self.config_path) == self.config_hash)
-             and ch.dlcache_p):
+         if (os.path.exists(self.config_path) and ch.dlcache_p):
             ch.INFO("config: using existing file")
          else:
             self.registry.blob_to_file(self.config_hash, self.config_path,
