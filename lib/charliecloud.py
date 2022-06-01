@@ -1348,14 +1348,12 @@ class Registry_HTTP:
          FATAL("WWW-Authenticate header not found")
       auth_h = res.headers["WWW-Authenticate"]
       VERBOSE("WWW-Authenticate raw: %s" % auth_h)
-      # We use two undocumented methods to parse the authentication response
-      # header (thanks Andy, i,e, @adrecord).
-      m = re.match('(Bearer|Basic) +(.*)', auth_h)
-      if not m:
-         FATAL("unknown authentication scheme: %s" % auth_h,
-               hint='expected Basic or Bearer')
-      auth_type = m[1]
-      auth_d = urllib.request.parse_keqv_list(urllib.request.parse_http_list(m[2]))
+      # We use two “undocumented (although very stable and frequently cited)”
+      # methods to parse the authentication response header (thanks Andy,
+      # i.e., @adrecord on GitHub).
+      (auth_type, auth_d) = auth_h.split(maxsplit=1)
+      auth_d = urllib.request.parse_keqv_list(
+                  urllib.request.parse_http_list(auth_d))
       VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
       # Dispatch to proper method.
       if   (auth_type == "Bearer"):
@@ -1363,7 +1361,7 @@ class Registry_HTTP:
       elif (auth_type == "Basic"):
          self.authenticate_basic(res, auth_d)
       else:
-         FATAL("unknown auth type: %s" % auth_h)
+         FATAL("unknown auth scheme: %s" % auth_h, "expected Basic or Bearer")
 
    def blob_exists_p(self, digest):
       """Return true if a blob with digest (hex string) exists in the
