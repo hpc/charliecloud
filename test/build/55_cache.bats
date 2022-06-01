@@ -309,27 +309,6 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-
-@test "${tag}: §3.4.2 two pulls, different" {
-
-    # We simulate a repository change by manually editing the skinny manifest in
-    # local storage. This would occur in the wild as follows:
-    #    1. pull alpine:3.9
-    #    2. a change occurs to the image in the repository
-    #    3. run pull --no-cache alpine:3.9
-    # Now the existing SID of the image will differ from the SID in
-    # the build-cache, resulting in a warning stating that the image is stale
-    # and a fresh pull.
-    ch-image build-cache --reset
-    ch-image pull alpine:3.9
-    sed -i 's/json/fson/' "${CH_IMAGE_STORAGE}/dlcache/alpine+3.9"*manifest.json
-    run ch-image pull alpine:3.9
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output == *"pulled image: adding to build cache"* ]]
-}
-
-
 @test "${tag}: branch ready" {
     ch-image build-cache --reset
 
@@ -895,7 +874,7 @@ RUN mkdir /foo  # should not collide with leftover /foo from above
 EOF
 }
 
-@test "${tag}: detect upstream base changes" {
+@test "${tag}: pull, catch remote changes" {
     # Skip unless GitHub Actions or there is a listener on localhost:5000.
     if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
                                       && ss -lnt | grep -F :5000); then
@@ -904,37 +883,46 @@ EOF
     export CH_IMAGE_USERNAME=charlie
     export CH_IMAGE_PASSWORD=test
 
-    # Simulate a change in base image from remote repo using two different
+    # Simulate a change in an image from a remote repo using two different
     # CH_IMAGE_STORAGE directories and a local resgistry.
     #
-    # The first storage, write, is used to stage changes to the test image
-    # and push them to the local registry. The second storage, read, represents
-    # a normal user pulling and using the test image in a typical user workflow.
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/write
-    ch-image reset
+    # The first storage, remote, is used to stage changes to an image
+    # and push them to the local registry (the source of truth).
+    # The second storage, user, represents a normal user's storage in a typical
+    # workflow.
+    #
+    # Note ch-image pull behavior is the same with or without the build cache.
+    # This test is indolently placed here because the build-cache interactions
+    # with pull is a more complex superset of functionality; thus if pull works
+    # here with the cache enabled we know it works without it.
+
+    # Prepare writing storage.
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/remote
     ch-image build-cache --reset
+    ch-image reset
 
-    #### REMOTE WRITE ####
-
-    # Initial state: create a base image, and push to localhost, and reset.
+    # Create the initial image state.
     ch-image build -t capablanca -f - . <<EOF
 FROM alpine:3.9
 RUN echo "jose" > /worldchampion
 EOF
     ch-image --tls-no-verify push capablanca localhost:5000/world:champion
 
-
-    #### LOCAL READ ####
-
-    # Pull the image and use it in it's initial state.
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/read
+    # Prepare user storage.
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/user
+    ch-image build-cache --reset
     ch-image reset
-    ch-image bucache --reset
+
+    # As user, build an image refering the remote image. The user cache and
+    # storage is cold; ch-image pull will be executed via build; image files
+    # should be downloaded and all instructions should miss.
     run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
 FROM localhost:5000/world:champion
 RUN cat /worldchampion
 EOF
     [[ $status -eq 0 ]]
+    echo "$output"
+    [[ $output = *'config: downloading'* ]]
     [[ $output = *'2. RUN cat /worldchampion'* ]]
     blessed_out=$(cat << 'EOF'
 *  (worldchamp) RUN cat /worldchampion
@@ -946,81 +934,48 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 
-    #### REMOTE WRITE ####
+    # As user, execute the same build command. Everything should hit.
+    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
+FROM localhost:5000/world:champion
+RUN cat /worldchampion
+EOF
+    [[ $status -eq 0 ]]
+    echo "$output"
+    [[ $output = *'1* FROM localhost:5000/world:champion'* ]]
+    [[ $output = *'2* RUN cat /worldchampion'* ]]
 
-    # Make a change and ensure the user's cache and storage pick it up.
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/write
+    # Make a change to the remote image.
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/remote
     ch-image build -t fischer -f - . <<EOF
 FROM alpine:3.9
 RUN echo "bobby" > /worldchampion
 EOF
     ch-image --tls-no-verify push fischer localhost:5000/world:champion
 
-    #### LOCAL READ ####
+    # As the simulated user, manually pull the remote registry with warm cache.
+    # The returned config SHA should differ from what is in storage, thus the
+    # new layer(s) should be pulled and the image branch in the cache updated.
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/user
+    run ch-image --tls-no-verify pull localhost:5000/world:champion
+    [[ $status -eq 0 ]]
+    [[ $output = *'config: downloading'* ]]
+    [[ $output = *'layer'*'downloading:'*'100%'* ]]
 
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/read
+    # Rebuild the same user image. The base image exists in storage the FROM
+    # instruction is a hit, however, the resulting SID differs from
+    # the original. Thus, subsequent intructions after FROM should miss.
+    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
+FROM localhost:5000/world:champion
+RUN cat /worldchampion
+EOF
+    [[ $status -eq 0 ]]
+    [[ $output = *'2. RUN cat /worldchampion'* ]]
+
     blessed_out=$(cat << 'EOF'
-*  (worldchamp) RUN echo "bobby" > /worldchampion
+*  (worldchamp) RUN cat /worldchampion
 *  (localhost+5000%world+champion) PULL localhost:5000/world:champion
 | *  RUN cat /worldchampion
-| *  PULL PULL localhost:5000/world:champion
-|/
-*  (HEAD -> root) root
-EOF
-)
-    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
-FROM localhost:5000/world:champion
-RUN cat /worldchampion
-EOF
-    [[ $status -eq 0 ]]
-    # Config should download.
-    [[ $output = *'config: downloading'* ]]
-    # Line 2 RUN should not be cached as a change in the base was detected.
-    [[ $output = *'2. RUN cat /worldchampion'* ]]
-    run ch-image build-cache --tree
-    [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-
-    # Run again. This time config should be reused and the instruction should
-    # be cached.
-    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
-FROM localhost:5000/world:champion
-RUN cat /worldchampion
-EOF
-    [[ $status -eq 0 ]]
-    # Config should be reused.
-    [[ $output = *'config: using existing file'* ]]
-    [[ $output = *'2* RUN cat /worldchampion'* ]]
-
-
-    #### REMOTE WRITE ####
-
-    # Revert the original image in the local registry and ensure the user
-    # registry cache still hits.
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/write
-    ch-image build -t capablanca -f - . <<EOF
-FROM alpine:3.9
-RUN echo "jose" > /worldchampion
-EOF
-    ch-image --tls-no-verify push capablanca localhost:5000/world:champion
-
-
-    #### LOCAL READ ####
-
-    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
-FROM localhost:5000/world:champion
-RUN cat /worldchampion
-EOF
-    [[ $status -eq 0 ]]
-    # Config should be reused.
-    [[ $output = *'config: using existing file'* ]]
-    # Run instruction should be cached.
-    [[ $output = *'2* RUN cat /worldchampion'* ]]
-    blessed_out=$(cat << 'EOF'
-*  RUN cat /worldchampion
-*  PULL PULL localhost:5000/world:champion
-| *  (worldchamp) RUN cat /worldchampion
-| *  (localhost+5000%world+champion) PULL localhost:5000/world:champion
+| *  PULL localhost:5000/world:champion
 |/
 *  (HEAD -> root) root
 EOF
