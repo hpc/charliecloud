@@ -86,7 +86,7 @@ Common options placed before the sub-command:
     Disable build cache (default).
 
   :code:`--rebuild`
-    For cache misses for all operations except for :code:`FROM` instructions.
+    Do not reuse cached operations; execute all non :code:`FROM` instructions and add them to the cache.  
     See section "Build cache" below for details.
 
   :code:`--redownload`
