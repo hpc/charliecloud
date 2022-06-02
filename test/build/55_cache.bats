@@ -1,7 +1,7 @@
 load ../common
 
 # shellcheck disable=SC2034
-tag=bucache
+tag=cache
 
 # WARNING: Git timestamp precision is only one second [1]. This can cause
 # unstable sorting within --tree output because the tests commit very fast. If
@@ -19,7 +19,7 @@ treeonly () {
 setup () {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    [[ $CH_IMAGE_BUCACHE = enabled ]] || skip 'build cache enabled only'
+    [[ $CH_IMAGE_CACHE = enabled ]] || skip 'build cache enabled only'
     export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest  # don't mess up main storage
     dot_base=$BATS_TMPDIR/bu_
     ch-image gestalt bucache-dot
@@ -189,7 +189,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    ch-image --bucache=rebuild build -t a -f bucache/a.df .
+    ch-image --rebuild build -t a -f bucache/a.df .
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
     echo "$output"
@@ -215,7 +215,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    ch-image --bucache=rebuild build -t b -f bucache/b.df .
+    ch-image --rebuild build -t b -f bucache/b.df .
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -246,7 +246,7 @@ EOF
 *  (HEAD -> root) root
 EOF
 )
-    ch-image --bucache=rebuild build -t c -f bucache/c.df .
+    ch-image --rebuild build -t c -f bucache/c.df .
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -416,7 +416,7 @@ EOF
     [[ $output = *'initializing empty build cache'* ]]
 
     # fail if build cache disabled
-    run ch-image build-cache --bucache=disabled --reset
+    run ch-image build-cache --no-cache --reset
     [[ $status -eq 1 ]]
     echo "$output"
     [[ $output = *'build-cache subcommand invalid with build cache disabled'* ]]
@@ -435,8 +435,8 @@ EOF
               | grep "commits" | awk '{print $2}') <(echo 4)
 
     # Number of commits after 2x forced rebuilds of A (4 dangling)
-    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
-    ch-image build --bucache=rebuild -t a -f ./bucache/a.df .
+    ch-image build --rebuild -t a -f ./bucache/a.df .
+    ch-image build --rebuild -t a -f ./bucache/a.df .
     diff -u <(  ch-image build-cache \
               | grep "commits" | awk '{print $2}') <(echo 8)
 
@@ -678,7 +678,7 @@ EOF
     ch-image build-cache --reset
 
     # Pull base image w/o cache.
-    ch-image pull --bucache=disabled alpine:3.9
+    ch-image pull --no-cache alpine:3.9
     [[ ! -e $CH_IMAGE_STORAGE/img/alpine+3.9/.git ]]
 
     # Build child image.
@@ -819,7 +819,7 @@ EOF
     # Re-build in "rebuild" mode. FROM should hit, others miss, and we should
     # have two branches.
     sleep 1
-    run ch-image build --bucache=rebuild -t a -f ./bucache/a.df ./bucache
+    run ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'* FROM'* ]]
@@ -848,7 +848,7 @@ EOF
     commit_before=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
     echo "before: ${commit_before}"
     sleep 1
-    ch-image build --bucache=rebuild -t a -f ./bucache/a.df ./bucache
+    ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
     run ch-image build-cache -v --tree
     echo "$output"
     [[ $status -eq 0 ]]

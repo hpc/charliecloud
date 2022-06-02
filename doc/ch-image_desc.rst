@@ -79,23 +79,21 @@ Common options placed before the sub-command:
         architecture as a simple string and converts to/from the registry view
         transparently.
 
-  :code:`--bucache`
-    Set the build cache mode: :code:`enabled`, :code:`disabled`, or
-    :code:`rebuild`, which writes the cache for all operations but reads only
-    :code:`FROM` instructions. See section "Build cache" below for details,
-    including the default.
-
-  :code:`--dlcache`
-    Set the download cache mode: :code:`enabled` (default) or
-    :code:`write-only`, which adds new downloaded files to the cache but does
-    not re-use existing files. (:code:`ch-image` needs to read downloaded
-    files to work, which is why the download cache cannot be disabled.)
+  :code:`--cache`
+    Enable build cache.
 
   :code:`--no-cache`
-    Shorthand for :code:`--bucache=disabled --dlcache=write-only`. *Note:* If
-    you simply want to re-execute a Dockerfile in its entirety, use
-    :code:`--bucache=rebuild` instead, as that will avoid re-caching the base
-    image specified in :code:`FROM`.
+    Disable build cache (default).
+
+  :code:`--rebuild`
+    For cache misses for all operations except for :code:`FROM` instructions.
+    See section "Build cache" below for details.
+
+  :code:`--redownload`
+    Do not use any existing files when pulling; redownload files and add them to
+    the cache. (Note that :code:`ch-image pull` will always retrieve the most
+    up-to-date image from a remote repository; this is typically used for
+    debugging purposes.)
 
   :code:`--password-many`
     Re-prompt the user every time a registry password is needed.
@@ -211,12 +209,12 @@ The cache has three modes, :code:`enabled`, :code:`disabled`, and a hybrid
 mode called :code:`rebuild` where the cache is fully enabled for :code:`FROM`
 instructions, but all other operations re-execute and re-cache their results.
 (The purpose is to do a clean rebuild of a Dockerfile atop a known-good base
-image.) The mode is selected with the :code:`--bucache` or :code:`--no-cache`
-options, or the :code:`CH_IMAGE_BUCACHE` environment variable.
+image.) The mode is selected via the :code:`--cache`, :code:`--no-cache`, or
+:code:`--rebuild` options, or the :code:`CH_IMAGE_CACHE` environment variable.
 
-In 0.28, the default mode is :code:`disabled`. In 0.29, we expect the default
-to be :code:`enabled` if an appropriate Git is installed, otherwise
-:code:`disabled`.
+In 0.28, the default mode is :code:`--no-cache`. In 0.29, we expect the default
+to be :code:`--cache` if an appropriate Git is installed, otherwise
+:code:`--no-cache`.
 
 For example, suppose we have this Dockerfile::
 
@@ -227,7 +225,7 @@ For example, suppose we have this Dockerfile::
 
 On our first build, we get::
 
-  $ ch-image --bucache=enabled build -t foo -f a.df .
+  $ ch-image --cache build -t foo -f a.df .
     1. FROM alpine:3.9
   [ ... pull chatter omitted ... ]
     2. RUN echo foo
@@ -243,7 +241,7 @@ instruction was executed. You can also see this by the output of the two
 
 But on our second build, we get::
 
-  $ ch-image --bucache=enabled build -t foo -f a.df .
+  $ ch-image --cache build -t foo -f a.df .
     1* FROM alpine:3.9
     2* RUN echo foo
     3* RUN echo bar
@@ -264,7 +262,7 @@ three instructions are the same, but the third is different::
   FROM alpine:3.9
   RUN echo foo
   RUN echo qux
-  $ ch-image --bucache=enabled build -t c -f c.df .
+  $ ch-image --cache build -t c -f c.df .
     1* FROM alpine:3.9
     2* RUN echo foo
     3. RUN echo qux
@@ -277,7 +275,7 @@ third is a miss, so Charliecloud retrieves that state and continues building.
 
 We can also inspect the cache::
 
-  $ ch-image --bucache=enabled build-cache --tree
+  $ ch-image --cache build-cache --tree
   *  (c) RUN echo qux
   | *  (a) RUN echo bar
   |/

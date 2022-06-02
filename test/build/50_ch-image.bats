@@ -378,7 +378,7 @@ EOF
 }
 
 @test 'ch-image build --bind' {
-    ch-image --bucache=disabled build -t tmpimg -f - \
+    ch-image --no-cache build -t tmpimg -f - \
              -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
 FROM 00_tiny
 RUN mount
