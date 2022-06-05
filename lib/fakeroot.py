@@ -271,22 +271,21 @@ DEFAULT_CONFIGS = {
    # util-linux dependency.  We could add -u to update all installed
    # packages, but that may not be what a user wants.
    #
-   #"arch":
-   #{ "name": "Arch Linux",
-   # "match": ("/etc/os-release", r"ID=arch"),  # /etc/arch-release empty
-   # "init": [ ("command -v fakeroot > /dev/null",
-   #            "pacman -Syq --noconfirm glibc util-linux fakeroot") ],
-   # "cmds": ["pacman"],
-   # "each": ["fakeroot"] },
+   "arch":
+   { "name": "Arch Linux",
+   "match": ("/etc/os-release", r"ID=arch"),  # /etc/arch-release empty
+   "init": [ ("command -v fakeroot > /dev/null",
+              "pacman -Syq --noconfirm glibc util-linux fakeroot") ],
+   "cmds": ["pacman"],
+   "each": ["fakeroot"] },
 
-   # no worky; see #1296
-   #"alpine":
-   #{ "name": "Alpine, any version",
-   #  "match": ("/etc/alpine-release", r"[0-9]\.[0-9]+\.[0-9]+"),
-   #  "init": [ ("command -v fakeroot > /dev/null",
-   #             "apk update; apk add fakeroot") ],
-   #  "cmds": ["apk"],
-   #  "each": ["fakeroot"] },
+   "alpine":
+   { "name": "Alpine, any version",
+    "match": ("/etc/alpine-release", r"[0-9]\.[0-9]+\.[0-9]+"),
+    "init": [ ("command -v fakeroot > /dev/null",
+               "apk update; apk add fakeroot") ],
+    "cmds": ["apk"],
+    "each": ["fakeroot"] },
 }
 
 
