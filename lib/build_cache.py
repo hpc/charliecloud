@@ -82,6 +82,7 @@ class File_Metadata:
 
    __slots__ = ('atime_ns',
                 'children',
+                'dont_restore',
                 'hardlink_to',
                 'mtime_ns',
                 'mode',
@@ -90,8 +91,9 @@ class File_Metadata:
    def __init__(self, name, st):
       self.name = name
       self.atime_ns = st.st_atime_ns
-      self.hardlink_to = None
+      self.dont_restore = False
       self.children = list()  # so we can keep it sorted
+      self.hardlink_to = None
       self.mtime_ns = st.st_mtime_ns
       self.mode = st.st_mode
 
@@ -311,7 +313,8 @@ class Enabled_Cache:
 
    def git_prepare(self, unpack_path, write=True):
       """Recursively walk the given unpack path and prepare it for a Git
-         commit. For each file, in this order:
+         commit. Most of this is reversed by git_restore(); anything not
+         reversed is noted. For each file, in this order:
 
            1. Record file metadata, specifically mode and timestamps, because
               Git does not save metadata beyond a limited executable bit.
@@ -338,9 +341,19 @@ class Enabled_Cache:
               checkout. (Git splits multiply-linked files into separate
               files, and directories cannot be hard-linked [1].)
 
-           5. Filenames starting in “.git” are special to Git. Therefore,
-              except at the root where “.git” files support the cache’s Git
-              worktree, rename them to begin with “.weirdal_” instead.
+           5. Files special due to their name:
+
+              a. Names starting in “.git” are special to Git. Therefore,
+                 except at the root where “.git” files support the cache’s Git
+                 worktree, rename them to begin with “.weirdal_” instead.
+
+              b. Files matching the pattern /var/lib/rpm/__db.* are Berkeley
+                 DB database support files used by RPM. Sometimes, something
+                 mishandles the last-modified dates on these files, fooling
+                 Git into thinking they have not been modified, and so they
+                 don't get committed or restored, which confuses BDB/RPM.
+                 Fortunately, they can be safely deleted, and that's a simple
+                 workaround, so we do it. See issue #1351.
 
          Return the File_Metadata tree, and if write is True, also save it in
          “ch/git.pickle”.
@@ -370,7 +383,11 @@ class Enabled_Cache:
       if   (   stat.S_ISREG(st.st_mode)
             or stat.S_ISLNK(st.st_mode)
             or stat.S_ISFIFO(st.st_mode)):
-         pass  # stat(2) gave us all we needed
+         if (path.startswith("./var/lib/rpm/__db.")):
+            ch.VERBOSE("deleting, see issue #1351: %s" % path)
+            ch.unlink(name)
+            fm.dont_restore = True
+            return fm
       elif (   stat.S_ISSOCK(st.st_mode)):
          ch.WARNING("socket in image, will be ignored: %s" % path)
       elif (   stat.S_ISCHR(st.st_mode)
@@ -437,6 +454,9 @@ class Enabled_Cache:
       "Changes CWD but restores it."
       assert (parent is not None or fm.name == ".")
       path = fm.name if parent is None else "%s/%s" % (parent, fm.name)
+      if (fm.dont_restore):
+         assert (not stat.S_ISDIR(fm.mode))  # directories need recursion
+         return
       # Make sure I exist, and with the correct name.
       if (not quick):
          if (fm.name.startswith(".git")):
