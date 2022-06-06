@@ -310,22 +310,6 @@ EOF
 }
 
 
-@test "${tag}: empty dir persistence" {
-    ch-image build-cache --reset
-    ch-image delete tmpimg || true
-
-    ch-image build -t tmpimg - <<'EOF'
-FROM alpine:3.9
-RUN mkdir /foo && mkdir /foo/bar
-EOF
-    sleep 1
-    ch-image build -t tmpimg - <<'EOF'
-FROM alpine:3.9
-RUN true        # miss
-RUN mkdir /foo  # should not collide with leftover /foo from above
-EOF
-}
-
 @test "${tag}: §3.4.2 two pulls, different" {
     localregistry_init
 
@@ -1026,4 +1010,21 @@ EOF
     commit_after=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
     echo "after: ${commit_after}"
     [[ $commit_before != "$commit_after" ]]
+}
+
+
+@test "${tag}: empty dir persistence" {
+    ch-image build-cache --reset
+    ch-image delete tmpimg || true
+
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.9
+RUN mkdir /foo && mkdir /foo/bar
+EOF
+    sleep 1
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.9
+RUN true        # miss
+RUN mkdir /foo  # should not collide with leftover /foo from above
+EOF
 }
