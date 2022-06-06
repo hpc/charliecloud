@@ -1943,37 +1943,35 @@ class Timer:
 
 ## Supporting functions ##
 
-def DEBUG(*args, **kwargs):
+def DEBUG(msg, hint=None, **kwargs):
    if (verbose >= 2):
-      log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
+      log(msg, hint, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
-def FATAL(*args, **kwargs):
+def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
       # calling ch-image.main()) and last entry (this function).
-      hint = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
-                                     f.lineno, f.name)
-                       for f in reversed(traceback.extract_stack()[1:-1]))
-      if "hint" in kwargs:
-         hint = "%s: %s" % (kwargs["hint"], hint)
-      kwargs["hint"] = hint
-   log(*args, color="1;31m", prefix="error: ", **kwargs)  # bold red
+      tr = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
+                                   f.lineno, f.name)
+                     for f in reversed(traceback.extract_stack()[1:-1]))
+      hint = tr if hint is None else "%s: %s" % (hint, tr)
+   log(msg, hint, "1;31m", "error: ", **kwargs)  # bold red
    sys.exit(1)
 
-def INFO(*args, **kwargs):
+def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   log(*args, color="33m", **kwargs)  # yellow
+   log(msg, hint, "33m", "", **kwargs)  # yellow
 
-def TRACE(*args, **kwargs):
+def TRACE(msg, hint=None, **kwargs):
    if (verbose >= 3):
-      log(*args, color="38;5;6m", **kwargs)  # dark cyan (same as 36m)
+      log(msg, hint, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
-def VERBOSE(*args, **kwargs):
+def VERBOSE(msg, hint=None, **kwargs):
    if (verbose >= 1):
-      log(*args, color="38;5;14m", **kwargs)  # light cyan (1;36m but not bold)
+      log(msg, hint, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
-def WARNING(*args, **kwargs):
-   log(*args, color="31m", prefix="warning: ", **kwargs)  # red
+def WARNING(msg, hint=None, **kwargs):
+   log(msg, hint, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -2307,7 +2305,7 @@ def listdir(path):
    "Return set of entries in directory path, without self (.) and parent (..)."
    return set(ossafe(os.listdir, "can't list: %s" % path, path))
 
-def log(msg, hint=None, color=None, prefix="", end="\n"):
+def log(msg, hint, color, prefix, end="\n"):
    if (color is not None):
       color_set(color, log_fp)
    if (log_festoon):
