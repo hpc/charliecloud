@@ -108,17 +108,6 @@ crayify_mpi_or_skip () {
     fi
 }
 
-# Do we need sudo to run docker?
-if docker info > /dev/null 2>&1; then
-    docker_ () {
-        docker "$@"
-    }
-else
-    docker_ () {
-        sudo docker "$@"
-    }
-fi
-
 env_require () {
     if [[ -z ${!1} ]]; then
         printf '$%s is empty or not set\n\n' "$1" >&2
@@ -266,6 +255,17 @@ unpack_img_all_nodes () {
     fi
 }
 
+# Do we need sudo to run docker?
+if [[ -n $ch_docker_nosudo ]]; then
+    docker_ () {
+        docker "$@"
+    }
+else
+    docker_ () {
+        sudo docker "$@"
+    }
+fi
+
 # Do we have what we need?
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
@@ -286,8 +286,6 @@ export BATS_TMPDIR=$btnew
 
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
-# shellcheck disable=SC2034
-ch_lib=$(ch-convert --_lib-path)
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)

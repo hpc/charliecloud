@@ -525,10 +525,8 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (force) WORKDIR /usr
 *  RUN.F yum install -y ed         # doesn't need --force
-*  RUN.F rm -f /var/lib/rpm/__db*  # work around RPM BDB bug
 | *  WORKDIR /usr
 | *  RUN yum install -y ed         # doesn't need --force
-| *  RUN rm -f /var/lib/rpm/__db*  # work around RPM BDB bug
 |/
 *  WORKDIR /
 *  (centos+7) PULL centos:7
@@ -546,10 +544,8 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  WORKDIR /usr
 *  RUN.F yum install -y ed         # doesn't need --force
-*  RUN.F rm -f /var/lib/rpm/__db*  # work around RPM BDB bug
 | *  (force) WORKDIR /usr
 | *  RUN yum install -y ed         # doesn't need --force
-| *  RUN rm -f /var/lib/rpm/__db*  # work around RPM BDB bug
 |/
 *  WORKDIR /
 *  (centos+7) PULL centos:7

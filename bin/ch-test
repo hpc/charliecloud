@@ -37,6 +37,13 @@ fi
 export ch_bin
 export ch_lib
 
+if docker info > /dev/null 2>&1; then
+    ch_docker_nosudo=yes
+else
+    ch_docker_nosudo=
+fi
+export ch_docker_nosudo
+
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
 Run some or all of the Charliecloud test suite.
