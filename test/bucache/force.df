@@ -1,5 +1,4 @@
 FROM centos:7
 WORKDIR /
-RUN rm -f /var/lib/rpm/__db*  # work around RPM BDB bug
 RUN yum install -y ed         # doesn't need --force
 WORKDIR /usr
