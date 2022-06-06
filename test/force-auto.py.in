@@ -292,9 +292,14 @@ class SUSE(Test):
             # No openssh packages seem to need --force.
             **{ Run.FAKE_NEEDED: "zypper install -y ed",
                 Run.NEEDED:      "zypper install -y dbus-1" } }
-class T_OpenSUSE_42(SUSE):
-   base = "opensuse/archive:42.3"
-   arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
+# As of 2022-06-03, fails with “Signature verification failed for file
+# 'repomd.xml' from repository 'OSS Update'.”. Neither opensuse/archive:42.3
+# nor opensuse/leap:42.3 work, though the latter has more architectures.
+#class T_OpenSUSE_42_3(SUSE):
+#   base = "opensuse/archive:42.3"
+#   arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
+class T_OpenSUSE_Leap_15_0(SUSE):
+   base = "opensuse/leap:15.0"
 class T_OpenSUSE_Leap_Latest(SUSE):
    base = "opensuse/leap:latest"
 

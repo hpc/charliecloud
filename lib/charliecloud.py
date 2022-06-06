@@ -25,6 +25,7 @@ import tarfile
 import time
 import traceback
 import types
+import urllib
 
 import version
 
@@ -1347,16 +1348,12 @@ class Registry_HTTP:
          FATAL("WWW-Authenticate header not found")
       auth_h = res.headers["WWW-Authenticate"]
       VERBOSE("WWW-Authenticate raw: %s" % auth_h)
-      # Parse the WWW-Authenticate header. Apparently doing this correctly is
-      # pretty hard. We use a non-compliant regex kludge [1,2]. Alternatives
-      # include putting the grammar into Lark (this can be gotten by reading
-      # the RFCs enough) or using the www-authenticate library [3].
-      #
-      # [1]: https://stackoverflow.com/a/1349528
-      # [2]: https://stackoverflow.com/a/1547940
-      # [3]: https://pypi.org/project/www-authenticate
-      auth_type = auth_h.split()[0]
-      auth_d = dict(re.findall(r'(?:(\w+)[:=] ?"?([\w.~:/?#@!$&()*+,;=\'\[\]-]+)"?)+', auth_h))
+      # We use two “undocumented (although very stable and frequently cited)”
+      # methods to parse the authentication response header (thanks Andy,
+      # i.e., @adrecord on GitHub).
+      (auth_type, auth_d) = auth_h.split(maxsplit=1)
+      auth_d = urllib.request.parse_keqv_list(
+                  urllib.request.parse_http_list(auth_d))
       VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
       # Dispatch to proper method.
       if   (auth_type == "Bearer"):
@@ -1364,7 +1361,7 @@ class Registry_HTTP:
       elif (auth_type == "Basic"):
          self.authenticate_basic(res, auth_d)
       else:
-         FATAL("unknown auth type: %s" % auth_h)
+         FATAL("unknown auth scheme: %s" % auth_h, "expected Basic or Bearer")
 
    def blob_exists_p(self, digest):
       """Return true if a blob with digest (hex string) exists in the
