@@ -18,20 +18,20 @@ jobs:
         pack_fmt: [squash-mount, tar-unpack, squash-unpack]
         keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
-        bucache:
+        cache:
           - disabled
         include:
           - builder: docker
             pack_fmt: squash-mount
             keep_sudo: true
-            bucache: disabled
+            cache: disabled
           - builder: ch-image
             pack_fmt: squash-mount
             keep_sudo: false
-            bucache: enabled
+            cache: enabled
 
     env:
-      CH_IMAGE_BUCACHE: ${{ matrix.bucache }}
+      CH_IMAGE_CACHE: ${{ matrix.cache }}
       CH_TEST_BUILDER: ${{ matrix.builder }}
       CH_TEST_TARDIR: /mnt/tarballs
       CH_TEST_IMGDIR: /mnt/images
@@ -72,7 +72,7 @@ jobs:
           echo builder: ${{ matrix.builder }}
           echo pack_fmt: ${{ matrix.pack_fmt }}
           echo keep_sudo: ${{ matrix.keep_sudo }}
-          echo bucache: ${{ matrix.bucache }}
+          echo cache: ${{ matrix.cache }}
           uname -a
           lsb_release -a
           id
@@ -145,7 +145,7 @@ jobs:
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
           # Configure Git and friends for build cache.
-          if [[ $CH_IMAGE_BUCACHE = enabled ]]; then
+          if [[ $CH_IMAGE_CACHE = enabled ]]; then
               # Git
               command -v git
               git --version
@@ -218,7 +218,7 @@ jobs:
           sudo usermod --add-subgids 10000-65536 $USER
 
       - name: disable bundled lark, ch-image
-        if: ${{ matrix.builder == 'ch-image' && matrix.bucache == 'enabled' }}
+        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'enabled' }}
         run: |
           set -x
           # no install, disable
@@ -399,7 +399,7 @@ jobs:
       - name: run test suite (installed from Git WD, standard)
         if: ${{    ( matrix.builder == 'docker' && ! matrix.keep_sudo )
                 || (    matrix.builder == 'ch-image'
-                     && matrix.bucache == 'enabled' ) }}
+                     && matrix.cache == 'enabled' ) }}
         run: |
           $ch_prefix/from-git/bin/ch-test all
 

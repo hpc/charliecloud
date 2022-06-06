@@ -136,6 +136,17 @@ image_ok () {
 
 }
 
+localregistry_init () {
+    # Skip unless GitHub Actions or there is a listener on localhost:5000.
+    if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
+                                      && ss -lnt | grep -F :5000); then
+        skip 'no local registry'
+    fi
+    # Note: These will only stick if function is called *not* in a subshell.
+    export CH_IMAGE_USERNAME=charlie
+    export CH_IMAGE_PASSWORD=test
+}
+
 multiprocess_ok () {
     [[ $ch_multiprocess ]] || skip 'no multiprocess launch tool found'
     # If the MPI in the container is MPICH, we only try host launch on Crays.

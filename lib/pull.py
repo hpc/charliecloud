@@ -152,7 +152,7 @@ class Image_Puller:
          # cheat; internal manifest library matches every architecture
          self.architectures = { ch.arch_host: None }
          return
-      # raise Not_In_Registry_Error if needed
+      # raises Not_In_Registry_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
                                    "manifest list: downloading")
       fm = ch.json_from_file(self.fatman_path, "fat manifest")

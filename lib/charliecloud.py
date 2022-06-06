@@ -308,13 +308,6 @@ class ArgumentParser(argparse.ArgumentParser):
 
    def parse_args(self, *args, **kwargs):
       cli = super().parse_args(*args, **kwargs)
-      # Incompatible arguments inexpressible by standard means.
-      # FIXME: can't distinguish between --cache and --no-cache when we reach
-      # this now because they both target the bucache attribute.
-      #if (cli.cache and cli.no_cache is not None):
-      #   self.error("--no-cache incompatible with --cache")
-      #if (cli.no_cache and cli.rebuild is not None):
-      #   self.error("--no-cache incompatible with --rebuild")
       # Bring in environment variables that set options.
       if (cli.bucache is None and "CH_IMAGE_CACHE" in os.environ):
          try:
@@ -2278,7 +2271,7 @@ def init(cli):
    else:
       arch = cli.arch
    # download cache
-   if (cli.dlcache):
+   if (cli.always_download):
       dlcache = Download_Mode.WRITE_ONLY
    else:
       dlcache = Download_Mode.ENABLED

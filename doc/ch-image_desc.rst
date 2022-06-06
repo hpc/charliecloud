@@ -40,7 +40,7 @@ Options that print brief information and then exit:
   :code:`--version`
     Print version number and exit successfully.
 
-Common options placed before the sub-command:
+Common options placed before or after the sub-command:
 
   :code:`-a`, :code:`--arch ARCH`
      Use :code:`ARCH` for architecture-aware registry operations, currently
@@ -79,21 +79,22 @@ Common options placed before the sub-command:
         architecture as a simple string and converts to/from the registry view
         transparently.
 
+  :code:`--always-download`
+    Download all files when pulling, even if they are already in builder
+    storage. Note that :code:`ch-image pull` will always retrieve the most
+    up-to-date image; this option is mostly for debugging.
+
   :code:`--cache`
     Enable build cache.
 
   :code:`--no-cache`
-    Disable build cache (default).
+    Disable build cache (default). This option turns off the cache completely;
+    if you want to re-execute a Dockerfile and store the new results in cache,
+    use :code:`--rebuild` instead.
 
   :code:`--rebuild`
-    Do not reuse cached operations; execute all non :code:`FROM` instructions and add them to the cache.  
-    See section "Build cache" below for details.
-
-  :code:`--redownload`
-    Do not use any existing files when pulling; redownload files and add them to
-    the cache. (Note that :code:`ch-image pull` will always retrieve the most
-    up-to-date image from a remote repository; this is typically used for
-    debugging purposes.)
+    Execute all instructions, even if they are build cache hits, except for
+    :code:`FROM` which is retrieved from cache on hit.
 
   :code:`--password-many`
     Re-prompt the user every time a registry password is needed.
@@ -205,12 +206,14 @@ repositories within the image should work. **Important exception**: No files
 named :code:`.git*` or other Git metadata are permitted in the image's root
 directory.
 
-The cache has three modes, :code:`enabled`, :code:`disabled`, and a hybrid
-mode called :code:`rebuild` where the cache is fully enabled for :code:`FROM`
-instructions, but all other operations re-execute and re-cache their results.
-(The purpose is to do a clean rebuild of a Dockerfile atop a known-good base
-image.) The mode is selected via the :code:`--cache`, :code:`--no-cache`, or
-:code:`--rebuild` options, or the :code:`CH_IMAGE_CACHE` environment variable.
+The cache has three modes, *enabled*, *disabled*, and a hybrid mode called
+*rebuild* where the cache is fully enabled for :code:`FROM` instructions, but
+all other operations re-execute and re-cache their results. The purpose of
+*rebuild* is to do a clean rebuild of a Dockerfile atop a known-good base
+image. Enabled mode is selected with :code:`--cache` or setting
+:code:`$CH_IMAGE_CACHE` to :code:`enabled`, disabled mode with
+:code:`--no-cache` or :code:`disabled`, and rebuild mode with
+:code:`--rebuild` or :code:`rebuild`.
 
 In 0.28, the default mode is :code:`--no-cache`. In 0.29, we expect the default
 to be :code:`--cache` if an appropriate Git is installed, otherwise
@@ -281,7 +284,7 @@ We can also inspect the cache::
   |/
   *  RUN echo foo
   *  (alpine+3.9) PULL alpine:3.9
-  *  (HEAD -> root) root
+  *  (HEAD -> root) ROOT
 
   named images:     4
   state IDs:        5

@@ -34,7 +34,7 @@ setup () {
     blessed_tree=$(cat << EOF
 initializing storage directory: v3 ${CH_IMAGE_STORAGE}
 initializing empty build cache
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}empty"
@@ -49,7 +49,7 @@ EOF
 
     blessed_tree=$(cat << 'EOF'
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}initial-pull"
@@ -68,7 +68,7 @@ EOF
     [[ $output = *'1. FROM alpine:3.9'* ]]
     blessed_tree=$(cat << 'EOF'
 *  (d, alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}from"
@@ -83,7 +83,7 @@ EOF
     [[ $output = *'1* FROM alpine:3.9'* ]]
     blessed_tree=$(cat << 'EOF'
 *  (d, alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -98,7 +98,7 @@ EOF
     [[ $output = *'1* FROM alpine:3.9'* ]]
     blessed_tree=$(cat << 'EOF'
 *  (d2, d, alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -117,7 +117,7 @@ EOF
 *  (a) RUN echo bar
 *  RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}a"
@@ -138,7 +138,7 @@ EOF
 *  (a) RUN echo bar
 *  RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}b"
@@ -163,7 +163,7 @@ EOF
 |/
 *  RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}c"
@@ -186,7 +186,7 @@ EOF
 | *  RUN echo foo
 |/
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     ch-image --rebuild build -t a -f bucache/a.df .
@@ -212,7 +212,7 @@ EOF
 | *  RUN echo foo
 |/
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     ch-image --rebuild build -t b -f bucache/b.df .
@@ -243,7 +243,7 @@ EOF
 | *  RUN echo foo
 |/
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     ch-image --rebuild build -t c -f bucache/c.df .
@@ -266,7 +266,7 @@ EOF
 |/
 *  RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}revert1"
@@ -283,7 +283,7 @@ EOF
 |/
 *  RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}revert2"
@@ -300,7 +300,7 @@ EOF
 
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -308,6 +308,177 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
+
+
+@test "${tag}: empty dir persistence" {
+    ch-image build-cache --reset
+    ch-image delete tmpimg || true
+
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.9
+RUN mkdir /foo && mkdir /foo/bar
+EOF
+    sleep 1
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.9
+RUN true        # miss
+RUN mkdir /foo  # should not collide with leftover /foo from above
+EOF
+}
+
+@test "${tag}: §3.4.2 two pulls, different" {
+    localregistry_init
+
+    # Simulate a change in an image from a remote repo; ensure that “ch-image
+    # pull” downloads the next image. Note ch-image pull behavior is the same
+    # with or without the build cache. This test is here for two reasons:
+    #
+    #    1. The build cache interactions with pull is more complex, i.e., we
+    #       assume that if pull works here with the cache enabled we it also
+    #       works without it.
+    #
+    #    2. We emit debugging PDFs for use in the paper, and doing that
+    #       anywhere else would be too surprising.
+
+    df_ours=$(cat <<'EOF'
+FROM localhost:5000/champ
+RUN cat /worldchampion
+EOF
+)
+    tree_ours_before=$(cat <<'EOF'
+*  (wc) RUN cat /worldchampion
+*  (localhost+5000%champ) PULL localhost:5000/champ
+*  (HEAD -> root) ROOT
+EOF
+)
+
+    echo
+    echo '*** Prepare “ours” and “theirs” storages.'
+    so=$BATS_TMPDIR/pull-local
+    st=$BATS_TMPDIR/pull-remote
+    rm -Rf --one-file-system "$so" "$st"
+
+    echo
+    echo '*** Them: Create the initial image state.'
+    ch-image -s "$st" build -t capablanca -f - . <<EOF
+FROM alpine:3.9
+RUN echo josé > /worldchampion
+EOF
+    ch-image -s "$st" --tls-no-verify push capablanca localhost:5000/champ
+
+    echo '*** Us: Build image using theirs as base.'
+    # Both download and build caches are cold; FROM will do a (lazy) pull.
+    # Files should be downloaded and all instructions should miss. Then do it
+    # again; nothing should download and it should be all hits.
+    run ch-image -s "$so" --tls-no-verify build -t wc -f <(echo "$df_ours") /tmp
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'. FROM'* ]]
+    [[ $output = *'manifest list: downloading'* ]]
+    [[ $output = *'manifest: downloading'* ]]
+    [[ $output = *'config: downloading'* ]]
+    [[ $output = *'. RUN'* ]]
+    run ch-image -s "$so" --tls-no-verify build -t wc -f <(echo "$df_ours") /tmp
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output != *'manifest list: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
+    [[ $output != *'config: downloading'* ]]
+    [[ $output = *'* RUN'* ]]
+    run ch-image -s "$so" build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$tree_ours_before") <(echo "$output" | treeonly)
+
+    echo
+    echo '*** Us: explicit (eager) pull.'
+    # This should download the manifest list and manifest, see that there are
+    # no changes, and not download the config or layers.
+    run ch-image -s "$so" --tls-no-verify pull localhost:5000/champ
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'manifest list: downloading'* ]]
+    [[ $output = *'manifest: downloading'* ]]
+    [[ $output = *'config: using existing file'* ]]
+    [[ $output = *'layer'*'using existing file'* ]]
+    run ch-image -s "$so" build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$tree_ours_before") <(echo "$output" | treeonly)
+
+    echo
+    echo '*** Them: Change and push the image.'
+    ch-image -s "$st" build -t fischer -f - . <<EOF
+FROM alpine:3.9
+RUN echo "bobby" > /worldchampion
+EOF
+    ch-image -s "$st" --tls-no-verify push fischer localhost:5000/champ
+
+    echo
+    echo '*** Us: Rebuild our image (lazy pull does not update).'
+    # FROM should not notice the updated remote image.
+    run ch-image -s "$so" --tls-no-verify build -t wc -f <(echo "$df_ours") /tmp
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output != *'manifest list: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
+    [[ $output != *'config: downloading'* ]]
+    [[ $output = *'* RUN'* ]]
+    run ch-image -s "$so" build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$tree_ours_before") <(echo "$output" | treeonly)
+
+    echo
+    echo '*** Us: Explicitly pull updated image.'
+    # Returned config hash should differ from what is in storage; thus, the
+    # new layer(s) should be pulled and the image branch in the cache updated.
+    run ch-image -s "$so" --tls-no-verify pull localhost:5000/champ
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'manifest list: downloading'* ]]
+    [[ $output = *'manifest: downloading'* ]]
+    [[ $output = *'config: downloading'* ]]
+    [[ $output = *'layer'*'downloading:'*'100%'* ]]
+    run ch-image -s "$so" build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u - <(echo "$output" | treeonly) <<'EOF'
+*  (localhost+5000%champ) PULL localhost:5000/champ
+| *  (wc) RUN cat /worldchampion
+| *  PULL localhost:5000/champ
+|/
+*  (HEAD -> root) ROOT
+EOF
+
+    echo
+    echo '*** Us: Rebuild our image (uses updated image).'
+    # After the eager pull above, the base image exists in storage. Thus, the
+    # FROM instruction hits; however, the resulting SID differs from the
+    # original. Thus, intructions after FROM should miss.
+    run ch-image -s "$so" --tls-no-verify build -t wc -f <(echo "$df_ours") /tmp
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output != *'manifest list: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
+    [[ $output != *'config: using existing file'* ]]
+    [[ $output = *'. RUN'* ]]
+    run ch-image -s "$so" build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u - <(echo "$output" | treeonly) <<'EOF'
+*  (wc) RUN cat /worldchampion
+*  (localhost+5000%champ) PULL localhost:5000/champ
+| *  RUN cat /worldchampion
+| *  PULL localhost:5000/champ
+|/
+*  (HEAD -> root) ROOT
+EOF
+}
+
 
 @test "${tag}: branch ready" {
     ch-image build-cache --reset
@@ -329,7 +500,7 @@ EOF
 *  (foo) RUN echo bar
 *  (foo#) RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -346,7 +517,7 @@ EOF
 |/
 *  RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -377,7 +548,7 @@ EOF
 |/
 *  WORKDIR /
 *  (centos+7) PULL centos:7
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -398,7 +569,7 @@ EOF
 |/
 *  WORKDIR /
 *  (centos+7) PULL centos:7
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -517,7 +688,7 @@ EOF
 |/
 *  ARG argA='vargA'
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -696,7 +867,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (foo) RUN echo foo
 *  (alpine+3.9) IMPORT alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -713,7 +884,7 @@ EOF
 *  (a2, a) RUN echo bar
 *  RUN echo foo
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     ch-image build -t a -f ./bucache/a.df .
@@ -750,7 +921,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.9) RUN echo foo
 *  (foo) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -767,7 +938,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
 *  (foo, alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -781,7 +952,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
 *  (foo, alpine+3.9, alpine+3.10) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -799,7 +970,7 @@ EOF
 | *  RUN echo foo
 | *  (foo, alpine+3.9) PULL alpine:3.9
 |/
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -832,7 +1003,7 @@ EOF
 | *  RUN echo foo
 |/
 *  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}rebuild"
@@ -855,132 +1026,4 @@ EOF
     commit_after=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
     echo "after: ${commit_after}"
     [[ $commit_before != "$commit_after" ]]
-}
-
-
-@test "${tag}: empty dir persistence" {
-    ch-image build-cache --reset
-    ch-image delete tmpimg || true
-
-    ch-image build -t tmpimg - <<'EOF'
-FROM alpine:3.9
-RUN mkdir /foo && mkdir /foo/bar
-EOF
-    sleep 1
-    ch-image build -t tmpimg - <<'EOF'
-FROM alpine:3.9
-RUN true        # miss
-RUN mkdir /foo  # should not collide with leftover /foo from above
-EOF
-}
-
-@test "${tag}: pull, catch remote changes" {
-    # Skip unless GitHub Actions or there is a listener on localhost:5000.
-    if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
-                                      && ss -lnt | grep -F :5000); then
-        skip 'no local registry'
-    fi
-    export CH_IMAGE_USERNAME=charlie
-    export CH_IMAGE_PASSWORD=test
-
-    # Simulate a change in an image from a remote repo using two different
-    # CH_IMAGE_STORAGE directories and a local resgistry.
-    #
-    # The first storage, remote, is used to stage changes to an image
-    # and push them to the local registry (the source of truth).
-    # The second storage, user, represents a normal user's storage in a typical
-    # workflow.
-    #
-    # Note ch-image pull behavior is the same with or without the build cache.
-    # This test is indolently placed here because the build-cache interactions
-    # with pull is a more complex superset of functionality; thus if pull works
-    # here with the cache enabled we know it works without it.
-
-    # Prepare writing storage.
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/remote
-    ch-image build-cache --reset
-    ch-image reset
-
-    # Create the initial image state.
-    ch-image build -t capablanca -f - . <<EOF
-FROM alpine:3.9
-RUN echo "jose" > /worldchampion
-EOF
-    ch-image --tls-no-verify push capablanca localhost:5000/world:champion
-
-    # Prepare user storage.
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/user
-    ch-image build-cache --reset
-    ch-image reset
-
-    # As user, build an image refering the remote image. The user cache and
-    # storage is cold; ch-image pull will be executed via build; image files
-    # should be downloaded and all instructions should miss.
-    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
-FROM localhost:5000/world:champion
-RUN cat /worldchampion
-EOF
-    [[ $status -eq 0 ]]
-    echo "$output"
-    [[ $output = *'config: downloading'* ]]
-    [[ $output = *'2. RUN cat /worldchampion'* ]]
-    blessed_out=$(cat << 'EOF'
-*  (worldchamp) RUN cat /worldchampion
-*  (localhost+5000%world+champion) PULL localhost:5000/world:champion
-*  (HEAD -> root) root
-EOF
-)
-    run ch-image build-cache --tree
-    [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-
-    # As user, execute the same build command. Everything should hit.
-    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
-FROM localhost:5000/world:champion
-RUN cat /worldchampion
-EOF
-    [[ $status -eq 0 ]]
-    echo "$output"
-    [[ $output = *'1* FROM localhost:5000/world:champion'* ]]
-    [[ $output = *'2* RUN cat /worldchampion'* ]]
-
-    # Make a change to the remote image.
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/remote
-    ch-image build -t fischer -f - . <<EOF
-FROM alpine:3.9
-RUN echo "bobby" > /worldchampion
-EOF
-    ch-image --tls-no-verify push fischer localhost:5000/world:champion
-
-    # As the simulated user, manually pull the remote registry with warm cache.
-    # The returned config SHA should differ from what is in storage, thus the
-    # new layer(s) should be pulled and the image branch in the cache updated.
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/user
-    run ch-image --tls-no-verify pull localhost:5000/world:champion
-    [[ $status -eq 0 ]]
-    [[ $output = *'config: downloading'* ]]
-    [[ $output = *'layer'*'downloading:'*'100%'* ]]
-
-    # Rebuild the same user image. The base image exists in storage the FROM
-    # instruction is a hit, however, the resulting SID differs from
-    # the original. Thus, subsequent intructions after FROM should miss.
-    run ch-image --tls-no-verify build -t worldchamp -f - . <<EOF
-FROM localhost:5000/world:champion
-RUN cat /worldchampion
-EOF
-    [[ $status -eq 0 ]]
-    [[ $output = *'2. RUN cat /worldchampion'* ]]
-
-    blessed_out=$(cat << 'EOF'
-*  (worldchamp) RUN cat /worldchampion
-*  (localhost+5000%world+champion) PULL localhost:5000/world:champion
-| *  RUN cat /worldchampion
-| *  PULL localhost:5000/world:champion
-|/
-*  (HEAD -> root) root
-EOF
-)
-    run ch-image build-cache --tree
-    [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }

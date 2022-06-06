@@ -409,7 +409,7 @@ RUN echo "shell2: $0"
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    if [[ $CH_IMAGE_BUCACHE = disabled ]]; then
+    if [[ $CH_IMAGE_CACHE = disabled ]]; then
         [[ $output = *'cwd1: /mnt'* ]]
         [[ $output = *'cwd2: /usr'* ]]
         [[ $output = *'env1: PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'* ]]
