@@ -116,13 +116,14 @@ fully understand the implications for your specific use case, because it is
 difficult to securely store secrets in environment variables.
 
 By default, all registry access is anonymous. To instead use authenticated
-access for everything, specify :code:`--auth`. Even for pulling public images,
-it can be useful to authenticate for registries that have per-user rate
-limits, such as `Docker Hub
-<https://docs.docker.com/docker-hub/download-rate-limit/>`_. (Older versions
-of Charliecloud started with anonymous access, then tried to upgrade to
-authenticated if it seemed necessary. However, this turned out to be brittle;
-see issue `#1318 <https://github.com/hpc/charliecloud/issues/1318>`_.)
+access for everything, specify :code:`--auth` or set the environment variable
+`$CH_IMAGE_AUTH=always`. Even for pulling public images, it can be useful to
+authenticate for registries that have per-user rate limits, such as `Docker
+Hub <https://docs.docker.com/docker-hub/download-rate-limit/>`_. (Older
+versions of Charliecloud started with anonymous access, then tried to upgrade
+to authenticated if it seemed necessary. However, this turned out to be
+brittle; see issue `#1318
+<https://github.com/hpc/charliecloud/issues/1318>`_.)
 
 The username and password are remembered for the life of the process and
 silently re-offered to the registry if needed. One case when this happens is
