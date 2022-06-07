@@ -323,7 +323,7 @@ AC_CHECK_DECL(FNM_EXTMATCH,
               [have_fnm_extmatch=yes],
               [have_fnm_extmatch=no],
               [[#define _GNU_SOURCE
-#include <fnmatch.h>]])
+                #include <fnmatch.h>]])
 
 
 ### SquashFS #################################################################
