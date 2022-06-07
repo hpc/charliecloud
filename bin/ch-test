@@ -37,6 +37,13 @@ fi
 export ch_bin
 export ch_lib
 
+if docker info > /dev/null 2>&1; then
+    ch_docker_nosudo=yes
+else
+    ch_docker_nosudo=
+fi
+export ch_docker_nosudo
+
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
 Run some or all of the Charliecloud test suite.
@@ -942,7 +949,7 @@ vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
 vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
                       21 'packed images dir'
 pack_fmt_set 21
-vset CH_IMAGE_BUCACHE "$bucache_mode"  "$CH_IMAGE_BUCACHE" disabled \
+vset CH_IMAGE_CACHE   "$bucache_mode"  "$CH_IMAGE_CACHE"   disabled \
                       21 'build cache mode'
 vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'

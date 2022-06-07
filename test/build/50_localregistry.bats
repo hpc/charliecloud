@@ -11,13 +11,7 @@ tag='ch-image push'
 setup () {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    # Skip unless GitHub Actions or there is a listener on localhost:5000.
-    if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
-                                      && ss -lnt | grep -F :5000); then
-        skip 'no local registry'
-    fi
-    export CH_IMAGE_USERNAME=charlie
-    export CH_IMAGE_PASSWORD=test
+    localregistry_init
 }
 
 @test "${tag}: without destination reference" {
