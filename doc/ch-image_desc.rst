@@ -78,9 +78,10 @@ Common options placed before the sub-command:
         architecture as a simple string and converts to/from the registry view
         transparently.
 
-  :code:`--auth MODE`
-    Set authentication mode to :code:`MODE`, which is one of **[FIXME]** or
-    :code:`auto` (the default). See section "Authentication" below.
+  :code:`--auth`
+    Authenticate with the remote repository, then (if successful) make all
+    subsequent requests in authenticated mode. The default is to never
+    authenticate, i.e., make all requests anonymously.
 
   :code:`--no-cache`
     Download everything needed, ignoring the cache.
@@ -102,49 +103,26 @@ Common options placed before the sub-command:
 Authentication
 ==============
 
-There is no separate :code:`login` subcommand like some other container
-implementations. If the remote repository needs authentication, Charliecloud
-will prompt you for a username and password. Note that some repositories call
-the secret something other than "password"; e.g., GitLab calls it a "personal
-access token (PAT)".
+Charliecloud has no separate :code:`login` subcommand like some other
+container implementations, and we do not plan to add one because Charliecloud
+maintains no configuration files. Instead, Charliecloud will prompt you for a
+username and password when authentication is needed. Note that some
+repositories call the secret something other than "password"; e.g., GitLab
+calls it a "personal access token (PAT)".
 
 For non-interactive authentication, you can use environment variables
 :code:`CH_IMAGE_USERNAME` and :code:`CH_IMAGE_PASSWORD`. Only do this if you
 fully understand the implications for your specific use case, because it is
 difficult to securely store secrets in environment variables.
 
-A complication is that some registries respond ambiguously to anonymous (i.e.,
-not authenticated) requests: if a resource exists but requires authentication
-to access (e.g., to pull a private image), these registries tell Charliecloud
-it is not found. Thus, an second authenticated request is needed, to either
-access the resource or determine that is really does not exist. Also, it can
-be useful to always authenticate for registries that have private rate limits
-if logged in, such as `Docker Hub
-<https://docs.docker.com/docker-hub/download-rate-limit/>`_.
-
-However, sometimes you do not have a registry account or don't want to log in
-for whatever reason; in these cases, prompting for a password to attempt an
-authenticated request is simply an annoyance. Therefore, :code:`ch-image`
-provides three authentication modes, set with the :code:`--auth=MODE` common
-option:
-
-   * :code:`always`: Try to authenticate with the registry immediately after
-     connection. If this fails, exit with an error, i.e., anonymous access is
-     not possible.
-
-   * :code:`never`: Only access the registry anonymously.
-
-   * :code:`lazy`: Start with anonymous access, but try to upgrade to
-     authenticated if it seems necessary, e.g. anonymously determine if layers
-     in a public image exist but authenticate before uploading. Note that the
-     heuristic is unreliable, e.g. with nVidia NGC, :code:`ch-image` cannot
-     pull images that require authentication because it thinks they do not
-     exist (issue `#1318 <https://github.com/hpc/charliecloud/issues/1318>`_).
-     This was the only mode before 0.28.
-
-   * :code:`auto` (the default): Use mode :code:`always` if
-     :code:`CH_IMAGE_USERNAME` and :code:`CH_IMAGE_PASSWORD` are non-empty;
-     otherwise :code:`lazy`.
+By default, all registry access is anonymous. To instead use authenticated
+access for everything, specify :code:`--auth`. Even for pulling public images,
+it can be useful to authenticate for registries that have per-user rate
+limits, such as `Docker Hub
+<https://docs.docker.com/docker-hub/download-rate-limit/>`_. (Older versions
+of Charliecloud started with anonymous access, then tried to upgrade to
+authenticated if it seemed necessary. However, this turned out to be brittle;
+see issue `#1318 <https://github.com/hpc/charliecloud/issues/1318>`_.)
 
 The username and password are remembered for the life of the process and
 silently re-offered to the registry if needed. One case when this happens is
