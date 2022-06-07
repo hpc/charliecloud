@@ -313,22 +313,13 @@ class ArgumentParser(argparse.ArgumentParser):
 
    def parse_args(self, *args, **kwargs):
       cli = super().parse_args(*args, **kwargs)
-      # Incompatible arguments inexpressible by standard means.
-      if (cli.no_cache and cli.bucache is not None):
-         self.error("--no-cache incompatible with --bucache")
-      if (cli.no_cache and cli.dlcache is not None):
-         self.error("--no-cache incompatible with --dlcache")
-      # Unpack shorthand options.
-      if (cli.no_cache):
-         cli.bucache = Build_Mode.DISABLED
-         cli.dlcache = Download_Mode.WRITE_ONLY
       # Bring in environment variables that set options.
-      if (cli.bucache is None and "CH_IMAGE_BUCACHE" in os.environ):
+      if (cli.bucache is None and "CH_IMAGE_CACHE" in os.environ):
          try:
-            cli.bucache = Build_Mode(os.environ["CH_IMAGE_BUCACHE"])
+            cli.bucache = Build_Mode(os.environ["CH_IMAGE_CACHE"])
          except ValueError:
-            FATAL("$CH_IMAGE_BUCACHE: invalid build cache mode: %s"
-                  % os.environ["CH_IMAGE_BUCACHE"])
+            FATAL("$CH_IMAGE_CACHE: invalid build cache mode: %s"
+                  % os.environ["CH_IMAGE_CACHE"])
       return cli
 
 
@@ -2279,7 +2270,7 @@ def init(cli):
    else:
       arch = cli.arch
    # download cache
-   if (cli.no_cache or cli.dlcache == Download_Mode.WRITE_ONLY):
+   if (cli.always_download):
       dlcache = Download_Mode.WRITE_ONLY
    else:
       dlcache = Download_Mode.ENABLED

@@ -225,7 +225,7 @@ class Enabled_Cache:
             # rules the user might have. https://stackoverflow.com/a/26681066
             ch.file_write(".gitignore", "!*\n")
             ch.cmd_quiet(["git", "add", ".gitignore"])
-            ch.cmd_quiet(["git", "commit", "-m", "root\n\n%s" % self.root_id])
+            ch.cmd_quiet(["git", "commit", "-m", "ROOT\n\n%s" % self.root_id])
             ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
             ch.chdir(cwd)
       except OSError as x:
@@ -271,7 +271,7 @@ class Enabled_Cache:
       else:
          sid = None
          commit = None
-         commit_short = 'lol'
+         commit_short = 'nada'
       ch.VERBOSE("branch: %s: %s %s" % (image.ref.for_path, commit_short, sid))
       return (sid, commit)
 
@@ -598,7 +598,7 @@ class Enabled_Cache:
       # See: https://git-scm.com/docs/git-log#_pretty_formats
       if (ch.verbose == 0):
          # ref names, subject (instruction)
-         fmt = "%C(auto)%d %Creset%<|(79,trunc)%s"
+         fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
       else:
          # ref names, short commit hash, subject (instruction), body (state ID)
          # FIXME: The body contains a trailing newline I can't figure out how

@@ -136,9 +136,9 @@ class Image_Puller:
       return (code, msg)
 
    def fatman_load(self):
-      """Load the fat manifest JSON file, downloading it first if needed. If
-         the image has a fat manifest, populate self.architectures; this may
-         be an empty dictionary if no valid architectures were found.
+      """Download the fat manifest and load it. If the image has a fat manifest
+         populate self.architectures; this may be an empty dictionary if no
+         valid architectures were found.
 
          Raises:
 
@@ -152,12 +152,9 @@ class Image_Puller:
          # cheat; internal manifest library matches every architecture
          self.architectures = { ch.arch_host: None }
          return
-      if (os.path.exists(self.fatman_path) and ch.dlcache_p):
-         ch.INFO("manifest list: using existing file")
-      else:
-         # raises Not_In_Registry_Error if needed
-         self.registry.fatman_to_file(self.fatman_path,
-                                      "manifest list: downloading")
+      # raises Not_In_Registry_Error if needed
+      self.registry.fatman_to_file(self.fatman_path,
+                                   "manifest list: downloading")
       fm = ch.json_from_file(self.fatman_path, "fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
          # FIXME (issue #1101): If it's a v2 manifest we could use it instead
@@ -196,8 +193,8 @@ class Image_Puller:
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
    def manifest_load(self):
-      """Download the manifest file if needed, parse it, and set
-         self.config_hash and self.layer_hashes. If the image does not exist,
+      """Download the manifest file, parse it, and set self.config_hash and
+         self.layer_hashes. If the image does not exist,
          exit with error."""
       def bad_key(key):
          ch.FATAL("manifest: %s: no key: %s" % (self.manifest_path, key))
@@ -209,18 +206,15 @@ class Image_Puller:
          manifest = manifests_internal[str(self.image.ref)]
          ch.INFO("manifest: using internal library")
       except KeyError:
-         # download the file if needed, then parse it
+         # download the file and parse it
          if (ch.arch == "yolo" or self.architectures is None):
             digest = None
          else:
             digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
-         if (os.path.exists(self.manifest_path) and ch.dlcache_p):
-            ch.INFO("manifest: using existing file")
-         else:
-            self.registry.manifest_to_file(self.manifest_path,
-                                           "manifest: downloading",
-                                           digest=digest)
+         self.registry.manifest_to_file(self.manifest_path,
+                                        "manifest: downloading",
+                                        digest=digest)
          manifest = ch.json_from_file(self.manifest_path, "manifest")
       # validate schema version
       try:
