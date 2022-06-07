@@ -598,7 +598,7 @@ class Enabled_Cache:
       # See: https://git-scm.com/docs/git-log#_pretty_formats
       if (ch.verbose == 0):
          # ref names, subject (instruction)
-         fmt = "%C(auto)%d %Creset%s"
+         fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
       else:
          # ref names, short commit hash, subject (instruction), body (state ID)
          # FIXME: The body contains a trailing newline I can't figure out how

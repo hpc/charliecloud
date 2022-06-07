@@ -318,7 +318,7 @@ EOF
     # with or without the build cache. This test is here for two reasons:
     #
     #    1. The build cache interactions with pull is more complex, i.e., we
-    #       assume that if pull works here with the cache enabled we it also
+    #       assume that if pull works here with the cache enabled, it also
     #       works without it.
     #
     #    2. We emit debugging PDFs for use in the paper, and doing that
@@ -463,6 +463,9 @@ EOF
 EOF
 }
 
+# FIXME: for issue #1359, add test here where they revert the image in the
+# remote registry to a previous state; our next pull will hit, and so too
+# should any subsequent previously cached instructions based on the FROM SID.
 
 @test "${tag}: branch ready" {
     ch-image build-cache --reset
