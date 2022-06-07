@@ -441,6 +441,7 @@ EOF
 {
   "arch": "amd64",
   "arg": {
+    "FAKEROOTDONTTRYCHOWN": "1",
     "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     "TAR_OPTIONS": "--no-same-owner"
   },

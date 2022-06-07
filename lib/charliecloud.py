@@ -112,7 +112,11 @@ ARG_DEFAULTS_MAGIC = { k:v for (k,v) in ((m, os.environ.get(m))
 
 # ARGs with pre-defined default values that *are* saved with the image.
 ARG_DEFAULTS = \
-   { "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   { # calls to chown/fchown withn a user namespace will fail with EINVAL for
+     # UID/GIDs besides the current one. This env var tells fakeroot to not
+     # try. Credit to Dave Dykstra for pointing us to this.
+     "FAKEROOTDONTTRYCHOWN": "1",
+     "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
      # GNU tar, when it thinks it’s running as root, tries to chown(2) and
      # chgrp(2) files to whatever is in the tarball.
      "TAR_OPTIONS": "--no-same-owner" }
