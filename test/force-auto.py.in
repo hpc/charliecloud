@@ -225,7 +225,6 @@ class T_CentOS_7(RHEL7, EPEL_Mixin):
 
 class RHEL8(Test):
    config = "rhel8"
-   arch_excludes = ["aarch64"]  # issue #1249
    runs = { **Test.runs,
             **{ Run.FAKE_NEEDED: "dnf install -y"
                                  " --setopt=install_weak_deps=false ed",

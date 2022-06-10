@@ -100,6 +100,15 @@ ARCH_MAP = { "x86_64":    "amd64",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
 
+# Some images have oddly specified architecture. For example, as of
+# 2022-06-08, on Docker Hub, opensuse/leap:15.1 offers architectures amd64,
+# arm/v7, arm64/v8, and ppc64le, while opensuse/leap:15.2 offers amd64, arm,
+# arm64, and ppc64le, i.e., with no variants. This maps architectures to a
+# sequence of fallback architectures that we hope are equivalent. See class
+# Arch_Dict below.
+ARCH_MAP_FALLBACK = { "arm/v7": ("arm",),
+                      "arm64/v8": ("arm64",) }
+
 # ARGs that are “magic”: always available, don’t cause cache misses, not saved
 # with the image.
 ARGS_MAGIC = { "HTTP_PROXY", "HTTPS_PROXY", "FTP_PROXY", "NO_PROXY",
@@ -279,6 +288,45 @@ class Not_In_Registry_Error(Exception): pass
 
 
 ## Classes ##
+
+class Arch_Dict(collections.UserDict):
+   """Dictionary that overloads subscript and “in” to consider
+      ARCH_MAP_FALLBACK."""
+
+   def __contains__(self, k):  # “in” operator
+      if (k in self.data):
+         return True
+      try:
+         return self._fallback_key(k) in self.data
+      except KeyError:
+         return False
+
+   def __getitem__(self, k):
+      try:
+         return self.data.__getitem__(k)
+      except KeyError:
+         return self.data.__getitem__(self._fallback_key(k))
+
+   def _fallback_key(self, k):
+      """Return fallback key corresponding to key k, or raise KeyError if
+         there is no fallback."""
+      assert (k not in self.data)
+      if (k not in ARCH_MAP_FALLBACK):
+         raise KeyError("no fallbacks: %s" % k)
+      for f in ARCH_MAP_FALLBACK[k]:
+         if (f in self.data):
+            return f
+      raise KeyError("fallbacks also missing: %s" % k)
+
+   def in_warn(self, k):
+      """Return True if k in self, False otherwise, just like the “in“
+         operator, but also log a warning if fallback is used."""
+      result = k in self
+      if (result and k not in self.data):
+         WARNING("arch %s requested but falling back to %s" %
+                 (k, self._fallback_key(k)))
+      return result
+
 
 class ArgumentParser(argparse.ArgumentParser):
 
