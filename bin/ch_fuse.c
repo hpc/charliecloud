@@ -242,8 +242,8 @@ void sq_mount(const char *img_path, char *mountpt)
    //
    // [1]: https://github.com/vasi/squashfuse/blob/74f4fe8/ll.c#L399
    for (int i = 5; true; i--)
-      if (!sqfs_ll_mount(sq.chan, sq.mountpt, &mount_args,
-                         &OPS, sizeof(OPS), sq.ll) != SQFS_OK) {
+      if (SQFS_OK == sqfs_ll_mount(sq.chan, sq.mountpt, &mount_args,
+                                   &OPS, sizeof(OPS), sq.ll)) {
          break;  // success
       } else if (i <= 0) {
          FATAL("too many FUSE errors; giving up");
